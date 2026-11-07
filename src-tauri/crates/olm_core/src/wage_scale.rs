@@ -60,7 +60,9 @@ impl TeamWageSeed {
 /// Give every rostered player with wage 0 a wage from the scale. Authored wages
 /// are untouched. A team with a wage budget whose bill would exceed it has only
 /// its seeded wages scaled down proportionally (never below `MIN_SEEDED_WAGE`).
-/// Teams without a budget (0) have no constraint to honour and keep the scale.
+/// Teams without a budget (0) are data shells with no finances: their players stay
+/// unseeded, because the monthly finance run would charge a wage to a club that has no
+/// income to pay it. The transfer path still prices them with the scale floor.
 pub fn seed_missing_wages(
     players: &mut [Player],
     teams: &[Team],
@@ -92,6 +94,9 @@ pub fn seed_missing_wages(
 
     let mut reports = Vec::new();
     for team in teams {
+        if team.wage_budget <= 0 {
+            continue;
+        }
         let Some(entries) = seeded.get(team.id.as_str()) else {
             continue;
         };
@@ -211,12 +216,14 @@ mod tests {
     }
 
     #[test]
-    fn seeding_ignores_the_budget_of_a_team_without_one() {
+    fn seeding_skips_a_data_shell_team_without_a_wage_budget() {
+        // 477 teams of the shipped data have wage budget 0 and finance 0: they are not in
+        // any competition, and a seeded wage would only bleed them negative every month.
         let mut players = vec![rostered("star", "club", 0, 370_000)];
 
         let reports = seed_missing_wages(&mut players, &[club(0)], &[]);
 
-        assert_eq!(players[0].wage, 466_000);
-        assert_eq!(reports[0].scale_factor, None);
+        assert_eq!(players[0].wage, 0);
+        assert!(reports.is_empty());
     }
 }

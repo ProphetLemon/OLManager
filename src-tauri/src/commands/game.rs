@@ -1394,17 +1394,47 @@ mod tests {
         }
 
         #[test]
-        fn new_game_leaves_no_rostered_player_without_a_wage() {
+        fn new_game_leaves_no_player_of_a_budgeted_team_without_a_wage() {
             let (game, _catalog, _overlay, _user) = new_game();
+            let budgeted: HashSet<&str> = game
+                .teams
+                .iter()
+                .filter(|t| t.wage_budget > 0)
+                .map(|t| t.id.as_str())
+                .collect();
 
             let unpaid: Vec<&str> = game
                 .players
                 .iter()
-                .filter(|p| p.team_id.is_some() && p.wage == 0)
+                .filter(|p| p.wage == 0 && p.team_id.as_deref().is_some_and(|t| budgeted.contains(t)))
                 .map(|p| p.match_name.as_str())
                 .collect();
 
-            assert!(unpaid.is_empty(), "{} rostered players have wage 0", unpaid.len());
+            assert!(unpaid.is_empty(), "{} budgeted-team players have wage 0", unpaid.len());
+        }
+
+        #[test]
+        fn new_game_does_not_charge_wages_to_teams_without_a_wage_budget() {
+            let (game, catalog, _overlay, _user) = new_game();
+            let authored: HashMap<&str, u32> =
+                catalog.iter().map(|p| (p.id.as_str(), p.wage)).collect();
+
+            let shells: Vec<&str> = game
+                .teams
+                .iter()
+                .filter(|t| t.wage_budget == 0 && t.finance == 0)
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(!shells.is_empty(), "the data ships shell teams");
+            let seeded: Vec<&str> = game
+                .players
+                .iter()
+                .filter(|p| p.team_id.as_deref().is_some_and(|t| shells.contains(&t)))
+                .filter(|p| authored.get(p.id.as_str()).is_some_and(|wage| *wage == 0 && p.wage > 0))
+                .map(|p| p.match_name.as_str())
+                .collect();
+
+            assert!(seeded.is_empty(), "{} shell-team players were seeded", seeded.len());
         }
 
         #[test]
