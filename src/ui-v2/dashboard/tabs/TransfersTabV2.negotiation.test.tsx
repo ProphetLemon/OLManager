@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
 
 import type { GameStateData, PlayerData, TeamData } from "@/store/gameStore";
-import TransfersTab from "@/ui-v2/_legacy/components/transfers/TransfersTab";
+import { TransfersTabV2 } from "./TransfersTabV2";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
@@ -228,7 +228,7 @@ function createGameState(players: PlayerData[] = [createPlayer()]): GameStateDat
   };
 }
 
-describe("TransfersTab", function (): void {
+describe("TransfersTabV2 negotiation", function (): void {
   beforeEach(function resetMocks(): void {
     mockedInvoke.mockReset();
     mockedInvoke.mockImplementation(
@@ -296,7 +296,7 @@ describe("TransfersTab", function (): void {
     });
 
     render(
-      <TransfersTab
+      <TransfersTabV2
         gameState={initialState}
         onSelectPlayer={vi.fn()}
         onSelectTeam={vi.fn()}
@@ -304,7 +304,7 @@ describe("TransfersTab", function (): void {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /offers/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /offers/i }));
     fireEvent.click(screen.getByRole("button", { name: /counter offer/i }));
     fireEvent.change(screen.getByLabelText(/counter amount/i), {
       target: { value: "1200000" },
@@ -350,7 +350,7 @@ describe("TransfersTab", function (): void {
     ]);
 
     render(
-      <TransfersTab
+      <TransfersTabV2
         gameState={state}
         onSelectPlayer={vi.fn()}
         onSelectTeam={vi.fn()}
@@ -358,7 +358,7 @@ describe("TransfersTab", function (): void {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /transfer market/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /transfer market/i }));
     fireEvent.click(screen.getByRole("button", { name: /^bid$/i }));
 
     expect(screen.getByText("Talks are still live with this club.")).toBeInTheDocument();
@@ -391,7 +391,7 @@ describe("TransfersTab", function (): void {
     ]);
 
     render(
-      <TransfersTab
+      <TransfersTabV2
         gameState={state}
         onSelectPlayer={vi.fn()}
         onSelectTeam={vi.fn()}
@@ -399,7 +399,7 @@ describe("TransfersTab", function (): void {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /offers/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /offers/i }));
     fireEvent.click(screen.getByRole("button", { name: /counter offer/i }));
 
     expect(screen.getByText("Talks are still live with this club.")).toBeInTheDocument();
@@ -416,7 +416,7 @@ describe("TransfersTab", function (): void {
     mockedInvoke.mockRejectedValue("Offer not found or not pending");
 
     render(
-      <TransfersTab
+      <TransfersTabV2
         gameState={createGameState()}
         onSelectPlayer={vi.fn()}
         onSelectTeam={vi.fn()}
@@ -424,7 +424,7 @@ describe("TransfersTab", function (): void {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /offers/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /offers/i }));
     fireEvent.click(screen.getByRole("button", { name: /counter offer/i }));
     fireEvent.click(screen.getByRole("button", { name: /submit counter/i }));
 
@@ -457,7 +457,7 @@ describe("TransfersTab", function (): void {
     ]);
 
     render(
-      <TransfersTab
+      <TransfersTabV2
         gameState={state}
         onSelectPlayer={vi.fn()}
         onSelectTeam={vi.fn()}
@@ -465,7 +465,7 @@ describe("TransfersTab", function (): void {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /offers/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /offers/i }));
 
     expect(screen.getByText(/Talks cooled off/i)).toBeInTheDocument();
   });
@@ -482,14 +482,15 @@ describe("TransfersTab", function (): void {
     ]);
 
     render(
-      <TransfersTab
+      <TransfersTabV2
         gameState={state}
         onSelectPlayer={vi.fn()}
         onSelectTeam={vi.fn()}
+        onGameUpdate={vi.fn()}
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /transfer market/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /transfer market/i }));
     fireEvent.click(screen.getByRole("button", { name: /^bid$/i }));
     fireEvent.change(screen.getByLabelText(/bid amount/i), {
       target: { value: "9000000" },
@@ -525,14 +526,15 @@ describe("TransfersTab", function (): void {
     );
 
     render(
-      <TransfersTab
+      <TransfersTabV2
         gameState={state}
         onSelectPlayer={vi.fn()}
         onSelectTeam={vi.fn()}
+        onGameUpdate={vi.fn()}
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /erl market/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /erl market/i }));
 
     expect(screen.getByText("J. Smith")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^bid$/i })).toBeInTheDocument();

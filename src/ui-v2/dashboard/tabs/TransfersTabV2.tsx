@@ -21,6 +21,7 @@ import type {
   GameStateData,
   PlayerData,
   PlayerSelectionOptions,
+  TransferOfferData,
 } from "@/store/gameStore";
 import { useTabUiField } from "@/store/tabUiStore";
 import { formatVal, calcAge, getTeamName } from "@/lib/common/helpers";
@@ -48,6 +49,7 @@ import {
   buildResumedBidFeedback,
   buildResumedCounterFeedback,
   getOutgoingNegotiationOffer,
+  getTransferOfferStatusLabel,
   mapTransferNegotiationError,
 } from "@/lib/transfers/helpers";
 import {
@@ -268,20 +270,13 @@ export function TransfersTabV2({
     }
   };
 
-  const openCounterNegotiation = (player: PlayerData, offer: { id: string; from_team_id: string; fee: number }) => {
+  const openCounterNegotiation = (player: PlayerData, offer: TransferOfferData) => {
     setCounterTarget({ player, offerId: offer.id, fromTeamId: offer.from_team_id, fee: offer.fee });
-    setCounterAmount(String(Math.round(offer.fee * 0.75)));
+    setCounterAmount(String(Math.round(offer.suggested_counter_fee ?? offer.fee)));
     setCounterError(null);
     setCounterResult(null);
-    setCounterFeedback(null);
     setSelectedPlayerIds([]);
-
-    const existing = getOutgoingNegotiationOffer(player, userTeamId);
-    if (existing) {
-      setCounterAmount(String(existing.suggested_counter_fee ?? existing.fee));
-      const fb = buildResumedCounterFeedback(existing);
-      if (fb) setCounterFeedback(fb);
-    }
+    setCounterFeedback(buildResumedCounterFeedback(offer));
   };
 
   const isFreeAgentBid = bidTarget ? !bidTarget.team_id : false;
@@ -860,7 +855,7 @@ export function TransfersTabV2({
                                     }
                                     className="text-[10px]"
                                   >
-                                    {formatVal(offer.fee)}
+                                    {formatVal(offer.fee)} — {getTransferOfferStatusLabel(t, offer.status)}
                                   </Badge>
                                   {offer.status === "Pending" && player.team_id === userTeamId && (
                                     <div className="flex gap-0.5">
@@ -881,6 +876,7 @@ export function TransfersTabV2({
                                       <button
                                         onClick={(e) => { e.stopPropagation(); openCounterNegotiation(player, offer); }}
                                         className="flex items-center gap-0.5 rounded bg-amber-500/20 px-1.5 text-[10px] text-amber-400 hover:bg-amber-500/30"
+                                        aria-label={t("transfers.counterOffer")}
                                         title={t("transfers.counterOffer")}
                                       >
                                         <Gavel className="size-2.5" /> {t("transfers.counter")}
