@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeBanRecommendationScore, rankBanCandidates } from "@/ui-v2/_legacy/components/match/draftIntelHelpers";
+import { computeBanRecommendationScore, rankBanCandidates, resolveMasterySampleSide } from "@/ui-v2/_legacy/components/match/draftIntelHelpers";
 
 describe("rankBanCandidates", () => {
   it("uses unified ban scoring for ranking", () => {
@@ -75,5 +75,20 @@ describe("rankBanCandidates", () => {
     });
 
     expect(ranked[0].championId).toBe("F");
+  });
+});
+
+describe("resolveMasterySampleSide", () => {
+  it("samples the opposing side during a ban step", () => {
+    expect(resolveMasterySampleSide({ type: "ban", side: "blue" }, "blue")).toBe("red");
+    expect(resolveMasterySampleSide({ type: "ban", side: "red" }, "red")).toBe("blue");
+  });
+
+  it("samples the acting side during a pick step", () => {
+    expect(resolveMasterySampleSide({ type: "pick", side: "blue" }, "red")).toBe("blue");
+  });
+
+  it("falls back to the controlled side without a step", () => {
+    expect(resolveMasterySampleSide(null, "red")).toBe("red");
   });
 });

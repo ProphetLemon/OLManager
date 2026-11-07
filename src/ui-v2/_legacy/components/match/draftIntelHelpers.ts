@@ -149,3 +149,18 @@ export function rankBanCandidates({
     })
     .sort((left, right) => right.score - left.score);
 }
+
+export type DraftSide = "blue" | "red";
+
+/**
+ * Side whose players' mastery is relevant for the current draft step.
+ * Picks are about the acting side's own players; bans target the opponent.
+ */
+export function resolveMasterySampleSide(
+  step: { type: string; side: DraftSide } | null | undefined,
+  controlledSide: DraftSide,
+): DraftSide {
+  if (!step) return controlledSide;
+  if (step.type === "ban") return step.side === "blue" ? "red" : "blue";
+  return step.side;
+}

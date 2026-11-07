@@ -14,6 +14,7 @@ import aiConfigSeed from "../../../../../assets/simulation/ai-config.json";
 import {
   computeBanRecommendationScore as computeUnifiedBanRecommendationScore,
   rankBanCandidates,
+  resolveMasterySampleSide,
   type BanRecommendationContext,
 } from "@/ui-v2/_legacy/components/match/draftIntelHelpers";
 import type { DraftStateEvaluation } from "@/ui-v2/_legacy/components/match/draftResultSimulator";
@@ -928,7 +929,7 @@ export default function ChampionDraft({
   };
 
   const displayMasteryForChampion = (champion: ChampionData): number => {
-    const sampleSide = currentStep?.side ?? controlledSide;
+    const sampleSide = resolveMasterySampleSide(currentStep, controlledSide);
     if (roleFilter !== "ALL") {
       return roleMasteryForChampion(sampleSide, roleFilter, champion.id);
     }
