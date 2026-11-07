@@ -192,6 +192,15 @@
     "invalidDate": "Ungültiges Datum",
     "invalidDob": "Ungültiges Geburtsdatum"
   },
+  "rosterOverlay": {
+    "asOf": "Kader Stand {{date}}",
+    "attribution": "Kaderdaten: {{name}}-Mitwirkende,",
+    "update": "Kader aktualisieren",
+    "updating": "Aktualisiere...",
+    "updated": "Kader aktualisiert auf {{date}}",
+    "upToDate": "Kader sind bereits aktuell",
+    "error": "Kader konnten nicht aktualisiert werden: {{message}}. Du kannst mit den aktuellen Kadern starten."
+  },
   "worldSelect": {
     "title": "Welt Wählen",
     "scanning": "Suche nach Datenbanken...",

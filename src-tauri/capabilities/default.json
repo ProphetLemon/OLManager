@@ -19,6 +19,8 @@
         { "url": "https://github.com/OpenLeagueManager" },
         { "url": "https://github.com/OpenLeagueManager/*" },
         { "url": "https://*.leaguepedia.com" },
+        { "url": "https://www.fandom.com/licensing" },
+        { "url": "https://creativecommons.org/licenses/*" },
         { "url": "mailto:*" }
       ]
     },

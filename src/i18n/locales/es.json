@@ -223,6 +223,15 @@
     "invalidDate": "Fecha inválida",
     "invalidDob": "Fecha de nacimiento inválida"
   },
+  "rosterOverlay": {
+    "asOf": "Plantillas a fecha de {{date}}",
+    "attribution": "Datos de plantillas: colaboradores de {{name}},",
+    "update": "Actualizar plantillas",
+    "updating": "Actualizando...",
+    "updated": "Plantillas actualizadas a {{date}}",
+    "upToDate": "Las plantillas ya están al día",
+    "error": "No se pudieron actualizar las plantillas: {{message}}. Puedes empezar con las plantillas actuales."
+  },
   "worldSelect": {
     "title": "Elegir Mundo",
     "scanning": "Buscando bases de datos...",

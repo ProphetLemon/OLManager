@@ -11,6 +11,8 @@ import { TeamGridV2 } from "@/ui-v2/_legacy/components/teamSelection/TeamGridV2"
 import { loadLeagueSelectionData, selectTeam } from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
+import { useRosterOverlay } from "@/hooks/useRosterOverlay";
+import { RosterOverlayPanel } from "@/ui-v2/components/RosterOverlayPanel";
 
 type Screen = "loading" | "error" | "league" | "teams";
 
@@ -42,6 +44,7 @@ export default function TeamSelectionV2() {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
+  const rosterOverlay = useRosterOverlay();
 
   useEffect(() => {
     loadLeagueSelectionData()
@@ -207,6 +210,13 @@ export default function TeamSelectionV2() {
           }} selectedTeamId={selectedTeamId} />
         </div>
       )}
+
+      <RosterOverlayPanel
+        info={rosterOverlay.info}
+        status={rosterOverlay.status}
+        error={rosterOverlay.error}
+        onUpdate={rosterOverlay.update}
+      />
     </div>
   );
 }

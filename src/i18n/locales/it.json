@@ -44,6 +44,15 @@
     "invalidDate": "Data non valida",
     "invalidDob": "Data di nascita non valida"
   },
+  "rosterOverlay": {
+    "asOf": "Rose aggiornate al {{date}}",
+    "attribution": "Dati delle rose: collaboratori di {{name}},",
+    "update": "Aggiorna rose",
+    "updating": "Aggiornamento...",
+    "updated": "Rose aggiornate al {{date}}",
+    "upToDate": "Le rose sono già aggiornate",
+    "error": "Impossibile aggiornare le rose: {{message}}. Puoi comunque iniziare con le rose attuali."
+  },
   "worldSelect": {
     "title": "Scegli Mondo",
     "scanning": "Ricerca database in corso...",

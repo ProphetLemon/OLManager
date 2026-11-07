@@ -192,6 +192,15 @@
     "invalidDate": "Data inválida",
     "invalidDob": "Data de nascimento inválida"
   },
+  "rosterOverlay": {
+    "asOf": "Elencos em {{date}}",
+    "attribution": "Dados dos elencos: colaboradores de {{name}},",
+    "update": "Atualizar elencos",
+    "updating": "Atualizando...",
+    "updated": "Elencos atualizados para {{date}}",
+    "upToDate": "Os elencos já estão atualizados",
+    "error": "Não foi possível atualizar os elencos: {{message}}. Você ainda pode começar com os elencos atuais."
+  },
   "worldSelect": {
     "title": "Escolher Mundo",
     "scanning": "Buscando bancos de dados...",

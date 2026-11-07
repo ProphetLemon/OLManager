@@ -192,6 +192,15 @@
     "invalidDate": "Date invalide",
     "invalidDob": "Date de naissance invalide"
   },
+  "rosterOverlay": {
+    "asOf": "Effectifs au {{date}}",
+    "attribution": "Données des effectifs : contributeurs de {{name}},",
+    "update": "Mettre à jour les effectifs",
+    "updating": "Mise à jour...",
+    "updated": "Effectifs mis à jour au {{date}}",
+    "upToDate": "Les effectifs sont déjà à jour",
+    "error": "Impossible de mettre à jour les effectifs : {{message}}. Vous pouvez commencer avec les effectifs actuels."
+  },
   "worldSelect": {
     "title": "Choisir le Monde",
     "scanning": "Recherche de bases de données...",

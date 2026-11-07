@@ -192,6 +192,15 @@
     "invalidDate": "Geçersiz tarih",
     "invalidDob": "Geçersiz doğum tarihi"
   },
+  "rosterOverlay": {
+    "asOf": "Kadrolar {{date}} tarihi itibarıyla",
+    "attribution": "Kadro verileri: {{name}} katkıda bulunanlar,",
+    "update": "Kadroları güncelle",
+    "updating": "Güncelleniyor...",
+    "updated": "Kadrolar {{date}} tarihine güncellendi",
+    "upToDate": "Kadrolar zaten güncel",
+    "error": "Kadrolar güncellenemedi: {{message}}. Mevcut kadrolarla başlayabilirsiniz."
+  },
   "worldSelect": {
     "title": "Dünya Seç",
     "scanning": "Veritabanları taranıyor...",

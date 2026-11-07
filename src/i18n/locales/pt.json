@@ -192,6 +192,15 @@
     "invalidDate": "Data inválida",
     "invalidDob": "Data de nascimento inválida"
   },
+  "rosterOverlay": {
+    "asOf": "Plantéis à data de {{date}}",
+    "attribution": "Dados dos plantéis: colaboradores de {{name}},",
+    "update": "Atualizar plantéis",
+    "updating": "A atualizar...",
+    "updated": "Plantéis atualizados para {{date}}",
+    "upToDate": "Os plantéis já estão atualizados",
+    "error": "Não foi possível atualizar os plantéis: {{message}}. Podes começar com os plantéis atuais."
+  },
   "worldSelect": {
     "title": "Escolher Mundo",
     "scanning": "A procurar bases de dados...",

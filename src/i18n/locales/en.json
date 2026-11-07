@@ -223,6 +223,15 @@
     "invalidDate": "Invalid date",
     "invalidDob": "Invalid date of birth"
   },
+  "rosterOverlay": {
+    "asOf": "Rosters as of {{date}}",
+    "attribution": "Roster data: {{name}} contributors,",
+    "update": "Update rosters",
+    "updating": "Updating...",
+    "updated": "Rosters updated to {{date}}",
+    "upToDate": "Rosters already up to date",
+    "error": "Could not update rosters: {{message}}. You can still start with the current rosters."
+  },
   "worldSelect": {
     "title": "Choose World",
     "scanning": "Scanning for databases...",
