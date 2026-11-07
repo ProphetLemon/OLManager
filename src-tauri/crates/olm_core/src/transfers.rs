@@ -1,6 +1,6 @@
 use crate::contract_wage_policy::{
     AiTransferKind, SigningIntent, ai_signing_policy, ai_transfer_cap_try_consume,
-    annual_team_wage_bill,
+    annual_team_wage_bill, wage_policy_allows_for_bill, wage_policy_room_for_new_signing,
 };
 use crate::contracts::{expected_contract_years, expected_wage};
 use crate::domain::negotiation::{NegotiationFeedback, NegotiationMood};
@@ -2263,9 +2263,12 @@ pub fn negotiate_player_wage(
         .iter()
         .find(|t| t.id.as_str() == payer_team_id.as_str())
         .ok_or("Paying team not found")?;
-    let affordable_wage =
-        (payer_team.wage_budget - annual_team_wage_bill(game, &payer_team_id)).max(0);
-    let over_budget = i64::from(annual_wage) > affordable_wage;
+    // The same board policy renewals and AI signings answer to: a wage is fine while the
+    // projected bill stays under the soft cap of the total wage budget, and a club already
+    // over budget only gets the small legacy grace.
+    let payer_bill = annual_team_wage_bill(game, &payer_team_id);
+    let affordable_wage = wage_policy_room_for_new_signing(payer_team, payer_bill);
+    let over_budget = !wage_policy_allows_for_bill(payer_team, payer_bill, 0, annual_wage);
     let blocked = below_floor || over_budget;
 
     // Accept immediately if the offer matches a previous counter-offer within tolerance

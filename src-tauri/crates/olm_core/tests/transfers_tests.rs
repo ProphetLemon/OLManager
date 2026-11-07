@@ -10,6 +10,7 @@ use olm_core::domain::player::{
 use olm_core::domain::season::TransferWindowStatus;
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::{FinancialTransactionKind, Team, TeamKind};
+use olm_core::contract_wage_policy::{annual_team_wage_bill, wage_policy_room_for_new_signing};
 use olm_core::contracts::expected_wage;
 use olm_core::game::Game;
 use olm_core::transfers::{
@@ -2276,6 +2277,71 @@ fn wage_the_club_cannot_fit_in_its_budget_is_refused() {
 
     assert_eq!(outcome.decision, TransferNegotiationDecision::Rejected);
     assert!(!outcome.is_terminal);
+    assert_eq!(game.players[0].team_id.as_deref(), Some("team-2"));
+}
+
+/// Puts `bill` of yearly wages on the user club, split over five filler players.
+fn load_user_wage_bill(game: &mut Game, bill: u32) {
+    for index in 0..5 {
+        let mut filler = make_user_player(&format!("filler-{index}"));
+        filler.wage = bill / 5;
+        game.players.push(filler);
+    }
+}
+
+#[test]
+fn healthy_club_can_sign_a_scale_wage_that_fits_the_board_policy() {
+    // Season 2: the club already pays 2M a year, which is below its total wage budget, and
+    // the wage fits the 110% soft cap although it exceeds budget minus bill.
+    let (mut game, offer_id) = star_with_accepted_fee();
+    load_user_wage_bill(&mut game, 2_000_000);
+    let date = game.clock.current_date.date_naive();
+    let wage = expected_wage(&game.players[0], &game.teams[0], date) * 3 / 2;
+    let bill = annual_team_wage_bill(&game, "team-1");
+    game.teams[0].wage_budget = (bill + i64::from(wage)) * 100 / 105;
+    assert!(game.teams[0].wage_budget > bill);
+    assert!(game.teams[0].wage_budget - bill < i64::from(wage));
+
+    let outcome = negotiate_player_wage(&mut game, "star", &offer_id, wage, 3).expect("wage");
+
+    assert_eq!(outcome.decision, TransferNegotiationDecision::Accepted);
+    assert_eq!(game.players[0].team_id.as_deref(), Some("team-1"));
+}
+
+#[test]
+fn club_past_its_wage_policy_is_refused_and_told_what_it_can_still_pay() {
+    let (mut game, offer_id) = star_with_accepted_fee();
+    load_user_wage_bill(&mut game, 2_000_000);
+    let date = game.clock.current_date.date_naive();
+    let expected = expected_wage(&game.players[0], &game.teams[0], date);
+    let bill = annual_team_wage_bill(&game, "team-1");
+    // The soft cap leaves room for 1.2x the expected wage and not a euro more.
+    game.teams[0].wage_budget = (bill + i64::from(expected) * 6 / 5) * 100 / 110;
+    let room = wage_policy_room_for_new_signing(&game.teams[0], bill);
+    assert!(room >= i64::from(expected));
+
+    let outcome =
+        negotiate_player_wage(&mut game, "star", &offer_id, expected * 3, 3).expect("wage");
+
+    assert_eq!(outcome.decision, TransferNegotiationDecision::Rejected);
+    assert!(!outcome.is_terminal);
+    assert_eq!(outcome.suggested_wage, Some(room as u32));
+    assert_eq!(game.players[0].team_id.as_deref(), Some("team-2"));
+}
+
+#[test]
+fn club_already_over_its_budget_only_gets_the_policy_grace() {
+    let (mut game, offer_id) = star_with_accepted_fee();
+    load_user_wage_bill(&mut game, 2_000_000);
+    game.teams[0].wage_budget = 1_000_000;
+    let date = game.clock.current_date.date_naive();
+    let expected = expected_wage(&game.players[0], &game.teams[0], date);
+
+    let outcome =
+        negotiate_player_wage(&mut game, "star", &offer_id, expected * 2, 3).expect("wage");
+
+    assert_eq!(outcome.decision, TransferNegotiationDecision::Rejected);
+    assert_eq!(outcome.suggested_wage, None, "the grace is far below the floor");
     assert_eq!(game.players[0].team_id.as_deref(), Some("team-2"));
 }
 

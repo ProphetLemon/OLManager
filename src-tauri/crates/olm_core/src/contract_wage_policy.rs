@@ -53,9 +53,24 @@ pub fn renewal_wage_policy_allows(
     wage_policy_allows_for_bill(team, current_bill, current_player_wage, offered_wage)
 }
 
+/// Most yearly wage the board lets `team` add for a player who is not on its bill
+/// yet, given its `current_bill`. Always agrees with [`wage_policy_allows_for_bill`]
+/// for a new signing: a wage is allowed exactly when it is at most this room.
+pub fn wage_policy_room_for_new_signing(team: &Team, current_bill: i64) -> i64 {
+    if current_bill <= team.wage_budget {
+        let soft_cap = (team.wage_budget * WAGE_SOFT_CAP_PCT) / 100;
+        return (soft_cap - current_bill).max(0);
+    }
+
+    std::cmp::max(
+        (team.wage_budget * LEGACY_OVER_BUDGET_GRACE_PCT) / 100,
+        LEGACY_OVER_BUDGET_GRACE_MIN,
+    )
+}
+
 /// [`renewal_wage_policy_allows`] against an explicit `current_bill` instead of
 /// the bill computed from the game's players and staff.
-fn wage_policy_allows_for_bill(
+pub(crate) fn wage_policy_allows_for_bill(
     team: &Team,
     current_bill: i64,
     current_player_wage: u32,
@@ -334,4 +349,40 @@ pub fn ai_transfer_cap_reset_if_new_day(game: &mut Game) {
     }
     game.ai_transfer_cap_counts.clear();
     game.ai_transfer_cap_last_reset_date = Some(current_date);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn club(wage_budget: i64) -> Team {
+        let mut team = Team::new(
+            "club".to_string(),
+            "Club".to_string(),
+            "CLB".to_string(),
+            "KR".to_string(),
+            "Seoul".to_string(),
+            "Arena".to_string(),
+            10_000,
+        );
+        team.wage_budget = wage_budget;
+        team
+    }
+
+    #[test]
+    fn room_for_a_new_signing_is_exactly_what_the_policy_allows() {
+        let cases = [
+            (2_000_000, 1_500_000),
+            (2_000_000, 2_000_000),
+            (1_000_000, 2_000_000),
+            (0, 0),
+        ];
+        for (budget, bill) in cases {
+            let team = club(budget);
+            let room = wage_policy_room_for_new_signing(&team, bill);
+            assert!(room >= 0);
+            assert!(wage_policy_allows_for_bill(&team, bill, 0, room as u32));
+            assert!(!wage_policy_allows_for_bill(&team, bill, 0, room as u32 + 1));
+        }
+    }
 }
