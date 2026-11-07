@@ -600,7 +600,7 @@
       "low": "Bassa"
     },
     "year": "Year",
-    "per_year_with_slash": "/year",
+    "per_year_with_slash": "/anno",
     "potential": "Potential",
     "fitness": "Fitness",
     "action": "Action",

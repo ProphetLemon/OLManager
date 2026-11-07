@@ -58,6 +58,7 @@ vi.mock("react-i18next", () => ({
         "finances.seasonIncome": "Season Income",
         "finances.perWeekSuffix": "/wk",
         "tactics.draftStrategy": "Draft Strategy",
+        "common.per_year_with_slash": "/yr",
         "common.played": "P",
         "common.won": "W",
         "common.drawn": "D",
@@ -449,6 +450,14 @@ describe("TeamProfileV2", () => {
     expect(screen.getByText("Squad Overview")).toBeInTheDocument();
     expect(screen.queryByText("Finances")).not.toBeInTheDocument();
     expect(screen.queryByText("common.condition")).not.toBeInTheDocument();
+  });
+
+  it("translates the per-year suffix of the wage rows", () => {
+    const team = createTeam();
+    render(<TeamProfileV2 teamId={team.id} gameState={createGameState(team)} onClose={vi.fn()} />);
+    const perYear = screen.getAllByText(/\/yr$/);
+    expect(perYear).toHaveLength(2);
+    expect(screen.queryByText(/\/año/)).not.toBeInTheDocument();
   });
 
   it("renders nothing for an unknown team", () => {

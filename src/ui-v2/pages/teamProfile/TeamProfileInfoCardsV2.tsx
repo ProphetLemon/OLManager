@@ -64,7 +64,7 @@ export function TeamProfileSummaryCardV2({
           <InfoRow
             icon={money}
             label={t("finances.wageBudget")}
-            value={`${formatVal(team.wage_budget)} /año`}
+            value={`${formatVal(team.wage_budget)} ${t("common.per_year_with_slash")}`}
           />
           <InfoRow
             icon={money}
@@ -74,7 +74,7 @@ export function TeamProfileSummaryCardV2({
           <InfoRow
             icon={money}
             label={t("teamProfile.totalWages")}
-            value={`${formatVal(viewModel.totalWages)} /año`}
+            value={`${formatVal(viewModel.totalWages)} ${t("common.per_year_with_slash")}`}
           />
           <InfoRow
             icon={money}
