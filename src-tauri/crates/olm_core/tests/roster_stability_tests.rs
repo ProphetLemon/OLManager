@@ -1948,6 +1948,41 @@ fn new_game_fill_spends_the_budget_across_roles_in_one_team() {
     assert_eq!(ids, vec!["fa-jg-star", "fa-sup-cheap"]);
 }
 
+fn unsigned_star(id: &str, role: LolRole, level: u8, market_value: u64) -> Player {
+    // Free agents in the shipped data carry no wage; a real signing pays the
+    // expected wage derived from the market value.
+    let mut star = rated(player(id, None, role, None), level, 0);
+    star.market_value = market_value;
+    star
+}
+
+#[test]
+fn new_game_fill_counts_an_earlier_fill_at_its_expected_wage_against_the_budget() {
+    // Payroll 60k, budget 170k (soft cap 187k). A 2M-value free agent costs
+    // about 124k, so exactly one such signing fits; the second role must see
+    // the first and settle for the cheap player.
+    let mut players = short_roster("ai-team");
+    for p in players.iter_mut() {
+        p.wage = 20_000;
+    }
+    players.push(unsigned_star("fa-jg-star", LolRole::Jungle, 90, 2_000_000));
+    players.push(unsigned_star(
+        "fa-sup-star",
+        LolRole::Support,
+        85,
+        2_000_000,
+    ));
+    players.push(unsigned_star("fa-sup-cheap", LolRole::Support, 50, 100_000));
+    let mut game = game_with(players, vec![]);
+    game.teams[1].team_kind = TeamKind::Academy;
+    game.teams[0].wage_budget = 180_000;
+
+    let fills = fill_new_game_rosters(&mut game);
+
+    let ids: Vec<&str> = fills.iter().map(|f| f.player_id.as_str()).collect();
+    assert_eq!(ids, vec!["fa-jg-star", "fa-sup-cheap"]);
+}
+
 #[test]
 fn new_game_fill_orders_teams_by_reputation_so_the_stronger_club_picks_first() {
     let mut players = vec![

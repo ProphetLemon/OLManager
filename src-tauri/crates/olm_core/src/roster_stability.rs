@@ -1,5 +1,6 @@
 use crate::contract_wage_policy::{
-    AiTransferKind, SigningIntent, ai_signing_policy, ai_transfer_cap_try_consume,
+    AiTransferKind, SigningIntent, ai_signing_policy, ai_signing_policy_for_bill,
+    ai_transfer_cap_try_consume, annual_team_wage_bill,
 };
 use crate::domain::player::{Player, PlayerAttributes};
 use crate::domain::season::TransferWindowStatus;
@@ -276,8 +277,10 @@ pub struct NewGameRosterFill {
 ///
 /// Teams are processed by descending reputation (then id), so the clubs that
 /// would realistically attract the best free agents choose first and a shared
-/// pool is split reproducibly. Each signing counts toward the club's wage bill
-/// before its next role is chosen.
+/// pool is split reproducibly. Each free-agent signing counts at the wage a
+/// real signing would pay toward the club's wage bill before its next role is
+/// chosen; that running total is local to the fill, since the stored wage stays
+/// untouched.
 pub fn fill_new_game_rosters(game: &mut Game) -> Vec<NewGameRosterFill> {
     let mut team_order = game
         .teams
@@ -293,9 +296,12 @@ pub fn fill_new_game_rosters(game: &mut Game) -> Vec<NewGameRosterFill> {
     let mut fills = Vec::new();
     for (_, team_id) in team_order {
         let missing = missing_roles(&eligible_team_players(game, &team_id, current_date));
+        let mut wage_bill = annual_team_wage_bill(game, &team_id);
         for role in missing {
-            let free_agent = best_free_agent_for_new_game(game, &team_id, role, current_date);
-            if let Some(index) = free_agent {
+            let free_agent =
+                best_free_agent_for_new_game(game, &team_id, role, current_date, wage_bill);
+            if let Some((index, signing_wage)) = free_agent {
+                wage_bill += i64::from(signing_wage);
                 let player_id = game.players[index].id.clone();
                 let player = &mut game.players[index];
                 player.team_id = Some(team_id.clone());
@@ -314,6 +320,7 @@ pub fn fill_new_game_rosters(game: &mut Game) -> Vec<NewGameRosterFill> {
                 role,
             ) {
                 let player = generated_player(&player_id, &team_id, role, game);
+                wage_bill += i64::from(player.wage);
                 game.players.push(player);
                 fills.push(NewGameRosterFill {
                     team_id: team_id.clone(),
@@ -327,7 +334,8 @@ pub fn fill_new_game_rosters(game: &mut Game) -> Vec<NewGameRosterFill> {
     fills
 }
 
-/// Index of the free agent a new-game roster should take for `role`.
+/// Index and expected wage of the free agent a new-game roster should take for
+/// `role`, judged against the club's running `wage_bill`.
 ///
 /// Best natural overall among players the signing policy accepts (emergency
 /// intent, so only the wage budget gates, not club prestige); otherwise the
@@ -337,13 +345,15 @@ fn best_free_agent_for_new_game(
     team_id: &str,
     role: LolRole,
     current_date: NaiveDate,
-) -> Option<usize> {
+    wage_bill: i64,
+) -> Option<(usize, u32)> {
     let team = game.teams.iter().find(|team| team.id == team_id)?;
     let scored = free_agent_candidates(game, role, current_date)
         .into_iter()
         .map(|(id, index)| {
             let player = &game.players[index];
-            let decision = ai_signing_policy(game, team, player, SigningIntent::Emergency);
+            let decision =
+                ai_signing_policy_for_bill(game, team, player, SigningIntent::Emergency, wage_bill);
             (id, index, natural_ovr(player), decision)
         })
         .collect::<Vec<_>>();
@@ -356,8 +366,8 @@ fn best_free_agent_for_new_game(
                 .total_cmp(left_ovr)
                 .then_with(|| left_id.cmp(right_id))
         });
-    if let Some((_, index, _, _)) = best_affordable {
-        return Some(*index);
+    if let Some((_, index, _, decision)) = best_affordable {
+        return Some((*index, decision.annual_wage));
     }
 
     scored
@@ -370,7 +380,7 @@ fn best_free_agent_for_new_game(
                     .then_with(|| left_id.cmp(right_id))
             },
         )
-        .map(|(_, index, _, _)| *index)
+        .map(|(_, index, _, decision)| (*index, decision.annual_wage))
 }
 
 fn renew_needed_current_players(game: &mut Game, team_id: &str, actions: &mut Vec<RepairAction>) {

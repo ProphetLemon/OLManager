@@ -16,7 +16,7 @@ const MAX_AI_EMERGENCY_TRANSFERS_PER_DAY: u8 = 1;
 const HIGH_REPUTATION_THRESHOLD: u32 = 1_100;
 const MIN_STRATEGIC_ATTRACTIVENESS: i32 = 35;
 
-fn annual_team_wage_bill(game: &Game, team_id: &str) -> i64 {
+pub fn annual_team_wage_bill(game: &Game, team_id: &str) -> i64 {
     let player_wages: i64 = game
         .players
         .iter()
@@ -50,8 +50,18 @@ pub fn renewal_wage_policy_allows(
     offered_wage: u32,
 ) -> bool {
     let current_bill = annual_team_wage_bill(game, &team.id);
-    let projected_bill =
-        projected_annual_wage_bill(game, &team.id, current_player_wage, offered_wage);
+    wage_policy_allows_for_bill(team, current_bill, current_player_wage, offered_wage)
+}
+
+/// [`renewal_wage_policy_allows`] against an explicit `current_bill` instead of
+/// the bill computed from the game's players and staff.
+fn wage_policy_allows_for_bill(
+    team: &Team,
+    current_bill: i64,
+    current_player_wage: u32,
+    offered_wage: u32,
+) -> bool {
+    let projected_bill = current_bill - current_player_wage as i64 + offered_wage as i64;
     let soft_cap = (team.wage_budget * WAGE_SOFT_CAP_PCT) / 100;
 
     if current_bill <= team.wage_budget {
@@ -254,6 +264,20 @@ pub fn ai_signing_policy(
     player: &Player,
     intent: SigningIntent,
 ) -> SigningDecision {
+    let current_bill = annual_team_wage_bill(game, &team.id);
+    ai_signing_policy_for_bill(game, team, player, intent, current_bill)
+}
+
+/// [`ai_signing_policy`] judging the wage budget against `current_bill`, for
+/// callers that track commitments the players' stored wages do not show yet
+/// (see `fill_new_game_rosters`).
+pub fn ai_signing_policy_for_bill(
+    game: &Game,
+    team: &Team,
+    player: &Player,
+    intent: SigningIntent,
+    current_bill: i64,
+) -> SigningDecision {
     let current_date = game.clock.current_date.date_naive();
     let annual_wage = expected_wage(player, team, current_date);
     let contract_years = expected_contract_years(player, current_date) as u8;
@@ -266,7 +290,7 @@ pub fn ai_signing_policy(
         );
     }
 
-    if !renewal_wage_policy_allows(game, team, 0, annual_wage) {
+    if !wage_policy_allows_for_bill(team, current_bill, 0, annual_wage) {
         return SigningDecision::rejected(
             SigningRejectionReason::WageBudgetExceeded,
             annual_wage,
