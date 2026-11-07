@@ -2,7 +2,7 @@ use crate::contract_wage_policy::{
     AiTransferKind, SigningIntent, ai_signing_policy, ai_transfer_cap_try_consume,
     annual_team_wage_bill, wage_policy_allows_for_bill, wage_policy_room_for_new_signing,
 };
-use crate::contracts::{expected_contract_years, expected_wage};
+use crate::contracts::{expected_contract_years, expected_signing_wage, expected_wage};
 use crate::domain::negotiation::{NegotiationFeedback, NegotiationMood};
 use crate::domain::player::{PlayerOfferItem, TransferOfferStatus, WageNegotiationStatus};
 use crate::domain::season::TransferWindowStatus;
@@ -2256,7 +2256,7 @@ pub fn negotiate_player_wage(
         .iter()
         .find(|t| t.id.as_str() == destination_team_id.as_str())
         .ok_or("Destination team not found")?;
-    let reference_wage = expected_wage(player, destination_team, current_date);
+    let reference_wage = expected_signing_wage(player, destination_team, current_date);
     let below_floor = annual_wage < wage_floor(reference_wage);
     let payer_team = game
         .teams

@@ -2290,6 +2290,26 @@ fn load_user_wage_bill(game: &mut Game, bill: u32) {
 }
 
 #[test]
+fn star_on_a_machine_derived_seven_percent_wage_does_not_accept_50k() {
+    // Non-LEC leagues ship wages of about 7% of market value (an LPL star: 370k value, 26k
+    // wage). Measured against that, 50k looked like a 90% raise.
+    let mut game = make_star_game();
+    game.players[0].wage = 26_000;
+    let outcome = make_transfer_bid(&mut game, "star", 900_000, TransferDestination::Main, &[])
+        .expect("bid should be processed");
+    assert_eq!(outcome.decision, TransferNegotiationDecision::Accepted);
+    game.players[0].transfer_listed = true;
+    let offer_id = star_offer_id(&game);
+
+    let outcome = negotiate_player_wage(&mut game, "star", &offer_id, 50_000, 3).expect("wage");
+
+    assert_ne!(outcome.decision, TransferNegotiationDecision::Accepted);
+    assert_eq!(game.players[0].team_id.as_deref(), Some("team-2"));
+    let counter = outcome.suggested_wage.expect("a counter");
+    assert!(counter >= olm_core::wage_scale::scale_wage_for_market_value(370_000));
+}
+
+#[test]
 fn healthy_club_can_sign_a_scale_wage_that_fits_the_board_policy() {
     // Season 2: the club already pays 2M a year, which is below its total wage budget, and
     // the wage fits the 110% soft cap although it exceeds budget minus bill.

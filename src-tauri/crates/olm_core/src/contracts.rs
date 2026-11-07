@@ -512,7 +512,28 @@ pub fn process_contract_expiries(game: &mut Game) {
 }
 
 pub fn expected_wage(player: &Player, team: &Team, current_date: NaiveDate) -> u32 {
-    let apply_minimum_floor = should_apply_minimum_expected_wage_floor(player, current_date);
+    expected_wage_with_floor(
+        player,
+        team,
+        current_date,
+        should_apply_minimum_expected_wage_floor(player, current_date),
+    )
+}
+
+/// What a player demands from a club that wants to sign him: [`expected_wage`] with the
+/// wage-scale floor always applied. Many non-LEC players ship a machine-derived wage of
+/// about 7% of market value; a new club must not be able to buy them at that price.
+/// Renewals keep using [`expected_wage`], so re-signing a squad stays affordable.
+pub fn expected_signing_wage(player: &Player, team: &Team, current_date: NaiveDate) -> u32 {
+    expected_wage_with_floor(player, team, current_date, true)
+}
+
+fn expected_wage_with_floor(
+    player: &Player,
+    team: &Team,
+    current_date: NaiveDate,
+    apply_minimum_floor: bool,
+) -> u32 {
     let starting_wage = if apply_minimum_floor {
         player.wage.max(minimum_expected_wage_floor(player))
     } else {
