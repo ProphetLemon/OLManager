@@ -3,6 +3,10 @@
     "hm": {
       "reason": "Reviewed: 43/65 changes are evidence-backed, not a wrong team mapping. All 8 mapped teams are the Czech/Slovak Hitpoint Masters rosters; 9 moves matched on ign+name against the team page (Raining, Dyego, JJirkos, DVLK, Dzeffry, KNEZA, plus Archer, Enkil and Lumity arriving from other competitions), 32 releases are backed by player pages saying previously or naming a team outside the game world, and there are no retirements. The league churns its roster every off-season and the floor policy already keeps teams playable.",
       "reviewed": "2026-11-07"
+    },
+    "tcl": {
+      "reason": "Reviewed: 29/46 changes (63%) are evidence-backed, not a wrong team mapping. The gate tipped over 60% once Team Phoenix was mapped to \"Team Phoenix (Turkish Team)\" (Raen1 is on both rosters). Every move to another team was matched on ign+name against the destination team page (BoostGate Esports, Bushido Wildcats, Dark Passage, SU Esports, Team Phoenix), the releases are backed by player pages saying the player has no current team or is with a team outside the game world, there are no retirements, and the additions are taken from the same team pages. The league churns its roster every off-season and the floor policy keeps teams playable.",
+      "reviewed": "2026-11-08"
     }
   }
 }
