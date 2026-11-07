@@ -180,7 +180,7 @@ export default function TeamSelectionV2() {
             </p>
           </div>
           {!isLeagueScreen && selectedTeamId && (
-            <button type="button" disabled={isConfirming} onClick={handleConfirm}
+            <button type="button" disabled={isConfirming || rosterOverlay.status === "updating"} onClick={handleConfirm}
               className="flex h-8 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 disabled:pointer-events-none disabled:opacity-50"
             >
               {isConfirming && <Loader2 className="size-4 animate-spin" />}

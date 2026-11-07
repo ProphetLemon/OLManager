@@ -8,6 +8,16 @@ const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
   setGameState: vi.fn(),
   setGameActive: vi.fn(),
+  rosterStatus: "idle" as string,
+}));
+
+vi.mock("@/hooks/useRosterOverlay", () => ({
+  useRosterOverlay: () => ({
+    info: null,
+    status: mocks.rosterStatus,
+    error: null,
+    update: vi.fn(),
+  }),
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -48,6 +58,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 describe("TeamSelectionV2", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.rosterStatus = "idle";
     mocks.loadLeagueSelectionData.mockResolvedValue({
       competitions: [
         {
@@ -102,5 +113,24 @@ describe("TeamSelectionV2", () => {
       screen.getByText("No active competition manifests available; cannot select a team safely"),
     ).toBeInTheDocument();
     expect(mocks.navigate).not.toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("disables Confirm while the roster update is in flight", async () => {
+    mocks.rosterStatus = "updating";
+    const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
+
+    render(
+      <MemoryRouter>
+        <TeamSelectionV2 />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /LEC/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /G2 Esports/i }));
+    const confirm = screen.getByRole("button", { name: /Confirmar/i });
+
+    expect(confirm).toBeDisabled();
+    fireEvent.click(confirm);
+    expect(mocks.selectTeam).not.toHaveBeenCalled();
   });
 });

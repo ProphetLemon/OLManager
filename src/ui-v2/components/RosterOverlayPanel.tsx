@@ -13,16 +13,22 @@ interface RosterOverlayPanelProps {
   onUpdate: () => void;
 }
 
+/**
+ * Licence links are never taken from the overlay: only these exact URLs, which
+ * are also the ones allowed by the opener capability, can be linked.
+ */
+const FANDOM_LICENSING_URL = "https://www.fandom.com/licensing";
+const CC_BY_SA_3_URL = "https://creativecommons.org/licenses/by-sa/3.0/";
+const ALLOWED_LICENSE_URLS = [FANDOM_LICENSING_URL, CC_BY_SA_3_URL];
+
+function trustedLicenseUrl(license: string, licenseUrl: string): string | null {
+  const allowed = ALLOWED_LICENSE_URLS.find((url) => url === licenseUrl);
+  if (allowed) return allowed;
+  return license === "CC BY-SA 3.0" ? FANDOM_LICENSING_URL : null;
+}
+
 function openExternal(url: string): void {
-  if (!/^https:\/\//i.test(url)) return;
-  const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-  if (isTauri) {
-    void import("@tauri-apps/plugin-opener")
-      .then((m) => m.openUrl(url))
-      .catch(() => window.open(url, "_blank", "noopener,noreferrer"));
-  } else {
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
+  void import("@tauri-apps/plugin-opener").then((m) => m.openUrl(url)).catch(() => {});
 }
 
 /** Presentational: shows the roster snapshot date, its licence and the update action. */
@@ -34,6 +40,7 @@ export function RosterOverlayPanel({ info, status, error, onUpdate }: RosterOver
 
   const asOf = formatDate(info.as_of, i18n.language);
   const { source } = info;
+  const licenseHref = trustedLicenseUrl(source.license, source.license_url);
 
   return (
     <div
@@ -48,12 +55,15 @@ export function RosterOverlayPanel({ info, status, error, onUpdate }: RosterOver
           {t("rosterOverlay.attribution", "Roster data: {{name}} contributors,", {
             name: source.name,
           })}{" "}
-          {source.license_url ? (
+          {licenseHref ? (
             <a
-              href={source.license_url}
+              href={licenseHref}
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={(event) => {
+                if (!("__TAURI_INTERNALS__" in window)) return;
                 event.preventDefault();
-                openExternal(source.license_url);
+                openExternal(licenseHref);
               }}
               className="underline underline-offset-2 hover:text-foreground"
             >

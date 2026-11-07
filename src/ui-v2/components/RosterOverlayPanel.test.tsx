@@ -77,6 +77,43 @@ describe("RosterOverlayPanel", () => {
     expect(link).toHaveAttribute("href", "https://www.fandom.com/licensing");
   });
 
+  it("does not link a licence URL that the overlay supplies", async () => {
+    mocks.getWorldOverlayInfo.mockResolvedValue(
+      makeInfo({
+        source: { ...makeInfo().source, license: "Proprietary", license_url: "https://evil.example/pwn" },
+      }),
+    );
+    render(<Harness />);
+
+    expect(await screen.findByText(/Proprietary/)).toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("links the known licence to a hard-coded URL, ignoring the overlay's", async () => {
+    mocks.getWorldOverlayInfo.mockResolvedValue(
+      makeInfo({
+        source: { ...makeInfo().source, license_url: "https://evil.example/pwn" },
+      }),
+    );
+    render(<Harness />);
+
+    const link = await screen.findByRole("link", { name: "CC BY-SA 3.0" });
+    expect(link).toHaveAttribute("href", "https://www.fandom.com/licensing");
+  });
+
+  it("never falls back to window.open when the opener plugin fails", async () => {
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    Object.defineProperty(window, "__TAURI_INTERNALS__", { value: {}, configurable: true });
+    render(<Harness />);
+
+    fireEvent.click(await screen.findByRole("link", { name: "CC BY-SA 3.0" }));
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(open).not.toHaveBeenCalled();
+    delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
+    open.mockRestore();
+  });
+
   it("shows the new date after a successful update", async () => {
     mocks.updateWorldOverlay.mockResolvedValue(
       makeInfo({ as_of: "2026-11-01", origin: "downloaded", updated: true }),
