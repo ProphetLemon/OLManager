@@ -38,10 +38,11 @@
       "via": "exact"
     },
     "al-team-c648abc2": {
-      "title": null,
+      "title": "Baam Esports",
       "name": "BAAM Esports",
       "competition": "al",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "al-team-e175ded9": {
       "title": "3BL Esports",
@@ -50,10 +51,11 @@
       "via": "exact"
     },
     "cblol-team-0c8be917": {
-      "title": null,
+      "title": "Leviatan",
       "name": "Leviatán",
       "competition": "cblol",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "cblol-team-0e114265": {
       "title": "Vivo Keyd Stars",
@@ -152,10 +154,11 @@
       "via": "exact"
     },
     "cd-team-a49fd9c6": {
-      "title": null,
+      "title": "Team Solid (Brazilian Team)",
       "name": "Team Solid",
       "competition": "cd",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "ebl-team-1103bd5e": {
       "title": "Lenovo Legion Honvéd",
@@ -173,7 +176,8 @@
       "title": null,
       "name": "Washed Gaming",
       "competition": "ebl",
-      "reason": "no Leaguepedia team page found for this name"
+      "reason": "Not covered: no Leaguepedia team page \"Washed Gaming\" (title lookup missing, search returned no team page, 2026-11-07).",
+      "manual": true
     },
     "ebl-team-8b9502f1": {
       "title": "Team Spawn Peek",
@@ -257,7 +261,8 @@
       "title": null,
       "name": "Eclipse",
       "competition": "eec",
-      "reason": "\"Eclipse\" exists but is not a team page"
+      "reason": "Disbanded: Leaguepedia \"Eclipse (French Team)\" lists disbanded 2026-07-05 (renamed Solary Eclipse); no roster. Evidence: https://lol.fandom.com/wiki/Eclipse_(French_Team)",
+      "manual": true
     },
     "eec-team-dd643d48": {
       "title": "Barcząca Esports Babylon",
@@ -428,10 +433,11 @@
       "via": "exact"
     },
     "lckcl-lck-cl-dn-soopers-challengers": {
-      "title": null,
+      "title": "DN SOOPers Challengers",
       "name": "DN SOOpers Challengers",
       "competition": "lckcl",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "lckcl-lck-cl-dplus-kia-challengers": {
       "title": "Dplus Kia Challengers",
@@ -446,22 +452,25 @@
       "via": "exact"
     },
     "lckcl-lck-cl-hanjin-brion-challengers": {
-      "title": null,
+      "title": "HANJIN BRION Challengers",
       "name": "HANJIN BRION CHALLENGERS",
       "competition": "lckcl",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "lckcl-lck-cl-hle-challengers": {
-      "title": null,
+      "title": "Hanwha Life Esports Challengers",
       "name": "HLE Challengers",
       "competition": "lckcl",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "lckcl-lck-cl-kiwoon-drx-challengers": {
-      "title": null,
+      "title": "Kiwoom DRX Challengers",
       "name": "Kiwoon DRX Challengers",
       "competition": "lckcl",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "lckcl-lck-cl-kt-rolster-challengers": {
       "title": "KT Rolster Challengers",
@@ -470,10 +479,11 @@
       "via": "exact"
     },
     "lckcl-lck-cl-ns-esports-academy": {
-      "title": null,
+      "title": "Nongshim Esports Academy",
       "name": "NS Esports Academy",
       "competition": "lckcl",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "lckcl-lck-cl-t1-esports-academy": {
       "title": "T1 Esports Academy",
@@ -518,10 +528,11 @@
       "via": "exact"
     },
     "lcp-team-f4306bce": {
-      "title": null,
+      "title": "Fukuoka SoftBank HAWKS gaming",
       "name": "SoftBank HAWKS",
       "competition": "lcp",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "lcp-team-gzg2025": {
       "title": "Ground Zero Gaming",
@@ -542,10 +553,11 @@
       "via": "exact"
     },
     "lcs-team-cb9503c1": {
-      "title": null,
+      "title": "LYON (2024 American Team)",
       "name": "LYON",
       "competition": "lcs",
-      "reason": "\"Lyon\" exists but is not a team page"
+      "via": "manual",
+      "manual": true
     },
     "lcs-team-d740ef00": {
       "title": "Shopify Rebellion",
@@ -716,10 +728,11 @@
       "via": "exact"
     },
     "les-team-854f6893": {
-      "title": null,
+      "title": "GIANTX iTero",
       "name": "GiantX Itero",
       "competition": "les",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "les-team-8baee3fd": {
       "title": "Movistar KOI Fénix",
@@ -920,10 +933,11 @@
       "via": "exact"
     },
     "lpl-team-38a818e5": {
-      "title": null,
+      "title": "ThunderTalk Gaming",
       "name": "TT Gaming",
       "competition": "lpl",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "lpl-team-3bd486ec": {
       "title": "Anyone's Legend",
@@ -1001,7 +1015,8 @@
       "title": null,
       "name": "Francesinhas",
       "competition": "lplol",
-      "reason": "no Leaguepedia team page found for this name"
+      "reason": "Not covered: no Leaguepedia team page \"Francesinhas\" (title lookup missing, search returned only LPLOL season pages, 2026-11-07).",
+      "manual": true
     },
     "lplol-team-273eca26": {
       "title": "ZeroZone Gaming",
@@ -1037,7 +1052,8 @@
       "title": null,
       "name": "Ronaldo Team",
       "competition": "lplol",
-      "reason": "no Leaguepedia team page found for this name"
+      "reason": "Not covered: no Leaguepedia team page \"Ronaldo Team\" (title lookup missing, search returned only player pages, 2026-11-07).",
+      "manual": true
     },
     "lplol-team-cd7def0c": {
       "title": "Crusaders",
@@ -1277,7 +1293,8 @@
       "title": null,
       "name": "One Round Specialists",
       "competition": "pcs",
-      "reason": "no Leaguepedia team page found for this name"
+      "reason": "Not covered: no Leaguepedia team page \"One Round Specialists\" (title lookup missing, search returned no team page, 2026-11-07).",
+      "manual": true
     },
     "pcs-team-86604284": {
       "title": "Equinox Core",
@@ -1286,10 +1303,11 @@
       "via": "exact"
     },
     "pcs-team-94671303": {
-      "title": null,
+      "title": "CTBC Flying Oyster Academy",
       "name": "CFO Academy",
       "competition": "pcs",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "pcs-team-9c289ca5": {
       "title": "Wangting",
@@ -1310,10 +1328,11 @@
       "via": "exact"
     },
     "prm-team-069c707b": {
-      "title": null,
+      "title": "G2 NORD",
       "name": "G2 Nord",
       "competition": "prm",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "prm-team-0be37b7e": {
       "title": "Berlin International Gaming",
@@ -1322,10 +1341,11 @@
       "via": "exact"
     },
     "prm-team-1347e217": {
-      "title": null,
+      "title": "TeamOrangeGaming",
       "name": "Team Orange Gaming",
       "competition": "prm",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "prm-team-3cef0cfa": {
       "title": "Kaufland Hangry Knights",
@@ -1340,10 +1360,11 @@
       "via": "exact"
     },
     "prm-team-8c9a2d4b": {
-      "title": null,
+      "title": "VfB eSports",
       "name": "VfB Stuttgart eSports",
       "competition": "prm",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     },
     "prm-team-a72b6e41": {
       "title": "E WIE EINFACH E-SPORTS",
@@ -1508,10 +1529,11 @@
       "via": "exact"
     },
     "tcl-team-phoenix": {
-      "title": null,
+      "title": "Team Phoenix (Turkish Team)",
       "name": "Team Phoenix",
       "competition": "tcl",
-      "reason": "\"Team Phoenix\" exists but is not a team page"
+      "via": "manual",
+      "manual": true
     },
     "vcs-team-0b0654fe": {
       "title": "1TAP Dino",
@@ -1544,10 +1566,11 @@
       "via": "exact"
     },
     "vcs-team-cf666c65": {
-      "title": null,
+      "title": "ZEN Esports (Vietnamese Team)",
       "name": "ZEN Esports",
       "competition": "vcs",
-      "reason": "no Leaguepedia team page found for this name"
+      "via": "manual",
+      "manual": true
     }
   }
 }
