@@ -24,6 +24,7 @@ export const TEMPLATE_FAMILIES: Record<string, string> = {
   podcast: "be.msg.allio.templates",
   rival_interest: "be.msg.rivalInterest.templates",
   media_story: "be.msg.mediaStory.templates",
+  stream: "be.msg.yuste.templates",
 };
 
 // The data/ submodule owns the templates; skip when it is not checked out.

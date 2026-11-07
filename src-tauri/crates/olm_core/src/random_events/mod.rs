@@ -5,6 +5,7 @@ mod responses;
 pub use builders_reports::{build_fan_petition_from_narrative, rival_interest_from_template};
 pub use message_builders::{
     allio_podcast_from_template, build_media_story_from_narrative, media_story_from_template,
+    yuste_stream_from_template,
 };
 pub use responses::apply_event_response;
 
@@ -296,9 +297,27 @@ pub fn check_random_events(game: &mut Game) {
         let msg_id = format!("yuste_{}", today);
         if !existing_ids.contains(&msg_id) && rng.random_range(0..33) == 0 {
             let is_positive = rng.random_bool(0.5);
+            let team_name = game
+                .teams
+                .iter()
+                .find(|t| t.id == user_team_id)
+                .map(|t| t.name.as_str())
+                .unwrap_or("Your Club");
+            let team_players: Vec<&crate::domain::player::Player> = game
+                .players
+                .iter()
+                .filter(|p| p.team_id.as_deref() == Some(&user_team_id))
+                .collect();
+            let player_name = if team_players.is_empty() {
+                "one of your players"
+            } else {
+                team_players[rng.random_range(0..team_players.len())].match_name.as_str()
+            };
             new_messages.push(message_builders::yuste_stream_message(
                 &msg_id,
                 is_positive,
+                team_name,
+                player_name,
                 &today,
             ));
         }

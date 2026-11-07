@@ -706,14 +706,33 @@ pub(super) fn allio_podcast_message(
     msg
 }
 
-pub(super) fn yuste_stream_message(msg_id: &str, is_positive: bool, date: &str) -> InboxMessage {
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
+/// el_yuste stream message from the data templates, with render-time i18n keys and params.
+///
+/// The templates name the user's team and one of its players, so both must travel as params.
+pub fn yuste_stream_from_template(
+    msg_id: &str,
+    team_name: &str,
+    player_name: &str,
+    date: &str,
+) -> Option<InboxMessage> {
+    crate::messages::template_store::template_store().build_message_keyed(
         "stream",
         msg_id,
         date,
         "en",
-        vec![],
-    ) {
+        vec![("team", team_name), ("player", player_name)],
+        "be.msg.yuste.templates",
+    )
+}
+
+pub(super) fn yuste_stream_message(
+    msg_id: &str,
+    is_positive: bool,
+    team_name: &str,
+    player_name: &str,
+    date: &str,
+) -> InboxMessage {
+    if let Some(msg) = yuste_stream_from_template(msg_id, team_name, player_name, date) {
         return msg;
     }
     let mut rng = rand::rng();

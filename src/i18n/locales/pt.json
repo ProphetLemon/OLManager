@@ -3083,6 +3083,88 @@
         }
       },
       "yuste": {
+        "templates": {
+          "stream_neg_1": {
+            "subject": "el_yuste: \"Não gosto nada do {{team}}\"",
+            "body": "el_yuste foi crítico do {{team}} na sua última emissão: \"Não gosto nada do {{team}}, não sei o que veem neles.\"\n\n\"Jogam sem alma, sem ideias. Precisam de uma mudança já\", acrescentou.\n\nAs críticas de streamers populares chegam a muita gente."
+          },
+          "stream_neg_10": {
+            "subject": "el_yuste: \"O {{team}} não vai a lado nenhum\"",
+            "body": "O streamer sentenciou que o {{team}} \"não vai a lado nenhum\" com o projeto atual.\n\n\"O {{team}} não vai a lado nenhum. Não vejo progressão, não vejo ideias, não vejo futuro\", argumentou.\n\nComentários tão contundentes podem influenciar o moral dos adeptos."
+          },
+          "stream_neg_2": {
+            "subject": "el_yuste goza com o {{team}}",
+            "body": "O streamer el_yuste gozou com o último jogo do {{team}} no seu canal.\n\n\"O {{team}} não dá, de cada vez que os vejo estão piores. É de chorar\", disse a rir.\n\nGozos em streams virais podem afetar a imagem do clube."
+          },
+          "stream_neg_3": {
+            "subject": "el_yuste: \"O {{team}} é um desastre\"",
+            "body": "el_yuste chamou \"desastre\" ao {{team}} na sua última emissão.\n\n\"Não há por onde pegar. O {{team}} é um desastre do princípio ao fim\", sentenciou.\n\nEste tipo de comentário pode ficar na opinião pública."
+          },
+          "stream_neg_4": {
+            "subject": "el_yuste: \"O {{team}} nunca melhora\"",
+            "body": "O streamer criticou a falta de progresso do {{team}}: \"O {{team}} nunca melhora, sempre os mesmos erros.\"\n\n\"Não aprendem, não mudam, não evoluem. É frustrante vê-los\", concluiu.\n\nCríticas repetidas podem afetar o moral da equipa."
+          },
+          "stream_neg_5": {
+            "subject": "el_yuste: \"{{player}} devia sair do {{team}}\"",
+            "body": "el_yuste opinou em direto que {{player}} devia procurar sair do {{team}} para continuar a crescer.\n\n\"{{player}} tem talento, mas no {{team}} nunca vai explodir. Precisa de mudar de ares\", disse.\n\nEstes comentários podem inquietar o jogador."
+          },
+          "stream_neg_6": {
+            "subject": "el_yuste: \"Que pena do {{team}}\"",
+            "body": "O streamer expressou a sua deceção com o {{team}}: \"Que pena do {{team}}, com o que prometiam.\"\n\n\"Achei que este ano dariam o salto, mas estão piores do que nunca\", lamentou.\n\nA deceção dos seguidores pode contagiar o balneário."
+          },
+          "stream_neg_7": {
+            "subject": "el_yuste: \"O {{team}} precisa de um reset\"",
+            "body": "el_yuste recomendou no seu canal que o {{team}} precisa de um reset completo.\n\n\"O {{team}} precisa de fazer reset, mudar o projeto inteiro. Isto não funciona\", afirmou.\n\nPedidos de mudanças radicais podem pressionar a direção."
+          },
+          "stream_neg_8": {
+            "subject": "el_yuste aborrece-se a ver o {{team}}",
+            "body": "O streamer disse em direto que se aborrece a ver o {{team}} jogar.\n\n\"O {{team}} é um sono, não criam nada, não arriscam, é horrível de ver\", queixou-se.\n\nCríticas ao estilo de jogo podem afetar a perceção da equipa."
+          },
+          "stream_neg_9": {
+            "subject": "el_yuste: \"O {{team}} é uma vergonha\"",
+            "body": "el_yuste foi muito duro com o {{team}}, chamando-lhes \"vergonha\" na sua última emissão.\n\n\"Uma equipa com este plantel não pode jogar assim. É uma vergonha\", disse visivelmente irritado.\n\nCríticas fortes podem escalar e chegar aos media tradicionais."
+          },
+          "stream_pos_1": {
+            "subject": "el_yuste: \"O {{team}} está embalado!\"",
+            "body": "O streamer el_yuste comentou na sua última emissão que o {{team}} está numa série impressionante.\n\n\"O {{team}} está a jogar muito bem, hein. Cuidado com eles, vão dar luta\", disse a rir.\n\nÉ sempre um bom sinal quando o el_yuste fala bem da sua equipa."
+          },
+          "stream_pos_10": {
+            "subject": "el_yuste: \"O {{team}} ganhou o meu respeito\"",
+            "body": "el_yuste declarou na sua última emissão que o {{team}} ganhou o seu respeito esta época.\n\n\"No início não acreditava no {{team}}, mas calaram-me a boca. Estão a fazer um grande trabalho\", reconheceu.\n\nConquistar os críticos já é uma vitória."
+          },
+          "stream_pos_2": {
+            "subject": "el_yuste está a gostar de ver o {{team}}",
+            "body": "el_yuste disse na emissão que está a gostar muito de ver o {{team}} jogar ultimamente.\n\n\"O {{team}} está a dar-me muitas alegrias esta época. Estão a fazer as coisas bem\", comentou.\n\nUm streamer tão popular dizer isto é boa publicidade."
+          },
+          "stream_pos_3": {
+            "subject": "el_yuste fica pasmado com {{player}}, do {{team}}",
+            "body": "Na sua última emissão, el_yuste ficou pasmado com uma jogada de {{player}}, do {{team}}.\n\n\"{{player}} é simplesmente incrível, pá. Como este miúdo joga\", exclamou.\n\nO clipe tornou-se viral nas redes do clube."
+          },
+          "stream_pos_4": {
+            "subject": "el_yuste: \"O {{team}} é a minha equipa revelação\"",
+            "body": "el_yuste confessou na emissão que o {{team}} é a sua equipa revelação da época.\n\n\"Não esperava isto do {{team}} de todo. Estão a dar a surpresa\", disse.\n\nQuando um streamer com tanta audiência o diz, as pessoas reparam."
+          },
+          "stream_pos_5": {
+            "subject": "el_yuste fica feliz pelo {{team}}",
+            "body": "O streamer el_yuste mostrou alegria com os últimos resultados do {{team}}.\n\n\"Estou muito feliz pelo {{team}}, a sério. Há um bom ambiente nessa equipa\", comentou em direto.\n\nO apoio de figuras públicas eleva o moral."
+          },
+          "stream_pos_6": {
+            "subject": "el_yuste: \"O {{team}} está forte\"",
+            "body": "el_yuste comentou no seu canal que o {{team}} está \"forte, muito forte\" esta época.\n\n\"Não sei o que mudaram no {{team}}, mas funciona. Continuem assim\", disse.\n\nComentários positivos em grandes streams chegam a muita gente."
+          },
+          "stream_pos_7": {
+            "subject": "el_yuste: \"Atenção ao {{team}}\"",
+            "body": "O streamer deixou um aviso: \"Atenção ao {{team}}, vêm com força.\"\n\n\"O {{team}} está a fazer as coisas bem e ninguém fala disso\", acrescentou.\n\nQuando o el_yuste o diz, mais gente repara na equipa."
+          },
+          "stream_pos_8": {
+            "subject": "el_yuste: \"O {{team}} está a convencer-me\"",
+            "body": "el_yuste admitiu em direto que o {{team}} o está a convencer esta época.\n\n\"Não é fácil eu gostar de uma equipa, mas estou a gostar do {{team}}\", confessou.\n\nQuando um crítico tão habitual fala bem, é sinal de que algo está a ser bem feito."
+          },
+          "stream_pos_9": {
+            "subject": "el_yuste: \"Que jogão do {{team}}\"",
+            "body": "O streamer emocionou-se a ver o último jogo do {{team}} e comentou-o em direto.\n\n\"Que jogão do {{team}}, por favor. É assim que dá gosto ver a liga\", disse emocionado.\n\nO clipe do momento foi partilhado centenas de vezes."
+          }
+        },
         "up": {
           "subject0": "el_yuste — even Yuste admits: viewership is up this week",
           "body0": "Yuste surprised his stream with a rare positive take: \"I'll be honest — the numbers are up this week and I'm not going to pretend otherwise. When the matches are good, the audience comes. Simple.\"\n\nA positive moment for the whole scene.",

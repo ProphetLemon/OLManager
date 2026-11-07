@@ -3084,6 +3084,88 @@
         "body9": "Eros closed Al Lío with a broader mercato warning: \"Some teams think they will have a quiet offseason and then the first call arrives. With {{team}}, I would prepare for movement, even if the official line is calm.\"\n\nThe smart play is to know your priorities early."
       },
       "yuste": {
+        "templates": {
+          "stream_neg_1": {
+            "subject": "el_yuste: \"{{team}} hiç hoşuma gitmiyor\"",
+            "body": "el_yuste son yayınında {{team}} takımını eleştirdi: \"{{team}} hiç hoşuma gitmiyor, insanlar onlarda ne görüyor bilmiyorum.\"\n\n\"Ruhsuz, fikirsiz oynuyorlar. Hemen bir değişikliğe ihtiyaçları var\", diye ekledi.\n\nPopüler yayıncıların eleştirileri çok kişiye ulaşır."
+          },
+          "stream_neg_10": {
+            "subject": "el_yuste: \"{{team}} hiçbir yere gitmiyor\"",
+            "body": "Yayıncı, {{team}} takımının mevcut projeyle \"hiçbir yere gitmediğini\" ilan etti.\n\n\"{{team}} hiçbir yere gitmiyor. İlerleme görmüyorum, fikir görmüyorum, gelecek görmüyorum\", diye savundu.\n\nBu kadar sert yorumlar taraftarların moralini etkileyebilir."
+          },
+          "stream_neg_2": {
+            "subject": "el_yuste {{team}} ile dalga geçiyor",
+            "body": "Yayıncı el_yuste, kanalında {{team}} takımının son maçıyla dalga geçti.\n\n\"{{team}} olmuyor ya, her seferinde daha kötü görüyorum. Ağlanacak hal\", dedi gülerek.\n\nViral yayınlardaki alaylar kulübün imajına zarar verebilir."
+          },
+          "stream_neg_3": {
+            "subject": "el_yuste: \"{{team}} tam bir felaket\"",
+            "body": "el_yuste son yayınında {{team}} takımına \"felaket\" dedi.\n\n\"Tutunacak bir şey yok. {{team}} baştan sona felaket\", diye hükmetti.\n\nBu tür yorumlar kamuoyunda karşılık bulabilir."
+          },
+          "stream_neg_4": {
+            "subject": "el_yuste: \"{{team}} asla gelişmiyor\"",
+            "body": "Yayıncı {{team}} takımının ilerleme eksikliğini eleştirdi: \"{{team}} asla gelişmiyor, hep aynı hatalar.\"\n\n\"Öğrenmiyorlar, değişmiyorlar, evrilmiyorlar. İzlemek sinir bozucu\", diyerek bitirdi.\n\nTekrarlanan eleştiriler takımın morelini etkileyebilir."
+          },
+          "stream_neg_5": {
+            "subject": "el_yuste: \"{{player}}, {{team}} takımından ayrılmalı\"",
+            "body": "el_yuste canlı yayında {{player}} oyuncusunun gelişmeye devam etmek için {{team}} takımından ayrılmayı düşünmesi gerektiğini söyledi.\n\n\"{{player}} yetenekli ama {{team}} takımında asla patlama yapamaz. Ortam değişikliğine ihtiyacı var\", dedi.\n\nBu yorumlar oyuncuyu huzursuz edebilir."
+          },
+          "stream_neg_6": {
+            "subject": "el_yuste: \"{{team}} için ne yazık\"",
+            "body": "Yayıncı {{team}} takımına duyduğu hayal kırıklığını dile getirdi: \"{{team}} için ne yazık, vaat ettikleri onca şeye rağmen.\"\n\n\"Bu yıl atılım yapacaklarını sanıyordum ama her zamankinden daha kötüler\", diye yakındı.\n\nTakipçilerin hayal kırıklığı soyunma odasına bulaşabilir."
+          },
+          "stream_neg_7": {
+            "subject": "el_yuste: \"{{team}} sıfırlanmalı\"",
+            "body": "el_yuste kanalında {{team}} takımının tamamen sıfırlanması gerektiğini önerdi.\n\n\"{{team}} sıfırlanmalı, tüm projeyi değiştirmeli. Bu işe yaramıyor\", dedi.\n\nKöklü değişim çağrıları yönetim üzerinde baskı yaratabilir."
+          },
+          "stream_neg_8": {
+            "subject": "el_yuste {{team}} izlerken sıkılıyor",
+            "body": "Yayıncı canlı yayında {{team}} takımını izlerken sıkıldığını söyledi.\n\n\"{{team}} tam bir uyku ilacı, hiçbir şey üretmiyorlar, risk almıyorlar, izlemesi korkunç\", diye şikâyet etti.\n\nOyun tarzına yönelik eleştiriler takımın algılanışını etkileyebilir."
+          },
+          "stream_neg_9": {
+            "subject": "el_yuste: \"{{team}} bir rezalet\"",
+            "body": "el_yuste son yayınında {{team}} takımına çok sert çıkıp onlara \"rezalet\" dedi.\n\n\"Bu kadroya sahip bir takım böyle oynayamaz. Rezalet\", dedi gözle görülür biçimde öfkeli.\n\nSert eleştiriler tırmanıp geleneksel medyaya ulaşabilir."
+          },
+          "stream_pos_1": {
+            "subject": "el_yuste: \"{{team}} formda!\"",
+            "body": "Yayıncı el_yuste son yayınında {{team}} takımının etkileyici bir seride olduğunu söyledi.\n\n\"{{team}} gerçekten çok iyi oynuyor ha. Dikkat edin onlara, başınızı ağrıtacaklar\", dedi gülerek.\n\nel_yuste takımınız hakkında iyi konuştuğunda bu her zaman iyi bir işarettir."
+          },
+          "stream_pos_10": {
+            "subject": "el_yuste: \"{{team}} saygımı kazandı\"",
+            "body": "el_yuste son yayınında {{team}} takımının bu sezon saygısını kazandığını açıkladı.\n\n\"Başta {{team}} takımına inanmıyordum ama beni susturdular. Harika iş çıkarıyorlar\", diye itiraf etti.\n\nEleştirmenleri kazanmak başlı başına bir zaferdir."
+          },
+          "stream_pos_2": {
+            "subject": "el_yuste {{team}} izlemekten keyif alıyor",
+            "body": "el_yuste yayında son zamanlarda {{team}} takımını izlemekten çok keyif aldığını söyledi.\n\n\"{{team}} bu sezon bana çok sevinç veriyor. İşleri doğru yapıyorlar\", diye yorumladı.\n\nBöylesine popüler bir yayıncının bunu söylemesi iyi bir reklam."
+          },
+          "stream_pos_3": {
+            "subject": "el_yuste, {{team}} oyuncusu {{player}} karşısında hayran kaldı",
+            "body": "Son yayınında el_yuste, {{team}} oyuncusu {{player}} oyuncusunun bir hamlesi karşısında hayran kaldı.\n\n\"{{player}} inanılmaz be adamım. Bu çocuk nasıl oynuyor\", diye haykırdı.\n\nKlip kulübün sosyal medyasında viral oldu."
+          },
+          "stream_pos_4": {
+            "subject": "el_yuste: \"{{team}} benim sürpriz takımım\"",
+            "body": "el_yuste yayında {{team}} takımının sezonun sürpriz takımı olduğunu itiraf etti.\n\n\"{{team}} takımından bunu hiç beklemiyordum. Sürpriz yapıyorlar\", dedi.\n\nBu kadar geniş kitleli bir yayıncı söylediğinde insanlar dikkat eder."
+          },
+          "stream_pos_5": {
+            "subject": "el_yuste {{team}} adına sevindi",
+            "body": "Yayıncı el_yuste, {{team}} takımının son sonuçlarına duyduğu sevinci gösterdi.\n\n\"{{team}} adına gerçekten çok mutluyum. O takımda iyi bir atmosfer var\", diye yorumladı canlı yayında.\n\nKamuya mal olmuş kişilerin desteği morali yükseltir."
+          },
+          "stream_pos_6": {
+            "subject": "el_yuste: \"{{team}} güçlü\"",
+            "body": "el_yuste kanalında {{team}} takımının bu sezon \"güçlü, çok güçlü\" olduğunu söyledi.\n\n\"{{team}} takımında ne değiştirdiler bilmiyorum ama işe yarıyor. Böyle devam edin\", dedi.\n\nBüyük yayınlardaki olumlu yorumlar çok kişiye ulaşır."
+          },
+          "stream_pos_7": {
+            "subject": "el_yuste: \"{{team}} takımına dikkat\"",
+            "body": "Yayıncı bir uyarıda bulundu: \"{{team}} takımına dikkat, güçlü geliyorlar.\"\n\n\"{{team}} işleri doğru yapıyor ve kimse bundan bahsetmiyor\", diye ekledi.\n\nel_yuste söylediğinde daha fazla insan takımı fark ediyor."
+          },
+          "stream_pos_8": {
+            "subject": "el_yuste: \"{{team}} beni ikna ediyor\"",
+            "body": "el_yuste canlı yayında {{team}} takımının bu sezon kendisini ikna ettiğini itiraf etti.\n\n\"Bir takımdan hoşlanmam kolay değil ama {{team}} hoşuma gidiyor\", diye itiraf etti.\n\nBu kadar sık eleştiren biri iyi konuşuyorsa, bir şeylerin doğru yapıldığının işaretidir."
+          },
+          "stream_pos_9": {
+            "subject": "el_yuste: \"{{team}} ne maç çıkardı\"",
+            "body": "Yayıncı {{team}} takımının son maçını izlerken duygulandı ve canlı yayında yorumladı.\n\n\"{{team}} ne maç çıkardı ama, yapma ya. Lig böyle izlemesi keyifli oluyor\", dedi heyecanla.\n\nO anın klibi yüzlerce kez paylaşıldı."
+          }
+        },
         "up": {
           "subject0": "el_yuste — Yuste bile kabul ediyor: bu hafta izlenme arttı",
           "body0": "Yuste yayınında nadir görülen olumlu bir yorumla herkesi şaşırttı: \"Dürüst olayım — rakamlar bu hafta yükseldi ve bunun aksini iddia etmeyeceğim. Maçlar iyi olduğunda izleyici geliyor. Bu kadar basit.\"\n\nTüm sahne için olumlu bir an.",

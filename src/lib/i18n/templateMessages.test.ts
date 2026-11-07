@@ -156,4 +156,16 @@ describe("random event messages render in the active language", () => {
     });
     expect((await renderIn("en", msg)).body).toContain("The fans are starting to voice");
   });
+
+  it("renders a stored el_yuste stream message in the active language", async () => {
+    const msg = stored({
+      subject: 'el_yuste: "KOI no me gusta nada"',
+      subject_key: "be.msg.yuste.templates.stream_neg_1.subject",
+      body_key: "be.msg.yuste.templates.stream_neg_1.body",
+      i18n_params: { team: "KOI", player: "Caps" },
+    });
+    expect((await renderIn("en", msg)).subject).toBe('el_yuste: "I really don\'t like KOI"');
+    expect((await renderIn("es", msg)).subject).toBe('el_yuste: "KOI no me gusta nada"');
+    expect((await renderIn("fr", msg)).subject).toContain("KOI");
+  });
 });

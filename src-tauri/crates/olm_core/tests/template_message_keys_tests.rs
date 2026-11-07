@@ -155,3 +155,22 @@ fn media_story_template_message_attaches_keys_and_params() {
     assert_eq!(param(&msg, "team"), Some("KOI"));
     assert_eq!(param(&msg, "player"), Some("Caps"));
 }
+
+#[test]
+fn stream_template_message_attaches_keys_and_params() {
+    assert_keyed("be.msg.yuste.templates", || {
+        random_events::yuste_stream_from_template("m1", "KOI", "Caps", "2025-08-12").unwrap()
+    });
+    let msg = random_events::yuste_stream_from_template("m1", "KOI", "Caps", "d").unwrap();
+    assert_eq!(param(&msg, "team"), Some("KOI"));
+    assert_eq!(param(&msg, "player"), Some("Caps"));
+}
+
+#[test]
+fn stream_template_message_fills_the_team_placeholder_in_the_stored_text() {
+    load_templates();
+    for _ in 0..40 {
+        let msg = random_events::yuste_stream_from_template("m1", "KOI", "Caps", "d").unwrap();
+        assert!(!msg.body.contains("{team}"), "unfilled placeholder: {}", msg.body);
+    }
+}
