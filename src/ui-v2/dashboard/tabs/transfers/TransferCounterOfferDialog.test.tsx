@@ -7,7 +7,7 @@ import type {
   TransferOfferData,
 } from "@/store/gameStore";
 import type { TransferNegotiationResponseData } from "@/services/transfersService";
-import TransferCounterOfferModal from "@/ui-v2/_legacy/components/transfers/TransferCounterOfferModal";
+import TransferCounterOfferDialog from "./TransferCounterOfferDialog";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -156,10 +156,10 @@ function createCounterTarget() {
   };
 }
 
-describe("TransferCounterOfferModal", () => {
+describe("TransferCounterOfferDialog", () => {
   it("renders the current offer context and negotiation history", () => {
     render(
-      <TransferCounterOfferModal
+      <TransferCounterOfferDialog
         counterTarget={createCounterTarget()}
         teams={[createTeam(), createTeam({ id: "team-2", name: "Buyer FC" })]}
         counterAmount="1600000"
@@ -200,7 +200,7 @@ describe("TransferCounterOfferModal", () => {
     const onClose = vi.fn();
 
     render(
-      <TransferCounterOfferModal
+      <TransferCounterOfferDialog
         counterTarget={createCounterTarget()}
         teams={[createTeam(), createTeam({ id: "team-2", name: "Buyer FC" })]}
         counterAmount="1400000"

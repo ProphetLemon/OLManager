@@ -24,7 +24,7 @@ import type {
   PlayerSelectionOptions,
   ScoutReportData,
 } from "@/store/gameStore";
-import WageNegotiationModal from "@/ui-v2/_legacy/components/transfers/WageNegotiationModal";
+import WageNegotiationDialog from "@/ui-v2/dashboard/tabs/transfers/WageNegotiationDialog";
 import PlayerProfileAttributesCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileAttributesCardV2";
 import PlayerProfileCareerCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileCareerCardV2";
 import PlayerProfileChampionsCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileChampionsCardV2";
@@ -455,7 +455,7 @@ function PlayerProfileContent({
       ) : null}
 
       {transfer.showWageModal && transfer.wageNegotiationTarget ? (
-        <WageNegotiationModal
+        <WageNegotiationDialog
           target={transfer.wageNegotiationTarget}
           teams={gameState.teams}
           wageAmount={transfer.wageNegotiationAmount}

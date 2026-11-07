@@ -9,7 +9,7 @@ import type {
 import type {
   TransferBidProjectionData,
 } from "@/services/transfersService";
-import TransferBidModal from "@/ui-v2/_legacy/components/transfers/TransferBidModal";
+import TransferBidDialog from "./TransferBidDialog";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -183,10 +183,10 @@ function createProjection(
   };
 }
 
-describe("TransferBidModal", () => {
+describe("TransferBidDialog", () => {
   it("renders the active negotiation state for an existing offer", () => {
     render(
-      <TransferBidModal
+      <TransferBidDialog
         bidTarget={createPlayer()}
         teams={[createTeam(), createTeam({ id: "team-2", name: "Seller FC" })]}
         currentDate="2025-01-15"
@@ -230,7 +230,7 @@ describe("TransferBidModal", () => {
 
   it("hides bid amount and projected impact for free agents", () => {
     render(
-      <TransferBidModal
+      <TransferBidDialog
         bidTarget={createPlayer({ team_id: null })}
         teams={[createTeam()]}
         currentDate="2025-01-15"
@@ -264,7 +264,7 @@ describe("TransferBidModal", () => {
 
   it("displays a bid error when provided", () => {
     render(
-      <TransferBidModal
+      <TransferBidDialog
         bidTarget={createPlayer()}
         teams={[createTeam(), createTeam({ id: "team-2", name: "Seller FC" })]}
         currentDate="2025-01-15"
@@ -301,7 +301,7 @@ describe("TransferBidModal", () => {
     const onClose = vi.fn();
 
     render(
-      <TransferBidModal
+      <TransferBidDialog
         bidTarget={createPlayer()}
         teams={[createTeam(), createTeam({ id: "team-2", name: "Seller FC" })]}
         currentDate="2025-01-15"

@@ -60,9 +60,9 @@ vi.mock("@/services/transfersService", () => ({
   negotiatePlayerWage: vi.fn(),
 }));
 
-vi.mock("@/ui-v2/_legacy/components/transfers/TransferBidModal", () => ({ default: () => null }));
-vi.mock("@/ui-v2/_legacy/components/transfers/TransferCounterOfferModal", () => ({ default: () => null }));
-vi.mock("@/ui-v2/_legacy/components/transfers/WageNegotiationModal", () => ({ default: () => null }));
+vi.mock("@/ui-v2/dashboard/tabs/transfers/TransferBidDialog", () => ({ default: () => null }));
+vi.mock("@/ui-v2/dashboard/tabs/transfers/TransferCounterOfferDialog", () => ({ default: () => null }));
+vi.mock("@/ui-v2/dashboard/tabs/transfers/WageNegotiationDialog", () => ({ default: () => null }));
 vi.mock("@/ui-v2/components/ui/country-flag", () => ({ CountryFlag: () => null }));
 vi.mock("@/lib/players/playerPhotos", () => ({ resolvePlayerPhoto: () => null }));
 vi.mock("@/lib/players/lolPlayerStats", () => ({ calculateLolOvr: () => 50 }));

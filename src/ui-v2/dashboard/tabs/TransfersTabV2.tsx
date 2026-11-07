@@ -59,10 +59,10 @@ import {
   type TransferSortState,
   type TransferTabView,
 } from "@/lib/transfers/model";
-import { type NegotiationFeedbackPanelData } from "@/ui-v2/_legacy/components/NegotiationFeedbackPanel";
-import TransferBidModal from "@/ui-v2/_legacy/components/transfers/TransferBidModal";
-import TransferCounterOfferModal from "@/ui-v2/_legacy/components/transfers/TransferCounterOfferModal";
-import WageNegotiationModal from "@/ui-v2/_legacy/components/transfers/WageNegotiationModal";
+import { type NegotiationFeedbackPanelData } from "@/lib/transfers/negotiationFeedback";
+import TransferBidDialog from "./transfers/TransferBidDialog";
+import TransferCounterOfferDialog from "./transfers/TransferCounterOfferDialog";
+import WageNegotiationDialog from "./transfers/WageNegotiationDialog";
 import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 
 import { Badge } from "@/ui-v2/components/ui/badge";
@@ -932,7 +932,7 @@ export function TransfersTabV2({
 
       {/* ─── Modals ─── */}
       {bidTarget && (
-        <TransferBidModal
+        <TransferBidDialog
           bidTarget={bidTarget}
           teams={gameState.teams}
           currentDate={gameState.clock.current_date}
@@ -967,7 +967,7 @@ export function TransfersTabV2({
         />
       )}
       {counterTarget && (
-        <TransferCounterOfferModal
+        <TransferCounterOfferDialog
           counterTarget={counterTarget}
           teams={gameState.teams}
           currentDate={gameState.clock.current_date}
@@ -993,7 +993,7 @@ export function TransfersTabV2({
         />
       )}
       {wageTarget && (
-        <WageNegotiationModal
+        <WageNegotiationDialog
           target={wageTarget}
           teams={gameState.teams}
           wageAmount={wageAmount}
