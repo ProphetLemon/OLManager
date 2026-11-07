@@ -1,6 +1,5 @@
 import type { GameStateData } from "@/store/gameStore";
 import PlayerProfile from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile";
-import TeamProfile from "@/ui-v2/_legacy/components/teamProfile";
 import DashboardAlerts from "@/ui-v2/_legacy/components/dashboard/DashboardAlerts";
 import type { DashboardAlert } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 import type { DashboardProfileNavigationState } from "@/ui-v2/_legacy/components/dashboard/dashboardProfileNavigation";
@@ -16,7 +15,6 @@ interface DashboardWorkspaceContentProps {
   dashboardTabContentModel: DashboardTabContentModel;
   onBack: () => void;
   onNavigate: (tab: string) => void;
-  onSelectPlayer: (id: string) => void;
   onSelectTeam: (id: string) => void;
   onGameUpdate: (state: GameStateData) => void;
   isUnemployed: boolean;
@@ -30,7 +28,6 @@ export default function DashboardWorkspaceContent({
   dashboardTabContentModel,
   onBack,
   onNavigate,
-  onSelectPlayer,
   onSelectTeam,
   onGameUpdate,
   isUnemployed,
@@ -77,14 +74,6 @@ export default function DashboardWorkspaceContent({
           onSelectTeam={onSelectTeam}
           onGameUpdate={onGameUpdate}
           onViewChampion={handleViewChampion}
-        />
-      ) : selectedTeam ? (
-        <TeamProfile
-          team={selectedTeam}
-          gameState={gameState}
-          isOwnTeam={selectedTeam.id === gameState.manager.team_id}
-          onClose={onBack}
-          onSelectPlayer={onSelectPlayer}
         />
       ) : (
         <>

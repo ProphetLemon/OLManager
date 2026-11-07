@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { GameStateData, PlayerData, TeamData } from "@/store/gameStore";
-import { buildTeamProfileViewModel } from "@/ui-v2/_legacy/components/teamProfile/TeamProfile.viewModel";
+import { buildTeamProfileViewModel } from "@/lib/teamProfile/viewModel";
 
 function createTeam(overrides: Partial<TeamData> = {}): TeamData {
   return {

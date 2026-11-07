@@ -792,7 +792,6 @@ export default function DashboardV2() {
             dashboardTabContentModel={dashboardTabContentModel}
             onBack={handleBack}
             onNavigate={handleNavigate}
-            onSelectPlayer={selectPlayer}
             onSelectTeam={selectTeam}
             onGameUpdate={setGameState}
             isUnemployed={isUnemployed ?? false}

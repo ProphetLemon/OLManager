@@ -1,9 +1,9 @@
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { compareStandingsByLolScore } from "@/store/gameStore";
 import type { GameStateData, PlayerData, TeamData } from "@/store/gameStore";
-import { getLolRoleForPlayer } from "@/ui-v2/_legacy/components/squad/SquadTab.helpers";
+import { getLolRoleForPlayer } from "@/lib/squad/helpers";
 
-import type { LeagueStanding, TeamProfileViewModel } from "@/ui-v2/_legacy/components/teamProfile/TeamProfile.types";
+import type { LeagueStanding, TeamProfileViewModel } from "@/lib/teamProfile/types";
 
 const ROLE_ORDER: Record<string, number> = {
   TOP: 1,

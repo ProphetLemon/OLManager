@@ -1,9 +1,9 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
 
 import type { GameStateData, PlayerData, TeamData } from "@/store/gameStore";
-import TeamProfile from "@/ui-v2/_legacy/components/teamProfile/TeamProfile";
+import TeamProfileV2 from "@/ui-v2/pages/TeamProfileV2";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
@@ -75,13 +75,6 @@ vi.mock("react-i18next", () => ({
     },
     i18n: { language: "en" },
   }),
-}));
-
-vi.mock("../../lib/common/countries", () => ({
-  countryName: () => "England",
-  isValidCountryCode: () => true,
-  normaliseNationality: (value: string) => value,
-  resolveCountryFlagCode: () => "GB",
 }));
 
 function createTeam(overrides: Partial<TeamData> = {}): TeamData {
@@ -222,7 +215,7 @@ function createGameState(team: TeamData): GameStateData {
   };
 }
 
-describe("TeamProfile", () => {
+describe("TeamProfileV2", () => {
   beforeEach(() => {
     vi.mocked(invoke).mockReset();
     vi.mocked(invoke).mockResolvedValue(null);
@@ -251,10 +244,9 @@ describe("TeamProfile", () => {
     });
 
     render(
-      <TeamProfile
-        team={team}
+      <TeamProfileV2
+        teamId={team.id}
         gameState={createGameState(team)}
-        isOwnTeam
         onClose={vi.fn()}
       />,
     );
@@ -298,10 +290,9 @@ describe("TeamProfile", () => {
     });
 
     render(
-      <TeamProfile
-        team={team}
+      <TeamProfileV2
+        teamId={team.id}
         gameState={createGameState(team)}
-        isOwnTeam
         onClose={vi.fn()}
       />,
     );
@@ -344,10 +335,9 @@ describe("TeamProfile", () => {
     });
 
     render(
-      <TeamProfile
-        team={team}
+      <TeamProfileV2
+        teamId={team.id}
         gameState={createGameState(team)}
-        isOwnTeam
         onClose={vi.fn()}
       />,
     );
@@ -379,10 +369,9 @@ describe("TeamProfile", () => {
     });
 
     render(
-      <TeamProfile
-        team={team}
+      <TeamProfileV2
+        teamId={team.id}
         gameState={createGameState(team)}
-        isOwnTeam
         onClose={vi.fn()}
       />,
     );
@@ -411,10 +400,9 @@ describe("TeamProfile", () => {
     });
 
     render(
-      <TeamProfile
-        team={academyTeam}
+      <TeamProfileV2
+        teamId={academyTeam.id}
         gameState={createGameState(academyTeam)}
-        isOwnTeam
         onClose={vi.fn()}
       />,
     );
@@ -422,5 +410,52 @@ describe("TeamProfile", () => {
     expect(screen.getByText("ERL")).toBeInTheDocument();
     expect(screen.getByText("LFL")).toBeInTheDocument();
     expect(screen.queryByText("London")).not.toBeInTheDocument();
+  });
+
+  it("goes back and opens a player from the roster", () => {
+    const team = createTeam();
+    const onClose = vi.fn();
+    const onSelectPlayer = vi.fn();
+
+    render(
+      <TeamProfileV2
+        teamId={team.id}
+        gameState={createGameState(team)}
+        onClose={onClose}
+        onSelectPlayer={onSelectPlayer}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Back/ }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByText("J. Smith"));
+    expect(onSelectPlayer).toHaveBeenCalledWith("player-1");
+  });
+
+  it("shows finances and the condition column only for the managed team", () => {
+    const team = createTeam();
+    const own = render(
+      <TeamProfileV2 teamId={team.id} gameState={createGameState(team)} onClose={vi.fn()} />,
+    );
+    expect(screen.getByText("Finances")).toBeInTheDocument();
+    expect(screen.getByText("common.condition")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "80");
+    own.unmount();
+
+    const state = createGameState(team);
+    state.manager.team_id = "other-team";
+    render(<TeamProfileV2 teamId={team.id} gameState={state} onClose={vi.fn()} />);
+    expect(screen.getByText("Squad Overview")).toBeInTheDocument();
+    expect(screen.queryByText("Finances")).not.toBeInTheDocument();
+    expect(screen.queryByText("common.condition")).not.toBeInTheDocument();
+  });
+
+  it("renders nothing for an unknown team", () => {
+    const team = createTeam();
+    const { container } = render(
+      <TeamProfileV2 teamId="missing" gameState={createGameState(team)} onClose={vi.fn()} />,
+    );
+    expect(container).toBeEmptyDOMElement();
   });
 });

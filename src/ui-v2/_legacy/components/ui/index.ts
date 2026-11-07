@@ -3,7 +3,6 @@ export { Button } from "@/ui-v2/_legacy/components/ui/Button";
 export { Badge } from "@/ui-v2/_legacy/components/ui/Badge";
 export { ProgressBar } from "@/ui-v2/_legacy/components/ui/ProgressBar";
 export { CountryFlag } from "@/ui-v2/_legacy/components/ui/CountryFlag";
-export { TeamLocation } from "@/ui-v2/_legacy/components/ui/TeamLocation";
 export { DatePicker } from "@/ui-v2/_legacy/components/ui/DatePicker";
 export { Select } from "@/ui-v2/_legacy/components/ui/Select";
 export { RoleBadge } from "@/ui-v2/_legacy/components/ui/RoleBadge";
