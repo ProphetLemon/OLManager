@@ -88,5 +88,5 @@ Branch: `feat/ui-v2`. Commit style: `feat(ui-v2): …`, `fix(ui-v2): …`.
 
 ## 6. Próximos pasos (opcionales)
 
-- Portar los wrappers `_legacy/` a v2 nativo (NewsTab, SocialTab, PlayerProfile, TeamProfile, transfer modals)
+- Portar los wrappers `_legacy/` a v2 nativo (SocialTab, PlayerProfile, TeamProfile, transfer modals)
 - Separar chunks grandes (MatchSimulation, _legacy) con lazy loading

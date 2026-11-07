@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { GameStateData, NewsArticle, TeamData } from "@/store/gameStore";
-import NewsTab from "@/ui-v2/_legacy/components/news/NewsTab";
+import { NewsTabV2 } from "./NewsTabV2";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: {
@@ -15,6 +15,7 @@ vi.mock("react-i18next", () => ({
       if (key === "news.newsWillAppear") return "News will appear soon";
       if (key === "common.all") return "All";
       if (key === "news.allTeams") return "All Teams";
+      if (key === "common.nextPage") return "Next";
       if (key === "news.backToNews") return "Back to news";
       if (key === "news.nArticles") return `${params?.count} articles`;
       if (key.startsWith("news.categories.")) {
@@ -26,7 +27,7 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("../../lib/i18n/backendI18n", () => ({
+vi.mock("@/lib/i18n/backendI18n", () => ({
   resolveNewsArticle: (article: unknown) => article,
 }));
 
@@ -114,9 +115,9 @@ function createGameState(news: NewsArticle[]): GameStateData {
   };
 }
 
-describe("NewsTab", () => {
+describe("NewsTabV2", () => {
   it("renders the empty state when there is no news", () => {
-    render(<NewsTab gameState={createGameState([])} onSelectTeam={vi.fn()} />);
+    render(<NewsTabV2 gameState={createGameState([])} onSelectTeam={vi.fn()} />);
 
     expect(screen.getByText("No news")).toBeInTheDocument();
     expect(screen.getByText("News will appear soon")).toBeInTheDocument();
@@ -126,7 +127,7 @@ describe("NewsTab", () => {
     const onSelectTeam = vi.fn();
 
     render(
-      <NewsTab
+      <NewsTabV2
         gameState={createGameState([createNewsArticle()])}
         onSelectTeam={onSelectTeam}
       />,
@@ -140,5 +141,51 @@ describe("NewsTab", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Alpha FC" })[0]);
 
     expect(onSelectTeam).toHaveBeenCalledWith("team-1");
+  });
+
+  it("filters by category and clears with All", () => {
+    render(
+      <NewsTabV2
+        gameState={createGameState([
+          createNewsArticle(),
+          createNewsArticle({ id: "news-2", headline: "Injury headline", category: "InjuryNews", date: "2026-07-30" }),
+        ])}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "InjuryNews" }));
+    expect(screen.queryByRole("button", { name: /League headline/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /Injury headline/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    expect(screen.getByRole("button", { name: /League headline/i })).toBeInTheDocument();
+  });
+
+  it("filters by team and shows the score line", () => {
+    render(
+      <NewsTabV2
+        gameState={createGameState([
+          createNewsArticle({
+            match_score: { home_team_id: "team-1", away_team_id: "team-2", home_goals: 2, away_goals: 1 },
+          }),
+          createNewsArticle({ id: "news-2", headline: "Other", team_ids: ["team-2"], date: "2026-07-30" }),
+        ])}
+      />,
+    );
+
+    expect(screen.getByText("2 – 1")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("All Teams"), { target: { value: "team-1" } });
+    expect(screen.queryByRole("button", { name: /Other/i })).toBeNull();
+  });
+
+  it("paginates beyond one page of articles", () => {
+    const many = Array.from({ length: 15 }, (_, i) =>
+      createNewsArticle({ id: `n${i}`, headline: `Story ${i}`, date: `2026-07-${String(i + 1).padStart(2, "0")}` }),
+    );
+    render(<NewsTabV2 gameState={createGameState(many)} />);
+
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("2 / 2")).toBeInTheDocument();
   });
 });
