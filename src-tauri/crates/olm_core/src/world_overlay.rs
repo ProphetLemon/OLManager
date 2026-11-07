@@ -10,7 +10,7 @@
 use std::collections::HashSet;
 use std::fmt;
 
-use chrono::NaiveDate;
+use chrono::{Duration, NaiveDate, Utc};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::domain::player::{LolRole, Player};
@@ -19,6 +19,15 @@ use crate::domain::team::Team;
 
 /// The only overlay `schemaVersion` this build understands.
 pub const SUPPORTED_SCHEMA_VERSION: u64 = 1;
+
+/// An overlay may be dated slightly ahead of the local clock (time zones).
+const MAX_FUTURE_DAYS: i64 = 2;
+const MAX_OPS: usize = 5000;
+const MAX_ID_CHARS: usize = 200;
+const MAX_NAME_CHARS: usize = 200;
+const MAX_EVIDENCE_CHARS: usize = 500;
+const MAX_SOURCE_CHARS: usize = 1000;
+const MAX_ATTRIBUTE: u8 = 100;
 
 const BUNDLED_OVERLAY_JSON: &str = include_str!("../../../../assets/world/roster-overlay.json");
 
@@ -167,6 +176,20 @@ fn check_date(field: &str, value: &str) -> Result<(), OverlayError> {
         })
 }
 
+/// `as_of` is compared as a string elsewhere, so only the canonical zero-padded
+/// form is accepted. Returns the parsed date for the future-date check.
+fn check_canonical_date(field: &str, value: &str) -> Result<NaiveDate, OverlayError> {
+    let invalid = || OverlayError::InvalidDate {
+        field: field.to_string(),
+        value: value.to_string(),
+    };
+    let date = NaiveDate::parse_from_str(value, "%Y-%m-%d").map_err(|_| invalid())?;
+    if value.len() != 10 || date.format("%Y-%m-%d").to_string() != value {
+        return Err(invalid());
+    }
+    Ok(date)
+}
+
 fn check_id(field: String, id: &str) -> Result<(), OverlayError> {
     if id.trim().is_empty() {
         return Err(OverlayError::InvalidField {
@@ -174,7 +197,124 @@ fn check_id(field: String, id: &str) -> Result<(), OverlayError> {
             reason: "id must not be empty",
         });
     }
+    check_len(field, id, MAX_ID_CHARS)
+}
+
+fn check_len(field: String, value: &str, max: usize) -> Result<(), OverlayError> {
+    if value.chars().count() > max {
+        return Err(OverlayError::InvalidField {
+            field,
+            reason: "text is too long",
+        });
+    }
     Ok(())
+}
+
+fn check_attribute(field: String, value: u8) -> Result<(), OverlayError> {
+    if value > MAX_ATTRIBUTE {
+        return Err(OverlayError::InvalidField {
+            field,
+            reason: "attribute must be between 0 and 100",
+        });
+    }
+    Ok(())
+}
+
+/// Profile images ship inside the app, so an overlay may only point at a
+/// root-relative asset path, never at a URL (including protocol-relative `//`).
+fn check_image_path(field: String, path: Option<&str>) -> Result<(), OverlayError> {
+    let Some(path) = path.filter(|p| !p.is_empty()) else {
+        return Ok(());
+    };
+    let allowed_chars = path
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '/' | '_' | '.' | '-'));
+    let allowed_ext = [".webp", ".png", ".jpg", ".jpeg"]
+        .iter()
+        .any(|ext| path.ends_with(ext));
+    if !path.starts_with('/')
+        || path.contains("..")
+        || path.contains("//")
+        || !allowed_chars
+        || !allowed_ext
+    {
+        return Err(OverlayError::InvalidField {
+            field,
+            reason: "image must be a root-relative asset path",
+        });
+    }
+    Ok(())
+}
+
+fn check_license_url(url: &str) -> Result<(), OverlayError> {
+    let host = url
+        .strip_prefix("https://")
+        .and_then(|rest| rest.split(['/', '?', '#']).next());
+    if matches!(host, Some("www.fandom.com" | "creativecommons.org")) {
+        return Ok(());
+    }
+    Err(OverlayError::InvalidField {
+        field: "source.license_url".to_string(),
+        reason: "must be an https URL on www.fandom.com or creativecommons.org",
+    })
+}
+
+fn check_player_record(at: &dyn Fn(&str) -> String, player: &Player) -> Result<(), OverlayError> {
+    check_id(at("player.id"), &player.id)?;
+    check_len(at("player.match_name"), &player.match_name, MAX_NAME_CHARS)?;
+    check_len(at("player.full_name"), &player.full_name, MAX_NAME_CHARS)?;
+    if let Some(team) = &player.team_id {
+        check_len(at("player.team_id"), team, MAX_ID_CHARS)?;
+    }
+    if player.position == LolRole::Unknown {
+        return Err(OverlayError::InvalidField {
+            field: at("player.position"),
+            reason: "unknown position",
+        });
+    }
+    check_date(&at("player.date_of_birth"), &player.date_of_birth)?;
+    let a = &player.attributes;
+    for (name, value) in [
+        ("mechanics", a.mechanics),
+        ("laning", a.laning),
+        ("teamfighting", a.teamfighting),
+        ("macro_play", a.macro_play),
+        ("consistency", a.consistency),
+        ("shotcalling", a.shotcalling),
+        ("champion_pool", a.champion_pool),
+        ("discipline", a.discipline),
+        ("mental_resilience", a.mental_resilience),
+        ("potential_base", player.potential_base),
+    ] {
+        check_attribute(at(&format!("player.{name}")), value)?;
+    }
+    check_image_path(
+        at("player.profile_image_url"),
+        player.profile_image_url.as_deref(),
+    )
+}
+
+fn check_staff_record(at: &dyn Fn(&str) -> String, staff: &Staff) -> Result<(), OverlayError> {
+    check_id(at("staff.id"), &staff.id)?;
+    check_len(at("staff.nickname"), &staff.nickname, MAX_NAME_CHARS)?;
+    check_len(at("staff.first_name"), &staff.first_name, MAX_NAME_CHARS)?;
+    check_len(at("staff.last_name"), &staff.last_name, MAX_NAME_CHARS)?;
+    if let Some(team) = &staff.team_id {
+        check_len(at("staff.team_id"), team, MAX_ID_CHARS)?;
+    }
+    let a = &staff.attributes;
+    for (name, value) in [
+        ("coaching", a.coaching),
+        ("judging_ability", a.judging_ability),
+        ("judging_potential", a.judging_potential),
+        ("physiotherapy", a.physiotherapy),
+    ] {
+        check_attribute(at(&format!("staff.{name}")), value)?;
+    }
+    check_image_path(
+        at("staff.profile_image_url"),
+        staff.profile_image_url.as_deref(),
+    )
 }
 
 impl WorldOverlay {
@@ -192,19 +332,48 @@ impl WorldOverlay {
         Ok(overlay)
     }
 
-    /// Check the invariants serde cannot express: real dates, usable ids and
-    /// roles, and a named source.
+    /// [`Self::validate_at`] against today's UTC date.
     pub fn validate(&self) -> Result<(), OverlayError> {
+        self.validate_at(Utc::now().date_naive())
+    }
+
+    /// Check the invariants serde cannot express: canonical dates (`as_of` no
+    /// later than `today` + [`MAX_FUTURE_DAYS`]), usable ids and roles, bounded
+    /// sizes, sane attributes, asset-only image paths and a trusted licence.
+    pub fn validate_at(&self, today: NaiveDate) -> Result<(), OverlayError> {
         if self.schema_version != SUPPORTED_SCHEMA_VERSION {
             return Err(OverlayError::UnsupportedSchemaVersion(Some(
                 self.schema_version,
             )));
         }
-        check_date("as_of", &self.as_of)?;
+        let as_of = check_canonical_date("as_of", &self.as_of)?;
+        if as_of > today + Duration::days(MAX_FUTURE_DAYS) {
+            return Err(OverlayError::InvalidDate {
+                field: "as_of".to_string(),
+                value: self.as_of.clone(),
+            });
+        }
         if self.source.name.trim().is_empty() || self.source.license.trim().is_empty() {
             return Err(OverlayError::InvalidField {
                 field: "source".to_string(),
                 reason: "name and license are required",
+            });
+        }
+        let source = &self.source;
+        for (name, value) in [
+            ("name", &source.name),
+            ("url", &source.url),
+            ("license", &source.license),
+            ("license_url", &source.license_url),
+            ("attribution", &source.attribution),
+        ] {
+            check_len(format!("source.{name}"), value, MAX_SOURCE_CHARS)?;
+        }
+        check_license_url(&source.license_url)?;
+        if self.players.len() > MAX_OPS || self.staff.len() > MAX_OPS {
+            return Err(OverlayError::InvalidField {
+                field: "players/staff".to_string(),
+                reason: "too many ops",
             });
         }
         for (index, op) in self.players.iter().enumerate() {
@@ -212,11 +381,16 @@ impl WorldOverlay {
             match op {
                 PlayerOp::Move {
                     id,
+                    team_id,
                     position,
                     contract_end,
-                    ..
+                    evidence,
                 } => {
                     check_id(at("id"), id)?;
+                    if let Some(team) = team_id {
+                        check_len(at("team_id"), team, MAX_ID_CHARS)?;
+                    }
+                    check_len(at("evidence"), evidence, MAX_EVIDENCE_CHARS)?;
                     if *position == Some(LolRole::Unknown) {
                         return Err(OverlayError::InvalidField {
                             field: at("position"),
@@ -227,15 +401,39 @@ impl WorldOverlay {
                         check_date(&at("contract_end"), date)?;
                     }
                 }
-                PlayerOp::Retire { id, .. } => check_id(at("id"), id)?,
-                PlayerOp::Add { player, .. } => check_id(at("player.id"), &player.id)?,
+                PlayerOp::Retire { id, evidence } => {
+                    check_id(at("id"), id)?;
+                    check_len(at("evidence"), evidence, MAX_EVIDENCE_CHARS)?;
+                }
+                PlayerOp::Add {
+                    player, evidence, ..
+                } => {
+                    check_player_record(&at, player)?;
+                    check_len(at("evidence"), evidence, MAX_EVIDENCE_CHARS)?;
+                }
             }
         }
         for (index, op) in self.staff.iter().enumerate() {
             let at = |part: &str| format!("staff[{index}].{part}");
             match op {
-                StaffOp::Move { id, .. } => check_id(at("id"), id)?,
-                StaffOp::Add { staff, .. } => check_id(at("staff.id"), &staff.id)?,
+                StaffOp::Move {
+                    id,
+                    team_id,
+                    evidence,
+                    ..
+                } => {
+                    check_id(at("id"), id)?;
+                    if let Some(team) = team_id {
+                        check_len(at("team_id"), team, MAX_ID_CHARS)?;
+                    }
+                    check_len(at("evidence"), evidence, MAX_EVIDENCE_CHARS)?;
+                }
+                StaffOp::Add {
+                    staff, evidence, ..
+                } => {
+                    check_staff_record(&at, staff)?;
+                    check_len(at("evidence"), evidence, MAX_EVIDENCE_CHARS)?;
+                }
             }
         }
         Ok(())
@@ -269,6 +467,9 @@ pub struct OverlayApplyReport {
     /// Player records touched by moves; larger than `moved_player_ids` when an
     /// id exists in more than one shard.
     pub moved_player_records: usize,
+    /// Extra records of a moved id that were removed so the player is not on
+    /// the target team twice.
+    pub collapsed_duplicate_records: usize,
     pub retired_player_ids: Vec<String>,
     pub retired_player_records: usize,
     pub added_player_ids: Vec<String>,
@@ -289,9 +490,10 @@ impl fmt::Display for OverlayApplyReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "players: {} moved ({} records), {} retired ({} records), {} added; staff: {} moved, {} added; {} ops skipped",
+            "players: {} moved ({} records, {} duplicates collapsed), {} retired ({} records), {} added; staff: {} moved, {} added; {} ops skipped",
             self.moved_player_ids.len(),
             self.moved_player_records,
+            self.collapsed_duplicate_records,
             self.retired_player_ids.len(),
             self.retired_player_records,
             self.added_player_ids.len(),
@@ -310,8 +512,10 @@ fn push_unique(list: &mut Vec<String>, id: &str) {
 
 /// Apply `overlay` to a freshly assembled world.
 ///
-/// An op keyed by id applies to every record with that id (some ids exist in two
-/// shards). Retired players are removed from `players`. Players that left a team
+/// A move applies to the first record with that id and removes the other
+/// records sharing it (some ids exist in two shards: stale and live), so the
+/// player is never on the target team twice. A retirement removes every record.
+/// Retired players are removed from `players`. Players that left a team
 /// are dropped from that team's lineup, roles and training groups.
 pub fn apply_world_overlay(
     teams: &mut [Team],
@@ -339,26 +543,37 @@ pub fn apply_world_overlay(
                     });
                     continue;
                 }
-                let mut records = 0;
-                for player in players.iter_mut().filter(|p| &p.id == id) {
-                    player.team_id.clone_from(team_id);
-                    if let Some(role) = position {
-                        player.position = *role;
-                        player.natural_position = *role;
-                    }
-                    if let Some(date) = contract_end {
-                        player.contract_end = Some(date.clone());
-                    }
-                    records += 1;
-                }
-                if records == 0 {
+                // An id can exist in two shards (stale and live). Moving every
+                // record would put the player on the target team twice, so the
+                // first record moves and the others are collapsed away.
+                let mut matching = players
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, p)| &p.id == id)
+                    .map(|(index, _)| index);
+                let Some(first) = matching.next() else {
                     report.skipped.push(SkippedOp {
                         id: id.clone(),
                         reason: SkipReason::UnknownPlayer,
                     });
                     continue;
+                };
+                let extra: Vec<usize> = matching.collect();
+                report.collapsed_duplicate_records += extra.len();
+                // Highest index first so earlier removals do not shift later ones.
+                for index in extra.into_iter().rev() {
+                    players.remove(index);
                 }
-                report.moved_player_records += records;
+                let player = &mut players[first];
+                player.team_id.clone_from(team_id);
+                if let Some(role) = position {
+                    player.position = *role;
+                    player.natural_position = *role;
+                }
+                if let Some(date) = contract_end {
+                    player.contract_end = Some(date.clone());
+                }
+                report.moved_player_records += 1;
                 push_unique(&mut report.moved_player_ids, id);
                 touched_players.insert(id.clone());
             }
@@ -571,7 +786,7 @@ mod tests {
     fn overlay(players: &str, staff: &str) -> WorldOverlay {
         WorldOverlay::parse(&format!(
             r#"{{"schemaVersion":1,"as_of":"2026-11-07",
-                "source":{{"name":"Leaguepedia","license":"CC BY-SA 3.0"}},
+                "source":{{"name":"Leaguepedia","license":"CC BY-SA 3.0","license_url":"https://www.fandom.com/licensing"}},
                 "coverage":[],"players":[{players}],"staff":[{staff}]}}"#
         ))
         .expect("test overlay should parse")
@@ -637,24 +852,24 @@ mod tests {
     }
 
     #[test]
-    fn move_applies_to_every_record_with_the_id() {
+    fn move_with_duplicate_ids_keeps_one_record_on_the_target_team() {
         let mut w = world();
         w.players.push(player("p-1", Some("t-b")));
+        w.teams[1].active_lineup_ids = vec!["p-1".to_string()];
         let report = apply(
             &mut w,
-            &overlay(r#"{"op":"move","id":"p-1","team_id":null}"#, ""),
+            &overlay(r#"{"op":"move","id":"p-1","team_id":"t-b"}"#, ""),
         );
-        assert_eq!(
-            w.players
-                .iter()
-                .filter(|p| p.id == "p-1" && p.team_id.is_none())
-                .count(),
-            2
-        );
+        let records: Vec<&Player> = w.players.iter().filter(|p| p.id == "p-1").collect();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].team_id.as_deref(), Some("t-b"));
+        assert_eq!(report.collapsed_duplicate_records, 1);
         assert_eq!(
             (report.moved_player_ids.len(), report.moved_player_records),
-            (1, 2)
+            (1, 1)
         );
+        assert_eq!(w.teams[0].active_lineup_ids, vec!["p-2".to_string()]);
+        assert_eq!(w.teams[1].active_lineup_ids, vec!["p-1".to_string()]);
     }
 
     #[test]
@@ -783,13 +998,12 @@ mod tests {
 
     #[test]
     fn malformed_dates_are_rejected() {
-        let bad_as_of =
-            r#"{"schemaVersion":1,"as_of":"2026-13-40","source":{"name":"x","license":"y"}}"#;
+        let bad_as_of = r#"{"schemaVersion":1,"as_of":"2026-13-40","source":{"name":"x","license":"y","license_url":"https://www.fandom.com/licensing"}}"#;
         assert!(matches!(
             WorldOverlay::parse(bad_as_of).unwrap_err(),
             OverlayError::InvalidDate { .. }
         ));
-        let bad_contract = r#"{"schemaVersion":1,"as_of":"2026-11-07","source":{"name":"x","license":"y"},
+        let bad_contract = r#"{"schemaVersion":1,"as_of":"2026-11-07","source":{"name":"x","license":"y","license_url":"https://www.fandom.com/licensing"},
             "players":[{"op":"move","id":"p-1","team_id":null,"contract_end":"soon"}]}"#;
         assert!(matches!(
             WorldOverlay::parse(bad_contract).unwrap_err(),
@@ -805,6 +1019,195 @@ mod tests {
             WorldOverlay::parse(json).unwrap_err(),
             OverlayError::Json(_)
         ));
+    }
+
+    const SOURCE: &str =
+        r#""source":{"name":"x","license":"y","license_url":"https://www.fandom.com/licensing"}"#;
+
+    fn doc(as_of: &str, body: &str) -> String {
+        format!(r#"{{"schemaVersion":1,"as_of":"{as_of}",{SOURCE}{body}}}"#)
+    }
+
+    fn today() -> NaiveDate {
+        NaiveDate::from_ymd_opt(2026, 11, 7).unwrap()
+    }
+
+    fn validate_doc(json: &str) -> Result<(), OverlayError> {
+        let overlay: WorldOverlay = serde_json::from_str(json).expect("shape");
+        overlay.validate_at(today())
+    }
+
+    fn add_player_with(patch: &str) -> String {
+        let player = format!(
+            r#"{{"id":"p-new","match_name":"New","full_name":"New Guy","position":"ADC","team_id":"t-b","date_of_birth":"2004-04-17"{patch}}}"#
+        );
+        doc(
+            "2026-11-07",
+            &format!(r#","players":[{{"op":"add","player":{player}}}]"#),
+        )
+    }
+
+    #[test]
+    fn as_of_must_be_canonical_zero_padded() {
+        for bad in [
+            "2026-1-5",
+            "2026-11-7",
+            "20261107",
+            " 2026-11-07",
+            "2026-11-07 ",
+        ] {
+            assert!(
+                matches!(
+                    validate_doc(&doc(bad, "")),
+                    Err(OverlayError::InvalidDate { .. })
+                ),
+                "{bad:?} must be rejected"
+            );
+        }
+        assert!(validate_doc(&doc("2026-11-07", "")).is_ok());
+    }
+
+    #[test]
+    fn as_of_more_than_two_days_ahead_is_rejected() {
+        assert!(validate_doc(&doc("2026-11-09", "")).is_ok());
+        assert!(matches!(
+            validate_doc(&doc("2026-11-10", "")),
+            Err(OverlayError::InvalidDate { .. })
+        ));
+    }
+
+    #[test]
+    fn license_url_must_be_https_on_a_trusted_host() {
+        for bad in [
+            "http://www.fandom.com/licensing",
+            "https://evil.example/licensing",
+            "https://www.fandom.com.evil.example/x",
+            "https://www.fandom.com@evil.example/x",
+            "",
+        ] {
+            let json = format!(
+                r#"{{"schemaVersion":1,"as_of":"2026-11-07","source":{{"name":"x","license":"y","license_url":"{bad}"}}}}"#
+            );
+            assert!(validate_doc(&json).is_err(), "{bad:?} must be rejected");
+        }
+        let cc = r#"{"schemaVersion":1,"as_of":"2026-11-07","source":{"name":"x","license":"y","license_url":"https://creativecommons.org/licenses/by-sa/3.0/"}}"#;
+        assert!(validate_doc(cc).is_ok());
+    }
+
+    #[test]
+    fn add_player_with_unknown_position_is_rejected() {
+        let json = add_player_with("").replace("ADC", "Unknown");
+        assert!(matches!(
+            validate_doc(&json),
+            Err(OverlayError::InvalidField {
+                reason: "unknown position",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn add_player_with_bad_date_of_birth_is_rejected() {
+        let json = add_player_with("").replace("2004-04-17", "someday");
+        assert!(matches!(
+            validate_doc(&json),
+            Err(OverlayError::InvalidDate { .. })
+        ));
+    }
+
+    #[test]
+    fn add_player_attributes_and_potential_are_bounded_to_100() {
+        assert!(validate_doc(&add_player_with(r#","attributes":{"mechanics":100,"laning":0,"macro_play":50,"consistency":50,"mental_resilience":50}"#)).is_ok());
+        let over = add_player_with(
+            r#","attributes":{"mechanics":101,"laning":0,"macro_play":50,"consistency":50,"mental_resilience":50}"#,
+        );
+        assert!(matches!(
+            validate_doc(&over),
+            Err(OverlayError::InvalidField { .. })
+        ));
+        let potential = add_player_with(r#","potential_base":200"#);
+        assert!(matches!(
+            validate_doc(&potential),
+            Err(OverlayError::InvalidField { .. })
+        ));
+    }
+
+    #[test]
+    fn staff_attributes_are_bounded_to_100() {
+        let staff = |attrs: &str| {
+            doc(
+                "2026-11-07",
+                &format!(
+                    r#","staff":[{{"op":"add","staff":{{"id":"s-new","role":"Coach","team_id":null,"attributes":{attrs}}}}}]"#
+                ),
+            )
+        };
+        assert!(validate_doc(&staff(r#"{"coaching":100}"#)).is_ok());
+        assert!(validate_doc(&staff(r#"{"coaching":101}"#)).is_err());
+    }
+
+    #[test]
+    fn profile_image_must_be_a_root_relative_asset_path() {
+        for ok in ["", "/img/players/faker.webp", "/a/b_c-d.jpg"] {
+            let json = add_player_with(&format!(r#","profile_image_url":"{ok}""#));
+            assert!(validate_doc(&json).is_ok(), "{ok:?} should be accepted");
+        }
+        for bad in [
+            "https://evil.example/x.png",
+            "//evil.example/x.png",
+            "/img/../secret.png",
+            "img/x.png",
+            "/img/x.svg",
+            "/img/x.png?q=1",
+            "javascript:alert(1).png",
+        ] {
+            let json = add_player_with(&format!(r#","profile_image_url":"{bad}""#));
+            assert!(validate_doc(&json).is_err(), "{bad:?} must be rejected");
+        }
+        let staff = doc(
+            "2026-11-07",
+            r#","staff":[{"op":"add","staff":{"id":"s-new","role":"Coach","team_id":null,"profile_image_url":"https://evil.example/x.png"}}]"#,
+        );
+        assert!(validate_doc(&staff).is_err());
+    }
+
+    #[test]
+    fn op_counts_are_bounded() {
+        let ops = |n: usize| {
+            let retire = r#"{"op":"retire","id":"p"}"#;
+            doc(
+                "2026-11-07",
+                &format!(r#","players":[{}]"#, vec![retire; n].join(",")),
+            )
+        };
+        assert!(validate_doc(&ops(5000)).is_ok());
+        assert!(validate_doc(&ops(5001)).is_err());
+        let staff_ops = format!(
+            r#","staff":[{}]"#,
+            vec![r#"{"op":"move","id":"s","team_id":null}"#; 5001].join(",")
+        );
+        assert!(validate_doc(&doc("2026-11-07", &staff_ops)).is_err());
+    }
+
+    #[test]
+    fn long_strings_are_rejected() {
+        let long = |n: usize| "a".repeat(n);
+        let retire = |id: &str, evidence: &str| {
+            doc(
+                "2026-11-07",
+                &format!(r#","players":[{{"op":"retire","id":"{id}","evidence":"{evidence}"}}]"#),
+            )
+        };
+        assert!(validate_doc(&retire(&long(200), &long(500))).is_ok());
+        assert!(validate_doc(&retire(&long(201), "")).is_err());
+        assert!(validate_doc(&retire("p", &long(501))).is_err());
+        let source = format!(
+            r#"{{"schemaVersion":1,"as_of":"2026-11-07","source":{{"name":"{}","license":"y","license_url":"https://www.fandom.com/licensing"}}}}"#,
+            long(1001)
+        );
+        assert!(validate_doc(&source).is_err());
+        let name = add_player_with("").replace("New Guy", &long(201));
+        assert!(validate_doc(&name).is_err());
     }
 
     #[test]

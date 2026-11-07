@@ -87,15 +87,31 @@ impl ResolvedOverlay {
     }
 }
 
-/// Pick the newest overlay. `as_of` is a validated `YYYY-MM-DD`, so plain string
-/// ordering is chronological. The bundled overlay wins ties.
+/// Pick the newest overlay. `as_of` is a validated canonical `YYYY-MM-DD`, so
+/// plain string ordering is chronological.
+///
+/// Ties go to the bundled overlay: a downloaded overlay with the same `as_of`
+/// does not replace it, even if its content differs. Publish a corrected
+/// overlay with a newer `as_of` for it to take effect.
 pub fn select_overlay(bundled: WorldOverlay, cached: Option<WorldOverlay>) -> ResolvedOverlay {
     match cached {
         Some(cached) if cached.as_of > bundled.as_of => ResolvedOverlay {
             overlay: cached,
             origin: OverlayOrigin::Downloaded,
         },
-        _ => ResolvedOverlay {
+        Some(cached) => {
+            if cached.as_of == bundled.as_of {
+                info!(
+                    "[world_overlay] cached overlay has the same as_of ({}) as the bundled one; keeping the bundled overlay",
+                    bundled.as_of
+                );
+            }
+            ResolvedOverlay {
+                overlay: bundled,
+                origin: OverlayOrigin::Bundled,
+            }
+        }
+        None => ResolvedOverlay {
             overlay: bundled,
             origin: OverlayOrigin::Bundled,
         },
@@ -105,13 +121,19 @@ pub fn select_overlay(bundled: WorldOverlay, cached: Option<WorldOverlay>) -> Re
 /// Read the cached overlay. A missing file is normal; an unreadable or invalid
 /// one is logged and ignored so it can never block a new game.
 pub fn read_cached_overlay(path: &Path) -> Option<WorldOverlay> {
-    let raw = match std::fs::read_to_string(path) {
-        Ok(raw) => raw,
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return None,
+    let bytes = match read_local_capped(path, MAX_OVERLAY_BYTES) {
+        Ok(bytes) => bytes,
+        Err(WorldOverlayError::Io(err)) if err.kind() == std::io::ErrorKind::NotFound => {
+            return None
+        }
         Err(err) => {
             warn!("[world_overlay] ignoring unreadable cache {path:?}: {err}");
             return None;
         }
+    };
+    let Ok(raw) = String::from_utf8(bytes) else {
+        warn!("[world_overlay] ignoring cache {path:?}: not valid UTF-8");
+        return None;
     };
     match WorldOverlay::parse(&raw) {
         Ok(overlay) => Some(overlay),
@@ -167,6 +189,22 @@ fn configured_source() -> String {
         .unwrap_or_else(|| DEFAULT_SOURCE.to_string())
 }
 
+/// What is safe to log or show about a source: `scheme://host` for a URL
+/// (userinfo, port, path and query dropped, since any of them may hold a
+/// credential or token), or "local file" for a path.
+fn describe_source(source: &str) -> String {
+    let Some((scheme, rest)) = source.split_once("://") else {
+        return "local file".to_string();
+    };
+    if !matches!(scheme.to_ascii_lowercase().as_str(), "http" | "https") {
+        return "local file".to_string();
+    }
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
+    let host_port = authority.rsplit('@').next().unwrap_or_default();
+    let host = host_port.split(':').next().unwrap_or_default();
+    format!("{}://{host}", scheme.to_ascii_lowercase())
+}
+
 fn is_remote(source: &str) -> bool {
     let lower = source.to_ascii_lowercase();
     lower.starts_with("https://") || lower.starts_with("http://")
@@ -189,7 +227,7 @@ async fn download_capped(
     limit: usize,
 ) -> Result<Vec<u8>, WorldOverlayError> {
     if !url.to_ascii_lowercase().starts_with("https://") {
-        return Err(WorldOverlayError::InsecureSource(url.to_string()));
+        return Err(WorldOverlayError::InsecureSource(describe_source(url)));
     }
     let client = reqwest::Client::builder()
         .user_agent(user_agent)
@@ -204,12 +242,12 @@ async fn download_capped(
             }
         }))
         .build()
-        .map_err(|err| WorldOverlayError::Network(err.to_string()))?;
+        .map_err(|err| WorldOverlayError::Network(err.without_url().to_string()))?;
     let mut response = client
         .get(url)
         .send()
         .await
-        .map_err(|err| WorldOverlayError::Network(err.to_string()))?;
+        .map_err(|err| WorldOverlayError::Network(err.without_url().to_string()))?;
     if !response.status().is_success() {
         return Err(WorldOverlayError::HttpStatus(response.status().as_u16()));
     }
@@ -223,7 +261,7 @@ async fn download_capped(
     while let Some(chunk) = response
         .chunk()
         .await
-        .map_err(|err| WorldOverlayError::Network(err.to_string()))?
+        .map_err(|err| WorldOverlayError::Network(err.without_url().to_string()))?
     {
         if bytes.len() + chunk.len() > limit {
             return Err(WorldOverlayError::TooLarge { limit });
@@ -329,7 +367,10 @@ pub async fn update_world_overlay(
     let source = configured_source();
     let user_agent = format!("OLManager/{}", app_handle.package_info().version);
     let path = cache_path(&app_handle).map_err(|err| err.to_string())?;
-    info!("[cmd] update_world_overlay: source={source}");
+    info!(
+        "[cmd] update_world_overlay: source={}",
+        describe_source(&source)
+    );
     refresh_cache(&path, &source, &user_agent, MAX_OVERLAY_BYTES)
         .await
         .map_err(|err| {
@@ -360,7 +401,7 @@ mod tests {
             })
             .collect();
         format!(
-            r#"{{"schemaVersion":1,"as_of":"{as_of}","source":{{"name":"Test","url":"https://example.test","license":"CC BY-SA 3.0","license_url":"https://example.test/license","attribution":"Test data"}},"coverage":[],"players":[{}],"staff":[]}}"#,
+            r#"{{"schemaVersion":1,"as_of":"{as_of}","source":{{"name":"Test","url":"https://example.test","license":"CC BY-SA 3.0","license_url":"https://www.fandom.com/licensing","attribution":"Test data"}},"coverage":[],"players":[{}],"staff":[]}}"#,
             players.join(",")
         )
     }
@@ -600,6 +641,53 @@ mod tests {
             matches!(err, WorldOverlayError::InsecureSource(_)),
             "got {err:?}"
         );
+    }
+
+    #[test]
+    fn describe_source_keeps_only_scheme_and_host() {
+        assert_eq!(
+            describe_source("https://user:s3cret@example.test:8443/a/b.json?token=abc#frag"),
+            "https://example.test"
+        );
+        assert_eq!(
+            describe_source("/home/me/private/overlay.json"),
+            "local file"
+        );
+        assert_eq!(describe_source("C:\\Users\\me\\overlay.json"), "local file");
+    }
+
+    #[test]
+    fn insecure_source_error_does_not_leak_credentials_or_query() {
+        let err = run(fetch_overlay_bytes(
+            "http://user:s3cret@example.test/overlay.json?token=abc",
+            UA,
+            MAX_OVERLAY_BYTES,
+        ))
+        .expect_err("http refused");
+        let message = err.to_string();
+        assert!(
+            !message.contains("s3cret") && !message.contains("token"),
+            "{message}"
+        );
+    }
+
+    #[test]
+    fn oversized_cache_file_is_ignored() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join(CACHE_FILE);
+        // Valid JSON padded with whitespace past the cap.
+        let padding = " ".repeat(MAX_OVERLAY_BYTES);
+        std::fs::write(&path, format!("{}{padding}", overlay_json("2026-09-01", 0)))
+            .expect("write");
+        assert!(read_cached_overlay(&path).is_none());
+    }
+
+    #[test]
+    fn cache_file_within_the_cap_is_read() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join(CACHE_FILE);
+        std::fs::write(&path, overlay_json("2026-09-01", 0)).expect("write");
+        assert!(read_cached_overlay(&path).is_some());
     }
 
     #[test]

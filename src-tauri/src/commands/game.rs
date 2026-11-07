@@ -1093,7 +1093,7 @@ mod tests {
     fn overlay() -> WorldOverlay {
         WorldOverlay::parse(
             r#"{"schemaVersion":1,"as_of":"2026-11-07",
-                "source":{"name":"Leaguepedia","license":"CC BY-SA 3.0"},
+                "source":{"name":"Leaguepedia","license":"CC BY-SA 3.0","license_url":"https://www.fandom.com/licensing"},
                 "players":[
                   {"op":"move","id":"mover","team_id":"t-b"},
                   {"op":"retire","id":"retiree"},
