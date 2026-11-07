@@ -56,13 +56,7 @@ pub(super) fn build_team_with_bench(game: &Game, team_id: &str) -> (TeamData, Ve
         .collect::<Vec<_>>();
 
     // Keep LoL lane order stable for draft/pre-match UIs.
-    let mut starters = starters;
-    starters.sort_by(|left, right| {
-        lol_role_rank(&left.natural_position)
-            .cmp(&lol_role_rank(&right.natural_position))
-            .then_with(|| calculate_lol_ovr(right).cmp(&calculate_lol_ovr(left)))
-            .then_with(|| right.condition.cmp(&left.condition))
-    });
+    let starters = arrange_starters_by_lane(starters);
 
     let starting_xi = starters
         .into_iter()
@@ -150,6 +144,37 @@ fn select_reconciled_lol_starters<'a>(
     }
 
     starters
+}
+
+/// Orders starters so slot `i` holds the player whose natural role matches lane `i`
+/// (the match engine derives the lane from the slot index). Players without a
+/// matching free slot fill the remaining slots, so a missing role never shifts
+/// other players into the wrong lane.
+fn arrange_starters_by_lane<'a>(
+    mut starters: Vec<&'a crate::domain::player::Player>,
+) -> Vec<&'a crate::domain::player::Player> {
+    starters.sort_by(|left, right| {
+        lol_role_rank(&left.natural_position)
+            .cmp(&lol_role_rank(&right.natural_position))
+            .then_with(|| calculate_lol_ovr(right).cmp(&calculate_lol_ovr(left)))
+            .then_with(|| right.condition.cmp(&left.condition))
+    });
+
+    let mut slots: Vec<Option<&'a crate::domain::player::Player>> = vec![None; starters.len()];
+    let mut unplaced = Vec::new();
+    for player in starters {
+        let slot = usize::from(lol_role_rank(&player.natural_position));
+        match slots.get_mut(slot) {
+            Some(entry @ None) => *entry = Some(player),
+            _ => unplaced.push(player),
+        }
+    }
+
+    let mut unplaced = unplaced.into_iter();
+    slots
+        .into_iter()
+        .filter_map(|slot| slot.or_else(|| unplaced.next()))
+        .collect()
 }
 
 fn current_available_player_by_id<'a>(
@@ -339,6 +364,34 @@ mod tests {
             vec!["top", "jungle", "oscar", "adc", "labrov"]
         );
         assert!(bench.iter().any(|player| player.id == "other-mid"));
+    }
+
+    #[test]
+    fn pre_match_team_builder_keeps_mid_in_mid_slot_when_roster_has_no_adc() {
+        let game = game_with_opponent(
+            vec![],
+            vec![
+                player("top", LolRole::Top, 70),
+                player("top-2", LolRole::Top, 65),
+                player("jungle", LolRole::Jungle, 70),
+                player("mid", LolRole::Mid, 70),
+                player("support", LolRole::Support, 70),
+            ],
+        );
+
+        let (team, _) = build_team_with_bench(&game, "opponent");
+        let ids = team
+            .players
+            .iter()
+            .map(|player| player.id.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(ids.len(), 5);
+        assert_eq!(ids[0], "top");
+        assert_eq!(ids[1], "jungle");
+        assert_eq!(ids[2], "mid");
+        assert_eq!(ids[4], "support");
+        assert_eq!(ids[3], "top-2");
     }
 
     #[test]
