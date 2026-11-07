@@ -245,7 +245,6 @@
     "expandSidebar": "Expandir barra lateral",
     "alerts": {
       "exhausted": "{{count}} jogador(es) em condição crítica (<25%)",
-      "injuredStartingXi": "{{count}} jogador(es) lesionado(s) na equipa titular — substitui-os",
       "incompleteStartingXi": "A equipa titular está incompleta — define a tua equipa",
       "urgentUnread": "{{count}} mensagem(ns) urgente(s) por ler",
       "matchTodayStartingXi": "Jogo hoje! Define a tua equipa titular"
@@ -616,10 +615,6 @@
     "won": "V",
     "drawn": "E",
     "lost": "D",
-    "gf": "GM",
-    "ga": "GS",
-    "gd": "DG",
-    "injured": "Lesionado",
     "back": "Voltar",
     "all": "Todos",
     "allPlayers": "Todos os jogadores",
@@ -658,9 +653,6 @@
     "renewContract": "Renovar contrato",
     "status": "Estado",
     "average": "Média",
-    "goalsFor": "GM",
-    "goalsAgainst": "GS",
-    "goalDifference": "DG",
     "nPlayersFound": "{{count}} jogador(es) encontrado(s)",
     "nResults": "{{count}} resultado(s)",
     "showingFirst": "A mostrar os primeiros {{shown}} de {{total}} jogadores. Refina a pesquisa para ver mais.",
@@ -684,12 +676,6 @@
       "LeftWinger": "ADC",
       "Striker": "ADC"
     },
-    "positionGroups": {
-      "Goalkeeper": "Top",
-      "Defender": "Jungle",
-      "Midfielder": "Mid",
-      "Forward": "ADC"
-    },
     "posAbbr": {
       "Goalkeeper": "TOP",
       "Defender": "JGL",
@@ -708,21 +694,6 @@
       "RightWinger": "ADC",
       "LeftWinger": "ADC",
       "Striker": "ADC"
-    },
-    "footedness": {
-      "Left": "Esquerdo",
-      "Right": "Direito",
-      "Both": "Ambos"
-    },
-    "footednessLabel": "Pé",
-    "weakFoot": "Pé fraco",
-    "playStyles": {
-      "Balanced": "Equilibrado",
-      "Attacking": "Ofensivo",
-      "Defensive": "Defensivo",
-      "Possession": "Posse de Bola",
-      "Counter": "Contra-Ataque",
-      "HighPress": "Pressão Alta"
     },
     "trainingSchedules": {
       "Intense": "Intenso",
@@ -744,39 +715,11 @@
       "Recovery": "Reset mental / recuperação",
       "General": "Geral"
     },
-    "attributes": {
-      "pace": "Velocidade",
-      "stamina": "Resistência",
-      "strength": "Força",
-      "agility": "Agilidade",
-      "passing": "Passe",
-      "shooting": "Remate",
-      "tackling": "Desarme",
-      "dribbling": "Drible",
-      "defending": "Defesa",
-      "positioning": "Posicionamento",
-      "vision": "Visão",
-      "decisions": "Decisão",
-      "composure": "Compostura",
-      "aggression": "Agressividade",
-      "teamwork": "Trabalho de Equipa",
-      "leadership": "Liderança",
-      "handling": "Enquadramento",
-      "reflexes": "Reflexos",
-      "aerial": "Jogo Aéreo"
-    },
     "moods": {
       "excellent": "Excelente",
       "good": "Bom",
       "mixed": "Misto",
       "poor": "Mau"
-    },
-    "injuries": {
-      "minorMuscleStrain": "Distensão muscular ligeira",
-      "twistedAnkle": "Tornozelo torcido",
-      "kneeBruise": "Contusão no joelho",
-      "hamstringTightness": "Tensão nos isquiotibiais",
-      "calfStrain": "Distensão na barriga da perna"
     },
     "scoutRatings": {
       "excellent": "Excelente",
@@ -795,12 +738,6 @@
       "high": "Alta",
       "moderate": "Moderada",
       "low": "Baixa"
-    },
-    "attrGroups": {
-      "physical": "Físico",
-      "technical": "Técnico",
-      "mental": "Mental",
-      "goalkeeper": "Top"
     },
     "fitness": "Fitness",
     "action": "Action",
@@ -846,47 +783,25 @@
     "removeFromLoanList": "Remover da lista de empréstimos",
     "outOfPosition": "Fora de posição",
     "outOfPositionTooltip": "A jogar fora da função preferida do jogador",
-    "dragHint": "Arrasta jogadores do banco para o campo ou troca titulares entre vagas.",
-    "benchDragHint": "Usa a lista do banco para arrastar jogadores diretamente para o campo.",
     "dropPlayerHere": "Larga o jogador aqui",
-    "dragToPitch": "Arrastar para o campo",
     "filterPlayers": "Filtrar por nome do jogador ou posição",
     "noBenchMatches": "Nenhum jogador do banco corresponde aos filtros atuais.",
     "noLineupMatches": "Nenhum titular corresponde aos filtros atuais.",
     "playStyleImpactTitle": "O que isto muda",
-    "playStyleDescriptions": {
-      "Balanced": "Mantém a tua equipa equilibrada com e sem bola, com uma estrutura estável e menos extremos.",
-      "Attacking": "Leva mais jogadores para a frente, cria mais apoio perto da área e pede mais iniciativa à tua equipa.",
-      "Defensive": "Faz a tua equipa priorizar a proteção dos espaços, manter-se compacta e correr menos riscos sem bola.",
-      "Possession": "Incentiva a tua equipa a circular a bola com paciência, controlar o ritmo e procurar espaços com mais clareza.",
-      "Counter": "Convida a tua equipa a acelerar logo após recuperar a bola, atacando os espaços antes que o adversário se reorganize.",
-      "HighPress": "Pede à tua equipa que pressione mais cedo, recupere a bola em zonas altas e mantenha o adversário sob pressão."
-    },
     "activeLineup": "Active Lineup",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
     "noRoleAvailable": "No player available"
   },
   "tactics": {
-    "formationStyle": "Plano de Jogo & Estilo",
     "playStyle": "Estilo de Jogo",
-    "lineupTab": "Alineação",
-    "rolesTab": "Objetivos & Funções",
     "teamRoles": "Funções da equipa",
     "viceCaptain": "Vice-capitão",
-    "setPiecesSection": "Funções de Objetivo",
-    "rolesHint": "Escolhe a hierarquia de liderança e os especialistas em objetivos da equipa titular atual.",
-    "autoSelectAssignments": "Selecionar padrões automaticamente",
-    "noStartersForRoles": "Define a tua equipa titular para atribuir funções da equipa e objetivos.",
-    "startingXI": "Cinco Inicial",
     "fullSquad": "Plantel Completo",
-    "riftInteractionHint": "Arrasta jogadores entre a Rift e o banco, clica num jogador para o analisar, clica num segundo para os comparar e depois confirma a troca no painel de comparação.",
     "selectedPlayer": "Jogador selecionado",
     "comparePlayer": "Jogador de comparação",
-    "selectSecondPlayer": "Seleciona um segundo jogador na vista da escalação para comparar atributos e preparar a troca.",
     "compareSelectionHint": "Analisa ambos os jogadores abaixo e confirma a troca quando estiveres pronto.",
     "confirmSwap": "Confirmar troca",
-    "selectPitchPlayer": "Seleciona um jogador na vista da escalação para analisar os seus atributos.",
     "selectAnotherToSwap": "Seleciona um segundo jogador para os comparar e confirmar a troca.",
     "lol": {
       "roles": {
@@ -1233,7 +1148,6 @@
       "Tactics": "Tática",
       "Defending": "Defesa",
       "Attacking": "Ataque",
-      "GoalKeeping": "Top",
       "Youth": "Academia"
     },
     "lolAttrs": {
@@ -1623,12 +1537,6 @@
     "statSquad": "Squad",
     "statValue": "Value"
   },
-  "playersList": {
-    "searchPlaceholder": "Procurar por nome ou nacionalidade...",
-    "allPos": "Todas Pos",
-    "allTeams": "Todas as Equipas",
-    "injured": "Lesionado"
-  },
   "teamsList": {
     "yourTeam": "A Tua Equipa",
     "pos": "Pos",
@@ -1651,11 +1559,8 @@
     "upperBracket": "Chave superior",
     "lowerBracket": "Chave inferior",
     "scheduled": "Agendado",
-    "goals": "Golos",
     "overview": "Resumo",
-    "leagueTable": "Tabela da Liga",
-    "topScorers": "Melhores Marcadores",
-    "noGoals": "Nenhum golo marcado ainda."
+    "leagueTable": "Tabela da Liga"
   },
   "news": {
     "noNews": "Sem notícias ainda.",
@@ -1743,33 +1648,18 @@
     "scoutToView": "Observa ou contrata este jogador para ver os atributos detalhados.",
     "seasonStats": "Estatísticas da Temporada",
     "advancedStats": "Estatísticas avançadas",
-    "shots": "Remates",
-    "shotsOnTarget": "Remates à baliza",
-    "passes": "Passes",
-    "tacklesWon": "Desarmes ganhos",
-    "interceptions": "Interceções",
-    "foulsCommitted": "Faltas cometidas",
-    "per90": "Por 90 min",
-    "passAccuracy": "Precisão de passe",
     "percentile": "Percentil",
     "percentileUnavailable": "Percentil indisponível",
     "recentMatches": "Jogos recentes",
     "vs": "vs",
     "noRecentMatches": "Sem dados de jogos recentes",
     "apps": "Jogos",
-    "goals": "Golos",
     "assists": "Assistências",
-    "mins": "Min",
-    "cleanSheets": "S/ Golo",
-    "yellows": "Amarelos",
-    "reds": "Vermelhos",
     "avgRating": "Nota Média",
     "careerHistory": "Historial da Carreira",
     "noCareer": "Sem historial de carreira — primeira temporada.",
     "nApps": "{{count}} jogos",
-    "nGoals": "{{count}} golos",
     "nAssists": "{{count}} assistências",
-    "daysRemaining": "{{count}} dias restantes — Jogador indisponível para seleção",
     "renewalProjectionTitle": "Impacto financeiro projetado",
     "renewalProjectionWageBill": "Folha de salários semanal {{before}} → {{after}}",
     "renewalProjectionBudgetUsage": "Uso do orçamento salarial {{before}}% → {{after}}%",
@@ -1811,16 +1701,7 @@
     "advancedStats": "Estatísticas da equipa",
     "winRate": "WR",
     "matchesPlayed": "Jogos",
-    "possession": "Posse de bola",
-    "goalDifference": "Diferença de golos",
-    "shots": "Remates",
-    "shotsOnTarget": "Remates à baliza",
-    "passes": "Passes",
-    "tacklesWon": "Desarmes ganhos",
-    "interceptions": "Interceções",
-    "foulsCommitted": "Faltas cometidas",
     "perMatch": "Por jogo",
-    "passAccuracy": "Precisão de passe",
     "recentMatches": "Jogos recentes"
   },
   "settings": {
@@ -1886,7 +1767,6 @@
     "upToDate": "Tens a versão mais recente"
   },
   "preMatch": {
-    "roleCoverage": "Ajuste da Estratégia",
     "autoSelect": "Selecionar Melhor Cinco",
     "selecting": "A selecionar...",
     "startingXI": "Cinco Inicial",
@@ -1897,13 +1777,8 @@
     "noBench": "Sem suplentes disponíveis.",
     "cancelSwap": "Cancelar",
     "swapHint": "Seleciona um suplente para trocar",
-    "setPieces": "Objetivos e Líder",
-    "lineup": "Escalação",
     "startMatch": "Iniciar Jogo",
     "captain": "Capitão",
-    "penaltyTaker": "Marcador de Penáltis",
-    "freeKickTaker": "Marcador de Livres",
-    "cornerTaker": "Marcador de Cantos",
     "fit": "FIT",
     "keyStats": "Estatísticas-Chave"
   },
@@ -2250,7 +2125,6 @@
       "victimIcon": "Eliminado"
     },
     "ratings": "Classificações de {{team}}",
-    "motm": "Melhor em Campo",
     "roundSummary": "Resumo da Jornada",
     "roundSummaryUnavailable": "Resumo da jornada indisponível.",
     "otherMatches": "Outros Jogos",
@@ -2279,172 +2153,10 @@
       "bodySingle": "O treinador do {{team}} falou brevemente após o resultado {{result}}.",
       "bodyNone": "O treinador do {{team}} recusou falar longamente após o resultado {{result}}."
     },
-    "press": {
-      "result": {
-        "questions": {
-          "win": "Bom resultado hoje, {{userScore}}-{{oppScore}} frente ao {{oppName}}. Até que ponto estás satisfeito com a exibição?",
-          "loss": "Resultado duro hoje, derrota por {{userScore}}-{{oppScore}} frente ao {{oppName}}. O que correu mal?",
-          "draw": "Empate {{userScore}}-{{oppScore}} frente ao {{oppName}}. Consideras que foi um resultado justo?"
-        },
-        "responses": {
-          "win": {
-            "humble": {
-              "tone": "Humilde",
-              "text": "Os jogadores trabalharam muito. Preparámo-nos bem e executámos o plano de jogo."
-            },
-            "confident": {
-              "tone": "Confiante",
-              "text": "Fomos a melhor equipa do início ao fim. Resultado merecido."
-            },
-            "deflect": {
-              "tone": "Evasivo",
-              "text": "São apenas três pontos. Agora seguimos para o próximo jogo."
-            }
-          },
-          "loss": {
-            "accept": {
-              "tone": "Honesto",
-              "text": "Hoje não fomos suficientemente bons. Temos de perceber o que correu mal."
-            },
-            "defiant": {
-              "tone": "Desafiador",
-              "text": "Não acho que merecêssemos perder. Criámos oportunidades suficientes."
-            },
-            "deflect": {
-              "tone": "Evasivo",
-              "text": "Prefiro não insistir nisso. Estaremos prontos para o próximo jogo."
-            }
-          },
-          "draw": {
-            "fair": {
-              "tone": "Justo",
-              "text": "Foi um resultado justo. Ambas as equipas tiveram oportunidades."
-            },
-            "frustrated": {
-              "tone": "Frustrado",
-              "text": "Devíamos ter ganho. Falhámos demasiadas oportunidades."
-            },
-            "positive": {
-              "tone": "Positivo",
-              "text": "Um ponto é um ponto. Há aspetos positivos a retirar de hoje."
-            }
-          }
-        }
-      },
-      "playerFocus": {
-        "questions": {
-          "scored": "{{playerName}} marcou hoje. Quão importante é o contributo dele para a equipa?",
-          "default": "Podes comentar a exibição de {{playerName}} hoje?"
-        },
-        "responses": {
-          "praise": {
-            "tone": "Elogio",
-            "text": "{{playerName}} esteve fantástico. É um jogador-chave para nós e a atitude dele é exemplar."
-          },
-          "demanding": {
-            "tone": "Exigente",
-            "text": "{{playerName}} pode fazer melhor. Espero mais de um jogador com a qualidade dele."
-          },
-          "deflect": {
-            "tone": "Evasivo",
-            "text": "Não gosto de destacar indivíduos. Isto é um jogo de equipa."
-          }
-        }
-      },
-      "tactics": {
-        "question": "Podes explicar-nos a tua abordagem tática hoje?",
-        "responses": {
-          "detailed": {
-            "tone": "Detalhado",
-            "text": "Montámos a equipa para controlar o meio-campo e usar a largura. Acho que a estrutura funcionou bem."
-          },
-          "brief": {
-            "tone": "Breve",
-            "text": "Tínhamos um plano e os jogadores executaram-no. É isso que importa."
-          },
-          "evasive": {
-            "tone": "Evasivo",
-            "text": "Prefiro não revelar demasiado. Cada equipa tem os seus segredos."
-          }
-        }
-      },
-      "fans": {
-        "questions": {
-          "win": "Os adeptos fizeram-se ouvir hoje. O que significa para ti esse apoio?",
-          "loss": "Alguns adeptos mostraram frustração no final. Tens uma mensagem para eles?",
-          "draw": "O ambiente esteve tenso em alguns momentos. Como geres essa pressão?"
-        },
-        "responses": {
-          "win": {
-            "grateful": {
-              "tone": "Humilde",
-              "text": "Os adeptos são incríveis. Empurram-nos em todos os jogos e devemos-lhes exibições como a de hoje."
-            },
-            "shared": {
-              "tone": "Confiante",
-              "text": "Celebramos todos juntos — jogadores, equipa técnica e adeptos. Esta vitória também é deles."
-            },
-            "deflect": {
-              "tone": "Evasivo",
-              "text": "Os adeptos sabem aquilo que representamos. Nós focamo-nos apenas no relvado."
-            }
-          },
-          "loss": {
-            "apologize": {
-              "tone": "Honesto",
-              "text": "Compreendo totalmente a frustração deles. Merecem melhor e vamos trabalhar muito para lhes dar isso."
-            },
-            "patience": {
-              "tone": "Focado",
-              "text": "Peço paciência. Estamos a construir algo e os maus dias acontecem. Vamos voltar mais fortes."
-            },
-            "curt": {
-              "tone": "Seco",
-              "text": "Não vou comentar coisas ditas no calor do momento. Vamos seguir em frente."
-            }
-          },
-          "draw": {
-            "appreciate": {
-              "tone": "Positivo",
-              "text": "Aprecio cada adepto que vem ver-nos. A energia deles levanta a equipa."
-            },
-            "understand": {
-              "tone": "Justo",
-              "text": "Eles querem ver-nos ganhar e eu também. Vamos continuar a insistir até os resultados aparecerem."
-            },
-            "curt": {
-              "tone": "Seco",
-              "text": "Não me envolvo com o que acontece nas bancadas. O meu foco está no relvado."
-            }
-          }
-        }
-      },
-      "ahead": {
-        "question": "Qual é o teu foco para o próximo jogo?",
-        "responses": {
-          "focused": {
-            "tone": "Focado",
-            "text": "Primeiro a recuperação, depois a preparação. Vamos jogo a jogo."
-          },
-          "ambitious": {
-            "tone": "Ambicioso",
-            "text": "Queremos continuar a construir dinâmica. O objetivo é claro."
-          },
-          "curt": {
-            "tone": "Seco",
-            "text": "Próxima pergunta, por favor. Pensaremos nisso quando chegar a altura."
-          }
-        }
-      }
-    },
-    "pen": "PEN",
     "home": "Casa",
     "away": "Fora",
     "matchDay": "Dia de Jogo",
     "preMatchPrep": "Preparação Pré-Jogo",
-    "startingLineup": "Quinteto Titular",
-    "setPiecesCaptain": "Objetivos e Líder",
-    "roleCoverage": "Ajuste de Estratégia",
     "selecting": "A selecionar...",
     "autoSelectXI": "Auto-Selecionar Melhor Cinco",
     "startingXI": "Cinco Titular",
@@ -2455,11 +2167,7 @@
     "nAvailable": "{{count}} disponíveis",
     "noBenchAvailable2": "Sem jogadores no banco.",
     "opponent": "Adversário",
-    "autoSelectTakers": "Auto-Selecionar Melhores Marcadores",
     "captain": "Capitão",
-    "penaltyTaker": "Marcador de Penáltis",
-    "freeKickTaker": "Marcador de Livres",
-    "cornerTaker": "Marcador de Cantos",
     "startMatch": "Iniciar Jogo",
     "notAssigned": "Não atribuído",
     "keyStats": "Stats Chave",
@@ -2809,11 +2517,6 @@
           }
         }
       },
-      "trainingInjury": {
-        "subject": "Injury — {{player}} ({{injury}})",
-        "body0": "Bad news from the training ground. {{player}} has picked up a {{injury}} during today's session.\n\nThe medical team estimates {{days}} days on the sidelines. We'll monitor the recovery closely.",
-        "body1": "Unfortunately, {{player}} went down in training today with a {{injury}}.\n\nInitial assessment: out for approximately {{days}} days. We'll keep you updated on their progress."
-      },
       "mediaPositive": {
         "subject": "Positive Press — {{player}}",
         "body": "The local papers are running a very positive piece on {{player}} today.\n\nThey are highlighting their excellent recent form and commitment to {{team}}. This kind of coverage is great for the player's confidence and the club's image."
@@ -2861,12 +2564,6 @@
       "fanPetition": {
         "subject": "Fan Petition — Draft Identity",
         "body": "A group of {{team}} supporters has organized a petition asking for a clearer draft identity and sharper objective setups.\n\n\"We want proactive plans on the Rift, not passive scaling every series. Show us the team knows how it wants to win.\"\n\nOver 500 signatures so far. How do you respond?",
-        "subject0": "Fan Petition — More Attacking Football",
-        "subject1": "Fan Petition — Give Youth a Chance",
-        "subject2": "Fan Open Letter — Transparency",
-        "body0": "A group of {{team}} supporters has organized a petition calling for more attacking play.\n\n\"We pay good money to watch exciting play. We want to see the team go forward and entertain us!\"\n\nOver 500 signatures so far. How do you respond?",
-        "body1": "Supporters of {{team}} have started a campaign urging you to give more opportunities to young players from the academy.\n\n\"The future of our club depends on developing homegrown talent. Stop overlooking the kids!\"\n\nIt's getting traction on social media. What's your response?",
-        "body2": "An open letter from the {{team}} Supporters Trust has been published, asking for more transparency from the management.\n\n\"We want to understand the club's vision. Where are we heading? What's the long-term plan?\"\n\nThe local press is covering it. How do you handle this?",
         "options": {
           "listenFans": {
             "label": "Ouvir os adeptos",
