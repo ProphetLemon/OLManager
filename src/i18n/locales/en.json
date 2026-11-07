@@ -2753,9 +2753,9 @@
           "draw": "Draw: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}"
         },
         "body": {
-          "victory0": "Full time: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nAn excellent result! The team put in a strong performance. Matchday {{matchday}} — keep this momentum going.",
-          "victory1": "Final whistle: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nThree points in the bag! The lads showed great character out there. Matchday {{matchday}} complete.",
-          "defeat0": "Full time: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nA disappointing result. We'll need to regroup and work on the areas that let us down. Matchday {{matchday}} — there's still time to turn things around.",
+          "victory0": "Final score: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nAn excellent result! The team put in a strong performance. Matchday {{matchday}} — keep this momentum going.",
+          "victory1": "Final score: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nGreat series! The team showed real composure out there. Matchday {{matchday}} complete.",
+          "defeat0": "Final score: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nA disappointing result. We'll need to regroup and work on the areas that let us down. Matchday {{matchday}} — there's still time to turn things around.",
           "defeat1": "Final score: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNot the result we wanted. Matchday {{matchday}} — the board will want to see improvement. Review what went wrong and prepare for the next challenge.",
           "draw": "Full time: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nA point earned in Matchday {{matchday}}. Depending on results elsewhere, this could be valuable. The team fought hard but couldn't find a winner."
         },

@@ -2879,15 +2879,15 @@
       },
       "matchResult": {
         "subject": {
-          "victory": "Victory: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",
-          "defeat": "Defeat: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",
+          "victory": "Vittoria: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",
+          "defeat": "Sconfitta: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",
           "draw": "Draw: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}"
         },
         "body": {
-          "victory0": "Full time: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nAn excellent result! The team put in a strong performance. Matchday {{matchday}} — keep this momentum going.",
-          "victory1": "Final whistle: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nThree points in the bag! The lads showed great character out there. Matchday {{matchday}} complete.",
-          "defeat0": "Full time: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nA disappointing result. We'll need to regroup and work on the areas that let us down. Matchday {{matchday}} — there's still time to turn things around.",
-          "defeat1": "Final score: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNot the result we wanted. Matchday {{matchday}} — the board will want to see improvement. Review what went wrong and prepare for the next challenge.",
+          "victory0": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn risultato eccellente! La squadra ha offerto una grande prestazione. Giornata {{matchday}} — mantieni questo slancio.",
+          "victory1": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nOttima serie! La squadra ha mostrato vera freddezza. Giornata {{matchday}} completata.",
+          "defeat0": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn risultato deludente. Dovremo riorganizzarci e lavorare sugli aspetti che ci hanno fatto difetto. Giornata {{matchday}} — c'è ancora tempo per ribaltare la situazione.",
+          "defeat1": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNon è il risultato che volevamo. Giornata {{matchday}} — il consiglio vorrà vedere miglioramenti. Rivedi cosa è andato storto e preparati alla prossima sfida.",
           "draw": "Full time: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nA point earned in Matchday {{matchday}}. Depending on results elsewhere, this could be valuable. The team fought hard but couldn't find a winner."
         },
         "actionStandings": "View Standings"

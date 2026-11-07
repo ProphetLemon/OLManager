@@ -2744,7 +2744,7 @@
         },
         "body": {
           "victory0": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\n¡Un resultado excelente! El equipo realizó una gran actuación. Jornada {{matchday}} — mantén este impulso.",
-          "victory1": "Pitido final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\n¡Tres puntos en el bolsillo! Los chicos mostraron gran carácter. Jornada {{matchday}} completada.",
+          "victory1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\n¡Gran serie! El equipo mostró una gran templanza. Jornada {{matchday}} completada.",
           "defeat0": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn resultado decepcionante. Necesitaremos reagruparnos y trabajar en las áreas que nos fallaron. Jornada {{matchday}} — aún hay tiempo para cambiar las cosas.",
           "defeat1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNo es el resultado que queríamos. Jornada {{matchday}} — la junta querrá ver mejoras. Revise qué salió mal y prepárese para el próximo desafío.",
           "draw": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn punto ganado en la Jornada {{matchday}}. Dependiendo de otros resultados, podría ser valioso. El equipo luchó pero no pudo encontrar un gol ganador."

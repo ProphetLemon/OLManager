@@ -2598,9 +2598,9 @@
           "draw": "Match Nul : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}"
         },
         "body": {
-          "victory0": "Coup de sifflet final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn excellent résultat ! L'équipe a réalisé une belle performance. Journée {{matchday}} — gardez cet élan.",
-          "victory1": "Fin du match : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nTrois points dans la poche ! Les gars ont montré un grand caractère. Journée {{matchday}} accomplie.",
-          "defeat0": "Coup de sifflet final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn résultat décevant. Il faudra se regrouper et travailler sur les points faibles. Journée {{matchday}} — il est encore temps de redresser la barre.",
+          "victory0": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn excellent résultat ! L'équipe a réalisé une belle performance. Journée {{matchday}} — gardez cet élan.",
+          "victory1": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nSuperbe série ! L'équipe a fait preuve d'un vrai sang-froid. Journée {{matchday}} accomplie.",
+          "defeat0": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn résultat décevant. Il faudra se regrouper et travailler sur les points faibles. Journée {{matchday}} — il est encore temps de redresser la barre.",
           "defeat1": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nPas le résultat espéré. Journée {{matchday}} — le conseil voudra voir des améliorations. Analysez ce qui n'a pas fonctionné et préparez-vous pour le prochain défi.",
           "draw": "Coup de sifflet final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn point pris à la Journée {{matchday}}. Selon les autres résultats, cela pourrait être précieux. L'équipe s'est battue mais n'a pas trouvé le but de la victoire."
         },

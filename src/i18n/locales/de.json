@@ -2598,9 +2598,9 @@
           "draw": "Unentschieden: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}"
         },
         "body": {
-          "victory0": "Abpfiff: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nEin hervorragendes Ergebnis! Die Mannschaft hat eine starke Leistung gezeigt. Spieltag {{matchday}} — behalten Sie diesen Schwung bei.",
-          "victory1": "Schlusspfiff: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nDrei Punkte eingefahren! Die Jungs haben großen Charakter gezeigt. Spieltag {{matchday}} abgeschlossen.",
-          "defeat0": "Abpfiff: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nEin enttäuschendes Ergebnis. Wir müssen uns neu formieren und an den Schwachstellen arbeiten. Spieltag {{matchday}} — es ist noch Zeit, das Ruder herumzureißen.",
+          "victory0": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nEin hervorragendes Ergebnis! Die Mannschaft hat eine starke Leistung gezeigt. Spieltag {{matchday}} — behalten Sie diesen Schwung bei.",
+          "victory1": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nTolle Serie! Das Team hat dort echte Nervenstärke gezeigt. Spieltag {{matchday}} abgeschlossen.",
+          "defeat0": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nEin enttäuschendes Ergebnis. Wir müssen uns neu formieren und an den Schwachstellen arbeiten. Spieltag {{matchday}} — es ist noch Zeit, das Ruder herumzureißen.",
           "defeat1": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNicht das gewünschte Ergebnis. Spieltag {{matchday}} — der Vorstand wird Verbesserungen sehen wollen. Analysieren Sie, was schiefgelaufen ist, und bereiten Sie sich auf die nächste Herausforderung vor.",
           "draw": "Abpfiff: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nEin Punkt am Spieltag {{matchday}}. Je nach anderen Ergebnissen könnte das wertvoll sein. Die Mannschaft hat gekämpft, konnte aber keinen Siegtreffer erzielen."
         },
