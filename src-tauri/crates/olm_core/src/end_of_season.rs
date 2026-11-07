@@ -74,6 +74,49 @@ pub fn is_league_complete(league: &League) -> bool {
     regular_complete && playoffs_complete
 }
 
+/// Final position of a team once playoffs are taken into account.
+///
+/// The playoff champion is 1st and the losing finalist 2nd. Any other playoff
+/// participant is placed no higher than 3rd, since it lost to a finalist. Teams
+/// outside the playoffs keep their regular-season rank. Without a decided
+/// playoff final the regular-season rank is returned unchanged.
+pub fn effective_final_position(league: &League, team_id: &str) -> u32 {
+    let regular_position = league
+        .sorted_standings()
+        .iter()
+        .position(|s| s.team_id == team_id)
+        .map(|i| (i + 1) as u32)
+        .unwrap_or(99);
+
+    let mut playoff_fixtures = league
+        .fixtures
+        .iter()
+        .filter(|fixture| fixture.match_type == MatchType::Playoffs);
+    let final_fixture = playoff_fixtures
+        .clone()
+        .max_by_key(|fixture| fixture.matchday);
+    let participated = playoff_fixtures
+        .any(|fixture| fixture.home_team_id == team_id || fixture.away_team_id == team_id);
+
+    let finalists = final_fixture.and_then(|fixture| {
+        let result = fixture.result.as_ref()?;
+        if result.home_wins > result.away_wins {
+            Some((&fixture.home_team_id, &fixture.away_team_id))
+        } else if result.away_wins > result.home_wins {
+            Some((&fixture.away_team_id, &fixture.home_team_id))
+        } else {
+            None
+        }
+    });
+
+    match finalists {
+        Some((champion, _)) if champion == team_id => 1,
+        Some((_, runner_up)) if runner_up == team_id => 2,
+        Some(_) if participated => regular_position.max(3),
+        _ => regular_position,
+    }
+}
+
 /// Check if the season is complete (all fixtures played).
 pub fn is_season_complete(game: &Game) -> bool {
     game.active_league().is_some_and(is_league_complete)
@@ -294,6 +337,7 @@ fn process_end_of_season_inner(
         .position(|s| s.team_id == user_team_id)
         .map(|i| i + 1)
         .unwrap_or(0) as u32;
+    let board_position = effective_final_position(league, &user_team_id);
     let user_standing = final_standings
         .iter()
         .find(|s| s.team_id == user_team_id)
@@ -521,6 +565,7 @@ fn process_end_of_season_inner(
 
     // 8. Send end-of-season messages
     let pos_suffix = position_suffix(user_position);
+    let board_pos_suffix = position_suffix(board_position);
 
     let user_team_name = game
         .teams
@@ -529,32 +574,32 @@ fn process_end_of_season_inner(
         .map(|t| t.name.clone())
         .unwrap_or_default();
 
-    let board_msg = if user_position == 1 {
+    let board_msg = if board_position == 1 {
         format!(
             "Congratulations! {} are league champions! What an incredible achievement.\n\n\
             The board is absolutely delighted with your performance. You finished on {} points.\n\n\
             We look forward to defending the title next season.",
             user_team_name, summary.user_points
         )
-    } else if user_position <= 4 {
+    } else if board_position <= 4 {
         format!(
             "A solid season for {}. You finished in {}{} place with {} points.\n\n\
             The board is satisfied with the campaign. Let's push for the title next season.",
-            user_team_name, user_position, pos_suffix, summary.user_points
+            user_team_name, board_position, board_pos_suffix, summary.user_points
         )
-    } else if user_position <= summary.total_teams / 2 {
+    } else if board_position <= summary.total_teams / 2 {
         format!(
             "{} finished the season in {}{} place with {} points.\n\n\
             A mid-table finish. The board expects improvement next season. \
             We need to be more competitive.",
-            user_team_name, user_position, pos_suffix, summary.user_points
+            user_team_name, board_position, board_pos_suffix, summary.user_points
         )
     } else {
         format!(
             "A disappointing season for {}. Finishing {}{} with only {} points is below expectations.\n\n\
             The board is concerned. Significant improvement will be needed next season, \
             or your position may come under review.",
-            user_team_name, user_position, pos_suffix, summary.user_points
+            user_team_name, board_position, board_pos_suffix, summary.user_points
         )
     };
 
@@ -653,30 +698,30 @@ fn process_end_of_season_inner(
 
     let msg_id = format!("season_end_{}", season);
     if !existing_ids.contains(&msg_id) {
-        let (body_key, mut i18n_params) = if user_position == 1 {
+        let (body_key, mut i18n_params) = if board_position == 1 {
             let mut p = std::collections::HashMap::new();
             p.insert("team".to_string(), user_team_name.clone());
             p.insert("points".to_string(), summary.user_points.to_string());
             ("be.msg.seasonReview.body.champion", p)
-        } else if user_position <= 4 {
+        } else if board_position <= 4 {
             let mut p = std::collections::HashMap::new();
             p.insert("team".to_string(), user_team_name.clone());
-            p.insert("position".to_string(), user_position.to_string());
-            p.insert("suffix".to_string(), pos_suffix.to_string());
+            p.insert("position".to_string(), board_position.to_string());
+            p.insert("suffix".to_string(), board_pos_suffix.to_string());
             p.insert("points".to_string(), summary.user_points.to_string());
             ("be.msg.seasonReview.body.topFour", p)
-        } else if user_position <= summary.total_teams / 2 {
+        } else if board_position <= summary.total_teams / 2 {
             let mut p = std::collections::HashMap::new();
             p.insert("team".to_string(), user_team_name.clone());
-            p.insert("position".to_string(), user_position.to_string());
-            p.insert("suffix".to_string(), pos_suffix.to_string());
+            p.insert("position".to_string(), board_position.to_string());
+            p.insert("suffix".to_string(), board_pos_suffix.to_string());
             p.insert("points".to_string(), summary.user_points.to_string());
             ("be.msg.seasonReview.body.midTable", p)
         } else {
             let mut p = std::collections::HashMap::new();
             p.insert("team".to_string(), user_team_name.clone());
-            p.insert("position".to_string(), user_position.to_string());
-            p.insert("suffix".to_string(), pos_suffix.to_string());
+            p.insert("position".to_string(), board_position.to_string());
+            p.insert("suffix".to_string(), board_pos_suffix.to_string());
             p.insert("points".to_string(), summary.user_points.to_string());
             ("be.msg.seasonReview.body.lowerHalf", p)
         };
