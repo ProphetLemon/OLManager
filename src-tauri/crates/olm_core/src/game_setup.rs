@@ -659,23 +659,35 @@ pub fn academy_overview_message(
     academy_players: usize,
     date: &str,
 ) -> InboxMessage {
+    // The stored text is English; the UI translates it from the keys and params.
+    let count = academy_players.to_string();
+    let params = HashMap::from([
+        ("academy".to_string(), academy_team.name.clone()),
+        ("count".to_string(), count.clone()),
+    ]);
     InboxMessage::new(
         format!("academy-overview-{}", parent_team.id),
-        format!("Academia activa: {}", academy_team.name),
+        format!("Academy active: {}", academy_team.name),
         format!(
-            "Tu club ya cuenta con academia vinculada. {} tiene {} prospectos cargados y listos para seguimiento/promocion.",
-            academy_team.name, academy_players
+            "Your club now has a linked academy. {} has {} prospects loaded and ready for scouting and promotion.",
+            academy_team.name, count
         ),
-        "Director Deportivo".to_string(),
+        "Sporting Director".to_string(),
         date.to_string(),
     )
     .with_category(MessageCategory::Welcome)
     .with_priority(MessagePriority::Normal)
-    .with_sender_role("Director Deportivo")
+    .with_sender_role("Sporting Director")
     .with_context(MessageContext {
         team_id: Some(parent_team.id.clone()),
         ..Default::default()
     })
+    .with_i18n(
+        "be.msg.academyOverview.subject",
+        "be.msg.academyOverview.body",
+        params,
+    )
+    .with_sender_i18n("be.sender.sportingDirector", "be.role.sportingDirector")
 }
 
 // ---------------------------------------------------------------------------
@@ -920,6 +932,40 @@ mod tests {
         );
         player.contract_end = contract_end.map(str::to_string);
         player
+    }
+
+    fn team(id: &str, name: &str) -> crate::domain::team::Team {
+        crate::domain::team::Team::new(
+            id.to_string(),
+            name.to_string(),
+            "TST".to_string(),
+            "ES".to_string(),
+            "Madrid".to_string(),
+            "Arena".to_string(),
+            1_000,
+        )
+    }
+
+    #[test]
+    fn academy_overview_is_english_with_keys_instead_of_hardcoded_spanish() {
+        let msg = super::academy_overview_message(
+            &team("parent", "Parent"),
+            &team("acad", "Parent Academy"),
+            7,
+            "2025-06-01",
+        );
+        assert!(msg.subject.contains("Academy"), "{}", msg.subject);
+        assert!(!msg.body.contains("Tu club"), "{}", msg.body);
+        assert_eq!(msg.sender_role, "Sporting Director");
+        assert!(msg.subject_key.is_some());
+        assert!(msg.body_key.is_some());
+        assert_eq!(
+            msg.i18n_params.get("academy").map(String::as_str),
+            Some("Parent Academy")
+        );
+        assert_eq!(msg.i18n_params.get("count").map(String::as_str), Some("7"));
+        assert!(msg.sender_key.is_some());
+        assert!(msg.sender_role_key.is_some());
     }
 
     #[test]

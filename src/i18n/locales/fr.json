@@ -2297,7 +2297,17 @@
       "leaguePulse": "The Shotcaller"
     },
     "msg": {
+      "academyOverview": {
+        "subject": "Académie active : {{academy}}",
+        "body": "Votre club dispose désormais d'une académie rattachée. {{academy}} compte {{count}} jeunes espoirs prêts à être suivis et promus."
+      },
       "welcome": {
+        "templates": {
+          "welcome": {
+            "subject": "Bienvenue à {{team}} !",
+            "body": "Le conseil d'administration vous souhaite la bienvenue en tant que nouvel entraîneur principal de {{team}}.\n\nNous avons pleinement confiance en votre capacité à mener cette équipe vers le succès.\n\nPassez en revue votre effectif, fixez vos priorités et préparez-vous aux défis à venir.\n\nBonne chance, coach !"
+          }
+        },
         "subject0": "Bienvenue à {{team}}",
         "subject1": "Nouvelle Ère à {{team}}",
         "subject2": "{{team}} Attend Votre Leadership",
@@ -2308,6 +2318,16 @@
         "actionThank": "Remercier le Conseil"
       },
       "schedule": {
+        "templates": {
+          "season_schedule": {
+            "subject": "Calendrier de la saison {{league}} publié",
+            "body": "Le calendrier de la prochaine saison de {{league}} a été publié.\n\nLa saison commence le {{start}}. Assurez-vous que votre effectif est prêt.\n\nNous allons affronter une concurrence rude cette année : préparez-vous en conséquence."
+          },
+          "schedule_2": {
+            "subject": "Saison {{league}} confirmée",
+            "body": "Le calendrier de la prochaine saison de {{league}} a été confirmé. L'action commence le {{start}}.\n\nÉtudiez attentivement les premiers matchs : un bon départ peut donner le ton de toute la campagne. Assurez-vous que vos joueurs clés sont en forme et prêts.\n\nBonne chance pour cette saison !"
+          }
+        },
         "subject": "Calendrier de la Saison Publié",
         "body0": "Le calendrier de la {{league}} a été publié. La saison commence le {{start}}.\n\nConsultez la liste des matchs et assurez-vous que votre effectif est prêt pour les défis à venir. La préparation de pré-saison sera cruciale.",
         "body1": "Liste des matchs confirmée ! La saison de la {{league}} débute le {{start}}.\n\nÉtudiez attentivement les premiers matchs — un bon départ peut donner le ton de toute la campagne. Assurez-vous que vos joueurs clés sont en forme.",
@@ -2336,6 +2356,12 @@
         "actionStandings": "Voir le Classement"
       },
       "staffAdvice": {
+        "templates": {
+          "staff_advice": {
+            "subject": "Postes vacants au sein du staff de {{team}}",
+            "body": "Coach, j'ai examiné la situation du staff à {{team}} et je voulais attirer votre attention sur quelques points :\n\n• Un bon entraîneur améliorera nettement l'efficacité des entraînements : vos joueurs progresseront plus vite.\n• Un kinésithérapeute qualifié aide à garder les joueurs en bonne santé et accélère la récupération entre les matchs.\n• Nos recruteurs peuvent aider à repérer des cibles de transfert et à analyser les adversaires.\n\nJe recommande vivement de pourvoir ces postes avant le début de la saison. Vous trouverez le personnel disponible dans la section Staff.\n\nJetez-y un œil dès que possible."
+          }
+        },
         "subject": "Rapport du Staff — Postes Vacants",
         "body": "Boss, j'ai examiné la situation du staff à {{team}} et je voulais signaler quelques points :\n\n• Un bon Entraîneur améliorera considérablement l'efficacité de l'entraînement — vos joueurs progresseront plus vite.\n• Un Kinésithérapeute qualifié garde les joueurs en forme et accélère la récupération entre les matchs.\n• Nos Recruteurs peuvent aider à identifier des cibles de transfert et évaluer les adversaires.\n\nJe recommande fortement de combler les postes vacants avant le début de la saison. Vous trouverez le staff disponible dans la section Staff.\n\nJetez-y un œil quand vous pourrez.",
         "actionView": "Voir le Staff"

@@ -2296,7 +2296,17 @@
       "leaguePulse": "League Pulse"
     },
     "msg": {
+      "academyOverview": {
+        "subject": "Academia ativa: {{academy}}",
+        "body": "O seu clube já tem uma academia associada. A {{academy}} tem {{count}} promessas prontas para observação e promoção."
+      },
       "welcome": {
+        "templates": {
+          "welcome": {
+            "subject": "Bem-vindo ao {{team}}!",
+            "body": "A direção dá-lhe as boas-vindas como novo treinador principal do {{team}}.\n\nTemos total confiança na sua capacidade de levar esta equipa ao sucesso.\n\nAnalise o seu plantel, defina as suas prioridades e prepare-se para os desafios que aí vêm.\n\nBoa sorte, treinador!"
+          }
+        },
         "subject0": "Bem-vindo ao {{team}}",
         "subject1": "Nova Era no {{team}}",
         "subject2": "{{team}} Aguarda a Sua Liderança",
@@ -2307,6 +2317,16 @@
         "actionThank": "Agradecer ao Conselho"
       },
       "schedule": {
+        "templates": {
+          "season_schedule": {
+            "subject": "Calendário da {{league}} publicado",
+            "body": "O calendário da próxima temporada da {{league}} foi publicado.\n\nA temporada começa a {{start}}. Garanta que o seu plantel está pronto.\n\nVamos enfrentar uma concorrência forte este ano — prepare-se em conformidade."
+          },
+          "schedule_2": {
+            "subject": "Temporada da {{league}} confirmada",
+            "body": "O calendário da próxima temporada da {{league}} foi confirmado. A ação começa a {{start}}.\n\nEstude os primeiros jogos com atenção — um bom arranque pode definir o tom de toda a campanha. Garanta que os seus jogadores-chave estão em forma e prontos.\n\nBoa sorte nesta temporada!"
+          }
+        },
         "subject": "Calendário da Época Publicado",
         "body0": "O calendário da {{league}} foi divulgado. A época começa a {{start}}.\n\nReveja a lista de jogos e certifique-se de que o seu plantel está pronto para os desafios que se aproximam. A preparação de pré-época será crucial.",
         "body1": "Lista de jogos confirmada! A época da {{league}} começa a {{start}}.\n\nEstude cuidadosamente os primeiros jogos — um bom início pode definir o tom de toda a campanha. Garanta que os seus jogadores-chave estejam em forma.",
@@ -2335,6 +2355,12 @@
         "actionStandings": "Ver Classificação"
       },
       "staffAdvice": {
+        "templates": {
+          "staff_advice": {
+            "subject": "Vagas na equipa técnica do {{team}}",
+            "body": "Treinador, analisei a situação do staff no {{team}} e queria chamar a atenção para alguns pontos:\n\n• Um bom treinador melhorará significativamente a eficácia do treino — os seus jogadores desenvolver-se-ão mais depressa.\n• Um fisioterapeuta qualificado ajuda a manter os jogadores saudáveis e acelera a recuperação entre jogos.\n• Os nossos olheiros podem ajudar a identificar alvos de transferência e a avaliar os adversários.\n\nRecomendo vivamente preencher estas vagas antes do início da temporada. Pode encontrar o pessoal disponível na secção de Staff.\n\nDê uma vista de olhos quando puder."
+          }
+        },
         "subject": "Relatório do Staff — Vagas de Treinadores",
         "body": "Mister, analisei a situação do staff no {{team}} e queria assinalar algumas coisas:\n\n• Um bom Treinador irá melhorar significativamente a eficácia do treino — os seus jogadores desenvolver-se-ão mais rapidamente.\n• Um Fisioterapeuta qualificado mantém os jogadores em boa forma e acelera a recuperação entre jogos.\n• Os nossos Observadores podem ajudar a identificar alvos de transferência e avaliar adversários.\n\nRecomendo vivamente que preencha as vagas antes do início da época. Pode encontrar staff disponível na secção de Staff.\n\nDê uma vista de olhos quando puder.",
         "actionView": "Ver Staff"

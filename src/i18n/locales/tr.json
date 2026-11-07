@@ -2297,7 +2297,17 @@
       "leaguePulse": "The Shotcaller"
     },
     "msg": {
+      "academyOverview": {
+        "subject": "Akademi aktif: {{academy}}",
+        "body": "Kulübünüzün artık bağlı bir akademisi var. {{academy}} akademisinde takip ve terfi için hazır {{count}} yetenek bulunuyor."
+      },
       "welcome": {
+        "templates": {
+          "welcome": {
+            "subject": "{{team}} takımına hoş geldiniz!",
+            "body": "Yönetim kurulu sizi {{team}} takımının yeni başantrenörü olarak memnuniyetle karşılıyor.\n\nBu takımı başarıya taşıma yeteneğinize tam güvenimiz var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve önümüzdeki zorluklara hazırlanın.\n\nBol şans, hocam!"
+          }
+        },
         "subject0": "{{team}} Takımına Hoş Geldiniz",
         "subject1": "{{team}}'de Yeni Bir Dönem",
         "subject2": "{{team}} Liderliğinizi Bekliyor",
@@ -2308,6 +2318,16 @@
         "actionThank": "Yönetime Teşekkür Et"
       },
       "schedule": {
+        "templates": {
+          "season_schedule": {
+            "subject": "{{league}} sezon fikstürü yayınlandı",
+            "body": "{{league}} liginin gelecek sezon fikstürü yayınlandı.\n\nSezon {{start}} tarihinde başlıyor. Kadronuzun hazır olduğundan emin olun.\n\nBu yıl zorlu bir rekabetle karşılaşacağız — buna göre hazırlanın."
+          },
+          "schedule_2": {
+            "subject": "{{league}} sezonu onaylandı",
+            "body": "{{league}} liginin gelecek sezon fikstürü onaylandı. Mücadele {{start}} tarihinde başlıyor.\n\nİlk maçları dikkatle inceleyin — güçlü bir başlangıç tüm sezonun temposunu belirleyebilir. Kilit oyuncularınızın maça hazır ve formda olduğundan emin olun.\n\nBu sezon bol şans!"
+          }
+        },
         "subject": "Sezon Fikstürü Açıklandı",
         "body0": "{{league}} fikstürü açıklandı. Sezon {{start}} tarihinde başlıyor.\n\nFikstürü inceleyin ve kadronuzun önündeki zorluklara hazır olduğundan emin olun. Sezon öncesi hazırlık çok önemli olacak.",
         "body1": "Fikstür onaylandı! {{league}} sezonu {{start}} tarihinde başlıyor.\n\nAçılış maçlarını dikkatlice inceleyin — güçlü bir başlangıç tüm mevsimin gidişatını belirleyebilir. Kilit oyuncularınızın maça hazır olduğundan emin olun.",
@@ -2336,6 +2356,12 @@
         "actionStandings": "Puan Durumuna Bak"
       },
       "staffAdvice": {
+        "templates": {
+          "staff_advice": {
+            "subject": "{{team}} takımında kadro boşlukları",
+            "body": "Hocam, {{team}} takımındaki ekip durumunu inceledim ve birkaç noktaya dikkat çekmek istedim:\n\n• İyi bir Antrenör antrenman verimliliğini belirgin şekilde artırır — oyuncularınız daha hızlı gelişir.\n• Nitelikli bir Fizyoterapist oyuncuları sağlıklı tutmaya yardımcı olur ve maçlar arası toparlanmayı hızlandırır.\n• Gözlemcilerimiz transfer hedeflerini belirlemeye ve rakipleri değerlendirmeye yardımcı olabilir.\n\nSezon başlamadan önce bu boşlukların doldurulmasını şiddetle tavsiye ederim. Müsait personeli Personel bölümünde bulabilirsiniz.\n\nMüsait olduğunuzda bir göz atın."
+          }
+        },
         "subject": "Personel Raporu — Koçluk Boşlukları",
         "body": "Koç, {{team}}'deki personel durumuna bir göz attım ve birkaç şeyi belirtmek istedim:\n\n• İyi bir Koç antrenman verimliliğini önemli ölçüde artırır — oyuncularınız daha hızlı gelişir.\n• Uzman bir Fizyoterapist oyuncuları dinç tutar ve maçlar arası toparlanmayı hızlandırır.\n• Gözlemcilerimiz transfer hedeflerini belirlemeye ve rakipleri analiz etmeye yardımcı olabilir.\n\nSezon başlamadan önce boşlukları doldurmanızı şiddetle tavsiye ederim. Uygun personeli Personel bölümünde bulabilirsiniz.\n\nFırsatınız olduğunda bir kontrol edin.",
         "actionView": "Personeli Gör"

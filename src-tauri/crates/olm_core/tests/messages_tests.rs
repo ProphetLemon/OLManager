@@ -44,7 +44,7 @@ fn season_schedule_message_fields() {
     let msg = messages::season_schedule_message("Premier League", "2025-08-10", "2025-06-01");
     assert_eq!(msg.id, "season_1");
     assert!(msg.body.contains("Premier League"));
-    assert!(msg.body.contains("2025-08-10"));
+    assert!(msg.body.contains("August 10, 2025"));
     assert_eq!(msg.sender_role, "Competition Secretary");
 }
 
@@ -336,4 +336,93 @@ fn transfer_message_has_unique_id() {
     let msg1 = messages::transfer_complete_message("A", 1000, "2025-08-01");
     let msg2 = messages::transfer_complete_message("B", 2000, "2025-08-01");
     assert_ne!(msg1.id, msg2.id, "Transfer messages should have unique IDs");
+}
+
+// ---------------------------------------------------------------------------
+// first-week messages translate at render time (keys + params contract)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn season_schedule_message_sends_the_start_date_as_iso_param() {
+    let msg = messages::season_schedule_message("Premier League", "2025-08-10", "2025-06-01");
+    assert_eq!(
+        msg.i18n_params.get("start").map(String::as_str),
+        Some("2025-08-10")
+    );
+    assert_eq!(
+        msg.i18n_params.get("league").map(String::as_str),
+        Some("Premier League")
+    );
+    assert!(msg.subject_key.is_some());
+    assert!(msg.body_key.is_some());
+}
+
+#[test]
+fn staff_advice_message_attaches_keys_and_team_param() {
+    let msg = messages::staff_advice_message("Test FC", "team1", "2025-06-01");
+    assert!(msg.subject_key.is_some());
+    assert!(msg.body_key.is_some());
+    assert_eq!(
+        msg.i18n_params.get("team").map(String::as_str),
+        Some("Test FC")
+    );
+}
+
+#[test]
+fn welcome_message_attaches_team_param() {
+    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "es");
+    assert_eq!(
+        msg.i18n_params.get("team").map(String::as_str),
+        Some("Test FC")
+    );
+}
+
+fn write_template(dir: &std::path::Path, name: &str, id: &str, trigger: &str) {
+    let json = format!(
+        r#"{{"id":"{id}","trigger":"{trigger}","sender":"board","category":"LeagueInfo",
+        "subject":"Subject {{team}}","body":"Body {{team}}",
+        "translations":{{"es":{{"subject":"Asunto {{team}}","body":"Cuerpo {{team}}"}}}}}}"#
+    );
+    std::fs::write(dir.join(name), json).unwrap();
+}
+
+#[test]
+fn keyed_template_message_derives_keys_from_the_template_id() {
+    let dir = tempfile::tempdir().unwrap();
+    write_template(dir.path(), "a.json", "schedule_2", "season_schedule");
+    let store = messages::template_store::TemplateStore::load(dir.path()).unwrap();
+    let msg = store
+        .build_message_keyed(
+            "season_schedule",
+            "season_1",
+            "2025-06-01",
+            "es",
+            vec![("team", "Test FC")],
+            "be.msg.schedule.templates",
+        )
+        .unwrap();
+    assert_eq!(
+        msg.subject_key.as_deref(),
+        Some("be.msg.schedule.templates.schedule_2.subject")
+    );
+    assert_eq!(
+        msg.body_key.as_deref(),
+        Some("be.msg.schedule.templates.schedule_2.body")
+    );
+    assert_eq!(msg.subject, "Asunto Test FC");
+    assert_eq!(
+        msg.i18n_params.get("team").map(String::as_str),
+        Some("Test FC")
+    );
+}
+
+#[test]
+fn plain_template_message_still_carries_no_keys() {
+    let dir = tempfile::tempdir().unwrap();
+    write_template(dir.path(), "a.json", "x", "some_trigger");
+    let store = messages::template_store::TemplateStore::load(dir.path()).unwrap();
+    let msg = store
+        .build_message("some_trigger", "m1", "2025-06-01", "en", vec![])
+        .unwrap();
+    assert!(msg.subject_key.is_none());
 }

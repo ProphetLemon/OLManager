@@ -2453,7 +2453,17 @@
       "leaguePulse": "The Shotcaller"
     },
     "msg": {
+      "academyOverview": {
+        "subject": "Academy active: {{academy}}",
+        "body": "Your club now has a linked academy. {{academy}} has {{count}} prospects loaded and ready for scouting and promotion."
+      },
       "welcome": {
+        "templates": {
+          "welcome": {
+            "subject": "Welcome to {{team}}!",
+            "body": "The board of directors welcomes you as the new head coach of {{team}}.\n\nWe have full confidence in your ability to lead this team to success.\n\nReview your squad, set your priorities, and prepare for the challenges ahead.\n\nGood luck, coach!"
+          }
+        },
         "subject0": "Welcome to {{team}}",
         "subject1": "New Era at {{team}}",
         "subject2": "{{team}} Awaits Your Leadership",
@@ -2464,6 +2474,16 @@
         "actionThank": "Thank the Board"
       },
       "schedule": {
+        "templates": {
+          "season_schedule": {
+            "subject": "{{league}} season schedule released",
+            "body": "The schedule for the upcoming {{league}} season has been released.\n\nThe season begins on {{start}}. Make sure your squad is ready.\n\nWe'll be facing tough competition this year — prepare accordingly."
+          },
+          "schedule_2": {
+            "subject": "{{league}} season confirmed",
+            "body": "The fixture list for the upcoming {{league}} season has been confirmed. The action begins on {{start}}.\n\nStudy the opening fixtures carefully — a strong start can set the tone for the whole campaign. Make sure your key players are in top form and ready to go.\n\nGood luck this season!"
+          }
+        },
         "subject": "Season Schedule Released",
         "body0": "The {{league}} schedule has been released. The season kicks off on {{start}}.\n\nReview the match list and ensure your squad is ready for the challenges ahead. Pre-season preparation will be crucial.",
         "body1": "Match list confirmed! The {{league}} season begins on {{start}}.\n\nStudy the opening matches carefully — a strong start can set the tone for the whole campaign. Make sure your key players are in top form.",
@@ -2492,6 +2512,12 @@
         "actionStandings": "View Standings"
       },
       "staffAdvice": {
+        "templates": {
+          "staff_advice": {
+            "subject": "Staff vacancies at {{team}}",
+            "body": "Coach, I've reviewed the staff situation at {{team}} and wanted to point out a few things:\n\n• A good Coach will significantly improve training effectiveness — your players will develop faster.\n• A qualified Physio helps keep players healthy and speeds up recovery between matches.\n• Our Scouts can help identify transfer targets and assess opponents.\n\nI strongly recommend filling these vacancies before the season starts. You can find available staff in the Staff section.\n\nTake a look when you can."
+          }
+        },
         "subject": "Staff Report — Coaching Vacancies",
         "body": "Boss, I've had a look at the staff situation at {{team}} and wanted to flag a few things:\n\n• A good Coach will significantly improve training effectiveness — your players will develop faster.\n• A qualified Physio keeps players fresh and speeds up recovery between matches.\n• Our Scouts can help identify transfer targets and assess opponents.\n\nI'd strongly recommend filling any vacancies before the season starts. You can find available staff in the Staff section.\n\nCheck it out when you get a chance.",
         "actionView": "View Staff"

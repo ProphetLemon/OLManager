@@ -94,12 +94,13 @@ fn view_offer_action() -> MessageAction {
 /// Message template system — generates rich messages with variations.
 pub fn welcome_message(team_name: &str, team_id: &str, date: &str, lang: &str) -> InboxMessage {
     // Use template store (with inline translations) if available
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
+    if let Some(msg) = crate::messages::template_store::template_store().build_message_keyed(
         "select_team",
         &format!("welcome_{}", team_id),
         date,
         lang,
         vec![("team", team_name), ("days", "0")],
+        "be.msg.welcome.templates",
     ) {
         return msg;
     }
@@ -178,14 +179,34 @@ pub fn welcome_message(team_name: &str, team_id: &str, date: &str, lang: &str) -
     .with_sender_i18n("be.sender.boardOfDirectors", "be.role.chairman")
 }
 
-pub fn season_schedule_message(league_name: &str, season_start: &str, date: &str) -> InboxMessage {
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
+/// Format an ISO date (`YYYY-MM-DD`) as the English text stored with a message,
+/// e.g. `August 10, 2025`. The UI re-formats the ISO `start` param for the
+/// active language, so this text is only the fallback. Unparseable input is
+/// returned unchanged.
+fn english_date(iso: &str) -> String {
+    chrono::NaiveDate::parse_from_str(iso, "%Y-%m-%d")
+        .map(|d| d.format("%B %-d, %Y").to_string())
+        .unwrap_or_else(|_| iso.to_string())
+}
+
+/// `season_start_iso` is an ISO date (`YYYY-MM-DD`); it travels in `i18n_params`
+/// as ISO so the UI can format it for the active language.
+pub fn season_schedule_message(
+    league_name: &str,
+    season_start_iso: &str,
+    date: &str,
+) -> InboxMessage {
+    let season_start = english_date(season_start_iso);
+    if let Some(mut msg) = crate::messages::template_store::template_store().build_message_keyed(
         "season_schedule",
         "season_schedule",
         date,
         "en",
-        vec![("league", league_name), ("start", season_start)],
+        vec![("league", league_name), ("start", &season_start)],
+        "be.msg.schedule.templates",
     ) {
+        msg.i18n_params
+            .insert("start".to_string(), season_start_iso.to_string());
         return msg;
     }
     let mut rng = rand::rng();
@@ -227,18 +248,19 @@ pub fn season_schedule_message(league_name: &str, season_start: &str, date: &str
     .with_i18n(
         "be.msg.schedule.subject",
         &format!("be.msg.schedule.body{}", idx),
-        params(&[("league", league_name), ("start", season_start)]),
+        params(&[("league", league_name), ("start", season_start_iso)]),
     )
     .with_sender_i18n("be.sender.leagueOffice", "be.role.competitionSecretary")
 }
 
 pub fn staff_advice_message(team_name: &str, team_id: &str, date: &str) -> InboxMessage {
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
+    if let Some(msg) = crate::messages::template_store::template_store().build_message_keyed(
         "staff_advice",
         &format!("staff_{team_id}"),
         date,
         "en",
         vec![("team", team_name)],
+        "be.msg.staffAdvice.templates",
     ) {
         return msg;
     }

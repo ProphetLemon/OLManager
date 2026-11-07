@@ -771,26 +771,22 @@ pub async fn select_team(
         }
     }
 
-    // For schedule message, compute season start from user competition manifest or fallback
+    // For schedule message, compute the season start (ISO) from the user competition manifest or fallback
     let season_start_str = if let Some(cid) = user_cid {
         if let Ok(m) = crate::commands::competitions::load_competition_manifest(&app_handle, cid) {
             if let Some(split) = m.schedule.splits.first() {
                 format!(
-                    "{} {}, {}",
-                    chrono::Month::try_from(split.season_start.month as u8)
-                        .map(|mon| mon.name())
-                        .unwrap_or("January"),
-                    split.season_start.day,
-                    season_year
+                    "{:04}-{:02}-{:02}",
+                    season_year, split.season_start.month, split.season_start.day
                 )
             } else {
-                format!("January 18, {}", season_year)
+                format!("{season_year:04}-01-18")
             }
         } else {
-            format!("January 18, {}", season_year)
+            format!("{season_year:04}-01-18")
         }
     } else {
-        format!("January 18, {}", season_year)
+        format!("{season_year:04}-01-18")
     };
 
     let season_msg = olm_core::messages::season_schedule_message(

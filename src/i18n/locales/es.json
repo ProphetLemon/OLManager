@@ -2442,7 +2442,17 @@
       "leaguePulse": "The Shotcaller"
     },
     "msg": {
+      "academyOverview": {
+        "subject": "Academia activa: {{academy}}",
+        "body": "Tu club ya cuenta con academia vinculada. {{academy}} tiene {{count}} prospectos cargados y listos para seguimiento y promoción."
+      },
       "welcome": {
+        "templates": {
+          "welcome": {
+            "subject": "¡Bienvenido a {{team}}!",
+            "body": "El consejo directivo te da la bienvenida como nuevo entrenador de {{team}}.\n\nTenemos plena confianza en tu capacidad para llevar a este equipo al éxito.\n\nRevisa tu plantilla, establece tus prioridades y prepárate para los desafíos que vienen.\n\n¡Buena suerte, entrenador!"
+          }
+        },
         "subject0": "Bienvenido a {{team}}",
         "subject1": "Nueva Era en {{team}}",
         "subject2": "{{team}} Espera Tu Liderazgo",
@@ -2453,6 +2463,16 @@
         "actionThank": "Agradecer a la Junta"
       },
       "schedule": {
+        "templates": {
+          "season_schedule": {
+            "subject": "Calendario de {{league}} publicado",
+            "body": "El calendario de la próxima temporada de {{league}} ha sido publicado.\n\nLa temporada comienza el {{start}}. Asegúrate de que tu plantilla esté lista.\n\nNos enfrentaremos a una competencia dura este año: prepárate en consecuencia."
+          },
+          "schedule_2": {
+            "subject": "Temporada de {{league}} confirmada",
+            "body": "El calendario de la próxima temporada de {{league}} ha sido confirmado. La acción comienza el {{start}}.\n\nEstudia los primeros partidos con atención: un buen arranque puede marcar el tono de toda la campaña. Asegúrate de que tus jugadores clave estén en forma.\n\n¡Buena suerte esta temporada!"
+          }
+        },
         "subject": "Calendario de Temporada Publicado",
         "body0": "El calendario de la {{league}} ha sido publicado. La temporada comienza el {{start}}.\n\nRevise la lista de partidos y asegúrese de que su plantilla esté lista para los desafíos que se avecinan. La preparación pretemporada será crucial.",
         "body1": "¡Lista de partidos confirmada! La temporada de la {{league}} comienza el {{start}}.\n\nEstudie cuidadosamente los primeros partidos — un buen comienzo puede marcar el tono de toda la campaña. Asegúrese de que sus jugadores clave estén en forma.",
@@ -2481,6 +2501,12 @@
         "actionStandings": "Ver Clasificación"
       },
       "staffAdvice": {
+        "templates": {
+          "staff_advice": {
+            "subject": "Vacantes de personal en {{team}}",
+            "body": "Jefe, he revisado la situación del personal en {{team}} y quería señalar algunas cosas:\n\n• Un buen Entrenador mejorará significativamente la efectividad del entrenamiento: tus jugadores se desarrollarán más rápido.\n• Un Fisioterapeuta cualificado ayuda a mantener sanos a los jugadores y acelera la recuperación entre partidos.\n• Nuestros Ojeadores pueden ayudar a identificar objetivos de fichaje y evaluar rivales.\n\nRecomiendo encarecidamente cubrir las vacantes antes de que comience la temporada. Puedes encontrar personal disponible en la sección de Personal.\n\nÉchale un vistazo cuando puedas."
+          }
+        },
         "subject": "Informe del Personal — Vacantes de Entrenadores",
         "body": "Jefe, he revisado la situación del personal en {{team}} y quería señalar algunas cosas:\n\n• Un buen Entrenador mejorará significativamente la efectividad del entrenamiento — sus jugadores se desarrollarán más rápido.\n• Un Fisioterapeuta cualificado mantiene a los jugadores en plena forma y acelera la recuperación entre partidos.\n• Nuestros Ojeadores pueden ayudar a identificar objetivos de fichaje y evaluar rivales.\n\nRecomiendo encarecidamente cubrir las vacantes antes de que comience la temporada. Puede encontrar personal disponible en la sección de Personal.\n\nÉchele un vistazo cuando pueda.",
         "actionView": "Ver Personal"

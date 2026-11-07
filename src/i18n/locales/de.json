@@ -2297,7 +2297,17 @@
       "leaguePulse": "League Pulse"
     },
     "msg": {
+      "academyOverview": {
+        "subject": "Akademie aktiv: {{academy}}",
+        "body": "Ihr Verein verfügt jetzt über eine angeschlossene Akademie. {{academy}} hat {{count}} Talente geladen, die bereit für Beobachtung und Beförderung sind."
+      },
       "welcome": {
+        "templates": {
+          "welcome": {
+            "subject": "Willkommen bei {{team}}!",
+            "body": "Der Vorstand heißt Sie als neuen Cheftrainer von {{team}} willkommen.\n\nWir vertrauen auf Ihre Fähigkeit, dieses Team zum Erfolg zu führen.\n\nPrüfen Sie Ihren Kader, setzen Sie Ihre Prioritäten und bereiten Sie sich auf die kommenden Herausforderungen vor.\n\nViel Erfolg, Trainer!"
+          }
+        },
         "subject0": "Willkommen bei {{team}}",
         "subject1": "Neue Ära bei {{team}}",
         "subject2": "{{team}} Erwartet Ihre Führung",
@@ -2308,6 +2318,16 @@
         "actionThank": "Dem Vorstand danken"
       },
       "schedule": {
+        "templates": {
+          "season_schedule": {
+            "subject": "Spielplan der {{league}}-Saison veröffentlicht",
+            "body": "Der Spielplan für die kommende Saison der {{league}} wurde veröffentlicht.\n\nDie Saison beginnt am {{start}}. Stellen Sie sicher, dass Ihr Kader bereit ist.\n\nWir treffen dieses Jahr auf harte Konkurrenz – bereiten Sie sich entsprechend vor."
+          },
+          "schedule_2": {
+            "subject": "{{league}}-Saison bestätigt",
+            "body": "Der Spielplan für die kommende Saison der {{league}} wurde bestätigt. Der Auftakt ist am {{start}}.\n\nStudieren Sie die ersten Partien sorgfältig – ein starker Start kann den Ton für die ganze Saison setzen. Achten Sie darauf, dass Ihre Schlüsselspieler fit und einsatzbereit sind.\n\nViel Erfolg in dieser Saison!"
+          }
+        },
         "subject": "Saisonspielplan veröffentlicht",
         "body0": "Der Spielplan der {{league}} wurde veröffentlicht. Die Saison beginnt am {{start}}.\n\nÜberprüfen Sie die Spielliste und stellen Sie sicher, dass Ihr Kader für die kommenden Herausforderungen bereit ist. Die Vorbereitung wird entscheidend sein.",
         "body1": "Spielplan bestätigt! Die {{league}}-Saison beginnt am {{start}}.\n\nStudieren Sie die ersten Spiele sorgfältig — ein guter Start kann den Ton für die gesamte Kampagne setzen. Stellen Sie sicher, dass Ihre Schlüsselspieler fit sind.",
@@ -2336,6 +2356,12 @@
         "actionStandings": "Tabelle ansehen"
       },
       "staffAdvice": {
+        "templates": {
+          "staff_advice": {
+            "subject": "Offene Stellen im Stab von {{team}}",
+            "body": "Trainer, ich habe mir die Personalsituation bei {{team}} angesehen und möchte auf einige Punkte hinweisen:\n\n• Ein guter Trainer verbessert die Wirksamkeit des Trainings deutlich – Ihre Spieler entwickeln sich schneller.\n• Ein qualifizierter Physiotherapeut hilft, Spieler gesund zu halten, und beschleunigt die Erholung zwischen den Spielen.\n• Unsere Scouts helfen dabei, Transferziele zu finden und Gegner zu analysieren.\n\nIch empfehle dringend, diese Stellen vor Saisonbeginn zu besetzen. Verfügbares Personal finden Sie im Bereich Personal.\n\nSchauen Sie bei Gelegenheit vorbei."
+          }
+        },
         "subject": "Personalbericht — Offene Trainerstellen",
         "body": "Chef, ich habe mir die Personalsituation bei {{team}} angesehen und wollte einige Dinge ansprechen:\n\n• Ein guter Trainer wird die Trainingseffektivität erheblich verbessern — Ihre Spieler werden sich schneller entwickeln.\n• Ein qualifizierter Physiotherapeut hält die Spieler frisch und beschleunigt die Erholung zwischen den Spielen.\n• Unsere Scouts können helfen, Transferziele zu identifizieren und Gegner zu bewerten.\n\nIch empfehle dringend, offene Stellen vor Saisonbeginn zu besetzen. Verfügbares Personal finden Sie im Personalbereich.\n\nSchauen Sie bei Gelegenheit vorbei.",
         "actionView": "Personal ansehen"
