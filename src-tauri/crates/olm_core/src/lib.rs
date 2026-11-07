@@ -52,4 +52,5 @@ pub mod time_blockers;
 pub mod training;
 pub mod transfers;
 pub mod turn;
+pub mod world_catalog;
 pub mod world_overlay;

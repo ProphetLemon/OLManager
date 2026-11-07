@@ -1,0 +1,11 @@
+{
+  "corrections": [
+    {
+      "id": "player-ac9f33f8",
+      "field": "full_name",
+      "from": "Lee Sang-hyeok",
+      "to": "Mun Hyeon-jun",
+      "evidence": "Leaguepedia T1 team members lists Oner (Jungler) as Mun Hyeon-jun; Lee Sang-hyeok is Faker (player-1ec551c6)."
+    }
+  ]
+}

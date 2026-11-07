@@ -63,6 +63,11 @@ competition's players moved or retired unless it has a reviewed exception.
 
 - Coverage is every competition the game loads players for (`legacy` is false, players shard exists), minus the stale
   duplicates `lck-cl` and `prime_league` (copies of `lckcl`/`prm` with other team ids).
+- The loaded world matches what the game assembles: duplicate player ids keep the live competition's record, players on
+  teams that do not exist are free agents, and the reviewed field fixes in `assets/world/catalog-corrections.json`
+  (`{"corrections": [{id, field, from, to, evidence}]}`, fields `full_name`/`match_name`/`nationality`) are applied. An entry
+  with an unknown id or a `from` that no longer matches is skipped, never an error. The game applies the same file in
+  `olm_core::world_catalog`; add an entry only with evidence (e.g. a Leaguepedia page in the offline cache).
 - Team ids are the in-game ids (`<competition>-<shard id>`, as `assemble_world_from_modular_data` builds them).
 - Only roles `Top Laner ... Support` and `Sub/*` count as the roster. `Trn/*` (trainee) and `IA/*` (inactive) entries only
   mark a person as seen. A person absent from every roster is looked up: retired (page says so) -> `retire`; "previously" or a

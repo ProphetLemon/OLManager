@@ -7,6 +7,42 @@ import path from "node:path";
 /** Stale duplicates of a live competition that the game still loads (same people, other team ids). */
 export const STALE_DUPLICATE_COMPETITIONS = Object.freeze({ "lck-cl": "lckcl", prime_league: "prm" });
 
+/** Reviewed field fixes shared with the game (src-tauri/crates/olm_core/src/world_catalog.rs). */
+export const CATALOG_CORRECTIONS_FILE = path.resolve(import.meta.dirname, "../../../assets/world/catalog-corrections.json");
+const CORRECTABLE_FIELDS = new Set(["full_name", "match_name", "nationality"]);
+
+/** Read the corrections document; a missing or malformed file means no corrections. */
+export function readCatalogCorrections(file = CATALOG_CORRECTIONS_FILE) {
+  try {
+    const json = JSON.parse(fs.readFileSync(file, "utf8"));
+    return Array.isArray(json?.corrections) ? json.corrections : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Apply corrections to normalized players in place, like `apply_catalog_corrections` in Rust:
+ * unknown id/field or a `from` mismatch is skipped and reported, never thrown.
+ */
+export function applyCatalogCorrections(players, corrections) {
+  const byId = new Map(players.map((p) => [p.id, p]));
+  let applied = 0;
+  const skipped = [];
+  for (const c of corrections) {
+    const player = byId.get(c.id);
+    if (!player) skipped.push(`${c.id}: unknown player id`);
+    else if (!CORRECTABLE_FIELDS.has(c.field)) skipped.push(`${c.id}: unsupported field '${c.field}'`);
+    else if (player[c.field] !== c.from) skipped.push(`${c.id}.${c.field}: expected '${c.from}' but found '${player[c.field]}'`);
+    else {
+      player[c.field] = c.to;
+      player.raw = { ...player.raw, [c.field]: c.to };
+      applied += 1;
+    }
+  }
+  return { applied, skipped };
+}
+
 const FREE_AGENT_MARKERS = new Set(["fa", "freeagent"]);
 
 /** Read a shard that is either a bare array or an object wrapping the array under `key`. */
@@ -95,8 +131,9 @@ function dedupe(records) {
 
 /**
  * @param {string} dataDir path to the `data/` directory
+ * @param {{corrections?: object[]}} [options] reviewed field fixes; defaults to assets/world/catalog-corrections.json
  */
-export function loadWorld(dataDir) {
+export function loadWorld(dataDir, { corrections = readCatalogCorrections() } = {}) {
   const manifests = scanManifests(dataDir);
   // Live competitions first so a stale duplicate never wins an id.
   const ordered = [
@@ -154,6 +191,11 @@ export function loadWorld(dataDir) {
   );
 
   const playerResult = dedupe([...players, ...faPlayers]);
+  const correctionReport = applyCatalogCorrections(playerResult.records, corrections);
+  // Players on teams that do not exist are free agents, as in the game.
+  for (const player of playerResult.records) {
+    if (player.team_id && !teams.has(player.team_id)) player.team_id = null;
+  }
   const staffResult = dedupe([...staff, ...faStaff]);
 
   return {
@@ -162,6 +204,7 @@ export function loadWorld(dataDir) {
     teams,
     players: playerResult.records,
     staff: staffResult.records,
+    corrections: correctionReport,
     duplicates: { players: playerResult.duplicates, staff: staffResult.duplicates },
   };
 }

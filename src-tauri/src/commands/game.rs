@@ -17,6 +17,7 @@ use olm_core::game::Game;
 use olm_core::game_setup;
 use olm_core::generator::definitions::CompetitionManifest;
 use olm_core::roster_stability;
+use olm_core::world_catalog;
 use olm_core::state::StateManager;
 use olm_core::world_overlay::{OverlayApplyReport, WorldOverlay, apply_world_overlay};
 
@@ -164,7 +165,8 @@ pub(crate) fn assemble_world_from_modular_data(
 
     // 1. Load every non-legacy competition's team + player + staff
     let mut all_teams: Vec<Team> = Vec::new();
-    let mut all_players: Vec<Player> = Vec::new();
+    // Players tagged with the competition they came from, so stale duplicates can lose.
+    let mut tagged_players: Vec<(String, Player)> = Vec::new();
     let mut staff = olm_core::competitions::load_staff_free_agents(data_dir)?;
 
     for manifest in manifests.iter().filter(|m| !m.legacy) {
@@ -186,7 +188,7 @@ pub(crate) fn assemble_world_from_modular_data(
                 info!("[game] FAILED to load teams for '{}': {}", cid, err);
             }
         }
-        let player_count_before = all_players.len();
+        let player_count_before = tagged_players.len();
         match olm_core::competitions::load_players(data_dir, manifest) {
             Ok(comp_players) => {
                 for mut player in comp_players {
@@ -201,14 +203,14 @@ pub(crate) fn assemble_world_from_modular_data(
                     if player.condition == 0 {
                         player.condition = 100;
                     }
-                    all_players.push(player);
+                    tagged_players.push((cid.to_string(), player));
                 }
             }
             Err(err) => {
                 info!("[game] FAILED to load players for '{}': {}", cid, err);
             }
         }
-        let loaded = all_players.len() - player_count_before;
+        let loaded = tagged_players.len() - player_count_before;
         info!("[game] loaded {} players for '{}'", loaded, cid);
 
         // Load competition staff
@@ -239,6 +241,24 @@ pub(crate) fn assemble_world_from_modular_data(
         info!("[game] loaded {} staff for '{}'", loaded_staff, cid);
     }
 
+    // Resolve ids shipped twice (stale duplicate competitions), then fix known field errors.
+    let (mut all_players, dropped_duplicates) = world_catalog::dedupe_players(tagged_players);
+    for dup in &dropped_duplicates {
+        info!(
+            "[game] duplicate player {}: dropped the '{}' record, kept '{}'",
+            dup.player_id, dup.dropped_from, dup.kept_from
+        );
+    }
+    let correction_report = world_catalog::apply_catalog_corrections(
+        &mut all_players,
+        &world_catalog::bundled_catalog_corrections(),
+    );
+    info!(
+        "[game] catalog corrections applied: {} ({} skipped)",
+        correction_report.applied,
+        correction_report.skipped.len()
+    );
+
     // 2. Bootstrap academy seeds from ERL catalog (JSON or legacy .txt fallback)
     let academy_bootstrap_date = "2026-01-01".to_string();
     let pre_count = all_teams.len();
@@ -264,6 +284,15 @@ pub(crate) fn assemble_world_from_modular_data(
 
     // 6. Recalculate market_value for players who have 0 (data issue in regional leagues)
     game_setup::apply_default_market_values(&mut all_players);
+
+    // Players on teams that do not exist (stale copies) become free agents.
+    let detached = world_catalog::detach_orphaned_players(&mut all_players, &all_teams);
+    if !detached.is_empty() {
+        info!(
+            "[game] {} players referenced unknown teams and became free agents",
+            detached.len()
+        );
+    }
 
     // DEBUG: count staff by team_id
     {
@@ -1441,11 +1470,9 @@ mod tests {
             }
         }
 
-        /// Known data defect, not caused by the overlay: the `data/` catalog has players
-        /// that appear twice (legacy lck_cl/lckcl and prime_league/prm copies) and players
-        /// whose team id matches no loaded team. Un-ignore once the catalog is clean.
+        /// The `data/` catalog ships players twice (legacy lck_cl/lckcl and prime_league/prm
+        /// copies) and players whose team id matches no loaded team; assembly repairs both.
         #[test]
-        #[ignore = "known catalog defect: duplicate player ids and dangling team ids in data/"]
         fn world_has_unique_player_ids_and_no_dangling_team_references() {
             let (game, _catalog, _overlay, _user_team) = new_game();
             let duplicates = duplicate_player_ids(&game.players);
@@ -1458,6 +1485,16 @@ mod tests {
                 .map(|p| p.id.as_str())
                 .collect();
             assert!(dangling.is_empty(), "players on unknown teams: {dangling:?}");
+        }
+
+        #[test]
+        fn assembly_applies_the_reviewed_catalog_corrections() {
+            let (game, catalog, _overlay, _user_team) = new_game();
+            for players in [&game.players, &catalog] {
+                let oner: Vec<_> = players.iter().filter(|p| p.match_name == "Oner").collect();
+                assert_eq!(oner.len(), 1);
+                assert_eq!(oner[0].full_name, "Mun Hyeon-jun");
+            }
         }
 
         #[test]
