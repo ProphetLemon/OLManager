@@ -2245,7 +2245,9 @@
           "3": "Ban {{threat}} and I can play {{champion}} with much more pressure.",
           "4": "{{threat}} is a hard counter to {{champion}}. Better remove it now.",
           "5": "If you want me on {{champion}}, the best move is removing {{threat}}."
-        }
+        },
+        "playerFlexible": "I have no pick priorities. I can adapt to the team.",
+        "playerNoDraftInfo": "No draft info. Suggestion: we can prioritize safe picks or adapt to the enemy draft."
       }
     },
     "assist": "assist: {{name}}",

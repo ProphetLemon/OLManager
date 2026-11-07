@@ -2203,7 +2203,7 @@ export default function ChampionDraft({
             sourceRole: flexibleRole,
             sourceImage: flexibleImage,
             type: "pick",
-            text: t("match.draft.phrases.playerFlexible", "No tengo prioridades para el pick. Me puedo adaptar al equipo."),
+            text: t("match.draft.phrases.playerFlexible", "I have no pick priorities. I can adapt to the team."),
           });
           return;
         }
@@ -2354,7 +2354,7 @@ export default function ChampionDraft({
             playerSeedPhotoUrl(fallbackSeedPlayer?.photo) ??
             `/player-photos/${fallbackPlayer.id}.webp`,
           type: "pick",
-          text: t("match.draft.phrases.playerFlexible", "Sin información de draft. Sugerencia: podemos priorizar picks seguros o adaptarnos al draft enemigo."),
+          text: t("match.draft.phrases.playerNoDraftInfo", "No draft info. Suggestion: we can prioritize safe picks or adapt to the enemy draft."),
         });
       }
     }
