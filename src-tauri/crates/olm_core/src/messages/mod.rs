@@ -296,51 +296,6 @@ pub fn staff_advice_message(team_name: &str, team_id: &str, date: &str) -> Inbox
     .with_sender_i18n("be.sender.assistantManager", "be.role.assistantManager")
 }
 
-pub fn board_expectations_message(team_name: &str, team_id: &str, date: &str) -> InboxMessage {
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
-        "board_expectations",
-        &format!("expectations_{team_id}"),
-        date,
-        "en",
-        vec![("team", team_name)],
-    ) {
-        return msg;
-    }
-    InboxMessage::new(
-        "board_expect_1".to_string(),
-        format!("{} — Season Objectives", team_name),
-        "The board has set the following expectations for this season:\n\n\
-            • Reach the top half of the LEC table\n\
-            • Maintain financial stability\n\
-            • Develop academy talent for the roster pipeline\n\n\
-            Meeting these objectives will strengthen your position. Failure to meet minimum \
-            expectations may result in a review of your tenure.\n\n\
-            We trust in your abilities."
-            .to_string(),
-        "Board of Directors".to_string(),
-        date.to_string(),
-    )
-    .with_category(MessageCategory::BoardDirective)
-    .with_priority(MessagePriority::High)
-    .with_sender_role("Chairman")
-    .with_action(action(
-        "ack_objectives",
-        "Accept Objectives",
-        "be.msg.boardExpect.actionAccept",
-        ActionType::Acknowledge,
-    ))
-    .with_context(MessageContext {
-        team_id: Some(team_id.to_string()),
-        ..Default::default()
-    })
-    .with_i18n(
-        "be.msg.boardExpect.subject",
-        "be.msg.boardExpect.body",
-        params(&[("team", team_name)]),
-    )
-    .with_sender_i18n("be.sender.boardOfDirectors", "be.role.chairman")
-}
-
 pub fn transfer_complete_message(player_name: &str, fee: u64, date: &str) -> InboxMessage {
     let fee_display = format_fee(fee);
     let fee_amount = format_fee_amount(fee);

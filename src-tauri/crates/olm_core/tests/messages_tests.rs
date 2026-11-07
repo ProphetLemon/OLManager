@@ -275,27 +275,6 @@ fn staff_advice_has_view_action() {
 }
 
 // ---------------------------------------------------------------------------
-// board_expectations_message
-// ---------------------------------------------------------------------------
-
-#[test]
-fn board_expectations_message_fields() {
-    let msg = messages::board_expectations_message("Test FC", "team1", "2025-06-01");
-    assert_eq!(msg.id, "board_expect_1");
-    assert!(msg.subject.contains("Test FC"));
-    assert!(msg.body.contains("LEC table"));
-    assert!(msg.body.contains("roster pipeline"));
-    assert_eq!(msg.sender_role, "Chairman");
-}
-
-#[test]
-fn board_expectations_has_ack_action() {
-    let msg = messages::board_expectations_message("Test FC", "team1", "2025-06-01");
-    let has_ack = msg.actions.iter().any(|a| a.id == "ack_objectives");
-    assert!(has_ack, "Should have acknowledge action");
-}
-
-// ---------------------------------------------------------------------------
 // transfer_complete_message
 // ---------------------------------------------------------------------------
 
