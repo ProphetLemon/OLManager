@@ -323,7 +323,7 @@ fn parse_catalog(raw: &str) -> Result<MetaRelationships, String> {
                     }
                     "curated" => {
                         kind == "counter"
-                            && relationship.confidence == "high"
+                            && matches!(relationship.confidence.as_str(), "high" | "medium")
                             && relationship
                                 .review_flags
                                 .iter()
@@ -539,6 +539,19 @@ mod tests {
         assert_eq!(
             parse_catalog(&with_summary(2)).unwrap_err(),
             "invalid champion relationship migration audit"
+        );
+
+        let medium = with_summary(1).replace("\"confidence\":\"high\"", "\"confidence\":\"medium\"");
+        assert_eq!(
+            parse_catalog(&medium).unwrap().counters
+                [&("heimerdinger".to_string(), "quinn".to_string())],
+            3
+        );
+        let unknown_confidence =
+            with_summary(1).replace("\"confidence\":\"high\"", "\"confidence\":\"low\"");
+        assert_eq!(
+            parse_catalog(&unknown_confidence).unwrap_err(),
+            "counter has invalid review metadata"
         );
 
         let unflagged = with_summary(1).replace("curated_general_knowledge", "other");

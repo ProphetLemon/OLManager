@@ -3,7 +3,7 @@
 
 export const CURATION_SOURCE = "assets/simulation/champion-counter-curation.json";
 export const CURATION_OPS = ["remove", "add", "set"];
-export const CURATION_CONFIDENCES = ["high"];
+export const CURATION_CONFIDENCES = ["high", "medium"];
 
 const pairKey = (source, target) => `${source}::${target}`;
 

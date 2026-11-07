@@ -48,6 +48,15 @@ describe("validation", () => {
     expect(() => validateCuration({ metadata: { ...metadata, schemaVersion: 2 as never }, changes: [] })).toThrow(/schemaVersion/);
   });
 
+  it("accepts high and medium confidence and rejects any other", () => {
+    for (const confidence of ["high", "medium"]) {
+      expect(() => validateCuration({ metadata, changes: [change({ op: "add", source: "a", target: "b", value: 2, confidence })] })).not.toThrow();
+    }
+    expect(() => validateCuration({ metadata, changes: [change({ op: "add", source: "a", target: "b", value: 2, confidence: "low" })] })).toThrow(/confidence/);
+    const { counters } = applyCounterCuration(legacy, { metadata, changes: [change({ op: "add", source: "e", target: "a", value: 2, confidence: "medium" })] });
+    expect(counters.at(-1)?.curated).toMatchObject({ op: "add", confidence: "medium" });
+  });
+
   it("flags out-of-range, self, mutual and unknown counters", () => {
     const ids = new Set(["a", "b"]);
     expect(() => validateCounterSet([{ source: "a", target: "b", value: 3 }], ids)).not.toThrow();

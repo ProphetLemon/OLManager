@@ -27,8 +27,8 @@ function readJson(url, label) {
 function validateReview(relationship, kind, index) {
   if (relationship.status === "curated") {
     if (kind !== "counters") fail(`${kind}[${index}] only counters can be curated`);
-    if (relationship.confidence !== "high" || !relationship.review_flags?.includes("curated_general_knowledge") || !relationship.rationale) {
-      fail(`${kind}[${index}] curated entries need high confidence, the curated_general_knowledge flag and a rationale`);
+    if (!["high", "medium"].includes(relationship.confidence) || !relationship.review_flags?.includes("curated_general_knowledge") || !relationship.rationale) {
+      fail(`${kind}[${index}] curated entries need high or medium confidence, the curated_general_knowledge flag and a rationale`);
     }
     if (!relationship.review?.required || !/^\d{4}-\d{2}-\d{2}$/.test(relationship.review.next_review_at ?? "")) {
       fail(`${kind}[${index}] must require an explicit dated review`);
