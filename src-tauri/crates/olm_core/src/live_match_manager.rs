@@ -47,8 +47,8 @@ pub struct LiveMatchSession {
 impl LiveMatchSession {
     /// Step one minute and apply AI decisions for computer-controlled sides.
     pub fn step(&mut self) -> MinuteResult {
-        let result = self.match_state.step_minute(&mut self.rng);
-        result
+        
+        self.match_state.step_minute(&mut self.rng)
     }
 
     /// Step multiple minutes at once (for fast-forward / instant sim).

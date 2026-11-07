@@ -258,7 +258,7 @@ fn step_many_returns_requested_count() {
         live_match_manager::create_live_match(&game, 0, MatchMode::Spectator, false).unwrap();
 
     let results = session.step_many(10);
-    assert!(results.len() >= 1 && results.len() <= 10);
+    assert!(!results.is_empty() && results.len() <= 10);
 }
 
 #[test]

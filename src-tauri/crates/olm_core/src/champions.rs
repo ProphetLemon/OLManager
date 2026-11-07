@@ -74,6 +74,7 @@ pub struct ChampionPatchNote {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "typescript", derive(TS))]
 #[cfg_attr(feature = "typescript", ts(export))]
+#[derive(Default)]
 pub struct ChampionPatchState {
     pub current_patch: u32,
     #[serde(default)]
@@ -93,21 +94,6 @@ pub struct ChampionPatchState {
     pub rng_seed: u64,
 }
 
-impl Default for ChampionPatchState {
-    fn default() -> Self {
-        Self {
-            current_patch: 0,
-            current_patch_label: String::new(),
-            patch_year: 0,
-            patch_index_in_year: 0,
-            last_patch_date: None,
-            hidden_meta: Vec::new(),
-            patch_notes: Vec::new(),
-            discovered_champion_ids: Vec::new(),
-            rng_seed: 0,
-        }
-    }
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct ChampionCatalogRoot {
@@ -953,7 +939,7 @@ pub fn ensure_training_targets_from_mastery(game: &mut Game, player_id: &str) {
             (meta.champion_id.clone(), score)
         })
         .collect();
-    by_meta.sort_by(|left, right| right.1.cmp(&left.1));
+    by_meta.sort_by_key(|entry| std::cmp::Reverse(entry.1));
 
     let mut selected: Vec<String> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
@@ -976,7 +962,7 @@ pub fn ensure_training_targets_from_mastery(game: &mut Game, player_id: &str) {
             .filter(|entry| entry.player_id == player_id)
             .map(|entry| (entry.champion_id.clone(), entry.mastery))
             .collect();
-        ranked_masteries.sort_by(|left, right| right.1.cmp(&left.1));
+        ranked_masteries.sort_by_key(|entry| std::cmp::Reverse(entry.1));
         for (champion_id, _) in ranked_masteries {
             let key = normalize_key(&champion_id);
             if seen.contains(&key) {
@@ -1073,7 +1059,7 @@ pub fn delegate_champion_training_to_coach(game: &mut Game) -> Result<usize, Str
         let role_meta: Vec<&ChampionMetaEntry> = meta_entries
             .iter()
             .filter(|entry| {
-                normalize_key(&entry.role) == normalize_key(&role)
+                normalize_key(&entry.role) == normalize_key(role)
                     && discovered.contains(&normalize_key(&entry.champion_id))
                     && tier_weight(&entry.tier) <= 1
             })
@@ -1109,7 +1095,7 @@ pub fn delegate_champion_training_to_coach(game: &mut Game) -> Result<usize, Str
                 .iter()
                 .filter(|meta| {
                     let champ_key = normalize_key(&meta.champion_id);
-                    normalize_key(&meta.role) == normalize_key(&role)
+                    normalize_key(&meta.role) == normalize_key(role)
                         && discovered.contains(&champ_key)
                         && get_mastery(&player_id, &meta.champion_id) < MASTERY_CAP
                 })

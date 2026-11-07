@@ -214,7 +214,7 @@ fn team_average_morale_by_team(game: &Game) -> HashMap<String, u8> {
     }
 
     sums.into_iter()
-        .map(|(team_id, (sum, count))| (team_id, if count == 0 { 0 } else { (sum / count) as u8 }))
+        .map(|(team_id, (sum, count))| (team_id, sum.checked_div(count).unwrap_or(0) as u8))
         .collect()
 }
 

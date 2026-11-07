@@ -407,8 +407,8 @@ pub fn load_free_agent_players() -> &'static Vec<Player> {
         ];
 
         for path in candidates.iter().flatten() {
-            if let Ok(content) = std::fs::read_to_string(path) {
-                if let Ok(data) = serde_json::from_str::<PlayerDataFile>(&content) {
+            if let Ok(content) = std::fs::read_to_string(path)
+                && let Ok(data) = serde_json::from_str::<PlayerDataFile>(&content) {
                     info!(
                         "[game] loaded {} free agent players from {:?}",
                         data.players.len(),
@@ -416,7 +416,6 @@ pub fn load_free_agent_players() -> &'static Vec<Player> {
                     );
                     return data.players;
                 }
-            }
         }
 
         warn!("[game] data/players/free_agents.json not found — using empty pool");

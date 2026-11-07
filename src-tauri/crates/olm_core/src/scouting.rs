@@ -184,6 +184,7 @@ pub fn process_scouting(game: &mut Game) {
     }
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn build_scout_report(
     assignment_id: &str,
     scout_name: &str,

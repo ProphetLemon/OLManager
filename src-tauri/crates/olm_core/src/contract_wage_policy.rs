@@ -196,13 +196,11 @@ fn tier_from_competition_id(team: &Team, leagues: &[League]) -> Option<u8> {
     leagues
         .iter()
         .find(|league| league.competition_id.as_deref() == Some(competition_id))
-        .map(|league| league.tier.max(1).min(3))
+        .map(|league| league.tier.clamp(1, 3))
 }
 
 fn tier_from_reputation(reputation: u32) -> u8 {
-    if reputation >= 1_300 {
-        1
-    } else if reputation >= 1_100 {
+    if reputation >= 1_100 {
         1
     } else if reputation >= 800 {
         2

@@ -17,7 +17,7 @@ use chrono::{Datelike, TimeZone, Utc};
 use std::collections::HashMap;
 
 pub fn expected_fixture_count(team_count: usize) -> Option<usize> {
-    if team_count >= 2 && team_count % 2 == 0 {
+    if team_count >= 2 && team_count.is_multiple_of(2) {
         Some((team_count * (team_count - 1)) / 2)
     } else {
         None
@@ -175,6 +175,7 @@ pub fn process_end_of_season_with_config(
 ///   - Calling `process_end_of_season` first when the split wraps the season
 ///   - Setting `split_index = 0` and `season += 1` before calling this
 ///     function for the new season's first split
+///
 /// Unlike end_of_season, this does NOT record history, award prizes,
 /// reset player stats, or send board messages — only fixtures are created.
 pub fn process_end_of_split(game: &mut Game, manifest: &CompetitionManifest) {
@@ -278,8 +279,8 @@ pub fn process_background_seasons(
         }
 
         // Generate next split/season schedule
-        if let Some(ref cid) = competition_id {
-            if let Some(manifest) = manifests.get(cid) {
+        if let Some(ref cid) = competition_id
+            && let Some(manifest) = manifests.get(cid) {
                 let next_idx = game.leagues[i].split_index + 1;
                 let (ns, split_idx) = if next_idx >= manifest.schedule.splits.len() {
                     (season + 1, 0)
@@ -289,7 +290,6 @@ pub fn process_background_seasons(
                 let new_league = generate_schedule_from_config(manifest, ns, &team_ids, split_idx);
                 game.leagues[i] = new_league;
             }
-        }
     }
 }
 
@@ -897,7 +897,8 @@ mod tests {
     use crate::generator::definitions::{CompetitionManifest, SeasonStart, SplitConfig};
 
     fn make_team(id: &str) -> crate::domain::team::Team {
-        let team = crate::domain::team::Team::new(
+        
+        crate::domain::team::Team::new(
             id.to_string(),
             format!("Team {id}"),
             id.to_string(),
@@ -905,8 +906,7 @@ mod tests {
             "Test League".to_string(),
             "Test Arena".to_string(),
             1000,
-        );
-        team
+        )
     }
 
     fn make_completed_fixture(

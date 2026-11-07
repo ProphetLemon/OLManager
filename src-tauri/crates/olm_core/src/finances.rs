@@ -169,6 +169,7 @@ fn kind_matches_amount_sign(kind: FinancialTransactionKind, amount: i64) -> bool
     }
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub fn push_finance_mail_once(
     game: &mut Game,
     team_id: &str,
@@ -750,8 +751,8 @@ pub fn process_monthly_finances(game: &mut Game) {
                 },
             )
             .ok();
-            if Some(team.id.as_str()) == user_team_id.as_deref() {
-                if let Some((sponsor_name, monthly_income, monthly_bonus, _)) = &sponsorship_context
+            if Some(team.id.as_str()) == user_team_id.as_deref()
+                && let Some((sponsor_name, monthly_income, monthly_bonus, _)) = &sponsorship_context
                 {
                     mail_events.push(MonthlyFinanceMailEvent::SponsorPayout {
                         team_id: team.id.clone(),
@@ -767,7 +768,6 @@ pub fn process_monthly_finances(game: &mut Game) {
                         });
                     }
                 }
-            }
         }
 
         if let Some(sponsorship) = team.sponsorship.as_mut() {

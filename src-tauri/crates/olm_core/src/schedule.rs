@@ -287,7 +287,7 @@ pub fn generate_single_round_league_with_offsets_and_bo_with_id(
     // Circle method requires an even number of slots. For an odd team count we
     // add a sentinel "bye" slot: whichever real team is paired with it sits out
     // that round (no fixture is emitted).
-    let has_bye = real_n % 2 != 0;
+    let has_bye = !real_n.is_multiple_of(2);
     let n = if has_bye { real_n + 1 } else { real_n };
     let bye_idx = n - 1; // sentinel index, only present when has_bye
 

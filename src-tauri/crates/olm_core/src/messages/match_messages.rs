@@ -110,6 +110,7 @@ pub fn pre_match_message(
     .with_sender_i18n("be.sender.assistantManager", "be.role.assistantManager")
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub fn match_result_message(
     fixture_id: &str,
     home_name: &str,

@@ -173,8 +173,8 @@ fn build_team_talk_weights(
     }
 
     let action_key = team_talk_action_key(tone, context);
-    if let Some(memory) = player.morale_core.recent_treatment.as_ref() {
-        if memory.action_key == action_key {
+    if let Some(memory) = player.morale_core.recent_treatment.as_ref()
+        && memory.action_key == action_key {
             let penalty = i32::from(memory.times_recently_used) * 2;
             adjust_weight(&mut weights.strong_positive, -penalty);
             adjust_weight(&mut weights.mild_positive, -penalty);
@@ -184,7 +184,6 @@ fn build_team_talk_weights(
                 i32::from(memory.times_recently_used),
             );
         }
-    }
 
     if weights.total() == 0 {
         weights.neutral = 1;

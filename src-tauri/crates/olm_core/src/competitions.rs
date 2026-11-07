@@ -98,11 +98,10 @@ pub fn load_teams(data_base: &Path, manifest: &CompetitionManifest) -> Result<Ve
     // Inject competition_id and fix logo paths
     for team in &mut data.teams {
         team.competition_id = Some(manifest.id.clone());
-        if let Some(ref mut url) = team.logo_url {
-            if url.starts_with("/team-logos/") {
+        if let Some(ref mut url) = team.logo_url
+            && url.starts_with("/team-logos/") {
                 *url = url.replacen("/team-logos/", "/teams-icons/", 1);
             }
-        }
     }
     Ok(data.teams)
 }
@@ -338,11 +337,10 @@ pub fn competition_id_from_team_id_known<'a>(
     let mut best: Option<&str> = None;
     for cid in known_competition_ids {
         let prefix = format!("{}-", cid);
-        if team_id.starts_with(&prefix) {
-            if best.map_or(true, |b| cid.len() > b.len()) {
+        if team_id.starts_with(&prefix)
+            && best.is_none_or(|b| cid.len() > b.len()) {
                 best = Some(cid.as_str());
             }
-        }
     }
     best
 }
@@ -395,8 +393,8 @@ pub fn sanitize_competition_references(game: &mut Game, known_competition_ids: &
 
     let mut changed = false;
 
-    if let Some(ref cid) = game.user_competition_id {
-        if !known_competition_ids.contains(cid) {
+    if let Some(ref cid) = game.user_competition_id
+        && !known_competition_ids.contains(cid) {
             warn!(
                 "[competitions] clearing invalid user_competition_id '{}'",
                 cid
@@ -404,11 +402,10 @@ pub fn sanitize_competition_references(game: &mut Game, known_competition_ids: &
             game.user_competition_id = None;
             changed = true;
         }
-    }
 
     for team in game.teams.iter_mut() {
-        if let Some(ref cid) = team.competition_id {
-            if !known_competition_ids.contains(cid) {
+        if let Some(ref cid) = team.competition_id
+            && !known_competition_ids.contains(cid) {
                 warn!(
                     "[competitions] clearing invalid competition_id '{}' for team '{}'",
                     cid, team.id
@@ -416,19 +413,17 @@ pub fn sanitize_competition_references(game: &mut Game, known_competition_ids: &
                 team.competition_id = None;
                 changed = true;
             }
-        }
     }
 
     // Try to restore user_competition_id from the manager team id, which is
     // scoped as `{competition_id}-{team_local_id}` and is stable even when the
     // team's persisted competition_id was invalid.
-    if game.user_competition_id.is_none() {
-        if let Some(manager_team) = game
+    if game.user_competition_id.is_none()
+        && let Some(manager_team) = game
             .teams
             .iter()
             .find(|t| t.manager_id.as_deref() == Some(&game.manager.id))
-        {
-            if let Some(cid) =
+            && let Some(cid) =
                 competition_id_from_team_id_known(&manager_team.id, known_competition_ids)
             {
                 info!(
@@ -438,8 +433,6 @@ pub fn sanitize_competition_references(game: &mut Game, known_competition_ids: &
                 game.user_competition_id = Some(cid.to_string());
                 changed = true;
             }
-        }
-    }
 
     changed
 }

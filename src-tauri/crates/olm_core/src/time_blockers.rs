@@ -3,11 +3,11 @@ use log::info;
 use crate::game::Game;
 use crate::player_rating::{effective_rating_for_assignment, natural_ovr, position_slots};
 
-fn user_team_context<'a>(
-    game: &'a Game,
+fn user_team_context(
+    game: &Game,
 ) -> Option<(
-    &'a crate::domain::team::Team,
-    Vec<&'a crate::domain::player::Player>,
+    &crate::domain::team::Team,
+    Vec<&crate::domain::player::Player>,
 )> {
     let user_team_id = game.manager.team_id.as_deref()?;
     let team = game.teams.iter().find(|team| team.id == user_team_id)?;

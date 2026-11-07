@@ -13,6 +13,7 @@ use super::{
 };
 use std::collections::HashMap;
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub(super) fn evaluate_open_trade_window(
     champion: &ChampionRuntime,
     enemy: &ChampionRuntime,
@@ -222,6 +223,7 @@ pub(super) fn evaluate_open_trade_window(
     }
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub(super) fn evaluate_disengage_champion_trade(
     champion: &ChampionRuntime,
     enemy: &ChampionRuntime,

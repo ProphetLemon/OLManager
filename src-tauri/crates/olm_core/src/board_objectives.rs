@@ -51,7 +51,7 @@ fn expected_league_rank(user_team_id: &str, teams: &[Team], players: &[Player]) 
 }
 
 fn objective_profile_for_rank(expected_rank: u32, num_teams: u32) -> ObjectiveProfile {
-    if num_teams <= 2 || expected_rank <= ((num_teams + 4) / 5).max(1) {
+    if num_teams <= 2 || expected_rank <= num_teams.div_ceil(5).max(1) {
         ObjectiveProfile::TitleContender
     } else if expected_rank <= num_teams.div_ceil(2) {
         ObjectiveProfile::PlayoffContender

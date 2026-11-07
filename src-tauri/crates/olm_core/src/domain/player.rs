@@ -741,7 +741,7 @@ mod tests {
     #[test]
     fn was_released_flag_serde_roundtrip() {
         // Serialize a player with was_released=true, deserialize, verify it survives
-        let mut player: Player = serde_json::from_value(serde_json::json!({
+        let player: Player = serde_json::from_value(serde_json::json!({
             "id": "p-wr",
             "match_name": "W. Released",
             "full_name": "Will Released",

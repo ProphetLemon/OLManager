@@ -270,8 +270,8 @@ impl SaveManager {
             if league.competition_id.is_some() {
                 continue;
             }
-            if let Some(tid) = league.standings.first().map(|s| s.team_id.as_str()) {
-                if let Some(cid) = game
+            if let Some(tid) = league.standings.first().map(|s| s.team_id.as_str())
+                && let Some(cid) = game
                     .teams
                     .iter()
                     .find(|t| t.id == tid)
@@ -283,7 +283,6 @@ impl SaveManager {
                         league.competition_id, league.name
                     );
                 }
-            }
         }
 
         info!(
@@ -371,9 +370,6 @@ impl SaveManager {
 mod tests {
     use super::*;
     use crate::clock::GameClock;
-    use crate::domain::league::{
-        Fixture, FixtureStatus, League, LeagueKind, MatchType, StandingEntry,
-    };
     use crate::domain::manager::Manager;
     use crate::domain::player::{Player, PlayerAttributes};
     use crate::domain::staff::{Staff, StaffAttributes, StaffRole};
@@ -469,76 +465,6 @@ mod tests {
             retired_player_ids: Default::default(),
             world_overlay_as_of: None,
         }
-    }
-
-    fn sample_game_with_league() -> Game {
-        let start = Utc.with_ymd_and_hms(2026, 7, 1, 0, 0, 0).unwrap();
-        let clock = GameClock::new(start);
-        let mut manager = Manager::new(
-            "mgr-user".to_string(),
-            "John".to_string(),
-            "Smith".to_string(),
-            "1990-01-15".to_string(),
-            "British".to_string(),
-        );
-        manager.hire("team-001".to_string());
-
-        let team_one = Team::new(
-            "team-001".to_string(),
-            "London FC".to_string(),
-            "LFC".to_string(),
-            "GB".to_string(),
-            "London".to_string(),
-            "London Stadium".to_string(),
-            50000,
-        );
-        let team_two = Team::new(
-            "team-002".to_string(),
-            "Rivals FC".to_string(),
-            "RFC".to_string(),
-            "GB".to_string(),
-            "Manchester".to_string(),
-            "Rivals Stadium".to_string(),
-            42000,
-        );
-
-        let league = League {
-            id: "league-current".to_string(),
-            name: "Premier Division".to_string(),
-            season: 2027,
-            fixtures: vec![Fixture {
-                id: "fix-current".to_string(),
-                matchday: 1,
-                date: "2027-08-15".to_string(),
-                home_team_id: "team-001".to_string(),
-                away_team_id: "team-002".to_string(),
-                match_type: MatchType::League,
-                best_of: 1,
-                status: FixtureStatus::Scheduled,
-                result: None,
-            }],
-            standings: vec![
-                StandingEntry::new("team-001".to_string()),
-                StandingEntry::new("team-002".to_string()),
-            ],
-            competition_id: None,
-            league_kind: LeagueKind::Main,
-            logo: None,
-            split_index: 0,
-            tier: 0,
-            active: false,
-        };
-
-        let mut game = Game::new(
-            clock,
-            manager,
-            vec![team_one, team_two],
-            vec![],
-            vec![],
-            vec![],
-        );
-        game.leagues = vec![league];
-        game
     }
 
     #[test]

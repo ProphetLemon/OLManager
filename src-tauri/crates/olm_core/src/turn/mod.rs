@@ -877,7 +877,7 @@ fn maybe_simulate_parallel_academy_leagues(game: &mut Game) {
 
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
     let league = &mut game.leagues[league_idx];
-    simulate_background_league(&mut game.teams, &mut game.players, league, &today, season);
+    simulate_background_league(&mut game.teams, &game.players, league, &today, season);
 
     // Academy-specific: generate playoffs when regular season completes
     let regular_fixtures_total = league
@@ -1747,7 +1747,8 @@ mod tests {
     }
 
     fn make_team(id: &str) -> Team {
-        let team = Team::new(
+        
+        Team::new(
             id.to_string(),
             format!("Team {id}"),
             id.to_string(),
@@ -1755,8 +1756,7 @@ mod tests {
             "Test League".to_string(),
             "Test Arena".to_string(),
             1000,
-        );
-        team
+        )
     }
 
     /// Create a minimal Game with 2 teams (5 players each) and a league with 1 fixture.
@@ -1990,7 +1990,7 @@ mod tests {
         let league = game.leagues.first_mut().unwrap();
         simulate_background_league(
             &mut game.teams,
-            &mut game.players,
+            &game.players,
             league,
             &today_str,
             season,
@@ -2014,7 +2014,7 @@ mod tests {
         let league = game.leagues.first_mut().unwrap();
         simulate_background_league(
             &mut game.teams,
-            &mut game.players,
+            &game.players,
             league,
             &today_str,
             season,

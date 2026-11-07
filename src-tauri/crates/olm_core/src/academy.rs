@@ -555,9 +555,9 @@ pub fn academy_seed_catalog() -> &'static Vec<AcademyTeamSeed> {
                 .join("players")
                 .join(format!("{}_players.json", league_id));
             let mut players_by_team_id: HashMap<String, Vec<AcademyPlayerSeed>> = HashMap::new();
-            if let Ok(players_json) = std::fs::read_to_string(&players_path) {
-                if let Ok(players_data) = serde_json::from_str::<serde_json::Value>(&players_json) {
-                    if let Some(all_players) = players_data["players"].as_array() {
+            if let Ok(players_json) = std::fs::read_to_string(&players_path)
+                && let Ok(players_data) = serde_json::from_str::<serde_json::Value>(&players_json)
+                    && let Some(all_players) = players_data["players"].as_array() {
                         for player in all_players {
                             if let Some(tid) = player["team_id"].as_str() {
                                 let seed = AcademyPlayerSeed {
@@ -587,8 +587,6 @@ pub fn academy_seed_catalog() -> &'static Vec<AcademyTeamSeed> {
                             }
                         }
                     }
-                }
-            }
 
             for entry in team_entries {
                 let team_id = entry["id"].as_str().unwrap_or("").to_string();

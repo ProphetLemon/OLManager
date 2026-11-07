@@ -19,12 +19,11 @@ fn cached_match_texts(data_base: Option<&Path>) -> Option<&'static MatchTexts> {
     if let Some(texts) = MATCH_TEXTS.get() {
         return Some(texts);
     }
-    if let Some(base) = data_base {
-        if let Some(texts) = load_match_texts(base) {
+    if let Some(base) = data_base
+        && let Some(texts) = load_match_texts(base) {
             let _ = MATCH_TEXTS.set(texts);
             return MATCH_TEXTS.get();
         }
-    }
     None
 }
 
@@ -174,15 +173,14 @@ fn team_fan_reaction_text(
         } else {
             &texts.fan_reaction_lost
         };
-        if let Some(options) = map.get(language).or_else(|| map.get("en")) {
-            if !options.is_empty() {
+        if let Some(options) = map.get(language).or_else(|| map.get("en"))
+            && !options.is_empty() {
                 let idx = variant_index(seed, options.len());
                 return options[idx]
                     .replace("{team}", team_short_name)
                     .replace("{opponent}", opponent_short_name)
                     .replace("{score}", score);
             }
-        }
     }
 
     let options: &[&str] = match (language, won) {
@@ -220,18 +218,15 @@ fn bouzys_vs_fnatic_text(
     seed: &str,
     data_base: Option<&Path>,
 ) -> String {
-    if let Some(texts) = cached_match_texts(data_base) {
-        if let Some(options) = texts
+    if let Some(texts) = cached_match_texts(data_base)
+        && let Some(options) = texts
             .bouzys_vs_fnatic
             .get(language)
             .or_else(|| texts.bouzys_vs_fnatic.get("en"))
-        {
-            if !options.is_empty() {
+            && !options.is_empty() {
                 let idx = variant_index(seed, options.len());
                 return options[idx].replace("{winner}", winner_short_name);
             }
-        }
-    }
 
     let options: &[&str] = match language {
         "es" => &[
@@ -284,28 +279,25 @@ fn team_loser_post_text(
         } else {
             &texts.team_loser_close
         };
-        if let Some(options) = map.get(language).or_else(|| map.get("en")) {
-            if !options.is_empty() {
+        if let Some(options) = map.get(language).or_else(|| map.get("en"))
+            && !options.is_empty() {
                 let idx = variant_index(seed, options.len());
                 return options[idx]
                     .replace("{team}", team_short_name)
                     .replace("{opponent}", opponent_short_name)
                     .replace("{score}", score);
             }
-        }
         if let Some(options) = texts
             .team_loser
             .get(language)
             .or_else(|| texts.team_loser.get("en"))
-        {
-            if !options.is_empty() {
+            && !options.is_empty() {
                 let idx = variant_index(seed, options.len());
                 return options[idx]
                     .replace("{team}", team_short_name)
                     .replace("{opponent}", opponent_short_name)
                     .replace("{score}", score);
             }
-        }
     }
 
     let options: &[&str] = if stomp {
@@ -802,8 +794,8 @@ pub fn ensure_social_registry_defaults(game: &mut Game, data_base: Option<&Path>
                 .find(|account| account.handle.eq_ignore_ascii_case(&default_account.handle))
             {
                 // Preserve user-edited fields but update Twitter URLs to local paths
-                if let Some(ref default_url) = default_account.profile_image_url {
-                    if existing
+                if let Some(ref default_url) = default_account.profile_image_url
+                    && existing
                         .profile_image_url
                         .as_ref()
                         .map(|url| url.contains("pbs.twimg.com"))
@@ -811,7 +803,6 @@ pub fn ensure_social_registry_defaults(game: &mut Game, data_base: Option<&Path>
                     {
                         existing.profile_image_url = Some(default_url.clone());
                     }
-                }
                 if existing.favorite_team_ids.is_empty()
                     && !default_account.favorite_team_ids.is_empty()
                 {

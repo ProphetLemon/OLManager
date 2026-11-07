@@ -31,13 +31,13 @@ fn next_split_end_date(game: &Game) -> String {
     let league_name = game
         .leagues
         .first()
-        .and_then(|l| {
+        .map(|l| {
             if l.name.contains("Winter") {
-                Some("Winter")
+                "Winter"
             } else if l.name.contains("Spring") {
-                Some("Spring")
+                "Spring"
             } else {
-                Some("Summer")
+                "Summer"
             }
         })
         .unwrap_or("Winter");
@@ -494,6 +494,7 @@ fn transfer_negotiation_metrics(round: u8, stalled: bool, respected_signal: bool
     (tension.clamp(20, 90) as u8, patience.clamp(18, 86) as u8)
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn upsert_transfer_offer(
     player: &mut crate::domain::player::Player,
     from_team_id: &str,
@@ -743,15 +744,13 @@ pub fn generate_incoming_transfer_offers(game: &mut Game) {
             }
         }
 
-        if academy_offer_window_open && !academy_offer_created_today {
-            if let Some(academy_id) = academy_player_id {
-                if !chosen_is_academy {
+        if academy_offer_window_open && !academy_offer_created_today
+            && let Some(academy_id) = academy_player_id
+                && !chosen_is_academy {
                     chosen_player_id = Some(academy_id);
                     chosen_fee = academy_fee;
                     chosen_is_academy = true;
                 }
-            }
-        }
 
         let Some(player_id) = chosen_player_id else {
             continue;
@@ -904,7 +903,7 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
         let Some(team) = game.teams.iter().find(|t| t.id == team_id) else {
             continue;
         };
-        let decision = ai_signing_policy(game, &team, player, SigningIntent::Strategic);
+        let decision = ai_signing_policy(game, team, player, SigningIntent::Strategic);
         if !decision.accepted {
             continue;
         }
@@ -999,13 +998,11 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
                     return None;
                 }
 
-                if let Some(date_str) = &player.can_be_transferred_until {
-                    if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                        if date >= current_date {
+                if let Some(date_str) = &player.can_be_transferred_until
+                    && let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+                        && date >= current_date {
                             return None;
                         }
-                    }
-                }
 
                 let seller_id = player.team_id.as_deref()?;
                 if seller_id == user_team_id || seller_id == buyer_id {
@@ -1043,13 +1040,11 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
             .players
             .iter()
             .filter_map(|player| {
-                if let Some(date_str) = &player.can_be_transferred_until {
-                    if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                        if date >= current_date {
+                if let Some(date_str) = &player.can_be_transferred_until
+                    && let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+                        && date >= current_date {
                             return None;
                         }
-                    }
-                }
 
                 let seller_id = player.team_id.as_deref()?;
                 if seller_id == user_team_id || seller_id == buyer_id {
@@ -1949,8 +1944,8 @@ fn calculate_wage_acceptance_score(
     if player.team_id.is_none() {
         // Free agent: eager to find a new club
         score += 25;
-    } else if let Some(team_id) = &player.team_id {
-        if game.teams.iter().any(|t| t.id.as_str() == team_id.as_str()) {
+    } else if let Some(team_id) = &player.team_id
+        && game.teams.iter().any(|t| t.id.as_str() == team_id.as_str()) {
             let player_team = game
                 .teams
                 .iter()
@@ -1981,7 +1976,6 @@ fn calculate_wage_acceptance_score(
                 }
             }
         }
-    }
 
     if player.transfer_listed {
         // Player actively wants to leave
@@ -1989,8 +1983,8 @@ fn calculate_wage_acceptance_score(
     }
 
     // Contract situation: players near end of contract are more open to moves
-    if let Some(contract_end) = &player.contract_end {
-        if let Ok(end_date) = NaiveDate::parse_from_str(contract_end, "%Y-%m-%d") {
+    if let Some(contract_end) = &player.contract_end
+        && let Ok(end_date) = NaiveDate::parse_from_str(contract_end, "%Y-%m-%d") {
             let days_left = (end_date - current_date).num_days();
             if days_left <= 30 {
                 score += 18; // Contract almost expired
@@ -2000,7 +1994,6 @@ fn calculate_wage_acceptance_score(
                 score += 5; // One year or less remaining
             }
         }
-    }
 
     // Contract duration: longer commitments demand higher wages
     if contract_years == 1 {
@@ -2384,6 +2377,7 @@ pub fn negotiate_player_wage(
     })
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn complete_transfer_with_wage(
     game: &mut Game,
     player_id: &str,
@@ -2461,11 +2455,10 @@ fn complete_transfer_with_wage(
     }
 
     if !from_id.is_empty() {
-        if let Some(t) = game.teams.iter_mut().find(|t| t.id == from_id) {
-            if let Some(pos) = t.active_lineup_ids.iter().position(|id| id == player_id) {
+        if let Some(t) = game.teams.iter_mut().find(|t| t.id == from_id)
+            && let Some(pos) = t.active_lineup_ids.iter().position(|id| id == player_id) {
                 t.active_lineup_ids.remove(pos);
             }
-        }
 
         let credit_target_id = academy_owner_id.as_deref().unwrap_or(from_id);
         if let Some(t) = game.teams.iter_mut().find(|t| t.id == credit_target_id) {
@@ -2495,11 +2488,10 @@ fn complete_transfer_with_wage(
         ensure_academy_roster_continuity(game, from_id, &player_snapshot);
     }
 
-    if let Some(t) = game.teams.iter_mut().find(|t| t.id == to_team_id) {
-        if let Some(pos) = t.active_lineup_ids.iter().position(|id| id == player_id) {
+    if let Some(t) = game.teams.iter_mut().find(|t| t.id == to_team_id)
+        && let Some(pos) = t.active_lineup_ids.iter().position(|id| id == player_id) {
             t.active_lineup_ids.remove(pos);
         }
-    }
 
     let offer = player_snapshot
         .transfer_offers
@@ -2582,6 +2574,7 @@ pub fn get_transfer_history(game: &Game) -> Vec<TransferHistoryEntry> {
     game.transfer_history.entries.clone()
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub fn record_transfer(
     game: &mut Game,
     player_id: &str,
@@ -2678,7 +2671,7 @@ fn round_transfer_fee(value: u64) -> u64 {
         return 0;
     }
 
-    ((value + 49_999) / 50_000) * 50_000
+    value.div_ceil(50_000) * 50_000
 }
 
 fn remove_player_from_team_references(team: &mut crate::domain::team::Team, player_id: &str) {
@@ -3109,6 +3102,7 @@ pub(crate) fn execute_transfer(
     )
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn execute_transfer_with_payer(
     game: &mut Game,
     player_id: &str,

@@ -34,9 +34,9 @@ pub(super) fn champion_kill_rewards(
     victim: &ChampionRuntime,
 ) -> (i64, i64) {
     let level_gap = victim.level - killer.level;
-    let victim_streak = (victim.kills as i64 - victim.deaths as i64).max(0);
-    let killer_ahead = (killer.kills as i64 - killer.deaths as i64).max(0);
-    let killer_kills = killer.kills.max(0) as i64;
+    let victim_streak = (victim.kills - victim.deaths).max(0);
+    let killer_ahead = (killer.kills - killer.deaths).max(0);
+    let killer_kills = killer.kills.max(0);
 
     let mut gold = CHAMPION_KILL_GOLD + level_gap * 14 + victim_streak * 25;
     if killer_ahead >= 2 {

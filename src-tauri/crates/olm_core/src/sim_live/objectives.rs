@@ -138,7 +138,7 @@ pub(super) fn ensure_dragon_cycle_defaults(
     champion_ids: impl Iterator<Item = String>,
     neutral_timers: &mut NeutralTimersRuntime,
 ) {
-    if neutral_timers.extra.get("dragonCurrentKind").is_some() {
+    if neutral_timers.extra.contains_key("dragonCurrentKind") {
         return;
     }
     let seed = champion_ids.fold(0_i64, |acc, id| {
@@ -198,12 +198,11 @@ pub(super) fn unlock_elder_if_needed(neutral_timers: &mut NeutralTimersRuntime, 
         return;
     }
 
-    if let Some(elder) = neutral_timers.entities.get_mut("elder") {
-        if !elder.unlocked {
+    if let Some(elder) = neutral_timers.entities.get_mut("elder")
+        && !elder.unlocked {
             elder.unlocked = true;
             elder.next_spawn_at = Some(now + 6.0 * 60.0);
         }
-    }
 }
 
 pub(super) fn tick_neutral_entity_timer(
@@ -228,9 +227,9 @@ pub(super) fn tick_neutral_entity_timer(
             spawn_text = Some(format!("{} spawned", timer.label));
         }
 
-        if timer.alive {
-            if let Some(grace_until) = timer.combat_grace_until {
-                if now >= grace_until {
+        if timer.alive
+            && let Some(grace_until) = timer.combat_grace_until
+                && now >= grace_until {
                     let had_remaining_hp = timer.hp > 0.0;
                     timer.alive = false;
                     timer.hp = 0.0;
@@ -241,8 +240,6 @@ pub(super) fn tick_neutral_entity_timer(
                         voidgrubs_expired_with_remaining_hp = true;
                     }
                 }
-            }
-        }
     }
 
     NeutralTimerTickResult {

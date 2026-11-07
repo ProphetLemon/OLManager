@@ -5,7 +5,7 @@ use crate::game::Game;
 use rand::RngExt;
 
 fn parse_sponsor_amount(raw: &str) -> Option<u64> {
-    let compact = raw.trim().replace(',', "").replace('€', "");
+    let compact = raw.trim().replace([',', '€'], "");
     if compact.is_empty() {
         return None;
     }

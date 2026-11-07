@@ -500,7 +500,7 @@ pub fn build_media_story_from_narrative(
             ..Default::default()
         })
         .with_i18n(
-            &subject_key,
+            subject_key,
             &body_key,
             params(&[
                 ("player", player_name),
@@ -673,14 +673,13 @@ pub(super) fn allio_podcast_message(
     )
     .with_sender_i18n("be.sender.allioPodcast", "be.role.allioPodcast");
 
-    if variant < 2 {
-        if let Some(pid) = player_id {
+    if variant < 2
+        && let Some(pid) = player_id {
             msg = msg.with_context(MessageContext {
                 player_id: Some(pid.to_string()),
                 ..Default::default()
             });
         }
-    }
 
     msg
 }

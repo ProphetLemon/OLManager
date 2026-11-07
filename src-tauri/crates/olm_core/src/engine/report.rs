@@ -332,20 +332,17 @@ fn populate_duration_seconds(
         .collect();
 
     for event in events {
-        match &event.event_type {
-            EventType::Substitution => {
-                if let Some(player_off_id) = event.secondary_player_id.as_ref() {
-                    minutes_by_player
-                        .insert(player_off_id.clone(), event.minute.min(total_minutes));
-                }
-                if let Some(player_on_id) = event.player_id.as_ref() {
-                    minutes_by_player.insert(
-                        player_on_id.clone(),
-                        total_minutes.saturating_sub(event.minute),
-                    );
-                }
+        if event.event_type == EventType::Substitution {
+            if let Some(player_off_id) = event.secondary_player_id.as_ref() {
+                minutes_by_player
+                    .insert(player_off_id.clone(), event.minute.min(total_minutes));
             }
-            _ => {}
+            if let Some(player_on_id) = event.player_id.as_ref() {
+                minutes_by_player.insert(
+                    player_on_id.clone(),
+                    total_minutes.saturating_sub(event.minute),
+                );
+            }
         }
     }
 

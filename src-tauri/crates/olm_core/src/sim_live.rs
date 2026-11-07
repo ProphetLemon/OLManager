@@ -1207,6 +1207,7 @@ fn create_champions(
     champions
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn seed_team(
     champions: &mut Vec<Value>,
     players: &[SnapshotPlayer],
@@ -2272,13 +2273,12 @@ impl NavGrid {
             let e2 = 2 * err;
 
             // Strictly check adjacent cells for diagonal movement to prevent corner-cutting through walls
-            if e2 > -dy && e2 < dx {
-                if self.is_blocked_cell((x0 + sx) as usize, y0 as usize)
-                    || self.is_blocked_cell(x0 as usize, (y0 + sy) as usize)
+            if e2 > -dy && e2 < dx
+                && (self.is_blocked_cell((x0 + sx) as usize, y0 as usize)
+                    || self.is_blocked_cell(x0 as usize, (y0 + sy) as usize))
                 {
                     return false;
                 }
-            }
 
             if e2 > -dy {
                 err -= dy;
@@ -2485,11 +2485,10 @@ fn point_in_polygon(point: Vec2, polygon: &[Vec2]) -> bool {
 }
 
 fn set_champion_direct_path(champion: &mut ChampionRuntime, target: Vec2) {
-    if let Some(current_target) = current_champion_path_target(champion) {
-        if dist(current_target, target) <= CHAMPION_REPATH_MIN_TARGET_DELTA {
+    if let Some(current_target) = current_champion_path_target(champion)
+        && dist(current_target, target) <= CHAMPION_REPATH_MIN_TARGET_DELTA {
             return;
         }
-    }
 
     let grid = nav_grid();
     if grid.has_line_of_sight(champion.pos, target) {
@@ -2533,11 +2532,10 @@ fn set_champion_direct_path_hysteresis(
     target: Vec2,
     min_target_delta: f64,
 ) {
-    if let Some(current_target) = current_champion_path_target(champion) {
-        if dist(current_target, target) <= min_target_delta {
+    if let Some(current_target) = current_champion_path_target(champion)
+        && dist(current_target, target) <= min_target_delta {
             return;
         }
-    }
     set_champion_direct_path(champion, target);
 }
 
@@ -2598,11 +2596,10 @@ fn pick_jungle_farm_fallback_pos(
             first_alive_fallback = Some(timer.pos);
         }
 
-        if let Some(threat) = threat_pos {
-            if dist(timer.pos, threat) <= JUNGLE_DISENGAGE_THREAT_AVOID_RADIUS {
+        if let Some(threat) = threat_pos
+            && dist(timer.pos, threat) <= JUNGLE_DISENGAGE_THREAT_AVOID_RADIUS {
                 continue;
             }
-        }
 
         return Some(timer.pos);
     }
@@ -2616,7 +2613,7 @@ fn jgl_disengage_fallback_pos(
     threat_pos: Vec2,
 ) -> Vec2 {
     let neutral_timers = decode_neutral_timers_state(&runtime.neutral_timers)
-        .unwrap_or_else(|| neutral_timers_default_runtime_state());
+        .unwrap_or_else(neutral_timers_default_runtime_state);
     let team_tactics = team_tactics_for_runtime(runtime.extra.get("teamTactics"), &champion.team);
     if let Some(camp_pos) = pick_jungle_farm_fallback_pos(
         champion,
@@ -2814,7 +2811,7 @@ fn should_force_laner_disengage(
         profile.outnumber_tolerance
     };
     if pressure.enemy_score > pressure.ally_score + pressure_margin
-        && pressure.enemy_champions >= pressure.ally_champions + 1
+        && pressure.enemy_champions > pressure.ally_champions
     {
         return true;
     }
@@ -2962,6 +2959,7 @@ fn should_commit_all_in_trade(
     trading::should_commit_all_in_trade(champion, enemy, champions, minions)
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn evaluate_open_trade_window(
     champion: &ChampionRuntime,
     enemy: &ChampionRuntime,
@@ -2986,6 +2984,7 @@ fn evaluate_open_trade_window(
     )
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn can_open_trade_window(
     champion: &ChampionRuntime,
     enemy: &ChampionRuntime,
@@ -3011,6 +3010,7 @@ fn can_open_trade_window(
     .decision
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn evaluate_disengage_champion_trade(
     champion: &ChampionRuntime,
     enemy: &ChampionRuntime,
@@ -3026,6 +3026,7 @@ fn evaluate_disengage_champion_trade(
     )
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn should_disengage_champion_trade(
     champion: &ChampionRuntime,
     enemy: &ChampionRuntime,
@@ -3138,8 +3139,8 @@ fn lane_farm_anchor_pos_v2(
         .map(|tower| dist(wave_front, tower.pos) <= 0.11)
         .unwrap_or(false);
 
-    if wave_at_own_tower && champion.role != "SUP" {
-        if let Some(tower) = allied_lane_tower {
+    if wave_at_own_tower && champion.role != "SUP"
+        && let Some(tower) = allied_lane_tower {
             let to_wave_from_tower = normalize(Vec2 {
                 x: wave_front.x - tower.pos.x,
                 y: wave_front.y - tower.pos.y,
@@ -3158,7 +3159,6 @@ fn lane_farm_anchor_pos_v2(
                 ),
             };
         }
-    }
 
     let emergency_farm_boost = if wave_at_own_tower { 1.55 } else { 1.0 };
     let advance = f64::min(
@@ -3468,6 +3468,7 @@ fn tick_recall(
     true
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn decide_champion_state(
     champion: &mut ChampionRuntime,
     now: f64,
@@ -4100,15 +4101,14 @@ fn try_cast_ultimate(runtime: &mut RuntimeState, champion_idx: usize, now: f64) 
     }
 
     if let Some(casted_special) = try_cast_special_ultimate(runtime, champion_idx, now) {
-        if casted_special {
-            if set_ultimate_cd(
+        if casted_special
+            && set_ultimate_cd(
                 &mut runtime.champions[champion_idx],
                 now,
                 ULTIMATE_BASE_CD_SEC,
             ) {
                 return true;
             }
-        }
         return false;
     }
 
@@ -4234,13 +4234,12 @@ fn tick_ignite_dot_effects(runtime: &mut RuntimeState, now: f64) {
         runtime.champions[idx].ignite_dot_until = 0.0;
         runtime.champions[idx].ignite_source_id = None;
 
-        if let Some(killer_id) = killer_id {
-            if let Some(killer_idx) = runtime
+        if let Some(killer_id) = killer_id
+            && let Some(killer_idx) = runtime
                 .champions
                 .iter()
                 .position(|champion| champion.id == killer_id)
-            {
-                if runtime.champions[killer_idx].alive {
+                && runtime.champions[killer_idx].alive {
                     runtime.champions[killer_idx].kills += 1;
                     let killer_team = runtime.champions[killer_idx].team.clone();
                     team_stats_mut(&mut runtime.stats, &killer_team).kills += 1;
@@ -4260,8 +4259,6 @@ fn tick_ignite_dot_effects(runtime: &mut RuntimeState, now: f64) {
                     );
                     continue;
                 }
-            }
-        }
     }
 }
 
@@ -5151,7 +5148,7 @@ fn should_engage_enemy_champion(
 
     if target_under_defending_tower && fight_plan != "Dive" {
         let secure_under_tower = enemy_hp_ratio <= 0.25
-            || (ally_nearby >= enemy_nearby + 1 && hp_ratio >= enemy_hp_ratio + 0.15);
+            || (ally_nearby > enemy_nearby && hp_ratio >= enemy_hp_ratio + 0.15);
         if !secure_under_tower {
             return false;
         }

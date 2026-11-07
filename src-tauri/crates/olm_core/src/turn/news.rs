@@ -974,7 +974,7 @@ mod tests {
             weekly_digest.i18n_params.get("weekStart"),
             Some(&"2025-08-11".to_string())
         );
-        assert!(weekly_digest.i18n_params.get("weekLabel").is_none());
+        assert!(!weekly_digest.i18n_params.contains_key("weekLabel"));
 
         let title_race = game
             .news

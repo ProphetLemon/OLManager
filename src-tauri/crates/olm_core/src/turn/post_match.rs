@@ -136,6 +136,7 @@ pub fn apply_match_report_with_capture<F>(
     );
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub fn apply_match_report_with_draft_capture<F>(
     game: &mut Game,
     fixture_index: usize,

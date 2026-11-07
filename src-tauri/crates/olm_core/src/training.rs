@@ -211,7 +211,7 @@ fn effective_scrim_slots(raw_slots: u8, schedule: &TrainingSchedule) -> usize {
 
 fn scrim_slot_weekdays_for_slots(slots: usize) -> &'static [u32] {
     match slots {
-        0 | 1 | 2 => &[2, 2],
+        0..=2 => &[2, 2],
         3 | 4 => &[2, 2, 3, 3],
         _ => &[2, 2, 3, 3, 4, 4],
     }
@@ -497,7 +497,7 @@ fn build_weekly_scrim_staff_report(
         top_focus,
         recurring_issue,
         top_champion,
-        &recommendation.fallback,
+        recommendation.fallback,
     );
 
     let params = params(&[
@@ -1310,54 +1310,6 @@ fn is_lol_training_capped(player: &crate::domain::player::Player) -> bool {
     calculate_lol_ovr(player) >= effective_potential_cap(player)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{apply_focus_gains, is_lol_training_capped};
-    use crate::domain::player::{LolRole, Player, PlayerAttributes};
-    use crate::domain::team::TrainingFocus;
-
-    fn attrs(stat: u8) -> PlayerAttributes {
-        PlayerAttributes {
-            mechanics: stat,
-            laning: stat,
-            teamfighting: stat,
-            macro_play: stat,
-            consistency: stat,
-            shotcalling: stat,
-            champion_pool: stat,
-            discipline: stat,
-            mental_resilience: stat,
-        }
-    }
-
-    #[test]
-    fn potential_cap_blocks_lol_stat_gains_when_ovr_reaches_cap() {
-        let mut player = Player::new(
-            "p-1".to_string(),
-            "Cap".to_string(),
-            "Cap".to_string(),
-            "2002-01-01".to_string(),
-            "GB".to_string(),
-            LolRole::Mid,
-            attrs(90),
-        );
-        player.potential_base = 90;
-
-        assert!(is_lol_training_capped(&player));
-
-        let before = player.attributes.clone();
-        apply_focus_gains(
-            &mut player.attributes,
-            &TrainingFocus::IndividualCoaching,
-            1.0,
-            true,
-        );
-        assert_eq!(player.attributes.mechanics, before.mechanics);
-        assert_eq!(player.attributes.laning, before.laning);
-        assert_eq!(player.attributes.champion_pool, before.champion_pool);
-    }
-}
-
 /// Apply a post-scrim decision (simplified — marks the decision on the report).
 pub fn apply_post_scrim_decision(
     game: &mut crate::game::Game,
@@ -1366,8 +1318,8 @@ pub fn apply_post_scrim_decision(
     decision: &str,
 ) -> Result<(), String> {
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
-    if let Some(team) = game.teams.iter_mut().find(|t| t.id == tid) {
-        if let Some(report) = team
+    if let Some(team) = game.teams.iter_mut().find(|t| t.id == tid)
+        && let Some(report) = team
             .scrim_reports
             .iter_mut()
             .find(|r| r.date == today && r.slot_index == slot_index && r.post_decision.is_none())
@@ -1376,7 +1328,6 @@ pub fn apply_post_scrim_decision(
             report.post_decision = Some(d);
             return Ok(());
         }
-    }
     Err("No unresolved scrim report found for this slot".to_string())
 }
 
@@ -1603,7 +1554,7 @@ pub fn estimate_team_lol_ovr(game: &crate::game::Game, team_id: &str) -> u8 {
         .players
         .iter()
         .filter(|p| p.team_id.as_deref() == Some(team_id))
-        .map(|p| crate::potential::calculate_lol_ovr(p))
+        .map(crate::potential::calculate_lol_ovr)
         .collect();
     if ovrs.is_empty() {
         return 74;
@@ -1612,4 +1563,52 @@ pub fn estimate_team_lol_ovr(game: &crate::game::Game, team_id: &str) -> u8 {
     let sample: Vec<u8> = ovrs.iter().take(5).copied().collect();
     let sum: u32 = sample.iter().map(|&v| u32::from(v)).sum();
     (sum / sample.len() as u32) as u8
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{apply_focus_gains, is_lol_training_capped};
+    use crate::domain::player::{LolRole, Player, PlayerAttributes};
+    use crate::domain::team::TrainingFocus;
+
+    fn attrs(stat: u8) -> PlayerAttributes {
+        PlayerAttributes {
+            mechanics: stat,
+            laning: stat,
+            teamfighting: stat,
+            macro_play: stat,
+            consistency: stat,
+            shotcalling: stat,
+            champion_pool: stat,
+            discipline: stat,
+            mental_resilience: stat,
+        }
+    }
+
+    #[test]
+    fn potential_cap_blocks_lol_stat_gains_when_ovr_reaches_cap() {
+        let mut player = Player::new(
+            "p-1".to_string(),
+            "Cap".to_string(),
+            "Cap".to_string(),
+            "2002-01-01".to_string(),
+            "GB".to_string(),
+            LolRole::Mid,
+            attrs(90),
+        );
+        player.potential_base = 90;
+
+        assert!(is_lol_training_capped(&player));
+
+        let before = player.attributes.clone();
+        apply_focus_gains(
+            &mut player.attributes,
+            &TrainingFocus::IndividualCoaching,
+            1.0,
+            true,
+        );
+        assert_eq!(player.attributes.mechanics, before.mechanics);
+        assert_eq!(player.attributes.laning, before.laning);
+        assert_eq!(player.attributes.champion_pool, before.champion_pool);
+    }
 }

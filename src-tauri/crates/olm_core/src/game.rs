@@ -247,15 +247,14 @@ impl Game {
     /// Returns a mutable reference to the player's active league.
     pub fn active_league_mut(&mut self) -> Option<&mut League> {
         let cid = self.user_competition_id.clone();
-        if let Some(ref cid) = cid {
-            if let Some(pos) = self
+        if let Some(ref cid) = cid
+            && let Some(pos) = self
                 .leagues
                 .iter()
                 .position(|l| l.competition_id.as_deref() == Some(cid))
             {
                 return self.leagues.get_mut(pos);
             }
-        }
         self.leagues.first_mut()
     }
 

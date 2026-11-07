@@ -190,7 +190,7 @@ pub fn dispatch(command: &str, args: &Value, game: &mut Game) -> Result<Dispatch
             // Sync with the full logic
             let effective = crate::training::effective_scrim_slots_u8(
                 raw,
-                &game
+                game
                     .teams
                     .iter()
                     .find(|t| t.id == tid)
@@ -298,8 +298,8 @@ pub fn dispatch(command: &str, args: &Value, game: &mut Game) -> Result<Dispatch
             let _slot_index = args.get("slotIndex").and_then(|v| v.as_u64()).unwrap_or(0) as u8;
             let action = string_arg(args, &["action"])?;
             let tid = manager_team_id(game)?;
-            if let Some(team) = game.teams.iter_mut().find(|t| t.id == tid) {
-                if action == "CancelScrims" {
+            if let Some(team) = game.teams.iter_mut().find(|t| t.id == tid)
+                && action == "CancelScrims" {
                     for (idx, opp) in team.weekly_scrim_opponent_ids.iter_mut().enumerate() {
                         *opp = String::new();
                         if let Some(plan) = team.weekly_scrim_plan_team_ids.get_mut(idx) {
@@ -307,7 +307,6 @@ pub fn dispatch(command: &str, args: &Value, game: &mut Game) -> Result<Dispatch
                         }
                     }
                 }
-            }
             Ok(DispatchResult::GameModified(json!(game)))
         }
         "delegate_scrim_decision" => {

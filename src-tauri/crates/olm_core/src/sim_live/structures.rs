@@ -67,19 +67,16 @@ pub(super) fn is_structure_targetable(
         return !team_has_alive_nexus_towers(structures, &structure.team);
     }
 
-    if structure.kind == "tower" {
-        if let Some(prereq_alive) = prerequisite_tower_alive(structures, &structure.id) {
-            if prereq_alive {
+    if structure.kind == "tower"
+        && let Some(prereq_alive) = prerequisite_tower_alive(structures, &structure.id)
+            && prereq_alive {
                 return false;
             }
-        }
-    }
 
-    if structure.kind == "inhib" {
-        if let Some(lane) = lane_tag_from_structure_id(&structure.id) {
+    if structure.kind == "inhib"
+        && let Some(lane) = lane_tag_from_structure_id(&structure.id) {
             return !inhib_tower_alive_for_lane(structures, &structure.team, lane);
         }
-    }
 
     true
 }
@@ -175,8 +172,8 @@ pub(super) fn select_structure_attack_target(
     range: f64,
 ) -> (Option<StructureAttackTarget>, bool) {
     if let Some(target_id) = structure.forced_target_champion_id.as_deref() {
-        if now <= structure.forced_target_until {
-            if let Some(champion_idx) = locked_tower_target_champion_idx(
+        if now <= structure.forced_target_until
+            && let Some(champion_idx) = locked_tower_target_champion_idx(
                 champions,
                 target_id,
                 &structure.team,
@@ -185,7 +182,6 @@ pub(super) fn select_structure_attack_target(
             ) {
                 return (Some(StructureAttackTarget::Champion(champion_idx)), false);
             }
-        }
         // forced target existed but is no longer valid/active
         if now > structure.forced_target_until
             || locked_tower_target_champion_idx(
@@ -327,8 +323,7 @@ pub(super) fn apply_damage_to_structure(
         let buffs = super::team_buffs_for_runtime(runtime.extra.get("teamBuffs"), attacker_team);
         let voidgrub_bonus = (buffs.voidgrub_stacks as f64
             * super::VOIDGRUB_TOWER_DAMAGE_PER_STACK)
-            .min(super::VOIDGRUB_TOWER_DAMAGE_MAX)
-            .max(0.0);
+            .clamp(0.0, super::VOIDGRUB_TOWER_DAMAGE_MAX);
         damage *= 1.0 + voidgrub_bonus;
     }
     if damage <= 0.0 {

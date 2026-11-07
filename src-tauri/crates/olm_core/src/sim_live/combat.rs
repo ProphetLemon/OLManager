@@ -108,8 +108,8 @@ pub(super) fn classify_objective_assist_plan(
 
     let is_objective_assist =
         should_assist_objective_attempt(champion, &runtime.champions, neutral_timers);
-    if is_objective_assist && champion.state == "objective" {
-        if let Some(attempt) =
+    if is_objective_assist && champion.state == "objective"
+        && let Some(attempt) =
             active_objective_attempt_for_team(&team, &runtime.champions, neutral_timers)
         {
             return ChampionObjectiveAssistPlan::ObjectiveAssist {
@@ -117,7 +117,6 @@ pub(super) fn classify_objective_assist_plan(
                 objective_pos: attempt.pos,
             };
         }
-    }
 
     ChampionObjectiveAssistPlan::None
 }
@@ -842,11 +841,10 @@ pub(super) fn pick_combat_target(
     let objective_assist_active =
         should_assist_objective_attempt(champion, &runtime.champions, neutral_timers)
             && champion.state == "objective";
-    if objective_assist_active {
-        if let Some(neutral_key) = nearby_neutral_objective_key(champion, neutral_timers) {
+    if objective_assist_active
+        && let Some(neutral_key) = nearby_neutral_objective_key(champion, neutral_timers) {
             return Some(CombatTarget::Neutral(neutral_key));
         }
-    }
 
     let lane_mult = champion_lane_damage_multiplier(champion);
 
@@ -1160,8 +1158,8 @@ pub(super) fn pick_combat_target(
         });
     }
 
-    if let Some(key) = nearby_neutral {
-        if let Some(timer) = neutral_timers.entities.get(&key) {
+    if let Some(key) = nearby_neutral
+        && let Some(timer) = neutral_timers.entities.get(&key) {
             let d = dist(champion.pos, timer.pos);
             fallback_candidates.push(FallbackCandidate {
                 target: CombatTarget::Neutral(key.clone()),
@@ -1171,7 +1169,6 @@ pub(super) fn pick_combat_target(
                 stable_key: key,
             });
         }
-    }
 
     fallback_candidates.sort_by(compare_fallback_candidate);
 
