@@ -228,6 +228,8 @@
     "attribution": "Roster data: {{name}} contributors,",
     "update": "Update rosters",
     "updating": "Updating...",
+    "checking": "Checking for roster updates…",
+    "checkFailed": "Couldn't check for roster updates. Using the rosters shown.",
     "updated": "Rosters updated to {{date}}",
     "upToDate": "Rosters already up to date",
     "error": "Could not update rosters: {{message}}. You can still start with the current rosters."

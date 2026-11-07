@@ -197,6 +197,8 @@
     "attribution": "Kadro verileri: {{name}} katkıda bulunanlar,",
     "update": "Kadroları güncelle",
     "updating": "Güncelleniyor...",
+    "checking": "Kadro güncellemeleri denetleniyor…",
+    "checkFailed": "Kadro güncellemeleri denetlenemedi. Gösterilen kadrolar kullanılıyor.",
     "updated": "Kadrolar {{date}} tarihine güncellendi",
     "upToDate": "Kadrolar zaten güncel",
     "error": "Kadrolar güncellenemedi: {{message}}. Mevcut kadrolarla başlayabilirsiniz."

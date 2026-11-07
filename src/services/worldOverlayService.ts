@@ -24,7 +24,16 @@ export async function getWorldOverlayInfo(): Promise<WorldOverlayInfo> {
   return invoke<WorldOverlayInfo>("get_world_overlay_info");
 }
 
-/** Download a newer roster overlay (if any); rejects with the backend message. */
-export async function updateWorldOverlay(): Promise<WorldOverlayInfo> {
+/**
+ * Download a newer roster overlay (if any); rejects with the backend message.
+ * `automatic` marks the background check made when the new-game screen opens,
+ * which the backend gives a shorter timeout than a manual update.
+ */
+export async function updateWorldOverlay(
+  options: { automatic?: boolean } = {},
+): Promise<WorldOverlayInfo> {
+  if (options.automatic) {
+    return invoke<WorldOverlayInfo>("update_world_overlay", { automatic: true });
+  }
   return invoke<WorldOverlayInfo>("update_world_overlay");
 }

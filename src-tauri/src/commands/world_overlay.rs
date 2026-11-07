@@ -22,7 +22,11 @@ const DEFAULT_SOURCE: &str =
     "https://raw.githubusercontent.com/ProphetLemon/OLManager/develop/assets/world/roster-overlay.json";
 /// Hard cap on the overlay size, enforced while streaming.
 const MAX_OVERLAY_BYTES: usize = 4 * 1024 * 1024;
+/// Timeout of a manual "Update rosters" press.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
+/// Timeout of the automatic check made when the new-game screen opens; it
+/// holds the Confirm button back, so it must stay short.
+const AUTOMATIC_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_REDIRECTS: usize = 5;
 const CACHE_DIR: &str = "world";
 const CACHE_FILE: &str = "roster-overlay.json";
@@ -225,13 +229,14 @@ async fn download_capped(
     url: &str,
     user_agent: &str,
     limit: usize,
+    timeout: Duration,
 ) -> Result<Vec<u8>, WorldOverlayError> {
     if !url.to_ascii_lowercase().starts_with("https://") {
         return Err(WorldOverlayError::InsecureSource(describe_source(url)));
     }
     let client = reqwest::Client::builder()
         .user_agent(user_agent)
-        .timeout(REQUEST_TIMEOUT)
+        .timeout(timeout)
         .redirect(reqwest::redirect::Policy::custom(|attempt| {
             if attempt.url().scheme() != "https" {
                 attempt.error("redirect to a non-https URL")
@@ -275,9 +280,10 @@ async fn fetch_overlay_bytes(
     source: &str,
     user_agent: &str,
     limit: usize,
+    timeout: Duration,
 ) -> Result<Vec<u8>, WorldOverlayError> {
     if is_remote(source) {
-        download_capped(source, user_agent, limit).await
+        download_capped(source, user_agent, limit, timeout).await
     } else {
         read_local_capped(Path::new(source), limit)
     }
@@ -322,12 +328,13 @@ async fn refresh_cache(
     source: &str,
     user_agent: &str,
     limit: usize,
+    timeout: Duration,
 ) -> Result<WorldOverlayInfo, WorldOverlayError> {
     let bundled = bundled_world_overlay().map_err(WorldOverlayError::BundledInvalid)?;
     let cached = read_cached_overlay(cache_path);
     let before = select_overlay(bundled.clone(), cached.clone());
 
-    let bytes = fetch_overlay_bytes(source, user_agent, limit).await?;
+    let bytes = fetch_overlay_bytes(source, user_agent, limit, timeout).await?;
     let text = std::str::from_utf8(&bytes).map_err(|_| {
         WorldOverlayError::Invalid(OverlayError::InvalidField {
             field: "document".to_string(),
@@ -359,19 +366,35 @@ async fn refresh_cache(
 // Tauri commands
 // ---------------------------------------------------------------------------
 
+/// Request timeout for a manual (`false`) or automatic (`true`) update.
+fn request_timeout(automatic: bool) -> Duration {
+    if automatic {
+        AUTOMATIC_REQUEST_TIMEOUT
+    } else {
+        REQUEST_TIMEOUT
+    }
+}
+
 /// Download a newer roster overlay (if any) and cache it for future new games.
+///
+/// `automatic` marks the background check made when the new-game screen opens:
+/// it uses a shorter timeout than a manual update. Everything else (https
+/// only, size cap, validation, atomic write) is identical.
 #[tauri::command]
 pub async fn update_world_overlay(
     app_handle: tauri::AppHandle,
+    automatic: Option<bool>,
 ) -> Result<WorldOverlayInfo, String> {
+    let timeout = request_timeout(automatic.unwrap_or(false));
     let source = configured_source();
     let user_agent = format!("OLManager/{}", app_handle.package_info().version);
     let path = cache_path(&app_handle).map_err(|err| err.to_string())?;
     info!(
-        "[cmd] update_world_overlay: source={}",
-        describe_source(&source)
+        "[cmd] update_world_overlay: source={} timeout={}s",
+        describe_source(&source),
+        timeout.as_secs()
     );
-    refresh_cache(&path, &source, &user_agent, MAX_OVERLAY_BYTES)
+    refresh_cache(&path, &source, &user_agent, MAX_OVERLAY_BYTES, timeout)
         .await
         .map_err(|err| {
             warn!("[cmd] update_world_overlay failed: {err}");
@@ -391,6 +414,13 @@ pub fn get_world_overlay_info(app_handle: tauri::AppHandle) -> Result<WorldOverl
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn automatic_check_uses_the_short_timeout_and_manual_keeps_the_long_one() {
+        assert_eq!(request_timeout(true), Duration::from_secs(5));
+        assert_eq!(request_timeout(false), Duration::from_secs(15));
+        assert!(request_timeout(true) < request_timeout(false));
+    }
 
     const UA: &str = "OLManager/test";
 
@@ -495,7 +525,14 @@ mod tests {
         let source = write_source(dir.path(), "src.json", &overlay_json(&newer, 2));
         let cache = dir.path().join("world").join(CACHE_FILE);
 
-        let info = run(refresh_cache(&cache, &source, UA, MAX_OVERLAY_BYTES)).expect("refresh");
+        let info = run(refresh_cache(
+            &cache,
+            &source,
+            UA,
+            MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
+        ))
+        .expect("refresh");
 
         assert!(info.updated);
         assert_eq!(info.origin, OverlayOrigin::Downloaded);
@@ -512,8 +549,22 @@ mod tests {
         let source = write_source(dir.path(), "src.json", &overlay_json(&newer, 1));
         let cache = dir.path().join(CACHE_FILE);
 
-        run(refresh_cache(&cache, &source, UA, MAX_OVERLAY_BYTES)).expect("first");
-        let info = run(refresh_cache(&cache, &source, UA, MAX_OVERLAY_BYTES)).expect("second");
+        run(refresh_cache(
+            &cache,
+            &source,
+            UA,
+            MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
+        ))
+        .expect("first");
+        let info = run(refresh_cache(
+            &cache,
+            &source,
+            UA,
+            MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
+        ))
+        .expect("second");
 
         assert!(!info.updated);
         assert_eq!(info.origin, OverlayOrigin::Downloaded);
@@ -525,11 +576,25 @@ mod tests {
         let cache = dir.path().join(CACHE_FILE);
         let newer = offset_date(2);
         let newer_src = write_source(dir.path(), "new.json", &overlay_json(&newer, 3));
-        run(refresh_cache(&cache, &newer_src, UA, MAX_OVERLAY_BYTES)).expect("seed cache");
+        run(refresh_cache(
+            &cache,
+            &newer_src,
+            UA,
+            MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
+        ))
+        .expect("seed cache");
         let before = std::fs::read(&cache).expect("read cache");
 
         let older_src = write_source(dir.path(), "old.json", &overlay_json(&offset_date(1), 1));
-        let info = run(refresh_cache(&cache, &older_src, UA, MAX_OVERLAY_BYTES)).expect("refresh");
+        let info = run(refresh_cache(
+            &cache,
+            &older_src,
+            UA,
+            MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
+        ))
+        .expect("refresh");
 
         assert!(!info.updated);
         assert_eq!(info.as_of, newer);
@@ -542,7 +607,14 @@ mod tests {
         let cache = dir.path().join(CACHE_FILE);
         let source = write_source(dir.path(), "old.json", &overlay_json(&offset_date(-30), 1));
 
-        let info = run(refresh_cache(&cache, &source, UA, MAX_OVERLAY_BYTES)).expect("refresh");
+        let info = run(refresh_cache(
+            &cache,
+            &source,
+            UA,
+            MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
+        ))
+        .expect("refresh");
 
         assert!(!info.updated);
         assert_eq!(info.origin, OverlayOrigin::Bundled);
@@ -554,7 +626,14 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         let cache = dir.path().join(CACHE_FILE);
         let good = write_source(dir.path(), "good.json", &overlay_json(&offset_date(2), 1));
-        run(refresh_cache(&cache, &good, UA, MAX_OVERLAY_BYTES)).expect("seed cache");
+        run(refresh_cache(
+            &cache,
+            &good,
+            UA,
+            MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
+        ))
+        .expect("seed cache");
         let before = std::fs::read(&cache).expect("read cache");
 
         let bad = write_source(
@@ -562,7 +641,14 @@ mod tests {
             "bad.json",
             &overlay_json(&offset_date(2), 0).replace("\"as_of\"", "\"as_of_x\""),
         );
-        let err = run(refresh_cache(&cache, &bad, UA, MAX_OVERLAY_BYTES)).expect_err("invalid");
+        let err = run(refresh_cache(
+            &cache,
+            &bad,
+            UA,
+            MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
+        ))
+        .expect_err("invalid");
 
         assert!(matches!(err, WorldOverlayError::Invalid(_)), "got {err:?}");
         assert_eq!(std::fs::read(&cache).expect("read cache"), before);
@@ -575,7 +661,14 @@ mod tests {
         let doc = overlay_json(&offset_date(1), 1).replace("\"id\":\"p0\"", "\"id\":\"\"");
         let source = write_source(dir.path(), "empty-id.json", &doc);
 
-        let err = run(refresh_cache(&cache, &source, UA, MAX_OVERLAY_BYTES)).expect_err("invalid");
+        let err = run(refresh_cache(
+            &cache,
+            &source,
+            UA,
+            MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
+        ))
+        .expect_err("invalid");
 
         assert!(matches!(err, WorldOverlayError::Invalid(_)), "got {err:?}");
         assert!(!cache.exists());
@@ -592,6 +685,7 @@ mod tests {
             &path.to_string_lossy(),
             UA,
             MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
         ))
         .expect_err("non utf8");
 
@@ -605,7 +699,14 @@ mod tests {
         let source = write_source(dir.path(), "big.json", &doc);
         let cache = dir.path().join(CACHE_FILE);
 
-        let err = run(refresh_cache(&cache, &source, UA, doc.len() - 1)).expect_err("too large");
+        let err = run(refresh_cache(
+            &cache,
+            &source,
+            UA,
+            doc.len() - 1,
+            REQUEST_TIMEOUT,
+        ))
+        .expect_err("too large");
 
         assert!(
             matches!(err, WorldOverlayError::TooLarge { .. }),
@@ -625,6 +726,7 @@ mod tests {
             &source,
             UA,
             doc.len(),
+            REQUEST_TIMEOUT,
         ))
         .expect("at the cap");
 
@@ -637,6 +739,7 @@ mod tests {
             "http://example.test/roster-overlay.json",
             UA,
             MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
         ))
         .expect_err("http refused");
         assert!(
@@ -664,6 +767,7 @@ mod tests {
             "http://user:s3cret@example.test/overlay.json?token=abc",
             UA,
             MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
         ))
         .expect_err("http refused");
         let message = err.to_string();
@@ -700,6 +804,7 @@ mod tests {
             &dir.path().join("nope.json").to_string_lossy(),
             UA,
             MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
         ))
         .expect_err("missing source");
         assert!(matches!(err, WorldOverlayError::Io(_)), "got {err:?}");

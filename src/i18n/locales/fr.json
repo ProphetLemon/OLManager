@@ -197,6 +197,8 @@
     "attribution": "Données des effectifs : contributeurs de {{name}},",
     "update": "Mettre à jour les effectifs",
     "updating": "Mise à jour...",
+    "checking": "Recherche de mises à jour des effectifs…",
+    "checkFailed": "Impossible de vérifier les mises à jour des effectifs. Les effectifs affichés sont utilisés.",
     "updated": "Effectifs mis à jour au {{date}}",
     "upToDate": "Les effectifs sont déjà à jour",
     "error": "Impossible de mettre à jour les effectifs : {{message}}. Vous pouvez commencer avec les effectifs actuels."

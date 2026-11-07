@@ -35,6 +35,7 @@ function openExternal(url: string): void {
 export function RosterOverlayPanel({ info, status, error, onUpdate }: RosterOverlayPanelProps) {
   const { t, i18n } = useTranslation();
   const updating = status === "updating";
+  const checking = status === "checking";
 
   if (!info) return null;
 
@@ -76,6 +77,17 @@ export function RosterOverlayPanel({ info, status, error, onUpdate }: RosterOver
       </div>
 
       <div className="flex items-center gap-3" aria-live="polite">
+        {checking && (
+          <span>{t("rosterOverlay.checking", "Checking for roster updates…")}</span>
+        )}
+        {status === "checkFailed" && (
+          <span>
+            {t(
+              "rosterOverlay.checkFailed",
+              "Couldn't check for roster updates. Using the rosters shown.",
+            )}
+          </span>
+        )}
         {status === "updated" && (
           <span className="text-primary">
             {t("rosterOverlay.updated", "Rosters updated to {{date}}", { date: asOf })}
@@ -84,8 +96,8 @@ export function RosterOverlayPanel({ info, status, error, onUpdate }: RosterOver
         {status === "upToDate" && (
           <span>{t("rosterOverlay.upToDate", "Rosters already up to date")}</span>
         )}
-        <Button type="button" variant="outline" size="sm" disabled={updating} onClick={onUpdate}>
-          {updating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+        <Button type="button" variant="outline" size="sm" disabled={updating || checking} onClick={onUpdate}>
+          {updating || checking ? <Loader2 className="animate-spin" /> : <RefreshCw />}
           {updating
             ? t("rosterOverlay.updating", "Updating...")
             : t("rosterOverlay.update", "Update rosters")}

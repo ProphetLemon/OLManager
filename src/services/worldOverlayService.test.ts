@@ -28,4 +28,12 @@ describe("worldOverlayService", () => {
     await expect(updateWorldOverlay()).rejects.toBe("download failed");
     expect(mockedInvoke).toHaveBeenCalledWith("update_world_overlay");
   });
+
+  it("flags an automatic check for the backend's shorter timeout", async () => {
+    const info = { as_of: "2026-11-01" };
+    mockedInvoke.mockResolvedValueOnce(info);
+
+    await expect(updateWorldOverlay({ automatic: true })).resolves.toBe(info);
+    expect(mockedInvoke).toHaveBeenCalledWith("update_world_overlay", { automatic: true });
+  });
 });

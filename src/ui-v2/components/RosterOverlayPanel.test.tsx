@@ -175,4 +175,33 @@ describe("RosterOverlayPanel", () => {
     expect(container).toBeEmptyDOMElement();
     warn.mockRestore();
   });
+
+  it("shows progress copy and disables the button while the automatic check runs", () => {
+    render(<RosterOverlayPanel info={makeInfo()} status="checking" error={null} onUpdate={() => {}} />);
+
+    expect(screen.getByText("Checking for roster updates…")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Update rosters" })).toBeDisabled();
+    expect(screen.getByText("Rosters as of June 22, 2026")).toBeInTheDocument();
+  });
+
+  it("shows a quiet notice, not the error alert, when the automatic check failed", () => {
+    const onUpdate = vi.fn();
+    render(<RosterOverlayPanel info={makeInfo()} status="checkFailed" error={null} onUpdate={onUpdate} />);
+
+    expect(screen.getByText("Couldn't check for roster updates. Using the rosters shown.")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByText("Rosters as of June 22, 2026")).toBeInTheDocument();
+    const retry = screen.getByRole("button", { name: "Update rosters" });
+    expect(retry).toBeEnabled();
+    fireEvent.click(retry);
+    expect(onUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays silent when idle after an up-to-date automatic check", () => {
+    render(<RosterOverlayPanel info={makeInfo()} status="idle" error={null} onUpdate={() => {}} />);
+
+    expect(screen.queryByText(/Checking for roster updates/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't check/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Rosters already up to date")).not.toBeInTheDocument();
+  });
 });
