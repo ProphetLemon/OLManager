@@ -2475,6 +2475,40 @@
         "respond": "Responder"
       },
       "playerEvent": {
+        "templates": {
+          "low_morale_1": {
+            "subject": "Preocupação com o moral: {{player}}",
+            "body": "Coach, notamos que o moral de {{player}} caiu bastante. Atualmente em {{morale}}%.\n\nIsso pode afetar o desempenho dele nas partidas e nos treinos. Talvez valha a pena conversar com ele para entender o que está acontecendo."
+          },
+          "low_morale_2": {
+            "subject": "{{player}} parece infeliz",
+            "body": "Queria chamar sua atenção — {{player}} parece estar infeliz (moral: {{morale}}%).\n\nSe nada for feito, isso pode gerar tensão no elenco. Uma conversa ou uma folga podem ajudar a levantar o ânimo dele."
+          },
+          "bench_complaint_1": {
+            "subject": "{{player}} quer mais tempo de jogo",
+            "body": "Coach, {{player}} demonstrou frustração com a falta de tempo de jogo recentemente.\n\nEle acha que merece uma vaga no time titular. Isso pode se tornar um problema maior se não for bem conduzido.\n\nComo você gostaria de lidar com isso?"
+          },
+          "bench_complaint_2": {
+            "subject": "{{player}} insatisfeito com o papel no elenco",
+            "body": "{{player}} veio falar comigo hoje — ele está insatisfeito com o papel atual no elenco e quer mais oportunidades no Rift.\n\nSe não pudermos oferecer mais tempo de jogo em breve, ele pode buscar uma transferência na próxima janela.\n\nA decisão é sua, coach."
+          },
+          "happy_player_1": {
+            "subject": "{{player}} está se sentindo ótimo!",
+            "body": "Boas notícias, coach — {{player}} está de ótimo humor ultimamente (moral: {{morale}}%).\n\nJogadores felizes rendem mais, então continue fazendo o que está fazendo com ele. Um ambiente positivo no elenco faz muita diferença."
+          },
+          "happy_player_2": {
+            "subject": "Boas vibrações de {{player}}",
+            "body": "Só queria compartilhar que {{player}} está aproveitando muito o momento no clube (moral: {{morale}}%).\n\nEle tem treinado forte e apoiado os companheiros. É ótimo ver uma atitude tão positiva no elenco.\n\nContinue cultivando esse ambiente!"
+          },
+          "contract_concern_1": {
+            "subject": "Contrato chegando ao fim: {{player}}",
+            "body": "Queria lembrar que o contrato de {{player}} está prestes a vencer (faltam {{days}} dias).\n\nSe não agirmos logo, corremos o risco de perdê-lo de graça. Devemos considerar abrir negociações de renovação ou colocá-lo à venda.\n\nQual é o seu plano para {{player}}?"
+          },
+          "contract_concern_2": {
+            "subject": "Contrato de {{player}} vence em {{days}} dias",
+            "body": "Um lembrete sobre a situação contratual de {{player}}. Com apenas {{days}} dias restantes no contrato atual, precisamos tomar uma decisão.\n\nOpções:\n• Abrir negociações de renovação\n• Colocá-lo à venda enquanto ainda tem valor\n• Deixar o contrato expirar\n\nPor favor, me diga como deseja prosseguir."
+          }
+        },
         "respond": "Responder",
         "options": {
           "moraleCrisis": {

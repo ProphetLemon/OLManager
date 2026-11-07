@@ -74,3 +74,48 @@ fn match_result_template_message_carries_the_placeholder_params() {
     assert_eq!(param(&msg, "opponent"), Some("G2"));
     assert_eq!(param(&msg, "score"), Some("KOI:2-1"));
 }
+
+// ---------------------------------------------------------------------------
+// player events
+// ---------------------------------------------------------------------------
+
+use olm_core::player_events;
+
+const PLAYER_EVENT_PREFIX: &str = "be.msg.playerEvent.templates";
+
+#[test]
+fn low_morale_template_message_attaches_keys_and_params() {
+    assert_keyed(PLAYER_EVENT_PREFIX, || {
+        player_events::low_morale_from_template("m1", "Caps", 31, "2025-08-12").unwrap()
+    });
+    let msg = player_events::low_morale_from_template("m1", "Caps", 31, "d").unwrap();
+    assert_eq!(param(&msg, "player"), Some("Caps"));
+    assert_eq!(param(&msg, "morale"), Some("31"));
+}
+
+#[test]
+fn bench_complaint_template_message_attaches_keys_and_params() {
+    assert_keyed(PLAYER_EVENT_PREFIX, || {
+        player_events::bench_complaint_from_template("m1", "Caps", "2025-08-12").unwrap()
+    });
+    let msg = player_events::bench_complaint_from_template("m1", "Caps", "d").unwrap();
+    assert_eq!(param(&msg, "player"), Some("Caps"));
+}
+
+#[test]
+fn happy_player_template_message_attaches_keys_and_params() {
+    assert_keyed(PLAYER_EVENT_PREFIX, || {
+        player_events::happy_player_from_template("m1", "Caps", "2025-08-12").unwrap()
+    });
+    let msg = player_events::happy_player_from_template("m1", "Caps", "d").unwrap();
+    assert_eq!(param(&msg, "morale"), Some("100"));
+}
+
+#[test]
+fn contract_concern_template_message_attaches_keys_and_params() {
+    assert_keyed(PLAYER_EVENT_PREFIX, || {
+        player_events::contract_concern_from_template("m1", "Caps", 20, "2025-08-12").unwrap()
+    });
+    let msg = player_events::contract_concern_from_template("m1", "Caps", 20, "d").unwrap();
+    assert_eq!(param(&msg, "days"), Some("20"));
+}

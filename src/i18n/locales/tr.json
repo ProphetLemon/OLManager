@@ -2475,6 +2475,40 @@
         "respond": "Yanıtla"
       },
       "playerEvent": {
+        "templates": {
+          "low_morale_1": {
+            "subject": "Moral endişesi: {{player}}",
+            "body": "Koç, {{player}} oyuncusunun morali belirgin şekilde düştü. Şu an %{{morale}}.\n\nBu, maçlardaki ve antrenmanlardaki performansını etkileyebilir. Neler olduğunu anlamak için onunla konuşmak faydalı olabilir."
+          },
+          "low_morale_2": {
+            "subject": "{{player}} mutsuz görünüyor",
+            "body": "Dikkatinizi çekmek istedim — {{player}} mutsuz görünüyor (moral: %{{morale}}).\n\nGöz ardı edilirse kadroda gerginlik yaratabilir. Bir sohbet ya da biraz izin morali yükseltebilir."
+          },
+          "bench_complaint_1": {
+            "subject": "{{player}} daha fazla süre istiyor",
+            "body": "Koç, {{player}} son zamanlarda az süre almasından duyduğu hayal kırıklığını dile getirdi.\n\nİlk beşte yer almayı hak ettiğini düşünüyor. Dikkatli yönetilmezse bu daha büyük bir soruna dönüşebilir.\n\nBunu nasıl ele almak istersiniz?"
+          },
+          "bench_complaint_2": {
+            "subject": "{{player}} kadrodaki rolünden memnun değil",
+            "body": "{{player}} bugün bana geldi — kadrodaki mevcut rolünden memnun değil ve Rift'te daha fazla fırsat istiyor.\n\nYakında ona daha fazla süre veremezsek bir sonraki dönemde transfer arayabilir.\n\nKarar sizin, koç."
+          },
+          "happy_player_1": {
+            "subject": "{{player}} harika hissediyor!",
+            "body": "İyi haber, koç — {{player}} son zamanlarda çok iyi bir ruh halinde (moral: %{{morale}}).\n\nMutlu oyuncular daha iyi performans gösterir, o yüzden onunla yaptığınız şeye devam edin. Kadrodaki olumlu atmosfer gerçekten fark yaratır."
+          },
+          "happy_player_2": {
+            "subject": "{{player}} cephesinden olumlu havalar",
+            "body": "Sadece {{player}} oyuncusunun şu sıralar kulüpteki zamanından gerçekten keyif aldığını paylaşmak istedim (moral: %{{morale}}).\n\nSıkı antrenman yapıyor ve takım arkadaşlarını destekliyor. Kadroda böyle olumlu bir tavır görmek harika.\n\nBu ortamı beslemeye devam edin!"
+          },
+          "contract_concern_1": {
+            "subject": "Sözleşme bitiyor: {{player}}",
+            "body": "{{player}} oyuncusunun sözleşmesinin yakında sona ereceğini hatırlatmak istedim ({{days}} gün kaldı).\n\nYakında harekete geçmezsek onu bedelsiz kaybetme riskimiz var. Yenileme görüşmeleri başlatmayı ya da onu transfer listesine koymayı düşünmeliyiz.\n\n{{player}} için planınız nedir?"
+          },
+          "contract_concern_2": {
+            "subject": "{{player}} sözleşmesi {{days}} gün içinde bitiyor",
+            "body": "{{player}} oyuncusunun sözleşme durumuyla ilgili bir hatırlatma. Mevcut anlaşmasında yalnızca {{days}} gün kaldığı için bir karar vermemiz gerekiyor.\n\nSeçenekler:\n• Yenileme görüşmeleri başlatmak\n• Değeri varken transfer listesine koymak\n• Sözleşmenin bitmesine izin vermek\n\nNasıl ilerlemek istediğinizi lütfen bildirin."
+          }
+        },
         "respond": "Yanıtla",
         "options": {
           "moraleCrisis": {

@@ -2248,6 +2248,40 @@
         "respond": "Rispondi"
       },
       "playerEvent": {
+        "templates": {
+          "low_morale_1": {
+            "subject": "Preoccupazione per il morale: {{player}}",
+            "body": "Coach, abbiamo notato che il morale di {{player}} è calato in modo significativo. Attualmente al {{morale}}%.\n\nPotrebbe influire sul suo rendimento in partita e negli allenamenti. Forse vale la pena parlargli per capire cosa sta succedendo."
+          },
+          "low_morale_2": {
+            "subject": "{{player}} sembra scontento",
+            "body": "Volevo farvelo notare — {{player}} sembra scontento (morale: {{morale}}%).\n\nSe non viene affrontata, la situazione potrebbe creare tensione nella squadra. Una conversazione o un po' di tempo libero potrebbero risollevargli il morale."
+          },
+          "bench_complaint_1": {
+            "subject": "{{player}} vuole più minuti",
+            "body": "Coach, {{player}} ha espresso frustrazione per lo scarso minutaggio di recente.\n\nSi sente meritevole di un posto nella formazione titolare. Potrebbe diventare un problema più grande se non gestito con attenzione.\n\nCome vuole affrontare la questione?"
+          },
+          "bench_complaint_2": {
+            "subject": "{{player}} insoddisfatto del suo ruolo",
+            "body": "{{player}} è venuto da me oggi — è insoddisfatto del suo ruolo attuale nella squadra e vuole più opportunità sulla Landa.\n\nSe non riusciamo a offrirgli presto più minuti, potrebbe cercare un trasferimento nella prossima finestra.\n\nLa decisione spetta a lei, coach."
+          },
+          "happy_player_1": {
+            "subject": "{{player}} si sente alla grande!",
+            "body": "Buone notizie, coach — {{player}} è di ottimo umore ultimamente (morale: {{morale}}%).\n\nI giocatori felici rendono meglio, quindi continui così. Un'atmosfera positiva nella squadra fa davvero la differenza."
+          },
+          "happy_player_2": {
+            "subject": "Buone vibrazioni da {{player}}",
+            "body": "Volevo solo dirle che {{player}} si sta godendo davvero il periodo al club (morale: {{morale}}%).\n\nSi sta allenando duramente e sostiene i compagni. È bello vedere un atteggiamento così positivo nella squadra.\n\nContinui a coltivare questo ambiente!"
+          },
+          "contract_concern_1": {
+            "subject": "Contratto in scadenza: {{player}}",
+            "body": "Volevo ricordarle che il contratto di {{player}} scade presto (restano {{days}} giorni).\n\nSe non agiamo presto, rischiamo di perderlo a parametro zero. Dovremmo valutare di aprire trattative di rinnovo o di metterlo sul mercato.\n\nQual è il suo piano per {{player}}?"
+          },
+          "contract_concern_2": {
+            "subject": "Il contratto di {{player}} scade tra {{days}} giorni",
+            "body": "Un promemoria sulla situazione contrattuale di {{player}}. Con soli {{days}} giorni rimasti sull'accordo attuale, dobbiamo prendere una decisione.\n\nOpzioni:\n• Aprire trattative di rinnovo\n• Metterlo sul mercato finché ha valore\n• Lasciare scadere il contratto\n\nMi faccia sapere come desidera procedere."
+          }
+        },
         "respond": "Rispondi",
         "options": {
           "moraleCrisis": {

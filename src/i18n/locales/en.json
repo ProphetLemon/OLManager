@@ -2655,6 +2655,40 @@
         "respond": "Respond"
       },
       "playerEvent": {
+        "templates": {
+          "low_morale_1": {
+            "subject": "Morale concern: {{player}}",
+            "body": "Coach, we've noticed that {{player}}'s morale has dropped significantly. Currently at {{morale}}%.\n\nThis could affect their performance in matches and training. It might be worth having a word with them to understand what's going on."
+          },
+          "low_morale_2": {
+            "subject": "{{player}} seems unhappy",
+            "body": "I wanted to bring this to your attention — {{player}} appears to be unhappy (morale: {{morale}}%).\n\nIf left unaddressed, this could create tension in the squad. A conversation or some time off might help lift their spirits."
+          },
+          "bench_complaint_1": {
+            "subject": "{{player}} wants more game time",
+            "body": "Coach, {{player}} has expressed frustration about their lack of playing time recently.\n\nThey feel they deserve a spot in the starting lineup. This could become a bigger issue if not managed carefully.\n\nHow would you like to handle this?"
+          },
+          "bench_complaint_2": {
+            "subject": "{{player}} unhappy with squad role",
+            "body": "{{player}} came to see me today — they're unhappy with their current role in the squad and want more opportunities on the Rift.\n\nIf we can't offer them more playtime soon, they may look for a transfer in the next window.\n\nYour call, coach."
+          },
+          "happy_player_1": {
+            "subject": "{{player}} is feeling great!",
+            "body": "Good news, coach — {{player}} is in high spirits lately (morale: {{morale}}%).\n\nHappy players perform better, so keep up whatever you're doing with them. A positive squad atmosphere makes a real difference."
+          },
+          "happy_player_2": {
+            "subject": "Positive vibes from {{player}}",
+            "body": "Just wanted to share that {{player}} is really enjoying their time at the club right now (morale: {{morale}}%).\n\nThey've been training hard and supporting teammates. It's great to see such a positive attitude in the squad.\n\nKeep nurturing that environment!"
+          },
+          "contract_concern_1": {
+            "subject": "Contract running down: {{player}}",
+            "body": "I wanted to remind you that {{player}}'s contract is expiring soon ({{days}} days remaining).\n\nIf we don't act soon, we risk losing them for nothing. We should consider opening renewal negotiations or listing them for transfer.\n\nWhat's your plan for {{player}}?"
+          },
+          "contract_concern_2": {
+            "subject": "{{player}} contract expiring in {{days}} days",
+            "body": "This is a reminder about {{player}}'s contract situation. With only {{days}} days left on their current deal, we need to make a decision.\n\nOptions:\n• Open renewal negotiations\n• List them for transfer while they still have value\n• Let the contract expire\n\nPlease advise on how you'd like to proceed."
+          }
+        },
         "respond": "Respond",
         "options": {
           "moraleCrisis": {

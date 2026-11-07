@@ -17,6 +17,10 @@ const LOCALES: Record<string, unknown> = { de, en, es, fr, it: itLocale, pt, "pt
 export const TEMPLATE_FAMILIES: Record<string, string> = {
   match_preview: "be.msg.preMatch.templates",
   match_result: "be.msg.matchResult.templates",
+  low_morale: "be.msg.playerEvent.templates",
+  bench_complaint: "be.msg.playerEvent.templates",
+  happy_player: "be.msg.playerEvent.templates",
+  contract_concern: "be.msg.playerEvent.templates",
 };
 
 // The data/ submodule owns the templates; skip when it is not checked out.
