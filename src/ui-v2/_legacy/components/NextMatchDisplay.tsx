@@ -13,15 +13,18 @@ import {
   isSeasonComplete,
 } from "@/lib/common/helpers";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
+import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 
 type DraftRole = "TOP" | "JUNGLE" | "MID" | "ADC" | "SUPPORT";
 
 export const ROLE_ORDER: DraftRole[] = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"];
 
-export function playerPhotoUrl(playerId: string): string | null {
-  const match = playerId.match(/^lec-player-(.+)$/);
-  if (!match) return null;
-  return `/player-photos/${match[1]}.webp`;
+export function playerPhotoUrl(
+  playerId: string,
+  matchName?: string,
+  profileImageUrl?: string | null,
+): string | null {
+  return resolvePlayerPhoto(playerId, matchName, profileImageUrl);
 }
 
 export function daysUntil(dateIso: string): number {
@@ -147,8 +150,8 @@ export default function NextMatchDisplay({
           const awayPlayer = awayLineup[index];
           const homePlayerOvr = homePlayer ? calculateLolOvr(homePlayer) : null;
           const awayPlayerOvr = awayPlayer ? calculateLolOvr(awayPlayer) : null;
-          const leftPhoto = homePlayer ? playerPhotoUrl(homePlayer.id) : null;
-          const rightPhoto = awayPlayer ? playerPhotoUrl(awayPlayer.id) : null;
+          const leftPhoto = homePlayer ? playerPhotoUrl(homePlayer.id, homePlayer.match_name, homePlayer.profile_image_url) : null;
+          const rightPhoto = awayPlayer ? playerPhotoUrl(awayPlayer.id, awayPlayer.match_name, awayPlayer.profile_image_url) : null;
 
           return (
             <Fragment key={`line-${role}`}>

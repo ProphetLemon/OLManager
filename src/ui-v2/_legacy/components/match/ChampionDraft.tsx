@@ -8,6 +8,7 @@ import { getChampionCounterValue } from "@/lib/champions/championRelationships";
 import { getLolStaffEffectsForTeam } from "@/lib/teams/lolStaffEffects";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
+import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import championsSeed from "../../../../../assets/simulation/champions.json";
 import championListSeed from "../../../../../assets/simulation/champion-list.json";
 import aiConfigSeed from "../../../../../assets/simulation/ai-config.json";
@@ -680,6 +681,15 @@ function playerSeedPhotoUrl(photo?: string): string | null {
   if (!photo) return null;
   if (photo.startsWith("/images/")) return `/data/lec${photo}`;
   return photo;
+}
+
+export function resolveDraftTipPlayerImage(
+  player: { id: string; name: string; profile_image_url?: string | null },
+  seedPhoto?: string,
+): string {
+  return (
+    resolvePlayerPhoto(player.id, player.name, player.profile_image_url ?? playerSeedPhotoUrl(seedPhoto)) ?? ""
+  );
 }
 
 export default function ChampionDraft({
@@ -2202,10 +2212,7 @@ export default function ChampionDraft({
           matchedSeedPlayer = undefined;
         } else {
           const flexibleRole = mapSeedRoleToDraftRole(String(matchedSeedPlayer?.role ?? "")) ?? ROLE_ORDER[index];
-          const flexibleImage =
-            player.profile_image_url ??
-            playerSeedPhotoUrl(matchedSeedPlayer?.photo) ??
-            `/player-photos/${player.id}.webp`;
+          const flexibleImage = resolveDraftTipPlayerImage(player, matchedSeedPlayer?.photo);
           tips.push({
             sourceType: "player",
             sourceName: player.name,
@@ -2219,10 +2226,7 @@ export default function ChampionDraft({
       }
 
       const sourceRole = mapSeedRoleToDraftRole(String(matchedSeedPlayer?.role ?? "")) ?? ROLE_ORDER[index];
-      const sourceImage =
-        player.profile_image_url ??
-        playerSeedPhotoUrl(matchedSeedPlayer?.photo) ??
-        `/player-photos/${player.id}.webp`;
+      const sourceImage = resolveDraftTipPlayerImage(player, matchedSeedPlayer?.photo);
 
       const playerState = gameState.players.find((item) => item.id === player.id);
       const gameIq = playerState
@@ -2359,10 +2363,7 @@ export default function ChampionDraft({
           sourceType: "player",
           sourceName: fallbackPlayer.name,
           sourceRole: fallbackPlayerRole ?? ROLE_ORDER[0],
-          sourceImage:
-            fallbackPlayer.profile_image_url ??
-            playerSeedPhotoUrl(fallbackSeedPlayer?.photo) ??
-            `/player-photos/${fallbackPlayer.id}.webp`,
+          sourceImage: resolveDraftTipPlayerImage(fallbackPlayer, fallbackSeedPlayer?.photo),
           type: "pick",
           text: t("match.draft.phrases.playerNoDraftInfo", "No draft info. Suggestion: we can prioritize safe picks or adapt to the enemy draft."),
         });
