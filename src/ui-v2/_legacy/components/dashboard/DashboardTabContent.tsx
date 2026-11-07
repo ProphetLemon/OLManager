@@ -11,7 +11,6 @@ import YouthAcademyTab from "@/ui-v2/_legacy/components/youthAcademy/YouthAcadem
 import StaffTab from "@/ui-v2/_legacy/components/staff/StaffTab";
 import InboxTab from "@/ui-v2/_legacy/components/inbox/InboxTab";
 import ManagerTab from "@/ui-v2/_legacy/components/manager/ManagerTab";
-import SocialTab from "@/ui-v2/_legacy/components/social/SocialTab";
 import ChampionsTab from "@/ui-v2/_legacy/components/champions/ChampionsTab";
 import ChampionsWorldTab from "@/ui-v2/_legacy/components/world/ChampionsWorldTab";
 import ScrimsTab from "@/ui-v2/_legacy/components/scrims/ScrimsTab";
@@ -150,10 +149,6 @@ export default function DashboardTabContent({
       )}
 
       {activeTab === "Manager" && <ManagerTab gameState={gameState} />}
-
-      {activeTab === "Social" && (
-        <SocialTab gameState={gameState} onGameUpdate={onGameUpdate} />
-      )}
 
       {![
         "Home",

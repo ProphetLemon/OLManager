@@ -52,7 +52,6 @@ src/
 | Tab v2 | Importa de _legacy |
 |--------|-------------------|
 | NewsTabV2 | `_legacy/components/news/NewsTab` |
-| SocialTabV2 | `_legacy/components/social/SocialTab` |
 | PlayerProfileV2 | `_legacy/components/playerProfile/PlayerProfile` |
 | TeamProfileV2 | `_legacy/components/teamProfile/TeamProfile` |
 | ScheduleTabV2 | `_legacy/components/schedule/ScheduleCalendarView` |
@@ -88,5 +87,5 @@ Branch: `feat/ui-v2`. Commit style: `feat(ui-v2): …`, `fix(ui-v2): …`.
 
 ## 6. Próximos pasos (opcionales)
 
-- Portar los wrappers `_legacy/` a v2 nativo (SocialTab, PlayerProfile, TeamProfile, transfer modals)
+- Portar los wrappers `_legacy/` a v2 nativo (PlayerProfile, TeamProfile, transfer modals)
 - Separar chunks grandes (MatchSimulation, _legacy) con lazy loading
