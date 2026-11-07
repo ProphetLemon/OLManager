@@ -500,6 +500,47 @@ fn find_open_offer_from_club<'a>(
         .find(|offer| offer.from_team_id == club_id && offer.status == TransferOfferStatus::Pending)
 }
 
+/// How long a turned-down bid stays on record. Two weeks is two league match weeks:
+/// long enough that re-sending the same figure over a few clicks or a couple of
+/// in-game days cannot wear a club down, short enough that a genuinely changed
+/// situation (a new window, a different season) gets a fresh hearing.
+const REJECTED_BID_COOL_OFF_DAYS: i64 = 14;
+/// After a counter, a new bid has to close at least this share of the distance between
+/// the previous bid and the counter before the club treats it as a serious step.
+const COUNTER_GAP_CLOSED_PCT: u64 = 50;
+
+/// The latest bid from `club_id` that was turned down within the cool-off.
+fn find_recent_rejected_bid<'a>(
+    current_date: NaiveDate,
+    player: &'a crate::domain::player::Player,
+    club_id: &str,
+) -> Option<&'a crate::domain::player::TransferOffer> {
+    player
+        .transfer_offers
+        .iter()
+        .filter(|offer| {
+            offer.from_team_id == club_id && offer.status == TransferOfferStatus::Rejected
+        })
+        .filter(|offer| {
+            NaiveDate::parse_from_str(&offer.date, "%Y-%m-%d")
+                .map(|date| {
+                    let age = (current_date - date).num_days();
+                    (0..REJECTED_BID_COOL_OFF_DAYS).contains(&age)
+                })
+                .unwrap_or(false)
+        })
+        .max_by_key(|offer| (offer.date.clone(), offer.negotiation_round))
+}
+
+/// Whether `fee` moves from `previous_fee` towards `counter_fee` far enough.
+fn closes_enough_of_gap(previous_fee: Option<u64>, counter_fee: u64, fee: u64) -> bool {
+    let Some(previous_fee) = previous_fee.filter(|previous| *previous < counter_fee) else {
+        return true;
+    };
+    fee.saturating_sub(previous_fee).saturating_mul(100)
+        >= (counter_fee - previous_fee).saturating_mul(COUNTER_GAP_CLOSED_PCT)
+}
+
 fn negotiation_round_from_offer(offer: Option<&crate::domain::player::TransferOffer>) -> u8 {
     offer
         .map(|offer| offer.negotiation_round.max(1).saturating_add(1))
@@ -1400,13 +1441,59 @@ pub fn make_transfer_bid(
     let existing_offer = find_open_offer_from_club(player, &user_team_id);
     let previous_fee = existing_offer.map(|offer| offer.fee);
     let previous_counter_fee = existing_offer.and_then(|offer| offer.suggested_counter_fee);
-    let round = negotiation_round_from_offer(existing_offer);
+    let recent_rejection = if existing_offer.is_none() {
+        find_recent_rejected_bid(current_date, player, &user_team_id)
+    } else {
+        None
+    };
+    let round = match (existing_offer, recent_rejection) {
+        (None, Some(rejected)) => rejected.negotiation_round.max(1).saturating_add(1),
+        _ => negotiation_round_from_offer(existing_offer),
+    };
     let respected_signal = previous_counter_fee
-        .map(|counter| fee >= counter.saturating_mul(95) / 100)
+        .map(|counter| {
+            fee >= counter.saturating_mul(95) / 100
+                && closes_enough_of_gap(previous_fee, counter, fee)
+        })
         .unwrap_or(false);
     let stalled = previous_fee
         .map(|previous| fee <= previous.saturating_add(50_000))
         .unwrap_or(false);
+
+    // A club that already said no does not change its mind because the same figure,
+    // or a lower one, is sent again: it only gets less patient.
+    if let Some(rejected) = recent_rejection
+        && included_items.is_empty()
+        && fee <= rejected.fee
+    {
+        let rejected_offer_id = rejected.id.clone();
+        if let Some(p) = game.players.iter_mut().find(|p| p.id == player_id)
+            && let Some(o) = p
+                .transfer_offers
+                .iter_mut()
+                .find(|o| o.id == rejected_offer_id)
+        {
+            o.negotiation_round = round;
+        }
+        let (tension, patience) = transfer_negotiation_metrics(round, true, false);
+        return Ok(transfer_outcome(
+            TransferNegotiationDecision::Rejected,
+            None,
+            true,
+            build_transfer_feedback(
+                "transfers.transferFeedbackRejectedHeadline",
+                "transfers.transferFeedbackRejectedDetail",
+                NegotiationMood::Guarded,
+                tension.saturating_add(10).min(92),
+                patience.saturating_sub(14),
+                round,
+                &[(
+                    "fee",
+                    round_transfer_fee(threshold.saturating_sub(total_included_value)).to_string(),
+                )],
+            ),
+        ));
+    }
     let concession = if respected_signal {
         ((threshold as f64) * 0.04).round() as u64
     } else if round >= 3 && !stalled {

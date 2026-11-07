@@ -2099,6 +2099,90 @@ fn star_with_accepted_fee() -> (Game, String) {
 }
 
 #[test]
+fn star_bid_of_400k_is_not_accepted_and_resending_it_builds_on_the_refusal() {
+    let mut game = make_star_game();
+
+    let first = make_transfer_bid(&mut game, "star", 400_000, TransferDestination::Main, &[])
+        .expect("first bid");
+    let second = make_transfer_bid(&mut game, "star", 400_000, TransferDestination::Main, &[])
+        .expect("second bid");
+
+    assert_eq!(first.decision, TransferNegotiationDecision::Rejected);
+    assert_eq!(second.decision, TransferNegotiationDecision::Rejected);
+    assert!(
+        second.feedback.round > first.feedback.round,
+        "the club remembers the earlier refusal (round {} then {})",
+        first.feedback.round,
+        second.feedback.round
+    );
+}
+
+#[test]
+fn lower_bid_after_a_rejection_is_rejected_with_a_later_round() {
+    let mut game = make_star_game();
+    let first = make_transfer_bid(&mut game, "star", 400_000, TransferDestination::Main, &[])
+        .expect("first bid");
+
+    let lower = make_transfer_bid(&mut game, "star", 380_000, TransferDestination::Main, &[])
+        .expect("lower bid");
+
+    assert_eq!(lower.decision, TransferNegotiationDecision::Rejected);
+    assert!(lower.feedback.round > first.feedback.round);
+}
+
+#[test]
+fn rejected_bid_is_forgotten_after_the_cool_off() {
+    let mut game = make_star_game();
+    make_transfer_bid(&mut game, "star", 400_000, TransferDestination::Main, &[])
+        .expect("first bid");
+    game.clock.advance_days(15);
+
+    let later = make_transfer_bid(&mut game, "star", 400_000, TransferDestination::Main, &[])
+        .expect("later bid");
+
+    assert_eq!(later.feedback.round, 1, "a fresh hearing after two weeks");
+}
+
+/// Lowest first bid the seller accepts outright, found by bisection (counters are
+/// rounded, so they are not the threshold itself).
+fn star_fee_threshold(market_value: u64) -> u64 {
+    let (mut low, mut high) = (300_000_u64, 900_000_u64);
+    while high - low > 1 {
+        let mid = (low + high) / 2;
+        let mut game = make_star_game_with_value(market_value);
+        let outcome = make_transfer_bid(&mut game, "star", mid, TransferDestination::Main, &[])
+            .expect("probe bid");
+        if outcome.decision == TransferNegotiationDecision::Accepted {
+            high = mid;
+        } else {
+            low = mid;
+        }
+    }
+    high
+}
+
+#[test]
+fn small_step_towards_a_counter_does_not_earn_the_concession() {
+    // 392k puts the threshold (548.8k) just under the 550k the club rounds its counter up
+    // to, which is where the "respected counter" concession used to bite.
+    let market_value = 392_000;
+    let threshold = star_fee_threshold(market_value);
+    let mut game = make_star_game_with_value(market_value);
+    let first_bid = threshold * 94 / 100;
+    let first = make_transfer_bid(&mut game, "star", first_bid, TransferDestination::Main, &[])
+        .expect("first bid");
+    assert_eq!(first.decision, TransferNegotiationDecision::CounterOffer);
+
+    // 3.9% under the threshold closes only 35% of the gap from the first bid. Before,
+    // that was enough to earn the 4% concession and be accepted.
+    let second_bid = threshold * 961 / 1000;
+    let second = make_transfer_bid(&mut game, "star", second_bid, TransferDestination::Main, &[])
+        .expect("second bid");
+
+    assert_ne!(second.decision, TransferNegotiationDecision::Accepted);
+}
+
+#[test]
 fn star_with_no_wage_does_not_accept_50k() {
     let (mut game, offer_id) = star_with_accepted_fee();
 
