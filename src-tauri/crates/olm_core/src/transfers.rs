@@ -2660,6 +2660,13 @@ pub fn record_transfer(
         intent: intent.map(str::to_string),
     };
 
+    game.moved_player_ids.insert(entry.player_id.clone());
+    game.moved_player_ids.extend(
+        entry
+            .included_players
+            .iter()
+            .map(|included| included.player_id.clone()),
+    );
     game.transfer_history.entries.insert(0, entry);
     if game.transfer_history.entries.len() > 200 {
         game.transfer_history.entries.truncate(200);
@@ -2915,6 +2922,7 @@ pub fn release_player_contract(game: &mut Game, player_id: &str) -> Result<i64, 
         player.was_released = true;
         player.transfer_listed = false;
         player.loan_listed = false;
+        game.moved_player_ids.insert(player_id.to_string());
         player.transfer_offers.clear();
     }
 

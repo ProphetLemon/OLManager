@@ -148,6 +148,11 @@ pub struct Game {
     /// inbox does not cause it to be regenerated.
     #[serde(default)]
     pub sent_contract_warning_ids: HashSet<String>,
+    /// Ids of players whose team assignment changed in-save (transfers and
+    /// releases). Unlike `transfer_history`, this is never truncated, so
+    /// catalog rehydration can always keep these players where the game put them.
+    #[serde(default)]
+    pub moved_player_ids: HashSet<String>,
 }
 
 /// Lenient deserializer for `competition_configs`.
@@ -208,6 +213,7 @@ impl Game {
             ai_transfer_cap_counts: HashMap::new(),
             ai_transfer_cap_last_reset_date: None,
             sent_contract_warning_ids: HashSet::new(),
+            moved_player_ids: HashSet::new(),
         };
         crate::identity_upgrade::upgrade_game_football_identities(&mut game);
         crate::season_context::refresh_game_context(&mut game);

@@ -1034,7 +1034,7 @@ fn merge_missing_players(game: &mut Game, imported_players: Vec<Player>) -> usiz
 /// team assignment was changed during play and must be preserved against the
 /// catalog. Includes players swapped in as part of a transfer.
 fn transfer_protected_player_ids(game: &Game) -> HashSet<String> {
-    let mut ids = HashSet::new();
+    let mut ids = game.moved_player_ids.clone();
     for entry in &game.transfer_history.entries {
         ids.insert(entry.player_id.clone());
         for included in &entry.included_players {
@@ -1642,5 +1642,117 @@ mod tests {
 
         let _ = std::fs::remove_dir_all(&tmp);
         Ok(())
+    }
+
+    fn rehydrate_test_game(players: Vec<Player>) -> Game {
+        use chrono::TimeZone;
+        use olm_core::clock::GameClock;
+        use olm_core::domain::manager::Manager;
+
+        let clock = GameClock::new(chrono::Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap());
+        let manager = Manager::new(
+            "manager-1".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        let teams = ["team-1", "team-2"]
+            .iter()
+            .map(|id| {
+                Team::new(
+                    id.to_string(),
+                    id.to_string(),
+                    "TST".to_string(),
+                    "England".to_string(),
+                    "London".to_string(),
+                    "Ground".to_string(),
+                    1_000,
+                )
+            })
+            .collect();
+        Game::new(clock, manager, teams, players, vec![], vec![])
+    }
+
+    fn rehydrate_test_player(id: &str, team_id: Option<&str>) -> Player {
+        use olm_core::domain::player::LolRole;
+        use olm_core::domain::player::PlayerAttributes;
+
+        let mut player = Player::new(
+            id.to_string(),
+            id.to_string(),
+            id.to_string(),
+            "2000-01-01".to_string(),
+            "England".to_string(),
+            LolRole::Adc,
+            PlayerAttributes {
+                mechanics: 60,
+                laning: 60,
+                teamfighting: 60,
+                macro_play: 60,
+                consistency: 60,
+                shotcalling: 60,
+                champion_pool: 60,
+                discipline: 60,
+                mental_resilience: 60,
+            },
+        );
+        player.team_id = team_id.map(str::to_string);
+        player
+    }
+
+    #[test]
+    fn rehydrate_keeps_transferred_player_after_history_cap_and_releases() {
+        let mut game = rehydrate_test_game(vec![
+            rehydrate_test_player("moved", Some("team-2")),
+            rehydrate_test_player("filler", Some("team-1")),
+            rehydrate_test_player("released", Some("team-1")),
+        ]);
+        olm_core::transfers::record_transfer(
+            &mut game,
+            "moved",
+            "team-1",
+            "team-2",
+            0,
+            0,
+            1,
+            false,
+            false,
+            false,
+            None,
+            0,
+            &[],
+            None,
+        );
+        for _ in 0..250 {
+            olm_core::transfers::record_transfer(
+                &mut game,
+                "filler",
+                "team-1",
+                "team-2",
+                0,
+                0,
+                1,
+                false,
+                false,
+                false,
+                None,
+                0,
+                &[],
+                None,
+            );
+        }
+        game.players[2].team_id = None;
+        game.players[2].was_released = true;
+        game.moved_player_ids.insert("released".to_string());
+
+        let catalog = vec![
+            rehydrate_test_player("moved", Some("team-1")),
+            rehydrate_test_player("released", Some("team-1")),
+        ];
+        reassign_stale_player_teams(&mut game, &catalog);
+
+        assert_eq!(game.players[0].team_id.as_deref(), Some("team-2"));
+        assert_eq!(game.players[2].team_id, None);
     }
 }
