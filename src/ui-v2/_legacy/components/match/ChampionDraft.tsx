@@ -13,6 +13,8 @@ import championListSeed from "../../../../../assets/simulation/champion-list.jso
 import aiConfigSeed from "../../../../../assets/simulation/ai-config.json";
 import {
   computeBanRecommendationScore as computeUnifiedBanRecommendationScore,
+  championFitsFreeRole,
+  freeRolesForSelections,
   rankBanCandidates,
   resolveMasterySampleSide,
   type BanRecommendationContext,
@@ -1025,6 +1027,12 @@ export default function ChampionDraft({
     return result;
   };
 
+  const freeRolesForPicks = (selections: DraftSelection[]): Set<Role> =>
+    freeRolesForSelections(
+      selections.map((selection) => championById.get(selection.championId)?.roleHints ?? []),
+      ROLE_ORDER,
+    ) as Set<Role>;
+
   const currentPickEvaluationContext = useMemo((): Omit<DraftEvaluationRequest, "championId"> | null => {
     if (currentStep?.type !== "pick") return null;
     const pickIndex = currentStep.side === "blue" ? bluePicks.length : redPicks.length;
@@ -1335,6 +1343,7 @@ export default function ChampionDraft({
     const targetPicks = targetSide === "blue" ? bluePicks : redPicks;
     const enemyCoveredRoles = assignedRolesForSelections(targetPicks);
     const ranked = rankBanCandidates({
+      enemyFreeRoles: freeRolesForPicks(targetPicks),
       available: available.map((champion) => ({
         championId: champion.id,
         roleHints: champion.roleHints,
@@ -1355,7 +1364,7 @@ export default function ChampionDraft({
         };
       },
     });
-    const bestBanId = ranked[0]?.championId;
+    const bestBanId = ranked[0]?.championId ?? available[0]?.id;
     return bestBanId ? championById.get(bestBanId) ?? null : null;
   };
 
@@ -1466,6 +1475,7 @@ export default function ChampionDraft({
       const targetPicks = targetSide === "blue" ? nextBluePicks : nextRedPicks;
       const enemyCoveredRoles = assignedRolesForSelections(targetPicks);
       const ranked = rankBanCandidates({
+        enemyFreeRoles: freeRolesForPicks(targetPicks),
         available: available.map((champion) => ({
           championId: champion.id,
           roleHints: champion.roleHints,
@@ -1486,7 +1496,7 @@ export default function ChampionDraft({
           };
         },
       });
-      const bestBanId = ranked[0]?.championId;
+      const bestBanId = ranked[0]?.championId ?? available[0]?.id;
       return bestBanId ? championById.get(bestBanId) ?? null : null;
     };
 
@@ -2016,11 +2026,8 @@ export default function ChampionDraft({
 
     const ownPicksList = controlledSide === "blue" ? bluePicks : redPicks;
     const enemyPicksList = controlledSide === "blue" ? redPicks : bluePicks;
-    const ownCoveredRoles = new Set<Role>();
-    ownPicksList.forEach((pick) => {
-      const champion = championById.get(pick.championId);
-      champion?.roleHints.forEach((role) => ownCoveredRoles.add(role));
-    });
+    const ownFreeRoles = freeRolesForPicks(ownPicksList);
+    const enemyFreeRoles = freeRolesForPicks(enemyPicksList);
     const availableChampions = champions.filter((champion) => !usedChampionIds.has(champion.id));
 
     const coachSkill = assistantCoach?.attributes?.coaching ?? 60;
@@ -2050,6 +2057,7 @@ export default function ChampionDraft({
       .map((pick) => pick.championId)
       .join("|")}:${redPicks.map((pick) => pick.championId).join("|")}`;
     const rivalMasteries = rivalMasteryCandidates
+      .filter((entry) => championFitsFreeRole(entry.champion.roleHints, enemyFreeRoles))
       .map((entry) => {
         const candidateTier = knownMetaTierForChampion(
           entry.champion,
@@ -2266,7 +2274,7 @@ export default function ChampionDraft({
         .sort((a, b) => b.value - a.value)[0];
 
       if (draftAdviceStage !== "ban" && bestMastery >= 50) {
-        if (sourceRole && ownCoveredRoles.has(sourceRole)) {
+        if (sourceRole && !ownFreeRoles.has(sourceRole)) {
           return;
         }
         const pickPhraseText =
@@ -2300,14 +2308,17 @@ export default function ChampionDraft({
         });
       }
 
-      const strongestThreat = availableChampions
+      const banTargetPool = availableChampions.filter((champion) =>
+        championFitsFreeRole(champion.roleHints, enemyFreeRoles),
+      );
+      const strongestThreat = banTargetPool
         .map((champion) => ({ champion, value: counterValue(champion.id, bestChampionAny.champion.id) }))
         .filter((item) => item.value >= 2)
         .sort((a, b) => b.value - a.value)[0];
 
       if (draftAdviceStage === "ban" && strongestThreat && bestChampionAny.mastery >= 70) {
         const banTarget =
-          availableChampions
+          banTargetPool
             .map((champion) => ({ champion, value: counterValue(champion.id, bestChampionAny.champion.id) }))
             .filter((item) => item.value >= 2)
             .sort((a, b) => b.value - a.value)[0]?.champion ?? strongestThreat.champion;
@@ -2337,12 +2348,10 @@ export default function ChampionDraft({
       const fallbackPlayerIndex = ownPlayers.findIndex((_, index) => {
         const fallbackRole =
           mapSeedRoleToDraftRole(String(ownTeamSeedPlayers[index]?.role ?? "")) ?? ROLE_ORDER[index] ?? null;
-        return fallbackRole ? !ownCoveredRoles.has(fallbackRole) : true;
+        return fallbackRole ? ownFreeRoles.has(fallbackRole) : true;
       });
-      const fallbackPlayer =
-        fallbackPlayerIndex >= 0 ? ownPlayers[fallbackPlayerIndex] : ownPlayers[0];
-      const fallbackSeedPlayer =
-        fallbackPlayerIndex >= 0 ? ownTeamSeedPlayers[fallbackPlayerIndex] : ownTeamSeedPlayers[0];
+      const fallbackPlayer = fallbackPlayerIndex >= 0 ? ownPlayers[fallbackPlayerIndex] : undefined;
+      const fallbackSeedPlayer = fallbackPlayerIndex >= 0 ? ownTeamSeedPlayers[fallbackPlayerIndex] : undefined;
       const fallbackPlayerRole =
         mapSeedRoleToDraftRole(String(fallbackSeedPlayer?.role ?? "")) ?? ROLE_ORDER[Math.max(0, fallbackPlayerIndex)] ?? null;
       if (fallbackPlayer) {

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { computeBanRecommendationScore, rankBanCandidates, resolveMasterySampleSide } from "@/ui-v2/_legacy/components/match/draftIntelHelpers";
+import {
+  championFitsFreeRole,
+  computeBanRecommendationScore,
+  freeRolesForSelections,
+  rankBanCandidates,
+  resolveMasterySampleSide,
+} from "@/ui-v2/_legacy/components/match/draftIntelHelpers";
 
 describe("rankBanCandidates", () => {
   it("uses unified ban scoring for ranking", () => {
@@ -90,5 +96,60 @@ describe("resolveMasterySampleSide", () => {
 
   it("falls back to the controlled side without a step", () => {
     expect(resolveMasterySampleSide(null, "red")).toBe("red");
+  });
+});
+
+const ROLES = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"];
+
+describe("freeRolesForSelections", () => {
+  it("returns every role when nothing is picked", () => {
+    expect([...freeRolesForSelections([], ROLES)].sort()).toEqual([...ROLES].sort());
+  });
+
+  it("frees roles that a flexible pick can leave open", () => {
+    const free = freeRolesForSelections([["MID"], ["MID", "TOP"]], ROLES);
+    expect(free.has("MID")).toBe(false);
+    expect(free.has("TOP")).toBe(false);
+    expect(free.has("JUNGLE")).toBe(true);
+  });
+
+  it("keeps a role free when a flexible pick can move away", () => {
+    const free = freeRolesForSelections([["MID", "TOP"]], ROLES);
+    expect(free.has("MID")).toBe(true);
+    expect(free.has("TOP")).toBe(true);
+  });
+});
+
+describe("championFitsFreeRole", () => {
+  it("rejects champions whose roles are all covered", () => {
+    expect(championFitsFreeRole(["MID"], new Set(["TOP", "JUNGLE"]))).toBe(false);
+    expect(championFitsFreeRole(["MID", "TOP"], new Set(["TOP"]))).toBe(true);
+  });
+});
+
+describe("rankBanCandidates with enemyFreeRoles", () => {
+  it("hard-excludes champions with no free role even if they are the only strong ones", () => {
+    const ranked = rankBanCandidates({
+      available: [
+        { championId: "MidOnly", roleHints: ["MID"] },
+        { championId: "Flex", roleHints: ["MID", "TOP"] },
+      ],
+      enemyCoveredRoles: new Set(["MID"]),
+      enemyFreeRoles: new Set(["TOP", "JUNGLE", "ADC", "SUPPORT"]),
+      resolveEnemyMastery: () => 99,
+      resolveMetaScore: (id) => (id === "MidOnly" ? 30 : 5),
+    });
+    expect(ranked.map((r) => r.championId)).toEqual(["Flex"]);
+  });
+
+  it("does not fall back to covered-role champions when none fit", () => {
+    const ranked = rankBanCandidates({
+      available: [{ championId: "MidOnly", roleHints: ["MID"] }],
+      enemyCoveredRoles: new Set(["MID"]),
+      enemyFreeRoles: new Set(["TOP"]),
+      resolveEnemyMastery: () => 90,
+      resolveMetaScore: () => 20,
+    });
+    expect(ranked).toEqual([]);
   });
 });

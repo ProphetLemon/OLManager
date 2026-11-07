@@ -29,6 +29,8 @@ export interface BanScoringContext {
 interface RankBanCandidatesParams {
   available: BanCandidateInput[];
   enemyCoveredRoles: Set<string>;
+  /** When provided, champions with no role in this set are excluded outright. */
+  enemyFreeRoles?: Set<string>;
   resolveEnemyMastery: (championId: string) => number;
   resolveMetaScore: (championId: string) => number;
   resolveScoringContext?: (candidate: BanCandidateInput) => BanScoringContext;
@@ -99,20 +101,61 @@ export function computeBanRecommendationScore(context: BanRecommendationContext)
   );
 }
 
+/**
+ * Roles that can still be filled given the current picks, where each entry of
+ * `selectionRoles` lists the roles that pick could play (an empty list means
+ * any role). A role is free when the picks can be assigned unique roles
+ * without using it. Unsatisfiable picks leave every role free.
+ */
+export function freeRolesForSelections(
+  selectionRoles: string[][],
+  roleOrder: readonly string[],
+): Set<string> {
+  const options = selectionRoles
+    .map((roles) => (roles.length > 0 ? roles : [...roleOrder]))
+    .sort((left, right) => left.length - right.length);
+
+  const assignable = (index: number, used: Set<string>): boolean => {
+    if (index >= options.length) return true;
+    for (const role of options[index]) {
+      if (used.has(role)) continue;
+      used.add(role);
+      if (assignable(index + 1, used)) return true;
+      used.delete(role);
+    }
+    return false;
+  };
+
+  if (!assignable(0, new Set())) return new Set(roleOrder);
+  return new Set(roleOrder.filter((role) => assignable(0, new Set([role]))));
+}
+
+export function championFitsFreeRole(roleHints: string[], freeRoles: Set<string>): boolean {
+  if (freeRoles.size === 0) return false;
+  if (roleHints.length === 0) return true;
+  return roleHints.some((role) => freeRoles.has(role));
+}
+
 export function rankBanCandidates({
   available,
   enemyCoveredRoles,
+  enemyFreeRoles,
   resolveEnemyMastery,
   resolveMetaScore,
   resolveScoringContext,
 }: RankBanCandidatesParams): RankedBanCandidate[] {
-  const roleRelevant = available.filter((champion) => {
+  const feasible = enemyFreeRoles
+    ? available.filter((champion) => championFitsFreeRole(champion.roleHints, enemyFreeRoles))
+    : available;
+  if (enemyFreeRoles && feasible.length === 0) return [];
+
+  const roleRelevant = feasible.filter((champion) => {
     if (enemyCoveredRoles.size === 0) return true;
     if (champion.roleHints.length === 0) return true;
     return !champion.roleHints.every((role) => enemyCoveredRoles.has(role));
   });
 
-  const banPool = roleRelevant.length > 0 ? roleRelevant : available;
+  const banPool = roleRelevant.length > 0 ? roleRelevant : feasible;
 
   return banPool
     .map((candidate) => {
