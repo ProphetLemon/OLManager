@@ -12,7 +12,7 @@ export function analyzeRosters(input: {
   absent: any[];
   staffMoves: any[];
   staffAdds: any[];
-  issues: Array<{ kind: string; subject: string; detail: string; [key: string]: unknown }>;
+  issues: Array<{ kind: string; subject: string; detail: string; candidates?: string[]; [key: string]: unknown }>;
   teamStats: Map<string, any>;
   suspectTeams: Set<string>;
   seenPlayers: Set<string>;

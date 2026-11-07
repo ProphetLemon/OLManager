@@ -8,7 +8,7 @@ Builds `assets/world/roster-overlay.json`: the changes (moves, retirements, new 
 npm run world:refresh -- --build-team-map
 
 # 2. Refresh. First run is slow (about 4 s per request); everything is cached in scripts/world/.cache/
-npm run world:refresh -- --as-of 2026-11-07
+npm run world:refresh
 
 # Smaller / offline runs
 npm run world:refresh -- --competitions lck,lec --dry-run --out /tmp/overlay.json
@@ -18,9 +18,15 @@ npm run world:refresh -- --offline --competitions lck,lec          # cache only,
 npm run verify:world-overlay [-- path/to/overlay.json [path/to/data]]
 ```
 
-Flags: `--competitions a,b` `--offline` `--cache-dir` `--throttle-ms` (4000) `--max-requests` (3000) `--as-of`
+Flags: `--competitions a,b` `--offline` `--cache-dir` `--throttle-ms` (4000) `--max-requests` (3000) `--max-cache-age-days` (7) `--as-of`
 `--out` `--report` (default `scripts/world/out/report.md`) `--build-team-map` `--allow-gate-failures` `--dry-run`
 (writes the overlay only when `--out` is given) `--data-dir` `--team-map` `--id-map`.
+
+Live runs re-fetch cache entries older than `--max-cache-age-days`; offline runs read any age. `as_of` defaults to the
+fetch date of the oldest cache entry used (an explicit `--as-of` wins, with a warning when it is newer than that).
+Name-only and IGN-only matches produce no operation: they appear under "Needs review" in the report until
+`id-map.json` pins them or both sides know the same date of birth. A run whose licence is the offline placeholder
+fails the `license-available` gate.
 
 ## Review before committing
 

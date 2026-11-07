@@ -4,7 +4,8 @@ import { analyzeRosters } from "../../../scripts/world/lib/analyze.mjs";
 import { MediaWikiClient, OfflineCacheMissError } from "../../../scripts/world/lib/mediawiki-client.mjs";
 import { decideAbsentPlayer, isWorldTeamName } from "../../../scripts/world/lib/ops.mjs";
 import { runRefresh, type RefreshResult } from "../../../scripts/world/lib/pipeline.mjs";
-import { serializeOverlay } from "../../../scripts/world/lib/overlay.mjs";
+import { OFFLINE_LICENSE, serializeOverlay } from "../../../scripts/world/lib/overlay.mjs";
+import { runGates } from "../../../scripts/world/lib/gates.mjs";
 import { deterministicId } from "../../../scripts/world/lib/generate.mjs";
 import { loadWorld } from "../../../scripts/world/lib/world.mjs";
 import { FIXTURES } from "./fixtures";
@@ -94,6 +95,86 @@ describe("refresh over the recorded LCK + LEC fixtures", () => {
     const ops = [...result.overlay.players, ...result.overlay.staff];
     expect(ops.every((op) => op.evidence.startsWith("https://lol.fandom.com/wiki/"))).toBe(true);
     expect(result.overlay.coverage).toEqual(["lck", "lckcl", "lec"].filter((c) => result.overlay.coverage.includes(c)));
+  });
+});
+
+describe("overlay date", () => {
+  const withOldest = (oldest: string | null) => {
+    const client = new MediaWikiClient({ cacheDir: FIXTURES.cacheDir, offline: true });
+    client.oldestFetchDate = () => oldest;
+    return client;
+  };
+  const refresh = (client: MediaWikiClient, asOf?: string) =>
+    runRefresh({ dataDir: FIXTURES.dataDir, teamMapPath: FIXTURES.teamMap, idMapPath: FIXTURES.idMap, client, asOf });
+
+  it("defaults as_of to the fetch date of the oldest cache entry used", async () => {
+    const result = await refresh(withOldest("2026-10-01"));
+    expect(result.overlay.as_of).toBe("2026-10-01");
+  });
+
+  it("lets an explicit --as-of win but warns when it is newer than the oldest entry", async () => {
+    const result = await refresh(withOldest("2026-10-01"), "2026-11-07");
+    expect(result.overlay.as_of).toBe("2026-11-07");
+    expect(result.warnings.some((w) => w.includes("--as-of 2026-11-07") && w.includes("2026-10-01"))).toBe(true);
+  });
+
+  it("does not warn when the explicit --as-of is not newer than the oldest entry", async () => {
+    const result = await refresh(withOldest("2026-11-07"), "2026-11-07");
+    expect(result.warnings.some((w) => w.includes("--as-of"))).toBe(false);
+  });
+});
+
+describe("weak matches", () => {
+  const world = loadWorld(FIXTURES.dataDir);
+  const titleToTeam = new Map([["KT Rolster", KT]]);
+  const willer = world.players.find((p) => p.id === "player-63a4a5a0")!; // on Kiwoom DRX
+  const lp = (extra: object) => ({
+    ign: "NewTag", page: "NewTag", realName: willer.full_name, country: "South Korea", roleLabel: "Starter", kind: "starter", position: "Mid", contractEnd: null, ...extra,
+  });
+  const analyze = (entry: object, overrides = {}) =>
+    analyzeRosters({ world, titleToTeam, rosters: new Map([["KT Rolster", { players: [entry], staff: [] }]]), overrides });
+
+  it("reports a name-only hit as needs-review instead of moving the player", () => {
+    const analysis = analyze(lp({}));
+    expect(analysis.moves).toHaveLength(0);
+    expect(analysis.adds).toHaveLength(0);
+    expect(analysis.issues.some((i) => i.kind === "needs-review" && i.candidates?.includes(willer.id))).toBe(true);
+    expect(analysis.seenPlayers.has(willer.id)).toBe(true);
+  });
+
+  it("moves the player once id-map.json pins the page", () => {
+    const analysis = analyze(lp({}), { players: [{ page: "NewTag", id: willer.id }] });
+    expect(analysis.moves.map((m) => m.id)).toEqual([willer.id]);
+  });
+
+  it("moves the player when both dates of birth are known and agree", () => {
+    const analysis = analyze(lp({ birthDate: willer.date_of_birth }));
+    expect(analysis.moves.map((m) => m.id)).toEqual([willer.id]);
+  });
+
+  it("lists needs-review entries in their own report section", async () => {
+    const report = (await run()).report;
+    expect(report).toContain("## Needs review");
+  });
+});
+
+describe("licence gate", () => {
+  const world = loadWorld(FIXTURES.dataDir);
+  const covered = new Set(world.competitions.filter((c) => c.covered).flatMap((c) => c.teamIds));
+  const overlayWith = (license: string) => ({
+    schemaVersion: 1, as_of: "2026-11-07", coverage: [], players: [], staff: [],
+    source: { name: "Leaguepedia", url: "https://lol.fandom.com", license, license_url: "https://www.fandom.com/licensing", attribution: "x" },
+  });
+
+  it("fails when the licence is the offline placeholder", () => {
+    const result = runGates({ overlay: overlayWith(OFFLINE_LICENSE.text), world, coveredTeamIds: covered });
+    expect(result.ok).toBe(false);
+    expect(result.results.find((g) => g.name === "license-available")?.ok).toBe(false);
+  });
+
+  it("passes with a real licence", () => {
+    const result = runGates({ overlay: overlayWith("CC BY-SA 3.0"), world, coveredTeamIds: covered });
+    expect(result.results.find((g) => g.name === "license-available")?.ok).toBe(true);
   });
 });
 

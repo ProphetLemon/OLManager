@@ -109,4 +109,66 @@ describe("MediaWikiClient", () => {
     expect(sleep).toHaveBeenCalledTimes(1);
     expect(sleep.mock.calls[0][0]).toBeGreaterThan(3000);
   });
+
+  describe("cache freshness", () => {
+    const DAY = 86_400_000;
+    const NOW = Date.parse("2026-11-07T12:00:00Z");
+    const query = { action: "query", titles: "A" };
+    const fresh = (fetchImpl: FetchImpl, extra: Partial<MediaWikiClientOptions> = {}) => make(fetchImpl, { now: () => NOW, ...extra });
+
+    it("stamps each stored entry with its fetch time and hides the stamp from callers", async () => {
+      const client = fresh(vi.fn(async () => json({ ok: true })));
+      await expect(client.get(query)).resolves.toEqual({ ok: true });
+      const stored = JSON.parse(fs.readFileSync(client.cachePath(query), "utf8"));
+      expect(stored.__fetchedAt).toBe("2026-11-07T12:00:00.000Z");
+      await expect(fresh(vi.fn(), { offline: true }).get(query)).resolves.toEqual({ ok: true });
+    });
+
+    it("re-fetches a live entry older than --max-cache-age-days and keeps a younger one", async () => {
+      const fetchImpl = vi.fn(async () => json({ ok: "new" }));
+      await fresh(vi.fn(async () => json({ ok: "old" }))).get(query);
+
+      const eightDaysLater = make(fetchImpl, { now: () => NOW + 8 * DAY, maxCacheAgeDays: 7 });
+      await expect(eightDaysLater.get(query)).resolves.toEqual({ ok: "new" });
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+
+      const twoDaysLater = make(fetchImpl, { now: () => NOW + 10 * DAY, maxCacheAgeDays: 7 });
+      await expect(twoDaysLater.get(query)).resolves.toEqual({ ok: "new" }); // re-stored at NOW + 8d, only 2d old
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+    });
+
+    it("treats an entry without a stamp as fetched at the file mtime", async () => {
+      const client = fresh(vi.fn(async () => json({ ok: "new" })));
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(client.cachePath(query), JSON.stringify({ ok: "legacy" }));
+      const tenDaysAgo = new Date(NOW - 10 * DAY);
+      fs.utimesSync(client.cachePath(query), tenDaysAgo, tenDaysAgo);
+
+      expect(client.readCacheEntry(query)).toMatchObject({ data: { ok: "legacy" }, fetchedAt: tenDaysAgo.getTime() });
+      await expect(client.get(query)).resolves.toEqual({ ok: "new" });
+    });
+
+    it("offline mode reads an entry of any age", async () => {
+      const writer = fresh(vi.fn(async () => json({ ok: "old" })));
+      await writer.get(query);
+      const offline = make(vi.fn(), { offline: true, now: () => NOW + 400 * DAY, maxCacheAgeDays: 7 });
+      await expect(offline.get(query)).resolves.toEqual({ ok: "old" });
+      expect(offline.oldestFetchDate()).toBe("2026-11-07");
+    });
+
+    it("reports the oldest fetch date among the entries it used", async () => {
+      const client = fresh(vi.fn(async () => json({ ok: true })));
+      expect(client.oldestFetchDate()).toBeNull();
+      const other = { action: "query", titles: "B" };
+      // A legacy (unstamped) entry whose mtime is three days old.
+      const aged = new Date(NOW - 3 * DAY);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(client.cachePath(other), JSON.stringify({ ok: true }));
+      fs.utimesSync(client.cachePath(other), aged, aged);
+
+      await client.get(query);
+      await client.get({ action: "query", titles: "B" });
+      expect(client.oldestFetchDate()).toBe("2026-11-04");
+    });
+  });
 });

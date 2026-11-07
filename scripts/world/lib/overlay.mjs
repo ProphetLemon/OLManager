@@ -4,6 +4,12 @@ import { OVERLAY_SCHEMA_VERSION } from "./overlay-schema.mjs";
 export const SOURCE_NAME = "Leaguepedia";
 export const SOURCE_URL = "https://lol.fandom.com";
 
+/** Stand-in licence when siteinfo is unavailable; the `licence-available` gate refuses to ship it. */
+export const OFFLINE_LICENSE = Object.freeze({
+  text: "unavailable (offline run without cached siteinfo)",
+  url: "https://lol.fandom.com/wiki/Leaguepedia:Copyrights",
+});
+
 export function buildAttribution(license) {
   return (
     `Roster data comes from Leaguepedia (${SOURCE_URL}) contributors and is used under ${license.text || "the wiki's license"}` +

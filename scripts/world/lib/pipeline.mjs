@@ -13,13 +13,11 @@ import { computeBaselines } from "./generate.mjs";
 import { runGates } from "./gates.mjs";
 import { lookupInfobox, lookupPlayerStatus } from "./player-status.mjs";
 import { buildOps } from "./ops.mjs";
-import { buildOverlay, todayUtc } from "./overlay.mjs";
+import { OFFLINE_LICENSE, buildOverlay, todayUtc } from "./overlay.mjs";
 import { renderReport } from "./report.mjs";
 import { EMPTY_ID_MAP } from "./match.mjs";
 import { loadTeamMap } from "./team-map.mjs";
 import { coveredCompetitionIds, loadWorld } from "./world.mjs";
-
-const OFFLINE_LICENSE = { text: "unavailable (offline run without cached siteinfo)", url: "https://lol.fandom.com/wiki/Leaguepedia:Copyrights" };
 
 /** Errors that mean "stop the run" rather than "skip this item". */
 const isFatal = (error) => error instanceof RequestBudgetExceededError;
@@ -45,7 +43,7 @@ export async function fetchTeamRoster(client, title) {
  * @param {string} [options.idMapPath]
  * @param {string[]} [options.competitions] defaults to every covered competition
  * @param {import("./mediawiki-client.mjs").MediaWikiClient} options.client
- * @param {string} [options.asOf]
+ * @param {string} [options.asOf] defaults to the fetch date of the oldest cache entry used
  * @param {object} [options.gateOptions]
  * @param {(message: string) => void} [options.log]
  */
@@ -126,13 +124,19 @@ export async function runRefresh(options) {
 
   const readableTeamIds = new Set([...rosters.keys()].map((title) => titleToTeam.get(title)).filter((id) => !analysis.suspectTeams.has(id)));
   const coverage = world.competitions.filter((c) => selected.includes(c.id) && c.teamIds.some((id) => readableTeamIds.has(id))).map((c) => c.id);
-  const overlay = buildOverlay({ asOf: options.asOf ?? todayUtc(), license, coverage, players: ops.players, staff: ops.staff });
+  // The overlay is only as fresh as the stalest answer it was built from.
+  const oldestFetch = options.client.oldestFetchDate?.() ?? null;
+  if (options.asOf && oldestFetch && options.asOf > oldestFetch) {
+    warnings.push(`--as-of ${options.asOf} is newer than the oldest cache entry used (fetched ${oldestFetch}); the rosters may be older than the overlay date claims`);
+  }
+  const asOf = options.asOf ?? oldestFetch ?? todayUtc();
+  const overlay = buildOverlay({ asOf, license, coverage, players: ops.players, staff: ops.staff });
   const gates = runGates({ overlay, world, coveredTeamIds: readableTeamIds, options: options.gateOptions });
 
   const teamRows = selectedTeams.map((teamId) => {
     const team = world.teams.get(teamId);
     const title = teamMap.teams[teamId]?.title ?? null;
-    const stats = analysis.teamStats.get(teamId) ?? { lpPlayers: 0, matched: 0, added: 0, ambiguous: 0, refused: 0 };
+    const stats = analysis.teamStats.get(teamId) ?? { lpPlayers: 0, matched: 0, added: 0, ambiguous: 0, refused: 0, review: 0 };
     const added = analysis.adds.filter((a) => a.teamId === teamId).length;
     let state = "ok";
     if (!title || unmapped.some((u) => u.id === teamId)) state = "unmapped";

@@ -21,8 +21,8 @@ export function renderReport({ asOf, license, selected, world, teamRows, unmappe
     const rows = teamRows.filter((r) => r.competition === competition);
     const prefix = (entry) => entry.competition === competition;
     lines.push(`## ${competition}`, "");
-    lines.push("| Game team | Leaguepedia page | LP players | Matched | New | Ambiguous | Refused | State |", "| --- | --- | --- | --- | --- | --- | --- | --- |");
-    for (const r of rows) lines.push(`| ${md(r.name)} | ${md(r.title ?? "-")} | ${r.lpPlayers} | ${r.matched} | ${r.added} | ${r.ambiguous} | ${r.refused} | ${md(r.state)} |`);
+    lines.push("| Game team | Leaguepedia page | LP players | Matched | New | Ambiguous | Refused | Review | State |", "| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+    for (const r of rows) lines.push(`| ${md(r.name)} | ${md(r.title ?? "-")} | ${r.lpPlayers} | ${r.matched} | ${r.added} | ${r.ambiguous} | ${r.refused} | ${r.review} | ${md(r.state)} |`);
     lines.push("");
     const playerOps = ops.players.filter(prefix);
     const staffOps = ops.staff.filter(prefix);
@@ -30,8 +30,13 @@ export function renderReport({ asOf, license, selected, world, teamRows, unmappe
     lines.push(`### Staff operations (${staffOps.length})`, "", ...(staffOps.length ? staffOps.map(opLine) : ["_none_"]), "");
   }
 
+  const isReview = (i) => i.kind === "needs-review" || i.kind === "staff-review";
+  lines.push("## Needs review", "", "Name-only and IGN-only matches. They produce no operation until `scripts/world/id-map.json` pins them or both sides know the same date of birth.", "");
+  const review = issues.filter(isReview);
+  lines.push(...(review.length ? review.map((i) => `- ${md(i.subject)}${i.team ? ` @ ${md(i.team)}` : ""}: ${md(i.detail)}`) : ["_none_"]), "");
+
   lines.push("## Skipped and ambiguous", "");
-  const rest = [...issues.filter((i) => i.level !== "info"), ...ops.skipped];
+  const rest = [...issues.filter((i) => i.level !== "info" && !isReview(i)), ...ops.skipped];
   lines.push(...(rest.length ? rest.map((i) => `- **${i.kind}** ${md(i.subject)}${i.team ? ` @ ${md(i.team)}` : ""}: ${md(i.detail)}`) : ["_none_"]), "");
 
   const notes = issues.filter((i) => i.level === "info");

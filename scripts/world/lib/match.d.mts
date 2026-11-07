@@ -10,6 +10,7 @@ export interface Entity {
   ign: string;
   name: string;
   nat: string;
+  dob?: string;
   stale: boolean;
   ref: any;
 }
@@ -18,9 +19,10 @@ export interface Person {
   page?: string | null;
   realName: string;
   country: string | null;
+  birthDate?: string | null;
 }
 export interface MatchResult {
-  status: "matched" | "ambiguous" | "refused" | "none";
+  status: "matched" | "review" | "ambiguous" | "refused" | "none";
   entity?: Entity;
   confidence?: string;
   candidates?: Entity[];

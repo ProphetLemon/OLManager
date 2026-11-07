@@ -20,12 +20,13 @@ export const playerEntity = (p) => ({
   ign: p.match_name,
   name: p.full_name,
   nat: countryToIso2(p.nationality),
+  dob: p.date_of_birth,
   stale: Boolean(p.competition && p.competition in STALE_DUPLICATE_COMPETITIONS),
   ref: p,
 });
 export const staffEntity = (s) => {
   const words = [...new Set(`${s.first_name} ${s.last_name}`.split(/\s+/).filter(Boolean))];
-  return { id: s.id, ign: s.nickname, name: words.join(" "), nat: countryToIso2(s.nationality), stale: false, ref: s };
+  return { id: s.id, ign: s.nickname, name: words.join(" "), nat: countryToIso2(s.nationality), dob: s.date_of_birth, stale: false, ref: s };
 };
 
 export function buildIndex(entities) {
@@ -67,11 +68,29 @@ function bestOf(found) {
   return live.length > 0 ? live : closest;
 }
 
+const isoDate = (value) => (/^\d{4}-\d{2}-\d{2}/.test(String(value ?? "")) ? String(value).slice(0, 10) : null);
+
 /**
- * @param {{ign:string,page?:string|null,realName:string,country:string|null}} person
+ * A name-only or ign-only match is a guess (a renamed player, or a namesake). It only becomes a
+ * match when both sides know the date of birth and agree; otherwise a human reviews it.
+ */
+function weakMatch(person, found) {
+  const { entity, confidence } = found;
+  const known = isoDate(person.birthDate);
+  const stored = isoDate(entity.dob);
+  if (known && stored) {
+    return known === stored
+      ? { status: "matched", entity, confidence: `${confidence}+dob` }
+      : { status: "review", entity, confidence, reason: `${confidence} match ${entity.id} but dates of birth differ (${known} vs ${stored})` };
+  }
+  return { status: "review", entity, confidence, reason: `${confidence} match ${entity.id} is not confirmed by id-map.json or a matching date of birth` };
+}
+
+/**
+ * @param {{ign:string,page?:string|null,realName:string,country:string|null,birthDate?:string|null}} person
  * @param {ReturnType<typeof buildIndex>} index
  * @param {{page:string, kind:"player"|"staff", overrides:IdMap}} context
- * @returns {{status:"matched"|"ambiguous"|"refused"|"none", entity?:object, confidence?:string, candidates?:object[], reason?:string}}
+ * @returns {{status:"matched"|"review"|"ambiguous"|"refused"|"none", entity?:object, confidence?:string, candidates?:object[], reason?:string}}
  */
 export function matchPerson(person, index, context) {
   const idMap = context.overrides ?? EMPTY_ID_MAP;
@@ -100,7 +119,7 @@ export function matchPerson(person, index, context) {
   }
   for (const tier of ["strong", "name", "ign"]) {
     const found = bestOf(tiers[tier]);
-    if (found.length === 1) return { status: "matched", entity: found[0].entity, confidence: found[0].confidence };
+    if (found.length === 1) return tier === "strong" ? { status: "matched", entity: found[0].entity, confidence: found[0].confidence } : weakMatch(person, found[0]);
     if (found.length > 1) return { status: "ambiguous", candidates: found.map((f) => f.entity), reason: `${found.length} candidates share ${tier} match` };
   }
   if (tiers.refused.length > 0) {

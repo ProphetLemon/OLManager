@@ -1,5 +1,6 @@
 // Plausibility gates run over a candidate overlay before it is written. A failed gate fails the run
 // (non-zero exit) unless --allow-gate-failures is passed.
+import { OFFLINE_LICENSE } from "./overlay.mjs";
 import { validateOverlay } from "./overlay-schema.mjs";
 import { toOverlayWorld } from "./world.mjs";
 
@@ -52,6 +53,9 @@ export function runGates({ overlay, world, coveredTeamIds, options = {} }) {
   results.push(
     gate("overlay-valid", "global", schema.ok, schema.ok ? "schema, references and added records validate" : `${schema.errors.length} validation error(s): ${schema.errors.slice(0, 3).map((e) => `${e.path} ${e.code}`).join("; ")}`),
   );
+
+  const placeholder = overlay.source?.license === OFFLINE_LICENSE.text;
+  results.push(gate("license-available", "global", !placeholder, placeholder ? "the licence is the offline placeholder (siteinfo was unavailable); re-run with network access so the overlay can credit its source" : "the overlay carries the licence reported by the wiki"));
 
   const dupes = [...duplicateIds(playerOps), ...duplicateIds(staffOps)];
   results.push(gate("no-id-twice", "global", dupes.length === 0, dupes.length ? `ids in several ops: ${dupes.join(", ")}` : "every id appears in at most one op"));

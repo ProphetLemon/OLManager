@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { DEFAULT_THROTTLE_MS, MediaWikiClient } from "./lib/mediawiki-client.mjs";
+import { DEFAULT_MAX_CACHE_AGE_DAYS, DEFAULT_THROTTLE_MS, MediaWikiClient } from "./lib/mediawiki-client.mjs";
 import { serializeOverlay } from "./lib/overlay.mjs";
 import { runRefresh } from "./lib/pipeline.mjs";
 import { buildTeamMap, loadTeamMap, summarizeTeamMap } from "./lib/team-map.mjs";
@@ -18,7 +18,8 @@ const HELP = `Usage: node scripts/world/refresh.mjs [flags]
   --cache-dir <dir>       HTTP cache (default scripts/world/.cache)
   --throttle-ms <n>       minimum delay between live requests (default ${DEFAULT_THROTTLE_MS})
   --max-requests <n>      cap on live requests (default 3000)
-  --as-of YYYY-MM-DD      overlay date (default: today, UTC)
+  --max-cache-age-days <n> live runs re-fetch cache entries older than this (default ${DEFAULT_MAX_CACHE_AGE_DAYS})
+  --as-of YYYY-MM-DD      overlay date (default: fetch date of the oldest cache entry used)
   --out <file>            overlay path (default assets/world/roster-overlay.json)
   --report <file>         review report (default scripts/world/out/report.md)
   --build-team-map        (re)build scripts/world/team-map.json, then exit
@@ -34,6 +35,7 @@ const { values } = parseArgs({
     "cache-dir": { type: "string", default: path.join(ROOT, "scripts/world/.cache") },
     "throttle-ms": { type: "string", default: String(DEFAULT_THROTTLE_MS) },
     "max-requests": { type: "string", default: "3000" },
+    "max-cache-age-days": { type: "string", default: String(DEFAULT_MAX_CACHE_AGE_DAYS) },
     "as-of": { type: "string" },
     out: { type: "string" },
     report: { type: "string", default: path.join(ROOT, "scripts/world/out/report.md") },
@@ -58,6 +60,7 @@ const client = new MediaWikiClient({
   offline: values.offline,
   throttleMs: Number(values["throttle-ms"]),
   maxRequests: Number(values["max-requests"]),
+  maxCacheAgeDays: Number(values["max-cache-age-days"]),
 });
 const competitions = values.competitions ? values.competitions.split(",").map((s) => s.trim()).filter(Boolean) : undefined;
 const writeFile = (file, text) => {

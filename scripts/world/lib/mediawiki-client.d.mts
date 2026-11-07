@@ -2,6 +2,7 @@ export const USER_AGENT: string;
 export const DEFAULT_API_URL: string;
 export const DEFAULT_THROTTLE_MS: number;
 export const DEFAULT_MAX_LAG: number;
+export const DEFAULT_MAX_CACHE_AGE_DAYS: number;
 
 export class OfflineCacheMissError extends Error {
   params: Record<string, string>;
@@ -21,6 +22,8 @@ export interface MediaWikiClientOptions {
   maxRetries?: number;
   fetchImpl?: (url: string, init: { headers: Record<string, string>; signal?: AbortSignal }) => Promise<Response>;
   sleep?: (ms: number) => Promise<void>;
+  maxCacheAgeDays?: number;
+  now?: () => number;
 }
 export interface ClientStats {
   network: number;
@@ -35,8 +38,11 @@ export class MediaWikiClient {
   stats: ClientStats;
   offline: boolean;
   cachePath(params: Record<string, string>): string;
+  maxCacheAgeDays: number;
+  readCacheEntry(params: Record<string, string>): { data: any; fetchedAt: number } | null;
   readCache(params: Record<string, string>): unknown;
-  writeCache(params: Record<string, string>, data: unknown): void;
+  writeCache(params: Record<string, string>, data: unknown, fetchedAt?: number): void;
+  oldestFetchDate(): string | null;
   get(params: Record<string, string>): Promise<any>;
   buildUrl(params: Record<string, string>): string;
 }

@@ -9,6 +9,11 @@ export const USER_AGENT = "OLManager-research/0.1 (roster refresh tool)";
 export const DEFAULT_API_URL = "https://lol.fandom.com/api.php";
 export const DEFAULT_THROTTLE_MS = 4000;
 export const DEFAULT_MAX_LAG = 5;
+export const DEFAULT_MAX_CACHE_AGE_DAYS = 7;
+
+/** Key added to a cache entry next to the API answer; entries recorded without it fall back to the file mtime. */
+const FETCHED_AT_KEY = "__fetchedAt";
+const DAY_MS = 86_400_000;
 
 /** Params that influence server behaviour but not the answer; excluded from the cache key. */
 const NON_KEY_PARAMS = new Set(["maxlag"]);
@@ -66,6 +71,8 @@ export class MediaWikiClient {
    * @param {number} [options.maxRetries] attempts after the first one
    * @param {(url: string, init: object) => Promise<Response>} [options.fetchImpl]
    * @param {(ms: number) => Promise<void>} [options.sleep]
+   * @param {number} [options.maxCacheAgeDays] live runs re-fetch cache entries older than this
+   * @param {() => number} [options.now] clock in ms, injectable for tests
    */
   constructor(options) {
     this.apiUrl = options.apiUrl ?? DEFAULT_API_URL;
@@ -76,6 +83,10 @@ export class MediaWikiClient {
     this.maxRetries = options.maxRetries ?? 4;
     this.fetchImpl = options.fetchImpl ?? ((url, init) => fetch(url, init));
     this.sleep = options.sleep ?? defaultSleep;
+    this.maxCacheAgeDays = options.maxCacheAgeDays ?? DEFAULT_MAX_CACHE_AGE_DAYS;
+    this.now = options.now ?? (() => Date.now());
+    /** Fetch time (ms) of every cache entry used by this run, by cache key. */
+    this.fetchedAt = new Map();
     this.stats = { network: 0, cacheHits: 0, retries: 0 };
     this.lastRequestAt = 0;
   }
@@ -84,28 +95,46 @@ export class MediaWikiClient {
     return path.join(this.cacheDir, `${cacheKey(params)}.json`);
   }
 
-  readCache(params) {
+  /** Cached answer plus the time it was fetched, or null when there is no entry. */
+  readCacheEntry(params) {
     const file = this.cachePath(params);
     if (!fs.existsSync(file)) return null;
-    return JSON.parse(fs.readFileSync(file, "utf8"));
+    const { [FETCHED_AT_KEY]: stamp, ...data } = JSON.parse(fs.readFileSync(file, "utf8"));
+    const stamped = stamp === undefined ? Number.NaN : Date.parse(stamp);
+    return { data, fetchedAt: Number.isNaN(stamped) ? fs.statSync(file).mtimeMs : stamped };
   }
 
-  writeCache(params, data) {
+  readCache(params) {
+    return this.readCacheEntry(params)?.data ?? null;
+  }
+
+  writeCache(params, data, fetchedAt = this.now()) {
     fs.mkdirSync(this.cacheDir, { recursive: true });
-    fs.writeFileSync(this.cachePath(params), JSON.stringify(data));
+    fs.writeFileSync(this.cachePath(params), JSON.stringify({ ...data, [FETCHED_AT_KEY]: new Date(fetchedAt).toISOString() }));
   }
 
   /** GET `api.php` with the given params. Cached on success; never caches API errors. */
   async get(params) {
-    const cached = this.readCache(params);
-    if (cached) {
+    const key = cacheKey(params);
+    const cached = this.readCacheEntry(params);
+    const stale = cached && !this.offline && this.now() - cached.fetchedAt > this.maxCacheAgeDays * DAY_MS;
+    if (cached && !stale) {
       this.stats.cacheHits += 1;
-      return cached;
+      this.fetchedAt.set(key, cached.fetchedAt);
+      return cached.data;
     }
     if (this.offline) throw new OfflineCacheMissError(params);
     const data = await this.fetchWithRetry(params);
-    this.writeCache(params, data);
+    const fetchedAt = this.now();
+    this.writeCache(params, data, fetchedAt);
+    this.fetchedAt.set(key, fetchedAt);
     return data;
+  }
+
+  /** Date (`YYYY-MM-DD`, UTC) of the oldest cache entry used so far, or null when none was used. */
+  oldestFetchDate() {
+    if (this.fetchedAt.size === 0) return null;
+    return new Date(Math.min(...this.fetchedAt.values())).toISOString().slice(0, 10);
   }
 
   buildUrl(params) {

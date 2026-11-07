@@ -30,7 +30,7 @@ export function analyzeRosters({ world, titleToTeam, rosters, overrides }) {
   const suspectTeams = new Set();
 
   const stat = (teamId) => {
-    if (!teamStats.has(teamId)) teamStats.set(teamId, { lpPlayers: 0, matched: 0, added: 0, ambiguous: 0, refused: 0 });
+    if (!teamStats.has(teamId)) teamStats.set(teamId, { lpPlayers: 0, matched: 0, added: 0, ambiguous: 0, refused: 0, review: 0 });
     return teamStats.get(teamId);
   };
   const gameCount = (teamId) => world.players.filter((p) => p.team_id === teamId).length;
@@ -38,7 +38,7 @@ export function analyzeRosters({ world, titleToTeam, rosters, overrides }) {
   for (const [title, teamId] of [...titleToTeam].sort()) {
     const roster = rosters.get(title);
     if (!roster) continue;
-    const local = { sightings: [], adds: [], issues: [], matched: 0 };
+    const local = { sightings: [], adds: [], issues: [], matched: 0, reviewed: 0 };
     for (const lp of roster.players) {
       const authoritative = AUTHORITATIVE_KINDS.has(lp.kind);
       const result = matchPerson(lp, playerIndex, { kind: "player", overrides });
@@ -48,6 +48,12 @@ export function analyzeRosters({ world, titleToTeam, rosters, overrides }) {
         local.matched += 1;
         s.matched += authoritative ? 1 : 0;
         local.sightings.push({ id: result.entity.id, authoritative, entry: { teamId, title, lp, confidence: result.confidence } });
+      } else if (result.status === "review") {
+        // Never turned into a move/retire: the candidate counts as seen so it is not treated as vanished either.
+        local.reviewed += 1;
+        s.review += 1;
+        seenPlayers.add(result.entity.id);
+        local.issues.push(issue("needs-review", `${lp.ign} (${lp.page})`, result.reason, { team: title, candidates: [result.entity.id] }));
       } else if (result.status === "ambiguous" || result.status === "refused") {
         s[result.status === "ambiguous" ? "ambiguous" : "refused"] += 1;
         for (const c of result.candidates ?? []) seenPlayers.add(c.id);
@@ -58,7 +64,7 @@ export function analyzeRosters({ world, titleToTeam, rosters, overrides }) {
         local.issues.push(issue("skipped", `${lp.ign} (${lp.page})`, `unmatched ${lp.roleLabel} entry is not authoritative`, { team: title }));
       }
     }
-    if (gameCount(teamId) >= 3 && roster.players.filter((p) => AUTHORITATIVE_KINDS.has(p.kind)).length >= 3 && local.matched === 0) {
+    if (gameCount(teamId) >= 3 && roster.players.filter((p) => AUTHORITATIVE_KINDS.has(p.kind)).length >= 3 && local.matched + local.reviewed === 0) {
       suspectTeams.add(teamId);
       issues.push(issue("suspect-mapping", title, `none of ${roster.players.length} roster entries match a game player; mapping to ${teamId} skipped`));
       continue;
