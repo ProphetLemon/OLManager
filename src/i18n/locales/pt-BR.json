@@ -2227,6 +2227,12 @@
   },
   "be": {
     "sender": {
+      "assistantCoach": "Treinador assistente",
+      "fitnessCoach": "Preparador físico",
+      "playerLiaison": "Contato com os jogadores",
+      "press": "Esportmaníacos",
+      "yuste": "el_yuste",
+      "alLio": "Al Lío Podcast",
       "boardOfDirectors": "Diretoria",
       "leagueOffice": "Escritório da Liga",
       "assistantManager": "Auxiliar Técnico",
@@ -2249,6 +2255,12 @@
       "elYuste": "el_yuste"
     },
     "role": {
+      "podcast": "Podcast",
+      "assistantCoach": "Treinador",
+      "fitnessCoach": "Treinador",
+      "officer": "Responsável",
+      "press": "Imprensa",
+      "streamer": "Streamer",
       "chairman": "Presidente",
       "competitionSecretary": "Secretário da Competição",
       "assistantManager": "Auxiliar Técnico",

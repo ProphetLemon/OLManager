@@ -2227,6 +2227,12 @@
   },
   "be": {
     "sender": {
+      "assistantCoach": "Yardımcı Antrenör",
+      "fitnessCoach": "Fitness Antrenörü",
+      "playerLiaison": "Oyuncu Sorumlusu",
+      "press": "Esportmaníacos",
+      "yuste": "el_yuste",
+      "alLio": "Al Lío Podcast",
       "boardOfDirectors": "Yönetim Kurulu",
       "leagueOffice": "Lig Yönetimi",
       "assistantManager": "Asistan Koç",
@@ -2249,6 +2255,12 @@
       "elYuste": "el_yuste"
     },
     "role": {
+      "podcast": "Podcast",
+      "assistantCoach": "Antrenör",
+      "fitnessCoach": "Antrenör",
+      "officer": "Yetkili",
+      "press": "Basın",
+      "streamer": "Yayıncı",
       "chairman": "Başkan",
       "competitionSecretary": "Turnuva Sekreteri",
       "assistantManager": "Asistan Koç",
