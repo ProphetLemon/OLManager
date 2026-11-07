@@ -71,6 +71,18 @@ fn action(id: &str, label: &str, label_key: &str, action_type: ActionType) -> Me
     }
 }
 
+/// Action that opens the Transfers tab on its incoming "offers" view.
+fn view_offer_action() -> MessageAction {
+    action(
+        "view_offer",
+        "View offer",
+        "be.msg.transferOffer.actionView",
+        ActionType::NavigateTo {
+            route: "/dashboard?tab=Transfers&view=offers".to_string(),
+        },
+    )
+}
+
 /// Message template system — generates rich messages with variations.
 pub fn welcome_message(team_name: &str, team_id: &str, date: &str, lang: &str) -> InboxMessage {
     // Use template store (with inline translations) if available
@@ -353,6 +365,10 @@ pub fn incoming_transfer_offer_message(
             ("fee", &fee_display),
         ],
     ) {
+        // The data template only acknowledges the offer; add the link to the
+        // offers view here because `data/` is a read-only submodule.
+        let mut msg = msg;
+        msg.actions.insert(0, view_offer_action());
         return msg;
     }
     InboxMessage::new(
@@ -368,14 +384,7 @@ pub fn incoming_transfer_offer_message(
     .with_category(MessageCategory::Transfer)
     .with_priority(MessagePriority::High)
     .with_sender_role("Director of Football")
-    .with_action(action(
-        "view_transfers",
-        "Review Offer",
-        "be.msg.transferOffer.actionReview",
-        ActionType::NavigateTo {
-            route: "/dashboard?tab=Transfers".to_string(),
-        },
-    ))
+    .with_action(view_offer_action())
     .with_context(MessageContext {
         player_id: Some(player_id.to_string()),
         ..Default::default()

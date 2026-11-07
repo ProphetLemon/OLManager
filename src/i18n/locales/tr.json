@@ -2670,7 +2670,8 @@
       "transferOffer": {
         "subject": "{{player}} İçin Gelen Teklif",
         "body": "{{club}}, {{player}} için {{fee}} değerinde bir teklif sundu. Teklifi kabul etmek veya reddetmek için Transferler sekmesinden teklifi inceleyin.",
-        "actionReview": "Teklifi İncele"
+        "actionReview": "Teklifi İncele",
+        "actionView": "Teklifi görüntüle"
       },
       "potentialReport": {
         "subject": "Potansiyel raporu tamamlandı",

@@ -86,6 +86,14 @@ describe("inboxHelpers", () => {
     });
   });
 
+  it("carries the requested view for a tab route", () => {
+    expect(getNavigationTarget("/dashboard?tab=Transfers&view=offers")).toEqual({
+      tab: "Transfers",
+      view: "offers",
+      shouldResolveAction: true,
+    });
+  });
+
   it("recognizes player-event message prefixes", () => {
     expect(isPlayerEventMessage("morale_talk_p1")).toBe(true);
     expect(isPlayerEventMessage("contract_concern_p2")).toBe(true);

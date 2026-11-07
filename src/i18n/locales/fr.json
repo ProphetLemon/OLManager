@@ -2670,7 +2670,8 @@
       "transferOffer": {
         "subject": "Offre reçue pour {{player}}",
         "body": "{{club}} a soumis une offre de {{fee}} pour {{player}}. Consultez-la dans l'onglet Transferts pour accepter ou refuser.",
-        "actionReview": "Voir l'offre"
+        "actionReview": "Voir l'offre",
+        "actionView": "Voir l'offre"
       },
       "potentialReport": {
         "subject": "Rapport de potentiel terminé",
