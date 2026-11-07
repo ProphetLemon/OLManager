@@ -14,6 +14,7 @@ use olm_core::domain::manager::Manager;
 use olm_core::domain::stats::StatsState;
 use olm_core::game::Game;
 use olm_core::game_setup;
+use olm_core::wage_scale;
 use olm_core::generator::definitions::CompetitionManifest;
 use olm_core::roster_stability;
 use olm_core::world_catalog;
@@ -77,12 +78,32 @@ pub(crate) fn build_new_game_world(
     // The overlay can leave a team short; make every Main team playable.
     fill_short_rosters(game);
 
+    // Rostered players the data ships without a wage get one from the LEC wage scale.
+    seed_missing_wages(game);
+
     auto_fill_user_lineup(game, inputs.team_id);
     eprintln!(
         "[select_team] AFTER assembly: staff.len={}",
         game.staff.len()
     );
     Ok(())
+}
+
+/// Seed the wage of every rostered wage-0 player and log how many budgeted teams
+/// needed their seeded wages scaled down to fit.
+fn seed_missing_wages(game: &mut Game) -> Vec<wage_scale::TeamWageSeed> {
+    let reports = wage_scale::seed_missing_wages(&mut game.players, &game.teams, &game.staff);
+    let seeded: usize = reports.iter().map(|report| report.seeded_players).sum();
+    let over_budget = reports.iter().filter(|r| r.over_budget_before()).count();
+    let scaled = reports.iter().filter(|r| r.scale_factor.is_some()).count();
+    info!(
+        "[game] seeded {} missing wages across {} teams ({} over budget before scaling, {} scaled down)",
+        seeded,
+        reports.len(),
+        over_budget,
+        scaled
+    );
+    reports
 }
 
 /// Auto-populate the active lineup for the user's team, one player per role.
@@ -1366,6 +1387,126 @@ mod tests {
                 .filter(|(_, n)| *n > 1)
                 .map(|(id, _)| id.to_string())
                 .collect()
+        }
+
+        fn annual_bill(game: &Game, team_id: &str) -> i64 {
+            olm_core::contract_wage_policy::annual_team_wage_bill(game, team_id)
+        }
+
+        #[test]
+        fn new_game_leaves_no_rostered_player_without_a_wage() {
+            let (game, _catalog, _overlay, _user) = new_game();
+
+            let unpaid: Vec<&str> = game
+                .players
+                .iter()
+                .filter(|p| p.team_id.is_some() && p.wage == 0)
+                .map(|p| p.match_name.as_str())
+                .collect();
+
+            assert!(unpaid.is_empty(), "{} rostered players have wage 0", unpaid.len());
+        }
+
+        #[test]
+        fn new_game_keeps_authored_wages() {
+            let (game, catalog, _overlay, _user) = new_game();
+
+            let authored: HashMap<&str, u32> = catalog
+                .iter()
+                .filter(|p| p.wage > 0)
+                .map(|p| (p.id.as_str(), p.wage))
+                .collect();
+            let changed = game
+                .players
+                .iter()
+                .filter(|p| authored.get(p.id.as_str()).is_some_and(|wage| *wage != p.wage))
+                .count();
+
+            assert_eq!(changed, 0, "seeding must not touch authored wages");
+        }
+
+        #[test]
+        fn new_game_seeding_never_pushes_a_team_over_its_wage_budget() {
+            let (game, catalog, _overlay, _user) = new_game();
+            let unpaid_in_catalog: HashSet<&str> = catalog
+                .iter()
+                .filter(|p| p.wage == 0)
+                .map(|p| p.id.as_str())
+                .collect();
+
+            // A budgeted team may still be over only when all its seeded players are already
+            // at the minimum seeded wage (the budget cannot cover even that, or the authored
+            // wages alone exceed it).
+            let mut by_league: std::collections::BTreeMap<String, (usize, usize)> =
+                std::collections::BTreeMap::new();
+            let mut offenders = Vec::new();
+            for team in game.teams.iter().filter(|t| t.wage_budget > 0) {
+                let bill = annual_bill(&game, &team.id);
+                let league = team.id.split('-').next().unwrap_or("").to_string();
+                let entry = by_league.entry(league).or_default();
+                entry.0 += 1;
+                if bill <= team.wage_budget {
+                    continue;
+                }
+                entry.1 += 1;
+                let can_still_shrink = game.players.iter().any(|p| {
+                    p.team_id.as_deref() == Some(team.id.as_str())
+                        && unpaid_in_catalog.contains(p.id.as_str())
+                        && p.wage > wage_scale::MIN_SEEDED_WAGE
+                });
+                if can_still_shrink {
+                    offenders.push(format!("{} bill {bill} budget {}", team.id, team.wage_budget));
+                }
+            }
+            eprintln!("budgeted teams / still over budget, by league: {by_league:?}");
+
+            assert!(offenders.is_empty(), "teams over budget after seeding: {offenders:?}");
+        }
+
+        #[test]
+        fn gumayusi_asks_about_half_a_million_a_year() {
+            let (game, _catalog, _overlay, _user) = new_game();
+            let gumayusi = player_named(&game, "Gumayusi");
+            assert_eq!(gumayusi.len(), 1);
+            let star = gumayusi[0];
+            let team = game
+                .teams
+                .iter()
+                .find(|t| Some(t.id.as_str()) == star.team_id.as_deref())
+                .expect("Gumayusi has a team");
+
+            let wage = olm_core::contracts::expected_wage(
+                star,
+                team,
+                game.clock.current_date.date_naive(),
+            );
+
+            assert!((450_000..=550_000).contains(&wage), "expected wage {wage}");
+        }
+
+        #[test]
+        fn koi_wage_budget_cannot_fit_five_top_ovr_stars() {
+            let (game, _catalog, _overlay, _user) = new_game();
+            let koi = game
+                .teams
+                .iter()
+                .find(|t| t.id == "lec-movistar-koi")
+                .expect("KOI exists");
+            let mut ranked: Vec<&Player> = game.players.iter().collect();
+            ranked.sort_by_key(|p| std::cmp::Reverse(olm_core::potential::calculate_lol_ovr(p)));
+            let date = game.clock.current_date.date_naive();
+
+            let five_stars: i64 = ranked
+                .iter()
+                .take(5)
+                .map(|p| i64::from(olm_core::contracts::expected_wage(p, koi, date)))
+                .sum();
+
+            assert!(
+                five_stars > koi.wage_budget,
+                "five stars cost {five_stars}, KOI budget {}",
+                koi.wage_budget
+            );
         }
 
         #[test]
