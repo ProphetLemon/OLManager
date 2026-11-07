@@ -6,6 +6,11 @@
   "content": {
     "lol": {
       "social": {
+        "events": {
+          "fanPetitionDraftObjectives": {
+            "body": "Bir grup {{team}} taraftarı, daha net bir draft kimliği ve daha keskin objektif kurulumları isteyen bir kampanya başlattı.\n\n\"Her seride pasif scaling yerine Rift'te proaktif planlar istiyoruz. Bize takımın nasıl kazanmak istediğini bildiğini gösterin.\"\n\nKonu espor sosyal medya kanallarında ilgi görüyor. Nasıl yanıt veriyorsunuz?"
+          }
+        },
         "questions": {
           "cleanWinObjectives": {
             "text": "Alt koridorunuz ejderleri topladı ve Baron kontrolünü sağladınız. Bu galibiyetin ne kadarı objektif kurulumundan geldi?"
@@ -2851,6 +2856,9 @@
           }
         }
       },
+      "fanPetitionLol": {
+        "subject": "Taraftar Dilekçesi — Draft kimliği"
+      },
       "fanPetition": {
         "subject": "Taraftar Dilekçesi — Draft kimliği",
         "body": "Bir grup {{team}} taraftarı, daha net bir draft kimliği ve daha keskin objektif kurulumları isteyen bir dilekçe başlattı.\n\n\"Her seride pasif scaling yerine Rift'te proaktif planlar istiyoruz. Bize takımın nasıl kazanmak istediğini bildiğini gösterin.\"\n\nŞimdiden 500'den fazla imza var. Nasıl yanıt veriyorsunuz?",
@@ -3202,6 +3210,10 @@
           "headline": "{{team}} Seri Yakaladı: Yenilmezlik {{runLength}} Oldu",
           "body": "{{team}}, kayıpsız bir şekilde {{runLength}} serilik bir galibiyet ivmesi yakaladı ve draftlar ve objektifler etrafında gerçek bir momentum inşa ediyor."
         }
+      },
+      "strategicRejection": {
+        "headline": "{{team}}, {{player}} transferinden vazgeçti",
+        "body": "{{team}}, {{player}} için stratejik değerlendirmesini teklif yapmadan sonlandırdı."
       },
       "transferRumour": {
         "headline": "{{player}}, {{to}} Transferini Tamamladı",

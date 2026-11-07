@@ -6,6 +6,11 @@
   "content": {
     "lol": {
       "social": {
+        "events": {
+          "fanPetitionDraftObjectives": {
+            "body": "Une vague de supporters de {{team}} a lancé une campagne réclamant une identité de draft plus claire et des mises en place d'objectifs plus tranchées.\n\n\"On veut des plans proactifs sur la Faille, pas du scaling passif à chaque série. Montrez que l'équipe sait comment elle veut gagner.\"\n\nLe fil prend de l'ampleur sur les réseaux sociaux de l'esport. Comment répondez-vous ?"
+          }
+        },
         "questions": {
           "cleanWinObjectives": {
             "text": "Votre bot lane a empilé les dragons et contrôlé le Baron. Quelle part de cette victoire vient de la préparation des objectifs ?"
@@ -2851,6 +2856,9 @@
           }
         }
       },
+      "fanPetitionLol": {
+        "subject": "Pétition des supporters — Identité de draft"
+      },
       "fanPetition": {
         "subject": "Pétition des supporters — Identité de draft",
         "body": "Un groupe de supporters de {{team}} a lancé une pétition demandant une identité de draft plus claire et une meilleure planification des objectifs.\n\n\"On veut des plans proactifs sur la Faille, pas du scaling passif à chaque série. Montrez que l'équipe sait comment elle veut gagner.\"\n\nPlus de 500 signatures déjà. Comment répondez-vous ?",
@@ -3202,6 +3210,10 @@
           "headline": "{{team}} porte sa série à {{runLength}} matchs",
           "body": "{{team}} enchaîne {{runLength}} séries sans défaite et construit une vraie dynamique autour du draft et des objectifs."
         }
+      },
+      "strategicRejection": {
+        "headline": "{{team}} renonce à {{player}}",
+        "body": "{{team}} a terminé son évaluation stratégique de {{player}} sans faire d'offre."
       },
       "transferRumour": {
         "headline": "{{player}} rejoint officiellement {{to}}",

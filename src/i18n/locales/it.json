@@ -2640,6 +2640,9 @@
           }
         }
       },
+      "fanPetitionLol": {
+        "subject": "Petizione tifosi — Identità di draft"
+      },
       "fanPetition": {
         "subject": "Petizione tifosi — Identità di draft",
         "body": "Un gruppo di tifosi del {{team}} ha organizzato una petizione chiedendo un'identità di draft più chiara e una migliore pianificazione degli obiettivi.\n\n\"Vogliamo piani proattivi sulla Rift, non scaling passivo ogni serie. Dimostrate che la squadra sa come vuole vincere.\"\n\nOltre 500 firme finora. Come rispondi?",
@@ -3038,6 +3041,10 @@
           "body": "{{team}} have gone {{runLength}} series without a loss and are building real momentum around drafts and objectives."
         }
       },
+      "strategicRejection": {
+        "headline": "{{team}} rinuncia a {{player}}",
+        "body": "{{team}} ha concluso la valutazione strategica di {{player}} senza presentare un'offerta."
+      },
       "transferRumour": {
         "headline": "{{player}} Complete Move to {{to}}",
         "body": "{{to}} have completed the signing of {{player}} from {{from}} for {{fee}}."
@@ -3274,6 +3281,11 @@
   "content": {
     "lol": {
       "social": {
+        "events": {
+          "fanPetitionDraftObjectives": {
+            "body": "Un'ondata di tifosi del {{team}} ha organizzato una campagna chiedendo un'identità di draft più chiara e una pianificazione degli obiettivi più incisiva.\n\n\"Vogliamo piani proattivi sulla Rift, non scaling passivo ogni serie. Dimostrate che la squadra sa come vuole vincere.\"\n\nIl thread sta guadagnando terreno sui canali social degli esports. Come rispondi?"
+          }
+        },
         "questions": {
           "cleanWinObjectives": {
             "text": "Your bot lane stacked dragons and controlled Baron. How much of this win came from objective setup?"

@@ -36,6 +36,11 @@
   "content": {
     "lol": {
       "social": {
+        "events": {
+          "fanPetitionDraftObjectives": {
+            "body": "Una ola de seguidores de {{team}} organizó una campaña pidiendo una identidad de draft más clara y una mejor planificación de objetivos.\n\n\"Queremos planes proactivos en la Grieta, no escalado pasivo todas las series. Demuestren que el equipo sabe cómo quiere ganar.\"\n\nEl hilo está ganando tracción en las redes sociales de los esports. ¿Cómo respondés?"
+          }
+        },
         "questions": {
           "cleanWinObjectives": {
             "text": "Tu bot lane acumuló dragones y controló el Barón. ¿Cuánto de esta victoria nació de la preparación de objetivos?"
@@ -2996,6 +3001,9 @@
           }
         }
       },
+      "fanPetitionLol": {
+        "subject": "Petición de la afición — Identidad de draft"
+      },
       "fanPetition": {
         "subject": "Petición de la afición — Identidad de draft",
         "body": "Un grupo de seguidores de {{team}} organizó una petición pidiendo una identidad de draft más clara y una mejor planificación de objetivos.\n\n\"Queremos planes proactivos en la Grieta, no escalado pasivo todas las series. Demuestren que el equipo sabe cómo quiere ganar.\"\n\nMás de 500 firmas hasta ahora. ¿Cómo respondés?",
@@ -3347,6 +3355,10 @@
           "headline": "{{team}} extiende su racha a {{runLength}} series",
           "body": "{{team}} acumula {{runLength}} series sin perder y construye impulso real desde drafts y objetivos."
         }
+      },
+      "strategicRejection": {
+        "headline": "{{team}} descarta a {{player}}",
+        "body": "{{team}} terminó su revisión estratégica de {{player}} sin hacer una oferta."
       },
       "transferRumour": {
         "headline": "{{player}} completa su pase a {{to}}",

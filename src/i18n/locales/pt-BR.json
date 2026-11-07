@@ -6,6 +6,11 @@
   "content": {
     "lol": {
       "social": {
+        "events": {
+          "fanPetitionDraftObjectives": {
+            "body": "Uma onda de torcedores do {{team}} organizou uma campanha pedindo uma identidade de draft mais clara e uma configuração de objetivos mais afiada.\n\n\"Queremos planos proativos no Rift, não scaling passivo toda série. Mostrem que o time sabe como quer vencer.\"\n\nO tópico está ganhando força nas redes sociais dos esports. Como você responde?"
+          }
+        },
         "questions": {
           "cleanWinObjectives": {
             "text": "Sua bot lane acumulou dragões e controlou o Barão. Quanto desta vitória veio da preparação de objetivos?"
@@ -2851,6 +2856,9 @@
           }
         }
       },
+      "fanPetitionLol": {
+        "subject": "Petição da torcida — Identidade de draft"
+      },
       "fanPetition": {
         "subject": "Petição da torcida — Identidade de draft",
         "body": "Um grupo de torcedores do {{team}} organizou uma petição pedindo uma identidade de draft mais clara e uma melhor configuração de objetivos.\n\n\"Queremos planos proativos no Rift, não scaling passivo toda série. Mostrem que o time sabe como quer vencer.\"\n\nMais de 500 assinaturas até agora. Como você responde?",
@@ -3202,6 +3210,10 @@
           "headline": "{{team}} amplia sequência para {{runLength}} séries",
           "body": "{{team}} chegou a {{runLength}} séries sem perder e constrói embalo real em drafts e objetivos."
         }
+      },
+      "strategicRejection": {
+        "headline": "{{team}} desiste de {{player}}",
+        "body": "{{team}} encerrou a avaliação estratégica de {{player}} sem fazer uma proposta."
       },
       "transferRumour": {
         "headline": "{{player}} fecha com {{to}}",

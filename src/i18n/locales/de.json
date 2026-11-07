@@ -6,6 +6,11 @@
   "content": {
     "lol": {
       "social": {
+        "events": {
+          "fanPetitionDraftObjectives": {
+            "body": "Eine Welle von {{team}}-Fans hat eine Kampagne gestartet und fordert eine klarere Draft-Identität und präzisere Objective-Setups.\n\n„Wir wollen proaktive Pläne auf der Rift, kein passives Scaling in jeder Serie. Zeigt uns, dass das Team weiß, wie es gewinnen will.“\n\nDer Thread gewinnt in den Esports-Social-Kanälen an Reichweite. Wie reagierst du?"
+          }
+        },
         "questions": {
           "cleanWinObjectives": {
             "text": "Eure Botlane hat Drachen gesammelt und den Baron kontrolliert. Wie viel von diesem Sieg kam aus der Vorbereitung auf die Objectives?"
@@ -2851,6 +2856,9 @@
           }
         }
       },
+      "fanPetitionLol": {
+        "subject": "Fan-Petition — Draft-Identität"
+      },
       "fanPetition": {
         "subject": "Fan Petition — Draft Identity",
         "body": "A group of {{team}} supporters has organized a petition asking for a clearer draft identity and sharper objective setups.\n\n\"We want proactive plans on the Rift, not passive scaling every series. Show us the team knows how it wants to win.\"\n\nOver 500 signatures so far. How do you respond?",
@@ -3202,6 +3210,10 @@
           "headline": "{{team}} Extend Series Run to {{runLength}}",
           "body": "{{team}} have gone {{runLength}} series without a loss and are building real momentum around drafts and objectives."
         }
+      },
+      "strategicRejection": {
+        "headline": "{{team}} verzichtet auf {{player}}",
+        "body": "{{team}} hat die strategische Prüfung von {{player}} abgeschlossen, ohne ein Angebot abzugeben."
       },
       "transferRumour": {
         "headline": "{{player}} Complete Move to {{to}}",

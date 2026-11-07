@@ -36,6 +36,11 @@
   "content": {
     "lol": {
       "social": {
+        "events": {
+          "fanPetitionDraftObjectives": {
+            "body": "A wave of {{team}} supporters has organized a campaign asking for a clearer draft identity and sharper objective setups.\n\n\"We want proactive plans on the Rift, not passive scaling every series. Show us the team knows how it wants to win.\"\n\nThe thread is gaining traction across esports social channels. How do you respond?"
+          }
+        },
         "questions": {
           "cleanWinObjectives": {
             "text": "Your bot lane stacked dragons and controlled Baron. How much of this win came from objective setup?"
@@ -3030,6 +3035,9 @@
           }
         }
       },
+      "fanPetitionLol": {
+        "subject": "Fan Petition — Draft Identity"
+      },
       "fanPetition": {
         "subject": "Fan Petition — Draft Identity",
         "body": "A group of {{team}} supporters has organized a petition asking for a clearer draft identity and sharper objective setups.\n\n\"We want proactive plans on the Rift, not passive scaling every series. Show us the team knows how it wants to win.\"\n\nOver 500 signatures so far. How do you respond?",
@@ -3381,6 +3389,10 @@
           "headline": "{{team}} Extend Series Run to {{runLength}}",
           "body": "{{team}} have gone {{runLength}} series without a loss and are building real momentum around drafts and objectives."
         }
+      },
+      "strategicRejection": {
+        "headline": "{{team}} pass on {{player}}",
+        "body": "{{team}} ended their strategic review of {{player}} without making an offer."
       },
       "transferRumour": {
         "headline": "{{player}} Complete Move to {{to}}",
