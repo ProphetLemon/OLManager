@@ -108,3 +108,30 @@ describe("player event messages render in the active language", () => {
     expect((await renderIn("es", happy)).subject).toBe("¡Caps está de buen humor!");
   });
 });
+
+describe("random event messages render in the active language", () => {
+  it("renders a stored-Spanish-or-English podcast in the active language", async () => {
+    // podcast_3 is stored Spanish in the data templates; every locale must still own its copy.
+    const msg = stored({
+      subject: "Al Lío: KOI protagonista del debate",
+      subject_key: "be.msg.allio.templates.podcast_3.subject",
+      body_key: "be.msg.allio.templates.podcast_3.body",
+      i18n_params: { team: "KOI", player: "Caps" },
+    });
+    expect((await renderIn("en", msg)).subject).toBe("Al Lío: KOI takes centre stage in the debate");
+    expect((await renderIn("es", msg)).subject).toBe("Al Lío: KOI protagonista del debate");
+    expect((await renderIn("de", msg)).subject).toBe("Al Lío: KOI im Mittelpunkt der Debatte");
+  });
+
+  it("renders a stored-English rival interest message in Spanish", async () => {
+    const msg = stored({
+      subject: "G2 eyeing Caps",
+      subject_key: "be.msg.rivalInterest.templates.rival_1.subject",
+      body_key: "be.msg.rivalInterest.templates.rival_1.body",
+      i18n_params: { player: "Caps", rival: "G2" },
+    });
+    const resolved = await renderIn("es", msg);
+    expect(resolved.subject).toBe("G2 tiene en el punto de mira a Caps");
+    expect(resolved.body).toContain("G2 está interesada en Caps");
+  });
+});

@@ -2690,6 +2690,48 @@
         }
       },
       "rivalInterest": {
+        "templates": {
+          "rival_1": {
+            "subject": "{{rival}} hat {{player}} im Visier",
+            "body": "Man hört, dass {{rival}} Interesse an {{player}} zeigt. Sie haben Fragen gestellt und bereiten womöglich ein Angebot vor.\n\nSollten wir uns Sorgen machen, oder steht {{player}} nicht zum Verkauf?"
+          },
+          "rival_2": {
+            "subject": "{{rival}} erkundigt sich nach {{player}}",
+            "body": "{{rival}} hat informell nach der Verfügbarkeit von {{player}} gefragt. Sie wollen offenbar ihren Kader verstärken und sehen {{player}} als Ziel.\n\nNoch kein offizielles Angebot, aber ich wollte Sie auf dem Laufenden halten."
+          },
+          "rival_3": {
+            "subject": "{{rival}} beobachtet {{player}}",
+            "body": "Unsere Quellen berichten, dass {{rival}} {{player}} in den letzten Spielen gescoutet hat. Das geht meist einer Transferanfrage voraus.\n\nWir sollten unsere Haltung festlegen, bevor sie handeln."
+          },
+          "rival_4": {
+            "subject": "{{rival}} will {{player}}",
+            "body": "In der Liga heißt es, dass {{rival}} {{player}} verpflichten will. Ihr Manager ist offenbar ein großer Bewunderer.\n\nDas könnte ernst werden — wir erhalten vielleicht bald ein offizielles Angebot."
+          },
+          "rival_5": {
+            "subject": "{{rival}} beobachtet den Vertrag von {{player}}",
+            "body": "Ich habe erfahren, dass {{rival}} die Vertragssituation von {{player}} genau verfolgt. Verlängern wir nicht bald, könnten sie das ausnutzen.\n\nDas sollten wir in unserer Planung berücksichtigen."
+          },
+          "rival_6": {
+            "subject": "{{rival}} erwägt ein Angebot für {{player}}",
+            "body": "{{rival}} erwägt Berichten zufolge ein Angebot für {{player}}. Sie sehen {{player}} als wichtige Verstärkung für den kommenden Split.\n\nIch halte Sie auf dem Laufenden, falls sich etwas tut."
+          },
+          "rival_7": {
+            "subject": "Gerücht: {{rival}} interessiert an {{player}}",
+            "body": "Es kursieren Transfergerüchte, dass {{rival}} an einer Verpflichtung von {{player}} interessiert ist. Noch ist es nur Spekulation, doch solche Gerüchte haben oft einen wahren Kern.\n\nDachte, Sie sollten es wissen."
+          },
+          "rival_8": {
+            "subject": "{{rival}} nimmt Kontakt wegen {{player}} auf",
+            "body": "{{rival}} hat wegen {{player}} erstmals Kontakt aufgenommen. Sie haben Informationen zur Verfügbarkeit und zu den Gehaltsvorstellungen des Spielers angefragt.\n\nDas könnte schnell gehen. Wie möchten Sie damit umgehen?"
+          },
+          "rival_9": {
+            "subject": "{{player}} weckt das Interesse von {{rival}}",
+            "body": "Die Leistungen von {{player}} haben die Aufmerksamkeit von {{rival}} geweckt. Sie haben sich nach dem Spieler umgehört und scheinen ernsthaft interessiert zu sein.\n\nWir müssen bald eine Entscheidung über die Zukunft von {{player}} treffen."
+          },
+          "rival_10": {
+            "subject": "{{rival}} bereit, {{player}} zu holen",
+            "body": "Quellen deuten an, dass {{rival}} bereit ist, einen konkreten Schritt für {{player}} zu machen. Ein offizielles Angebot könnte innerhalb von Tagen eintreffen.\n\nWir sollten unsere Antwort vorbereiten."
+          }
+        },
         "subject": "Transfer Rumour — {{player}} linked with {{rival}}",
         "body0": "We've received word that {{rival}} have been making enquiries about {{player}}.\n\nTheir scouts were spotted at our last few matches, and our sources suggest they may approach with a formal offer soon.\n\nHow would you like us to respond if they make contact?",
         "body1": "The press are reporting that {{player}} is a target for {{rival}}.\n\nAccording to sources, the player has attracted attention after their recent performances. No formal bid yet, but it's only a matter of time.\n\nWhat's your stance?",
@@ -2881,6 +2923,48 @@
         }
       },
       "allio": {
+        "templates": {
+          "podcast_1": {
+            "subject": "Al Lío Podcast spricht über {{team}}",
+            "body": "Der Al Lío Podcast hat der aktuellen Lage von {{team}} ein eigenes Segment gewidmet. Das Panel war sich über die Perspektiven des Teams uneins.\n\n\"{{team}} ist eine interessante Fallstudie\", meinte einer der Moderatoren.\n\nWenn bei Al Lío über einen gesprochen wird, ist man auf dem Radar."
+          },
+          "podcast_2": {
+            "subject": "Al Lío: \"{{team}} braucht eine Veränderung\"",
+            "body": "Im letzten Al Lío Podcast waren sich mehrere Panelisten einig, dass {{team}} dringend eine Veränderung braucht.\n\n\"So können sie nicht weitermachen\", sagte einer von ihnen. \"In dieser Kabine muss sich etwas bewegen.\"\n\nDie Sendung hatte ein großes Publikum, und das Thema sorgt für Gesprächsstoff."
+          },
+          "podcast_3": {
+            "subject": "Al Lío: {{team}} im Mittelpunkt der Debatte",
+            "body": "Der letzte Al Lío Podcast hatte {{team}} als Hauptthema der Debatte. Die Diskutierenden beleuchteten die Lage des Teams von allen Seiten.\n\n\"Es ist ein Team, das viele Meinungen hervorruft\", fassten sie zusammen.\n\nDie Debatte war intensiv und dauerte fast eine halbe Stunde."
+          },
+          "podcast_4": {
+            "subject": "Al Lío hebt {{player}} von {{team}} hervor",
+            "body": "Im Al Lío Podcast wurde die Leistung von {{player}}, Spieler von {{team}}, als eine der besten der Woche hervorgehoben.\n\n\"{{player}} befindet sich auf einem spektakulären Niveau\", hieß es. \"{{player}} verdient es, in der Diskussion um den besten Spieler zu sein.\"\n\nEs ist immer ein gutes Zeichen, wenn über die eigenen Spieler gut gesprochen wird."
+          },
+          "podcast_5": {
+            "subject": "Al Lío: \"{{team}} braucht Geduld\"",
+            "body": "Im Al Lío Podcast argumentierten einige Panelisten, dass {{team}} Zeit und Geduld braucht, damit das Projekt funktioniert.\n\n\"Ein Siegerteam baut man nicht über Nacht\", meinten sie.\n\nAndere widersprachen, was eine lebhafte Debatte auslöste."
+          },
+          "podcast_6": {
+            "subject": "Al Lío kritisiert das Management von {{team}}",
+            "body": "Der Al Lío Podcast äußerte sich kritisch zur sportlichen Führung von {{team}} und verwies auf Fehler bei der Kaderplanung.\n\n\"Die Verpflichtungen haben nicht funktioniert, und der Spielstil ist nicht zu erkennen\", hieß es.\n\nKritik in beliebten Sendungen kann sich in der öffentlichen Meinung festsetzen."
+          },
+          "podcast_7": {
+            "subject": "Al Lío: \"Das Projekt von {{team}} macht Hoffnung\"",
+            "body": "Im Al Lío Podcast wurde optimistisch über das Projekt von {{team}} gesprochen. Mehrere Panelisten waren sich einig, dass das Team auf dem richtigen Weg ist.\n\n\"Es wird vieles richtig gemacht, auch wenn die Ergebnisse nicht folgen\", sagten sie.\n\nBei Al Lío gelobt zu werden, ist gute Werbung für den Verein."
+          },
+          "podcast_8": {
+            "subject": "Al Lío debattiert über die Zukunft von {{player}}",
+            "body": "Der Al Lío Podcast widmete ein Segment der Zukunft von {{player}}, der derzeit bei {{team}} spielt.\n\n\"{{player}} hat das Niveau, um für ein besseres Team zu spielen\", meinten einige.\n\nSolche Gerüchte können die Konzentration des Spielers beeinträchtigen."
+          },
+          "podcast_9": {
+            "subject": "Al Lío: \"{{team}} bereitet mir Sorgen\"",
+            "body": "Einer der Panelisten im Al Lío Podcast äußerte Besorgnis über die Lage von {{team}}.\n\n\"{{team}} bereitet mir Sorgen, weil ich keine Reaktion sehe\", sagte er. \"Schlechte Teams reagieren, aber {{team}} wirkt festgefahren.\"\n\nKommentare wie dieser können zusätzlichen Druck erzeugen."
+          },
+          "podcast_10": {
+            "subject": "Al Lío sagt {{team}} eine gute Zukunft voraus",
+            "body": "Im Al Lío Podcast sagte ein bekannter Analyst voraus, dass {{team}} eine vielversprechende Zukunft hat, wenn es den aktuellen Kurs hält.\n\n\"Ich sehe sehr interessante Dinge bei {{team}}. Gebt ihnen Zeit, und sie werden von sich reden machen\", prognostizierte er.\n\nPositive Prognosen von Medienfiguren können die Moral des Vereins heben."
+          }
+        },
         "subject0": "Al Lío Podcast — Transfer rumour: {{player}} being tracked",
         "body0": "Eros dropped a transfer hint on today's Al Lío episode: \"I'm hearing things about {{player}}. Multiple teams have been asking questions. Nothing confirmed yet, but the mercato around {{team}} is heating up.\"\n\nKeep this in mind when planning your squad for next split.",
         "subject1": "Al Lío Podcast — Eros hints at incoming deal for {{team}}",

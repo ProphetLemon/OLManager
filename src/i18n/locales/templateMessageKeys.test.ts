@@ -21,6 +21,8 @@ export const TEMPLATE_FAMILIES: Record<string, string> = {
   bench_complaint: "be.msg.playerEvent.templates",
   happy_player: "be.msg.playerEvent.templates",
   contract_concern: "be.msg.playerEvent.templates",
+  podcast: "be.msg.allio.templates",
+  rival_interest: "be.msg.rivalInterest.templates",
 };
 
 // The data/ submodule owns the templates; skip when it is not checked out.

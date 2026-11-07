@@ -512,6 +512,23 @@ pub fn build_media_story_from_narrative(
     )
 }
 
+/// Al Lío podcast message from the data templates, with render-time i18n keys and params.
+pub fn allio_podcast_from_template(
+    msg_id: &str,
+    team_name: &str,
+    player_name: &str,
+    date: &str,
+) -> Option<InboxMessage> {
+    crate::messages::template_store::template_store().build_message_keyed(
+        "podcast",
+        msg_id,
+        date,
+        "en",
+        vec![("team", team_name), ("player", player_name)],
+        "be.msg.allio.templates",
+    )
+}
+
 pub(super) fn allio_podcast_message(
     msg_id: &str,
     team_name: &str,
@@ -520,13 +537,7 @@ pub(super) fn allio_podcast_message(
     date: &str,
 ) -> InboxMessage {
     let pname = player_name.unwrap_or("one of your players");
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
-        "podcast",
-        msg_id,
-        date,
-        "en",
-        vec![("team", team_name), ("player", pname)],
-    ) {
+    if let Some(msg) = allio_podcast_from_template(msg_id, team_name, pname, date) {
         return msg;
     }
 

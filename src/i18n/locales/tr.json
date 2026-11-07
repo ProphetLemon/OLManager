@@ -2690,6 +2690,48 @@
         }
       },
       "rivalInterest": {
+        "templates": {
+          "rival_1": {
+            "subject": "{{rival}}, {{player}} oyuncusuna göz dikti",
+            "body": "Duyduğuma göre {{rival}}, {{player}} ile ilgileniyor. Soru soruyorlar ve bir teklif hazırlıyor olabilirler.\n\nEndişelenmeli miyiz, yoksa {{player}} satılık değil mi?"
+          },
+          "rival_2": {
+            "subject": "{{rival}}, {{player}} hakkında bilgi alıyor",
+            "body": "{{rival}}, {{player}} oyuncusunun durumu hakkında gayriresmî olarak bilgi aldı. Kadrolarını güçlendirmek istiyorlar ve {{player}} oyuncusunu hedef olarak görüyorlar.\n\nHenüz resmî bir teklif yok ama sizi bilgilendirmek istedim."
+          },
+          "rival_3": {
+            "subject": "{{rival}}, {{player}} oyuncusunu izliyor",
+            "body": "Kaynaklarımız {{rival}} takımının son maçlarda {{player}} oyuncusunu izlediğini bildiriyor. Bu genellikle bir transfer girişiminden önce gelir.\n\nOnlar harekete geçmeden önce tavrımıza karar vermeliyiz."
+          },
+          "rival_4": {
+            "subject": "{{rival}}, {{player}} oyuncusunu istiyor",
+            "body": "Ligde {{rival}} takımının {{player}} oyuncusunu transfer etmek istediği konuşuluyor. Menajerleri onun büyük bir hayranı gibi görünüyor.\n\nBu ciddi olabilir — yakında resmî bir teklif alabiliriz."
+          },
+          "rival_5": {
+            "subject": "{{rival}}, {{player}} oyuncusunun sözleşmesini takip ediyor",
+            "body": "{{rival}} takımının {{player}} oyuncusunun sözleşme durumunu yakından izlediğini öğrendim. Yakında uzatmazsak bundan faydalanmaya çalışabilirler.\n\nPlanlamamızda göz önünde bulundurmamız gereken bir şey."
+          },
+          "rival_6": {
+            "subject": "{{rival}}, {{player}} için teklif düşünüyor",
+            "body": "Söylentilere göre {{rival}}, {{player}} için bir teklif düşünüyor. {{player}} oyuncusunu önümüzdeki split için kilit bir takviye olarak görüyorlar.\n\nBir gelişme olursa sizi bilgilendireceğim."
+          },
+          "rival_7": {
+            "subject": "Söylenti: {{rival}}, {{player}} ile ilgileniyor",
+            "body": "{{rival}} takımının {{player}} oyuncusunu transfer etmekle ilgilendiğine dair transfer söylentileri dolaşıyor. Şimdilik sadece spekülasyon ama bu tür söylentilerde çoğu zaman bir doğruluk payı olur.\n\nBilmeniz gerektiğini düşündüm."
+          },
+          "rival_8": {
+            "subject": "{{rival}}, {{player}} için iletişime geçti",
+            "body": "{{rival}}, {{player}} hakkında ilk teması kurdu. Oyuncunun durumu ve maaş beklentisi hakkında bilgi istediler.\n\nBu hızla ilerleyebilir. Nasıl ele almak istersiniz?"
+          },
+          "rival_9": {
+            "subject": "{{player}}, {{rival}} takımının dikkatini çekiyor",
+            "body": "{{player}} oyuncusunun performansı {{rival}} takımının dikkatini çekti. Oyuncu hakkında etrafta soru soruyorlar ve gerçekten ilgilenir görünüyorlar.\n\n{{player}} oyuncusunun geleceği hakkında yakında bir karar vermemiz gerekebilir."
+          },
+          "rival_10": {
+            "subject": "{{rival}}, {{player}} için harekete geçmeye hazır",
+            "body": "Kaynaklar {{rival}} takımının {{player}} için somut bir adım atmaya hazır olduğunu belirtiyor. Resmî bir teklif birkaç gün içinde gelebilir.\n\nCevabımızı hazırlamalıyız."
+          }
+        },
         "subject": "Transfer Dedikodusu — {{player}}, {{rival}} ile anılıyor",
         "body0": "{{rival}} ekibinin {{player}} için hamle yapmaya başladığına dair haberler aldık.\n\nPersonelleri oyuncunun son maçlarını ve dereceli maç verilerini incelerken görüldü, kaynaklar yakında resmi bir teklif gelebileceğini söylüyor.\n\nİletişime geçerlerse nasıl yanıt verelim?",
         "body1": "Espor medyası {{player}}'ın artık {{rival}} için somut bir hedef olduğunu bildiriyor.\n\nOyuncu son maç performanslarının ardından dikkat çekti. Henüz resmi bir teklif yok ama baskı hızla artıyor.\n\nTavrınız nedir?",
@@ -2881,6 +2923,48 @@
         }
       },
       "allio": {
+        "templates": {
+          "podcast_1": {
+            "subject": "Al Lío Podcast {{team}} hakkında konuşuyor",
+            "body": "Al Lío Podcast, {{team}} takımının mevcut durumuna bir bölüm ayırdı. Panel, takımın geleceği konusunda karışık görüşlere sahipti.\n\n\"{{team}} ilginç bir vaka çalışması\", dedi sunuculardan biri.\n\nAl Lío'da konuşulmak, radarda olduğunuz anlamına gelir."
+          },
+          "podcast_2": {
+            "subject": "Al Lío: \"{{team}} bir değişikliğe ihtiyaç duyuyor\"",
+            "body": "Son Al Lío Podcast'inde birkaç panelist, {{team}} takımının acil bir değişikliğe ihtiyacı olduğu konusunda hemfikirdi.\n\n\"Böyle devam edemezler\", dedi içlerinden biri. \"O soyunma odasında bir şeylerin kıpırdaması lazım.\"\n\nProgramın izleyici sayısı yüksekti ve konu gündem oluyor."
+          },
+          "podcast_3": {
+            "subject": "Al Lío: {{team}} tartışmanın merkezinde",
+            "body": "Son Al Lío Podcast'inde tartışmanın ana konusu {{team}} oldu. Konuklar takımın durumunu her açıdan analiz etti.\n\n\"Çok fikir doğuran bir takım\", diye özetlediler.\n\nTartışma yoğundu ve neredeyse yarım saat sürdü."
+          },
+          "podcast_4": {
+            "subject": "Al Lío, {{team}} oyuncusu {{player}} oyuncusunu öne çıkarıyor",
+            "body": "Al Lío Podcast'inde {{team}} oyuncusu {{player}} oyuncusunun performansı haftanın en iyilerinden biri olarak vurgulandı.\n\n\"{{player}} muhteşem bir seviyede\", dediler. \"{{player}}, en iyi oyuncu tartışmasında yer almayı hak ediyor.\"\n\nOyuncularınız hakkında iyi konuşulması her zaman iyi bir işarettir."
+          },
+          "podcast_5": {
+            "subject": "Al Lío: \"{{team}} sabra ihtiyaç duyuyor\"",
+            "body": "Al Lío Podcast'inde bazı panelistler, projenin işe yaraması için {{team}} takımının zamana ve sabra ihtiyacı olduğunu savundu.\n\n\"Kazanan bir takım bir gecede kurulmaz\", diye tartıştılar.\n\nDiğerleri aynı fikirde değildi ve hareketli bir tartışma çıktı."
+          },
+          "podcast_6": {
+            "subject": "Al Lío, {{team}} yönetimini eleştiriyor",
+            "body": "Al Lío Podcast, {{team}} takımının sportif yönetimini eleştirdi ve kadro planlamasındaki hatalara dikkat çekti.\n\n\"Transferler işe yaramadı ve oyun tarzı görünmüyor\", dediler.\n\nPopüler programlardaki eleştiriler kamuoyunda karşılık bulabilir."
+          },
+          "podcast_7": {
+            "subject": "Al Lío: \"{{team}} projesi heyecan veriyor\"",
+            "body": "Al Lío Podcast'inde {{team}} projesinden iyimser bir dille söz edildi. Birkaç panelist takımın doğru yolda olduğu konusunda hemfikirdi.\n\n\"Sonuçlar gelmese de işler doğru yapılıyor\", dediler.\n\nAl Lío'da övülmek kulüp için iyi bir reklamdır."
+          },
+          "podcast_8": {
+            "subject": "Al Lío, {{player}} oyuncusunun geleceğini tartışıyor",
+            "body": "Al Lío Podcast, şu anda {{team}} takımında olan {{player}} oyuncusunun geleceğini tartışmaya bir bölüm ayırdı.\n\n\"{{player}}, daha iyi bir takımda oynayacak seviyede\", diyenler oldu.\n\nBu tür söylentiler oyuncunun konsantrasyonunu etkileyebilir."
+          },
+          "podcast_9": {
+            "subject": "Al Lío: \"{{team}} beni endişelendiriyor\"",
+            "body": "Al Lío Podcast panelistlerinden biri {{team}} takımının durumuyla ilgili endişesini dile getirdi.\n\n\"{{team}} beni endişelendiriyor çünkü bir tepki görmüyorum\", dedi. \"Kötü takımlar tepki verir ama {{team}} yerinde sayıyor gibi.\"\n\nBu tür yorumlar ek baskı yaratabilir."
+          },
+          "podcast_10": {
+            "subject": "Al Lío, {{team}} için parlak bir gelecek öngörüyor",
+            "body": "Al Lío Podcast'inde tanınmış bir analist, {{team}} takımının mevcut rotasını korursa gelecek vaat eden bir geleceği olduğunu öngördü.\n\n\"{{team}} takımında çok ilginç şeyler görüyorum. Zaman verin, adlarından söz ettirecekler\", diye tahmin etti.\n\nMedya figürlerinin olumlu öngörüleri kulübün morelini yükseltebilir."
+          }
+        },
         "subject0": "Al Lío Podcast — Transfer dedikodusu: {{player}} takip ediliyor",
         "body0": "Eros bugünkü Al Lío bölümünde transfer iması yaptı: \"{{player}} hakkında bazı şeyler duyuyorum. Birden fazla takım soru sordu. Henüz doğrulanmış bir şey yok ama {{team}} etrafındaki market ısınıyor.\"\n\nGelecek mevsim kadronuzu planlarken bunu aklınızda bulundurun.",
         "subject1": "Al Lío Podcast — Eros, {{team}} için yaklaşan bir hamleye işaret ediyor",

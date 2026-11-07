@@ -2,8 +2,8 @@ mod builders_reports;
 mod message_builders;
 mod responses;
 
-pub use builders_reports::build_fan_petition_from_narrative;
-pub use message_builders::build_media_story_from_narrative;
+pub use builders_reports::{build_fan_petition_from_narrative, rival_interest_from_template};
+pub use message_builders::{allio_podcast_from_template, build_media_story_from_narrative};
 pub use responses::apply_event_response;
 
 use crate::contracts::{ContractWarningStage, contract_warning_stage};
