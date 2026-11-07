@@ -1,18 +1,14 @@
 import DashboardModalFrame from "@/ui-v2/_legacy/components/dashboard/DashboardModalFrame";
 import NegotiationFeedbackPanel from "@/ui-v2/_legacy/components/NegotiationFeedbackPanel";
-import { Button } from "@/ui-v2/_legacy/components/ui";
 import { formatPlayerWage } from "@/lib/playerProfile/helpers";
-import type {
-  NegotiationFeedbackData,
-  RenewalProjection,
-} from "@/lib/playerProfile/renewal";
+import type { NegotiationFeedbackData, RenewalProjection } from "@/lib/playerProfile/renewal";
+import { Button } from "@/ui-v2/components/ui/button";
+import { cn } from "@/ui-v2/lib/utils";
+import { FIELD_CLASS, FIELD_LABEL_CLASS } from "./modalFieldStyles";
 
-type TranslateFn = (
-  key: string,
-  options?: Record<string, string | number>,
-) => string;
+type TranslateFn = (key: string, options?: Record<string, string | number>) => string;
 
-interface PlayerProfileRenewalModalProps {
+interface PlayerProfileRenewalModalV2Props {
   show: boolean;
   playerName: string;
   t: TranslateFn;
@@ -36,7 +32,11 @@ interface PlayerProfileRenewalModalProps {
   onSubmit: () => void;
 }
 
-export default function PlayerProfileRenewalModal({
+function budgetUsagePct(bill: number, budget: number): number {
+  return budget > 0 ? Math.round((bill / budget) * 100) : 0;
+}
+
+export default function PlayerProfileRenewalModalV2({
   show,
   playerName,
   t,
@@ -58,29 +58,25 @@ export default function PlayerProfileRenewalModal({
   onClose,
   onDelegate,
   onSubmit,
-}: PlayerProfileRenewalModalProps) {
-  if (!show) {
-    return null;
-  }
+}: PlayerProfileRenewalModalV2Props) {
+  if (!show) return null;
+
+  const runway = (weeks: number | null) =>
+    weeks === null ? t("finances.runwayStable") : t("finances.runwayWeeks", { count: weeks });
 
   return (
     <DashboardModalFrame maxWidthClassName="max-w-md">
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-heading font-bold uppercase tracking-wider text-foreground">
+          <h3 className="font-heading text-lg font-bold uppercase tracking-wider text-foreground">
             {t("playerProfile.renewalTitle")}
           </h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            {playerName}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{playerName}</p>
         </div>
 
         <div className="space-y-3">
           <div>
-            <label
-              htmlFor="renewal-wage"
-              className="text-xs font-heading font-bold uppercase tracking-wider text-muted-foreground block mb-1"
-            >
+            <label htmlFor="renewal-wage" className={FIELD_LABEL_CLASS}>
               {t("playerProfile.renewalWage")}
             </label>
             <input
@@ -91,15 +87,12 @@ export default function PlayerProfileRenewalModal({
               value={renewalWage}
               onChange={(event) => onWageChange(event.target.value)}
               disabled={renewalIsTerminal}
-              className="w-full px-3 py-2 rounded-lg bg-muted/50 bg-muted border border-border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className={FIELD_CLASS}
             />
           </div>
 
           <div>
-            <label
-              htmlFor="renewal-length"
-              className="text-xs font-heading font-bold uppercase tracking-wider text-muted-foreground block mb-1"
-            >
+            <label htmlFor="renewal-length" className={FIELD_LABEL_CLASS}>
               {t("playerProfile.renewalLength")}
             </label>
             <input
@@ -111,19 +104,17 @@ export default function PlayerProfileRenewalModal({
               value={renewalLength}
               onChange={(event) => onLengthChange(event.target.value)}
               disabled={renewalIsTerminal}
-              className="w-full px-3 py-2 rounded-lg bg-muted/50 bg-muted border border-border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className={FIELD_CLASS}
             />
           </div>
         </div>
 
         {!isRenewalWageValid && renewalWage !== "" ? (
-          <p className="text-sm text-red-500">
-            {t("playerProfile.renewalInvalidWage")}
-          </p>
+          <p className="text-sm text-destructive">{t("playerProfile.renewalInvalidWage")}</p>
         ) : null}
 
         {renewalViolatesSoftCap ? (
-          <p className="text-sm text-red-500">
+          <p className="text-sm text-destructive">
             {t("playerProfile.renewalBudgetWarning", {
               defaultValue: "Offer exceeds the board wage pressure limit",
             })}
@@ -131,60 +122,36 @@ export default function PlayerProfileRenewalModal({
         ) : null}
 
         {renewalProjection ? (
-          <div className="rounded-lg border border-border border-border bg-muted/50 bg-card/40 p-3 space-y-2">
-            <p className="text-xs font-heading font-bold uppercase tracking-wider text-muted-foreground">
+          <div className="space-y-2 rounded-lg border border-border bg-muted/50 p-3">
+            <p className="font-heading text-xs font-bold uppercase tracking-wider text-muted-foreground">
               {t("playerProfile.renewalProjectionTitle", {
                 defaultValue: "Projected financial impact",
               })}
             </p>
-            <p className="text-xs text-foreground/70">
+            <p className="text-xs tabular-nums text-foreground/70">
               {t("playerProfile.renewalProjectionWageBill", {
-                before: formatPlayerWage(
-                  renewalProjection.current_annual_wage_bill,
-                  annualSuffix,
-                ),
-                after: formatPlayerWage(
-                  renewalProjection.projected_annual_wage_bill,
-                  annualSuffix,
-                ),
+                before: formatPlayerWage(renewalProjection.current_annual_wage_bill, annualSuffix),
+                after: formatPlayerWage(renewalProjection.projected_annual_wage_bill, annualSuffix),
                 defaultValue: "Annual wage bill {{before}} -> {{after}}",
               })}
             </p>
-            <p className="text-xs text-foreground/70">
+            <p className="text-xs tabular-nums text-foreground/70">
               {t("playerProfile.renewalProjectionBudgetUsage", {
-                before:
-                  renewalProjection.annual_wage_budget > 0
-                    ? Math.round(
-                      (renewalProjection.current_annual_wage_bill /
-                        renewalProjection.annual_wage_budget) *
-                      100,
-                    )
-                    : 0,
-                after:
-                  renewalProjection.annual_wage_budget > 0
-                    ? Math.round(
-                      (renewalProjection.projected_annual_wage_bill /
-                        renewalProjection.annual_wage_budget) *
-                      100,
-                    )
-                    : 0,
+                before: budgetUsagePct(
+                  renewalProjection.current_annual_wage_bill,
+                  renewalProjection.annual_wage_budget,
+                ),
+                after: budgetUsagePct(
+                  renewalProjection.projected_annual_wage_bill,
+                  renewalProjection.annual_wage_budget,
+                ),
                 defaultValue: "Wage budget use {{before}}% -> {{after}}%",
               })}
             </p>
-            <p className="text-xs text-foreground/70">
+            <p className="text-xs tabular-nums text-foreground/70">
               {t("playerProfile.renewalProjectionRunway", {
-                before:
-                  renewalProjection.current_cash_runway_weeks === null
-                    ? t("finances.runwayStable")
-                    : t("finances.runwayWeeks", {
-                      count: renewalProjection.current_cash_runway_weeks,
-                    }),
-                after:
-                  renewalProjection.projected_cash_runway_weeks === null
-                    ? t("finances.runwayStable")
-                    : t("finances.runwayWeeks", {
-                      count: renewalProjection.projected_cash_runway_weeks,
-                    }),
+                before: runway(renewalProjection.current_cash_runway_weeks),
+                after: runway(renewalProjection.projected_cash_runway_weeks),
                 defaultValue: "Cash runway {{before}} -> {{after}}",
               })}
             </p>
@@ -192,9 +159,7 @@ export default function PlayerProfileRenewalModal({
         ) : null}
 
         {renewalStatusMessage ? (
-          <p className={`text-sm font-medium ${renewalStatusClassName}`}>
-            {renewalStatusMessage}
-          </p>
+          <p className={cn("text-sm font-medium", renewalStatusClassName)}>{renewalStatusMessage}</p>
         ) : null}
 
         {renewalCooledOff ? (
@@ -211,7 +176,7 @@ export default function PlayerProfileRenewalModal({
           tensionKey="playerProfile.renewalTension"
         />
 
-        <div className="flex gap-2 justify-end">
+        <div className="flex justify-end gap-2">
           {renewalIsTerminal ? (
             <Button variant="ghost" onClick={onClose}>
               {t("common.done")}
@@ -221,11 +186,7 @@ export default function PlayerProfileRenewalModal({
               <Button variant="ghost" onClick={onClose}>
                 {t("common.cancel")}
               </Button>
-              <Button
-                variant="outline"
-                onClick={onDelegate}
-                disabled={renewalSubmitting}
-              >
+              <Button variant="outline" onClick={onDelegate} disabled={renewalSubmitting}>
                 {t("playerProfile.delegateRenewal")}
               </Button>
               <Button onClick={onSubmit} disabled={renewalSubmitDisabled}>
@@ -238,4 +199,3 @@ export default function PlayerProfileRenewalModal({
     </DashboardModalFrame>
   );
 }
-

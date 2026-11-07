@@ -1,5 +1,5 @@
 import type { GameStateData } from "@/store/gameStore";
-import PlayerProfile from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile";
+import PlayerProfileV2 from "@/ui-v2/pages/PlayerProfileV2";
 import DashboardAlerts from "@/ui-v2/_legacy/components/dashboard/DashboardAlerts";
 import type { DashboardAlert } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 import type { DashboardProfileNavigationState } from "@/ui-v2/_legacy/components/dashboard/dashboardProfileNavigation";
@@ -63,10 +63,9 @@ export default function DashboardWorkspaceContent({
       )}
 
       {selectedPlayer && !selectedTeam ? (
-        <PlayerProfile
-          player={selectedPlayer}
+        <PlayerProfileV2
+          playerId={selectedPlayer.id}
           gameState={gameState}
-          isOwnClub={selectedPlayer.team_id === gameState.manager.team_id}
           startWithRenewalModal={
             profileNavigation.selectedPlayerOptions?.openRenewal === true
           }

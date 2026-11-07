@@ -51,7 +51,7 @@ src/
 
 | Tab v2 | Importa de _legacy |
 |--------|-------------------|
-| PlayerProfileV2 | `_legacy/components/playerProfile/PlayerProfile` |
+| PlayerProfileV2 | `DashboardModalFrame`, `NegotiationFeedbackPanel`, `WageNegotiationModal`, `TransferNegotiationHistory` y `CountryFlag` desde _legacy (la página es nativa en `pages/playerProfile/`) |
 | ScheduleTabV2 | `_legacy/components/schedule/ScheduleCalendarView` |
 | ScheduleTabV2 | `_legacy/components/match/DraftResultScreen` |
 | ScheduleTabV2 | `_legacy/components/playoffs/PlayoffBracketBoard` |
@@ -85,5 +85,5 @@ Branch: `feat/ui-v2`. Commit style: `feat(ui-v2): …`, `fix(ui-v2): …`.
 
 ## 6. Próximos pasos (opcionales)
 
-- Portar los wrappers `_legacy/` a v2 nativo (PlayerProfile, transfer modals)
+- Portar los wrappers `_legacy/` a v2 nativo (transfer modals, incluidos los que usa PlayerProfileV2)
 - Separar chunks grandes (MatchSimulation, _legacy) con lazy loading

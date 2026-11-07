@@ -8,7 +8,7 @@ import {
 import { createDashboardTabContentModel } from "@/ui-v2/_legacy/components/dashboard/dashboardTabContentModel";
 import DashboardWorkspaceContent from "@/ui-v2/_legacy/components/dashboard/DashboardWorkspaceContent";
 
-vi.mock("../playerProfile/PlayerProfile", () => ({
+vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({
   default: ({ onClose, onSelectTeam, startWithRenewalModal }: any) => (
     <div>
       <span>Player Profile Mock</span>

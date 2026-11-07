@@ -4,7 +4,7 @@ import { beforeEach } from "vitest";
 import { describe, expect, it, vi } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
 import type { GameStateData, PlayerData, TeamData } from "@/store/gameStore";
-import PlayerProfile from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile";
+import PlayerProfileV2 from "@/ui-v2/pages/PlayerProfileV2";
 
 function hasAnnualWage(text: string, amount: number): boolean {
   const numberPortion = amount.toLocaleString();
@@ -111,7 +111,7 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("../../lib/i18n/backendI18n", () => ({
+vi.mock("@/lib/i18n/backendI18n", () => ({
   resolveBackendText: (
     _key?: string,
     fallback?: string,
@@ -119,12 +119,33 @@ vi.mock("../../lib/i18n/backendI18n", () => ({
   ) => fallback ?? "",
 }));
 
-vi.mock("../../lib/common/countries", () => ({
+vi.mock("@/lib/common/countries", () => ({
   countryName: () => "England",
   isValidCountryCode: () => true,
   normaliseNationality: (value: string) => value,
   resolveCountryFlagCode: () => "GB",
 }));
+
+interface PlayerProfileAdapterProps {
+  player: PlayerData;
+  gameState: GameStateData;
+  isOwnClub?: boolean;
+  onClose: () => void;
+  onSelectTeam?: (id: string) => void;
+  onGameUpdate?: (state: GameStateData) => void;
+}
+
+function PlayerProfile({ player, gameState, onClose, onSelectTeam, onGameUpdate }: PlayerProfileAdapterProps) {
+  return (
+    <PlayerProfileV2
+      gameState={gameState}
+      playerId={player.id}
+      onClose={onClose}
+      onSelectTeam={onSelectTeam}
+      onGameUpdate={onGameUpdate}
+    />
+  );
+}
 
 function createTeam(overrides: Partial<TeamData> = {}): TeamData {
   return {
@@ -281,7 +302,7 @@ function RenewalHarness({ initialPlayer }: { initialPlayer?: PlayerData }) {
   );
 }
 
-describe("PlayerProfile contract surfaces", () => {
+describe("PlayerProfileV2 contract surfaces", () => {
   beforeEach(() => {
     vi.mocked(invoke).mockReset();
     vi.mocked(invoke).mockImplementation(async (command: string) =>
