@@ -332,7 +332,7 @@
     "reviewSquadDesc": "Oyuncu istatistiklerini, durumlarını ve özelliklerini kontrol edin",
     "hireStaff": "Personel alın",
     "hireStaffDesc": "Personel antrenman kalitesini ve toparlanmayı artırır — bir Koç ve Fizyoterapist alın",
-    "setTactics": "Dizilişinizi ve taktiklerinizi belirleyin",
+    "setTactics": "Oyun planınızı ve taktiklerinizi belirleyin",
     "setTacticsDesc": "Kadronuza uygun bir rol dağılımı ve oyun tarzı seçin",
     "configTraining": "Antrenmanı yapılandırın",
     "configTrainingDesc": "Oyuncularınızı geliştirmek için bir odak noktası ve program seçin",
@@ -1387,7 +1387,7 @@
       "Transfer": "Transfer",
       "BoardDirective": "Yönetim",
       "PlayerMorale": "Moral",
-      "Injury": "Sakatlık",
+      "Injury": "Sağlık",
       "training": "Antrenman",
       "Finance": "Finans",
       "Contract": "Sözleşme",
@@ -1447,7 +1447,7 @@
     "objective": {
       "LeaguePosition": "İlk {{target}} içinde bitir",
       "Wins": "En az {{target}} seri maçı kazan",
-      "GoalsScored": "En az {{target}} normal sezon maçı kazan"
+      "GoalsScored": "En az {{target}} harita kazan"
     }
   },
   "transfers": {
@@ -1669,7 +1669,7 @@
       "LeagueRoundup": "Lig Özeti",
       "StandingsUpdate": "Puan Durumu",
       "TransferRumour": "Transfer Söylentisi",
-      "InjuryNews": "Sakatlık Haberi",
+      "InjuryNews": "Sağlık Haberi",
       "SeasonPreview": "Sezon Ön İncelemesi",
       "Editorial": "Köşe Yazısı",
       "ManagerialChange": "Teknik Ekip Değişikliği"
@@ -2421,7 +2421,7 @@
       }
     },
     "pen": "PEN",
-    "home": "İç Saha",
+    "home": "Ev Sahibi",
     "away": "Deplasman",
     "matchDay": "Maç Günü",
     "preMatchPrep": "Maç Öncesi Hazırlık",
@@ -2623,7 +2623,7 @@
       },
       "boardObjectives": {
         "subject": "Sezon {{season}} — Yönetim Hedefleri",
-        "body": "Yönetim bu sezon için aşağıdaki hedefleri belirledi:\n\n1. İlk {{expectedPos}} içinde bitir\n2. En az {{winTarget}} maç kazan\n3. En az {{goalsTarget}} skor üret\n\nBu hedeflere ulaşmak, yönetimin size olan güvenini artıracaktır. Beklentilerin karşılanmaması bütçe kesintilerine veya daha ciddi sonuçlara yol açabilir."
+        "body": "Yönetim bu sezon için aşağıdaki hedefleri belirledi:\n\n1. İlk {{expectedPos}} içinde bitir\n2. En az {{winTarget}} seri kazan\n3. En az {{goalsTarget}} harita kazan\n\nBu hedeflere ulaşmak, yönetimin size olan güvenini artıracaktır. Beklentilerin karşılanmaması bütçe kesintilerine veya daha ciddi sonuçlara yol açabilir."
       },
       "boardObjectiveReview": {
         "subject": "Sezon {{season}} — Yönetim Hedefleri Değerlendirmesi",
@@ -2851,7 +2851,7 @@
             "description": "Kötü sonuçları sahiplenin. Yönetim dürüstlüğe saygı duyar."
           },
           "blameCircumstances": {
-            "label": "Şanssızlıklara ve sakatlıklara işaret et",
+            "label": "Şanssızlığa ve zorlu rakiplere işaret et",
             "description": "Suçu dış faktörlere atın. İkna edebilir ya da etmeyebilir."
           }
         }
@@ -3244,14 +3244,14 @@
     },
     "Playmaker": {
       "label": "Oyun Kurucu",
-      "desc": "Geniş vizyonlu yaratıcı pasör"
+      "desc": "Oyunu okur ve hamleleri yönetir"
     },
     "Sharpshooter": {
       "label": "Keskin Nişancı",
-      "desc": "Klinik bitirici"
+      "desc": "Koridor trade'lerinde ölümcül"
     },
     "Dribbler": {
-      "label": "Top Cambazı",
+      "label": "Mekanik Ustası",
       "desc": "Mekaniklerde yetenekli"
     },
     "BallWinner": {
@@ -3284,7 +3284,7 @@
     },
     "SafeHands": {
       "label": "Güvenilir Eller",
-      "desc": "Güvenilir ve istikrarlı (Kaleci refleksi)"
+      "desc": "Baskı altında güvenilir ve istikrarlı"
     },
     "CatReflexes": {
       "label": "Kedi Refleksleri",
@@ -3292,19 +3292,19 @@
     },
     "AerialDominance": {
       "label": "Alan Hakimiyeti",
-      "desc": "Alan savaşlarında (havadan) bölgeyi kontrol eder"
+      "desc": "Uzun menzilli yeteneklerle alanı kontrol eder"
     },
     "CompleteForward": {
       "label": "Çok Yönlü Taşıyıcı",
-      "desc": "Her yönden tehlikeli (Komple forvet)"
+      "desc": "Her yönden tehlikeli"
     },
     "Engine": {
       "label": "Motor",
-      "desc": "Dinamo gibi her alana koşan güçlü yapı"
+      "desc": "Haritanın her yerinde yorulmayan güç"
     },
     "SetPieceSpecialist": {
       "label": "Kuşatma Uzmanı",
-      "desc": "Sabit ve duran hedeflerde (Set piece) ölümcül"
+      "desc": "Hedef savaşlarında ölümcül"
     }
   },
   "date": {

@@ -299,7 +299,7 @@
     "searchPlaceholder": "Search champions..."
   },
   "continueMenu": {
-    "goToField": "Aller sur le Terrain",
+    "goToField": "Aller sur la Faille",
     "goToFieldDesc": "Contrôle total du match",
     "watchSpectator": "Regarder en Spectateur",
     "watchSpectatorDesc": "Regarder le match sans contrôles",
@@ -332,8 +332,8 @@
     "reviewSquadDesc": "Consultez les stats, la condition et les traits des joueurs",
     "hireStaff": "Engagez du personnel",
     "hireStaffDesc": "Le staff améliore la qualité de l'entraînement et la récupération",
-    "setTactics": "Définissez votre formation et tactique",
-    "setTacticsDesc": "Choisissez une formation et un style adaptés à votre effectif",
+    "setTactics": "Définissez votre plan de jeu et vos tactiques",
+    "setTacticsDesc": "Choisissez un plan de jeu et un style adaptés à votre effectif",
     "configTraining": "Configurez l'entraînement",
     "configTrainingDesc": "Choisissez un focus et un planning pour développer vos joueurs",
     "readMessages": "Lisez vos messages",
@@ -512,9 +512,9 @@
     "preseasonFocus": "Profitez de cette période pour préparer votre effectif, suivre le mercato et arriver prêt pour la reprise.",
     "friendly": "Match amical",
     "preseasonTournament": "Tournoi de présaison",
-    "opener": "Coup d'envoi de la saison",
+    "opener": "Match d'ouverture de la saison",
     "startsOn": "Débute le {{date}}",
-    "startsInDays": "{{count}} jour(s) avant le coup d'envoi",
+    "startsInDays": "{{count}} jour(s) avant le premier match",
     "noOpener": "Le début de saison n'est pas encore programmé.",
     "standingsLocked": "Le classement sera disponible une fois les matchs officiels commencés.",
     "tournamentsPreseasonHint": "Les classements et courses aux récompenses apparaîtront lorsque la saison sera lancée.",
@@ -1387,7 +1387,7 @@
       "Transfer": "Transfert",
       "BoardDirective": "Direction",
       "PlayerMorale": "Moral",
-      "Injury": "Blessure",
+      "Injury": "Santé",
       "training": "Entraînement",
       "Finance": "Finances",
       "Contract": "Contrat",
@@ -1669,7 +1669,7 @@
       "LeagueRoundup": "Résumé de Journée",
       "StandingsUpdate": "Classement",
       "TransferRumour": "Transfert",
-      "InjuryNews": "Blessure",
+      "InjuryNews": "Santé",
       "SeasonPreview": "Avant-Saison",
       "Editorial": "Éditorial",
       "ManagerialChange": "Changement d'Entraîneur"
@@ -1855,7 +1855,7 @@
     "savesCleared": "Sauvegardes supprimées !",
     "about": "À propos",
     "matchModes": {
-      "live": "Aller sur le Terrain",
+      "live": "Aller sur la Faille",
       "liveDesc": "Contrôle total du match",
       "spectator": "Regarder en Spectateur",
       "spectatorDesc": "Regarder sans contrôles",
@@ -2851,7 +2851,7 @@
             "description": "Assumez les mauvais résultats. La direction respecte l'honnêteté."
           },
           "blameCircumstances": {
-            "label": "Évoquer les blessures et la malchance",
+            "label": "Évoquer la malchance et les adversaires coriaces",
             "description": "Reportez la faute sur des facteurs extérieurs. Cela peut les convaincre ou non."
           }
         }
@@ -2909,7 +2909,7 @@
       },
       "benchComplaint": {
         "subject": "{{player}} — Veut plus de temps de jeu",
-        "body0": "Coach, {{player}} est venu vous voir. Il est frustré par son manque de temps de jeu lors des derniers matchs et veut savoir ce qu'il doit faire pour réintégrer l'équipe.\n\n\"J'ai l'impression de bien m'entraîner, mais je n'ai pas l'occasion de le montrer sur le terrain.\"",
+        "body0": "Coach, {{player}} est venu vous voir. Il est frustré par son manque de temps de jeu lors des derniers matchs et veut savoir ce qu'il doit faire pour réintégrer l'équipe.\n\n\"J'ai l'impression de bien m'entraîner, mais je n'ai pas l'occasion de le montrer en match.\"",
         "body1": "{{player}} a frappé à la porte de votre bureau avec un air contrarié. Il n'a pas joué lors des derniers matchs et veut des réponses.\n\n\"Je suis venu dans ce club pour jouer. Si je ne fais pas partie de vos plans, je préfère que vous me le disiez franchement.\""
       },
       "happyPlayer": {
@@ -3244,19 +3244,19 @@
     },
     "Playmaker": {
       "label": "Meneur de Jeu",
-      "desc": "Passeur créatif avec vision"
+      "desc": "Lit la partie et orchestre les actions"
     },
     "Sharpshooter": {
-      "label": "Buteur",
-      "desc": "Finisseur clinique"
+      "label": "Tireur d'Élite",
+      "desc": "Mortel dans les échanges en lane"
     },
     "Dribbler": {
-      "label": "Dribbleur",
-      "desc": "Habile avec le ballon"
+      "label": "Maître du Kiting",
+      "desc": "Doué sur le plan mécanique"
     },
     "BallWinner": {
-      "label": "Récupérateur",
-      "desc": "Récupère le ballon sans relâche"
+      "label": "Intercepteur",
+      "desc": "Intercepte les rotations adverses sans relâche"
     },
     "Rock": {
       "label": "Roc",
@@ -3272,7 +3272,7 @@
     },
     "Visionary": {
       "label": "Visionnaire",
-      "desc": "Voit des passes que d'autres ne voient pas"
+      "desc": "Voit des actions que les autres ratent"
     },
     "HotHead": {
       "label": "Tête Brûlée",
@@ -3284,23 +3284,23 @@
     },
     "SafeHands": {
       "label": "Mains Sûres",
-      "desc": "Gardien fiable"
+      "desc": "Fiable sous pression"
     },
     "CatReflexes": {
       "label": "Réflexes de Chat",
       "desc": "Réflexes ultra-rapides"
     },
     "AerialDominance": {
-      "label": "Domination Aér.",
-      "desc": "Domine la surface dans les airs"
+      "label": "Contrôle de Zone",
+      "desc": "Contrôle l'espace avec des compétences à longue portée"
     },
     "CompleteForward": {
-      "label": "Attaquant Complet",
+      "label": "Hypercarry",
       "desc": "Dangereux de toutes les manières"
     },
     "Engine": {
       "label": "Moteur",
-      "desc": "Puissance de surface à surface"
+      "desc": "Force infatigable sur toute la map"
     },
     "SetPieceSpecialist": {
       "label": "Spécialiste Objectifs",

@@ -362,8 +362,8 @@
     "reviewSquadDesc": "Consulta estadísticas, condición y rasgos de los jugadores",
     "hireStaff": "Contrata personal técnico",
     "hireStaffDesc": "El staff mejora la calidad del entrenamiento y la recuperación",
-    "setTactics": "Configura tu formación y táctica",
-    "setTacticsDesc": "Elige una formación y estilo de juego que se adapte a tu plantilla",
+    "setTactics": "Configura tu plan de juego y táctica",
+    "setTacticsDesc": "Elige un plan de juego y un estilo que se adapte a tu plantilla",
     "configTraining": "Configura el entrenamiento",
     "configTrainingDesc": "Elige un enfoque y horario para desarrollar a tus jugadores",
     "readMessages": "Lee tus mensajes",
@@ -1515,7 +1515,7 @@
       "Transfer": "Fichaje",
       "BoardDirective": "Directiva",
       "PlayerMorale": "Moral",
-      "Injury": "Lesión",
+      "Injury": "Salud",
       "training": "Entrenamiento",
       "Finance": "Finanzas",
       "Contract": "Contrato",
@@ -1797,7 +1797,7 @@
       "LeagueRoundup": "Resumen de Jornada",
       "StandingsUpdate": "Clasificación",
       "TransferRumour": "Fichaje",
-      "InjuryNews": "Lesión",
+      "InjuryNews": "Salud",
       "SeasonPreview": "Previa de Temporada",
       "Editorial": "Editorial",
       "ManagerialChange": "Cambio de Entrenador"
@@ -2996,7 +2996,7 @@
             "description": "Asume los malos resultados. La directiva respeta la honestidad."
           },
           "blameCircumstances": {
-            "label": "Señalar lesiones y mala suerte",
+            "label": "Señalar la mala suerte y los cruces difíciles",
             "description": "Desvía la culpa hacia factores externos. Puede que les convenza o no."
           }
         }
@@ -3054,7 +3054,7 @@
       },
       "benchComplaint": {
         "subject": "{{player}} — Quiere más minutos",
-        "body0": "Míster, {{player}} ha venido a verte. Está frustrado por la falta de minutos en los últimos partidos y quiere saber qué necesita hacer para volver al equipo.\n\n\"Siento que he entrenado bien, pero no estoy teniendo la oportunidad de demostrarlo en el campo.\"",
+        "body0": "Míster, {{player}} ha venido a verte. Está frustrado por la falta de minutos en los últimos partidos y quiere saber qué necesita hacer para volver al equipo.\n\n\"Siento que he entrenado bien, pero no estoy teniendo la oportunidad de demostrarlo en el juego.\"",
         "body1": "{{player}} llamó a la puerta de tu despacho con gesto de disgusto. No ha participado en los últimos partidos y quiere respuestas.\n\n\"Vine a este club para jugar. Si no entro en tus planes, prefiero que me lo digas claramente.\""
       },
       "happyPlayer": {
@@ -3389,19 +3389,19 @@
     },
     "Playmaker": {
       "label": "Creador",
-      "desc": "Pasador creativo con visión"
+      "desc": "Lee la partida y orquesta las jugadas"
     },
     "Sharpshooter": {
-      "label": "Goleador",
-      "desc": "Finalizador clínico"
+      "label": "Tirador Certero",
+      "desc": "Letal en los intercambios de línea"
     },
     "Dribbler": {
-      "label": "Regateador",
-      "desc": "Hábil con el balón"
+      "label": "Maestro del Kiteo",
+      "desc": "Mecánicamente dotado"
     },
     "BallWinner": {
-      "label": "Recuperador",
-      "desc": "Recupera el balón sin descanso"
+      "label": "Interceptor",
+      "desc": "Intercepta las rotaciones rivales sin descanso"
     },
     "Rock": {
       "label": "Roca",
@@ -3417,7 +3417,7 @@
     },
     "Visionary": {
       "label": "Visionario",
-      "desc": "Ve pases que otros no pueden"
+      "desc": "Ve jugadas que otros no ven"
     },
     "HotHead": {
       "label": "Temperamental",
@@ -3429,23 +3429,23 @@
     },
     "SafeHands": {
       "label": "Manos Seguras",
-      "desc": "Portero fiable"
+      "desc": "Fiable bajo presión"
     },
     "CatReflexes": {
       "label": "Reflejos Felinos",
       "desc": "Reflejos ultrarrápidos"
     },
     "AerialDominance": {
-      "label": "Dominio Aéreo",
-      "desc": "Domina el área por alto"
+      "label": "Control de Zona",
+      "desc": "Domina el espacio con habilidades de largo alcance"
     },
     "CompleteForward": {
-      "label": "Delantero Completo",
+      "label": "Hypercarry",
       "desc": "Peligroso en todos los sentidos"
     },
     "Engine": {
       "label": "Motor",
-      "desc": "Potencia de área a área"
+      "desc": "Fuerza incansable en todo el mapa"
     },
     "SetPieceSpecialist": {
       "label": "Especialista en Objetivos",

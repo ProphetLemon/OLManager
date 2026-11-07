@@ -268,7 +268,7 @@
     }
   },
   "continueMenu": {
-    "goToField": "Aufs Spielfeld",
+    "goToField": "Zum Rift",
     "goToFieldDesc": "Volle Spielkontrolle",
     "watchSpectator": "Als Zuschauer",
     "watchSpectatorDesc": "Spiel anschauen ohne Kontrolle",
@@ -1387,7 +1387,7 @@
       "Transfer": "Transfer",
       "BoardDirective": "Vorstand",
       "PlayerMorale": "Moral",
-      "Injury": "Verletzung",
+      "Injury": "Gesundheit",
       "training": "Training",
       "Finance": "Finanzen",
       "Contract": "Vertrag",
@@ -1669,7 +1669,7 @@
       "LeagueRoundup": "Spieltag-Zusammenfassung",
       "StandingsUpdate": "Tabelle",
       "TransferRumour": "Transfer",
-      "InjuryNews": "Verletzung",
+      "InjuryNews": "Gesundheit",
       "SeasonPreview": "Saisonvorschau",
       "Editorial": "Kommentar",
       "ManagerialChange": "Trainerwechsel"
@@ -1855,7 +1855,7 @@
     "savesCleared": "Speicherstände gelöscht!",
     "about": "Über",
     "matchModes": {
-      "live": "Aufs Spielfeld",
+      "live": "Zum Rift",
       "liveDesc": "Volle Spielkontrolle",
       "spectator": "Als Zuschauer",
       "spectatorDesc": "Nur zuschauen, keine Kontrolle",
@@ -2851,7 +2851,7 @@
             "description": "Steh zu den schlechten Ergebnissen. Der Vorstand respektiert Ehrlichkeit."
           },
           "blameCircumstances": {
-            "label": "Verletzungen und Pech anführen",
+            "label": "Auf Pech und schwere Gegner verweisen",
             "description": "Schiebe die Schuld auf äußere Faktoren. Das kann sie überzeugen oder auch nicht."
           }
         }
@@ -2874,8 +2874,8 @@
             "description": "Triff dich mit Fanvertretern und höre dir ihre Sorgen an. Gut für die Moral."
           },
           "ignoreFans": {
-            "label": "Auf den Fußball fokussieren",
-            "description": "Lehne höflich ab — Fußballentscheidungen bleiben in der Kabine."
+            "label": "Auf das Spiel fokussieren",
+            "description": "Lehne höflich ab — Spielentscheidungen bleiben im Team."
           },
           "addressPublicly": {
             "label": "Eine öffentliche Stellungnahme abgeben",
@@ -2909,12 +2909,12 @@
       },
       "benchComplaint": {
         "subject": "{{player}} — Will mehr Spielzeit",
-        "body0": "Trainer, {{player}} ist zu dir gekommen. Der Spieler ist frustriert über die fehlende Spielzeit in den letzten Partien und will wissen, was nötig ist, um wieder in die Mannschaft zu kommen.\n\n\"Ich habe das Gefühl, gut zu trainieren, aber ich bekomme keine Chance, das auf dem Platz zu zeigen.\"",
-        "body1": "{{player}} stand unzufrieden vor deiner Bürotür. Der Spieler kam in den letzten Partien nicht zum Einsatz und will Antworten.\n\n\"Ich bin zu diesem Verein gekommen, um Fußball zu spielen. Wenn ich nicht in deinen Plänen vorkomme, sag es mir bitte direkt.\""
+        "body0": "Trainer, {{player}} ist zu dir gekommen. Der Spieler ist frustriert über die fehlende Spielzeit in den letzten Partien und will wissen, was nötig ist, um wieder in die Mannschaft zu kommen.\n\n\"Ich habe das Gefühl, gut zu trainieren, aber ich bekomme keine Chance, das im Spiel zu zeigen.\"",
+        "body1": "{{player}} stand unzufrieden vor deiner Bürotür. Der Spieler kam in den letzten Partien nicht zum Einsatz und will Antworten.\n\n\"Ich bin zu diesem Verein gekommen, um zu spielen. Wenn ich nicht in deinen Plänen vorkomme, sag es mir bitte direkt.\""
       },
       "happyPlayer": {
         "subject": "{{player}} — Fühlt sich großartig",
-        "body0": "{{player}} schaute mit einem breiten Lächeln in deinem Büro vorbei. Der Spieler fühlt sich mit seiner Form und der Richtung der Mannschaft sehr wohl.\n\n\"Ich wollte nur sagen, dass ich meinen Fußball gerade wirklich genieße, Trainer. Die Stimmung in der Kabine ist fantastisch.\"",
+        "body0": "{{player}} schaute mit einem breiten Lächeln in deinem Büro vorbei. Der Spieler fühlt sich mit seiner Form und der Richtung der Mannschaft sehr wohl.\n\n\"Ich wollte nur sagen, dass ich das Spiel gerade wirklich genieße, Trainer. Die Stimmung in der Kabine ist fantastisch.\"",
         "body1": "Dein Assistent erwähnt, dass {{player}} zuletzt ausgezeichnet gelaunt war. Der Spieler hat dich nach dem Training angesprochen.\n\n\"Trainer, ich genieße hier jede Minute. Wenn es so weitergeht, zerreiße ich mich für dich.\""
       },
       "contractConcern": {
@@ -3244,19 +3244,19 @@
     },
     "Playmaker": {
       "label": "Spielmacher",
-      "desc": "Kreativer Passgeber mit Übersicht"
+      "desc": "Liest das Spiel und orchestriert Aktionen"
     },
     "Sharpshooter": {
       "label": "Scharfschütze",
-      "desc": "Klinischer Abschluss"
+      "desc": "Tödlich in Lane-Duellen"
     },
     "Dribbler": {
-      "label": "Dribbler",
-      "desc": "Geschickt am Ball"
+      "label": "Kiting-Meister",
+      "desc": "Mechanisch begabt"
     },
     "BallWinner": {
-      "label": "Ballgewinner",
-      "desc": "Gewinnt den Ball unermüdlich zurück"
+      "label": "Abfangjäger",
+      "desc": "Fängt gegnerische Rotationen unermüdlich ab"
     },
     "Rock": {
       "label": "Fels",
@@ -3272,7 +3272,7 @@
     },
     "Visionary": {
       "label": "Visionär",
-      "desc": "Sieht Pässe, die andere nicht sehen"
+      "desc": "Sieht Spielzüge, die andere übersehen"
     },
     "HotHead": {
       "label": "Hitzkopf",
@@ -3284,27 +3284,27 @@
     },
     "SafeHands": {
       "label": "Sichere Hände",
-      "desc": "Zuverlässiger Torwart"
+      "desc": "Zuverlässig unter Druck"
     },
     "CatReflexes": {
       "label": "Katzenreflexe",
       "desc": "Blitzschnelle Reflexe"
     },
     "AerialDominance": {
-      "label": "Lufthoheit",
-      "desc": "Beherrscht den Strafraum in der Luft"
+      "label": "Raumkontrolle",
+      "desc": "Kontrolliert den Raum mit Fernreichweite"
     },
     "CompleteForward": {
-      "label": "Kompletter Stürmer",
+      "label": "Hypercarry",
       "desc": "In jeder Hinsicht gefährlich"
     },
     "Engine": {
       "label": "Motor",
-      "desc": "Box-to-Box Kraftpaket"
+      "desc": "Unermüdliche Kraft über die ganze Map"
     },
     "SetPieceSpecialist": {
-      "label": "Standardspezialist",
-      "desc": "Tödlich bei ruhenden Bällen"
+      "label": "Objective-Spezialist",
+      "desc": "Tödlich in Objective-Fights"
     }
   },
   "date": {

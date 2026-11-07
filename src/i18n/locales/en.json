@@ -297,7 +297,7 @@
     }
   },
   "continueMenu": {
-    "goToField": "Go to the Field",
+    "goToField": "Go to the Rift",
     "goToFieldDesc": "Full match control (default)",
     "watchSpectator": "Watch as Spectator",
     "watchSpectatorDesc": "Watch the match, no controls",
@@ -641,7 +641,7 @@
     "preseasonTournament": "Preseason Tournament",
     "opener": "Season Opener",
     "startsOn": "Starts on {{date}}",
-    "startsInDays": "{{count}} day(s) to kickoff",
+    "startsInDays": "{{count}} day(s) until the first match",
     "noOpener": "Opening day not scheduled yet.",
     "standingsLocked": "League standings will unlock after competitive matches begin.",
     "tournamentsPreseasonHint": "Competition tables and award races will appear once the season gets underway.",
@@ -1525,7 +1525,7 @@
       "Transfer": "Transfer",
       "BoardDirective": "Board",
       "PlayerMorale": "Morale",
-      "Injury": "Injury",
+      "Injury": "Health",
       "training": "Training",
       "Finance": "Finance",
       "Contract": "Contract",
@@ -1807,7 +1807,7 @@
       "LeagueRoundup": "League Roundup",
       "StandingsUpdate": "Standings",
       "TransferRumour": "Transfer",
-      "InjuryNews": "Injury",
+      "InjuryNews": "Health",
       "SeasonPreview": "Season Preview",
       "Editorial": "Editorial",
       "ManagerialChange": "Managerial"
@@ -2004,7 +2004,7 @@
     "savesCleared": "Saves cleared!",
     "about": "About",
     "matchModes": {
-      "live": "Go to the Field",
+      "live": "Go to the Rift",
       "liveDesc": "Full match control",
       "spectator": "Watch as Spectator",
       "spectatorDesc": "Watch only, no controls",
@@ -3030,7 +3030,7 @@
             "description": "Own the poor results. The board respects honesty."
           },
           "blameCircumstances": {
-            "label": "Point to injuries and bad luck",
+            "label": "Point to bad luck and tough matchups",
             "description": "Deflect blame to external factors. May or may not convince them."
           }
         }
@@ -3423,19 +3423,19 @@
     },
     "Playmaker": {
       "label": "Playmaker",
-      "desc": "Creative passer with vision"
+      "desc": "Reads the game and orchestrates plays"
     },
     "Sharpshooter": {
       "label": "Sharpshooter",
-      "desc": "Clinical finisher"
+      "desc": "Lethal in lane trades"
     },
     "Dribbler": {
-      "label": "Dribbler",
-      "desc": "Skillful on the ball"
+      "label": "Kite Master",
+      "desc": "Mechanically gifted"
     },
     "BallWinner": {
-      "label": "Ball Winner",
-      "desc": "Wins the ball back relentlessly"
+      "label": "Interceptor",
+      "desc": "Intercepts enemy rotations relentlessly"
     },
     "Rock": {
       "label": "Rock",
@@ -3451,7 +3451,7 @@
     },
     "Visionary": {
       "label": "Visionary",
-      "desc": "Sees passes others can't"
+      "desc": "Sees plays others miss"
     },
     "HotHead": {
       "label": "Hot Head",
@@ -3463,27 +3463,27 @@
     },
     "SafeHands": {
       "label": "Safe Hands",
-      "desc": "Reliable shot stopper"
+      "desc": "Reliable when the pressure is on"
     },
     "CatReflexes": {
       "label": "Cat Reflexes",
       "desc": "Lightning-fast reflexes"
     },
     "AerialDominance": {
-      "label": "Aerial Dom.",
-      "desc": "Commands the box in the air"
+      "label": "Zone Control",
+      "desc": "Controls space with long-range abilities"
     },
     "CompleteForward": {
-      "label": "Complete Forward",
+      "label": "Hyper Carry",
       "desc": "Dangerous in every way"
     },
     "Engine": {
       "label": "Engine",
-      "desc": "Box-to-box powerhouse"
+      "desc": "Tireless force across the whole map"
     },
     "SetPieceSpecialist": {
-      "label": "Set Piece Spec.",
-      "desc": "Deadly from dead balls"
+      "label": "Macro Specialist",
+      "desc": "Deadly in objective fights"
     }
   },
   "date": {

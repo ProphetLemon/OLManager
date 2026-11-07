@@ -299,7 +299,7 @@
     "searchPlaceholder": "Search champions..."
   },
   "continueMenu": {
-    "goToField": "Ir para o Campo",
+    "goToField": "Ir para a Rift",
     "goToFieldDesc": "Controle total da partida (padrão)",
     "watchSpectator": "Assistir como Espectador",
     "watchSpectatorDesc": "Assista ao jogo, sem controles",
@@ -332,8 +332,8 @@
     "reviewSquadDesc": "Confira as estatísticas, condição e características dos jogadores",
     "hireStaff": "Contrate a comissão técnica",
     "hireStaffDesc": "A comissão melhora a qualidade do treino e recuperação — contrate um Treinador e um Fisioterapeuta",
-    "setTactics": "Defina sua formação e táticas",
-    "setTacticsDesc": "Escolha uma formação e estilo de jogo que se encaixem no seu elenco",
+    "setTactics": "Defina seu plano de jogo e táticas",
+    "setTacticsDesc": "Escolha um plano de jogo e estilo que se encaixem no seu elenco",
     "configTraining": "Configure o treinamento",
     "configTrainingDesc": "Escolha um foco e calendário para desenvolver seus jogadores",
     "readMessages": "Leia suas mensagens",
@@ -1387,7 +1387,7 @@
       "Transfer": "Transferência",
       "BoardDirective": "Diretoria",
       "PlayerMorale": "Moral",
-      "Injury": "Lesão",
+      "Injury": "Saúde",
       "training": "Treino",
       "Finance": "Finanças",
       "Contract": "Contrato",
@@ -1669,7 +1669,7 @@
       "LeagueRoundup": "Resumo da Rodada",
       "StandingsUpdate": "Classificação",
       "TransferRumour": "Transferência",
-      "InjuryNews": "Lesão",
+      "InjuryNews": "Saúde",
       "SeasonPreview": "Prévia da Temporada",
       "Editorial": "Editorial",
       "ManagerialChange": "Mudança Técnica"
@@ -1855,7 +1855,7 @@
     "savesCleared": "Saves apagados!",
     "about": "Sobre",
     "matchModes": {
-      "live": "Ir para o Campo",
+      "live": "Ir para a Rift",
       "liveDesc": "Controle total da partida",
       "spectator": "Assistir como Espectador",
       "spectatorDesc": "Apenas assistir, sem controles",
@@ -2851,7 +2851,7 @@
             "description": "Assuma os maus resultados. A diretoria respeita a honestidade."
           },
           "blameCircumstances": {
-            "label": "Culpar lesões e azar",
+            "label": "Culpar o azar e adversários difíceis",
             "description": "Desvie a culpa para fatores externos. Pode ou não convencê-los."
           }
         }
@@ -3244,19 +3244,19 @@
     },
     "Playmaker": {
       "label": "Armador",
-      "desc": "Passador criativo com visão"
+      "desc": "Lê a partida e orquestra as jogadas"
     },
     "Sharpshooter": {
-      "label": "Artilheiro",
-      "desc": "Finalizador clínico"
+      "label": "Atirador Certeiro",
+      "desc": "Letal nas trocas de rota"
     },
     "Dribbler": {
-      "label": "Driblador",
-      "desc": "Habilidoso com a bola"
+      "label": "Mestre do Kiting",
+      "desc": "Mecanicamente talentoso"
     },
     "BallWinner": {
-      "label": "Recuperador",
-      "desc": "Recupera a bola incansavelmente"
+      "label": "Interceptador",
+      "desc": "Intercepta as rotações inimigas incansavelmente"
     },
     "Rock": {
       "label": "Rocha",
@@ -3272,7 +3272,7 @@
     },
     "Visionary": {
       "label": "Visionário",
-      "desc": "Enxerga passes que ninguém vê"
+      "desc": "Enxerga jogadas que ninguém vê"
     },
     "HotHead": {
       "label": "Esquentado",
@@ -3284,23 +3284,23 @@
     },
     "SafeHands": {
       "label": "Mãos Seguras",
-      "desc": "Goleiro confiável"
+      "desc": "Confiável sob pressão"
     },
     "CatReflexes": {
       "label": "Reflexos de Gato",
       "desc": "Reflexos ultra-rápidos"
     },
     "AerialDominance": {
-      "label": "Domínio Aéreo",
-      "desc": "Domina a área no jogo aéreo"
+      "label": "Controle de Zona",
+      "desc": "Controla o espaço com habilidades de longo alcance"
     },
     "CompleteForward": {
-      "label": "Atacante Completo",
+      "label": "Hypercarry",
       "desc": "Perigoso de todas as formas"
     },
     "Engine": {
       "label": "Motor",
-      "desc": "Potência área-a-área"
+      "desc": "Força incansável em todo o mapa"
     },
     "SetPieceSpecialist": {
       "label": "Especialista em Objetivos",

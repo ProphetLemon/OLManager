@@ -331,8 +331,8 @@
     "reviewSquadDesc": "Consulta estatísticas, condição e características dos jogadores",
     "hireStaff": "Contrata staff técnico",
     "hireStaffDesc": "O staff melhora a qualidade do treino e a recuperação",
-    "setTactics": "Define a tua formação e tática",
-    "setTacticsDesc": "Escolhe uma formação e estilo de jogo adequados ao teu plantel",
+    "setTactics": "Define o teu plano de jogo e tática",
+    "setTacticsDesc": "Escolhe um plano de jogo e estilo adequados ao teu plantel",
     "configTraining": "Configura o treino",
     "configTrainingDesc": "Escolhe um foco e horário para desenvolver os teus jogadores",
     "readMessages": "Lê as tuas mensagens",
@@ -1386,7 +1386,7 @@
       "Transfer": "Transferência",
       "BoardDirective": "Direção",
       "PlayerMorale": "Moral",
-      "Injury": "Lesão",
+      "Injury": "Saúde",
       "training": "Treino",
       "Finance": "Finanças",
       "Contract": "Contrato",
@@ -1668,7 +1668,7 @@
       "LeagueRoundup": "Resumo da Jornada",
       "StandingsUpdate": "Classificação",
       "TransferRumour": "Transferência",
-      "InjuryNews": "Lesão",
+      "InjuryNews": "Saúde",
       "SeasonPreview": "Antevisão da Temporada",
       "Editorial": "Editorial",
       "ManagerialChange": "Mudança de Treinador"
@@ -2850,7 +2850,7 @@
             "description": "Assume os maus resultados. A direção respeita a honestidade."
           },
           "blameCircumstances": {
-            "label": "Culpar lesões e azar",
+            "label": "Culpar o azar e adversários difíceis",
             "description": "Desvia a culpa para fatores externos. Pode ou não convencê-los."
           }
         }
@@ -2908,7 +2908,7 @@
       },
       "benchComplaint": {
         "subject": "{{player}} — Quer mais tempo de jogo",
-        "body0": "Mister, {{player}} veio falar contigo. Está frustrado com a falta de tempo de jogo nos últimos jogos e quer saber o que precisa de fazer para voltar à equipa.\n\n\"Sinto que tenho treinado bem, mas não estou a ter oportunidade de mostrar isso em campo.\"",
+        "body0": "Mister, {{player}} veio falar contigo. Está frustrado com a falta de tempo de jogo nos últimos jogos e quer saber o que precisa de fazer para voltar à equipa.\n\n\"Sinto que tenho treinado bem, mas não estou a ter oportunidade de mostrar isso no jogo.\"",
         "body1": "{{player}} bateu à porta do teu gabinete com um ar descontente. Não participou nos últimos jogos e quer respostas.\n\n\"Vim para este clube para jogar. Se não faço parte dos teus planos, prefiro que mo digas diretamente.\""
       },
       "happyPlayer": {
@@ -3243,19 +3243,19 @@
     },
     "Playmaker": {
       "label": "Criador",
-      "desc": "Passador criativo com visão"
+      "desc": "Lê o jogo e orquestra as jogadas"
     },
     "Sharpshooter": {
-      "label": "Finalizador",
-      "desc": "Finalizador clínico"
+      "label": "Atirador Certeiro",
+      "desc": "Letal nas trocas de rota"
     },
     "Dribbler": {
-      "label": "Driblador",
-      "desc": "Habilidoso com a bola"
+      "label": "Mestre do Kiting",
+      "desc": "Mecanicamente talentoso"
     },
     "BallWinner": {
-      "label": "Recuperador",
-      "desc": "Recupera a bola incansavelmente"
+      "label": "Interceptador",
+      "desc": "Intercepta as rotações inimigas incansavelmente"
     },
     "Rock": {
       "label": "Rocha",
@@ -3271,7 +3271,7 @@
     },
     "Visionary": {
       "label": "Visionário",
-      "desc": "Vê passes que outros não conseguem"
+      "desc": "Vê jogadas que outros não veem"
     },
     "HotHead": {
       "label": "Esquentado",
@@ -3283,23 +3283,23 @@
     },
     "SafeHands": {
       "label": "Mãos Seguras",
-      "desc": "Guarda-redes fiável"
+      "desc": "Fiável sob pressão"
     },
     "CatReflexes": {
       "label": "Reflexos Felinos",
       "desc": "Reflexos ultrarrápidos"
     },
     "AerialDominance": {
-      "label": "Domínio Aéreo",
-      "desc": "Domina a área pelo ar"
+      "label": "Controlo de Zona",
+      "desc": "Controla o espaço com habilidades de longo alcance"
     },
     "CompleteForward": {
-      "label": "Avançado Completo",
+      "label": "Hypercarry",
       "desc": "Perigoso em todos os sentidos"
     },
     "Engine": {
       "label": "Motor",
-      "desc": "Potência de área a área"
+      "desc": "Força incansável em todo o mapa"
     },
     "SetPieceSpecialist": {
       "label": "Especialista em Objetivos",
