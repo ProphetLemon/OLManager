@@ -375,8 +375,11 @@ function sideFromActorLabel(
   return match.team === "red" ? "red" : "blue";
 }
 
-export default function LolMatchLive({ gameState, snapshot, blueTeamId, championSelections, onSnapshotUpdate, onImportantEvent, onFullTime }: Props) {
+export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blueTeamId, championSelections, onSnapshotUpdate, onImportantEvent, onFullTime }: Props) {
   const { t } = useTranslation();
+  // The finished snapshot is fed back through onSnapshotUpdate; keeping the first one
+  // stops that echo from re-creating the simulation and replaying the match.
+  const [snapshot] = useState(initialSnapshot);
   const walls = useMemo(() => getWalls(), []);
   const nav = useMemo(() => new NavGrid(walls), [walls]);
   const [seed] = useState(randomSeed10Digits);
