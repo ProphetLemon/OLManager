@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
 
 import type { GameStateData, PlayerData, TeamData } from "@/store/gameStore";
+import { formatVal } from "@/lib/common/helpers";
 import { TransfersTabV2 } from "./TransfersTabV2";
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -363,7 +364,7 @@ describe("TransfersTabV2 negotiation", function (): void {
 
     expect(screen.getByText("Talks are still live with this club.")).toBeInTheDocument();
     expect(screen.getByText("The other club are waiting for your next move.")).toBeInTheDocument();
-    expect(screen.getByText("Their last signal pointed toward 1150000.")).toBeInTheDocument();
+    expect(screen.getByText(`Their last signal pointed toward ${formatVal(1150000)}.`)).toBeInTheDocument();
     expect(screen.getByText("Recent exchange")).toBeInTheDocument();
     expect(screen.getByText("Your last bid")).toBeInTheDocument();
     expect(screen.getByText("Their last signal")).toBeInTheDocument();
@@ -404,7 +405,7 @@ describe("TransfersTabV2 negotiation", function (): void {
 
     expect(screen.getByText("Talks are still live with this club.")).toBeInTheDocument();
     expect(screen.getByText("The other club are waiting for your next move.")).toBeInTheDocument();
-    expect(screen.getByText("Their last signal pointed toward 1150000.")).toBeInTheDocument();
+    expect(screen.getByText(`Their last signal pointed toward ${formatVal(1150000)}.`)).toBeInTheDocument();
     expect(screen.getByText("Recent exchange")).toBeInTheDocument();
     expect(screen.getByText("Your last counter")).toBeInTheDocument();
     expect(screen.getByText("Their current offer")).toBeInTheDocument();

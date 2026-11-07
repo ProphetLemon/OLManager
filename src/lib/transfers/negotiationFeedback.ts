@@ -10,14 +10,18 @@ export type NegotiationFeedbackPanelData = {
   params?: Record<string, string>;
 };
 
+const MONEY_PARAM_KEYS = ["wage", "fee"] as const;
+
 /** Backend params carry money as raw integer strings; format them like the rest of the transfers UI. */
 export function formatFeedbackParams(
   params: Record<string, string> | undefined,
 ): Record<string, string> {
   const formatted = { ...(params ?? {}) };
-  const wage = Number(formatted.wage);
-  if (formatted.wage !== undefined && Number.isFinite(wage)) {
-    formatted.wage = formatVal(wage);
+  for (const key of MONEY_PARAM_KEYS) {
+    const value = Number(formatted[key]);
+    if (formatted[key] !== undefined && Number.isFinite(value)) {
+      formatted[key] = formatVal(value);
+    }
   }
   return formatted;
 }
