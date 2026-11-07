@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { formatVal } from "@/lib/common/helpers";
-import NegotiationFeedbackPanel from "@/ui-v2/_legacy/components/NegotiationFeedbackPanel";
+import NegotiationFeedbackPanel from "@/ui-v2/components/negotiation/NegotiationFeedbackPanel";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({

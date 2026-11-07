@@ -1,4 +1,4 @@
-import type { NegotiationFeedbackPanelData } from "@/ui-v2/_legacy/components/NegotiationFeedbackPanel";
+import type { NegotiationFeedbackPanelData } from "@/lib/transfers/negotiationFeedback";
 
 export interface RenewalProjection {
   current_annual_wage_bill: number;

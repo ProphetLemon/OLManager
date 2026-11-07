@@ -1,6 +1,6 @@
 import DashboardModalFrame from "@/ui-v2/_legacy/components/dashboard/DashboardModalFrame";
-import NegotiationFeedbackPanel from "@/ui-v2/_legacy/components/NegotiationFeedbackPanel";
-import TransferNegotiationHistory from "@/ui-v2/_legacy/components/transfers/TransferNegotiationHistory";
+import NegotiationFeedbackPanel from "@/ui-v2/components/negotiation/NegotiationFeedbackPanel";
+import TransferNegotiationHistory from "@/ui-v2/components/negotiation/TransferNegotiationHistory";
 import { formatVal } from "@/lib/common/helpers";
 import type { TeamData } from "@/store/gameStore";
 import type {

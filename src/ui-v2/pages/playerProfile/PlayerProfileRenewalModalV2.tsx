@@ -1,5 +1,5 @@
 import DashboardModalFrame from "@/ui-v2/_legacy/components/dashboard/DashboardModalFrame";
-import NegotiationFeedbackPanel from "@/ui-v2/_legacy/components/NegotiationFeedbackPanel";
+import NegotiationFeedbackPanel from "@/ui-v2/components/negotiation/NegotiationFeedbackPanel";
 import { formatPlayerWage } from "@/lib/playerProfile/helpers";
 import type { NegotiationFeedbackData, RenewalProjection } from "@/lib/playerProfile/renewal";
 import { Button } from "@/ui-v2/components/ui/button";
