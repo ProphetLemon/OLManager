@@ -17,7 +17,7 @@ use olm_core::game::Game;
 use olm_core::game_setup;
 use olm_core::roster_stability;
 use olm_core::state::StateManager;
-use olm_core::world_overlay::{apply_world_overlay, OverlayApplyReport, WorldOverlay};
+use olm_core::world_overlay::{OverlayApplyReport, WorldOverlay, apply_world_overlay};
 
 use crate::SaveManagerState;
 use validator::Validate;
@@ -224,6 +224,29 @@ fn apply_roster_overlay(game: &mut Game, overlay: &WorldOverlay) -> OverlayApply
     report
 }
 
+/// Fill roles the assembled world left empty on every Main team and protect the
+/// filled players from catalog rehydration reverting them.
+fn fill_short_rosters(game: &mut Game) -> Vec<roster_stability::NewGameRosterFill> {
+    let fills = roster_stability::fill_new_game_rosters(game);
+    game.moved_player_ids
+        .extend(fills.iter().map(|fill| fill.player_id.clone()));
+    if !fills.is_empty() {
+        let generated = fills.iter().filter(|fill| fill.generated).count();
+        let teams = fills
+            .iter()
+            .map(|fill| fill.team_id.as_str())
+            .collect::<std::collections::BTreeSet<_>>()
+            .len();
+        info!(
+            "[game] filled {} short roster slot(s) across {} team(s) ({} generated)",
+            fills.len(),
+            teams,
+            generated
+        );
+    }
+    fills
+}
+
 // ---------------------------------------------------------------------------
 // Tauri commands
 // ---------------------------------------------------------------------------
@@ -355,6 +378,9 @@ pub async fn select_team(
             apply_roster_overlay(&mut game, &overlay);
         }
 
+        // The overlay can leave a team short; make every Main team playable.
+        fill_short_rosters(&mut game);
+
         // Auto-populate active lineup for the user's team
         let roles = [
             LolRole::Top,
@@ -404,7 +430,10 @@ pub async fn select_team(
                     user_team.active_lineup_ids
                 );
             } else {
-                warn!("[select_team] auto_lineup incomplete ({}/5 roles filled), setting empty lineup — user must configure manually", roles.len() - missing_roles.len());
+                warn!(
+                    "[select_team] auto_lineup incomplete ({}/5 roles filled), setting empty lineup — user must configure manually",
+                    roles.len() - missing_roles.len()
+                );
                 user_team.active_lineup_ids = vec![];
             }
         }
@@ -858,7 +887,10 @@ pub async fn get_active_game(
     if rehydrated.total() > 0 {
         log::info!(
             "[cmd] get_active_game: rehydrated {} missing teams, {} players, {} reassigned players, {} staff from catalog",
-            rehydrated.teams, rehydrated.players, rehydrated.players_reassigned, rehydrated.staff
+            rehydrated.teams,
+            rehydrated.players,
+            rehydrated.players_reassigned,
+            rehydrated.staff
         );
         state.set_game(game.clone());
     }
@@ -1115,6 +1147,30 @@ mod tests {
         assert!(game.moved_player_ids.contains("mover"));
         assert!(game.moved_player_ids.contains("rookie"));
         assert!(!game.moved_player_ids.contains("retiree"));
+    }
+
+    #[test]
+    fn short_roster_fill_tracks_filled_players_as_moved() {
+        let mut game = test_game();
+        let mut free_agent = Player::new(
+            "fa-top".to_string(),
+            "fa-top".to_string(),
+            "fa-top".to_string(),
+            "2000-01-01".to_string(),
+            "KR".to_string(),
+            LolRole::Top,
+            PlayerAttributes::default(),
+        );
+        free_agent.team_id = None;
+        game.players.push(free_agent);
+
+        let fills = fill_short_rosters(&mut game);
+
+        assert!(!fills.is_empty());
+        for fill in &fills {
+            assert!(game.moved_player_ids.contains(&fill.player_id));
+        }
+        assert!(fills.iter().any(|fill| fill.player_id == "fa-top"));
     }
 
     #[test]
