@@ -37,6 +37,7 @@ import {
   getDashboardAlerts,
   getManagerTeamName,
   getTodayMatchFixture,
+  getPendingIncomingOffersCount,
   getUnreadMessagesCount,
 } from "@/lib/dashboard/helpers";
 import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboard/DashboardHeader";
@@ -380,6 +381,7 @@ export default function DashboardV2() {
     ? formatDateFull(gameState.clock.current_date, settings.language)
     : "";
   const unreadMessagesCount = gameState ? getUnreadMessagesCount(gameState) : 0;
+  const pendingOffersCount = gameState ? getPendingIncomingOffersCount(gameState) : 0;
   const myTeamName = gameState ? getManagerTeamName(gameState) : null;
   const myTeam = gameState?.teams.find((t) => t.id === gameState?.manager.team_id);
   const liveManagerName = gameState
@@ -447,6 +449,7 @@ export default function DashboardV2() {
         activeTab={profileNavigation.activeTab}
         onNavClick={handleNavClick}
         unreadMessagesCount={unreadMessagesCount}
+        pendingOffersCount={pendingOffersCount}
         managerFullName={`${gameState?.manager.first_name ?? ""} ${gameState?.manager.last_name ?? ""}`.trim() || null}
         managerName={liveManagerName}
         managerAvatar={managerAvatar}

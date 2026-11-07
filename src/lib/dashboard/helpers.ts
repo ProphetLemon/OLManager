@@ -56,6 +56,18 @@ export function getUnreadMessagesCount(gameState: GameStateData): number {
   return gameState.messages.filter((message) => !message.read).length;
 }
 
+/** Pending transfer offers other clubs made for the user's players (the ones awaiting an answer). */
+export function getPendingIncomingOffersCount(gameState: GameStateData): number {
+  const teamId = gameState.manager.team_id;
+  return gameState.players
+    .filter((player) => player.team_id === teamId)
+    .reduce(
+      (total, player) =>
+        total + player.transfer_offers.filter((offer) => offer.status === "Pending").length,
+      0,
+    );
+}
+
 export function getManagerTeamName(gameState: GameStateData): string | null {
   return (
     gameState.teams.find((team) => team.id === gameState.manager.team_id)?.name ??

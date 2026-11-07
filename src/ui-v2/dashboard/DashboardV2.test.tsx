@@ -69,6 +69,7 @@ vi.mock("@/lib/dashboard/helpers", () => ({
   getManagerTeamName: () => "Test Team",
   getTodayMatchFixture: () => null,
   getUnreadMessagesCount: () => 0,
+  getPendingIncomingOffersCount: () => 0,
 }));
 
 vi.mock("@/ui-v2/_legacy/components/dashboard/DashboardWorkspaceContent", () => ({
