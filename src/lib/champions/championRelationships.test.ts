@@ -13,9 +13,10 @@ describe("champion relationships", () => {
       schemaVersion: 1,
       dataset: "champion-relationships",
       provenance: { status: "legacy_baseline" },
+      migration: { legacy_counts: { counters: 2464 } },
     });
     expect(championRelationships.roles).toHaveLength(170);
-    expect(championRelationships.counters).toHaveLength(2464);
+    expect(championRelationships.counters).toHaveLength(2465);
     expect(championRelationships.synergies).toHaveLength(670);
   });
 
@@ -33,6 +34,42 @@ describe("champion relationships", () => {
       duplicate_entries_removed: 22,
     });
     expect(championRelationships.migration.synergy_duplicate_reduction.audit).toHaveLength(22);
+  });
+});
+
+describe("curated counter corrections", () => {
+  it("raises Malphite over Yasuo to a strong counter", () => {
+    expect(getChampionCounterValue("Malphite", "Yasuo")).toBe(3);
+  });
+
+  it("downgrades Sylas over Shyvana from near-unplayable to a slight edge", () => {
+    expect(getChampionCounterValue("Sylas", "Shyvana")).toBe(1);
+  });
+
+  it("downgrades Yone over Aurelion Sol from near-unplayable to a clear edge", () => {
+    expect(getChampionCounterValue("Yone", "AurelionSol")).toBe(2);
+  });
+
+  it("adds Rammus as a hard counter to Master Yi without a reverse entry", () => {
+    expect(getChampionCounterValue("Rammus", "MasterYi")).toBe(4);
+    expect(getChampionCounterValue("MasterYi", "Rammus")).toBe(0);
+  });
+
+  it("marks curated entries and keeps legacy entries untouched", () => {
+    const curated = championRelationships.counters.filter((relationship) => relationship.status === "curated");
+    expect(curated.map((relationship) => `${relationship.source}->${relationship.target}`).sort()).toEqual([
+      "malphite->yasuo",
+      "rammus->masteryi",
+      "sylas->shyvana",
+      "yone->aurelionsol",
+    ]);
+    expect(curated.every((relationship) => relationship.confidence === "high" && relationship.review_flags.includes("curated_general_knowledge"))).toBe(true);
+    expect(getChampionCounterValue("Aatrox", "Cho'Gath")).toBe(1);
+  });
+
+  it("has no mutual counter pairs", () => {
+    const keys = new Set(championRelationships.counters.map((relationship) => `${relationship.source}::${relationship.target}`));
+    expect(championRelationships.counters.filter((relationship) => keys.has(`${relationship.target}::${relationship.source}`))).toEqual([]);
   });
 });
 

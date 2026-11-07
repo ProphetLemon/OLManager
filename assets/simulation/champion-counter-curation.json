@@ -5,5 +5,38 @@
     "reviewed_at": "2026-11-07",
     "method": "Three lane-group Game Designer audits plus adversarial Reality Checker refutation; only high-confidence, unrefuted changes applied"
   },
-  "changes": []
+  "changes": [
+    {
+      "op": "set",
+      "source": "malphite",
+      "target": "yasuo",
+      "value": 3,
+      "confidence": "high",
+      "reason": "Malphite is a famous Yasuo counter (armor stacking, ult knock-up, Yasuo cannot trade); 1 understates it."
+    },
+    {
+      "op": "set",
+      "source": "sylas",
+      "target": "shyvana",
+      "value": 1,
+      "confidence": "high",
+      "reason": "5 means near-unplayable, which Shyvana is not vs Sylas; at most a slight edge."
+    },
+    {
+      "op": "add",
+      "source": "rammus",
+      "target": "masteryi",
+      "value": 4,
+      "confidence": "high",
+      "reason": "Rammus into Master Yi is among the most famous counters (taunt and armor vs auto-attack carry). Rammus has zero counter entries."
+    },
+    {
+      "op": "set",
+      "source": "yone",
+      "target": "aurelionsol",
+      "value": 2,
+      "confidence": "high",
+      "reason": "5 means near-unplayable; Yone vs Aurelion Sol is at most a modest early edge for Yone, never a near-auto-win."
+    }
+  ]
 }
