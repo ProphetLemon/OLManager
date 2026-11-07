@@ -220,6 +220,14 @@ fn parse_catalog(raw: &str) -> Result<MetaRelationships, String> {
     }
     if dataset.migration.legacy_counts.roles != dataset.roles.len()
         || expected_counter_total(&dataset.migration) != Some(dataset.counters.len())
+        || dataset.migration.curation.as_ref().is_some_and(|curation| {
+            dataset
+                .counters
+                .iter()
+                .filter(|counter| counter.status == "curated")
+                .count()
+                != curation.changes.add + curation.changes.set
+        })
         || dataset.migration.legacy_counts.synergies != 692
         || dataset.migration.synergy_duplicate_reduction.strategy != "maximum_value"
         || dataset
