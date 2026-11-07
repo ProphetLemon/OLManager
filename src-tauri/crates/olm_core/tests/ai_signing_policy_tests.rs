@@ -210,7 +210,9 @@ fn casual_intent_allows_low_impact_at_tier_one() {
 #[test]
 fn signing_policy_accepts_when_budget_and_fit_ok() {
     let fa = player("fa1", None, LolRole::Mid, 80, 1_000_000);
-    let game = game_with_team_and_player(1_100, fa, 1);
+    let mut game = game_with_team_and_player(1_100, fa, 1);
+    // On the LEC wage scale a 1M player asks about 1.2M a year, so the club needs room for it.
+    game.teams.iter_mut().find(|t| t.id == "ai-team").unwrap().wage_budget = 2_000_000;
     let team = game.teams.iter().find(|t| t.id == "ai-team").unwrap();
     let player_ref = game.players.iter().find(|p| p.id == "fa1").unwrap();
     let decision = ai_signing_policy(&game, team, player_ref, SigningIntent::Casual);

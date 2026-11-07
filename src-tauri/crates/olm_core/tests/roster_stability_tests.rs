@@ -571,7 +571,8 @@ fn rejected_free_agent_does_not_block_later_eligible_free_agent() {
     players[4].market_value = 3_000_000;
     players[5].market_value = 100_000;
     let mut game = game_with(players, vec!["top", "jungle", "mid", "adc"]);
-    game.teams[0].wage_budget = 300_000;
+    // On the LEC wage scale the 100k support asks about 144k, the 3M one about 3.6M.
+    game.teams[0].wage_budget = 400_000;
 
     let report = repair_team(&mut game, "ai-team", RosterStabilityReason::Emergency)
         .expect("later eligible free agent should repair role gap");
@@ -1462,13 +1463,15 @@ fn repair_assigns_free_agent_with_non_zero_wage_and_term() {
         player("adc2", Some("ai-team"), LolRole::Adc, Some("2028-06-30")),
         player("free-support", None, LolRole::Support, Some("2028-06-30")),
     ];
-    players[5].wage = 100_000;
+    // The wage sits above the LEC-scale floor of a 2M player (about 2.4M), so only the
+    // multipliers move it.
+    players[5].wage = 2_500_000;
     players[5].market_value = 2_000_000;
     players[5].morale = 40;
     players[5].date_of_birth = "2002-01-01".to_string();
     let mut game = game_with(players, vec!["top", "jungle", "mid", "adc", "adc2"]);
     game.teams[0].reputation = 30;
-    game.teams[0].wage_budget = 1_000_000;
+    game.teams[0].wage_budget = 5_000_000;
 
     repair_team(&mut game, "ai-team", RosterStabilityReason::PreMatch)
         .expect("free support should repair role gap");
@@ -1479,9 +1482,9 @@ fn repair_assigns_free_agent_with_non_zero_wage_and_term() {
         .find(|player| player.id == "free-support")
         .unwrap();
     assert_eq!(assigned.team_id.as_deref(), Some("ai-team"));
-    // 100_000 * 1.05 (age <= 27) * 1.10 (morale <= 50) * 1.18 (market_value >= 2M)
-    // * 1.05 (reputation < 40) = 144_000 after rounding.
-    assert_eq!(assigned.wage, 144_000);
+    // 2_500_000 * 1.05 (age <= 27) * 1.10 (morale <= 50) * 1.18 (market_value >= 2M)
+    // * 1.05 (reputation < 40) = 3_578_000 after rounding.
+    assert_eq!(assigned.wage, 3_578_000);
     assert!(assigned.contract_end.is_some());
 }
 
@@ -1939,7 +1942,13 @@ fn new_game_fill_spends_the_budget_across_roles_in_one_team() {
         50,
         20_000,
     ));
+    // On the LEC wage scale the stars (50k market value) ask about 85k and the cheap
+    // player (10k) about 37k, so a 250k budget (soft cap 275k) leaves room for one star.
+    for (id, market_value) in [("fa-jg-star", 50_000), ("fa-sup-star", 50_000), ("fa-sup-cheap", 10_000)] {
+        players.iter_mut().find(|p| p.id == id).unwrap().market_value = market_value;
+    }
     let mut game = game_with(players, vec![]);
+    game.teams[0].wage_budget = 250_000;
     game.teams[1].team_kind = TeamKind::Academy;
 
     let fills = fill_new_game_rosters(&mut game);

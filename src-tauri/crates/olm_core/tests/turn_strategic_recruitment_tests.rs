@@ -356,6 +356,8 @@ fn process_day_runs_strategic_recruitment_for_eligible_team() {
 fn strategic_recruitment_fa_fallback_signs_high_impact_free_agent() {
     let free_agents = vec![free_agent("fa-star", LolRole::Support, 85, 2_000_000)];
     let mut game = make_strategic_game(1_200, 1, vec![], free_agents);
+    // On the LEC wage scale a 2M free agent asks about 2.4M a year, above the default 2M budget.
+    game.teams.iter_mut().find(|t| t.id == "buyer").unwrap().wage_budget = 4_000_000;
 
     ai_strategic_recruitment(&mut game, "buyer");
 

@@ -511,7 +511,7 @@ pub fn process_contract_expiries(game: &mut Game) {
     }
 }
 
-pub(crate) fn expected_wage(player: &Player, team: &Team, current_date: NaiveDate) -> u32 {
+pub fn expected_wage(player: &Player, team: &Team, current_date: NaiveDate) -> u32 {
     let apply_minimum_floor = should_apply_minimum_expected_wage_floor(player, current_date);
     let starting_wage = if apply_minimum_floor {
         player.wage.max(minimum_expected_wage_floor(player))
@@ -559,9 +559,10 @@ fn should_apply_minimum_expected_wage_floor(player: &Player, current_date: Naive
         || remaining_contract_days(player, current_date) == 0
 }
 
+/// Wage floor of a player without a binding contract: the shared LEC wage scale
+/// (see `wage_scale`), which keeps the 25k minimum for the lowest tiers.
 fn minimum_expected_wage_floor(player: &Player) -> u32 {
-    let market_value_floor = (player.market_value / 20).min(u64::from(u32::MAX)) as u32;
-    round_up_to_nearest_thousand(market_value_floor.max(25_000))
+    crate::wage_scale::scale_wage_for_market_value(player.market_value)
 }
 
 fn importance_wage_multiplier(player: &Player) -> f32 {

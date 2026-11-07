@@ -50,6 +50,7 @@ pub mod state;
 pub mod team_talk;
 pub mod time_blockers;
 pub mod training;
+pub mod wage_scale;
 pub mod transfers;
 pub mod turn;
 pub mod world_catalog;
