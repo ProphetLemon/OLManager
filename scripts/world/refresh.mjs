@@ -7,6 +7,7 @@ import { parseArgs } from "node:util";
 import { DEFAULT_MAX_CACHE_AGE_DAYS, DEFAULT_THROTTLE_MS, MediaWikiClient } from "./lib/mediawiki-client.mjs";
 import { loadGateExceptions } from "./lib/gates.mjs";
 import { serializeOverlay } from "./lib/overlay.mjs";
+import { resolveKeyPath, signOverlayFile } from "./lib/signing.mjs";
 import { runRefresh } from "./lib/pipeline.mjs";
 import { buildTeamMap, loadTeamMap, summarizeTeamMap } from "./lib/team-map.mjs";
 import { coveredCompetitionIds, loadWorld } from "./lib/world.mjs";
@@ -110,6 +111,13 @@ async function refresh() {
   const out = values.out ?? path.join(ROOT, "assets/world/roster-overlay.json");
   writeFile(out, serializeOverlay(result.overlay));
   console.log(`overlay written: ${out}`);
+  const keyPath = resolveKeyPath();
+  if (fs.existsSync(keyPath)) {
+    signOverlayFile(out, fs.readFileSync(keyPath, "utf8"));
+    console.log(`overlay signed: ${out}.sig`);
+  } else {
+    console.error(`[world] WARNING: no signing key at ${keyPath}; ${out}.sig was NOT updated and the app will reject this overlay. Run "npm run world:keygen" or set OLM_OVERLAY_SIGNING_KEY, then "npm run world:sign".`);
+  }
 }
 
 try {

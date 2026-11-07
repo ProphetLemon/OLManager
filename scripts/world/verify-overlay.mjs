@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { formatErrors, validateOverlay } from "./lib/overlay-schema.mjs";
+import { PUBLIC_KEY_FILE, verifyOverlayFile } from "./lib/signing.mjs";
 import { loadWorld, toOverlayWorld } from "./lib/world.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
@@ -19,4 +20,10 @@ if (!result.ok) {
   console.error(`verify:world-overlay: ${result.errors.length} problem(s) in ${file}\n${formatErrors(result.errors)}`);
   process.exit(1);
 }
-console.log(`verify:world-overlay: ${file} OK (${overlay.players.length} player ops, ${overlay.staff.length} staff ops, as of ${overlay.as_of})`);
+const publicKeyFile = path.join(ROOT, PUBLIC_KEY_FILE);
+const signature = verifyOverlayFile(file, fs.readFileSync(publicKeyFile, "utf8").trim());
+if (!signature.ok) {
+  console.error(`verify:world-overlay: ${signature.reason} for ${file} against ${PUBLIC_KEY_FILE}; re-sign with "npm run world:sign"`);
+  process.exit(1);
+}
+console.log(`verify:world-overlay: ${file} OK (${overlay.players.length} player ops, ${overlay.staff.length} staff ops, as of ${overlay.as_of}, signature valid)`);

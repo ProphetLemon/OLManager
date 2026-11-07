@@ -99,3 +99,23 @@ Keep that attribution wherever the overlay data is surfaced.
 `npx vitest run src/lib/world` uses recorded responses in `scripts/world/fixtures/cache` (keys are
 `sha1` of the sorted request parameters, same as the original Python spike) and a small LCK/LEC world in
 `scripts/world/fixtures/data`. Tests never touch the network.
+
+## Signing the overlay (Ed25519)
+
+The app only accepts a downloaded overlay whose detached Ed25519 signature verifies against the public key compiled into the
+app. A tampered, unsigned or wrongly signed overlay is rejected and the app keeps what it had (the bundled overlay at worst).
+
+- **Format.** `assets/world/roster-overlay.json.sig` holds the base64 (standard alphabet, padded, one line) of the 64-byte
+  Ed25519 signature over the exact bytes of `roster-overlay.json`. Any edit to the overlay, even whitespace, needs a re-sign.
+- **Public key.** `assets/world/overlay-signing-key.pub`: base64 of the raw 32-byte key, committed and embedded in the app.
+- **Private key.** PKCS#8 PEM, mode 0600, outside the repo: `$OLM_OVERLAY_SIGNING_KEY` or
+  `~/.config/olmanager/overlay-signing-key.pem`. **Back it up** (password manager or offline media). Losing it means shipping
+  a new app build with a new public key before any overlay can be downloaded again. Never print, paste or commit it.
+- **Create (once).** `npm run world:keygen` creates the key only if none exists, never overwrites, and prints only the public key
+  and its SHA-256 fingerprint. Commit the printed public key as `overlay-signing-key.pub` and ship an app build that embeds it.
+- **Re-sign.** `npm run world:refresh` signs automatically after writing the overlay when the key is available and prints a
+  warning when it is not. To sign by hand (for example after editing the overlay): `npm run world:sign [-- path/to/overlay.json]`.
+- **Check.** `npm run verify:world-overlay` also verifies the signature against the committed public key.
+- **Publishing.** The app downloads `<source>` and `<source>.sig` from the fork's `develop` branch. Downloads only succeed once
+  the signed overlay and its `.sig` are both on `develop`; until then the app keeps the bundled overlay. Commit the overlay and
+  its `.sig` together.
