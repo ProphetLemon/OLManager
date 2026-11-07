@@ -2574,7 +2574,7 @@
         "subject2": "{{team}} Erwartet Ihre Führung",
         "body0": "Der Vorstand von {{team}} freut sich, Sie als neuen Trainer begrüßen zu dürfen.\n\nWir haben große Hoffnungen in Ihre Amtszeit und glauben, dass Sie diesen Verein zum Ruhm führen können. Ihre erste Aufgabe wird es sein, den Kader zu überprüfen und einen taktischen Plan für die kommende Saison vorzubereiten.\n\nWir wünschen Ihnen viel Erfolg.",
         "body1": "Im Namen der gesamten {{team}}-Familie freuen wir uns, Ihre Ernennung zum Trainer bekannt zu geben.\n\nDie Fans sind gespannt auf Ihre Vision für das Team. Nehmen Sie sich Zeit, den Kader zu bewerten, unsere finanzielle Lage zu prüfen und Ihren taktischen Ansatz festzulegen.\n\nDer Vorstand steht hinter Ihnen.",
-        "body2": "Willkommen bei {{team}}! Die Fans und das Personal freuen sich auf die Zukunft unter Ihrer Führung.\n\nWir empfehlen Ihnen, zunächst die Stärken und Schwächen Ihres Kaders zu überprüfen und dann Ihren bevorzugten Spielplan und Ihre Trainingsplanung einzurichten.\n\nDie kommende Saison wird ein echter Test — machen Sie uns stolz.",
+        "body2": "Willkommen bei {{team}}! Die Fans und das Personal freuen sich auf die Zukunft unter Ihrer Führung.\n\nWir empfehlen Ihnen, zunächst die Stärken und Schwächen Ihres Kaders zu überprüfen und dann Ihren bevorzugten Matchplan und Ihre Trainingsplanung einzurichten.\n\nDie kommende Saison wird ein echter Test — machen Sie uns stolz.",
         "actionReview": "Kader überprüfen",
         "actionThank": "Dem Vorstand danken"
       },
@@ -2602,7 +2602,7 @@
           "victory1": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nTolle Serie! Das Team hat dort echte Nervenstärke gezeigt. Spieltag {{matchday}} abgeschlossen.",
           "defeat0": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nEin enttäuschendes Ergebnis. Wir müssen uns neu formieren und an den Schwachstellen arbeiten. Spieltag {{matchday}} — es ist noch Zeit, das Ruder herumzureißen.",
           "defeat1": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNicht das gewünschte Ergebnis. Spieltag {{matchday}} — der Vorstand wird Verbesserungen sehen wollen. Analysieren Sie, was schiefgelaufen ist, und bereiten Sie sich auf die nächste Herausforderung vor.",
-          "draw": "Abpfiff: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nEin Punkt am Spieltag {{matchday}}. Je nach anderen Ergebnissen könnte das wertvoll sein. Die Mannschaft hat gekämpft, konnte aber keinen Siegtreffer erzielen."
+          "draw": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nEin Punkt am Spieltag {{matchday}}. Je nach anderen Ergebnissen könnte das wertvoll sein. Die Mannschaft hat gekämpft, konnte sich aber nicht durchsetzen."
         },
         "actionStandings": "Tabelle ansehen"
       },

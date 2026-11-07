@@ -2881,14 +2881,14 @@
         "subject": {
           "victory": "Vittoria: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",
           "defeat": "Sconfitta: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",
-          "draw": "Draw: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}"
+          "draw": "Pareggio: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}"
         },
         "body": {
           "victory0": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn risultato eccellente! La squadra ha offerto una grande prestazione. Giornata {{matchday}} — mantieni questo slancio.",
           "victory1": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nOttima serie! La squadra ha mostrato vera freddezza. Giornata {{matchday}} completata.",
           "defeat0": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn risultato deludente. Dovremo riorganizzarci e lavorare sugli aspetti che ci hanno fatto difetto. Giornata {{matchday}} — c'è ancora tempo per ribaltare la situazione.",
           "defeat1": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNon è il risultato che volevamo. Giornata {{matchday}} — il consiglio vorrà vedere miglioramenti. Rivedi cosa è andato storto e preparati alla prossima sfida.",
-          "draw": "Full time: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nA point earned in Matchday {{matchday}}. Depending on results elsewhere, this could be valuable. The team fought hard but couldn't find a winner."
+          "draw": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn punto conquistato nella Giornata {{matchday}}. A seconda degli altri risultati, potrebbe essere prezioso. La squadra ha lottato ma non è riuscita a trovare il successo."
         },
         "actionStandings": "View Standings"
       },

@@ -2599,7 +2599,7 @@
         },
         "body": {
           "victory0": "Seri Sonu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nMükemmel bir sonuç! Takım güçlü bir performans sergiledi. {{matchday}}. Maç Günü — bu momentumu koruyun.",
-          "victory1": "Maç sonucu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nHarika bir seri! Takım sahada gerçek bir soğukkanlılık gösterdi. {{matchday}}. Maç Günü tamamlandı.",
+          "victory1": "Maç sonucu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nHarika bir seri! Takım gerçek bir soğukkanlılık gösterdi. {{matchday}}. Maç Günü tamamlandı.",
           "defeat0": "Seri Sonu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nHayal kırıklığı yaratan bir sonuç. Toparlanmalı ve bizi yarı yolda bırakan şeyler üzerinde çalışmalıyız. {{matchday}}. Maç Günü — işleri tersine çevirmek için hala zaman var.",
           "defeat1": "Maç sonucu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nİstediğimiz sonuç bu değildi. {{matchday}}. Maç Günü — yönetim gelişme görmek isteyecektir. Neyin yanlış gittiğini analiz edin ve bir sonraki mücadeleye hazırlanın.",
           "draw": "Seri Sonu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\n{{matchday}}. Maç Gününde bir puan alındı. Diğer sonuçlara bağlı olarak bu değerli olabilir. Takım sert savaştı ama galibiyeti bulamadı."

@@ -2602,7 +2602,7 @@
           "victory1": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nSuperbe série ! L'équipe a fait preuve d'un vrai sang-froid. Journée {{matchday}} accomplie.",
           "defeat0": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn résultat décevant. Il faudra se regrouper et travailler sur les points faibles. Journée {{matchday}} — il est encore temps de redresser la barre.",
           "defeat1": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nPas le résultat espéré. Journée {{matchday}} — le conseil voudra voir des améliorations. Analysez ce qui n'a pas fonctionné et préparez-vous pour le prochain défi.",
-          "draw": "Coup de sifflet final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn point pris à la Journée {{matchday}}. Selon les autres résultats, cela pourrait être précieux. L'équipe s'est battue mais n'a pas trouvé le but de la victoire."
+          "draw": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn point pris à la Journée {{matchday}}. Selon les autres résultats, cela pourrait être précieux. L'équipe s'est battue mais n'a pas réussi à faire la différence."
         },
         "actionStandings": "Voir le Classement"
       },
