@@ -119,3 +119,11 @@ app. A tampered, unsigned or wrongly signed overlay is rejected and the app keep
 - **Publishing.** The app downloads `<source>` and `<source>.sig` from the fork's `develop` branch. Downloads only succeed once
   the signed overlay and its `.sig` are both on `develop`; until then the app keeps the bundled overlay. Commit the overlay and
   its `.sig` together.
+
+App side: `src-tauri/src/commands/world_overlay.rs` downloads `<source>.sig` with the same https-only, size-capped, timeout rules,
+verifies it (`olm_core::world_overlay_signature`) before parsing or caching, stores the signature next to the cache and verifies
+the cached pair again on every read. A missing or invalid signature rejects the download, keeps the current cache and never
+blocks a new game; a cache without a valid signature is ignored in favour of the bundled overlay. `OLM_WORLD_OVERLAY_SOURCE`
+(URL or local path) goes through the same verification against the embedded key, so a local override needs a `.sig` too.
+The crypto is `ed25519-dalek` 2.x (BSD-3-Clause, RustCrypto/dalek-cryptography, the de-facto Rust Ed25519 crate; verification
+uses `verify_strict`, default features off).
