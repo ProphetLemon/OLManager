@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Clock, Eye, GraduationCap, ScanSearch, User } from "lucide-react";
 
 import type { GameStateData } from "@/store/gameStore";
+import { useTabUiField } from "@/store/tabUiStore";
 import { sendScout } from "@/services/scoutingService";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import { calculateAvailableScouts, scoutMaxSlots } from "@/lib/scouting/helpers";
@@ -23,10 +24,10 @@ const SCOUTING_PAGE_SIZE = 20;
 
 export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavigate }: ScoutingTabV2Props) {
   const { t } = useTranslation();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [posFilter, setPosFilter] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useTabUiField("scouting", "searchQuery");
+  const [posFilter, setPosFilter] = useTabUiField("scouting", "posFilter");
   const [sending, setSending] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useTabUiField("scouting", "page");
 
   const myTeamId = gameState.manager.team_id ?? "";
   const myTeam = gameState.teams.find((team) => team.id === myTeamId);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowDown,
@@ -22,6 +22,7 @@ import type {
   PlayerData,
   PlayerSelectionOptions,
 } from "@/store/gameStore";
+import { useTabUiField } from "@/store/tabUiStore";
 import { formatVal, calcAge, getTeamName } from "@/lib/common/helpers";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
@@ -138,12 +139,15 @@ export function TransfersTabV2({
   const totalAnnualWages = getAnnualWageBill(myRoster);
 
   // ─── View + Sort + Filter state ───
-  const [view, setView] = useState<TransferTabView>("my_list");
-  const [search, setSearch] = useState("");
-  const [posFilter, setPosFilter] = useState<string | null>(null);
-  const [competitionFilter, setCompetitionFilter] = useState<string | null>(null);
-  const [sort, setSort] = useState<TransferSortState | null>({ key: "ovr", direction: "desc" });
-  const [page, setPage] = useState(0);
+  // Persisted in a store so the state survives the tab unmounting while a profile is open.
+  const [viewState, setView] = useTabUiField("transfers", "view");
+  const view = viewState as TransferTabView;
+  const [search, setSearch] = useTabUiField("transfers", "search");
+  const [posFilter, setPosFilter] = useTabUiField("transfers", "posFilter");
+  const [competitionFilter, setCompetitionFilter] = useTabUiField("transfers", "competitionFilter");
+  const [sortState, setSort] = useTabUiField("transfers", "sort");
+  const sort = sortState as TransferSortState | null;
+  const [page, setPage] = useTabUiField("transfers", "page");
   const PAGE_SIZE = 25;
 
   // ─── Bid modal state ───
@@ -213,7 +217,14 @@ export function TransfersTabV2({
   );
 
   // Reset page when filters change
-  useEffect(() => { setPage(0); }, [search, posFilter, competitionFilter, view]);
+  const previousFilters = useRef<unknown[] | null>(null);
+  useEffect(() => {
+    const current = [search, posFilter, competitionFilter, view];
+    const previous = previousFilters.current;
+    previousFilters.current = current;
+    // Skip the first run so a restored page is not reset on remount.
+    if (previous && previous.some((value, i) => value !== current[i])) setPage(0);
+  }, [search, posFilter, competitionFilter, view, setPage]);
 
   const tabCounts: Record<TransferTabView, number> = useMemo(
     () => ({
