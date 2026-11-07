@@ -4,7 +4,7 @@ import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import type { GameStateData, ScrimReportData } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { getChampionTiming } from "@/lib/champions/championTiming";
-import { getChampionCounterValue } from "@/lib/champions/championRelationships";
+import { championFitsLane, getChampionCounterValue, laneCounterValue } from "@/lib/champions/championRelationships";
 import { getLolStaffEffectsForTeam } from "@/lib/teams/lolStaffEffects";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
@@ -1335,9 +1335,15 @@ export default function ChampionDraft({
           missingRoles.length > 0 && champion.roleHints.some((role) => missingRoles.includes(role)) ? 12 : 0;
         let counter = 0;
 
-        enemyPicks.forEach((enemyPick) => {
-          counter += counterValue(champion.id, enemyPick.championId) * AI_WEIGHTS.pick.counterAdvantageWeight;
-          counter -= counterValue(enemyPick.championId, champion.id) * AI_WEIGHTS.pick.counterRiskWeight;
+        const candidateRole = ROLE_ORDER[ownPicks.length];
+        enemyPicks.forEach((enemyPick, enemyIdx) => {
+          const enemyRole = ROLE_ORDER[enemyIdx];
+          counter +=
+            laneCounterValue(champion.id, candidateRole, enemyPick.championId, enemyRole) *
+            AI_WEIGHTS.pick.counterAdvantageWeight;
+          counter -=
+            laneCounterValue(enemyPick.championId, enemyRole, champion.id, candidateRole) *
+            AI_WEIGHTS.pick.counterRiskWeight;
         });
 
         const score = 50 + counter + roleNeedBonus;
@@ -1462,9 +1468,15 @@ export default function ChampionDraft({
             missingRoles.length > 0 && champion.roleHints.some((role) => missingRoles.includes(role)) ? 12 : 0;
           let counter = 0;
 
-          enemyPicks.forEach((enemyPick) => {
-            counter += counterValue(champion.id, enemyPick.championId) * AI_WEIGHTS.pick.counterAdvantageWeight;
-            counter -= counterValue(enemyPick.championId, champion.id) * AI_WEIGHTS.pick.counterRiskWeight;
+          const candidateRole = ROLE_ORDER[ownPicks.length];
+          enemyPicks.forEach((enemyPick, enemyIdx) => {
+            const enemyRole = ROLE_ORDER[enemyIdx];
+            counter +=
+              laneCounterValue(champion.id, candidateRole, enemyPick.championId, enemyRole) *
+              AI_WEIGHTS.pick.counterAdvantageWeight;
+            counter -=
+              laneCounterValue(enemyPick.championId, enemyRole, champion.id, candidateRole) *
+              AI_WEIGHTS.pick.counterRiskWeight;
           });
 
           const score =
@@ -1650,12 +1662,12 @@ export default function ChampionDraft({
       else if (champMastery >= 50) mastery += 2;
       else if (champMastery >= 25) mastery += 1;
 
-      enemyPicks.forEach((enemyPick) => {
+      enemyPicks.forEach((enemyPick, enemyIdx) => {
         counter +=
-          counterValue(pick.championId, enemyPick.championId) *
+          laneCounterValue(pick.championId, ROLE_ORDER[idx], enemyPick.championId, ROLE_ORDER[enemyIdx]) *
           AI_WEIGHTS.score.counterAdvantageWeight;
         counter -=
-          counterValue(enemyPick.championId, pick.championId) *
+          laneCounterValue(enemyPick.championId, ROLE_ORDER[enemyIdx], pick.championId, ROLE_ORDER[idx]) *
           AI_WEIGHTS.score.counterRiskWeight;
       });
     });
@@ -1925,8 +1937,16 @@ export default function ChampionDraft({
     const availableForEnemy = champions.filter(
       (champion) => !usedChampionIds.has(champion.id) || enemyPickedIds.has(champion.id),
     );
+    // The selected champion would fill the next own pick slot; picked enemies keep their slot role,
+    // and unpicked enemies count when one of their role hints shares that lane.
+    const selectedRole = ROLE_ORDER[(controlledSide === "blue" ? bluePicks : redPicks).length];
+    const laneOpponents = availableForEnemy.filter((enemyChampion) => {
+      const pickedIdx = enemyPicks.findIndex((pick) => pick.championId === enemyChampion.id);
+      const enemyRoles = pickedIdx >= 0 ? [ROLE_ORDER[pickedIdx]] : enemyChampion.roleHints;
+      return championFitsLane(enemyRoles, selectedRole);
+    });
 
-    const favorableAll = availableForEnemy
+    const favorableAll = laneOpponents
       .map((enemyChampion) => ({
         champion: enemyChampion,
         value: counterValue(selectedChampion.id, enemyChampion.id),
@@ -1935,7 +1955,7 @@ export default function ChampionDraft({
       .filter((row) => row.value >= 1)
       .sort((a, b) => b.value - a.value);
 
-    const riskyAll = availableForEnemy
+    const riskyAll = laneOpponents
       .map((enemyChampion) => ({
         champion: enemyChampion,
         value: counterValue(enemyChampion.id, selectedChampion.id),
@@ -2117,8 +2137,14 @@ export default function ChampionDraft({
     if (coachSkill >= 70 && ownPicksList.length > 0) {
       const lastOwnPick = ownPicksList[ownPicksList.length - 1]?.championId;
       if (lastOwnPick && enemyPicksList.length > 0) {
-        enemyPicksList.forEach((enemyPick) => {
-          if (enemyCountersLastOwnPick(lastOwnPick, enemyPick.championId, counterValue)) {
+        const lastOwnRole = ROLE_ORDER[ownPicksList.length - 1];
+        enemyPicksList.forEach((enemyPick, enemyIdx) => {
+          const enemyRole = ROLE_ORDER[enemyIdx];
+          const laneAwareCounterValue = (source: string, target: string): number =>
+            source === enemyPick.championId
+              ? laneCounterValue(source, enemyRole, target, lastOwnRole)
+              : laneCounterValue(source, lastOwnRole, target, enemyRole);
+          if (enemyCountersLastOwnPick(lastOwnPick, enemyPick.championId, laneAwareCounterValue)) {
             const enemyChamp = championById.get(enemyPick.championId);
             if (enemyChamp) {
               addCoachTip(
@@ -2266,12 +2292,12 @@ export default function ChampionDraft({
       if (!resolvedBestChampion) return;
 
       const strongCounterTarget = enemyPicksList
-        .map((enemyPick) => {
+        .map((enemyPick, enemyIdx) => {
           const enemyChampion = championById.get(enemyPick.championId);
           if (!enemyChampion) return null;
           return {
             enemyChampion,
-            value: counterValue(resolvedBestChampion.id, enemyChampion.id),
+            value: laneCounterValue(resolvedBestChampion.id, sourceRole, enemyChampion.id, ROLE_ORDER[enemyIdx]),
           };
         })
         .filter((item): item is { enemyChampion: ChampionData; value: number } => item !== null)
@@ -2312,8 +2338,10 @@ export default function ChampionDraft({
         });
       }
 
-      const banTargetPool = availableChampions.filter((champion) =>
-        championFitsFreeRole(champion.roleHints, enemyFreeRoles),
+      // Only champions that could face this player in lane are ban threats to him.
+      const banTargetPool = availableChampions.filter(
+        (champion) =>
+          championFitsFreeRole(champion.roleHints, enemyFreeRoles) && championFitsLane(champion.roleHints, sourceRole),
       );
       const strongestThreat = banTargetPool
         .map((champion) => ({ champion, value: counterValue(champion.id, bestChampionAny.champion.id) }))
