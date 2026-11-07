@@ -1,10 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { LeagueSelectionData, GameStateData } from "@/store/gameStore";
+import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
 
 export function formatFinance(val: number): string {
-  if (val >= 1_000_000) return `€${(val / 1_000_000).toFixed(1)}M`;
-  if (val >= 1_000) return `€${(val / 1_000).toFixed(0)}K`;
-  return `€${val}`;
+  if (val >= 1_000_000) return `${activeCurrencySymbol()}${(val / 1_000_000).toFixed(1)}M`;
+  if (val >= 1_000) return `${activeCurrencySymbol()}${(val / 1_000).toFixed(0)}K`;
+  return `${activeCurrencySymbol()}${val}`;
 }
 
 export function getReputationLabel(rep: number): { label: string; variant: "default" | "secondary" | "destructive" } {

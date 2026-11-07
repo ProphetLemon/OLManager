@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { getApiClientSync } from "../api/client";
+import { setActiveCurrency } from "../lib/formatting/valueFormatting";
 
 export interface AppSettings {
   theme: "dark" | "light" | "system";
@@ -84,3 +85,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     }
   },
 }));
+
+setActiveCurrency(useSettingsStore.getState().settings.currency);
+useSettingsStore.subscribe((state) => {
+  setActiveCurrency(state.settings.currency);
+});

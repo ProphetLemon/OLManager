@@ -40,6 +40,7 @@ import { Badge } from "@/ui-v2/components/ui/badge";
 import { Separator } from "@/ui-v2/components/ui/separator";
 import { Button } from "@/ui-v2/components/ui/button";
 import { cn } from "@/ui-v2/lib/utils";
+import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
 
 function getActiveLeague(gameState: GameStateData) {
   if (!gameState.leagues?.length) return null;
@@ -589,15 +590,15 @@ function RecentResultsCard({
 function formatCompactCurrency(value: number): string {
   const sign = value >= 0 ? "+" : "−";
   const abs = Math.abs(value);
-  if (abs >= 1_000_000) return `${sign}€${(abs / 1_000_000).toFixed(1)}M`;
-  if (abs >= 1_000) return `${sign}€${(abs / 1_000).toFixed(0)}K`;
-  return `${sign}€${Math.round(abs)}`;
+  if (abs >= 1_000_000) return `${sign}${activeCurrencySymbol()}${(abs / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${sign}${activeCurrencySymbol()}${(abs / 1_000).toFixed(0)}K`;
+  return `${sign}${activeCurrencySymbol()}${Math.round(abs)}`;
 }
 
 function formatBalance(value: number): string {
-  if (Math.abs(value) >= 1_000_000) return `€${(value / 1_000_000).toFixed(2)}M`;
-  if (Math.abs(value) >= 1_000) return `€${(value / 1_000).toFixed(1)}K`;
-  return `€${Math.round(value)}`;
+  if (Math.abs(value) >= 1_000_000) return `${activeCurrencySymbol()}${(value / 1_000_000).toFixed(2)}M`;
+  if (Math.abs(value) >= 1_000) return `${activeCurrencySymbol()}${(value / 1_000).toFixed(1)}K`;
+  return `${activeCurrencySymbol()}${Math.round(value)}`;
 }
 
 function FinancesCard({

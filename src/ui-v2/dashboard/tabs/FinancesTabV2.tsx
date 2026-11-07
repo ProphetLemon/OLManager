@@ -56,6 +56,7 @@ import {
   TableRow,
 } from "@/ui-v2/components/ui/table";
 import { cn } from "@/ui-v2/lib/utils";
+import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
 
 interface FinancesTabV2Props {
   gameState: GameStateData;
@@ -98,7 +99,7 @@ function formatLedgerAmount(amount: number): string {
   const absoluteAmount = Math.abs(amount);
   const formattedAmount = absoluteAmount % 1_000 === 0
     ? formatVal(absoluteAmount)
-    : `€${absoluteAmount.toLocaleString()}`;
+    : `${activeCurrencySymbol()}${absoluteAmount.toLocaleString()}`;
   return `${sign}${formattedAmount}`;
 }
 
@@ -316,7 +317,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
               <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.annualWageBudget", "Annual wage budget")}</p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">{formatVal(annualWageBudget)}</p>
               <p className="mt-1 text-[10px] text-muted-foreground">
-                {t("finances.monthlyCommitment", "Monthly commitment")}: €{financeSnapshot.monthlyWageBudget.toLocaleString()}{monthlySuffix}
+                {t("finances.monthlyCommitment", "Monthly commitment")}: {activeCurrencySymbol()}{financeSnapshot.monthlyWageBudget.toLocaleString()}{monthlySuffix}
               </p>
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
                 <div className={cn("h-full rounded-full transition-all", wageBudgetUsagePercent > 100 ? "bg-red-400" : "bg-primary")} style={{ width: `${Math.min(100, wageBudgetUsagePercent)}%` }} />
@@ -360,10 +361,10 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
           <CardContent>
             <div className="text-center">
               <p className="font-heading text-2xl font-bold tabular-nums text-foreground">
-                €{totalWages.toLocaleString()}{annualSuffix}
+                {activeCurrencySymbol()}{totalWages.toLocaleString()}{annualSuffix}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {t("finances.budget")}: €{annualWageBudget.toLocaleString()}{annualSuffix}
+                {t("finances.budget")}: {activeCurrencySymbol()}{annualWageBudget.toLocaleString()}{annualSuffix}
                 {totalWages <= annualWageBudget ? (
                   <span className="ml-1 text-emerald-400">— {t("finances.underBudget")}</span>
                 ) : (
@@ -384,14 +385,14 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
             <div className="mt-4 space-y-2 border-t border-border pt-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">{t("finances.playerWages", "Sueldos jugadores")}</span>
-                <span className="tabular-nums text-foreground">€{playerWages.toLocaleString()}{annualSuffix}</span>
+                <span className="tabular-nums text-foreground">{activeCurrencySymbol()}{playerWages.toLocaleString()}{annualSuffix}</span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                 <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(100, (playerWages / Math.max(1, totalWages)) * 100)}%` }} />
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">{t("finances.staffWages", "Sueldos staff")}</span>
-                <span className="tabular-nums text-foreground">€{staffWages.toLocaleString()}{annualSuffix}</span>
+                <span className="tabular-nums text-foreground">{activeCurrencySymbol()}{staffWages.toLocaleString()}{annualSuffix}</span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                 <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${Math.min(100, (staffWages / Math.max(1, totalWages)) * 100)}%` }} />
@@ -410,18 +411,18 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/50 p-3 text-center">
                 <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.annualWageSpend")}</p>
-                <p className="mt-1 font-heading text-lg font-bold text-red-400 tabular-nums">€{totalWages.toLocaleString()}{annualSuffix}</p>
+                <p className="mt-1 font-heading text-lg font-bold text-red-400 tabular-nums">{activeCurrencySymbol()}{totalWages.toLocaleString()}{annualSuffix}</p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3 text-center">
                 <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.annualSponsorIncome")}</p>
-                <p className="mt-1 font-heading text-lg font-bold text-emerald-400 tabular-nums">€{annualSponsorIncome.toLocaleString()}{annualSuffix}</p>
+                <p className="mt-1 font-heading text-lg font-bold text-emerald-400 tabular-nums">{activeCurrencySymbol()}{annualSponsorIncome.toLocaleString()}{annualSuffix}</p>
               </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/50 p-3 text-center">
                 <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.projectedAnnualNet")}</p>
                 <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", projectedAnnualNet >= 0 ? "text-emerald-400" : "text-red-400")}>
-                  €{projectedAnnualNet.toLocaleString()}{annualSuffix}
+                  {activeCurrencySymbol()}{projectedAnnualNet.toLocaleString()}{annualSuffix}
                 </p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3 text-center">
@@ -638,7 +639,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                         {riskLevel === "critical" ? t("finances.contractRiskCritical") : t("finances.contractRiskWarning")}
                       </Badge>
                       <p className="font-heading text-xs font-bold tabular-nums text-foreground">
-                        €{safeFinanceNumber(player.wage).toLocaleString()}{annualSuffix}
+                        {activeCurrencySymbol()}{safeFinanceNumber(player.wage).toLocaleString()}{annualSuffix}
                       </p>
                       {onSelectPlayer && (
                         <button
@@ -719,7 +720,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                         </span>
                       </TableCell>
                       <TableCell className={cn("tabular-nums text-sm text-foreground", i % 2 === 1 && "bg-muted/20")}>
-                        €{safeFinanceNumber(p.wage).toLocaleString()}
+                        {activeCurrencySymbol()}{safeFinanceNumber(p.wage).toLocaleString()}
                       </TableCell>
                       <TableCell className={cn("tabular-nums text-sm text-muted-foreground", i % 2 === 1 && "bg-muted/20")}>
                         {formatVal(safeFinanceNumber(p.market_value))}

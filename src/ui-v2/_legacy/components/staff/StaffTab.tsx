@@ -25,6 +25,7 @@ import {
 } from "@/lib/teams/lolStaffEffects";
 import { resolveStaffPhoto } from "@/lib/players/playerPhotos";
 import { staffDisplayName } from "@/lib/staff/staffName";
+import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
 
 interface StaffTabProps {
   gameState: GameStateData;
@@ -415,7 +416,7 @@ export default function StaffTab({ gameState, onGameUpdate, mode = "club" }: Sta
                         )}
                         {staff.wage > 0 && (
                           <span className="text-[10px] bg-gray-100 dark:bg-navy-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded font-heading uppercase tracking-wider">
-                            €{staff.wage.toLocaleString()}/año
+                            {activeCurrencySymbol()}{staff.wage.toLocaleString()}/año
                           </span>
                         )}
                       </div>

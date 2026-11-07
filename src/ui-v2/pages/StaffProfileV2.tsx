@@ -31,6 +31,7 @@ import { countryName } from "@/lib/common/countries";
 import { CountryFlag } from "@/ui-v2/_legacy/components/ui/CountryFlag";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
+import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
 
 const ROLE_ICONS: Record<string, React.ReactNode> = {
   AssistantManager: <Briefcase className="size-5" />,
@@ -185,7 +186,7 @@ export default function StaffProfileV2({
               )}
               {staff.wage > 0 && (
                 <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
-                  €{staff.wage.toLocaleString()}/año
+                  {activeCurrencySymbol()}{staff.wage.toLocaleString()}/año
                 </span>
               )}
               {staff.contract_end && (

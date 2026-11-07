@@ -1,6 +1,7 @@
 import type { TeamData } from "@/store/gameStore";
 import type {  } from "i18next";
 import { calcAge, formatWeeklyAmount } from "@/lib/common/helpers";
+import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
 
 export function getPlayerTeamName(
     teams: TeamData[],
@@ -26,19 +27,19 @@ export function getPlayerAge(
 
 export function formatPlayerMarketValue(value: number): string {
     if (value >= 1_000_000) {
-        return `€${(value / 1_000_000).toFixed(1)}M`;
+        return `${activeCurrencySymbol()}${(value / 1_000_000).toFixed(1)}M`;
     }
     if (value >= 1_000) {
-        return `€${(value / 1_000).toFixed(0)}K`;
+        return `${activeCurrencySymbol()}${(value / 1_000).toFixed(0)}K`;
     }
-    return `€${value}`;
+    return `${activeCurrencySymbol()}${value}`;
 }
 
 export function formatPlayerWage(
     annualWage: number,
     suffix: string,
 ): string {
-    return formatWeeklyAmount(`€${annualWage.toLocaleString()}`, suffix);
+    return formatWeeklyAmount(`${activeCurrencySymbol()}${annualWage.toLocaleString()}`, suffix);
 }
 
 export function getAttributeColorClass(value: number): string {

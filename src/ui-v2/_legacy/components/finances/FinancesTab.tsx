@@ -28,6 +28,7 @@ import ContextMenu from "@/ui-v2/_legacy/components/ContextMenu";
 import { getLolRoleForPlayer } from "@/ui-v2/_legacy/components/squad/SquadTab.helpers";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolveMessage } from "@/lib/i18n/backendI18n";
+import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
 
 function getFacilityUpgradeCost(level: number): number {
   return level * 250_000;
@@ -386,11 +387,11 @@ export default function FinancesTab({
               {t("finances.annualTotal")}
             </p>
             <p className="font-heading font-bold text-2xl text-gray-800 dark:text-gray-100 mt-1">
-              €{totalWages.toLocaleString()}{annualSuffix}
+              {activeCurrencySymbol()}{totalWages.toLocaleString()}{annualSuffix}
             </p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
               {t("finances.budget")}:{" "}
-              €{annualWageBudget.toLocaleString()}{annualSuffix}{" "}
+              {activeCurrencySymbol()}{annualWageBudget.toLocaleString()}{annualSuffix}{" "}
               —{" "}
               {totalWages <= annualWageBudget ? (
                 <span className="text-primary-500">
@@ -424,7 +425,7 @@ export default function FinancesTab({
                 {t("finances.annualWageSpend")}
               </p>
               <p className="font-heading font-bold text-xl text-red-500">
-                €{totalWages.toLocaleString()}{annualSuffix}
+                {activeCurrencySymbol()}{totalWages.toLocaleString()}{annualSuffix}
               </p>
             </div>
             <div className="rounded-xl border border-gray-200 dark:border-navy-600 bg-gray-50 dark:bg-navy-800 p-4 text-center">
@@ -432,7 +433,7 @@ export default function FinancesTab({
                 {t("finances.annualSponsorIncome")}
               </p>
               <p className="font-heading font-bold text-xl text-primary-500">
-                €{annualSponsorIncome.toLocaleString()}{annualSuffix}
+                {activeCurrencySymbol()}{annualSponsorIncome.toLocaleString()}{annualSuffix}
               </p>
             </div>
             <div className="rounded-xl border border-gray-200 dark:border-navy-600 bg-gray-50 dark:bg-navy-800 p-4 text-center">
@@ -442,7 +443,7 @@ export default function FinancesTab({
               <p
                 className={`font-heading font-bold text-xl ${projectedAnnualNet >= 0 ? "text-primary-500" : "text-red-500"}`}
               >
-                €{projectedAnnualNet.toLocaleString()}{annualSuffix}
+                {activeCurrencySymbol()}{projectedAnnualNet.toLocaleString()}{annualSuffix}
               </p>
             </div>
             <div className="rounded-xl border border-gray-200 dark:border-navy-600 bg-gray-50 dark:bg-navy-800 p-4 text-center">
@@ -576,7 +577,7 @@ export default function FinancesTab({
                             : t("finances.contractRiskWarning")}
                         </Badge>
                         <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          €{safeFinanceNumber(player.wage).toLocaleString()}{annualSuffix}
+                          {activeCurrencySymbol()}{safeFinanceNumber(player.wage).toLocaleString()}{annualSuffix}
                         </span>
                         {onSelectPlayer ? (
                           <Button
@@ -951,7 +952,7 @@ export default function FinancesTab({
                           <RoleBadge role={lolRole} size="sm" />
                         </td>
                         <td className="py-3 px-5 text-sm font-medium text-gray-700 dark:text-gray-300">
-                          €{safeFinanceNumber(p.wage).toLocaleString()}
+                          {activeCurrencySymbol()}{safeFinanceNumber(p.wage).toLocaleString()}
                         </td>
                         <td className="py-3 px-5 text-sm text-gray-600 dark:text-gray-400">
                           {formatVal(safeFinanceNumber(p.market_value))}

@@ -12,6 +12,7 @@ import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
+import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
 
 interface YouthAcademyTabProps {
   gameState: GameStateData;
@@ -377,7 +378,7 @@ export default function YouthAcademyTab({ gameState, onSelectPlayer, onGameUpdat
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">{option.source_team_name}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {option.league_name} · {option.country} · €{option.acquisition_cost.toLocaleString(numberLocale)}
+                            {option.league_name} · {option.country} · {activeCurrencySymbol()}{option.acquisition_cost.toLocaleString(numberLocale)}
                           </p>
                         </div>
                       </div>

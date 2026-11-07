@@ -614,7 +614,7 @@ export default function TransfersTab({
                   {t("finances.wageBudget")}
                 </p>
                 <p className="font-heading font-bold text-lg text-white">
-                  €{formatVal(annualWageBudget)}
+                  {formatVal(annualWageBudget)}
                 </p>
                 {totalWages > 0 && (
                   <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden mt-1">
