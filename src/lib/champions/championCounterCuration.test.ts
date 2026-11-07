@@ -54,7 +54,7 @@ describe("validation", () => {
     }
     expect(() => validateCuration({ metadata, changes: [change({ op: "add", source: "a", target: "b", value: 2, confidence: "low" })] })).toThrow(/confidence/);
     const { counters } = applyCounterCuration(legacy, { metadata, changes: [change({ op: "add", source: "e", target: "a", value: 2, confidence: "medium" })] });
-    expect(counters.at(-1)?.curated).toMatchObject({ op: "add", confidence: "medium" });
+    expect(counters[counters.length - 1].curated).toMatchObject({ op: "add", confidence: "medium" });
   });
 
   it("flags out-of-range, self, mutual and unknown counters", () => {
