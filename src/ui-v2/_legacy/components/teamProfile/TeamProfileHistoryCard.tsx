@@ -42,7 +42,7 @@ export default function TeamProfileHistoryCard({
                   {t("teamProfile.winRate")}
                 </th>
                 <th className="py-3 px-5 font-heading font-bold uppercase tracking-wider text-muted-foreground text-center">
-                  {t("common.pts")}
+                  {`${t("common.won")}-${t("common.lost")}`}
                 </th>
               </tr>
             </thead>
@@ -74,7 +74,7 @@ export default function TeamProfileHistoryCard({
                     {winRate}
                   </td>
                   <td className="py-3 px-5 text-center text-sm text-muted-foreground/80 tabular-nums">
-                    {record.points}
+                    {record.won}-{record.lost}
                   </td>
                 </tr>
               )})}

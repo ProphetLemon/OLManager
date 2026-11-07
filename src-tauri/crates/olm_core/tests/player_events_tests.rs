@@ -604,6 +604,39 @@ fn seeding_first_day_contract_concerns_adds_messages_without_extra_morale_pressu
 }
 
 #[test]
+fn contract_concern_is_sent_again_after_renewal() {
+    let mut game = make_game();
+    let set_end = |game: &mut Game, days: i64| {
+        let end = (game.clock.current_date + chrono::Duration::days(days))
+            .format("%Y-%m-%d")
+            .to_string();
+        game.players
+            .iter_mut()
+            .find(|p| p.id == "p_fwd0")
+            .unwrap()
+            .contract_end = Some(end);
+    };
+    let count = |game: &Game| {
+        game.messages
+            .iter()
+            .filter(|m| m.id == "contract_concern_p_fwd0_final")
+            .count()
+    };
+
+    set_end(&mut game, 20);
+    player_events::generate_contract_concern_messages(&mut game, false);
+    assert_eq!(count(&game), 1);
+
+    game.messages.clear();
+    player_events::generate_contract_concern_messages(&mut game, false);
+    assert_eq!(count(&game), 0, "same contract must not be warned twice");
+
+    set_end(&mut game, 21);
+    player_events::generate_contract_concern_messages(&mut game, false);
+    assert_eq!(count(&game), 1, "renewed contract should warn again");
+}
+
+#[test]
 fn no_contract_concern_beyond_twelve_months() {
     let mut game = make_game();
     let end_date = (game.clock.current_date + chrono::Duration::days(420))
@@ -650,6 +683,40 @@ fn no_contract_concern_if_expired() {
     assert!(
         contract_msgs.is_empty(),
         "No contract concern if contract already expired"
+    );
+}
+
+#[test]
+fn deleted_contract_warning_is_not_resent_for_same_stage() {
+    let mut game = make_game();
+    let end = (game.clock.current_date + chrono::Duration::days(150))
+        .format("%Y-%m-%d")
+        .to_string();
+    game.players
+        .iter_mut()
+        .find(|p| p.id == "p_fwd0")
+        .unwrap()
+        .contract_end = Some(end);
+
+    player_events::check_player_events(&mut game);
+    assert!(
+        game.messages
+            .iter()
+            .any(|m| m.id == "contract_concern_p_fwd0_6m"),
+        "Warning should be sent the first time"
+    );
+
+    game.messages
+        .retain(|m| m.id != "contract_concern_p_fwd0_6m");
+    game.clock.current_date += chrono::Duration::days(1);
+    player_events::check_player_events(&mut game);
+
+    assert!(
+        !game
+            .messages
+            .iter()
+            .any(|m| m.id == "contract_concern_p_fwd0_6m"),
+        "Deleted warning must not be regenerated for the same stage"
     );
 }
 

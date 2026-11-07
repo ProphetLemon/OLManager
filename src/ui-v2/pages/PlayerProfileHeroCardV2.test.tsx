@@ -128,4 +128,25 @@ describe("PlayerProfileHeroCardV2", () => {
     expect(screen.queryByText("Transferible")).not.toBeInTheDocument();
     expect(screen.queryByText("Cedible")).not.toBeInTheDocument();
   });
+
+  it("shows the localized nationality name next to the flag", async () => {
+    const PlayerProfileHeroCardV2 = (await import("./PlayerProfileHeroCardV2")).default;
+    render(
+      <PlayerProfileHeroCardV2
+        player={MOCK_PLAYER}
+        ovr={75}
+        age={22}
+        teamName="Test Team"
+        annualSuffix="/yr"
+        language="es"
+        isOwnClub
+        scoutAvailability={"none" as any}
+        scoutStatus={"none" as any}
+        scoutError={null}
+        onScout={vi.fn()}
+        t={(key: string) => ES_TRANSLATIONS[key] ?? key}
+      />,
+    );
+    expect(screen.getByText("República de Corea")).toBeInTheDocument();
+  });
 });

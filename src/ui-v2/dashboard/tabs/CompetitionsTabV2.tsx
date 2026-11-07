@@ -159,7 +159,6 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                       <th className="hidden px-3 py-3 text-center font-heading font-bold md:table-cell">{t("competitions.tableHeader.mapsWon")}</th>
                       <th className="hidden px-3 py-3 text-center font-heading font-bold md:table-cell">{t("competitions.tableHeader.mapsLost")}</th>
                       <th className="px-3 py-3 text-center font-heading font-bold">{t("competitions.tableHeader.diff")}</th>
-                      <th className="px-4 py-3 text-center font-heading font-bold">{t("competitions.tableHeader.pts")}</th>
                       <th className="hidden w-24 px-3 py-3 text-center font-heading font-bold lg:table-cell">{t("competitions.tableHeader.wr")}</th>
                     </tr>
                   </thead>
@@ -195,7 +194,6 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                           <td className="hidden px-3 py-3 text-center text-xs tabular-nums text-muted-foreground md:table-cell">{entry.maps_won ?? entry.kills_for ?? 0}</td>
                           <td className="hidden px-3 py-3 text-center text-xs tabular-nums text-muted-foreground md:table-cell">{entry.maps_lost ?? entry.kills_against ?? 0}</td>
                           <td className={cn("px-3 py-3 text-center text-xs tabular-nums font-medium", diff >= 0 ? "text-emerald-400" : "text-red-400")}>{diff >= 0 ? "+" : ""}{diff}</td>
-                          <td className="px-4 py-3 text-center font-heading text-sm font-bold tabular-nums text-foreground">{entry.points}</td>
                           <td className="hidden px-3 py-3 lg:table-cell">
                             <div className="flex items-center gap-2">
                               <div className="h-1.5 w-full max-w-16 overflow-hidden rounded-full bg-muted">
@@ -208,7 +206,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                       );
                     })}
                     {sortedStandings.length === 0 && (
-                      <tr><td colSpan={10} className="py-12 text-center text-sm text-muted-foreground">{t("competitions.noStandings")}</td></tr>
+                      <tr><td colSpan={9} className="py-12 text-center text-sm text-muted-foreground">{t("competitions.noStandings")}</td></tr>
                     )}
                   </tbody>
                 </table>

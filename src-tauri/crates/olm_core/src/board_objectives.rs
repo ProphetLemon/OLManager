@@ -276,11 +276,7 @@ pub fn update_objective_progress(game: &mut Game) {
     };
 
     let standings = league.sorted_standings();
-    let user_pos = standings
-        .iter()
-        .position(|s| s.team_id == user_team_id)
-        .map(|i| (i + 1) as u32)
-        .unwrap_or(99);
+    let user_pos = end_of_season::effective_final_position(league, &user_team_id);
     let user_standing = standings.iter().find(|s| s.team_id == user_team_id);
 
     let league_complete = end_of_season::is_league_complete(league);
@@ -813,6 +809,61 @@ mod tests {
         assert!(!objective_by_id(&game, "obj_position").met);
         assert!(objective_by_id(&game, "obj_wins").met);
         assert!(!objective_by_id(&game, "obj_goals").met);
+    }
+
+    #[test]
+    fn update_objective_progress_counts_playoff_title_for_league_position() {
+        let mut game = make_game(80, 1, 4);
+        game.board_objectives = vec![make_objective(
+            "obj_position",
+            ObjectiveType::LeaguePosition,
+            1,
+            false,
+        )];
+
+        let entry = |team_id: &str, won: u32, lost: u32, points: u32| StandingEntry {
+            team_id: team_id.to_string(),
+            played: 6,
+            won,
+            lost,
+            maps_won: won * 2,
+            maps_lost: lost * 2,
+            points,
+        };
+        let fixture = |id: &str, matchday: u32, home: &str, away: &str, match_type| Fixture {
+            id: id.to_string(),
+            matchday,
+            date: format!("2025-08-{:02}", matchday),
+            home_team_id: home.to_string(),
+            away_team_id: away.to_string(),
+            match_type,
+            best_of: 1,
+            status: FixtureStatus::Completed,
+            result: Some(make_result(2, 0)),
+        };
+        let mut league = game.active_league().cloned().unwrap();
+        // The user team (team1) finishes the regular season third.
+        league.standings = vec![
+            entry("team2", 5, 1, 16),
+            entry("team3", 4, 2, 13),
+            entry("team1", 3, 3, 10),
+            entry("team4", 0, 6, 1),
+        ];
+        league.fixtures = vec![
+            fixture("f1", 1, "team1", "team2", MatchType::League),
+            fixture("f2", 2, "team3", "team4", MatchType::League),
+            fixture("f3", 3, "team1", "team3", MatchType::League),
+            fixture("f4", 4, "team2", "team4", MatchType::League),
+            fixture("f5", 5, "team1", "team4", MatchType::League),
+            fixture("f6", 6, "team2", "team3", MatchType::League),
+            fixture("po-semi", 7, "team1", "team3", MatchType::Playoffs),
+            fixture("po-final", 8, "team1", "team2", MatchType::Playoffs),
+        ];
+        game.leagues = vec![league];
+
+        update_objective_progress(&mut game);
+
+        assert!(objective_by_id(&game, "obj_position").met);
     }
 
     #[test]

@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import type { TeamData } from "@/store/gameStore";
 import { Card, CardBody, CardHeader } from "@/ui-v2/_legacy/components/ui";
+import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
 
 interface HomeFinancesCardProps {
   team: TeamData;
@@ -10,12 +11,12 @@ interface HomeFinancesCardProps {
 
 function formatCompactCurrency(value: number): string {
   if (Math.abs(value) >= 1_000_000) {
-    return `${value >= 0 ? "+" : ""}€${(value / 1_000_000).toFixed(1)}M`;
+    return `${value >= 0 ? "+" : ""}${activeCurrencySymbol()}${(value / 1_000_000).toFixed(1)}M`;
   }
   if (Math.abs(value) >= 1_000) {
-    return `${value >= 0 ? "+" : ""}€${(value / 1_000).toFixed(0)}K`;
+    return `${value >= 0 ? "+" : ""}${activeCurrencySymbol()}${(value / 1_000).toFixed(0)}K`;
   }
-  return `${value >= 0 ? "+" : ""}€${Math.round(value)}`;
+  return `${value >= 0 ? "+" : ""}${activeCurrencySymbol()}${Math.round(value)}`;
 }
 
 export default function HomeFinancesCard({ team, onNavigate }: HomeFinancesCardProps) {
@@ -43,7 +44,7 @@ export default function HomeFinancesCard({ team, onNavigate }: HomeFinancesCardP
           {t("home.projectedBalance")}
         </p>
         <p className={`mt-1 text-4xl leading-none font-heading font-bold ${projected >= 0 ? "text-green-500" : "text-red-500"}`}>
-          {projected >= 0 ? "€" : "-€"}
+          {projected >= 0 ? "" : "-"}{activeCurrencySymbol()}
           {Math.abs(Math.round(projected / 1_000_000))}M
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">

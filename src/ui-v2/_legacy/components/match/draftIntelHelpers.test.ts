@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { computeBanRecommendationScore, rankBanCandidates } from "@/ui-v2/_legacy/components/match/draftIntelHelpers";
+import { getChampionCounterValue } from "@/lib/champions/championRelationships";
+import {
+  championFitsFreeRole,
+  computeBanRecommendationScore,
+  enemyCountersLastOwnPick,
+  freeRolesForSelections,
+  rankBanCandidates,
+  resolveMasterySampleSide,
+} from "@/ui-v2/_legacy/components/match/draftIntelHelpers";
 
 describe("rankBanCandidates", () => {
   it("uses unified ban scoring for ranking", () => {
@@ -75,5 +83,96 @@ describe("rankBanCandidates", () => {
     });
 
     expect(ranked[0].championId).toBe("F");
+  });
+});
+
+describe("resolveMasterySampleSide", () => {
+  it("samples the opposing side during a ban step", () => {
+    expect(resolveMasterySampleSide({ type: "ban", side: "blue" }, "blue")).toBe("red");
+    expect(resolveMasterySampleSide({ type: "ban", side: "red" }, "red")).toBe("blue");
+  });
+
+  it("samples the acting side during a pick step", () => {
+    expect(resolveMasterySampleSide({ type: "pick", side: "blue" }, "red")).toBe("blue");
+  });
+
+  it("falls back to the controlled side without a step", () => {
+    expect(resolveMasterySampleSide(null, "red")).toBe("red");
+  });
+});
+
+const ROLES = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"];
+
+describe("freeRolesForSelections", () => {
+  it("returns every role when nothing is picked", () => {
+    expect([...freeRolesForSelections([], ROLES)].sort()).toEqual([...ROLES].sort());
+  });
+
+  it("frees roles that a flexible pick can leave open", () => {
+    const free = freeRolesForSelections([["MID"], ["MID", "TOP"]], ROLES);
+    expect(free.has("MID")).toBe(false);
+    expect(free.has("TOP")).toBe(false);
+    expect(free.has("JUNGLE")).toBe(true);
+  });
+
+  it("keeps a role free when a flexible pick can move away", () => {
+    const free = freeRolesForSelections([["MID", "TOP"]], ROLES);
+    expect(free.has("MID")).toBe(true);
+    expect(free.has("TOP")).toBe(true);
+  });
+});
+
+describe("championFitsFreeRole", () => {
+  it("rejects champions whose roles are all covered", () => {
+    expect(championFitsFreeRole(["MID"], new Set(["TOP", "JUNGLE"]))).toBe(false);
+    expect(championFitsFreeRole(["MID", "TOP"], new Set(["TOP"]))).toBe(true);
+  });
+});
+
+describe("rankBanCandidates with enemyFreeRoles", () => {
+  it("hard-excludes champions with no free role even if they are the only strong ones", () => {
+    const ranked = rankBanCandidates({
+      available: [
+        { championId: "MidOnly", roleHints: ["MID"] },
+        { championId: "Flex", roleHints: ["MID", "TOP"] },
+      ],
+      enemyCoveredRoles: new Set(["MID"]),
+      enemyFreeRoles: new Set(["TOP", "JUNGLE", "ADC", "SUPPORT"]),
+      resolveEnemyMastery: () => 99,
+      resolveMetaScore: (id) => (id === "MidOnly" ? 30 : 5),
+    });
+    expect(ranked.map((r) => r.championId)).toEqual(["Flex"]);
+  });
+
+  it("does not fall back to covered-role champions when none fit", () => {
+    const ranked = rankBanCandidates({
+      available: [{ championId: "MidOnly", roleHints: ["MID"] }],
+      enemyCoveredRoles: new Set(["MID"]),
+      enemyFreeRoles: new Set(["TOP"]),
+      resolveEnemyMastery: () => 90,
+      resolveMetaScore: () => 20,
+    });
+    expect(ranked).toEqual([]);
+  });
+});
+
+describe("enemyCountersLastOwnPick", () => {
+  // Dataset: aatrox counters drmundo (3).
+  it("warns when the enemy pick counters our last pick (real dataset pair)", () => {
+    expect(getChampionCounterValue("aatrox", "drmundo")).toBeGreaterThanOrEqual(2);
+    expect(enemyCountersLastOwnPick("drmundo", "aatrox", getChampionCounterValue)).toBe(true);
+  });
+
+  it("does not warn for an unrelated pair", () => {
+    expect(enemyCountersLastOwnPick("drmundo", "unknown-champion", getChampionCounterValue)).toBe(false);
+  });
+
+  it("does not warn when only our pick counters the enemy and not vice versa", () => {
+    const one = (s: string, t: string) => (s === "a" && t === "b" ? 3 : 0);
+    expect(enemyCountersLastOwnPick("a", "b", one)).toBe(false);
+  });
+
+  it("does not warn below the threshold", () => {
+    expect(enemyCountersLastOwnPick("a", "b", (s, t) => (s === "b" && t === "a" ? 1 : 0))).toBe(false);
   });
 });

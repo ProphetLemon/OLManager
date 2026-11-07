@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { GameStateData } from './types';
+import { useTabUiStore } from './tabUiStore';
 
 // Re-export all types so existing imports from gameStore keep working
 export type {
@@ -144,11 +145,14 @@ export const useGameStore = create<GameStore>((set) => ({
   })),
   markClean: () => set({ isDirty: false }),
   setShowFiredModal: (show) => set({ showFiredModal: show }),
-  clearGame: () => set({
-    hasActiveGame: false,
-    managerName: null,
-    gameState: null,
-    isDirty: false,
-    showFiredModal: false,
-  }),
+  clearGame: () => {
+    useTabUiStore.getState().resetTabUi();
+    set({
+      hasActiveGame: false,
+      managerName: null,
+      gameState: null,
+      isDirty: false,
+      showFiredModal: false,
+    });
+  },
 }));

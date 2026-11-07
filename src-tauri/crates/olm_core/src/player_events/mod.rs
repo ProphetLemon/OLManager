@@ -47,9 +47,12 @@ pub fn generate_contract_concern_messages(game: &mut Game, apply_morale_pressure
 
         let msg_id = format!("contract_concern_{}_{}", player.id, stage.message_suffix());
 
-        if existing_ids.contains(&msg_id) {
+        let sent_key = format!("{msg_id}@{}", player.contract_end.as_deref().unwrap_or(""));
+
+        if existing_ids.contains(&msg_id) || game.sent_contract_warning_ids.contains(&sent_key) {
             continue;
         }
+        game.sent_contract_warning_ids.insert(sent_key);
 
         if apply_morale_pressure {
             player.morale = (player.morale as i16 - stage.morale_pressure()).clamp(5, 100) as u8;

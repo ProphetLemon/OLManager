@@ -208,6 +208,58 @@ pub fn generate_single_round_league_with_offsets_and_bo(
     )
 }
 
+/// Blue (home) / red (away) history of one team within a generated league.
+#[derive(Clone, Copy, Default)]
+struct SideHistory {
+    home: i32,
+    away: i32,
+    last_home: Option<bool>,
+    run: i32,
+}
+
+impl SideHistory {
+    fn record(&mut self, home: bool) {
+        if home {
+            self.home += 1;
+        } else {
+            self.away += 1;
+        }
+        self.run = if self.last_home == Some(home) {
+            self.run + 1
+        } else {
+            1
+        };
+        self.last_home = Some(home);
+    }
+
+    /// Cost of playing `home` next: long same-side runs and imbalance are penalised.
+    fn cost(&self, home: bool) -> i32 {
+        let run = if self.last_home == Some(home) {
+            self.run * self.run * 4
+        } else {
+            0
+        };
+        let (h, a) = if home {
+            (self.home + 1, self.away)
+        } else {
+            (self.home, self.away + 1)
+        };
+        run + (h - a).abs()
+    }
+
+    /// Decide whether `first` takes the home side against `second`. `fallback`
+    /// keeps the choice deterministic when both orientations cost the same.
+    fn first_team_should_be_home(first: &Self, second: &Self, fallback: bool) -> bool {
+        let first_home = first.cost(true) + second.cost(false);
+        let first_away = first.cost(false) + second.cost(true);
+        match first_home.cmp(&first_away) {
+            std::cmp::Ordering::Less => true,
+            std::cmp::Ordering::Greater => false,
+            std::cmp::Ordering::Equal => fallback,
+        }
+    }
+}
+
 /// Same as `generate_single_round_league_with_offsets_and_bo` but accepts
 /// an explicit `league_id` instead of generating a UUID. Used when the
 /// `competition_id` should be used as the league id for consistent frontend
@@ -251,6 +303,9 @@ pub fn generate_single_round_league_with_offsets_and_bo_with_id(
 
     let mut indices: Vec<usize> = (0..n).collect();
     let mut matchday: u32 = 1;
+    // Per-team side history so blue/red alternate fairly instead of depending on
+    // the pair slot, which leaves rotating teams on the same side for long runs.
+    let mut side_history = vec![SideHistory::default(); n];
 
     for round_idx in 0..rounds {
         let day_offset = round_day_offsets
@@ -266,11 +321,20 @@ pub fn generate_single_round_league_with_offsets_and_bo_with_id(
             if has_bye && (home_idx == bye_idx || away_idx == bye_idx) {
                 continue;
             }
-            let (home_team_id, away_team_id) = if (matchday + i as u32) % 2 == 0 {
-                (team_ids[home_idx].clone(), team_ids[away_idx].clone())
+            let first_is_home = SideHistory::first_team_should_be_home(
+                &side_history[home_idx],
+                &side_history[away_idx],
+                (round_idx + i) % 2 == 0,
+            );
+            let (home_idx, away_idx) = if first_is_home {
+                (home_idx, away_idx)
             } else {
-                (team_ids[away_idx].clone(), team_ids[home_idx].clone())
+                (away_idx, home_idx)
             };
+            side_history[home_idx].record(true);
+            side_history[away_idx].record(false);
+            let (home_team_id, away_team_id) =
+                (team_ids[home_idx].clone(), team_ids[away_idx].clone());
 
             league.fixtures.push(build_fixture(
                 matchday,
@@ -518,6 +582,41 @@ mod tests {
         // No team plays itself
         for f in &league.fixtures {
             assert_ne!(f.home_team_id, f.away_team_id);
+        }
+    }
+
+    #[test]
+    fn single_round_league_alternates_sides_per_team() {
+        let start = Utc.with_ymd_and_hms(2026, 8, 1, 0, 0, 0).unwrap();
+        for team_count in [4usize, 6, 8, 10, 5, 9] {
+            let teams: Vec<String> = (0..team_count).map(|i| format!("team_{}", i)).collect();
+            let league = generate_single_round_league("Sides", 2026, &teams, start);
+
+            for team in &teams {
+                let mut games: Vec<&Fixture> = league
+                    .fixtures
+                    .iter()
+                    .filter(|f| f.home_team_id == *team || f.away_team_id == *team)
+                    .collect();
+                games.sort_by_key(|f| f.matchday);
+
+                let sides: Vec<bool> = games.iter().map(|f| f.home_team_id == *team).collect();
+                let home = sides.iter().filter(|s| **s).count() as i64;
+                let away = sides.len() as i64 - home;
+                assert!(
+                    (home - away).abs() <= 1,
+                    "{team} in {team_count}-team league has {home} blue vs {away} red"
+                );
+
+                let mut streak = 1;
+                for pair in sides.windows(2) {
+                    streak = if pair[0] == pair[1] { streak + 1 } else { 1 };
+                    assert!(
+                        streak <= 2,
+                        "{team} in {team_count}-team league has {streak} consecutive same-side games: {sides:?}"
+                    );
+                }
+            }
         }
     }
 

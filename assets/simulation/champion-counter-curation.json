@@ -1,0 +1,335 @@
+{
+  "metadata": {
+    "schemaVersion": 1,
+    "basis": "General League of Legends lane-matchup knowledge, not patch statistics",
+    "reviewed_at": "2026-11-07",
+    "method": "High-confidence changes plus medium-confidence changes confirmed by adversarial refutation, approved by the user on 2026-11-07"
+  },
+  "changes": [
+    {
+      "op": "set",
+      "source": "malphite",
+      "target": "yasuo",
+      "value": 3,
+      "confidence": "high",
+      "reason": "Malphite is a famous Yasuo counter (armor stacking, ult knock-up, Yasuo cannot trade); 1 understates it."
+    },
+    {
+      "op": "set",
+      "source": "sylas",
+      "target": "shyvana",
+      "value": 1,
+      "confidence": "high",
+      "reason": "5 means near-unplayable, which Shyvana is not vs Sylas; at most a slight edge."
+    },
+    {
+      "op": "add",
+      "source": "rammus",
+      "target": "masteryi",
+      "value": 4,
+      "confidence": "high",
+      "reason": "Rammus into Master Yi is among the most famous counters (taunt and armor vs auto-attack carry). Rammus has zero counter entries."
+    },
+    {
+      "op": "set",
+      "source": "yone",
+      "target": "aurelionsol",
+      "value": 2,
+      "confidence": "high",
+      "reason": "5 means near-unplayable; Yone vs Aurelion Sol is at most a modest early edge for Yone, never a near-auto-win."
+    },
+    {
+      "op": "remove",
+      "source": "fiora",
+      "target": "gwen",
+      "confidence": "medium",
+      "reason": "Direction reversed: Gwen is widely cited as a Fiora counter (Mist blocks the riposte target, sustain), not the reverse. Store as gwen->fiora."
+    },
+    {
+      "op": "add",
+      "source": "gwen",
+      "target": "fiora",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Gwen is widely cited as a Fiora counter (Mist blocks the riposte target, sustain), not the reverse. Store as gwen->fiora."
+    },
+    {
+      "op": "remove",
+      "source": "kayle",
+      "target": "garen",
+      "confidence": "medium",
+      "reason": "Garen is favoured in early lane (silence, sustain); Kayle only wins by scaling. No hard counter for Kayle."
+    },
+    {
+      "op": "set",
+      "source": "jayce",
+      "target": "volibear",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Jayce ranged poke gives a lane edge, but not a widely cited hard counter."
+    },
+    {
+      "op": "remove",
+      "source": "riven",
+      "target": "gwen",
+      "confidence": "medium",
+      "reason": "Direction reversed: Gwen is widely seen as favoured vs Riven (W blocks combos, Snip Snip sustain). Store as gwen->riven."
+    },
+    {
+      "op": "add",
+      "source": "gwen",
+      "target": "riven",
+      "value": 3,
+      "confidence": "medium",
+      "reason": "Gwen is widely seen as favoured vs Riven (W blocks combos, Snip Snip sustain). Store as gwen->riven."
+    },
+    {
+      "op": "set",
+      "source": "jax",
+      "target": "volibear",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Jax vs Volibear is at most a modest edge; 4 hard counter is not a widely cited matchup."
+    },
+    {
+      "op": "set",
+      "source": "jax",
+      "target": "irelia",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Jax vs Irelia is commonly seen as Irelia early, Jax late; a 4 hard counter in lane is overstated."
+    },
+    {
+      "op": "set",
+      "source": "naafiri",
+      "target": "aurelionsol",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Assassin vs scaling mage gives a lane/early edge, but not a hard counter."
+    },
+    {
+      "op": "set",
+      "source": "mel",
+      "target": "vex",
+      "value": 3,
+      "confidence": "medium",
+      "reason": "Mel is a reasonable answer to Vex, but a hard counter is not widely cited."
+    },
+    {
+      "op": "set",
+      "source": "yasuo",
+      "target": "naafiri",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Hard-counter value is overstated; Naafiri is not a widely cited near-hard-loss for Yasuo."
+    },
+    {
+      "op": "set",
+      "source": "yone",
+      "target": "naafiri",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Same as yasuo->naafiri: 4 is too high for a lane edge."
+    },
+    {
+      "op": "set",
+      "source": "irelia",
+      "target": "naafiri",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Irelia has a solid lane edge but not a hard counter."
+    },
+    {
+      "op": "set",
+      "source": "lissandra",
+      "target": "naafiri",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Lissandra is a mild lane advantage here, not a widely cited hard counter."
+    },
+    {
+      "op": "remove",
+      "source": "veigar",
+      "target": "galio",
+      "confidence": "medium",
+      "reason": "Direction reversed: Galio's MR passive, shield and taunt are widely seen as a counter to Veigar, not the reverse."
+    },
+    {
+      "op": "add",
+      "source": "galio",
+      "target": "veigar",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Galio's MR passive, shield and taunt are widely seen as a counter to Veigar, not the reverse."
+    },
+    {
+      "op": "remove",
+      "source": "azir",
+      "target": "fizz",
+      "confidence": "medium",
+      "reason": "Direction reversed: Fizz dodges Azir's burst with E and wins the early lane; Azir only scales better. Direction looks backwards."
+    },
+    {
+      "op": "add",
+      "source": "fizz",
+      "target": "azir",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Fizz dodges Azir's burst with E and wins the early lane; Azir only scales better. Direction looks backwards."
+    },
+    {
+      "op": "add",
+      "source": "malzahar",
+      "target": "zed",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Malzahar's passive shield and silence are well-known answers to Zed."
+    },
+    {
+      "op": "add",
+      "source": "fizz",
+      "target": "cassiopeia",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Fizz E dodges Cassiopeia's key spells and he roams past her immobile playstyle."
+    },
+    {
+      "op": "add",
+      "source": "fizz",
+      "target": "ziggs",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Ziggs has only one entry; Fizz and other mobile assassins are commonly cited counters to Ziggs."
+    },
+    {
+      "op": "remove",
+      "source": "velkoz",
+      "target": "leona",
+      "confidence": "medium",
+      "reason": "Direction reversed: Vel'Koz is immobile and squishy; engage supports counter him, not the other way round."
+    },
+    {
+      "op": "add",
+      "source": "leona",
+      "target": "velkoz",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Vel'Koz is immobile and squishy; engage supports counter him, not the other way round."
+    },
+    {
+      "op": "remove",
+      "source": "xerath",
+      "target": "leona",
+      "confidence": "medium",
+      "reason": "Direction reversed: Same pattern: immobile poke mage versus hard engage. Leona is favoured."
+    },
+    {
+      "op": "add",
+      "source": "leona",
+      "target": "xerath",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "Same pattern: immobile poke mage versus hard engage. Leona is favoured."
+    },
+    {
+      "op": "remove",
+      "source": "blitzcrank",
+      "target": "morgana",
+      "confidence": "medium",
+      "reason": "Direction reversed: Morgana's Black Shield blocks the Rocket Grab; her counter to Blitz is widely cited."
+    },
+    {
+      "op": "add",
+      "source": "morgana",
+      "target": "blitzcrank",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Morgana's Black Shield blocks the Rocket Grab; her counter to Blitz is widely cited."
+    },
+    {
+      "op": "remove",
+      "source": "pyke",
+      "target": "morgana",
+      "confidence": "medium",
+      "reason": "Direction reversed: Black Shield blocks Pyke's hook and CC, so Morgana is favoured."
+    },
+    {
+      "op": "add",
+      "source": "morgana",
+      "target": "pyke",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "Black Shield blocks Pyke's hook and CC, so Morgana is favoured."
+    },
+    {
+      "op": "set",
+      "source": "karma",
+      "target": "xerath",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "Xerath outranges Karma by a wide margin. Karma's edge is only a slight shield and mobility advantage, so 3 is too high."
+    },
+    {
+      "op": "set",
+      "source": "yuumi",
+      "target": "morgana",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "Yuumi is not a hard counter (4) to Morgana, who can hit the host with Q. A slight edge at most."
+    },
+    {
+      "op": "set",
+      "source": "yuumi",
+      "target": "zyra",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "A value of 4 (hard counter) is overstated for Yuumi against Zyra's plants and root. A slight edge at most."
+    },
+    {
+      "op": "set",
+      "source": "yuumi",
+      "target": "swain",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "There is no widely cited hard counter relationship here; Swain's root and drain compete evenly with Yuumi."
+    },
+    {
+      "op": "remove",
+      "source": "senna",
+      "target": "braum",
+      "confidence": "medium",
+      "reason": "Direction reversed: Braum's Unbreakable wall and passive stun shut down Senna's projectile poke. Braum is the favoured one."
+    },
+    {
+      "op": "add",
+      "source": "braum",
+      "target": "senna",
+      "value": 2,
+      "confidence": "medium",
+      "reason": "Braum's Unbreakable wall and passive stun shut down Senna's projectile poke. Braum is the favoured one."
+    },
+    {
+      "op": "set",
+      "source": "janna",
+      "target": "brand",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "Janna has no real answer to Brand's poke. A value of 3 (strong counter) is unsupported."
+    },
+    {
+      "op": "remove",
+      "source": "ezreal",
+      "target": "caitlyn",
+      "confidence": "high",
+      "reason": "Direction reversed: Caitlyn out-ranges Ezreal and is widely seen as winning the lane."
+    },
+    {
+      "op": "add",
+      "source": "caitlyn",
+      "target": "ezreal",
+      "value": 2,
+      "confidence": "high",
+      "reason": "Caitlyn out-ranges Ezreal (650 vs 550 range, traps) and is widely seen as winning the lane."
+    }
+  ]
+}

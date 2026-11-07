@@ -1974,7 +1974,9 @@
           "3": "Ban {{threat}} et je joue {{champion}} avec beaucoup plus de pression.",
           "4": "{{threat}} est un hard counter de {{champion}}. Mieux vaut le retirer maintenant.",
           "5": "Si vous voulez que je joue {{champion}}, le mieux est d'enlever {{threat}}."
-        }
+        },
+        "playerFlexible": "Je n'ai aucune priorité de pick. Je peux m'adapter à l'équipe.",
+        "playerNoDraftInfo": "Aucune info de draft. Suggestion : on peut prioriser des picks sûrs ou s'adapter au draft adverse."
       }
     },
     "assist": "passe décisive : {{name}}",

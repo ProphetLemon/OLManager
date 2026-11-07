@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { GameStateData, PlayerData, TeamData } from "@/store/gameStore";
@@ -148,5 +148,25 @@ describe("TransfersTabV2 finance summary", () => {
     expect(screen.getByText("€500K /yr")).toBeInTheDocument();
     expect(screen.getByText("Annual wage bill")).toBeInTheDocument();
     expect(screen.getByText("€120K /yr")).toBeInTheDocument();
+  });
+});
+
+describe("TransfersTabV2 state across profile round-trip", () => {
+  it("restores the search filter after unmount and remount", async () => {
+    const { TransfersTabV2 } = await import("./TransfersTabV2");
+    const props = {
+      gameState: createGameState(),
+      onGameUpdate: vi.fn(),
+      onSelectPlayer: vi.fn(),
+      onSelectTeam: vi.fn(),
+    };
+    const first = render(<TransfersTabV2 {...props} />);
+    fireEvent.change(screen.getByPlaceholderText("transfers.searchByName"), {
+      target: { value: "faker" },
+    });
+    first.unmount();
+
+    render(<TransfersTabV2 {...props} />);
+    expect(screen.getByPlaceholderText("transfers.searchByName")).toHaveValue("faker");
   });
 });

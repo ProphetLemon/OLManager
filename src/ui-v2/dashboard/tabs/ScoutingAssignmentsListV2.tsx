@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { PlayerData, ScoutingAssignment, StaffData, TeamData } from "@/store/gameStore";
 import { getTeamName } from "@/lib/common/helpers";
 import { getLolRoleForPlayer } from "@/lib/squad/helpers";
+import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 
 interface ScoutingAssignmentsListV2Props {
@@ -40,12 +41,21 @@ export default function ScoutingAssignmentsListV2({
             if (!scout || !player) return null;
 
             const team = player.team_id ? getTeamName(teams, player.team_id) : t("common.freeAgent");
+            const photo = resolvePlayerPhoto(player.id, player.match_name, player.profile_image_url);
 
             return (
               <div
                 key={assignment.id}
                 className="flex items-center gap-4 rounded-lg border border-border bg-muted/20 p-3"
               >
+                {photo ? (
+                  <img
+                    src={photo}
+                    alt={player.match_name}
+                    className="size-9 shrink-0 rounded-full border border-border object-cover"
+                    loading="lazy"
+                  />
+                ) : null}
                 <div className="min-w-0 flex-1">
                   <button
                     type="button"

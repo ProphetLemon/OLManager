@@ -6,6 +6,7 @@ import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import type { PlayerProfileScoutStatus, ScoutAvailability } from "@/lib/playerProfile/scouting";
 import PlayerProfileScoutAction from "@/ui-v2/_legacy/components/playerProfile/PlayerProfileScoutAction";
+import { countryName } from "@/lib/common/countries";
 import { CountryFlag } from "@/ui-v2/_legacy/components/ui/CountryFlag";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
@@ -146,7 +147,10 @@ export default function PlayerProfileHeroCardV2({
                 {player.match_name}
               </h2>
               {player.nationality && (
-                <CountryFlag code={player.nationality} locale={language} className="size-5 rounded-sm shadow-sm" />
+                <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <CountryFlag code={player.nationality} locale={language} className="size-5 rounded-sm shadow-sm" />
+                  <span>{countryName(player.nationality, language)}</span>
+                </span>
               )}
             </div>
 

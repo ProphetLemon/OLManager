@@ -175,6 +175,7 @@ pub fn release_player_contract(game: &mut Game, player_id: &str) {
         p.team_id = None;
         p.was_released = true;
         p.transfer_listed = false;
+        game.moved_player_ids.insert(player_id.to_string());
     }
 }
 

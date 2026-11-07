@@ -133,6 +133,9 @@ export interface DraftStateEvaluation {
   }>;
   blue_relationship: DraftRelationshipContribution;
   red_relationship: DraftRelationshipContribution;
+  /** Symmetric, outcome-only relationships from both complete drafts. Never display these. */
+  outcome_blue_relationship?: DraftRelationshipContribution;
+  outcome_red_relationship?: DraftRelationshipContribution;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -521,8 +524,10 @@ export function simulateDraftMatchResult(params: {
   // remain independent inputs below rather than being folded into this score.
   const blueDraftStrength = average(draftEvaluations?.blue.map((evaluation) => evaluation.total) ?? [50]);
   const redDraftStrength = average(draftEvaluations?.red.map((evaluation) => evaluation.total) ?? [50]);
-  const blueRelationship = draft.canonical?.blue_relationship.total ?? 0;
-  const redRelationship = draft.canonical?.red_relationship.total ?? 0;
+  const blueRelationship =
+    (draft.canonical?.outcome_blue_relationship ?? draft.canonical?.blue_relationship)?.total ?? 0;
+  const redRelationship =
+    (draft.canonical?.outcome_red_relationship ?? draft.canonical?.red_relationship)?.total ?? 0;
 
   const bluePower =
     blueOverall * 0.35 +

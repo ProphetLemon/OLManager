@@ -1974,7 +1974,9 @@
           "3": "{{threat}}'i banlayın, ben de {{champion}} ile çok daha fazla baskı kurayım.",
           "4": "{{threat}}, {{champion}}'a karşı çok avantajlı. Şimdiden aradan çıkarmak en iyisi.",
           "5": "Beni {{champion}}'da istiyorsanız, en iyi hamle {{threat}}'i banlamak olur."
-        }
+        },
+        "playerFlexible": "Pick için önceliğim yok. Takıma uyum sağlayabilirim.",
+        "playerNoDraftInfo": "Draft bilgisi yok. Öneri: güvenli pick'lere öncelik verebilir veya rakibin draftına uyum sağlayabiliriz."
       }
     },
     "assist": "asist: {{name}}",

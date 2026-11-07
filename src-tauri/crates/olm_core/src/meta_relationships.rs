@@ -53,6 +53,8 @@ struct Semantics {
 #[serde(deny_unknown_fields)]
 struct Migration {
     legacy_counts: LegacyCounts,
+    #[serde(default)]
+    curation: Option<CurationSummary>,
     synergy_duplicate_reduction: SynergyDuplicateReduction,
 }
 
@@ -62,6 +64,26 @@ struct LegacyCounts {
     roles: usize,
     counters: usize,
     synergies: usize,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CurationSummary {
+    source: String,
+    #[serde(rename = "schemaVersion")]
+    schema_version: u8,
+    reviewed_at: String,
+    basis: String,
+    changes: CurationChanges,
+    counters_after_curation: usize,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CurationChanges {
+    remove: usize,
+    add: usize,
+    set: usize,
 }
 
 #[derive(Debug, Deserialize)]
@@ -98,6 +120,8 @@ struct Relationship {
     confidence: String,
     review_flags: Vec<String>,
     review: Review,
+    #[serde(default)]
+    rationale: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -150,6 +174,26 @@ fn canonical_role(value: &str) -> Option<LolRole> {
     }
 }
 
+/// Legacy counters adjusted by the curation overlay, when one was applied.
+fn expected_counter_total(migration: &Migration) -> Option<usize> {
+    let legacy = migration.legacy_counts.counters;
+    match &migration.curation {
+        None => Some(legacy),
+        Some(curation) => {
+            if curation.source.is_empty()
+                || curation.schema_version != 1
+                || curation.reviewed_at.len() != 10
+                || curation.basis.is_empty()
+                || curation.changes.set > legacy
+            {
+                return None;
+            }
+            let total = (legacy + curation.changes.add).checked_sub(curation.changes.remove)?;
+            (total == curation.counters_after_curation).then_some(total)
+        }
+    }
+}
+
 fn parse_catalog(raw: &str) -> Result<MetaRelationships, String> {
     let dataset: DatasetRoot = serde_json::from_str(raw).map_err(|error| error.to_string())?;
     if dataset.schema_version != 1 {
@@ -175,7 +219,15 @@ fn parse_catalog(raw: &str) -> Result<MetaRelationships, String> {
         return Err("invalid champion relationship dataset metadata".to_string());
     }
     if dataset.migration.legacy_counts.roles != dataset.roles.len()
-        || dataset.migration.legacy_counts.counters != dataset.counters.len()
+        || expected_counter_total(&dataset.migration) != Some(dataset.counters.len())
+        || dataset.migration.curation.as_ref().is_some_and(|curation| {
+            dataset
+                .counters
+                .iter()
+                .filter(|counter| counter.status == "curated")
+                .count()
+                != curation.changes.add + curation.changes.set
+        })
         || dataset.migration.legacy_counts.synergies != 692
         || dataset.migration.synergy_duplicate_reduction.strategy != "maximum_value"
         || dataset
@@ -261,15 +313,32 @@ fn parse_catalog(raw: &str) -> Result<MetaRelationships, String> {
                 if relationship.directionality != directionality {
                     return Err(format!("{kind} has invalid directionality"));
                 }
+                let provenance_ok = match relationship.status.as_str() {
+                    "legacy_baseline" => {
+                        relationship.confidence == "low"
+                            && relationship
+                                .review_flags
+                                .iter()
+                                .any(|flag| flag == "source_unverified")
+                    }
+                    "curated" => {
+                        kind == "counter"
+                            && matches!(relationship.confidence.as_str(), "high" | "medium")
+                            && relationship
+                                .review_flags
+                                .iter()
+                                .any(|flag| flag == "curated_general_knowledge")
+                            && relationship
+                                .rationale
+                                .as_deref()
+                                .is_some_and(|rationale| !rationale.is_empty())
+                    }
+                    _ => false,
+                };
                 if !matches!(
                     relationship.stability.as_str(),
                     "foundational" | "patch_sensitive"
-                ) || relationship.status != "legacy_baseline"
-                    || relationship.confidence != "low"
-                    || !relationship
-                        .review_flags
-                        .iter()
-                        .any(|flag| flag == "source_unverified")
+                ) || !provenance_ok
                     || !relationship.review.required
                     || relationship.review.next_review_at.len() != 10
                     || relationship.review.reason.is_empty()
@@ -444,6 +513,51 @@ mod tests {
         assert_eq!(
             parse_catalog(&wrong_directionality).unwrap_err(),
             "counter has invalid directionality"
+        );
+    }
+
+    #[test]
+    fn catalog_accepts_curated_counters_and_checks_the_curation_summary() {
+        let curated = r#"[{"source":"heimerdinger","target":"quinn","value":3,"directionality":"directed","stability":"foundational","patch_validity":null,"status":"curated","confidence":"high","review_flags":["curated_general_knowledge"],"review":{"required":true,"next_review_at":"2027-11-07","reason":"test"},"rationale":"test"}]"#;
+        let summary = |after: usize| {
+            format!(
+                r#""legacy_counts":{{"roles":2,"counters":0,"synergies":692}},"curation":{{"source":"assets/simulation/champion-counter-curation.json","schemaVersion":1,"reviewed_at":"2026-11-07","basis":"test","changes":{{"remove":0,"add":1,"set":0}},"counters_after_curation":{after}}}"#
+            )
+        };
+        let base = valid_dataset(curated);
+        let with_summary = |after: usize| {
+            base.replace(
+                r#""legacy_counts":{"roles":2,"counters":1,"synergies":692}"#,
+                &summary(after),
+            )
+        };
+        assert_eq!(
+            parse_catalog(&with_summary(1)).unwrap().counters
+                [&("heimerdinger".to_string(), "quinn".to_string())],
+            3
+        );
+        assert_eq!(
+            parse_catalog(&with_summary(2)).unwrap_err(),
+            "invalid champion relationship migration audit"
+        );
+
+        let medium = with_summary(1).replace("\"confidence\":\"high\"", "\"confidence\":\"medium\"");
+        assert_eq!(
+            parse_catalog(&medium).unwrap().counters
+                [&("heimerdinger".to_string(), "quinn".to_string())],
+            3
+        );
+        let unknown_confidence =
+            with_summary(1).replace("\"confidence\":\"high\"", "\"confidence\":\"low\"");
+        assert_eq!(
+            parse_catalog(&unknown_confidence).unwrap_err(),
+            "counter has invalid review metadata"
+        );
+
+        let unflagged = with_summary(1).replace("curated_general_knowledge", "other");
+        assert_eq!(
+            parse_catalog(&unflagged).unwrap_err(),
+            "counter has invalid review metadata"
         );
     }
 

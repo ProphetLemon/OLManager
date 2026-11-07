@@ -1943,7 +1943,9 @@
           "3": "Ban {{threat}} and I can play {{champion}} with much more pressure.",
           "4": "{{threat}} is a hard counter to {{champion}}. Better remove it now.",
           "5": "If you want me on {{champion}}, the best move is removing {{threat}}."
-        }
+        },
+        "playerFlexible": "Non ho priorità per il pick. Mi posso adattare alla squadra.",
+        "playerNoDraftInfo": "Nessuna informazione sul draft. Suggerimento: possiamo dare priorità a pick sicuri o adattarci al draft avversario."
       }
     },
     "tacticsBeforeLive": "Adjust your strategy and, when ready, we start the match.",

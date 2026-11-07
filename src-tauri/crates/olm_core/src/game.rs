@@ -17,7 +17,7 @@ use ts_rs::TS;
 
 use crate::generator::definitions::CompetitionManifest;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "typescript", derive(TS))]
@@ -144,6 +144,15 @@ pub struct Game {
     /// Last in-game date for which `ai_transfer_cap_counts` was reset.
     #[serde(default)]
     pub ai_transfer_cap_last_reset_date: Option<String>,
+    /// Ids of contract warning messages already sent, so deleting one from the
+    /// inbox does not cause it to be regenerated.
+    #[serde(default)]
+    pub sent_contract_warning_ids: HashSet<String>,
+    /// Ids of players whose team assignment changed in-save (transfers and
+    /// releases). Unlike `transfer_history`, this is never truncated, so
+    /// catalog rehydration can always keep these players where the game put them.
+    #[serde(default)]
+    pub moved_player_ids: HashSet<String>,
 }
 
 /// Lenient deserializer for `competition_configs`.
@@ -203,6 +212,8 @@ impl Game {
             transfer_history: TransferHistory::default(),
             ai_transfer_cap_counts: HashMap::new(),
             ai_transfer_cap_last_reset_date: None,
+            sent_contract_warning_ids: HashSet::new(),
+            moved_player_ids: HashSet::new(),
         };
         crate::identity_upgrade::upgrade_game_football_identities(&mut game);
         crate::season_context::refresh_game_context(&mut game);

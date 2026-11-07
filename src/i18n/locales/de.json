@@ -1974,7 +1974,9 @@
           "3": "Ban {{threat}} and I can play {{champion}} with much more pressure.",
           "4": "{{threat}} is a hard counter to {{champion}}. Better remove it now.",
           "5": "If you want me on {{champion}}, the best move is removing {{threat}}."
-        }
+        },
+        "playerFlexible": "Ich habe keine Prioritäten für den Pick. Ich kann mich dem Team anpassen.",
+        "playerNoDraftInfo": "Keine Draft-Infos. Vorschlag: Wir können sichere Picks priorisieren oder uns dem gegnerischen Draft anpassen."
       }
     },
     "assist": "Vorlage: {{name}}",

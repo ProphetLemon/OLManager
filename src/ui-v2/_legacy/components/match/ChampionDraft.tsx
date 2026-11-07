@@ -4,16 +4,21 @@ import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import type { GameStateData, ScrimReportData } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { getChampionTiming } from "@/lib/champions/championTiming";
-import { getChampionCounterValue } from "@/lib/champions/championRelationships";
+import { championFitsLane, getChampionCounterValue, laneCounterValue } from "@/lib/champions/championRelationships";
 import { getLolStaffEffectsForTeam } from "@/lib/teams/lolStaffEffects";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
+import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import championsSeed from "../../../../../assets/simulation/champions.json";
 import championListSeed from "../../../../../assets/simulation/champion-list.json";
 import aiConfigSeed from "../../../../../assets/simulation/ai-config.json";
 import {
   computeBanRecommendationScore as computeUnifiedBanRecommendationScore,
+  championFitsFreeRole,
+  enemyCountersLastOwnPick,
+  freeRolesForSelections,
   rankBanCandidates,
+  resolveMasterySampleSide,
   type BanRecommendationContext,
 } from "@/ui-v2/_legacy/components/match/draftIntelHelpers";
 import type { DraftStateEvaluation } from "@/ui-v2/_legacy/components/match/draftResultSimulator";
@@ -679,6 +684,15 @@ function playerSeedPhotoUrl(photo?: string): string | null {
   return photo;
 }
 
+export function resolveDraftTipPlayerImage(
+  player: { id: string; name: string; profile_image_url?: string | null },
+  seedPhoto?: string,
+): string {
+  return (
+    resolvePlayerPhoto(player.id, player.name, player.profile_image_url ?? playerSeedPhotoUrl(seedPhoto)) ?? ""
+  );
+}
+
 export default function ChampionDraft({
   snapshot,
   onComplete,
@@ -928,7 +942,7 @@ export default function ChampionDraft({
   };
 
   const displayMasteryForChampion = (champion: ChampionData): number => {
-    const sampleSide = currentStep?.side ?? controlledSide;
+    const sampleSide = resolveMasterySampleSide(currentStep, controlledSide);
     if (roleFilter !== "ALL") {
       return roleMasteryForChampion(sampleSide, roleFilter, champion.id);
     }
@@ -1023,6 +1037,12 @@ export default function ChampionDraft({
     search(0, new Set<Role>());
     return result;
   };
+
+  const freeRolesForPicks = (selections: DraftSelection[]): Set<Role> =>
+    freeRolesForSelections(
+      selections.map((selection) => championById.get(selection.championId)?.roleHints ?? []),
+      ROLE_ORDER,
+    ) as Set<Role>;
 
   const currentPickEvaluationContext = useMemo((): Omit<DraftEvaluationRequest, "championId"> | null => {
     if (currentStep?.type !== "pick") return null;
@@ -1315,9 +1335,15 @@ export default function ChampionDraft({
           missingRoles.length > 0 && champion.roleHints.some((role) => missingRoles.includes(role)) ? 12 : 0;
         let counter = 0;
 
-        enemyPicks.forEach((enemyPick) => {
-          counter += counterValue(champion.id, enemyPick.championId) * AI_WEIGHTS.pick.counterAdvantageWeight;
-          counter -= counterValue(enemyPick.championId, champion.id) * AI_WEIGHTS.pick.counterRiskWeight;
+        const candidateRole = ROLE_ORDER[ownPicks.length];
+        enemyPicks.forEach((enemyPick, enemyIdx) => {
+          const enemyRole = ROLE_ORDER[enemyIdx];
+          counter +=
+            laneCounterValue(champion.id, candidateRole, enemyPick.championId, enemyRole) *
+            AI_WEIGHTS.pick.counterAdvantageWeight;
+          counter -=
+            laneCounterValue(enemyPick.championId, enemyRole, champion.id, candidateRole) *
+            AI_WEIGHTS.pick.counterRiskWeight;
         });
 
         const score = 50 + counter + roleNeedBonus;
@@ -1334,6 +1360,7 @@ export default function ChampionDraft({
     const targetPicks = targetSide === "blue" ? bluePicks : redPicks;
     const enemyCoveredRoles = assignedRolesForSelections(targetPicks);
     const ranked = rankBanCandidates({
+      enemyFreeRoles: freeRolesForPicks(targetPicks),
       available: available.map((champion) => ({
         championId: champion.id,
         roleHints: champion.roleHints,
@@ -1354,7 +1381,7 @@ export default function ChampionDraft({
         };
       },
     });
-    const bestBanId = ranked[0]?.championId;
+    const bestBanId = ranked[0]?.championId ?? available[0]?.id;
     return bestBanId ? championById.get(bestBanId) ?? null : null;
   };
 
@@ -1441,9 +1468,15 @@ export default function ChampionDraft({
             missingRoles.length > 0 && champion.roleHints.some((role) => missingRoles.includes(role)) ? 12 : 0;
           let counter = 0;
 
-          enemyPicks.forEach((enemyPick) => {
-            counter += counterValue(champion.id, enemyPick.championId) * AI_WEIGHTS.pick.counterAdvantageWeight;
-            counter -= counterValue(enemyPick.championId, champion.id) * AI_WEIGHTS.pick.counterRiskWeight;
+          const candidateRole = ROLE_ORDER[ownPicks.length];
+          enemyPicks.forEach((enemyPick, enemyIdx) => {
+            const enemyRole = ROLE_ORDER[enemyIdx];
+            counter +=
+              laneCounterValue(champion.id, candidateRole, enemyPick.championId, enemyRole) *
+              AI_WEIGHTS.pick.counterAdvantageWeight;
+            counter -=
+              laneCounterValue(enemyPick.championId, enemyRole, champion.id, candidateRole) *
+              AI_WEIGHTS.pick.counterRiskWeight;
           });
 
           const score =
@@ -1465,6 +1498,7 @@ export default function ChampionDraft({
       const targetPicks = targetSide === "blue" ? nextBluePicks : nextRedPicks;
       const enemyCoveredRoles = assignedRolesForSelections(targetPicks);
       const ranked = rankBanCandidates({
+        enemyFreeRoles: freeRolesForPicks(targetPicks),
         available: available.map((champion) => ({
           championId: champion.id,
           roleHints: champion.roleHints,
@@ -1485,7 +1519,7 @@ export default function ChampionDraft({
           };
         },
       });
-      const bestBanId = ranked[0]?.championId;
+      const bestBanId = ranked[0]?.championId ?? available[0]?.id;
       return bestBanId ? championById.get(bestBanId) ?? null : null;
     };
 
@@ -1628,12 +1662,12 @@ export default function ChampionDraft({
       else if (champMastery >= 50) mastery += 2;
       else if (champMastery >= 25) mastery += 1;
 
-      enemyPicks.forEach((enemyPick) => {
+      enemyPicks.forEach((enemyPick, enemyIdx) => {
         counter +=
-          counterValue(pick.championId, enemyPick.championId) *
+          laneCounterValue(pick.championId, ROLE_ORDER[idx], enemyPick.championId, ROLE_ORDER[enemyIdx]) *
           AI_WEIGHTS.score.counterAdvantageWeight;
         counter -=
-          counterValue(enemyPick.championId, pick.championId) *
+          laneCounterValue(enemyPick.championId, ROLE_ORDER[enemyIdx], pick.championId, ROLE_ORDER[idx]) *
           AI_WEIGHTS.score.counterRiskWeight;
       });
     });
@@ -1903,8 +1937,16 @@ export default function ChampionDraft({
     const availableForEnemy = champions.filter(
       (champion) => !usedChampionIds.has(champion.id) || enemyPickedIds.has(champion.id),
     );
+    // The selected champion would fill the next own pick slot; picked enemies keep their slot role,
+    // and unpicked enemies count when one of their role hints shares that lane.
+    const selectedRole = ROLE_ORDER[(controlledSide === "blue" ? bluePicks : redPicks).length];
+    const laneOpponents = availableForEnemy.filter((enemyChampion) => {
+      const pickedIdx = enemyPicks.findIndex((pick) => pick.championId === enemyChampion.id);
+      const enemyRoles = pickedIdx >= 0 ? [ROLE_ORDER[pickedIdx]] : enemyChampion.roleHints;
+      return championFitsLane(enemyRoles, selectedRole);
+    });
 
-    const favorableAll = availableForEnemy
+    const favorableAll = laneOpponents
       .map((enemyChampion) => ({
         champion: enemyChampion,
         value: counterValue(selectedChampion.id, enemyChampion.id),
@@ -1913,7 +1955,7 @@ export default function ChampionDraft({
       .filter((row) => row.value >= 1)
       .sort((a, b) => b.value - a.value);
 
-    const riskyAll = availableForEnemy
+    const riskyAll = laneOpponents
       .map((enemyChampion) => ({
         champion: enemyChampion,
         value: counterValue(enemyChampion.id, selectedChampion.id),
@@ -2015,11 +2057,8 @@ export default function ChampionDraft({
 
     const ownPicksList = controlledSide === "blue" ? bluePicks : redPicks;
     const enemyPicksList = controlledSide === "blue" ? redPicks : bluePicks;
-    const ownCoveredRoles = new Set<Role>();
-    ownPicksList.forEach((pick) => {
-      const champion = championById.get(pick.championId);
-      champion?.roleHints.forEach((role) => ownCoveredRoles.add(role));
-    });
+    const ownFreeRoles = freeRolesForPicks(ownPicksList);
+    const enemyFreeRoles = freeRolesForPicks(enemyPicksList);
     const availableChampions = champions.filter((champion) => !usedChampionIds.has(champion.id));
 
     const coachSkill = assistantCoach?.attributes?.coaching ?? 60;
@@ -2049,6 +2088,7 @@ export default function ChampionDraft({
       .map((pick) => pick.championId)
       .join("|")}:${redPicks.map((pick) => pick.championId).join("|")}`;
     const rivalMasteries = rivalMasteryCandidates
+      .filter((entry) => championFitsFreeRole(entry.champion.roleHints, enemyFreeRoles))
       .map((entry) => {
         const candidateTier = knownMetaTierForChampion(
           entry.champion,
@@ -2097,9 +2137,14 @@ export default function ChampionDraft({
     if (coachSkill >= 70 && ownPicksList.length > 0) {
       const lastOwnPick = ownPicksList[ownPicksList.length - 1]?.championId;
       if (lastOwnPick && enemyPicksList.length > 0) {
-        enemyPicksList.forEach((enemyPick) => {
-          const counterVal = counterValue(lastOwnPick, enemyPick.championId);
-          if (counterVal <= -2) {
+        const lastOwnRole = ROLE_ORDER[ownPicksList.length - 1];
+        enemyPicksList.forEach((enemyPick, enemyIdx) => {
+          const enemyRole = ROLE_ORDER[enemyIdx];
+          const laneAwareCounterValue = (source: string, target: string): number =>
+            source === enemyPick.championId
+              ? laneCounterValue(source, enemyRole, target, lastOwnRole)
+              : laneCounterValue(source, lastOwnRole, target, enemyRole);
+          if (enemyCountersLastOwnPick(lastOwnPick, enemyPick.championId, laneAwareCounterValue)) {
             const enemyChamp = championById.get(enemyPick.championId);
             if (enemyChamp) {
               addCoachTip(
@@ -2193,27 +2238,21 @@ export default function ChampionDraft({
           matchedSeedPlayer = undefined;
         } else {
           const flexibleRole = mapSeedRoleToDraftRole(String(matchedSeedPlayer?.role ?? "")) ?? ROLE_ORDER[index];
-          const flexibleImage =
-            player.profile_image_url ??
-            playerSeedPhotoUrl(matchedSeedPlayer?.photo) ??
-            `/player-photos/${player.id}.webp`;
+          const flexibleImage = resolveDraftTipPlayerImage(player, matchedSeedPlayer?.photo);
           tips.push({
             sourceType: "player",
             sourceName: player.name,
             sourceRole: flexibleRole,
             sourceImage: flexibleImage,
             type: "pick",
-            text: t("match.draft.phrases.playerFlexible", "No tengo prioridades para el pick. Me puedo adaptar al equipo."),
+            text: t("match.draft.phrases.playerFlexible", "I have no pick priorities. I can adapt to the team."),
           });
           return;
         }
       }
 
       const sourceRole = mapSeedRoleToDraftRole(String(matchedSeedPlayer?.role ?? "")) ?? ROLE_ORDER[index];
-      const sourceImage =
-        player.profile_image_url ??
-        playerSeedPhotoUrl(matchedSeedPlayer?.photo) ??
-        `/player-photos/${player.id}.webp`;
+      const sourceImage = resolveDraftTipPlayerImage(player, matchedSeedPlayer?.photo);
 
       const playerState = gameState.players.find((item) => item.id === player.id);
       const gameIq = playerState
@@ -2253,19 +2292,19 @@ export default function ChampionDraft({
       if (!resolvedBestChampion) return;
 
       const strongCounterTarget = enemyPicksList
-        .map((enemyPick) => {
+        .map((enemyPick, enemyIdx) => {
           const enemyChampion = championById.get(enemyPick.championId);
           if (!enemyChampion) return null;
           return {
             enemyChampion,
-            value: counterValue(resolvedBestChampion.id, enemyChampion.id),
+            value: laneCounterValue(resolvedBestChampion.id, sourceRole, enemyChampion.id, ROLE_ORDER[enemyIdx]),
           };
         })
         .filter((item): item is { enemyChampion: ChampionData; value: number } => item !== null)
         .sort((a, b) => b.value - a.value)[0];
 
       if (draftAdviceStage !== "ban" && bestMastery >= 50) {
-        if (sourceRole && ownCoveredRoles.has(sourceRole)) {
+        if (sourceRole && !ownFreeRoles.has(sourceRole)) {
           return;
         }
         const pickPhraseText =
@@ -2299,14 +2338,19 @@ export default function ChampionDraft({
         });
       }
 
-      const strongestThreat = availableChampions
+      // Only champions that could face this player in lane are ban threats to him.
+      const banTargetPool = availableChampions.filter(
+        (champion) =>
+          championFitsFreeRole(champion.roleHints, enemyFreeRoles) && championFitsLane(champion.roleHints, sourceRole),
+      );
+      const strongestThreat = banTargetPool
         .map((champion) => ({ champion, value: counterValue(champion.id, bestChampionAny.champion.id) }))
         .filter((item) => item.value >= 2)
         .sort((a, b) => b.value - a.value)[0];
 
       if (draftAdviceStage === "ban" && strongestThreat && bestChampionAny.mastery >= 70) {
         const banTarget =
-          availableChampions
+          banTargetPool
             .map((champion) => ({ champion, value: counterValue(champion.id, bestChampionAny.champion.id) }))
             .filter((item) => item.value >= 2)
             .sort((a, b) => b.value - a.value)[0]?.champion ?? strongestThreat.champion;
@@ -2336,12 +2380,10 @@ export default function ChampionDraft({
       const fallbackPlayerIndex = ownPlayers.findIndex((_, index) => {
         const fallbackRole =
           mapSeedRoleToDraftRole(String(ownTeamSeedPlayers[index]?.role ?? "")) ?? ROLE_ORDER[index] ?? null;
-        return fallbackRole ? !ownCoveredRoles.has(fallbackRole) : true;
+        return fallbackRole ? ownFreeRoles.has(fallbackRole) : true;
       });
-      const fallbackPlayer =
-        fallbackPlayerIndex >= 0 ? ownPlayers[fallbackPlayerIndex] : ownPlayers[0];
-      const fallbackSeedPlayer =
-        fallbackPlayerIndex >= 0 ? ownTeamSeedPlayers[fallbackPlayerIndex] : ownTeamSeedPlayers[0];
+      const fallbackPlayer = fallbackPlayerIndex >= 0 ? ownPlayers[fallbackPlayerIndex] : undefined;
+      const fallbackSeedPlayer = fallbackPlayerIndex >= 0 ? ownTeamSeedPlayers[fallbackPlayerIndex] : undefined;
       const fallbackPlayerRole =
         mapSeedRoleToDraftRole(String(fallbackSeedPlayer?.role ?? "")) ?? ROLE_ORDER[Math.max(0, fallbackPlayerIndex)] ?? null;
       if (fallbackPlayer) {
@@ -2349,12 +2391,9 @@ export default function ChampionDraft({
           sourceType: "player",
           sourceName: fallbackPlayer.name,
           sourceRole: fallbackPlayerRole ?? ROLE_ORDER[0],
-          sourceImage:
-            fallbackPlayer.profile_image_url ??
-            playerSeedPhotoUrl(fallbackSeedPlayer?.photo) ??
-            `/player-photos/${fallbackPlayer.id}.webp`,
+          sourceImage: resolveDraftTipPlayerImage(fallbackPlayer, fallbackSeedPlayer?.photo),
           type: "pick",
-          text: t("match.draft.phrases.playerFlexible", "Sin información de draft. Sugerencia: podemos priorizar picks seguros o adaptarnos al draft enemigo."),
+          text: t("match.draft.phrases.playerNoDraftInfo", "No draft info. Suggestion: we can prioritize safe picks or adapt to the enemy draft."),
         });
       }
     }

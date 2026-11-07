@@ -175,7 +175,7 @@ export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
                 <StatCell label={t("teams.statOvr")} value={String(avgOvr)} />
                 <StatCell label={t("teams.statRep")} value={String(team.reputation)} />
                 <StatCell label={t("teams.statValue")} value={formatVal(totalValue)} />
-                <StatCell label={t("teams.statPts")} value={standing ? String(standing.points) : "—"} />
+                <StatCell label={`${t("common.won")}-${t("common.lost")}`} value={standing ? `${standing.won}-${standing.lost}` : "—"} />
               </div>
 
               {/* Bottom */}

@@ -1510,6 +1510,10 @@ fn release_player_contract_sets_was_released_flag() {
         released.transfer_offers.is_empty(),
         "transfer offers should be cleared"
     );
+    assert!(
+        game.moved_player_ids.contains("release-test-1"),
+        "released player should be recorded as moved"
+    );
 }
 
 #[test]

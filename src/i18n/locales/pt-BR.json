@@ -1921,7 +1921,9 @@
           "3": "Ban em {{threat}} e eu jogo {{champion}} com muito mais pressão.",
           "4": "{{threat}} é hard counter de {{champion}}. Melhor banir agora.",
           "5": "Se vocês querem que eu jogue de {{champion}}, o ideal é tirar {{threat}}."
-        }
+        },
+        "playerFlexible": "Não tenho prioridades para o pick. Posso me adaptar ao time.",
+        "playerNoDraftInfo": "Sem informações de draft. Sugestão: podemos priorizar picks seguros ou nos adaptar ao draft inimigo."
       }
     },
     "assist": "assistência: {{name}}",

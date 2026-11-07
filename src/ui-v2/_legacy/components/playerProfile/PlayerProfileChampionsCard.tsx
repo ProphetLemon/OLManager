@@ -54,6 +54,7 @@ export default function PlayerProfileChampionsCard({ champions, onViewChampion }
                     </span>
                   )}
 
+                  {item.games > 0 && (
                   <div className="flex flex-col items-end gap-0.5">
                     <span className={`text-lg font-heading font-black ${item.wr >= 55 ? "text-emerald-300" : item.wr >= 48 ? "text-amber-300" : "text-rose-300"}`}>
                       {item.wr.toFixed(1)}% {t("playerProfile.championWinRateShort")}
@@ -65,15 +66,18 @@ export default function PlayerProfileChampionsCard({ champions, onViewChampion }
                       />
                     </div>
                   </div>
+                  )}
                 </div>
 
                 <div className="mt-auto">
                   <p className="text-2xl font-heading font-black text-white leading-none truncate">{item.championName}</p>
                   <div className="mt-1 flex items-center justify-between text-white/90">
                     <p className="text-xs">{t("playerProfile.championMasteryLabel", { value: item.mastery })}</p>
-                    <p className="text-2xl font-heading font-black leading-none">
-                      {item.games} <span className="text-lg">{t("playerProfile.championGames")}</span>
-                    </p>
+                    {item.games > 0 && (
+                      <p className="text-2xl font-heading font-black leading-none">
+                        {item.games} <span className="text-lg">{t("playerProfile.championGames")}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

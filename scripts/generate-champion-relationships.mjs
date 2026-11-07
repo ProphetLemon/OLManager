@@ -1,7 +1,9 @@
 import { readFileSync, writeFileSync } from "node:fs";
+import { CURATION_SOURCE, applyCounterCuration } from "./lib/champion-counter-curation.mjs";
 
 const legacyCatalog = JSON.parse(readFileSync(new URL("../assets/simulation/champions.json", import.meta.url), "utf8"));
 const legacy = legacyCatalog.data;
+const curation = JSON.parse(readFileSync(new URL("../assets/simulation/champion-counter-curation.json", import.meta.url), "utf8"));
 const capturedAt = "2026-08-02";
 
 function canonicalChampionId(value) {
@@ -33,14 +35,37 @@ const roles = Object.entries(legacy.roles)
   }))
   .sort((left, right) => left.champion_id.localeCompare(right.champion_id));
 
-const counters = legacy.counterpicks.map(({ a, b, value }) => ({
+const legacyCounters = legacy.counterpicks.map(({ a, b, value }) => ({
   source: canonicalChampionId(a),
   target: canonicalChampionId(b),
+  value,
+}));
+const curatedCounters = applyCounterCuration(legacyCounters, curation);
+
+function curatedReview({ confidence, reason }) {
+  const nextReviewYear = Number(curation.metadata.reviewed_at.slice(0, 4)) + 1;
+  return {
+    status: "curated",
+    confidence,
+    review_flags: ["curated_general_knowledge"],
+    review: {
+      required: true,
+      next_review_at: `${nextReviewYear}${curation.metadata.reviewed_at.slice(4)}`,
+      reason: `Curated from general lane-matchup knowledge; re-review on major champion changes. ${reason}`,
+    },
+  };
+}
+
+const counters = curatedCounters.counters.map(({ source, target, value, curated }) => ({
+  source,
+  target,
   value,
   directionality: "directed",
   stability: "foundational",
   patch_validity: null,
-  ...legacyReview("counter"),
+  ...(curated
+    ? { ...curatedReview(curated), rationale: curated.reason }
+    : legacyReview("counter")),
 }));
 
 const groupedSynergies = new Map();
@@ -94,6 +119,14 @@ const dataset = {
       roles: roles.length,
       counters: legacy.counterpicks.length,
       synergies: legacy.synergies.length,
+    },
+    curation: {
+      source: CURATION_SOURCE,
+      schemaVersion: curation.metadata.schemaVersion,
+      reviewed_at: curation.metadata.reviewed_at,
+      basis: curation.metadata.basis,
+      changes: curatedCounters.summary,
+      counters_after_curation: counters.length,
     },
     synergy_duplicate_reduction: {
       strategy: "maximum_value",

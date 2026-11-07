@@ -159,7 +159,7 @@ function buildChampionPerformanceMap(
   );
 }
 
-function buildTopChampionMasteries(
+export function buildTopChampionMasteries(
   playerId: string,
   matchName: string,
   role: "TOP" | "JUNGLE" | "MID" | "ADC" | "SUPPORT",
@@ -194,8 +194,15 @@ function buildTopChampionMasteries(
     });
   }
 
-  const champions = [...championByKey.values()]
-    .sort((a, b) => b.mastery - a.mastery);
+  const hasHistory = [...championByKey.values()].some(
+    (entry) => (championPerformance.get(entry.championId)?.games ?? 0) > 0,
+  );
+  const gamesOf = (championId: string) => championPerformance.get(championId)?.games ?? 0;
+  const champions = [...championByKey.values()].sort((a, b) =>
+    hasHistory
+      ? gamesOf(b.championId) - gamesOf(a.championId) || b.mastery - a.mastery
+      : b.mastery - a.mastery,
+  );
 
   if (champions.length === 0) {
     const fallbackChampion = fallbackChampionForRole(playerId, role);
