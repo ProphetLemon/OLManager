@@ -160,14 +160,14 @@ pub fn match_result_message(
         "Victory" => {
             let v = [
                 format!(
-                    "Full time: {} {} - {} {}.\n\n\
+                    "Final score: {} {} - {} {}.\n\n\
                     An excellent result! The team put in a strong performance. \
                     Matchday {} — keep this momentum going.",
                     home_name, home_goals, away_goals, away_name, matchday
                 ),
                 format!(
-                    "Final whistle: {} {} - {} {}.\n\n\
-                    Three points in the bag! The lads showed great character out there. \
+                    "Final score: {} {} - {} {}.\n\n\
+                    Great series! The team showed real composure out there. \
                     Matchday {} complete.",
                     home_name, home_goals, away_goals, away_name, matchday
                 ),
@@ -177,7 +177,7 @@ pub fn match_result_message(
         "Defeat" => {
             let v = [
                 format!(
-                    "Full time: {} {} - {} {}.\n\n\
+                    "Final score: {} {} - {} {}.\n\n\
                     A disappointing result. We'll need to regroup and work on the areas that let us down. \
                     Matchday {} — there's still time to turn things around.",
                     home_name, home_goals, away_goals, away_name, matchday
@@ -193,8 +193,8 @@ pub fn match_result_message(
         }
         _ => {
             format!(
-                "Full time: {} {} - {} {}.\n\n\
-                A point earned in Matchday {}. Depending on results elsewhere, this could be valuable. \
+                "Final score: {} {} - {} {}.\n\n\
+                A tie in Matchday {}. Depending on results elsewhere, this could be valuable. \
                 The team fought hard but couldn't find a winner.",
                 home_name, home_goals, away_goals, away_name, matchday
             )

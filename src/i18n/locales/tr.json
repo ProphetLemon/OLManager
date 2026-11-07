@@ -6,6 +6,11 @@
   "content": {
     "lol": {
       "social": {
+        "events": {
+          "fanPetitionDraftObjectives": {
+            "body": "Bir grup {{team}} taraftarı, daha net bir draft kimliği ve daha keskin objektif kurulumları isteyen bir kampanya başlattı.\n\n\"Her seride pasif scaling yerine Rift'te proaktif planlar istiyoruz. Bize takımın nasıl kazanmak istediğini bildiğini gösterin.\"\n\nKonu espor sosyal medya kanallarında ilgi görüyor. Nasıl yanıt veriyorsunuz?"
+          }
+        },
         "questions": {
           "cleanWinObjectives": {
             "text": "Alt koridorunuz ejderleri topladı ve Baron kontrolünü sağladınız. Bu galibiyetin ne kadarı objektif kurulumundan geldi?"
@@ -236,7 +241,6 @@
     "expandSidebar": "Yan menüyü genişlet",
     "alerts": {
       "exhausted": "{{count}} oyuncunun durumu kritik (<%25)",
-      "injuredStartingXi": "İlk 5'te {{count}} sakat oyuncu var — onları değiştirin",
       "incompleteStartingXi": "İlk 5 eksik — kadronuzu belirleyin",
       "urgentUnread": "{{count}} acil okunmamış mesaj",
       "matchTodayStartingXi": "Bugün maç var! İlk 5'ini belirle"
@@ -327,7 +331,7 @@
     "reviewSquadDesc": "Oyuncu istatistiklerini, durumlarını ve özelliklerini kontrol edin",
     "hireStaff": "Personel alın",
     "hireStaffDesc": "Personel antrenman kalitesini ve toparlanmayı artırır — bir Koç ve Fizyoterapist alın",
-    "setTactics": "Dizilişinizi ve taktiklerinizi belirleyin",
+    "setTactics": "Oyun planınızı ve taktiklerinizi belirleyin",
     "setTacticsDesc": "Kadronuza uygun bir rol dağılımı ve oyun tarzı seçin",
     "configTraining": "Antrenmanı yapılandırın",
     "configTrainingDesc": "Oyuncularınızı geliştirmek için bir odak noktası ve program seçin",
@@ -612,10 +616,6 @@
     "won": "G",
     "drawn": "B",
     "lost": "M",
-    "gf": "AG",
-    "ga": "YG",
-    "gd": "AV",
-    "injured": "Sakat",
     "back": "Geri",
     "all": "Tümü",
     "allPlayers": "Tüm Oyuncular",
@@ -654,71 +654,47 @@
     "renewContract": "Sözleşme Yenile",
     "status": "Durum",
     "average": "Ortalama",
-    "goalsFor": "AG",
-    "goalsAgainst": "YG",
-    "goalDifference": "AV",
     "nPlayersFound": "{{count}} oyuncu bulundu",
     "nResults": "{{count}} sonuç",
     "showingFirst": "Toplam {{total}} oyuncudan ilk {{shown}} kadarı gösteriliyor. Daha fazlasını görmek için aramanızı daraltın.",
     "noPlayersMatch": "Filtrelerinizle eşleşen oyuncu yok.",
     "positions": {
-      "Goalkeeper": "Kaleci",
-      "Defender": "Defans",
-      "Midfielder": "Orta Saha",
-      "Forward": "Forvet",
-      "RightBack": "Sağ Bek",
-      "CenterBack": "Stoper",
-      "LeftBack": "Sol Bek",
-      "RightWingBack": "Sağ Kanat Bek",
-      "LeftWingBack": "Sol Kanat Bek",
-      "DefensiveMidfielder": "Defansif Orta Saha",
-      "CentralMidfielder": "Merkez Orta Saha",
-      "AttackingMidfielder": "Ofansif Orta Saha",
-      "RightMidfielder": "Sağ Orta Saha",
-      "LeftMidfielder": "Sol Orta Saha",
-      "RightWinger": "Sağ Kanat",
-      "LeftWinger": "Sol Kanat",
-      "Striker": "Santrfor"
-    },
-    "positionGroups": {
-      "Goalkeeper": "Kaleciler",
-      "Defender": "Defanslar",
-      "Midfielder": "Orta Sahalar",
-      "Forward": "Forvetler"
+      "Goalkeeper": "Top",
+      "Defender": "Jungle",
+      "Midfielder": "Mid",
+      "Forward": "ADC",
+      "RightBack": "Top",
+      "CenterBack": "Jungle",
+      "LeftBack": "Jungle",
+      "RightWingBack": "Top",
+      "LeftWingBack": "Jungle",
+      "DefensiveMidfielder": "Mid",
+      "CentralMidfielder": "Mid",
+      "AttackingMidfielder": "Mid",
+      "RightMidfielder": "ADC",
+      "LeftMidfielder": "ADC",
+      "RightWinger": "ADC",
+      "LeftWinger": "ADC",
+      "Striker": "ADC"
     },
     "posAbbr": {
-      "Goalkeeper": "KL",
-      "Defender": "DEF",
-      "Midfielder": "OS",
-      "Forward": "FOR",
-      "RightBack": "SĞB",
-      "CenterBack": "STP",
-      "LeftBack": "SLB",
-      "RightWingBack": "SKB",
-      "LeftWingBack": "SLKB",
-      "DefensiveMidfielder": "DOS",
-      "CentralMidfielder": "MOS",
-      "AttackingMidfielder": "OOS",
-      "RightMidfielder": "SĞO",
-      "LeftMidfielder": "SLO",
-      "RightWinger": "SĞK",
-      "LeftWinger": "SLK",
-      "Striker": "SNT"
-    },
-    "footedness": {
-      "Left": "Sol",
-      "Right": "Sağ",
-      "Both": "İki Ayak"
-    },
-    "footednessLabel": "Ayak",
-    "weakFoot": "Zayıf ayak",
-    "playStyles": {
-      "Balanced": "Dengeli",
-      "Attacking": "Hücumcu",
-      "Defensive": "Savunmacı",
-      "Possession": "Topa Sahip Olma",
-      "Counter": "Kontra Atak",
-      "HighPress": "Yüksek Baskı"
+      "Goalkeeper": "TOP",
+      "Defender": "JGL",
+      "Midfielder": "MID",
+      "Forward": "ADC",
+      "RightBack": "TOP",
+      "CenterBack": "JGL",
+      "LeftBack": "JGL",
+      "RightWingBack": "TOP",
+      "LeftWingBack": "JGL",
+      "DefensiveMidfielder": "MID",
+      "CentralMidfielder": "MID",
+      "AttackingMidfielder": "MID",
+      "RightMidfielder": "ADC",
+      "LeftMidfielder": "ADC",
+      "RightWinger": "ADC",
+      "LeftWinger": "ADC",
+      "Striker": "ADC"
     },
     "trainingSchedules": {
       "Intense": "Yoğun",
@@ -740,39 +716,11 @@
       "Recovery": "Toparlanma",
       "General": "Genel"
     },
-    "attributes": {
-      "pace": "Hız",
-      "stamina": "Dayanıklılık",
-      "strength": "Güç",
-      "agility": "Çeviklik",
-      "passing": "Paslaşma",
-      "shooting": "Şut",
-      "tackling": "Müdahale",
-      "dribbling": "Top Sürme",
-      "defending": "Savunma",
-      "positioning": "Pozisyon Alma",
-      "vision": "Görüş",
-      "decisions": "Karar Verme",
-      "composure": "Soğukkanlılık",
-      "aggression": "Agresiflik",
-      "teamwork": "Takım Oyunu",
-      "leadership": "Liderlik",
-      "handling": "Top Tutma",
-      "reflexes": "Refleksler",
-      "aerial": "Hava Hakimiyeti"
-    },
     "moods": {
       "excellent": "Mükemmel",
       "good": "İyi",
       "mixed": "Karışık",
       "poor": "Kötü"
-    },
-    "injuries": {
-      "minorMuscleStrain": "Hafif kas gerilmesi",
-      "twistedAnkle": "Ayak bileği burkulması",
-      "kneeBruise": "Diz zedelenmesi",
-      "hamstringTightness": "Arka adale gerginliği",
-      "calfStrain": "Baldır gerilmesi"
     },
     "scoutRatings": {
       "excellent": "Mükemmel",
@@ -791,12 +739,6 @@
       "high": "Yüksek",
       "moderate": "Orta",
       "low": "Düşük"
-    },
-    "attrGroups": {
-      "physical": "Fiziksel",
-      "technical": "Teknik",
-      "mental": "Zihinsel",
-      "goalkeeper": "Kaleci"
     },
     "fitness": "Fitness",
     "action": "Action",
@@ -842,47 +784,25 @@
     "removeFromLoanList": "Kiralık listesinden çıkar",
     "outOfPosition": "Pozisyon dışı",
     "outOfPositionTooltip": "Oyuncunun tercih ettiği rolün dışında oynuyor",
-    "dragHint": "Yedek oyuncuları sahaya sürükleyin veya sahadaki oyuncuların yerini değiştirin.",
-    "benchDragHint": "Oyuncuları doğrudan sahaya sürüklemek için yedek kulübesi listesini kullanın.",
     "dropPlayerHere": "Oyuncuyu buraya bırak",
-    "dragToPitch": "Sahaya sürükle",
     "filterPlayers": "Oyuncu adına veya pozisyona göre filtrele",
     "noBenchMatches": "Mevcut filtrelerle eşleşen yedek oyuncu yok.",
     "noLineupMatches": "Mevcut filtrelerle eşleşen ilk 5 oyuncusu yok.",
     "playStyleImpactTitle": "Bu neyi değiştirir?",
-    "playStyleDescriptions": {
-      "Balanced": "Takımınızı topa sahipken ve değilken ölçülü tutar, istikrarlı bir diziliş sergiler ve aşırılıklardan kaçınır.",
-      "Attacking": "Daha fazla kişiyi ileri iter, ceza sahası etrafında ekstra destek yaratır ve takımınızdan daha fazla inisiyatif almasını ister.",
-      "Defensive": "Takımınızın önce alanı korumasını, kompakt kalmasını ve topun arkasında açığa çıkma riskini azaltmasını sağlar.",
-      "Possession": "Takımınızı topu sabırla dolaştırmaya, tempoyu kontrol etmeye ve daha temiz fırsatlar aramaya teşvik eder.",
-      "Counter": "Takımınızı topu kazandıktan sonra hızla ileri çıkmaya ve rakip yerleşmeden boşluklara saldırmaya davet eder.",
-      "HighPress": "Takımınızdan rakipleri daha erken kapatmasını, topu daha ileride kazanmasını ve rakipleri baskı altında tutmasını ister."
-    },
     "activeLineup": "Active Lineup",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
     "noRoleAvailable": "No player available"
   },
   "tactics": {
-    "formationStyle": "Diziliş ve Stil",
     "playStyle": "Oyun Tarzı",
-    "lineupTab": "Kadro",
-    "rolesTab": "Duran Toplar ve Roller",
     "teamRoles": "Takım Rolleri",
     "viceCaptain": "İkinci Kaptan",
-    "setPiecesSection": "Duran Toplar",
-    "rolesHint": "Mevcut İlk 11'den liderlik hiyerarşinizi ve duran top uzmanlarınızı seçin.",
-    "autoSelectAssignments": "Varsayılanları otomatik seç",
-    "noStartersForRoles": "Takım rollerini ve duran topları atamak için İlk 11'inizi belirleyin.",
-    "startingXI": "İlk 11 — {{formation}}",
     "fullSquad": "Tüm Kadro",
-    "riftInteractionHint": "Oyuncuları saha ve yedek kulübesi arasında sürükleyin, bir oyuncuyu incelemek için üzerine tıklayın, onları karşılaştırmak için ikinci bir oyuncuya tıklayın ve ardından karşılaştırma panelinden değişikliği onaylayayın.",
     "selectedPlayer": "Seçilen oyuncu",
     "comparePlayer": "Karşılaştırılan oyuncu",
-    "selectSecondPlayer": "Özellikleri karşılaştırmak ve değişikliği hazırlamak için kadro görünümünde ikinci bir oyuncu seçin.",
     "compareSelectionHint": "Her iki oyuncuyu da aşağıdan inceleyin ve hazır olduğunuzda değişikliği onaylayın.",
     "confirmSwap": "Değişikliği onayla",
-    "selectPitchPlayer": "Özelliklerini incelemek için kadro görünümünde bir oyuncu seçin.",
     "selectAnotherToSwap": "Karşılaştırmak ve değişikliği onaylamak için ikinci bir oyuncu seçin.",
     "lol": {
       "roles": {
@@ -1229,7 +1149,6 @@
       "Tactics": "Taktik",
       "Defending": "Savunma",
       "Attacking": "Hücum",
-      "GoalKeeping": "Kalecilik",
       "Youth": "Altyapı Gelişimi"
     },
     "lolAttrs": {
@@ -1382,7 +1301,7 @@
       "Transfer": "Transfer",
       "BoardDirective": "Yönetim",
       "PlayerMorale": "Moral",
-      "Injury": "Sakatlık",
+      "Injury": "Sağlık",
       "training": "Antrenman",
       "Finance": "Finans",
       "Contract": "Sözleşme",
@@ -1442,7 +1361,7 @@
     "objective": {
       "LeaguePosition": "İlk {{target}} içinde bitir",
       "Wins": "En az {{target}} seri maçı kazan",
-      "GoalsScored": "En az {{target}} normal sezon maçı kazan"
+      "GoalsScored": "En az {{target}} harita kazan"
     }
   },
   "transfers": {
@@ -1619,12 +1538,6 @@
     "statSquad": "Squad",
     "statValue": "Value"
   },
-  "playersList": {
-    "searchPlaceholder": "İsme veya uyruğa göre ara...",
-    "allPos": "Tüm Poz.",
-    "allTeams": "Tüm Takımlar",
-    "injured": "Sakat"
-  },
   "teamsList": {
     "yourTeam": "Takımınız",
     "pos": "Sıra",
@@ -1647,11 +1560,8 @@
     "upperBracket": "Üst Grup (Upper Bracket)",
     "lowerBracket": "Alt Grup (Lower Bracket)",
     "scheduled": "Planlandı",
-    "goals": "Skorlar",
     "overview": "Genel Bakış",
-    "leagueTable": "Lig Tablosu",
-    "topScorers": "En Çok Skor Alanlar",
-    "noGoals": "Henüz skor (kill) alınmadı."
+    "leagueTable": "Lig Tablosu"
   },
   "news": {
     "noNews": "Henüz haber makalesi yok.",
@@ -1664,7 +1574,7 @@
       "LeagueRoundup": "Lig Özeti",
       "StandingsUpdate": "Puan Durumu",
       "TransferRumour": "Transfer Söylentisi",
-      "InjuryNews": "Sakatlık Haberi",
+      "InjuryNews": "Sağlık Haberi",
       "SeasonPreview": "Sezon Ön İncelemesi",
       "Editorial": "Köşe Yazısı",
       "ManagerialChange": "Teknik Ekip Değişikliği"
@@ -1739,33 +1649,18 @@
     "scoutToView": "Detaylı özelliklerini görmek için bu oyuncuyu gözlemleyin veya transfer edin.",
     "seasonStats": "Sezon İstatistikleri",
     "advancedStats": "Gelişmiş İstatistikler",
-    "shots": "Hasar",
-    "shotsOnTarget": "İsabetli Şut",
-    "passes": "Paslar",
-    "tacklesWon": "Kazanılan Müdahale",
-    "interceptions": "Araya Girme",
-    "foulsCommitted": "Yapılan Faul",
-    "per90": "90 dk başına",
-    "passAccuracy": "Pas İsabeti",
     "percentile": "Yüzdelik",
     "percentileUnavailable": "Yüzdelik verisi yok",
     "recentMatches": "Son Maçlar",
     "vs": "vs",
     "noRecentMatches": "Son maç verisi yok",
     "apps": "Maçlar",
-    "goals": "Skorlar",
     "assists": "Asistler",
-    "mins": "Dk",
-    "cleanSheets": "Gol Yemezlik",
-    "yellows": "Sarılar",
-    "reds": "Kırmızılar",
     "avgRating": "OVR. Reyting",
     "careerHistory": "Kariyer Geçmişi",
     "noCareer": "Henüz kariyer geçmişi yok — ilk sezon.",
     "nApps": "{{count}} maç",
-    "nGoals": "{{count}} skor",
     "nAssists": "{{count}} asist",
-    "daysRemaining": "{{count}} gün kaldı — Oyuncu seçilemez",
     "renewalProjectionTitle": "Öngörülen finansal etki",
     "renewalProjectionWageBill": "Haftalık maaş gideri {{before}} → {{after}}",
     "renewalProjectionBudgetUsage": "Maaş bütçesi kullanımı %{{before}} → %{{after}}",
@@ -1807,16 +1702,7 @@
     "advancedStats": "Takım İstatistikleri",
     "winRate": "WR",
     "matchesPlayed": "Maçlar",
-    "possession": "Topa Sahip Olma",
-    "goalDifference": "Averaj",
-    "shots": "Şut",
-    "shotsOnTarget": "İsabetli Şut",
-    "passes": "Pas",
-    "tacklesWon": "Müdahale",
-    "interceptions": "Araya Girme",
-    "foulsCommitted": "Faul",
     "perMatch": "Maç Başına",
-    "passAccuracy": "Pas İsabeti",
     "recentMatches": "Son Maçlar"
   },
   "settings": {
@@ -1882,7 +1768,6 @@
     "upToDate": "Güncel versiyonu kullanıyorsunuz"
   },
   "preMatch": {
-    "roleCoverage": "Diziliş Uyumu",
     "autoSelect": "En İyi 5'liyi Otomatik Seç",
     "selecting": "Seçiliyor...",
     "startingXI": "İlk 5",
@@ -1893,13 +1778,8 @@
     "noBench": "Yedek oyuncu yok.",
     "cancelSwap": "İptal",
     "swapHint": "Değiştirmek için bir yedek oyuncu seçin",
-    "setPieces": "Duran Toplar ve Kaptan",
-    "lineup": "Kadro",
     "startMatch": "Maça Başla",
     "captain": "Kaptan",
-    "penaltyTaker": "Penaltıcı",
-    "freeKickTaker": "Frikikçi",
-    "cornerTaker": "Kornerci",
     "fit": "UYUM",
     "keyStats": "Önemli İstatistikler"
   },
@@ -1975,7 +1855,6 @@
     "playStyle": "Oyun Tarzı",
     "keyEvents": "Önemli Olaylar",
     "noEventsYet": "Maç henüz başlamadı.",
-    "waitingKickoff": "Vadi'ye inilmesi bekleniyor...",
     "waitingFirstSkirmish": "İlk çatışma bekleniyor...",
     "liveControls": "Canlı kontroller",
     "play": "Oynat",
@@ -2100,12 +1979,6 @@
     },
     "assist": "asist: {{name}}",
     "subFor": "çıkan {{name}}",
-    "possession": "Topa Sahip Olma",
-    "shots": "Hasar / Şut",
-    "shotsOnTarget": "İsabetli Şut",
-    "fouls": "Faul",
-    "corners": "Korner",
-    "yellowCards": "Sarı Kart",
     "bench": "Yedek Kulübesi",
     "substitutions": "Oyuncu Değişiklikleri",
     "substitutionsTitle": "Oyuncu Değişiklikleri",
@@ -2121,14 +1994,8 @@
     "history": "Geçmiş",
     "player": "Oyuncu",
     "fitness": "Kondisyon",
-    "halfTime": "Oyun Arası",
-    "ht": "ARA",
-    "fullTime": "Maç Sonu",
-    "ft": "MS",
-    "firstHalfEvents": "İlk Yarı Olayları",
     "noMajorEvents": "Önemli bir olay yok.",
     "teamTalk": "Takım Konuşması",
-    "teamTalkPrompt": "Maç arasında takıma nasıl hitap edeceğinizi seçin.",
     "teamTalkOptions": {
       "calm": {
         "label": "Sakin Kal",
@@ -2160,7 +2027,6 @@
     "spectatorMode": "İzleyici Modu",
     "spectatorHT": "Her iki koç da soyunma odasında takımlarıyla konuşuyor.",
     "makeSubstitution": "Oyuncu Değişikliği Yap",
-    "waitingSecondHalf": "İkinci yarı bekleniyor...",
     "makeChanges": "Değişikliklerinizi yapın, ardından maça devam edin.",
     "resumeMatch": "Maça Devam Et",
     "victory": "Galibiyet",
@@ -2228,7 +2094,6 @@
       "victimIcon": "Kurban"
     },
     "ratings": "{{team}} Reytingleri",
-    "motm": "Maçın Oyuncusu",
     "roundSummary": "Tur Özeti",
     "roundSummaryUnavailable": "Tur özeti mevcut değil.",
     "otherMatches": "Diğer Maçlar",
@@ -2236,9 +2101,7 @@
     "otherMatchesUnavailable": "Bu fikstür için diğer maç bağlamı henüz mevcut değil.",
     "viewDetails": "Detayları gör",
     "matchDetails": "Maç Detayları",
-    "scorers": "Skorerler",
     "tactics": "Taktik Hazırlığı",
-    "noGoals": "Skor üretilmedi.",
     "matchComplete": "Maç tamamlandı.",
     "addressPress": "Basına konuşun veya geri dönün.",
     "skip": "Atla",
@@ -2257,172 +2120,10 @@
       "bodySingle": "{{team}} koçu, {{result}} sonucunun ardından kısa bir açıklama yaptı.",
       "bodyNone": "{{team}} koçu, {{result}} sonucunun ardından uzun bir konuşma yapmayı reddetti."
     },
-    "press": {
-      "result": {
-        "questions": {
-          "win": "Bugün {{oppName}} karşısında {{userScore}}-{{oppScore}} ile güçlü bir sonuç aldınız. Performanstan ne kadar memnunsunuz?",
-          "loss": "Bugün {{oppName}}'e {{userScore}}-{{oppScore}} yenilerek zor bir sonuç aldınız. Sahada ne yanlış gitti?",
-          "draw": "{{oppName}} karşısında {{userScore}}-{{oppScore}} beraberlik. Sizce bu adil bir sonuç mu?"
-        },
-        "responses": {
-          "win": {
-            "humble": {
-              "tone": "Mütevazı",
-              "text": "Oyuncular çok çalıştı. İyi hazırlandık ve oyun planını uyguladık."
-            },
-            "confident": {
-              "tone": "Özgüvenli",
-              "text": "Başından sonuna kadar daha iyi olan taraf bizdik. Hak edilmiş bir sonuç."
-            },
-            "deflect": {
-              "tone": "Geçiştiren",
-              "text": "Bu sadece tek maç. Bir sonrakine odaklanıyoruz."
-            }
-          },
-          "loss": {
-            "accept": {
-              "tone": "Kabul Eden",
-              "text": "Bugün yeterince iyi değildik. Neyin yanlış gittiğine bakmak zorundayız."
-            },
-            "defiant": {
-              "tone": "Meydan Okuyan",
-              "text": "Kaybetmeyi hak ettiğimizi düşünmüyorum. Yeterince iyi oynadık."
-            },
-            "deflect": {
-              "tone": "Geçiştiren",
-              "text": "Bunun üzerinde durmamayı tercih ederim. Bir sonraki maça hazır olacağız."
-            }
-          },
-          "draw": {
-            "fair": {
-              "tone": "Adil",
-              "text": "Adil bir sonuçtu. İki takımın da kazanma şansı vardı."
-            },
-            "frustrated": {
-              "tone": "Sinirli",
-              "text": "Bunu kazanmalıydık. Çok fazla kaçırılmış fırsat var."
-            },
-            "positive": {
-              "tone": "Pozitif",
-              "text": "Beraberlik beraberliktir. Bugünden çıkarılacak olumlu şeyler de var."
-            }
-          }
-        }
-      },
-      "playerFocus": {
-        "questions": {
-          "scored": "{{playerName}} bugün harikaydı. Takıma katkısı ne kadar önemli?",
-          "default": "{{playerName}}'in bugünkü performansı hakkında yorum yapabilir misiniz?"
-        },
-        "responses": {
-          "praise": {
-            "tone": "Öven",
-            "text": "{{playerName}} harikaydı. Bizim için kilit bir oyuncu ve çalışma ahlakı örnek teşkil ediyor."
-          },
-          "demanding": {
-            "tone": "Talepkar",
-            "text": "{{playerName}} daha iyisini yapabilir. Onun kalitesindeki bir oyuncudan daha fazlasını bekliyorum."
-          },
-          "deflect": {
-            "tone": "Geçiştiren",
-            "text": "Bireyleri öne çıkarmayı sevmiyorum. Bu bir takım oyunu."
-          }
-        }
-      },
-      "tactics": {
-        "question": "Bugünkü taktiksel yaklaşımınızdan bahseder misiniz?",
-        "responses": {
-          "detailed": {
-            "tone": "Detaylı",
-            "text": "Harita kontrolünü sağlamak ve baskımızı kullanmayı planlamıştık. Bence sistem iyi çalıştı."
-          },
-          "brief": {
-            "tone": "Kısa",
-            "text": "Bir planımız vardı ve oyuncular bunu uyguladı. Önemli olan da bu."
-          },
-          "evasive": {
-            "tone": "Kaçamak",
-            "text": "Çok fazla ipucu vermek istemiyorum. Her takımın sırları vardır."
-          }
-        }
-      },
-      "fans": {
-        "questions": {
-          "win": "Taraftarların sesi bugün harika çıkıyordu. Onların desteği sizin için ne anlama geliyor?",
-          "loss": "Maç sonunda bazı taraftarlar hayal kırıklıklarını dile getirdi. Onlara bir mesajınız var mı?",
-          "draw": "Bugün atmosfer zaman zaman gergindi. Bu baskıyı nasıl yönetiyorsunuz?"
-        },
-        "responses": {
-          "win": {
-            "grateful": {
-              "tone": "Mütevazı",
-              "text": "Taraftarlar inanılmaz. Bizi her maç destekliyorlar ve onlara bugünkü gibi performanslar borçluyuz."
-            },
-            "shared": {
-              "tone": "Özgüvenli",
-              "text": "Hepimiz birlikte kutluyoruz — oyuncular, personel ve taraftarlar. Bu onların da zaferi."
-            },
-            "deflect": {
-              "tone": "Geçiştiren",
-              "text": "Taraftarlar neyle uğraştığımızı biliyor. Biz sadece sahaya odaklanıyoruz."
-            }
-          },
-          "loss": {
-            "apologize": {
-              "tone": "Kabul Eden",
-              "text": "Hayal kırıklıklarını tamamen anlıyorum. Daha iyisini hak ediyorlar ve bunu başarmak için çok çalışacağız."
-            },
-            "patience": {
-              "tone": "Odaklanmış",
-              "text": "Sabır rica ediyorum. Bir şeyler inşa ediyoruz ve kötü günler olabilir. Daha güçlü döneceğiz."
-            },
-            "curt": {
-              "tone": "Sert",
-              "text": "Maçın sıcağıyla yaşanan şeyler hakkında yorum yapmayacağım. Önümüze bakalım."
-            }
-          },
-          "draw": {
-            "appreciate": {
-              "tone": "Pozitif",
-              "text": "Bizi izlemeye gelen her bir taraftara minnettarım. Onların enerjisi takımı ayağa kaldırıyor."
-            },
-            "understand": {
-              "tone": "Adil",
-              "text": "Onlar bizi kazanırken görmek istiyor, ben de öyle. Sonuçlar gelene kadar zorlamaya devam edeceğiz."
-            },
-            "curt": {
-              "tone": "Sert",
-              "text": "Tribünlerde olan bitenle ilgilenmiyorum. Benim odağım sahanın içi."
-            }
-          }
-        }
-      },
-      "ahead": {
-        "question": "Bir sonraki maça girerken odak noktanız nedir?",
-        "responses": {
-          "focused": {
-            "tone": "Odaklanmış",
-            "text": "Önce toparlanma, sonra hazırlık. Maç maç ilerliyoruz."
-          },
-          "ambitious": {
-            "tone": "İddialı",
-            "text": "Momentumu arttırmaya devam etmek istiyoruz. Hedef belli."
-          },
-          "curt": {
-            "tone": "Sert",
-            "text": "Sonraki soru lütfen. Zamanı geldiğinde bunun için endişeleniriz."
-          }
-        }
-      }
-    },
-    "pen": "PEN",
-    "home": "İç Saha",
+    "home": "Ev Sahibi",
     "away": "Deplasman",
     "matchDay": "Maç Günü",
     "preMatchPrep": "Maç Öncesi Hazırlık",
-    "startingLineup": "İlk 5",
-    "setPiecesCaptain": "Duran Toplar ve Kaptan",
-    "roleCoverage": "Diziliş Uyumu",
     "selecting": "Seçiliyor...",
     "autoSelectXI": "En İyi 5'liyi Otomatik Seç",
     "startingXI": "İlk 5",
@@ -2433,11 +2134,7 @@
     "nAvailable": "{{count}} uygun",
     "noBenchAvailable2": "Uygun yedek oyuncu yok.",
     "opponent": "Rakip",
-    "autoSelectTakers": "En İyi Atıcıları Otomatik Seç",
     "captain": "Kaptan",
-    "penaltyTaker": "Penaltıcı",
-    "freeKickTaker": "Frikikçi",
-    "cornerTaker": "Kornerci",
     "startMatch": "Maça Başla",
     "notAssigned": "Atanmadı",
     "keyStats": "Önemli İstatistikler",
@@ -2492,7 +2189,7 @@
     "statsArchived": "Oyuncu istatistikleri arşivlendi. Yeni bir fikstür oluşturulacak.",
     "newSeason": "Sezon {{n}}",
     "newScheduleReleased": "Yeni sezon fikstürü açıklandı. İyi şanslar!",
-    "goldenBoot": "Altın Ayakkabı",
+    "goldenBoot": "Skor Lideri",
     "nGoals": "{{count}} skor",
     "playerOfYear": "Yılın Oyuncusu",
     "avgRating": "OVR. reyting: {{rating}}",
@@ -2574,7 +2271,7 @@
         "subject2": "{{team}} Liderliğinizi Bekliyor",
         "body0": "{{team}} yönetim kurulu olarak sizi yeni baş koçumuz olarak görmekten mutluluk duyuyoruz.\n\nGörevinizle ilgili büyük umutlarımız var ve bu kulübü zafere taşıyabileceğinize inanıyoruz. İlk göreviniz kadroyu gözden geçirmek ve yaklaşan sezon için taktiksel bir plan hazırlamak olacak.\n\nSize en iyi dileklerimizi sunuyoruz.",
         "body1": "Tüm {{team}} ailesi adına, baş koç olarak görev alacağınızı duyurmaktan heyecan duyuyoruz.\n\nTaraftarlar takım için planlarınızı duymak için sabırsızlanıyor. Lütfen kadroyu değerlendirmek, finansal durumumuzu incelemek ve taktiksel yaklaşımınızı belirlemek için zaman ayırın.\n\nYönetim arkanızda.",
-        "body2": "{{team}} takımına hoş geldiniz! Taraftarlar ve personel, rehberliğinizdeki gelecek için heyecanlı.\n\nKadronuzun güçlü ve zayıf yönlerini inceleyerek başlamanızı, ardından tercih ettiğiniz dizilişi ve antrenman rejimini kurmanızı öneririz.\n\nYaklaşan sezon gerçek bir sınav olacak — bizi gurulandırın.",
+        "body2": "{{team}} takımına hoş geldiniz! Taraftarlar ve personel, rehberliğinizdeki gelecek için heyecanlı.\n\nKadronuzun güçlü ve zayıf yönlerini inceleyerek başlamanızı, ardından tercih ettiğiniz oyun planını ve antrenman rejimini kurmanızı öneririz.\n\nYaklaşan sezon gerçek bir sınav olacak — bizi gurulandırın.",
         "actionReview": "Kadroyu İncele",
         "actionThank": "Yönetime Teşekkür Et"
       },
@@ -2599,16 +2296,16 @@
         },
         "body": {
           "victory0": "Seri Sonu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nMükemmel bir sonuç! Takım güçlü bir performans sergiledi. {{matchday}}. Maç Günü — bu momentumu koruyun.",
-          "victory1": "Son düdük: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nGalibiyet cepte! Çocuklar sahnede harika bir karakter gösterdi. {{matchday}}. Maç Günü tamamlandı.",
+          "victory1": "Maç sonucu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nHarika bir seri! Takım gerçek bir soğukkanlılık gösterdi. {{matchday}}. Maç Günü tamamlandı.",
           "defeat0": "Seri Sonu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nHayal kırıklığı yaratan bir sonuç. Toparlanmalı ve bizi yarı yolda bırakan şeyler üzerinde çalışmalıyız. {{matchday}}. Maç Günü — işleri tersine çevirmek için hala zaman var.",
           "defeat1": "Maç sonucu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nİstediğimiz sonuç bu değildi. {{matchday}}. Maç Günü — yönetim gelişme görmek isteyecektir. Neyin yanlış gittiğini analiz edin ve bir sonraki mücadeleye hazırlanın.",
-          "draw": "Seri Sonu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\n{{matchday}}. Maç Gününde bir puan alındı. Diğer sonuçlara bağlı olarak bu değerli olabilir. Takım sert savaştı ama galibiyeti bulamadı."
+          "draw": "Seri Sonu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\n{{matchday}}. Maç Gününde karşılaşma berabere bitti. Diğer sonuçlara bağlı olarak bu değerli olabilir. Takım sert savaştı ama galibiyeti bulamadı."
         },
         "actionStandings": "Puan Durumuna Bak"
       },
       "staffAdvice": {
         "subject": "Personel Raporu — Koçluk Boşlukları",
-        "body": "Koç, {{team}}'deki personel durumuna bir göz attım ve birkaç şeyi belirtmek istedim:\n\n• İyi bir Koç antrenman verimliliğini önemli ölçüde artırır — oyuncularınız daha hızlı gelişir.\n• Uzman bir Fizyoterapist sakatlıkları önlemeye yardımcı olur ve maçlar arası toparlanmayı hızlandırır.\n• Gözlemcilerimiz transfer hedeflerini belirlemeye ve rakipleri analiz etmeye yardımcı olabilir.\n\nSezon başlamadan önce boşlukları doldurmanızı şiddetle tavsiye ederim. Uygun personeli Personel bölümünde bulabilirsiniz.\n\nFırsatınız olduğunda bir kontrol edin.",
+        "body": "Koç, {{team}}'deki personel durumuna bir göz attım ve birkaç şeyi belirtmek istedim:\n\n• İyi bir Koç antrenman verimliliğini önemli ölçüde artırır — oyuncularınız daha hızlı gelişir.\n• Uzman bir Fizyoterapist oyuncuları dinç tutar ve maçlar arası toparlanmayı hızlandırır.\n• Gözlemcilerimiz transfer hedeflerini belirlemeye ve rakipleri analiz etmeye yardımcı olabilir.\n\nSezon başlamadan önce boşlukları doldurmanızı şiddetle tavsiye ederim. Uygun personeli Personel bölümünde bulabilirsiniz.\n\nFırsatınız olduğunda bir kontrol edin.",
         "actionView": "Personeli Gör"
       },
       "boardExpect": {
@@ -2618,7 +2315,7 @@
       },
       "boardObjectives": {
         "subject": "Sezon {{season}} — Yönetim Hedefleri",
-        "body": "Yönetim bu sezon için aşağıdaki hedefleri belirledi:\n\n1. İlk {{expectedPos}} içinde bitir\n2. En az {{winTarget}} maç kazan\n3. En az {{goalsTarget}} skor üret\n\nBu hedeflere ulaşmak, yönetimin size olan güvenini artıracaktır. Beklentilerin karşılanmaması bütçe kesintilerine veya daha ciddi sonuçlara yol açabilir."
+        "body": "Yönetim bu sezon için aşağıdaki hedefleri belirledi:\n\n1. İlk {{expectedPos}} içinde bitir\n2. En az {{winTarget}} seri kazan\n3. En az {{goalsTarget}} harita kazan\n\nBu hedeflere ulaşmak, yönetimin size olan güvenini artıracaktır. Beklentilerin karşılanmaması bütçe kesintilerine veya daha ciddi sonuçlara yol açabilir."
       },
       "boardObjectiveReview": {
         "subject": "Sezon {{season}} — Yönetim Hedefleri Değerlendirmesi",
@@ -2667,17 +2364,17 @@
         "critical": {
           "subject": "ACİL: Kadro Kondisyon Krizi",
           "body": {
-            "intense": "Koç, ciddi bir kondisyon krizimiz var. {{criticalCount}} oyuncunun durumu kritik ve sakatlanma riskleri yüksek:\n\n{{players}}\n\nOrtalama kadro kondisyonu %{{avgCondition}} seviyesinde. Mevcut Yoğun programla (6 gün antrenman), takım çok fazla zorlanıyor. Dengeli bir programa geçmek onlara toparlanma süresi verecektir.\n\nDinlenmeden onları daha fazla zorlarsak, sakatlıklar kaçınılmaz olur.",
-            "balanced": "Koç, ciddi bir kondisyon krizimiz var. {{criticalCount}} oyuncunun durumu kritik ve sakatlanma riskleri yüksek:\n\n{{players}}\n\nOrtalama kadro kondisyonu %{{avgCondition}} seviyesinde. Dengeli bir programda bile kadronun dinlenmeye ihtiyacı var. Geçici olarak Hafif bir programa geçmeyi düşünün.\n\nDinlenmeden onları daha fazla zorlarsak, sakatlıklar kaçınılmaz olur.",
-            "light": "Koç, ciddi bir kondisyon krizimiz var. {{criticalCount}} oyuncunun durumu kritik ve sakatlanma riskleri yüksek:\n\n{{players}}\n\nOrtalama kadro kondisyonu %{{avgCondition}} seviyesinde. Kadro zaten Hafif bir programda — sorun yüksek antrenman yoğunluğu olabilir. Yoğunluğu azaltmayı düşünün.\n\nDinlenmeden onları daha fazla zorlarsak, sakatlıklar kaçınılmaz olur."
+            "intense": "Koç, ciddi bir kondisyon krizimiz var. {{criticalCount}} oyuncunun durumu kritik ve tükenmişliğin eşiğinde:\n\n{{players}}\n\nOrtalama kadro kondisyonu %{{avgCondition}} seviyesinde. Mevcut Yoğun programla (6 gün antrenman), takım çok fazla zorlanıyor. Dengeli bir programa geçmek onlara toparlanma süresi verecektir.\n\nDinlenmeden onları daha fazla zorlarsak, performans ve moral düşer.",
+            "balanced": "Koç, ciddi bir kondisyon krizimiz var. {{criticalCount}} oyuncunun durumu kritik ve tükenmişliğin eşiğinde:\n\n{{players}}\n\nOrtalama kadro kondisyonu %{{avgCondition}} seviyesinde. Dengeli bir programda bile kadronun dinlenmeye ihtiyacı var. Geçici olarak Hafif bir programa geçmeyi düşünün.\n\nDinlenmeden onları daha fazla zorlarsak, performans ve moral düşer.",
+            "light": "Koç, ciddi bir kondisyon krizimiz var. {{criticalCount}} oyuncunun durumu kritik ve tükenmişliğin eşiğinde:\n\n{{players}}\n\nOrtalama kadro kondisyonu %{{avgCondition}} seviyesinde. Kadro zaten Hafif bir programda — sorun yüksek antrenman yoğunluğu olabilir. Yoğunluğu azaltmayı düşünün.\n\nDinlenmeden onları daha fazla zorlarsak, performans ve moral düşer."
           }
         },
         "warning": {
           "subject": "Kadro Kondisyon Uyarısı",
           "body": {
-            "intense": "Koç, kadro yorgun görünüyor. Ortalama kondisyon %{{avgCondition}} ve {{exhaustedCount}} oyuncu %40 durumun altında.\n\nDengeli bir programa geçmek kadroya daha fazla toparlanma süresi verecektir.\n\nBir sonraki maçtan önce çocuklara biraz dinlenme vermeyi düşünmeliyiz.",
-            "balanced": "Koç, kadro yorgun görünüyor. Ortalama kondisyon %{{avgCondition}} ve {{exhaustedCount}} oyuncu %40 durumun altında.\n\nBirkaç günlüğüne Hafif bir program uygulamak takımın toparlanmasına yardımcı olabilir.\n\nBir sonraki maçtan önce çocuklara biraz dinlenme vermeyi düşünmeliyiz.",
-            "light": "Koç, kadro yorgun görünüyor. Ortalama kondisyon %{{avgCondition}} ve {{exhaustedCount}} oyuncu %40 durumun altında.\n\nKadro zaten Hafif bir programda, bu yüzden toparlanma doğal olarak gerçekleşecektir. Sadece özellikle bitkin düşen oyunculara göz kulak olun.\n\nBir sonraki maçtan önce çocuklara biraz dinlenme vermeyi düşünmeliyiz."
+            "intense": "Koç, kadro yorgun görünüyor. Ortalama kondisyon %{{avgCondition}} ve {{exhaustedCount}} oyuncu %40 durumun altında.\n\nDengeli bir programa geçmek kadroya daha fazla toparlanma süresi verecektir.\n\nBir sonraki maçtan önce takıma biraz dinlenme vermeyi düşünmeliyiz.",
+            "balanced": "Koç, kadro yorgun görünüyor. Ortalama kondisyon %{{avgCondition}} ve {{exhaustedCount}} oyuncu %40 durumun altında.\n\nBirkaç günlüğüne Hafif bir program uygulamak takımın toparlanmasına yardımcı olabilir.\n\nBir sonraki maçtan önce takıma biraz dinlenme vermeyi düşünmeliyiz.",
+            "light": "Koç, kadro yorgun görünüyor. Ortalama kondisyon %{{avgCondition}} ve {{exhaustedCount}} oyuncu %40 durumun altında.\n\nKadro zaten Hafif bir programda, bu yüzden toparlanma doğal olarak gerçekleşecektir. Sadece özellikle bitkin düşen oyunculara göz kulak olun.\n\nBir sonraki maçtan önce takıma biraz dinlenme vermeyi düşünmeliyiz."
           }
         },
         "actionAdjust": "Antrenmanı Ayarla"
@@ -2805,11 +2502,6 @@
           }
         }
       },
-      "trainingInjury": {
-        "subject": "Sakatlık — {{player}} ({{injury}})",
-        "body0": "Antrenman tesislerinden kötü haber. {{player}} bugünkü seansta bir {{injury}} geçirdi.\n\nSağlık ekibi sahalardan {{days}} gün uzak kalacağını tahmin ediyor. İyileşme sürecini yakından takip edeceğiz.",
-        "body1": "Maalesef {{player}} bugün antrenmanda {{injury}} nedeniyle sakatlandı.\n\nİlk değerlendirme: yaklaşık {{days}} gün yok. İlerlemesi hakkında sizi bilgilendirmeye devam edeceğiz."
-      },
       "mediaPositive": {
         "subject": "Olumlu Medya — {{player}}",
         "body": "Yerel basın bugün {{player}} hakkında çok olumlu bir yazı yayınlıyor.\n\nOyuncunun son dönemdeki mükemmel formunu ve {{team}} takımına olan bağlılığını vurguluyorlar. Bu tür bir haber oyuncunun özgüveni ve kulübün imajı için harikadır."
@@ -2846,20 +2538,17 @@
             "description": "Kötü sonuçları sahiplenin. Yönetim dürüstlüğe saygı duyar."
           },
           "blameCircumstances": {
-            "label": "Şanssızlıklara ve sakatlıklara işaret et",
+            "label": "Şanssızlığa ve zorlu rakiplere işaret et",
             "description": "Suçu dış faktörlere atın. İkna edebilir ya da etmeyebilir."
           }
         }
       },
+      "fanPetitionLol": {
+        "subject": "Taraftar Dilekçesi — Draft kimliği"
+      },
       "fanPetition": {
         "subject": "Taraftar Dilekçesi — Draft kimliği",
         "body": "Bir grup {{team}} taraftarı, daha net bir draft kimliği ve daha keskin objektif kurulumları isteyen bir dilekçe başlattı.\n\n\"Her seride pasif scaling yerine Rift'te proaktif planlar istiyoruz. Bize takımın nasıl kazanmak istediğini bildiğini gösterin.\"\n\nŞimdiden 500'den fazla imza var. Nasıl yanıt veriyorsunuz?",
-        "subject0": "Taraftar Dilekçesi — Daha proaktif draftlar",
-        "subject1": "Taraftar Dilekçesi — Akademi yeteneklerine oyun süresi ver",
-        "subject2": "Taraftar Açık Mektubu — Rekabetçi şeffaflık",
-        "body0": "Bir grup {{team}} taraftarı, daha proaktif draftlar ve daha erken harita temposu isteyen bir dilekçe başlattı.\n\n\"Her oyunda pasif olarak güçlenmek yerine ilk dakikadan itibaren bir kimlik görmek istiyoruz.\"\n\nŞimdiden 500'den fazla imza var. Nasıl yanıt veriyorsunuz?",
-        "body1": "{{team}} taraftarları, akademi oyuncularına ve umut vaat eden isimlere daha fazla oyun süresi vermenizi istiyor.\n\n\"Organizasyonumuzun geleceği sonsuza dek yedek kulübesinde oturtmaya değil, yetenek geliştirmeye bağlı.\"\n\nKampanya internette ilgi görüyor. Yanıtınız nedir?",
-        "body2": "{{team}} taraftar grubundan gelen açık bir mektup, teknik ekipten daha fazla şeffaflık talep ediyor.\n\n\"Gidişatı açıklayın: Draft kimliği, kadro planı ve playoff hedefleri.\"\n\nEspor medyası da bunu haber yaptı. Bu durumu nasıl idare edeceksiniz?",
         "options": {
           "listenFans": {
             "label": "Taraftarlarla etkileşime geç",
@@ -3203,6 +2892,10 @@
           "body": "{{team}}, kayıpsız bir şekilde {{runLength}} serilik bir galibiyet ivmesi yakaladı ve draftlar ve objektifler etrafında gerçek bir momentum inşa ediyor."
         }
       },
+      "strategicRejection": {
+        "headline": "{{team}}, {{player}} transferinden vazgeçti",
+        "body": "{{team}}, {{player}} için stratejik değerlendirmesini teklif yapmadan sonlandırdı."
+      },
       "transferRumour": {
         "headline": "{{player}}, {{to}} Transferini Tamamladı",
         "body": "{{to}}, {{player}} transferini {{fee}} karşılığında {{from}} takımından tamamladı."
@@ -3232,14 +2925,14 @@
     },
     "Playmaker": {
       "label": "Oyun Kurucu",
-      "desc": "Geniş vizyonlu yaratıcı pasör"
+      "desc": "Oyunu okur ve hamleleri yönetir"
     },
     "Sharpshooter": {
       "label": "Keskin Nişancı",
-      "desc": "Klinik bitirici"
+      "desc": "Koridor trade'lerinde ölümcül"
     },
     "Dribbler": {
-      "label": "Top Cambazı",
+      "label": "Mekanik Ustası",
       "desc": "Mekaniklerde yetenekli"
     },
     "BallWinner": {
@@ -3272,7 +2965,7 @@
     },
     "SafeHands": {
       "label": "Güvenilir Eller",
-      "desc": "Güvenilir ve istikrarlı (Kaleci refleksi)"
+      "desc": "Baskı altında güvenilir ve istikrarlı"
     },
     "CatReflexes": {
       "label": "Kedi Refleksleri",
@@ -3280,19 +2973,19 @@
     },
     "AerialDominance": {
       "label": "Alan Hakimiyeti",
-      "desc": "Alan savaşlarında (havadan) bölgeyi kontrol eder"
+      "desc": "Uzun menzilli yeteneklerle alanı kontrol eder"
     },
     "CompleteForward": {
       "label": "Çok Yönlü Taşıyıcı",
-      "desc": "Her yönden tehlikeli (Komple forvet)"
+      "desc": "Her yönden tehlikeli"
     },
     "Engine": {
       "label": "Motor",
-      "desc": "Dinamo gibi her alana koşan güçlü yapı"
+      "desc": "Haritanın her yerinde yorulmayan güç"
     },
     "SetPieceSpecialist": {
       "label": "Kuşatma Uzmanı",
-      "desc": "Sabit ve duran hedeflerde (Set piece) ölümcül"
+      "desc": "Hedef savaşlarında ölümcül"
     }
   },
   "date": {

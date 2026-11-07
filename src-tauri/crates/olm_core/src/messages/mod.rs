@@ -113,7 +113,7 @@ pub fn welcome_message(team_name: &str, team_id: &str, date: &str, lang: &str) -
             format!(
                 "Welcome to {}! The supporters and staff are excited about the future under your guidance.\n\n\
                 We recommend you start by reviewing your squad's strengths and weaknesses, \
-                then set up your preferred formation and training regime.\n\n\
+                then set up your preferred game plan and training regime.\n\n\
                 The upcoming season will be a true test — make us proud.",
                 team_name
             ),
@@ -173,14 +173,14 @@ pub fn season_schedule_message(league_name: &str, season_start: &str, date: &str
     let variations = [
         format!(
             "The {} schedule has been released. The season kicks off on {}.\n\n\
-            Review the fixture list and ensure your squad is ready for the challenges ahead. \
+            Review the match list and ensure your squad is ready for the challenges ahead. \
             Pre-season preparation will be crucial.",
             league_name, season_start
         ),
         format!(
-            "Fixture list confirmed! The {} season begins on {}.\n\n\
-            Study the opening fixtures carefully — a strong start can set the tone for the whole campaign. \
-            Make sure your key players are match-fit.",
+            "Match list confirmed! The {} season begins on {}.\n\n\
+            Study the opening matches carefully — a strong start can set the tone for the whole campaign. \
+            Make sure your key players are in top form.",
             league_name, season_start
         ),
     ];
@@ -229,7 +229,7 @@ pub fn staff_advice_message(team_name: &str, team_id: &str, date: &str) -> Inbox
         format!(
             "Boss, I've had a look at the staff situation at {} and wanted to flag a few things:\n\n\
             • A good **Coach** will significantly improve training effectiveness — your players will develop faster.\n\
-            • A qualified **Physio** helps speed up recovery between matches and keep players match-fit.\n\
+            • A qualified **Physio** keeps players fresh and speeds up recovery between matches.\n\
             • Our **Scouts** can help identify transfer targets and assess opponents.\n\n\
             I'd strongly recommend filling any vacancies before the season starts. \
             You can find available staff in the Staff section.\n\n\

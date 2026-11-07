@@ -103,7 +103,7 @@ pub fn check_squad_fitness_warnings(game: &mut Game) {
             }
             TrainingSchedule::Light => {
                 "Even on the Light schedule, the squad is struggling. Please set the training focus \
-                to Mental Reset / Recovery — the lads need proper rest."
+                to Mental Reset / Recovery — the players need proper rest."
             }
         };
 
@@ -207,7 +207,7 @@ pub fn check_squad_fitness_warnings(game: &mut Game) {
         let body = format!(
             "Boss, the squad is looking tired. Average fitness is {:.0}% and {} players are below 40% condition.\n\n\
             {}\n\n\
-            We should consider giving the lads some rest before the next match.",
+            We should consider giving the team some rest before the next match.",
             avg_condition, exhausted_count, schedule_advice,
         );
 

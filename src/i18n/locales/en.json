@@ -36,6 +36,11 @@
   "content": {
     "lol": {
       "social": {
+        "events": {
+          "fanPetitionDraftObjectives": {
+            "body": "A wave of {{team}} supporters has organized a campaign asking for a clearer draft identity and sharper objective setups.\n\n\"We want proactive plans on the Rift, not passive scaling every series. Show us the team knows how it wants to win.\"\n\nThe thread is gaining traction across esports social channels. How do you respond?"
+          }
+        },
         "questions": {
           "cleanWinObjectives": {
             "text": "Your bot lane stacked dragons and controlled Baron. How much of this win came from objective setup?"
@@ -292,7 +297,7 @@
     }
   },
   "continueMenu": {
-    "goToField": "Go to the Field",
+    "goToField": "Go to the Rift",
     "goToFieldDesc": "Full match control (default)",
     "watchSpectator": "Watch as Spectator",
     "watchSpectatorDesc": "Watch the match, no controls",
@@ -636,7 +641,7 @@
     "preseasonTournament": "Preseason Tournament",
     "opener": "Season Opener",
     "startsOn": "Starts on {{date}}",
-    "startsInDays": "{{count}} day(s) to kickoff",
+    "startsInDays": "{{count}} day(s) until the first match",
     "noOpener": "Opening day not scheduled yet.",
     "standingsLocked": "League standings will unlock after competitive matches begin.",
     "tournamentsPreseasonHint": "Competition tables and award races will appear once the season gets underway.",
@@ -739,10 +744,6 @@
     "won": "W",
     "drawn": "D",
     "lost": "L",
-    "gf": "GF",
-    "ga": "GA",
-    "gd": "GD",
-    "injured": "Injured",
     "back": "Back",
     "all": "All",
     "allPlayers": "All Players",
@@ -782,9 +783,6 @@
     "renewContract": "Renew Contract",
     "status": "Status",
     "average": "Average",
-    "goalsFor": "GF",
-    "goalsAgainst": "GA",
-    "goalDifference": "GD",
     "nPlayersFound": "{{count}} player(s) found",
     "nResults": "{{count}} result(s)",
     "showingFirst": "Showing first {{shown}} of {{total}} players. Refine your search to see more.",
@@ -808,12 +806,6 @@
       "LeftWinger": "ADC",
       "Striker": "ADC"
     },
-    "positionGroups": {
-      "Goalkeeper": "Top",
-      "Defender": "Jungle",
-      "Midfielder": "Mid",
-      "Forward": "ADC"
-    },
     "posAbbr": {
       "Goalkeeper": "TOP",
       "Defender": "JGL",
@@ -832,21 +824,6 @@
       "RightWinger": "ADC",
       "LeftWinger": "ADC",
       "Striker": "ADC"
-    },
-    "footedness": {
-      "Left": "Left",
-      "Right": "Right",
-      "Both": "Both"
-    },
-    "footednessLabel": "Foot",
-    "weakFoot": "Weak foot",
-    "playStyles": {
-      "Balanced": "Balanced",
-      "Attacking": "Attacking",
-      "Defensive": "Defensive",
-      "Possession": "Possession",
-      "Counter": "Counter",
-      "HighPress": "High Press"
     },
     "trainingSchedules": {
       "Intense": "Intense",
@@ -868,39 +845,11 @@
       "Recovery": "Mental Reset",
       "General": "General"
     },
-    "attributes": {
-      "pace": "Pace",
-      "stamina": "Stamina",
-      "strength": "Strength",
-      "agility": "Agility",
-      "passing": "Passing",
-      "shooting": "Shooting",
-      "tackling": "Tackling",
-      "dribbling": "Dribbling",
-      "defending": "Defending",
-      "positioning": "Positioning",
-      "vision": "Vision",
-      "decisions": "Decisions",
-      "composure": "Composure",
-      "aggression": "Aggression",
-      "teamwork": "Teamwork",
-      "leadership": "Leadership",
-      "handling": "Handling",
-      "reflexes": "Reflexes",
-      "aerial": "Aerial"
-    },
     "moods": {
       "excellent": "Excellent",
       "good": "Good",
       "mixed": "Mixed",
       "poor": "Poor"
-    },
-    "injuries": {
-      "minorMuscleStrain": "Minor muscle strain",
-      "twistedAnkle": "Twisted ankle",
-      "kneeBruise": "Knee bruise",
-      "hamstringTightness": "Hamstring tightness",
-      "calfStrain": "Calf strain"
     },
     "scoutRatings": {
       "excellent": "Excellent",
@@ -919,12 +868,6 @@
       "high": "High",
       "moderate": "Moderate",
       "low": "Low"
-    },
-    "attrGroups": {
-      "physical": "Physical",
-      "technical": "Technical",
-      "mental": "Mental",
-      "goalkeeper": "Top"
     },
     "action": "Action",
     "backToMenu": "Back to Menu",
@@ -969,48 +912,26 @@
     "removeFromLoanList": "Remove from loan list",
     "outOfPosition": "Out of position",
     "outOfPositionTooltip": "Playing outside the player's preferred role",
-    "dragHint": "Drag bench players onto the Rift or swap starters between slots.",
-    "benchDragHint": "Use the bench list to drag players directly onto the Rift.",
     "dropPlayerHere": "Drop player here",
-    "dragToPitch": "Drag to Rift",
     "filterPlayers": "Filter by player name or position",
     "noBenchMatches": "No bench players match the current filters.",
     "noLineupMatches": "No starters match the current filters.",
     "playStyleImpactTitle": "What this changes",
-    "playStyleDescriptions": {
-      "Balanced": "Keeps your team measured in and out of possession, with a steady shape and fewer extremes.",
-      "Attacking": "Pushes more bodies forward, creates extra support around the box, and asks your team to take more initiative.",
-      "Defensive": "Makes your team protect space first, stay compact, and reduce the risk of getting exposed behind the ball.",
-      "Possession": "Encourages your team to circulate the ball patiently, control the tempo, and look for cleaner openings.",
-      "Counter": "Invites your team to break forward quickly after regaining the ball, attacking space before the opponent resets.",
-      "HighPress": "Asks your team to close down earlier, win the ball higher up the Rift, and keep opponents under pressure."
-    },
     "activeLineup": "Active Lineup",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
     "noRoleAvailable": "No player available"
   },
   "tactics": {
-    "formationStyle": "Game Plan & Style",
     "playStyle": "Play Style",
     "draftStrategy": "Draft Strategy",
-    "lineupTab": "Lineup",
-    "rolesTab": "Objectives & Roles",
     "teamRoles": "Team Roles",
     "viceCaptain": "Vice-captain",
-    "setPiecesSection": "Objective Roles",
-    "rolesHint": "Choose your leadership hierarchy and objective specialists from the current Starting Five.",
-    "autoSelectAssignments": "Auto-select defaults",
-    "noStartersForRoles": "Set your starting five to assign team roles and objectives.",
-    "startingXI": "Starting Five",
     "fullSquad": "Full Squad",
-    "riftInteractionHint": "Drag players between the Rift and bench, click one player to inspect them, click a second player to compare them, then confirm the swap in the compare panel.",
     "selectedPlayer": "Selected player",
     "comparePlayer": "Comparison player",
-    "selectSecondPlayer": "Select a second player in the lineup view to compare attributes and prepare the swap.",
     "compareSelectionHint": "Review both players below, then confirm the swap when you're ready.",
     "confirmSwap": "Confirm swap",
-    "selectPitchPlayer": "Select a player in the lineup view to inspect their attributes.",
     "selectAnotherToSwap": "Select a second player to compare them and confirm the swap.",
     "lol": {
       "roles": {
@@ -1356,7 +1277,6 @@
       "Tactics": "Tactics",
       "Defending": "Defending",
       "Attacking": "Attacking",
-      "GoalKeeping": "Goalkeeping",
       "Youth": "Youth Dev"
     },
     "lolAttrs": {
@@ -1520,7 +1440,7 @@
       "Transfer": "Transfer",
       "BoardDirective": "Board",
       "PlayerMorale": "Morale",
-      "Injury": "Injury",
+      "Injury": "Health",
       "training": "Training",
       "Finance": "Finance",
       "Contract": "Contract",
@@ -1757,12 +1677,6 @@
     "statSquad": "Squad",
     "statValue": "Value"
   },
-  "playersList": {
-    "searchPlaceholder": "Search by name or nationality...",
-    "allPos": "All Pos",
-    "allTeams": "All Teams",
-    "injured": "Injured"
-  },
   "teamsList": {
     "yourTeam": "Your Team",
     "pos": "Pos",
@@ -1785,11 +1699,8 @@
     "upperBracket": "Upper Bracket",
     "lowerBracket": "Lower Bracket",
     "scheduled": "Scheduled",
-    "goals": "Goals",
     "overview": "Overview",
-    "leagueTable": "League Table",
-    "topScorers": "Top Scorers",
-    "noGoals": "No goals scored yet."
+    "leagueTable": "League Table"
   },
   "news": {
     "noNews": "No news articles yet.",
@@ -1802,7 +1713,7 @@
       "LeagueRoundup": "League Roundup",
       "StandingsUpdate": "Standings",
       "TransferRumour": "Transfer",
-      "InjuryNews": "Injury",
+      "InjuryNews": "Health",
       "SeasonPreview": "Season Preview",
       "Editorial": "Editorial",
       "ManagerialChange": "Managerial"
@@ -1888,33 +1799,18 @@
     "scoutToView": "Scout this player or sign them to view detailed attributes.",
     "seasonStats": "Season Statistics",
     "advancedStats": "Advanced Stats",
-    "shots": "Shots",
-    "shotsOnTarget": "Shots On Target",
-    "passes": "Passes",
-    "tacklesWon": "Tackles Won",
-    "interceptions": "Interceptions",
-    "foulsCommitted": "Fouls Committed",
-    "per90": "Per 90 mins",
-    "passAccuracy": "Pass Accuracy",
     "percentile": "Percentile",
     "percentileUnavailable": "Percentile unavailable",
     "recentMatches": "Recent Matches",
     "vs": "vs",
     "noRecentMatches": "No recent match data",
     "apps": "Apps",
-    "goals": "Goals",
     "assists": "Assists",
-    "mins": "Mins",
-    "cleanSheets": "Clean Sh",
-    "yellows": "Yellows",
-    "reds": "Reds",
     "avgRating": "Avg Rating",
     "careerHistory": "Career History",
     "noCareer": "No career history yet — first season.",
     "nApps": "{{count}} apps",
-    "nGoals": "{{count}} goals",
     "nAssists": "{{count}} assists",
-    "daysRemaining": "{{count}} days remaining — Player unavailable for selection",
     "renewalProjectionTitle": "Projected financial impact",
     "renewalProjectionWageBill": "Weekly wage bill {{before}} → {{after}}",
     "renewalProjectionBudgetUsage": "Wage budget use {{before}}% → {{after}}%",
@@ -1956,16 +1852,7 @@
     "advancedStats": "Team Stats",
     "winRate": "WR",
     "matchesPlayed": "Matches",
-    "possession": "Possession",
-    "goalDifference": "Goal Difference",
-    "shots": "Shots",
-    "shotsOnTarget": "Shots On Target",
-    "passes": "Passes",
-    "tacklesWon": "Tackles Won",
-    "interceptions": "Interceptions",
-    "foulsCommitted": "Fouls Committed",
     "perMatch": "Per Match",
-    "passAccuracy": "Pass Accuracy",
     "recentMatches": "Recent Matches"
   },
   "settings": {
@@ -1999,7 +1886,7 @@
     "savesCleared": "Saves cleared!",
     "about": "About",
     "matchModes": {
-      "live": "Go to the Field",
+      "live": "Go to the Rift",
       "liveDesc": "Full match control",
       "spectator": "Watch as Spectator",
       "spectatorDesc": "Watch only, no controls",
@@ -2031,7 +1918,6 @@
     "upToDate": "You're up to date"
   },
   "preMatch": {
-    "roleCoverage": "Strategy Fit",
     "autoSelect": "Auto-Select Best Five",
     "selecting": "Selecting...",
     "startingXI": "Starting Five",
@@ -2042,13 +1928,8 @@
     "noBench": "No bench players available.",
     "cancelSwap": "Cancel",
     "swapHint": "Select a bench player to swap with",
-    "setPieces": "Objectives & Captain",
-    "lineup": "Lineup",
     "startMatch": "Start Match",
     "captain": "Captain",
-    "penaltyTaker": "Baron Taker",
-    "freeKickTaker": "Elder Taker",
-    "cornerTaker": "Dragon Taker",
     "fit": "FIT",
     "keyStats": "Key Stats"
   },
@@ -2125,7 +2006,6 @@
     "draftStrategy": "Draft Strategy",
     "keyEvents": "Key Events",
     "noEventsYet": "Match hasn't started yet.",
-    "waitingKickoff": "Waiting for kick-off...",
     "waitingFirstSkirmish": "Waiting for first skirmish...",
     "liveControls": "Live controls",
     "play": "Play",
@@ -2250,12 +2130,6 @@
     },
     "assist": "assist: {{name}}",
     "subFor": "for {{name}}",
-    "possession": "Possession",
-    "shots": "Shots",
-    "shotsOnTarget": "Shots on Target",
-    "fouls": "Fouls",
-    "corners": "Corners",
-    "yellowCards": "Yellow Cards",
     "bench": "Bench",
     "substitutions": "Substitutions",
     "substitutionsTitle": "Substitutions",
@@ -2272,14 +2146,8 @@
     "player": "Player",
     "fitness": "Fitness",
     "condition": "Condition",
-    "halfTime": "Half Time",
-    "ht": "HT",
-    "fullTime": "Full Time",
-    "ft": "FT",
-    "firstHalfEvents": "First Half Events",
     "noMajorEvents": "No major events.",
     "teamTalk": "Team Talk",
-    "teamTalkPrompt": "Choose how you address the team at half time.",
     "teamTalkOptions": {
       "calm": {
         "label": "Stay Calm",
@@ -2311,7 +2179,6 @@
     "spectatorMode": "Spectator Mode",
     "spectatorHT": "Both managers are talking to their teams in the dressing room.",
     "makeSubstitution": "Make Substitution",
-    "waitingSecondHalf": "Waiting for second half...",
     "makeChanges": "Make your changes, then resume the match.",
     "resumeMatch": "Resume Match",
     "victory": "Victory",
@@ -2403,7 +2270,6 @@
       "victimIcon": "Victim"
     },
     "ratings": "{{team}} Ratings",
-    "motm": "Man of the Match",
     "roundSummary": "Round Summary",
     "roundSummaryUnavailable": "Round summary unavailable.",
     "otherMatches": "Other Matches",
@@ -2411,9 +2277,7 @@
     "otherMatchesUnavailable": "Other match context unavailable for this match yet.",
     "viewDetails": "View details",
     "matchDetails": "Match Details",
-    "scorers": "Scorers",
     "tactics": "Tactics Preparation",
-    "noGoals": "No goals scored.",
     "matchComplete": "Match complete.",
     "addressPress": "Address the press or head back.",
     "skip": "Skip",
@@ -2432,172 +2296,10 @@
       "bodySingle": "The {{team}} manager spoke briefly after the {{result}} result.",
       "bodyNone": "The {{team}} manager declined to speak at length after the {{result}} result."
     },
-    "press": {
-      "result": {
-        "questions": {
-          "win": "A strong result today, {{userScore}}-{{oppScore}} against {{oppName}}. How pleased are you with the performance?",
-          "loss": "A tough result today, losing {{userScore}}-{{oppScore}} to {{oppName}}. What went wrong out there?",
-          "draw": "A {{userScore}}-{{oppScore}} draw against {{oppName}}. Is that a fair result?"
-        },
-        "responses": {
-          "win": {
-            "humble": {
-              "tone": "Humble",
-              "text": "The players worked hard. We prepared well and executed the game plan."
-            },
-            "confident": {
-              "tone": "Confident",
-              "text": "We were the better side from start to finish. A deserved result."
-            },
-            "deflect": {
-              "tone": "Deflect",
-              "text": "It's just three points. We move on to the next one."
-            }
-          },
-          "loss": {
-            "accept": {
-              "tone": "Accept",
-              "text": "We weren't good enough today. We have to look at what went wrong."
-            },
-            "defiant": {
-              "tone": "Defiant",
-              "text": "I don't think we deserved to lose. We created enough chances."
-            },
-            "deflect": {
-              "tone": "Deflect",
-              "text": "I'd rather not dwell on it. We'll be ready for the next match."
-            }
-          },
-          "draw": {
-            "fair": {
-              "tone": "Fair",
-              "text": "It was a fair result. Both teams had chances."
-            },
-            "frustrated": {
-              "tone": "Frustrated",
-              "text": "We should have won that. Too many missed opportunities."
-            },
-            "positive": {
-              "tone": "Positive",
-              "text": "A point is a point. There are positives to take from today."
-            }
-          }
-        }
-      },
-      "playerFocus": {
-        "questions": {
-          "scored": "{{playerName}} scored today. How important is their contribution to the team?",
-          "default": "Can you comment on {{playerName}}'s performance today?"
-        },
-        "responses": {
-          "praise": {
-            "tone": "Praise",
-            "text": "{{playerName}} has been fantastic. They're a key player for us and their work rate is exemplary."
-          },
-          "demanding": {
-            "tone": "Demanding",
-            "text": "{{playerName}} can do better. I expect more from a player of their quality."
-          },
-          "deflect": {
-            "tone": "Deflect",
-            "text": "I don't like to single out individuals. It's a team game."
-          }
-        }
-      },
-      "tactics": {
-        "question": "Can you talk us through your tactical approach today?",
-        "responses": {
-          "detailed": {
-            "tone": "Detailed",
-            "text": "We set up to control the midfield and use our width. I think the shape worked well."
-          },
-          "brief": {
-            "tone": "Brief",
-            "text": "We had a plan and the players executed it. That's all that matters."
-          },
-          "evasive": {
-            "tone": "Evasive",
-            "text": "I'd rather not give away too much. Every team has their secrets."
-          }
-        }
-      },
-      "fans": {
-        "questions": {
-          "win": "The fans were in great voice today. What does their support mean to you?",
-          "loss": "Some fans voiced frustration at full time. Do you have a message for them?",
-          "draw": "The atmosphere was tense at times today. How do you manage that pressure?"
-        },
-        "responses": {
-          "win": {
-            "grateful": {
-              "tone": "Humble",
-              "text": "The fans are incredible. They drive us forward every match and we owe them performances like today."
-            },
-            "shared": {
-              "tone": "Confident",
-              "text": "We all celebrate together — players, staff, and supporters. This is their victory too."
-            },
-            "deflect": {
-              "tone": "Deflect",
-              "text": "The fans know what we're about. We just focus on the game."
-            }
-          },
-          "loss": {
-            "apologize": {
-              "tone": "Accept",
-              "text": "I understand their frustration completely. They deserve better and we'll work hard to deliver."
-            },
-            "patience": {
-              "tone": "Focused",
-              "text": "I ask for patience. We're building something and bad days happen. We'll come back stronger."
-            },
-            "curt": {
-              "tone": "Curt",
-              "text": "I won't comment on things said in the heat of the moment. Let's move on."
-            }
-          },
-          "draw": {
-            "appreciate": {
-              "tone": "Positive",
-              "text": "I appreciate every single supporter who comes to watch us. Their energy lifts the team."
-            },
-            "understand": {
-              "tone": "Fair",
-              "text": "They want to see us win and so do I. We'll keep pushing until the results come."
-            },
-            "curt": {
-              "tone": "Curt",
-              "text": "I don't get involved with what happens in the stands. My focus is on the game."
-            }
-          }
-        }
-      },
-      "ahead": {
-        "question": "What's your focus going into the next match?",
-        "responses": {
-          "focused": {
-            "tone": "Focused",
-            "text": "Recovery first, then preparation. We take it one game at a time."
-          },
-          "ambitious": {
-            "tone": "Ambitious",
-            "text": "We want to keep building momentum. The target is clear."
-          },
-          "curt": {
-            "tone": "Curt",
-            "text": "Next question, please. We'll worry about that when it comes."
-          }
-        }
-      }
-    },
-    "pen": "PEN",
     "home": "Home",
     "away": "Away",
     "matchDay": "Match Day",
     "preMatchPrep": "Pre-Match Preparation",
-    "startingLineup": "Starting Lineup",
-    "setPiecesCaptain": "Objectives & Captain",
-    "roleCoverage": "Strategy Fit",
     "selecting": "Selecting...",
     "autoSelectXI": "Auto-Select Best Five",
     "startingXI": "Starting Five",
@@ -2608,11 +2310,7 @@
     "nAvailable": "{{count}} available",
     "noBenchAvailable2": "No bench players available.",
     "opponent": "Opponent",
-    "autoSelectTakers": "Auto-Select Best Takers",
     "captain": "Captain",
-    "penaltyTaker": "Baron Taker",
-    "freeKickTaker": "Elder Taker",
-    "cornerTaker": "Dragon Taker",
     "startMatch": "Start Match",
     "notAssigned": "Not assigned",
     "keyStats": "Key Stats",
@@ -2647,8 +2345,8 @@
     "statsArchived": "Player stats will be archived. A new schedule will be generated.",
     "newSeason": "Season {{n}}",
     "newScheduleReleased": "The new schedule has been released. Good luck!",
-    "goldenBoot": "Golden Boot",
-    "nGoals": "{{count}} goals",
+    "goldenBoot": "Kill Leader",
+    "nGoals": "{{count}} kills",
     "playerOfYear": "Player of the Year",
     "avgRating": "Avg rating: {{rating}}",
     "continueDashboard": "Continue to Dashboard"
@@ -2729,14 +2427,14 @@
         "subject2": "{{team}} Awaits Your Leadership",
         "body0": "The board of directors at {{team}} is delighted to welcome you as the new manager.\n\nWe have high hopes for your tenure and believe you can lead this club to glory. Your first task will be to review the squad and prepare a tactical plan for the upcoming season.\n\nWe wish you the best of luck.",
         "body1": "On behalf of the entire {{team}} family, we are thrilled to announce your appointment as manager.\n\nThe fans are eager to see your vision for the team. Please take time to assess the squad, review our financial position, and set your tactical approach.\n\nThe board stands behind you.",
-        "body2": "Welcome to {{team}}! The supporters and staff are excited about the future under your guidance.\n\nWe recommend you start by reviewing your squad's strengths and weaknesses, then set up your preferred formation and training regime.\n\nThe upcoming season will be a true test — make us proud.",
+        "body2": "Welcome to {{team}}! The supporters and staff are excited about the future under your guidance.\n\nWe recommend you start by reviewing your squad's strengths and weaknesses, then set up your preferred game plan and training regime.\n\nThe upcoming season will be a true test — make us proud.",
         "actionReview": "Review Squad",
         "actionThank": "Thank the Board"
       },
       "schedule": {
         "subject": "Season Schedule Released",
         "body0": "The {{league}} schedule has been released. The season kicks off on {{start}}.\n\nReview the match list and ensure your squad is ready for the challenges ahead. Pre-season preparation will be crucial.",
-        "body1": "Match list confirmed! The {{league}} season begins on {{start}}.\n\nStudy the opening matches carefully — a strong start can set the tone for the whole campaign. Make sure your key players are match-fit.",
+        "body1": "Match list confirmed! The {{league}} season begins on {{start}}.\n\nStudy the opening matches carefully — a strong start can set the tone for the whole campaign. Make sure your key players are in top form.",
         "actionView": "View Matches"
       },
       "preMatch": {
@@ -2753,17 +2451,17 @@
           "draw": "Draw: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}"
         },
         "body": {
-          "victory0": "Full time: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nAn excellent result! The team put in a strong performance. Matchday {{matchday}} — keep this momentum going.",
-          "victory1": "Final whistle: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nThree points in the bag! The lads showed great character out there. Matchday {{matchday}} complete.",
-          "defeat0": "Full time: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nA disappointing result. We'll need to regroup and work on the areas that let us down. Matchday {{matchday}} — there's still time to turn things around.",
+          "victory0": "Final score: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nAn excellent result! The team put in a strong performance. Matchday {{matchday}} — keep this momentum going.",
+          "victory1": "Final score: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nGreat series! The team showed real composure out there. Matchday {{matchday}} complete.",
+          "defeat0": "Final score: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nA disappointing result. We'll need to regroup and work on the areas that let us down. Matchday {{matchday}} — there's still time to turn things around.",
           "defeat1": "Final score: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNot the result we wanted. Matchday {{matchday}} — the board will want to see improvement. Review what went wrong and prepare for the next challenge.",
-          "draw": "Full time: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nA point earned in Matchday {{matchday}}. Depending on results elsewhere, this could be valuable. The team fought hard but couldn't find a winner."
+          "draw": "Final score: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nA tie in Matchday {{matchday}}. Depending on results elsewhere, this could be valuable. The team fought hard but couldn't find a winner."
         },
         "actionStandings": "View Standings"
       },
       "staffAdvice": {
         "subject": "Staff Report — Coaching Vacancies",
-        "body": "Boss, I've had a look at the staff situation at {{team}} and wanted to flag a few things:\n\n• A good Coach will significantly improve training effectiveness — your players will develop faster.\n• A qualified Physio helps with injury prevention and speeds up recovery between matches.\n• Our Scouts can help identify transfer targets and assess opponents.\n\nI'd strongly recommend filling any vacancies before the season starts. You can find available staff in the Staff section.\n\nCheck it out when you get a chance.",
+        "body": "Boss, I've had a look at the staff situation at {{team}} and wanted to flag a few things:\n\n• A good Coach will significantly improve training effectiveness — your players will develop faster.\n• A qualified Physio keeps players fresh and speeds up recovery between matches.\n• Our Scouts can help identify transfer targets and assess opponents.\n\nI'd strongly recommend filling any vacancies before the season starts. You can find available staff in the Staff section.\n\nCheck it out when you get a chance.",
         "actionView": "View Staff"
       },
       "boardExpect": {
@@ -2846,17 +2544,17 @@
         "critical": {
           "subject": "URGENT: Squad Fitness Crisis",
           "body": {
-            "intense": "Boss, we have a serious fitness crisis. {{criticalCount}} players are in critical condition and at risk of injury:\n\n{{players}}\n\nAverage squad fitness is at {{avgCondition}}%. With the current Intense schedule (6 days training), the squad is being pushed too hard. Switching to a Balanced schedule would give them recovery time.\n\nIf we push them further without rest, injuries are inevitable.",
-            "balanced": "Boss, we have a serious fitness crisis. {{criticalCount}} players are in critical condition and at risk of injury:\n\n{{players}}\n\nAverage squad fitness is at {{avgCondition}}%. Even on a Balanced schedule, the squad needs attention. Consider switching to a Light schedule temporarily.\n\nIf we push them further without rest, injuries are inevitable.",
-            "light": "Boss, we have a serious fitness crisis. {{criticalCount}} players are in critical condition and at risk of injury:\n\n{{players}}\n\nAverage squad fitness is at {{avgCondition}}%. The squad is already on a Light schedule — the issue may be high training intensity. Consider reducing intensity.\n\nIf we push them further without rest, injuries are inevitable."
+            "intense": "Boss, we have a serious fitness crisis. {{criticalCount}} players are in critical condition and close to burnout:\n\n{{players}}\n\nAverage squad fitness is at {{avgCondition}}%. With the current Intense schedule (6 days training), the squad is being pushed too hard. Switching to a Balanced schedule would give them recovery time.\n\nIf we push them further without rest, performance and morale will suffer.",
+            "balanced": "Boss, we have a serious fitness crisis. {{criticalCount}} players are in critical condition and close to burnout:\n\n{{players}}\n\nAverage squad fitness is at {{avgCondition}}%. Even on a Balanced schedule, the squad needs attention. Consider switching to a Light schedule temporarily.\n\nIf we push them further without rest, performance and morale will suffer.",
+            "light": "Boss, we have a serious fitness crisis. {{criticalCount}} players are in critical condition and close to burnout:\n\n{{players}}\n\nAverage squad fitness is at {{avgCondition}}%. The squad is already on a Light schedule — the issue may be high training intensity. Consider reducing intensity.\n\nIf we push them further without rest, performance and morale will suffer."
           }
         },
         "warning": {
           "subject": "Squad Fitness Warning",
           "body": {
-            "intense": "Boss, the squad is looking tired. Average fitness is {{avgCondition}}% and {{exhaustedCount}} players are below 40% condition.\n\nSwitching to a Balanced schedule would give the squad more recovery time.\n\nWe should consider giving the lads some rest before the next match.",
-            "balanced": "Boss, the squad is looking tired. Average fitness is {{avgCondition}}% and {{exhaustedCount}} players are below 40% condition.\n\nA Light schedule for a few days could help the squad bounce back.\n\nWe should consider giving the lads some rest before the next match.",
-            "light": "Boss, the squad is looking tired. Average fitness is {{avgCondition}}% and {{exhaustedCount}} players are below 40% condition.\n\nThe squad is already on a Light schedule, so recovery should come naturally. Just keep an eye on any particularly exhausted players.\n\nWe should consider giving the lads some rest before the next match."
+            "intense": "Boss, the squad is looking tired. Average fitness is {{avgCondition}}% and {{exhaustedCount}} players are below 40% condition.\n\nSwitching to a Balanced schedule would give the squad more recovery time.\n\nWe should consider giving the team some rest before the next match.",
+            "balanced": "Boss, the squad is looking tired. Average fitness is {{avgCondition}}% and {{exhaustedCount}} players are below 40% condition.\n\nA Light schedule for a few days could help the squad bounce back.\n\nWe should consider giving the team some rest before the next match.",
+            "light": "Boss, the squad is looking tired. Average fitness is {{avgCondition}}% and {{exhaustedCount}} players are below 40% condition.\n\nThe squad is already on a Light schedule, so recovery should come naturally. Just keep an eye on any particularly exhausted players.\n\nWe should consider giving the team some rest before the next match."
           }
         },
         "actionAdjust": "Adjust Training"
@@ -2984,11 +2682,6 @@
           }
         }
       },
-      "trainingInjury": {
-        "subject": "Injury — {{player}} ({{injury}})",
-        "body0": "Bad news from the training ground. {{player}} has picked up a {{injury}} during today's session.\n\nThe medical team estimates {{days}} days on the sidelines. We'll monitor the recovery closely.",
-        "body1": "Unfortunately, {{player}} went down in training today with a {{injury}}.\n\nInitial assessment: out for approximately {{days}} days. We'll keep you updated on their progress."
-      },
       "mediaPositive": {
         "subject": "Positive Press — {{player}}",
         "body": "The local papers are running a very positive piece on {{player}} today.\n\nThey are highlighting their excellent recent form and commitment to {{team}}. This kind of coverage is great for the player's confidence and the club's image."
@@ -3025,20 +2718,17 @@
             "description": "Own the poor results. The board respects honesty."
           },
           "blameCircumstances": {
-            "label": "Point to injuries and bad luck",
+            "label": "Point to bad luck and tough matchups",
             "description": "Deflect blame to external factors. May or may not convince them."
           }
         }
       },
+      "fanPetitionLol": {
+        "subject": "Fan Petition — Draft Identity"
+      },
       "fanPetition": {
         "subject": "Fan Petition — Draft Identity",
         "body": "A group of {{team}} supporters has organized a petition asking for a clearer draft identity and sharper objective setups.\n\n\"We want proactive plans on the Rift, not passive scaling every series. Show us the team knows how it wants to win.\"\n\nOver 500 signatures so far. How do you respond?",
-        "subject0": "Fan Petition — More proactive drafts",
-        "subject1": "Fan Petition — Give academy talent stage time",
-        "subject2": "Fan Open Letter — Competitive transparency",
-        "body0": "A group of {{team}} supporters has launched a petition asking for more proactive drafts and earlier map tempo.\n\n\"We want to see identity from minute one, not passive scaling every game.\"\n\nOver 500 signatures already. How do you respond?",
-        "body1": "Supporters of {{team}} are asking you to give more stage time to academy players and fresh prospects.\n\n\"The future of our org depends on developing talent, not benching it forever.\"\n\nThe campaign is gaining traction online. What's your response?",
-        "body2": "An open letter from the {{team}} supporters' group calls for more transparency from the competitive staff.\n\n\"Explain the direction: draft identity, roster plan and playoff goals.\"\n\nEsports media have picked it up. How do you handle this?",
         "options": {
           "listenFans": {
             "label": "Engage with the fans",
@@ -3382,6 +3072,10 @@
           "body": "{{team}} have gone {{runLength}} series without a loss and are building real momentum around drafts and objectives."
         }
       },
+      "strategicRejection": {
+        "headline": "{{team}} pass on {{player}}",
+        "body": "{{team}} ended their strategic review of {{player}} without making an offer."
+      },
       "transferRumour": {
         "headline": "{{player}} Complete Move to {{to}}",
         "body": "{{to}} have completed the signing of {{player}} from {{from}} for {{fee}}."
@@ -3411,19 +3105,19 @@
     },
     "Playmaker": {
       "label": "Playmaker",
-      "desc": "Creative passer with vision"
+      "desc": "Reads the game and orchestrates plays"
     },
     "Sharpshooter": {
       "label": "Sharpshooter",
-      "desc": "Clinical finisher"
+      "desc": "Lethal in lane trades"
     },
     "Dribbler": {
-      "label": "Dribbler",
-      "desc": "Skillful on the ball"
+      "label": "Kite Master",
+      "desc": "Mechanically gifted"
     },
     "BallWinner": {
-      "label": "Ball Winner",
-      "desc": "Wins the ball back relentlessly"
+      "label": "Interceptor",
+      "desc": "Intercepts enemy rotations relentlessly"
     },
     "Rock": {
       "label": "Rock",
@@ -3439,7 +3133,7 @@
     },
     "Visionary": {
       "label": "Visionary",
-      "desc": "Sees passes others can't"
+      "desc": "Sees plays others miss"
     },
     "HotHead": {
       "label": "Hot Head",
@@ -3451,27 +3145,27 @@
     },
     "SafeHands": {
       "label": "Safe Hands",
-      "desc": "Reliable shot stopper"
+      "desc": "Reliable when the pressure is on"
     },
     "CatReflexes": {
       "label": "Cat Reflexes",
       "desc": "Lightning-fast reflexes"
     },
     "AerialDominance": {
-      "label": "Aerial Dom.",
-      "desc": "Commands the box in the air"
+      "label": "Zone Control",
+      "desc": "Controls space with long-range abilities"
     },
     "CompleteForward": {
-      "label": "Complete Forward",
+      "label": "Hyper Carry",
       "desc": "Dangerous in every way"
     },
     "Engine": {
       "label": "Engine",
-      "desc": "Box-to-box powerhouse"
+      "desc": "Tireless force across the whole map"
     },
     "SetPieceSpecialist": {
-      "label": "Set Piece Spec.",
-      "desc": "Deadly from dead balls"
+      "label": "Macro Specialist",
+      "desc": "Deadly in objective fights"
     }
   },
   "date": {

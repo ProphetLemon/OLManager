@@ -22,9 +22,6 @@ vi.mock("react-i18next", () => ({
       if (key === "common.won") return "W";
       if (key === "common.drawn") return "D";
       if (key === "common.lost") return "L";
-      if (key === "common.gf") return "GF";
-      if (key === "common.ga") return "GA";
-      if (key === "common.gd") return "GD";
       if (key === "common.pts") return "Pts";
       if (key === "schedule.season") return `Season ${params?.number}`;
       if (key === "schedule.matchday") return `Matchday ${params?.number}`;
