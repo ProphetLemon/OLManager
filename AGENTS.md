@@ -51,7 +51,7 @@ src/
 
 | Tab v2 | Importa de _legacy |
 |--------|-------------------|
-| PlayerProfileV2 | `DashboardModalFrame`, `NegotiationFeedbackPanel`, `WageNegotiationModal`, `TransferNegotiationHistory` y `CountryFlag` desde _legacy (la página es nativa en `pages/playerProfile/`) |
+| PlayerProfileV2 | `DashboardModalFrame` desde _legacy (modales de renovación, rescisión y oferta; la página es nativa en `pages/playerProfile/`) |
 | ScheduleTabV2 | `_legacy/components/schedule/ScheduleCalendarView` |
 | ScheduleTabV2 | `_legacy/components/match/DraftResultScreen` |
 | ScheduleTabV2 | `_legacy/components/playoffs/PlayoffBracketBoard` |

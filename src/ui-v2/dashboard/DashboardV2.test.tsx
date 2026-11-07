@@ -103,7 +103,17 @@ vi.mock("@/ui-v2/dashboard/tabs/TrainingTabV2", () => ({ TrainingTabV2: () => nu
 vi.mock("@/ui-v2/dashboard/tabs/PlayersTabV2", () => ({ PlayersTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/TeamsTabV2", () => ({ TeamsTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/StaffTabV2", () => ({ StaffTabV2: () => null }));
-vi.mock("@/ui-v2/dashboard/tabs/FinancesTabV2", () => ({ FinancesTabV2: () => null }));
+vi.mock("@/ui-v2/dashboard/tabs/FinancesTabV2", () => ({
+  FinancesTabV2: ({
+    onSelectPlayer,
+  }: {
+    onSelectPlayer?: (id: string, options?: { openRenewal?: boolean }) => void;
+  }) => (
+    <button onClick={() => onSelectPlayer?.("player-1", { openRenewal: true })}>
+      renew-player-1
+    </button>
+  ),
+}));
 vi.mock("@/ui-v2/dashboard/tabs/ScrimsTabV2", () => ({ ScrimsTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/SoloqTabV2", () => ({ SoloqTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/ScoutingTabV2", () => ({ ScoutingTabV2: () => null }));
@@ -119,7 +129,11 @@ vi.mock("@/ui-v2/dashboard/tabs/MetaTabV2", () => ({ MetaTabV2: () => null }));
 
 vi.mock("@/ui-v2/pages/TeamProfileV2", () => ({ default: () => null }));
 vi.mock("@/ui-v2/pages/ChampionPageV2", () => ({ default: () => null }));
-vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({ default: () => null }));
+vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({
+  default: ({ startWithRenewalModal }: { startWithRenewalModal?: boolean }) => (
+    <div data-testid="player-profile" data-renewal={String(startWithRenewalModal)} />
+  ),
+}));
 vi.mock("@/ui-v2/pages/StaffProfileV2", () => ({ default: () => null }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -201,5 +215,20 @@ describe("DashboardV2 tab sync", () => {
     await waitFor(() =>
       expect(useBugReportStore.getState().currentDashboardTab).toBe("Finances"),
     );
+  });
+
+  it("opens the player profile with the renewal intent from finances", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+
+    render(
+      <MemoryRouter initialEntries={["/finanzas"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "renew-player-1" }));
+
+    const profile = await screen.findByTestId("player-profile");
+    expect(profile.getAttribute("data-renewal")).toBe("true");
   });
 });

@@ -749,6 +749,7 @@ export default function DashboardV2() {
             <PlayerProfileV2
               gameState={gameState}
               playerId={profileNavigation.selectedPlayerId}
+              startWithRenewalModal={profileNavigation.selectedPlayerOptions?.openRenewal === true}
               onClose={() =>
                 setProfileNavigation((s) => goBackDashboardProfile(s))
               }
