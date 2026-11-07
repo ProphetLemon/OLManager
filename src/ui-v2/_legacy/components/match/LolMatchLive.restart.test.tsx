@@ -70,6 +70,42 @@ describe("LolMatchLive", () => {
     }) as unknown as typeof window.matchMedia;
   });
 
+  it("builds the simulation once when champion profiles load late", async () => {
+    let releaseChampionJson: (value: unknown) => void = () => undefined;
+    const championJson = new Promise((resolve) => {
+      releaseChampionJson = resolve;
+    });
+    const fetchMock = vi.fn((url: string) => {
+      if (url.endsWith("/champion.json")) {
+        return championJson.then(() => ({
+          ok: true,
+          json: async () => ({ data: { Ahri: { id: "Ahri", tags: ["Mage"], stats: { hp: 590, attackrange: 550 } } } }),
+        }));
+      }
+      return Promise.resolve({ ok: false, json: async () => ({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <LolMatchLive
+        gameState={null}
+        snapshot={baseSnapshot}
+        championSelections={{ home: { p1: "Ahri" }, away: {} } as never}
+        onSnapshotUpdate={() => undefined}
+        onImportantEvent={() => undefined}
+        onFullTime={() => undefined}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    releaseChampionJson(undefined);
+    await waitFor(() => expect(constructed.count).toBeGreaterThanOrEqual(1), { timeout: 2000 });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(fetchMock).toHaveBeenCalled();
+    expect(constructed.count).toBe(1);
+    vi.unstubAllGlobals();
+  });
+
   it("does not restart the simulation when the finished snapshot is fed back as a prop", async () => {
     const onFullTime = vi.fn();
 
