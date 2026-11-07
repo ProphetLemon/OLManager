@@ -60,6 +60,9 @@ export default defineConfig(async () => {
       globals: true,
       include: ["src/**/*.test.{ts,tsx}"],
       setupFiles: ["src/test-setup.ts"],
+      // Number/Date formatting uses the host locale (`toLocaleString()`), so
+      // pin it: expectations such as "€40,000" must not depend on the machine.
+      env: { LC_ALL: "en_US.UTF-8", LANG: "en_US.UTF-8" },
       // @ts-expect-error process is a nodejs global
       forbidOnly: Boolean(process.env.CI),
       coverage: {
