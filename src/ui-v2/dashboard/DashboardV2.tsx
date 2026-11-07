@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
@@ -11,7 +11,6 @@ import { useBugReportStore } from "@/store/bugReportStore";
 import { useAdvanceTime, type MatchModeType } from "@/hooks/useAdvanceTime";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import { isAcademyTeam } from "@/store/academySelectors";
-import TeamProfileV2 from "@/ui-v2/pages/TeamProfileV2";
 import { assetUrl } from "@/lib/assetUrl";
 import { DEFAULT_MANAGER_ICON_PATH } from "@/lib/common/managerAvatars";
 
@@ -19,7 +18,6 @@ import {
   formatDateFull,
   isSeasonComplete as isLeagueSeasonComplete,
 } from "@/lib/common/helpers";
-import DashboardWorkspaceContent from "@/ui-v2/_legacy/components/dashboard/DashboardWorkspaceContent";
 import DashboardOverlays from "@/ui-v2/_legacy/components/dashboard/DashboardOverlays";
 import FiredModal from "@/ui-v2/_legacy/components/dashboard/FiredModal";
 import {
@@ -44,32 +42,38 @@ import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboar
 
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
-import { HomeTabV2 } from "./tabs/HomeTabV2";
-import { InboxTabV2 } from "./tabs/InboxTabV2";
-import { ScheduleTabV2 } from "./tabs/ScheduleTabV2";
-import { SquadTabV2 } from "./tabs/SquadTabV2";
-import { TacticsTabV2 } from "./tabs/TacticsTabV2";
-import { TrainingTabV2 } from "./tabs/TrainingTabV2";
-import { PlayersTabV2 } from "./tabs/PlayersTabV2";
-import { TeamsTabV2 } from "./tabs/TeamsTabV2";
-import { StaffTabV2 } from "./tabs/StaffTabV2";
-import { FinancesTabV2 } from "./tabs/FinancesTabV2";
-import { ScrimsTabV2 } from "./tabs/ScrimsTabV2";
-import { SoloqTabV2 } from "./tabs/SoloqTabV2";
-import { ScoutingTabV2 } from "./tabs/ScoutingTabV2";
-import { TransfersTabV2 } from "./tabs/TransfersTabV2";
-import { NewsTabV2 } from "./tabs/NewsTabV2";
-import { SocialTabV2 } from "./tabs/SocialTabV2";
 
-import { ManagerTabV2 } from "./tabs/ManagerTabV2";
-import { YouthTabV2 } from "./tabs/YouthTabV2";
-import { CompetitionsTabV2 } from "./tabs/CompetitionsTabV2";
-import { MarketTabV2 } from "./tabs/MarketTabV2";
-import { ChampionsWorldTabV2 } from "./tabs/ChampionsWorldTabV2";
-import { MetaTabV2 } from "./tabs/MetaTabV2";
-import ChampionPageV2 from "@/ui-v2/pages/ChampionPageV2";
-import PlayerProfileV2 from "@/ui-v2/pages/PlayerProfileV2";
-import StaffProfileV2 from "@/ui-v2/pages/StaffProfileV2";
+
+import { LazyFallback } from "@/ui-v2/components/LazyFallback";
+
+// Tabs and profile pages load on demand so the dashboard shell stays small.
+const HomeTabV2 = lazy(() => import("./tabs/HomeTabV2").then((m) => ({ default: m.HomeTabV2 })));
+const InboxTabV2 = lazy(() => import("./tabs/InboxTabV2").then((m) => ({ default: m.InboxTabV2 })));
+const ScheduleTabV2 = lazy(() => import("./tabs/ScheduleTabV2").then((m) => ({ default: m.ScheduleTabV2 })));
+const SquadTabV2 = lazy(() => import("./tabs/SquadTabV2").then((m) => ({ default: m.SquadTabV2 })));
+const TacticsTabV2 = lazy(() => import("./tabs/TacticsTabV2").then((m) => ({ default: m.TacticsTabV2 })));
+const TrainingTabV2 = lazy(() => import("./tabs/TrainingTabV2").then((m) => ({ default: m.TrainingTabV2 })));
+const PlayersTabV2 = lazy(() => import("./tabs/PlayersTabV2").then((m) => ({ default: m.PlayersTabV2 })));
+const TeamsTabV2 = lazy(() => import("./tabs/TeamsTabV2").then((m) => ({ default: m.TeamsTabV2 })));
+const StaffTabV2 = lazy(() => import("./tabs/StaffTabV2").then((m) => ({ default: m.StaffTabV2 })));
+const FinancesTabV2 = lazy(() => import("./tabs/FinancesTabV2").then((m) => ({ default: m.FinancesTabV2 })));
+const ScrimsTabV2 = lazy(() => import("./tabs/ScrimsTabV2").then((m) => ({ default: m.ScrimsTabV2 })));
+const SoloqTabV2 = lazy(() => import("./tabs/SoloqTabV2").then((m) => ({ default: m.SoloqTabV2 })));
+const ScoutingTabV2 = lazy(() => import("./tabs/ScoutingTabV2").then((m) => ({ default: m.ScoutingTabV2 })));
+const TransfersTabV2 = lazy(() => import("./tabs/TransfersTabV2").then((m) => ({ default: m.TransfersTabV2 })));
+const NewsTabV2 = lazy(() => import("./tabs/NewsTabV2").then((m) => ({ default: m.NewsTabV2 })));
+const SocialTabV2 = lazy(() => import("./tabs/SocialTabV2").then((m) => ({ default: m.SocialTabV2 })));
+const ManagerTabV2 = lazy(() => import("./tabs/ManagerTabV2").then((m) => ({ default: m.ManagerTabV2 })));
+const YouthTabV2 = lazy(() => import("./tabs/YouthTabV2").then((m) => ({ default: m.YouthTabV2 })));
+const CompetitionsTabV2 = lazy(() => import("./tabs/CompetitionsTabV2").then((m) => ({ default: m.CompetitionsTabV2 })));
+const MarketTabV2 = lazy(() => import("./tabs/MarketTabV2").then((m) => ({ default: m.MarketTabV2 })));
+const ChampionsWorldTabV2 = lazy(() => import("./tabs/ChampionsWorldTabV2").then((m) => ({ default: m.ChampionsWorldTabV2 })));
+const MetaTabV2 = lazy(() => import("./tabs/MetaTabV2").then((m) => ({ default: m.MetaTabV2 })));
+const ChampionPageV2 = lazy(() => import("@/ui-v2/pages/ChampionPageV2"));
+const PlayerProfileV2 = lazy(() => import("@/ui-v2/pages/PlayerProfileV2"));
+const StaffProfileV2 = lazy(() => import("@/ui-v2/pages/StaffProfileV2"));
+const TeamProfileV2 = lazy(() => import("@/ui-v2/pages/TeamProfileV2"));
+const DashboardWorkspaceContent = lazy(() => import("@/ui-v2/_legacy/components/dashboard/DashboardWorkspaceContent"));
 
 const TAB_TRANSLATION_KEYS: Record<string, string> = {
   Home: "dashboard.home",
@@ -504,6 +508,7 @@ export default function DashboardV2() {
           onNavigate={handleNavigate}
         />
 
+        <Suspense fallback={<LazyFallback />}>
         {profileNavigation.activeTab === "Home" &&
         !viewingChampionKey &&
         !profileNavigation.selectedPlayerId &&
@@ -794,6 +799,7 @@ export default function DashboardV2() {
             onViewChampion={(k) => setViewingChampionKey(k)}
           />
         )}
+        </Suspense>
       </main>
     </div>
   );

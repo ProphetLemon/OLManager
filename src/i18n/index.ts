@@ -1,13 +1,6 @@
-import i18n from "i18next";
+import i18n, { type BackendModule } from "i18next";
 import { initReactI18next } from "react-i18next";
 import en from "./locales/en.json";
-import es from "./locales/es.json";
-import pt from "./locales/pt.json";
-import fr from "./locales/fr.json";
-import de from "./locales/de.json";
-import ptBR from "./locales/pt-BR.json";
-import it from "./locales/it.json";
-import tr from "./locales/tr.json";
 
 export const SUPPORTED_LANGUAGES = [
   { code: "en", label: "English" },
@@ -19,22 +12,36 @@ export const SUPPORTED_LANGUAGES = [
   { code: "tr", label: "Türkçe" },
 ] as const;
 
-i18n.use(initReactI18next).init({
-  resources: {
-    en: { translation: en },
-    es: { translation: es },
-    pt: { translation: pt },
-    fr: { translation: fr },
-    de: { translation: de },
-    it: { translation: it },
-    "pt-BR": { translation: ptBR },
-    tr: { translation: tr },
+/**
+ * English is bundled (it is the fallback and the initial language). Every
+ * other locale is its own chunk, fetched by i18next the first time the
+ * language is selected; `changeLanguage` resolves once it has loaded.
+ */
+const lazyLocaleBackend: BackendModule = {
+  type: "backend",
+  init() {},
+  read(language, _namespace, callback) {
+    import(`./locales/${language}.json`)
+      .then((module) => callback(null, module.default))
+      // Region variants such as "en-US" have no file of their own: i18next
+      // also asks for the base language, so an empty bundle is the answer.
+      .catch(() => callback(null, {}));
   },
-  lng: "en",
-  fallbackLng: "en",
-  interpolation: {
-    escapeValue: false, // React already escapes
-  },
-});
+};
+
+i18n
+  .use(lazyLocaleBackend)
+  .use(initReactI18next)
+  .init({
+    resources: {
+      en: { translation: en },
+    },
+    partialBundledLanguages: true,
+    lng: "en",
+    fallbackLng: "en",
+    interpolation: {
+      escapeValue: false, // React already escapes
+    },
+  });
 
 export default i18n;
