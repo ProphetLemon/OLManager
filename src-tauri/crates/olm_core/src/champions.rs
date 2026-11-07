@@ -1783,6 +1783,34 @@ mod tests {
     }
 
     #[test]
+    fn heimerdinger_and_quinn_are_in_the_role_catalog_and_the_initial_meta() {
+        let catalog: HashSet<(String, String)> = champion_catalog().iter().cloned().collect();
+        for (champion, role) in [
+            ("Heimerdinger", "Mid"),
+            ("Heimerdinger", "Support"),
+            ("Quinn", "Top"),
+        ] {
+            assert!(
+                catalog.contains(&(champion.to_string(), role.to_string())),
+                "{champion} {role} missing from the role catalog"
+            );
+        }
+
+        let mut game = game_with_lineup(Vec::new());
+        game.clock.current_date = test_date(2026, 1, 20);
+        ensure_initial_patch_state(&mut game);
+        let meta: HashSet<(String, String)> = game
+            .champion_patch
+            .hidden_meta
+            .iter()
+            .map(|entry| (entry.champion_id.clone(), entry.role.clone()))
+            .collect();
+        assert!(meta.contains(&("Heimerdinger".to_string(), "Mid".to_string())));
+        assert!(meta.contains(&("Heimerdinger".to_string(), "Support".to_string())));
+        assert!(meta.contains(&("Quinn".to_string(), "Top".to_string())));
+    }
+
+    #[test]
     fn patches_only_roll_on_tuesday_after_the_fortnightly_interval() {
         let mut game = game_with_lineup(Vec::new());
         game.clock.current_date = test_date(2026, 1, 20); // Tuesday
