@@ -96,7 +96,7 @@ jobs:
           cat > dist-release/SIGNING_STATUS.txt <<'EOF'
           Platform binaries are generated on GitHub-hosted runners.
           Update bundles are signed with an Ed25519 key for tauri-plugin-updater verification.
-          Windows and macOS installer-level signing/notarization is not enabled until maintainers configure additional certificates.
+          macOS bundles are ad-hoc signed only. Windows installer signing and macOS notarization are not enabled until maintainers configure additional certificates.
           EOF
 
       - name: Generate source checksums

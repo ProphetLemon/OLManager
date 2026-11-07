@@ -120,6 +120,17 @@ cargo test --manifest-path src-tauri/Cargo.toml --workspace
 
 > Do not run production Tauri bundle builds as part of normal PR validation. Packaging belongs to the release process.
 
+### macOS: "app is damaged" warning
+
+macOS builds are ad-hoc signed but not notarized (no Apple Developer account), so Gatekeeper may report the downloaded app as "damaged". To open it:
+
+- System Settings → Privacy & Security → scroll to the blocked app message → **Open Anyway**, or
+- Remove the quarantine flag from a terminal:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Open League Manager.app"
+```
+
 ---
 
 ## 5. Project Structure
