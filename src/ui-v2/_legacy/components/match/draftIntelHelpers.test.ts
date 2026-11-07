@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { getChampionCounterValue } from "@/lib/champions/championRelationships";
 import {
   championFitsFreeRole,
   computeBanRecommendationScore,
+  enemyCountersLastOwnPick,
   freeRolesForSelections,
   rankBanCandidates,
   resolveMasterySampleSide,
@@ -151,5 +153,26 @@ describe("rankBanCandidates with enemyFreeRoles", () => {
       resolveMetaScore: () => 20,
     });
     expect(ranked).toEqual([]);
+  });
+});
+
+describe("enemyCountersLastOwnPick", () => {
+  // Dataset: aatrox counters drmundo (3).
+  it("warns when the enemy pick counters our last pick (real dataset pair)", () => {
+    expect(getChampionCounterValue("aatrox", "drmundo")).toBeGreaterThanOrEqual(2);
+    expect(enemyCountersLastOwnPick("drmundo", "aatrox", getChampionCounterValue)).toBe(true);
+  });
+
+  it("does not warn for an unrelated pair", () => {
+    expect(enemyCountersLastOwnPick("drmundo", "unknown-champion", getChampionCounterValue)).toBe(false);
+  });
+
+  it("does not warn when only our pick counters the enemy and not vice versa", () => {
+    const one = (s: string, t: string) => (s === "a" && t === "b" ? 3 : 0);
+    expect(enemyCountersLastOwnPick("a", "b", one)).toBe(false);
+  });
+
+  it("does not warn below the threshold", () => {
+    expect(enemyCountersLastOwnPick("a", "b", (s, t) => (s === "b" && t === "a" ? 1 : 0))).toBe(false);
   });
 });

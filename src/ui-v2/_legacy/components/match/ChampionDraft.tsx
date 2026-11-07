@@ -15,6 +15,7 @@ import aiConfigSeed from "../../../../../assets/simulation/ai-config.json";
 import {
   computeBanRecommendationScore as computeUnifiedBanRecommendationScore,
   championFitsFreeRole,
+  enemyCountersLastOwnPick,
   freeRolesForSelections,
   rankBanCandidates,
   resolveMasterySampleSide,
@@ -2117,8 +2118,7 @@ export default function ChampionDraft({
       const lastOwnPick = ownPicksList[ownPicksList.length - 1]?.championId;
       if (lastOwnPick && enemyPicksList.length > 0) {
         enemyPicksList.forEach((enemyPick) => {
-          const counterVal = counterValue(lastOwnPick, enemyPick.championId);
-          if (counterVal <= -2) {
+          if (enemyCountersLastOwnPick(lastOwnPick, enemyPick.championId, counterValue)) {
             const enemyChamp = championById.get(enemyPick.championId);
             if (enemyChamp) {
               addCoachTip(

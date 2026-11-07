@@ -207,3 +207,18 @@ export function resolveMasterySampleSide(
   if (step.type === "ban") return step.side === "blue" ? "red" : "blue";
   return step.side;
 }
+
+/** Minimum counter value for an enemy pick to be flagged against our last pick. */
+export const COUNTER_LAST_PICK_WARN_THRESHOLD = 2;
+
+/**
+ * Whether an enemy pick counters our last own pick strongly enough to warn the
+ * coach. `counterValue(source, target)` is how hard `source` counters `target`.
+ */
+export function enemyCountersLastOwnPick(
+  lastOwnPick: string,
+  enemyPick: string,
+  counterValue: (source: string, target: string) => number,
+): boolean {
+  return counterValue(enemyPick, lastOwnPick) >= COUNTER_LAST_PICK_WARN_THRESHOLD;
+}
