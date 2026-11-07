@@ -5,6 +5,7 @@ use crate::error::AppError;
 /// Validate and sanitize an avatar filename to prevent path traversal.
 /// Accepts only safe filenames with allowed image extensions,
 /// rejects any path separators, null bytes, or parent directory references.
+#[allow(dead_code)] // Path-traversal sanitizer kept for the avatar import flow; not wired yet.
 pub fn safe_avatar_filename(input: &str) -> Result<String, AppError> {
     let bytes = input.as_bytes();
     if input.is_empty() || input.len() > 128 {

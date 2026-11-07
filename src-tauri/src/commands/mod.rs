@@ -81,5 +81,5 @@ pub fn update_manager_profile(
     }
 
     state.set_game(game.clone());
-    Ok(serde_json::to_value(&game).map_err(|e| e.to_string())?)
+    serde_json::to_value(&game).map_err(|e| e.to_string())
 }

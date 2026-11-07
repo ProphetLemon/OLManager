@@ -6,7 +6,6 @@ use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::{Team, TeamKind};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
-use tauri::Manager as TauriManager;
 use tauri::State;
 
 use olm_core::clock::GameClock;
@@ -22,7 +21,6 @@ use olm_core::state::StateManager;
 use olm_core::world_overlay::{OverlayApplyReport, WorldOverlay, apply_world_overlay};
 
 use crate::SaveManagerState;
-use validator::Validate;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TeamSelectionData {
@@ -146,6 +144,8 @@ fn auto_fill_user_lineup(game: &mut Game, team_id: &str) {
     }
 }
 
+type AssembledWorld = (Vec<Team>, Vec<Player>, Vec<Staff>);
+
 /// Assemble teams, players, and staff from modular competition data files.
 /// Used by Flow C: the game was created lightweight (empty teams/players),
 /// and now we need to load the selected competition's data.
@@ -154,7 +154,7 @@ pub(crate) fn assemble_world_from_modular_data(
     manifests: &[CompetitionManifest],
     competition_id: &str,
     team_id: &str,
-) -> Result<(Vec<Team>, Vec<Player>, Vec<Staff>), String> {
+) -> Result<AssembledWorld, String> {
     info!(
         "[game] assemble_world_from_modular_data: competition={}, team_id={}",
         competition_id, team_id
@@ -713,8 +713,7 @@ pub async fn select_team(
     // Initialize message template store
     {
         // Look for messages root directory (to find senders)
-        let msg_root_candidates = vec![
-            std::env::current_dir()
+        let msg_root_candidates = [std::env::current_dir()
                 .ok()
                 .map(|d| d.join("data").join("messages")),
             std::env::current_dir()
@@ -722,27 +721,22 @@ pub async fn select_team(
                 .map(|d| d.join("../data").join("messages")),
             std::env::current_dir()
                 .ok()
-                .map(|d| d.join("src-tauri/data").join("messages")),
-        ];
+                .map(|d| d.join("src-tauri/data").join("messages"))];
         let mut messages_root = None;
-        for candidate in &msg_root_candidates {
-            if let Some(path) = candidate {
-                if path.is_dir() {
-                    messages_root = Some(path.clone());
-                    break;
-                }
+        for path in msg_root_candidates.iter().flatten() {
+            if path.is_dir() {
+                messages_root = Some(path.clone());
+                break;
             }
         }
 
         // Look for triggers/ subdirectory inside messages root
-        let triggers_candidates = vec![messages_root.as_ref().map(|p| p.join("triggers"))];
-        for candidate in &triggers_candidates {
-            if let Some(path) = candidate {
-                if path.is_dir() {
-                    let result = olm_core::messages::template_store::init_template_store(path);
-                    eprintln!("[template_store] init from {:?}: {:?}", path, result);
-                    break;
-                }
+        let triggers_candidates = [messages_root.as_ref().map(|p| p.join("triggers"))];
+        for path in triggers_candidates.iter().flatten() {
+            if path.is_dir() {
+                let result = olm_core::messages::template_store::init_template_store(path);
+                eprintln!("[template_store] init from {:?}: {:?}", path, result);
+                break;
             }
         }
 
@@ -1170,14 +1164,6 @@ pub async fn exit_to_menu(
     state.clear_save_id();
 
     Ok(())
-}
-
-fn validate_date_format(date: &str) -> Result<(), validator::ValidationError> {
-    if chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").is_ok() {
-        Ok(())
-    } else {
-        Err(validator::ValidationError::new("invalid_date_format"))
-    }
 }
 
 /// Diagnostic: verify the current set of know.enums is consistent.

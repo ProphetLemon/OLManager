@@ -241,7 +241,7 @@ fn estimate_team_lol_ovr(game: &Game, team_id: &str) -> u8 {
         .players
         .iter()
         .filter(|player| player.team_id.as_deref() == Some(team_id))
-        .map(|player| olm_core::potential::calculate_lol_ovr(player))
+        .map(olm_core::potential::calculate_lol_ovr)
         .collect();
     if ovrs.is_empty() {
         return 74;
@@ -993,7 +993,7 @@ pub fn auto_configure_weekly_scrim_setup(state: State<'_, StateManager>) -> Resu
         .map(|team| (team.id.clone(), estimate_team_lol_ovr(&game, &team.id)))
         .filter(|(id, _)| known_team_ids.contains(id))
         .collect();
-    rivals_by_strength.sort_by(|a, b| b.1.cmp(&a.1));
+    rivals_by_strength.sort_by_key(|rival| std::cmp::Reverse(rival.1));
 
     if let Some(team) = game.teams.iter_mut().find(|t| t.id == manager_team_id) {
         let (setup_locked, _) =
@@ -1421,7 +1421,7 @@ pub fn get_scrim_context(state: State<'_, StateManager>) -> Result<ScrimContextR
         .filter(|report| report.date == today)
         .cloned()
         .collect();
-    today_reports.sort_by(|left, right| left.slot_index.cmp(&right.slot_index));
+    today_reports.sort_by_key(|left| left.slot_index);
     let unresolved_report = today_reports
         .iter()
         .find(|report| report.post_decision.is_none())

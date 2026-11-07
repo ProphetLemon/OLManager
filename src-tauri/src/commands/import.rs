@@ -412,7 +412,7 @@ fn write_import_cache_to(path: PathBuf, bytes: &[u8]) -> Result<(), String> {
     let cache_dir = path
         .parent()
         .ok_or_else(|| format!("cache path has no parent: {path:?}"))?;
-    std::fs::create_dir_all(&cache_dir).map_err(|e| format!("mkdir {cache_dir:?}: {e}"))?;
+    std::fs::create_dir_all(cache_dir).map_err(|e| format!("mkdir {cache_dir:?}: {e}"))?;
     let file_name = path
         .file_name()
         .map(|n| n.to_string_lossy().to_string())

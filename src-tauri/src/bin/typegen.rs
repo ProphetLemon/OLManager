@@ -4,7 +4,6 @@
 ///
 /// Generated .ts files are placed in OUT_DIR during compilation.
 /// Run this binary to verify all types implement TS correctly.
-
 fn main() {
     // Just verify compilation succeeds — #[ts(export)] handles file generation
     // during the build phase via ts-rs macros.
