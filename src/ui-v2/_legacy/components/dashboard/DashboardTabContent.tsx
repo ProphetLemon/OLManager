@@ -3,7 +3,6 @@ import TacticsTab from "@/ui-v2/_legacy/components/tactics/TacticsTab";
 import TrainingTab from "@/ui-v2/_legacy/components/training/TrainingTab";
 import ScheduleTab from "@/ui-v2/_legacy/components/schedule/ScheduleTab";
 import FinancesTab from "@/ui-v2/_legacy/components/finances/FinancesTab";
-import TransfersTab from "@/ui-v2/_legacy/components/transfers/TransfersTab";
 import PlayersListTab from "@/ui-v2/_legacy/components/players/PlayersListTab";
 
 import ScoutingTab from "@/ui-v2/_legacy/components/scouting/ScoutingTab";
@@ -85,15 +84,6 @@ export default function DashboardTabContent({
           gameState={gameState}
           onGameUpdate={onGameUpdate}
           onSelectPlayer={onSelectPlayer}
-        />
-      )}
-
-      {activeTab === "Transfers" && (
-        <TransfersTab
-          gameState={gameState}
-          onSelectPlayer={onSelectPlayer}
-          onSelectTeam={onSelectTeam}
-          onGameUpdate={onGameUpdate}
         />
       )}
 

@@ -56,7 +56,6 @@ src/
 | ScheduleTabV2 | `_legacy/components/match/DraftResultScreen` |
 | ScheduleTabV2 | `_legacy/components/playoffs/PlayoffBracketBoard` |
 | HomeTabV2 | `_legacy/components/NextMatchDisplay` |
-| TransfersTabV2 | modals y CountryFlag desde _legacy |
 | SquadTabV2, PlayersTabV2 | PlayerAvatar, ContextMenu desde _legacy |
 | CompetitionsTabV2 | ScheduleCalendarView desde _legacy |
 | AppV2 | FloatingBugButton, MainMenu, MatchSimulation, SettingsV2 |
@@ -85,5 +84,5 @@ Branch: `feat/ui-v2`. Commit style: `feat(ui-v2): …`, `fix(ui-v2): …`.
 
 ## 6. Próximos pasos (opcionales)
 
-- Portar los wrappers `_legacy/` a v2 nativo (transfer modals, incluidos los que usa PlayerProfileV2)
+- Portar los wrappers `_legacy/` restantes a v2 nativo (ver tabla de la sección 3). Ya son nativos: dialogs de fichajes (`dashboard/tabs/transfers/`), `CountryFlag` (`components/ui/country-flag`) y `NegotiationFeedbackPanel` (`components/negotiation/`)
 - Separar chunks grandes (MatchSimulation, _legacy) con lazy loading

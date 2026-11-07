@@ -6,7 +6,7 @@ import {
   filterTransferPlayers,
   getCurrentTransferList,
   type TransferTabView,
-} from "@/ui-v2/_legacy/components/transfers/TransfersTab.model";
+} from "@/lib/transfers/model";
 
 function createTeam(overrides: Partial<TeamData> = {}): TeamData {
   return {
@@ -151,7 +151,7 @@ function createGameState(players: PlayerData[]): GameStateData {
   };
 }
 
-describe("TransfersTab.model", () => {
+describe("transfers/model", () => {
   it("derives the transfer collections for the current user team", () => {
     const userListed = createPlayer({
       id: "user-listed",

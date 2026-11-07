@@ -8,7 +8,7 @@ import {
   getTransferOfferBadgeVariant,
   getTransferOfferStatusLabel,
   mapTransferNegotiationError,
-} from "@/ui-v2/_legacy/components/transfers/TransfersTab.helpers";
+} from "@/lib/transfers/helpers";
 
 function createOffer(
   overrides: Partial<TransferOfferData> = {},
@@ -88,7 +88,7 @@ function createPlayer(
 
 const t = (key: string) => key;
 
-describe("TransfersTab.helpers", () => {
+describe("transfers/helpers", () => {
   it("returns the pending outgoing offer for the user team", () => {
     const player = createPlayer({
       transfer_offers: [
