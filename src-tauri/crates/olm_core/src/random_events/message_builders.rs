@@ -321,6 +321,23 @@ fn esportmaniacos_story_copy(
     (subject, body, subject_key.to_string(), body_key, priority)
 }
 
+/// Media story from the data templates, with render-time i18n keys and params.
+pub fn media_story_from_template(
+    msg_id: &str,
+    team_name: &str,
+    player_name: &str,
+    date: &str,
+) -> Option<InboxMessage> {
+    crate::messages::template_store::template_store().build_message_keyed(
+        "media_story",
+        msg_id,
+        date,
+        "en",
+        vec![("team", team_name), ("player", player_name)],
+        "be.msg.mediaStory.templates",
+    )
+}
+
 pub(super) fn media_story_message(
     msg_id: &str,
     team_name: &str,
@@ -340,13 +357,7 @@ pub(super) fn media_story_message(
         return message;
     }
 
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
-        "media_story",
-        msg_id,
-        date,
-        "en",
-        vec![("team", team_name), ("player", player_name)],
-    ) {
+    if let Some(msg) = media_story_from_template(msg_id, team_name, player_name, date) {
         return msg;
     }
 

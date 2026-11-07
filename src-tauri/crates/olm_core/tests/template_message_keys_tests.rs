@@ -145,3 +145,13 @@ fn rival_interest_template_message_attaches_keys_and_params() {
     assert_eq!(param(&msg, "player"), Some("Caps"));
     assert_eq!(param(&msg, "rival"), Some("G2"));
 }
+
+#[test]
+fn media_story_template_message_attaches_keys_and_params() {
+    assert_keyed("be.msg.mediaStory.templates", || {
+        random_events::media_story_from_template("m1", "KOI", "Caps", "2025-08-12").unwrap()
+    });
+    let msg = random_events::media_story_from_template("m1", "KOI", "Caps", "d").unwrap();
+    assert_eq!(param(&msg, "team"), Some("KOI"));
+    assert_eq!(param(&msg, "player"), Some("Caps"));
+}

@@ -134,4 +134,26 @@ describe("random event messages render in the active language", () => {
     expect(resolved.subject).toBe("G2 tiene en el punto de mira a Caps");
     expect(resolved.body).toContain("G2 está interesada en Caps");
   });
+
+  it("renders a stored-English media story in Spanish", async () => {
+    const msg = stored({
+      subject: "Media questions KOI's direction",
+      subject_key: "be.msg.mediaStory.templates.media_neg_1.subject",
+      body_key: "be.msg.mediaStory.templates.media_neg_1.body",
+      i18n_params: { team: "KOI", player: "Caps" },
+    });
+    const resolved = await renderIn("es", msg);
+    expect(resolved.subject).not.toBe("Media questions KOI's direction");
+    expect(resolved.subject).toContain("KOI");
+    expect(resolved.body).not.toContain("{{");
+  });
+
+  it("renders the English media copy without the stray characters stored in the data template", async () => {
+    const msg = stored({
+      subject_key: "be.msg.mediaStory.templates.media_neg_2.subject",
+      body_key: "be.msg.mediaStory.templates.media_neg_2.body",
+      i18n_params: { team: "KOI" },
+    });
+    expect((await renderIn("en", msg)).body).toContain("The fans are starting to voice");
+  });
 });

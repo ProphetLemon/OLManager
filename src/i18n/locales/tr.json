@@ -2627,6 +2627,90 @@
           }
         }
       },
+      "mediaStory": {
+        "templates": {
+          "media_neg_1": {
+            "subject": "Medya {{team}} takımının yönünü sorguluyor",
+            "body": "Yakın tarihli bir makale, {{team}} takımının mevcut teknik ekip altında gittiği yönü sorguluyor. Yazı, tutarsız sonuçlara ve net bir kimlik eksikliğine dikkat çekiyor.\n\n\"{{team}} geriye gidiyor gibi görünüyor\", dedi analist.\n\nBaskı artıyor."
+          },
+          "media_neg_10": {
+            "subject": "{{team}} yönetimi üzerindeki baskı artıyor",
+            "body": "Kötü bir sonuç serisinin ardından {{team}} yönetimi üzerindeki medya baskısı artıyor. Birçok yayın organı teknik ekipte değişiklik çağrısı yapıyor.\n\n\"Yönetim kurulu bunu daha ne kadar tolere edecek?\", diye soruyor bir makale.\n\nSıcak koltukta sıcaklık yükseliyor."
+          },
+          "media_neg_2": {
+            "subject": "{{team}} performansına yönelik eleştiriler büyüyor",
+            "body": "Medyada {{team}} takımının son performansına yönelik eleştiriler artıyor. Birçok yorumcu takımın hazırlığını ve taktik yaklaşımını sorguladı.\n\n\"Bu performans seviyesinin mazereti yok\", dedi bir yorumcu.\n\nTaraftarlar endişelerini sosyal medyada dile getirmeye başladı."
+          },
+          "media_neg_3": {
+            "subject": "Spor sitesi soruyor: \"{{team}} krizde mi?\"",
+            "body": "Popüler bir spor sitesi, {{team}} takımının kriz modunda olup olmadığını sorgulayan bir makale yayımladı. Yazı, takımın puan tablosunda düşüşüne dikkat çekiyor.\n\n\"Bir şeylerin değişmesi lazım, hem de hızlı\", diyor makale.\n\nSpot ışıkları tamamen teknik ekibin üzerinde."
+          },
+          "media_neg_4": {
+            "subject": "Analist {{team}} takımının son formunu topa tuttu",
+            "body": "Tanınmış bir analist, {{team}} takımının son formunu eleştirerek \"bu kadroya sahip bir takım için kabul edilemez\" olarak niteledi.\n\nEleştiri, takımın istikrar bulmakta zorlandığı zor bir dönemde geliyor.\n\nHer kötü sonuçla birlikte medyanın mercek altına alması yoğunlaşıyor."
+          },
+          "media_neg_5": {
+            "subject": "Lig özeti: \"{{team}} beklentilerin altında\"",
+            "body": "Haftalık lig özeti, {{team}} takımını split'in en çok hayal kırıklığı yaratan takımı olarak nitelendirdi.\n\n\"Elindeki kaynaklarla {{team}} çok daha iyi performans göstermeli\", diyor özet.\n\nKulübün etrafındaki anlatı giderek daha olumsuz hale geliyor."
+          },
+          "media_neg_6": {
+            "subject": "Sosyal medya {{team}} teknik direktörünü eleştiriyor",
+            "body": "Bir dizi hayal kırıklığı yaratan sonucun ardından sosyal medya, {{team}} teknik ekibine yönelik eleştirilerle çalkalanıyor.\n\nTaraftarlar değişiklik talep ediyor ve alınan taktik kararları sorguluyor.\n\nÇevrimiçi baskı zaman zaman soyunma odasını etkileyebilir."
+          },
+          "media_neg_7": {
+            "subject": "\"{{team}} takımında sorun ne?\" — köşe yazısı",
+            "body": "\"{{team}} takımında sorun ne?\" başlıklı bir köşe yazısı yayımlandı ve takımın zorluklarını ayrıntılı biçimde analiz ediyor.\n\nYazar, takımın sorunlarının taktikten daha derin olduğunu belirtiyor ve olası moral sorunlarına işaret ediyor.\n\nBu tür yazılar kamuoyunun algısını etkileyebilir."
+          },
+          "media_neg_8": {
+            "subject": "Medya raporu: {{player}} beklentilerin altında",
+            "body": "Bir medya raporu, {{player}} oyuncusunun son dönemdeki form düşüşüne dikkat çekerek oyuncunun potansiyelinin mevcut teknik ekip altında en üst düzeyde kullanılıp kullanılmadığını sorguladı.\n\n\"{{player}} yetenekli bir oyuncu ama geriliyor gibi görünüyor\", diyor rapor.\n\nBireysel oyuncu formu çoğu zaman antrenör kalitesine bağlanır."
+          },
+          "media_neg_9": {
+            "subject": "Makale iddia ediyor: \"{{team}} yeniden yapılanmalı\"",
+            "body": "Kışkırtıcı bir makale, {{team}} takımının teknik ekipten başlayarak tamamen yeniden yapılanması gerektiğini iddia ediyor.\n\nYazı, mevcut projenin ömrünü tamamladığını ve yeni bir liderliğe ihtiyaç olduğunu savunuyor.\n\nBu tür makaleler ilgi görürse huzursuzluk yaratabilir."
+          },
+          "media_pos_1": {
+            "subject": "Spor medyası {{team}} takımının toparlanmasını övüyor",
+            "body": "Yerel spor medyası, {{team}} takımının bu sezonki etkileyici toparlanmasını öne çıkardı. Makale, takımın taktik disiplinini ve mücadele ruhunu övüyor.\n\n\"{{team}}, bu teknik ekiple tamamen farklı bir takım gibi görünüyor\", diyor rapor.\n\nBöyle devam edin koç — medya fark ediyor."
+          },
+          "media_pos_10": {
+            "subject": "{{team}} teknik direktörü haftanın koçu seçildi",
+            "body": "{{team}} takımının son sonuçlarının ardından önde gelen bir espor yayını tarafından haftanın koçu seçildiniz.\n\nÖdül, taktik kararlarınızı ve takımın Rift'teki gelişen koordinasyonunu takdir ediyor.\n\nTüm emeğin karşılığı olan hak edilmiş bir takdir."
+          },
+          "media_pos_2": {
+            "subject": "Esportmaniacos: \"{{team}} ciddi bir aday\"",
+            "body": "Esportmaniacos programı, {{team}} takımını ligin en çok gelişen takımlarından biri olarak gösterdi.\n\n\"Bir kimlik buldular ve ona sadık kalıyorlar\", diye yorumladı analist programda.\n\nÇalışmanız ulusal düzeyde fark ediliyor."
+          },
+          "media_pos_3": {
+            "subject": "Röportaj: {{team}} koçu yükselişte",
+            "body": "Yakın tarihli bir röportajda {{team}} başantrenörü, takımın felsefesini ve uzun vadeli vizyonunu anlattı.\n\nRöportaj, kurduğunuz olumlu ortamı ve oyuncuların yöntemlerinize duyduğu güveni öne çıkarıyor.\n\nTaraftarlar yeni yöne olumlu tepki veriyor."
+          },
+          "media_pos_4": {
+            "subject": "Analist: {{team}} beklentileri aşıyor",
+            "body": "Tanınmış bir lig analisti, {{team}} takımının performansı hakkında parlak bir değerlendirme yayımladı ve takımın sezon öncesi tüm beklentileri aştığını belirtti.\n\nAnaliz, teknik ekibi sınıfının üzerinde oynayan kenetlenmiş bir grup yarattığı için övüyor.\n\nSahnenin en saygın seslerinden birinden büyük bir övgü."
+          },
+          "media_pos_5": {
+            "subject": "{{team}} taraftar güveni tüm zamanların zirvesinde",
+            "body": "Yakın tarihli bir taraftar anketi, {{team}} takımına duyulan güvenin tüm zamanların en yüksek seviyesine ulaştığını gösteriyor. Taraftarlar kulübün yönü konusunda iyimser.\n\nSezonluk bilet satışları arttı ve sosyal medya etkileşimi belirgin biçimde yükseldi.\n\nTaraftarlar kurduğunuz şeye inanıyor."
+          },
+          "media_pos_6": {
+            "subject": "\"{{team}} split'in sürpriz takımı\"",
+            "body": "Birçok analist {{team}} takımını split'in sürpriz takımı olarak nitelendiriyor. Takımın son performansları tüm ligin dikkatini çekti.\n\nMakale, taktik esnekliğinizi ve kadro derinliğini kilit faktörler olarak vurguluyor.\n\nSaygı kazanılır ve siz onu kazanıyorsunuz."
+          },
+          "media_pos_7": {
+            "subject": "{{team}} olumlu bir belgesel bölümünde yer aldı",
+            "body": "Bir spor belgesel dizisi, başarılı yeniden yapılanmalar üzerine bir bölümde {{team}} takımına yer verdi. Yapım, dönüşüm hakkında oyuncularla ve personelle röportaj yapıyor.\n\nBelgesel, göreve geldiğinizden beri uyguladığınız kültür değişimini öne çıkarıyor.\n\nKulüp için harika bir tanıtım."
+          },
+          "media_pos_8": {
+            "subject": "{{player}}, son formuyla medyadan övgü aldı",
+            "body": "{{player}}, {{team}} formasıyla sergilediği olağanüstü son performansları nedeniyle medyadan özel övgü aldı.\n\nHaber, çalışmanızın {{player}} oyuncusunun potansiyelini ortaya çıkarmada belirleyici olduğunu belirtiyor.\n\nOyuncu gelişimi, başarılı bir koçun temel ölçütlerinden biridir."
+          },
+          "media_pos_9": {
+            "subject": "\"{{team}} taraftarlarının heyecanlanmak için nedeni var\"",
+            "body": "Popüler bir espor haber sitesi, \"{{team}} taraftarlarının heyecanlanmak için nedeni var\" başlıklı bir makale yayımladı.\n\nMakale, takımın gelişen istatistiklerini ve sizin liderliğinizde izlenen olumlu gidişatı ayrıntılandırıyor.\n\nGenel topluluk ilerlemeyi fark etmeye başlıyor."
+          }
+        }
+      },
       "mediaPositive": {
         "subject": "Olumlu Medya — {{player}}",
         "body": "Yerel basın bugün {{player}} hakkında çok olumlu bir yazı yayınlıyor.\n\nOyuncunun son dönemdeki mükemmel formunu ve {{team}} takımına olan bağlılığını vurguluyorlar. Bu tür bir haber oyuncunun özgüveni ve kulübün imajı için harikadır."

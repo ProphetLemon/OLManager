@@ -2807,6 +2807,90 @@
           }
         }
       },
+      "mediaStory": {
+        "templates": {
+          "media_neg_1": {
+            "subject": "Media questions {{team}}'s direction",
+            "body": "A recent article questions the direction {{team}} is heading under the current coaching staff. The piece points to inconsistent results and a lack of clear identity.\n\n\"{{team}} seems to be going backwards,\" the analyst stated.\n\nThe pressure is mounting."
+          },
+          "media_neg_10": {
+            "subject": "Pressure mounts on {{team}} management",
+            "body": "Media pressure is mounting on the management of {{team}} following a poor run of results. Several outlets are calling for changes in the coaching staff.\n\n\"How much longer will the board tolerate this?\" one article asks.\n\nThe temperature is rising in the hot seat."
+          },
+          "media_neg_2": {
+            "subject": "Criticism grows over {{team}}'s performances",
+            "body": "Criticism is growing in the media over {{team}}'s recent performances. Several commentators have questioned the team's preparation and tactical approach.\n\n\"There are no excuses for this level of performance,\" one pundit said.\n\nThe fans are starting to voice their concerns on social media."
+          },
+          "media_neg_3": {
+            "subject": "\"Is {{team}} in crisis?\" asks sports website",
+            "body": "A popular sports website has published an article questioning whether {{team}} is in crisis mode. The piece highlights the team's slide down the standings.\n\n\"Something needs to change, and fast,\" the article concludes.\n\nThe spotlight is firmly on the coaching staff."
+          },
+          "media_neg_4": {
+            "subject": "Analyst slams {{team}}'s recent form",
+            "body": "A well-known analyst has been critical of {{team}}'s recent form, describing it as \"unacceptable for a team with this roster.\"\n\nThe criticism comes at a difficult time, with the team struggling to find consistency.\n\nMedia scrutiny is intensifying with every poor result."
+          },
+          "media_neg_5": {
+            "subject": "\"{{team}} underachieving\" says league roundup",
+            "body": "The weekly league roundup has labeled {{team}} as the most underachieving team of the split.\n\n\"With the resources at their disposal, {{team}} should be performing much better,\" the roundup states.\n\nThe narrative is becoming increasingly negative around the club."
+          },
+          "media_neg_6": {
+            "subject": "Social media criticizes {{team}} coach",
+            "body": "Social media is buzzing with criticism directed at the {{team}} coaching staff after a string of disappointing results.\n\nFans are calling for changes and questioning the tactical decisions being made.\n\nOnline pressure can sometimes affect the dressing room."
+          },
+          "media_neg_7": {
+            "subject": "\"What's wrong with {{team}}?\" — opinion piece",
+            "body": "An opinion piece titled \"What's wrong with {{team}}?\" has been published, analyzing the team's struggles in detail.\n\nThe author suggests that the team's issues run deeper than just tactics, pointing to potential morale problems.\n\nOpinion pieces like this can influence public perception."
+          },
+          "media_neg_8": {
+            "subject": "{{player}} underperforming, says media report",
+            "body": "A media report has highlighted {{player}}'s recent drop in form, questioning whether the player's potential is being maximized under the current coaching staff.\n\n\"{{player}} is a talented player who seems to be regressing,\" the report states.\n\nIndividual player form is often attributed to coaching quality."
+          },
+          "media_neg_9": {
+            "subject": "\"{{team}} needs a rebuild\" claims article",
+            "body": "A provocative article claims that {{team}} needs a complete rebuild, starting from the coaching staff down.\n\nThe piece argues that the current project has run its course and fresh leadership is needed.\n\nArticles like this can create unrest if they gain traction."
+          },
+          "media_pos_1": {
+            "subject": "Sports media praises {{team}}'s turnaround",
+            "body": "Local sports media has highlighted {{team}}'s impressive turnaround this season. The article praises the team's tactical discipline and fighting spirit.\n\n\"{{team}} looks like a completely different squad under this coaching staff,\" the report states.\n\nKeep up the good work, coach — the media is taking notice."
+          },
+          "media_pos_10": {
+            "subject": "{{team}}'s coach named coach of the week",
+            "body": "You've been named coach of the week by a leading esports publication following {{team}}'s recent results.\n\nThe award recognizes your tactical decisions and the team's improved coordination on the Rift.\n\nA well-deserved recognition for all the hard work."
+          },
+          "media_pos_2": {
+            "subject": "Esportmaniacos: \"{{team}} is a serious contender\"",
+            "body": "The Esportmaniacos program has named {{team}} as one of the most improved teams in the league.\n\n\"They've found an identity and they're sticking to it,\" the analyst commented during the show.\n\nYour work is being noticed at the national level."
+          },
+          "media_pos_3": {
+            "subject": "Interview: {{team}} coach on the rise",
+            "body": "In a recent interview, the head coach of {{team}} discussed the team's philosophy and long-term vision.\n\nThe interview highlights the positive environment you've built and the trust the players have in your methods.\n\nFans are responding well to the new direction."
+          },
+          "media_pos_4": {
+            "subject": "Analyst: {{team}} exceeding expectations",
+            "body": "A well-known league analyst has published a glowing review of {{team}}'s performance, stating they are exceeding all pre-season expectations.\n\nThe analysis credits the coaching staff with creating a cohesive unit that punches above its weight.\n\nHigh praise from one of the most respected voices in the scene."
+          },
+          "media_pos_5": {
+            "subject": "Fan confidence at all-time high for {{team}}",
+            "body": "A recent fan survey shows that confidence in {{team}} has reached an all-time high. Supporters are optimistic about the direction of the club.\n\nSeason ticket sales have increased, and social media engagement is up significantly.\n\nThe fans believe in what you're building."
+          },
+          "media_pos_6": {
+            "subject": "\"{{team}} is the dark horse of the split\"",
+            "body": "Multiple analysts are calling {{team}} the dark horse of the split. The team's recent performances have caught the attention of the entire league.\n\nThe article highlights your tactical flexibility and the squad's depth as key factors.\n\nRespect is earned, and you're earning it."
+          },
+          "media_pos_7": {
+            "subject": "{{team}} featured in positive documentary segment",
+            "body": "A sports documentary series has featured {{team}} in a segment about successful team rebuilds. The piece interviews players and staff about the transformation.\n\nThe documentary highlights the culture shift you've implemented since taking charge.\n\nGreat publicity for the club."
+          },
+          "media_pos_8": {
+            "subject": "{{player}} praised by media for recent form",
+            "body": "{{player}} has received special praise from the media for their outstanding recent performances with {{team}}.\n\nThe coverage mentions that your coaching has been instrumental in unlocking {{player}}'s potential.\n\nPlayer development is one of the key measures of a successful coach."
+          },
+          "media_pos_9": {
+            "subject": "\"{{team}} fans have reason to be excited\"",
+            "body": "A popular esports news site has published an article titled \"Why {{team}} fans have reason to be excited.\"\n\nThe article breaks down the team's improved statistics and the positive trajectory under your leadership.\n\nThe wider community is starting to recognize the progress."
+          }
+        }
+      },
       "mediaPositive": {
         "subject": "Positive Press — {{player}}",
         "body": "The local papers are running a very positive piece on {{player}} today.\n\nThey are highlighting their excellent recent form and commitment to {{team}}. This kind of coverage is great for the player's confidence and the club's image."

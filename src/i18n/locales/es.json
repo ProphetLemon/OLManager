@@ -2772,6 +2772,90 @@
           }
         }
       },
+      "mediaStory": {
+        "templates": {
+          "media_neg_1": {
+            "subject": "La prensa cuestiona la dirección de {{team}}",
+            "body": "Un artículo reciente cuestiona la dirección que está tomando {{team}} bajo el actual cuerpo técnico. La pieza señala resultados inconsistentes y una falta de identidad clara.\n\n\"{{team}} parece estar yendo hacia atrás,\" declaró el analista.\n\nLa presión está aumentando."
+          },
+          "media_neg_10": {
+            "subject": "Aumenta la presión sobre la directiva de {{team}}",
+            "body": "La presión mediática está aumentando sobre la directiva de {{team}} tras una mala racha de resultados. Varios medios están pidiendo cambios en el cuerpo técnico.\n\n\"¿Cuánto más tolerará el consejo esto?\" pregunta un artículo.\n\nLa temperatura está subiendo en el banquillo."
+          },
+          "media_neg_2": {
+            "subject": "Crece la crítica por el rendimiento de {{team}}",
+            "body": "Crece la crítica en los medios por las recientes actuaciones de {{team}}. Varios comentaristas han cuestionado la preparación y el enfoque táctico del equipo.\n\n\"No hay excusas para este nivel de rendimiento,\" dijo un experto.\n\nLos aficionados empiezan a expresar sus preocupaciones en redes sociales."
+          },
+          "media_neg_3": {
+            "subject": "\"¿Está {{team}} en crisis?\" pregunta un sitio deportivo",
+            "body": "Un popular sitio deportivo ha publicado un artículo cuestionando si {{team}} está en modo crisis. La pieza destaca el descenso del equipo en la clasificación.\n\n\"Algo tiene que cambiar, y rápido,\" concluye el artículo.\n\nEl foco está firmemente en el cuerpo técnico."
+          },
+          "media_neg_4": {
+            "subject": "Analista critica el estado de forma de {{team}}",
+            "body": "Un conocido analista ha criticado el estado de forma de {{team}}, calificándolo de \"inaceptable para un equipo con esta plantilla.\"\n\nLa crítica llega en un momento difícil, con el equipo luchando por encontrar consistencia.\n\nEl escrutinio mediático se intensifica con cada mal resultado."
+          },
+          "media_neg_5": {
+            "subject": "\"{{team}} está rindiendo por debajo\" dice el resumen de la liga",
+            "body": "El resumen semanal de la liga ha calificado a {{team}} como el equipo que más rinde por debajo de su potencial en el split.\n\n\"Con los recursos a su disposición, {{team}} debería estar rindiendo mucho mejor,\" afirma el resumen.\n\nLa narrativa se está volviendo cada vez más negativa en torno al club."
+          },
+          "media_neg_6": {
+            "subject": "Redes sociales critican al entrenador de {{team}}",
+            "body": "Las redes sociales están que arden con críticas dirigidas al cuerpo técnico de {{team}} tras una serie de resultados decepcionantes.\n\nLos aficionados piden cambios y cuestionan las decisiones tácticas que se están tomando.\n\nLa presión en línea puede afectar a veces al vestuario."
+          },
+          "media_neg_7": {
+            "subject": "\"¿Qué le pasa a {{team}}?\" — artículo de opinión",
+            "body": "Se ha publicado un artículo de opinión titulado \"¿Qué le pasa a {{team}}?\" que analiza en detalle las dificultades del equipo.\n\nEl autor sugiere que los problemas del equipo van más allá de la táctica, señalando posibles problemas de moral.\n\nEste tipo de artículos pueden influir en la percepción pública."
+          },
+          "media_neg_8": {
+            "subject": "{{player}} rinde por debajo, según informe de prensa",
+            "body": "Un informe de prensa ha destacado la reciente caída de forma de {{player}}, cuestionando si se está maximizando su potencial bajo el actual cuerpo técnico.\n\n\"{{player}} es un jugador talentoso que parece estar retrocediendo,\" afirma el informe.\n\nEl estado de forma individual a menudo se atribuye a la calidad del entrenamiento."
+          },
+          "media_neg_9": {
+            "subject": "\"{{team}} necesita una reconstrucción\" afirma un artículo",
+            "body": "Un provocador artículo afirma que {{team}} necesita una reconstrucción completa, empezando por el cuerpo técnico.\n\nLa pieza argumenta que el proyecto actual ha llegado a su fin y se necesita un liderazgo fresco.\n\nArtículos como este pueden crear malestar si ganan tracción."
+          },
+          "media_pos_1": {
+            "subject": "La prensa elogia la recuperación de {{team}}",
+            "body": "La prensa deportiva local ha destacado la impresionante recuperación de {{team}} esta temporada. El artículo elogia la disciplina táctica y el espíritu de lucha del equipo.\n\n\"{{team}} parece una plantilla completamente diferente bajo este cuerpo técnico,\" afirma el reportaje.\n\nSiga así, entrenador — la prensa lo está notando."
+          },
+          "media_pos_10": {
+            "subject": "El entrenador de {{team}} nombrado entrenador de la semana",
+            "body": "Ha sido nombrado entrenador de la semana por una importante publicación de esports tras los recientes resultados de {{team}}.\n\nEl premio reconoce sus decisiones tácticas y la mejora en la coordinación del equipo en la Grieta.\n\nUn reconocimiento merecido por todo el trabajo duro."
+          },
+          "media_pos_2": {
+            "subject": "Esportmaniacos: \"{{team}} es un serio candidato\"",
+            "body": "El programa Esportmaniacos ha señalado a {{team}} como uno de los equipos más mejorados de la liga.\n\n\"Han encontrado una identidad y se están aferrando a ella,\" comentó el analista durante el programa.\n\nSu trabajo está siendo notado a nivel nacional."
+          },
+          "media_pos_3": {
+            "subject": "Entrevista: el entrenador de {{team}} en ascenso",
+            "body": "En una reciente entrevista, el entrenador de {{team}} habló sobre la filosofía del equipo y su visión a largo plazo.\n\nLa entrevista destaca el ambiente positivo que ha construido y la confianza que los jugadores tienen en sus métodos.\n\nLos aficionados están respondiendo bien a la nueva dirección."
+          },
+          "media_pos_4": {
+            "subject": "Analista: {{team}} supera las expectativas",
+            "body": "Un conocido analista de la liga ha publicado una crítica muy positiva del rendimiento de {{team}}, afirmando que superan todas las expectativas previas a la temporada.\n\nEl análisis atribuye al cuerpo técnico la creación de un equipo cohesionado que rinde por encima de su nivel.\n\nGrandes elogios de una de las voces más respetadas de la escena."
+          },
+          "media_pos_5": {
+            "subject": "La confianza de la afición en {{team}} está en máximos",
+            "body": "Una encuesta reciente muestra que la confianza de la afición en {{team}} ha alcanzado un máximo histórico. Los seguidores son optimistas sobre la dirección del club.\n\nLas ventas de abonos han aumentado y la actividad en redes sociales ha crecido significativamente.\n\nLos aficionados creen en lo que está construyendo."
+          },
+          "media_pos_6": {
+            "subject": "\"{{team}} es la revelación del split\"",
+            "body": "Múltiples analistas están señalando a {{team}} como la revelación del split. Las recientes actuaciones del equipo han llamado la atención de toda la liga.\n\nEl artículo destaca su flexibilidad táctica y la profundidad de la plantilla como factores clave.\n\nEl respeto se gana, y usted lo está ganando."
+          },
+          "media_pos_7": {
+            "subject": "{{team}} aparece en documental positivo",
+            "body": "Una serie documental deportiva ha presentado a {{team}} en un segmento sobre reconstrucciones exitosas. La pieza entrevista a jugadores y personal sobre la transformación.\n\nEl documental destaca el cambio cultural que ha implementado desde que asumió el cargo.\n\nGran publicidad para el club."
+          },
+          "media_pos_8": {
+            "subject": "La prensa elogia a {{player}} por su forma reciente",
+            "body": "{{player}} ha recibido elogios especiales de la prensa por sus destacadas actuaciones recientes con {{team}}.\n\nLa cobertura menciona que su entrenamiento ha sido fundamental para desbloquear el potencial de {{player}}.\n\nEl desarrollo de jugadores es una de las medidas clave de un entrenador exitoso."
+          },
+          "media_pos_9": {
+            "subject": "\"Los aficionados de {{team}} tienen razón para estar emocionados\"",
+            "body": "Un popular sitio de noticias de esports ha publicado un artículo titulado \"Por qué los aficionados de {{team}} tienen razón para estar emocionados.\"\n\nEl artículo desglosa las estadísticas mejoradas del equipo y la trayectoria positiva bajo su liderazgo.\n\nLa comunidad en general está empezando a reconocer el progreso."
+          }
+        }
+      },
       "mediaPositive": {
         "subject": "Positive Press — {{player}}",
         "body": "The local papers are running a very positive piece on {{player}} today.\n\nThey are highlighting their excellent recent form and commitment to {{team}}. This kind of coverage is great for the player's confidence and the club's image."
