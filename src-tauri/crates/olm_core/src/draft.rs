@@ -279,6 +279,10 @@ pub struct DraftStateEvaluation {
     /// Only the viewer's authorized relationships are serialized. The other side is neutral.
     pub blue_relationship: DraftRelationshipContribution,
     pub red_relationship: DraftRelationshipContribution,
+    /// Symmetric relationships computed from both complete drafts. These feed the
+    /// match outcome only and must never be displayed to the viewer.
+    pub outcome_blue_relationship: DraftRelationshipContribution,
+    pub outcome_red_relationship: DraftRelationshipContribution,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -418,6 +422,12 @@ pub fn evaluate_draft_state(
     }
     let visible_relationship =
         relationship_contribution(&own.picks, &enemy.picks, &authorized_enemy_ids);
+    let (outcome_blue_relationship, outcome_red_relationship) = if viewer_is_blue {
+        evaluate_internal_draft_relationships(&own.picks, &enemy.picks)
+    } else {
+        let (red, blue) = evaluate_internal_draft_relationships(&own.picks, &enemy.picks);
+        (blue, red)
+    };
     let neutral = DraftRelationshipContribution {
         synergy: 0,
         counter: 0,
@@ -458,6 +468,8 @@ pub fn evaluate_draft_state(
         } else {
             neutral
         },
+        outcome_blue_relationship,
+        outcome_red_relationship,
     })
 }
 
@@ -852,13 +864,11 @@ mod tests {
         assert_eq!(hidden.blue_relationship.synergy, 2);
         assert_eq!(hidden.blue_relationship.counter, 0);
         assert_eq!(hidden.red_relationship.total, 0);
-        assert!(
-            hidden
-                .blue_relationship
-                .reasons
-                .iter()
-                .all(|reason| reason == "team synergy")
-        );
+        assert!(hidden
+            .blue_relationship
+            .reasons
+            .iter()
+            .all(|reason| reason == "team synergy"));
         assert_eq!(hidden.pick_evaluations[0].meta_power, None);
         assert_eq!(hidden.pick_evaluations[0].total, None);
 
@@ -894,6 +904,55 @@ mod tests {
         .unwrap();
         assert_eq!(authorized.blue_relationship.counter, 1);
         assert!(authorized.blue_relationship.total.abs() <= MAX_RELATIONSHIP_CONTRIBUTION);
+    }
+
+    #[test]
+    fn outcome_relationships_credit_both_sides_symmetrically() {
+        let game = game_with_player();
+        let pick = |champion: &str, role| DraftPickInput {
+            player_id: "player".into(),
+            champion_id: champion.into(),
+            effective_role: role,
+        };
+        let synergy_pair = vec![
+            pick("Aatrox", LolRole::Top),
+            pick("Kindred", LolRole::Jungle),
+        ];
+        let lone_pick = vec![pick("Chogath", LolRole::Top)];
+        let evaluate = |blue_picks: Vec<DraftPickInput>, red_picks: Vec<DraftPickInput>| {
+            evaluate_draft_state(
+                &game,
+                &DraftStateInput {
+                    viewer_team_id: "team".into(),
+                    blue: DraftSideInput {
+                        team_id: "team".into(),
+                        picks: blue_picks,
+                    },
+                    red: DraftSideInput {
+                        team_id: "rival".into(),
+                        picks: red_picks,
+                    },
+                    knowledge: DraftKnowledgeInput::default(),
+                },
+            )
+            .unwrap()
+        };
+
+        let opponent_synergy = evaluate(lone_pick.clone(), synergy_pair.clone());
+        assert_eq!(opponent_synergy.outcome_red_relationship.synergy, 2);
+        assert_eq!(opponent_synergy.outcome_blue_relationship.synergy, 0);
+        // The displayed (viewer-restricted) opponent side stays neutral.
+        assert_eq!(opponent_synergy.red_relationship.total, 0);
+
+        let viewer_synergy = evaluate(synergy_pair, lone_pick);
+        assert_eq!(
+            viewer_synergy.outcome_blue_relationship,
+            opponent_synergy.outcome_red_relationship
+        );
+        assert_eq!(
+            viewer_synergy.outcome_red_relationship,
+            opponent_synergy.outcome_blue_relationship
+        );
     }
 
     #[test]

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   simulateDraftMatchResult,
   type DraftEvaluationsBySide,
+  type DraftRelationshipContribution,
 } from "@/ui-v2/_legacy/components/match/draftResultSimulator";
 import type { ChampionDraftResultPayload } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
@@ -112,5 +113,34 @@ describe("simulateDraftMatchResult", () => {
     });
 
     expect(canonical.power.blue).toBeGreaterThan(neutral.power.blue);
+  });
+  it("credits the opponent's outcome relationships and swaps with the drafts", () => {
+    const strong = { synergy: 6, counter: 0, total: 6, reasons: ["team synergy"] };
+    const none: DraftRelationshipContribution = { synergy: 0, counter: 0, total: 0, reasons: [] };
+    const run = (blue: DraftRelationshipContribution, red: DraftRelationshipContribution) =>
+      simulateDraftMatchResult({
+        snapshot,
+        gameState,
+        draft: {
+          ...draft,
+          canonical: {
+            pick_evaluations: [],
+            blue_relationship: none,
+            red_relationship: none,
+            outcome_blue_relationship: blue,
+            outcome_red_relationship: red,
+          },
+        },
+        draftEvaluations: evaluations(70, 70),
+        seedSalt: "symmetric",
+      });
+
+    const neutral = run(none, none);
+    const redStrong = run(none, strong);
+    const blueStrong = run(strong, none);
+
+    expect(redStrong.power.red).toBeGreaterThan(neutral.power.red);
+    expect(blueStrong.power.blue).toBeCloseTo(redStrong.power.red, 6);
+    expect(blueStrong.power.red).toBeCloseTo(redStrong.power.blue, 6);
   });
 });
