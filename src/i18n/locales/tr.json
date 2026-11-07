@@ -2602,13 +2602,13 @@
           "victory1": "Maç sonucu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nHarika bir seri! Takım gerçek bir soğukkanlılık gösterdi. {{matchday}}. Maç Günü tamamlandı.",
           "defeat0": "Seri Sonu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nHayal kırıklığı yaratan bir sonuç. Toparlanmalı ve bizi yarı yolda bırakan şeyler üzerinde çalışmalıyız. {{matchday}}. Maç Günü — işleri tersine çevirmek için hala zaman var.",
           "defeat1": "Maç sonucu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nİstediğimiz sonuç bu değildi. {{matchday}}. Maç Günü — yönetim gelişme görmek isteyecektir. Neyin yanlış gittiğini analiz edin ve bir sonraki mücadeleye hazırlanın.",
-          "draw": "Seri Sonu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\n{{matchday}}. Maç Gününde bir puan alındı. Diğer sonuçlara bağlı olarak bu değerli olabilir. Takım sert savaştı ama galibiyeti bulamadı."
+          "draw": "Seri Sonu: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\n{{matchday}}. Maç Gününde karşılaşma berabere bitti. Diğer sonuçlara bağlı olarak bu değerli olabilir. Takım sert savaştı ama galibiyeti bulamadı."
         },
         "actionStandings": "Puan Durumuna Bak"
       },
       "staffAdvice": {
         "subject": "Personel Raporu — Koçluk Boşlukları",
-        "body": "Koç, {{team}}'deki personel durumuna bir göz attım ve birkaç şeyi belirtmek istedim:\n\n• İyi bir Koç antrenman verimliliğini önemli ölçüde artırır — oyuncularınız daha hızlı gelişir.\n• Uzman bir Fizyoterapist sakatlıkları önlemeye yardımcı olur ve maçlar arası toparlanmayı hızlandırır.\n• Gözlemcilerimiz transfer hedeflerini belirlemeye ve rakipleri analiz etmeye yardımcı olabilir.\n\nSezon başlamadan önce boşlukları doldurmanızı şiddetle tavsiye ederim. Uygun personeli Personel bölümünde bulabilirsiniz.\n\nFırsatınız olduğunda bir kontrol edin.",
+        "body": "Koç, {{team}}'deki personel durumuna bir göz attım ve birkaç şeyi belirtmek istedim:\n\n• İyi bir Koç antrenman verimliliğini önemli ölçüde artırır — oyuncularınız daha hızlı gelişir.\n• Uzman bir Fizyoterapist oyuncuları dinç tutar ve maçlar arası toparlanmayı hızlandırır.\n• Gözlemcilerimiz transfer hedeflerini belirlemeye ve rakipleri analiz etmeye yardımcı olabilir.\n\nSezon başlamadan önce boşlukları doldurmanızı şiddetle tavsiye ederim. Uygun personeli Personel bölümünde bulabilirsiniz.\n\nFırsatınız olduğunda bir kontrol edin.",
         "actionView": "Personeli Gör"
       },
       "boardExpect": {
@@ -2667,17 +2667,17 @@
         "critical": {
           "subject": "ACİL: Kadro Kondisyon Krizi",
           "body": {
-            "intense": "Koç, ciddi bir kondisyon krizimiz var. {{criticalCount}} oyuncunun durumu kritik ve sakatlanma riskleri yüksek:\n\n{{players}}\n\nOrtalama kadro kondisyonu %{{avgCondition}} seviyesinde. Mevcut Yoğun programla (6 gün antrenman), takım çok fazla zorlanıyor. Dengeli bir programa geçmek onlara toparlanma süresi verecektir.\n\nDinlenmeden onları daha fazla zorlarsak, sakatlıklar kaçınılmaz olur.",
-            "balanced": "Koç, ciddi bir kondisyon krizimiz var. {{criticalCount}} oyuncunun durumu kritik ve sakatlanma riskleri yüksek:\n\n{{players}}\n\nOrtalama kadro kondisyonu %{{avgCondition}} seviyesinde. Dengeli bir programda bile kadronun dinlenmeye ihtiyacı var. Geçici olarak Hafif bir programa geçmeyi düşünün.\n\nDinlenmeden onları daha fazla zorlarsak, sakatlıklar kaçınılmaz olur.",
-            "light": "Koç, ciddi bir kondisyon krizimiz var. {{criticalCount}} oyuncunun durumu kritik ve sakatlanma riskleri yüksek:\n\n{{players}}\n\nOrtalama kadro kondisyonu %{{avgCondition}} seviyesinde. Kadro zaten Hafif bir programda — sorun yüksek antrenman yoğunluğu olabilir. Yoğunluğu azaltmayı düşünün.\n\nDinlenmeden onları daha fazla zorlarsak, sakatlıklar kaçınılmaz olur."
+            "intense": "Koç, ciddi bir kondisyon krizimiz var. {{criticalCount}} oyuncunun durumu kritik ve tükenmişliğin eşiğinde:\n\n{{players}}\n\nOrtalama kadro kondisyonu %{{avgCondition}} seviyesinde. Mevcut Yoğun programla (6 gün antrenman), takım çok fazla zorlanıyor. Dengeli bir programa geçmek onlara toparlanma süresi verecektir.\n\nDinlenmeden onları daha fazla zorlarsak, performans ve moral düşer.",
+            "balanced": "Koç, ciddi bir kondisyon krizimiz var. {{criticalCount}} oyuncunun durumu kritik ve tükenmişliğin eşiğinde:\n\n{{players}}\n\nOrtalama kadro kondisyonu %{{avgCondition}} seviyesinde. Dengeli bir programda bile kadronun dinlenmeye ihtiyacı var. Geçici olarak Hafif bir programa geçmeyi düşünün.\n\nDinlenmeden onları daha fazla zorlarsak, performans ve moral düşer.",
+            "light": "Koç, ciddi bir kondisyon krizimiz var. {{criticalCount}} oyuncunun durumu kritik ve tükenmişliğin eşiğinde:\n\n{{players}}\n\nOrtalama kadro kondisyonu %{{avgCondition}} seviyesinde. Kadro zaten Hafif bir programda — sorun yüksek antrenman yoğunluğu olabilir. Yoğunluğu azaltmayı düşünün.\n\nDinlenmeden onları daha fazla zorlarsak, performans ve moral düşer."
           }
         },
         "warning": {
           "subject": "Kadro Kondisyon Uyarısı",
           "body": {
-            "intense": "Koç, kadro yorgun görünüyor. Ortalama kondisyon %{{avgCondition}} ve {{exhaustedCount}} oyuncu %40 durumun altında.\n\nDengeli bir programa geçmek kadroya daha fazla toparlanma süresi verecektir.\n\nBir sonraki maçtan önce çocuklara biraz dinlenme vermeyi düşünmeliyiz.",
-            "balanced": "Koç, kadro yorgun görünüyor. Ortalama kondisyon %{{avgCondition}} ve {{exhaustedCount}} oyuncu %40 durumun altında.\n\nBirkaç günlüğüne Hafif bir program uygulamak takımın toparlanmasına yardımcı olabilir.\n\nBir sonraki maçtan önce çocuklara biraz dinlenme vermeyi düşünmeliyiz.",
-            "light": "Koç, kadro yorgun görünüyor. Ortalama kondisyon %{{avgCondition}} ve {{exhaustedCount}} oyuncu %40 durumun altında.\n\nKadro zaten Hafif bir programda, bu yüzden toparlanma doğal olarak gerçekleşecektir. Sadece özellikle bitkin düşen oyunculara göz kulak olun.\n\nBir sonraki maçtan önce çocuklara biraz dinlenme vermeyi düşünmeliyiz."
+            "intense": "Koç, kadro yorgun görünüyor. Ortalama kondisyon %{{avgCondition}} ve {{exhaustedCount}} oyuncu %40 durumun altında.\n\nDengeli bir programa geçmek kadroya daha fazla toparlanma süresi verecektir.\n\nBir sonraki maçtan önce takıma biraz dinlenme vermeyi düşünmeliyiz.",
+            "balanced": "Koç, kadro yorgun görünüyor. Ortalama kondisyon %{{avgCondition}} ve {{exhaustedCount}} oyuncu %40 durumun altında.\n\nBirkaç günlüğüne Hafif bir program uygulamak takımın toparlanmasına yardımcı olabilir.\n\nBir sonraki maçtan önce takıma biraz dinlenme vermeyi düşünmeliyiz.",
+            "light": "Koç, kadro yorgun görünüyor. Ortalama kondisyon %{{avgCondition}} ve {{exhaustedCount}} oyuncu %40 durumun altında.\n\nKadro zaten Hafif bir programda, bu yüzden toparlanma doğal olarak gerçekleşecektir. Sadece özellikle bitkin düşen oyunculara göz kulak olun.\n\nBir sonraki maçtan önce takıma biraz dinlenme vermeyi düşünmeliyiz."
           }
         },
         "actionAdjust": "Antrenmanı Ayarla"

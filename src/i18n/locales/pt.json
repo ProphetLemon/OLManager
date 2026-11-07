@@ -2601,13 +2601,13 @@
           "victory1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nÓtima série! A equipa mostrou verdadeira calma. Jornada {{matchday}} concluída.",
           "defeat0": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUm resultado dececionante. Precisamos de reagrupar e trabalhar nas áreas que nos falharam. Jornada {{matchday}} — ainda há tempo para inverter a situação.",
           "defeat1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNão é o resultado que queríamos. Jornada {{matchday}} — o conselho vai querer ver melhorias. Reveja o que correu mal e prepare-se para o próximo desafio.",
-          "draw": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUm ponto ganho na Jornada {{matchday}}. Dependendo de outros resultados, pode ser valioso. A equipa lutou mas não conseguiu levar a melhor."
+          "draw": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUm empate na Jornada {{matchday}}. Dependendo de outros resultados, pode ser valioso. A equipa lutou mas não conseguiu levar a melhor."
         },
         "actionStandings": "Ver Classificação"
       },
       "staffAdvice": {
         "subject": "Relatório do Staff — Vagas de Treinadores",
-        "body": "Mister, analisei a situação do staff no {{team}} e queria assinalar algumas coisas:\n\n• Um bom Treinador irá melhorar significativamente a eficácia do treino — os seus jogadores desenvolver-se-ão mais rapidamente.\n• Um Fisioterapeuta qualificado ajuda na prevenção de lesões e acelera a recuperação entre jogos.\n• Os nossos Observadores podem ajudar a identificar alvos de transferência e avaliar adversários.\n\nRecomendo vivamente que preencha as vagas antes do início da época. Pode encontrar staff disponível na secção de Staff.\n\nDê uma vista de olhos quando puder.",
+        "body": "Mister, analisei a situação do staff no {{team}} e queria assinalar algumas coisas:\n\n• Um bom Treinador irá melhorar significativamente a eficácia do treino — os seus jogadores desenvolver-se-ão mais rapidamente.\n• Um Fisioterapeuta qualificado mantém os jogadores em boa forma e acelera a recuperação entre jogos.\n• Os nossos Observadores podem ajudar a identificar alvos de transferência e avaliar adversários.\n\nRecomendo vivamente que preencha as vagas antes do início da época. Pode encontrar staff disponível na secção de Staff.\n\nDê uma vista de olhos quando puder.",
         "actionView": "Ver Staff"
       },
       "boardExpect": {
@@ -2666,17 +2666,17 @@
         "critical": {
           "subject": "URGENTE: Crise de Condição Física",
           "body": {
-            "intense": "Mister, temos uma crise séria de condição física. {{criticalCount}} jogadores estão em estado crítico e em risco de lesão:\n\n{{players}}\n\nA condição física média do plantel está a {{avgCondition}}%. Com o programa Intenso actual (6 dias de treino), o plantel está a ser demasiado exigido. Mudar para um programa Equilibrado dar-lhes-ia tempo de recuperação.\n\nSe continuarmos a forçar sem descanso, as lesões serão inevitáveis.",
-            "balanced": "Mister, temos uma crise séria de condição física. {{criticalCount}} jogadores estão em estado crítico e em risco de lesão:\n\n{{players}}\n\nA condição física média do plantel está a {{avgCondition}}%. Mesmo com um programa Equilibrado, o plantel precisa de atenção. Considere mudar para um programa Ligeiro temporariamente.\n\nSe continuarmos a forçar sem descanso, as lesões serão inevitáveis.",
-            "light": "Mister, temos uma crise séria de condição física. {{criticalCount}} jogadores estão em estado crítico e em risco de lesão:\n\n{{players}}\n\nA condição física média do plantel está a {{avgCondition}}%. O plantel já está num programa Ligeiro — o problema pode ser a intensidade alta do treino. Considere reduzir a intensidade.\n\nSe continuarmos a forçar sem descanso, as lesões serão inevitáveis."
+            "intense": "Mister, temos uma crise séria de condição física. {{criticalCount}} jogadores estão em estado crítico e à beira do esgotamento:\n\n{{players}}\n\nA condição física média do plantel está a {{avgCondition}}%. Com o programa Intenso actual (6 dias de treino), o plantel está a ser demasiado exigido. Mudar para um programa Equilibrado dar-lhes-ia tempo de recuperação.\n\nSe continuarmos a forçar sem descanso, o rendimento e o moral vão sofrer.",
+            "balanced": "Mister, temos uma crise séria de condição física. {{criticalCount}} jogadores estão em estado crítico e à beira do esgotamento:\n\n{{players}}\n\nA condição física média do plantel está a {{avgCondition}}%. Mesmo com um programa Equilibrado, o plantel precisa de atenção. Considere mudar para um programa Ligeiro temporariamente.\n\nSe continuarmos a forçar sem descanso, o rendimento e o moral vão sofrer.",
+            "light": "Mister, temos uma crise séria de condição física. {{criticalCount}} jogadores estão em estado crítico e à beira do esgotamento:\n\n{{players}}\n\nA condição física média do plantel está a {{avgCondition}}%. O plantel já está num programa Ligeiro — o problema pode ser a intensidade alta do treino. Considere reduzir a intensidade.\n\nSe continuarmos a forçar sem descanso, o rendimento e o moral vão sofrer."
           }
         },
         "warning": {
           "subject": "Aviso de Condição Física",
           "body": {
-            "intense": "Mister, o plantel parece cansado. A condição física média é de {{avgCondition}}% e {{exhaustedCount}} jogadores estão abaixo dos 40%.\n\nMudar para um programa Equilibrado daria mais tempo de recuperação.\n\nDevíamos considerar dar descanso aos rapazes antes do próximo jogo.",
-            "balanced": "Mister, o plantel parece cansado. A condição física média é de {{avgCondition}}% e {{exhaustedCount}} jogadores estão abaixo dos 40%.\n\nUm programa Ligeiro durante alguns dias poderia ajudar o plantel a recuperar.\n\nDevíamos considerar dar descanso aos rapazes antes do próximo jogo.",
-            "light": "Mister, o plantel parece cansado. A condição física média é de {{avgCondition}}% e {{exhaustedCount}} jogadores estão abaixo dos 40%.\n\nO plantel já está num programa Ligeiro, por isso a recuperação deverá ser natural. Apenas fique atento aos jogadores mais esgotados.\n\nDevíamos considerar dar descanso aos rapazes antes do próximo jogo."
+            "intense": "Mister, o plantel parece cansado. A condição física média é de {{avgCondition}}% e {{exhaustedCount}} jogadores estão abaixo dos 40%.\n\nMudar para um programa Equilibrado daria mais tempo de recuperação.\n\nDevíamos considerar dar descanso à equipa antes do próximo jogo.",
+            "balanced": "Mister, o plantel parece cansado. A condição física média é de {{avgCondition}}% e {{exhaustedCount}} jogadores estão abaixo dos 40%.\n\nUm programa Ligeiro durante alguns dias poderia ajudar o plantel a recuperar.\n\nDevíamos considerar dar descanso à equipa antes do próximo jogo.",
+            "light": "Mister, o plantel parece cansado. A condição física média é de {{avgCondition}}% e {{exhaustedCount}} jogadores estão abaixo dos 40%.\n\nO plantel já está num programa Ligeiro, por isso a recuperação deverá ser natural. Apenas fique atento aos jogadores mais esgotados.\n\nDevíamos considerar dar descanso à equipa antes do próximo jogo."
           }
         },
         "actionAdjust": "Ajustar Treino"

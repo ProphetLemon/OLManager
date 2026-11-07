@@ -2747,13 +2747,13 @@
           "victory1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\n¡Gran serie! El equipo mostró una gran templanza. Jornada {{matchday}} completada.",
           "defeat0": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn resultado decepcionante. Necesitaremos reagruparnos y trabajar en las áreas que nos fallaron. Jornada {{matchday}} — aún hay tiempo para cambiar las cosas.",
           "defeat1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNo es el resultado que queríamos. Jornada {{matchday}} — la junta querrá ver mejoras. Revise qué salió mal y prepárese para el próximo desafío.",
-          "draw": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn punto ganado en la Jornada {{matchday}}. Dependiendo de otros resultados, podría ser valioso. El equipo luchó pero no logró imponerse."
+          "draw": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn empate en la Jornada {{matchday}}. Dependiendo de otros resultados, podría ser valioso. El equipo luchó pero no logró imponerse."
         },
         "actionStandings": "Ver Clasificación"
       },
       "staffAdvice": {
         "subject": "Informe del Personal — Vacantes de Entrenadores",
-        "body": "Jefe, he revisado la situación del personal en {{team}} y quería señalar algunas cosas:\n\n• Un buen Entrenador mejorará significativamente la efectividad del entrenamiento — sus jugadores se desarrollarán más rápido.\n• Un Fisioterapeuta cualificado ayuda con la prevención de lesiones y acelera la recuperación entre partidos.\n• Nuestros Ojeadores pueden ayudar a identificar objetivos de fichaje y evaluar rivales.\n\nRecomiendo encarecidamente cubrir las vacantes antes de que comience la temporada. Puede encontrar personal disponible en la sección de Personal.\n\nÉchele un vistazo cuando pueda.",
+        "body": "Jefe, he revisado la situación del personal en {{team}} y quería señalar algunas cosas:\n\n• Un buen Entrenador mejorará significativamente la efectividad del entrenamiento — sus jugadores se desarrollarán más rápido.\n• Un Fisioterapeuta cualificado mantiene a los jugadores en plena forma y acelera la recuperación entre partidos.\n• Nuestros Ojeadores pueden ayudar a identificar objetivos de fichaje y evaluar rivales.\n\nRecomiendo encarecidamente cubrir las vacantes antes de que comience la temporada. Puede encontrar personal disponible en la sección de Personal.\n\nÉchele un vistazo cuando pueda.",
         "actionView": "Ver Personal"
       },
       "boardExpect": {
@@ -2812,17 +2812,17 @@
         "critical": {
           "subject": "URGENTE: Crisis de forma física del plantel",
           "body": {
-            "intense": "Jefe, tenemos una crisis seria de condición física. {{criticalCount}} jugadores están en estado crítico y en riesgo de lesión:\n\n{{players}}\n\nLa condición física media de la plantilla está al {{avgCondition}}%. Con el programa Intenso actual (6 días de entrenamiento), la plantilla está siendo exigida en exceso. Cambiar a un programa Equilibrado les daría tiempo de recuperación.\n\nSi seguimos presionando sin descanso, las lesiones serán inevitables.",
-            "balanced": "Jefe, tenemos una crisis seria de condición física. {{criticalCount}} jugadores están en estado crítico y en riesgo de lesión:\n\n{{players}}\n\nLa condición física media de la plantilla está al {{avgCondition}}%. Incluso con un programa Equilibrado, la plantilla necesita atención. Considere cambiar a un programa Ligero temporalmente.\n\nSi seguimos presionando sin descanso, las lesiones serán inevitables.",
-            "light": "Jefe, tenemos una crisis seria de condición física. {{criticalCount}} jugadores están en estado crítico y en riesgo de lesión:\n\n{{players}}\n\nLa condición física media de la plantilla está al {{avgCondition}}%. La plantilla ya está en un programa Ligero — el problema puede ser la intensidad alta del entrenamiento. Considere reducir la intensidad.\n\nSi seguimos presionando sin descanso, las lesiones serán inevitables."
+            "intense": "Jefe, tenemos una crisis seria de condición física. {{criticalCount}} jugadores están en estado crítico y al borde del agotamiento:\n\n{{players}}\n\nLa condición física media de la plantilla está al {{avgCondition}}%. Con el programa Intenso actual (6 días de entrenamiento), la plantilla está siendo exigida en exceso. Cambiar a un programa Equilibrado les daría tiempo de recuperación.\n\nSi seguimos presionando sin descanso, el rendimiento y la moral se resentirán.",
+            "balanced": "Jefe, tenemos una crisis seria de condición física. {{criticalCount}} jugadores están en estado crítico y al borde del agotamiento:\n\n{{players}}\n\nLa condición física media de la plantilla está al {{avgCondition}}%. Incluso con un programa Equilibrado, la plantilla necesita atención. Considere cambiar a un programa Ligero temporalmente.\n\nSi seguimos presionando sin descanso, el rendimiento y la moral se resentirán.",
+            "light": "Jefe, tenemos una crisis seria de condición física. {{criticalCount}} jugadores están en estado crítico y al borde del agotamiento:\n\n{{players}}\n\nLa condición física media de la plantilla está al {{avgCondition}}%. La plantilla ya está en un programa Ligero — el problema puede ser la intensidad alta del entrenamiento. Considere reducir la intensidad.\n\nSi seguimos presionando sin descanso, el rendimiento y la moral se resentirán."
           }
         },
         "warning": {
           "subject": "Aviso de Condición Física",
           "body": {
-            "intense": "Jefe, la plantilla parece cansada. La condición física media es del {{avgCondition}}% y {{exhaustedCount}} jugadores están por debajo del 40%.\n\nCambiar a un programa Equilibrado daría más tiempo de recuperación.\n\nDeberíamos considerar dar descanso a los chicos antes del próximo partido.",
-            "balanced": "Jefe, la plantilla parece cansada. La condición física media es del {{avgCondition}}% y {{exhaustedCount}} jugadores están por debajo del 40%.\n\nUn programa Ligero durante unos días podría ayudar a la plantilla a recuperarse.\n\nDeberíamos considerar dar descanso a los chicos antes del próximo partido.",
-            "light": "Jefe, la plantilla parece cansada. La condición física media es del {{avgCondition}}% y {{exhaustedCount}} jugadores están por debajo del 40%.\n\nLa plantilla ya está en un programa Ligero, así que la recuperación debería llegar naturalmente. Solo vigile a los jugadores más agotados.\n\nDeberíamos considerar dar descanso a los chicos antes del próximo partido."
+            "intense": "Jefe, la plantilla parece cansada. La condición física media es del {{avgCondition}}% y {{exhaustedCount}} jugadores están por debajo del 40%.\n\nCambiar a un programa Equilibrado daría más tiempo de recuperación.\n\nDeberíamos considerar dar descanso al equipo antes del próximo partido.",
+            "balanced": "Jefe, la plantilla parece cansada. La condición física media es del {{avgCondition}}% y {{exhaustedCount}} jugadores están por debajo del 40%.\n\nUn programa Ligero durante unos días podría ayudar a la plantilla a recuperarse.\n\nDeberíamos considerar dar descanso al equipo antes del próximo partido.",
+            "light": "Jefe, la plantilla parece cansada. La condición física media es del {{avgCondition}}% y {{exhaustedCount}} jugadores están por debajo del 40%.\n\nLa plantilla ya está en un programa Ligero, así que la recuperación debería llegar naturalmente. Solo vigile a los jugadores más agotados.\n\nDeberíamos considerar dar descanso al equipo antes del próximo partido."
           }
         },
         "actionAdjust": "Ajustar Entrenamiento"

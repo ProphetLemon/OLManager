@@ -2602,13 +2602,13 @@
           "victory1": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nSuperbe série ! L'équipe a fait preuve d'un vrai sang-froid. Journée {{matchday}} accomplie.",
           "defeat0": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn résultat décevant. Il faudra se regrouper et travailler sur les points faibles. Journée {{matchday}} — il est encore temps de redresser la barre.",
           "defeat1": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nPas le résultat espéré. Journée {{matchday}} — le conseil voudra voir des améliorations. Analysez ce qui n'a pas fonctionné et préparez-vous pour le prochain défi.",
-          "draw": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn point pris à la Journée {{matchday}}. Selon les autres résultats, cela pourrait être précieux. L'équipe s'est battue mais n'a pas réussi à faire la différence."
+          "draw": "Score final : {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn match nul à la Journée {{matchday}}. Selon les autres résultats, cela pourrait être précieux. L'équipe s'est battue mais n'a pas réussi à faire la différence."
         },
         "actionStandings": "Voir le Classement"
       },
       "staffAdvice": {
         "subject": "Rapport du Staff — Postes Vacants",
-        "body": "Boss, j'ai examiné la situation du staff à {{team}} et je voulais signaler quelques points :\n\n• Un bon Entraîneur améliorera considérablement l'efficacité de l'entraînement — vos joueurs progresseront plus vite.\n• Un Kinésithérapeute qualifié aide à la prévention des blessures et accélère la récupération entre les matchs.\n• Nos Recruteurs peuvent aider à identifier des cibles de transfert et évaluer les adversaires.\n\nJe recommande fortement de combler les postes vacants avant le début de la saison. Vous trouverez le staff disponible dans la section Staff.\n\nJetez-y un œil quand vous pourrez.",
+        "body": "Boss, j'ai examiné la situation du staff à {{team}} et je voulais signaler quelques points :\n\n• Un bon Entraîneur améliorera considérablement l'efficacité de l'entraînement — vos joueurs progresseront plus vite.\n• Un Kinésithérapeute qualifié garde les joueurs en forme et accélère la récupération entre les matchs.\n• Nos Recruteurs peuvent aider à identifier des cibles de transfert et évaluer les adversaires.\n\nJe recommande fortement de combler les postes vacants avant le début de la saison. Vous trouverez le staff disponible dans la section Staff.\n\nJetez-y un œil quand vous pourrez.",
         "actionView": "Voir le Staff"
       },
       "boardExpect": {
@@ -2667,17 +2667,17 @@
         "critical": {
           "subject": "URGENT : Crise de Forme Physique de l'Effectif",
           "body": {
-            "intense": "Boss, nous avons une crise sérieuse de condition physique. {{criticalCount}} joueurs sont dans un état critique et risquent de se blesser :\n\n{{players}}\n\nLa condition physique moyenne de l'effectif est à {{avgCondition}}%. Avec le programme Intense actuel (6 jours d'entraînement), l'effectif est trop sollicité. Passer à un programme Équilibré leur donnerait du temps de récupération.\n\nSi on continue à forcer sans repos, les blessures seront inévitables.",
-            "balanced": "Boss, nous avons une crise sérieuse de condition physique. {{criticalCount}} joueurs sont dans un état critique et risquent de se blesser :\n\n{{players}}\n\nLa condition physique moyenne de l'effectif est à {{avgCondition}}%. Même avec un programme Équilibré, l'effectif a besoin d'attention. Envisagez de passer à un programme Léger temporairement.\n\nSi on continue à forcer sans repos, les blessures seront inévitables.",
-            "light": "Boss, nous avons une crise sérieuse de condition physique. {{criticalCount}} joueurs sont dans un état critique et risquent de se blesser :\n\n{{players}}\n\nLa condition physique moyenne de l'effectif est à {{avgCondition}}%. L'effectif est déjà en programme Léger — le problème pourrait être l'intensité élevée de l'entraînement. Envisagez de réduire l'intensité.\n\nSi on continue à forcer sans repos, les blessures seront inévitables."
+            "intense": "Boss, nous avons une crise sérieuse de condition physique. {{criticalCount}} joueurs sont dans un état critique et sont proches de l'épuisement :\n\n{{players}}\n\nLa condition physique moyenne de l'effectif est à {{avgCondition}}%. Avec le programme Intense actuel (6 jours d'entraînement), l'effectif est trop sollicité. Passer à un programme Équilibré leur donnerait du temps de récupération.\n\nSi on continue à forcer sans repos, les performances et le moral en pâtiront.",
+            "balanced": "Boss, nous avons une crise sérieuse de condition physique. {{criticalCount}} joueurs sont dans un état critique et sont proches de l'épuisement :\n\n{{players}}\n\nLa condition physique moyenne de l'effectif est à {{avgCondition}}%. Même avec un programme Équilibré, l'effectif a besoin d'attention. Envisagez de passer à un programme Léger temporairement.\n\nSi on continue à forcer sans repos, les performances et le moral en pâtiront.",
+            "light": "Boss, nous avons une crise sérieuse de condition physique. {{criticalCount}} joueurs sont dans un état critique et sont proches de l'épuisement :\n\n{{players}}\n\nLa condition physique moyenne de l'effectif est à {{avgCondition}}%. L'effectif est déjà en programme Léger — le problème pourrait être l'intensité élevée de l'entraînement. Envisagez de réduire l'intensité.\n\nSi on continue à forcer sans repos, les performances et le moral en pâtiront."
           }
         },
         "warning": {
           "subject": "Alerte Condition Physique",
           "body": {
-            "intense": "Boss, l'effectif semble fatigué. La condition physique moyenne est de {{avgCondition}}% et {{exhaustedCount}} joueurs sont en dessous de 40%.\n\nPasser à un programme Équilibré donnerait plus de temps de récupération.\n\nNous devrions envisager de donner du repos aux gars avant le prochain match.",
-            "balanced": "Boss, l'effectif semble fatigué. La condition physique moyenne est de {{avgCondition}}% et {{exhaustedCount}} joueurs sont en dessous de 40%.\n\nUn programme Léger pendant quelques jours pourrait aider l'effectif à récupérer.\n\nNous devrions envisager de donner du repos aux gars avant le prochain match.",
-            "light": "Boss, l'effectif semble fatigué. La condition physique moyenne est de {{avgCondition}}% et {{exhaustedCount}} joueurs sont en dessous de 40%.\n\nL'effectif est déjà en programme Léger, donc la récupération devrait venir naturellement. Gardez juste un œil sur les joueurs les plus épuisés.\n\nNous devrions envisager de donner du repos aux gars avant le prochain match."
+            "intense": "Boss, l'effectif semble fatigué. La condition physique moyenne est de {{avgCondition}}% et {{exhaustedCount}} joueurs sont en dessous de 40%.\n\nPasser à un programme Équilibré donnerait plus de temps de récupération.\n\nNous devrions envisager de donner du repos à l'équipe avant le prochain match.",
+            "balanced": "Boss, l'effectif semble fatigué. La condition physique moyenne est de {{avgCondition}}% et {{exhaustedCount}} joueurs sont en dessous de 40%.\n\nUn programme Léger pendant quelques jours pourrait aider l'effectif à récupérer.\n\nNous devrions envisager de donner du repos à l'équipe avant le prochain match.",
+            "light": "Boss, l'effectif semble fatigué. La condition physique moyenne est de {{avgCondition}}% et {{exhaustedCount}} joueurs sont en dessous de 40%.\n\nL'effectif est déjà en programme Léger, donc la récupération devrait venir naturellement. Gardez juste un œil sur les joueurs les plus épuisés.\n\nNous devrions envisager de donner du repos à l'équipe avant le prochain match."
           }
         },
         "actionAdjust": "Ajuster l'Entraînement"

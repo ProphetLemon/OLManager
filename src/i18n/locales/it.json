@@ -2473,17 +2473,17 @@
         "critical": {
           "subject": "URGENTE: Crisi di condizione della rosa",
           "body": {
-            "intense": "Mister, abbiamo una seria crisi di condizione fisica. {{criticalCount}} giocatori sono in condizioni critiche e a rischio infortunio:\n\n{{players}}\n\nLa condizione media della rosa è al {{avgCondition}}%. Con l'attuale programma Intenso (6 giorni di allenamento), la squadra viene spinta troppo oltre. Passare a un programma Equilibrato darebbe tempo per recuperare.\n\nSe continuiamo così senza riposo, gli infortuni saranno inevitabili.",
-            "balanced": "Mister, abbiamo una seria crisi di condizione fisica. {{criticalCount}} giocatori sono in condizioni critiche e a rischio infortunio:\n\n{{players}}\n\nLa condizione media della rosa è al {{avgCondition}}%. Anche con un programma Equilibrato la squadra ha bisogno di attenzione. Valuta di passare temporaneamente a un programma Leggero.\n\nSe continuiamo così senza riposo, gli infortuni saranno inevitabili.",
-            "light": "Mister, abbiamo una seria crisi di condizione fisica. {{criticalCount}} giocatori sono in condizioni critiche e a rischio infortunio:\n\n{{players}}\n\nLa condizione media della rosa è al {{avgCondition}}%. La squadra è già su un programma Leggero — il problema potrebbe essere l'intensità elevata degli allenamenti. Valuta di ridurla.\n\nSe continuiamo così senza riposo, gli infortuni saranno inevitabili."
+            "intense": "Mister, abbiamo una seria crisi di condizione fisica. {{criticalCount}} giocatori sono in condizioni critiche e vicini all'esaurimento:\n\n{{players}}\n\nLa condizione media della rosa è al {{avgCondition}}%. Con l'attuale programma Intenso (6 giorni di allenamento), la squadra viene spinta troppo oltre. Passare a un programma Equilibrato darebbe tempo per recuperare.\n\nSe continuiamo così senza riposo, rendimento e morale ne risentiranno.",
+            "balanced": "Mister, abbiamo una seria crisi di condizione fisica. {{criticalCount}} giocatori sono in condizioni critiche e vicini all'esaurimento:\n\n{{players}}\n\nLa condizione media della rosa è al {{avgCondition}}%. Anche con un programma Equilibrato la squadra ha bisogno di attenzione. Valuta di passare temporaneamente a un programma Leggero.\n\nSe continuiamo così senza riposo, rendimento e morale ne risentiranno.",
+            "light": "Mister, abbiamo una seria crisi di condizione fisica. {{criticalCount}} giocatori sono in condizioni critiche e vicini all'esaurimento:\n\n{{players}}\n\nLa condizione media della rosa è al {{avgCondition}}%. La squadra è già su un programma Leggero — il problema potrebbe essere l'intensità elevata degli allenamenti. Valuta di ridurla.\n\nSe continuiamo così senza riposo, rendimento e morale ne risentiranno."
           }
         },
         "warning": {
           "subject": "Avviso condizione della rosa",
           "body": {
-            "intense": "Mister, la squadra appare stanca. La forma media è al {{avgCondition}}% e {{exhaustedCount}} giocatori sono sotto il 40% di condizione.\n\nPassare a un programma Equilibrato darebbe più tempo di recupero alla rosa.\n\nDovremmo valutare di concedere un po' di riposo ai ragazzi prima della prossima partita.",
-            "balanced": "Mister, la squadra appare stanca. La forma media è al {{avgCondition}}% e {{exhaustedCount}} giocatori sono sotto il 40% di condizione.\n\nUn programma Leggero per qualche giorno potrebbe aiutare la squadra a rimettersi.\n\nDovremmo valutare di concedere un po' di riposo ai ragazzi prima della prossima partita.",
-            "light": "Mister, la squadra appare stanca. La forma media è al {{avgCondition}}% e {{exhaustedCount}} giocatori sono sotto il 40% di condizione.\n\nLa squadra è già su un programma Leggero, quindi il recupero dovrebbe arrivare naturalmente. Tieni solo d'occhio i giocatori più esausti.\n\nDovremmo valutare di concedere un po' di riposo ai ragazzi prima della prossima partita."
+            "intense": "Mister, la squadra appare stanca. La forma media è al {{avgCondition}}% e {{exhaustedCount}} giocatori sono sotto il 40% di condizione.\n\nPassare a un programma Equilibrato darebbe più tempo di recupero alla rosa.\n\nDovremmo valutare di concedere un po' di riposo alla squadra prima della prossima partita.",
+            "balanced": "Mister, la squadra appare stanca. La forma media è al {{avgCondition}}% e {{exhaustedCount}} giocatori sono sotto il 40% di condizione.\n\nUn programma Leggero per qualche giorno potrebbe aiutare la squadra a rimettersi.\n\nDovremmo valutare di concedere un po' di riposo alla squadra prima della prossima partita.",
+            "light": "Mister, la squadra appare stanca. La forma media è al {{avgCondition}}% e {{exhaustedCount}} giocatori sono sotto il 40% di condizione.\n\nLa squadra è già su un programma Leggero, quindi il recupero dovrebbe arrivare naturalmente. Tieni solo d'occhio i giocatori più esausti.\n\nDovremmo valutare di concedere un po' di riposo alla squadra prima della prossima partita."
           }
         },
         "actionAdjust": "Regola allenamento"
@@ -2888,14 +2888,14 @@
           "victory1": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nOttima serie! La squadra ha mostrato vera freddezza. Giornata {{matchday}} completata.",
           "defeat0": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn risultato deludente. Dovremo riorganizzarci e lavorare sugli aspetti che ci hanno fatto difetto. Giornata {{matchday}} — c'è ancora tempo per ribaltare la situazione.",
           "defeat1": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNon è il risultato che volevamo. Giornata {{matchday}} — il consiglio vorrà vedere miglioramenti. Rivedi cosa è andato storto e preparati alla prossima sfida.",
-          "draw": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn punto conquistato nella Giornata {{matchday}}. A seconda degli altri risultati, potrebbe essere prezioso. La squadra ha lottato ma non è riuscita a trovare il successo."
+          "draw": "Punteggio finale: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn pareggio nella Giornata {{matchday}}. A seconda degli altri risultati, potrebbe essere prezioso. La squadra ha lottato ma non è riuscita a trovare il successo."
         },
         "actionStandings": "View Standings"
       },
       "staffAdvice": {
-        "subject": "Staff Report — Coaching Vacancies",
-        "body": "Boss, I've had a look at the staff situation at {{team}} and wanted to flag a few things:\n\n• A good Coach will significantly improve training effectiveness — your players will develop faster.\n• A qualified Physio helps with injury prevention and speeds up recovery between matches.\n• Our Scouts can help identify transfer targets and assess opponents.\n\nI'd strongly recommend filling any vacancies before the season starts. You can find available staff in the Staff section.\n\nCheck it out when you get a chance.",
-        "actionView": "View Staff"
+        "subject": "Rapporto sullo staff — Posti da allenatore vacanti",
+        "body": "Mister, ho dato un'occhiata alla situazione dello staff del {{team}} e volevo segnalare alcune cose:\n\n• Un buon Allenatore migliorerà sensibilmente l'efficacia degli allenamenti — i tuoi giocatori cresceranno più in fretta.\n• Un Fisioterapista qualificato mantiene i giocatori in forma e accelera il recupero tra una partita e l'altra.\n• I nostri Osservatori possono aiutare a individuare obiettivi di mercato e analizzare gli avversari.\n\nTi consiglio vivamente di coprire i posti vacanti prima dell'inizio della stagione. Puoi trovare lo staff disponibile nella sezione Staff.\n\nDacci un'occhiata appena puoi.",
+        "actionView": "Vedi staff"
       },
       "boardExpect": {
         "subject": "{{team}} — Season Objectives",

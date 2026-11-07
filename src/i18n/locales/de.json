@@ -2602,13 +2602,13 @@
           "victory1": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nTolle Serie! Das Team hat dort echte Nervenstärke gezeigt. Spieltag {{matchday}} abgeschlossen.",
           "defeat0": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nEin enttäuschendes Ergebnis. Wir müssen uns neu formieren und an den Schwachstellen arbeiten. Spieltag {{matchday}} — es ist noch Zeit, das Ruder herumzureißen.",
           "defeat1": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNicht das gewünschte Ergebnis. Spieltag {{matchday}} — der Vorstand wird Verbesserungen sehen wollen. Analysieren Sie, was schiefgelaufen ist, und bereiten Sie sich auf die nächste Herausforderung vor.",
-          "draw": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nEin Punkt am Spieltag {{matchday}}. Je nach anderen Ergebnissen könnte das wertvoll sein. Die Mannschaft hat gekämpft, konnte sich aber nicht durchsetzen."
+          "draw": "Endergebnis: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nEin Unentschieden am Spieltag {{matchday}}. Je nach anderen Ergebnissen könnte das wertvoll sein. Die Mannschaft hat gekämpft, konnte sich aber nicht durchsetzen."
         },
         "actionStandings": "Tabelle ansehen"
       },
       "staffAdvice": {
         "subject": "Personalbericht — Offene Trainerstellen",
-        "body": "Chef, ich habe mir die Personalsituation bei {{team}} angesehen und wollte einige Dinge ansprechen:\n\n• Ein guter Trainer wird die Trainingseffektivität erheblich verbessern — Ihre Spieler werden sich schneller entwickeln.\n• Ein qualifizierter Physiotherapeut hilft bei der Verletzungsprävention und beschleunigt die Erholung zwischen den Spielen.\n• Unsere Scouts können helfen, Transferziele zu identifizieren und Gegner zu bewerten.\n\nIch empfehle dringend, offene Stellen vor Saisonbeginn zu besetzen. Verfügbares Personal finden Sie im Personalbereich.\n\nSchauen Sie bei Gelegenheit vorbei.",
+        "body": "Chef, ich habe mir die Personalsituation bei {{team}} angesehen und wollte einige Dinge ansprechen:\n\n• Ein guter Trainer wird die Trainingseffektivität erheblich verbessern — Ihre Spieler werden sich schneller entwickeln.\n• Ein qualifizierter Physiotherapeut hält die Spieler frisch und beschleunigt die Erholung zwischen den Spielen.\n• Unsere Scouts können helfen, Transferziele zu identifizieren und Gegner zu bewerten.\n\nIch empfehle dringend, offene Stellen vor Saisonbeginn zu besetzen. Verfügbares Personal finden Sie im Personalbereich.\n\nSchauen Sie bei Gelegenheit vorbei.",
         "actionView": "Personal ansehen"
       },
       "boardExpect": {
@@ -2667,17 +2667,17 @@
         "critical": {
           "subject": "DRINGEND: Fitness-Krise im Kader",
           "body": {
-            "intense": "Chef, wir haben eine ernste Fitness-Krise. {{criticalCount}} Spieler sind in kritischem Zustand und verletzungsgefährdet:\n\n{{players}}\n\nDie durchschnittliche Kaderfitness liegt bei {{avgCondition}}%. Mit dem aktuellen Intensiv-Programm (6 Trainingstage) wird der Kader zu stark belastet. Ein Wechsel zum Ausgewogenen Programm würde Erholungszeit geben.\n\nWenn wir weiter ohne Pause forcieren, sind Verletzungen unvermeidlich.",
-            "balanced": "Chef, wir haben eine ernste Fitness-Krise. {{criticalCount}} Spieler sind in kritischem Zustand und verletzungsgefährdet:\n\n{{players}}\n\nDie durchschnittliche Kaderfitness liegt bei {{avgCondition}}%. Selbst mit dem Ausgewogenen Programm braucht der Kader Aufmerksamkeit. Erwägen Sie einen vorübergehenden Wechsel zum Leichten Programm.\n\nWenn wir weiter ohne Pause forcieren, sind Verletzungen unvermeidlich.",
-            "light": "Chef, wir haben eine ernste Fitness-Krise. {{criticalCount}} Spieler sind in kritischem Zustand und verletzungsgefährdet:\n\n{{players}}\n\nDie durchschnittliche Kaderfitness liegt bei {{avgCondition}}%. Der Kader ist bereits im Leichten Programm — das Problem könnte die hohe Trainingsintensität sein. Erwägen Sie, die Intensität zu reduzieren.\n\nWenn wir weiter ohne Pause forcieren, sind Verletzungen unvermeidlich."
+            "intense": "Chef, wir haben eine ernste Fitness-Krise. {{criticalCount}} Spieler sind in kritischem Zustand und stehen kurz vor dem Burnout:\n\n{{players}}\n\nDie durchschnittliche Kaderfitness liegt bei {{avgCondition}}%. Mit dem aktuellen Intensiv-Programm (6 Trainingstage) wird der Kader zu stark belastet. Ein Wechsel zum Ausgewogenen Programm würde Erholungszeit geben.\n\nWenn wir weiter ohne Pause forcieren, leiden Leistung und Moral.",
+            "balanced": "Chef, wir haben eine ernste Fitness-Krise. {{criticalCount}} Spieler sind in kritischem Zustand und stehen kurz vor dem Burnout:\n\n{{players}}\n\nDie durchschnittliche Kaderfitness liegt bei {{avgCondition}}%. Selbst mit dem Ausgewogenen Programm braucht der Kader Aufmerksamkeit. Erwägen Sie einen vorübergehenden Wechsel zum Leichten Programm.\n\nWenn wir weiter ohne Pause forcieren, leiden Leistung und Moral.",
+            "light": "Chef, wir haben eine ernste Fitness-Krise. {{criticalCount}} Spieler sind in kritischem Zustand und stehen kurz vor dem Burnout:\n\n{{players}}\n\nDie durchschnittliche Kaderfitness liegt bei {{avgCondition}}%. Der Kader ist bereits im Leichten Programm — das Problem könnte die hohe Trainingsintensität sein. Erwägen Sie, die Intensität zu reduzieren.\n\nWenn wir weiter ohne Pause forcieren, leiden Leistung und Moral."
           }
         },
         "warning": {
           "subject": "Fitness-Warnung für den Kader",
           "body": {
-            "intense": "Chef, der Kader wirkt müde. Die durchschnittliche Fitness liegt bei {{avgCondition}}% und {{exhaustedCount}} Spieler sind unter 40%.\n\nEin Wechsel zum Ausgewogenen Programm würde mehr Erholungszeit geben.\n\nWir sollten den Jungs vor dem nächsten Spiel etwas Ruhe gönnen.",
-            "balanced": "Chef, der Kader wirkt müde. Die durchschnittliche Fitness liegt bei {{avgCondition}}% und {{exhaustedCount}} Spieler sind unter 40%.\n\nEin Leichtes Programm für ein paar Tage könnte dem Kader helfen, sich zu erholen.\n\nWir sollten den Jungs vor dem nächsten Spiel etwas Ruhe gönnen.",
-            "light": "Chef, der Kader wirkt müde. Die durchschnittliche Fitness liegt bei {{avgCondition}}% und {{exhaustedCount}} Spieler sind unter 40%.\n\nDer Kader ist bereits im Leichten Programm, daher sollte die Erholung natürlich kommen. Behalten Sie einfach die besonders erschöpften Spieler im Auge.\n\nWir sollten den Jungs vor dem nächsten Spiel etwas Ruhe gönnen."
+            "intense": "Chef, der Kader wirkt müde. Die durchschnittliche Fitness liegt bei {{avgCondition}}% und {{exhaustedCount}} Spieler sind unter 40%.\n\nEin Wechsel zum Ausgewogenen Programm würde mehr Erholungszeit geben.\n\nWir sollten dem Team vor dem nächsten Spiel etwas Ruhe gönnen.",
+            "balanced": "Chef, der Kader wirkt müde. Die durchschnittliche Fitness liegt bei {{avgCondition}}% und {{exhaustedCount}} Spieler sind unter 40%.\n\nEin Leichtes Programm für ein paar Tage könnte dem Kader helfen, sich zu erholen.\n\nWir sollten dem Team vor dem nächsten Spiel etwas Ruhe gönnen.",
+            "light": "Chef, der Kader wirkt müde. Die durchschnittliche Fitness liegt bei {{avgCondition}}% und {{exhaustedCount}} Spieler sind unter 40%.\n\nDer Kader ist bereits im Leichten Programm, daher sollte die Erholung natürlich kommen. Behalten Sie einfach die besonders erschöpften Spieler im Auge.\n\nWir sollten dem Team vor dem nächsten Spiel etwas Ruhe gönnen."
           }
         },
         "actionAdjust": "Training anpassen"

@@ -193,8 +193,8 @@ pub fn match_result_message(
         }
         _ => {
             format!(
-                "Full time: {} {} - {} {}.\n\n\
-                A point earned in Matchday {}. Depending on results elsewhere, this could be valuable. \
+                "Final score: {} {} - {} {}.\n\n\
+                A tie in Matchday {}. Depending on results elsewhere, this could be valuable. \
                 The team fought hard but couldn't find a winner.",
                 home_name, home_goals, away_goals, away_name, matchday
             )
