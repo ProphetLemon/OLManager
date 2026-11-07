@@ -2031,6 +2031,13 @@
       "searchPlaceholder": "Buscar...",
       "selected": "Seleccionado",
       "selectThenConfirm": "Seleccioná un campeón y confirmá",
+      "rivalMasteryBandTooltip": "Nivel estimado. Ojea a este jugador para ver la maestría exacta.",
+      "rivalMasteryLegend": "La maestría rival se muestra como Alta / Media / Baja hasta que ojees al jugador.",
+      "rivalMasteryBand": {
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Baja"
+      },
       "enemyComfortUnknown": "Sin maestrías rivales descubiertas",
       "masterySourceSignature": "Insignia",
       "masterySourceScouting": "Scouting",

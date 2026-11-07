@@ -1861,6 +1861,13 @@
       "searchPlaceholder": "Search...",
       "selected": "Selected",
       "selectThenConfirm": "Select a champion and confirm",
+      "rivalMasteryBandTooltip": "Estimated level. Scout this player to see the exact mastery.",
+      "rivalMasteryLegend": "Rival mastery is shown as High / Medium / Low until you scout the player.",
+      "rivalMasteryBand": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
       "enemyComfortUnknown": "No rival mastery discovered",
       "masterySourceSignature": "Signature",
       "masterySourceScouting": "Scouting",

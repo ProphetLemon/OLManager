@@ -18,9 +18,13 @@ import {
   enemyCountersLastOwnPick,
   freeRolesForSelections,
   rankBanCandidates,
+  gateMasteryReading,
+  gatedMasterySortValue,
   resolveMasterySampleSide,
+  type GatedMastery,
   type BanRecommendationContext,
 } from "@/ui-v2/_legacy/components/match/draftIntelHelpers";
+import GatedMasteryReadout from "@/ui-v2/_legacy/components/match/GatedMasteryReadout";
 import type { DraftStateEvaluation } from "@/ui-v2/_legacy/components/match/draftResultSimulator";
 
 type Side = "blue" | "red";
@@ -1236,6 +1240,42 @@ export default function ChampionDraft({
     redPlayers,
   ]);
 
+  const scoutedPlayerKeys = useMemo(() => {
+    const keys = new Set<string>();
+    (gameState?.messages ?? []).forEach((message) => {
+      const report = message.context?.scout_report;
+      if (!report) return;
+      keys.add(report.player_id);
+      const matchedGamePlayer = gameState?.players.find((player) => player.id === report.player_id);
+      if (matchedGamePlayer) keys.add(normalizeKey(matchedGamePlayer.match_name));
+      if (report.player_name) keys.add(normalizeKey(report.player_name));
+    });
+    return keys;
+  }, [gameState?.messages, gameState?.players]);
+
+  const gatedMasteryForChampion = (champion: ChampionData): GatedMastery => {
+    const raw = displayMasteryForChampion(champion);
+    const sampleSide = resolveMasterySampleSide(currentStep, controlledSide);
+    if (sampleSide === controlledSide) return { kind: "exact", value: raw };
+    const index =
+      roleFilter !== "ALL"
+        ? ROLE_ORDER.indexOf(roleFilter)
+        : sampleSide === "blue"
+          ? bluePicks.length
+          : redPicks.length;
+    const playerId = (sampleSide === "blue" ? bluePlayerIds : redPlayerIds)[index];
+    const playerName = (sampleSide === "blue" ? bluePlayers : redPlayers)[index]?.name;
+    const isScouted =
+      (playerId !== undefined && scoutedPlayerKeys.has(playerId)) ||
+      (playerName !== undefined && scoutedPlayerKeys.has(normalizeKey(playerName)));
+    return gateMasteryReading(raw, { isRivalSample: true, isScouted });
+  };
+
+  const showRivalMasteryLegend =
+    !finished &&
+    resolveMasterySampleSide(currentStep, controlledSide) !== controlledSide &&
+    (roleFilter !== "ALL" || sortMode === "mastery");
+
   const visibleChampions = useMemo(() => {
     const filtered = champions.filter((champion) => {
       if (roleFilter !== "ALL" && !champion.roleHints.includes(roleFilter)) return false;
@@ -1273,7 +1313,9 @@ export default function ChampionDraft({
 
     if (sortMode === "mastery") {
       return filtered.sort((left, right) => {
-        const masteryDelta = displayMasteryForChampion(right) - displayMasteryForChampion(left);
+        const masteryDelta =
+          gatedMasterySortValue(gatedMasteryForChampion(right)) -
+          gatedMasterySortValue(gatedMasteryForChampion(left));
         if (masteryDelta !== 0) return masteryDelta;
         return left.name.localeCompare(right.name);
       });
@@ -1293,7 +1335,7 @@ export default function ChampionDraft({
     metaScoreForChampion,
     discoveredMetaChampionIds,
     runtimeMetaScoreByChampion,
-    displayMasteryForChampion,
+    gatedMasteryForChampion,
     resolvePlayerMastery,
     searchTerm,
   ]);
@@ -1810,20 +1852,6 @@ export default function ChampionDraft({
     const staffEffects = getLolStaffEffectsForTeam(gameState, userTeamId);
     const staffRevealBudget = calculateStaffRevealBudget(staffEffects.metaDiscovery);
 
-    const scoutedPlayerKeys = new Set<string>();
-    (gameState?.messages ?? []).forEach((message) => {
-      const report = message.context?.scout_report;
-      if (!report) return;
-      const reportPlayerId = report.player_id;
-      const matchedGamePlayer = gameState?.players.find((player) => player.id === reportPlayerId);
-      if (matchedGamePlayer) {
-        scoutedPlayerKeys.add(normalizeKey(matchedGamePlayer.match_name));
-      }
-      if (report.player_name) {
-        scoutedPlayerKeys.add(normalizeKey(report.player_name));
-      }
-    });
-
     const rivalSeedPlayers = PLAYER_SEEDS.filter((player) => player.teamId === rivalTeamSeed.id);
     const byIgn = new Map<string, PlayerSeed>();
     rivalSeedPlayers.forEach((player) => {
@@ -1916,6 +1944,7 @@ export default function ChampionDraft({
     redPlayers,
     redPlayerIds,
     rivalTeamSeed,
+    scoutedPlayerKeys,
     snapshot.away_team.id,
     snapshot.home_team.id,
     usedChampionIds,
@@ -2957,6 +2986,20 @@ export default function ChampionDraft({
 
               </div>
 
+              {showRivalMasteryLegend ? (
+                <p
+                  className="relative text-center text-2xs text-gray-400"
+                  title={t("match.draft.rivalMasteryBandTooltip", {
+                    defaultValue: "Estimated level. Scout this player to see the exact mastery.",
+                  })}
+                >
+                  {t("match.draft.rivalMasteryLegend", {
+                    defaultValue:
+                      "Rival mastery is shown as High / Medium / Low until you scout the player.",
+                  })}
+                </p>
+              ) : null}
+
               <div className="relative text-center text-gray-200 text-xs">
                 {finished
                   ? t("match.draft.completed")
@@ -3027,7 +3070,10 @@ export default function ChampionDraft({
                     {visibleChampions.map((champion) => {
                       const isUsed = usedChampionIds.has(champion.id);
                       const showMastery = roleFilter !== "ALL";
-                      const mastery = showMastery ? displayMasteryForChampion(champion) : 0;
+                      const masteryReading: GatedMastery = showMastery
+                        ? gatedMasteryForChampion(champion)
+                        : { kind: "exact", value: 0 };
+                      const mastery = masteryReading.kind === "exact" ? masteryReading.value : 0;
                       const masteryTone = masteryBarTone(mastery);
                       const metaTier = knownMetaTierForChampion(
                         champion,
@@ -3055,9 +3101,9 @@ export default function ChampionDraft({
                           <div className="px-2 pb-1.5">
                             <div className="flex items-center justify-between text-xs font-bold">
                               <span className={metaTier === "?" ? "text-gray-500" : metaTier === "S" ? "text-red-400" : metaTier === "A" ? "text-orange-300" : "text-slate-300"}>{metaTier}</span>
-                              {showMastery ? <span className="text-gray-400">{mastery}</span> : null}
+                              {showMastery ? <GatedMasteryReadout reading={masteryReading} /> : null}
                             </div>
-                            {showMastery ? (
+                            {showMastery && masteryReading.kind === "exact" ? (
                               <div className="mt-0.5 h-1 rounded bg-background/40 overflow-hidden">
                                 <div
                                   className={`h-full ${masteryTone === "gold" ? "bg-amber-400" : masteryTone === "green" ? "bg-emerald-400" : "bg-rose-400"}`}

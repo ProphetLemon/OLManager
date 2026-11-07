@@ -1839,6 +1839,13 @@
       "searchPlaceholder": "Buscar...",
       "selected": "Selecionado",
       "selectThenConfirm": "Selecione um campeão e confirme",
+      "rivalMasteryBandTooltip": "Estimated level. Scout this player to see the exact mastery.",
+      "rivalMasteryLegend": "Rival mastery is shown as High / Medium / Low until you scout the player.",
+      "rivalMasteryBand": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
       "enemyComfortUnknown": "Nenhuma maestria rival descoberta",
       "masterySourceSignature": "Insígnia",
       "masterySourceScouting": "Scouting",

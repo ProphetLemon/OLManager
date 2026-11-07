@@ -5,6 +5,8 @@ import {
   computeBanRecommendationScore,
   enemyCountersLastOwnPick,
   freeRolesForSelections,
+  gateMasteryReading,
+  gatedMasterySortValue,
   rankBanCandidates,
   resolveMasterySampleSide,
 } from "@/ui-v2/_legacy/components/match/draftIntelHelpers";
@@ -174,5 +176,38 @@ describe("enemyCountersLastOwnPick", () => {
 
   it("does not warn below the threshold", () => {
     expect(enemyCountersLastOwnPick("a", "b", (s, t) => (s === "b" && t === "a" ? 1 : 0))).toBe(false);
+  });
+});
+
+describe("gateMasteryReading", () => {
+  it("shows exact mastery for the user's own side", () => {
+    expect(gateMasteryReading(82, { isRivalSample: false, isScouted: false })).toEqual({
+      kind: "exact",
+      value: 82,
+    });
+  });
+
+  it("shows exact mastery for scouted rival players", () => {
+    expect(gateMasteryReading(82, { isRivalSample: true, isScouted: true })).toEqual({
+      kind: "exact",
+      value: 82,
+    });
+  });
+
+  it("hides exact mastery of unscouted rival players behind a coarse band", () => {
+    const high = gateMasteryReading(91, { isRivalSample: true, isScouted: false });
+    const medium = gateMasteryReading(60, { isRivalSample: true, isScouted: false });
+    const low = gateMasteryReading(25, { isRivalSample: true, isScouted: false });
+    expect(high).toMatchObject({ kind: "band", band: "high" });
+    expect(medium).toMatchObject({ kind: "band", band: "medium" });
+    expect(low).toMatchObject({ kind: "band", band: "low" });
+    expect(JSON.stringify(high)).not.toContain("91");
+  });
+
+  it("gives the same sort value to every champion in a band", () => {
+    const a = gateMasteryReading(88, { isRivalSample: true, isScouted: false });
+    const b = gateMasteryReading(76, { isRivalSample: true, isScouted: false });
+    expect(gatedMasterySortValue(a)).toBe(gatedMasterySortValue(b));
+    expect(gatedMasterySortValue(gateMasteryReading(70, { isRivalSample: false, isScouted: false }))).toBe(70);
   });
 });
