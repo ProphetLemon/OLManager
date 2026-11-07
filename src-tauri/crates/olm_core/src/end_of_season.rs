@@ -146,12 +146,28 @@ fn prize_money_for_position(position: u32) -> i64 {
         .unwrap_or(150_000)
 }
 
+/// Share of the treasury that becomes the yearly wage budget after a settlement.
+///
+/// `wage_budget` is a TOTAL annual bill budget (the board policy compares the whole
+/// player and staff bill to it), not the room left for new signings. The shipped data
+/// sets it to half of the starting cash: across the 100 budgeted teams of the real
+/// world the wage_budget/finance ratio is 0.50 at the median, 0.40 at the 10th and
+/// 0.50 at the 90th percentile (outliers: 0.09 to 0.77). The previous 6% shrank a
+/// 4.5M club's 2.25M budget to 270k against a bill near 2M, which blocked every
+/// signing from season 2. 50% keeps a club whose cash did not change at its
+/// initial budget.
+const WAGE_BUDGET_SHARE_OF_FINANCE: f64 = 0.50;
+
+/// Share of the treasury that becomes the transfer budget. The data sets it between
+/// 0.04 and 0.33 of cash (median 0.20), so 22% is already of the initial order.
+const TRANSFER_BUDGET_SHARE_OF_FINANCE: f64 = 0.22;
+
 fn refresh_hiring_cycle_budgets(team: &mut crate::domain::team::Team) {
-    // Minimal hook: after split settlements (prize/objectives), rebalance next-cycle
-    // planning budgets from current treasury so offseason hiring decisions have
-    // coherent funds available without a full finance redesign.
-    team.wage_budget = ((team.finance.max(0) as f64) * 0.06).round() as i64;
-    team.transfer_budget = ((team.finance.max(0) as f64) * 0.22).round() as i64;
+    // After split settlements (prize/objectives), rebalance next-cycle planning
+    // budgets from current treasury so offseason hiring decisions have coherent funds.
+    let treasury = team.finance.max(0) as f64;
+    team.wage_budget = (treasury * WAGE_BUDGET_SHARE_OF_FINANCE).round() as i64;
+    team.transfer_budget = (treasury * TRANSFER_BUDGET_SHARE_OF_FINANCE).round() as i64;
 }
 
 /// Process end-of-season: record history, compute awards, reset stats, generate next season.
