@@ -6,15 +6,23 @@ use crate::domain::message::*;
 use rand::RngExt;
 use std::collections::HashMap;
 
-/// Helper to format fee values for display.
-fn format_fee(fee: u64) -> String {
+/// Format a fee without a currency symbol, e.g. `172K`.
+///
+/// Data templates write the symbol themselves (`€{fee}`), so they must receive
+/// the bare amount or the symbol would show twice.
+fn format_fee_amount(fee: u64) -> String {
     if fee >= 1_000_000 {
-        format!("€{:.1}M", fee as f64 / 1_000_000.0)
+        format!("{:.1}M", fee as f64 / 1_000_000.0)
     } else if fee >= 1_000 {
-        format!("€{}K", fee / 1_000)
+        format!("{}K", fee / 1_000)
     } else {
-        format!("€{}", fee)
+        fee.to_string()
     }
+}
+
+/// Format a fee with its currency symbol for texts that do not add one, e.g. `€172K`.
+fn format_fee(fee: u64) -> String {
+    format!("€{}", format_fee_amount(fee))
 }
 
 /// Apply sender info (name, role, icon) from the senders store to a message.
@@ -313,12 +321,13 @@ pub fn board_expectations_message(team_name: &str, team_id: &str, date: &str) ->
 
 pub fn transfer_complete_message(player_name: &str, fee: u64, date: &str) -> InboxMessage {
     let fee_display = format_fee(fee);
+    let fee_amount = format_fee_amount(fee);
     if let Some(msg) = crate::messages::template_store::template_store().build_message(
         "transfer_complete",
         &format!("transfer_{player_name}"),
         date,
         "en",
-        vec![("player", player_name), ("fee", &fee_display)],
+        vec![("player", player_name), ("fee", &fee_amount)],
     ) {
         return msg;
     }
@@ -354,6 +363,7 @@ pub fn incoming_transfer_offer_message(
     date: &str,
 ) -> InboxMessage {
     let fee_display = format_fee(fee);
+    let fee_amount = format_fee_amount(fee);
     if let Some(msg) = crate::messages::template_store::template_store().build_message(
         "transfer_offer",
         &format!("offer_{offer_id}"),
@@ -362,7 +372,7 @@ pub fn incoming_transfer_offer_message(
         vec![
             ("player", player_name),
             ("buyer", buying_team_name),
-            ("fee", &fee_display),
+            ("fee", &fee_amount),
         ],
     ) {
         // The data template only acknowledges the offer; add the link to the
