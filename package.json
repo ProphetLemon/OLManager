@@ -16,7 +16,9 @@
     "test:watch": "vitest",
     "tauri": "tauri",
     "test:e2e": "playwright test --config e2e/playwright.config.ts",
-    "test:e2e:ui": "playwright test --config e2e/playwright.config.ts --ui"
+    "test:e2e:ui": "playwright test --config e2e/playwright.config.ts --ui",
+    "world:refresh": "node scripts/world/refresh.mjs",
+    "verify:world-overlay": "node scripts/world/verify-overlay.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

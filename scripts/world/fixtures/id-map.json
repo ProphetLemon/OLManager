@@ -1,0 +1,18 @@
+{
+ "players": [
+  {
+   "page": "Oner",
+   "id": "player-ac9f33f8",
+   "note": "game record carries another person's real name; IGN and team match"
+  }
+ ],
+ "staff": [],
+ "rejections": [
+  {
+   "page": "Daglas",
+   "id": "player-4bc8debd",
+   "kind": "player",
+   "reason": "academy record of the same IGN, different team and role"
+  }
+ ]
+}

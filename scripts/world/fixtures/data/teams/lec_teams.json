@@ -1,0 +1,26 @@
+{
+ "name": "lec",
+ "teams": [
+  {
+   "id": "lec-team-vitality",
+   "name": "Team Vitality",
+   "short_name": "VIT",
+   "country": "FR",
+   "team_kind": "Main"
+  },
+  {
+   "id": "lec-team-heretics-lec",
+   "name": "Team Heretics",
+   "short_name": "TH",
+   "country": "ES",
+   "team_kind": "Main"
+  },
+  {
+   "id": "lec-fnatic",
+   "name": "Fnatic",
+   "short_name": "FNC",
+   "country": "GB",
+   "team_kind": "Main"
+  }
+ ]
+}

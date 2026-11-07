@@ -17,6 +17,7 @@ use olm_core::game::Game;
 use olm_core::game_setup;
 use olm_core::roster_stability;
 use olm_core::state::StateManager;
+use olm_core::world_overlay::{OverlayApplyReport, WorldOverlay, apply_world_overlay};
 
 use crate::SaveManagerState;
 use validator::Validate;
@@ -189,6 +190,63 @@ fn assemble_world_from_modular_data(
     Ok((all_teams, all_players, staff))
 }
 
+/// Pick the roster overlay a new game starts from: the newest `as_of` of the
+/// bundled overlay and the one downloaded into the app data dir (see
+/// `commands::world_overlay`). A malformed overlay must never block a new game,
+/// so errors are logged and the game starts from the bundled data alone.
+fn resolve_world_overlay(app_handle: &tauri::AppHandle) -> Option<WorldOverlay> {
+    super::world_overlay::resolve_overlay_for_new_game(app_handle)
+}
+
+/// Apply `overlay` to a freshly assembled world and record it on the game:
+/// changed ids are protected from catalog rehydration, retired ids are
+/// tombstoned and the overlay date is kept for display.
+fn apply_roster_overlay(game: &mut Game, overlay: &WorldOverlay) -> OverlayApplyReport {
+    let report = apply_world_overlay(&mut game.teams, &mut game.players, &mut game.staff, overlay);
+    // Added players arrive without a contract end or market value.
+    game_setup::apply_default_initial_contract_end(&mut game.players);
+    game_setup::apply_default_market_values(&mut game.players);
+
+    game.moved_player_ids
+        .extend(report.protected_player_ids().cloned());
+    for id in &report.retired_player_ids {
+        if !game.retired_player_ids.contains(id) {
+            game.retired_player_ids.push(id.clone());
+        }
+    }
+    game.world_overlay_as_of = Some(overlay.as_of.clone());
+    info!(
+        "[game] roster overlay as of {}: {} ({} skipped)",
+        overlay.as_of,
+        report,
+        report.skipped.len()
+    );
+    report
+}
+
+/// Fill roles the assembled world left empty on every Main team and protect the
+/// filled players from catalog rehydration reverting them.
+fn fill_short_rosters(game: &mut Game) -> Vec<roster_stability::NewGameRosterFill> {
+    let fills = roster_stability::fill_new_game_rosters(game);
+    game.moved_player_ids
+        .extend(fills.iter().map(|fill| fill.player_id.clone()));
+    if !fills.is_empty() {
+        let generated = fills.iter().filter(|fill| fill.generated).count();
+        let teams = fills
+            .iter()
+            .map(|fill| fill.team_id.as_str())
+            .collect::<std::collections::BTreeSet<_>>()
+            .len();
+        info!(
+            "[game] filled {} short roster slot(s) across {} team(s) ({} generated)",
+            fills.len(),
+            teams,
+            generated
+        );
+    }
+    fills
+}
+
 // ---------------------------------------------------------------------------
 // Tauri commands
 // ---------------------------------------------------------------------------
@@ -315,6 +373,14 @@ pub async fn select_team(
         game.players = assembled_players;
         game.staff = assembled_staff;
 
+        // Bring the bundled snapshot up to date before lineups are built from it.
+        if let Some(overlay) = resolve_world_overlay(&app_handle) {
+            apply_roster_overlay(&mut game, &overlay);
+        }
+
+        // The overlay can leave a team short; make every Main team playable.
+        fill_short_rosters(&mut game);
+
         // Auto-populate active lineup for the user's team
         let roles = [
             LolRole::Top,
@@ -364,7 +430,10 @@ pub async fn select_team(
                     user_team.active_lineup_ids
                 );
             } else {
-                warn!("[select_team] auto_lineup incomplete ({}/5 roles filled), setting empty lineup — user must configure manually", roles.len() - missing_roles.len());
+                warn!(
+                    "[select_team] auto_lineup incomplete ({}/5 roles filled), setting empty lineup — user must configure manually",
+                    roles.len() - missing_roles.len()
+                );
                 user_team.active_lineup_ids = vec![];
             }
         }
@@ -818,7 +887,10 @@ pub async fn get_active_game(
     if rehydrated.total() > 0 {
         log::info!(
             "[cmd] get_active_game: rehydrated {} missing teams, {} players, {} reassigned players, {} staff from catalog",
-            rehydrated.teams, rehydrated.players, rehydrated.players_reassigned, rehydrated.staff
+            rehydrated.teams,
+            rehydrated.players,
+            rehydrated.players_reassigned,
+            rehydrated.staff
         );
         state.set_game(game.clone());
     }
@@ -1001,4 +1073,419 @@ fn validate_date_format(date: &str) -> Result<(), validator::ValidationError> {
 #[tauri::command]
 pub fn debug_serde_test() -> Result<String, String> {
     Ok("debug ok".into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use olm_core::domain::player::PlayerAttributes;
+
+    fn test_game() -> Game {
+        let teams = ["t-a", "t-b"]
+            .iter()
+            .map(|id| {
+                Team::new(
+                    id.to_string(),
+                    id.to_string(),
+                    "TST".to_string(),
+                    "KR".to_string(),
+                    "Seoul".to_string(),
+                    "Arena".to_string(),
+                    1_000,
+                )
+            })
+            .collect();
+        let players = [("mover", "t-a"), ("retiree", "t-a")]
+            .iter()
+            .map(|(id, team_id)| {
+                let mut player = Player::new(
+                    id.to_string(),
+                    id.to_string(),
+                    id.to_string(),
+                    "2000-01-01".to_string(),
+                    "KR".to_string(),
+                    LolRole::Mid,
+                    PlayerAttributes::default(),
+                );
+                player.team_id = Some(team_id.to_string());
+                player
+            })
+            .collect();
+        let clock = GameClock::new(chrono::Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap());
+        let manager = Manager::new(
+            "mgr".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "KR".to_string(),
+        );
+        Game::new(clock, manager, teams, players, vec![], vec![])
+    }
+
+    fn overlay() -> WorldOverlay {
+        WorldOverlay::parse(
+            r#"{"schemaVersion":1,"as_of":"2026-11-07",
+                "source":{"name":"Leaguepedia","license":"CC BY-SA 3.0","license_url":"https://www.fandom.com/licensing"},
+                "players":[
+                  {"op":"move","id":"mover","team_id":"t-b"},
+                  {"op":"retire","id":"retiree"},
+                  {"op":"add","player":{"id":"rookie","match_name":"Rookie","full_name":"Rookie",
+                    "position":"Top","team_id":"t-b","contract_end":"","date_of_birth":"2005-01-01"}}
+                ]}"#,
+        )
+        .expect("test overlay")
+    }
+
+    #[test]
+    fn roster_overlay_is_recorded_on_the_game() {
+        let mut game = test_game();
+
+        apply_roster_overlay(&mut game, &overlay());
+
+        assert_eq!(game.world_overlay_as_of.as_deref(), Some("2026-11-07"));
+        assert_eq!(game.retired_player_ids, vec!["retiree".to_string()]);
+        assert!(game.moved_player_ids.contains("mover"));
+        assert!(game.moved_player_ids.contains("rookie"));
+        assert!(!game.moved_player_ids.contains("retiree"));
+    }
+
+    #[test]
+    fn short_roster_fill_tracks_filled_players_as_moved() {
+        let mut game = test_game();
+        let mut free_agent = Player::new(
+            "fa-top".to_string(),
+            "fa-top".to_string(),
+            "fa-top".to_string(),
+            "2000-01-01".to_string(),
+            "KR".to_string(),
+            LolRole::Top,
+            PlayerAttributes::default(),
+        );
+        free_agent.team_id = None;
+        game.players.push(free_agent);
+
+        let fills = fill_short_rosters(&mut game);
+
+        assert!(!fills.is_empty());
+        for fill in &fills {
+            assert!(game.moved_player_ids.contains(&fill.player_id));
+        }
+        assert!(fills.iter().any(|fill| fill.player_id == "fa-top"));
+    }
+
+    #[test]
+    fn roster_overlay_gives_added_players_a_contract_and_market_value() {
+        let mut game = test_game();
+
+        apply_roster_overlay(&mut game, &overlay());
+
+        let rookie = game.players.iter().find(|p| p.id == "rookie").unwrap();
+        assert!(rookie.contract_end.is_some());
+        assert!(rookie.market_value > 0);
+    }
+
+    /// End-to-end new game with the real `data/` catalog and the bundled overlay.
+    ///
+    /// `select_team` needs a Tauri `AppHandle` (path resolution, `State`), which cannot be
+    /// built in unit tests, so this runs the same steps in the same order with the
+    /// `AppHandle`-free building blocks: modular data assembly (same calls as
+    /// `assemble_world_from_modular_data`), `apply_roster_overlay`, `fill_short_rosters`
+    /// and the user lineup auto-fill, then a real `.olsave` round trip plus the
+    /// `load_game` catalog rehydration (`reassign_stale_player_teams` + `merge_missing_players`).
+    mod bundled_overlay_new_game {
+        use super::*;
+        use olm_core::db::save_manager::SaveManager;
+        use std::collections::{HashMap, HashSet};
+
+        const ROLES: [LolRole; 5] = [
+            LolRole::Top,
+            LolRole::Jungle,
+            LolRole::Mid,
+            LolRole::Adc,
+            LolRole::Support,
+        ];
+        const ICE_ID: &str = "lec-player-105501834624360050";
+
+        fn data_base() -> PathBuf {
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("data")
+        }
+
+        /// Mirrors `assemble_world_from_modular_data` minus path resolution.
+        fn assemble(data: &std::path::Path) -> (Vec<Team>, Vec<Player>, Vec<Staff>) {
+            olm_core::state::RESOURCE_DATA_DIR.get_or_init(|| data.to_path_buf());
+            let manifests = olm_core::competitions::scan_competitions(&data.join("competitions"));
+            let mut teams: Vec<Team> = Vec::new();
+            let mut players: Vec<Player> = Vec::new();
+            let mut staff = olm_core::competitions::load_staff_free_agents(data).expect("fa staff");
+            for manifest in manifests.iter().filter(|m| !m.legacy) {
+                let cid = &manifest.id;
+                let prefix = format!("{cid}-");
+                let mut comp_teams = olm_core::competitions::load_teams(data, manifest).unwrap_or_default();
+                for team in &mut comp_teams {
+                    if !team.id.starts_with(&prefix) {
+                        team.id = format!("{prefix}{}", team.id);
+                    }
+                    team.competition_id = Some(cid.to_string());
+                }
+                teams.extend(comp_teams);
+                for mut player in olm_core::competitions::load_players(data, manifest).unwrap_or_default() {
+                    if let Some(tid) = player.team_id.clone() {
+                        if tid != "fa" && tid != "freeagent" && !tid.starts_with(&prefix) {
+                            player.team_id = Some(format!("{cid}-{tid}"));
+                        }
+                    }
+                    if player.morale == 0 {
+                        player.morale = 68;
+                    }
+                    if player.condition == 0 {
+                        player.condition = 100;
+                    }
+                    players.push(player);
+                }
+                for mut member in olm_core::competitions::load_staff(data, manifest).unwrap_or_default() {
+                    if let Some(tid) = member.team_id.clone() {
+                        if !tid.starts_with(&prefix) {
+                            member.team_id = Some(format!("{cid}-{tid}"));
+                        }
+                    }
+                    staff.push(member);
+                }
+            }
+            let date = "2026-01-01".to_string();
+            game_setup::bootstrap_example_academy_pool_from_example(&mut teams, &mut players, &date);
+            game_setup::remove_free_agents_shadowed_by_academy(&mut players, &teams);
+            game_setup::inject_json_free_agents(&mut players);
+            game_setup::apply_default_initial_contract_end(&mut players);
+            game_setup::apply_default_market_values(&mut players);
+            (teams, players, staff)
+        }
+
+        fn player_named<'a>(game: &'a Game, name: &str) -> Vec<&'a Player> {
+            game.players.iter().filter(|p| p.match_name == name).collect()
+        }
+
+        fn team_id_by_name(game: &Game, name: &str) -> String {
+            let found: Vec<_> = game.teams.iter().filter(|t| t.name == name).collect();
+            assert_eq!(found.len(), 1, "expected exactly one team named {name}");
+            found[0].id.clone()
+        }
+
+        /// Same body as the lineup block in `select_team`.
+        fn auto_lineup(game: &mut Game, team_id: &str) {
+            if let Some(user_team) = game.teams.iter_mut().find(|t| t.id == team_id) {
+                let mut used = HashSet::new();
+                let lineup: Vec<String> = ROLES
+                    .iter()
+                    .map(|role| {
+                        let pick = game
+                            .players
+                            .iter()
+                            .find(|p| {
+                                p.team_id.as_deref() == Some(team_id)
+                                    && !used.contains(&p.id)
+                                    && (p.position == *role || p.natural_position == *role)
+                            })
+                            .map(|p| p.id.clone());
+                        if let Some(id) = &pick {
+                            used.insert(id.clone());
+                        }
+                        pick.unwrap_or_default()
+                    })
+                    .collect();
+                user_team.active_lineup_ids = if lineup.iter().all(|id| !id.is_empty()) {
+                    lineup
+                } else {
+                    vec![]
+                };
+            }
+        }
+
+        fn new_game() -> (Game, Vec<Player>, WorldOverlay, String) {
+            let data = data_base();
+            let (teams, players, staff) = assemble(&data);
+            let catalog = players.clone();
+            let clock = GameClock::new(chrono::Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap());
+            let manager = Manager::new(
+                "mgr_user".to_string(),
+                "Test".to_string(),
+                "Manager".to_string(),
+                "1990-01-01".to_string(),
+                "KR".to_string(),
+            );
+            let mut game = Game::new(clock, manager, teams, players, staff, vec![]);
+            let overlay = olm_core::world_overlay::bundled_world_overlay().expect("bundled overlay");
+            apply_roster_overlay(&mut game, &overlay);
+            fill_short_rosters(&mut game);
+            let user_team = team_id_by_name(&game, "Kiwoom DRX");
+            auto_lineup(&mut game, &user_team);
+            (game, catalog, overlay, user_team)
+        }
+
+        fn duplicate_player_ids(players: &[Player]) -> HashSet<String> {
+            let mut counts: HashMap<&str, usize> = HashMap::new();
+            for p in players {
+                *counts.entry(p.id.as_str()).or_default() += 1;
+            }
+            counts
+                .into_iter()
+                .filter(|(_, n)| *n > 1)
+                .map(|(id, _)| id.to_string())
+                .collect()
+        }
+
+        #[test]
+        fn new_game_reflects_bundled_overlay_and_every_team_is_playable() {
+            let (game, catalog, overlay, user_team) = new_game();
+
+            let drx = user_team.clone();
+            let kt = team_id_by_name(&game, "KT Rolster");
+            let vitality = team_id_by_name(&game, "Team Vitality");
+
+            assert_eq!(game.world_overlay_as_of.as_deref(), Some(overlay.as_of.as_str()));
+
+            let aiming = player_named(&game, "Aiming");
+            assert_eq!(aiming.len(), 1);
+            assert_eq!(aiming[0].team_id.as_deref(), Some(drx.as_str()));
+            // "Jiwoo" is also the name of a Challengers player, so look for the one on KT.
+            let jiwoo_on_kt = player_named(&game, "Jiwoo")
+                .into_iter()
+                .filter(|p| p.team_id.as_deref() == Some(kt.as_str()))
+                .count();
+            assert_eq!(jiwoo_on_kt, 1);
+
+            assert!(catalog.iter().any(|p| p.id == ICE_ID), "Ice must exist in the catalog");
+            assert!(game.players.iter().all(|p| p.id != ICE_ID));
+            assert!(game.retired_player_ids.iter().any(|id| id == ICE_ID));
+
+            let pad: Vec<_> = game
+                .staff
+                .iter()
+                .filter(|s| s.nickname == "Pad" && s.team_id.as_deref() == Some(vitality.as_str()))
+                .collect();
+            assert_eq!(pad.len(), 1);
+            assert_eq!(pad[0].role, olm_core::domain::staff::StaffRole::Coach);
+
+            let mut by_team: HashMap<&str, Vec<&Player>> = HashMap::new();
+            for p in &game.players {
+                if let Some(tid) = p.team_id.as_deref() {
+                    by_team.entry(tid).or_default().push(p);
+                }
+            }
+            let mut gaps = Vec::new();
+            let mut main_teams = 0;
+            for team in game
+                .teams
+                .iter()
+                .filter(|t| t.team_kind == TeamKind::Main && t.competition_id.is_some())
+            {
+                main_teams += 1;
+                let roster = by_team.get(team.id.as_str()).cloned().unwrap_or_default();
+                for role in &ROLES {
+                    if !roster.iter().any(|p| p.position == *role || p.natural_position == *role) {
+                        gaps.push(format!("{} lacks {:?}", team.id, role));
+                    }
+                }
+            }
+            assert!(main_teams > 100, "expected a real world, got {main_teams} main teams");
+            assert!(gaps.is_empty(), "teams with missing roles: {gaps:?}");
+
+            let team = game.teams.iter().find(|t| t.id == user_team).unwrap();
+            assert_eq!(team.active_lineup_ids.len(), 5);
+            let unique: HashSet<_> = team.active_lineup_ids.iter().collect();
+            assert_eq!(unique.len(), 5);
+            for id in &team.active_lineup_ids {
+                let p = game.players.iter().find(|p| &p.id == id).unwrap();
+                assert_eq!(p.team_id.as_deref(), Some(user_team.as_str()));
+            }
+        }
+
+        #[test]
+        fn overlay_and_filled_staff_never_dangle_or_duplicate() {
+            let (game, _catalog, _overlay, _user_team) = new_game();
+            let team_ids: HashSet<&str> = game.teams.iter().map(|t| t.id.as_str()).collect();
+            for s in &game.staff {
+                if let Some(tid) = s.team_id.as_deref() {
+                    assert!(team_ids.contains(tid), "staff {} -> unknown team {tid}", s.id);
+                }
+            }
+            // Players added or moved by the overlay, and players the fill touched, must
+            // sit on a real team.
+            for p in game.players.iter().filter(|p| game.moved_player_ids.contains(&p.id)) {
+                if let Some(tid) = p.team_id.as_deref() {
+                    assert!(team_ids.contains(tid), "moved player {} -> unknown team {tid}", p.id);
+                }
+            }
+        }
+
+        /// Known data defect, not caused by the overlay: the `data/` catalog has players
+        /// that appear twice (legacy lck_cl/lckcl and prime_league/prm copies) and players
+        /// whose team id matches no loaded team. Un-ignore once the catalog is clean.
+        #[test]
+        #[ignore = "known catalog defect: duplicate player ids and dangling team ids in data/"]
+        fn world_has_unique_player_ids_and_no_dangling_team_references() {
+            let (game, _catalog, _overlay, _user_team) = new_game();
+            let duplicates = duplicate_player_ids(&game.players);
+            assert!(duplicates.is_empty(), "duplicate player ids: {duplicates:?}");
+            let team_ids: HashSet<&str> = game.teams.iter().map(|t| t.id.as_str()).collect();
+            let dangling: Vec<_> = game
+                .players
+                .iter()
+                .filter(|p| p.team_id.as_deref().is_some_and(|t| !team_ids.contains(t)))
+                .map(|p| p.id.as_str())
+                .collect();
+            assert!(dangling.is_empty(), "players on unknown teams: {dangling:?}");
+        }
+
+        #[test]
+        fn save_and_reload_keep_overlay_results_against_the_catalog() {
+            let (game, catalog, overlay, _user_team) = new_game();
+            let drx = team_id_by_name(&game, "Kiwoom DRX");
+            let kt = team_id_by_name(&game, "KT Rolster");
+            let dup_ids = duplicate_player_ids(&game.players);
+            let protected: Vec<(String, Option<String>)> = game
+                .players
+                .iter()
+                .filter(|p| game.moved_player_ids.contains(&p.id) && !dup_ids.contains(&p.id))
+                .map(|p| (p.id.clone(), p.team_id.clone()))
+                .collect();
+            assert!(protected.len() > 100, "expected many moved/filled players");
+
+            let dir = tempfile::tempdir().expect("tempdir");
+            let mut manager = SaveManager::init(dir.path()).expect("save manager");
+            let save_id = manager.create_save(&game, "overlay e2e").expect("create save");
+            let mut loaded = manager.load_game(&save_id).expect("load save");
+
+            assert_eq!(loaded.world_overlay_as_of.as_deref(), Some(overlay.as_of.as_str()));
+            assert_eq!(loaded.retired_player_ids, game.retired_player_ids);
+            assert_eq!(loaded.players.len(), game.players.len());
+
+            // load_game: rehydrate against the pre-overlay catalog.
+            let before: Vec<(String, Option<String>)> =
+                loaded.players.iter().map(|p| (p.id.clone(), p.team_id.clone())).collect();
+            crate::commands::import::reassign_stale_player_teams(&mut loaded, &catalog);
+            let added = crate::commands::import::merge_missing_players(&mut loaded, catalog.clone());
+
+            // reassign keeps the player order, so compare position by position.
+            for ((id, team), p) in before.iter().zip(&loaded.players) {
+                if !dup_ids.contains(id) {
+                    assert_eq!(&p.team_id, team, "catalog rehydration moved {id}");
+                }
+            }
+            assert_eq!(added, 0, "retired or already present players must not be backfilled");
+            assert!(loaded.players.iter().all(|p| p.id != ICE_ID));
+            for id in &game.retired_player_ids {
+                assert!(loaded.players.iter().all(|p| &p.id != id), "retired {id} came back");
+            }
+            let aiming = player_named(&loaded, "Aiming");
+            assert_eq!(aiming.len(), 1);
+            assert_eq!(aiming[0].team_id.as_deref(), Some(drx.as_str()));
+            assert!(player_named(&loaded, "Jiwoo")
+                .iter()
+                .any(|p| p.team_id.as_deref() == Some(kt.as_str())));
+            for (id, team) in protected {
+                let p = loaded.players.iter().find(|p| p.id == id).unwrap();
+                assert_eq!(p.team_id, team, "moved or filled player {id} reverted");
+            }
+        }
+    }
 }

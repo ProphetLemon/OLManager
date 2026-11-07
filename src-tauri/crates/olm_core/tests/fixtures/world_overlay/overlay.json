@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "as_of": "2026-11-07",
+  "source": {
+    "name": "Leaguepedia",
+    "url": "https://lol.fandom.com",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://www.fandom.com/licensing",
+    "attribution": "Roster data comes from Leaguepedia (https://lol.fandom.com) contributors and is used under CC BY-SA 3.0 (https://www.fandom.com/licensing). Each operation cites the page it was read from (https://lol.fandom.com/wiki/<Page_Title>); page histories list the contributors."
+  },
+  "coverage": [
+    "lck",
+    "lec"
+  ],
+  "players": [
+    {
+      "op": "move",
+      "id": "player-c5877188",
+      "team_id": "lck-team-bc4c40ec",
+      "evidence": "https://lol.fandom.com/wiki/Kiwoom_DRX",
+      "contract_end": "2026-11-16"
+    },
+    {
+      "op": "retire",
+      "id": "lec-player-105501834624360050",
+      "evidence": "https://lol.fandom.com/wiki/Ice_(Yoon_Sang-hoon)"
+    }
+  ],
+  "staff": [
+    {
+      "op": "add",
+      "staff": {
+        "id": "staff-947dccc5",
+        "role": "HeadCoach",
+        "wage": null,
+        "team_id": "lec-team-vitality",
+        "last_name": "Suckow-Breum",
+        "attributes": {
+          "coaching": 81,
+          "physiotherapy": 83,
+          "judging_ability": 86,
+          "judging_potential": 81
+        },
+        "first_name": "Patrick Suckow-Breum",
+        "nationality": "Denmark",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "Pad"
+      },
+      "evidence": "https://lol.fandom.com/wiki/Team_Vitality",
+      "dob_approx": true
+    }
+  ]
+}

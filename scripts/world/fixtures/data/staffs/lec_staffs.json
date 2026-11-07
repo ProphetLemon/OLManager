@@ -1,0 +1,293 @@
+{
+ "name": "lec",
+ "staff": [
+  {
+   "id": "staff-62319f46",
+   "role": "Assistant",
+   "wage": 30000,
+   "team_id": "lec-team-heretics-lec",
+   "last_name": "Akpınarlı",
+   "attributes": {
+    "coaching": 71,
+    "physiotherapy": 63,
+    "judging_ability": 70,
+    "judging_potential": 73
+   },
+   "first_name": "Emre Akpınarlı",
+   "nationality": "Turkey",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/1e2812ca.webp",
+   "nickname": "Arkhe"
+  },
+  {
+   "id": "staff-f3dd3299",
+   "role": "Scout",
+   "wage": 30000,
+   "team_id": "lec-team-heretics-lec",
+   "last_name": "Carranza",
+   "attributes": {
+    "coaching": 47,
+    "physiotherapy": 49,
+    "judging_ability": 56,
+    "judging_potential": 50
+   },
+   "first_name": "Deam Saavedra Carranza",
+   "nationality": "Costa Rica",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/8e4241efee9a20dd.png",
+   "nickname": "Deam147"
+  },
+  {
+   "id": "staff-217d297a",
+   "role": "Assistant",
+   "wage": 30000,
+   "team_id": "lec-team-heretics-lec",
+   "last_name": "Holm",
+   "attributes": {
+    "coaching": 79,
+    "physiotherapy": 82,
+    "judging_ability": 84,
+    "judging_potential": 84
+   },
+   "first_name": "Erlend Våtevik ",
+   "nationality": "Norway",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/2b0caba3b82668f0.webp",
+   "nickname": "Nukeduck"
+  },
+  {
+   "contract_end": "2100-11-16",
+   "id": "3722a829-c21b-43f6-9287-12cc5ff02cfe",
+   "first_name": "Samuel Mathews",
+   "nickname": "Sam Mathews",
+   "role": "Owner",
+   "team_id": "lec-fnatic",
+   "profile_image_url": "/staff-photos/7d0d872c74fa1776.jpg"
+  },
+  {
+   "id": "staff-314cb40c",
+   "role": "Scout",
+   "wage": 30000,
+   "team_id": "lec-team-vitality",
+   "last_name": "Morisot",
+   "attributes": {
+    "coaching": 49,
+    "physiotherapy": 52,
+    "judging_ability": 51,
+    "judging_potential": 49
+   },
+   "first_name": "Jonas Morisot",
+   "nationality": "France",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/1ff09787.webp",
+   "nickname": null
+  },
+  {
+   "contract_end": "2026-11-16",
+   "id": "47a8f6eb-7f36-45f5-924f-0fae5ddde607",
+   "first_name": "Richard Wolter",
+   "nickname": "Immanuelity",
+   "role": "Performance Coach",
+   "team_id": "lec-fnatic",
+   "profile_image_url": "/staff-photos/bff2215c3934d8f8.png"
+  },
+  {
+   "id": "staff-891b413e",
+   "role": "Assistant",
+   "wage": null,
+   "team_id": "lec-fnatic",
+   "last_name": "Pascu",
+   "attributes": {
+    "coaching": 85,
+    "physiotherapy": 75,
+    "judging_ability": 82,
+    "judging_potential": 81
+   },
+   "first_name": "Andrei Pascu",
+   "nationality": "Romania",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/7b34ed90.webp",
+   "nickname": "Odoamne"
+  },
+  {
+   "id": "staff-8c320e54",
+   "role": "Assistant",
+   "wage": 30000,
+   "team_id": "lec-team-vitality",
+   "last_name": "Fischer",
+   "attributes": {
+    "coaching": 74,
+    "physiotherapy": 68,
+    "judging_ability": 74,
+    "judging_potential": 73
+   },
+   "first_name": "Danusch Fischer",
+   "nationality": "Germany",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/0281d932.webp",
+   "nickname": "Arvindir"
+  },
+  {
+   "id": "staff-c4d70048",
+   "role": "Assistant",
+   "wage": 30000,
+   "team_id": "lec-team-vitality",
+   "last_name": "Vidal",
+   "attributes": {
+    "coaching": 74,
+    "physiotherapy": 68,
+    "judging_ability": 78,
+    "judging_potential": 80
+   },
+   "first_name": "Mauro Garih Vidal",
+   "nationality": "Spain",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/694b663248a87372.png",
+   "nickname": "Garih"
+  },
+  {
+   "contract_end": "2100-01-01",
+   "id": "657df7ce-7cc6-437d-a4e0-eaf40f44d811",
+   "first_name": "Jorge Orejudo",
+   "nickname": "Goorgo",
+   "role": "Owner",
+   "team_id": "lec-team-heretics-lec",
+   "profile_image_url": "/staff-photos/eccc5ef1adb01319.png"
+  },
+  {
+   "id": "staff-34f82415",
+   "role": "Assistant",
+   "wage": 30000,
+   "team_id": "lec-team-vitality",
+   "last_name": "Trumbić",
+   "attributes": {
+    "coaching": 86,
+    "physiotherapy": 80,
+    "judging_ability": 87,
+    "judging_potential": 85
+   },
+   "first_name": "Luka Trumbić",
+   "nationality": "Croatia",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/65b19afc.webp",
+   "nickname": null
+  },
+  {
+   "id": "staff-cb78bfa2",
+   "role": "Assistant",
+   "wage": 30000,
+   "team_id": "lec-team-vitality",
+   "last_name": "MacCormack",
+   "attributes": {
+    "coaching": 99,
+    "physiotherapy": 84,
+    "judging_ability": 96,
+    "judging_potential": 90
+   },
+   "first_name": "James MacCormack",
+   "nationality": "United Kingdom",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/7e87d3f9.webp",
+   "nickname": "Mac"
+  },
+  {
+   "contract_end": "2100-01-01",
+   "id": "9909e826-5333-4a5c-a767-f182220b76ff",
+   "first_name": "Fabien Devide",
+   "nickname": "Neo",
+   "role": "Owner",
+   "team_id": "lec-team-vitality",
+   "profile_image_url": "/staff-photos/fa264b6fd9d0a70a.jpg"
+  },
+  {
+   "id": "staff-bd861166",
+   "role": "Assistant",
+   "wage": 30000,
+   "team_id": "lec-fnatic",
+   "last_name": "Pérez",
+   "attributes": {
+    "coaching": 81,
+    "physiotherapy": 71,
+    "judging_ability": 74,
+    "judging_potential": 81
+   },
+   "first_name": "Pablo Vegas ",
+   "nationality": "Spain",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/c5fb46f73037f877.webp",
+   "nickname": "Gaax"
+  },
+  {
+   "id": "staff-e6ed0b15",
+   "role": "Assistant",
+   "wage": 30000,
+   "team_id": "lec-fnatic",
+   "last_name": "Lohmann",
+   "attributes": {
+    "coaching": 90,
+    "physiotherapy": 93,
+    "judging_ability": 96,
+    "judging_potential": 96
+   },
+   "first_name": "Fabian Lohmann",
+   "nationality": "Germany",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/19512861.webp",
+   "nickname": "GrabbZ"
+  },
+  {
+   "id": "staff-9b849fcf",
+   "role": "Scout",
+   "wage": 30000,
+   "team_id": "lec-team-heretics-lec",
+   "last_name": "Diepstraten",
+   "attributes": {
+    "coaching": 88,
+    "physiotherapy": 86,
+    "judging_ability": 91,
+    "judging_potential": 83
+   },
+   "first_name": "Fabian Diepstraten",
+   "nationality": "Netherlands",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/649dd0c6.webp",
+   "nickname": "Febiven"
+  }
+ ]
+}

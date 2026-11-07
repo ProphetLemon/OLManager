@@ -1,0 +1,106 @@
+{
+  "players": [
+    {
+      "id": "player-c5877188",
+      "wage": 0,
+      "career": [],
+      "injury": null,
+      "morale": 100,
+      "fitness": 100,
+      "team_id": "lck-team-932ee946",
+      "condition": 100,
+      "full_name": "Kim Ha-ram",
+      "attributes": {
+        "mechanics": 90,
+        "laning": 89,
+        "teamfighting": 90,
+        "macro_play": 89,
+        "consistency": 89,
+        "shotcalling": 87,
+        "champion_pool": 86,
+        "discipline": 89,
+        "mental_resilience": 89
+      },
+      "match_name": "Aiming",
+      "loan_listed": false,
+      "morale_core": {},
+      "contract_end": "",
+      "market_value": 0,
+      "potential_base": 90,
+      "transfer_listed": false,
+      "transfer_offers": [],
+      "champion_mastery": [],
+      "alternate_positions": [],
+      "position": "ADC",
+      "nationality": "KR",
+      "date_of_birth": "2000-07-20",
+      "stats": {},
+      "profile_image_url": "/player-photos/8450852e837e29ed.webp"
+    },
+    {
+      "id": "lec-player-105501834624360050",
+      "wage": 135000,
+      "stats": {
+        "appearances": 0
+      },
+      "career": [],
+      "injury": null,
+      "morale": 100,
+      "fitness": 100,
+      "team_id": "lec-team-heretics-lec",
+      "position": "ADC",
+      "condition": 100,
+      "full_name": "Yoon Sang-hoon",
+      "photo_url": "/player-photos/105501834624360050.webp",
+      "attributes": {
+        "mechanics": 84,
+        "laning": 81,
+        "teamfighting": 81,
+        "macro_play": 80,
+        "consistency": 82,
+        "shotcalling": 72,
+        "champion_pool": 78,
+        "discipline": 80,
+        "mental_resilience": 80
+      },
+      "match_name": "Ice",
+      "loan_listed": false,
+      "morale_core": {},
+      "nationality": "KR",
+      "contract_end": "",
+      "market_value": 130000,
+      "birth_country": null,
+      "date_of_birth": "2001-04-09",
+      "potential_base": 80,
+      "training_focus": null,
+      "transfer_listed": false,
+      "transfer_offers": [],
+      "champion_mastery": [],
+      "profile_image_url": "/player-photos/105501834624360050.webp",
+      "potential_revealed": null
+    }
+  ],
+  "staff": [
+    {
+      "id": "staff-8c320e54",
+      "role": "Assistant",
+      "wage": 30000,
+      "team_id": "lec-team-vitality",
+      "last_name": "Fischer",
+      "attributes": {
+        "coaching": 74,
+        "physiotherapy": 68,
+        "judging_ability": 74,
+        "judging_potential": 73
+      },
+      "first_name": "Danusch Fischer",
+      "nationality": "Germany",
+      "contract_end": "2026-12-20",
+      "birth_country": null,
+      "date_of_birth": "1990-01-01",
+      "specialization": null,
+      "profile_image_url": "/staff-photos/0281d932.webp",
+      "nickname": "Arvindir"
+    }
+  ]
+}

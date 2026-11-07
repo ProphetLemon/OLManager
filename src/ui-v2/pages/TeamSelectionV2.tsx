@@ -11,6 +11,8 @@ import { TeamGridV2 } from "@/ui-v2/_legacy/components/teamSelection/TeamGridV2"
 import { loadLeagueSelectionData, selectTeam } from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
+import { useRosterOverlay } from "@/hooks/useRosterOverlay";
+import { RosterOverlayPanel } from "@/ui-v2/components/RosterOverlayPanel";
 
 type Screen = "loading" | "error" | "league" | "teams";
 
@@ -42,6 +44,7 @@ export default function TeamSelectionV2() {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
+  const rosterOverlay = useRosterOverlay({ autoCheck: true });
 
   useEffect(() => {
     loadLeagueSelectionData()
@@ -177,7 +180,7 @@ export default function TeamSelectionV2() {
             </p>
           </div>
           {!isLeagueScreen && selectedTeamId && (
-            <button type="button" disabled={isConfirming} onClick={handleConfirm}
+            <button type="button" disabled={isConfirming || rosterOverlay.status === "updating" || rosterOverlay.status === "checking"} onClick={handleConfirm}
               className="flex h-8 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 disabled:pointer-events-none disabled:opacity-50"
             >
               {isConfirming && <Loader2 className="size-4 animate-spin" />}
@@ -207,6 +210,13 @@ export default function TeamSelectionV2() {
           }} selectedTeamId={selectedTeamId} />
         </div>
       )}
+
+      <RosterOverlayPanel
+        info={rosterOverlay.info}
+        status={rosterOverlay.status}
+        error={rosterOverlay.error}
+        onUpdate={rosterOverlay.update}
+      />
     </div>
   );
 }

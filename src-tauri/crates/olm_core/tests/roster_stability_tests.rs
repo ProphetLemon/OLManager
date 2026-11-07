@@ -7,10 +7,11 @@ use olm_core::domain::manager::Manager;
 use olm_core::domain::player::{Player, PlayerAttributes};
 use olm_core::domain::season::TransferWindowStatus;
 use olm_core::domain::stats::LolRole;
-use olm_core::domain::team::Team;
+use olm_core::domain::team::{Team, TeamKind};
 use olm_core::game::Game;
 use olm_core::roster_stability::{
-    RepairAction, RosterStabilityReason, evaluate_team, repair_league, repair_team,
+    NewGameRosterFill, RepairAction, RosterStabilityReason, evaluate_team, fill_new_game_rosters,
+    repair_league, repair_team,
 };
 use olm_core::transfers::get_transfer_history;
 
@@ -1644,4 +1645,206 @@ fn non_emergency_repair_rejects_low_impact_free_agent_at_tier_one() {
         }),
         "a replacement support should still be on the team"
     );
+}
+
+fn short_roster(team_id: &str) -> Vec<Player> {
+    vec![
+        player("top", Some(team_id), LolRole::Top, Some("2028-06-30")),
+        player("mid", Some(team_id), LolRole::Mid, Some("2028-06-30")),
+        player("adc", Some(team_id), LolRole::Adc, Some("2028-06-30")),
+    ]
+}
+
+fn player_snapshot(game: &Game) -> Vec<(String, Option<String>, Option<String>)> {
+    game.players
+        .iter()
+        .map(|p| (p.id.clone(), p.team_id.clone(), p.contract_end.clone()))
+        .collect()
+}
+
+fn team_role_ids(game: &Game, team_id: &str, role: LolRole) -> Vec<String> {
+    game.players
+        .iter()
+        .filter(|p| p.team_id.as_deref() == Some(team_id) && p.natural_position == role)
+        .map(|p| p.id.clone())
+        .collect()
+}
+
+#[test]
+fn new_game_fill_assigns_free_agents_by_natural_position_in_id_order() {
+    let mut players = short_roster("ai-team");
+    players.push(player("fa-jungle-b", None, LolRole::Jungle, None));
+    players.push(player("fa-jungle-a", None, LolRole::Jungle, None));
+    players.push(player("fa-support", None, LolRole::Support, None));
+    players.push(player("fa-top", None, LolRole::Top, None));
+    let mut game = game_with(players, vec![]);
+    game.teams[1].team_kind = TeamKind::Academy;
+
+    let fills = fill_new_game_rosters(&mut game);
+
+    assert_eq!(
+        fills,
+        vec![
+            NewGameRosterFill {
+                team_id: "ai-team".to_string(),
+                player_id: "fa-jungle-a".to_string(),
+                role: LolRole::Jungle,
+                generated: false,
+            },
+            NewGameRosterFill {
+                team_id: "ai-team".to_string(),
+                player_id: "fa-support".to_string(),
+                role: LolRole::Support,
+                generated: false,
+            },
+        ]
+    );
+    let filled = game.players.iter().find(|p| p.id == "fa-jungle-a").unwrap();
+    assert_eq!(filled.team_id.as_deref(), Some("ai-team"));
+    assert_eq!(filled.contract_end.as_deref(), Some("2027-11-30"));
+    let untouched = game.players.iter().find(|p| p.id == "fa-jungle-b").unwrap();
+    assert_eq!(untouched.team_id, None);
+    let spare_top = game.players.iter().find(|p| p.id == "fa-top").unwrap();
+    assert_eq!(spare_top.team_id, None);
+}
+
+#[test]
+fn new_game_fill_makes_the_team_match_eligible_without_side_effects() {
+    let mut players = short_roster("ai-team");
+    players.push(player("fa-jungle", None, LolRole::Jungle, None));
+    players.push(player("fa-support", None, LolRole::Support, None));
+    let mut game = game_with(players, vec![]);
+
+    fill_new_game_rosters(&mut game);
+
+    let evaluation = evaluate_team(&game, "ai-team", RosterStabilityReason::LoadMigration).unwrap();
+    assert!(evaluation.missing_roles.is_empty());
+    assert!(get_transfer_history(&game).is_empty());
+    assert!(game.messages.is_empty());
+}
+
+#[test]
+fn new_game_fill_also_fills_the_user_managed_team() {
+    let mut players = short_roster("ai-team");
+    players.push(player("fa-jungle", None, LolRole::Jungle, None));
+    players.push(player("fa-support", None, LolRole::Support, None));
+    let mut game = game_with(players, vec![]);
+    game.teams[1].team_kind = TeamKind::Academy;
+    game.teams[0].manager_id = Some("manager-1".to_string());
+
+    let fills = fill_new_game_rosters(&mut game);
+
+    assert_eq!(fills.len(), 2);
+    assert_eq!(
+        team_role_ids(&game, "ai-team", LolRole::Jungle),
+        vec!["fa-jungle"]
+    );
+    assert_eq!(
+        team_role_ids(&game, "ai-team", LolRole::Support),
+        vec!["fa-support"]
+    );
+}
+
+#[test]
+fn new_game_fill_leaves_a_full_team_untouched() {
+    let mut players = full_roster("ai-team");
+    players.push(player("fa-top", None, LolRole::Top, None));
+    let mut game = game_with(players, vec![]);
+    game.teams[1].team_kind = TeamKind::Academy;
+    let before = player_snapshot(&game);
+
+    let fills = fill_new_game_rosters(&mut game);
+
+    assert!(fills.is_empty());
+    assert_eq!(player_snapshot(&game), before);
+}
+
+#[test]
+fn new_game_fill_generates_a_player_when_the_pool_lacks_the_role() {
+    let mut players = full_roster("ai-team");
+    players.retain(|p| p.id != "support");
+    players.push(player("fa-top", None, LolRole::Top, None));
+    let mut game = game_with(players, vec![]);
+    game.teams[1].team_kind = TeamKind::Academy;
+
+    let fills = fill_new_game_rosters(&mut game);
+
+    assert_eq!(fills.len(), 1);
+    assert!(fills[0].generated);
+    assert_eq!(fills[0].role, LolRole::Support);
+    assert!(fills[0].player_id.starts_with("emergency-"));
+    assert_eq!(
+        team_role_ids(&game, "ai-team", LolRole::Support),
+        vec![fills[0].player_id.clone()]
+    );
+}
+
+#[test]
+fn new_game_fill_ignores_released_and_expired_free_agents() {
+    let mut players = short_roster("ai-team");
+    players.push(player("fa-support", None, LolRole::Support, None));
+    players[3].was_released = true;
+    players.push(player(
+        "fa-jungle",
+        None,
+        LolRole::Jungle,
+        Some("2020-01-01"),
+    ));
+    let mut game = game_with(players, vec![]);
+    game.teams[1].team_kind = TeamKind::Academy;
+
+    let fills = fill_new_game_rosters(&mut game);
+
+    assert_eq!(fills.len(), 2);
+    assert!(fills.iter().all(|fill| fill.generated));
+}
+
+#[test]
+fn new_game_fill_is_deterministic_and_does_not_share_a_free_agent_between_teams() {
+    let mut players = vec![
+        player("fa-top-1", None, LolRole::Top, None),
+        player("fa-top-2", None, LolRole::Top, None),
+    ];
+    for team_id in ["ai-team", "other-ai"] {
+        players.push(player(
+            &format!("{team_id}-jg"),
+            Some(team_id),
+            LolRole::Jungle,
+            Some("2028-06-30"),
+        ));
+        players.push(player(
+            &format!("{team_id}-mid"),
+            Some(team_id),
+            LolRole::Mid,
+            Some("2028-06-30"),
+        ));
+        players.push(player(
+            &format!("{team_id}-adc"),
+            Some(team_id),
+            LolRole::Adc,
+            Some("2028-06-30"),
+        ));
+        players.push(player(
+            &format!("{team_id}-sup"),
+            Some(team_id),
+            LolRole::Support,
+            Some("2028-06-30"),
+        ));
+    }
+    let mut first = game_with(players.clone(), vec![]);
+    let mut second = game_with(players, vec![]);
+
+    let fills = fill_new_game_rosters(&mut first);
+    fill_new_game_rosters(&mut second);
+
+    assert_eq!(
+        team_role_ids(&first, "ai-team", LolRole::Top),
+        vec!["fa-top-1"]
+    );
+    assert_eq!(
+        team_role_ids(&first, "other-ai", LolRole::Top),
+        vec!["fa-top-2"]
+    );
+    assert_eq!(fills.len(), 2);
+    assert_eq!(player_snapshot(&first), player_snapshot(&second));
 }

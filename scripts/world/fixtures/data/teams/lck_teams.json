@@ -1,0 +1,26 @@
+{
+ "name": "lck",
+ "teams": [
+  {
+   "id": "team-bc4c40ec",
+   "name": "Kiwoom DRX",
+   "short_name": "DRX",
+   "country": "South Korea",
+   "team_kind": "Main"
+  },
+  {
+   "id": "team-932ee946",
+   "name": "KT Rolster",
+   "short_name": "KT",
+   "country": "KR",
+   "team_kind": "Main"
+  },
+  {
+   "id": "team-61bd92d5",
+   "name": "Nongshim RedForce",
+   "short_name": "NS",
+   "country": "KR",
+   "team_kind": "Main"
+  }
+ ]
+}

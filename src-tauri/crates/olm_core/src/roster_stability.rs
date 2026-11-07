@@ -251,6 +251,73 @@ pub fn repair_league(
     Ok(reports)
 }
 
+/// One roster slot filled by [`fill_new_game_rosters`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NewGameRosterFill {
+    pub team_id: String,
+    pub player_id: String,
+    pub role: LolRole,
+    /// `true` when no eligible free agent existed and a player was generated.
+    pub generated: bool,
+}
+
+/// Give every Main team (AI and user-managed) a player for each required role
+/// at the start of a new game.
+///
+/// Missing roles are filled from the free-agent pool in the same deterministic
+/// order as emergency repair (natural position, lowest id first); a player is
+/// generated only when the pool has nobody eligible. Unlike [`repair_team`] this
+/// is a setup step: it records no transfers, news or finances, ignores signing
+/// caps and wage policy, and gives filled players the default initial contract
+/// end. Teams are processed in id order so a shared pool is split reproducibly.
+pub fn fill_new_game_rosters(game: &mut Game) -> Vec<NewGameRosterFill> {
+    let mut team_ids = game
+        .teams
+        .iter()
+        .filter(|team| team.team_kind == TeamKind::Main)
+        .map(|team| team.id.clone())
+        .collect::<Vec<_>>();
+    team_ids.sort();
+
+    let current_date = current_date(game);
+    let mut fills = Vec::new();
+    for team_id in team_ids {
+        let missing = missing_roles(&eligible_team_players(game, &team_id, current_date));
+        for role in missing {
+            let free_agent = free_agent_candidates(game, role, current_date)
+                .into_iter()
+                .next();
+            if let Some((player_id, index)) = free_agent {
+                let player = &mut game.players[index];
+                player.team_id = Some(team_id.clone());
+                player.contract_end = None;
+                crate::game_setup::apply_default_initial_contract_end(std::slice::from_mut(player));
+                fills.push(NewGameRosterFill {
+                    team_id: team_id.clone(),
+                    player_id,
+                    role,
+                    generated: false,
+                });
+            } else if let Some(player_id) = available_generated_player_id(
+                game,
+                &team_id,
+                RosterStabilityReason::Emergency,
+                role,
+            ) {
+                let player = generated_player(&player_id, &team_id, role, game);
+                game.players.push(player);
+                fills.push(NewGameRosterFill {
+                    team_id: team_id.clone(),
+                    player_id,
+                    role,
+                    generated: true,
+                });
+            }
+        }
+    }
+    fills
+}
+
 fn renew_needed_current_players(game: &mut Game, team_id: &str, actions: &mut Vec<RepairAction>) {
     let current_date = current_date(game);
     let mut missing = missing_roles(&eligible_team_players(game, team_id, current_date));
@@ -359,21 +426,8 @@ fn assign_free_agent(
         AiTransferKind::Strategic
     };
 
-    // Collect matching free agents in deterministic order and try each one.
     // Cap consumption and transfer recording only happen for the selected candidate.
-    let mut candidates: Vec<(String, usize)> = game
-        .players
-        .iter()
-        .enumerate()
-        .filter(|(_, player)| player.team_id.is_none())
-        .filter(|(_, player)| player.natural_position == role)
-        .filter(|(_, player)| !player.was_released)
-        .filter(|(_, player)| {
-            player.contract_end.is_none() || has_current_contract(player, current_date)
-        })
-        .map(|(index, player)| (player.id.clone(), index))
-        .collect();
-    candidates.sort();
+    let candidates = free_agent_candidates(game, role, current_date);
 
     for (_, index) in candidates {
         let decision = {
@@ -420,6 +474,29 @@ fn assign_free_agent(
     }
 
     None
+}
+
+/// Free agents that can fill `role`, as `(player_id, index)` sorted by id so
+/// selection is deterministic.
+fn free_agent_candidates(
+    game: &Game,
+    role: LolRole,
+    current_date: NaiveDate,
+) -> Vec<(String, usize)> {
+    let mut candidates: Vec<(String, usize)> = game
+        .players
+        .iter()
+        .enumerate()
+        .filter(|(_, player)| player.team_id.is_none())
+        .filter(|(_, player)| player.natural_position == role)
+        .filter(|(_, player)| !player.was_released)
+        .filter(|(_, player)| {
+            player.contract_end.is_none() || has_current_contract(player, current_date)
+        })
+        .map(|(index, player)| (player.id.clone(), index))
+        .collect();
+    candidates.sort();
+    candidates
 }
 
 fn is_emergency_repair(reason: RosterStabilityReason) -> bool {

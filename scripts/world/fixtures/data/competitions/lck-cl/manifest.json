@@ -1,0 +1,9 @@
+{
+ "id": "lck-cl",
+ "name": "LCK-CL (stale)",
+ "tier": 2,
+ "active": true,
+ "teams_file": "teams/lck-cl_teams.json",
+ "players_file": "players/lck-cl_players.json",
+ "staff_file": null
+}
