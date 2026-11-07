@@ -330,8 +330,17 @@ async fn fetch_overlay_bytes(
 }
 
 /// Where the detached signature of the overlay at `source` lives.
+///
+/// For a URL the suffix goes into the path, before any query or fragment; a
+/// local path is taken verbatim (`?` and `#` are ordinary file-name characters).
 fn signature_source(source: &str) -> String {
-    format!("{source}{SIGNATURE_SUFFIX}")
+    if !is_remote(source) {
+        return format!("{source}{SIGNATURE_SUFFIX}");
+    }
+    let (base, tail) = source.split_at(source.find(['?', '#']).unwrap_or(source.len()));
+    let after_scheme = base.split_once("://").map_or(base, |(_, rest)| rest);
+    let separator = if after_scheme.contains('/') { "" } else { "/" };
+    format!("{base}{separator}{SIGNATURE_SUFFIX}{tail}")
 }
 
 /// Fetch the signature of `source`; a missing one is [`WorldOverlayError::MissingSignature`].
@@ -388,6 +397,52 @@ pub fn write_atomically(path: &Path, bytes: &[u8]) -> Result<(), WorldOverlayErr
     Ok(())
 }
 
+/// Fetch the overlay and then its signature under ONE total deadline: each fetch
+/// gets only the time the previous one left, so the pair never takes longer than
+/// `timeout` (an automatic check must not hold the new-game screen for twice that).
+async fn fetch_pair_with<A, B>(
+    timeout: Duration,
+    fetch_overlay: impl FnOnce(Duration) -> A,
+    fetch_signature: impl FnOnce(Duration) -> B,
+) -> Result<(Vec<u8>, Vec<u8>), WorldOverlayError>
+where
+    A: std::future::Future<Output = Result<Vec<u8>, WorldOverlayError>>,
+    B: std::future::Future<Output = Result<Vec<u8>, WorldOverlayError>>,
+{
+    let deadline = tokio::time::Instant::now() + timeout;
+    let bytes = within_deadline(deadline, fetch_overlay).await?;
+    let signature = within_deadline(deadline, fetch_signature).await?;
+    Ok((bytes, signature))
+}
+
+async fn within_deadline<F, Fut>(
+    deadline: tokio::time::Instant,
+    fetch: F,
+) -> Result<Vec<u8>, WorldOverlayError>
+where
+    F: FnOnce(Duration) -> Fut,
+    Fut: std::future::Future<Output = Result<Vec<u8>, WorldOverlayError>>,
+{
+    let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+    tokio::time::timeout_at(deadline, fetch(remaining))
+        .await
+        .unwrap_or_else(|_| Err(WorldOverlayError::Network("request timed out".to_string())))
+}
+
+/// Store the downloaded pair: the overlay first, the signature last. A crash in
+/// between leaves a new overlay next to the old signature, which read-time
+/// verification rejects, so the pair is ignored; a new signature never sits next
+/// to an old overlay.
+fn store_pair_with(
+    cache_path: &Path,
+    overlay: &[u8],
+    signature: &[u8],
+    mut write: impl FnMut(&Path, &[u8]) -> Result<(), WorldOverlayError>,
+) -> Result<(), WorldOverlayError> {
+    write(cache_path, overlay)?;
+    write(&signature_path(cache_path), signature)
+}
+
 /// Download from `source`, validate and store into `cache_path` when it is not
 /// older than what is cached. Returns the overlay a new game would now use.
 async fn refresh_cache(
@@ -402,8 +457,12 @@ async fn refresh_cache(
     let cached = read_cached_overlay(cache_path, key);
     let before = select_overlay(bundled.clone(), cached.clone());
 
-    let bytes = fetch_overlay_bytes(source, user_agent, limit, timeout).await?;
-    let signature = fetch_signature_bytes(source, user_agent, timeout).await?;
+    let (bytes, signature) = fetch_pair_with(
+        timeout,
+        |remaining| fetch_overlay_bytes(source, user_agent, limit, remaining),
+        |remaining| fetch_signature_bytes(source, user_agent, remaining),
+    )
+    .await?;
     verify_overlay_signature(&bytes, &signature, key).map_err(WorldOverlayError::BadSignature)?;
     let text = std::str::from_utf8(&bytes).map_err(|_| {
         WorldOverlayError::Invalid(OverlayError::InvalidField {
@@ -420,8 +479,7 @@ async fn refresh_cache(
         None => downloaded.as_of >= bundled.as_of,
     };
     if acceptable {
-        write_atomically(&signature_path(cache_path), &signature)?;
-        write_atomically(cache_path, &bytes)?;
+        store_pair_with(cache_path, &bytes, &signature, write_atomically)?;
     } else {
         info!(
             "[world_overlay] downloaded overlay {} is older than the one in use, keeping it",
@@ -579,6 +637,114 @@ mod tests {
             signature_for(&signing_key(9), content.as_bytes()),
         )
         .expect("write cache signature");
+    }
+
+    #[test]
+    fn signature_source_inserts_the_suffix_into_the_url_path() {
+        assert_eq!(
+            signature_source("https://example.test/a/overlay.json"),
+            "https://example.test/a/overlay.json.sig"
+        );
+        assert_eq!(
+            signature_source("https://example.test/a/overlay.json?token=1&v=2#frag"),
+            "https://example.test/a/overlay.json.sig?token=1&v=2#frag"
+        );
+        assert_eq!(
+            signature_source("https://example.test/a/overlay.json#frag"),
+            "https://example.test/a/overlay.json.sig#frag"
+        );
+        assert_eq!(
+            signature_source("https://example.test?x=1"),
+            "https://example.test/.sig?x=1"
+        );
+    }
+
+    #[test]
+    fn signature_source_keeps_local_paths_verbatim() {
+        assert_eq!(
+            signature_source("/tmp/over lay.json"),
+            "/tmp/over lay.json.sig"
+        );
+        // `?` and `#` are ordinary characters in a file name.
+        assert_eq!(signature_source("/tmp/a#b?c.json"), "/tmp/a#b?c.json.sig");
+    }
+
+    #[test]
+    fn the_overlay_and_signature_fetches_share_one_deadline() {
+        let timeout = Duration::from_millis(300);
+        let slow = |remaining: Duration| async move {
+            // Each fetch would finish inside the full timeout on its own.
+            let _ = remaining;
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            Ok::<_, WorldOverlayError>(vec![1u8])
+        };
+        let started = std::time::Instant::now();
+        let result = run(fetch_pair_with(timeout, slow, slow));
+        assert!(
+            matches!(result, Err(WorldOverlayError::Network(_))),
+            "{result:?}"
+        );
+        assert!(
+            started.elapsed() < Duration::from_millis(380),
+            "took {:?}",
+            started.elapsed()
+        );
+    }
+
+    #[test]
+    fn the_second_fetch_only_gets_the_time_the_first_left() {
+        let timeout = Duration::from_millis(500);
+        let seen = std::cell::Cell::new(Duration::ZERO);
+        let result = run(fetch_pair_with(
+            timeout,
+            |_| async {
+                tokio::time::sleep(Duration::from_millis(150)).await;
+                Ok(vec![1u8])
+            },
+            |remaining| {
+                seen.set(remaining);
+                async { Ok(vec![2u8]) }
+            },
+        ))
+        .expect("pair");
+        assert_eq!(result, (vec![1u8], vec![2u8]));
+        assert!(seen.get() <= Duration::from_millis(360), "{:?}", seen.get());
+    }
+
+    #[test]
+    fn the_cache_pair_is_written_overlay_first_and_signature_last() {
+        let cache = Path::new("/cache/world.json");
+        let mut order = Vec::new();
+        store_pair_with(cache, b"overlay", b"sig", |path, _| {
+            order.push(path.to_path_buf());
+            Ok(())
+        })
+        .expect("store");
+        assert_eq!(order, vec![cache.to_path_buf(), signature_path(cache)]);
+    }
+
+    #[test]
+    fn a_crash_between_the_two_writes_leaves_a_pair_that_is_ignored() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, _) = seeded_cache(dir.path());
+        let old_sig = std::fs::read(signature_path(&cache)).expect("old sig");
+        let new_doc = overlay_json(&offset_date(2), 2);
+        let new_sig = signature_for(&signing_key(9), new_doc.as_bytes());
+
+        let mut writes = 0;
+        let result = store_pair_with(&cache, new_doc.as_bytes(), new_sig.as_bytes(), |p, b| {
+            writes += 1;
+            if writes == 1 {
+                write_atomically(p, b)
+            } else {
+                Err(WorldOverlayError::Io(std::io::Error::other("crash")))
+            }
+        });
+        assert!(result.is_err());
+        // New overlay, old signature: never a new signature over the old overlay.
+        assert_eq!(std::fs::read(signature_path(&cache)).expect("sig"), old_sig);
+        assert_eq!(std::fs::read(&cache).expect("overlay"), new_doc.as_bytes());
+        assert!(read_cached_overlay(&cache, &test_key()).is_none());
     }
 
     #[test]
