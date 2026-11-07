@@ -1166,6 +1166,25 @@ pub fn choose_post_scrim_decision(
     slot_index: u8,
     decision: String,
 ) -> Result<Game, String> {
+    choose_post_scrim_decision_internal(&state, slot_index, decision)
+}
+
+pub(crate) fn choose_post_scrim_decision_internal(
+    state: &StateManager,
+    slot_index: u8,
+    decision: String,
+) -> Result<Game, String> {
+    apply_manager_post_scrim_decision(state, slot_index, decision, true)
+}
+
+/// `enforce_day_off_position` is false only for the "offer rest" action, which rests the
+/// squad after the first block and is the one legitimate early `DayOff`.
+fn apply_manager_post_scrim_decision(
+    state: &StateManager,
+    slot_index: u8,
+    decision: String,
+    enforce_day_off_position: bool,
+) -> Result<Game, String> {
     info!(
         "[cmd] choose_post_scrim_decision: slot={}, decision={}",
         slot_index, decision
@@ -1187,7 +1206,7 @@ pub fn choose_post_scrim_decision(
         .clone()
         .ok_or("No team assigned".to_string())?;
 
-    if decision == olm_core::domain::team::PostScrimDecision::DayOff {
+    if enforce_day_off_position && decision == olm_core::domain::team::PostScrimDecision::DayOff {
         let current_weekday = game.clock.current_date.weekday().num_days_from_monday() as u8;
         let team = game
             .teams
@@ -1209,6 +1228,14 @@ pub fn choose_post_scrim_decision(
 #[tauri::command]
 pub fn choose_daily_scrim_action(
     state: State<'_, StateManager>,
+    slot_index: u8,
+    action: String,
+) -> Result<Game, String> {
+    choose_daily_scrim_action_internal(&state, slot_index, action)
+}
+
+pub(crate) fn choose_daily_scrim_action_internal(
+    state: &StateManager,
     slot_index: u8,
     action: String,
 ) -> Result<Game, String> {
@@ -1282,12 +1309,23 @@ pub fn choose_daily_scrim_action(
         _ => return Err(format!("Unknown daily scrim action: {action}")),
     };
 
-    let mut updated = choose_post_scrim_decision(state.clone(), slot_index, decision.to_string())?;
+    let mut updated = apply_manager_post_scrim_decision(
+        state,
+        slot_index,
+        decision.to_string(),
+        action != "OfferRest",
+    )?;
 
     if action == "ContinueToBlock2" || action == "PushThrough" {
-        let weekday_num = updated.clock.current_date.weekday().num_days_from_monday();
-        olm_core::training::process_scrim_block(&mut updated, weekday_num);
-        state.set_game(updated.clone());
+        // Resolve block B on the stored game: the value returned above is the client
+        // projection, and saving it back would drop the hidden meta.
+        let mut stored = state
+            .get_game(|g| g.clone())
+            .ok_or("No active game session".to_string())?;
+        let weekday_num = stored.clock.current_date.weekday().num_days_from_monday();
+        olm_core::training::process_scrim_block(&mut stored, weekday_num);
+        state.set_game(stored.clone());
+        updated = crate::client_game::game_for_client(&stored);
     }
 
     Ok(updated)
@@ -1372,6 +1410,12 @@ pub fn delegate_scrim_decision(state: State<'_, StateManager>) -> Result<Game, S
 
 #[tauri::command]
 pub fn get_scrim_context(state: State<'_, StateManager>) -> Result<ScrimContextResponse, String> {
+    get_scrim_context_internal(&state)
+}
+
+pub(crate) fn get_scrim_context_internal(
+    state: &StateManager,
+) -> Result<ScrimContextResponse, String> {
     info!("[cmd] get_scrim_context");
     let game = state
         .get_game(|g| g.clone())
@@ -1432,7 +1476,11 @@ pub fn get_scrim_context(state: State<'_, StateManager>) -> Result<ScrimContextR
         .cloned();
 
     let today_context = if let Some(report) = unresolved_report.clone() {
-        let decision_phase_active = day_phase == "ScrimBlock";
+        // The backend blocks advancing in ScrimBlock while a report is unresolved, so the
+        // decision must be offered in ScrimBlock as well as ReviewBlock.
+        // The backend blocks advancing in ScrimBlock while a report is unresolved, so the
+        // decision must be offered in ScrimBlock as well as ReviewBlock.
+        let decision_phase_active = matches!(day_phase, "ScrimBlock" | "ReviewBlock");
         let report_opponent_team_id = report.opponent_team_id.clone();
         TodayScrimContextResponse {
             state: "PlayedNeedsReview".to_string(),

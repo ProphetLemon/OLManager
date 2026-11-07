@@ -766,4 +766,139 @@ mod tests {
             start_date + chrono::Duration::days(1)
         );
     }
+
+    /// Wednesday with two daily scrim blocks planned against "team2", at Morning.
+    fn make_manual_scrim_day() -> StateManager {
+        let state = StateManager::new();
+        let mut game = make_game(22);
+        game.clock.current_date = Utc.with_ymd_and_hms(2025, 6, 18, 12, 0, 0).unwrap();
+        game.teams[0].scrim_weekly_slots = 2;
+        game.teams[0].weekly_scrim_plan_team_ids =
+            vec![vec!["team2".to_string()], vec!["team3".to_string()]];
+
+        let mut opponent_team = Team::new(
+            "team2".to_string(),
+            "Rival FC".to_string(),
+            "RIV".to_string(),
+            "England".to_string(),
+            "Rivaltown".to_string(),
+            "Rival Ground".to_string(),
+            21_000,
+        );
+        opponent_team.active_lineup_ids = game
+            .players
+            .iter()
+            .skip(11)
+            .take(11)
+            .map(|player| player.id.clone())
+            .collect();
+        for player in game.players.iter_mut().skip(11) {
+            player.team_id = Some("team2".to_string());
+        }
+        game.teams.push(opponent_team);
+        // Block B needs a different opponent: the same team cannot be scrimmed twice a week.
+        game.teams.push(Team::new(
+            "team3".to_string(),
+            "Third FC".to_string(),
+            "THI".to_string(),
+            "England".to_string(),
+            "Thirdtown".to_string(),
+            "Third Ground".to_string(),
+            21_000,
+        ));
+        state.set_game(game);
+        state
+    }
+
+    /// Forces the unresolved report of `slot_index` to a win so the daily flow is deterministic.
+    fn force_scrim_win(state: &StateManager, slot_index: u8) {
+        let mut game = state.get_game(|g| g.clone()).expect("game");
+        let report = game.teams[0]
+            .scrim_reports
+            .iter_mut()
+            .find(|report| report.slot_index == slot_index)
+            .expect("report for slot");
+        report.won = Some(true);
+        state.set_game(game);
+    }
+
+    fn today_can_review(state: &StateManager) -> (bool, String) {
+        let context = crate::commands::squad::get_scrim_context_internal(state).expect("context");
+        (context.today.can_review, context.today.state)
+    }
+
+    fn scrim_phase(state: &StateManager) -> DayPhase {
+        state.get_game(|g| g.day_phase.clone()).expect("game")
+    }
+
+    #[test]
+    fn manual_scrim_day_continue_to_block_two_never_deadlocks() {
+        use crate::commands::squad::choose_daily_scrim_action_internal as choose;
+        let state = make_manual_scrim_day();
+
+        let first = advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        assert_eq!(first.action, "phase_advanced");
+        assert_eq!(scrim_phase(&state), DayPhase::ScrimBlock);
+        force_scrim_win(&state, 0);
+
+        // The player must be able to decide in the very phase that blocks.
+        assert_eq!(
+            today_can_review(&state),
+            (true, "PlayedNeedsReview".to_string())
+        );
+        let blocked = advance_time_with_mode_internal(&state, "instant").expect("blocked");
+        assert_eq!(blocked.action, "blocked_scrim_decision");
+        assert_eq!(scrim_phase(&state), DayPhase::ScrimBlock);
+
+        // Block B is played right after the decision, still in ScrimBlock.
+        choose(&state, 0, "ContinueToBlock2".to_string()).expect("continue to block B");
+        let game = state.get_game(|g| g.clone()).expect("game");
+        assert_eq!(game.teams[0].scrim_reports.len(), 2);
+        assert!(game.teams[0].scrim_reports[0].post_decision.is_some());
+        assert_eq!(
+            today_can_review(&state),
+            (true, "PlayedNeedsReview".to_string())
+        );
+        let blocked_b = advance_time_with_mode_internal(&state, "instant").expect("blocked B");
+        assert_eq!(blocked_b.action, "blocked_scrim_decision");
+
+        // Closing the day with block B's decision releases the block.
+        choose(&state, 1, "DayOff".to_string()).expect("close the day");
+        let released = advance_time_with_mode_internal(&state, "instant").expect("released");
+        assert_eq!(released.action, "phase_advanced");
+        assert_eq!(scrim_phase(&state), DayPhase::ReviewBlock);
+    }
+
+    #[test]
+    fn manual_scrim_day_offer_rest_releases_the_block_without_a_second_scrim() {
+        use crate::commands::squad::choose_daily_scrim_action_internal as choose;
+        let state = make_manual_scrim_day();
+
+        advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        force_scrim_win(&state, 0);
+        let blocked = advance_time_with_mode_internal(&state, "instant").expect("blocked");
+        assert_eq!(blocked.action, "blocked_scrim_decision");
+
+        choose(&state, 0, "OfferRest".to_string()).expect("offer rest");
+        let game = state.get_game(|g| g.clone()).expect("game");
+        assert_eq!(game.teams[0].scrim_reports.len(), 1);
+
+        let released = advance_time_with_mode_internal(&state, "instant").expect("released");
+        assert_eq!(released.action, "phase_advanced");
+        assert_eq!(scrim_phase(&state), DayPhase::ReviewBlock);
+    }
+
+    #[test]
+    fn scrim_context_offers_the_review_in_review_block_too() {
+        let state = make_manual_scrim_day();
+        advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        let mut game = state.get_game(|g| g.clone()).expect("game");
+        game.day_phase = DayPhase::ReviewBlock;
+        state.set_game(game);
+
+        assert_eq!(
+            today_can_review(&state),
+            (true, "PlayedNeedsReview".to_string())
+        );
+    }
 }

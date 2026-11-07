@@ -116,7 +116,6 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   const [decisionSaving, setDecisionSaving] = useState<string | null>(null);
   const [decisionFeedback, setDecisionFeedback] = useState<string | null>(null);
   const [showCancelFollowups, setShowCancelFollowups] = useState(false);
-  const reviewPhaseActive = (gameState.day_phase ?? "Morning") === "ReviewBlock";
   const remoteScrimContext = useScrimContextWithFallback(gameState);
   const myTeam = gameState.teams.find((t) => t.id === gameState.manager.team_id);
 
@@ -459,7 +458,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                 )}
 
                 {/* Post-scrim review decisions */}
-                {todayContext.state === "PlayedNeedsReview" && todayContext.report && reviewPhaseActive && (
+                {todayContext.state === "PlayedNeedsReview" && todayContext.report && todayContext.canReview && (
                   <div className="space-y-2">
                     <p className="font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                       {isFirstBlock ? (showCancelFollowups ? t("scrims.cancelFollowupTitle") : t("scrims.blockDecisionTitle")) : t("scrims.closeDayTitle")}

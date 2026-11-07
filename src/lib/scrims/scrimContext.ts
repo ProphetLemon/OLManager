@@ -200,7 +200,9 @@ export function deriveTodayScrimContext(gameState: GameStateData, team: TeamData
   const unresolvedReport = todayReports.find((report) => report.post_decision == null) ?? null;
 
   if (unresolvedReport) {
-    const reviewPhaseActive = dayPhase === "ReviewBlock";
+    // The backend blocks advancing in ScrimBlock while a report is unresolved, so the
+    // decision must be offered there as well as in ReviewBlock.
+    const reviewPhaseActive = dayPhase === "ScrimBlock" || dayPhase === "ReviewBlock";
     return {
       state: "PlayedNeedsReview",
       slotIndex: unresolvedReport.slot_index,
