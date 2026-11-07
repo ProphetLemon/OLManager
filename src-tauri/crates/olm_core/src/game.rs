@@ -153,6 +153,14 @@ pub struct Game {
     /// catalog rehydration can always keep these players where the game put them.
     #[serde(default)]
     pub moved_player_ids: HashSet<String>,
+    /// Tombstones for players the roster overlay retired. Catalog rehydration
+    /// must never re-add these (see `merge_missing_players`).
+    #[serde(default)]
+    pub retired_player_ids: Vec<String>,
+    /// `as_of` date of the roster overlay applied when this game was created,
+    /// if any. Shown to the player as "Rosters as of <date>".
+    #[serde(default)]
+    pub world_overlay_as_of: Option<String>,
 }
 
 /// Lenient deserializer for `competition_configs`.
@@ -214,6 +222,8 @@ impl Game {
             ai_transfer_cap_last_reset_date: None,
             sent_contract_warning_ids: HashSet::new(),
             moved_player_ids: HashSet::new(),
+            retired_player_ids: vec![],
+            world_overlay_as_of: None,
         };
         crate::identity_upgrade::upgrade_game_football_identities(&mut game);
         crate::season_context::refresh_game_context(&mut game);

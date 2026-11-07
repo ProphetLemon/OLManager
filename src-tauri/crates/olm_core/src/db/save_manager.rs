@@ -466,6 +466,8 @@ mod tests {
             ai_transfer_cap_last_reset_date: None,
             sent_contract_warning_ids: Default::default(),
             moved_player_ids: Default::default(),
+            retired_player_ids: Default::default(),
+            world_overlay_as_of: None,
         }
     }
 
@@ -726,6 +728,36 @@ mod tests {
 
         assert_eq!(loaded.board_objectives.len(), 1);
         assert_eq!(loaded.board_objectives[0].description, "Finish top 4");
+    }
+
+    #[test]
+    fn test_game_roundtrip_preserves_world_overlay_state() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut sm = SaveManager::init(&dir.path().join("saves")).unwrap();
+        let mut game = sample_game();
+        game.retired_player_ids = vec!["p-retired".to_string()];
+        game.world_overlay_as_of = Some("2026-11-07".to_string());
+        game.moved_player_ids.insert("p-moved".to_string());
+
+        let save_id = sm.create_save(&game, "Overlay").unwrap();
+        let loaded = sm.load_game(&save_id).unwrap();
+
+        assert_eq!(loaded.retired_player_ids, vec!["p-retired".to_string()]);
+        assert_eq!(loaded.world_overlay_as_of.as_deref(), Some("2026-11-07"));
+        assert!(loaded.moved_player_ids.contains("p-moved"));
+    }
+
+    #[test]
+    fn test_game_saved_before_world_overlay_still_loads() {
+        let mut value = serde_json::to_value(sample_game()).unwrap();
+        let object = value.as_object_mut().unwrap();
+        object.remove("retired_player_ids");
+        object.remove("world_overlay_as_of");
+
+        let loaded: Game = serde_json::from_value(value).unwrap();
+
+        assert!(loaded.retired_player_ids.is_empty());
+        assert_eq!(loaded.world_overlay_as_of, None);
     }
 
     #[test]
