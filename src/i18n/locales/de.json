@@ -2334,6 +2334,17 @@
         "actionView": "Spielplan ansehen"
       },
       "preMatch": {
+        "venue": { "home": "Heim", "away": "Auswärts" },
+        "templates": {
+          "preview_1": {
+            "subject": "Nächstes Spiel: gegen {{opponent}}",
+            "body": "Coach, unser nächstes Spiel ist gegen {{opponent}} ({{venue}}) am {{date}}.\n\nIch habe mir ihre letzten Partien angesehen und denke, wir haben eine solide Chance, wenn wir uns an unseren Spielplan halten. Konzentrieren wir uns auf unsere Stärken und nutzen ihre Schwächen aus.\n\nSorgen wir dafür, dass der Kader vorbereitet ist."
+          },
+          "preview_2": {
+            "subject": "Spieltag naht: {{opponent}}",
+            "body": "Achtung, Coach — wir treffen auf {{opponent}} ({{venue}}) am {{date}}.\n\nDas wird ein hartes Spiel. {{opponent}} hat einige starke Spieler, die wir im Blick behalten müssen. Ich habe einen Scouting-Bericht über ihre wichtigsten Gefahrenquellen vorbereitet.\n\nGehen wir den Spielplan vor dem Spieltag durch."
+          }
+        },
         "subject": "Anstehend: vs {{opponent}} ({{venue}})",
         "body0": "Ihr {{venue}}-Spiel gegen {{opponent}} steht am {{matchDate}} an.\n\nSpieltag {{matchday}} der Ersten Division. Stellen Sie sicher, dass Ihre Starter Five in guter Verfassung ist und Ihre Taktik steht.\n\nNutzen Sie den {{venue}}-Vorteil.",
         "body1": "Erinnerung: Sie treffen {{venue}} auf {{opponent}} am {{matchDate}}.\n\nDies ist Spieltag {{matchday}} — überprüfen Sie die Fitness Ihres Kaders und ziehen Sie taktische Anpassungen in Betracht.",
@@ -2341,6 +2352,28 @@
         "actionScout": "Gegner analysieren"
       },
       "matchResult": {
+        "templates": {
+          "defeat_1": {
+            "subject": "Niederlage: {{home}} {{score}} {{away}}",
+            "body": "Heute eine bittere Niederlage, Coach. Wir haben gegen {{opponent}} verloren: {{score}}.\n\nAus diesem Spiel können wir lernen. Analysieren wir, was schiefgelaufen ist, und kommen wir stärker zurück.\n\nDie Saison ist lang — wir fangen uns wieder."
+          },
+          "defeat_2": {
+            "subject": "Niederlage: {{opponent}} schlägt uns {{score}}",
+            "body": "Nicht unser Tag, Coach. {{opponent}} hat uns {{score}} geschlagen.\n\nWir müssen analysieren, was schiefgelaufen ist, und die Probleme vor dem nächsten Spiel beheben. Ich bereite eine detaillierte Aufschlüsselung der entscheidenden Momente vor.\n\nBleiben wir konzentriert — es steht noch viel auf dem Spiel."
+          },
+          "draw_1": {
+            "subject": "Unentschieden: {{home}} {{score}} {{away}}",
+            "body": "Ein hart erkämpftes Unentschieden heute, Coach. {{home}} {{score}} {{away}} gegen {{opponent}}.\n\nNicht das Ergebnis, das wir wollten, aber wir haben Charakter gezeigt. Nehmen wir das Positive mit und arbeiten an den Schwächen.\n\nDas nächste Spiel ist die Chance, wieder zu gewinnen."
+          },
+          "victory_1": {
+            "subject": "Sieg! {{score}} gegen {{opponent}}",
+            "body": "Tolles Ergebnis heute, Coach! Wir haben {{opponent}} mit {{score}} geschlagen.\n\nDas Team hat den Spielplan gut umgesetzt. Bauen wir auf diesem Schwung für das nächste Spiel auf.\n\nGut gemacht an alle Beteiligten."
+          },
+          "victory_2": {
+            "subject": "Sieg! {{home}} {{score}} {{away}}",
+            "body": "Wir haben es geschafft, Coach! Ein solider Sieg mit {{score}} gegen {{opponent}}.\n\nDie Spieler haben geliefert, als es am meisten zählte. Halten wir dieses Leistungsniveau.\n\nSehen Sie sich die Spielaufnahmen an und finden Sie Verbesserungspotenzial für das nächste Mal."
+          }
+        },
         "subject": {
           "victory": "Sieg: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",
           "defeat": "Niederlage: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",

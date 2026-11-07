@@ -2334,6 +2334,17 @@
         "actionView": "Fikstürü Gör"
       },
       "preMatch": {
+        "venue": { "home": "ev sahibi", "away": "deplasman" },
+        "templates": {
+          "preview_1": {
+            "subject": "Sıradaki maç: {{opponent}} karşısında",
+            "body": "Koç, bir sonraki maçımız {{date}} tarihinde {{opponent}} ile ({{venue}}).\n\nSon maçlarını inceledim ve oyun planımıza sadık kalırsak sağlam bir şansımız olduğunu düşünüyorum. Güçlü yanlarımıza odaklanıp zayıflıklarını değerlendirelim.\n\nKadronun hazır olduğundan emin olalım."
+          },
+          "preview_2": {
+            "subject": "Maç günü yaklaşıyor: {{opponent}}",
+            "body": "Dikkat koç — {{date}} tarihinde {{opponent}} ile ({{venue}}) karşılaşıyoruz.\n\nZor bir maç olacak. {{opponent}} takımında hesaba katmamız gereken güçlü oyuncular var. Başlıca tehditleri hakkında bir scout raporu hazırladım.\n\nMaç gününden önce oyun planını gözden geçirelim."
+          }
+        },
         "subject": "Yaklaşan Maç: vs {{opponent}} ({{venue}})",
         "body0": "{{matchDate}} tarihinde {{opponent}} ile {{venue}} maçınız yaklaşıyor.\n\n1. Lig'de {{matchday}}. Maç Günü. İlk 5'inizin iyi durumda olduğundan ve taktiklerinizin ayarlandığından emin olun.\n\n{{venue}} avantajınızı en iyi şekilde kullanın.",
         "body1": "Hatırlatma: {{matchDate}} tarihinde {{opponent}} ile karşılaşıyorsunuz ({{venue}}).\n\nBu {{matchday}}. Maç Günü — kadro kondisyonunuzu gözden geçirin ve olası taktiksel değişiklikleri değerlendirin.",
@@ -2341,6 +2352,28 @@
         "actionScout": "Rakibi Gözlemle"
       },
       "matchResult": {
+        "templates": {
+          "defeat_1": {
+            "subject": "Mağlubiyet: {{home}} {{score}} {{away}}",
+            "body": "Bugün zor bir yenilgi, koç. {{opponent}} karşısında {{score}} kaybettik.\n\nBu maçtan çıkarılacak dersler var. Nerede hata yaptığımızı inceleyip daha güçlü dönelim.\n\nSezon uzun — toparlanacağız."
+          },
+          "defeat_2": {
+            "subject": "Mağlubiyet: {{opponent}} bizi {{score}} yendi",
+            "body": "Bizim günümüz değildi, koç. {{opponent}} bizi {{score}} yendi.\n\nNelerin ters gittiğini analiz edip bir sonraki maçtan önce sorunları gidermeliyiz. Kilit anların ayrıntılı bir dökümünü hazırlayacağım.\n\nOdağımızı koruyalım — hâlâ oynanacak çok şey var."
+          },
+          "draw_1": {
+            "subject": "Beraberlik: {{home}} {{score}} {{away}}",
+            "body": "Bugün çekişmeli bir beraberlik, koç. {{home}} {{score}} {{away}}, rakip {{opponent}}.\n\nİstediğimiz sonuç değildi ama karakter gösterdik. Olumlu yanları alıp zayıflıklar üzerinde çalışalım.\n\nSıradaki maç yeniden kazanmaya dönmek için bir fırsat."
+          },
+          "victory_1": {
+            "subject": "Galibiyet! {{opponent}} karşısında {{score}}",
+            "body": "Bugün harika bir sonuç, koç! {{opponent}} takımını {{score}} yendik.\n\nTakım oyun planını iyi uyguladı. Bu ivmeyi bir sonraki maça taşıyalım.\n\nEmeği geçen herkese teşekkürler."
+          },
+          "victory_2": {
+            "subject": "Kazandık! {{home}} {{score}} {{away}}",
+            "body": "Başardık, koç! {{opponent}} karşısında sağlam bir {{score}} galibiyet.\n\nOyuncular en önemli anda üzerine düştü. Bu performans seviyesini sürdürelim.\n\nMaç görüntülerini inceleyip bir dahaki sefere geliştirilecek alanları belirleyin."
+          }
+        },
         "subject": {
           "victory": "Galibiyet: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",
           "defeat": "Mağlubiyet: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",

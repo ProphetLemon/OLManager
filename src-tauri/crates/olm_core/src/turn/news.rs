@@ -844,7 +844,7 @@ mod tests {
         assert!(message.subject.contains("(H)"));
         assert_eq!(message.context.fixture_id.as_deref(), Some("fx1"));
         assert_eq!(message.context.team_id.as_deref(), Some("team2"));
-        assert_eq!(message.i18n_params.get("venue"), Some(&"home".to_string()));
+        assert_eq!(message.i18n_params.get("venue"), Some(&"be.msg.preMatch.venue.home".to_string()));
         assert_eq!(
             message.i18n_params.get("opponent"),
             Some(&"Beta FC".to_string())

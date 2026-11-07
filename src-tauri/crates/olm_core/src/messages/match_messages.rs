@@ -12,18 +12,26 @@ pub fn pre_match_message(
     date: &str,
 ) -> InboxMessage {
     let venue = if is_home { "home" } else { "away" };
-    let venue_label = if is_home { "Local" } else { "Visitante" };
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
+    // The venue travels as an i18n key (the UI translates it); the stored text is English.
+    let venue_key = if is_home {
+        "be.msg.preMatch.venue.home"
+    } else {
+        "be.msg.preMatch.venue.away"
+    };
+    if let Some(mut msg) = crate::messages::template_store::template_store().build_message_keyed(
         "match_preview",
         &format!("preview_{fixture_id}"),
         date,
         "en",
         vec![
             ("opponent", opponent_name),
-            ("venue", venue_label),
+            ("venue", venue),
             ("date", match_date),
         ],
+        "be.msg.preMatch.templates",
     ) {
+        msg.i18n_params
+            .insert("venue".to_string(), venue_key.to_string());
         return msg;
     }
     let mut rng = rand::rng();
@@ -101,7 +109,7 @@ pub fn pre_match_message(
         "be.msg.preMatch.subject",
         &format!("be.msg.preMatch.body{}", idx),
         params(&[
-            ("venue", venue),
+            ("venue", venue_key),
             ("opponent", opponent_name),
             ("matchDate", match_date),
             ("matchday", &matchday.to_string()),
@@ -132,7 +140,7 @@ pub fn match_result_message(
     );
     let opponent = if is_home { away_name } else { home_name };
 
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
+    if let Some(msg) = crate::messages::template_store::template_store().build_message_keyed(
         "match_result",
         &format!("result_{fixture_id}"),
         date,
@@ -144,6 +152,7 @@ pub fn match_result_message(
             ("opponent", opponent),
             ("matchday", &matchday.to_string()),
         ],
+        "be.msg.matchResult.templates",
     ) {
         return msg;
     }
