@@ -653,6 +653,40 @@ fn no_contract_concern_if_expired() {
     );
 }
 
+#[test]
+fn deleted_contract_warning_is_not_resent_for_same_stage() {
+    let mut game = make_game();
+    let end = (game.clock.current_date + chrono::Duration::days(150))
+        .format("%Y-%m-%d")
+        .to_string();
+    game.players
+        .iter_mut()
+        .find(|p| p.id == "p_fwd0")
+        .unwrap()
+        .contract_end = Some(end);
+
+    player_events::check_player_events(&mut game);
+    assert!(
+        game.messages
+            .iter()
+            .any(|m| m.id == "contract_concern_p_fwd0_6m"),
+        "Warning should be sent the first time"
+    );
+
+    game.messages
+        .retain(|m| m.id != "contract_concern_p_fwd0_6m");
+    game.clock.current_date += chrono::Duration::days(1);
+    player_events::check_player_events(&mut game);
+
+    assert!(
+        !game
+            .messages
+            .iter()
+            .any(|m| m.id == "contract_concern_p_fwd0_6m"),
+        "Deleted warning must not be regenerated for the same stage"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // apply_player_response: morale_talk responses
 // ---------------------------------------------------------------------------

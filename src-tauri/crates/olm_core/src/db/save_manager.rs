@@ -464,6 +464,7 @@ mod tests {
             transfer_history: Default::default(),
             ai_transfer_cap_counts: Default::default(),
             ai_transfer_cap_last_reset_date: None,
+            sent_contract_warning_ids: Default::default(),
         }
     }
 
