@@ -1,6 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { runGates, simulateRosterCounts } from "../../../scripts/world/lib/gates.mjs";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { loadGateExceptions, runGates, simulateRosterCounts } from "../../../scripts/world/lib/gates.mjs";
 import { loadWorld } from "../../../scripts/world/lib/world.mjs";
 import { FIXTURES } from "./fixtures";
 
@@ -62,5 +65,54 @@ describe("plausibility gates", () => {
     ]);
     expect(counts.get("lck-team-bc4c40ec")).toBe(teams("lck-team-bc4c40ec").length - 2);
     expect(counts.get("lck-team-932ee946")).toBe(teams("lck-team-932ee946").length + 2);
+  });
+
+  it("passes a shortfall caused only by confirmed moves and lists the team", () => {
+    const roster = teams("lck-team-bc4c40ec");
+    const overlay = overlayOf(roster.slice(0, roster.length - 4).map((p) => ({ op: "move", id: p.id, team_id: "lck-team-932ee946", evidence })));
+    const result = runGates({ overlay, world, coveredTeamIds: covered, options: { maxChangedShare: 1 } });
+    expect(gate(result, "min-roster").ok).toBe(true);
+    expect(gate(result, "min-roster").detail).toContain("short only through confirmed moves/retirements; the game fills them from free agents at new game");
+    expect(gate(result, "min-roster").detail).toContain("lck-team-bc4c40ec");
+  });
+
+  it("fails when a release out of a short team is still in the overlay", () => {
+    const roster = teams("lck-team-bc4c40ec");
+    const [released, ...moved] = roster.slice(0, roster.length - 4);
+    const overlay = overlayOf([
+      { op: "move", id: released.id, team_id: null, evidence },
+      ...moved.map((p) => ({ op: "move", id: p.id, team_id: "lck-team-932ee946", evidence })),
+    ]);
+    const result = runGates({ overlay, world, coveredTeamIds: covered, options: { maxChangedShare: 1 } });
+    expect(gate(result, "min-roster").ok).toBe(false);
+  });
+
+  describe("max-changed-share reviewed exceptions", () => {
+    const lck = world.players.filter((p) => p.competition === "lck");
+    const overlay = overlayOf(lck.map((p) => ({ op: "retire", id: p.id, evidence })));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gate-exceptions-"));
+    const write = (content: unknown) => {
+      const file = path.join(dir, `${Math.random().toString(36).slice(2)}.json`);
+      fs.writeFileSync(file, JSON.stringify(content));
+      return file;
+    };
+
+    it("passes a listed competition and quotes the reason", () => {
+      const gateExceptions = loadGateExceptions(write({ maxChangedShare: { lck: { reason: "reviewed: evidence-backed", reviewed: "2026-11-07" } } }));
+      const result = runGates({ overlay, world, coveredTeamIds: covered, options: { minRosterSize: 0 }, gateExceptions });
+      expect(gate(result, "max-changed-share").ok).toBe(true);
+      expect(gate(result, "max-changed-share").detail).toContain("reviewed exception: reviewed: evidence-backed");
+    });
+
+    it("treats a missing file as no exceptions", () => {
+      const gateExceptions = loadGateExceptions(path.join(dir, "absent.json"));
+      expect(gate(runGates({ overlay, world, coveredTeamIds: covered, options: { minRosterSize: 0 }, gateExceptions }), "max-changed-share").ok).toBe(false);
+    });
+
+    it("rejects entries without a reason or a reviewed date", () => {
+      expect(() => loadGateExceptions(write({ maxChangedShare: { lck: { reviewed: "2026-11-07" } } }))).toThrow(/lck needs a non-empty reason/);
+      expect(() => loadGateExceptions(write({ maxChangedShare: { lck: { reason: "x" } } }))).toThrow(/lck needs a reviewed date/);
+      expect(() => loadGateExceptions(write({ maxChangedShare: { lck: { reason: "x", reviewed: "yesterday" } } }))).toThrow(/reviewed date/);
+    });
   });
 });

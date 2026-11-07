@@ -1,5 +1,5 @@
 import type { MediaWikiClient } from "./mediawiki-client.mjs";
-import type { GateResult } from "./gates.mjs";
+import type { GateExceptions, GateResult } from "./gates.mjs";
 import type { World } from "./world.mjs";
 import type { RosterOverlay } from "./overlay-schema.mjs";
 
@@ -29,5 +29,6 @@ export function runRefresh(options: {
   client: MediaWikiClient;
   asOf?: string;
   gateOptions?: Record<string, number>;
+  gateExceptions?: GateExceptions;
   log?: (message: string) => void;
 }): Promise<RefreshResult>;

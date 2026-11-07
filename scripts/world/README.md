@@ -20,7 +20,8 @@ npm run verify:world-overlay [-- path/to/overlay.json [path/to/data]]
 
 Flags: `--competitions a,b` `--offline` `--cache-dir` `--throttle-ms` (4000) `--max-requests` (3000) `--max-cache-age-days` (7) `--as-of`
 `--out` `--report` (default `scripts/world/out/report.md`) `--build-team-map` `--allow-gate-failures` `--dry-run`
-(writes the overlay only when `--out` is given) `--data-dir` `--team-map` `--id-map`.
+(writes the overlay only when `--out` is given) `--gate-exceptions` (default `scripts/world/gate-exceptions.json`)
+`--data-dir` `--team-map` `--id-map`.
 
 Live runs re-fetch cache entries older than `--max-cache-age-days`; offline runs read any age. `as_of` defaults to the
 fetch date of the oldest cache entry used (an explicit `--as-of` wins, with a warning when it is newer than that).
@@ -40,8 +41,23 @@ Fix problems in the reviewed inputs, not in the overlay:
   Needed for people the matcher refuses (conflicting real names, duplicate records with identical IGN and name).
 
 Gates (a failed gate exits non-zero and the overlay is not written unless `--allow-gate-failures`): schema and references
-valid, no id used twice, no covered team ends under 5 players (or below its starting size), at most 8 new players per team,
-at most 60% of a competition's players moved or retired.
+valid, no id used twice, no team left under its floor by a release, at most 8 new players per team, at most 60% of a
+competition's players moved or retired unless it has a reviewed exception.
+
+- **Roster floor.** `floor(team) = min(5, the team's starting player count in the bundled world)`. In the off-season
+  Leaguepedia rosters are empty or partial, but the game starts on 1 January with playable rosters. After the operations
+  are built, every team that would end under its floor keeps all of its players that the overlay would release (a `move`
+  with `team_id: null`). Those releases are dropped and listed in the report under "Skipped and ambiguous" as
+  `kept-for-roster-floor` (team, would-be count, floor). Moves to other teams, retirements and additions are never dropped.
+- **`min-roster` gate.** Fails only when a team ends under its floor and a release out of it is still in the overlay. Teams
+  short only through confirmed moves/retirements pass and are listed in the gate detail ("short only through confirmed
+  moves/retirements; the game fills them from free agents at new game").
+- **`max-changed-share` exceptions.** `scripts/world/gate-exceptions.json`
+  (`{"maxChangedShare": {"<competitionId>": {"reason": "...", "reviewed": "YYYY-MM-DD"}}}`; override with
+  `--gate-exceptions`; a missing file means none; an entry without `reason` or `reviewed` is rejected). Add one only after
+  reading the competition's operations in the report: moves matched on strong/ign+name, releases backed by player pages,
+  retirements from the infobox, and no wrong team mapping (a wrong mapping is fixed in `team-map.json`, never exempted).
+  A listed competition passes with `reviewed exception: <reason>` in the gate detail.
 
 ## What the tool does and does not decide
 

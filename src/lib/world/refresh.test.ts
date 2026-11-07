@@ -44,7 +44,8 @@ describe("refresh over the recorded LCK + LEC fixtures", () => {
   it("retires Ice only because his page says so, and releases players whose page shows no team", () => {
     expect(playerOp("lec-player-105501834624360050")).toMatchObject({ op: "retire", evidence: expect.stringContaining("Ice_(Yoon_Sang-hoon)") });
     expect(playerOp("lec-player-100356590519370319")).toMatchObject({ op: "move", team_id: null });
-    expect(playerOp("lec-player-102174699705191142")).toMatchObject({ op: "move", team_id: null });
+    // Serin's release would leave Team Heretics under its floor, so it is kept out of the overlay
+    expect(playerOp("lec-player-102174699705191142")).toBeUndefined();
     // Way has no resolvable page: unknown means no op
     expect(playerOp("lec-player-107492119089043087")).toBeUndefined();
   });
@@ -76,11 +77,14 @@ describe("refresh over the recorded LCK + LEC fixtures", () => {
     expect(result.report).toMatch(/Labrov|Effort|Oner|Sharvel|FIESTA|Daglas/);
   });
 
-  it("flags Team Heretics, whose Leaguepedia roster is short, instead of shipping a hollow team", () => {
-    const failed = result.gates.results.filter((g) => !g.ok).map((g) => g.name);
-    expect(failed).toEqual(["min-roster"]);
-    expect(result.gates.results.find((g) => g.name === "min-roster")?.detail).toContain("lec-team-heretics-lec");
-    expect(result.gates.ok).toBe(false);
+  it("keeps Team Heretics playable by dropping the release that would hollow it out, and reports it", () => {
+    const kept = result.ops.skipped.filter((s) => s.kind === "kept-for-roster-floor");
+    expect(kept).toHaveLength(1);
+    expect(kept[0]).toMatchObject({ subject: "Serin (lec-player-102174699705191142)" });
+    expect(kept[0].detail).toContain("lec-team-heretics-lec would end with 4 players, under its floor of 5");
+    expect(result.report).toContain("kept-for-roster-floor");
+    expect(result.gates.results.filter((g) => !g.ok)).toEqual([]);
+    expect(result.gates.ok).toBe(true);
   });
 
   it("produces byte-identical output for the same input", async () => {

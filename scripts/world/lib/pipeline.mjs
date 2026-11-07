@@ -10,7 +10,8 @@ import {
 import { findTeamSections, parseActiveRoster, parseStaffTable } from "./leaguepedia-parse.mjs";
 import { analyzeRosters } from "./analyze.mjs";
 import { computeBaselines } from "./generate.mjs";
-import { runGates } from "./gates.mjs";
+import { DEFAULT_GATE_OPTIONS, runGates } from "./gates.mjs";
+import { applyRosterFloor } from "./roster-floor.mjs";
 import { lookupInfobox, lookupPlayerStatus } from "./player-status.mjs";
 import { buildOps } from "./ops.mjs";
 import { OFFLINE_LICENSE, buildOverlay, todayUtc } from "./overlay.mjs";
@@ -45,6 +46,7 @@ export async function fetchTeamRoster(client, title) {
  * @param {import("./mediawiki-client.mjs").MediaWikiClient} options.client
  * @param {string} [options.asOf] defaults to the fetch date of the oldest cache entry used
  * @param {object} [options.gateOptions]
+ * @param {import("./gates.mjs").GateExceptions} [options.gateExceptions] reviewed max-changed-share exceptions
  * @param {(message: string) => void} [options.log]
  */
 export async function runRefresh(options) {
@@ -111,7 +113,10 @@ export async function runRefresh(options) {
 
   // --- operations, overlay, gates ------------------------------------------------------------------------
   const baselines = computeBaselines(world);
-  const ops = buildOps({ world, analysis, statuses, infoboxes, baselines });
+  const built = buildOps({ world, analysis, statuses, infoboxes, baselines });
+  const minRosterSize = options.gateOptions?.minRosterSize ?? DEFAULT_GATE_OPTIONS.minRosterSize;
+  const floored = applyRosterFloor({ world, players: built.players, minRosterSize });
+  const ops = { ...built, players: floored.players, skipped: [...built.skipped, ...floored.skipped] };
 
   let license = OFFLINE_LICENSE;
   try {
@@ -131,7 +136,7 @@ export async function runRefresh(options) {
   }
   const asOf = options.asOf ?? oldestFetch ?? todayUtc();
   const overlay = buildOverlay({ asOf, license, coverage, players: ops.players, staff: ops.staff });
-  const gates = runGates({ overlay, world, coveredTeamIds: readableTeamIds, options: options.gateOptions });
+  const gates = runGates({ overlay, world, coveredTeamIds: readableTeamIds, options: options.gateOptions, gateExceptions: options.gateExceptions });
 
   const teamRows = selectedTeams.map((teamId) => {
     const team = world.teams.get(teamId);

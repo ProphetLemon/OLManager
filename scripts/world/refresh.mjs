@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { DEFAULT_MAX_CACHE_AGE_DAYS, DEFAULT_THROTTLE_MS, MediaWikiClient } from "./lib/mediawiki-client.mjs";
+import { loadGateExceptions } from "./lib/gates.mjs";
 import { serializeOverlay } from "./lib/overlay.mjs";
 import { runRefresh } from "./lib/pipeline.mjs";
 import { buildTeamMap, loadTeamMap, summarizeTeamMap } from "./lib/team-map.mjs";
@@ -25,6 +26,7 @@ const HELP = `Usage: node scripts/world/refresh.mjs [flags]
   --build-team-map        (re)build scripts/world/team-map.json, then exit
   --allow-gate-failures   write the overlay even if a plausibility gate fails
   --dry-run               do not write the overlay unless --out is given explicitly
+  --gate-exceptions <file> reviewed max-changed-share exceptions (default scripts/world/gate-exceptions.json; missing = none)
   --data-dir, --team-map, --id-map   override input locations (tests, experiments)
 `;
 
@@ -44,6 +46,7 @@ const { values } = parseArgs({
     "dry-run": { type: "boolean", default: false },
     "data-dir": { type: "string", default: path.join(ROOT, "data") },
     "team-map": { type: "string", default: path.join(ROOT, "scripts/world/team-map.json") },
+    "gate-exceptions": { type: "string", default: path.join(ROOT, "scripts/world/gate-exceptions.json") },
     "id-map": { type: "string", default: path.join(ROOT, "scripts/world/id-map.json") },
     help: { type: "boolean", default: false },
   },
@@ -88,6 +91,7 @@ async function refresh() {
     idMapPath: values["id-map"],
     competitions,
     client,
+    gateExceptions: loadGateExceptions(values["gate-exceptions"]),
     asOf: values["as-of"],
     log,
   });
