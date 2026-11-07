@@ -1,5 +1,6 @@
 use crate::contract_wage_policy::{
     AiTransferKind, SigningIntent, ai_signing_policy, ai_transfer_cap_try_consume,
+    annual_team_wage_bill,
 };
 use crate::contracts::{expected_contract_years, expected_wage};
 use crate::domain::negotiation::{NegotiationFeedback, NegotiationMood};
@@ -1930,20 +1931,32 @@ pub struct WageNegotiationOutcome {
     pub feedback: NegotiationFeedback,
 }
 
+/// Share of the expected wage below which a player refuses to talk numbers at all.
+const WAGE_FLOOR_PCT_OF_EXPECTED: u64 = 85;
+/// A manager offer this close under the player's own counter closes the deal. The
+/// slack is proportional because a flat 5,000 was 10% of a 50k wage but 1% of a 500k one.
+const WAGE_COUNTER_TOLERANCE_PCT: u64 = 2;
+/// From this reply on, a player whose terms are still unmet walks away for good.
+const WAGE_FINAL_ROUND: u8 = 4;
+
+/// Lowest wage the player will consider for `reference_wage`.
+fn wage_floor(reference_wage: u32) -> u32 {
+    (u64::from(reference_wage) * WAGE_FLOOR_PCT_OF_EXPECTED).div_ceil(100) as u32
+}
+
 fn calculate_wage_acceptance_score(
     current_date: NaiveDate,
     player: &crate::domain::player::Player,
     offered_wage: u32,
+    reference_wage: u32,
     contract_years: u8,
     game: &Game,
 ) -> i32 {
-    let current_wage = player.wage;
-    let wage_diff = offered_wage as i64 - current_wage as i64;
-    let wage_increase_pct = if current_wage > 0 {
-        ((offered_wage as f64 / current_wage as f64) - 1.0) * 100.0
-    } else {
-        100.0
-    };
+    // The offer is measured against what the player expects to earn, never against a
+    // current wage of 0, so an unpaid-looking star cannot be bought with any figure.
+    let baseline_wage = reference_wage.max(player.wage).max(1);
+    let wage_diff = offered_wage as i64 - baseline_wage as i64;
+    let wage_increase_pct = ((offered_wage as f64 / baseline_wage as f64) - 1.0) * 100.0;
 
     let mut score = 0_i32;
 
@@ -2147,12 +2160,32 @@ pub fn negotiate_player_wage(
     let current_date = game.clock.current_date.date_naive();
     let date = game.clock.current_date.format("%Y-%m-%d").to_string();
     // wage_negotiation_round starts at 1 for a fresh offer; don't double-increment
-    let round = offer.wage_negotiation_round;
+    let round = offer.wage_negotiation_round.max(1);
+    // Every reply that is not an acceptance moves the talks one round on.
+    let next_round = round.saturating_add(1);
 
-    // Accept immediately if offer matches a previous counter-offer within tolerance
-    if let Some(counter_annual) = offer.suggested_counter_wage
-        && annual_wage >= counter_annual.saturating_sub(5_000)
-        && annual_wage <= counter_annual.saturating_add(5_000)
+    let destination_team = game
+        .teams
+        .iter()
+        .find(|t| t.id.as_str() == destination_team_id.as_str())
+        .ok_or("Destination team not found")?;
+    let reference_wage = expected_wage(player, destination_team, current_date);
+    let below_floor = annual_wage < wage_floor(reference_wage);
+    let payer_team = game
+        .teams
+        .iter()
+        .find(|t| t.id.as_str() == payer_team_id.as_str())
+        .ok_or("Paying team not found")?;
+    let affordable_wage =
+        (payer_team.wage_budget - annual_team_wage_bill(game, &payer_team_id)).max(0);
+    let over_budget = i64::from(annual_wage) > affordable_wage;
+    let blocked = below_floor || over_budget;
+
+    // Accept immediately if the offer matches a previous counter-offer within tolerance
+    if !blocked
+        && let Some(counter_annual) = offer.suggested_counter_wage
+        && u64::from(annual_wage)
+            >= u64::from(counter_annual) * (100 - WAGE_COUNTER_TOLERANCE_PCT) / 100
     {
         if let Some(p) = game.players.iter_mut().find(|p| p.id == player_id)
             && let Some(o) = p.transfer_offers.iter_mut().find(|o| o.id == offer_id)
@@ -2192,8 +2225,14 @@ pub fn negotiate_player_wage(
         });
     }
 
-    let score =
-        calculate_wage_acceptance_score(current_date, player, annual_wage, contract_years, game);
+    let score = calculate_wage_acceptance_score(
+        current_date,
+        player,
+        annual_wage,
+        reference_wage,
+        contract_years,
+        game,
+    );
 
     let previous_wage = if annual_wage > player.wage {
         Some(player.wage)
@@ -2212,17 +2251,7 @@ pub fn negotiate_player_wage(
 
     let (tension, patience) = wage_negotiation_metrics(round, stalled, respected_signal);
 
-    let destination_team = game
-        .teams
-        .iter()
-        .find(|t| t.id.as_str() == destination_team_id.as_str())
-        .ok_or("Destination team not found")?;
-
-    if score >= 50 {
-        let current_annual_wage_bill = calc_annual_wages(game, &destination_team_id);
-        let projected_annual_wage_bill = current_annual_wage_bill + annual_wage as i64;
-        let can_afford = projected_annual_wage_bill <= destination_team.wage_budget;
-
+    if score >= 50 && !blocked {
         if let Some(p) = game.players.iter_mut().find(|p| p.id == player_id)
             && let Some(o) = p.transfer_offers.iter_mut().find(|o| o.id == offer_id)
         {
@@ -2244,26 +2273,14 @@ pub fn negotiate_player_wage(
             &date,
         )?;
 
-        let (headline, detail) = if can_afford {
-            (
-                "transfers.wageFeedbackAcceptedHeadline",
-                "transfers.wageFeedbackAcceptedDetail",
-            )
-        } else {
-            (
-                "transfers.wageFeedbackAcceptedOverBudgetHeadline",
-                "transfers.wageFeedbackAcceptedOverBudgetDetail",
-            )
-        };
-
         return Ok(WageNegotiationOutcome {
             decision: TransferNegotiationDecision::Accepted,
             suggested_wage: None,
             suggested_years: None,
             is_terminal: true,
             feedback: build_wage_feedback(
-                headline,
-                detail,
+                "transfers.wageFeedbackAcceptedHeadline",
+                "transfers.wageFeedbackAcceptedDetail",
                 NegotiationMood::Positive,
                 tension.saturating_sub(10),
                 patience.saturating_add(10).min(92),
@@ -2273,11 +2290,12 @@ pub fn negotiate_player_wage(
         });
     }
 
-    if round >= 4 && score < 40 {
+    if round >= WAGE_FINAL_ROUND && (blocked || score < 40) {
         if let Some(p) = game.players.iter_mut().find(|p| p.id == player_id)
             && let Some(o) = p.transfer_offers.iter_mut().find(|o| o.id == offer_id)
         {
             o.wage_negotiation_status = WageNegotiationStatus::Rejected;
+            o.wage_negotiation_round = next_round;
             o.date = date;
         }
 
@@ -2294,6 +2312,38 @@ pub fn negotiate_player_wage(
                 patience.saturating_sub(16),
                 round,
                 &[],
+            ),
+        });
+    }
+
+    if over_budget {
+        // The club cannot fit this wage. Name what it can still pay when that is a
+        // wage the player would consider, otherwise there is nothing to counter with.
+        let suggested_wage = u32::try_from(affordable_wage)
+            .ok()
+            .filter(|affordable| *affordable >= wage_floor(reference_wage));
+        if let Some(p) = game.players.iter_mut().find(|p| p.id == player_id)
+            && let Some(o) = p.transfer_offers.iter_mut().find(|o| o.id == offer_id)
+        {
+            o.suggested_counter_wage = suggested_wage;
+            o.suggested_counter_years = suggested_wage.map(|_| contract_years);
+            o.date = date.clone();
+            o.wage_negotiation_round = next_round;
+        }
+
+        return Ok(WageNegotiationOutcome {
+            decision: TransferNegotiationDecision::Rejected,
+            suggested_wage,
+            suggested_years: suggested_wage.map(|_| contract_years),
+            is_terminal: false,
+            feedback: build_wage_feedback(
+                "transfers.wageFeedbackOverBudgetHeadline",
+                "transfers.wageFeedbackOverBudgetDetail",
+                NegotiationMood::Guarded,
+                tension.saturating_add(8).min(92),
+                patience.saturating_sub(8),
+                round,
+                &[("wage", affordable_wage.to_string())],
             ),
         });
     }
@@ -2323,6 +2373,9 @@ pub fn negotiate_player_wage(
         let min_acceptable = (player.wage as f64 * 1.1).round() as u32;
         suggested_wage = suggested_wage.max(min_acceptable);
 
+        // A counter is never below what the player expects to earn.
+        suggested_wage = suggested_wage.max(reference_wage);
+
         let suggested_years = if contract_years < 3 {
             (contract_years + 1).min(5)
         } else {
@@ -2335,7 +2388,7 @@ pub fn negotiate_player_wage(
             o.suggested_counter_wage = Some(suggested_wage);
             o.suggested_counter_years = Some(suggested_years);
             o.date = date.clone();
-            o.wage_negotiation_round = round;
+            o.wage_negotiation_round = next_round;
         }
 
         return Ok(WageNegotiationOutcome {
@@ -2377,7 +2430,9 @@ pub fn negotiate_player_wage(
         let base = ((annual_wage as f64) * years_premium).round() as u32;
         let min_over_offer = (annual_wage as f64 * 1.05).round() as u32;
         let min_acceptable = (player.wage as f64 * 1.1).round() as u32;
-        base.max(min_over_offer).max(min_acceptable)
+        base.max(min_over_offer)
+            .max(min_acceptable)
+            .max(reference_wage)
     };
     if let Some(p) = game.players.iter_mut().find(|p| p.id == player_id)
         && let Some(o) = p.transfer_offers.iter_mut().find(|o| o.id == offer_id)
@@ -2385,7 +2440,7 @@ pub fn negotiate_player_wage(
         o.suggested_counter_wage = Some(suggested_wage);
         o.suggested_counter_years = Some(contract_years);
         o.date = date.clone();
-        o.wage_negotiation_round = round;
+        o.wage_negotiation_round = next_round;
     }
 
     Ok(WageNegotiationOutcome {
