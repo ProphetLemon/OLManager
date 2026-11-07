@@ -4,10 +4,13 @@ import { describe, expect, it, vi } from "vitest";
 // Every jsdom window the parser opens is recorded, so the test can check that each one was closed.
 const { windows } = vi.hoisted(() => ({ windows: [] as Array<{ close: { mock: { calls: unknown[] } } }> }));
 
+// jsdom ships no type declarations, so only the surface this test touches is typed.
+type JsdomModule = { JSDOM: new (...args: unknown[]) => { window: { close(): void } } };
+
 vi.mock("jsdom", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("jsdom")>();
+  const actual = await importOriginal<JsdomModule>();
   class TrackedJSDOM extends actual.JSDOM {
-    constructor(...args: ConstructorParameters<typeof actual.JSDOM>) {
+    constructor(...args: unknown[]) {
       super(...args);
       windows.push({ close: vi.spyOn(this.window, "close") });
     }
