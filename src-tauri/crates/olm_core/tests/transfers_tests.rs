@@ -124,7 +124,13 @@ fn make_seller_team(starting_xi_ids: Vec<String>) -> Team {
         "Seller Ground".to_string(),
         28_000,
     );
-    team.active_lineup_ids = starting_xi_ids;
+    // A club with no lineup at all ranks its players by OVR, so a "not in the lineup"
+    // seller gets a lineup that lists somebody else.
+    team.active_lineup_ids = if starting_xi_ids.is_empty() {
+        vec!["seller-lineup-placeholder".to_string()]
+    } else {
+        starting_xi_ids
+    };
     team
 }
 
@@ -1317,6 +1323,8 @@ fn ai_free_agent_signing_prioritizes_missing_role() {
     ai_team.team_kind = TeamKind::Main;
     ai_team.finance = 5_000_000;
     ai_team.transfer_budget = 3_000_000;
+    // Room for the 1.05M adc (asks about 1.27M on the LEC wage scale) but not for the 1.6M mid.
+    ai_team.wage_budget = 2_000_000;
 
     let players = vec![
         make_player_with_position("ai-top", LolRole::Top, Some("team-2"), 900_000),
@@ -1390,6 +1398,8 @@ fn ai_club_transfer_prioritizes_missing_role() {
     ai_buyer.team_kind = TeamKind::Main;
     ai_buyer.finance = 6_000_000;
     ai_buyer.transfer_budget = 3_500_000;
+    // The 0.95M adc asks about 1.16M a year on the LEC wage scale; the 1.5M mid would not fit.
+    ai_buyer.wage_budget = 2_000_000;
 
     let mut seller_team = Team::new(
         "team-3".to_string(),
@@ -1403,6 +1413,8 @@ fn ai_club_transfer_prioritizes_missing_role() {
     seller_team.team_kind = TeamKind::Main;
     seller_team.finance = 4_000_000;
     seller_team.transfer_budget = 2_000_000;
+    // A lineup that lists nobody on the market, so neither seller counts as a key player.
+    seller_team.active_lineup_ids = vec!["seller-lineup-placeholder".to_string()];
 
     let mut seller_mid = make_player_with_position(
         "seller-mid-premium",
@@ -1694,7 +1706,8 @@ fn make_game_with_free_agents(free_agents: Vec<Player>) -> Game {
     manager.hire("team-user".to_string());
 
     let mut team = make_ai_team("team-ai");
-    team.wage_budget = 1_000_000;
+    // On the LEC wage scale a 1M free agent asks about 1.2M a year.
+    team.wage_budget = 5_000_000;
 
     let mut game = Game::new(clock, manager, vec![team], free_agents, vec![], vec![]);
     game.season_context.transfer_window.status = TransferWindowStatus::Open;

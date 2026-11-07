@@ -409,6 +409,9 @@ mod tests {
         );
         team.finance = 6_000_000;
         team.transfer_budget = 3_000_000;
+        // A club without a lineup ranks its players by OVR; this one lists somebody else
+        // so its bid target stays a fringe player.
+        team.active_lineup_ids = vec!["lineup-placeholder".to_string()];
         team
     }
 

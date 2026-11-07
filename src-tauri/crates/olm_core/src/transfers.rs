@@ -111,14 +111,20 @@ fn contract_days_remaining(current_date: NaiveDate, contract_end: Option<&str>) 
     Some((contract_end_date - current_date).num_days())
 }
 
+/// Number of players an AI team without a lineup treats as its key players.
+const KEY_PLAYERS_WITHOUT_LINEUP: usize = 5;
+
 fn infer_player_importance(
     player: &crate::domain::player::Player,
     owner_team: &crate::domain::team::Team,
+    players: &[crate::domain::player::Player],
 ) -> PlayerImportance {
     if owner_team
         .active_lineup_ids
         .iter()
         .any(|id| id == &player.id)
+        || (owner_team.active_lineup_ids.is_empty()
+            && is_top_ovr_of_roster(player, &owner_team.id, players))
     {
         return PlayerImportance::Key;
     }
@@ -130,11 +136,33 @@ fn infer_player_importance(
     PlayerImportance::Fringe
 }
 
+/// True when `player` is among the best `KEY_PLAYERS_WITHOUT_LINEUP` of the
+/// team's roster by OVR (ties broken by id so the answer is stable).
+fn is_top_ovr_of_roster(
+    player: &crate::domain::player::Player,
+    team_id: &str,
+    players: &[crate::domain::player::Player],
+) -> bool {
+    let rank_key = |p: &crate::domain::player::Player| {
+        (
+            std::cmp::Reverse(crate::potential::calculate_lol_ovr(p)),
+            p.id.clone(),
+        )
+    };
+    let own = rank_key(player);
+    let better = players
+        .iter()
+        .filter(|p| p.team_id.as_deref() == Some(team_id) && rank_key(p) < own)
+        .count();
+    better < KEY_PLAYERS_WITHOUT_LINEUP
+}
+
 fn minimum_acceptable_fee(
     current_date: NaiveDate,
     player: &crate::domain::player::Player,
     owner_team: &crate::domain::team::Team,
     buyer_team: &crate::domain::team::Team,
+    players: &[crate::domain::player::Player],
 ) -> u64 {
     let mut multiplier: f64 = if player.transfer_listed { 0.8 } else { 1.2 };
 
@@ -150,7 +178,7 @@ fn minimum_acceptable_fee(
         }
     }
 
-    match infer_player_importance(player, owner_team) {
+    match infer_player_importance(player, owner_team, players) {
         PlayerImportance::Key => multiplier += 0.2,
         PlayerImportance::Regular => multiplier += 0.1,
         PlayerImportance::Fringe => {}
@@ -1367,7 +1395,7 @@ pub fn make_transfer_bid(
 
     let buyer_team = my_team;
 
-    let threshold = minimum_acceptable_fee(current_date, player, owner_team, buyer_team);
+    let threshold = minimum_acceptable_fee(current_date, player, owner_team, buyer_team, &game.players);
     let existing_offer = find_open_offer_from_club(player, &user_team_id);
     let previous_fee = existing_offer.map(|offer| offer.fee);
     let previous_counter_fee = existing_offer.and_then(|offer| offer.suggested_counter_fee);
@@ -3311,4 +3339,80 @@ fn contract_end_for_years(current_date: NaiveDate, contract_years: u8) -> String
         "{}-11-30",
         current_date.year() + i32::from(contract_years.max(1))
     )
+}
+
+#[cfg(test)]
+mod importance_tests {
+    use super::*;
+    use crate::domain::player::{Player, PlayerAttributes};
+    use crate::domain::stats::LolRole;
+    use crate::domain::team::Team;
+
+    fn roster_player(id: &str, skill: u8) -> Player {
+        let mut player = Player::new(
+            id.to_string(),
+            id.to_string(),
+            id.to_string(),
+            "2000-01-01".to_string(),
+            "KR".to_string(),
+            LolRole::Mid,
+            PlayerAttributes {
+                mechanics: skill,
+                laning: skill,
+                teamfighting: skill,
+                macro_play: skill,
+                consistency: skill,
+                shotcalling: skill,
+                champion_pool: skill,
+                discipline: skill,
+                mental_resilience: skill,
+            },
+        );
+        player.team_id = Some("ai".to_string());
+        player.market_value = 300_000;
+        player
+    }
+
+    fn team(id: &str) -> Team {
+        Team::new(
+            id.to_string(),
+            id.to_string(),
+            "TST".to_string(),
+            "KR".to_string(),
+            "Seoul".to_string(),
+            "Arena".to_string(),
+            10_000,
+        )
+    }
+
+    fn asking_fee(player: &Player, owner: &Team, players: &[Player]) -> u64 {
+        let date = NaiveDate::from_ymd_opt(2026, 11, 7).unwrap();
+        minimum_acceptable_fee(date, player, owner, &team("buyer"), players)
+    }
+
+    #[test]
+    fn team_without_lineup_asks_more_for_a_top_five_ovr_player() {
+        let owner = team("ai");
+        let players: Vec<Player> = (0..7)
+            .map(|index| roster_player(&format!("p{index}"), 90 - index as u8 * 5))
+            .collect();
+
+        let star = asking_fee(&players[0], &owner, &players);
+        let bench = asking_fee(&players[6], &owner, &players);
+
+        assert!(star > bench, "star {star} should ask more than bench {bench}");
+    }
+
+    #[test]
+    fn team_without_lineup_treats_the_sixth_best_player_as_fringe() {
+        let owner = team("ai");
+        let players: Vec<Player> = (0..7)
+            .map(|index| roster_player(&format!("p{index}"), 90 - index as u8 * 5))
+            .collect();
+
+        assert_eq!(
+            asking_fee(&players[5], &owner, &players),
+            asking_fee(&players[6], &owner, &players)
+        );
+    }
 }
