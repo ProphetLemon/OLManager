@@ -1,0 +1,6 @@
+{
+  "note": "Reviewed overrides for the Leaguepedia matcher. `players`/`staff`: pin a Leaguepedia page title to a game id. `rejections`: say a page is NOT that game id. Keep a reason for every entry.",
+  "players": [],
+  "staff": [],
+  "rejections": []
+}
