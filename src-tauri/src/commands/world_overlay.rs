@@ -415,6 +415,8 @@ mod tests {
     }
 
     /// A date `days` away from the bundled `as_of`, in the same YYYY-MM-DD form.
+    /// Keep future offsets within the validator's small future tolerance (2 days): the bundled
+    /// overlay is dated the day it was generated, so a larger offset would be rejected as a future date.
     fn offset_date(days: i64) -> String {
         let base = chrono::NaiveDate::parse_from_str(&bundled_date(), "%Y-%m-%d").expect("date");
         (base + chrono::Duration::days(days))
@@ -489,7 +491,7 @@ mod tests {
     #[test]
     fn refresh_stores_newer_overlay_and_reports_update() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let newer = offset_date(30);
+        let newer = offset_date(2);
         let source = write_source(dir.path(), "src.json", &overlay_json(&newer, 2));
         let cache = dir.path().join("world").join(CACHE_FILE);
 
@@ -506,7 +508,7 @@ mod tests {
     #[test]
     fn refresh_with_same_overlay_is_not_reported_as_update() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let newer = offset_date(30);
+        let newer = offset_date(2);
         let source = write_source(dir.path(), "src.json", &overlay_json(&newer, 1));
         let cache = dir.path().join(CACHE_FILE);
 
@@ -521,12 +523,12 @@ mod tests {
     fn refresh_does_not_replace_cache_with_older_overlay() {
         let dir = tempfile::tempdir().expect("tempdir");
         let cache = dir.path().join(CACHE_FILE);
-        let newer = offset_date(60);
+        let newer = offset_date(2);
         let newer_src = write_source(dir.path(), "new.json", &overlay_json(&newer, 3));
         run(refresh_cache(&cache, &newer_src, UA, MAX_OVERLAY_BYTES)).expect("seed cache");
         let before = std::fs::read(&cache).expect("read cache");
 
-        let older_src = write_source(dir.path(), "old.json", &overlay_json(&offset_date(10), 1));
+        let older_src = write_source(dir.path(), "old.json", &overlay_json(&offset_date(1), 1));
         let info = run(refresh_cache(&cache, &older_src, UA, MAX_OVERLAY_BYTES)).expect("refresh");
 
         assert!(!info.updated);
@@ -551,14 +553,14 @@ mod tests {
     fn refresh_rejects_invalid_overlay_and_keeps_cache() {
         let dir = tempfile::tempdir().expect("tempdir");
         let cache = dir.path().join(CACHE_FILE);
-        let good = write_source(dir.path(), "good.json", &overlay_json(&offset_date(20), 1));
+        let good = write_source(dir.path(), "good.json", &overlay_json(&offset_date(2), 1));
         run(refresh_cache(&cache, &good, UA, MAX_OVERLAY_BYTES)).expect("seed cache");
         let before = std::fs::read(&cache).expect("read cache");
 
         let bad = write_source(
             dir.path(),
             "bad.json",
-            &overlay_json(&offset_date(90), 0).replace("\"as_of\"", "\"as_of_x\""),
+            &overlay_json(&offset_date(2), 0).replace("\"as_of\"", "\"as_of_x\""),
         );
         let err = run(refresh_cache(&cache, &bad, UA, MAX_OVERLAY_BYTES)).expect_err("invalid");
 
@@ -570,7 +572,7 @@ mod tests {
     fn refresh_rejects_overlay_with_empty_op_id() {
         let dir = tempfile::tempdir().expect("tempdir");
         let cache = dir.path().join(CACHE_FILE);
-        let doc = overlay_json(&offset_date(5), 1).replace("\"id\":\"p0\"", "\"id\":\"\"");
+        let doc = overlay_json(&offset_date(1), 1).replace("\"id\":\"p0\"", "\"id\":\"\"");
         let source = write_source(dir.path(), "empty-id.json", &doc);
 
         let err = run(refresh_cache(&cache, &source, UA, MAX_OVERLAY_BYTES)).expect_err("invalid");
@@ -599,7 +601,7 @@ mod tests {
     #[test]
     fn oversized_source_is_rejected_by_the_size_cap() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let doc = overlay_json(&offset_date(30), 50);
+        let doc = overlay_json(&offset_date(2), 50);
         let source = write_source(dir.path(), "big.json", &doc);
         let cache = dir.path().join(CACHE_FILE);
 
@@ -615,7 +617,7 @@ mod tests {
     #[test]
     fn source_exactly_at_the_cap_is_accepted() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let doc = overlay_json(&offset_date(30), 5);
+        let doc = overlay_json(&offset_date(2), 5);
         let source = write_source(dir.path(), "exact.json", &doc);
 
         let info = run(refresh_cache(
