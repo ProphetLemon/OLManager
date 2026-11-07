@@ -2637,8 +2637,8 @@
     "statsArchived": "Las estadísticas de jugadores serán archivadas. Se generará un nuevo calendario.",
     "newSeason": "Temporada {{n}}",
     "newScheduleReleased": "¡El nuevo calendario ha sido publicado. ¡Buena suerte!",
-    "goldenBoot": "Bota de Oro",
-    "nGoals": "{{count}} goles",
+    "goldenBoot": "Líder de Bajas",
+    "nGoals": "{{count}} bajas",
     "playerOfYear": "Jugador del Año",
     "avgRating": "Puntuación media: {{rating}}",
     "continueDashboard": "Continuar al Panel"

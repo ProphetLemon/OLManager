@@ -2492,8 +2492,8 @@
     "statsArchived": "Les statistiques des joueurs seront archivées. Un nouveau calendrier sera généré.",
     "newSeason": "Saison {{n}}",
     "newScheduleReleased": "Le nouveau calendrier a été publié. Bonne chance !",
-    "goldenBoot": "Soulier d'Or",
-    "nGoals": "{{count}} buts",
+    "goldenBoot": "Leader des Kills",
+    "nGoals": "{{count}} kills",
     "playerOfYear": "Joueur de l'Année",
     "avgRating": "Note moyenne : {{rating}}",
     "continueDashboard": "Continuer vers le Tableau de Bord"

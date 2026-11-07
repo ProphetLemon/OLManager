@@ -2492,8 +2492,8 @@
     "statsArchived": "Spielerstatistiken werden archiviert. Ein neuer Spielplan wird erstellt.",
     "newSeason": "Saison {{n}}",
     "newScheduleReleased": "Der neue Spielplan wurde veröffentlicht. Viel Glück!",
-    "goldenBoot": "Goldener Schuh",
-    "nGoals": "{{count}} Tore",
+    "goldenBoot": "Kill-Leader",
+    "nGoals": "{{count}} Kills",
     "playerOfYear": "Spieler des Jahres",
     "avgRating": "Durchschnittsbewertung: {{rating}}",
     "continueDashboard": "Weiter zum Dashboard"
