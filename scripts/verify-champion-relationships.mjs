@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
+import { CURATION_SOURCE, applyCounterCuration, validateCounterSet } from "./lib/champion-counter-curation.mjs";
 
 const datasetUrl = new URL("../data/champions/champion-relationships.v1.json", import.meta.url);
 const legacyCatalogUrl = new URL("../assets/simulation/champions.json", import.meta.url);
+const curationUrl = new URL("../assets/simulation/champion-counter-curation.json", import.meta.url);
 const canonicalRoles = new Set(["Top", "Jungle", "Mid", "Bot", "Support"]);
 const stabilityValues = new Set(["foundational", "patch_sensitive"]);
 
@@ -23,6 +25,16 @@ function readJson(url, label) {
 }
 
 function validateReview(relationship, kind, index) {
+  if (relationship.status === "curated") {
+    if (kind !== "counters") fail(`${kind}[${index}] only counters can be curated`);
+    if (relationship.confidence !== "high" || !relationship.review_flags?.includes("curated_general_knowledge") || !relationship.rationale) {
+      fail(`${kind}[${index}] curated entries need high confidence, the curated_general_knowledge flag and a rationale`);
+    }
+    if (!relationship.review?.required || !/^\d{4}-\d{2}-\d{2}$/.test(relationship.review.next_review_at ?? "")) {
+      fail(`${kind}[${index}] must require an explicit dated review`);
+    }
+    return;
+  }
   if (relationship.status !== "legacy_baseline" || relationship.confidence !== "low") {
     fail(`${kind}[${index}] must retain legacy_baseline status and low confidence`);
   }
@@ -36,6 +48,7 @@ function validateReview(relationship, kind, index) {
 
 const dataset = readJson(datasetUrl, "relationship dataset");
 const legacy = readJson(legacyCatalogUrl, "legacy champion catalog");
+const curation = readJson(curationUrl, "counter curation");
 if (dataset.schemaVersion !== 1 || dataset.dataset !== "champion-relationships") fail("unsupported schema identity");
 if (!/^\d{4}-\d{2}-\d{2}$/.test(dataset.captured_at ?? "")) fail("captured_at must be an ISO date");
 if (dataset.provenance?.status !== "legacy_baseline" || !/not independently verified official/i.test(dataset.provenance?.statement ?? "")) {
@@ -75,7 +88,7 @@ function validateRelationship(relationship, kind, index) {
 const counterKeys = new Set();
 for (const [index, relationship] of dataset.counters.entries()) {
   validateRelationship(relationship, "counters", index);
-  if (relationship.directionality !== "directed" || relationship.stability !== "foundational") fail(`counters[${index}] must be directed and foundational for the legacy baseline`);
+  if (relationship.directionality !== "directed" || relationship.stability !== "foundational") fail(`counters[${index}] must be directed and foundational`);
   const key = relationshipKey(relationship);
   if (counterKeys.has(key)) fail(`duplicate counter: ${key}`);
   counterKeys.add(key);
@@ -92,7 +105,7 @@ for (const [index, relationship] of dataset.synergies.entries()) {
 }
 
 if (dataset.counters.some((relationship) => relationship.stability !== "foundational" || relationship.patch_validity !== null)) {
-  fail("legacy counters must be foundational and cannot claim patch validity without source evidence");
+  fail("counters must be foundational and cannot claim patch validity without source evidence");
 }
 if (dataset.synergies.some((relationship) => relationship.stability !== "foundational" || relationship.patch_validity !== null)) {
   fail("legacy synergies must be foundational and cannot claim patch validity without source evidence");
@@ -101,9 +114,24 @@ if (dataset.synergies.some((relationship) => relationship.stability !== "foundat
 const expectedRoles = Object.entries(legacy.data.roles).map(([id, roles]) => ({ champion_id: canonicalChampionId(id), legacy_id: id, roles })).sort((left, right) => left.champion_id.localeCompare(right.champion_id));
 if (JSON.stringify(dataset.roles.map(({ champion_id, legacy_id, roles }) => ({ champion_id, legacy_id, roles }))) !== JSON.stringify(expectedRoles)) fail("role migration does not exactly match the legacy catalog");
 
-const expectedCounters = legacy.data.counterpicks.map(({ a, b, value }) => `${canonicalChampionId(a)}::${canonicalChampionId(b)}::${value}`).sort();
+const legacyCounters = legacy.data.counterpicks.map(({ a, b, value }) => ({ source: canonicalChampionId(a), target: canonicalChampionId(b), value }));
+let curated;
+try {
+  curated = applyCounterCuration(legacyCounters, curation);
+  validateCounterSet(curated.counters, new Set(rolesById.keys()));
+} catch (error) {
+  fail(error.message);
+}
+const expectedCounters = curated.counters.map(({ source, target, value }) => `${source}::${target}::${value}`).sort();
 const actualCounters = dataset.counters.map(({ source, target, value }) => `${source}::${target}::${value}`).sort();
-if (JSON.stringify(actualCounters) !== JSON.stringify(expectedCounters)) fail("counter migration does not exactly match the legacy catalog");
+if (JSON.stringify(actualCounters) !== JSON.stringify(expectedCounters)) fail("counter data does not exactly match the legacy catalog plus the curation overlay");
+const expectedCurated = curated.counters.filter((entry) => entry.curated).map(({ source, target }) => `${source}::${target}`).sort();
+const actualCurated = dataset.counters.filter((entry) => entry.status === "curated").map(relationshipKey).sort();
+if (JSON.stringify(actualCurated) !== JSON.stringify(expectedCurated)) fail("curated counter entries do not match the curation overlay");
+if (dataset.migration?.curation?.source !== CURATION_SOURCE || JSON.stringify(dataset.migration.curation.changes) !== JSON.stringify(curated.summary)) {
+  fail("migration.curation summary does not match the curation overlay");
+}
+if (dataset.migration.legacy_counts?.counters !== legacy.data.counterpicks.length) fail("legacy counter count does not match the legacy catalog");
 
 const legacySynergyGroups = new Map();
 for (const { a, b, value } of legacy.data.synergies) {
@@ -122,4 +150,4 @@ if (dataset.migration?.synergy_duplicate_reduction?.duplicate_pairs_reduced !== 
 if (dataset.migration.synergy_duplicate_reduction.duplicate_entries_removed !== 22 || legacy.data.synergies.length - dataset.synergies.length !== 22) fail("expected exactly 22 removed duplicate synergy entries");
 if (dataset.migration.synergy_duplicate_reduction.audit?.length !== 22) fail("duplicate reduction audit must cover all 22 pairs");
 
-console.log(`[champion-relationships] validated roles=${dataset.roles.length}; counters=${dataset.counters.length}; synergies=${dataset.synergies.length}; duplicate_pairs_reduced=22`);
+console.log(`[champion-relationships] validated roles=${dataset.roles.length}; counters=${dataset.counters.length} (curated=${expectedCurated.length}); synergies=${dataset.synergies.length}; duplicate_pairs_reduced=22`);

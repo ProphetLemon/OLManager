@@ -1,0 +1,9 @@
+{
+  "metadata": {
+    "schemaVersion": 1,
+    "basis": "General League of Legends lane-matchup knowledge, not patch statistics",
+    "reviewed_at": "2026-11-07",
+    "method": "Three lane-group Game Designer audits plus adversarial Reality Checker refutation; only high-confidence, unrefuted changes applied"
+  },
+  "changes": []
+}
