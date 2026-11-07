@@ -173,13 +173,13 @@ pub fn season_schedule_message(league_name: &str, season_start: &str, date: &str
     let variations = [
         format!(
             "The {} schedule has been released. The season kicks off on {}.\n\n\
-            Review the fixture list and ensure your squad is ready for the challenges ahead. \
+            Review the match list and ensure your squad is ready for the challenges ahead. \
             Pre-season preparation will be crucial.",
             league_name, season_start
         ),
         format!(
-            "Fixture list confirmed! The {} season begins on {}.\n\n\
-            Study the opening fixtures carefully — a strong start can set the tone for the whole campaign. \
+            "Match list confirmed! The {} season begins on {}.\n\n\
+            Study the opening matches carefully — a strong start can set the tone for the whole campaign. \
             Make sure your key players are in top form.",
             league_name, season_start
         ),

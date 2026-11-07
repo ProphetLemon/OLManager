@@ -266,7 +266,7 @@
     }
   },
   "continueMenu": {
-    "goToField": "Ir para a Rift",
+    "goToField": "Ir para o Rift",
     "goToFieldDesc": "Controlo total do jogo",
     "watchSpectator": "Ver como Espetador",
     "watchSpectatorDesc": "Ver o jogo sem controlos",
@@ -1735,7 +1735,7 @@
     "savesCleared": "Saves apagados!",
     "about": "Sobre",
     "matchModes": {
-      "live": "Ir para a Rift",
+      "live": "Ir para o Rift",
       "liveDesc": "Controlo total do jogo",
       "spectator": "Ver como Espetador",
       "spectatorDesc": "Apenas ver, sem controlos",
@@ -2298,7 +2298,7 @@
           "victory1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nÓtima série! A equipa mostrou verdadeira calma. Jornada {{matchday}} concluída.",
           "defeat0": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUm resultado dececionante. Precisamos de reagrupar e trabalhar nas áreas que nos falharam. Jornada {{matchday}} — ainda há tempo para inverter a situação.",
           "defeat1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNão é o resultado que queríamos. Jornada {{matchday}} — o conselho vai querer ver melhorias. Reveja o que correu mal e prepare-se para o próximo desafio.",
-          "draw": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUm empate na Jornada {{matchday}}. Dependendo de outros resultados, pode ser valioso. A equipa lutou mas não conseguiu levar a melhor."
+          "draw": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUm empate na Jornada {{matchday}}. Dependendo de outros resultados, pode ser valioso. A equipa lutou mas não conseguiu levar a melhor."
         },
         "actionStandings": "Ver Classificação"
       },

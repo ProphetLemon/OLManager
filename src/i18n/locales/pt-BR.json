@@ -298,7 +298,7 @@
     "searchPlaceholder": "Search champions..."
   },
   "continueMenu": {
-    "goToField": "Ir para a Rift",
+    "goToField": "Ir para o Rift",
     "goToFieldDesc": "Controle total da partida (padrão)",
     "watchSpectator": "Assistir como Espectador",
     "watchSpectatorDesc": "Assista ao jogo, sem controles",
@@ -1736,7 +1736,7 @@
     "savesCleared": "Saves apagados!",
     "about": "Sobre",
     "matchModes": {
-      "live": "Ir para a Rift",
+      "live": "Ir para o Rift",
       "liveDesc": "Controle total da partida",
       "spectator": "Assistir como Espectador",
       "spectatorDesc": "Apenas assistir, sem controles",
@@ -2299,7 +2299,7 @@
           "victory1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nÓtima série! O time mostrou muita calma lá dentro. Rodada {{matchday}} concluída.",
           "defeat0": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUm resultado decepcionante. Precisamos nos reagrupar e trabalhar nas áreas que nos deixaram na mão. Rodada {{matchday}} — ainda há tempo para virar o jogo.",
           "defeat1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNão é o resultado que queríamos. Rodada {{matchday}} — a diretoria vai querer ver melhoras. Revise o que deu errado e se prepare para o próximo desafio.",
-          "draw": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUm empate na Rodada {{matchday}}. Dependendo de outros resultados, pode ser valioso. O time lutou mas não conseguiu levar a melhor."
+          "draw": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUm empate na Rodada {{matchday}}. Dependendo de outros resultados, pode ser valioso. O time lutou mas não conseguiu levar a melhor."
         },
         "actionStandings": "Ver Classificação"
       },
