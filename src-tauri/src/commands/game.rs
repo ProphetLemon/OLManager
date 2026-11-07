@@ -17,6 +17,9 @@ use olm_core::game::Game;
 use olm_core::game_setup;
 use olm_core::roster_stability;
 use olm_core::state::StateManager;
+use olm_core::world_overlay::{
+    apply_world_overlay, bundled_world_overlay, OverlayApplyReport, WorldOverlay,
+};
 
 use crate::SaveManagerState;
 use validator::Validate;
@@ -189,6 +192,50 @@ fn assemble_world_from_modular_data(
     Ok((all_teams, all_players, staff))
 }
 
+/// Pick the roster overlay a new game starts from.
+///
+/// Seam for the downloadable overlay: for now this is the overlay bundled with
+/// the app. The fresh-rosters work extends it to also read a downloaded cache in
+/// the app data dir and return whichever of the two has the newest `as_of`.
+/// Callers only depend on the returned overlay, never on where it came from.
+/// A malformed overlay must never block a new game, so errors are logged and
+/// the game starts from the bundled data alone.
+fn resolve_world_overlay(_app_handle: &tauri::AppHandle) -> Option<WorldOverlay> {
+    match bundled_world_overlay() {
+        Ok(overlay) => Some(overlay),
+        Err(err) => {
+            warn!("[game] ignoring bundled roster overlay: {err}");
+            None
+        }
+    }
+}
+
+/// Apply `overlay` to a freshly assembled world and record it on the game:
+/// changed ids are protected from catalog rehydration, retired ids are
+/// tombstoned and the overlay date is kept for display.
+fn apply_roster_overlay(game: &mut Game, overlay: &WorldOverlay) -> OverlayApplyReport {
+    let report = apply_world_overlay(&mut game.teams, &mut game.players, &mut game.staff, overlay);
+    // Added players arrive without a contract end or market value.
+    game_setup::apply_default_initial_contract_end(&mut game.players);
+    game_setup::apply_default_market_values(&mut game.players);
+
+    game.moved_player_ids
+        .extend(report.protected_player_ids().cloned());
+    for id in &report.retired_player_ids {
+        if !game.retired_player_ids.contains(id) {
+            game.retired_player_ids.push(id.clone());
+        }
+    }
+    game.world_overlay_as_of = Some(overlay.as_of.clone());
+    info!(
+        "[game] roster overlay as of {}: {} ({} skipped)",
+        overlay.as_of,
+        report,
+        report.skipped.len()
+    );
+    report
+}
+
 // ---------------------------------------------------------------------------
 // Tauri commands
 // ---------------------------------------------------------------------------
@@ -314,6 +361,11 @@ pub async fn select_team(
         game.teams = assembled_teams;
         game.players = assembled_players;
         game.staff = assembled_staff;
+
+        // Bring the bundled snapshot up to date before lineups are built from it.
+        if let Some(overlay) = resolve_world_overlay(&app_handle) {
+            apply_roster_overlay(&mut game, &overlay);
+        }
 
         // Auto-populate active lineup for the user's team
         let roles = [
@@ -1001,4 +1053,90 @@ fn validate_date_format(date: &str) -> Result<(), validator::ValidationError> {
 #[tauri::command]
 pub fn debug_serde_test() -> Result<String, String> {
     Ok("debug ok".into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use olm_core::domain::player::PlayerAttributes;
+
+    fn test_game() -> Game {
+        let teams = ["t-a", "t-b"]
+            .iter()
+            .map(|id| {
+                Team::new(
+                    id.to_string(),
+                    id.to_string(),
+                    "TST".to_string(),
+                    "KR".to_string(),
+                    "Seoul".to_string(),
+                    "Arena".to_string(),
+                    1_000,
+                )
+            })
+            .collect();
+        let players = [("mover", "t-a"), ("retiree", "t-a")]
+            .iter()
+            .map(|(id, team_id)| {
+                let mut player = Player::new(
+                    id.to_string(),
+                    id.to_string(),
+                    id.to_string(),
+                    "2000-01-01".to_string(),
+                    "KR".to_string(),
+                    LolRole::Mid,
+                    PlayerAttributes::default(),
+                );
+                player.team_id = Some(team_id.to_string());
+                player
+            })
+            .collect();
+        let clock = GameClock::new(chrono::Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap());
+        let manager = Manager::new(
+            "mgr".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "KR".to_string(),
+        );
+        Game::new(clock, manager, teams, players, vec![], vec![])
+    }
+
+    fn overlay() -> WorldOverlay {
+        WorldOverlay::parse(
+            r#"{"schemaVersion":1,"as_of":"2026-11-07",
+                "source":{"name":"Leaguepedia","license":"CC BY-SA 3.0"},
+                "players":[
+                  {"op":"move","id":"mover","team_id":"t-b"},
+                  {"op":"retire","id":"retiree"},
+                  {"op":"add","player":{"id":"rookie","match_name":"Rookie","full_name":"Rookie",
+                    "position":"Top","team_id":"t-b","contract_end":"","date_of_birth":"2005-01-01"}}
+                ]}"#,
+        )
+        .expect("test overlay")
+    }
+
+    #[test]
+    fn roster_overlay_is_recorded_on_the_game() {
+        let mut game = test_game();
+
+        apply_roster_overlay(&mut game, &overlay());
+
+        assert_eq!(game.world_overlay_as_of.as_deref(), Some("2026-11-07"));
+        assert_eq!(game.retired_player_ids, vec!["retiree".to_string()]);
+        assert!(game.moved_player_ids.contains("mover"));
+        assert!(game.moved_player_ids.contains("rookie"));
+        assert!(!game.moved_player_ids.contains("retiree"));
+    }
+
+    #[test]
+    fn roster_overlay_gives_added_players_a_contract_and_market_value() {
+        let mut game = test_game();
+
+        apply_roster_overlay(&mut game, &overlay());
+
+        let rookie = game.players.iter().find(|p| p.id == "rookie").unwrap();
+        assert!(rookie.contract_end.is_some());
+        assert!(rookie.market_value > 0);
+    }
 }

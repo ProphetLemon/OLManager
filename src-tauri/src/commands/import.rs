@@ -1014,15 +1014,21 @@ fn collect_runtime_teams(app_handle: &tauri::AppHandle) -> Vec<Team> {
 /// Append catalog players whose id is absent from the save. Existing players are
 /// never mutated, so transfers and in-save edits are preserved — only genuinely
 /// missing players (e.g. roster slots added to the source data after the save
-/// was generated) are backfilled.
+/// was generated) are backfilled. Players the roster overlay retired
+/// (`Game::retired_player_ids`) are never re-added.
 fn merge_missing_players(game: &mut Game, imported_players: Vec<Player>) -> usize {
     let mut existing_ids: HashSet<String> = game
         .players
         .iter()
         .map(|player| player.id.clone())
         .collect();
+    let retired: HashSet<&str> = game.retired_player_ids.iter().map(String::as_str).collect();
     let before = game.players.len();
-    for player in imported_players {
+    let missing: Vec<Player> = imported_players
+        .into_iter()
+        .filter(|player| !retired.contains(player.id.as_str()))
+        .collect();
+    for player in missing {
         if existing_ids.insert(player.id.clone()) {
             game.players.push(player);
         }
@@ -1754,5 +1760,39 @@ mod tests {
 
         assert_eq!(game.players[0].team_id.as_deref(), Some("team-2"));
         assert_eq!(game.players[2].team_id, None);
+    }
+
+    #[test]
+    fn rehydrate_keeps_overlay_move_and_does_not_readd_retired_player() {
+        let mut game = rehydrate_test_game(vec![
+            rehydrate_test_player("overlay-moved", Some("team-2")),
+            rehydrate_test_player("untouched", Some("team-1")),
+        ]);
+        game.moved_player_ids.insert("overlay-moved".to_string());
+        game.retired_player_ids.push("overlay-retired".to_string());
+
+        let catalog = vec![
+            rehydrate_test_player("overlay-moved", Some("team-1")),
+            rehydrate_test_player("overlay-retired", Some("team-1")),
+            rehydrate_test_player("untouched", Some("team-1")),
+            rehydrate_test_player("brand-new", Some("team-1")),
+        ];
+        reassign_stale_player_teams(&mut game, &catalog);
+        let added = merge_missing_players(&mut game, catalog);
+
+        let team_of = |id: &str| {
+            game.players
+                .iter()
+                .find(|p| p.id == id)
+                .map(|p| p.team_id.clone())
+        };
+        assert_eq!(team_of("overlay-moved"), Some(Some("team-2".to_string())));
+        assert_eq!(
+            team_of("overlay-retired"),
+            None,
+            "retired player must stay gone"
+        );
+        assert_eq!(team_of("brand-new"), Some(Some("team-1".to_string())));
+        assert_eq!(added, 1);
     }
 }
