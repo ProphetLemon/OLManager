@@ -21,7 +21,7 @@ vi.mock("@/lib/players/roleIcons", () => ({
   ROLE_ICON_PATHS: {},
 }));
 
-vi.mock("@/ui-v2/_legacy/components/playerProfile/PlayerProfileScoutAction", () => ({
+vi.mock("@/ui-v2/pages/playerProfile/PlayerProfileScoutActionV2", () => ({
   default: () => null,
 }));
 

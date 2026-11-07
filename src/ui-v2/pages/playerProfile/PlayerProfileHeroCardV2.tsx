@@ -5,7 +5,7 @@ import { formatPlayerMarketValue, formatPlayerWage } from "@/lib/playerProfile/h
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import type { PlayerProfileScoutStatus, ScoutAvailability } from "@/lib/playerProfile/scouting";
-import PlayerProfileScoutAction from "@/ui-v2/_legacy/components/playerProfile/PlayerProfileScoutAction";
+import PlayerProfileScoutActionV2 from "@/ui-v2/pages/playerProfile/PlayerProfileScoutActionV2";
 import { countryName } from "@/lib/common/countries";
 import { CountryFlag } from "@/ui-v2/_legacy/components/ui/CountryFlag";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
@@ -244,7 +244,7 @@ export default function PlayerProfileHeroCardV2({
               </div>
             )}
 
-            <PlayerProfileScoutAction availability={scoutAvailability} scoutStatus={scoutStatus} scoutError={scoutError} onScout={onScout} />
+            <PlayerProfileScoutActionV2 availability={scoutAvailability} scoutStatus={scoutStatus} scoutError={scoutError} onScout={onScout} />
           </div>
 
           {/* Right: quick stats */}

@@ -15,9 +15,9 @@ import {
   getPlayerTeamName,
 } from "@/lib/playerProfile/helpers";
 import { buildPlayerAttributeGroups } from "@/lib/playerProfile/attributes";
-import PlayerProfileAttributesCardV2 from "@/ui-v2/pages/PlayerProfileAttributesCardV2";
+import PlayerProfileAttributesCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileAttributesCardV2";
 import PlayerProfileContractCard from "@/ui-v2/_legacy/components/playerProfile/PlayerProfileContractCard";
-import PlayerProfileHeroCardV2 from "@/ui-v2/pages/PlayerProfileHeroCardV2";
+import PlayerProfileHeroCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileHeroCardV2";
 import PlayerProfileRenewalModal from "@/ui-v2/_legacy/components/playerProfile/PlayerProfileRenewalModal";
 import {
   type DelegatedRenewalCaseData,

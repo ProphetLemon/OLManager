@@ -1,0 +1,198 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import type { CareerEntry, GameStateData, PlayerMatchHistoryEntryData } from "@/store/gameStore";
+import PlayerProfileCareerCardV2 from "./PlayerProfileCareerCardV2";
+import PlayerProfileChampionsCardV2 from "./PlayerProfileChampionsCardV2";
+import PlayerProfileContractCardV2 from "./PlayerProfileContractCardV2";
+import PlayerProfileMatchHistoryCardV2 from "./PlayerProfileMatchHistoryCardV2";
+import PlayerProfileScoutActionV2 from "./PlayerProfileScoutActionV2";
+import PlayerProfileStatsCardV2 from "./PlayerProfileStatsCardV2";
+import PlayerProfileTraitsCardV2 from "./PlayerProfileTraitsCardV2";
+
+vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: vi.fn() },
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+
+const t = (key: string, options?: Record<string, string | number>) =>
+  options?.count !== undefined ? `${key}:${options.count}` : key;
+
+describe("PlayerProfileChampionsCardV2", () => {
+  it("hides games and win rate when the champion has no games", () => {
+    render(
+      <PlayerProfileChampionsCardV2
+        champions={[
+          { championId: "Ahri", championName: "Ahri", mastery: 90, rank: "insignia", wr: 0, games: 0 },
+        ]}
+      />,
+    );
+    expect(screen.queryByText(/0\.0%/)).toBeNull();
+    expect(screen.queryByText("playerProfile.championGames")).toBeNull();
+  });
+
+  it("shows win rate and games, and reports the clicked champion", () => {
+    const onViewChampion = vi.fn();
+    render(
+      <PlayerProfileChampionsCardV2
+        champions={[
+          { championId: "Ahri", championName: "Ahri", mastery: 90, rank: "insignia", wr: 60, games: 5 },
+          { championId: "Zed", championName: "Zed", mastery: 70, rank: 1, wr: 40, games: 3 },
+        ]}
+        onViewChampion={onViewChampion}
+      />,
+    );
+    expect(screen.getByText(/60\.0%/)).toBeInTheDocument();
+    expect(screen.getByText("#1")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Zed/ }));
+    expect(onViewChampion).toHaveBeenCalledWith("Zed");
+  });
+});
+
+describe("PlayerProfileStatsCardV2", () => {
+  it("shows the empty message when no games were played", () => {
+    render(<PlayerProfileStatsCardV2 stats={{ games_played: 0 } as never} t={t} />);
+    expect(screen.getByText("playerProfile.noStats")).toBeInTheDocument();
+  });
+
+  it("computes KDA from kills, assists and deaths", () => {
+    render(
+      <PlayerProfileStatsCardV2
+        stats={{ games_played: 4, wins: 3, losses: 1, kills: 10, assists: 20, deaths: 5, cs: 900, vision_score: 40 } as never}
+        t={t}
+      />,
+    );
+    expect(screen.getByText("6.0")).toBeInTheDocument();
+    expect(screen.getByText("900")).toBeInTheDocument();
+  });
+});
+
+const career = (season: number, team = `Team ${season}`): CareerEntry =>
+  ({ season, team_id: `t-${season}`, team_name: team, appearances: 10, kills: 5, assists: 7, avg_rating: 7.25 }) as never;
+
+describe("PlayerProfileCareerCardV2", () => {
+  const gameState = { teams: [{ id: "t-5", name: "Renamed FC" }] } as unknown as GameStateData;
+
+  it("shows the latest three seasons first and expands on request", () => {
+    render(
+      <PlayerProfileCareerCardV2
+        career={[career(1), career(2), career(3), career(4), career(5)]}
+        gameState={gameState}
+        t={t}
+      />,
+    );
+    expect(screen.getAllByRole("row")).toHaveLength(4);
+    expect(screen.getByText("Renamed FC")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /common\.showMore/ }));
+    expect(screen.getAllByRole("row")).toHaveLength(6);
+  });
+
+  it("renders nothing for an empty career", () => {
+    const { container } = render(<PlayerProfileCareerCardV2 career={[]} gameState={gameState} t={t} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("PlayerProfileMatchHistoryCardV2", () => {
+  const entries = Array.from({ length: 12 }, (_, idx) => ({
+    fixtureId: `f-${idx}`,
+    date: `2026-08-${String(idx + 1).padStart(2, "0")}`,
+    opponentName: `Opp ${idx}`,
+    result: idx % 2 === 0 ? "Win" : "Loss",
+    kills: 1,
+    deaths: 2,
+    assists: 3,
+    championId: null,
+  })) as unknown as PlayerMatchHistoryEntryData[];
+
+  it("lists the newest ten matches and expands to all", () => {
+    render(<PlayerProfileMatchHistoryCardV2 history={entries} t={t} language="en" />);
+    expect(screen.getByText("vs Opp 11")).toBeInTheDocument();
+    expect(screen.queryByText("vs Opp 0")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /common\.showMore/ }));
+    expect(screen.getByText("vs Opp 0")).toBeInTheDocument();
+  });
+});
+
+describe("PlayerProfileContractCardV2", () => {
+  const base = {
+    dateOfBirth: "2000-01-01",
+    contractEnd: "2026-10-15",
+    currentDate: "2026-08-01T00:00:00Z",
+    condition: 80,
+    fitness: 70,
+    morale: 60,
+    marketValue: 350000,
+    wage: 12000,
+    annualSuffix: "/yr",
+    language: "en",
+    contractRiskLevel: "critical" as const,
+    contractRiskLabel: "Critical",
+    isOwnClub: true,
+    isTransferWindowOpen: true,
+    transferActionSubmitting: false,
+    onOpenRenewal: vi.fn(),
+    onReleaseContract: vi.fn(),
+    onOpenTransferBid: vi.fn(),
+    t,
+  };
+
+  it("offers renewal and release for the own club during the window", () => {
+    const onOpenRenewal = vi.fn();
+    const onReleaseContract = vi.fn();
+    render(<PlayerProfileContractCardV2 {...base} onOpenRenewal={onOpenRenewal} onReleaseContract={onReleaseContract} />);
+    expect(screen.getByText("Critical")).toBeInTheDocument();
+    expect(screen.getByRole("meter", { name: "common.condition" })).toHaveAttribute("aria-valuenow", "80");
+    fireEvent.click(screen.getByRole("button", { name: "common.renewContract" }));
+    fireEvent.click(screen.getByRole("button", { name: "playerProfile.releaseContract" }));
+    expect(onOpenRenewal).toHaveBeenCalled();
+    expect(onReleaseContract).toHaveBeenCalled();
+  });
+
+  it("hides release outside the transfer window", () => {
+    render(<PlayerProfileContractCardV2 {...base} isTransferWindowOpen={false} />);
+    expect(screen.queryByRole("button", { name: "playerProfile.releaseContract" })).toBeNull();
+  });
+
+  it("offers a transfer bid for other clubs only while the window is open", () => {
+    const onOpenTransferBid = vi.fn();
+    const { rerender } = render(
+      <PlayerProfileContractCardV2 {...base} isOwnClub={false} onOpenTransferBid={onOpenTransferBid} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "playerProfile.makeTransferOffer" }));
+    expect(onOpenTransferBid).toHaveBeenCalled();
+    rerender(<PlayerProfileContractCardV2 {...base} isOwnClub={false} isTransferWindowOpen={false} />);
+    expect(screen.queryByRole("button", { name: "playerProfile.makeTransferOffer" })).toBeNull();
+  });
+});
+
+describe("PlayerProfileTraitsCardV2", () => {
+  it("renders every trait", () => {
+    render(<PlayerProfileTraitsCardV2 title="Traits" traits={["Leader", "Clutch"]} />);
+    expect(screen.getByText("Leader")).toBeInTheDocument();
+    expect(screen.getByText("Clutch")).toBeInTheDocument();
+  });
+});
+
+describe("PlayerProfileScoutActionV2", () => {
+  const availability = (overrides = {}) =>
+    ({ scouts: [{ id: "s1" }], availableScout: { id: "s1" }, canScout: true, alreadyScouting: false, ...overrides }) as never;
+
+  it("shows a hint when there are no scouts", () => {
+    render(
+      <PlayerProfileScoutActionV2 availability={availability({ scouts: [] })} scoutStatus="idle" scoutError={null} onScout={vi.fn()} />,
+    );
+    expect(screen.getByText("scouting.noScoutsHint")).toBeInTheDocument();
+  });
+
+  it("starts scouting and shows progress once sent", () => {
+    const onScout = vi.fn();
+    const { rerender } = render(
+      <PlayerProfileScoutActionV2 availability={availability()} scoutStatus="idle" scoutError="boom" onScout={onScout} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "scouting.scoutBtn" }));
+    expect(onScout).toHaveBeenCalled();
+    expect(screen.getByText("boom")).toBeInTheDocument();
+    rerender(<PlayerProfileScoutActionV2 availability={availability()} scoutStatus="sent" scoutError={null} onScout={onScout} />);
+    expect(screen.getByText("scouting.scoutingInProgress")).toBeInTheDocument();
+  });
+});
