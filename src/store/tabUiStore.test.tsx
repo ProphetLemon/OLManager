@@ -1,5 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
+import { useGameStore } from "./gameStore";
 import { useTabUiField, useTabUiStore } from "./tabUiStore";
 
 describe("tabUiStore", () => {
@@ -26,5 +27,13 @@ describe("tabUiStore", () => {
     expect(second.result.current.view[0]).toBe("market");
     expect(second.result.current.page[0]).toBe(2);
     expect(second.result.current.query[0]).toBe("faker");
+  });
+
+  it("resets tab UI state when the game is cleared", () => {
+    useTabUiStore.setState((s) => ({
+      tabs: { ...s.tabs, scouting: { ...s.tabs.scouting, searchQuery: "faker" } },
+    }));
+    useGameStore.getState().clearGame();
+    expect(useTabUiStore.getState().tabs.scouting.searchQuery).toBe("");
   });
 });
