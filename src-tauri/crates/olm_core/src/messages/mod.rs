@@ -113,7 +113,7 @@ pub fn welcome_message(team_name: &str, team_id: &str, date: &str, lang: &str) -
             format!(
                 "Welcome to {}! The supporters and staff are excited about the future under your guidance.\n\n\
                 We recommend you start by reviewing your squad's strengths and weaknesses, \
-                then set up your preferred formation and training regime.\n\n\
+                then set up your preferred game plan and training regime.\n\n\
                 The upcoming season will be a true test — make us proud.",
                 team_name
             ),
