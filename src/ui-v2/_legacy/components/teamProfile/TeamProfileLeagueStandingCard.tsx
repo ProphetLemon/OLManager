@@ -31,7 +31,7 @@ export default function TeamProfileLeagueStandingCard({
           <StatBox label={t("common.won")} value={standings.won} />
           <StatBox label={t("common.lost")} value={standings.lost} />
           <StatBox label={t("teamProfile.winRate")} value={winRate} />
-          <StatBox label={t("common.pts")} value={standings.points} highlight />
+          <StatBox label={`${t("common.won")}-${t("common.lost")}`} value={`${standings.won}-${standings.lost}`} highlight />
         </div>
       </CardBody>
     </Card>
