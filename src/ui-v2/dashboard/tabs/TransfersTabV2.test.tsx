@@ -63,7 +63,7 @@ vi.mock("@/services/transfersService", () => ({
 vi.mock("@/ui-v2/_legacy/components/transfers/TransferBidModal", () => ({ default: () => null }));
 vi.mock("@/ui-v2/_legacy/components/transfers/TransferCounterOfferModal", () => ({ default: () => null }));
 vi.mock("@/ui-v2/_legacy/components/transfers/WageNegotiationModal", () => ({ default: () => null }));
-vi.mock("@/ui-v2/_legacy/components/ui/CountryFlag", () => ({ CountryFlag: () => null }));
+vi.mock("@/ui-v2/components/ui/country-flag", () => ({ CountryFlag: () => null }));
 vi.mock("@/lib/players/playerPhotos", () => ({ resolvePlayerPhoto: () => null }));
 vi.mock("@/lib/players/lolPlayerStats", () => ({ calculateLolOvr: () => 50 }));
 vi.mock("@/lib/players/lolIdentity", () => ({ resolvePlayerCurrentLolRole: () => "MID" }));

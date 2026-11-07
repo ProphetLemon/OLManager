@@ -7,7 +7,7 @@ import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
 import { getLolRoleForPlayer } from "@/lib/squad/helpers";
 import type { PlayerData } from "@/store/gameStore";
-import { CountryFlag } from "@/ui-v2/_legacy/components/ui/CountryFlag";
+import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import {
   Table,

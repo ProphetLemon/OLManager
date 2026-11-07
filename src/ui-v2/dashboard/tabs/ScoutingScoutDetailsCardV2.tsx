@@ -3,7 +3,7 @@ import { Eye } from "lucide-react";
 
 import type { PlayerData, ScoutingAssignment, StaffData } from "@/store/gameStore";
 import { countryName } from "@/lib/common/countries";
-import { CountryFlag } from "@/ui-v2/_legacy/components/ui/CountryFlag";
+import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { scoutAssignmentCount, scoutMaxSlots } from "@/lib/scouting/helpers";
 import { resolveStaffPhoto } from "@/lib/players/playerPhotos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";

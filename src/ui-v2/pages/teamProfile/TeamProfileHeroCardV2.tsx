@@ -7,7 +7,7 @@ import { defaultTeamLogoSrc, formatLeaguePosition } from "@/lib/teamProfile/club
 import { resolveTeamProfileLogo } from "@/lib/teamProfile/logo";
 import type { TeamProfileViewModel } from "@/lib/teamProfile/types";
 import type { TeamData } from "@/store/gameStore";
-import { CountryFlag } from "@/ui-v2/_legacy/components/ui/CountryFlag";
+import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { Card } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
 

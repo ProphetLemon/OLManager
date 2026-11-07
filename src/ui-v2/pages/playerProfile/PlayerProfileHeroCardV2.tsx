@@ -7,7 +7,7 @@ import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import type { PlayerProfileScoutStatus, ScoutAvailability } from "@/lib/playerProfile/scouting";
 import PlayerProfileScoutActionV2 from "@/ui-v2/pages/playerProfile/PlayerProfileScoutActionV2";
 import { countryName } from "@/lib/common/countries";
-import { CountryFlag } from "@/ui-v2/_legacy/components/ui/CountryFlag";
+import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";

@@ -25,7 +25,7 @@ vi.mock("@/ui-v2/pages/playerProfile/PlayerProfileScoutActionV2", () => ({
   default: () => null,
 }));
 
-vi.mock("@/ui-v2/_legacy/components/ui/CountryFlag", () => ({
+vi.mock("@/ui-v2/components/ui/country-flag", () => ({
   CountryFlag: () => null,
 }));
 

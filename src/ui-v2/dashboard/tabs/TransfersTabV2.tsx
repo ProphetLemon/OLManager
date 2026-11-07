@@ -63,7 +63,7 @@ import { type NegotiationFeedbackPanelData } from "@/ui-v2/_legacy/components/Ne
 import TransferBidModal from "@/ui-v2/_legacy/components/transfers/TransferBidModal";
 import TransferCounterOfferModal from "@/ui-v2/_legacy/components/transfers/TransferCounterOfferModal";
 import WageNegotiationModal from "@/ui-v2/_legacy/components/transfers/WageNegotiationModal";
-import { CountryFlag } from "@/ui-v2/_legacy/components/ui/CountryFlag";
+import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";

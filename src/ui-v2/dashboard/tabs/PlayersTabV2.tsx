@@ -15,7 +15,7 @@ import { getTeamName, calcAge, formatVal } from "@/lib/common/helpers";
 import { getAllCountryNames } from "@/lib/common/countries";
 import { getLolRoleForPlayer } from "@/lib/squad/helpers";
 import { PlayerAvatar } from "@/ui-v2/_legacy/components/ui/PlayerAvatar";
-import { CountryFlag } from "@/ui-v2/_legacy/components/ui/CountryFlag";
+import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
