@@ -1848,3 +1848,168 @@ fn new_game_fill_is_deterministic_and_does_not_share_a_free_agent_between_teams(
     assert_eq!(fills.len(), 2);
     assert_eq!(player_snapshot(&first), player_snapshot(&second));
 }
+
+fn rated(mut player: Player, level: u8, wage: u32) -> Player {
+    player.attributes = PlayerAttributes {
+        mental_resilience: level,
+        champion_pool: level,
+        laning: level,
+        mechanics: level,
+        macro_play: level,
+        consistency: level,
+        discipline: level,
+        teamfighting: level,
+        shotcalling: level,
+    };
+    player.wage = wage;
+    player
+}
+
+fn new_game_fill_game(free_agents: Vec<Player>) -> Game {
+    let mut players = full_roster("ai-team");
+    players.retain(|p| p.id != "support");
+    players.extend(free_agents);
+    let mut game = game_with(players, vec![]);
+    game.teams[1].team_kind = TeamKind::Academy;
+    game.teams[0].wage_budget = 400_000;
+    game
+}
+
+#[test]
+fn new_game_fill_picks_the_best_affordable_free_agent_over_a_lower_id_weaker_one() {
+    let mut game = new_game_fill_game(vec![
+        rated(player("fa-a", None, LolRole::Support, None), 50, 40_000),
+        rated(player("fa-b", None, LolRole::Support, None), 80, 40_000),
+        rated(player("fa-c", None, LolRole::Support, None), 65, 40_000),
+    ]);
+
+    let fills = fill_new_game_rosters(&mut game);
+
+    assert_eq!(fills.len(), 1);
+    assert_eq!(fills[0].player_id, "fa-b");
+    assert!(!fills[0].generated);
+}
+
+#[test]
+fn new_game_fill_skips_an_over_budget_star_for_an_affordable_player() {
+    let mut game = new_game_fill_game(vec![
+        rated(player("fa-star", None, LolRole::Support, None), 95, 900_000),
+        rated(player("fa-solid", None, LolRole::Support, None), 70, 40_000),
+        rated(player("fa-weak", None, LolRole::Support, None), 55, 30_000),
+    ]);
+
+    let fills = fill_new_game_rosters(&mut game);
+
+    assert_eq!(fills[0].player_id, "fa-solid");
+    let star = game.players.iter().find(|p| p.id == "fa-star").unwrap();
+    assert_eq!(star.team_id, None);
+}
+
+#[test]
+fn new_game_fill_takes_the_cheapest_free_agent_when_nobody_is_affordable() {
+    let mut game = new_game_fill_game(vec![
+        rated(player("fa-a", None, LolRole::Support, None), 90, 900_000),
+        rated(player("fa-b", None, LolRole::Support, None), 60, 700_000),
+        rated(player("fa-c", None, LolRole::Support, None), 75, 800_000),
+    ]);
+
+    let fills = fill_new_game_rosters(&mut game);
+
+    assert_eq!(fills[0].player_id, "fa-b");
+    assert!(!fills[0].generated);
+}
+
+#[test]
+fn new_game_fill_spends_the_budget_across_roles_in_one_team() {
+    // Budget 200k (soft cap 220k) with 150k already on payroll: only one 60k
+    // signing fits, so the second role falls back to the cheapest player.
+    let mut players = short_roster("ai-team");
+    players.push(rated(
+        player("fa-jg-star", None, LolRole::Jungle, None),
+        90,
+        60_000,
+    ));
+    players.push(rated(
+        player("fa-sup-star", None, LolRole::Support, None),
+        85,
+        60_000,
+    ));
+    players.push(rated(
+        player("fa-sup-cheap", None, LolRole::Support, None),
+        50,
+        20_000,
+    ));
+    let mut game = game_with(players, vec![]);
+    game.teams[1].team_kind = TeamKind::Academy;
+
+    let fills = fill_new_game_rosters(&mut game);
+
+    let ids: Vec<&str> = fills.iter().map(|f| f.player_id.as_str()).collect();
+    assert_eq!(ids, vec!["fa-jg-star", "fa-sup-cheap"]);
+}
+
+#[test]
+fn new_game_fill_orders_teams_by_reputation_so_the_stronger_club_picks_first() {
+    let mut players = vec![
+        rated(player("fa-top-low", None, LolRole::Top, None), 50, 30_000),
+        rated(player("fa-top-high", None, LolRole::Top, None), 85, 30_000),
+    ];
+    for team_id in ["ai-team", "other-ai"] {
+        for (suffix, role) in [
+            ("jg", LolRole::Jungle),
+            ("mid", LolRole::Mid),
+            ("adc", LolRole::Adc),
+            ("sup", LolRole::Support),
+        ] {
+            players.push(player(
+                &format!("{team_id}-{suffix}"),
+                Some(team_id),
+                role,
+                Some("2028-06-30"),
+            ));
+        }
+    }
+    let mut game = game_with(players, vec![]);
+    game.teams[0].reputation = 400;
+    game.teams[1].reputation = 900;
+
+    fill_new_game_rosters(&mut game);
+
+    assert_eq!(
+        team_role_ids(&game, "other-ai", LolRole::Top),
+        vec!["fa-top-high"]
+    );
+    assert_eq!(
+        team_role_ids(&game, "ai-team", LolRole::Top),
+        vec!["fa-top-low"]
+    );
+}
+
+#[test]
+fn new_game_fill_treats_the_user_team_like_any_other_team() {
+    let mut game = new_game_fill_game(vec![
+        rated(player("fa-a", None, LolRole::Support, None), 50, 40_000),
+        rated(player("fa-b", None, LolRole::Support, None), 80, 40_000),
+    ]);
+    game.teams[0].manager_id = Some("manager-1".to_string());
+
+    let fills = fill_new_game_rosters(&mut game);
+
+    assert_eq!(fills[0].player_id, "fa-b");
+}
+
+#[test]
+fn new_game_fill_by_level_is_reproducible() {
+    let free_agents = vec![
+        rated(player("fa-a", None, LolRole::Support, None), 70, 40_000),
+        rated(player("fa-b", None, LolRole::Support, None), 70, 40_000),
+    ];
+    let mut first = new_game_fill_game(free_agents.clone());
+    let mut second = new_game_fill_game(free_agents);
+
+    let first_fills = fill_new_game_rosters(&mut first);
+    let second_fills = fill_new_game_rosters(&mut second);
+
+    assert_eq!(first_fills, second_fills);
+    assert_eq!(first_fills[0].player_id, "fa-a");
+}

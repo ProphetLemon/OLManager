@@ -6,6 +6,7 @@ use crate::domain::season::TransferWindowStatus;
 use crate::domain::stats::LolRole;
 use crate::domain::team::TeamKind;
 use crate::game::Game;
+use crate::player_rating::natural_ovr;
 use crate::transfers::record_transfer;
 use chrono::{Datelike, NaiveDate};
 use std::collections::{HashMap, HashSet};
@@ -264,30 +265,38 @@ pub struct NewGameRosterFill {
 /// Give every Main team (AI and user-managed) a player for each required role
 /// at the start of a new game.
 ///
-/// Missing roles are filled from the free-agent pool in the same deterministic
-/// order as emergency repair (natural position, lowest id first); a player is
-/// generated only when the pool has nobody eligible. Unlike [`repair_team`] this
-/// is a setup step: it records no transfers, news or finances, ignores signing
-/// caps and wage policy, and gives filled players the default initial contract
-/// end. Teams are processed in id order so a shared pool is split reproducibly.
+/// Missing roles are filled from the free-agent pool by level and budget: the
+/// best-rated free agent (natural overall, then lowest id) that the existing
+/// AI signing policy accepts for the club's wage budget; when nobody is
+/// affordable, the cheapest eligible free agent; a player is generated only
+/// when the pool has nobody eligible. Unlike [`repair_team`] this is a setup
+/// step: it records no transfers, news or finances, consumes no signing caps,
+/// leaves the player's wage untouched and gives filled players the default
+/// initial contract end.
+///
+/// Teams are processed by descending reputation (then id), so the clubs that
+/// would realistically attract the best free agents choose first and a shared
+/// pool is split reproducibly. Each signing counts toward the club's wage bill
+/// before its next role is chosen.
 pub fn fill_new_game_rosters(game: &mut Game) -> Vec<NewGameRosterFill> {
-    let mut team_ids = game
+    let mut team_order = game
         .teams
         .iter()
         .filter(|team| team.team_kind == TeamKind::Main)
-        .map(|team| team.id.clone())
+        .map(|team| (team.reputation, team.id.clone()))
         .collect::<Vec<_>>();
-    team_ids.sort();
+    team_order.sort_by(|(left_rep, left_id), (right_rep, right_id)| {
+        right_rep.cmp(left_rep).then_with(|| left_id.cmp(right_id))
+    });
 
     let current_date = current_date(game);
     let mut fills = Vec::new();
-    for team_id in team_ids {
+    for (_, team_id) in team_order {
         let missing = missing_roles(&eligible_team_players(game, &team_id, current_date));
         for role in missing {
-            let free_agent = free_agent_candidates(game, role, current_date)
-                .into_iter()
-                .next();
-            if let Some((player_id, index)) = free_agent {
+            let free_agent = best_free_agent_for_new_game(game, &team_id, role, current_date);
+            if let Some(index) = free_agent {
+                let player_id = game.players[index].id.clone();
                 let player = &mut game.players[index];
                 player.team_id = Some(team_id.clone());
                 player.contract_end = None;
@@ -316,6 +325,52 @@ pub fn fill_new_game_rosters(game: &mut Game) -> Vec<NewGameRosterFill> {
         }
     }
     fills
+}
+
+/// Index of the free agent a new-game roster should take for `role`.
+///
+/// Best natural overall among players the signing policy accepts (emergency
+/// intent, so only the wage budget gates, not club prestige); otherwise the
+/// cheapest by expected wage, higher overall first. Ties break by id.
+fn best_free_agent_for_new_game(
+    game: &Game,
+    team_id: &str,
+    role: LolRole,
+    current_date: NaiveDate,
+) -> Option<usize> {
+    let team = game.teams.iter().find(|team| team.id == team_id)?;
+    let scored = free_agent_candidates(game, role, current_date)
+        .into_iter()
+        .map(|(id, index)| {
+            let player = &game.players[index];
+            let decision = ai_signing_policy(game, team, player, SigningIntent::Emergency);
+            (id, index, natural_ovr(player), decision)
+        })
+        .collect::<Vec<_>>();
+
+    let best_affordable = scored
+        .iter()
+        .filter(|(_, _, _, decision)| decision.accepted)
+        .min_by(|(left_id, _, left_ovr, _), (right_id, _, right_ovr, _)| {
+            right_ovr
+                .total_cmp(left_ovr)
+                .then_with(|| left_id.cmp(right_id))
+        });
+    if let Some((_, index, _, _)) = best_affordable {
+        return Some(*index);
+    }
+
+    scored
+        .iter()
+        .min_by(
+            |(left_id, _, left_ovr, left), (right_id, _, right_ovr, right)| {
+                left.annual_wage
+                    .cmp(&right.annual_wage)
+                    .then_with(|| right_ovr.total_cmp(left_ovr))
+                    .then_with(|| left_id.cmp(right_id))
+            },
+        )
+        .map(|(_, index, _, _)| *index)
 }
 
 fn renew_needed_current_players(game: &mut Game, team_id: &str, actions: &mut Vec<RepairAction>) {
