@@ -8,7 +8,19 @@ export function pageUrl(title) {
 }
 
 const clean = (value) => String(value ?? "").replace(/\s+/g, " ").trim();
-const documentOf = (html) => new JSDOM(`<body>${html}</body>`).window.document;
+/**
+ * Parse `html`, hand its document to `read` and close the jsdom window afterwards. An unclosed window stays
+ * alive until its pending load tasks run, so a loop that never yields (offline runs, every answer from the
+ * cache) would otherwise keep thousands of them and run out of memory. `read` must return plain data.
+ */
+function withDocument(html, read) {
+  const { window } = new JSDOM(`<body>${html}</body>`);
+  try {
+    return read(window.document);
+  } finally {
+    window.close();
+  }
+}
 
 /** Rendered text of an element without the hidden sort-key spans Leaguepedia injects. */
 function visibleText(element) {
@@ -66,7 +78,10 @@ export function classifyRole(label) {
 
 /** @returns {Array<{ign:string,page:string,realName:string,country:string|null,kind:string,position:string|null,roleLabel:string,contractEnd:string|null,joined:string|null}>} */
 export function parseActiveRoster(html) {
-  const doc = documentOf(html);
+  return withDocument(html, readActiveRoster);
+}
+
+function readActiveRoster(doc) {
   const table = doc.querySelector("table.team-members-current");
   if (!table) return [];
   const players = [];
@@ -97,7 +112,10 @@ export function parseActiveRoster(html) {
 
 /** @returns {Array<{ign:string,page:string|null,realName:string,country:string|null,roleLabel:string,inactive:boolean}>} */
 export function parseStaffTable(html) {
-  const doc = documentOf(html);
+  return withDocument(html, readStaffTable);
+}
+
+function readStaffTable(doc) {
   const table = doc.querySelector("table.listplayer-table");
   if (!table) return [];
   const staff = [];
@@ -153,7 +171,7 @@ export function parseInfobox(wikitext) {
  * @returns {{state: "currently"|"previously"|"retired"|null, teamText: string|null}}
  */
 export function parseIntro(html) {
-  const text = clean(documentOf(html).body.textContent);
+  const text = withDocument(html, (doc) => clean(doc.body.textContent));
   const match = text.match(/esports (?:player|coach|[a-z ]+?)[^.]{0,80}?\b(currently|previously|retired)\b([^.]{0,160})/);
   if (!match) return { state: null, teamText: null };
   return { state: match[1], teamText: clean(match[2]) || null };
