@@ -486,3 +486,32 @@ describe("resolveBackendText", () => {
   });
 });
 
+
+describe("transfer offer message locale", () => {
+  const offer = {
+    id: "offer_o1",
+    subject: "Transfer offer received for ToniOP",
+    body: "English template text",
+    sender: "Director of Football",
+    sender_role: "Director",
+    date: "2027-01-10",
+    read: false,
+    category: "Transfer",
+    priority: "High",
+    actions: [],
+    context: { team_id: null, player_id: null },
+    subject_key: "be.msg.transferOffer.subject",
+    body_key: "be.msg.transferOffer.body",
+    i18n_params: { player: "ToniOP", club: "Fnatic", buyer: "Fnatic", fee: "\u20ac172K" },
+  } as unknown as MessageData;
+
+  it("renders the stored message in the active language with a single currency symbol", async () => {
+    await i18n.changeLanguage("es");
+    const resolved = resolveMessage(offer);
+    await i18n.changeLanguage("en");
+    expect(resolved.subject).toBe("Oferta recibida por ToniOP");
+    expect(resolved.body).toContain("Fnatic");
+    expect(resolved.body).toContain("\u20ac172K");
+    expect(resolved.body).not.toContain("\u20ac\u20ac");
+  });
+});

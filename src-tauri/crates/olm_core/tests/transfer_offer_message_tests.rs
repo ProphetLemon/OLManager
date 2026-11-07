@@ -121,3 +121,27 @@ fn transfer_complete_body_shows_the_fee_with_a_single_currency_symbol() {
         msg.body
     );
 }
+
+#[test]
+fn offer_message_carries_i18n_keys_so_the_ui_renders_the_players_language() {
+    let msg = offer_message(172_000);
+    assert_eq!(msg.subject_key.as_deref(), Some("be.msg.transferOffer.subject"));
+    assert_eq!(msg.body_key.as_deref(), Some("be.msg.transferOffer.body"));
+}
+
+#[test]
+fn offer_message_params_match_the_locale_placeholders() {
+    let msg = offer_message(172_000);
+    assert_eq!(msg.i18n_params.get("player").map(String::as_str), Some("ToniOP"));
+    assert_eq!(msg.i18n_params.get("club").map(String::as_str), Some("Fnatic"));
+    assert_eq!(msg.i18n_params.get("fee").map(String::as_str), Some("\u{20ac}172K"));
+}
+
+#[test]
+fn transfer_complete_message_carries_i18n_keys() {
+    load_templates();
+    let msg = messages::transfer_complete_message("ToniOP", 1_250_000, "2027-01-10");
+    assert_eq!(msg.subject_key.as_deref(), Some("be.msg.transferComplete.subject"));
+    assert_eq!(msg.body_key.as_deref(), Some("be.msg.transferComplete.body"));
+    assert_eq!(msg.i18n_params.get("fee").map(String::as_str), Some("\u{20ac}1.2M"));
+}

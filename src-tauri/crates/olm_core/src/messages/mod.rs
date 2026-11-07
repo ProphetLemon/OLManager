@@ -329,7 +329,13 @@ pub fn transfer_complete_message(player_name: &str, fee: u64, date: &str) -> Inb
         "en",
         vec![("player", player_name), ("fee", &fee_amount)],
     ) {
-        return msg;
+        // The backend does not know the UI language, so the stored template text is
+        // English. Keys let the UI render the message in the active language.
+        return msg.with_i18n(
+            "be.msg.transferComplete.subject",
+            "be.msg.transferComplete.body",
+            params(&[("player", player_name), ("fee", &fee_display)]),
+        );
     }
     let id = format!("transfer_{}", uuid::Uuid::new_v4());
     InboxMessage::new(
@@ -376,8 +382,18 @@ pub fn incoming_transfer_offer_message(
         ],
     ) {
         // The data template only acknowledges the offer; add the link to the
-        // offers view here because `data/` is a read-only submodule.
-        let mut msg = msg;
+        // offers view here because `data/` is a read-only submodule. Keys let the UI
+        // render the message in the active language (see `transfer_complete_message`).
+        let mut msg = msg.with_i18n(
+            "be.msg.transferOffer.subject",
+            "be.msg.transferOffer.body",
+            params(&[
+                ("club", buying_team_name),
+                ("buyer", buying_team_name),
+                ("fee", &fee_display),
+                ("player", player_name),
+            ]),
+        );
         msg.actions.insert(0, view_offer_action());
         return msg;
     }
