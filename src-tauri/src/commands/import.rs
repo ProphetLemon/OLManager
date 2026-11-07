@@ -1016,7 +1016,7 @@ fn collect_runtime_teams(app_handle: &tauri::AppHandle) -> Vec<Team> {
 /// missing players (e.g. roster slots added to the source data after the save
 /// was generated) are backfilled. Players the roster overlay retired
 /// (`Game::retired_player_ids`) are never re-added.
-fn merge_missing_players(game: &mut Game, imported_players: Vec<Player>) -> usize {
+pub(crate) fn merge_missing_players(game: &mut Game, imported_players: Vec<Player>) -> usize {
     let mut existing_ids: HashSet<String> = game
         .players
         .iter()
@@ -1056,7 +1056,7 @@ fn transfer_protected_player_ids(game: &Game) -> HashSet<String> {
 /// which case the in-game move (user or simulated) wins. Matched by id; only
 /// reassigned when the catalog provides a concrete team_id (never released to
 /// free agency on a catalog gap).
-fn reassign_stale_player_teams(game: &mut Game, imported_players: &[Player]) -> usize {
+pub(crate) fn reassign_stale_player_teams(game: &mut Game, imported_players: &[Player]) -> usize {
     let protected = transfer_protected_player_ids(game);
     let catalog_team: std::collections::HashMap<&str, &str> = imported_players
         .iter()
