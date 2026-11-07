@@ -1,0 +1,9 @@
+{
+ "id": "lck",
+ "name": "LCK",
+ "tier": 1,
+ "active": true,
+ "teams_file": "teams/lck_teams.json",
+ "players_file": "players/lck_players.json",
+ "staff_file": null
+}

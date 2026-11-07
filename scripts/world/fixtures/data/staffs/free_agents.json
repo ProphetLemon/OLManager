@@ -1,0 +1,34 @@
+{
+ "name": "Free Agent Staff",
+ "staff": [
+  {
+   "id": "staff-6b1e34e3",
+   "role": "Assistant",
+   "wage": 30000,
+   "team_id": null,
+   "last_name": "Sarafian",
+   "attributes": {
+    "coaching": 88,
+    "physiotherapy": 82,
+    "judging_ability": 85,
+    "judging_potential": 82
+   },
+   "first_name": "Nubar Sarafian",
+   "nationality": "United Kingdom",
+   "contract_end": "2026-12-20",
+   "birth_country": null,
+   "date_of_birth": "1990-01-01",
+   "specialization": null,
+   "profile_image_url": "/staff-photos/44d173ea.webp",
+   "nickname": "Maxlore"
+  },
+  {
+   "id": "12a28b03-c54f-43ec-b223-834df0de197e",
+   "first_name": "Leo Pironti",
+   "nickname": "ProbablyME",
+   "role": "Analyst",
+   "team_id": null,
+   "profile_image_url": null
+  }
+ ]
+}

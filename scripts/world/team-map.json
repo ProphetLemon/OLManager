@@ -1,0 +1,1553 @@
+{
+  "schemaVersion": 1,
+  "teams": {
+    "al-team-0f68e76a": {
+      "title": "JSK Esports",
+      "name": "JSK Esports",
+      "competition": "al",
+      "via": "exact"
+    },
+    "al-team-12ea162a": {
+      "title": "One More Esports",
+      "name": "One More Esports",
+      "competition": "al",
+      "via": "exact"
+    },
+    "al-team-1f166743": {
+      "title": "GnG Amazigh",
+      "name": "GnG Amazigh",
+      "competition": "al",
+      "via": "exact"
+    },
+    "al-team-47ce6033": {
+      "title": "FN Esports",
+      "name": "FN Esports",
+      "competition": "al",
+      "via": "exact"
+    },
+    "al-team-8829d0c3": {
+      "title": "Dragons Esports",
+      "name": "Dragons Esports",
+      "competition": "al",
+      "via": "exact"
+    },
+    "al-team-90b5943e": {
+      "title": "Anubis Gaming",
+      "name": "Anubis Gaming",
+      "competition": "al",
+      "via": "exact"
+    },
+    "al-team-c648abc2": {
+      "title": null,
+      "name": "BAAM Esports",
+      "competition": "al",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "al-team-e175ded9": {
+      "title": "3BL Esports",
+      "name": "3BL Esports",
+      "competition": "al",
+      "via": "exact"
+    },
+    "cblol-team-0c8be917": {
+      "title": null,
+      "name": "Leviatán",
+      "competition": "cblol",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "cblol-team-0e114265": {
+      "title": "Vivo Keyd Stars",
+      "name": "Vivo Keyd Stars",
+      "competition": "cblol",
+      "via": "exact"
+    },
+    "cblol-team-20461098": {
+      "title": "Fluxo W7M",
+      "name": "Fluxo W7M",
+      "competition": "cblol",
+      "via": "exact"
+    },
+    "cblol-team-76137e73": {
+      "title": "RED Canids",
+      "name": "RED Canids",
+      "competition": "cblol",
+      "via": "exact"
+    },
+    "cblol-team-a72bf9ea": {
+      "title": "PaiN Gaming",
+      "name": "paiN Gaming",
+      "competition": "cblol",
+      "via": "exact"
+    },
+    "cblol-team-b3da089b": {
+      "title": "LØS",
+      "name": "LOS",
+      "competition": "cblol",
+      "via": "redirect"
+    },
+    "cblol-team-fur2025": {
+      "title": "FURIA",
+      "name": "FURIA",
+      "competition": "cblol",
+      "via": "exact"
+    },
+    "cblol-team-loud2025": {
+      "title": "LOUD",
+      "name": "LOUD",
+      "competition": "cblol",
+      "via": "exact"
+    },
+    "cd-team-0dcb5849": {
+      "title": "RMD Gaming",
+      "name": "RMD Gaming",
+      "competition": "cd",
+      "via": "exact"
+    },
+    "cd-team-2ec1b6c9": {
+      "title": "Estral Esports",
+      "name": "Estral Esports",
+      "competition": "cd",
+      "via": "exact"
+    },
+    "cd-team-31ca2c75": {
+      "title": "INTZ",
+      "name": "INTZ",
+      "competition": "cd",
+      "via": "exact"
+    },
+    "cd-team-369e4620": {
+      "title": "Vivo Keyd Stars Academy",
+      "name": "Vivo Keyd Stars Academy",
+      "competition": "cd",
+      "via": "exact"
+    },
+    "cd-team-408c21b2": {
+      "title": "PaiN Gaming Academy",
+      "name": "paiN Gaming Academy",
+      "competition": "cd",
+      "via": "exact"
+    },
+    "cd-team-467d253d": {
+      "title": "RED Academy",
+      "name": "RED Academy",
+      "competition": "cd",
+      "via": "exact"
+    },
+    "cd-team-4fec330a": {
+      "title": "Ei Nerd Esports",
+      "name": "Ei Nerd Esports",
+      "competition": "cd",
+      "via": "exact"
+    },
+    "cd-team-53c6789c": {
+      "title": "KaBuM! Ilha das Lendas",
+      "name": "KaBuM! Ilha das Lendas",
+      "competition": "cd",
+      "via": "exact"
+    },
+    "cd-team-603562ef": {
+      "title": "7REX",
+      "name": "7REX",
+      "competition": "cd",
+      "via": "exact"
+    },
+    "cd-team-a49fd9c6": {
+      "title": null,
+      "name": "Team Solid",
+      "competition": "cd",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "ebl-team-1103bd5e": {
+      "title": "Lenovo Legion Honvéd",
+      "name": "Lenovo Legion Honvéd",
+      "competition": "ebl",
+      "via": "exact"
+    },
+    "ebl-team-3359999b": {
+      "title": "TQ DURPA KASHLQ",
+      "name": "TQ DURPA KASHLQ",
+      "competition": "ebl",
+      "via": "exact"
+    },
+    "ebl-team-500fa635": {
+      "title": null,
+      "name": "Washed Gaming",
+      "competition": "ebl",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "ebl-team-8b9502f1": {
+      "title": "Team Spawn Peek",
+      "name": "Team Spawn Peek",
+      "competition": "ebl",
+      "via": "exact"
+    },
+    "ebl-team-aa50d684": {
+      "title": "Magaza Esports",
+      "name": "Magaza Esports",
+      "competition": "ebl",
+      "via": "exact"
+    },
+    "ebl-team-b09886df": {
+      "title": "The Secret Club",
+      "name": "The Secret Club",
+      "competition": "ebl",
+      "via": "exact"
+    },
+    "ebl-team-cd386f74": {
+      "title": "SPIKE Syndicate",
+      "name": "SPIKE Syndicate",
+      "competition": "ebl",
+      "via": "exact"
+    },
+    "ebl-team-db2b783a": {
+      "title": "Lupus Esports",
+      "name": "Lupus Esports",
+      "competition": "ebl",
+      "via": "exact"
+    },
+    "ebl-team-dc2f50f2": {
+      "title": "Partizan Sangal",
+      "name": "Partizan Sangal",
+      "competition": "ebl",
+      "via": "exact"
+    },
+    "ebl-team-de9656fe": {
+      "title": "Croatian Flair",
+      "name": "Croatian Flair",
+      "competition": "ebl",
+      "via": "exact"
+    },
+    "eec-team-17a78639": {
+      "title": "G2 Hel",
+      "name": "G2 Hel",
+      "competition": "eec",
+      "via": "exact"
+    },
+    "eec-team-3b78a7d2": {
+      "title": "Eterna",
+      "name": "Eterna",
+      "competition": "eec",
+      "via": "exact"
+    },
+    "eec-team-4234565b": {
+      "title": "Blue Otter Europe",
+      "name": "Blue Otter Europe",
+      "competition": "eec",
+      "via": "exact"
+    },
+    "eec-team-727ebaea": {
+      "title": "Vitality Rising Bees",
+      "name": "Vitality Rising Bees",
+      "competition": "eec",
+      "via": "exact"
+    },
+    "eec-team-88bed990": {
+      "title": "SK Gaming Avarosa",
+      "name": "SK Gaming Avarosa",
+      "competition": "eec",
+      "via": "exact"
+    },
+    "eec-team-8d2d693f": {
+      "title": "Mental Rush",
+      "name": "Mental Rush",
+      "competition": "eec",
+      "via": "exact"
+    },
+    "eec-team-d81f5f95": {
+      "title": null,
+      "name": "Eclipse",
+      "competition": "eec",
+      "reason": "\"Eclipse\" exists but is not a team page"
+    },
+    "eec-team-dd643d48": {
+      "title": "Barcząca Esports Babylon",
+      "name": "Barcząca Esports Babylon",
+      "competition": "eec",
+      "via": "exact"
+    },
+    "hll-team-2e0c08a9": {
+      "title": "WLGaming Esports",
+      "name": "WLGaming Esports",
+      "competition": "hll",
+      "via": "exact"
+    },
+    "hll-team-34f5f8b3": {
+      "title": "Team Insidious",
+      "name": "Team Insidious",
+      "competition": "hll",
+      "via": "exact"
+    },
+    "hll-team-608ecbe2": {
+      "title": "Team Phantasma",
+      "name": "Team Phantasma",
+      "competition": "hll",
+      "via": "exact"
+    },
+    "hll-team-86bb25d6": {
+      "title": "The ParadOx Invaders",
+      "name": "The ParadOx",
+      "competition": "hll",
+      "via": "redirect"
+    },
+    "hll-team-8aeeec01": {
+      "title": "Spartans EU",
+      "name": "Spartans EU",
+      "competition": "hll",
+      "via": "exact"
+    },
+    "hll-team-92da5b60": {
+      "title": "GOAL",
+      "name": "GOAL",
+      "competition": "hll",
+      "via": "exact"
+    },
+    "hll-team-b2dec67c": {
+      "title": "ALMO Players",
+      "name": "ALMO Players",
+      "competition": "hll",
+      "via": "exact"
+    },
+    "hll-team-ca24ae43": {
+      "title": "Gamespace Mediterranean College Esports",
+      "name": "Gamespace Mediterranean College Esports",
+      "competition": "hll",
+      "via": "exact"
+    },
+    "hm-team-193151e6": {
+      "title": "Nightbirds",
+      "name": "Nightbirds",
+      "competition": "hm",
+      "via": "exact"
+    },
+    "hm-team-19466153": {
+      "title": "CITA Kaizen",
+      "name": "CITA Kaizen",
+      "competition": "hm",
+      "via": "exact"
+    },
+    "hm-team-2bda20fb": {
+      "title": "EXILE esports",
+      "name": "EXILE esports",
+      "competition": "hm",
+      "via": "exact"
+    },
+    "hm-team-5a2933ca": {
+      "title": "ESuba",
+      "name": "eSuba",
+      "competition": "hm",
+      "via": "exact"
+    },
+    "hm-team-5bf73fd8": {
+      "title": "Onion Team",
+      "name": "Onion Team",
+      "competition": "hm",
+      "via": "exact"
+    },
+    "hm-team-c01f7ad8": {
+      "title": "Meavedron",
+      "name": "Meavedron",
+      "competition": "hm",
+      "via": "exact"
+    },
+    "hm-team-da129d80": {
+      "title": "BRUTE",
+      "name": "BRUTE",
+      "competition": "hm",
+      "via": "exact"
+    },
+    "hm-team-df25d69f": {
+      "title": "Bohemian Guardians",
+      "name": "Bohemian Guardians",
+      "competition": "hm",
+      "via": "exact"
+    },
+    "lck-team-2166882d": {
+      "title": "DN SOOPers",
+      "name": "DN SOOPers",
+      "competition": "lck",
+      "via": "exact"
+    },
+    "lck-team-2c4f82f9": {
+      "title": "T1",
+      "name": "T1",
+      "competition": "lck",
+      "via": "exact"
+    },
+    "lck-team-3f714e0d": {
+      "title": "BNK FEARX",
+      "name": "BNK FEARX",
+      "competition": "lck",
+      "via": "exact"
+    },
+    "lck-team-41bf07a6": {
+      "title": "Dplus Kia",
+      "name": "Dplus KIA",
+      "competition": "lck",
+      "via": "redirect"
+    },
+    "lck-team-61bd92d5": {
+      "title": "Nongshim RedForce",
+      "name": "Nongshim RedForce",
+      "competition": "lck",
+      "via": "exact"
+    },
+    "lck-team-861ba8cb": {
+      "title": "Hanwha Life Esports",
+      "name": "Hanwha Life Esports",
+      "competition": "lck",
+      "via": "exact"
+    },
+    "lck-team-932ee946": {
+      "title": "KT Rolster",
+      "name": "KT Rolster",
+      "competition": "lck",
+      "via": "exact"
+    },
+    "lck-team-bc4c40ec": {
+      "title": "Kiwoom DRX",
+      "name": "Kiwoom DRX",
+      "competition": "lck",
+      "via": "exact"
+    },
+    "lck-team-bd98ddef": {
+      "title": "HANJIN BRION",
+      "name": "HANJIN BRION",
+      "competition": "lck",
+      "via": "exact"
+    },
+    "lck-team-dae32fa2": {
+      "title": "Gen.G",
+      "name": "Gen.G Esports",
+      "competition": "lck",
+      "via": "variant"
+    },
+    "lckcl-lck-cl-bnk-fearx-youth": {
+      "title": "BNK FEARX Youth",
+      "name": "BNK FEARX Youth",
+      "competition": "lckcl",
+      "via": "exact"
+    },
+    "lckcl-lck-cl-dn-soopers-challengers": {
+      "title": null,
+      "name": "DN SOOpers Challengers",
+      "competition": "lckcl",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "lckcl-lck-cl-dplus-kia-challengers": {
+      "title": "Dplus Kia Challengers",
+      "name": "Dplus KIA Challengers",
+      "competition": "lckcl",
+      "via": "redirect"
+    },
+    "lckcl-lck-cl-gen-g-global-academy": {
+      "title": "Gen.G Global Academy",
+      "name": "Gen.G Global Academy",
+      "competition": "lckcl",
+      "via": "exact"
+    },
+    "lckcl-lck-cl-hanjin-brion-challengers": {
+      "title": null,
+      "name": "HANJIN BRION CHALLENGERS",
+      "competition": "lckcl",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "lckcl-lck-cl-hle-challengers": {
+      "title": null,
+      "name": "HLE Challengers",
+      "competition": "lckcl",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "lckcl-lck-cl-kiwoon-drx-challengers": {
+      "title": null,
+      "name": "Kiwoon DRX Challengers",
+      "competition": "lckcl",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "lckcl-lck-cl-kt-rolster-challengers": {
+      "title": "KT Rolster Challengers",
+      "name": "KT Rolster Challengers",
+      "competition": "lckcl",
+      "via": "exact"
+    },
+    "lckcl-lck-cl-ns-esports-academy": {
+      "title": null,
+      "name": "NS Esports Academy",
+      "competition": "lckcl",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "lckcl-lck-cl-t1-esports-academy": {
+      "title": "T1 Esports Academy",
+      "name": "T1 Esports Academy",
+      "competition": "lckcl",
+      "via": "exact"
+    },
+    "lcp-team-494fc51a": {
+      "title": "GAM Esports",
+      "name": "GAM Esports",
+      "competition": "lcp",
+      "via": "exact"
+    },
+    "lcp-team-709031e2": {
+      "title": "MVK Esports",
+      "name": "MVK Esports",
+      "competition": "lcp",
+      "via": "exact"
+    },
+    "lcp-team-83d3342f": {
+      "title": "CTBC Flying Oyster",
+      "name": "CTBC Flying Oyster",
+      "competition": "lcp",
+      "via": "exact"
+    },
+    "lcp-team-cbc2ec83": {
+      "title": "DetonatioN FocusMe",
+      "name": "DetonatioN FocusMe",
+      "competition": "lcp",
+      "via": "exact"
+    },
+    "lcp-team-d13da18a": {
+      "title": "Team Secret Whales",
+      "name": "Team Secret Whales",
+      "competition": "lcp",
+      "via": "exact"
+    },
+    "lcp-team-dcg2025": {
+      "title": "Deep Cross Gaming",
+      "name": "Deep Cross Gaming",
+      "competition": "lcp",
+      "via": "exact"
+    },
+    "lcp-team-f4306bce": {
+      "title": null,
+      "name": "SoftBank HAWKS",
+      "competition": "lcp",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "lcp-team-gzg2025": {
+      "title": "Ground Zero Gaming",
+      "name": "Ground Zero Gaming",
+      "competition": "lcp",
+      "via": "exact"
+    },
+    "lcs-team-75904cb7": {
+      "title": "Disguised",
+      "name": "Disguised",
+      "competition": "lcs",
+      "via": "exact"
+    },
+    "lcs-team-c92025": {
+      "title": "Cloud9",
+      "name": "Cloud9",
+      "competition": "lcs",
+      "via": "exact"
+    },
+    "lcs-team-cb9503c1": {
+      "title": null,
+      "name": "LYON",
+      "competition": "lcs",
+      "reason": "\"Lyon\" exists but is not a team page"
+    },
+    "lcs-team-d740ef00": {
+      "title": "Shopify Rebellion",
+      "name": "Shopify Rebellion",
+      "competition": "lcs",
+      "via": "exact"
+    },
+    "lcs-team-dig2025": {
+      "title": "Dignitas",
+      "name": "Dignitas",
+      "competition": "lcs",
+      "via": "exact"
+    },
+    "lcs-team-fly2025": {
+      "title": "FlyQuest",
+      "name": "FlyQuest",
+      "competition": "lcs",
+      "via": "exact"
+    },
+    "lcs-team-sen2025": {
+      "title": "Sentinels",
+      "name": "Sentinels",
+      "competition": "lcs",
+      "via": "exact"
+    },
+    "lcs-team-tl2025": {
+      "title": "Team Liquid",
+      "name": "Team Liquid",
+      "competition": "lcs",
+      "via": "exact"
+    },
+    "ldl-team-0c76150c": {
+      "title": "Royal Club",
+      "name": "Royal Club",
+      "competition": "ldl",
+      "via": "exact"
+    },
+    "ldl-team-13997011": {
+      "title": "Oh My God Academy",
+      "name": "Oh My God Academy",
+      "competition": "ldl",
+      "via": "exact"
+    },
+    "ldl-team-37ced0d1": {
+      "title": "LGD Gaming Young Team",
+      "name": "LGD Gaming Young Team",
+      "competition": "ldl",
+      "via": "exact"
+    },
+    "ldl-team-8d56ae81": {
+      "title": "Weibo Gaming Youth Team",
+      "name": "Weibo Gaming Youth Team",
+      "competition": "ldl",
+      "via": "exact"
+    },
+    "ldl-team-94b3267f": {
+      "title": "LNG Academy",
+      "name": "LNG Academy",
+      "competition": "ldl",
+      "via": "exact"
+    },
+    "ldl-team-a73f2996": {
+      "title": "Team WE Academy",
+      "name": "Team WE Academy",
+      "competition": "ldl",
+      "via": "exact"
+    },
+    "ldl-team-bf6805f5": {
+      "title": "Bilibili Gaming Junior",
+      "name": "Bilibili Gaming Junior",
+      "competition": "ldl",
+      "via": "exact"
+    },
+    "ldl-team-c6cb03ca": {
+      "title": "ThunderTalk Gaming Young",
+      "name": "ThunderTalk Gaming Young",
+      "competition": "ldl",
+      "via": "exact"
+    },
+    "ldl-team-edb9580a": {
+      "title": "Top Esports Challenger",
+      "name": "Top Esports Challenger",
+      "competition": "ldl",
+      "via": "exact"
+    },
+    "ldl-team-f97df98e": {
+      "title": "Anyone's Legend.Young",
+      "name": "Anyone's Legend.Young",
+      "competition": "ldl",
+      "via": "exact"
+    },
+    "lec-fnatic": {
+      "title": "Fnatic",
+      "name": "Fnatic",
+      "competition": "lec",
+      "via": "exact"
+    },
+    "lec-g2-esports": {
+      "title": "G2 Esports",
+      "name": "G2 Esports",
+      "competition": "lec",
+      "via": "exact"
+    },
+    "lec-giantx-lec": {
+      "title": "GIANTX",
+      "name": "GIANTX",
+      "competition": "lec",
+      "via": "exact"
+    },
+    "lec-karmine-corp": {
+      "title": "Karmine Corp",
+      "name": "Karmine Corp",
+      "competition": "lec",
+      "via": "exact"
+    },
+    "lec-movistar-koi": {
+      "title": "Movistar KOI",
+      "name": "Movistar KOI",
+      "competition": "lec",
+      "via": "exact"
+    },
+    "lec-natus-vincere": {
+      "title": "Natus Vincere",
+      "name": "Natus Vincere",
+      "competition": "lec",
+      "via": "exact"
+    },
+    "lec-shifters": {
+      "title": "Shifters",
+      "name": "Shifters",
+      "competition": "lec",
+      "via": "exact"
+    },
+    "lec-sk-gaming": {
+      "title": "SK Gaming",
+      "name": "SK Gaming",
+      "competition": "lec",
+      "via": "exact"
+    },
+    "lec-team-heretics-lec": {
+      "title": "Team Heretics",
+      "name": "Team Heretics",
+      "competition": "lec",
+      "via": "exact"
+    },
+    "lec-team-vitality": {
+      "title": "Team Vitality",
+      "name": "Team Vitality",
+      "competition": "lec",
+      "via": "exact"
+    },
+    "les-team-06974122": {
+      "title": null,
+      "name": "Barcelona Esports",
+      "competition": "les",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "les-team-129835c5": {
+      "title": "UCAM Esports",
+      "name": "UCAM Esports",
+      "competition": "les",
+      "via": "exact"
+    },
+    "les-team-5d7b3ec4": {
+      "title": "Falke Esports",
+      "name": "Falke Esports",
+      "competition": "les",
+      "via": "exact"
+    },
+    "les-team-854f6893": {
+      "title": null,
+      "name": "GiantX Itero",
+      "competition": "les",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "les-team-8baee3fd": {
+      "title": "Movistar KOI Fénix",
+      "name": "Movistar KOI Fénix",
+      "competition": "les",
+      "via": "exact"
+    },
+    "les-team-ac846213": {
+      "title": "UB Alma Mater",
+      "name": "UB Alma Mater",
+      "competition": "les",
+      "via": "exact"
+    },
+    "les-team-d0d82673": {
+      "title": "LUA Gaming",
+      "name": "LUA Gaming",
+      "competition": "les",
+      "via": "exact"
+    },
+    "les-team-f10b156f": {
+      "title": "Team Heretics Academy",
+      "name": "Team Heretics Academy",
+      "competition": "les",
+      "via": "exact"
+    },
+    "lfl-team-012b64d1": {
+      "title": "Solary",
+      "name": "Solary",
+      "competition": "lfl",
+      "via": "exact"
+    },
+    "lfl-team-0f9010b5": {
+      "title": "TLN Pirates",
+      "name": "TLN Pirates",
+      "competition": "lfl",
+      "via": "exact"
+    },
+    "lfl-team-8f3d532a": {
+      "title": "Team Vitality Academy",
+      "name": "Vitality Academy",
+      "competition": "lfl",
+      "via": "redirect"
+    },
+    "lfl-team-92b46fef": {
+      "title": "Skillcamp",
+      "name": "Skillcamp",
+      "competition": "lfl",
+      "via": "exact"
+    },
+    "lfl-team-ab04f649": {
+      "title": "Joblife",
+      "name": "Joblife",
+      "competition": "lfl",
+      "via": "exact"
+    },
+    "lfl-team-af25d742": {
+      "title": "Karmine Corp Blue",
+      "name": "Karmine Corp Blue",
+      "competition": "lfl",
+      "via": "exact"
+    },
+    "lfl-team-c12fef91": {
+      "title": "Ici Japon Corp. Esport",
+      "name": "Ici Japon Corp. Esport",
+      "competition": "lfl",
+      "via": "exact"
+    },
+    "lfl-team-da97809e": {
+      "title": "Galions",
+      "name": "Galions",
+      "competition": "lfl",
+      "via": "exact"
+    },
+    "lfl-team-ed48a04c": {
+      "title": "Esprit Shōnen",
+      "name": "Esprit Shōnen",
+      "competition": "lfl",
+      "via": "exact"
+    },
+    "lfl-team-f8f7f78d": {
+      "title": "ZYB Esport",
+      "name": "ZYB Esport",
+      "competition": "lfl",
+      "via": "exact"
+    },
+    "lit-team-3ee8399a": {
+      "title": "TITANS",
+      "name": "TITANS",
+      "competition": "lit",
+      "via": "exact"
+    },
+    "lit-team-763ea26a": {
+      "title": "Aeterna Esports",
+      "name": "Aeterna Esports",
+      "competition": "lit",
+      "via": "exact"
+    },
+    "lit-team-78e0cf99": {
+      "title": "Colossal Gaming",
+      "name": "Colossal Gaming",
+      "competition": "lit",
+      "via": "exact"
+    },
+    "lit-team-a272304b": {
+      "title": "StoneHenge Esports",
+      "name": "StoneHenge Esports",
+      "competition": "lit",
+      "via": "exact"
+    },
+    "lit-team-d4e0b415": {
+      "title": "EKO Esports",
+      "name": "EKO Esports",
+      "competition": "lit",
+      "via": "exact"
+    },
+    "lit-team-d6fcaa33": {
+      "title": "Zena Esports",
+      "name": "Zena Esports",
+      "competition": "lit",
+      "via": "exact"
+    },
+    "lit-team-d8e80ef5": {
+      "title": "HMBLE",
+      "name": "HMBLE",
+      "competition": "lit",
+      "via": "exact"
+    },
+    "lit-team-dacb4a17": {
+      "title": "GMBLERS Esports",
+      "name": "GMBLERS Esports",
+      "competition": "lit",
+      "via": "exact"
+    },
+    "ljl-team-15282d93": {
+      "title": "DetonatioN FocusMe Academy",
+      "name": "DetonatioN FocusMe Academy",
+      "competition": "ljl",
+      "via": "exact"
+    },
+    "ljl-team-208c3750": {
+      "title": "L Guide Gaming",
+      "name": "L Guide Gaming",
+      "competition": "ljl",
+      "via": "exact"
+    },
+    "ljl-team-5059567a": {
+      "title": "VARREL YOUTH",
+      "name": "VARREL YOUTH",
+      "competition": "ljl",
+      "via": "exact"
+    },
+    "ljl-team-5f5b57be": {
+      "title": "Fast8",
+      "name": "Fast8",
+      "competition": "ljl",
+      "via": "exact"
+    },
+    "ljl-team-899e9d2f": {
+      "title": "Yang Yang Gaming",
+      "name": "Yang Yang Gaming",
+      "competition": "ljl",
+      "via": "exact"
+    },
+    "ljl-team-8d244b3a": {
+      "title": "RAYN Clocks",
+      "name": "RAYN Clocks",
+      "competition": "ljl",
+      "via": "exact"
+    },
+    "ljl-team-b6b8bfae": {
+      "title": "FENNEL",
+      "name": "FENNEL",
+      "competition": "ljl",
+      "via": "exact"
+    },
+    "ljl-team-c1e9468d": {
+      "title": "Rising Gaming",
+      "name": "Rising Gaming",
+      "competition": "ljl",
+      "via": "exact"
+    },
+    "ljl-team-e82d1866": {
+      "title": "New Meta",
+      "name": "New Meta",
+      "competition": "ljl",
+      "via": "exact"
+    },
+    "ljl-team-e977febc": {
+      "title": "Uwinks",
+      "name": "Uwinks",
+      "competition": "ljl",
+      "via": "exact"
+    },
+    "lpl-team-0a33a07d": {
+      "title": "Ninjas in Pyjamas",
+      "name": "Ninjas in Pyjamas",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lpl-team-38a818e5": {
+      "title": null,
+      "name": "TT Gaming",
+      "competition": "lpl",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "lpl-team-3bd486ec": {
+      "title": "Anyone's Legend",
+      "name": "Anyone's Legend",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lpl-team-5facf88e": {
+      "title": "Team WE",
+      "name": "Team WE",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lpl-team-6481a859": {
+      "title": "JD Gaming",
+      "name": "JD Gaming",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lpl-team-75263716": {
+      "title": "Oh My God",
+      "name": "Oh My God",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lpl-team-a324dc9d": {
+      "title": "Weibo Gaming",
+      "name": "Weibo Gaming",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lpl-team-a84cce06": {
+      "title": "Ultra Prime",
+      "name": "Ultra Prime",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lpl-team-b777d366": {
+      "title": "Top Esports",
+      "name": "Top Esports",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lpl-team-ca28739d": {
+      "title": "EDward Gaming",
+      "name": "EDward Gaming",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lpl-team-d6ad5a14": {
+      "title": "Invictus Gaming",
+      "name": "Invictus Gaming",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lpl-team-dc1429f2": {
+      "title": "LGD Gaming",
+      "name": "LGD Gaming",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lpl-team-dd4bc6a5": {
+      "title": "Bilibili Gaming",
+      "name": "Bilibili Gaming",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lpl-team-ec9ab429": {
+      "title": "LNG Esports",
+      "name": "LNG Esports",
+      "competition": "lpl",
+      "via": "exact"
+    },
+    "lplol-team-258078d0": {
+      "title": null,
+      "name": "Francesinhas",
+      "competition": "lplol",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "lplol-team-273eca26": {
+      "title": "ZeroZone Gaming",
+      "name": "ZeroZone Gaming",
+      "competition": "lplol",
+      "via": "exact"
+    },
+    "lplol-team-527a1974": {
+      "title": "Dream Esports",
+      "name": "Dream Esports",
+      "competition": "lplol",
+      "via": "exact"
+    },
+    "lplol-team-6b8fef2d": {
+      "title": "GTZ Esports",
+      "name": "GTZ Esports",
+      "competition": "lplol",
+      "via": "exact"
+    },
+    "lplol-team-81f175c5": {
+      "title": "Otter Side",
+      "name": "Otter Side",
+      "competition": "lplol",
+      "via": "exact"
+    },
+    "lplol-team-8baac22a": {
+      "title": "Bubliki",
+      "name": "Bubliki",
+      "competition": "lplol",
+      "via": "exact"
+    },
+    "lplol-team-a0a25c12": {
+      "title": null,
+      "name": "Ronaldo Team",
+      "competition": "lplol",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "lplol-team-cd7def0c": {
+      "title": "Crusaders",
+      "name": "Crusaders",
+      "competition": "lplol",
+      "via": "exact"
+    },
+    "lrn-fuego": {
+      "title": "Fuego",
+      "name": "Fuego",
+      "competition": "lrn",
+      "via": "exact"
+    },
+    "lrn-g3v-e-sports": {
+      "title": "G3V E-sports",
+      "name": "G3V E-sports",
+      "competition": "lrn",
+      "via": "exact"
+    },
+    "lrn-icon-esports": {
+      "title": null,
+      "name": "Icon Esports",
+      "competition": "lrn",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "lrn-lyon-academy": {
+      "title": "LYON Academy",
+      "name": "LYON Academy",
+      "competition": "lrn",
+      "via": "exact"
+    },
+    "lrn-ncg-esports": {
+      "title": "NCG Esports",
+      "name": "NCG Esports",
+      "competition": "lrn",
+      "via": "exact"
+    },
+    "lrn-polar-squad-esport": {
+      "title": "Polar Squad Esports",
+      "name": "Polar Squad Esport",
+      "competition": "lrn",
+      "via": "variant"
+    },
+    "lrn-sdm-tigres": {
+      "title": "SDM Tigres",
+      "name": "SDM Tigres",
+      "competition": "lrn",
+      "via": "exact"
+    },
+    "lrn-zeu5-esport": {
+      "title": "Zeu5 Esports",
+      "name": "Zeu5 Esport",
+      "competition": "lrn",
+      "via": "variant"
+    },
+    "lrs-9z-globant": {
+      "title": "9z Globant",
+      "name": "9z Globant",
+      "competition": "lrs",
+      "via": "exact"
+    },
+    "lrs-golden-lions": {
+      "title": "Golden Lions",
+      "name": "Golden Lions",
+      "competition": "lrs",
+      "via": "exact"
+    },
+    "lrs-malvinas-gaming": {
+      "title": "Malvinas Gaming",
+      "name": "Malvinas Gaming",
+      "competition": "lrs",
+      "via": "exact"
+    },
+    "lrs-maze-gaming": {
+      "title": "Maze Gaming",
+      "name": "Maze Gaming",
+      "competition": "lrs",
+      "via": "exact"
+    },
+    "lrs-seven-dark": {
+      "title": "Seven Dark",
+      "name": "Seven Dark",
+      "competition": "lrs",
+      "via": "exact"
+    },
+    "lrs-the-new-kings": {
+      "title": "The New Kings",
+      "name": "The New Kings",
+      "competition": "lrs",
+      "via": "exact"
+    },
+    "lrs-tu-pap-esports": {
+      "title": "Tu Papá Esports",
+      "name": "Tu Papá Esports",
+      "competition": "lrs",
+      "via": "exact"
+    },
+    "lrs-volticons": {
+      "title": "Volticons",
+      "name": "Volticons",
+      "competition": "lrs",
+      "via": "exact"
+    },
+    "nacl-team-10540476": {
+      "title": "Dorado Gaming",
+      "name": "Dorado Gaming",
+      "competition": "nacl",
+      "via": "exact"
+    },
+    "nacl-team-31b92c52": {
+      "title": "Conviction",
+      "name": "Conviction",
+      "competition": "nacl",
+      "via": "exact"
+    },
+    "nacl-team-73a32fd5": {
+      "title": "Maryville University",
+      "name": "Maryville University",
+      "competition": "nacl",
+      "via": "exact"
+    },
+    "nacl-team-99f3b280": {
+      "title": "Blue Otter",
+      "name": "Blue Otter",
+      "competition": "nacl",
+      "via": "exact"
+    },
+    "nacl-team-ba8042f7": {
+      "title": "Citadel Gaming",
+      "name": "Citadel Gaming",
+      "competition": "nacl",
+      "via": "exact"
+    },
+    "nacl-team-e21b9ba3": {
+      "title": "CCG Esports",
+      "name": "CCG Esports",
+      "competition": "nacl",
+      "via": "exact"
+    },
+    "nacl-team-f1da75bb": {
+      "title": "Winthrop University",
+      "name": "Winthrop University",
+      "competition": "nacl",
+      "via": "exact"
+    },
+    "nacl-team-fa242f1f": {
+      "title": "Supernova",
+      "name": "Supernova",
+      "competition": "nacl",
+      "via": "exact"
+    },
+    "nlc-team-1cee59ca": {
+      "title": "Bulldog Esports",
+      "name": "Bulldog Esports",
+      "competition": "nlc",
+      "via": "exact"
+    },
+    "nlc-team-34ca921d": {
+      "title": "4 Swines & A Bum",
+      "name": "4 Swines & A Bum",
+      "competition": "nlc",
+      "via": "exact"
+    },
+    "nlc-team-390ad3b4": {
+      "title": "Verdant",
+      "name": "Verdant",
+      "competition": "nlc",
+      "via": "exact"
+    },
+    "nlc-team-5ef306d4": {
+      "title": "Arctic Pandas",
+      "name": "Arctic Pandas",
+      "competition": "nlc",
+      "via": "exact"
+    },
+    "nlc-team-78aca3aa": {
+      "title": "Deer Gaming",
+      "name": "Deer Gaming",
+      "competition": "nlc",
+      "via": "exact"
+    },
+    "nlc-team-794821d8": {
+      "title": "Ruddy Corporation",
+      "name": "Ruddy Corporation",
+      "competition": "nlc",
+      "via": "exact"
+    },
+    "nlc-team-9114115f": {
+      "title": "Lund Esports Organization",
+      "name": "Lund Esports Organization",
+      "competition": "nlc",
+      "via": "exact"
+    },
+    "nlc-team-cc3cd5f0": {
+      "title": "Lundqvist Lightside",
+      "name": "Lundqvist Lightside",
+      "competition": "nlc",
+      "via": "exact"
+    },
+    "nlc-team-e8c7e277": {
+      "title": "La BOMBAS",
+      "name": "La BOMBAS",
+      "competition": "nlc",
+      "via": "exact"
+    },
+    "nlc-team-ee2bd46c": {
+      "title": "DMG Esports",
+      "name": "DMG Esports",
+      "competition": "nlc",
+      "via": "exact"
+    },
+    "pcs-team-0df06611": {
+      "title": "SillySilly Gaming",
+      "name": "SillySilly Gaming",
+      "competition": "pcs",
+      "via": "exact"
+    },
+    "pcs-team-33bed81a": {
+      "title": "Viper Night Raider",
+      "name": "Viper Night Raider",
+      "competition": "pcs",
+      "via": "exact"
+    },
+    "pcs-team-3696f88a": {
+      "title": "Ground Zero Academy",
+      "name": "Ground Zero Academy",
+      "competition": "pcs",
+      "via": "exact"
+    },
+    "pcs-team-4b825a93": {
+      "title": "Shadow Keepers Esports",
+      "name": "Shadow Keepers",
+      "competition": "pcs",
+      "via": "variant"
+    },
+    "pcs-team-74d3c7fe": {
+      "title": null,
+      "name": "One Round Specialists",
+      "competition": "pcs",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "pcs-team-86604284": {
+      "title": "Equinox Core",
+      "name": "Equinox Core",
+      "competition": "pcs",
+      "via": "exact"
+    },
+    "pcs-team-94671303": {
+      "title": null,
+      "name": "CFO Academy",
+      "competition": "pcs",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "pcs-team-9c289ca5": {
+      "title": "Wangting",
+      "name": "wangting",
+      "competition": "pcs",
+      "via": "exact"
+    },
+    "pcs-team-c4a0b95f": {
+      "title": "Xu Ji Basalt",
+      "name": "Xu Ji Basalt",
+      "competition": "pcs",
+      "via": "exact"
+    },
+    "pcs-team-f8c7a360": {
+      "title": "Frank Esports",
+      "name": "Frank Esports",
+      "competition": "pcs",
+      "via": "exact"
+    },
+    "prm-team-069c707b": {
+      "title": null,
+      "name": "G2 Nord",
+      "competition": "prm",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "prm-team-0be37b7e": {
+      "title": "Berlin International Gaming",
+      "name": "Berlin International Gaming",
+      "competition": "prm",
+      "via": "exact"
+    },
+    "prm-team-1347e217": {
+      "title": null,
+      "name": "Team Orange Gaming",
+      "competition": "prm",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "prm-team-3cef0cfa": {
+      "title": "Kaufland Hangry Knights",
+      "name": "Kaufland Hangry Knights",
+      "competition": "prm",
+      "via": "exact"
+    },
+    "prm-team-5dc37618": {
+      "title": "Eintracht Frankfurt",
+      "name": "Eintracht Frankfurt",
+      "competition": "prm",
+      "via": "exact"
+    },
+    "prm-team-8c9a2d4b": {
+      "title": null,
+      "name": "VfB Stuttgart eSports",
+      "competition": "prm",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "prm-team-a72b6e41": {
+      "title": "E WIE EINFACH E-SPORTS",
+      "name": "E WIE EINFACH E-SPORTS",
+      "competition": "prm",
+      "via": "exact"
+    },
+    "prm-team-bec332f5": {
+      "title": "Eintracht Spandau",
+      "name": "Eintracht Spandau",
+      "competition": "prm",
+      "via": "exact"
+    },
+    "prm-team-e48c23c9": {
+      "title": "Unicorns of Love Sexy Edition",
+      "name": "Unicorns of Love Sexy Edition",
+      "competition": "prm",
+      "via": "exact"
+    },
+    "prm-team-f3b86137": {
+      "title": "ROSSMANN Centaurs",
+      "name": "ROSSMANN Centaurs",
+      "competition": "prm",
+      "via": "exact"
+    },
+    "rl-team-239dd021": {
+      "title": "Anonymo Esports",
+      "name": "Anonymo Esports",
+      "competition": "rl",
+      "via": "exact"
+    },
+    "rl-team-76542a8b": {
+      "title": "Bomba Team",
+      "name": "Bomba Team",
+      "competition": "rl",
+      "via": "exact"
+    },
+    "rl-team-83efd7e9": {
+      "title": "DOCISK",
+      "name": "DOCISK",
+      "competition": "rl",
+      "via": "exact"
+    },
+    "rl-team-c3747fd1": {
+      "title": "GLORE",
+      "name": "GLORE",
+      "competition": "rl",
+      "via": "exact"
+    },
+    "rl-team-c5d360c2": {
+      "title": null,
+      "name": "Forsaken",
+      "competition": "rl",
+      "reason": "\"Forsaken\" exists but is not a team page"
+    },
+    "rl-team-d772ad68": {
+      "title": "Barcząca Esports by Yumisu",
+      "name": "Barcząca Esports",
+      "competition": "rl",
+      "via": "redirect"
+    },
+    "rl-team-efe1b300": {
+      "title": null,
+      "name": "LODIS",
+      "competition": "rl",
+      "reason": "\"Lodis\" exists but is not a team page"
+    },
+    "rl-team-ff1df943": {
+      "title": "Devils.one inStreamly",
+      "name": "devils.one inStreamly",
+      "competition": "rl",
+      "via": "exact"
+    },
+    "rol-team-3088debc": {
+      "title": "Frites Esports Club",
+      "name": "Frites Esports Club",
+      "competition": "rol",
+      "via": "exact"
+    },
+    "rol-team-3738562e": {
+      "title": "Once Upon A Team",
+      "name": "Once Upon A Team",
+      "competition": "rol",
+      "via": "exact"
+    },
+    "rol-team-45502488": {
+      "title": "Dynasty",
+      "name": "Dynasty",
+      "competition": "rol",
+      "via": "exact"
+    },
+    "rol-team-897210b6": {
+      "title": "MCon esports",
+      "name": "mCon esports",
+      "competition": "rol",
+      "via": "exact"
+    },
+    "rol-team-96e42b9a": {
+      "title": "ZennIT",
+      "name": "ZennIT",
+      "competition": "rol",
+      "via": "exact"
+    },
+    "rol-team-a0e8ccac": {
+      "title": "The Bandits",
+      "name": "The Bandits",
+      "competition": "rol",
+      "via": "exact"
+    },
+    "rol-team-e6e445de": {
+      "title": "Myth Esports",
+      "name": "Myth Esports",
+      "competition": "rol",
+      "via": "exact"
+    },
+    "rol-team-f9cfb0f2": {
+      "title": null,
+      "name": "Senshi eSports",
+      "competition": "rol",
+      "reason": "no Leaguepedia team page found for this name"
+    },
+    "tcl-boostgate-esports": {
+      "title": "BoostGate Esports",
+      "name": "BoostGate Esports",
+      "competition": "tcl",
+      "via": "exact"
+    },
+    "tcl-bushido-wildcats": {
+      "title": "Bushido Wildcats",
+      "name": "Bushido Wildcats",
+      "competition": "tcl",
+      "via": "exact"
+    },
+    "tcl-dark-passage": {
+      "title": "Dark Passage",
+      "name": "Dark Passage",
+      "competition": "tcl",
+      "via": "exact"
+    },
+    "tcl-misa-esports": {
+      "title": "Misa Esports",
+      "name": "Misa Esports",
+      "competition": "tcl",
+      "via": "exact"
+    },
+    "tcl-ozarox-esports": {
+      "title": "Ozarox Esports",
+      "name": "Ozarox Esports",
+      "competition": "tcl",
+      "via": "exact"
+    },
+    "tcl-pcific-esports": {
+      "title": "PCIFIC Esports",
+      "name": "PCIFIC Esports",
+      "competition": "tcl",
+      "via": "exact"
+    },
+    "tcl-su-esports": {
+      "title": "SU Esports",
+      "name": "SU Esports",
+      "competition": "tcl",
+      "via": "exact"
+    },
+    "tcl-team-phoenix": {
+      "title": null,
+      "name": "Team Phoenix",
+      "competition": "tcl",
+      "reason": "\"Team Phoenix\" exists but is not a team page"
+    },
+    "vcs-team-0b0654fe": {
+      "title": "1TAP Dino",
+      "name": "Saigon Dino",
+      "competition": "vcs",
+      "via": "redirect"
+    },
+    "vcs-team-12d8ddae": {
+      "title": "9Gaming",
+      "name": "9Gaming Esports",
+      "competition": "vcs",
+      "via": "redirect"
+    },
+    "vcs-team-2b60138b": {
+      "title": "MVK Esports Academy",
+      "name": "MVK Esports Academy",
+      "competition": "vcs",
+      "via": "exact"
+    },
+    "vcs-team-3cd254ed": {
+      "title": "SN CyberCore Esports",
+      "name": "SN CyberCore Esports",
+      "competition": "vcs",
+      "via": "exact"
+    },
+    "vcs-team-cd683e2d": {
+      "title": "Saigon Warriors",
+      "name": "Saigon Warriors",
+      "competition": "vcs",
+      "via": "exact"
+    },
+    "vcs-team-cf666c65": {
+      "title": null,
+      "name": "ZEN Esports",
+      "competition": "vcs",
+      "reason": "no Leaguepedia team page found for this name"
+    }
+  }
+}

@@ -105,3 +105,10 @@ openspec/
 # showing up as untracked clutter.
 # =========================
 public/player-photos/
+
+# =========================
+# World roster refresh tool
+# HTTP cache and review reports are local artifacts
+# =========================
+scripts/world/.cache/
+scripts/world/out/

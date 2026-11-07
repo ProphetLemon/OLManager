@@ -1,0 +1,47 @@
+{
+ "schemaVersion": 1,
+ "teams": {
+  "lck-team-bc4c40ec": {
+   "title": "Kiwoom DRX",
+   "name": "Kiwoom DRX",
+   "competition": "lck",
+   "via": "exact"
+  },
+  "lck-team-932ee946": {
+   "title": "KT Rolster",
+   "name": "KT Rolster",
+   "competition": "lck",
+   "via": "exact"
+  },
+  "lck-team-61bd92d5": {
+   "title": "Nongshim RedForce",
+   "name": "Nongshim RedForce",
+   "competition": "lck",
+   "via": "exact"
+  },
+  "lec-team-vitality": {
+   "title": "Team Vitality",
+   "name": "Team Vitality",
+   "competition": "lec",
+   "via": "exact"
+  },
+  "lec-team-heretics-lec": {
+   "title": "Team Heretics",
+   "name": "Team Heretics",
+   "competition": "lec",
+   "via": "exact"
+  },
+  "lec-fnatic": {
+   "title": "Fnatic",
+   "name": "Fnatic",
+   "competition": "lec",
+   "via": "exact"
+  },
+  "lckcl-lck-cl-kiwoon-drx-challengers": {
+   "title": null,
+   "name": "Kiwoon DRX Challengers",
+   "competition": "lckcl",
+   "reason": "no Leaguepedia team page found for this name"
+  }
+ }
+}
