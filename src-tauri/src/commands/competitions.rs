@@ -163,6 +163,12 @@ fn data_base_candidates(app_handle: &tauri::AppHandle, cwd: &Path) -> Vec<Option
     candidates
 }
 
+/// Like [`resolve_data_base`], but with the descriptive error listing every
+/// candidate that was checked.
+pub fn require_data_base(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
+    resolve_data_base(app_handle).ok_or_else(|| data_directory_not_found_error(app_handle))
+}
+
 fn data_directory_not_found_error(app_handle: &tauri::AppHandle) -> String {
     let Ok(cwd) = std::env::current_dir() else {
         return "Data directory not found. Could not resolve current working directory."
