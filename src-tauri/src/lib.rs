@@ -322,6 +322,8 @@ pub fn run() {
             sim_live_run_to_completion,
             sim_live_skip_to_end,
             auto_import_database,
+            update_world_overlay,
+            get_world_overlay_info,
             import_export_zip,
             import_cached_export,
             get_import_cache_info,

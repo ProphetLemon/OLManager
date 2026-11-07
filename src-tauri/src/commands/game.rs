@@ -17,9 +17,7 @@ use olm_core::game::Game;
 use olm_core::game_setup;
 use olm_core::roster_stability;
 use olm_core::state::StateManager;
-use olm_core::world_overlay::{
-    apply_world_overlay, bundled_world_overlay, OverlayApplyReport, WorldOverlay,
-};
+use olm_core::world_overlay::{apply_world_overlay, OverlayApplyReport, WorldOverlay};
 
 use crate::SaveManagerState;
 use validator::Validate;
@@ -192,22 +190,12 @@ fn assemble_world_from_modular_data(
     Ok((all_teams, all_players, staff))
 }
 
-/// Pick the roster overlay a new game starts from.
-///
-/// Seam for the downloadable overlay: for now this is the overlay bundled with
-/// the app. The fresh-rosters work extends it to also read a downloaded cache in
-/// the app data dir and return whichever of the two has the newest `as_of`.
-/// Callers only depend on the returned overlay, never on where it came from.
-/// A malformed overlay must never block a new game, so errors are logged and
-/// the game starts from the bundled data alone.
-fn resolve_world_overlay(_app_handle: &tauri::AppHandle) -> Option<WorldOverlay> {
-    match bundled_world_overlay() {
-        Ok(overlay) => Some(overlay),
-        Err(err) => {
-            warn!("[game] ignoring bundled roster overlay: {err}");
-            None
-        }
-    }
+/// Pick the roster overlay a new game starts from: the newest `as_of` of the
+/// bundled overlay and the one downloaded into the app data dir (see
+/// `commands::world_overlay`). A malformed overlay must never block a new game,
+/// so errors are logged and the game starts from the bundled data alone.
+fn resolve_world_overlay(app_handle: &tauri::AppHandle) -> Option<WorldOverlay> {
+    super::world_overlay::resolve_overlay_for_new_game(app_handle)
 }
 
 /// Apply `overlay` to a freshly assembled world and record it on the game:
