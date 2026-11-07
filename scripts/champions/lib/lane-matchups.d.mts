@@ -13,18 +13,21 @@ export interface Matchup {
 }
 export interface CounterCandidate extends Matchup {
   winRate: number;
+  lowerBound: number;
   value: number;
 }
 export interface CandidateOptions {
   minGames?: number;
-  minWinRate?: number;
+  minLowerBound?: number;
 }
 export const DEFAULT_MIN_GAMES: number;
-export const DEFAULT_MIN_WIN_RATE: number;
+export const DEFAULT_MIN_LOWER_BOUND: number;
 export function canonicalChampionId(value: string): string;
 export function canonicalRole(value: string): string | null;
 export function aggregateLaneMatchups(rows: ScoreboardRow[]): { matchups: Matchup[]; skipped: number; laneGames: number };
-export function strengthForWinRate(winRate: number): number | null;
+export function strengthForLowerBound(lowerBound: number): number | null;
+export function wilsonLowerBound(wins: number, games: number, z?: number): number;
+export function createChampionResolver(champions: { id: string; name: string }[]): (value: string) => string | null;
 export function deriveCounterCandidates(matchups: Matchup[], options?: CandidateOptions): CounterCandidate[];
 export function findContradictions(
   curated: { source: string; target: string; value: number }[],

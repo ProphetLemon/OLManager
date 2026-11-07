@@ -3,20 +3,45 @@
 // A row is one player-game: { gameId, champion, role, win }. Two rows of the same game and role with
 // opposite results are one lane matchup (champion A against champion B in that role).
 
-export const DEFAULT_MIN_GAMES = 12;
-export const DEFAULT_MIN_WIN_RATE = 0.55;
+export const DEFAULT_MIN_GAMES = 20;
+/** A pair qualifies only when the 95% Wilson lower bound of its win rate reaches this value. */
+export const DEFAULT_MIN_LOWER_BOUND = 0.5;
 
 /**
- * Win-rate bands for the curation counter value (1 = slight edge, 5 = near-unplayable matchup).
- * Pro-play win rates are compressed by draft selection, so the bands start low: 0.55 is already a clear edge.
+ * Bands on the Wilson lower bound for the curation counter value (1 = slight edge, 5 = near-unplayable matchup).
+ * Using the lower bound keeps small samples from reaching high values on a lucky raw win rate.
  */
 export const STRENGTH_BANDS = [
-  { min: 0.8, value: 5 },
-  { min: 0.72, value: 4 },
-  { min: 0.65, value: 3 },
-  { min: 0.6, value: 2 },
-  { min: 0.55, value: 1 },
+  { min: 0.7, value: 5 },
+  { min: 0.6, value: 4 },
+  { min: 0.55, value: 3 },
+  { min: 0.52, value: 2 },
+  { min: 0.5, value: 1 },
 ];
+
+/** 95% Wilson score lower bound of a win rate. */
+export function wilsonLowerBound(wins, games, z = 1.96) {
+  if (games <= 0) return 0;
+  const p = wins / games;
+  const z2 = z * z;
+  const centre = p + z2 / (2 * games);
+  const margin = z * Math.sqrt((p * (1 - p)) / games + z2 / (4 * games * games));
+  return (centre - margin) / (1 + z2 / games);
+}
+
+/**
+ * Resolves a Leaguepedia champion name to the game's champion id (lowercase), through champion-list entries
+ * { id, name }. Returns null when the name matches no entry.
+ */
+export function createChampionResolver(champions) {
+  const byName = new Map();
+  for (const { id, name } of champions) {
+    const gameId = canonicalChampionId(id);
+    byName.set(gameId, gameId);
+    byName.set(canonicalChampionId(name), gameId);
+  }
+  return (value) => byName.get(canonicalChampionId(value)) ?? null;
+}
 
 export function canonicalChampionId(value) {
   const normalized = String(value).toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -77,24 +102,25 @@ function bump(pairs, role, source, target, won) {
   pairs.set(key, entry);
 }
 
-/** Counter value 1..5 for a win rate, or null below the counter threshold. */
-export function strengthForWinRate(winRate, bands = STRENGTH_BANDS) {
-  return bands.find((band) => winRate >= band.min)?.value ?? null;
+/** Counter value 1..5 for a Wilson lower bound, or null below the counter threshold. */
+export function strengthForLowerBound(lowerBound, bands = STRENGTH_BANDS) {
+  return bands.find((band) => lowerBound >= band.min)?.value ?? null;
 }
 
 /**
- * Directed counter candidates: pairs with enough games and a win rate at or above the threshold.
+ * Directed counter candidates: pairs with enough games and a Wilson lower bound at or above the threshold.
  * When a pair qualifies in several roles, the role with the most games wins (ties: higher win rate).
  */
-export function deriveCounterCandidates(matchups, { minGames = DEFAULT_MIN_GAMES, minWinRate = DEFAULT_MIN_WIN_RATE } = {}) {
+export function deriveCounterCandidates(matchups, { minGames = DEFAULT_MIN_GAMES, minLowerBound = DEFAULT_MIN_LOWER_BOUND } = {}) {
   const best = new Map();
   for (const matchup of matchups) {
     if (matchup.games < minGames) continue;
     const winRate = matchup.wins / matchup.games;
-    if (winRate < minWinRate) continue;
-    const value = strengthForWinRate(winRate);
+    const lowerBound = wilsonLowerBound(matchup.wins, matchup.games);
+    if (lowerBound < minLowerBound) continue;
+    const value = strengthForLowerBound(lowerBound);
     if (value === null) continue;
-    const candidate = { ...matchup, winRate, value };
+    const candidate = { ...matchup, winRate, lowerBound, value };
     const key = `${matchup.source}::${matchup.target}`;
     const current = best.get(key);
     if (!current || candidate.games > current.games || (candidate.games === current.games && candidate.winRate > current.winRate)) {

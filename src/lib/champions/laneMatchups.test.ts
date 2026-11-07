@@ -5,7 +5,9 @@ import {
   deriveCounterCandidates,
   findContradictions,
   roleDistribution,
-  strengthForWinRate,
+  createChampionResolver,
+  strengthForLowerBound,
+  wilsonLowerBound,
 } from "../../../scripts/champions/lib/lane-matchups.mjs";
 
 const game = (gameId: string, role: string, winner: string, loser: string) => [
@@ -49,38 +51,63 @@ describe("aggregateLaneMatchups", () => {
 
 describe("deriveCounterCandidates", () => {
   const matchups = [
-    { role: "Top", source: "a", target: "b", games: 20, wins: 13 }, // 65% -> 3
-    { role: "Top", source: "b", target: "a", games: 20, wins: 7 },
-    { role: "Mid", source: "c", target: "d", games: 11, wins: 10 }, // below sample
-    { role: "Mid", source: "e", target: "f", games: 40, wins: 21 }, // 52.5% below threshold
-    { role: "Bot", source: "g", target: "h", games: 12, wins: 7 }, // 58.3% at the sample minimum -> 1
+    { role: "Top", source: "a", target: "b", games: 40, wins: 29 }, // 72.5%, lower bound 0.57 -> 3
+    { role: "Top", source: "b", target: "a", games: 40, wins: 11 },
+    { role: "Mid", source: "c", target: "d", games: 19, wins: 18 }, // below sample
+    { role: "Mid", source: "e", target: "f", games: 40, wins: 22 }, // 55% but lower bound 0.40
+    { role: "Bot", source: "g", target: "h", games: 12, wins: 7 }, // 58% of a dozen games is noise
+    { role: "Bot", source: "i", target: "j", games: 12, wins: 10 }, // a small sample cannot reach a high band
   ];
 
-  it("applies the minimum sample and win-rate threshold", () => {
+  it("gates on the Wilson lower bound and the minimum sample", () => {
     const out = deriveCounterCandidates(matchups);
-    expect(out.map((c) => `${c.source}>${c.target}:${c.value}`)).toEqual(["a>b:3", "g>h:1"]);
+    expect(out.map((c) => `${c.source}>${c.target}:${c.value}`)).toEqual(["a>b:3"]);
+    expect(out[0].lowerBound).toBeCloseTo(wilsonLowerBound(29, 40));
   });
 
   it("keeps the role with the larger sample when a pair qualifies twice", () => {
     const out = deriveCounterCandidates([
-      { role: "Top", source: "a", target: "b", games: 15, wins: 10 },
-      { role: "Mid", source: "a", target: "b", games: 30, wins: 20 },
+      { role: "Top", source: "a", target: "b", games: 30, wins: 24 },
+      { role: "Mid", source: "a", target: "b", games: 60, wins: 45 },
     ]);
     expect(out).toHaveLength(1);
     expect(out[0].role).toBe("Mid");
   });
 
-  it("maps win rate bands to curation values 1..5", () => {
-    expect(strengthForWinRate(0.54)).toBeNull();
-    expect([0.55, 0.6, 0.65, 0.72, 0.8].map((rate) => strengthForWinRate(rate))).toEqual([1, 2, 3, 4, 5]);
+  it("bases the value on the lower bound, not the raw win rate", () => {
+    expect(wilsonLowerBound(7, 12)).toBeLessThan(0.5);
+    expect(wilsonLowerBound(0, 0)).toBe(0);
+    expect(strengthForLowerBound(0.49)).toBeNull();
+    expect([0.5, 0.52, 0.55, 0.6, 0.7].map((bound) => strengthForLowerBound(bound))).toEqual([1, 2, 3, 4, 5]);
+  });
+});
+
+describe("createChampionResolver", () => {
+  const resolve = createChampionResolver([
+    { id: "Nunu", name: "Nunu & Willump" },
+    { id: "Renata", name: "Renata Glasc" },
+    { id: "MonkeyKing", name: "Wukong" },
+    { id: "Ahri", name: "Ahri" },
+  ]);
+
+  it("maps Leaguepedia names to game ids", () => {
+    expect(resolve("Nunu & Willump")).toBe("nunu");
+    expect(resolve("Renata Glasc")).toBe("renata");
+    expect(resolve("Wukong")).toBe("monkeyking");
+    expect(resolve("Ahri")).toBe("ahri");
+    expect(resolve("Nunu")).toBe("nunu");
+  });
+
+  it("returns null for a name that does not resolve", () => {
+    expect(resolve("Not A Champion")).toBeNull();
   });
 });
 
 describe("findContradictions", () => {
   it("flags curated counters whose reverse direction is supported by data", () => {
     const matchups = [
-      { role: "Top", source: "yasuo", target: "malphite", games: 20, wins: 14 },
-      { role: "Top", source: "malphite", target: "yasuo", games: 20, wins: 6 },
+      { role: "Top", source: "yasuo", target: "malphite", games: 40, wins: 29 },
+      { role: "Top", source: "malphite", target: "yasuo", games: 40, wins: 11 },
     ];
     const out = findContradictions(
       [
@@ -91,7 +118,7 @@ describe("findContradictions", () => {
     );
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ source: "malphite", target: "yasuo" });
-    expect(out[0].against.winRate).toBeCloseTo(0.7);
+    expect(out[0].against.winRate).toBeCloseTo(0.725);
   });
 });
 
