@@ -1,4 +1,3 @@
-import HomeTab from "@/ui-v2/_legacy/components/home/HomeTab";
 import SquadTab from "@/ui-v2/_legacy/components/squad/SquadTab";
 import TacticsTab from "@/ui-v2/_legacy/components/tactics/TacticsTab";
 import TrainingTab from "@/ui-v2/_legacy/components/training/TrainingTab";
@@ -6,7 +5,6 @@ import ScheduleTab from "@/ui-v2/_legacy/components/schedule/ScheduleTab";
 import FinancesTab from "@/ui-v2/_legacy/components/finances/FinancesTab";
 import TransfersTab from "@/ui-v2/_legacy/components/transfers/TransfersTab";
 import PlayersListTab from "@/ui-v2/_legacy/components/players/PlayersListTab";
-import TeamsListTab from "@/ui-v2/_legacy/components/teams/TeamsListTab";
 
 import ScoutingTab from "@/ui-v2/_legacy/components/scouting/ScoutingTab";
 import YouthAcademyTab from "@/ui-v2/_legacy/components/youthAcademy/YouthAcademyTab";
@@ -18,7 +16,6 @@ import SocialTab from "@/ui-v2/_legacy/components/social/SocialTab";
 import ChampionsTab from "@/ui-v2/_legacy/components/champions/ChampionsTab";
 import ChampionsWorldTab from "@/ui-v2/_legacy/components/world/ChampionsWorldTab";
 import ScrimsTab from "@/ui-v2/_legacy/components/scrims/ScrimsTab";
-import CompetitionsTab from "@/ui-v2/_legacy/components/competitions/CompetitionsTab";
 import MarketTab from "@/ui-v2/_legacy/components/market/MarketTab";
 import EndOfSeasonScreen from "@/ui-v2/_legacy/components/EndOfSeasonScreen";
 import type { DashboardTabContentModel } from "@/ui-v2/_legacy/components/dashboard/dashboardTabContentModel";
@@ -36,7 +33,6 @@ export default function DashboardTabContent({
     initialMessageId,
     managerId,
     seasonComplete,
-    visitedOnboardingTabs,
     handlers: {
       onGameUpdate,
       onNavigate,
@@ -51,15 +47,6 @@ export default function DashboardTabContent({
       {/* End-of-season screen when all fixtures are complete */}
       {seasonComplete && activeTab === "Home" && (
         <EndOfSeasonScreen gameState={gameState} onGameUpdate={onGameUpdate} />
-      )}
-
-      {activeTab === "Home" && !seasonComplete && (
-        <HomeTab
-          gameState={gameState}
-          onNavigate={onNavigate}
-          onGameUpdate={onGameUpdate}
-          visitedOnboardingTabs={visitedOnboardingTabs}
-        />
       )}
 
       {activeTab === "Squad" && (
@@ -120,10 +107,6 @@ export default function DashboardTabContent({
         />
       )}
 
-      {activeTab === "Teams" && (
-        <TeamsListTab gameState={gameState} onSelectTeam={onSelectTeam} />
-      )}
-
       {activeTab === "WorldStaff" && (
         <StaffTab gameState={gameState} mode="world" />
       )}
@@ -133,9 +116,6 @@ export default function DashboardTabContent({
         <ChampionsWorldTab champions={gameState.champions} onViewChampion={onViewChampion} />
       )}
 
-      {activeTab === "Competitions" && (
-        <CompetitionsTab gameState={gameState} />
-        )}
       {activeTab === "Market" && (
         <MarketTab gameState={gameState} />
       )}

@@ -1,7 +1,6 @@
 import type { GameStateData } from "@/store/gameStore";
 import PlayerProfile from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile";
 import TeamProfile from "@/ui-v2/_legacy/components/teamProfile";
-import ChampionPage from "@/ui-v2/_legacy/pages/ChampionPage";
 import DashboardAlerts from "@/ui-v2/_legacy/components/dashboard/DashboardAlerts";
 import type { DashboardAlert } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 import type { DashboardProfileNavigationState } from "@/ui-v2/_legacy/components/dashboard/dashboardProfileNavigation";
@@ -21,8 +20,6 @@ interface DashboardWorkspaceContentProps {
   onSelectTeam: (id: string) => void;
   onGameUpdate: (state: GameStateData) => void;
   isUnemployed: boolean;
-  viewingChampionKey?: string | null;
-  onCloseChampion?: () => void;
   onViewChampion?: (championKey: string) => void;
 }
 
@@ -37,8 +34,6 @@ export default function DashboardWorkspaceContent({
   onSelectTeam,
   onGameUpdate,
   isUnemployed,
-  viewingChampionKey,
-  onCloseChampion = () => undefined,
   onViewChampion = () => undefined,
 }: DashboardWorkspaceContentProps) {
   const { t } = useTranslation();
@@ -70,13 +65,7 @@ export default function DashboardWorkspaceContent({
         </div>
       )}
 
-      {/* Champion page - only show when no player/team is selected */}
-      {viewingChampionKey && !selectedPlayer && !selectedTeam ? (
-        <ChampionPage
-          championKey={viewingChampionKey}
-          onClose={onCloseChampion}
-        />
-      ) : selectedPlayer && !selectedTeam ? (
+      {selectedPlayer && !selectedTeam ? (
         <PlayerProfile
           player={selectedPlayer}
           gameState={gameState}

@@ -788,8 +788,6 @@ export default function DashboardV2() {
             onSelectTeam={selectTeam}
             onGameUpdate={setGameState}
             isUnemployed={isUnemployed ?? false}
-            viewingChampionKey={viewingChampionKey}
-            onCloseChampion={() => setViewingChampionKey(null)}
             onViewChampion={(k) => setViewingChampionKey(k)}
           />
         )}
