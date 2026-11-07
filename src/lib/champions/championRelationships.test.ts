@@ -16,7 +16,7 @@ describe("champion relationships", () => {
       migration: { legacy_counts: { counters: 2464 } },
     });
     expect(championRelationships.roles).toHaveLength(170);
-    expect(championRelationships.counters).toHaveLength(2465);
+    expect(championRelationships.counters).toHaveLength(2467);
     expect(championRelationships.synergies).toHaveLength(670);
   });
 
@@ -55,15 +55,70 @@ describe("curated counter corrections", () => {
     expect(getChampionCounterValue("MasterYi", "Rammus")).toBe(0);
   });
 
+  it("removes Kayle over Garen, which was wrongly listed as a counter", () => {
+    expect(getChampionCounterValue("Kayle", "Garen")).toBe(0);
+    expect(getChampionCounterValue("Garen", "Kayle")).toBe(0);
+  });
+
+  it("inverts Blitzcrank over Morgana to Morgana over Blitzcrank", () => {
+    expect(getChampionCounterValue("Blitzcrank", "Morgana")).toBe(0);
+    expect(getChampionCounterValue("Morgana", "Blitzcrank")).toBe(2);
+  });
+
+  it("inverts Ezreal over Caitlyn to Caitlyn over Ezreal", () => {
+    expect(getChampionCounterValue("Ezreal", "Caitlyn")).toBe(0);
+    expect(getChampionCounterValue("Caitlyn", "Ezreal")).toBe(2);
+  });
+
+  it("inverts Fiora over Gwen to Gwen over Fiora", () => {
+    expect(getChampionCounterValue("Fiora", "Gwen")).toBe(0);
+    expect(getChampionCounterValue("Gwen", "Fiora")).toBeGreaterThan(0);
+  });
+
+  it("applies medium-confidence sets, adds and inversions from the refutation-confirmed batch", () => {
+    expect(getChampionCounterValue("Mel", "Vex")).toBe(3);
+    expect(getChampionCounterValue("Janna", "Brand")).toBe(1);
+    expect(getChampionCounterValue("Malzahar", "Zed")).toBe(2);
+    expect(getChampionCounterValue("Leona", "Vel'Koz")).toBe(2);
+    expect(getChampionCounterValue("Vel'Koz", "Leona")).toBe(0);
+  });
+
   it("marks curated entries and keeps legacy entries untouched", () => {
     const curated = championRelationships.counters.filter((relationship) => relationship.status === "curated");
     expect(curated.map((relationship) => `${relationship.source}->${relationship.target}`).sort()).toEqual([
+      "braum->senna",
+      "caitlyn->ezreal",
+      "fizz->azir",
+      "fizz->cassiopeia",
+      "fizz->ziggs",
+      "galio->veigar",
+      "gwen->fiora",
+      "gwen->riven",
+      "irelia->naafiri",
+      "janna->brand",
+      "jax->irelia",
+      "jax->volibear",
+      "jayce->volibear",
+      "karma->xerath",
+      "leona->velkoz",
+      "leona->xerath",
+      "lissandra->naafiri",
       "malphite->yasuo",
+      "malzahar->zed",
+      "mel->vex",
+      "morgana->blitzcrank",
+      "morgana->pyke",
+      "naafiri->aurelionsol",
       "rammus->masteryi",
       "sylas->shyvana",
+      "yasuo->naafiri",
       "yone->aurelionsol",
+      "yone->naafiri",
+      "yuumi->morgana",
+      "yuumi->swain",
+      "yuumi->zyra",
     ]);
-    expect(curated.every((relationship) => relationship.confidence === "high" && relationship.review_flags.includes("curated_general_knowledge"))).toBe(true);
+    expect(curated.every((relationship) => ["high", "medium"].includes(relationship.confidence) && relationship.review_flags.includes("curated_general_knowledge"))).toBe(true);
     expect(getChampionCounterValue("Aatrox", "Cho'Gath")).toBe(1);
   });
 
