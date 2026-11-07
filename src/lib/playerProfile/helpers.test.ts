@@ -7,7 +7,7 @@ import {
     getAttributeColorClass,
     getPlayerAge,
     getPlayerTeamName,
-} from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile.helpers";
+} from "@/lib/playerProfile/helpers";
 
 function createTeam(overrides: Partial<TeamData> = {}): TeamData {
     return {
@@ -104,7 +104,7 @@ function createPlayer(overrides: Partial<PlayerData> = {}): PlayerData {
 
 void createPlayer;
 
-describe("PlayerProfile.helpers", function (): void {
+describe("playerProfile helpers", function (): void {
     it("resolves the player team name with free-agent and unknown fallbacks", function (): void {
         const teams = [createTeam()];
 

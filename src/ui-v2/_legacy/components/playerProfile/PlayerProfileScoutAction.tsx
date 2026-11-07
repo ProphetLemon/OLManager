@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type {
     PlayerProfileScoutStatus,
     ScoutAvailability,
-} from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile.scouting";
+} from "@/lib/playerProfile/scouting";
 
 interface PlayerProfileScoutActionProps {
     availability: ScoutAvailability;

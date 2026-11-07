@@ -13,8 +13,8 @@ import { Button } from "@/ui-v2/_legacy/components/ui";
 import {
   getPlayerAge,
   getPlayerTeamName,
-} from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile.helpers";
-import { buildPlayerAttributeGroups } from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile.attributes";
+} from "@/lib/playerProfile/helpers";
+import { buildPlayerAttributeGroups } from "@/lib/playerProfile/attributes";
 import PlayerProfileAttributesCardV2 from "@/ui-v2/pages/PlayerProfileAttributesCardV2";
 import PlayerProfileContractCard from "@/ui-v2/_legacy/components/playerProfile/PlayerProfileContractCard";
 import PlayerProfileHeroCardV2 from "@/ui-v2/pages/PlayerProfileHeroCardV2";
@@ -29,11 +29,11 @@ import {
   type RenewalResponseData,
   type RenewalStatus,
   shouldDisableRenewalSubmit,
-} from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile.renewal";
+} from "@/lib/playerProfile/renewal";
 import {
   getScoutAvailability,
   type PlayerProfileScoutStatus,
-} from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile.scouting";
+} from "@/lib/playerProfile/scouting";
 import PlayerProfileChampionsCard from "@/ui-v2/_legacy/components/playerProfile/PlayerProfileChampionsCard";
 import PlayerProfileStatsCard from "@/ui-v2/_legacy/components/playerProfile/PlayerProfileStatsCard";
 import PlayerProfileCareerCard from "@/ui-v2/_legacy/components/playerProfile/PlayerProfileCareerCard";

@@ -11,7 +11,7 @@ import {
     getContractRiskBadgeVariant,
     getContractYearsRemaining,
 } from "@/lib/common/helpers";
-import { formatPlayerMarketValue, formatPlayerWage } from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile.helpers";
+import { formatPlayerMarketValue, formatPlayerWage } from "@/lib/playerProfile/helpers";
 import { Badge, Button, Card, CardBody, CardHeader } from "@/ui-v2/_legacy/components/ui";
 
 type TranslateFn = (

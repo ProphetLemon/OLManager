@@ -1,11 +1,11 @@
 import DashboardModalFrame from "@/ui-v2/_legacy/components/dashboard/DashboardModalFrame";
 import NegotiationFeedbackPanel from "@/ui-v2/_legacy/components/NegotiationFeedbackPanel";
 import { Button } from "@/ui-v2/_legacy/components/ui";
-import { formatPlayerWage } from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile.helpers";
+import { formatPlayerWage } from "@/lib/playerProfile/helpers";
 import type {
   NegotiationFeedbackData,
   RenewalProjection,
-} from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile.renewal";
+} from "@/lib/playerProfile/renewal";
 
 type TranslateFn = (
   key: string,

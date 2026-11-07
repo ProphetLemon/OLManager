@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlayerData, ScoutReportData } from "@/store/gameStore";
-import { buildPlayerAttributeGroups } from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile.attributes";
+import { buildPlayerAttributeGroups } from "@/lib/playerProfile/attributes";
 
 function createPlayer(overrides: Partial<PlayerData> = {}): PlayerData {
     return {
@@ -59,7 +59,7 @@ function createPlayer(overrides: Partial<PlayerData> = {}): PlayerData {
     };
 }
 
-describe("PlayerProfile.attributes", () => {
+describe("playerProfile attributes", () => {
     const t = (key: string): string => key;
 
     it("builds the LoL-facing attribute groups with averages", () => {

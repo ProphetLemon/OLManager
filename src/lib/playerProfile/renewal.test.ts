@@ -3,7 +3,7 @@ import {
   getRenewalStatusClassName,
   getRenewalStatusMessage,
   shouldDisableRenewalSubmit,
-} from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile.renewal";
+} from "@/lib/playerProfile/renewal";
 
 const t = (key: string, params?: Record<string, string | number>): string => {
   if (key === "playerProfile.renewalBlocked") {

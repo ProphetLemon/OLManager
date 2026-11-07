@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ScoutingAssignment, StaffData } from "@/store/gameStore";
-import { getScoutAvailability } from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile.scouting";
+import { getScoutAvailability } from "@/lib/playerProfile/scouting";
 
 function createScout(overrides: Partial<StaffData> = {}): StaffData {
     return {
