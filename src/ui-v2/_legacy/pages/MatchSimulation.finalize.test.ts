@@ -12,6 +12,7 @@ describe("finalizeLiveMatch", () => {
     const ok = await finalizeLiveMatch({
       finish: () => Promise.resolve({ game }),
       recordPicks: () => Promise.resolve(picksGame),
+      refetchGame: () => Promise.resolve(game),
       onGame,
     });
     expect(ok).toBe(true);
@@ -24,10 +25,27 @@ describe("finalizeLiveMatch", () => {
     const ok = await finalizeLiveMatch({
       finish: () => Promise.reject("No active live match"),
       recordPicks: null,
+      refetchGame: () => Promise.resolve(game),
+      onGame,
+    });
+    expect(ok).toBe(true);
+    expect(onGame).toHaveBeenCalledTimes(1);
+    expect(onGame).toHaveBeenCalledWith(game);
+  });
+
+  it("still advances and logs when the already-finalized refetch fails", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const onGame = vi.fn();
+    const ok = await finalizeLiveMatch({
+      finish: () => Promise.reject("No active live match"),
+      recordPicks: null,
+      refetchGame: () => Promise.reject(new Error("offline")),
       onGame,
     });
     expect(ok).toBe(true);
     expect(onGame).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 
   it("keeps real finish errors visible and reports failure", async () => {
@@ -36,6 +54,7 @@ describe("finalizeLiveMatch", () => {
     const ok = await finalizeLiveMatch({
       finish: () => Promise.reject(new Error("database is locked")),
       recordPicks,
+      refetchGame: vi.fn(),
       onGame: vi.fn(),
     });
     expect(ok).toBe(false);
@@ -50,6 +69,7 @@ describe("finalizeLiveMatch", () => {
     const ok = await finalizeLiveMatch({
       finish: () => Promise.resolve({ game }),
       recordPicks: () => Promise.reject(new Error("picks failed")),
+      refetchGame: vi.fn(),
       onGame,
     });
     expect(ok).toBe(true);

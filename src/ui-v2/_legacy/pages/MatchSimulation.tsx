@@ -1397,6 +1397,7 @@ export default function MatchSimulation() {
             });
           }
         : null,
+      refetchGame: () => invoke<GameStateData>("get_active_game"),
       onGame: setGameState,
     });
     if (finalized) {
