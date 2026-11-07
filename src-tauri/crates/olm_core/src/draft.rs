@@ -293,6 +293,25 @@ pub struct VisiblePickEvaluation {
     pub engine_modifier: Option<f64>,
 }
 
+/// Bot (ADC) and Support share the bot lane, so they count as lane opponents.
+fn lane_group(role: LolRole) -> Option<u8> {
+    match role {
+        LolRole::Top => Some(0),
+        LolRole::Jungle => Some(1),
+        LolRole::Mid => Some(2),
+        LolRole::Adc | LolRole::Support => Some(3),
+        LolRole::Unknown => None,
+    }
+}
+
+/// Counters only apply between lane opponents; an unknown role keeps the counter.
+fn are_lane_opponents(own: LolRole, enemy: LolRole) -> bool {
+    match (lane_group(own), lane_group(enemy)) {
+        (Some(own_lane), Some(enemy_lane)) => own_lane == enemy_lane,
+        _ => true,
+    }
+}
+
 fn relationship_contribution(
     own_picks: &[DraftPickInput],
     enemy_picks: &[DraftPickInput],
@@ -311,6 +330,9 @@ fn relationship_contribution(
         }
         for enemy in enemy_picks {
             if !authorized_enemy_ids.contains(&canonical_champion_id(&enemy.champion_id)) {
+                continue;
+            }
+            if !are_lane_opponents(pick.effective_role, enemy.effective_role) {
                 continue;
             }
             counter += counter_value(&pick.champion_id, &enemy.champion_id);
@@ -927,6 +949,42 @@ mod tests {
         assert_eq!(clamped_blue.total, MAX_RELATIONSHIP_CONTRIBUTION);
         assert_eq!(clamped_red.counter, -MAX_RELATIONSHIP_CONTRIBUTION);
         assert_eq!(clamped_red.total, -MAX_RELATIONSHIP_CONTRIBUTION);
+    }
+
+    fn counter_for_roles(own_role: LolRole, enemy_role: LolRole) -> i8 {
+        let own = [DraftPickInput {
+            player_id: "own".into(),
+            champion_id: "Aatrox".into(),
+            effective_role: own_role,
+        }];
+        let enemy = [DraftPickInput {
+            player_id: "enemy".into(),
+            champion_id: "Cho'Gath".into(),
+            effective_role: enemy_role,
+        }];
+        let authorized = HashSet::from([canonical_champion_id("Cho'Gath")]);
+        relationship_contribution(&own, &enemy, &authorized).counter
+    }
+
+    #[test]
+    fn counters_do_not_apply_between_different_lanes() {
+        assert_eq!(counter_for_roles(LolRole::Top, LolRole::Jungle), 0);
+        assert_eq!(counter_for_roles(LolRole::Mid, LolRole::Top), 0);
+        assert_eq!(counter_for_roles(LolRole::Adc, LolRole::Jungle), 0);
+    }
+
+    #[test]
+    fn counters_apply_between_lane_opponents() {
+        assert_eq!(counter_for_roles(LolRole::Top, LolRole::Top), 1);
+        assert_eq!(counter_for_roles(LolRole::Adc, LolRole::Support), 1);
+        assert_eq!(counter_for_roles(LolRole::Support, LolRole::Adc), 1);
+        assert_eq!(counter_for_roles(LolRole::Adc, LolRole::Adc), 1);
+    }
+
+    #[test]
+    fn counters_keep_counting_when_a_role_is_unknown() {
+        assert_eq!(counter_for_roles(LolRole::Unknown, LolRole::Jungle), 1);
+        assert_eq!(counter_for_roles(LolRole::Top, LolRole::Unknown), 1);
     }
 
     #[test]
