@@ -298,6 +298,11 @@ pub(crate) fn assemble_world_from_modular_data(
         info!("[game] loaded {} staff for '{}'", loaded_staff, cid);
     }
 
+    // Fill the metadata gaps the read-only data ships with (country, finances, budgets)
+    // before rosters and wages are seeded, so the budgets are visible to both.
+    let filled = olm_core::team_overrides::bundled().apply_all(&mut all_teams);
+    info!("[game] team overrides filled {} teams", filled);
+
     // Resolve ids shipped twice (stale duplicate competitions), then fix known field errors.
     let (mut all_players, dropped_duplicates) = world_catalog::dedupe_players(tagged_players);
     for dup in &dropped_duplicates {
@@ -1464,6 +1469,40 @@ mod tests {
                 .map(|m| m.id.clone())
                 .collect();
             (manifests, known)
+        }
+
+        #[test]
+        fn les_clubs_without_metadata_get_it_from_team_overrides_and_seeded_wages() {
+            let (game, _, _, _) = new_game();
+            let gxi = game.teams.iter().find(|t| t.id == "les-team-854f6893").expect("GiantX Itero");
+            let uam = game.teams.iter().find(|t| t.id == "les-team-ac846213").expect("UB Alma Mater");
+            assert_eq!((gxi.country.as_str(), gxi.city.as_str(), gxi.reputation), ("ES", "Madrid", 315));
+            assert_eq!((gxi.finance, gxi.wage_budget, gxi.transfer_budget), (1_960_000, 980_000, 392_000));
+            assert_eq!((uam.country.as_str(), uam.city.as_str(), uam.reputation), ("ES", "Barcelona", 300));
+            assert_eq!((uam.finance, uam.wage_budget, uam.transfer_budget), (2_600_000, 1_300_000, 520_000));
+            for club in [gxi, uam] {
+                let roster: Vec<_> = game
+                    .players
+                    .iter()
+                    .filter(|p| p.team_id.as_deref() == Some(club.id.as_str()))
+                    .collect();
+                assert!(!roster.is_empty(), "{} has a roster", club.name);
+                assert!(roster.iter().all(|p| p.wage > 0), "{} players have seeded wages", club.name);
+            }
+        }
+
+        #[test]
+        fn every_les_season_wage_bill_fits_its_wage_budget() {
+            let (game, _, _, _) = new_game();
+            for team in game.teams.iter().filter(|t| t.competition_id.as_deref() == Some("les")) {
+                let bill = annual_bill(&game, &team.id);
+                assert!(
+                    bill <= team.wage_budget,
+                    "{}: bill {bill} exceeds wage budget {}",
+                    team.name,
+                    team.wage_budget
+                );
+            }
         }
 
         #[test]
