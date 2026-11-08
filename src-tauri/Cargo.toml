@@ -53,3 +53,8 @@ ed25519-dalek = { version = "2", default-features = false }
 
 [features]
 typescript = ["ts-rs", "olm_core/typescript"]
+
+# The seeded full-match simulation tests in olm_core take over a minute at
+# opt-level 0; level 2 keeps debug assertions and symbols but runs them ~10x faster.
+[profile.dev.package.olm_core]
+opt-level = 2
