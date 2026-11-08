@@ -3,11 +3,13 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { APP_VERSION } from "../common/appInfo";
+import { APP_EDITION } from "../common/edition";
 
 const root = resolve(__dirname, "../../..");
 const readText = (rel: string) => readFileSync(resolve(root, rel), "utf-8");
 
 const tauriConf = JSON.parse(readText("src-tauri/tauri.conf.json")) as {
+  productName: string;
   version: string;
   app: { windows: { title: string }[] };
   bundle: { targets: string | string[] };
@@ -22,6 +24,13 @@ describe("release configuration", () => {
     expect(cargoVersion).toBe(pkg.version);
     expect(APP_VERSION).toBe(pkg.version);
     expect(tauriConf.app.windows[0].title).toContain(pkg.version);
+  });
+
+  it("shows the edition in the window and page titles but not in asset names", () => {
+    expect(tauriConf.app.windows[0].title).toContain(APP_EDITION);
+    expect(readText("index.html")).toContain(`<title>Open League Manager · ${APP_EDITION}</title>`);
+    // productName names the installer and AppImage assets the updater downloads; keep it ASCII.
+    expect(tauriConf.productName).toBe("Open League Manager");
   });
 
   it("uses a YYYY.MMDD.N calendar version that semver orders by date", () => {

@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Minus, Square, X } from "lucide-react";
 
+import { APP_EDITION } from "@/lib/common/edition";
+
 export function TitleBarV2() {
   const { t } = useTranslation();
   const [maximized, setMaximized] = useState(false);
@@ -59,6 +61,12 @@ export function TitleBarV2() {
         <img src="/logo.webp" alt={t("titleBar.appLogoAlt")} className="size-5 object-contain" />
         <span className="font-heading text-xs font-bold uppercase tracking-widest text-muted-foreground">
           {t("titleBar.appName")}
+        </span>
+        <span aria-hidden="true" className="text-xs text-muted-foreground/60">
+          ·
+        </span>
+        <span className="truncate font-heading text-xs font-bold uppercase tracking-widest text-primary">
+          {APP_EDITION}
         </span>
       </div>
 

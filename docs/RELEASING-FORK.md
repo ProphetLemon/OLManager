@@ -67,7 +67,7 @@ Run scons without `-j`: a parallel install races on two bitmap files. The data p
 `PATH=~/.cache/olmanager/nsis-3.13-x86/bin:$PATH npm run release:fork`.
 
 1. Set the version in `package.json`, `package-lock.json`, `src-tauri/Cargo.toml` (then let any cargo command
-   refresh `Cargo.lock`), `src-tauri/tauri.conf.json` (also the window title), `src/lib/common/appInfo.ts` and
+   refresh `Cargo.lock`), `src-tauri/tauri.conf.json` (also the window title, which keeps the "Limón Edition 🍋" name), `src/lib/common/appInfo.ts` and
    the `CHANGELOG.md` heading. `src/lib/release/releaseConfig.test.ts` checks that they match and follow the scheme.
 2. `npm run release:fork -- --dry-run` checks the tools and key and shows the plan without building.
 3. `npm run release:fork` builds the NSIS installer, then the AppImage, both signed with the same key, and writes
