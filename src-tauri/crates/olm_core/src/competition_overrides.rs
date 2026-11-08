@@ -180,7 +180,8 @@ fn validate_schedule(schedule: &ScheduleConfig) -> Result<(), String> {
             ));
         }
         if let Some(playoffs) = &split.playoffs {
-            if playoffs.teams < 2 || playoffs.teams > schedule.team_count {
+            // Only the 6-team and 8-team brackets are implemented by the turn loop.
+            if !matches!(playoffs.teams, 6 | 8) || playoffs.teams > schedule.team_count {
                 return Err(format!(
                     "split '{}' has an invalid playoffs.teams",
                     split.name
@@ -259,6 +260,17 @@ mod tests {
         assert_eq!(o.validate(&[m.clone()]).len(), 1);
         assert!(!o.apply(&mut m));
         assert_eq!(m.schedule.format, "unknown");
+    }
+
+    #[test]
+    fn validation_rejects_playoff_sizes_without_a_bracket() {
+        let o = overrides(
+            r#""schedule":{"format":"double_round_robin","team_count":8,"splits":[{"name":"Spring","best_of":1,
+            "season_start":{"month":3,"day":1},"playoffs":{"format":"single_elimination","teams":4}}]}"#,
+        );
+        let problems = o.validate(&[manifest("les")]);
+        assert_eq!(problems.len(), 1);
+        assert!(problems[0].contains("playoffs.teams"));
     }
 
     #[test]
