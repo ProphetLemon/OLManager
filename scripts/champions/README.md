@@ -27,8 +27,11 @@ Leaguepedia may answer `ratelimited` to anonymous requests. `--login` (on `pro-m
 It is unverified whether a logged-in normal account avoids the Cargo rate limit; the first live run is the test.
 
 1. Log in to https://lol.fandom.com with a Fandom account.
-2. Open https://lol.fandom.com/wiki/Special:BotPasswords and create a bot named `olmanager`. Leave only the basic
-   grant (read is enough, no edit grants). The page then shows the exact login name (`Account@olmanager`) and a password.
+2. Open https://lol.fandom.com/wiki/Special:BotPasswords and create a bot named `olmanager`. Tick only "Basic
+   rights", "High API limits" and "Create, query and delete data through the Cargo extension". A bot-password session
+   keeps only the rights its grants include, so the Cargo grant makes sure queries stay allowed. A grant never adds
+   rights the account lacks, so a normal account still cannot delete Cargo data. Leave every edit, upload and admin
+   grant unticked. The page then shows the exact login name (`Account@olmanager`) and a password.
 3. Create the private file (works in fish and bash), then open it in an editor and write the two lines:
 
    ```bash
