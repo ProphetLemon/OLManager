@@ -13,6 +13,7 @@ use crate::domain::team::{Team, TeamKind, TeamSeasonRecord};
 use crate::end_of_season;
 use crate::engine::LolRole as EngineLolRole;
 use crate::game::Game;
+use crate::generator::definitions::SplitConfig;
 use crate::player_events;
 use crate::potential;
 use crate::random_events;
@@ -743,7 +744,8 @@ fn simulate_background_league(
     }
 }
 
-/// Simulate all background leagues (game.leagues[1..]) for today.
+/// Simulate all background leagues (every league except the user's active
+/// league, wherever it sits in `game.leagues`) for today.
 /// This is a no-op when there is only the active league.
 /// Before simulation, runs repair_league to ensure all AI teams are match eligible.
 fn process_background_leagues(game: &mut Game, today: &str) {
@@ -772,8 +774,11 @@ fn process_background_leagues(game: &mut Game, today: &str) {
     }
 
     let season = game.clock.current_date.year() as u32;
-    for i in 1..game.leagues.len() {
-        let league = &mut game.leagues[i];
+    let active_index = game.active_league_index();
+    for (i, league) in game.leagues.iter_mut().enumerate() {
+        if i == active_index {
+            continue;
+        }
         simulate_background_league(&mut game.teams, &game.players, league, today, season);
     }
 }
@@ -968,20 +973,39 @@ fn maybe_simulate_parallel_academy_leagues(game: &mut Game) {
     }
 }
 
+/// Playoff bracket shape for a split. A split that declares `playoffs.teams`
+/// of 8 or 6 selects the 8-team (winter) or 6-team (spring/summer) bracket;
+/// anything else falls back to the LEC defaults derived from the split name.
+fn playoff_shape(split: Option<&SplitConfig>) -> schedule::LecSplit {
+    let configured = split
+        .and_then(|s| s.playoffs.as_ref())
+        .and_then(|p| match p.teams {
+            8 => Some(schedule::LecSplit::Winter),
+            6 => Some(schedule::LecSplit::Summer),
+            _ => None,
+        });
+    configured
+        .or_else(|| {
+            split
+                .map(|s| s.name.as_str())
+                .and_then(schedule::parse_lec_split)
+        })
+        .unwrap_or(schedule::LecSplit::Summer)
+}
+
+/// Schedules the next playoff round for the user's active league.
 fn maybe_schedule_playoffs(game: &mut Game) {
-    let Some(league) = game.leagues.first_mut() else {
+    let index = game.active_league_index();
+    let Some(league) = game.leagues.get_mut(index) else {
         return;
     };
 
-    let split_name = league
+    let split_config = league
         .competition_id
         .as_ref()
         .and_then(|cid| game.competition_configs.get(cid))
-        .and_then(|manifest| manifest.schedule.splits.get(league.split_index))
-        .map(|s| s.name.as_str());
-    let split = split_name
-        .and_then(schedule::parse_lec_split)
-        .unwrap_or(schedule::LecSplit::Summer);
+        .and_then(|manifest| manifest.schedule.splits.get(league.split_index));
+    let split = playoff_shape(split_config);
 
     let playoff_fixtures_exist = league
         .fixtures
