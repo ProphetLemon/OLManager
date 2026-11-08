@@ -315,7 +315,7 @@
     "delegateAssistant": "Delegate to Assistant",
     "delegateAssistantDesc": "AI handles everything instantly",
     "skipToMatchDay": "Skip to Match Day",
-    "skipToMatchDayDesc": "Fast-forward to your next match",
+    "skipToMatchDayDesc": "Fast-forward to your next match and play it automatically",
     "matchDayTitle": "Match Day",
     "delegateWarning": "Your assistant will manage the match. You won't be able to intervene.",
     "skipToNextDay": "Skip to Next Day"

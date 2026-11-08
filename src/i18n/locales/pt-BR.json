@@ -316,7 +316,7 @@
     "delegateAssistant": "Delegar ao Assistente",
     "delegateAssistantDesc": "A IA resolve tudo instantaneamente",
     "skipToMatchDay": "Pular para o Dia de Jogo",
-    "skipToMatchDayDesc": "Avançar até a próxima partida",
+    "skipToMatchDayDesc": "Avançar até a próxima partida e jogá-la automaticamente",
     "matchDayTitle": "Dia de Jogo",
     "delegateWarning": "Seu assistente comandará a partida. Você não poderá intervir.",
     "skipToNextDay": "Skip to Next Day"

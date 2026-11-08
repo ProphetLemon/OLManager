@@ -75,6 +75,10 @@ pub fn check_blocking_actions(state: State<'_, StateManager>) -> Result<serde_js
 
 #[tauri::command]
 pub fn skip_to_match_day(state: State<'_, StateManager>) -> Result<serde_json::Value, String> {
+    skip_to_match_day_internal(&state)
+}
+
+fn skip_to_match_day_internal(state: &StateManager) -> Result<serde_json::Value, String> {
     info!("[cmd] skip_to_match_day");
     let mut game = state
         .get_game(|g| g.clone())
@@ -90,6 +94,7 @@ pub fn skip_to_match_day(state: State<'_, StateManager>) -> Result<serde_json::V
     );
 
     let mut days_skipped = 0u32;
+    let mut match_simulated = false;
     loop {
         if days_skipped >= 60 {
             break;
@@ -111,6 +116,39 @@ pub fn skip_to_match_day(state: State<'_, StateManager>) -> Result<serde_json::V
                 "[cmd] skip_to_match_day: found match_day={}, days_skipped={}",
                 today, days_skipped
             );
+
+            // The same blockers that stop a normal Continue also stop the auto-play.
+            let blockers = compute_blocking_actions(&game);
+            if !blockers.is_empty() {
+                state.set_game(game.clone());
+                return Ok(serde_json::json!({
+                    "action": "blocked",
+                    "game": crate::client_game::game_for_client(&game),
+                    "blockers": blockers,
+                    "days_skipped": days_skipped
+                }));
+            }
+
+            // Play the day like any simulated matchday: the staff drafts for the user's side
+            // with the shared AI draft, and results, picks, stats and messages are recorded.
+            let mut captures = Vec::new();
+            olm_core::turn::process_day_with_capture(&mut game, &mut |capture| {
+                captures.push(capture);
+            });
+            for capture in captures {
+                state.append_stats_state(capture);
+            }
+            days_skipped += 1;
+            match_simulated = true;
+
+            if game.manager.team_id.is_none() {
+                state.set_game(game.clone());
+                return Ok(serde_json::json!({
+                    "action": "fired",
+                    "game": crate::client_game::game_for_client(&game),
+                    "days_skipped": days_skipped
+                }));
+            }
             break;
         }
 
@@ -167,13 +205,16 @@ pub fn skip_to_match_day(state: State<'_, StateManager>) -> Result<serde_json::V
     Ok(serde_json::json!({
         "action": "arrived",
         "game": crate::client_game::game_for_client(&game),
-        "days_skipped": days_skipped
+        "days_skipped": days_skipped,
+        "match_simulated": match_simulated
     }))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{advance_time_with_mode_internal, compute_blocking_actions};
+    use super::{
+        advance_time_with_mode_internal, compute_blocking_actions, skip_to_match_day_internal,
+    };
     use chrono::{TimeZone, Utc};
     use olm_core::clock::GameClock;
     use olm_core::domain::league::{Fixture, FixtureStatus, LeagueKind, MatchType};
@@ -362,6 +403,51 @@ mod tests {
         );
         assert_eq!(stats.team_matches.len(), 2);
         assert_eq!(stats.player_matches[0].fixture_id, "fixture-1");
+    }
+
+    #[test]
+    fn skip_to_match_day_simulates_the_users_match_with_an_auto_draft() {
+        let state = StateManager::new();
+        state.set_game(make_game_with_matchday());
+        state.set_stats_state(StatsState::default());
+
+        let response = skip_to_match_day_internal(&state).expect("skip response");
+
+        assert_eq!(response["action"], "arrived");
+        assert_eq!(response["match_simulated"], true);
+        let game = state.get_game(|g| g.clone()).unwrap();
+        let fixture = &game.leagues[0].fixtures[0];
+        assert_eq!(fixture.status, FixtureStatus::Completed);
+        assert!(fixture.result.is_some());
+        assert_eq!(
+            game.clock.current_date.date_naive(),
+            Utc.with_ymd_and_hms(2025, 6, 16, 12, 0, 0)
+                .unwrap()
+                .date_naive()
+        );
+        let stats = state.get_stats_state(|current| current.clone()).unwrap();
+        assert_eq!(stats.team_matches.len(), 2);
+        assert!(stats
+            .player_matches
+            .iter()
+            .all(|record| record.fixture_id == "fixture-1"));
+        assert!(!stats.player_matches.is_empty());
+    }
+
+    #[test]
+    fn skip_to_match_day_does_not_play_the_match_while_blockers_remain() {
+        let state = StateManager::new();
+        let mut game = make_game_with_matchday();
+        game.players
+            .retain(|player| player.team_id.as_deref() != Some("team1") || player.id == "p1");
+        game.teams[0].active_lineup_ids = vec!["p1".to_string()];
+        state.set_game(game);
+
+        let response = skip_to_match_day_internal(&state).expect("skip response");
+
+        assert_eq!(response["action"], "blocked");
+        let game = state.get_game(|g| g.clone()).unwrap();
+        assert_eq!(game.leagues[0].fixtures[0].status, FixtureStatus::Scheduled);
     }
 
     #[test]
