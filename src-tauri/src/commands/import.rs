@@ -1151,22 +1151,42 @@ pub fn rehydrate_game_from_catalog(
     app_handle: &tauri::AppHandle,
     game: &mut Game,
 ) -> RehydrateCounts {
-    let teams = merge_missing_teams(game, collect_runtime_teams(app_handle));
+    apply_catalog_to_game(
+        game,
+        collect_runtime_teams(app_handle),
+        collect_runtime_players(app_handle),
+        collect_runtime_staff(app_handle),
+    )
+}
 
-    let catalog_players = collect_runtime_players(app_handle);
+fn apply_catalog_to_game(
+    game: &mut Game,
+    catalog_teams: Vec<Team>,
+    catalog_players: Vec<Player>,
+    catalog_staff: Vec<Staff>,
+) -> RehydrateCounts {
+    let teams = merge_missing_teams(game, catalog_teams);
+
     let players_reassigned = reassign_stale_player_teams(game, &catalog_players);
     let players = merge_missing_players(game, catalog_players);
 
     game_setup::apply_default_market_values(&mut game.players);
 
-    let staff = merge_missing_staff(game, collect_runtime_staff(app_handle));
+    let staff = merge_missing_staff(game, catalog_staff);
 
-    RehydrateCounts {
+    let counts = RehydrateCounts {
         teams,
         players,
         players_reassigned,
         staff,
+    };
+    if counts.total() > 0 {
+        // Rehydrated players arrive without a residency; the save was already
+        // grandfathered on load, so mark only the ones still missing a region.
+        olm_core::residency::grandfather_unmarked_rostered_players(game);
+        olm_core::residency::refresh_import_flags(game);
     }
+    counts
 }
 
 fn rehydrate_active_game(
@@ -1705,6 +1725,21 @@ mod tests {
         );
         player.team_id = team_id.map(str::to_string);
         player
+    }
+
+    #[test]
+    fn rehydration_grandfathers_players_it_adds_to_an_initialized_game() {
+        let mut game = rehydrate_test_game(vec![]);
+        game.residency_initialized = true;
+        let mut newcomer = rehydrate_test_player("newcomer", Some("team-1"));
+        newcomer.nationality = "Korea".to_string();
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![newcomer], vec![]);
+
+        assert_eq!(counts.players, 1);
+        let added = &game.players[0];
+        assert!(added.resident_region.is_some());
+        assert!(!added.is_import);
     }
 
     #[test]
