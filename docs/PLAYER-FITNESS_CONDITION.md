@@ -61,6 +61,36 @@ Multiplied by:
 
 Training days use a lower base (5.0×). Recovery focus days use 9.0×.
 
+### AI teams rest tired players (`ai_rotation.rs`)
+
+The user manages their own team's lineup and training; rival teams follow a
+simple rule so they do not play the whole split on empty. All values are
+`[PLACEHOLDER]` until playtested.
+
+| Rule | Threshold |
+|------|-----------|
+| A starter rests when a same-role substitute is available | starter condition < 40, substitute condition >= 55 and fresher |
+| A rested player returns to the lineup | condition >= 70 and better OVR than the current starter |
+| Fatigued players skip training and take a rest day instead (no substitute needed) | condition < 45 |
+| Import limit | a swap never leaves more than 2 imports in the starting five |
+
+The 40 / 70 gap is a hysteresis so a pair does not swap every day. The lineup is
+re-evaluated once a day after recovery (`turn::process_day`,
+`turn::finish_live_match_day`), so the user's rival is already rested when the
+match starts. Swaps are same-role only, so lane order never changes. Teams
+without a substitute for a role keep their starter, and rely on the training
+rest above. Old saves need nothing: no stored state, the rule reads the current
+lineup and conditions.
+
+Simulation (`tests/ai_condition_sim_tests.rs`: eight teams, three matchdays a
+week, ten weeks), rival starters' condition:
+
+| Roster | Before | After |
+|--------|--------|-------|
+| 5 starters, no substitute | mean 19.4, last week 5.5, lowest 0 | mean 57.5, last week 53.8, lowest 27 |
+| plus 1 substitute | mean 19.4, last week 5.5, lowest 0 | mean 58.5, last week 54.6, lowest 28 |
+| plus 2 substitutes | mean 19.3, last week 5.5, lowest 0 | mean 63.5, last week 63.2, lowest 28 |
+
 ### ⚠️ Condition does NOT affect match performance
 
 The engine never reads `player.condition` during live simulation. A player with `condition = 1` plays identically to `condition = 100`. The `effective_overall()` method that would multiply OVR by `condition / 100` was removed as dead code (Oct 2025).

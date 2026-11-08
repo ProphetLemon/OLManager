@@ -129,6 +129,8 @@ where
     champions::process_daily_champion_system(game);
 
     debug!("[turn] process_day {}: complete, advancing clock", today);
+    // After recovery and roster moves, so the next match sees the rested lineup.
+    crate::ai_rotation::rotate_ai_lineups(game);
     game.clock.advance_days(1);
     game.day_phase = crate::game::DayPhase::Morning;
     crate::season_context::refresh_game_context(game);
@@ -176,6 +178,7 @@ pub fn finish_live_match_day(game: &mut Game) {
     potential::process_potential_research(game);
     champions::process_daily_champion_system(game);
 
+    crate::ai_rotation::rotate_ai_lineups(game);
     game.clock.advance_days(1);
     game.day_phase = crate::game::DayPhase::Morning;
     crate::season_context::refresh_game_context(game);

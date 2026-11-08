@@ -944,6 +944,12 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
                 continue;
             }
 
+            // The AI rests a fatigued player instead of training him; the user
+            // sets the plan for their own team.
+            let is_training_day = is_training_day
+                && (manager_team_id.as_deref() == Some(plan.team_id.as_str())
+                    || player.condition >= crate::ai_rotation::TRAINING_REST_BELOW);
+
             // Determine this player's effective focus:
             // player override > team default
             let player_focus = player
