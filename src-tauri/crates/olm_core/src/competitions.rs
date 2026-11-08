@@ -315,7 +315,7 @@ fn competition_summary(
 
 /// A competition is offered at team selection when it is active, not legacy,
 /// and has at least one split to play (so regional leagues without a schedule stay hidden).
-fn is_selectable_competition(manifest: &CompetitionManifest) -> bool {
+pub(crate) fn is_selectable_competition(manifest: &CompetitionManifest) -> bool {
     manifest.active && !manifest.legacy && !manifest.schedule.splits.is_empty()
 }
 

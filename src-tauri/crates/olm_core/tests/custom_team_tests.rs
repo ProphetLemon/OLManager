@@ -1,0 +1,494 @@
+use chrono::TimeZone;
+use olm_core::clock::GameClock;
+use olm_core::competitions::competition_id_from_team_id_known;
+use olm_core::custom_team::{
+    CustomTeamError, CustomTeamSpec, badge_data_uri, custom_team_allowed, custom_team_id,
+    league_median_profile, replace_team_with_custom, validate_spec,
+};
+use olm_core::domain::manager::Manager;
+use olm_core::domain::player::{LolRole, Player, PlayerAttributes};
+use olm_core::domain::staff::{Staff, StaffAttributes, StaffRole};
+use olm_core::domain::team::{Team, TeamKind};
+use olm_core::game::Game;
+use olm_core::generator::definitions::CompetitionManifest;
+
+const GOLDEN_UCM: &str = "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Cpath%20d%3D%22M64%206L116%2022V62C116%2092%2094%20114%2064%20124C34%20114%2012%2092%2012%2062V22Z%22%20fill%3D%22%23f97316%22%20stroke%3D%22%2318181b%22%20stroke-width%3D%226%22%2F%3E%3Ctext%20x%3D%2264%22%20y%3D%2278%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2244%22%20fill%3D%22%2318181b%22%3EUCM%3C%2Ftext%3E%3C%2Fsvg%3E";
+const GOLDEN_OLMX: &str = "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Cpath%20d%3D%22M64%206L116%2022V62C116%2092%2094%20114%2064%20124C34%20114%2012%2092%2012%2062V22Z%22%20fill%3D%22%232563eb%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%226%22%2F%3E%3Ctext%20x%3D%2264%22%20y%3D%2278%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2236%22%20fill%3D%22%23ffffff%22%3EOLMX%3C%2Ftext%3E%3C%2Fsvg%3E";
+
+fn spec() -> CustomTeamSpec {
+    CustomTeamSpec {
+        name: "Ray Esports".to_string(),
+        short_name: "ray".to_string(),
+        primary_color: "#112233".to_string(),
+        secondary_color: "#FFFFFF".to_string(),
+        country: "ES".to_string(),
+    }
+}
+
+fn team(id: &str, name: &str, short: &str, competition: &str) -> Team {
+    let mut team = Team::new(
+        id.to_string(),
+        name.to_string(),
+        short.to_string(),
+        "ES".to_string(),
+        String::new(),
+        "Arena".to_string(),
+        1_000,
+    );
+    team.competition_id = Some(competition.to_string());
+    team
+}
+
+fn player(id: &str, team_id: Option<&str>) -> Player {
+    let mut player = Player::new(
+        id.to_string(),
+        id.to_string(),
+        id.to_string(),
+        "2000-01-01".to_string(),
+        "ES".to_string(),
+        LolRole::Adc,
+        PlayerAttributes {
+            mechanics: 60,
+            laning: 60,
+            teamfighting: 60,
+            macro_play: 60,
+            consistency: 60,
+            shotcalling: 60,
+            champion_pool: 60,
+            discipline: 60,
+            mental_resilience: 60,
+        },
+    );
+    player.team_id = team_id.map(str::to_string);
+    player.contract_end = Some("2027-06-30".to_string());
+    player.wage = 12_000;
+    player
+}
+
+fn coach(id: &str, team_id: &str) -> Staff {
+    let mut staff = Staff::new(
+        id.to_string(),
+        id.to_string(),
+        id.to_string(),
+        "1980-01-01".to_string(),
+        StaffRole::Coach,
+        StaffAttributes {
+            coaching: 60,
+            judging_ability: 60,
+            judging_potential: 60,
+            physiotherapy: 60,
+        },
+    );
+    staff.team_id = Some(team_id.to_string());
+    staff
+}
+
+/// Three competitions of three or four teams, with players and staff on `les-b`.
+fn world() -> Game {
+    let clock = GameClock::new(chrono::Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap());
+    let manager = Manager::new(
+        "manager-1".to_string(),
+        "Test".to_string(),
+        "Manager".to_string(),
+        "1980-01-01".to_string(),
+        "ES".to_string(),
+    );
+    let mut teams = vec![
+        team("les-a", "Alpha Gaming", "ALP", "les"),
+        team("les-b", "Bravo Club", "BRV", "les"),
+        team("les-c", "Charlie Club", "CHA", "les"),
+        team("les-d", "Delta Club", "DEL", "les"),
+        team("lec-g2", "G2 Esports", "G2", "lec"),
+        team("lec-fnc", "Fnatic", "FNC", "lec"),
+        team("lec-kc", "Karmine Corp", "KC", "lec"),
+        team("emea-x", "Xeno Club", "XEN", "emea-masters"),
+        team("emea-y", "Yankee Club", "YAN", "emea-masters"),
+        team("emea-z", "Zulu Club", "ZUL", "emea-masters"),
+    ];
+    for (id, finance, reputation) in [
+        ("les-a", 100, 200),
+        ("les-b", 999, 999),
+        ("les-c", 300, 0),
+        ("les-d", 500, 400),
+    ] {
+        let t = teams.iter_mut().find(|t| t.id == id).unwrap();
+        t.finance = finance;
+        t.reputation = reputation;
+    }
+    let players = vec![
+        player("p-b1", Some("les-b")),
+        player("p-b2", Some("les-b")),
+        player("p-a1", Some("les-a")),
+    ];
+    let staff = vec![coach("s-b1", "les-b"), coach("s-a1", "les-a")];
+    Game::new(clock, manager, teams, players, staff, vec![])
+}
+
+fn manifest(tier: Option<u8>, active: bool, legacy: bool, with_split: bool) -> CompetitionManifest {
+    let splits = if with_split {
+        serde_json::json!([{ "name": "Spring", "season_start": { "month": 1, "day": 10 } }])
+    } else {
+        serde_json::json!([])
+    };
+    serde_json::from_value(serde_json::json!({
+        "id": "les",
+        "name": "LES",
+        "region": "LES",
+        "tier": tier,
+        "active": active,
+        "legacy": legacy,
+        "schedule": { "format": "round_robin", "team_count": 8, "splits": splits },
+    }))
+    .unwrap()
+}
+
+#[test]
+fn validate_spec_normalizes_a_valid_spec() {
+    let result = validate_spec(&spec(), &[]).unwrap();
+
+    assert_eq!(result.short_name, "RAY");
+    assert_eq!(result.secondary_color, "#ffffff");
+}
+
+#[test]
+fn validate_spec_rejects_short_name_of_five_chars() {
+    let mut s = spec();
+    s.short_name = "ABCDE".to_string();
+
+    assert_eq!(
+        validate_spec(&s, &[]).unwrap_err(),
+        CustomTeamError::InvalidShortName
+    );
+}
+
+#[test]
+fn validate_spec_rejects_short_name_of_two_chars() {
+    let mut s = spec();
+    s.short_name = "AB".to_string();
+
+    assert_eq!(
+        validate_spec(&s, &[]).unwrap_err(),
+        CustomTeamError::InvalidShortName
+    );
+}
+
+#[test]
+fn validate_spec_rejects_non_alphanumeric_short_name() {
+    let mut s = spec();
+    s.short_name = "A<B".to_string();
+
+    assert_eq!(
+        validate_spec(&s, &[]).unwrap_err(),
+        CustomTeamError::InvalidShortName
+    );
+}
+
+#[test]
+fn validate_spec_rejects_names_outside_three_to_thirty_chars() {
+    let mut s = spec();
+    s.name = " ab ".to_string();
+    assert_eq!(
+        validate_spec(&s, &[]).unwrap_err(),
+        CustomTeamError::InvalidName
+    );
+
+    s.name = "x".repeat(31);
+    assert_eq!(
+        validate_spec(&s, &[]).unwrap_err(),
+        CustomTeamError::InvalidName
+    );
+}
+
+#[test]
+fn validate_spec_rejects_bad_hex_colors() {
+    for bad in ["112233", "#12345", "#12345g", "#1122334", ""] {
+        let mut s = spec();
+        s.primary_color = bad.to_string();
+        assert_eq!(
+            validate_spec(&s, &[]).unwrap_err(),
+            CustomTeamError::InvalidColor(bad.to_string()),
+            "{bad}"
+        );
+    }
+}
+
+#[test]
+fn validate_spec_rejects_empty_country() {
+    let mut s = spec();
+    s.country = "  ".to_string();
+
+    assert_eq!(
+        validate_spec(&s, &[]).unwrap_err(),
+        CustomTeamError::MissingCountry
+    );
+}
+
+#[test]
+fn validate_spec_rejects_duplicate_name_ignoring_case() {
+    let other = team("t1", "RAY ESPORTS", "ZZZ", "les");
+
+    assert_eq!(
+        validate_spec(&spec(), &[&other]).unwrap_err(),
+        CustomTeamError::DuplicateName
+    );
+}
+
+#[test]
+fn validate_spec_rejects_duplicate_short_name() {
+    let other = team("t1", "Other Club", "RAY", "lec");
+
+    assert_eq!(
+        validate_spec(&spec(), &[&other]).unwrap_err(),
+        CustomTeamError::DuplicateShortName
+    );
+}
+
+#[test]
+fn validate_spec_ignores_academy_teams() {
+    let mut academy = team("t1", "Ray Esports", "RAY", "les");
+    academy.team_kind = TeamKind::Academy;
+
+    assert!(validate_spec(&spec(), &[&academy]).is_ok());
+}
+
+#[test]
+fn replace_accepts_the_replaced_clubs_own_name() {
+    let mut game = world();
+    let mut s = spec();
+    s.name = "Bravo Club".to_string();
+    s.short_name = "BRV".to_string();
+
+    assert!(replace_team_with_custom(&mut game, "les", "les-b", &s).is_ok());
+}
+
+#[test]
+fn replace_rejects_a_name_used_by_another_competition() {
+    let mut game = world();
+    let mut s = spec();
+    s.name = "g2 esports".to_string();
+
+    assert_eq!(
+        replace_team_with_custom(&mut game, "les", "les-b", &s).unwrap_err(),
+        CustomTeamError::DuplicateName
+    );
+}
+
+#[test]
+fn custom_team_id_keeps_competition_prefix_resolvable() {
+    let known = vec!["les".to_string(), "emea-masters".to_string()];
+
+    let id = custom_team_id("les", "RAY");
+    let dashed = custom_team_id("emea-masters", "R-4Y");
+
+    assert_eq!(id, "les-custom-ray");
+    assert_eq!(competition_id_from_team_id_known(&id, &known), Some("les"));
+    assert_eq!(
+        competition_id_from_team_id_known(&dashed, &known),
+        Some("emea-masters")
+    );
+}
+
+#[test]
+fn league_median_profile_ignores_zero_values_and_averages_even_counts() {
+    let mut a = team("a", "A", "AAA", "les");
+    let mut b = team("b", "B", "BBB", "les");
+    let mut c = team("c", "C", "CCC", "les");
+    let mut d = team("d", "D", "DDD", "les");
+    (a.finance, b.finance, c.finance, d.finance) = (100, 0, 300, 201);
+    (a.reputation, b.reputation, c.reputation, d.reputation) = (10, 20, 0, 0);
+
+    let profile = league_median_profile(&[&a, &b, &c, &d]);
+
+    assert_eq!(
+        profile.finance, 201,
+        "zero ignored: median of 100, 201, 300"
+    );
+    assert_eq!(profile.reputation, 15, "even count: mean of 10 and 20");
+}
+
+#[test]
+fn league_median_profile_means_the_two_middle_values_for_even_counts() {
+    let mut a = team("a", "A", "AAA", "les");
+    let mut b = team("b", "B", "BBB", "les");
+    (a.reputation, b.reputation) = (301, 400);
+
+    let profile = league_median_profile(&[&a, &b]);
+
+    assert_eq!(profile.reputation, 350);
+}
+
+#[test]
+fn league_median_profile_falls_back_to_team_defaults() {
+    let mut a = team("a", "A", "AAA", "les");
+    a.finance = 0;
+    let defaults = Team::new(
+        String::new(),
+        String::new(),
+        String::new(),
+        String::new(),
+        String::new(),
+        String::new(),
+        0,
+    );
+
+    let profile = league_median_profile(&[&a]);
+
+    assert_eq!(profile.finance, defaults.finance);
+    assert_eq!(league_median_profile(&[]).reputation, defaults.reputation);
+}
+
+#[test]
+fn replace_team_removes_replaced_and_releases_players_and_staff() {
+    let mut game = world();
+    let before = game.teams.len();
+
+    let outcome = replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+
+    assert_eq!(game.teams.len(), before);
+    assert!(game.teams.iter().all(|t| t.id != "les-b"));
+    assert_eq!(game.removed_team_ids, vec!["les-b".to_string()]);
+    assert_eq!(outcome.team_id, "les-custom-ray");
+    assert_eq!(outcome.released_player_ids, vec!["p-b1", "p-b2"]);
+    assert_eq!(outcome.released_staff_ids, vec!["s-b1"]);
+    for id in ["p-b1", "p-b2"] {
+        let p = game.players.iter().find(|p| p.id == id).unwrap();
+        assert_eq!(p.team_id, None);
+        assert!(game.moved_player_ids.contains(id));
+    }
+    let untouched = game.players.iter().find(|p| p.id == "p-a1").unwrap();
+    assert_eq!(untouched.team_id.as_deref(), Some("les-a"));
+    assert_eq!(
+        game.staff.iter().find(|s| s.id == "s-b1").unwrap().team_id,
+        None
+    );
+}
+
+#[test]
+fn replace_team_leaves_released_player_contracts_to_the_free_agent_pass() {
+    let mut game = world();
+
+    replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+
+    let released = game.players.iter().find(|p| p.id == "p-b1").unwrap();
+    assert_eq!(released.wage, 12_000);
+    assert_eq!(released.contract_end.as_deref(), Some("2027-06-30"));
+}
+
+#[test]
+fn replace_team_builds_the_club_from_the_league_median() {
+    let mut game = world();
+
+    replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+
+    let custom = game
+        .teams
+        .iter()
+        .find(|t| t.id == "les-custom-ray")
+        .unwrap();
+    // Peers (les-a, les-c, les-d): finance 100/300/500, reputation 200/0/400.
+    assert_eq!(custom.finance, 300);
+    assert_eq!(custom.reputation, 300);
+    assert_eq!(custom.competition_id.as_deref(), Some("les"));
+    assert_eq!(custom.team_kind, TeamKind::Main);
+    assert_eq!(custom.name, "Ray Esports");
+    assert_eq!(custom.colors.primary, "#112233");
+    assert_eq!(custom.founded_year, 2026);
+    assert!(custom.sponsorship.is_none());
+    assert!(
+        custom
+            .logo_url
+            .as_deref()
+            .is_some_and(|logo| logo.starts_with("data:image/svg+xml"))
+    );
+}
+
+#[test]
+fn replace_team_clears_academy_links_to_the_replaced_team() {
+    let mut game = world();
+    let mut academy = team("les-b-acad", "Bravo Academy", "BRA", "les");
+    academy.team_kind = TeamKind::Academy;
+    academy.parent_team_id = Some("les-b".to_string());
+    game.teams.push(academy);
+    let mut sister = team("les-e", "Echo Club", "ECH", "les");
+    sister.academy_team_id = Some("les-b".to_string());
+    sister.parent_team_id = Some("les-b".to_string());
+    game.teams.push(sister);
+
+    replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+
+    let academy = game.teams.iter().find(|t| t.id == "les-b-acad").unwrap();
+    assert_eq!(academy.parent_team_id, None);
+    let sister = game.teams.iter().find(|t| t.id == "les-e").unwrap();
+    assert_eq!(sister.academy_team_id, None);
+    assert_eq!(sister.parent_team_id, None);
+}
+
+#[test]
+fn replace_team_rejects_unknown_academy_and_wrong_competition_ids() {
+    let mut game = world();
+    let mut academy = team("les-acad", "Les Academy", "LAC", "les");
+    academy.team_kind = TeamKind::Academy;
+    game.teams.push(academy);
+
+    assert_eq!(
+        replace_team_with_custom(&mut game, "les", "nope", &spec()).unwrap_err(),
+        CustomTeamError::ReplacedTeamNotFound("nope".to_string())
+    );
+    assert_eq!(
+        replace_team_with_custom(&mut game, "les", "les-acad", &spec()).unwrap_err(),
+        CustomTeamError::NotCustomizableTeamKind
+    );
+    assert_eq!(
+        replace_team_with_custom(&mut game, "les", "lec-g2", &spec()).unwrap_err(),
+        CustomTeamError::ReplacedTeamNotInCompetition
+    );
+    assert!(game.removed_team_ids.is_empty());
+}
+
+#[test]
+fn custom_team_error_converts_to_its_display_string() {
+    let message: String = CustomTeamError::DuplicateName.into();
+
+    assert_eq!(message, CustomTeamError::DuplicateName.to_string());
+}
+
+#[test]
+fn badge_data_uri_matches_golden_for_three_char_short_name() {
+    assert_eq!(badge_data_uri("UCM", "#f97316", "#18181b"), GOLDEN_UCM);
+}
+
+#[test]
+fn badge_data_uri_matches_golden_for_four_char_short_name() {
+    assert_eq!(badge_data_uri("OLMX", "#2563eb", "#ffffff"), GOLDEN_OLMX);
+}
+
+#[test]
+fn badge_data_uri_contains_no_unescaped_angle_brackets_in_text() {
+    let uri = badge_data_uri("A<B", "#000000", "#ffffff");
+    let payload = uri.trim_start_matches("data:image/svg+xml;utf8,");
+
+    assert!(!payload.contains('<'));
+    assert!(payload.contains("%26lt%3BB") || payload.contains("A%26lt%3B"));
+}
+
+#[test]
+fn custom_team_allowed_is_false_for_tier_one() {
+    assert!(!custom_team_allowed(&manifest(Some(1), true, false, true)));
+}
+
+#[test]
+fn custom_team_allowed_is_false_without_a_tier() {
+    assert!(!custom_team_allowed(&manifest(None, true, false, true)));
+}
+
+#[test]
+fn custom_team_allowed_is_false_for_legacy_inactive_or_unscheduled_leagues() {
+    assert!(!custom_team_allowed(&manifest(Some(2), true, true, true)));
+    assert!(!custom_team_allowed(&manifest(Some(2), false, false, true)));
+    assert!(!custom_team_allowed(&manifest(Some(2), true, false, false)));
+}
+
+#[test]
+fn custom_team_allowed_is_true_for_a_tier_two_league_with_splits() {
+    assert!(custom_team_allowed(&manifest(Some(2), true, false, true)));
+}
