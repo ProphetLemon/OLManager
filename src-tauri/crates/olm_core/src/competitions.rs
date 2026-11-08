@@ -313,8 +313,14 @@ fn competition_summary(
     })
 }
 
+/// A competition is offered at team selection when it is active, not legacy,
+/// and has at least one split to play (so regional leagues without a schedule stay hidden).
+fn is_selectable_competition(manifest: &CompetitionManifest) -> bool {
+    manifest.active && !manifest.legacy && !manifest.schedule.splits.is_empty()
+}
+
 /// Build lightweight league selection metadata from all competition manifests.
-/// Filters out legacy and non-tier-1 competitions.
+/// Keeps every selectable competition whatever its tier; the tier is exposed in the payload.
 /// This is read-only and does not require game state.
 pub fn build_league_selection(data_base: &Path) -> LeagueSelectionData {
     let competitions_base = data_base.join("competitions");
@@ -333,7 +339,7 @@ pub fn build_league_selection(data_base: &Path) -> LeagueSelectionData {
 
     let filtered_manifests: Vec<_> = manifests
         .into_iter()
-        .filter(|m| m.active && !m.legacy && m.tier.unwrap_or(1) == 1)
+        .filter(is_selectable_competition)
         .collect();
 
     for m in &filtered_manifests {
@@ -533,6 +539,47 @@ mod tests {
         let manifest = load_competition_manifest_with(dir.path(), "lec", &overrides).expect("load");
 
         assert_eq!(manifest.schedule.format, "double_round_robin");
+    }
+
+    fn write_competition(base: &std::path::Path, id: &str, tier: u8, legacy: bool, with_split: bool) {
+        let dir = base.join("competitions").join(id);
+        std::fs::create_dir_all(&dir).expect("competition dir");
+        let splits = if with_split {
+            r#"[{"name": "Winter", "season_start": {"day": 18, "month": 1}}]"#
+        } else {
+            "[]"
+        };
+        std::fs::write(
+            dir.join("manifest.json"),
+            format!(
+                r#"{{
+                    "id": "{id}", "name": "{id}", "region": "EU", "tier": {tier},
+                    "active": true, "legacy": {legacy},
+                    "teams_file": "teams/{id}.json",
+                    "schedule": {{"format": "single_round_robin", "team_count": 0, "splits": {splits}}}
+                }}"#
+            ),
+        )
+        .expect("manifest");
+        std::fs::create_dir_all(base.join("teams")).expect("teams dir");
+        std::fs::write(base.join("teams").join(format!("{id}.json")), r#"{"teams": []}"#)
+            .expect("teams file");
+    }
+
+    #[test]
+    fn league_selection_offers_playable_leagues_of_every_tier() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_competition(dir.path(), "lec", 1, false, true);
+        write_competition(dir.path(), "les", 2, false, true);
+        write_competition(dir.path(), "lfl", 2, false, false);
+        write_competition(dir.path(), "old", 1, true, true);
+
+        let data = build_league_selection(dir.path());
+        let mut ids: Vec<_> = data.competitions.iter().map(|c| (c.id.as_str(), c.tier)).collect();
+        ids.sort();
+
+        // tier-2 with splits kept, tier-2 without splits and legacy dropped
+        assert_eq!(ids, vec![("lec", 1), ("les", 2)]);
     }
 
     fn write_staff_file(path: &std::path::Path) {
