@@ -117,8 +117,12 @@ const env = {
   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "",
 };
 // beforeBuildCommand in tauri.conf.json already runs scripts/sync-data.mjs.
-function runBuild(label, tauriArgs) {
-  const res = spawnSync("npm", ["run", "tauri", "--", "build", ...tauriArgs], { cwd: root, env, stdio: "inherit" });
+function runBuild(label, tauriArgs, extraEnv = {}) {
+  const res = spawnSync("npm", ["run", "tauri", "--", "build", ...tauriArgs], {
+    cwd: root,
+    env: { ...env, ...extraEnv },
+    stdio: "inherit",
+  });
   if (res.status !== 0) fail(`the ${label} build failed (exit ${res.status ?? "signal"}).`);
 }
 
@@ -131,8 +135,9 @@ function locate(label, find) {
 }
 
 runBuild("Windows", ["--runner", "cargo-xwin", "--target", WINDOWS_TARGET, "--bundles", "nsis"]);
-// Native build: the first one downloads linuxdeploy from GitHub.
-runBuild("Linux AppImage", ["--bundles", "appimage"]);
+// Native build: the first one downloads linuxdeploy from GitHub. linuxdeploy ships an old `strip` that cannot
+// read current distro libraries ("unknown type [0x13] section `.relr.dyn'"), so stripping is turned off.
+runBuild("Linux AppImage", ["--bundles", "appimage"], { NO_STRIP: "true" });
 
 const exe = locate("Windows", () => {
   const { setup, sig } = findInstaller(readdirSync(nsisDir), version);

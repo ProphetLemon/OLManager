@@ -98,6 +98,15 @@ and shows no error.
 Download `Open.League.Manager_<v>_amd64.AppImage`, `chmod +x` it and run it directly. The updater replaces that
 file in place, so always launch the AppImage itself (not an extracted copy), from a location the user can write to.
 
+Portability: an AppImage bundles the build host's libraries but uses the player's glibc. Built on this CachyOS
+host it needs glibc 2.44 or newer (checked with `objdump -T` on the extracted AppImage), so it only runs on
+up-to-date rolling distros (Arch, CachyOS and similar). The bundled libraries come from the `cachyos-v3` repos,
+which are built for x86-64-v3, so expect an AVX2 CPU too. For Ubuntu, Debian or Mint players, build the
+AppImage on an older base (for example an Ubuntu 22.04 container or CI runner) instead.
+
+`release:fork` sets `NO_STRIP=true` for the AppImage build. linuxdeploy ships an old `strip` that fails on
+current distro libraries with "unknown type [0x13] section `.relr.dyn'".
+
 ## One-time migration for the friend
 
 The portable zip (built with `--no-bundle`) has no installer and embeds upstream's public key, so it cannot
