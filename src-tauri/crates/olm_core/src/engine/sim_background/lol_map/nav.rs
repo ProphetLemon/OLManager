@@ -64,6 +64,19 @@ pub(super) fn mirror(point: (f64, f64)) -> (f64, f64) {
     (point.1, point.0)
 }
 
+/// The hand-drawn wall set is not exactly mirror-symmetric, which gave the Home
+/// side a better path to several objectives (about 55% wins between equal
+/// teams). Navigation therefore treats a spot as blocked when it or its mirror
+/// image is inside a wall, so both teams face the same map.
+fn point_blocked(p: (f64, f64)) -> bool {
+    point_in_active_wall(p) || point_in_active_wall(mirror(p))
+}
+
+/// Mirror-symmetric version of `segment_blocked`.
+pub(super) fn path_blocked(a: (f64, f64), b: (f64, f64)) -> bool {
+    segment_blocked(a, b) || segment_blocked(mirror(a), mirror(b))
+}
+
 pub(super) fn lane_polyline(lane: LaneKey) -> &'static [(f64, f64)] {
     match lane {
         LaneKey::Top => &TOP_LANE,
@@ -97,6 +110,9 @@ pub(super) fn lane_point(lane: LaneKey, t: f64) -> (f64, f64) {
 
 struct NavGrid {
     open: Vec<bool>,
+    /// Open cells connected to the largest walkable region. Targets snap to
+    /// these only, so a pocket sealed off by walls never traps a unit.
+    main: Vec<bool>,
     /// Bit `k` set when the move to `NEIGHBOURS[k]` crosses no wall.
     links: Vec<u8>,
 }
@@ -127,7 +143,7 @@ fn nav_grid() -> &'static NavGrid {
         let mut open = vec![false; GRID * GRID];
         for cy in 0..GRID {
             for cx in 0..GRID {
-                open[cell_index(cx, cy)] = !point_in_active_wall(cell_center(cx, cy));
+                open[cell_index(cx, cy)] = !point_blocked(cell_center(cx, cy));
             }
         }
         let mut links = vec![0u8; GRID * GRID];
@@ -141,15 +157,54 @@ fn nav_grid() -> &'static NavGrid {
                         continue;
                     };
                     if open[cell_index(nx, ny)]
-                        && !segment_blocked(cell_center(cx, cy), cell_center(nx, ny))
+                        && !path_blocked(cell_center(cx, cy), cell_center(nx, ny))
                     {
                         links[cell_index(cx, cy)] |= 1 << k;
                     }
                 }
             }
         }
-        NavGrid { open, links }
+        let main = largest_region(&open, &links);
+        NavGrid { open, main, links }
     })
+}
+
+/// Marks the cells of the largest connected region of the walkable grid.
+fn largest_region(open: &[bool], links: &[u8]) -> Vec<bool> {
+    let mut region = vec![usize::MAX; GRID * GRID];
+    let mut sizes: Vec<usize> = Vec::new();
+    for start in 0..GRID * GRID {
+        if !open[start] || region[start] != usize::MAX {
+            continue;
+        }
+        let id = sizes.len();
+        let mut size = 0;
+        let mut stack = vec![start];
+        region[start] = id;
+        while let Some(idx) = stack.pop() {
+            size += 1;
+            let (cx, cy) = (idx % GRID, idx / GRID);
+            for k in 0..NEIGHBOURS.len() {
+                if links[idx] & (1 << k) == 0 {
+                    continue;
+                }
+                if let Some((nx, ny)) = neighbour(cx, cy, k) {
+                    let nidx = cell_index(nx, ny);
+                    if region[nidx] == usize::MAX {
+                        region[nidx] = id;
+                        stack.push(nidx);
+                    }
+                }
+            }
+        }
+        sizes.push(size);
+    }
+    let biggest = sizes
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, size)| **size)
+        .map(|(id, _)| id);
+    region.iter().map(|id| Some(*id) == biggest).collect()
 }
 
 /// Open cell closest to `p` (the cell itself when it is open).
@@ -168,7 +223,7 @@ fn nearest_open_cell(p: (f64, f64)) -> (usize, usize) {
                     continue;
                 }
                 let (nx, ny) = (nx as usize, ny as usize);
-                if !grid.open[cell_index(nx, ny)] {
+                if !grid.main[cell_index(nx, ny)] {
                     continue;
                 }
                 let d = distance(cell_center(nx, ny), p);
@@ -182,6 +237,13 @@ fn nearest_open_cell(p: (f64, f64)) -> (usize, usize) {
         }
     }
     (cx, cy)
+}
+
+/// Centre of the walkable cell closest to `p`: the spot a unit actually reaches
+/// when `p` lies inside a wall (a pit, for instance).
+pub(super) fn walkable_point(p: (f64, f64)) -> (f64, f64) {
+    let (cx, cy) = nearest_open_cell(p);
+    cell_center(cx, cy)
 }
 
 /// Walking distance (in map units) from every cell to `target`; unreachable
@@ -242,7 +304,7 @@ pub(super) fn step_toward(from: (f64, f64), target: (f64, f64), speed: f64) -> (
     if d < ARRIVE_DISTANCE {
         return (from, true);
     }
-    if !segment_blocked(from, target) {
+    if !path_blocked(from, target) {
         let f = (speed / d).min(1.0);
         let next = (
             from.0 + (target.0 - from.0) * f,
@@ -257,40 +319,55 @@ pub(super) fn step_toward(from: (f64, f64), target: (f64, f64), speed: f64) -> (
     let mut remaining = speed;
     for _ in 0..16 {
         let (cx, cy) = cell_of(pos);
-        let here = field[cell_index(cx, cy)];
-        let mut best: Option<((usize, usize), f32)> = None;
+        let here_idx = cell_index(cx, cy);
+        let here = field[here_idx];
+        // Neighbours that get closer to the target, best first.
+        let mut options: Vec<((usize, usize), f32)> = Vec::new();
         for k in 0..NEIGHBOURS.len() {
             let Some((nx, ny)) = neighbour(cx, cy, k) else {
                 continue;
             };
             let nidx = cell_index(nx, ny);
-            let reachable = if grid.open[cell_index(cx, cy)] {
-                grid.links[cell_index(cx, cy)] & (1 << k) != 0
+            let reachable = if grid.open[here_idx] {
+                grid.links[here_idx] & (1 << k) != 0
             } else {
                 grid.open[nidx]
             };
-            if reachable && field[nidx] < best.map_or(here, |(_, v)| v) {
-                best = Some(((nx, ny), field[nidx]));
+            if reachable && field[nidx] < here {
+                options.push(((nx, ny), field[nidx]));
             }
         }
-        let Some(((nx, ny), _)) = best else {
+        if options.is_empty() {
             // Local minimum of the field: this is the closest reachable cell.
             return (pos, true);
+        }
+        options.sort_by(|a, b| a.1.total_cmp(&b.1));
+
+        // A unit off the cell centre may be unable to cut straight to the next
+        // centre (a wall corner in between); the links are only checked between
+        // centres, so fall back to walking to the centre of its own cell first.
+        let next = options
+            .iter()
+            .map(|((nx, ny), _)| cell_center(*nx, *ny))
+            .find(|center| !path_blocked(pos, *center))
+            .or_else(|| {
+                let own = cell_center(cx, cy);
+                (grid.open[here_idx] && distance(pos, own) > 1e-9 && !path_blocked(pos, own))
+                    .then_some(own)
+            });
+        let Some(center) = next else {
+            return (pos, false);
         };
-        let center = cell_center(nx, ny);
         let hop = distance(pos, center);
         if hop > remaining {
             let f = remaining / hop;
-            let next = (
+            let step = (
                 pos.0 + (center.0 - pos.0) * f,
                 pos.1 + (center.1 - pos.1) * f,
             );
-            if !segment_blocked(pos, next) {
-                pos = next;
+            if !path_blocked(pos, step) {
+                pos = step;
             }
-            return (pos, false);
-        }
-        if segment_blocked(pos, center) {
             return (pos, false);
         }
         pos = center;
@@ -300,4 +377,66 @@ pub(super) fn step_toward(from: (f64, f64), target: (f64, f64), speed: f64) -> (
         }
     }
     (pos, false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::sim_background::lol_map::{blue_spawn, objective_anchor, red_spawn};
+
+    fn walking_distance(from: (f64, f64), to: (f64, f64)) -> f32 {
+        let (cx, cy) = cell_of(from);
+        flow_field(to)[cell_index(cx, cy)]
+    }
+
+    #[test]
+    fn walkable_grid_is_mirror_symmetric() {
+        let grid = nav_grid();
+        for cy in 0..GRID {
+            for cx in 0..GRID {
+                assert_eq!(
+                    grid.open[cell_index(cx, cy)],
+                    grid.open[cell_index(cy, cx)],
+                    "cell ({cx},{cy}) differs from its mirror"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn every_destination_is_reachable_from_both_bases() {
+        let mut targets: Vec<(f64, f64)> = ["baron", "dragon", "grubs", "herald"]
+            .iter()
+            .map(|n| objective_anchor(n))
+            .collect();
+        for lane in [LaneKey::Top, LaneKey::Mid, LaneKey::Bot] {
+            targets.extend([0.05, 0.3, 0.5, 0.7, 0.95].map(|t| lane_point(lane, t)));
+        }
+        for slot in 0..5 {
+            for spawn in [blue_spawn(slot), red_spawn(slot)] {
+                for target in &targets {
+                    assert!(
+                        walking_distance(spawn, *target).is_finite(),
+                        "{target:?} is unreachable from {spawn:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn both_bases_walk_the_same_distance_to_mirrored_targets() {
+        for slot in 0..5 {
+            for lane in [LaneKey::Top, LaneKey::Mid, LaneKey::Bot] {
+                for t in [0.2, 0.5, 0.8] {
+                    let home = walking_distance(blue_spawn(slot), lane_point(lane, t));
+                    let away = walking_distance(red_spawn(slot), lane_point(lane, 1.0 - t));
+                    assert!(
+                        (home - away).abs() < 0.03,
+                        "slot {slot} {lane:?} t={t}: home walks {home:.3}, away {away:.3}"
+                    );
+                }
+            }
+        }
+    }
 }

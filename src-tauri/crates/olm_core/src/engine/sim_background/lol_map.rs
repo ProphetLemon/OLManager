@@ -1,3 +1,22 @@
+//! Minute-level map model behind `simulate_lol`: background and AI-vs-AI league
+//! matches, user matches played in the turn and instant matches all run through
+//! it (`LiveMatchState::new(..).run_to_completion(..)` with
+//! `MatchConfig::default()` plus the clamped draft modifiers).
+//!
+//! Each minute: units walk to where their role wants them (laners stand on the
+//! lane front, the jungler farms then takes objectives, see `nav`), trade
+//! damage with the nearest enemy (`resolve_fights`, scaled by level, items and
+//! the fight skill gap), contest objectives (macro skill) and push the lane
+//! fronts toward the side with the stronger units nearby. A front pressed
+//! against a standing tower sieges it; the nexus ends the match.
+//!
+//! Outcome targets, all `[PLACEHOLDER]` pending playtest and measured by
+//! `pacing_tests`: even teams last 25-40 minutes with 15-35 kills and win
+//! 45-55% each side, a moderate rating gap wins at least 60%, 95 vs 40 at
+//! least 90%, and the win rate never falls as the gap widens. The map is
+//! mirror-symmetric (see `nav`), so a side never has a better route.
+//! `MatchConfig::home_advantage` is deliberately not applied.
+
 use rand::{Rng, RngExt};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -9,7 +28,7 @@ use crate::engine::types::{PlayerData, Side, TeamData, Zone};
 use super::{LiveMatchState, MatchPhase};
 
 mod nav;
-use nav::{lane_point, mirror, step_toward};
+use nav::{lane_point, mirror, step_toward, walkable_point};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LolDragonKind {
@@ -212,7 +231,7 @@ fn default_level() -> u8 {
     1
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LaneKey {
     Top,
     Mid,
@@ -816,26 +835,55 @@ impl LiveMatchState {
         }
     }
 
+    /// Moves each lane front and sieges the tower it is pressed against.
+    ///
+    /// A lane front moves toward the side whose nearby units are stronger
+    /// (alive, healthy, levelled, itemised, skilled). It can never pass a
+    /// standing tower, and the side pressed against a tower damages it in
+    /// proportion to its edge over the defenders.
     fn resolve_structures<R: Rng>(
         &mut self,
         minute: u8,
         rng: &mut R,
         events: &mut Vec<MatchEvent>,
     ) {
-        for attacker in [Side::Home, Side::Away] {
-            for lane in [LaneKey::Top, LaneKey::Mid, LaneKey::Bot] {
-                let pressure = lane_pressure(&self.lol_map, attacker, lane, minute);
-                if pressure < 0.25 {
+        for lane in [LaneKey::Top, LaneKey::Mid, LaneKey::Bot] {
+            let front = lane_front(&self.lol_map, lane);
+            let point = lane_point(lane, front);
+            let home_force = lane_force(&self.lol_map.units, Side::Home, lane, point);
+            let away_force = lane_force(&self.lol_map.units, Side::Away, lane, point);
+            let total = home_force + away_force;
+            let edge = if total > 0.0 {
+                (home_force - away_force) / total
+            } else {
+                0.0
+            };
+            let (low, high) = front_bounds(&self.lol_map, lane);
+            let front = (front + LANE_PUSH_PER_MINUTE * edge).clamp(low, high);
+            set_lane_front(&mut self.lol_map, lane, front);
+
+            for attacker in [Side::Home, Side::Away] {
+                let (own, other) = if attacker == Side::Home {
+                    (home_force, away_force)
+                } else {
+                    (away_force, home_force)
+                };
+                let pressure = own - other * TOWER_DEFENCE;
+                if pressure <= 0.0 {
                     continue;
                 }
-
                 let Some(target) = next_target(&self.lol_map, attacker, lane) else {
                     continue;
                 };
+                if (front - target_front(attacker, target)).abs() > SIEGE_REACH {
+                    continue;
+                }
 
                 let scaling = team_scaling(&self.lol_map.units, attacker);
                 let dmg = pressure
                     * scaling
+                    * SIEGE_DAMAGE_SCALE
+                    * siege_time_factor(minute)
                     * rng.random_range(
                         self.config.structure_damage_min..self.config.structure_damage_max,
                     );
@@ -885,7 +933,8 @@ impl LiveMatchState {
             .filter(|u| u.alive && u.side == Side::Away)
             .count();
 
-        if home >= away {
+        // A tie alternates by minute so neither side collects the possession.
+        if home > away || (home == away && self.current_minute.is_multiple_of(2)) {
             self.possession = Side::Home;
             self.home_possession_ticks = self.home_possession_ticks.saturating_add(1);
         } else {
@@ -936,7 +985,24 @@ fn jungle_camp(side: Side) -> (f64, f64) {
         mirror(home)
     }
 }
+/// Where a team contests an objective. The pits are walled in, so this is the
+/// closest walkable spot to the objective itself: presence is measured from
+/// where units can really stand.
 fn objective_anchor(name: &str) -> (f64, f64) {
+    static SPOTS: OnceLock<[(f64, f64); 5]> = OnceLock::new();
+    let spots = SPOTS.get_or_init(|| {
+        ["baron", "dragon", "grubs", "herald", ""].map(|n| walkable_point(raw_objective_anchor(n)))
+    });
+    match name {
+        "baron" => spots[0],
+        "dragon" => spots[1],
+        "grubs" => spots[2],
+        "herald" => spots[3],
+        _ => spots[4],
+    }
+}
+
+fn raw_objective_anchor(name: &str) -> (f64, f64) {
     match name {
         "baron" => (0.3274739583333333, 0.2981770833333333),
         "dragon" => (0.673828125, 0.703125),
@@ -1029,7 +1095,7 @@ const FIGHT_SKILL_K: f64 = 0.4;
 /// first calibration needed about 14 uninterrupted minutes to kill one
 /// champion; at this scale a lane pair kills within a few minutes of contact.
 /// [PLACEHOLDER]
-const FIGHT_DAMAGE_SCALE: f64 = 4.0;
+const FIGHT_DAMAGE_SCALE: f64 = 6.0;
 
 /// Per-hit damage roll. Wide enough that two equal champions rarely die in the
 /// same minute, so every trade has a winner and an underdog can still take
@@ -1189,11 +1255,11 @@ fn tower_team_gold(target: StructureTarget) -> f64 {
 /// differently. [PLACEHOLDER]
 fn role_income_weight(role: LolRole) -> f64 {
     match role {
-        LolRole::Top => 1.17,
-        LolRole::Jungle => 0.78,
-        LolRole::Mid => 1.19,
+        LolRole::Top => 1.34,
+        LolRole::Jungle => 0.73,
+        LolRole::Mid => 1.29,
         LolRole::Adc => 1.45,
-        LolRole::Support => 0.50,
+        LolRole::Support => 0.44,
     }
 }
 
@@ -1268,50 +1334,96 @@ fn grant_objective_rewards(
     }
 }
 
-fn lane_pressure(state: &LolMapState, attacker: Side, lane: LaneKey, minute: u8) -> f64 {
-    let target_anchor = structure_anchor(
-        attacker,
-        next_target(state, attacker, lane).unwrap_or(StructureTarget::Outer(lane)),
-    );
-    let champ_pressure: f64 = state
-        .units
-        .iter()
-        .filter(|u| u.alive && u.side == attacker)
-        .map(|u| {
-            let d = distance((u.x, u.y), target_anchor);
-            if d > 0.18 {
-                return 0.0;
-            }
-            let role = match u.role {
-                LolRole::Adc => 1.35,
-                LolRole::Mid => 1.10,
-                LolRole::Top => 1.05,
-                LolRole::Jungle => 0.95,
-                LolRole::Support => 0.80,
-            };
-            role * (1.0 + u.level as f64 * 0.03 + u.item_tier as f64 * 0.08) * (1.0 - d / 0.18)
-        })
-        .sum();
+/// Arc-length fraction a lane front moves per minute at full edge (all nearby
+/// strength on one side). Crossing from the middle to a tower takes about
+/// three minutes of total dominance. [PLACEHOLDER]
+const LANE_PUSH_PER_MINUTE: f64 = 0.3;
 
-    let (blue_wave, red_wave) = lane_waves(state, lane);
-    let wave_adv = if attacker == Side::Home {
-        (blue_wave - red_wave).max(0.0)
-    } else {
-        (red_wave - blue_wave).max(0.0)
-    };
+/// Share of the defenders' strength that counts against a siege (the tower and
+/// the wave fight for them). [PLACEHOLDER]
+const TOWER_DEFENCE: f64 = 0.5;
 
-    if wave_adv < 0.35 {
-        return 0.0;
-    }
+/// How close to a tower's line a front must be for its attackers to hit it.
+const SIEGE_REACH: f64 = 0.03;
 
-    let time = if minute < 14 {
-        0.70
+/// Multiplier turning the config's per-tick structure damage range into
+/// damage per minute. [PLACEHOLDER]
+const SIEGE_DAMAGE_SCALE: f64 = 80.0;
+
+/// Sieges start slow (no tower before the mid-teens) and speed up as the game
+/// goes on, so a stalled match still ends. [PLACEHOLDER]
+fn siege_time_factor(minute: u8) -> f64 {
+    if minute < 14 {
+        0.7
     } else if minute < 28 {
         1.0
     } else {
-        1.25
+        1.4
+    }
+}
+
+/// Radius around a lane front within which units count for that lane.
+const LANE_RADIUS: f64 = 0.20;
+
+/// Fighting strength of one unit: health, level, items and skill.
+fn unit_strength(unit: &LolUnitState) -> f64 {
+    let level = 1.0 + f64::from(unit.level.saturating_sub(1)) * 0.06;
+    let items = 1.0 + f64::from(unit.item_tier) * 0.10;
+    let health = (unit.hp / 100.0).clamp(0.25, 1.0);
+    level * items * health * (FIGHT_SKILL_K * unit.fight_skill).exp()
+}
+
+/// How much a unit of `role` counts toward `lane`: its own laner fully, the
+/// jungler and the bot-lane support most of the way, rotating laners less.
+fn lane_role_weight(role: LolRole, lane: LaneKey) -> f64 {
+    match (role, lane) {
+        (LolRole::Top, LaneKey::Top)
+        | (LolRole::Mid, LaneKey::Mid)
+        | (LolRole::Adc, LaneKey::Bot) => 1.0,
+        (LolRole::Support, LaneKey::Bot) => 0.7,
+        (LolRole::Jungle, _) => 0.8,
+        _ => 0.5,
+    }
+}
+
+/// Combined strength of `side`'s living units around the lane front `point`.
+fn lane_force(units: &[LolUnitState], side: Side, lane: LaneKey, point: (f64, f64)) -> f64 {
+    units
+        .iter()
+        .filter(|u| u.alive && u.side == side && distance((u.x, u.y), point) <= LANE_RADIUS)
+        .map(|u| lane_role_weight(u.role, lane) * unit_strength(u))
+        .sum()
+}
+
+/// Lane-front position (arc-length fraction from the blue base) of a tower
+/// that `attacker` is sieging.
+fn target_front(attacker: Side, target: StructureTarget) -> f64 {
+    let red = match target {
+        StructureTarget::Outer(_) => 0.78,
+        StructureTarget::Inner(_) => 0.86,
+        StructureTarget::Inhib(_) => 0.93,
+        StructureTarget::NexusTop | StructureTarget::NexusBot | StructureTarget::Nexus => 0.97,
     };
-    (champ_pressure * 0.28 + wave_adv * 0.16) * time
+    if attacker == Side::Home {
+        red
+    } else {
+        1.0 - red
+    }
+}
+
+/// The lane front cannot be pushed past a standing tower of either team.
+fn front_bounds(state: &LolMapState, lane: LaneKey) -> (f64, f64) {
+    let low = next_target(state, Side::Away, lane).map_or(0.02, |t| target_front(Side::Away, t));
+    let high = next_target(state, Side::Home, lane).map_or(0.98, |t| target_front(Side::Home, t));
+    (low, high)
+}
+
+fn set_lane_front(state: &mut LolMapState, lane: LaneKey, front: f64) {
+    match lane {
+        LaneKey::Top => state.blue.top.front = front,
+        LaneKey::Mid => state.blue.mid.front = front,
+        LaneKey::Bot => state.blue.bot.front = front,
+    }
 }
 
 fn team_scaling(units: &[LolUnitState], side: Side) -> f64 {
@@ -1358,28 +1470,6 @@ fn next_target(state: &LolMapState, attacker: Side, lane: LaneKey) -> Option<Str
         return Some(StructureTarget::Nexus);
     }
     None
-}
-
-fn structure_anchor(attacker: Side, target: StructureTarget) -> (f64, f64) {
-    let blue = match target {
-        StructureTarget::Outer(LaneKey::Top) => (0.186, 0.336),
-        StructureTarget::Inner(LaneKey::Top) => (0.124, 0.279),
-        StructureTarget::Inhib(LaneKey::Top) => (0.111, 0.222),
-        StructureTarget::Outer(LaneKey::Mid) => (0.348, 0.498),
-        StructureTarget::Inner(LaneKey::Mid) => (0.284, 0.435),
-        StructureTarget::Inhib(LaneKey::Mid) => (0.222, 0.374),
-        StructureTarget::Outer(LaneKey::Bot) => (0.510, 0.661),
-        StructureTarget::Inner(LaneKey::Bot) => (0.448, 0.597),
-        StructureTarget::Inhib(LaneKey::Bot) => (0.386, 0.534),
-        StructureTarget::NexusTop => (0.224, 0.766),
-        StructureTarget::NexusBot => (0.346, 0.888),
-        StructureTarget::Nexus => (0.231, 0.850),
-    };
-    if attacker == Side::Home {
-        (1.0 - blue.0, 1.0 - blue.1)
-    } else {
-        blue
-    }
 }
 
 fn deal_structure_damage(
@@ -1497,15 +1587,6 @@ fn lane_front(state: &LolMapState, lane: LaneKey) -> f64 {
         LaneKey::Mid => state.blue.mid.front,
         LaneKey::Bot => state.blue.bot.front,
     }
-}
-
-fn lane_waves(state: &LolMapState, lane: LaneKey) -> (f64, f64) {
-    let lane_state = match lane {
-        LaneKey::Top => &state.blue.top,
-        LaneKey::Mid => &state.blue.mid,
-        LaneKey::Bot => &state.blue.bot,
-    };
-    (lane_state.blue_wave, lane_state.red_wave)
 }
 
 fn lane_waves_mut(state: &mut LolMapState, lane: LaneKey) -> (&mut f64, &mut f64) {
@@ -1633,6 +1714,8 @@ mod economy_unit_tests;
 
 #[cfg(test)]
 mod mobility_tests;
+#[cfg(test)]
+mod pacing_tests;
 #[cfg(test)]
 mod rating_tests;
 #[cfg(test)]
