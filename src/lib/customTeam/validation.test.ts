@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  BACKEND_ERROR_TABLE,
   contrastRatio,
   defaultReplacementId,
   mapBackendCustomTeamError,
@@ -117,18 +118,33 @@ describe("contrastRatio", () => {
 });
 
 describe("mapBackendCustomTeamError", () => {
-  it("maps duplicate name and duplicate short name messages", () => {
-    expect(mapBackendCustomTeamError("A team with this name already exists")).toEqual({
-      field: "name",
-      code: "duplicate",
-    });
-    expect(mapBackendCustomTeamError("A team with this short name already exists")).toEqual({
-      field: "shortName",
-      code: "duplicate",
-    });
+  // Every string below is the verbatim `Display` output of
+  // `olm_core::custom_team::CustomTeamError` (custom_team.rs, `impl fmt::Display`).
+  it.each([
+    ["Club name must be 3 to 30 characters", "name", "format"],
+    ["Short name must be 3 or 4 letters or digits", "shortName", "format"],
+    ["Invalid color 'blue', expected #RRGGBB", "primary", "format"],
+    ["Country is required", "country", "required"],
+    ["Another team already uses this name", "name", "duplicate"],
+    ["Another team already uses this short name", "shortName", "duplicate"],
+    ["Team 'les-team-1' was not found", "replaces", "format"],
+    ["The replaced team is not in this competition", "replaces", "format"],
+    ["Only main clubs can be replaced", "replaces", "format"],
+  ] as const)("maps the Rust message %j", (message, field, code) => {
+    expect(mapBackendCustomTeamError(message)).toEqual({ field, code });
+  });
+
+  it("keeps matching when the message is wrapped with a stack trace", () => {
+    expect(
+      mapBackendCustomTeamError("Error: Another team already uses this short name\n\n  at x"),
+    ).toEqual({ field: "shortName", code: "duplicate" });
+  });
+
+  it("covers every row of the table with a Rust message above", () => {
+    expect(BACKEND_ERROR_TABLE).toHaveLength(9);
   });
 
   it("returns null for unrelated errors", () => {
-    expect(mapBackendCustomTeamError("Replaced team not found: x")).toBeNull();
+    expect(mapBackendCustomTeamError("No active competition manifests available")).toBeNull();
   });
 });

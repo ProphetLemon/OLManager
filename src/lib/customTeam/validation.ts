@@ -133,19 +133,26 @@ export function contrastRatio(a: string, b: string): number {
 export const LOW_CONTRAST_RATIO = 3;
 
 /**
- * Backend `CustomTeamError` messages that map to a field error. Kept in one
- * table so the wizard and its tests share it; patterns are matched against the
- * lowercased message, most specific first.
+ * Backend `CustomTeamError` messages that map to a field error. Each pattern
+ * quotes the `Display` string from `olm_core::custom_team` and is matched
+ * against the lowercased message (`Invalid color` and `Team ... was not found`
+ * embed a value). Order matters: the short-name message contains the name
+ * message's words, so it comes first among the duplicates.
  */
-const BACKEND_ERROR_TABLE: ReadonlyArray<{
+export const BACKEND_ERROR_TABLE: ReadonlyArray<{
   pattern: RegExp;
   field: CustomTeamField;
   code: ValidationCode;
 }> = [
-  { pattern: /short name.*(already|duplicate|taken|exists)/, field: "shortName", code: "duplicate" },
-  { pattern: /(already|duplicate|taken|exists).*short name/, field: "shortName", code: "duplicate" },
-  { pattern: /name.*(already|duplicate|taken|exists)/, field: "name", code: "duplicate" },
-  { pattern: /(already|duplicate|taken|exists).*name/, field: "name", code: "duplicate" },
+  { pattern: /club name must be 3 to 30 characters/, field: "name", code: "format" },
+  { pattern: /short name must be 3 or 4 letters or digits/, field: "shortName", code: "format" },
+  { pattern: /invalid color '.*', expected #rrggbb/, field: "primary", code: "format" },
+  { pattern: /country is required/, field: "country", code: "required" },
+  { pattern: /another team already uses this short name/, field: "shortName", code: "duplicate" },
+  { pattern: /another team already uses this name/, field: "name", code: "duplicate" },
+  { pattern: /team '.*' was not found/, field: "replaces", code: "format" },
+  { pattern: /the replaced team is not in this competition/, field: "replaces", code: "format" },
+  { pattern: /only main clubs can be replaced/, field: "replaces", code: "format" },
 ];
 
 /** Map a backend error string to a field error, or `null` when it is not one we localise. */

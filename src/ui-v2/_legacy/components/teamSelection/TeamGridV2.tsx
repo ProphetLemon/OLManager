@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Check, Landmark, MapPin, Star, Users } from "lucide-react";
+import { Check, Landmark, MapPin, Plus, Star, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { TeamSummary } from "@/store/gameStore";
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { cn } from "@/ui-v2/lib/utils";
@@ -10,18 +11,27 @@ interface TeamGridV2Props {
   teams: TeamSummary[];
   onSelectTeam: (id: string) => void;
   selectedTeamId: string | null;
+  /** When set, a dashed "create your team" card is rendered before the teams. */
+  onCreateTeam?: () => void;
 }
 
 export function TeamGridV2({
-  teams, onSelectTeam, selectedTeamId,
+  teams, onSelectTeam, selectedTeamId, onCreateTeam,
 }: TeamGridV2Props) {
+  const { t } = useTranslation();
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  // The create card, when present, is roving-focus item 0; teams follow it.
+  const offset = onCreateTeam ? 1 : 0;
+  const createLabel = t("teamSelect.custom.create", "Create your team");
   const { activeIndex, handleKeyDown, getTabIndex } = useRovingFocus({
-    itemCount: teams.length,
+    itemCount: teams.length + offset,
     columns: 2,
     loop: false,
-    onSelect: (i) => onSelectTeam(teams[i]?.id),
-    getItemLabel: (i) => teams[i]?.name ?? "",
+    onSelect: (i) => {
+      if (offset && i === 0) onCreateTeam?.();
+      else onSelectTeam(teams[i - offset]?.id);
+    },
+    getItemLabel: (i) => (offset && i === 0 ? createLabel : teams[i - offset]?.name ?? ""),
   });
 
   useEffect(() => {
@@ -35,7 +45,24 @@ export function TeamGridV2({
       tabIndex={-1}
     >
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-5 md:grid-cols-2">
-          {teams.map((team, i) => {
+          {onCreateTeam && (
+            <button type="button"
+              ref={(el) => { itemRefs.current[0] = el; }}
+              tabIndex={getTabIndex(0)}
+              onClick={onCreateTeam}
+              className="group flex min-h-40 flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border p-5 text-center transition-colors hover:border-primary/60 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+                <Plus className="size-6" aria-hidden="true" />
+              </span>
+              <span className="font-heading text-base font-bold uppercase tracking-wide text-foreground">{createLabel}</span>
+              <span className="max-w-xs text-xs text-muted-foreground">
+                {t("teamSelect.custom.createHint", "Replace one club in this league with your own.")}
+              </span>
+            </button>
+          )}
+          {teams.map((team, idx) => {
+            const i = idx + offset;
             const isSelected = team.id === selectedTeamId;
             const rep = getReputationLabel(team.reputation ?? 0);
             const logo = getTeamLogoPath(team.id, team.logo_url);

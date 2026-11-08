@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   setGameActive: vi.fn(),
   rosterStatus: "idle" as string,
   useRosterOverlay: vi.fn(),
+  invoke: vi.fn(),
 }));
 
 vi.mock("@/hooks/useRosterOverlay", () => ({
@@ -36,7 +37,11 @@ vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
   useTranslation: () => ({
     i18n: { language: "en" },
-    t: (_key: string, fallback?: string) => fallback ?? _key,
+    t: (_key: string, options?: string | Record<string, unknown>) => {
+      if (typeof options === "string") return options;
+      const template = String(options?.defaultValue ?? _key);
+      return template.replace(/{{(\w+)}}/g, (_m, name) => String(options?.[name] ?? ""));
+    },
   }),
 }));
 
@@ -56,8 +61,63 @@ vi.mock("@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers", () => 
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn(),
+  invoke: mocks.invoke,
 }));
+
+vi.mock("@/lib/players/lolIdentity", () => ({
+  resolvePlayerLolRole: (player: { role: string }) => player.role,
+}));
+
+vi.mock("@/lib/players/lolPlayerStats", () => ({
+  calculateLolOvr: (player: { ovr: number }) => player.ovr,
+}));
+
+function lesTeam(id: string, name: string, short: string, reputation: number) {
+  return {
+    id,
+    name,
+    short_name: short,
+    logo_url: null,
+    country: "ES",
+    finance: 1000,
+    reputation,
+    colors: null,
+    ovr: null,
+    player_count: 5,
+  };
+}
+
+const ROLES = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"];
+
+/** A started game whose managed club (`les-custom-ray`) differs from the slot it replaced. */
+function customGame() {
+  return {
+    manager: { team_id: "les-custom-ray", first_name: "A", last_name: "B", nickname: "" },
+    teams: [{ id: "les-custom-ray" }, { id: "les-b" }],
+    players: [
+      ...ROLES.map((role, i) => ({ id: `ray-${i}`, team_id: "les-custom-ray", role, ovr: 60 })),
+      ...ROLES.map((role, i) => ({ id: `other-${i}`, team_id: "les-b", role, ovr: 70 })),
+    ],
+  };
+}
+
+async function openWizard() {
+  const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
+  render(
+    <MemoryRouter>
+      <TeamSelectionV2 />
+    </MemoryRouter>,
+  );
+  fireEvent.click(await screen.findByRole("button", { name: /LES/i }));
+  fireEvent.click(await screen.findByRole("button", { name: /Create your team/i }));
+}
+
+function walkWizard() {
+  fireEvent.change(screen.getByLabelText("Club name"), { target: { value: "Ray Esports" } });
+  fireEvent.change(screen.getByLabelText("Country"), { target: { value: "ES" } });
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+}
 
 describe("TeamSelectionV2", () => {
   beforeEach(() => {
@@ -87,6 +147,21 @@ describe("TeamSelectionV2", () => {
               ovr: null,
               player_count: 5,
             },
+          ],
+        },
+        {
+          id: "les",
+          name: "LES",
+          region: "Spain",
+          logo: null,
+          tier: 2,
+          legacy: false,
+          active: true,
+          team_count: 2,
+          custom_team_allowed: true,
+          teams: [
+            { ...lesTeam("les-a", "Falke Esports", "FAL", 300) },
+            { ...lesTeam("les-b", "Other Club", "OTH", 180) },
           ],
         },
       ],
@@ -184,5 +259,79 @@ describe("TeamSelectionV2", () => {
     fireEvent.click(await screen.findByRole("button", { name: /G2 Esports/i }));
 
     expect(screen.getByRole("button", { name: /Confirmar/i })).toBeEnabled();
+  });
+
+  describe("create your team", () => {
+    it("shows the create card only in leagues that allow a custom club", async () => {
+      const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
+      render(
+        <MemoryRouter>
+          <TeamSelectionV2 />
+        </MemoryRouter>,
+      );
+
+      fireEvent.click(await screen.findByRole("button", { name: /LEC/i }));
+      await screen.findByRole("button", { name: /G2 Esports/i });
+      expect(screen.queryByRole("button", { name: /Create your team/i })).not.toBeInTheDocument();
+    });
+
+    it("offers the create card in a league that allows it", async () => {
+      const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
+      render(
+        <MemoryRouter>
+          <TeamSelectionV2 />
+        </MemoryRouter>,
+      );
+
+      fireEvent.click(await screen.findByRole("button", { name: /LES/i }));
+      expect(await screen.findByRole("button", { name: /Create your team/i })).toBeInTheDocument();
+    });
+
+    it("confirms the replaced slot with the spec and builds the lineup from manager.team_id", async () => {
+      mocks.selectTeam.mockResolvedValue(customGame());
+      mocks.invoke.mockResolvedValue(customGame());
+      await openWizard();
+      walkWizard();
+      fireEvent.click(screen.getByRole("button", { name: "Create club" }));
+
+      await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith("/dashboard"));
+      expect(mocks.selectTeam).toHaveBeenCalledWith("les-b", "en", {
+        name: "Ray Esports",
+        short_name: "RAY",
+        primary_color: "#f97316",
+        secondary_color: "#18181b",
+        country: "ES",
+      });
+      // selectedTeamId was never set; the lineup must come from the generated club.
+      expect(mocks.invoke).toHaveBeenCalledWith("set_active_lineup", {
+        playerIds: ["ray-0", "ray-1", "ray-2", "ray-3", "ray-4"],
+      });
+    });
+
+    it("keeps the wizard open and localizes a backend rejection", async () => {
+      mocks.selectTeam.mockRejectedValue("Another team already uses this name");
+      await openWizard();
+      walkWizard();
+      fireEvent.click(screen.getByRole("button", { name: "Create club" }));
+
+      expect(await screen.findByText("Another club already uses this name.")).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Identity" })).toBeInTheDocument();
+      expect(mocks.navigate).not.toHaveBeenCalledWith("/dashboard");
+    });
+
+    it("returns to the team grid on Escape from the wizard", async () => {
+      await openWizard();
+      fireEvent.keyDown(screen.getByLabelText("Club name"), { key: "Escape" });
+
+      expect(await screen.findByRole("button", { name: /Create your team/i })).toBeInTheDocument();
+      expect(screen.queryByLabelText("Club name")).not.toBeInTheDocument();
+    });
+
+    it("disables Create club while the roster overlay is updating", async () => {
+      mocks.rosterStatus = "updating";
+      await openWizard();
+      walkWizard();
+      expect(screen.getByRole("button", { name: "Create club" })).toBeDisabled();
+    });
   });
 });

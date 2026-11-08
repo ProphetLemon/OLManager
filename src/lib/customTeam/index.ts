@@ -1,5 +1,6 @@
 export { buildBadgeDataUri } from "./badge";
 export {
+  BACKEND_ERROR_TABLE,
   LOW_CONTRAST_RATIO,
   NAME_MAX,
   NAME_MIN,
