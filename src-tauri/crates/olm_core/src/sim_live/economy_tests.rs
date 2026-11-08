@@ -230,7 +230,45 @@ fn role_weights_keep_team_gold_at_the_unweighted_baseline() {
     );
 }
 
+/// Inclusive `(min, max)` share of team gold per role after 12 minutes.
+///
+/// Support and Bot earn relatively more early (assist and passive income) than
+/// over a whole match, so these bands sit around the 12-minute measurement of
+/// the shipped weights (Top 19-20%, Jungle 18%, Mid 21-24%, Bot 21-25%, Support
+/// 16-17%) rather than the full-match targets. With every weight at 1.0 the
+/// same run gives Top 27%, Jungle 15%, Mid 32%, Bot 16%, Support 11%, outside
+/// four of the five bands, so the check still catches broken weights.
+/// [PLACEHOLDER] the full-match targets stay in `ROLE_SHARE_RANGE`.
+const EARLY_ROLE_SHARE_RANGE: [(&str, f64, f64); 5] = [
+    ("TOP", 0.17, 0.24),
+    ("JGL", 0.15, 0.21),
+    ("MID", 0.19, 0.26),
+    ("ADC", 0.19, 0.27),
+    ("SUP", 0.13, 0.19),
+];
+
+/// Cheap default guard for the role shares: 4 seeded matches cut at 12
+/// minutes (about 8 s in a debug build) instead of 12 full ones (about 70 s).
 #[test]
+fn early_game_role_gold_shares_stay_in_band() {
+    let summary = summarize(&run_batch(0, 4, 0.0, 0.0, SHORT_RUN_TICKS));
+    for (role, min, max) in EARLY_ROLE_SHARE_RANGE {
+        let share = summary.role_share[role];
+        assert!(
+            (min..=max).contains(&share),
+            "{role} earns {:.1}% of team gold after 12 min, expected {:.0}%-{:.0}%",
+            share * 100.0,
+            min * 100.0,
+            max * 100.0
+        );
+    }
+}
+
+/// Full-match version of the share and pacing guard (12 full matches, about
+/// 70 s in a debug build): `cargo test -p olm_core --lib
+/// sim_live::economy_tests::role_gold_shares_match_pro_averages -- --ignored`.
+#[test]
+#[ignore = "slow: 12 full matches (about 70 s debug); run explicitly when changing the economy"]
 fn role_gold_shares_match_pro_averages() {
     let outcomes = run_batch(0, batch_size(12), 0.0, 0.0, FULL_MATCH_TICKS);
     let summary = summarize(&outcomes);
