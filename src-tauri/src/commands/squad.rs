@@ -1450,8 +1450,7 @@ pub(crate) fn get_scrim_context_internal(
     );
 
     let has_official_match = game
-        .leagues
-        .first()
+        .active_league()
         .map(|league| {
             league.fixtures.iter().any(|fixture| {
                 fixture.status == olm_core::domain::league::FixtureStatus::Scheduled

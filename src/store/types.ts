@@ -61,6 +61,7 @@ export interface TeamSeasonRecord {
   kills_for: number;
   kills_against: number;
   points?: number;
+  competition_id?: string | null;
 }
 
 export interface TeamRolesData {

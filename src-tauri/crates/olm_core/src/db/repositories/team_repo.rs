@@ -508,6 +508,7 @@ mod tests {
             lost: 5,
             kills_for: 55,
             kills_against: 30,
+            competition_id: None,
         });
 
         upsert_team(db.conn(), &team).unwrap();

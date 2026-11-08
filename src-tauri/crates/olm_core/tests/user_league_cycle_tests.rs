@@ -499,6 +499,38 @@ fn season_wrap_keeps_tier_logo_and_active_on_every_league() {
     );
 }
 
+fn history_competition(game: &Game, team_id: &str) -> Option<String> {
+    game.teams
+        .iter()
+        .find(|t| t.id == team_id)
+        .and_then(|t| t.history.iter().find(|r| r.season == 2025))
+        .and_then(|r| r.competition_id.clone())
+}
+
+#[test]
+fn season_wrap_stamps_the_users_league_on_its_team_history() {
+    let mut game = finished_two_league_game("lec", 1);
+    advance_season(&mut game);
+    assert_eq!(history_competition(&game, "lec1").as_deref(), Some("lec"));
+}
+
+#[test]
+fn season_wrap_stamps_the_background_league_on_its_team_history() {
+    let mut game = finished_two_league_game("lec", 1);
+    advance_season(&mut game);
+    assert_eq!(history_competition(&game, "reg1").as_deref(), Some("reg"));
+}
+
+#[test]
+fn old_team_history_without_competition_id_deserializes() {
+    let record: TeamSeasonRecord = serde_json::from_str(
+        r#"{"season":2024,"league_position":2,"played":10,"won":6,"lost":4,
+            "kills_for":14,"kills_against":9}"#,
+    )
+    .expect("old save record should load");
+    assert_eq!(record.competition_id, None);
+}
+
 #[test]
 fn background_roll_gives_the_team_its_real_position_over_a_zero_placeholder() {
     let mut game = finished_two_league_game("lec", 1);
@@ -517,6 +549,7 @@ fn background_roll_gives_the_team_its_real_position_over_a_zero_placeholder() {
         lost: 3,
         kills_for: 0,
         kills_against: 3,
+        competition_id: None,
     });
     process_background_seasons(&mut game, &cycle_manifests());
     let team = game.teams.iter().find(|t| t.id == "reg4").unwrap();

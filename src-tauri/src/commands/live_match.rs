@@ -191,8 +191,7 @@ pub fn record_fixture_champion_picks(
         .ok_or("No active game session".to_string())?;
 
     let league = game
-        .leagues
-        .first_mut()
+        .active_league_mut()
         .ok_or("No active league in game state".to_string())?;
     let fixture = league
         .fixtures

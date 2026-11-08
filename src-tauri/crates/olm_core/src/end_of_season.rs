@@ -377,6 +377,9 @@ pub fn roll_completed_background_leagues(
                         if record.league_position == 0 {
                             record.league_position = position;
                         }
+                        if record.competition_id.is_none() {
+                            record.competition_id = competition_id.clone();
+                        }
                     } else {
                         team.history.push(TeamSeasonRecord {
                             season,
@@ -386,6 +389,7 @@ pub fn roll_completed_background_leagues(
                             lost: standing.lost,
                             kills_for: standing.maps_won,
                             kills_against: standing.maps_lost,
+                            competition_id: competition_id.clone(),
                         });
                     }
                     team.form.clear();
@@ -425,6 +429,7 @@ fn process_end_of_season_inner(
         .unwrap_or(&league.id)
         .to_string();
     let season = league.season;
+    let league_competition_id = league.competition_id.clone();
     let league_name = league.name.clone();
     let _current_split_index = league.split_index;
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
@@ -521,6 +526,7 @@ fn process_end_of_season_inner(
                 lost: standing.lost,
                 kills_for: standing.maps_won,
                 kills_against: standing.maps_lost,
+                competition_id: league_competition_id.clone(),
             });
             // Reset form
             team.form.clear();

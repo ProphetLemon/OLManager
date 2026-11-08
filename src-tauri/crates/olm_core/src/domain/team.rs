@@ -709,6 +709,10 @@ pub struct TeamSeasonRecord {
     pub lost: u32,
     pub kills_for: u32,
     pub kills_against: u32,
+    /// Competition the team played this season in. `None` for records written before
+    /// teams could move between competitions.
+    #[serde(default)]
+    pub competition_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -377,6 +377,7 @@ fn maybe_push_weekly_academy_report(game: &mut Game, today: &str) {
                     lost: 0,
                     kills_for: 0,
                     kills_against: 0,
+                    competition_id: None,
                 });
             let points = record.won.saturating_mul(3);
             let goal_diff = record.kills_for as i32 - record.kills_against as i32;
@@ -603,6 +604,7 @@ fn ensure_team_season_record(team: &mut Team, season: u32) -> &mut TeamSeasonRec
         lost: 0,
         kills_for: 0,
         kills_against: 0,
+        competition_id: team.competition_id.clone(),
     });
     let last_index = team.history.len().saturating_sub(1);
     &mut team.history[last_index]
