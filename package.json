@@ -18,6 +18,7 @@
     "test:e2e": "playwright test --config e2e/playwright.config.ts",
     "test:e2e:ui": "playwright test --config e2e/playwright.config.ts --ui",
     "world:refresh": "node scripts/world/refresh.mjs",
+    "release:fork": "node scripts/release/build-fork-release.mjs",
     "world:keygen": "node scripts/world/keygen.mjs",
     "world:sign": "node scripts/world/sign.mjs",
     "verify:world-overlay": "node scripts/world/verify-overlay.mjs"
