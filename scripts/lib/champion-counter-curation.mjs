@@ -4,6 +4,9 @@
 export const CURATION_SOURCE = "assets/simulation/champion-counter-curation.json";
 export const CURATION_OPS = ["remove", "add", "set"];
 export const CURATION_CONFIDENCES = ["high", "medium"];
+/** Where a change comes from. Optional per change; absent means general_knowledge. */
+export const CURATION_BASES = ["general_knowledge", "pro_play_stats"];
+export const DEFAULT_CURATION_BASIS = "general_knowledge";
 
 const pairKey = (source, target) => `${source}::${target}`;
 
@@ -26,6 +29,7 @@ export function validateCuration(curation) {
     if (change.op !== "remove" && (!Number.isInteger(change.value) || change.value < 1 || change.value > 5)) fail(`${label} value must be an integer 1..5`);
     if (change.op === "remove" && "value" in change) fail(`${label} remove must not carry a value`);
     if (!CURATION_CONFIDENCES.includes(change.confidence)) fail(`${label} has unsupported confidence`);
+    if ("basis" in change && !CURATION_BASES.includes(change.basis)) fail(`${label} has unsupported basis`);
     if (typeof change.reason !== "string" || !change.reason) fail(`${label} needs a reason`);
     const key = pairKey(change.source, change.target);
     if (seen.has(key)) fail(`${label} duplicates a change for ${key}`);
@@ -64,8 +68,8 @@ export function applyCounterCuration(legacyCounters, curation) {
   return { counters: [...entries.values()], summary };
 }
 
-function curatedMark({ op, confidence, reason }) {
-  return { op, confidence, reason };
+function curatedMark({ op, confidence, reason, basis = DEFAULT_CURATION_BASIS }) {
+  return { op, confidence, reason, basis };
 }
 
 /** Throws unless the counters are integer 1..5, free of self and mutual pairs, and use known champion IDs. */

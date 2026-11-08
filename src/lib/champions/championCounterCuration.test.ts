@@ -57,6 +57,22 @@ describe("validation", () => {
     expect(counters[counters.length - 1].curated).toMatchObject({ op: "add", confidence: "medium" });
   });
 
+  it("accepts a per-entry basis, defaults it to general knowledge and rejects unknown ones", () => {
+    for (const basis of ["general_knowledge", "pro_play_stats"]) {
+      expect(() => validateCuration({ metadata, changes: [change({ op: "add", source: "a", target: "b", value: 2, basis })] })).not.toThrow();
+    }
+    expect(() => validateCuration({ metadata, changes: [change({ op: "add", source: "a", target: "b", value: 2, basis: "vibes" })] })).toThrow(/basis/);
+    const { counters } = applyCounterCuration(legacy, {
+      metadata,
+      changes: [
+        change({ op: "add", source: "e", target: "a", value: 2, basis: "pro_play_stats" }),
+        change({ op: "add", source: "f", target: "a", value: 2 }),
+      ],
+    });
+    expect(counters[2].curated).toMatchObject({ basis: "pro_play_stats" });
+    expect(counters[3].curated).toMatchObject({ basis: "general_knowledge" });
+  });
+
   it("flags out-of-range, self, mutual and unknown counters", () => {
     const ids = new Set(["a", "b"]);
     expect(() => validateCounterSet([{ source: "a", target: "b", value: 3 }], ids)).not.toThrow();

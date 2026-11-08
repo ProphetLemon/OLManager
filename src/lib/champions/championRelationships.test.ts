@@ -151,7 +151,7 @@ describe("curated counter corrections", () => {
       "yuumi->swain",
       "yuumi->zyra",
     ]);
-    expect(curated.every((relationship) => ["high", "medium"].includes(relationship.confidence) && relationship.review_flags.includes("curated_general_knowledge"))).toBe(true);
+    expect(curated.every((relationship) => ["high", "medium"].includes(relationship.confidence) && relationship.review_flags.some((flag) => flag === "curated_general_knowledge" || flag === "curated_pro_play_stats"))).toBe(true);
     expect(getChampionCounterValue("Aatrox", "Cho'Gath")).toBe(1);
   });
 
@@ -160,6 +160,20 @@ describe("curated counter corrections", () => {
     expect(getChampionCounterValue("Poppy", "KSante")).toBe(3);
     expect(getChampionCounterValue("Cassiopeia", "Viktor")).toBe(1);
     expect(getChampionCounterValue("Viktor", "Cassiopeia")).toBe(0);
+  });
+
+  it("gives stats-based curated counters their own provenance and keeps the others unchanged", () => {
+    const curated = championRelationships.counters.filter((relationship) => relationship.status === "curated");
+    const stats = curated.filter((relationship) => relationship.review_flags.includes("curated_pro_play_stats"));
+    expect(stats).toHaveLength(11);
+    for (const relationship of stats) {
+      expect(relationship.review_flags).toEqual(["curated_pro_play_stats"]);
+      expect(relationship.review.reason).toMatch(/pro-play lane matchup statistics \(Leaguepedia\)/);
+      expect(relationship.review.reason).not.toMatch(/general lane-matchup knowledge/);
+    }
+    const general = curated.filter((relationship) => !stats.includes(relationship));
+    expect(general).toHaveLength(32);
+    expect(general.every((relationship) => relationship.review_flags.join() === "curated_general_knowledge" && /general lane-matchup knowledge/.test(relationship.review.reason))).toBe(true);
   });
 
   it("has no mutual counter pairs", () => {

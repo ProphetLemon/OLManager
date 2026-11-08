@@ -42,16 +42,25 @@ const legacyCounters = legacy.counterpicks.map(({ a, b, value }) => ({
 }));
 const curatedCounters = applyCounterCuration(legacyCounters, curation);
 
-function curatedReview({ confidence, reason }) {
+const CURATED_PROVENANCE = {
+  general_knowledge: { flag: "curated_general_knowledge", text: "Curated from general lane-matchup knowledge; re-review on major champion changes." },
+  pro_play_stats: {
+    flag: "curated_pro_play_stats",
+    text: "Curated from pro-play lane matchup statistics (Leaguepedia); n and Wilson lower bound in the rationale. A statistical lead without multiple-comparison correction; re-review on major champion changes.",
+  },
+};
+
+function curatedReview({ confidence, reason, basis }) {
   const nextReviewYear = Number(curation.metadata.reviewed_at.slice(0, 4)) + 1;
+  const provenance = CURATED_PROVENANCE[basis];
   return {
     status: "curated",
     confidence,
-    review_flags: ["curated_general_knowledge"],
+    review_flags: [provenance.flag],
     review: {
       required: true,
       next_review_at: `${nextReviewYear}${curation.metadata.reviewed_at.slice(4)}`,
-      reason: `Curated from general lane-matchup knowledge; re-review on major champion changes. ${reason}`,
+      reason: `${provenance.text} ${reason}`,
     },
   };
 }
