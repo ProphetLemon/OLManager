@@ -25,7 +25,7 @@ export function isNoReleaseError(err: unknown): boolean {
  */
 export function isNoPlatformBuildError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
-  return /platform .* not found|not found in the response `platforms`/i.test(message);
+  return /platform .* not found|(?:not found|were found) in the response `platforms`/i.test(message);
 }
 
 export class NoPlatformBuildError extends Error {
