@@ -166,6 +166,11 @@ pub struct Game {
     /// team at that moment become residents of the team's league region.
     #[serde(default)]
     pub residency_initialized: bool,
+    /// Team ids deliberately deleted from the world (for example a club replaced
+    /// by a custom team). Catalog rehydration must never bring them back or
+    /// point players at them. A `Vec` keeps serialization deterministic.
+    #[serde(default)]
+    pub removed_team_ids: Vec<String>,
 }
 
 /// Lenient deserializer for `competition_configs`.
@@ -230,6 +235,7 @@ impl Game {
             retired_player_ids: vec![],
             world_overlay_as_of: None,
             residency_initialized: false,
+            removed_team_ids: vec![],
         };
         crate::identity_upgrade::upgrade_game_football_identities(&mut game);
         crate::season_context::refresh_game_context(&mut game);
