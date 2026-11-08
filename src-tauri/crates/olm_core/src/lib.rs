@@ -45,6 +45,7 @@ pub mod scouting;
 pub mod scrim_flow;
 pub mod season_awards;
 pub mod season_context;
+pub mod season_rollover;
 pub mod sim_live;
 pub mod sim_live_bridge;
 pub mod social;

@@ -15,6 +15,7 @@ use olm_core::game::Game;
 use olm_core::generator::definitions::{
     CompetitionManifest, PlayoffConfig, ScheduleConfig, SeasonStart, SplitConfig,
 };
+use olm_core::season_rollover::advance_season;
 use olm_core::turn;
 use std::collections::HashMap;
 
@@ -381,4 +382,77 @@ fn end_of_split_regenerates_only_the_users_league() {
             .iter()
             .all(|f| f.status == FixtureStatus::Completed)
     );
+}
+
+/// Finished two-league game whose user league is `user_league`, with both leagues on
+/// `split_index` and the two-split cycle manifests registered in the game config.
+fn finished_two_league_game(user_league: &str, split_index: usize) -> Game {
+    let mut game = two_league_game(4, 4, user_league);
+    game.leagues = game.leagues.into_iter().map(completed).collect();
+    for l in &mut game.leagues {
+        l.split_index = split_index;
+    }
+    game.competition_configs = cycle_manifests();
+    game
+}
+
+#[test]
+fn advance_season_moves_both_leagues_to_the_next_split_when_the_user_is_first() {
+    let mut game = finished_two_league_game("lec", 0);
+    let outcome = advance_season(&mut game);
+    assert!(!outcome.was_season_end);
+    assert_eq!(
+        (
+            league_by_id(&game, "lec").split_index,
+            league_by_id(&game, "reg").split_index
+        ),
+        (1, 1)
+    );
+}
+
+#[test]
+fn advance_season_moves_both_leagues_to_the_next_split_when_the_user_is_second() {
+    let mut game = finished_two_league_game("reg", 0);
+    let outcome = advance_season(&mut game);
+    assert!(!outcome.was_season_end);
+    assert_eq!(
+        (
+            league_by_id(&game, "lec").split_index,
+            league_by_id(&game, "reg").split_index
+        ),
+        (1, 1)
+    );
+}
+
+#[test]
+fn advance_season_summarises_the_finished_split_of_the_users_league() {
+    let mut game = finished_two_league_game("reg", 0);
+    let outcome = advance_season(&mut game);
+    assert_eq!(outcome.summary.league_name, "REG");
+    assert_eq!(outcome.summary.total_teams, 4);
+}
+
+#[test]
+fn advance_season_wraps_both_leagues_into_the_next_season_on_the_last_split() {
+    let mut game = finished_two_league_game("reg", 1);
+    let outcome = advance_season(&mut game);
+    assert!(outcome.was_season_end);
+    let seasons: Vec<(u32, usize)> = ["lec", "reg"]
+        .into_iter()
+        .map(|id| {
+            (
+                league_by_id(&game, id).season,
+                league_by_id(&game, id).split_index,
+            )
+        })
+        .collect();
+    assert_eq!(seasons, vec![(2026, 0), (2026, 0)]);
+}
+
+#[test]
+fn advance_season_without_a_manifest_runs_the_legacy_season_end() {
+    let mut game = finished_two_league_game("lec", 0);
+    game.competition_configs.clear();
+    let outcome = advance_season(&mut game);
+    assert!(outcome.was_season_end);
 }

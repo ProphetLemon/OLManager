@@ -290,9 +290,8 @@ pub fn process_end_of_split(game: &mut Game, manifest: &CompetitionManifest) {
 
 /// Process end-of-season for background leagues (every league except the
 /// user's active league, wherever it sits in `game.leagues`).
-/// Records team history for completed bg leagues and generates next season via
-/// the competition manifest (looked up by competition_id).
-/// Skips bg leagues that are not complete, or have no competition_id.
+/// Skips bg leagues that are not complete; see [`roll_completed_background_leagues`]
+/// for what happens to the complete ones.
 pub fn process_background_seasons(
     game: &mut Game,
     manifests: &HashMap<String, CompetitionManifest>,
@@ -303,8 +302,19 @@ pub fn process_background_seasons(
         .filter(|i| *i != active_index)
         .filter(|i| is_league_complete(&game.leagues[*i]))
         .collect();
+    roll_completed_background_leagues(game, manifests, &complete_indices);
+}
 
-    for i in complete_indices {
+/// Roll the given completed background leagues forward.
+/// Records team history for leagues that closed their season and generates the next
+/// split/season via the competition manifest (looked up by competition_id). Leagues
+/// without a competition_id or manifest keep their finished schedule.
+pub fn roll_completed_background_leagues(
+    game: &mut Game,
+    manifests: &HashMap<String, CompetitionManifest>,
+    completed_indices: &[usize],
+) {
+    for &i in completed_indices {
         let season = game.leagues[i].season;
         let final_standings = game.leagues[i].sorted_standings();
         let competition_id = game.leagues[i].competition_id.clone();
