@@ -16,7 +16,7 @@ describe("champion relationships", () => {
       migration: { legacy_counts: { counters: 2464 } },
     });
     expect(championRelationships.roles).toHaveLength(172);
-    expect(championRelationships.counters).toHaveLength(2468);
+    expect(championRelationships.counters).toHaveLength(2479);
     expect(championRelationships.synergies).toHaveLength(670);
   });
 
@@ -109,6 +109,7 @@ describe("curated counter corrections", () => {
     expect(curated.map((relationship) => `${relationship.source}->${relationship.target}`).sort()).toEqual([
       "braum->senna",
       "caitlyn->ezreal",
+      "cassiopeia->viktor",
       "fizz->azir",
       "fizz->cassiopeia",
       "fizz->ziggs",
@@ -120,6 +121,7 @@ describe("curated counter corrections", () => {
       "jax->irelia",
       "jax->volibear",
       "jayce->volibear",
+      "kalista->varus",
       "karma->xerath",
       "leona->velkoz",
       "leona->xerath",
@@ -130,9 +132,18 @@ describe("curated counter corrections", () => {
       "morgana->blitzcrank",
       "morgana->pyke",
       "naafiri->aurelionsol",
+      "poppy->ksante",
+      "poppy->leesin",
+      "poppy->leona",
+      "poppy->rell",
+      "poppy->sejuani",
       "quinn->darius",
       "rammus->masteryi",
+      "renata->rell",
+      "skarner->sejuani",
       "sylas->shyvana",
+      "trundle->ivern",
+      "trundle->sejuani",
       "yasuo->naafiri",
       "yone->aurelionsol",
       "yone->naafiri",
@@ -142,6 +153,13 @@ describe("curated counter corrections", () => {
     ]);
     expect(curated.every((relationship) => ["high", "medium"].includes(relationship.confidence) && relationship.review_flags.includes("curated_general_knowledge"))).toBe(true);
     expect(getChampionCounterValue("Aatrox", "Cho'Gath")).toBe(1);
+  });
+
+  it("adds stats-informed pro-play counters for champions that had none", () => {
+    expect(getChampionCounterValue("Trundle", "Ivern")).toBe(4);
+    expect(getChampionCounterValue("Poppy", "KSante")).toBe(3);
+    expect(getChampionCounterValue("Cassiopeia", "Viktor")).toBe(1);
+    expect(getChampionCounterValue("Viktor", "Cassiopeia")).toBe(0);
   });
 
   it("has no mutual counter pairs", () => {

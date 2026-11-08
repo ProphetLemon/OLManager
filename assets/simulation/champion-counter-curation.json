@@ -338,6 +338,94 @@
       "value": 3,
       "confidence": "high",
       "reason": "General knowledge, added with the Quinn catalog entry: Quinn out-ranges Darius, blinds his auto attacks and kites him, a widely known top lane counter."
+    },
+    {
+      "op": "add",
+      "source": "cassiopeia",
+      "target": "viktor",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "Pro-play Mid lane (Leaguepedia ScoreboardPlayers, 2025-01-01 onward): cassiopeia won 100 of 174 games (57.5%) against viktor, 95% Wilson lower bound 50.0%, band 1. A statistical lead without multiple-comparison correction, not a confirmed matchup."
+    },
+    {
+      "op": "add",
+      "source": "kalista",
+      "target": "varus",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "Pro-play Bot lane (Leaguepedia ScoreboardPlayers, 2025-01-01 onward): kalista won 107 of 185 games (57.8%) against varus, 95% Wilson lower bound 50.6%, band 1. A statistical lead without multiple-comparison correction, not a confirmed matchup."
+    },
+    {
+      "op": "add",
+      "source": "poppy",
+      "target": "ksante",
+      "value": 3,
+      "confidence": "medium",
+      "reason": "Pro-play Top lane (Leaguepedia ScoreboardPlayers, 2025-01-01 onward): poppy won 59 of 88 games (67.0%) against ksante, 95% Wilson lower bound 56.7%, band 3. A statistical lead without multiple-comparison correction, not a confirmed matchup."
+    },
+    {
+      "op": "add",
+      "source": "poppy",
+      "target": "leesin",
+      "value": 3,
+      "confidence": "medium",
+      "reason": "Pro-play Jungle lane (Leaguepedia ScoreboardPlayers, 2025-01-01 onward): poppy won 26 of 36 games (72.2%) against leesin, 95% Wilson lower bound 56.0%, band 3. A statistical lead without multiple-comparison correction, not a confirmed matchup."
+    },
+    {
+      "op": "add",
+      "source": "poppy",
+      "target": "leona",
+      "value": 3,
+      "confidence": "medium",
+      "reason": "Pro-play Support lane (Leaguepedia ScoreboardPlayers, 2025-01-01 onward): poppy won 95 of 147 games (64.6%) against leona, 95% Wilson lower bound 56.6%, band 3. A statistical lead without multiple-comparison correction, not a confirmed matchup."
+    },
+    {
+      "op": "add",
+      "source": "poppy",
+      "target": "rell",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "Pro-play Support lane (Leaguepedia ScoreboardPlayers, 2025-01-01 onward): poppy won 156 of 270 games (57.8%) against rell, 95% Wilson lower bound 51.8%, band 1. A statistical lead without multiple-comparison correction, not a confirmed matchup."
+    },
+    {
+      "op": "add",
+      "source": "poppy",
+      "target": "sejuani",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "Pro-play Jungle lane (Leaguepedia ScoreboardPlayers, 2025-01-01 onward): poppy won 31 of 47 games (66.0%) against sejuani, 95% Wilson lower bound 51.7%, band 1. A statistical lead without multiple-comparison correction, not a confirmed matchup."
+    },
+    {
+      "op": "add",
+      "source": "renata",
+      "target": "rell",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "Pro-play Support lane (Leaguepedia ScoreboardPlayers, 2025-01-01 onward): renata won 90 of 153 games (58.8%) against rell, 95% Wilson lower bound 50.9%, band 1. A statistical lead without multiple-comparison correction, not a confirmed matchup."
+    },
+    {
+      "op": "add",
+      "source": "skarner",
+      "target": "sejuani",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "Pro-play Jungle lane (Leaguepedia ScoreboardPlayers, 2025-01-01 onward): skarner won 110 of 191 games (57.6%) against sejuani, 95% Wilson lower bound 50.5%, band 1. A statistical lead without multiple-comparison correction, not a confirmed matchup."
+    },
+    {
+      "op": "add",
+      "source": "trundle",
+      "target": "ivern",
+      "value": 4,
+      "confidence": "medium",
+      "reason": "Pro-play Jungle lane (Leaguepedia ScoreboardPlayers, 2025-01-01 onward): trundle won 24 of 31 games (77.4%) against ivern, 95% Wilson lower bound 60.2%, band 4. A statistical lead without multiple-comparison correction, not a confirmed matchup."
+    },
+    {
+      "op": "add",
+      "source": "trundle",
+      "target": "sejuani",
+      "value": 1,
+      "confidence": "medium",
+      "reason": "Pro-play Jungle lane (Leaguepedia ScoreboardPlayers, 2025-01-01 onward): trundle won 44 of 71 games (62.0%) against sejuani, 95% Wilson lower bound 50.3%, band 1. A statistical lead without multiple-comparison correction, not a confirmed matchup."
     }
   ]
 }
