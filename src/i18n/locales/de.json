@@ -1577,6 +1577,9 @@
     "playoffBracketTitle": "Playoff bracket",
     "upperBracket": "Upper Bracket",
     "lowerBracket": "Lower Bracket",
+    "singleEliminationBracket": "K.-o.-System",
+    "playoffSemifinals": "Halbfinale",
+    "playoffFinal": "Finale",
     "scheduled": "Scheduled",
     "overview": "Übersicht",
     "leagueTable": "Ligatabelle"

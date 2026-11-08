@@ -1430,6 +1430,9 @@
     "playoffBracketTitle": "Playoff bracket",
     "upperBracket": "Upper Bracket",
     "lowerBracket": "Lower Bracket",
+    "singleEliminationBracket": "Eliminazione diretta",
+    "playoffSemifinals": "Semifinali",
+    "playoffFinal": "Finale",
     "scheduled": "Scheduled"
   },
   "news": {

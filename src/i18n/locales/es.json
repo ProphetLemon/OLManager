@@ -1705,6 +1705,9 @@
     "playoffBracketTitle": "Cuadro de playoffs",
     "upperBracket": "Upper Bracket",
     "lowerBracket": "Lower Bracket",
+    "singleEliminationBracket": "Eliminación directa",
+    "playoffSemifinals": "Semifinales",
+    "playoffFinal": "Final",
     "scheduled": "Programado",
     "overview": "Resumen",
     "leagueTable": "Tabla de Liga"

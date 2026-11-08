@@ -1577,6 +1577,9 @@
     "playoffBracketTitle": "Chave dos playoffs",
     "upperBracket": "Chave superior",
     "lowerBracket": "Chave inferior",
+    "singleEliminationBracket": "Eliminação direta",
+    "playoffSemifinals": "Semifinais",
+    "playoffFinal": "Final",
     "scheduled": "Agendado",
     "overview": "Visão Geral",
     "leagueTable": "Tabela da Liga"
