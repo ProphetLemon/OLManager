@@ -9,7 +9,7 @@ use olm_core::domain::league::{
 use olm_core::domain::manager::Manager;
 use olm_core::domain::player::{Player, PlayerAttributes};
 use olm_core::domain::stats::LolRole;
-use olm_core::domain::team::Team;
+use olm_core::domain::team::{Team, TeamSeasonRecord};
 use olm_core::end_of_season::{process_background_seasons, process_end_of_split};
 use olm_core::game::Game;
 use olm_core::generator::definitions::{
@@ -455,4 +455,70 @@ fn advance_season_without_a_manifest_runs_the_legacy_season_end() {
     game.competition_configs.clear();
     let outcome = advance_season(&mut game);
     assert!(outcome.was_season_end);
+}
+
+/// Tag every league with the metadata a regenerated schedule must not lose.
+fn tag_leagues(game: &mut Game) {
+    for (tier, l) in (1u8..).zip(game.leagues.iter_mut()) {
+        l.tier = tier + 1;
+        l.logo = Some(format!("{}.png", l.id));
+        l.active = true;
+    }
+}
+
+fn metadata(game: &Game, id: &str) -> (u8, Option<String>, bool, LeagueKind) {
+    let l = league_by_id(game, id);
+    (l.tier, l.logo.clone(), l.active, l.league_kind.clone())
+}
+
+#[test]
+fn split_advance_keeps_tier_logo_and_active_on_every_league() {
+    let mut game = finished_two_league_game("lec", 0);
+    tag_leagues(&mut game);
+    advance_season(&mut game);
+    assert_eq!(
+        (metadata(&game, "lec"), metadata(&game, "reg")),
+        (
+            (2, Some("lec.png".into()), true, LeagueKind::Main),
+            (3, Some("reg.png".into()), true, LeagueKind::Main)
+        )
+    );
+}
+
+#[test]
+fn season_wrap_keeps_tier_logo_and_active_on_every_league() {
+    let mut game = finished_two_league_game("reg", 1);
+    tag_leagues(&mut game);
+    advance_season(&mut game);
+    assert_eq!(
+        (metadata(&game, "lec"), metadata(&game, "reg")),
+        (
+            (2, Some("lec.png".into()), true, LeagueKind::Main),
+            (3, Some("reg.png".into()), true, LeagueKind::Main)
+        )
+    );
+}
+
+#[test]
+fn background_roll_gives_the_team_its_real_position_over_a_zero_placeholder() {
+    let mut game = finished_two_league_game("lec", 1);
+    let last_team = game
+        .teams
+        .iter_mut()
+        .find(|t| t.id == "reg4")
+        .expect("reg4 exists");
+    // `ensure_team_season_record` pre-creates the record with position 0 during the
+    // parallel background simulation.
+    last_team.history.push(TeamSeasonRecord {
+        season: 2025,
+        league_position: 0,
+        played: 3,
+        won: 0,
+        lost: 3,
+        kills_for: 0,
+        kills_against: 3,
+    });
+    process_background_seasons(&mut game, &cycle_manifests());
+    let team = game.teams.iter().find(|t| t.id == "reg4").unwrap();
+    assert_eq!(team.history[0].league_position, 4);
 }
