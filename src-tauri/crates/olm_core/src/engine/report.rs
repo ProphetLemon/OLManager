@@ -216,7 +216,7 @@ impl MatchReport {
                 stats.role = Some(unit.role);
                 stats.kills = unit.kills as u16;
                 stats.deaths = unit.deaths as u16;
-                stats.gold_earned = unit.gold.round().max(0.0) as u32;
+                stats.gold_earned = (unit.gold + unit.gold_spent).round().max(0.0) as u32;
                 stats.damage_dealt = unit.damage_dealt.round().max(0.0) as u32;
 
                 match unit.side {

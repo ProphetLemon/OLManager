@@ -137,8 +137,13 @@ pub struct LolUnitState {
     pub level: u8,
     #[serde(default)]
     pub xp: f64,
+    /// Unspent gold. Total gold earned is `gold + gold_spent`.
     #[serde(default)]
     pub gold: f64,
+    /// Gold already converted into completed items. Saves written before the
+    /// item model deserialize to 0 and simply start buying from their current gold.
+    #[serde(default)]
+    pub gold_spent: f64,
     #[serde(default)]
     pub damage_dealt: f64,
     #[serde(default)]
@@ -296,6 +301,7 @@ impl LolMapState {
                 level: 1,
                 xp: 0.0,
                 gold: 500.0,
+                gold_spent: 0.0,
                 damage_dealt: 0.0,
                 item_tier: 0,
                 condition: player.condition,
@@ -325,6 +331,7 @@ impl LolMapState {
                 level: 1,
                 xp: 0.0,
                 gold: 500.0,
+                gold_spent: 0.0,
                 damage_dealt: 0.0,
                 item_tier: 0,
                 condition: player.condition,
@@ -490,9 +497,10 @@ impl LiveMatchState {
             if !unit.alive {
                 continue;
             }
-            unit.gold += passive_gold;
+            credit_gold(unit, passive_gold);
             unit.xp += 16.0;
             sync_progress(unit);
+            buy_items(unit);
         }
     }
 
@@ -643,7 +651,7 @@ impl LiveMatchState {
             let (killer_side, killer_id) = {
                 let k = &mut self.lol_map.units[killer_idx];
                 k.kills = k.kills.saturating_add(1);
-                k.gold += 300.0;
+                credit_gold(k, 300.0);
                 k.xp += 180.0;
                 sync_progress(k);
                 (k.side, k.player_id.clone())
@@ -754,7 +762,10 @@ impl LiveMatchState {
                 }
             }
 
-            grant_objective_rewards(&mut self.lol_map.units, side, anchor);
+            if name == "baron" {
+                grant_team_gold(&mut self.lol_map.units, side, BARON_TEAM_GOLD, true);
+            }
+            grant_objective_rewards(&mut self.lol_map.units, side, anchor, name != "baron");
             push_event(self, minute, EventType::ObjectiveTaken, side, events);
         }
     }
@@ -797,6 +808,12 @@ impl LiveMatchState {
                     StructureTarget::Nexus => EventType::NexusDestroyed,
                 };
                 push_event(self, minute, event_type, attacker, events);
+                grant_team_gold(
+                    &mut self.lol_map.units,
+                    attacker,
+                    tower_team_gold(target),
+                    false,
+                );
 
                 if matches!(target, StructureTarget::Nexus) {
                     self.lol_map.destroyed_nexus_by = Some(attacker);
@@ -1061,7 +1078,7 @@ fn distribute_wave_income(
     let per_unit = gold_pool / idxs.len() as f64;
     for idx in idxs {
         let unit = &mut units[idx];
-        unit.gold += per_unit;
+        credit_gold(unit, per_unit);
         unit.xp += per_unit * 0.9;
         sync_progress(unit);
     }
@@ -1077,7 +1094,74 @@ fn sync_progress(unit: &mut LolUnitState) {
         req *= 1.17;
     }
     unit.level = level;
-    unit.item_tier = ((unit.gold / 1450.0).floor() as u8).min(6);
+}
+
+/// Price of each completed item, in the order a unit buys them.
+///
+/// Gold is no longer a power source by itself (ECON-001): it only matters once
+/// it is converted into a completed item, and fights read the item count. The
+/// prices keep the old pacing (one item per 1450 gold earned, the first one
+/// discounted by the 500 starting gold). [PLACEHOLDER] pending playtest.
+const ITEM_PRICES: [f64; 6] = [950.0, 1450.0, 1450.0, 1450.0, 1450.0, 1450.0];
+
+/// Gold every living teammate receives when a side takes Baron.
+/// Mirrors `sim_live::economy::BARON_TEAM_GOLD`. [PLACEHOLDER]
+const BARON_TEAM_GOLD: f64 = 300.0;
+
+/// Gold every member of the attacking side receives when a tower falls.
+/// Mirrors `sim_live::economy::tower_team_gold`. [PLACEHOLDER]
+fn tower_team_gold(target: StructureTarget) -> f64 {
+    match target {
+        StructureTarget::Outer(_) => 125.0,
+        StructureTarget::Inner(_) => 100.0,
+        StructureTarget::NexusTop | StructureTarget::NexusBot => 90.0,
+        StructureTarget::Inhib(_) | StructureTarget::Nexus => 0.0,
+    }
+}
+
+/// Relative weight of a role's income, pulling gold shares toward pro averages
+/// (Top 20-23%, Jungle 17-20%, Mid 21-24%, Bot 23-27%, Support 10-14%; general
+/// knowledge, approximate). Mirrors `sim_live::economy::role_income_weight`
+/// in intent; the weights differ because this engine distributes gold
+/// differently. [PLACEHOLDER]
+fn role_income_weight(role: LolRole) -> f64 {
+    match role {
+        LolRole::Top => 0.98,
+        LolRole::Jungle => 0.83,
+        LolRole::Mid => 1.19,
+        LolRole::Adc => 1.45,
+        LolRole::Support => 0.56,
+    }
+}
+
+fn credit_gold(unit: &mut LolUnitState, amount: f64) {
+    unit.gold += amount * role_income_weight(unit.role);
+}
+
+/// Converts unspent gold into completed items (at most six).
+fn buy_items(unit: &mut LolUnitState) {
+    while let Some(price) = ITEM_PRICES.get(unit.item_tier as usize).copied() {
+        if unit.gold < price {
+            break;
+        }
+        unit.gold -= price;
+        unit.gold_spent += price;
+        unit.item_tier += 1;
+    }
+}
+
+/// Pays `amount` to each member of `side` (living only when `alive_only`).
+fn grant_team_gold(units: &mut [LolUnitState], side: Side, amount: f64, alive_only: bool) {
+    if amount <= 0.0 {
+        return;
+    }
+    for unit in units
+        .iter_mut()
+        .filter(|u| u.side == side && (u.alive || !alive_only))
+    {
+        unit.gold += amount;
+        buy_items(unit);
+    }
 }
 
 fn objective_presence(units: &[LolUnitState], side: Side, anchor: (f64, f64), radius: f64) -> f64 {
@@ -1095,14 +1179,21 @@ fn objective_presence(units: &[LolUnitState], side: Side, anchor: (f64, f64), ra
         .sum()
 }
 
-fn grant_objective_rewards(units: &mut [LolUnitState], side: Side, anchor: (f64, f64)) {
+fn grant_objective_rewards(
+    units: &mut [LolUnitState],
+    side: Side,
+    anchor: (f64, f64),
+    pay_local_gold: bool,
+) {
     for unit in units.iter_mut().filter(|u| u.alive && u.side == side) {
         let d = distance((unit.x, unit.y), anchor);
         if d > 0.20 {
             continue;
         }
         let share = (1.0 - d / 0.20).clamp(0.35, 1.0);
-        unit.gold += 240.0 * share;
+        if pay_local_gold {
+            credit_gold(unit, 240.0 * share);
+        }
         unit.xp += 160.0 * share;
         sync_progress(unit);
     }
@@ -1474,3 +1565,6 @@ fn distance(a: (f64, f64), b: (f64, f64)) -> f64 {
     let dy = a.1 - b.1;
     (dx * dx + dy * dy).sqrt()
 }
+
+#[cfg(test)]
+mod economy_unit_tests;

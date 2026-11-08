@@ -1,6 +1,8 @@
 mod lol_map;
 mod simulation;
 mod snapshot;
+#[cfg(test)]
+mod economy_tests;
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};
