@@ -636,8 +636,13 @@ fn register_parallel_result(
 }
 
 /// Simulate due fixtures for a background league (academy or competition league[1..]).
-/// Updates fixture results, standings, and team form. Does NOT generate playoff fixtures,
-/// player stats, messages, or news.
+/// Updates fixture results, regular-season standings, and team form. Does NOT generate
+/// playoff fixtures (see [`schedule_playoffs_for`]), player stats, messages, or news.
+///
+/// Playoff fixtures that are due are played and stored so the bracket pairing functions
+/// can read their winners, but they never touch the regular-season standings. Every series
+/// is simulated as a single map whatever its `best_of`: background leagues trade the
+/// series length for speed, as their regular-season fixtures already do.
 /// Takes separate slices for teams, players, and league (disjoint Game fields) so
 /// the borrow checker permits simultaneous mutable access.
 fn simulate_background_league(
@@ -647,7 +652,8 @@ fn simulate_background_league(
     today: &str,
     season: u32,
 ) {
-    let mut completed_fixtures: Vec<(String, String, u8, u8)> = Vec::new();
+    // (home, away, home wins, away wins, counts for the regular-season standings)
+    let mut completed_fixtures: Vec<(String, String, u8, u8, bool)> = Vec::new();
 
     // Find due fixtures
     let fixtures_to_play: Vec<(usize, String, String)> = league
@@ -695,6 +701,7 @@ fn simulate_background_league(
     for ((fixture_index, home_team_id, away_team_id, home_wins, away_wins), _report) in
         simulated_results.iter().zip(match_reports.iter())
     {
+        let mut counts_for_standings = true;
         if let Some(fixture) = league.fixtures.get_mut(*fixture_index) {
             fixture.result = Some(MatchResult {
                 home_wins: *home_wins,
@@ -702,16 +709,23 @@ fn simulate_background_league(
                 ..MatchResult::default()
             });
             fixture.status = FixtureStatus::Completed;
+            counts_for_standings = fixture.counts_for_league_standings();
         }
         completed_fixtures.push((
             home_team_id.clone(),
             away_team_id.clone(),
             *home_wins,
             *away_wins,
+            counts_for_standings,
         ));
     }
 
-    for (home_team_id, away_team_id, home_wins, away_wins) in &completed_fixtures {
+    for (home_team_id, away_team_id, home_wins, away_wins, counts_for_standings) in
+        &completed_fixtures
+    {
+        if !counts_for_standings {
+            continue;
+        }
         if let Some(home) = league
             .standings
             .iter_mut()
@@ -729,7 +743,7 @@ fn simulate_background_league(
     }
 
     // Update team form (no player stats, messages, news)
-    for (home_team_id, away_team_id, home_wins, away_wins) in &completed_fixtures {
+    for (home_team_id, away_team_id, home_wins, away_wins, _) in &completed_fixtures {
         let home_won = if home_wins == away_wins {
             home_team_id <= away_team_id
         } else {
@@ -749,6 +763,9 @@ fn simulate_background_league(
 /// Simulate all background leagues (every league except the user's active
 /// league, wherever it sits in `game.leagues`) for today.
 /// This is a no-op when there is only the active league.
+/// After simulating the day, every background league with a competition manifest gets
+/// its next playoff round scheduled, and any league that is now complete is rolled
+/// forward the same day instead of waiting for the user's next season advance.
 /// Before simulation, runs repair_league to ensure all AI teams are match eligible.
 fn process_background_leagues(game: &mut Game, today: &str) {
     // Before background simulation, ensure all AI teams are match eligible.
@@ -783,6 +800,43 @@ fn process_background_leagues(game: &mut Game, today: &str) {
         }
         simulate_background_league(&mut game.teams, &game.players, league, today, season);
     }
+
+    // Playoffs need the manifest's bracket; leagues without one (academy leagues,
+    // removed competitions) finish with their regular season as they always did.
+    for index in 0..game.leagues.len() {
+        if index != active_index && background_league_has_manifest(game, index) {
+            schedule_playoffs_for(game, index);
+        }
+    }
+
+    roll_finished_background_leagues(game);
+}
+
+/// True when the league at `index` belongs to a competition whose manifest is loaded.
+fn background_league_has_manifest(game: &Game, index: usize) -> bool {
+    game.leagues
+        .get(index)
+        .and_then(|league| league.competition_id.as_ref())
+        .is_some_and(|cid| game.competition_configs.contains_key(cid))
+}
+
+/// Rolls every complete background league that has a manifest to its next split or
+/// season. Leagues without a manifest keep their finished schedule here, since rolling
+/// them would not regenerate fixtures and the same league would be "rolled" every day;
+/// the user's season advance still closes those. Rolling is idempotent: a rolled league
+/// has no completed fixtures and is no longer complete.
+fn roll_finished_background_leagues(game: &mut Game) {
+    let active_index = game.active_league_index();
+    let complete_indices: Vec<usize> = (0..game.leagues.len())
+        .filter(|&index| index != active_index)
+        .filter(|&index| background_league_has_manifest(game, index))
+        .filter(|&index| end_of_season::is_league_complete(&game.leagues[index]))
+        .collect();
+    if complete_indices.is_empty() {
+        return;
+    }
+    let manifests = game.competition_configs.clone();
+    end_of_season::roll_completed_background_leagues(game, &manifests, &complete_indices);
 }
 
 fn maybe_simulate_parallel_academy_leagues(game: &mut Game) {
@@ -1050,7 +1104,13 @@ fn playoff_series_length(
 /// Schedules the next playoff round for the user's active league.
 fn maybe_schedule_playoffs(game: &mut Game) {
     let index = game.active_league_index();
-    let Some(league) = game.leagues.get_mut(index) else {
+    schedule_playoffs_for(game, index);
+}
+
+/// Schedules the next playoff round for the league at `league_index`, using the bracket
+/// its current split declares (8, 6 or 4 seeds) or the LEC split-name fallback.
+fn schedule_playoffs_for(game: &mut Game, league_index: usize) {
+    let Some(league) = game.leagues.get_mut(league_index) else {
         return;
     };
 

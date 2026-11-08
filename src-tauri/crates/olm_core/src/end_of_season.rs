@@ -407,7 +407,31 @@ pub fn roll_completed_background_leagues(
             } else {
                 (season, next_idx)
             };
-            game.leagues[i] = build_split_league(&game.leagues[i], manifest, ns, split_idx, None);
+            let mut next = build_split_league(&game.leagues[i], manifest, ns, split_idx, None);
+            // A league that finishes while the next split's calendar window has already
+            // opened would get fixtures dated today or earlier, which no daily
+            // simulation ever plays. Shift the whole calendar past the clock instead.
+            let today = game.clock.current_date.date_naive();
+            shift_fixtures_after(&mut next, today);
+            game.leagues[i] = next;
+        }
+    }
+}
+
+/// Moves every fixture of `league` forward by the same number of days so the earliest one
+/// is dated after `date`. A league whose fixtures already start later is left untouched.
+fn shift_fixtures_after(league: &mut League, date: chrono::NaiveDate) {
+    let parse = |value: &str| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok();
+    let Some(earliest) = league.fixtures.iter().filter_map(|f| parse(&f.date)).min() else {
+        return;
+    };
+    if earliest > date {
+        return;
+    }
+    let shift = chrono::Duration::days((date - earliest).num_days() + 1);
+    for fixture in &mut league.fixtures {
+        if let Some(day) = parse(&fixture.date) {
+            fixture.date = (day + shift).format("%Y-%m-%d").to_string();
         }
     }
 }
