@@ -24,6 +24,8 @@ interface PlayerProfileContractCardV2Props {
   language: string;
   contractRiskLevel: ContractRiskLevel;
   contractRiskLabel: string;
+  /** False for free agents: contract rows and the current wage are hidden. Defaults to true. */
+  hasTeam?: boolean;
   isOwnClub: boolean;
   isTransferWindowOpen: boolean;
   transferActionSubmitting: boolean;
@@ -62,6 +64,7 @@ export default function PlayerProfileContractCardV2({
   language,
   contractRiskLevel,
   contractRiskLabel,
+  hasTeam = true,
   isOwnClub,
   isTransferWindowOpen,
   transferActionSubmitting,
@@ -71,6 +74,7 @@ export default function PlayerProfileContractCardV2({
   t,
 }: PlayerProfileContractCardV2Props) {
   const risk = RISK_BADGE[contractRiskLevel];
+  const isContracted = hasTeam && contractEnd !== null;
 
   return (
     <PlayerProfileSectionV2 title={t("playerProfile.contractInfo")}>
@@ -84,35 +88,41 @@ export default function PlayerProfileContractCardV2({
           icon={<Briefcase className="size-4" />}
           label={t("common.contract")}
           value={
-            contractEnd
+            isContracted
               ? t("finances.contractExpiresOn", { date: contractEnd })
               : t("playerProfile.noContract")
           }
         />
-        <InfoRow
-          icon={<Calendar className="size-4" />}
-          label={t("playerProfile.yearsRemaining")}
-          value={getContractYearsRemaining(contractEnd, currentDate)}
-        />
-        <InfoRow
-          icon={<Briefcase className="size-4" />}
-          label={t("playerProfile.contractRisk")}
-          value={
-            <Badge variant={risk.variant} className={cn(risk.className)}>
-              {contractRiskLabel}
-            </Badge>
-          }
-        />
+        {isContracted ? (
+          <>
+            <InfoRow
+              icon={<Calendar className="size-4" />}
+              label={t("playerProfile.yearsRemaining")}
+              value={getContractYearsRemaining(contractEnd, currentDate)}
+            />
+            <InfoRow
+              icon={<Briefcase className="size-4" />}
+              label={t("playerProfile.contractRisk")}
+              value={
+                <Badge variant={risk.variant} className={cn(risk.className)}>
+                  {contractRiskLabel}
+                </Badge>
+              }
+            />
+          </>
+        ) : null}
         <InfoRow
           icon={<DollarSign className="size-4" />}
           label={t("finances.marketValue")}
           value={formatPlayerMarketValue(marketValue)}
         />
-        <InfoRow
-          icon={<TrendingUp className="size-4" />}
-          label={t("playerProfile.annualWage")}
-          value={formatPlayerWage(wage, annualSuffix)}
-        />
+        {isContracted ? (
+          <InfoRow
+            icon={<TrendingUp className="size-4" />}
+            label={t("playerProfile.annualWage")}
+            value={formatPlayerWage(wage, annualSuffix)}
+          />
+        ) : null}
         <InfoRow
           icon={<Heart className="size-4" />}
           label={t("common.condition")}

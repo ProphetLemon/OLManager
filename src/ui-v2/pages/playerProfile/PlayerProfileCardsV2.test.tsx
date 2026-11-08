@@ -148,6 +148,21 @@ describe("PlayerProfileContractCardV2", () => {
     expect(onReleaseContract).toHaveBeenCalled();
   });
 
+  it("hides years remaining, risk badge and wage for a player without contract", () => {
+    render(<PlayerProfileContractCardV2 {...base} contractEnd={null} />);
+    expect(screen.getByText("playerProfile.noContract")).toBeInTheDocument();
+    expect(screen.queryByText("playerProfile.yearsRemaining")).toBeNull();
+    expect(screen.queryByText("playerProfile.contractRisk")).toBeNull();
+    expect(screen.queryByText("Critical")).toBeNull();
+    expect(screen.queryByText("playerProfile.annualWage")).toBeNull();
+  });
+
+  it("hides contract rows for a player without a team even with a stale contract end", () => {
+    render(<PlayerProfileContractCardV2 {...base} hasTeam={false} />);
+    expect(screen.queryByText("playerProfile.yearsRemaining")).toBeNull();
+    expect(screen.queryByText("playerProfile.annualWage")).toBeNull();
+  });
+
   it("hides release outside the transfer window", () => {
     render(<PlayerProfileContractCardV2 {...base} isTransferWindowOpen={false} />);
     expect(screen.queryByRole("button", { name: "playerProfile.releaseContract" })).toBeNull();

@@ -357,6 +357,7 @@ function PlayerProfileContent({
           language={i18n.language}
           contractRiskLevel={contractRiskLevel}
           contractRiskLabel={contractRiskLabel}
+          hasTeam={player.team_id != null}
           isOwnClub={isOwnClub}
           isTransferWindowOpen={isTransferWindowOpen}
           transferActionSubmitting={transfer.transferActionSubmitting}
