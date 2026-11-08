@@ -6,7 +6,7 @@
 use log::info;
 
 use crate::end_of_season::{
-    EndOfSeasonSummary, process_background_seasons, process_end_of_season,
+    EndOfSeasonSummary, playoff_champion_id, process_background_seasons, process_end_of_season,
     process_end_of_season_with_config, process_end_of_split,
 };
 use crate::game::Game;
@@ -46,16 +46,21 @@ fn split_summary(game: &Game) -> EndOfSeasonSummary {
         .map(|i| i + 1)
         .unwrap_or(0);
     let user_standing = user_position.checked_sub(1).and_then(|i| standings.get(i));
-    let champion = standings.first();
-    let champion_name = champion
-        .and_then(|c| game.teams.iter().find(|t| t.id == c.team_id))
+    let champion_id = league
+        .and_then(playoff_champion_id)
+        .or_else(|| standings.first().map(|s| s.team_id.clone()))
+        .unwrap_or_default();
+    let champion_name = game
+        .teams
+        .iter()
+        .find(|t| t.id == champion_id)
         .map(|t| t.name.clone())
         .unwrap_or_default();
 
     EndOfSeasonSummary {
         season: league.map(|l| l.season).unwrap_or(0),
         league_name: league.map(|l| l.name.clone()).unwrap_or_default(),
-        champion_id: champion.map(|c| c.team_id.clone()).unwrap_or_default(),
+        champion_id,
         champion_name,
         user_position: user_position as u32,
         user_points: user_standing.map(|s| s.points).unwrap_or(0),
@@ -146,5 +151,49 @@ mod tests {
         let resolved = resolve_user_manifest(&game).expect("manifest from configs");
 
         assert_eq!(resolved.schedule.splits.len(), 1);
+    }
+
+    #[test]
+    fn split_summary_names_the_playoff_champion_not_the_table_leader() {
+        use crate::domain::league::{Fixture, FixtureStatus, League, MatchResult, MatchType};
+
+        let team_ids = vec!["leader".to_string(), "winner".to_string()];
+        let mut league = League::new(
+            "league-1".to_string(),
+            "LES".to_string(),
+            1,
+            &team_ids,
+            Some("les".to_string()),
+        );
+        league.standings[0].points = 30;
+        league.fixtures.push(Fixture {
+            id: "final".to_string(),
+            matchday: 10,
+            home_team_id: "leader".to_string(),
+            away_team_id: "winner".to_string(),
+            match_type: MatchType::Playoffs,
+            best_of: 5,
+            status: FixtureStatus::Completed,
+            result: Some(MatchResult {
+                home_wins: 1,
+                away_wins: 3,
+                ..Default::default()
+            }),
+            ..Default::default()
+        });
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 8, 20, 12, 0, 0).unwrap());
+        let manager = Manager::new(
+            "manager-1".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        let mut game = Game::new(clock, manager, vec![], vec![], vec![], vec![]);
+        game.leagues.push(league);
+
+        let summary = split_summary(&game);
+
+        assert_eq!(summary.champion_id, "winner");
     }
 }
