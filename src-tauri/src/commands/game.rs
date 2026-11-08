@@ -345,7 +345,17 @@ pub(crate) fn assemble_world_from_modular_data(
         start_date.year()
     );
 
-    // 6. Recalculate market_value for players who have 0 (data issue in regional leagues)
+    // 6. Players shipped with every attribute at exactly 50 have no rating data: estimate
+    // them from their league and role (free agents at an amateur level). This must run
+    // before market values and wages are seeded so both follow the estimated OVR.
+    let estimated =
+        olm_core::placeholder_ratings::estimate_placeholder_ratings(&mut all_players, &all_teams);
+    info!(
+        "[game] estimated ratings for {} rostered and {} free-agent placeholder players",
+        estimated.rostered, estimated.free_agents
+    );
+
+    // 7. Recalculate market_value for players who have 0 (data issue in regional leagues)
     game_setup::apply_default_market_values(&mut all_players);
 
     // Players on teams that do not exist (stale copies) become free agents.
@@ -1454,6 +1464,33 @@ mod tests {
                 .map(|m| m.id.clone())
                 .collect();
             (manifests, known)
+        }
+
+        #[test]
+        fn new_game_replaces_flat_fifty_ratings_and_prices_them_from_the_new_ovr() {
+            let (game, _catalog, _overlay, _user) = new_game();
+
+            let flat: Vec<_> = game
+                .players
+                .iter()
+                .filter(|p| olm_core::placeholder_ratings::is_placeholder_rating(p))
+                .map(|p| p.id.as_str())
+                .collect();
+            assert!(flat.is_empty(), "flat-50 placeholders survived: {flat:?}");
+
+            for name in ["Werlyb", "Elmillor"] {
+                let found = player_named(&game, name);
+                assert_eq!(found.len(), 1, "expected exactly one {name}");
+                let player = found[0];
+                assert!(player.team_id.is_none(), "{name} is a free agent");
+                let ovr = olm_core::potential::calculate_lol_ovr(player);
+                assert!((40..=45).contains(&ovr), "{name} OVR {ovr}");
+                assert_eq!(
+                    player.market_value,
+                    game_setup::suggested_seed_market_value(ovr, player.potential_base.max(ovr), false),
+                    "{name} market value must follow the estimated OVR"
+                );
+            }
         }
 
         #[test]

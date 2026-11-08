@@ -32,6 +32,7 @@ pub mod news;
 pub mod player_events;
 pub mod player_identity;
 pub mod player_rating;
+pub mod placeholder_ratings;
 pub mod potential;
 pub mod random_events;
 pub mod residency;
