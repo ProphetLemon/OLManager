@@ -4,17 +4,13 @@ import { describe, expect, it, vi } from "vitest";
 import { buildBadgeDataUri } from "@/lib/customTeam";
 import type { CompetitionSummary } from "@/store/types";
 
-vi.mock("react-i18next", () => ({
-  initReactI18next: { type: "3rdParty", init: vi.fn() },
-  useTranslation: () => ({
-    i18n: { language: "en" },
-    t: (_key: string, options?: string | Record<string, unknown>) => {
-      if (typeof options === "string") return options;
-      const template = String(options?.defaultValue ?? _key);
-      return template.replace(/{{(\w+)}}/g, (_m, name) => String(options?.[name] ?? ""));
-    },
-  }),
-}));
+vi.mock("react-i18next", async () => {
+  const { translateFromEnglish } = await import("@/test-i18n");
+  return {
+    initReactI18next: { type: "3rdParty", init: vi.fn() },
+    useTranslation: () => ({ i18n: { language: "en" }, t: translateFromEnglish }),
+  };
+});
 
 import CustomTeamWizardV2, { suggestShortName } from "./CustomTeamWizardV2";
 

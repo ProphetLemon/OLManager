@@ -566,7 +566,68 @@
     "selectLeague": "Select League",
     "selectLeagueSubtitle": "Choose the league you want to manage",
     "selectTeam": "Select Team",
-    "teams": "Teams"
+    "teams": "Teams",
+    "custom": {
+      "create": "Cria a tua equipa",
+      "createHint": "Substitui um clube desta liga pelo teu.",
+      "title": "Cria a tua equipa",
+      "subtitle": "Substitui um clube desta liga pelo teu",
+      "stepOf": "Passo {{current}} de {{total}}",
+      "stepsLabel": "Progresso",
+      "steps": {
+        "identity": "Identidade",
+        "badge": "Emblema",
+        "replace": "Substituir e rever"
+      },
+      "fields": {
+        "name": "Nome do clube",
+        "shortName": "Nome curto",
+        "country": "País",
+        "primaryColor": "Cor principal",
+        "secondaryColor": "Cor secundária",
+        "pickPrimary": "Escolher a cor principal",
+        "pickSecondary": "Escolher a cor secundária"
+      },
+      "hints": {
+        "name": "De {{min}} a {{max}} caracteres.",
+        "shortName": "3 ou 4 letras ou dígitos. Aparece no marcador."
+      },
+      "countryPlaceholder": "Escolhe um país",
+      "presets": "Combinações de cores",
+      "preset": "Cores {{primary}} e {{secondary}}",
+      "previewAlt": "Pré-visualização do emblema de {{tag}}",
+      "previewHint": "É assim que o emblema aparece nas listas. O emblema grande é mostrado acima.",
+      "replace": {
+        "heading": "Clube a substituir",
+        "notice": "Os jogadores e o staff passam a agentes livres. O teu clube começa com o orçamento e a reputação medianos da liga e com um plantel completado com agentes livres.",
+        "lowestReputation": "Menor reputação",
+        "reputation": "Reputação {{value}}"
+      },
+      "summary": {
+        "heading": "Resumo",
+        "text": "{{name}} ({{tag}}), de {{country}}, vai substituir {{replaced}}."
+      },
+      "actions": {
+        "next": "Seguinte",
+        "back": "Voltar",
+        "confirm": "Criar clube",
+        "cancel": "Cancelar"
+      },
+      "errors": {
+        "required": "Este campo é obrigatório.",
+        "tooShort": "Usa pelo menos {{min}} caracteres.",
+        "tooLong": "Usa no máximo {{max}} caracteres.",
+        "nameFormat": "Usa de {{min}} a {{max}} caracteres.",
+        "shortNameFormat": "Apenas letras e dígitos, sem espaços.",
+        "colorFormat": "Usa uma cor no formato #RRGGBB.",
+        "duplicateName": "Outro clube já usa este nome.",
+        "duplicateShortName": "Outro clube já usa este nome curto.",
+        "replaceInvalid": "Escolhe um clube desta liga para substituir.",
+        "replaceRequired": "Escolhe o clube que queres substituir.",
+        "lowContrast": "Estas cores são muito próximas e a sigla pode ser difícil de ler. Podes continuar na mesma.",
+        "title": "Não foi possível criar o clube"
+      }
+    }
   },
   "youthAcademy": {
     "title": "Academia de Jovens",

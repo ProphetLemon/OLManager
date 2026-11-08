@@ -567,7 +567,68 @@
     "selectLeague": "Select League",
     "selectLeagueSubtitle": "Choose the league you want to manage",
     "selectTeam": "Select Team",
-    "teams": "Teams"
+    "teams": "Teams",
+    "custom": {
+      "create": "Créer votre équipe",
+      "createHint": "Remplacez un club de cette ligue par le vôtre.",
+      "title": "Créer votre équipe",
+      "subtitle": "Remplacez un club de cette ligue par le vôtre",
+      "stepOf": "Étape {{current}} sur {{total}}",
+      "stepsLabel": "Progression",
+      "steps": {
+        "identity": "Identité",
+        "badge": "Écusson",
+        "replace": "Remplacer et vérifier"
+      },
+      "fields": {
+        "name": "Nom du club",
+        "shortName": "Nom court",
+        "country": "Pays",
+        "primaryColor": "Couleur principale",
+        "secondaryColor": "Couleur secondaire",
+        "pickPrimary": "Choisir la couleur principale",
+        "pickSecondary": "Choisir la couleur secondaire"
+      },
+      "hints": {
+        "name": "De {{min}} à {{max}} caractères.",
+        "shortName": "3 ou 4 lettres ou chiffres. Affiché sur le tableau d'affichage."
+      },
+      "countryPlaceholder": "Choisir un pays",
+      "presets": "Palettes de couleurs",
+      "preset": "Couleurs {{primary}} et {{secondary}}",
+      "previewAlt": "Aperçu de l'écusson pour {{tag}}",
+      "previewHint": "Voici l'écusson dans les listes. Le grand écusson est affiché ci-dessus.",
+      "replace": {
+        "heading": "Club à remplacer",
+        "notice": "Ses joueurs et son personnel deviennent agents libres. Votre club démarre avec le budget et la réputation médians de la ligue, et un effectif complété avec des agents libres.",
+        "lowestReputation": "Réputation la plus basse",
+        "reputation": "Réputation {{value}}"
+      },
+      "summary": {
+        "heading": "Récapitulatif",
+        "text": "{{name}} ({{tag}}), {{country}}, remplacera {{replaced}}."
+      },
+      "actions": {
+        "next": "Suivant",
+        "back": "Retour",
+        "confirm": "Créer le club",
+        "cancel": "Annuler"
+      },
+      "errors": {
+        "required": "Ce champ est obligatoire.",
+        "tooShort": "Utilisez au moins {{min}} caractères.",
+        "tooLong": "Utilisez {{max}} caractères au maximum.",
+        "nameFormat": "Utilisez de {{min}} à {{max}} caractères.",
+        "shortNameFormat": "Lettres et chiffres uniquement, sans espaces.",
+        "colorFormat": "Utilisez une couleur au format #RRGGBB.",
+        "duplicateName": "Un autre club utilise déjà ce nom.",
+        "duplicateShortName": "Un autre club utilise déjà ce nom court.",
+        "replaceInvalid": "Choisissez un club de cette ligue à remplacer.",
+        "replaceRequired": "Choisissez le club que vous voulez remplacer.",
+        "lowContrast": "Ces couleurs sont proches, le sigle risque d'être difficile à lire. Vous pouvez continuer.",
+        "title": "Impossible de créer le club"
+      }
+    }
   },
   "youthAcademy": {
     "title": "Académie",

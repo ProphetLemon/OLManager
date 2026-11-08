@@ -695,7 +695,68 @@
     "selectLeague": "Select League",
     "selectLeagueSubtitle": "Choose the league you want to manage",
     "selectTeam": "Select Team",
-    "teams": "Teams"
+    "teams": "Teams",
+    "custom": {
+      "create": "Crea tu equipo",
+      "createHint": "Sustituye a un club de esta liga por el tuyo.",
+      "title": "Crea tu equipo",
+      "subtitle": "Sustituye a un club de esta liga por el tuyo",
+      "stepOf": "Paso {{current}} de {{total}}",
+      "stepsLabel": "Progreso",
+      "steps": {
+        "identity": "Identidad",
+        "badge": "Escudo",
+        "replace": "Sustituir y revisar"
+      },
+      "fields": {
+        "name": "Nombre del club",
+        "shortName": "Nombre corto",
+        "country": "País",
+        "primaryColor": "Color principal",
+        "secondaryColor": "Color secundario",
+        "pickPrimary": "Elegir el color principal",
+        "pickSecondary": "Elegir el color secundario"
+      },
+      "hints": {
+        "name": "De {{min}} a {{max}} caracteres.",
+        "shortName": "3 o 4 letras o dígitos. Se muestra en el marcador."
+      },
+      "countryPlaceholder": "Elige un país",
+      "presets": "Combinaciones de colores",
+      "preset": "Colores {{primary}} y {{secondary}}",
+      "previewAlt": "Vista previa del escudo de {{tag}}",
+      "previewHint": "Así se ve el escudo en las listas. El escudo grande se muestra arriba.",
+      "replace": {
+        "heading": "Club a sustituir",
+        "notice": "Sus jugadores y su personal pasan a ser agentes libres. Tu club empieza con el presupuesto y la reputación medios de la liga, y con una plantilla completada con agentes libres.",
+        "lowestReputation": "Menor reputación",
+        "reputation": "Reputación {{value}}"
+      },
+      "summary": {
+        "heading": "Resumen",
+        "text": "{{name}} ({{tag}}), de {{country}}, sustituirá a {{replaced}}."
+      },
+      "actions": {
+        "next": "Siguiente",
+        "back": "Atrás",
+        "confirm": "Crear club",
+        "cancel": "Cancelar"
+      },
+      "errors": {
+        "required": "Este campo es obligatorio.",
+        "tooShort": "Usa al menos {{min}} caracteres.",
+        "tooLong": "Usa como máximo {{max}} caracteres.",
+        "nameFormat": "Usa de {{min}} a {{max}} caracteres.",
+        "shortNameFormat": "Usa solo letras y dígitos, sin espacios.",
+        "colorFormat": "Usa un color en formato #RRGGBB.",
+        "duplicateName": "Otro club ya usa este nombre.",
+        "duplicateShortName": "Otro club ya usa este nombre corto.",
+        "replaceInvalid": "Elige un club de esta liga para sustituir.",
+        "replaceRequired": "Elige el club que quieres sustituir.",
+        "lowContrast": "Estos colores son muy parecidos y la sigla puede leerse con dificultad. Puedes continuar igualmente.",
+        "title": "No se pudo crear el club"
+      }
+    }
   },
   "youthAcademy": {
     "title": "Academia",

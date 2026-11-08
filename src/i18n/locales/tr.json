@@ -567,7 +567,68 @@
     "selectLeague": "Select League",
     "selectLeagueSubtitle": "Choose the league you want to manage",
     "selectTeam": "Select Team",
-    "teams": "Teams"
+    "teams": "Teams",
+    "custom": {
+      "create": "Kendi takımını kur",
+      "createHint": "Bu ligdeki bir kulübün yerine kendi kulübünü koy.",
+      "title": "Kendi takımını kur",
+      "subtitle": "Bu ligdeki bir kulübün yerine kendi kulübünü koy",
+      "stepOf": "Adım {{current}} / {{total}}",
+      "stepsLabel": "İlerleme",
+      "steps": {
+        "identity": "Kimlik",
+        "badge": "Arma",
+        "replace": "Değiştir ve gözden geçir"
+      },
+      "fields": {
+        "name": "Kulüp adı",
+        "shortName": "Kısa ad",
+        "country": "Ülke",
+        "primaryColor": "Ana renk",
+        "secondaryColor": "İkinci renk",
+        "pickPrimary": "Ana rengi seç",
+        "pickSecondary": "İkinci rengi seç"
+      },
+      "hints": {
+        "name": "{{min}} ile {{max}} karakter arasında.",
+        "shortName": "3 veya 4 harf ya da rakam. Skor tabelasında görünür."
+      },
+      "countryPlaceholder": "Bir ülke seç",
+      "presets": "Renk önerileri",
+      "preset": "{{primary}} ve {{secondary}} renkleri",
+      "previewAlt": "{{tag}} için arma önizlemesi",
+      "previewHint": "Arma listelerde böyle görünür. Büyük arma yukarıda gösterilir.",
+      "replace": {
+        "heading": "Yerine geçilecek kulüp",
+        "notice": "Oyuncuları ve personeli serbest oyuncu olur. Kulübün, ligin ortanca bütçesi ve itibarıyla ve serbest oyunculardan tamamlanan bir kadroyla başlar.",
+        "lowestReputation": "En düşük itibar",
+        "reputation": "İtibar {{value}}"
+      },
+      "summary": {
+        "heading": "Özet",
+        "text": "{{country}} ülkesinden {{name}} ({{tag}}), {{replaced}} kulübünün yerini alacak."
+      },
+      "actions": {
+        "next": "İleri",
+        "back": "Geri",
+        "confirm": "Kulübü kur",
+        "cancel": "İptal"
+      },
+      "errors": {
+        "required": "Bu alan zorunludur.",
+        "tooShort": "En az {{min}} karakter kullan.",
+        "tooLong": "En fazla {{max}} karakter kullan.",
+        "nameFormat": "{{min}} ile {{max}} karakter arasında kullan.",
+        "shortNameFormat": "Yalnızca harf ve rakam kullan, boşluk olmasın.",
+        "colorFormat": "#RRGGBB biçiminde bir renk kullan.",
+        "duplicateName": "Başka bir kulüp bu adı zaten kullanıyor.",
+        "duplicateShortName": "Başka bir kulüp bu kısa adı zaten kullanıyor.",
+        "replaceInvalid": "Yerine geçmek için bu ligden bir kulüp seç.",
+        "replaceRequired": "Yerine geçmek istediğin kulübü seç.",
+        "lowContrast": "Bu renkler birbirine yakın, kısaltma zor okunabilir. Yine de devam edebilirsin.",
+        "title": "Kulüp oluşturulamadı"
+      }
+    }
   },
   "youthAcademy": {
     "title": "Akademi",

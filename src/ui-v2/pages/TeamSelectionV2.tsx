@@ -199,14 +199,14 @@ export default function TeamSelectionV2() {
               {isLeagueScreen
                 ? t("teamSelect.selectLeague", "Select League")
                 : isCustomScreen
-                  ? t("teamSelect.custom.title", "Create your team")
+                  ? t("teamSelect.custom.title")
                   : selectedCompetition?.name ?? ""}
             </h1>
             <p className="text-xs text-muted-foreground/70">
               {isLeagueScreen
                 ? t("teamSelect.selectLeagueSubtitle", "Choose a competition")
                 : isCustomScreen
-                  ? t("teamSelect.custom.subtitle", "Replace one club in this league with your own")
+                  ? t("teamSelect.custom.subtitle")
                   : t("teamSelect.selectTeam", "Elige un equipo")}
             </p>
           </div>

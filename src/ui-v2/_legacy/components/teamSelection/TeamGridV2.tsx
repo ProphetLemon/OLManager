@@ -22,7 +22,7 @@ export function TeamGridV2({
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   // The create card, when present, is roving-focus item 0; teams follow it.
   const offset = onCreateTeam ? 1 : 0;
-  const createLabel = t("teamSelect.custom.create", "Create your team");
+  const createLabel = t("teamSelect.custom.create");
   const { activeIndex, handleKeyDown, getTabIndex } = useRovingFocus({
     itemCount: teams.length + offset,
     columns: 2,
@@ -57,7 +57,7 @@ export function TeamGridV2({
               </span>
               <span className="font-heading text-base font-bold uppercase tracking-wide text-foreground">{createLabel}</span>
               <span className="max-w-xs text-xs text-muted-foreground">
-                {t("teamSelect.custom.createHint", "Replace one club in this league with your own.")}
+                {t("teamSelect.custom.createHint")}
               </span>
             </button>
           )}

@@ -418,7 +418,68 @@
     "selectLeague": "Select League",
     "selectLeagueSubtitle": "Choose the league you want to manage",
     "selectTeam": "Select Team",
-    "teams": "Teams"
+    "teams": "Teams",
+    "custom": {
+      "create": "Crea la tua squadra",
+      "createHint": "Sostituisci un club di questa lega con il tuo.",
+      "title": "Crea la tua squadra",
+      "subtitle": "Sostituisci un club di questa lega con il tuo",
+      "stepOf": "Passo {{current}} di {{total}}",
+      "stepsLabel": "Avanzamento",
+      "steps": {
+        "identity": "Identità",
+        "badge": "Stemma",
+        "replace": "Sostituisci e rivedi"
+      },
+      "fields": {
+        "name": "Nome del club",
+        "shortName": "Nome breve",
+        "country": "Paese",
+        "primaryColor": "Colore principale",
+        "secondaryColor": "Colore secondario",
+        "pickPrimary": "Scegli il colore principale",
+        "pickSecondary": "Scegli il colore secondario"
+      },
+      "hints": {
+        "name": "Da {{min}} a {{max}} caratteri.",
+        "shortName": "3 o 4 lettere o cifre. Mostrato nel tabellone."
+      },
+      "countryPlaceholder": "Scegli un paese",
+      "presets": "Combinazioni di colori",
+      "preset": "Colori {{primary}} e {{secondary}}",
+      "previewAlt": "Anteprima dello stemma per {{tag}}",
+      "previewHint": "Così appare lo stemma negli elenchi. Lo stemma grande è mostrato sopra.",
+      "replace": {
+        "heading": "Club da sostituire",
+        "notice": "I suoi giocatori e il suo staff diventano svincolati. Il tuo club parte con il budget e la reputazione medi della lega e con una rosa completata con svincolati.",
+        "lowestReputation": "Reputazione più bassa",
+        "reputation": "Reputazione {{value}}"
+      },
+      "summary": {
+        "heading": "Riepilogo",
+        "text": "{{name}} ({{tag}}), {{country}}, sostituirà {{replaced}}."
+      },
+      "actions": {
+        "next": "Avanti",
+        "back": "Indietro",
+        "confirm": "Crea club",
+        "cancel": "Annulla"
+      },
+      "errors": {
+        "required": "Questo campo è obbligatorio.",
+        "tooShort": "Usa almeno {{min}} caratteri.",
+        "tooLong": "Usa al massimo {{max}} caratteri.",
+        "nameFormat": "Usa da {{min}} a {{max}} caratteri.",
+        "shortNameFormat": "Solo lettere e cifre, senza spazi.",
+        "colorFormat": "Usa un colore nel formato #RRGGBB.",
+        "duplicateName": "Un altro club usa già questo nome.",
+        "duplicateShortName": "Un altro club usa già questo nome breve.",
+        "replaceInvalid": "Scegli un club di questa lega da sostituire.",
+        "replaceRequired": "Scegli il club che vuoi sostituire.",
+        "lowContrast": "Questi colori sono vicini e la sigla potrebbe essere difficile da leggere. Puoi continuare comunque.",
+        "title": "Impossibile creare il club"
+      }
+    }
   },
   "youthAcademy": {
     "title": "Settore giovanile",

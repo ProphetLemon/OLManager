@@ -185,40 +185,37 @@ export default function CustomTeamWizardV2({
   const message = (field: CustomTeamField, code: ValidationCode): string => {
     switch (`${field}:${code}`) {
       case "name:duplicate":
-        return t("teamSelect.custom.errors.duplicateName", "Another club already uses this name.");
+        return t("teamSelect.custom.errors.duplicateName");
       case "shortName:duplicate":
-        return t("teamSelect.custom.errors.duplicateShortName", "Another club already uses this short name.");
+        return t("teamSelect.custom.errors.duplicateShortName");
       case "name:format":
         return t("teamSelect.custom.errors.nameFormat", {
-          defaultValue: "Use {{min}} to {{max}} characters.",
           min: NAME_MIN,
           max: NAME_MAX,
         });
       case "shortName:format":
-        return t("teamSelect.custom.errors.shortNameFormat", "Use letters and digits only, no spaces.");
+        return t("teamSelect.custom.errors.shortNameFormat");
       case "primary:format":
       case "secondary:format":
-        return t("teamSelect.custom.errors.colorFormat", "Use a colour in #RRGGBB format.");
+        return t("teamSelect.custom.errors.colorFormat");
       case "replaces:format":
-        return t("teamSelect.custom.errors.replaceInvalid", "Choose a club from this league to replace.");
+        return t("teamSelect.custom.errors.replaceInvalid");
       case "replaces:required":
-        return t("teamSelect.custom.errors.replaceRequired", "Choose the club you want to replace.");
+        return t("teamSelect.custom.errors.replaceRequired");
       default:
         break;
     }
     if (code === "tooShort") {
       return t("teamSelect.custom.errors.tooShort", {
-        defaultValue: "Use at least {{min}} characters.",
         min: field === "name" ? NAME_MIN : SHORT_NAME_MIN,
       });
     }
     if (code === "tooLong") {
       return t("teamSelect.custom.errors.tooLong", {
-        defaultValue: "Use at most {{max}} characters.",
         max: field === "name" ? NAME_MAX : SHORT_NAME_MAX,
       });
     }
-    return t("teamSelect.custom.errors.required", "This field is required.");
+    return t("teamSelect.custom.errors.required");
   };
 
   /** Inline error for a field: a backend rejection wins, local errors show once touched. */
@@ -278,9 +275,9 @@ export default function CustomTeamWizardV2({
   const countryLabel = nationalities.find((option) => option.code === country)?.name ?? country;
 
   const stepTitles = [
-    t("teamSelect.custom.steps.identity", "Identity"),
-    t("teamSelect.custom.steps.badge", "Badge"),
-    t("teamSelect.custom.steps.replace", "Replace and review"),
+    t("teamSelect.custom.steps.identity"),
+    t("teamSelect.custom.steps.badge"),
+    t("teamSelect.custom.steps.replace"),
   ];
 
   const colorField = (
@@ -332,7 +329,6 @@ export default function CustomTeamWizardV2({
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t("teamSelect.custom.stepOf", {
-                  defaultValue: "Step {{current}} of {{total}}",
                   current: step + 1,
                   total: LAST_STEP + 1,
                 })}
@@ -342,14 +338,14 @@ export default function CustomTeamWizardV2({
             </div>
             <img
               src={badgeSrc}
-              alt={t("teamSelect.custom.previewAlt", { defaultValue: "Badge preview for {{tag}}", tag: badgeTag })}
+              alt={t("teamSelect.custom.previewAlt", { tag: badgeTag })}
               width={96}
               height={96}
               className="size-24 shrink-0"
               data-testid="badge-preview-large"
             />
           </div>
-          <ol aria-label={t("teamSelect.custom.stepsLabel", "Progress")} className="flex gap-2">
+          <ol aria-label={t("teamSelect.custom.stepsLabel")} className="flex gap-2">
             {stepTitles.map((title, index) => (
               <li
                 key={title}
@@ -378,9 +374,8 @@ export default function CustomTeamWizardV2({
             <div className="space-y-5">
               <Field
                 id="custom-team-name"
-                label={t("teamSelect.custom.fields.name", "Club name")}
+                label={t("teamSelect.custom.fields.name")}
                 hint={t("teamSelect.custom.hints.name", {
-                  defaultValue: "{{min}} to {{max}} characters.",
                   min: NAME_MIN,
                   max: NAME_MAX,
                 })}
@@ -400,8 +395,8 @@ export default function CustomTeamWizardV2({
               </Field>
               <Field
                 id="custom-team-short"
-                label={t("teamSelect.custom.fields.shortName", "Short name")}
-                hint={t("teamSelect.custom.hints.shortName", "3 or 4 letters or digits. Shown on the scoreboard.")}
+                label={t("teamSelect.custom.fields.shortName")}
+                hint={t("teamSelect.custom.hints.shortName")}
                 error={errorFor("shortName")}
               >
                 <input
@@ -424,7 +419,7 @@ export default function CustomTeamWizardV2({
               </Field>
               <Field
                 id="custom-team-country"
-                label={t("teamSelect.custom.fields.country", "Country")}
+                label={t("teamSelect.custom.fields.country")}
                 error={errorFor("country")}
               >
                 <select
@@ -436,7 +431,7 @@ export default function CustomTeamWizardV2({
                   onBlur={() => touch("country")}
                   className={inputClass}
                 >
-                  <option value="">{t("teamSelect.custom.countryPlaceholder", "Choose a country")}</option>
+                  <option value="">{t("teamSelect.custom.countryPlaceholder")}</option>
                   {nationalities.map((option) => (
                     <option key={option.code} value={option.code}>
                       {option.name}
@@ -453,8 +448,8 @@ export default function CustomTeamWizardV2({
                 {colorField(
                   "custom-team-primary",
                   "primary",
-                  t("teamSelect.custom.fields.primaryColor", "Primary colour"),
-                  t("teamSelect.custom.fields.pickPrimary", "Pick the primary colour"),
+                  t("teamSelect.custom.fields.primaryColor"),
+                  t("teamSelect.custom.fields.pickPrimary"),
                   primary,
                   (value) => {
                     setPrimary(value);
@@ -463,8 +458,8 @@ export default function CustomTeamWizardV2({
                 {colorField(
                   "custom-team-secondary",
                   "secondary",
-                  t("teamSelect.custom.fields.secondaryColor", "Secondary colour"),
-                  t("teamSelect.custom.fields.pickSecondary", "Pick the secondary colour"),
+                  t("teamSelect.custom.fields.secondaryColor"),
+                  t("teamSelect.custom.fields.pickSecondary"),
                   secondary,
                   (value) => {
                     setSecondary(value);
@@ -474,7 +469,7 @@ export default function CustomTeamWizardV2({
 
               <fieldset>
                 <legend className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  {t("teamSelect.custom.presets", "Colour presets")}
+                  {t("teamSelect.custom.presets")}
                 </legend>
                 <div className="flex flex-wrap gap-2">
                   {BADGE_PRESETS.map(([p, s]) => {
@@ -485,7 +480,6 @@ export default function CustomTeamWizardV2({
                         type="button"
                         aria-pressed={active}
                         aria-label={t("teamSelect.custom.preset", {
-                          defaultValue: "Colours {{primary}} and {{secondary}}",
                           primary: p,
                           secondary: s,
                         })}
@@ -516,17 +510,14 @@ export default function CustomTeamWizardV2({
                   data-testid="badge-preview-small"
                 />
                 <p className="text-sm text-muted-foreground">
-                  {t("teamSelect.custom.previewHint", "This is how the badge looks in lists. The large badge is shown above.")}
+                  {t("teamSelect.custom.previewHint")}
                 </p>
               </div>
 
               {lowContrast && (
                 <p role="status" className="flex items-start gap-2 text-sm text-amber-400">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                  {t(
-                    "teamSelect.custom.errors.lowContrast",
-                    "These colours are close together, so the tag may be hard to read. You can still continue.",
-                  )}
+                  {t("teamSelect.custom.errors.lowContrast")}
                 </p>
               )}
             </div>
@@ -536,13 +527,10 @@ export default function CustomTeamWizardV2({
             <div className="space-y-6">
               <fieldset aria-describedby="custom-team-replace-notice">
                 <legend className="mb-1 font-heading text-sm font-bold uppercase tracking-wider text-foreground">
-                  {t("teamSelect.custom.replace.heading", "Club to replace")}
+                  {t("teamSelect.custom.replace.heading")}
                 </legend>
                 <p id="custom-team-replace-notice" className="mb-3 text-sm text-muted-foreground">
-                  {t(
-                    "teamSelect.custom.replace.notice",
-                    "Its players and staff become free agents. Your club starts with the league's median budget and reputation, and a squad filled from the free agents.",
-                  )}
+                  {t("teamSelect.custom.replace.notice")}
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {teams.map((team) => {
@@ -579,7 +567,6 @@ export default function CustomTeamWizardV2({
                             {team.reputation == null
                               ? "—"
                               : t("teamSelect.custom.replace.reputation", {
-                                  defaultValue: "Reputation {{value}}",
                                   value: team.reputation,
                                 })}
                             {" · "}
@@ -588,7 +575,7 @@ export default function CustomTeamWizardV2({
                         </span>
                         {team.id === defaultReplacementId(teams) && (
                           <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                            {t("teamSelect.custom.replace.lowestReputation", "Lowest reputation")}
+                            {t("teamSelect.custom.replace.lowestReputation")}
                           </span>
                         )}
                       </label>
@@ -612,11 +599,10 @@ export default function CustomTeamWizardV2({
                     id="custom-team-summary"
                     className="font-heading text-sm font-bold uppercase tracking-wider text-foreground"
                   >
-                    {t("teamSelect.custom.summary.heading", "Summary")}
+                    {t("teamSelect.custom.summary.heading")}
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {t("teamSelect.custom.summary.text", {
-                      defaultValue: "{{name}} ({{tag}}) from {{country}} will replace {{replaced}}.",
                       name: name.trim(),
                       tag: badgeTag,
                       country: countryLabel,
@@ -629,7 +615,7 @@ export default function CustomTeamWizardV2({
               {error && !backend && (
                 <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
                   <p className="font-heading text-sm font-bold uppercase tracking-wide">
-                    {t("teamSelect.custom.errors.title", "Could not create the club")}
+                    {t("teamSelect.custom.errors.title")}
                   </p>
                   <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-xs">{error}</pre>
                 </div>
@@ -645,7 +631,7 @@ export default function CustomTeamWizardV2({
               className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
             >
               <ArrowLeft className="size-4" aria-hidden="true" />
-              {step === 0 ? t("teamSelect.custom.actions.cancel", "Cancel") : t("teamSelect.custom.actions.back", "Back")}
+              {step === 0 ? t("teamSelect.custom.actions.cancel") : t("teamSelect.custom.actions.back")}
             </button>
             {step < LAST_STEP ? (
               <button
@@ -654,7 +640,7 @@ export default function CustomTeamWizardV2({
                 disabled={!stepValid}
                 className="flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
               >
-                {t("teamSelect.custom.actions.next", "Next")}
+                {t("teamSelect.custom.actions.next")}
                 <ArrowRight className="size-4" aria-hidden="true" />
               </button>
             ) : (
@@ -665,7 +651,7 @@ export default function CustomTeamWizardV2({
                 className="flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
               >
                 {isSubmitting && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                {t("teamSelect.custom.actions.confirm", "Create club")}
+                {t("teamSelect.custom.actions.confirm")}
               </button>
             )}
           </div>

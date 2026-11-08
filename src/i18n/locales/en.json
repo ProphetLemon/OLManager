@@ -695,7 +695,68 @@
     "selectLeague": "Select League",
     "selectLeagueSubtitle": "Choose the league you want to manage",
     "selectTeam": "Select Team",
-    "teams": "Teams"
+    "teams": "Teams",
+    "custom": {
+      "create": "Create your team",
+      "createHint": "Replace one club in this league with your own.",
+      "title": "Create your team",
+      "subtitle": "Replace one club in this league with your own",
+      "stepOf": "Step {{current}} of {{total}}",
+      "stepsLabel": "Progress",
+      "steps": {
+        "identity": "Identity",
+        "badge": "Badge",
+        "replace": "Replace and review"
+      },
+      "fields": {
+        "name": "Club name",
+        "shortName": "Short name",
+        "country": "Country",
+        "primaryColor": "Primary colour",
+        "secondaryColor": "Secondary colour",
+        "pickPrimary": "Pick the primary colour",
+        "pickSecondary": "Pick the secondary colour"
+      },
+      "hints": {
+        "name": "{{min}} to {{max}} characters.",
+        "shortName": "3 or 4 letters or digits. Shown on the scoreboard."
+      },
+      "countryPlaceholder": "Choose a country",
+      "presets": "Colour presets",
+      "preset": "Colours {{primary}} and {{secondary}}",
+      "previewAlt": "Badge preview for {{tag}}",
+      "previewHint": "This is how the badge looks in lists. The large badge is shown above.",
+      "replace": {
+        "heading": "Club to replace",
+        "notice": "Its players and staff become free agents. Your club starts with the league's median budget and reputation, and a squad filled from the free agents.",
+        "lowestReputation": "Lowest reputation",
+        "reputation": "Reputation {{value}}"
+      },
+      "summary": {
+        "heading": "Summary",
+        "text": "{{name}} ({{tag}}) from {{country}} will replace {{replaced}}."
+      },
+      "actions": {
+        "next": "Next",
+        "back": "Back",
+        "confirm": "Create club",
+        "cancel": "Cancel"
+      },
+      "errors": {
+        "required": "This field is required.",
+        "tooShort": "Use at least {{min}} characters.",
+        "tooLong": "Use at most {{max}} characters.",
+        "nameFormat": "Use {{min}} to {{max}} characters.",
+        "shortNameFormat": "Use letters and digits only, no spaces.",
+        "colorFormat": "Use a colour in #RRGGBB format.",
+        "duplicateName": "Another club already uses this name.",
+        "duplicateShortName": "Another club already uses this short name.",
+        "replaceInvalid": "Choose a club from this league to replace.",
+        "replaceRequired": "Choose the club you want to replace.",
+        "lowContrast": "These colours are close together, so the tag may be hard to read. You can still continue.",
+        "title": "Could not create the club"
+      }
+    }
   },
   "youthAcademy": {
     "title": "Academy",

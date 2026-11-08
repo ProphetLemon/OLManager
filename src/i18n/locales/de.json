@@ -567,7 +567,68 @@
     "selectLeague": "Select League",
     "selectLeagueSubtitle": "Choose the league you want to manage",
     "selectTeam": "Select Team",
-    "teams": "Teams"
+    "teams": "Teams",
+    "custom": {
+      "create": "Eigenes Team gründen",
+      "createHint": "Ersetze einen Verein dieser Liga durch deinen eigenen.",
+      "title": "Eigenes Team gründen",
+      "subtitle": "Ersetze einen Verein dieser Liga durch deinen eigenen",
+      "stepOf": "Schritt {{current}} von {{total}}",
+      "stepsLabel": "Fortschritt",
+      "steps": {
+        "identity": "Identität",
+        "badge": "Wappen",
+        "replace": "Ersetzen und prüfen"
+      },
+      "fields": {
+        "name": "Vereinsname",
+        "shortName": "Kurzname",
+        "country": "Land",
+        "primaryColor": "Hauptfarbe",
+        "secondaryColor": "Zweitfarbe",
+        "pickPrimary": "Hauptfarbe auswählen",
+        "pickSecondary": "Zweitfarbe auswählen"
+      },
+      "hints": {
+        "name": "{{min}} bis {{max}} Zeichen.",
+        "shortName": "3 oder 4 Buchstaben oder Ziffern. Wird auf der Anzeigetafel gezeigt."
+      },
+      "countryPlaceholder": "Land auswählen",
+      "presets": "Farbvorlagen",
+      "preset": "Farben {{primary}} und {{secondary}}",
+      "previewAlt": "Wappenvorschau für {{tag}}",
+      "previewHint": "So sieht das Wappen in Listen aus. Das große Wappen siehst du oben.",
+      "replace": {
+        "heading": "Zu ersetzender Verein",
+        "notice": "Seine Spieler und sein Personal werden vertragslos. Dein Verein startet mit dem mittleren Budget und Ansehen der Liga und einem Kader, der mit vertragslosen Spielern aufgefüllt wird.",
+        "lowestReputation": "Niedrigstes Ansehen",
+        "reputation": "Ansehen {{value}}"
+      },
+      "summary": {
+        "heading": "Zusammenfassung",
+        "text": "{{name}} ({{tag}}) aus {{country}} ersetzt {{replaced}}."
+      },
+      "actions": {
+        "next": "Weiter",
+        "back": "Zurück",
+        "confirm": "Verein gründen",
+        "cancel": "Abbrechen"
+      },
+      "errors": {
+        "required": "Dieses Feld ist erforderlich.",
+        "tooShort": "Verwende mindestens {{min}} Zeichen.",
+        "tooLong": "Verwende höchstens {{max}} Zeichen.",
+        "nameFormat": "Verwende {{min}} bis {{max}} Zeichen.",
+        "shortNameFormat": "Nur Buchstaben und Ziffern, keine Leerzeichen.",
+        "colorFormat": "Verwende eine Farbe im Format #RRGGBB.",
+        "duplicateName": "Ein anderer Verein verwendet diesen Namen bereits.",
+        "duplicateShortName": "Ein anderer Verein verwendet diesen Kurznamen bereits.",
+        "replaceInvalid": "Wähle einen Verein dieser Liga zum Ersetzen.",
+        "replaceRequired": "Wähle den Verein, den du ersetzen möchtest.",
+        "lowContrast": "Diese Farben liegen nah beieinander, das Kürzel ist eventuell schwer lesbar. Du kannst trotzdem fortfahren.",
+        "title": "Verein konnte nicht erstellt werden"
+      }
+    }
   },
   "youthAcademy": {
     "title": "Jugendakademie",

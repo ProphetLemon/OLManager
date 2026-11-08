@@ -33,17 +33,13 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-vi.mock("react-i18next", () => ({
-  initReactI18next: { type: "3rdParty", init: vi.fn() },
-  useTranslation: () => ({
-    i18n: { language: "en" },
-    t: (_key: string, options?: string | Record<string, unknown>) => {
-      if (typeof options === "string") return options;
-      const template = String(options?.defaultValue ?? _key);
-      return template.replace(/{{(\w+)}}/g, (_m, name) => String(options?.[name] ?? ""));
-    },
-  }),
-}));
+vi.mock("react-i18next", async () => {
+  const { translateFromEnglish } = await import("@/test-i18n");
+  return {
+    initReactI18next: { type: "3rdParty", init: vi.fn() },
+    useTranslation: () => ({ i18n: { language: "en" }, t: translateFromEnglish }),
+  };
+});
 
 vi.mock("@/store/gameStore", () => ({
   useGameStore: () => ({
@@ -183,7 +179,7 @@ describe("TeamSelectionV2", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /LEC/i }));
     fireEvent.click(await screen.findByRole("button", { name: /G2 Esports/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Confirmar/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Confirm$/ }));
 
     await waitFor(() => {
       expect(screen.getByText("Could not select team")).toBeInTheDocument();
@@ -206,7 +202,7 @@ describe("TeamSelectionV2", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /LEC/i }));
     fireEvent.click(await screen.findByRole("button", { name: /G2 Esports/i }));
-    const confirm = screen.getByRole("button", { name: /Confirmar/i });
+    const confirm = screen.getByRole("button", { name: /^Confirm$/ });
 
     expect(confirm).toBeDisabled();
     fireEvent.click(confirm);
@@ -238,7 +234,7 @@ describe("TeamSelectionV2", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /LEC/i }));
     fireEvent.click(await screen.findByRole("button", { name: /G2 Esports/i }));
-    const confirm = screen.getByRole("button", { name: /Confirmar/i });
+    const confirm = screen.getByRole("button", { name: /^Confirm$/ });
 
     expect(confirm).toBeDisabled();
     fireEvent.click(confirm);
@@ -258,7 +254,7 @@ describe("TeamSelectionV2", () => {
     fireEvent.click(await screen.findByRole("button", { name: /LEC/i }));
     fireEvent.click(await screen.findByRole("button", { name: /G2 Esports/i }));
 
-    expect(screen.getByRole("button", { name: /Confirmar/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /^Confirm$/ })).toBeEnabled();
   });
 
   describe("create your team", () => {
