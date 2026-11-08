@@ -5,25 +5,8 @@ import { invoke } from "@tauri-apps/api/core";
 import type { GameStateData } from "@/store/gameStore";
 import { formatVal, getTeamName } from "@/lib/common/helpers";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
-import { resolveTeamLogo } from "@/lib/teams/teamLogos";
+import { resolveTransferTeamLogo } from "@/lib/teams/transferLogos";
 import { cn } from "@/ui-v2/lib/utils";
-
-function teamLogoFromId(teamId: string): string {
-  const slug = teamId.replace(/^lec-/, "");
-  if (slug === "shifters") {
-    return "/teams-icons/shifters.webp";
-  }
-  return `/team-logos/${slug}.png`;
-}
-
-function resolveTransferTeamLogo(teamId: string, teamName: string): string | null {
-  if (!teamId) return null;
-  const primary = teamLogoFromId(teamId);
-  if (primary.startsWith("/team-logos/") || primary.startsWith("http")) {
-    return primary;
-  }
-  return resolveTeamLogo(teamName);
-}
 
 interface IncludedPlayerData {
   player_id: string;
@@ -137,8 +120,8 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
             );
             const fromTeamLogo = isFreeAgent
               ? null
-              : resolveTransferTeamLogo(entry.from_team_id, entry.from_team_name);
-            const toTeamLogo = resolveTransferTeamLogo(entry.to_team_id, entry.to_team_name);
+              : resolveTransferTeamLogo(gameState?.teams, entry.from_team_id, entry.from_team_name);
+            const toTeamLogo = resolveTransferTeamLogo(gameState?.teams, entry.to_team_id, entry.to_team_name);
 
             return (
               <div
@@ -251,6 +234,7 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
                           inc.player_profile_image_url,
                         );
                         const incToTeamLogo = resolveTransferTeamLogo(
+                          gameState?.teams,
                           entry.from_team_id,
                           entry.from_team_name,
                         );

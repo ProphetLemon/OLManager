@@ -20,3 +20,27 @@ export function resolveTeamLogo(teamName?: string | null, logoUrl?: string | nul
     .replace(/[^a-z0-9]/g, "");
   return slug ? assetUrl(`/teams-icons/${slug}.webp`) : null;
 }
+
+/** Minimal team shape needed to look up a logo by id. */
+export interface LogoTeamRef {
+  id: string;
+  logo_url?: string | null;
+}
+
+/**
+ * Resolve a team's logo by id, preferring the team's own `logo_url`
+ * (including generated `data:` badges of user-created clubs) over any
+ * id-derived path.
+ *
+ * `idFallback` is only used when the team is unknown or has no `logo_url`,
+ * so legacy id-derived paths keep working for catalog teams.
+ */
+export function resolveTeamLogoById(
+  teams: readonly LogoTeamRef[] | null | undefined,
+  teamId: string | null | undefined,
+  idFallback: () => string | null,
+): string | null {
+  if (!teamId) return null;
+  const own = teams?.find((team) => team.id === teamId)?.logo_url;
+  return own ? assetUrl(own) : idFallback();
+}
