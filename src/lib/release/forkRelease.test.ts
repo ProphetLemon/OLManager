@@ -7,6 +7,7 @@ import {
   encodeAssetName,
   findInstaller,
   findOnPath,
+  makensisCpu,
   parseArgs,
   publishCommands,
   releaseAssetName,
@@ -98,5 +99,13 @@ describe("fork release helpers", () => {
     const exists = (p: string) => p === "/opt/bin/makensis";
     expect(findOnPath("makensis", "/usr/bin:/opt/bin", exists)).toBe("/opt/bin/makensis");
     expect(findOnPath("makensis", "/usr/bin", exists)).toBeNull();
+  });
+
+  it("reads the makensis target CPU from -HDRINFO", () => {
+    // Tauri's installer script loads the 32-bit nsis_tauri_utils plugin, so only an x86 makensis works.
+    expect(makensisCpu("Defined symbols: __GLOBAL__,NSIS_CHAR_SIZE=2,NSIS_CPU=x86,NSIS_IX86=400")).toBe("x86");
+    expect(makensisCpu("Defined symbols: NSIS_AMD64=1,NSIS_CHAR_SIZE=2,NSIS_CPU=amd64")).toBe("amd64");
+    expect(makensisCpu("Defined symbols: NSIS_AMD64=1,NSIS_CHAR_SIZE=2")).toBe("amd64");
+    expect(makensisCpu("")).toBeNull();
   });
 });

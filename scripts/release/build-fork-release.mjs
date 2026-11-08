@@ -15,11 +15,13 @@ import { fileURLToPath } from "node:url";
 
 import {
   NSIS_HINT,
+  NSIS_X86_HINT,
   WINDOWS_TARGET,
   buildLatestJson,
   buildReleaseNotes,
   findInstaller,
   findOnPath,
+  makensisCpu,
   parseArgs,
   publishCommands,
   releaseAssetName,
@@ -68,8 +70,16 @@ const opts = (() => {
   }
 })();
 
+const makensisPath = findOnPath("makensis");
+const makensisIsX86 = (() => {
+  if (!makensisPath) return false;
+  const info = spawnSync(makensisPath, ["-HDRINFO"], { encoding: "utf-8" });
+  return makensisCpu(`${info.stdout ?? ""}${info.stderr ?? ""}`) === "x86";
+})();
+
 const checks = [
-  ["makensis", Boolean(findOnPath("makensis")), NSIS_HINT],
+  ["makensis", Boolean(makensisPath), NSIS_HINT],
+  ["makensis targets x86", makensisIsX86, NSIS_X86_HINT],
   ["cargo-xwin", Boolean(findOnPath("cargo-xwin") || existsSync(join(homedir(), ".cargo", "bin", "cargo-xwin"))), "install it: cargo install cargo-xwin"],
   ["updater private key", existsSync(keyPath), `generate it: npx tauri signer generate -w ${keyPath} --ci`],
 ];
@@ -90,8 +100,9 @@ if (opts.dryRun) {
 
 // makensis first: without it the bundler fails with a confusing message.
 if (!checks[0][1]) fail(`makensis is not on PATH. ${NSIS_HINT}`);
-if (!checks[1][1]) fail(checks[1][2]);
-if (!checks[2][1]) fail(`updater private key not found at ${keyPath}. ${checks[2][2]}`);
+if (!checks[1][1]) fail(`${makensisPath} is not an x86 build. ${NSIS_X86_HINT}`);
+if (!checks[2][1]) fail(checks[2][2]);
+if (!checks[3][1]) fail(`updater private key not found at ${keyPath}. ${checks[3][2]}`);
 
 // The key goes to the child through its environment only; it is never printed.
 const env = {

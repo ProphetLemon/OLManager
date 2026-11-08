@@ -2,6 +2,8 @@ export const DEFAULT_REPO: string;
 export const WINDOWS_TARGET: string;
 export const UPDATER_PLATFORM: string;
 export const NSIS_HINT: string;
+export const NSIS_X86_HINT: string;
+export function makensisCpu(hdrInfo: string): string | null;
 export function releaseAssetName(fileName: string): string;
 export function encodeAssetName(assetName: string): string;
 export function tagFor(version: string): string;

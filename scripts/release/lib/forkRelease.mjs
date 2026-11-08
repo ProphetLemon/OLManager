@@ -7,6 +7,19 @@ export const DEFAULT_REPO = "ProphetLemon/OLManager";
 export const WINDOWS_TARGET = "x86_64-pc-windows-msvc";
 export const UPDATER_PLATFORM = "windows-x86_64";
 export const NSIS_HINT = "install NSIS: paru -S nsis";
+export const NSIS_X86_HINT =
+  "Tauri's installer needs an x86 makensis, and the AUR nsis package is built for amd64 only. " +
+  "Build an x86 one and put its bin/ first on PATH (docs/RELEASING-FORK.md, \"x86 NSIS\")";
+
+/**
+ * Target CPU of a makensis build, read from its `-HDRINFO` output: "x86", "amd64", or null when unknown.
+ * Tauri's NSIS script calls the 32-bit nsis_tauri_utils plugin, which an amd64 makensis cannot load.
+ */
+export function makensisCpu(hdrInfo) {
+  const cpu = /\bNSIS_CPU=(\w+)/.exec(hdrInfo)?.[1];
+  if (cpu) return cpu.toLowerCase();
+  return /\bNSIS_AMD64\b/.test(hdrInfo) ? "amd64" : null;
+}
 
 /** GitHub rewrites spaces in uploaded asset names to dots; use that name up front so latest.json matches. */
 export function releaseAssetName(fileName) {

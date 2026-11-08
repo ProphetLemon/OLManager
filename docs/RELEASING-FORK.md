@@ -41,7 +41,28 @@ that starts at 1 for each day.
 
 ## Build (Linux, cross-compiling for Windows x64)
 
-Requirements: `makensis` (`paru -S nsis`), `cargo-xwin`, the `x86_64-pc-windows-msvc` Rust target.
+Requirements: an x86 `makensis` (see below), `cargo-xwin`, the `x86_64-pc-windows-msvc` Rust target.
+
+### x86 NSIS
+
+The AUR `nsis` package is built with `TARGET_ARCH=amd64` only. Tauri's installer script calls the 32-bit
+`nsis_tauri_utils` plugin, which an amd64 makensis cannot load, so the build fails with
+`Plugin not found, cannot call nsis_tauri_utils::SemverCompare`. `release:fork` checks this up front.
+
+Build an x86 NSIS once, in user space and without sudo. It needs `scons`, `mingw-w64-gcc` and `mingw-w64-zlib`, all
+already pulled in by `paru -S nsis`. The source is the tarball paru downloaded:
+
+```
+P=~/.cache/olmanager/nsis-3.13-x86
+mkdir -p ~/.cache/olmanager/build && tar -xjf ~/.cache/paru/clone/nsis/nsis-3.13-src.tar.bz2 -C ~/.cache/olmanager/build
+cd ~/.cache/olmanager/build/nsis-3.13-src
+scons VERSION=3.13 PREFIX=$P PREFIX_CONF=$P/etc SKIPUTILS='NSIS Menu' STRIP_CP=false TARGET_ARCH=x86 \
+  ZLIB_W32=/usr/i686-w64-mingw32/ NSIS_MAX_STRLEN=8192 NSIS_CONFIG_LOG=yes PREFIX_DEST= install
+```
+
+Run scons without `-j`: a parallel install races on two bitmap files. The data path is compiled in, so do not move
+`$P` afterwards. Then release with it first on PATH:
+`PATH=~/.cache/olmanager/nsis-3.13-x86/bin:$PATH npm run release:fork`.
 
 1. Set the version in `package.json`, `package-lock.json`, `src-tauri/Cargo.toml` (then let any cargo command
    refresh `Cargo.lock`), `src-tauri/tauri.conf.json` (also the window title), `src/lib/common/appInfo.ts` and
