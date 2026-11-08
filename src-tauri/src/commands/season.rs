@@ -14,16 +14,19 @@ pub fn check_season_complete(state: State<'_, StateManager>) -> Result<bool, Str
     Ok(olm_core::end_of_season::is_season_complete(&game))
 }
 
-/// Try to load the competition manifest from the globally-resolved resource dir.
+/// Resolve the user's competition manifest. The game's merged configs come first so
+/// the override layer applies; the data directory is only a fallback for older games.
 fn resolve_competition_manifest(game: &olm_core::game::Game) -> Option<CompetitionManifest> {
     let competition_id = game.user_competition_id.as_deref()?;
+    if let Some(manifest) = game.competition_configs.get(competition_id) {
+        return Some(manifest.clone());
+    }
     let data_dir = olm_core::state::RESOURCE_DATA_DIR.get()?;
-    let path = data_dir
-        .join("competitions")
-        .join(competition_id)
-        .join("manifest.json");
-    let json = std::fs::read_to_string(path).ok()?;
-    serde_json::from_str::<CompetitionManifest>(&json).ok()
+    olm_core::competitions::load_competition_manifest(
+        &data_dir.join("competitions"),
+        competition_id,
+    )
+    .ok()
 }
 
 #[tauri::command]
@@ -148,4 +151,38 @@ pub fn get_season_awards(
         .get_game(|g| g.clone())
         .ok_or("No active game session".to_string())?;
     Ok(olm_core::season_awards::compute_season_awards(&game))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{TimeZone, Utc};
+    use olm_core::clock::GameClock;
+    use olm_core::domain::manager::Manager;
+    use olm_core::game::Game;
+
+    #[test]
+    fn resolve_competition_manifest_uses_the_games_merged_config() {
+        let manifest: CompetitionManifest = serde_json::from_str(
+            r#"{"id":"les","name":"LES","region":"EU","teams_file":"t.json","players_file":"p.json",
+                "schedule":{"format":"double_round_robin","team_count":8,
+                "splits":[{"name":"Spring","best_of":1,"season_start":{"month":3,"day":1}}]}}"#,
+        )
+        .expect("manifest should parse");
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 8, 20, 12, 0, 0).unwrap());
+        let manager = Manager::new(
+            "manager-1".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        let mut game = Game::new(clock, manager, vec![], vec![], vec![], vec![]);
+        game.user_competition_id = Some("les".to_string());
+        game.competition_configs.insert("les".to_string(), manifest);
+
+        let resolved = resolve_competition_manifest(&game).expect("manifest from configs");
+
+        assert_eq!(resolved.schedule.splits.len(), 1);
+    }
 }
