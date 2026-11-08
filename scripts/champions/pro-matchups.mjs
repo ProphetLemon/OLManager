@@ -1,6 +1,6 @@
 // Pro-play lane matchup report from Leaguepedia (Cargo table ScoreboardPlayers, CC BY-SA 3.0).
 //
-//   node scripts/champions/pro-matchups.mjs --since 2025-01-01 [--until 2027-01-01] [--offline]
+//   node scripts/champions/pro-matchups.mjs --since 2025-01-01 [--until 2027-01-01] [--offline] [--login]
 //        [--cache-dir <dir>] [--out <report.json>] [--min-games 20] [--min-lower-bound 0.5]
 //        [--max-requests 800] [--page-size 500]
 //
@@ -10,6 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loginFromFile } from "../world/lib/bot-credentials.mjs";
 import { MediaWikiClient } from "../world/lib/mediawiki-client.mjs";
 import {
   DEFAULT_MIN_GAMES,
@@ -24,6 +25,22 @@ import {
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const scratch = path.join(root, "src-tauri/target/olm-scratch");
 
+const HELP = `Usage: node scripts/champions/pro-matchups.mjs [flags]
+
+  --since YYYY-MM-DD      first match date (default 2025-01-01)
+  --until YYYY-MM-DD      end date, exclusive (default 2027-01-01)
+  --offline               read the cache only; fail on a miss
+  --login                 log in with a Leaguepedia bot password from ~/.config/olmanager/leaguepedia-bot.env
+                          (opt-in; see scripts/champions/README.md, "Logging in"); ignored with --offline
+  --cache-dir <dir>       HTTP cache (default src-tauri/target/olm-scratch/lp-cargo-cache)
+  --out <file>            report path (default src-tauri/target/olm-scratch/pro-matchups-report.json)
+  --min-games <n>         minimum games per matchup
+  --min-lower-bound <x>   minimum Wilson lower bound
+  --max-requests <n>      cap on live requests (default 800)
+  --page-size <n>         Cargo page size (default 500)
+  -h, --help              show this help
+`;
+
 function parseArgs(argv) {
   const args = {
     since: "2025-01-01",
@@ -35,10 +52,14 @@ function parseArgs(argv) {
     minWinRate: DEFAULT_MIN_LOWER_BOUND,
     maxRequests: 800,
     pageSize: 500,
+    login: false,
+    help: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
     if (flag === "--offline") args.offline = true;
+    else if (flag === "--login") args.login = true;
+    else if (flag === "--help" || flag === "-h") args.help = true;
     else if (flag === "--since") args.since = argv[++i];
     else if (flag === "--until") args.until = argv[++i];
     else if (flag === "--cache-dir") args.cacheDir = path.resolve(argv[++i]);
@@ -87,7 +108,12 @@ async function fetchAllRows(client, args) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  if (args.help) {
+    console.log(HELP);
+    return;
+  }
   const client = new MediaWikiClient({ cacheDir: args.cacheDir, offline: args.offline, maxRequests: args.maxRequests, maxCacheAgeDays: 30 });
+  if (args.login) await loginFromFile(client, { log: (message) => console.error(`[pro-matchups] ${message}`) });
   const fetched = await fetchAllRows(client, args);
   const championList = JSON.parse(fs.readFileSync(path.join(root, "assets/simulation/champion-list.json"), "utf8")).champions;
   const resolve = createChampionResolver(championList);

@@ -43,6 +43,8 @@ export class MediaWikiClient {
   readCache(params: Record<string, string>): unknown;
   writeCache(params: Record<string, string>, data: unknown, fetchedAt?: number): void;
   oldestFetchDate(): string | null;
+  loggedIn: boolean;
+  login(credentials: { user: string; password: string }): Promise<boolean>;
   get(params: Record<string, string>): Promise<any>;
   buildUrl(params: Record<string, string>): string;
 }

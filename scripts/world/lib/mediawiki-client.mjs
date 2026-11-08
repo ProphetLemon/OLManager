@@ -59,6 +59,21 @@ export function cacheKey(params) {
   return createHash("sha1").update(pythonJsonDumps(keyed)).digest("hex").slice(0, 16);
 }
 
+const LOGIN_HOST = "lol.fandom.com";
+
+/** Credentials only ever go to https://lol.fandom.com. */
+function assertLoginTarget(apiUrl) {
+  let url;
+  try {
+    url = new URL(apiUrl);
+  } catch {
+    throw new MediaWikiError("refusing to log in: the API URL is not a valid URL");
+  }
+  if (url.protocol !== "https:" || url.hostname !== LOGIN_HOST) {
+    throw new MediaWikiError(`refusing to send credentials: login is only allowed over https to ${LOGIN_HOST}`);
+  }
+}
+
 const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export class MediaWikiClient {
@@ -89,6 +104,64 @@ export class MediaWikiClient {
     this.fetchedAt = new Map();
     this.stats = { network: 0, cacheHits: 0, retries: 0 };
     this.lastRequestAt = 0;
+    /** In-memory cookie jar (name -> value). Never written to disk. */
+    this.cookies = new Map();
+    this.loggedIn = false;
+  }
+
+  storeCookies(response) {
+    for (const line of response.headers?.getSetCookie?.() ?? []) {
+      const pair = line.split(";")[0];
+      const eq = pair.indexOf("=");
+      if (eq > 0) this.cookies.set(pair.slice(0, eq).trim(), pair.slice(eq + 1).trim());
+    }
+  }
+
+  cookieHeader() {
+    return [...this.cookies].map(([name, value]) => `${name}=${value}`).join("; ");
+  }
+
+  requestHeaders(extra = {}) {
+    const headers = { "User-Agent": USER_AGENT, Accept: "application/json", ...extra };
+    if (this.cookies.size > 0) headers.Cookie = this.cookieHeader();
+    return headers;
+  }
+
+  /** One uncached login-flow request: same throttle, budget and User-Agent as ordinary ones. */
+  async loginRequest(url, init) {
+    if (this.stats.network >= this.maxRequests) throw new RequestBudgetExceededError(this.maxRequests);
+    await this.waitForThrottle();
+    this.stats.network += 1;
+    const response = await this.fetchImpl(url, { ...init, redirect: "error", signal: AbortSignal.timeout(40_000) });
+    this.storeCookies(response);
+    if (!response.ok) throw new MediaWikiError(`login request failed: HTTP ${response.status}`, { status: response.status });
+    return response.json();
+  }
+
+  /**
+   * Opt-in bot-password login (https://www.mediawiki.org/wiki/API:Login). Login requests are never cached.
+   * Errors carry login.result and login.reason only, never the password, token or cookies.
+   */
+  async login({ user, password }) {
+    assertLoginTarget(this.apiUrl);
+    if (this.offline) return false;
+    const tokenQuery = new URLSearchParams({ action: "query", meta: "tokens", type: "login", format: "json" });
+    const tokenData = await this.loginRequest(`${this.apiUrl}?${tokenQuery}`, { headers: this.requestHeaders() });
+    const token = tokenData?.query?.tokens?.logintoken;
+    if (!token) throw new MediaWikiError("login failed: the wiki returned no login token");
+    const body = new URLSearchParams({ action: "login", lgname: user, lgpassword: password, lgtoken: token, format: "json" });
+    const data = await this.loginRequest(this.apiUrl, {
+      method: "POST",
+      headers: this.requestHeaders({ "Content-Type": "application/x-www-form-urlencoded" }),
+      body: body.toString(),
+    });
+    const result = data?.login?.result;
+    if (result !== "Success") {
+      const reason = data?.login?.reason;
+      throw new MediaWikiError(`login failed: ${result ?? "no result"}${reason ? ` (${reason})` : ""}`, { result, reason });
+    }
+    this.loggedIn = true;
+    return true;
   }
 
   cachePath(params) {
@@ -152,7 +225,7 @@ export class MediaWikiClient {
       let retryAfterMs = 0;
       try {
         const response = await this.fetchImpl(this.buildUrl(params), {
-          headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
+          headers: this.requestHeaders(),
           signal: AbortSignal.timeout(40_000),
         });
         if (response.status === 429 || response.status >= 500) {

@@ -94,6 +94,11 @@ Keep that attribution wherever the overlay data is surfaced.
 - Do not run it in CI or on a schedule without agreeing that with the wiki operators first.
 - `--max-requests` is a hard cap on live requests; a run stops with an error when it is exhausted.
 
+## Logging in (optional)
+
+`--login` logs in with a Leaguepedia bot password before the first query. Setup steps are in
+`scripts/champions/README.md` under "Logging in". It is unverified whether a logged-in account avoids rate limits.
+
 ## Tests
 
 `npx vitest run src/lib/world` uses recorded responses in `scripts/world/fixtures/cache` (keys are
