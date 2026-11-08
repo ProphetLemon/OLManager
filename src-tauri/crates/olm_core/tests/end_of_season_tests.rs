@@ -224,6 +224,7 @@ fn make_test_manifest() -> CompetitionManifest {
         erls: vec![],
         reputation: None,
         nearby_country_codes: vec![],
+        promotion: None,
         legacy: false,
         active: true,
     }

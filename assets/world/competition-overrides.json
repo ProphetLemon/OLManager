@@ -1,4 +1,16 @@
 {
   "version": 1,
-  "competitions": {}
+  "competitions": {
+    "les": {
+      "promotion": {
+        "to": "lec",
+        "slots": 1,
+        "feeders": [
+          { "team": "les-team-8baee3fd", "parent": "lec-movistar-koi" },
+          { "team": "les-team-f10b156f", "parent": "lec-team-heretics-lec" },
+          { "team": "les-team-854f6893", "parent": "lec-giantx-lec" }
+        ]
+      }
+    }
+  }
 }

@@ -187,6 +187,7 @@ fn manifest(id: &str, split_names: &[&str], playoff_teams: Option<u32>) -> Compe
         erls: vec![],
         reputation: None,
         nearby_country_codes: vec![],
+        promotion: None,
         legacy: false,
         active: true,
     }

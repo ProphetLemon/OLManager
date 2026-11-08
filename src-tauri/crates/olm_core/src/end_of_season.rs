@@ -980,6 +980,7 @@ mod tests {
             erls: vec![],
             reputation: None,
             nearby_country_codes: vec![],
+            promotion: None,
             legacy: false,
             active: true,
         }

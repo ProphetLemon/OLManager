@@ -17,7 +17,7 @@
 //! resource plumbing and no signature. At runtime invalid entries are logged
 //! and skipped; a test validates the bundled file against the scanned data.
 
-use crate::generator::definitions::{CompetitionManifest, ScheduleConfig};
+use crate::generator::definitions::{CompetitionManifest, PromotionLink, ScheduleConfig};
 use log::warn;
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -40,6 +40,9 @@ pub struct CompetitionOverride {
     pub legacy: Option<bool>,
     #[serde(default)]
     pub schedule: Option<ScheduleConfig>,
+    /// Ladder link from this (lower) league to the league above it.
+    #[serde(default)]
+    pub promotion: Option<PromotionLink>,
 }
 
 /// Parsed overrides plus the entries that could not be parsed.
@@ -91,7 +94,56 @@ impl CompetitionOverrides {
                 problems.push(format!("override '{id}': {e}"));
             }
         }
+        self.validate_links(manifests, &mut problems);
         problems
+    }
+
+    /// Cross-checks of the promotion links against the scanned manifests: the
+    /// target exists, is not the source itself, ranks above it when both tiers
+    /// are known, and the links form no cycle. One link per lower league holds
+    /// by construction (each entry carries at most one).
+    fn validate_links(&self, manifests: &[CompetitionManifest], problems: &mut Vec<String>) {
+        let tier_of = |id: &str| -> Option<u8> {
+            let manifest = manifests.iter().find(|m| m.id == id)?;
+            self.entries.get(id).and_then(|e| e.tier).or(manifest.tier)
+        };
+        for (id, entry) in &self.entries {
+            let Some(link) = &entry.promotion else {
+                continue;
+            };
+            if !manifests.iter().any(|m| m.id == link.to) {
+                problems.push(format!(
+                    "override '{id}': promotion target '{}' is unknown",
+                    link.to
+                ));
+            } else if link.to == *id {
+                problems.push(format!("override '{id}': promotion links to itself"));
+            } else if let (Some(from), Some(to)) = (tier_of(id), tier_of(&link.to))
+                && to >= from
+            {
+                problems.push(format!(
+                    "override '{id}': promotion target '{}' (tier {to}) must rank above tier {from}",
+                    link.to
+                ));
+            }
+            if self.link_chain_cycles(id) {
+                problems.push(format!("override '{id}': promotion links form a cycle"));
+            }
+        }
+    }
+
+    /// Whether following promotion links from `start` returns to a league already seen.
+    fn link_chain_cycles(&self, start: &str) -> bool {
+        let mut seen = vec![start];
+        let mut current = start;
+        while let Some(link) = self.entries.get(current).and_then(|e| e.promotion.as_ref()) {
+            if seen.contains(&link.to.as_str()) {
+                return true;
+            }
+            seen.push(link.to.as_str());
+            current = link.to.as_str();
+        }
+        false
     }
 
     /// Apply the matching entry to one manifest. An invalid entry is logged and
@@ -119,6 +171,9 @@ impl CompetitionOverrides {
         if let Some(schedule) = &entry.schedule {
             manifest.schedule = schedule.clone();
         }
+        if let Some(promotion) = &entry.promotion {
+            manifest.promotion = Some(promotion.clone());
+        }
         true
     }
 
@@ -143,16 +198,37 @@ fn validate_entry(entry: &CompetitionOverride) -> Result<(), String> {
         && entry.active.is_none()
         && entry.legacy.is_none()
         && entry.schedule.is_none()
+        && entry.promotion.is_none()
     {
         return Err("entry overrides nothing".to_string());
     }
     if entry.tier == Some(0) {
         return Err("tier must be at least 1".to_string());
     }
+    if let Some(link) = &entry.promotion {
+        validate_promotion(link)?;
+    }
     match &entry.schedule {
         Some(schedule) => validate_schedule(schedule),
         None => Ok(()),
     }
+}
+
+fn validate_promotion(link: &PromotionLink) -> Result<(), String> {
+    if link.to.trim().is_empty() {
+        return Err("promotion.to must not be empty".to_string());
+    }
+    if link.slots == 0 {
+        return Err("promotion.slots must be at least 1".to_string());
+    }
+    if link
+        .feeders
+        .iter()
+        .any(|f| f.team.trim().is_empty() || f.parent.trim().is_empty())
+    {
+        return Err("promotion feeders need a team and a parent id".to_string());
+    }
+    Ok(())
 }
 
 fn validate_schedule(schedule: &ScheduleConfig) -> Result<(), String> {
@@ -306,5 +382,151 @@ mod tests {
         assert!(!manifests.is_empty(), "data/competitions must be present");
         let parsed = CompetitionOverrides::parse(BUNDLED_OVERRIDES_JSON).expect("bundled parses");
         assert_eq!(parsed.validate(&manifests), Vec::<String>::new());
+    }
+
+    const PROMOTION: &str = r#""promotion":{"to":"lec","slots":1,
+        "feeders":[{"team":"les-team-1","parent":"lec-a"}]}"#;
+
+    fn two_leagues(entry: &str) -> (CompetitionOverrides, Vec<CompetitionManifest>) {
+        let mut lec = manifest("lec");
+        lec.tier = Some(1);
+        (overrides(entry), vec![manifest("les"), lec])
+    }
+
+    #[test]
+    fn promotion_only_entry_parses_and_validates() {
+        let (o, manifests) = two_leagues(PROMOTION);
+        assert_eq!(o.validate(&manifests), Vec::<String>::new());
+    }
+
+    #[test]
+    fn apply_sets_promotion_and_leaves_the_schedule_untouched() {
+        let (o, mut manifests) = two_leagues(PROMOTION);
+        assert!(o.apply(&mut manifests[0]));
+        let link = manifests[0].promotion.as_ref().expect("promotion applied");
+        assert_eq!(
+            (link.to.as_str(), link.slots, link.feeders.len()),
+            ("lec", 1, 1)
+        );
+        assert_eq!(manifests[0].schedule.format, "unknown");
+    }
+
+    #[test]
+    fn promotion_slots_default_to_one() {
+        let (o, mut manifests) = two_leagues(r#""promotion":{"to":"lec"}"#);
+        o.apply(&mut manifests[0]);
+        assert_eq!(manifests[0].promotion.as_ref().map(|l| l.slots), Some(1));
+    }
+
+    #[test]
+    fn promotion_rejects_zero_slots_and_empty_feeder_ids() {
+        for entry in [
+            r#""promotion":{"to":"lec","slots":0}"#,
+            r#""promotion":{"to":"lec","feeders":[{"team":"","parent":"lec-a"}]}"#,
+            r#""promotion":{"to":"lec","feeders":[{"team":"les-team-1","parent":" "}]}"#,
+        ] {
+            let (o, manifests) = two_leagues(entry);
+            assert_eq!(o.validate(&manifests).len(), 1, "{entry}");
+        }
+    }
+
+    #[test]
+    fn promotion_rejects_typos_in_its_fields() {
+        let (o, manifests) = two_leagues(r#""promotion":{"to":"lec","slot":2}"#);
+        assert_eq!(o.validate(&manifests).len(), 1);
+    }
+
+    #[test]
+    fn promotion_to_an_unknown_league_is_reported() {
+        let (o, manifests) = two_leagues(r#""promotion":{"to":"nope"}"#);
+        let problems = o.validate(&manifests);
+        assert_eq!(problems.len(), 1);
+        assert!(problems[0].contains("unknown"));
+    }
+
+    #[test]
+    fn promotion_to_itself_is_reported() {
+        let (o, manifests) = two_leagues(r#""promotion":{"to":"les"}"#);
+        assert!(o.validate(&manifests)[0].contains("itself"));
+    }
+
+    #[test]
+    fn promotion_to_a_lower_or_equal_tier_is_reported() {
+        let (o, mut manifests) = two_leagues(PROMOTION);
+        manifests[1].tier = Some(3);
+        assert!(o.validate(&manifests)[0].contains("must rank above"));
+    }
+
+    #[test]
+    fn promotion_cycles_are_reported() {
+        let o = CompetitionOverrides::parse(
+            r#"{"version":1,"competitions":{
+                "a":{"promotion":{"to":"b"}},"b":{"promotion":{"to":"a"}}}}"#,
+        )
+        .unwrap();
+        let problems = o.validate(&[manifest("a"), manifest("b")]);
+        assert!(problems.iter().any(|p| p.contains("cycle")), "{problems:?}");
+    }
+
+    #[test]
+    fn manifest_json_without_promotion_deserializes_to_none() {
+        assert!(manifest("les").promotion.is_none());
+    }
+
+    #[test]
+    fn manifest_with_a_promotion_round_trips_through_json() {
+        let (o, mut manifests) = two_leagues(PROMOTION);
+        o.apply(&mut manifests[0]);
+        let json = serde_json::to_string(&manifests[0]).unwrap();
+        let back: CompetitionManifest = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.promotion, manifests[0].promotion);
+    }
+
+    #[test]
+    fn bundled_promotion_feeders_exist_in_data() {
+        let data = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../data");
+        let manifests = crate::competitions::scan_raw_competitions(&data.join("competitions"));
+        assert!(!manifests.is_empty(), "data/competitions must be present");
+        let parsed = CompetitionOverrides::parse(BUNDLED_OVERRIDES_JSON).expect("bundled parses");
+        let team_ids = |competition: &str| -> Vec<String> {
+            let manifest = manifests
+                .iter()
+                .find(|m| m.id == competition)
+                .expect("manifest");
+            let prefix = format!("{competition}-");
+            crate::competitions::load_teams(&data, manifest)
+                .expect("teams load")
+                .into_iter()
+                .map(|t| {
+                    if t.id.starts_with(&prefix) {
+                        t.id
+                    } else {
+                        format!("{prefix}{}", t.id)
+                    }
+                })
+                .collect()
+        };
+        let mut checked = 0;
+        for (id, entry) in &parsed.entries {
+            let Some(link) = &entry.promotion else {
+                continue;
+            };
+            let (lower, upper) = (team_ids(id), team_ids(&link.to));
+            for feeder in &link.feeders {
+                assert!(
+                    lower.contains(&feeder.team),
+                    "feeder {} not in {id}",
+                    feeder.team
+                );
+                assert!(
+                    upper.contains(&feeder.parent),
+                    "parent {} not in {}",
+                    feeder.parent,
+                    link.to
+                );
+                checked += 1;
+            }
+        }
+        assert!(checked > 0, "the bundled file declares at least one feeder");
     }
 }
