@@ -128,3 +128,79 @@ fn role_weights_favor_the_carry_over_the_support() {
     credit_gold(&mut support, 100.0);
     assert!(adc.gold > support.gold);
 }
+
+/// A unit shaped like one saved before the item model: `item_tier` came from
+/// `floor(total gold / 1450)`, every coin sat in `gold` and `gold_spent` did not
+/// exist (it deserializes to 0).
+fn legacy_unit(item_tier: u8, total_gold: f64) -> LolUnitState {
+    let mut unit = seeded_units().remove(0);
+    unit.item_tier = item_tier;
+    unit.gold = total_gold;
+    unit.gold_spent = 0.0;
+    unit
+}
+
+#[test]
+fn old_save_does_not_buy_several_items_on_its_first_tick() {
+    // Three items under the old rule, 4600 gold earned. Without a backfill the
+    // unit looked like it had 4600 unspent coins and bought items 4, 5 and 6
+    // at once (a one-off +3 item power spike).
+    let mut state = super::test_support::new_match(70, 70);
+    state.lol_map.units[0] = legacy_unit(3, 4_600.0);
+    let earned_before = 4_600.0;
+
+    state.tick_progression(1);
+
+    let unit = &state.lol_map.units[0];
+    assert_eq!(unit.item_tier, 3, "the first tick must not add items");
+    assert_eq!(
+        unit.gold_spent,
+        ITEM_PRICES[..3].iter().sum::<f64>(),
+        "gold_spent is backfilled from the item count"
+    );
+    let earned_after = unit.gold + unit.gold_spent;
+    assert!(
+        earned_after >= earned_before && earned_after - earned_before < 200.0,
+        "total earned gold is preserved apart from one tick of income, got {earned_after}"
+    );
+}
+
+#[test]
+fn backfill_is_idempotent_and_leaves_new_matches_alone() {
+    let mut state = super::test_support::new_match(70, 70);
+    state.lol_map.units[0] = legacy_unit(2, 3_000.0);
+
+    state.tick_progression(1);
+    let after_first = state.lol_map.units[0].clone();
+    // A second tick only adds income; it must not backfill again.
+    state.tick_progression(2);
+    let after_second = &state.lol_map.units[0];
+    assert_eq!(after_second.gold_spent, after_first.gold_spent);
+    assert_eq!(after_second.item_tier, after_first.item_tier);
+
+    // A fresh unit (no items, nothing spent) is untouched by the migration.
+    let fresh = &state.lol_map.units[1];
+    assert_eq!(fresh.gold_spent, 0.0);
+    assert_eq!(fresh.item_tier, 0);
+}
+
+#[test]
+fn saves_without_the_rating_fields_load_as_a_neutral_player() {
+    let unit = seeded_units().remove(0);
+    let mut json = serde_json::to_value(&unit).expect("unit serializes");
+    let map = json.as_object_mut().expect("unit is an object");
+    for key in ["fight_skill", "macro_skill", "gold_spent"] {
+        map.remove(key);
+    }
+    let loaded: LolUnitState = serde_json::from_value(json).expect("old unit loads");
+    assert_eq!(loaded.fight_skill, 0.0);
+    assert_eq!(loaded.macro_skill, 0.0);
+    assert_eq!(loaded.gold_spent, 0.0);
+
+    let lane = serde_json::json!({
+        "outer_alive": true, "outer_hp": 1200.0, "inner_alive": true, "inner_hp": 1400.0,
+        "inhibitor_alive": true, "inhibitor_hp": 1200.0, "inhibitor_respawn_minute": null
+    });
+    let lane: LolLaneState = serde_json::from_value(lane).expect("old lane loads");
+    assert_eq!(lane.front, 0.5, "an old lane starts from the neutral front");
+}

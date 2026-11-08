@@ -562,6 +562,9 @@ impl LiveMatchState {
     fn tick_progression(&mut self, minute: u8) {
         let passive_gold = if minute < 15 { 24.0 } else { 32.0 };
         for unit in &mut self.lol_map.units {
+            backfill_legacy_items(unit);
+        }
+        for unit in &mut self.lol_map.units {
             if !unit.alive {
                 continue;
             }
@@ -1265,6 +1268,27 @@ fn role_income_weight(role: LolRole) -> f64 {
 
 fn credit_gold(unit: &mut LolUnitState, amount: f64) {
     unit.gold += amount * role_income_weight(unit.role);
+}
+
+/// Brings a unit saved before the item model in line with it.
+///
+/// Those saves derived `item_tier` from `floor(total gold / 1450)`, kept every
+/// coin in `gold` and have no `gold_spent` (it deserializes to 0). Left alone,
+/// the first tick would see all that gold as unspent and buy several items at
+/// once, a one-off power spike. The items the unit already owns are treated as
+/// bought at the breakpoint prices: `gold_spent` is backfilled and taken out of
+/// `gold`, so total earned gold is unchanged. The unit keeps its item count and
+/// may buy at most the one item its leftover gold now affords, like any other
+/// purchase. A unit with nothing spent and no items (every new match) is
+/// untouched, and a migrated unit has `gold_spent > 0`, so this runs once.
+fn backfill_legacy_items(unit: &mut LolUnitState) {
+    if unit.gold_spent > 0.0 || unit.item_tier == 0 {
+        return;
+    }
+    let owned = (unit.item_tier as usize).min(ITEM_PRICES.len());
+    let spent: f64 = ITEM_PRICES[..owned].iter().sum();
+    unit.gold_spent = spent;
+    unit.gold = (unit.gold - spent).max(0.0);
 }
 
 /// Converts unspent gold into completed items (at most six).
