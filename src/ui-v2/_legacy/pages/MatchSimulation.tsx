@@ -1935,6 +1935,8 @@ export default function MatchSimulation() {
           onComplete={handleDraftComplete}
           controlledSide={userSelectedSide}
           allAi={effectiveMatchMode === "spectator"}
+          instant={effectiveMatchMode === "spectator"}
+          autoFinalize={matchMode === "delegate"}
           seriesLength={seriesLength}
           blueSeriesWins={blueSeriesWins}
           redSeriesWins={redSeriesWins}

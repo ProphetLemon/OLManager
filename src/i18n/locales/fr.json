@@ -1890,6 +1890,7 @@
       "redPicks": "Picks Rouge",
       "startMatch": "Lancer la partie",
       "finalizeDraft": "Finaliser le draft",
+      "skipDraft": "Passer le draft",
       "loadingChampions": "Chargement des champions...",
       "loadError": "Erreur lors du chargement des champions",
       "noChampionsForFilters": "Aucun champion disponible avec les filtres actuels.",

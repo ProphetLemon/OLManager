@@ -1837,6 +1837,7 @@
       "redPicks": "Picks Vermelho",
       "startMatch": "Iniciar partida",
       "finalizeDraft": "Finalizar draft",
+      "skipDraft": "Pular draft",
       "loadingChampions": "Carregando campeões...",
       "loadError": "Erro ao carregar campeões",
       "noChampionsForFilters": "Não há campeões disponíveis com os filtros atuais.",

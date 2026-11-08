@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import type { GameStateData, ScrimReportData } from "@/store/gameStore";
-import { useSettingsStore } from "@/store/settingsStore";
 import { getChampionTiming } from "@/lib/champions/championTiming";
 import { championFitsLane, getChampionCounterValue, laneCounterValue } from "@/lib/champions/championRelationships";
 import { getLolStaffEffectsForTeam } from "@/lib/teams/lolStaffEffects";
@@ -250,6 +249,10 @@ interface ChampionDraftProps {
   onComplete: (result: ChampionDraftResultPayload) => void;
   controlledSide?: Side;
   allAi?: boolean;
+  /** Resolves every remaining step at once with the AI logic, with no per-step delay. */
+  instant?: boolean;
+  /** Reports the finished draft as soon as the role order is ready, without the finalize click. */
+  autoFinalize?: boolean;
   seriesLength?: 1 | 3 | 5;
   blueSeriesWins?: number;
   redSeriesWins?: number;
@@ -702,6 +705,8 @@ export default function ChampionDraft({
   onComplete,
   controlledSide = "blue",
   allAi = false,
+  instant = false,
+  autoFinalize = false,
   seriesLength = 1,
   blueSeriesWins = 0,
   redSeriesWins = 0,
@@ -715,9 +720,6 @@ export default function ChampionDraft({
       ?? `/competitions-icons/${gameState.user_competition_id}.webp`
     : "/competitions-icons/lec.webp";
 
-  const debugToolsEnabled = useSettingsStore(
-    (state) => state.settings.debug_tools_enabled,
-  );
   const [champions, setChampions] = useState<ChampionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1464,7 +1466,7 @@ export default function ChampionDraft({
     return pool[randomIndex] ?? null;
   };
 
-  const handleSkipDraftDebug = (): void => {
+  const handleSkipDraft = (): void => {
     if (finished || loading || champions.length === 0) return;
 
     let nextBlueBans = [...blueBans];
@@ -1557,7 +1559,7 @@ export default function ChampionDraft({
               && candidate.roleHints.every((role) => enemyCoveredRoles.has(role as Role)),
             enemyJungleLocked: enemyCoveredRoles.has("JUNGLE"),
             isFlexThreat: candidate.roleHints.length >= 2,
-            draftHashSeed: `${stepIndex}:${targetSide}:${candidate.championId}:debug`,
+            draftHashSeed: `${stepIndex}:${targetSide}:${candidate.championId}:skip`,
           };
         },
       });
@@ -1628,6 +1630,7 @@ export default function ChampionDraft({
 
   useEffect(() => {
     if (!currentStep || finished || loading || champions.length === 0) return;
+    if (instant) return;
     if (!allAi && currentStep.side === controlledSide) return;
 
     const minMs = Math.min(AI_TIMING.aiMinMs, AI_TIMING.aiMaxMs);
@@ -1652,9 +1655,18 @@ export default function ChampionDraft({
     currentStepKey,
     currentPickEvaluationContext,
     finished,
+    instant,
     loading,
     usedChampionIds,
   ]);
+
+  const instantResolvedRef = useRef(false);
+  useEffect(() => {
+    if (!instant || instantResolvedRef.current) return;
+    if (finished || loading || champions.length === 0) return;
+    instantResolvedRef.current = true;
+    handleSkipDraft();
+  });
 
   useEffect(() => {
     if (!currentStep || finished || loading || champions.length === 0) return;
@@ -1810,6 +1822,29 @@ export default function ChampionDraft({
     const timeoutId = setTimeout(() => setShowFinalRoleReassignFx(false), 800);
     return () => clearTimeout(timeoutId);
   }, [bluePicks.length, blueRoleOrder, finished, redPicks.length, redRoleOrder]);
+
+  const buildResultPayload = (): ChampionDraftResultPayload => ({
+    blue: {
+      picks: blueOrderedPicks.filter((pick): pick is DraftPick => pick !== null),
+      bans: blueBans,
+      score: blueScore,
+    },
+    red: {
+      picks: redOrderedPicks.filter((pick): pick is DraftPick => pick !== null),
+      bans: redBans,
+      score: redScore,
+    },
+    history: draftHistory,
+  });
+
+  const autoFinalizedRef = useRef(false);
+  useEffect(() => {
+    if (!autoFinalize || autoFinalizedRef.current || !finished) return;
+    if (bluePicks.length > 0 && !blueRoleOrder) return;
+    if (redPicks.length > 0 && !redRoleOrder) return;
+    autoFinalizedRef.current = true;
+    onComplete(buildResultPayload());
+  });
 
   const armSwapFromRole = (side: Side, roleIdx: number): void => {
     if (!finished) return;
@@ -3017,14 +3052,14 @@ export default function ChampionDraft({
                 ) : null}
               </div>
 
-              {!finished && debugToolsEnabled ? (
+              {!finished ? (
                 <div className="relative flex justify-end">
                   <button
                     type="button"
-                    onClick={handleSkipDraftDebug}
-                    className="rounded-md border border-fuchsia-300/60 bg-fuchsia-500/15 hover:bg-fuchsia-500/25 text-fuchsia-100 px-2 py-1 text-2xs font-heading font-bold uppercase tracking-wide"
+                    onClick={handleSkipDraft}
+                    className="rounded-md border border-white/20 bg-white/5 hover:bg-white/10 text-gray-100 px-2 py-1 text-2xs font-heading font-bold uppercase tracking-wide"
                   >
-                    Skip draft (debug)
+                    {t("match.draft.skipDraft")}
                   </button>
                 </div>
               ) : null}
@@ -3261,21 +3296,7 @@ export default function ChampionDraft({
         {finished ? (
           <button
             className="w-full md:w-80 self-center rounded-md bg-orange-500 hover:bg-orange-400 text-navy-900 py-2 font-heading font-bold uppercase tracking-wide"
-            onClick={() =>
-              onComplete({
-                blue: {
-                  picks: blueOrderedPicks.filter((pick): pick is DraftPick => pick !== null),
-                  bans: blueBans,
-                  score: blueScore,
-                },
-                red: {
-                  picks: redOrderedPicks.filter((pick): pick is DraftPick => pick !== null),
-                  bans: redBans,
-                  score: redScore,
-                },
-                history: draftHistory,
-              })
-            }
+            onClick={() => onComplete(buildResultPayload())}
           >
             {t("match.draft.finalizeDraft")}
           </button>

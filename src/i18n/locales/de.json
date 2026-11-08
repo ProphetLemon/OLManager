@@ -1890,6 +1890,7 @@
       "redPicks": "Red picks",
       "startMatch": "Start match",
       "finalizeDraft": "Finalize draft",
+      "skipDraft": "Draft überspringen",
       "loadingChampions": "Loading champions...",
       "loadError": "Error loading champions",
       "noChampionsForFilters": "No champions available with the current filters.",

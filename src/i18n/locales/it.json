@@ -1859,6 +1859,7 @@
       "redPicks": "Red picks",
       "startMatch": "Start match",
       "finalizeDraft": "Finalize draft",
+      "skipDraft": "Salta il draft",
       "loadingChampions": "Loading champions...",
       "loadError": "Error loading champions",
       "noChampionsForFilters": "No champions available with the current filters.",

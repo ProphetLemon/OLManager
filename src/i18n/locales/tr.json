@@ -1890,6 +1890,7 @@
       "redPicks": "Kırmızı takım seçimleri",
       "startMatch": "Maça başla",
       "finalizeDraft": "Draftı onayla",
+      "skipDraft": "Draftı atla",
       "loadingChampions": "Şampiyonlar yükleniyor...",
       "loadError": "Şampiyonlar yüklenirken hata oluştu",
       "noChampionsForFilters": "Mevcut filtrelerle uygun şampiyon bulunmuyor.",
