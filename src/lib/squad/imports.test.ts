@@ -33,6 +33,11 @@ describe("import rule helpers", () => {
     expect(wouldExceedImportLimit(over, "d", p("x", true))).toBe(true);
   });
 
+  it("does not count an incoming import twice when he already starts in another slot", () => {
+    const starters = [p("a", true), p("b", true), p("c"), p("d"), p("e")];
+    expect(wouldExceedImportLimit(starters, "c", p("a", true))).toBe(false);
+  });
+
   it("parses the backend refusal", () => {
     expect(parseImportLimitError("LINEUP_TOO_MANY_IMPORTS:3:2")).toEqual({ count: 3, max: 2 });
     expect(parseImportLimitError(new Error("LINEUP_TOO_MANY_IMPORTS:4:2"))).toEqual({

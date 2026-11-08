@@ -30,11 +30,14 @@ export function countImports(players: ReadonlyArray<Partial<ImportFlagged>>): nu
 export function wouldExceedImportLimit(
   starters: ReadonlyArray<ImportFlagged>,
   outgoingId: string | null,
-  incoming: { is_import?: boolean },
+  incoming: { id?: string; is_import?: boolean },
 ): boolean {
   const outgoing = starters.find((starter) => starter.id === outgoingId);
   const before = countImports(starters);
-  const after = before - (outgoing && isImportPlayer(outgoing) ? 1 : 0) + (isImportPlayer(incoming) ? 1 : 0);
+  // An incoming player who already starts is only moved, so he is already counted.
+  const alreadyStarting = "id" in incoming && starters.some((starter) => starter.id === incoming.id);
+  const added = !alreadyStarting && isImportPlayer(incoming) ? 1 : 0;
+  const after = before - (outgoing && isImportPlayer(outgoing) ? 1 : 0) + added;
   return after > MAX_IMPORTS_IN_STARTING_FIVE && after > before;
 }
 
