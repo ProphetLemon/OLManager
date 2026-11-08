@@ -567,9 +567,24 @@ pub fn apply_default_initial_contract_end(
     report
 }
 
+/// Authored placeholder ladder: some data files carry `market_value == 15 * wage`
+/// (uncorrelated with OVR) instead of a real valuation.
+const PLACEHOLDER_MARKET_VALUE_WAGE_MULTIPLE: u64 = 15;
+
+fn has_placeholder_market_value(player: &Player) -> bool {
+    player.wage > 0
+        && player.market_value
+            == PLACEHOLDER_MARKET_VALUE_WAGE_MULTIPLE * u64::from(player.wage)
+}
+
+/// Fills missing market values with the seed formula. Authored placeholder values
+/// (see [`has_placeholder_market_value`]) are recomputed the same way; any other
+/// authored value is kept. Idempotent: the formula output depends only on OVR and
+/// potential. Run it before free-agent wages are cleared, since the placeholder
+/// signature needs the authored wage.
 pub fn apply_default_market_values(players: &mut [Player]) {
     for player in players.iter_mut() {
-        if player.market_value > 0 {
+        if player.market_value > 0 && !has_placeholder_market_value(player) {
             continue;
         }
         let ovr = potential::calculate_lol_ovr(player);
@@ -956,7 +971,7 @@ pub fn ensure_example_academy_pool(game: &mut Game) {
 #[cfg(test)]
 mod tests {
     use super::{
-        apply_default_initial_contract_end, calculate_age_on_date,
+        apply_default_initial_contract_end, apply_default_market_values, calculate_age_on_date,
         default_initial_contract_end_for_start_year, legacy_new_game_start_date,
         new_game_start_date,
     };
@@ -1002,6 +1017,40 @@ mod tests {
             "Arena".to_string(),
             1_000,
         )
+    }
+
+    fn player_with_value(id: &str, market_value: u64, wage: u32) -> Player {
+        let mut player = player_with_contract(id, None);
+        player.market_value = market_value;
+        player.wage = wage;
+        player
+    }
+
+    #[test]
+    fn placeholder_market_values_are_recomputed_and_real_ones_kept() {
+        let mut players = vec![
+            player_with_value("placeholder", 630_000, 42_000),
+            player_with_value("authored", 230_000, 356_000),
+            player_with_value("zero", 0, 40_000),
+        ];
+
+        apply_default_market_values(&mut players);
+
+        let formula = super::suggested_seed_market_value(
+            crate::potential::calculate_lol_ovr(&players[0]),
+            players[0].potential_base.max(crate::potential::calculate_lol_ovr(&players[0])),
+            false,
+        );
+        assert_eq!(players[0].market_value, formula);
+        assert_ne!(players[0].market_value, 630_000);
+        assert_eq!(players[1].market_value, 230_000);
+        assert_eq!(players[2].market_value, formula);
+        assert_eq!(players[0].wage, 42_000, "wages are never touched");
+
+        let after_first: Vec<u64> = players.iter().map(|p| p.market_value).collect();
+        apply_default_market_values(&mut players);
+        let after_second: Vec<u64> = players.iter().map(|p| p.market_value).collect();
+        assert_eq!(after_first, after_second, "the pass is idempotent");
     }
 
     #[test]
