@@ -45,7 +45,11 @@ pub(super) fn build_team_with_bench(game: &Game, team_id: &str) -> (TeamData, Ve
         .iter()
         .filter(|p| p.team_id.as_deref() == Some(team_id))
         .collect();
+    let region = team.and_then(crate::residency::team_region);
     let starters = select_reconciled_lol_starters(team, available_players.as_slice());
+    // Whoever picked the five (the saved lineup, a stale id, the OVR fallback),
+    // it must respect the import limit.
+    let starters = crate::residency::limit_imports(starters, available_players.as_slice(), region);
     let starter_ids = starters
         .iter()
         .map(|player| player.id.as_str())
@@ -60,11 +64,11 @@ pub(super) fn build_team_with_bench(game: &Game, team_id: &str) -> (TeamData, Ve
 
     let starting_xi = starters
         .into_iter()
-        .map(to_engine_player)
+        .map(|player| to_engine_player(player, region))
         .collect::<Vec<_>>();
     let bench = bench_domain
         .into_iter()
-        .map(to_engine_player)
+        .map(|player| to_engine_player(player, region))
         .collect::<Vec<_>>();
 
     let team_data = TeamData {
@@ -209,8 +213,12 @@ fn best_available_player_for_role<'a>(
         })
 }
 
-fn to_engine_player(p: &crate::domain::player::Player) -> PlayerData {
+fn to_engine_player(
+    p: &crate::domain::player::Player,
+    region: Option<crate::residency::Region>,
+) -> PlayerData {
     PlayerData {
+        is_import: crate::residency::is_import(p, region),
         id: p.id.clone(),
         name: p.match_name.clone(),
         profile_image_url: p.profile_image_url.clone(),

@@ -146,7 +146,7 @@ pub fn dispatch(command: &str, args: &Value, game: &mut Game) -> Result<Dispatch
         // ── Lineup ──────────────────────────────────────────
         "set_active_lineup" | "set_starting_xi" => {
             let ids = string_vec_arg(args, &["playerIds", "player_ids"])?;
-            commands::set_active_lineup(game, &manager_team_id(game)?, ids);
+            commands::set_active_lineup(game, &manager_team_id(game)?, ids)?;
             Ok(DispatchResult::GameModified(json!(game)))
         }
         "set_lol_tactics" => {

@@ -285,6 +285,17 @@ impl SaveManager {
                 }
         }
 
+        // Migration: saves from before the import rule treat everyone on a team
+        // as a resident of that team's league region (runs once per game).
+        let grandfathered = crate::residency::grandfather_rostered_players(&mut game);
+        crate::residency::refresh_import_flags(&mut game);
+        if grandfathered > 0 {
+            info!(
+                "[save_manager] grandfathered residency for {} rostered players",
+                grandfathered
+            );
+        }
+
         info!(
             "[save_manager] load_game: loaded, players={}, teams={}",
             game.players.len(),
@@ -464,6 +475,7 @@ mod tests {
             moved_player_ids: Default::default(),
             retired_player_ids: Default::default(),
             world_overlay_as_of: None,
+            residency_initialized: false,
         }
     }
 

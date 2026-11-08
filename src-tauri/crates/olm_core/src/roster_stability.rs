@@ -604,6 +604,17 @@ fn reconcile_lineup(game: &mut Game, team_id: &str, actions: &mut Vec<RepairActi
         .map(|team| team.active_lineup_ids.clone())
         .unwrap_or_default();
     let lineup = select_lineup(game, team_id, current_date);
+    // Only players with a current contract may replace an import.
+    let eligible: Vec<Player> = eligible_team_players(game, team_id, current_date)
+        .into_iter()
+        .cloned()
+        .collect();
+    let lineup = crate::residency::limit_lineup_ids_for(
+        crate::residency::region_of_team_id(game, team_id),
+        &eligible,
+        team_id,
+        lineup,
+    );
     let lineup_set = lineup.iter().map(String::as_str).collect::<HashSet<_>>();
     let removed_ids = previous
         .iter()

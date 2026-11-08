@@ -161,6 +161,11 @@ pub struct Game {
     /// if any. Shown to the player as "Rosters as of <date>".
     #[serde(default)]
     pub world_overlay_as_of: Option<String>,
+    /// Whether `residency::grandfather_rostered_players` already ran for this
+    /// game. Saves from before the import rule load as `false`, so players on a
+    /// team at that moment become residents of the team's league region.
+    #[serde(default)]
+    pub residency_initialized: bool,
 }
 
 /// Lenient deserializer for `competition_configs`.
@@ -224,6 +229,7 @@ impl Game {
             moved_player_ids: HashSet::new(),
             retired_player_ids: vec![],
             world_overlay_as_of: None,
+            residency_initialized: false,
         };
         crate::identity_upgrade::upgrade_game_football_identities(&mut game);
         crate::season_context::refresh_game_context(&mut game);

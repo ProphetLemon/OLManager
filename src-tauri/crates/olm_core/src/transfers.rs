@@ -938,6 +938,7 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
             .players
             .iter()
             .filter(|player| player.team_id.is_none())
+            .filter(|player| crate::residency::has_import_slot_for(game, team, player))
             .filter(|player| lol_role_to_string(&player.natural_position) == preferred_role)
             .filter_map(|player| {
                 let asking_price = (player.market_value as i64).max(25_000) / 5;
@@ -953,6 +954,7 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
             .players
             .iter()
             .filter(|player| player.team_id.is_none())
+            .filter(|player| crate::residency::has_import_slot_for(game, team, player))
             .filter_map(|player| {
                 let asking_price = (player.market_value as i64).max(25_000) / 5;
                 (asking_price > 0 && asking_price <= budget_cap).then_some((
@@ -1003,6 +1005,7 @@ pub fn ai_agent_purchase(game: &mut Game, team_id: &str, role: &str) -> bool {
         .players
         .iter()
         .filter(|player| player.team_id.is_none())
+        .filter(|player| crate::residency::has_import_slot_for(game, &team, player))
         .filter(|player| lol_role_to_string(&player.natural_position) == role)
         .filter_map(|player| {
             let asking_price = (player.market_value as i64).max(25_000) / 5;
@@ -1083,6 +1086,9 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
                 if seller_team.team_kind != TeamKind::Main {
                     return None;
                 }
+                if !crate::residency::has_import_slot_for(game, &buyer_team, player) {
+                    return None;
+                }
 
                 let fee = suggested_incoming_fee(current_date, player, &buyer_team, &buyer_id);
                 if fee == 0 || (fee as i64) > budget_cap {
@@ -1123,6 +1129,9 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
 
                 let seller_team = game.teams.iter().find(|team| team.id == seller_id)?;
                 if seller_team.team_kind != TeamKind::Main {
+                    return None;
+                }
+                if !crate::residency::has_import_slot_for(game, &buyer_team, player) {
                     return None;
                 }
 
@@ -1723,6 +1732,7 @@ fn execute_free_agent_signing_with_payer(
         clear_player_from_active_lineup(team, player_id);
         reconcile_lol_active_lineup(team, &players_snapshot);
     }
+    crate::residency::refresh_import_flags(game);
 
     let user_team_id = game.manager.team_id.clone().unwrap_or_default();
     let is_user_involved = to_team_id == user_team_id;
@@ -2666,6 +2676,8 @@ fn complete_transfer_with_wage(
             t.active_lineup_ids.remove(pos);
         }
 
+    crate::residency::refresh_import_flags(game);
+
     let offer = player_snapshot
         .transfer_offers
         .iter()
@@ -2918,7 +2930,14 @@ fn reconcile_lol_active_lineup(
         }
     }
 
-    team.active_lineup_ids = next_ids.into_iter().filter(|id| !id.is_empty()).collect();
+    let next_ids: Vec<String> = next_ids.into_iter().filter(|id| !id.is_empty()).collect();
+    // A signing must never leave the starting five over the import limit.
+    team.active_lineup_ids = crate::residency::limit_lineup_ids_for(
+        crate::residency::team_region(team),
+        players,
+        &team.id,
+        next_ids,
+    );
 }
 
 fn current_team_player_by_id<'a>(

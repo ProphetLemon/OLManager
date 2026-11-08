@@ -511,16 +511,18 @@ fn set_active_lineup_internal(
         .clone()
         .ok_or("No team assigned".to_string())?;
 
-    apply_active_lineup(&mut game, &team_id, player_ids);
+    apply_active_lineup(&mut game, &team_id, player_ids)?;
 
     state.set_game(game.clone());
     Ok(crate::client_game::game_for_client(&game))
 }
 
-fn apply_active_lineup(game: &mut Game, team_id: &str, player_ids: Vec<String>) {
-    if let Some(team) = game.teams.iter_mut().find(|t| t.id == team_id) {
-        team.active_lineup_ids = player_ids;
-    }
+fn apply_active_lineup(
+    game: &mut Game,
+    team_id: &str,
+    player_ids: Vec<String>,
+) -> Result<(), String> {
+    olm_core::commands::set_active_lineup(game, team_id, player_ids)
 }
 
 #[tauri::command]
@@ -2094,12 +2096,34 @@ mod tests {
             &mut game,
             "team-1",
             vec!["p2".to_string(), "p1".to_string()],
-        );
+        )
+        .unwrap();
 
         assert_eq!(
             game.teams[0].active_lineup_ids,
             vec!["p2".to_string(), "p1".to_string()]
         );
+    }
+
+    #[test]
+    fn apply_active_lineup_refuses_a_lineup_with_three_imports() {
+        let mut game = make_game();
+        game.teams[0].competition_id = Some("lec".to_string());
+        let mut ids = Vec::new();
+        for (i, nationality) in ["KR", "CN", "TW", "ES", "FR"].iter().enumerate() {
+            let mut p = game.players[0].clone();
+            p.id = format!("imp{i}");
+            p.team_id = Some("team-1".to_string());
+            p.nationality = nationality.to_string();
+            p.resident_region = None;
+            ids.push(p.id.clone());
+            game.players.push(p);
+        }
+
+        let err = super::apply_active_lineup(&mut game, "team-1", ids).unwrap_err();
+
+        assert_eq!(err, "LINEUP_TOO_MANY_IMPORTS:3:2");
+        assert!(game.teams[0].active_lineup_ids.is_empty());
     }
 
     #[test]

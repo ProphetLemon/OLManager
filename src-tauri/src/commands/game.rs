@@ -99,6 +99,12 @@ pub(crate) fn build_new_game_world(
     // Rostered players the data ships without a wage get one from the LEC wage scale.
     seed_missing_wages(game);
 
+    // Everyone on a team now is a resident of that team's league region; only
+    // later signings can be imports.
+    let grandfathered = olm_core::residency::grandfather_rostered_players(game);
+    olm_core::residency::refresh_import_flags(game);
+    info!("[game] grandfathered residency for {} rostered players", grandfathered);
+
     auto_fill_user_lineup(game, inputs.team_id);
     eprintln!(
         "[select_team] AFTER assembly: staff.len={}",
@@ -168,7 +174,13 @@ fn auto_fill_user_lineup(game: &mut Game, team_id: &str) {
             );
         }
         if lineup.iter().all(|id| !id.is_empty()) {
-            user_team.active_lineup_ids = lineup;
+            // Best valid five: never more than the allowed imports.
+            user_team.active_lineup_ids = olm_core::residency::limit_lineup_ids_for(
+                olm_core::residency::team_region(user_team),
+                &game.players,
+                team_id,
+                lineup,
+            );
             info!(
                 "[select_team] active_lineup_ids set to {:?}",
                 user_team.active_lineup_ids
@@ -1717,6 +1729,39 @@ mod tests {
                 let p = game.players.iter().find(|p| &p.id == id).unwrap();
                 assert_eq!(p.team_id.as_deref(), Some(user_team.as_str()));
             }
+        }
+
+        #[test]
+        fn new_game_rostered_players_are_residents_and_free_agents_are_not_marked() {
+            let (game, _catalog, _overlay, user_team) = new_game();
+            assert!(game.residency_initialized);
+            for team in game.teams.iter().filter(|t| t.team_kind == TeamKind::Main) {
+                let region = olm_core::residency::team_region(team);
+                for p in game
+                    .players
+                    .iter()
+                    .filter(|p| p.team_id.as_deref() == Some(team.id.as_str()))
+                {
+                    assert!(
+                        !olm_core::residency::is_import(p, region),
+                        "{} must be a resident of {}",
+                        p.id,
+                        team.id
+                    );
+                    assert!(!p.is_import);
+                }
+            }
+            assert!(
+                game.players
+                    .iter()
+                    .filter(|p| p.team_id.is_none())
+                    .all(|p| p.resident_region.is_none())
+            );
+            let team = game.teams.iter().find(|t| t.id == user_team).unwrap();
+            let lineup: Vec<String> = team.active_lineup_ids.clone();
+            assert!(
+                olm_core::residency::validate_lineup_imports(&game, &user_team, &lineup).is_ok()
+            );
         }
 
         #[test]

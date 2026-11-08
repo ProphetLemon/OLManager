@@ -8,6 +8,7 @@ use olm_core::game::Game;
 /// the complete patch meta. Clients receive only entries they have discovered.
 pub fn game_for_client(game: &Game) -> Game {
     let mut projected = game.clone();
+    olm_core::residency::refresh_import_flags(&mut projected);
     let discovered: HashSet<String> = projected
         .champion_patch
         .discovered_champion_ids

@@ -369,12 +369,44 @@ impl LiveMatchState {
         Ok(())
     }
 
+    /// Refuse a pre-match swap that leaves the starting five with more imports
+    /// than allowed. A swap that does not add an import is always fine, so a
+    /// five that is already over the limit can still be repaired.
+    fn check_pre_match_swap_imports(
+        &self,
+        side: Side,
+        player_off_id: &str,
+        player_on_id: &str,
+    ) -> Result<(), String> {
+        let (starters, bench) = match side {
+            Side::Home => (&self.home.players, &self.home_bench),
+            Side::Away => (&self.away.players, &self.away_bench),
+        };
+        let (Some(off), Some(on)) = (
+            starters.iter().find(|p| p.id == player_off_id),
+            bench.iter().find(|p| p.id == player_on_id),
+        ) else {
+            return Ok(());
+        };
+        let current = starters.iter().filter(|p| p.is_import).count();
+        let after = current - usize::from(off.is_import) + usize::from(on.is_import);
+        if after > crate::residency::MAX_IMPORTS_IN_STARTING_FIVE && after > current {
+            return Err(crate::residency::ImportLimitExceeded {
+                imports: after,
+                max: crate::residency::MAX_IMPORTS_IN_STARTING_FIVE,
+            }
+            .to_string());
+        }
+        Ok(())
+    }
+
     fn apply_pre_match_swap(
         &mut self,
         side: Side,
         player_off_id: &str,
         player_on_id: &str,
     ) -> Result<(), String> {
+        self.check_pre_match_swap_imports(side, player_off_id, player_on_id)?;
         let (off_idx, incoming_id, outgoing_id) = match side {
             Side::Home => {
                 let on_idx = self

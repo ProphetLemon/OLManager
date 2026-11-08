@@ -163,6 +163,9 @@ pub enum SigningRejectionReason {
     WageBudgetExceeded,
     ReputationMismatch,
     DailyCapReached,
+    /// An import the club could not start: its starting five already holds the
+    /// allowed imports and he would not replace one of them.
+    ImportSlotsFull,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -300,6 +303,17 @@ pub fn ai_signing_policy_for_bill(
     if !reputation_fit_ok(team, player, intent, game) {
         return SigningDecision::rejected(
             SigningRejectionReason::ReputationMismatch,
+            annual_wage,
+            contract_years,
+        );
+    }
+
+    // Emergency signings fill a hole in the roster and may need an import;
+    // every other signing must be someone the club could actually start.
+    if intent != SigningIntent::Emergency && !crate::residency::has_import_slot_for(game, team, player)
+    {
+        return SigningDecision::rejected(
+            SigningRejectionReason::ImportSlotsFull,
             annual_wage,
             contract_years,
         );

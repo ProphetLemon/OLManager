@@ -130,6 +130,7 @@ where
     game.clock.advance_days(1);
     game.day_phase = crate::game::DayPhase::Morning;
     crate::season_context::refresh_game_context(game);
+    crate::residency::refresh_import_flags(game);
 }
 
 /// Called after a live match finishes to complete the day:
@@ -174,6 +175,7 @@ pub fn finish_live_match_day(game: &mut Game) {
     game.clock.advance_days(1);
     game.day_phase = crate::game::DayPhase::Morning;
     crate::season_context::refresh_game_context(game);
+    crate::residency::refresh_import_flags(game);
 }
 
 // ---------------------------------------------------------------------------
@@ -236,6 +238,13 @@ fn build_engine_team_from(
             }
         }
     }
+    let lineup_ids = crate::residency::limit_lineup_ids_in(
+        teams,
+        players,
+        team_id,
+        lineup_ids.into_iter().take(5).collect(),
+    );
+    let region = team.and_then(crate::residency::team_region);
     let engine_players: Vec<crate::engine::PlayerData> = lineup_ids
         .into_iter()
         .take(5)
@@ -245,6 +254,7 @@ fn build_engine_team_from(
             name: p.match_name.clone(),
             profile_image_url: p.profile_image_url.clone(),
             role: to_engine_role(p.natural_position),
+            is_import: crate::residency::is_import(p, region),
             condition: p.condition,
             fitness: p.fitness,
             // Map OLD domain fields to NEW LoL-native engine structure
@@ -1519,7 +1529,12 @@ fn resolve_auto_draft(game: &Game, home_team_id: &str, away_team_id: &str) -> Au
                 }
             }
         }
-        for player_id in ids.into_iter().take(5) {
+        let ids = crate::residency::limit_lineup_ids(
+            game,
+            team_id,
+            ids.into_iter().take(5).collect(),
+        );
+        for player_id in ids {
             let Some(player) = game.players.iter().find(|player| player.id == player_id) else {
                 continue;
             };
@@ -1805,6 +1820,42 @@ mod tests {
         }
 
         (game, today.to_string())
+    }
+
+    #[test]
+    fn background_ai_lineup_never_starts_three_imports() {
+        let (mut game, _) = bg_test_game("2025-06-15");
+        let roles = [
+            LolRole::Top,
+            LolRole::Jungle,
+            LolRole::Mid,
+            LolRole::Adc,
+            LolRole::Support,
+            LolRole::Top,
+        ];
+        // team1: five starters, three of them imports, plus a resident backup top.
+        game.players.retain(|p| p.team_id.as_deref() != Some("team1"));
+        for (i, role) in roles.iter().enumerate() {
+            let mut p = make_player(&format!("team1-p{i}"), "team1", 70);
+            p.natural_position = *role;
+            p.position = *role;
+            p.nationality = if i < 3 { "KR" } else { "ES" }.to_string();
+            game.players.push(p);
+        }
+        game.players
+            .iter_mut()
+            .find(|p| p.id == "team1-p5")
+            .unwrap()
+            .attributes
+            .mechanics = 40;
+        game.teams[0].competition_id = Some("lec".to_string());
+        game.teams[0].active_lineup_ids = (0..5).map(|i| format!("team1-p{i}")).collect();
+
+        let team = build_engine_team(&game, "team1");
+
+        assert_eq!(team.players.len(), 5);
+        assert!(team.players.iter().filter(|p| p.is_import).count() <= 2);
+        assert!(team.players.iter().any(|p| p.id == "team1-p5"));
     }
 
     #[test]

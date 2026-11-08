@@ -1,7 +1,7 @@
 use chrono::{TimeZone, Utc};
 use olm_core::clock::GameClock;
 use olm_core::contract_wage_policy::{
-    AiTransferKind, SigningIntent, ai_signing_policy, ai_team_tier,
+    AiTransferKind, SigningIntent, SigningRejectionReason, ai_signing_policy, ai_team_tier,
     ai_transfer_cap_reset_if_new_day, ai_transfer_cap_try_consume, reputation_fit_ok,
 };
 use olm_core::domain::league::{
@@ -331,4 +331,85 @@ fn transfer_cap_state_tracks_counts_per_team() {
         .unwrap_or_default();
     assert_eq!(state.strategic_count, 1);
     assert_eq!(state.emergency_count, 0);
+}
+
+fn lineup_with_two_imports(team_id: &str) -> Vec<Player> {
+    let roles = [
+        ("top", LolRole::Top, "KR"),
+        ("jg", LolRole::Jungle, "KR"),
+        ("mid", LolRole::Mid, "ES"),
+        ("adc", LolRole::Adc, "ES"),
+        ("sup", LolRole::Support, "ES"),
+    ];
+    roles
+        .into_iter()
+        .map(|(id, role, nationality)| {
+            let mut p = player(id, Some(team_id), role, 70, 300_000);
+            p.nationality = nationality.to_string();
+            p
+        })
+        .collect()
+}
+
+fn game_with_full_import_slots() -> Game {
+    let fa = player("fa-import", None, LolRole::Mid, 80, 1_000_000);
+    let mut game = game_with_team_and_player(1_100, fa, 2);
+    game.players.extend(lineup_with_two_imports("ai-team"));
+    let team = game.teams.iter_mut().find(|t| t.id == "ai-team").unwrap();
+    team.competition_id = Some("lec".to_string());
+    team.wage_budget = 5_000_000;
+    team.active_lineup_ids = ["top", "jg", "mid", "adc", "sup"]
+        .iter()
+        .map(|id| id.to_string())
+        .collect();
+    game.players
+        .iter_mut()
+        .find(|p| p.id == "fa-import")
+        .unwrap()
+        .nationality = "CN".to_string();
+    game
+}
+
+#[test]
+fn ai_does_not_sign_an_import_it_could_not_start() {
+    let game = game_with_full_import_slots();
+    let team = game.teams.iter().find(|t| t.id == "ai-team").unwrap();
+    let import = game.players.iter().find(|p| p.id == "fa-import").unwrap();
+
+    for intent in [SigningIntent::Strategic, SigningIntent::Casual] {
+        let decision = ai_signing_policy(&game, team, import, intent);
+        assert!(!decision.accepted, "{intent:?} must refuse the import");
+        assert_eq!(decision.reason, SigningRejectionReason::ImportSlotsFull);
+    }
+}
+
+#[test]
+fn ai_signs_a_resident_or_an_import_that_replaces_an_import() {
+    let mut game = game_with_full_import_slots();
+    let team = game.teams.iter().find(|t| t.id == "ai-team").unwrap().clone();
+
+    // A resident always fits.
+    game.players
+        .iter_mut()
+        .find(|p| p.id == "fa-import")
+        .unwrap()
+        .nationality = "FR".to_string();
+    let resident = game.players.iter().find(|p| p.id == "fa-import").unwrap();
+    assert!(ai_signing_policy(&game, &team, resident, SigningIntent::Strategic).accepted);
+
+    // An import at a role currently held by an import fits (still 2 imports).
+    let mut replacement = player("fa-top", None, LolRole::Top, 80, 1_000_000);
+    replacement.nationality = "CN".to_string();
+    game.players.push(replacement);
+    let replacement = game.players.iter().find(|p| p.id == "fa-top").unwrap();
+    assert!(ai_signing_policy(&game, &team, replacement, SigningIntent::Strategic).accepted);
+}
+
+#[test]
+fn emergency_signings_may_still_take_an_import() {
+    let game = game_with_full_import_slots();
+    let team = game.teams.iter().find(|t| t.id == "ai-team").unwrap();
+    let import = game.players.iter().find(|p| p.id == "fa-import").unwrap();
+    let decision = ai_signing_policy(&game, team, import, SigningIntent::Emergency);
+    assert!(decision.accepted);
 }

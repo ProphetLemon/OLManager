@@ -276,6 +276,8 @@ fn row_to_player(row: &rusqlite::Row) -> rusqlite::Result<Player> {
         champion_training_targets: Vec::new(),
         can_be_transferred_until: None,
         lol_ovr: 0,
+        resident_region: None,
+        is_import: false,
     })
 }
 
