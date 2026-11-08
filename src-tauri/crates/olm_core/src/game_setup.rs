@@ -560,6 +560,10 @@ pub fn apply_default_initial_contract_end(
     let mut report = ContractDefaultsReport::default();
 
     for player in players.iter_mut() {
+        // Free agents have no contract to default; the signing sets one.
+        if player.team_id.is_none() {
+            continue;
+        }
         let current = player
             .contract_end
             .as_deref()
@@ -587,6 +591,25 @@ fn has_placeholder_market_value(player: &Player) -> bool {
     player.wage > 0
         && player.market_value
             == PLACEHOLDER_MARKET_VALUE_WAGE_MULTIPLE * u64::from(player.wage)
+}
+
+/// Leaves every player without a team contract-free, as a manual release does:
+/// no `contract_end` and a wage of 0, so the signing ask comes from
+/// `expected_signing_wage` (which floors a free agent at the LEC wage scale) instead
+/// of a stale seed wage. Returns how many free agents were changed.
+///
+/// Run it once the world is assembled (after the market-value pass, which needs the
+/// authored wage, and after roster fills, which pick free agents by their pool state).
+pub fn clear_free_agent_contracts(players: &mut [Player]) -> usize {
+    let mut changed = 0;
+    for player in players.iter_mut().filter(|p| p.team_id.is_none()) {
+        if player.contract_end.is_some() || player.wage != 0 {
+            player.contract_end = None;
+            player.wage = 0;
+            changed += 1;
+        }
+    }
+    changed
 }
 
 /// Fills missing market values with the seed formula. Authored placeholder values
@@ -1016,6 +1039,7 @@ mod tests {
             default_attrs(),
         );
         player.contract_end = contract_end.map(str::to_string);
+        player.team_id = Some("team-1".to_string());
         player
     }
 
@@ -1076,6 +1100,42 @@ mod tests {
 
         assert_eq!(players[0].position, LolRole::Mid);
         assert_eq!(players[0].natural_position, LolRole::Mid);
+    }
+
+    #[test]
+    fn free_agents_get_no_default_contract_but_rostered_players_do() {
+        let mut free_agent = player_with_contract("fa", None);
+        free_agent.team_id = None;
+        let mut rostered = player_with_contract("rostered", None);
+        rostered.team_id = Some("team-1".to_string());
+        let mut players = vec![free_agent, rostered];
+
+        let start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let report = apply_default_initial_contract_end(&mut players, start);
+
+        assert_eq!(players[0].contract_end, None);
+        assert_eq!(players[1].contract_end.as_deref(), Some("2027-11-30"));
+        assert_eq!((report.filled, report.extended), (1, 0));
+    }
+
+    #[test]
+    fn clearing_free_agent_contracts_zeroes_wage_and_end_only_for_free_agents() {
+        let mut free_agent = player_with_value("fa", 300_000, 42_000);
+        free_agent.team_id = None;
+        free_agent.contract_end = Some("2027-11-30".to_string());
+        let mut rostered = player_with_value("rostered", 300_000, 42_000);
+        rostered.team_id = Some("team-1".to_string());
+        rostered.contract_end = Some("2027-11-30".to_string());
+        let mut players = vec![free_agent, rostered];
+
+        let changed = super::clear_free_agent_contracts(&mut players);
+
+        assert_eq!(changed, 1);
+        assert_eq!((players[0].wage, players[0].contract_end.clone()), (0, None));
+        assert_eq!(players[0].market_value, 300_000);
+        assert_eq!(players[1].wage, 42_000);
+        assert_eq!(players[1].contract_end.as_deref(), Some("2027-11-30"));
+        assert_eq!(super::clear_free_agent_contracts(&mut players), 0, "idempotent");
     }
 
     #[test]

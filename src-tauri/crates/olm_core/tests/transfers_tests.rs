@@ -1794,6 +1794,61 @@ fn free_agent_bid_is_accepted_even_with_low_budget() {
     assert_eq!(game.teams[0].transfer_budget, 100_000);
 }
 
+fn no_wage_free_agent_with_accepted_offer() -> (Game, String) {
+    let mut free_agent = make_free_agent("fa-no-wage", LolRole::Adc);
+    free_agent.market_value = 300_000;
+    free_agent.wage = 0;
+    let mut game = make_user_game_with_free_agent(free_agent);
+    game.teams[0].wage_budget = 3_000_000;
+    game.teams[0].finance = 5_000_000;
+    make_transfer_bid(&mut game, "fa-no-wage", 0, TransferDestination::Main, &[])
+        .expect("free agent bid");
+    let offer_id = game.players[0]
+        .transfer_offers
+        .iter()
+        .find(|o| o.status == TransferOfferStatus::Accepted)
+        .map(|o| o.id.clone())
+        .expect("accepted free-agent offer");
+    (game, offer_id)
+}
+
+#[test]
+fn free_agent_with_no_wage_asks_the_wage_scale_not_zero() {
+    let (game, _) = no_wage_free_agent_with_accepted_offer();
+    let today = game.clock.current_date.date_naive();
+
+    let ask = olm_core::contracts::expected_signing_wage(&game.players[0], &game.teams[0], today);
+
+    assert!(ask >= 300_000, "ask {ask} should follow the wage scale of a 300K player");
+}
+
+#[test]
+fn free_agent_with_no_wage_cannot_be_signed_for_a_trivial_wage() {
+    let (mut game, offer_id) = no_wage_free_agent_with_accepted_offer();
+
+    let outcome = negotiate_player_wage(&mut game, "fa-no-wage", &offer_id, 30_000, 3)
+        .expect("cheap wage reply");
+
+    assert_ne!(outcome.decision, TransferNegotiationDecision::Accepted);
+    assert!(game.players[0].team_id.is_none(), "not signed for 30K");
+}
+
+#[test]
+fn free_agent_with_no_wage_counters_above_the_ask_and_signs_at_the_counter() {
+    let (mut game, offer_id) = no_wage_free_agent_with_accepted_offer();
+    let today = game.clock.current_date.date_naive();
+    let ask = olm_core::contracts::expected_signing_wage(&game.players[0], &game.teams[0], today);
+
+    let first = negotiate_player_wage(&mut game, "fa-no-wage", &offer_id, ask, 3)
+        .expect("fair wage reply");
+    let counter = first.suggested_wage.expect("the player names a counter wage");
+    assert!(counter >= ask, "counter {counter} should not undercut the ask {ask}");
+
+    let second = negotiate_player_wage(&mut game, "fa-no-wage", &offer_id, counter, 3)
+        .expect("counter reply");
+    assert_eq!(second.decision, TransferNegotiationDecision::Accepted);
+}
+
 #[test]
 fn project_free_agent_bid_financial_impact_uses_zero_fee() {
     let mut free_agent = make_free_agent("fa-zero-fee", LolRole::Adc);

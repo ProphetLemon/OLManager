@@ -96,6 +96,11 @@ pub(crate) fn build_new_game_world(
     // The overlay can leave a team short; make every Main team playable.
     fill_short_rosters(game);
 
+    // Whoever is still without a team (including players detached as orphans) starts
+    // contract-free with no stale seed wage; their ask comes from the wage scale.
+    let cleared = game_setup::clear_free_agent_contracts(&mut game.players);
+    info!("[game] {} free agents start without a contract or wage", cleared);
+
     // Rostered players the data ships without a wage get one from the LEC wage scale.
     seed_missing_wages(game);
 
@@ -1452,6 +1457,18 @@ mod tests {
         }
 
         #[test]
+        fn new_game_free_agents_have_no_contract_and_no_stale_wage() {
+            let (game, _catalog, _overlay, _user) = new_game();
+
+            let free_agents: Vec<_> = game.players.iter().filter(|p| p.team_id.is_none()).collect();
+            assert!(!free_agents.is_empty(), "the world ships free agents");
+            for player in free_agents {
+                assert_eq!(player.contract_end, None, "{} has a contract", player.id);
+                assert_eq!(player.wage, 0, "{} keeps a stale wage", player.id);
+            }
+        }
+
+        #[test]
         fn new_game_starts_on_january_first_of_the_season_after_the_snapshot() {
             let (game, _catalog, overlay, _user) = new_game();
 
@@ -1575,6 +1592,8 @@ mod tests {
             let changed = game
                 .players
                 .iter()
+                // Free agents start at wage 0 on purpose (see clear_free_agent_contracts).
+                .filter(|p| p.team_id.is_some())
                 .filter(|p| authored.get(p.id.as_str()).is_some_and(|wage| *wage != p.wage))
                 .count();
 
