@@ -7,6 +7,7 @@ pub mod champions;
 pub mod clock;
 pub mod club;
 pub mod commands;
+pub mod competition_overrides;
 pub mod competitions;
 pub mod contract_wage_policy;
 pub mod contracts;

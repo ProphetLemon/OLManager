@@ -1,3 +1,4 @@
+use crate::competition_overrides::{self, CompetitionOverrides};
 use crate::domain::player::Player;
 use crate::domain::staff::Staff;
 use crate::domain::team::Team;
@@ -15,8 +16,24 @@ use crate::generator::definitions::{
 // Manifest loading
 // ---------------------------------------------------------------------------
 
-/// Scan a `competitions/` directory and return all manifests.
+/// Scan a `competitions/` directory and return all manifests with the bundled
+/// main-repo override layer applied.
 pub fn scan_competitions(competitions_base: &Path) -> Vec<CompetitionManifest> {
+    scan_competitions_with(competitions_base, competition_overrides::bundled())
+}
+
+/// Like [`scan_competitions`] but with an explicit override layer.
+pub fn scan_competitions_with(
+    competitions_base: &Path,
+    overrides: &CompetitionOverrides,
+) -> Vec<CompetitionManifest> {
+    let mut manifests = scan_raw_competitions(competitions_base);
+    overrides.apply_all(&mut manifests);
+    manifests
+}
+
+/// Scan a `competitions/` directory without applying any override layer.
+pub fn scan_raw_competitions(competitions_base: &Path) -> Vec<CompetitionManifest> {
     let entries = match std::fs::read_dir(competitions_base) {
         Ok(e) => e,
         Err(err) => {
@@ -68,11 +85,26 @@ pub fn load_competition_manifest(
     competitions_base: &Path,
     competition_id: &str,
 ) -> Result<CompetitionManifest, String> {
+    load_competition_manifest_with(
+        competitions_base,
+        competition_id,
+        competition_overrides::bundled(),
+    )
+}
+
+/// Like [`load_competition_manifest`] but with an explicit override layer.
+pub fn load_competition_manifest_with(
+    competitions_base: &Path,
+    competition_id: &str,
+    overrides: &CompetitionOverrides,
+) -> Result<CompetitionManifest, String> {
     let manifest_path = competitions_base.join(competition_id).join("manifest.json");
     let json = std::fs::read_to_string(&manifest_path)
         .map_err(|e| format!("Failed to read manifest for '{}': {}", competition_id, e))?;
-    serde_json::from_str(&json)
-        .map_err(|e| format!("Failed to parse manifest for '{}': {}", competition_id, e))
+    let mut manifest: CompetitionManifest = serde_json::from_str(&json)
+        .map_err(|e| format!("Failed to parse manifest for '{}': {}", competition_id, e))?;
+    overrides.apply(&mut manifest);
+    Ok(manifest)
 }
 
 // ---------------------------------------------------------------------------
@@ -463,6 +495,44 @@ mod tests {
             }}"#
         ))
         .expect("manifest should parse")
+    }
+
+    const OVERRIDES_JSON: &str = r#"{"version":1,"competitions":{"lec":{"tier":1,
+        "schedule":{"format":"double_round_robin","team_count":6,
+        "splits":[{"name":"Spring","best_of":1,"season_start":{"month":3,"day":1}}]}}}}"#;
+
+    fn write_manifest_dir(base: &std::path::Path) {
+        let dir = base.join("lec");
+        std::fs::create_dir_all(&dir).expect("competition dir");
+        std::fs::write(
+            dir.join("manifest.json"),
+            r#"{"id":"lec","name":"LEC","region":"EU","tier":2,
+                "schedule":{"format":"unknown","team_count":0,"splits":[]}}"#,
+        )
+        .expect("manifest write");
+    }
+
+    #[test]
+    fn scan_with_overrides_patches_every_scanned_manifest() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_manifest_dir(dir.path());
+        let overrides = CompetitionOverrides::parse(OVERRIDES_JSON).expect("overrides");
+
+        let manifests = scan_competitions_with(dir.path(), &overrides);
+
+        assert_eq!(manifests[0].tier, Some(1));
+        assert_eq!(manifests[0].schedule.team_count, 6);
+    }
+
+    #[test]
+    fn load_with_overrides_patches_a_single_manifest() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_manifest_dir(dir.path());
+        let overrides = CompetitionOverrides::parse(OVERRIDES_JSON).expect("overrides");
+
+        let manifest = load_competition_manifest_with(dir.path(), "lec", &overrides).expect("load");
+
+        assert_eq!(manifest.schedule.format, "double_round_robin");
     }
 
     fn write_staff_file(path: &std::path::Path) {
