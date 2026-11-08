@@ -1932,7 +1932,8 @@
     "updateAvailable": "Update Available",
     "checkNow": "Check Now",
     "updateAvailableDetail": "Version {{version}} is available",
-    "upToDate": "You're up to date"
+    "upToDate": "You're up to date",
+    "noPlatformBuild": "A release exists, but it has no build for your system yet"
   },
   "preMatch": {
     "autoSelect": "Auto-Select Best Five",

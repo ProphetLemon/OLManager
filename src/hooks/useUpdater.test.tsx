@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../services/updaterService", () => ({
+  NoPlatformBuildError: class NoPlatformBuildError extends Error {},
   checkForUpdate: mocks.checkForUpdate,
   downloadAndInstallUpdate: mocks.downloadAndInstallUpdate,
 }));
@@ -51,5 +52,15 @@ describe("useUpdater", () => {
     await waitFor(() => expect(result.current.checking).toBe(false));
     expect(result.current.updateAvailable).toBe(false);
     expect(result.current.error).toBe("offline");
+  });
+
+  it("flags a missing platform build without reporting an error", async () => {
+    const { NoPlatformBuildError } = await import("../services/updaterService");
+    mocks.checkForUpdate.mockRejectedValue(new NoPlatformBuildError("platform"));
+    const { result } = renderHook(() => useUpdater(true));
+    await waitFor(() => expect(result.current.checking).toBe(false));
+    expect(result.current.noPlatformBuild).toBe(true);
+    expect(result.current.error).toBeNull();
+    expect(result.current.updateAvailable).toBe(false);
   });
 });

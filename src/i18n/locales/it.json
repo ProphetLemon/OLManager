@@ -1633,7 +1633,8 @@
     "updateAvailable": "Aggiornamento Disponibile",
     "checkNow": "Controlla Ora",
     "updateAvailableDetail": "La versione {{version}} è disponibile",
-    "upToDate": "Hai l'ultima versione"
+    "upToDate": "Hai l'ultima versione",
+    "noPlatformBuild": "Esiste una versione, ma non ha ancora una build per il tuo sistema"
   },
   "preMatch": {
     "autoSelect": "Seleziona automaticamente il miglior cinque",

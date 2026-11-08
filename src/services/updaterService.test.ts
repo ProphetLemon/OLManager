@@ -11,6 +11,7 @@ vi.mock("@tauri-apps/plugin-process", () => ({ relaunch: mocks.relaunch }));
 import {
   checkForUpdate,
   downloadAndInstallUpdate,
+  isNoPlatformBuildError,
   isNoReleaseError,
   needsManualRelaunch,
 } from "./updaterService";
@@ -39,6 +40,15 @@ describe("updaterService", () => {
   it("still surfaces other failures such as a signature or network error", async () => {
     mocks.check.mockRejectedValue(new Error("error sending request for url"));
     await expect(checkForUpdate()).rejects.toThrow("error sending request");
+  });
+
+  it("tells a platform missing from latest.json apart from no release", async () => {
+    const message =
+      "the platform `windows-x86_64` was not found in the response `platforms` object";
+    expect(isNoPlatformBuildError(new Error(message))).toBe(true);
+    expect(isNoPlatformBuildError(new Error("status code 404 Not Found"))).toBe(false);
+    mocks.check.mockRejectedValue(new Error(message));
+    await expect(checkForUpdate()).rejects.toMatchObject({ name: "NoPlatformBuildError" });
   });
 
   it("recognises the no-release errors only", () => {

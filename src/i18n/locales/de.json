@@ -1782,7 +1782,8 @@
     "updateAvailable": "Aktualisierung verfügbar",
     "checkNow": "Jetzt prüfen",
     "updateAvailableDetail": "Version {{version}} ist verfügbar",
-    "upToDate": "Du hast die neueste Version"
+    "upToDate": "Du hast die neueste Version",
+    "noPlatformBuild": "Es gibt eine Version, aber noch keinen Build für dein System"
   },
   "preMatch": {
     "autoSelect": "Beste Fünf automatisch wählen",

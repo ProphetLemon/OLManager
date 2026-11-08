@@ -20,6 +20,22 @@ export function isNoReleaseError(err: unknown): boolean {
 }
 
 /**
+ * `latest.json` exists but has no entry for this platform: a release was
+ * published without a build for the player's system.
+ */
+export function isNoPlatformBuildError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /platform .* not found|not found in the response `platforms`/i.test(message);
+}
+
+export class NoPlatformBuildError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NoPlatformBuildError";
+  }
+}
+
+/**
  * The passive NSIS installer closes the app and starts the new build itself on
  * Windows. Every other platform replaces the files in place and needs an
  * explicit relaunch.
@@ -37,6 +53,9 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
   try {
     update = await check();
   } catch (err) {
+    if (isNoPlatformBuildError(err)) {
+      throw new NoPlatformBuildError(err instanceof Error ? err.message : String(err));
+    }
     if (isNoReleaseError(err)) return null;
     throw err;
   }

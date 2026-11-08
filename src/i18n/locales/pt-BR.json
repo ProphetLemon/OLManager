@@ -1782,7 +1782,8 @@
     "updateAvailable": "Atualização Disponível",
     "checkNow": "Verificar Agora",
     "updateAvailableDetail": "A versão {{version}} está disponível",
-    "upToDate": "Você está na versão mais recente"
+    "upToDate": "Você está na versão mais recente",
+    "noPlatformBuild": "Existe uma versão, mas ela ainda não tem build para o seu sistema"
   },
   "preMatch": {
     "autoSelect": "Selecionar Titulares Automaticamente",

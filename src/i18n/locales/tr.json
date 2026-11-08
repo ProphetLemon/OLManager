@@ -1782,7 +1782,8 @@
     "updateAvailable": "Güncelleme Mevcut",
     "checkNow": "Şimdi Kontrol Et",
     "updateAvailableDetail": "Sürüm {{version}} mevcut",
-    "upToDate": "Güncel versiyonu kullanıyorsunuz"
+    "upToDate": "Güncel versiyonu kullanıyorsunuz",
+    "noPlatformBuild": "Bir sürüm var, ancak sisteminiz için henüz bir yapı yok"
   },
   "preMatch": {
     "autoSelect": "En İyi 5'liyi Otomatik Seç",

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import {
+  NoPlatformBuildError,
   checkForUpdate,
   downloadAndInstallUpdate,
   UpdateInfo,
@@ -13,6 +14,8 @@ interface UpdaterState {
   downloading: boolean;
   progress: { percent: number; contentLength?: number } | null;
   error: string | null;
+  /** The latest release has no build for this platform. */
+  noPlatformBuild: boolean;
   dismissed: boolean;
 }
 
@@ -24,11 +27,12 @@ export function useUpdater(checkOnMount = true) {
     downloading: false,
     progress: null,
     error: null,
+    noPlatformBuild: false,
     dismissed: false,
   });
 
   const check = useCallback(async () => {
-    setState((prev) => ({ ...prev, checking: true, error: null }));
+    setState((prev) => ({ ...prev, checking: true, error: null, noPlatformBuild: false }));
     try {
       const info = await checkForUpdate();
       if (info) {
@@ -47,6 +51,10 @@ export function useUpdater(checkOnMount = true) {
         }));
       }
     } catch (err) {
+      if (err instanceof NoPlatformBuildError) {
+        setState((prev) => ({ ...prev, checking: false, noPlatformBuild: true }));
+        return;
+      }
       setState((prev) => ({
         ...prev,
         checking: false,
