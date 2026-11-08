@@ -256,10 +256,16 @@ fn validate_schedule(schedule: &ScheduleConfig) -> Result<(), String> {
             ));
         }
         if let Some(playoffs) = &split.playoffs {
-            // Only the 6-team and 8-team brackets are implemented by the turn loop.
-            if !matches!(playoffs.teams, 6 | 8) || playoffs.teams > schedule.team_count {
+            // Only the 4-, 6- and 8-team brackets are implemented by the turn loop.
+            if !matches!(playoffs.teams, 4 | 6 | 8) || playoffs.teams > schedule.team_count {
                 return Err(format!(
                     "split '{}' has an invalid playoffs.teams",
+                    split.name
+                ));
+            }
+            if playoffs.best_of == Some(0) {
+                return Err(format!(
+                    "split '{}' has a playoffs.best_of of zero",
                     split.name
                 ));
             }
@@ -342,11 +348,20 @@ mod tests {
     fn validation_rejects_playoff_sizes_without_a_bracket() {
         let o = overrides(
             r#""schedule":{"format":"double_round_robin","team_count":8,"splits":[{"name":"Spring","best_of":1,
-            "season_start":{"month":3,"day":1},"playoffs":{"format":"single_elimination","teams":4}}]}"#,
+            "season_start":{"month":3,"day":1},"playoffs":{"format":"single_elimination","teams":5}}]}"#,
         );
         let problems = o.validate(&[manifest("les")]);
         assert_eq!(problems.len(), 1);
         assert!(problems[0].contains("playoffs.teams"));
+    }
+
+    #[test]
+    fn validation_accepts_the_four_team_bracket() {
+        let o = overrides(
+            r#""schedule":{"format":"single_round_robin","team_count":8,"splits":[{"name":"Spring","best_of":3,
+            "season_start":{"month":4,"day":8},"playoffs":{"format":"single_elimination","teams":4}}]}"#,
+        );
+        assert_eq!(o.validate(&[manifest("les")]), Vec::<String>::new());
     }
 
     #[test]

@@ -175,6 +175,7 @@ fn manifest(id: &str, split_names: &[&str], playoff_teams: Option<u32>) -> Compe
                     playoffs: playoff_teams.map(|teams| PlayoffConfig {
                         format: "single_elimination".to_string(),
                         teams,
+                        best_of: None,
                     }),
                 })
                 .collect(),

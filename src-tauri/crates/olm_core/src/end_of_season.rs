@@ -74,47 +74,98 @@ pub fn is_league_complete(league: &League) -> bool {
     regular_complete && playoffs_complete
 }
 
+/// Decided winner and loser of a playoff series, or `None` while it is open.
+fn series_outcome(fixture: &crate::domain::league::Fixture) -> Option<(&str, &str)> {
+    let result = fixture.result.as_ref()?;
+    if result.home_wins > result.away_wins {
+        Some((&fixture.home_team_id, &fixture.away_team_id))
+    } else if result.away_wins > result.home_wins {
+        Some((&fixture.away_team_id, &fixture.home_team_id))
+    } else {
+        None
+    }
+}
+
+/// Winner of the last playoff series (the split final), once it is decided.
+pub fn playoff_champion_id(league: &League) -> Option<String> {
+    league
+        .fixtures
+        .iter()
+        .filter(|fixture| fixture.match_type == MatchType::Playoffs)
+        .max_by_key(|fixture| fixture.matchday)
+        .and_then(series_outcome)
+        .map(|(champion, _)| champion.to_string())
+}
+
 /// Final position of a team once playoffs are taken into account.
 ///
-/// The playoff champion is 1st and the losing finalist 2nd. Any other playoff
-/// participant is placed no higher than 3rd, since it lost to a finalist. Teams
-/// outside the playoffs keep their regular-season rank. Without a decided
-/// playoff final the regular-season rank is returned unchanged.
+/// The playoff champion is 1st and the losing finalist 2nd. In a four-team
+/// bracket (two semifinals and a final) the semifinal losers take 3rd and 4th
+/// by regular-season rank. Any other playoff participant is placed no higher
+/// than 3rd, since it lost to a finalist. Teams outside the playoffs keep their
+/// regular-season rank. Without a decided playoff final the regular-season rank
+/// is returned unchanged.
 pub fn effective_final_position(league: &League, team_id: &str) -> u32 {
-    let regular_position = league
-        .sorted_standings()
+    let sorted = league.sorted_standings();
+    let regular_position = sorted
         .iter()
         .position(|s| s.team_id == team_id)
         .map(|i| (i + 1) as u32)
         .unwrap_or(99);
 
-    let mut playoff_fixtures = league
+    let playoff_fixtures: Vec<_> = league
         .fixtures
         .iter()
-        .filter(|fixture| fixture.match_type == MatchType::Playoffs);
-    let final_fixture = playoff_fixtures
-        .clone()
-        .max_by_key(|fixture| fixture.matchday);
+        .filter(|fixture| fixture.match_type == MatchType::Playoffs)
+        .collect();
+    let finalists = playoff_fixtures
+        .iter()
+        .max_by_key(|fixture| fixture.matchday)
+        .copied()
+        .and_then(series_outcome);
     let participated = playoff_fixtures
+        .iter()
         .any(|fixture| fixture.home_team_id == team_id || fixture.away_team_id == team_id);
 
-    let finalists = final_fixture.and_then(|fixture| {
-        let result = fixture.result.as_ref()?;
-        if result.home_wins > result.away_wins {
-            Some((&fixture.home_team_id, &fixture.away_team_id))
-        } else if result.away_wins > result.home_wins {
-            Some((&fixture.away_team_id, &fixture.home_team_id))
-        } else {
-            None
-        }
-    });
-
-    match finalists {
-        Some((champion, _)) if champion == team_id => 1,
-        Some((_, runner_up)) if runner_up == team_id => 2,
-        Some(_) if participated => regular_position.max(3),
-        _ => regular_position,
+    let Some((champion, runner_up)) = finalists else {
+        return regular_position;
+    };
+    if champion == team_id {
+        return 1;
     }
+    if runner_up == team_id {
+        return 2;
+    }
+    if !participated {
+        return regular_position;
+    }
+
+    // Four-team bracket: the two semifinal losers split 3rd and 4th by seed.
+    let first_round = playoff_fixtures.iter().map(|f| f.matchday).min();
+    let is_four_team_bracket = playoff_fixtures.len() == 3
+        && playoff_fixtures
+            .iter()
+            .filter(|fixture| Some(fixture.matchday) == first_round)
+            .count()
+            == 2;
+    if is_four_team_bracket {
+        let mut semifinal_losers: Vec<u32> = playoff_fixtures
+            .iter()
+            .filter_map(|fixture| series_outcome(fixture))
+            .map(|(_, loser)| loser)
+            .filter(|loser| *loser != runner_up)
+            .filter_map(|loser| sorted.iter().position(|s| s.team_id == loser))
+            .map(|i| (i + 1) as u32)
+            .collect();
+        semifinal_losers.sort_unstable();
+        if let Some(rank) = semifinal_losers
+            .iter()
+            .position(|position| *position == regular_position)
+        {
+            return 3 + rank as u32;
+        }
+    }
+    regular_position.max(3)
 }
 
 /// Check if the season is complete (all fixtures played).
@@ -362,22 +413,7 @@ fn process_end_of_season_inner(
         .find(|s| s.team_id == user_team_id)
         .cloned();
 
-    let playoff_champion_id = league
-        .fixtures
-        .iter()
-        .filter(|fixture| fixture.match_type == MatchType::Playoffs)
-        .max_by_key(|fixture| fixture.matchday)
-        .and_then(|fixture| {
-            fixture.result.as_ref().and_then(|result| {
-                if result.home_wins > result.away_wins {
-                    Some(fixture.home_team_id.clone())
-                } else if result.away_wins > result.home_wins {
-                    Some(fixture.away_team_id.clone())
-                } else {
-                    None
-                }
-            })
-        });
+    let playoff_champion_id = playoff_champion_id(league);
 
     let champion_id = playoff_champion_id.unwrap_or_else(|| {
         final_standings

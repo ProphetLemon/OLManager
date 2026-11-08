@@ -31,6 +31,10 @@ pub enum LecSplit {
     Summer,
 }
 
+/// Fixture id prefix that marks the four-team single-elimination playoff
+/// bracket. The UI mirrors it to lay that bracket out as semifinals and a final.
+pub const FOUR_TEAM_PLAYOFF_ID_PREFIX: &str = "po4-";
+
 pub fn regular_best_of(split: LecSplit) -> u8 {
     match split {
         LecSplit::Winter => 1,

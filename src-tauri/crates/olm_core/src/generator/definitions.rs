@@ -139,6 +139,9 @@ pub struct SeasonStart {
 pub struct PlayoffConfig {
     pub format: String,
     pub teams: u32,
+    /// Series length of the four-team bracket; absent means best of five.
+    #[serde(default)]
+    pub best_of: Option<u8>,
 }
 
 // ---------------------------------------------------------------------------
