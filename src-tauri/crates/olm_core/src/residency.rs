@@ -412,6 +412,14 @@ pub fn grandfather_rostered_players(game: &mut Game) -> usize {
     if game.residency_initialized {
         return 0;
     }
+    grandfather_unmarked_rostered_players(game)
+}
+
+/// Same marking as [`grandfather_rostered_players`] but regardless of
+/// [`Game::residency_initialized`]. Used after a catalog rehydration adds
+/// rostered players to an already-initialized game; players who already hold a
+/// region are never touched.
+pub fn grandfather_unmarked_rostered_players(game: &mut Game) -> usize {
     let regions: std::collections::HashMap<String, Region> = game
         .teams
         .iter()
@@ -702,6 +710,23 @@ mod tests {
         assert_eq!(grandfather_rostered_players(&mut g), 0);
         assert_eq!(g.players[1].resident_region, None);
         assert!(is_import(&g.players[1], region_of_team_id(&g, "lec-a")));
+    }
+
+    #[test]
+    fn grandfathering_after_rehydration_marks_only_unmarked_players() {
+        let mut g = game(
+            vec![team("lec-a", "lec")],
+            vec![
+                player("old", "KR", LolRole::Top, 70, "lec-a"),
+                player("added", "KR", LolRole::Mid, 70, "lec-a"),
+            ],
+        );
+        g.players[0].resident_region = Some("NA".to_string());
+        g.residency_initialized = true;
+        assert_eq!(grandfather_rostered_players(&mut g), 0);
+        assert_eq!(grandfather_unmarked_rostered_players(&mut g), 1);
+        assert_eq!(g.players[0].resident_region.as_deref(), Some("NA"));
+        assert_eq!(g.players[1].resident_region.as_deref(), Some("EMEA"));
     }
 
     #[test]

@@ -944,6 +944,10 @@ pub async fn load_game(
     let mut game = sm.load_game(&save_id)?;
     let rehydrated = crate::commands::import::rehydrate_game_from_catalog(&app_handle, &mut game);
     if rehydrated.total() > 0 {
+        // Rehydrated players arrive without a residency; the save was already
+        // grandfathered on load, so mark only the ones still missing a region.
+        olm_core::residency::grandfather_unmarked_rostered_players(&mut game);
+        olm_core::residency::refresh_import_flags(&mut game);
         info!(
             "[cmd] load_game: rehydrated {} missing teams, {} players, {} reassigned players, {} staff from catalog",
             rehydrated.teams, rehydrated.players, rehydrated.players_reassigned, rehydrated.staff
