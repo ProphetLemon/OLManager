@@ -1487,7 +1487,11 @@ mod tests {
                 assert!((40..=45).contains(&ovr), "{name} OVR {ovr}");
                 assert_eq!(
                     player.market_value,
-                    game_setup::suggested_seed_market_value(ovr, player.potential_base.max(ovr), false),
+                    game_setup::suggested_seed_market_value(
+                        ovr,
+                        player.potential_base.max(ovr),
+                        false
+                    ),
                     "{name} market value must follow the estimated OVR"
                 );
             }
