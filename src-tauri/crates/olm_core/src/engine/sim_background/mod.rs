@@ -1,8 +1,8 @@
+#[cfg(test)]
+mod economy_tests;
 mod lol_map;
 mod simulation;
 mod snapshot;
-#[cfg(test)]
-mod economy_tests;
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -452,20 +452,29 @@ impl LiveMatchState {
             }
         };
 
-        if let Some(unit) = self
+        // The unit takes over the incoming player's id and ratings.
+        let (fight_skill, macro_skill) = {
+            let incoming = &self.team_mut(side).players[off_idx];
+            (
+                lol_map::fight_skill(incoming),
+                lol_map::macro_skill(incoming),
+            )
+        };
+        let slot = self
             .lol_map
             .units
-            .iter_mut()
-            .find(|unit| unit.side == side && usize::from(unit.spawn_slot) == off_idx)
-        {
+            .iter()
+            .position(|unit| unit.side == side && usize::from(unit.spawn_slot) == off_idx)
+            .or_else(|| {
+                self.lol_map
+                    .units
+                    .iter()
+                    .position(|unit| unit.side == side && unit.player_id == outgoing_id)
+            });
+        if let Some(unit) = slot.and_then(|idx| self.lol_map.units.get_mut(idx)) {
             unit.player_id = incoming_id;
-        } else if let Some(unit) = self
-            .lol_map
-            .units
-            .iter_mut()
-            .find(|unit| unit.side == side && unit.player_id == outgoing_id)
-        {
-            unit.player_id = incoming_id;
+            unit.fight_skill = fight_skill;
+            unit.macro_skill = macro_skill;
         }
 
         Ok(())

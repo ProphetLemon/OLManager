@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use std::sync::OnceLock;
 
 use crate::engine::event::{EventType, MatchEvent};
-use crate::engine::types::{Side, TeamData, Zone};
+use crate::engine::types::{PlayerData, Side, TeamData, Zone};
 
 use super::{LiveMatchState, MatchPhase};
 
@@ -158,6 +158,38 @@ pub struct LolUnitState {
     /// Short-term energy (0-100). Affects damage dealt and received in fights.
     #[serde(default = "default_condition")]
     pub condition: u8,
+    /// Combat rating relative to a neutral player (rating 70 = 0.0, +0.1 per 10
+    /// rating points). Read by `resolve_fights`. Saves written before ratings
+    /// reached the engine deserialize to 0.0, i.e. a neutral player.
+    #[serde(default)]
+    pub fight_skill: f64,
+    /// Decision-making rating relative to a neutral player, same scale. Read by
+    /// objective contests.
+    #[serde(default)]
+    pub macro_skill: f64,
+}
+
+/// Rating of a player who neither helps nor hurts his team. [PLACEHOLDER]
+const NEUTRAL_RATING: f64 = 70.0;
+
+/// Combat rating of a player: mechanics and teamfighting decide fights, laning
+/// and consistency shape the trades around them. Weights sum to 1, so a roster
+/// with every attribute at `r` scores `(r - 70) / 100`. [PLACEHOLDER]
+pub(super) fn fight_skill(player: &PlayerData) -> f64 {
+    let rating = f64::from(player.mechanics) * 0.40
+        + f64::from(player.teamfighting) * 0.30
+        + f64::from(player.laning) * 0.20
+        + f64::from(player.consistency) * 0.10;
+    (rating - NEUTRAL_RATING) / 100.0
+}
+
+/// Decision-making rating: macro play first, then shotcalling and discipline.
+/// Same scale as `fight_skill`. [PLACEHOLDER]
+pub(super) fn macro_skill(player: &PlayerData) -> f64 {
+    let rating = f64::from(player.macro_play) * 0.50
+        + f64::from(player.shotcalling) * 0.30
+        + f64::from(player.discipline) * 0.20;
+    (rating - NEUTRAL_RATING) / 100.0
 }
 
 fn default_unit_hp() -> f64 {
@@ -317,6 +349,8 @@ impl LolMapState {
                 damage_dealt: 0.0,
                 item_tier: 0,
                 condition: player.condition,
+                fight_skill: fight_skill(player),
+                macro_skill: macro_skill(player),
             });
         }
 
@@ -347,6 +381,8 @@ impl LolMapState {
                 damage_dealt: 0.0,
                 item_tier: 0,
                 condition: player.condition,
+                fight_skill: fight_skill(player),
+                macro_skill: macro_skill(player),
             });
         }
     }
@@ -576,6 +612,7 @@ impl LiveMatchState {
             .iter()
             .map(|u| (u.side, u.alive, u.x, u.y, u.role, u.level, u.item_tier))
             .collect();
+        let fight_skills: Vec<f64> = self.lol_map.units.iter().map(|u| u.fight_skill).collect();
 
         let mut incoming = vec![0.0_f64; n];
         let mut killer = vec![None; n];
@@ -613,10 +650,14 @@ impl LiveMatchState {
                     Side::Home => self.config.home_draft_modifier,
                     Side::Away => self.config.away_draft_modifier,
                 };
+            // Skill gap between attacker and victim, applied to the whole match.
+            let skill_mult = (FIGHT_SKILL_K * (fight_skills[i] - fight_skills[victim])).exp();
             let damage = role_power(role)
+                * FIGHT_DAMAGE_SCALE
+                * skill_mult
                 * scale
                 * game_damage_scale(minute, self.config.late_game_damage_scale)
-                * rng.random_range(0.88..1.16)
+                * rng.random_range(FIGHT_ROLL_MIN..FIGHT_ROLL_MAX)
                 * (1.0 - best_dist / 0.095).clamp(0.45, 1.0)
                 * attack_mult
                 * defense_mult;
@@ -978,6 +1019,24 @@ fn movement_speed(role: LolRole, level: u8, item_tier: u8) -> f64 {
     base * (1.0 + level.saturating_sub(1) as f64 * 0.004 + item_tier as f64 * 0.01)
 }
 
+/// Exponent applied to the fight skill gap (`exp(K * gap)`): with `K = 0.4`, a
+/// 20 point rating gap is a 1.08x damage edge per hit. Kills, levels and items
+/// compound it into a clear win-rate edge over a match.
+/// [PLACEHOLDER]
+const FIGHT_SKILL_K: f64 = 0.4;
+
+/// Damage multiplier that turns one hit per minute into lethal trades. The
+/// first calibration needed about 14 uninterrupted minutes to kill one
+/// champion; at this scale a lane pair kills within a few minutes of contact.
+/// [PLACEHOLDER]
+const FIGHT_DAMAGE_SCALE: f64 = 4.0;
+
+/// Per-hit damage roll. Wide enough that two equal champions rarely die in the
+/// same minute, so every trade has a winner and an underdog can still take
+/// one. [PLACEHOLDER]
+const FIGHT_ROLL_MIN: f64 = 0.55;
+const FIGHT_ROLL_MAX: f64 = 1.45;
+
 fn role_power(role: LolRole) -> f64 {
     match role {
         LolRole::Top => 6.0,
@@ -1130,8 +1189,8 @@ fn tower_team_gold(target: StructureTarget) -> f64 {
 /// differently. [PLACEHOLDER]
 fn role_income_weight(role: LolRole) -> f64 {
     match role {
-        LolRole::Top => 1.03,
-        LolRole::Jungle => 0.83,
+        LolRole::Top => 1.17,
+        LolRole::Jungle => 0.78,
         LolRole::Mid => 1.19,
         LolRole::Adc => 1.45,
         LolRole::Support => 0.50,
@@ -1168,6 +1227,10 @@ fn grant_team_gold(units: &mut [LolUnitState], side: Side, amount: f64, alive_on
     }
 }
 
+/// Exponent applied to a unit's macro skill when contesting an objective.
+/// [PLACEHOLDER]
+const MACRO_SKILL_K: f64 = 1.0;
+
 fn objective_presence(units: &[LolUnitState], side: Side, anchor: (f64, f64), radius: f64) -> f64 {
     units
         .iter()
@@ -1177,7 +1240,9 @@ fn objective_presence(units: &[LolUnitState], side: Side, anchor: (f64, f64), ra
             if d > radius {
                 0.0
             } else {
-                (1.0 + u.level as f64 * 0.03 + u.item_tier as f64 * 0.06) * (1.0 - d / radius)
+                (1.0 + u.level as f64 * 0.03 + u.item_tier as f64 * 0.06)
+                    * (MACRO_SKILL_K * u.macro_skill).exp()
+                    * (1.0 - d / radius)
             }
         })
         .sum()
@@ -1568,5 +1633,7 @@ mod economy_unit_tests;
 
 #[cfg(test)]
 mod mobility_tests;
+#[cfg(test)]
+mod rating_tests;
 #[cfg(test)]
 mod test_support;
