@@ -399,6 +399,7 @@
     }
   },
   "teamSelect": {
+    "regionalLeagues": "Leghe regionali",
     "title": "Scegli il tuo club",
     "subtitle": "Seleziona la squadra che vuoi allenare",
     "confirming": "Conferma in corso...",

@@ -548,6 +548,7 @@
     }
   },
   "teamSelect": {
+    "regionalLeagues": "Bölgesel ligler",
     "title": "Kulübünüzü Seçin",
     "subtitle": "Yönetmek istediğiniz takımı seçin",
     "confirming": "Onaylanıyor...",

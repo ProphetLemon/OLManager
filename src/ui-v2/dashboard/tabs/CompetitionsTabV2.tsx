@@ -7,6 +7,7 @@ import { compareStandingsByLolScore, getStandingKillDiff } from "@/store/gameSto
 import { getTeamLogoPath } from "@/lib/schedule/helpers";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
+import { listCompetitionLeagues } from "@/lib/world/leagueGroups";
 import { cn } from "@/ui-v2/lib/utils";
 import ScheduleCalendarView from "@/ui-v2/_legacy/components/schedule/ScheduleCalendarView";
 import type { StoredFixtureDraftResult } from "@/lib/schedule/helpers";
@@ -34,7 +35,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
   const [visible, setVisible] = useState(false);
   useEffect(() => setVisible(true), []);
 
-  const leagues = useMemo(() => (gameState.leagues ?? []).filter((l) => l.tier === 1 && l.active === true), [gameState.leagues]);
+  const leagues = useMemo(() => listCompetitionLeagues(gameState.leagues ?? []), [gameState.leagues]);
   const selectedLeague = selectedCid ? leagues.find((l) => (l.competition_id ?? l.id) === selectedCid) ?? null : null;
   const selectedTeamIds = selectedCid ? gameState.teams.filter((t) => t.competition_id === selectedCid).map((t) => t.id) : [];
   const selectedPlayers = selectedTeamIds.length > 0 ? gameState.players.filter((p) => p.team_id != null && selectedTeamIds.includes(p.team_id)) : [];
