@@ -83,3 +83,26 @@ pub(super) fn tower_team_gold(structure_id: &str) -> i64 {
         90
     }
 }
+
+/// Relative weight of a role's farm, kill and assist income (ECON-003).
+///
+/// The positional model lets the lane carries out-farm everyone else; these
+/// weights pull the share of total team gold each role earns toward the usual
+/// pro-play ranges (general knowledge, approximate): Top 20-23%, Jungle
+/// 17-20%, Mid 21-24%, Bot 23-27%, Support 10-14%. Objective gold shared by the
+/// whole team (Baron, towers) is not weighted. [PLACEHOLDER] pending playtest.
+pub(super) fn role_income_weight(role: &str) -> f64 {
+    match role {
+        "TOP" => 0.795,
+        "JGL" => 1.33,
+        "MID" => 0.66,
+        "ADC" => 1.43,
+        "SUP" => 1.76,
+        _ => 1.0,
+    }
+}
+
+/// `gold` scaled by the role's income weight and rounded to whole gold.
+pub(super) fn role_adjusted_income(role: &str, gold: i64) -> i64 {
+    ((gold as f64) * role_income_weight(role)).round() as i64
+}

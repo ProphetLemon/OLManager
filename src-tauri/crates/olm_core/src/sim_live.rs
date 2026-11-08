@@ -26,7 +26,7 @@ mod waves;
 pub use api::*;
 use economy::{
     BARON_TEAM_GOLD, champion_kill_rewards, jungle_camp_cs_reward, jungle_camp_reward,
-    tower_team_gold,
+    role_adjusted_income, tower_team_gold,
 };
 use events::{log_event, push_event};
 use layout::{
@@ -5632,6 +5632,7 @@ fn add_gold_xp_to_champion(runtime: &mut RuntimeState, champion_id: &str, gold: 
         .iter_mut()
         .find(|champion| champion.id == champion_id)
     {
+        let gold = role_adjusted_income(&champion.role, gold);
         champion.gold += gold;
         champion.xp += xp;
         apply_level_scaling(champion);
@@ -5731,6 +5732,7 @@ fn register_minion_death(runtime: &mut RuntimeState, minion_idx: usize) {
                 && (now - champion.last_support_cs_at) < SUPPORT_CS_MIN_INTERVAL_SEC;
 
             if !support_cs_blocked {
+                let gold = role_adjusted_income(&champion.role, gold);
                 champion.gold += gold;
                 champion.cs += 1;
                 if champion.role == "SUP" {
@@ -6390,3 +6392,6 @@ mod macro_ai_tests;
 
 #[cfg(test)]
 mod runtime_tests;
+
+#[cfg(test)]
+mod economy_tests;
