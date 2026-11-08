@@ -51,7 +51,7 @@ const HELP = `Usage: node scripts/champions/pro-matchups.mjs [flags]
   -h, --help              show this help
 `;
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const args = {
     since: "2025-01-01",
     until: "2027-01-01",
@@ -59,7 +59,7 @@ function parseArgs(argv) {
     cacheDir: path.join(scratch, "lp-cargo-cache"),
     out: path.join(scratch, "pro-matchups-report.json"),
     minGames: DEFAULT_MIN_GAMES,
-    minWinRate: DEFAULT_MIN_LOWER_BOUND,
+    minLowerBound: DEFAULT_MIN_LOWER_BOUND,
     maxRequests: 800,
     pageSize: 500,
     login: false,

@@ -8,3 +8,16 @@ export function fetchAllRows(
   client: { get(params: Record<string, string>): Promise<{ cargoquery?: { title: Record<string, string> }[] }> },
   args: { since: string; until: string; pageSize: number },
 ): Promise<ScoreboardRow[]>;
+export function parseArgs(argv: string[]): {
+  since: string;
+  until: string;
+  offline: boolean;
+  login: boolean;
+  help: boolean;
+  cacheDir: string;
+  out: string;
+  minGames: number;
+  minLowerBound: number;
+  maxRequests: number;
+  pageSize: number;
+};

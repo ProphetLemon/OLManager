@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { MAX_PAGE_SIZE, clampPageSize, fetchAllRows, scoreboardParams } from "../../../scripts/champions/pro-matchups.mjs";
+import { DEFAULT_MIN_GAMES, DEFAULT_MIN_LOWER_BOUND } from "../../../scripts/champions/lib/lane-matchups.mjs";
+import { MAX_PAGE_SIZE, clampPageSize, fetchAllRows, parseArgs, scoreboardParams } from "../../../scripts/champions/pro-matchups.mjs";
 
 type CargoRow = { title: Record<string, string> };
 
@@ -52,5 +53,19 @@ describe("fetchAllRows", () => {
     expect(rows).toHaveLength(40);
     expect(calls).toHaveLength(1);
     expect(scoreboardParams({ since: "a", until: "b", offset: 0, pageSize: 500 }).order_by).toBe("GameId,Role,PlayerWin");
+  });
+});
+
+describe("parseArgs thresholds", () => {
+  it("applies the default lower-bound and game thresholds", () => {
+    const args = parseArgs([]);
+    expect(args.minLowerBound).toBe(DEFAULT_MIN_LOWER_BOUND);
+    expect(args.minGames).toBe(DEFAULT_MIN_GAMES);
+  });
+
+  it("lets the flags override the defaults", () => {
+    const args = parseArgs(["--min-lower-bound", "0.55", "--min-games", "30"]);
+    expect(args.minLowerBound).toBe(0.55);
+    expect(args.minGames).toBe(30);
   });
 });
