@@ -362,6 +362,13 @@ pub fn roll_completed_background_leagues(
             })
             .unwrap_or(true);
 
+        // Ledger first: the league is replaced by its next split below.
+        if is_end_of_season {
+            crate::ladder::record_season_end(game, i);
+        } else {
+            crate::ladder::record_split_end(game, i);
+        }
+
         if is_end_of_season {
             // Record TeamSeasonRecord for each team (no prize money, no messages)
             for (idx, standing) in final_standings.iter().enumerate() {
@@ -441,6 +448,10 @@ fn process_end_of_season_inner(
     _manifest: Option<&CompetitionManifest>,
 ) -> EndOfSeasonSummary {
     crate::board_objectives::update_objective_progress(game);
+
+    // Close the ledger season while the final standings and playoffs are intact.
+    let active_index = game.active_league_index();
+    crate::ladder::record_season_end(game, active_index);
 
     let league = match game.active_league() {
         Some(l) => l,

@@ -23,6 +23,7 @@ pub mod engine;
 pub mod finances;
 pub mod firing;
 pub mod game;
+pub mod ladder;
 pub mod game_setup;
 pub mod generator;
 pub mod identity_upgrade;

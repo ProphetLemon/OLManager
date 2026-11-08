@@ -948,4 +948,43 @@ export interface GameStateData {
   champion_masteries?: ChampionMasteryEntryData[];
   champion_patch?: ChampionPatchStateData;
   champions?: ChampionData[];
+  /** Promotion/relegation ledger. Absent in saves from before the ledger. */
+  ladder?: LadderStateData;
+}
+
+/** Running totals of one competition's regular-season records for the season in progress. */
+export interface SeasonTallyData {
+  season: number;
+  splits: number;
+  last_split?: number | null;
+  rows: Record<string, StandingData>;
+}
+
+/** How a finished season ended for one competition. */
+export interface SeasonOutcomeData {
+  competition_id: string;
+  season: number;
+  champion_id?: string | null;
+  /** Team ids from first to last. */
+  final_order: string[];
+  /** Season-long regular-season table (every split summed), best first. */
+  season_table: StandingData[];
+}
+
+export type LadderMovementStatus = "Applied" | "SkippedLate" | "NoEligible";
+
+/** A promotion and relegation decision between two linked leagues. */
+export interface LadderMovementData {
+  link_lower: string;
+  link_upper: string;
+  season: number;
+  promoted: string[];
+  relegated: string[];
+  status: LadderMovementStatus;
+}
+
+export interface LadderStateData {
+  tallies: Record<string, SeasonTallyData>;
+  outcomes: SeasonOutcomeData[];
+  movements: LadderMovementData[];
 }

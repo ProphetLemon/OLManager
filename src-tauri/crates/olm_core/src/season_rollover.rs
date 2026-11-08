@@ -99,6 +99,8 @@ pub fn advance_season(game: &mut Game) -> AdvanceOutcome {
             } else {
                 info!("[season] split complete, advancing to next split");
                 let summary = split_summary(game);
+                let active_index = game.active_league_index();
+                crate::ladder::record_split_end(game, active_index);
                 if let Some(league) = game.active_league_mut() {
                     league.split_index += 1;
                 }
