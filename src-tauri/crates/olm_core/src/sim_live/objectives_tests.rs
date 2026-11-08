@@ -195,3 +195,54 @@ fn dragon_cycle_progresses_a_b_then_soul_rift_c_repeats() {
         Some(third_kind.as_str())
     );
 }
+
+#[test]
+fn baron_kill_pays_every_living_teammate_not_just_the_killer() {
+    let mut entities = HashMap::new();
+    entities.insert(
+        "baron".to_string(),
+        test_neutral_timer(
+            "baron",
+            Vec2 {
+                x: 0.3275,
+                y: 0.2982,
+            },
+            true,
+        ),
+    );
+    let mut neutral = NeutralTimersRuntime {
+        dragon_soul_unlocked: false,
+        elder_unlocked: false,
+        entities,
+        extra: HashMap::new(),
+    };
+    let killer = test_champion("b-jgl", "blue", "JGL", "jungle", Vec2 { x: 0.33, y: 0.3 });
+    let ally = test_champion("b-mid", "blue", "MID", "mid", Vec2 { x: 0.5, y: 0.5 });
+    let mut fallen = test_champion("b-top", "blue", "TOP", "top", Vec2 { x: 0.1, y: 0.1 });
+    fallen.alive = false;
+    let enemy = test_champion("r-mid", "red", "MID", "mid", Vec2 { x: 0.5, y: 0.5 });
+    let mut runtime = test_runtime(
+        vec![killer, ally, fallen, enemy],
+        vec![],
+        vec![],
+        NeutralTimersRuntime {
+            dragon_soul_unlocked: false,
+            elder_unlocked: false,
+            entities: HashMap::new(),
+            extra: HashMap::new(),
+        },
+    );
+
+    mark_neutral_taken(&mut runtime, &mut neutral, "baron", Some(0));
+
+    let reward = economy::BARON_TEAM_GOLD;
+    assert_eq!(runtime.champions[0].gold, reward);
+    assert_eq!(
+        runtime.champions[1].gold, reward,
+        "a living teammate shares Baron gold"
+    );
+    assert_eq!(runtime.champions[2].gold, 0, "a dead teammate does not");
+    assert_eq!(runtime.champions[3].gold, 0, "the enemy team earns nothing");
+    assert_eq!(runtime.stats.blue.gold, 2 * reward);
+    assert_eq!(runtime.stats.blue.barons, 1);
+}

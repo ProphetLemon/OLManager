@@ -24,7 +24,10 @@ mod vision;
 mod waves;
 
 pub use api::*;
-use economy::{champion_kill_rewards, jungle_camp_cs_reward, jungle_camp_reward};
+use economy::{
+    BARON_TEAM_GOLD, champion_kill_rewards, jungle_camp_cs_reward, jungle_camp_reward,
+    tower_team_gold,
+};
 use events::{log_event, push_event};
 use layout::{
     BASE_POSITION_BLUE, BASE_POSITION_RED, LANE_PATH_BOT_BLUE, LANE_PATH_MID_BLUE,
@@ -579,7 +582,6 @@ const HERALD_SOFT_CLOSE_AT: f64 = 19.0 * 60.0 + 45.0;
 const HERALD_HARD_CLOSE_AT: f64 = 19.0 * 60.0 + 55.0;
 const DRAGON_SECURE_GOLD: i64 = 40;
 const DRAGON_SECURE_XP: i64 = 90;
-const BARON_SECURE_GOLD: i64 = 60;
 const BARON_SECURE_XP: i64 = 120;
 const OBJECTIVE_SECURE_GOLD: i64 = 45;
 const OBJECTIVE_SECURE_XP: i64 = 90;
@@ -4826,7 +4828,8 @@ fn mark_neutral_taken(
             }
             NeutralCaptureKind::Baron => {
                 team_stats_mut(&mut runtime.stats, &killer_team).barons += 1;
-                add_gold_xp_to_champion(runtime, &killer_id, BARON_SECURE_GOLD, BARON_SECURE_XP);
+                add_gold_xp_to_champion(runtime, &killer_id, 0, BARON_SECURE_XP);
+                award_team_gold(runtime, &killer_team, BARON_TEAM_GOLD, true);
                 let mut buffs = runtime_buffs_from_extra(runtime.extra.get("teamBuffs"));
                 team_buffs_mut(&mut buffs, &killer_team).baron_until =
                     runtime.time_sec + BARON_BUFF_DURATION_SEC;
@@ -5637,6 +5640,22 @@ fn add_gold_xp_to_champion(runtime: &mut RuntimeState, champion_id: &str, gold: 
     }
 }
 
+/// Pays `gold` to each member of `team` (only the living ones when `alive_only`).
+fn award_team_gold(runtime: &mut RuntimeState, team: &str, gold: i64, alive_only: bool) {
+    let team = normalized_team(team);
+    let mut paid = 0;
+    for champion in runtime
+        .champions
+        .iter_mut()
+        .filter(|champion| normalized_team(&champion.team) == team)
+        .filter(|champion| champion.alive || !alive_only)
+    {
+        champion.gold += gold;
+        paid += gold;
+    }
+    team_stats_mut(&mut runtime.stats, team).gold += paid;
+}
+
 fn add_cs_to_champion(runtime: &mut RuntimeState, champion_id: &str, cs: i64) {
     if cs <= 0 {
         return;
@@ -5739,6 +5758,8 @@ fn destroy_structure(runtime: &mut RuntimeState, structure_idx: usize, attacker_
     if runtime.structures[structure_idx].kind == "tower" {
         let team_stats = team_stats_mut(&mut runtime.stats, attacker_team);
         team_stats.towers += 1;
+        let reward = tower_team_gold(&runtime.structures[structure_idx].id);
+        award_team_gold(runtime, attacker_team, reward, false);
     }
 
     let event_type = if runtime.structures[structure_idx].kind == "nexus" {

@@ -59,3 +59,27 @@ pub(super) fn champion_kill_rewards(
         xp.clamp(CHAMPION_KILL_XP_MIN, CHAMPION_KILL_XP_MAX),
     )
 }
+
+/// Gold every living member of the team that kills Baron Nashor receives.
+///
+/// General game knowledge: the real game pays about 300 gold to each living
+/// teammate. The previous model paid 60 gold to the single last hitter (ECON-002).
+/// [PLACEHOLDER] pending playtest.
+pub(super) const BARON_TEAM_GOLD: i64 = 300;
+
+/// Gold every member of the team that destroys a turret receives, by tier.
+///
+/// The previous model paid nothing for towers (ECON-002). The real game splits
+/// turret gold between a local share and a global team share; this model keeps
+/// only the shared part so that pushing is rewarded evenly.
+/// [PLACEHOLDER] pending playtest.
+pub(super) fn tower_team_gold(structure_id: &str) -> i64 {
+    if structure_id.ends_with("-outer") {
+        125
+    } else if structure_id.ends_with("-inner") {
+        100
+    } else {
+        // Inhibitor towers and the two nexus towers.
+        90
+    }
+}

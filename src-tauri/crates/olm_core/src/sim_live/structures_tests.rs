@@ -1,5 +1,7 @@
 use super::macro_ai::baron_push_target_for_lane;
-use super::test_helpers::{empty_neutral, test_minion, test_runtime, test_structure};
+use super::test_helpers::{
+    empty_neutral, test_champion, test_minion, test_runtime, test_structure,
+};
 use super::*;
 
 #[test]
@@ -102,4 +104,39 @@ fn minion_can_target_nexus_tower_after_lane_inhib_is_down() {
     let hp_before = runtime.structures[0].hp;
     resolve_minion_combat(&mut runtime);
     assert!(runtime.structures[0].hp < hp_before);
+}
+
+#[test]
+fn destroying_a_tower_pays_every_member_of_the_attacking_team() {
+    let mut top = test_champion("b-top", "blue", "TOP", "top", Vec2 { x: 0.2, y: 0.2 });
+    let mut adc = test_champion("b-adc", "blue", "ADC", "bot", Vec2 { x: 0.6, y: 0.6 });
+    adc.alive = false;
+    let red = test_champion("r-top", "red", "TOP", "top", Vec2 { x: 0.3, y: 0.3 });
+    let tower = test_structure("red-top-outer", "red", "top", Vec2 { x: 0.3, y: 0.3 });
+    top.gold = 10;
+
+    let mut runtime = test_runtime(vec![top, adc, red], vec![], vec![tower], empty_neutral());
+    destroy_structure(&mut runtime, 0, "blue");
+
+    let reward = economy::tower_team_gold("red-top-outer");
+    assert!(reward > 0);
+    assert_eq!(runtime.champions[0].gold, 10 + reward);
+    assert_eq!(
+        runtime.champions[1].gold, reward,
+        "a dead teammate still shares tower gold"
+    );
+    assert_eq!(
+        runtime.champions[2].gold, 0,
+        "the defending team earns nothing"
+    );
+    assert_eq!(runtime.stats.blue.gold, 2 * reward);
+    assert_eq!(runtime.stats.blue.towers, 1);
+}
+
+#[test]
+fn inner_towers_pay_no_more_than_outer_towers() {
+    assert!(
+        economy::tower_team_gold("blue-mid-inner") <= economy::tower_team_gold("blue-mid-outer")
+    );
+    assert!(economy::tower_team_gold("blue-mid-inhib-tower") > 0);
 }
