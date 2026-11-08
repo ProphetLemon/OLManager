@@ -217,6 +217,8 @@
   "dashboard": {
     "home": "Startseite",
     "inbox": "Posteingang",
+    "matchPlayedByStaff": "Dein Staff hat das Spiel gegen {{opponent}} gespielt: {{score}}. Öffne den Spielplan für das Ergebnis.",
+    "matchPlayedByStaffNoScore": "Dein Staff hat das Spiel gespielt. Öffne den Spielplan für das Ergebnis.",
     "manager": "Head Coach",
     "squad": "Kader",
     "tactics": "Taktik",

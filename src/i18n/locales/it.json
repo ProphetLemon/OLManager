@@ -69,6 +69,8 @@
   "dashboard": {
     "home": "Casa",
     "inbox": "Posta",
+    "matchPlayedByStaff": "Il tuo staff ha giocato la partita contro {{opponent}}: {{score}}. Apri il calendario per vedere il risultato.",
+    "matchPlayedByStaffNoScore": "Il tuo staff ha giocato la partita. Apri il calendario per vedere il risultato.",
     "manager": "Head Coach",
     "squad": "Rosa",
     "tactics": "Tattiche",

@@ -217,6 +217,8 @@
   "dashboard": {
     "home": "Accueil",
     "inbox": "Boîte de Réception",
+    "matchPlayedByStaff": "Votre staff a joué le match contre {{opponent}} : {{score}}. Ouvrez le calendrier pour voir le résultat.",
+    "matchPlayedByStaffNoScore": "Votre staff a joué le match. Ouvrez le calendrier pour voir le résultat.",
     "manager": "Head Coach",
     "squad": "Effectif",
     "tactics": "Tactique",

@@ -248,6 +248,8 @@
   "dashboard": {
     "home": "Home",
     "inbox": "Inbox",
+    "matchPlayedByStaff": "Your staff played the match against {{opponent}}: {{score}}. Open the schedule for the result.",
+    "matchPlayedByStaffNoScore": "Your staff played the match. Open the schedule for the result.",
     "manager": "Head Coach",
     "squad": "Squad",
     "tactics": "Tactics",

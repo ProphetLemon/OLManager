@@ -217,6 +217,8 @@
   "dashboard": {
     "home": "Ana Sayfa",
     "inbox": "Gelen Kutusu",
+    "matchPlayedByStaff": "Teknik ekibin {{opponent}} karşısındaki maçı oynadı: {{score}}. Sonuç için takvimi aç.",
+    "matchPlayedByStaffNoScore": "Teknik ekibin maçı oynadı. Sonuç için takvimi aç.",
     "manager": "Baş koç",
     "squad": "Kadro",
     "tactics": "Taktikler",

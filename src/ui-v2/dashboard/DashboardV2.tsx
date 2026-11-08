@@ -275,6 +275,7 @@ export default function DashboardV2() {
     blockerModal,
     setBlockerModal,
     autoDelegationNotice,
+    matchPlayedNotice,
     handleContinue,
     handleConfirmMatch,
     handleSkipToMatchDay,
@@ -407,6 +408,15 @@ export default function DashboardV2() {
       id: "scrim_auto_delegate_notice",
       text: autoDelegationNotice,
       tab: "Scrims",
+      severity: "info",
+    });
+  }
+
+  if (matchPlayedNotice) {
+    dashboardAlerts.unshift({
+      id: "staff_played_match_notice",
+      text: matchPlayedNotice,
+      tab: "Schedule",
       severity: "info",
     });
   }

@@ -33,6 +33,7 @@ function HookHarness(props: {
   const {
     blockerModal,
     autoDelegationNotice,
+    matchPlayedNotice,
     handleConfirmMatch,
     handleContinue,
     handleSkipToMatchDay,
@@ -56,6 +57,7 @@ function HookHarness(props: {
       <div data-testid="blocker-count">
         {blockerModal?.blockers.length ?? 0}
       </div>
+      <div data-testid="match-played-notice">{matchPlayedNotice ?? ""}</div>
       <div data-testid="auto-delegation-notice">{autoDelegationNotice ?? ""}</div>
     </div>
   );
@@ -407,5 +409,32 @@ describe("useAdvanceTime", function (): void {
 
     expect(screen.getByTestId("blocker-count")).toHaveTextContent("0");
     expect(screen.getByTestId("auto-delegation-notice")).toHaveTextContent("Assistant Coach resolvió automáticamente");
+  });
+
+  it("tells the user the staff played their match when skipping to match day", async function (): Promise<void> {
+    mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({
+      action: "arrived",
+      days_skipped: 3,
+      match_simulated: true,
+      game: {
+        clock: { current_date: "2026-07-05", start_date: "2026-07-01" },
+        manager: { team_id: "t1" },
+        teams: [{ id: "t1", name: "Mine" }, { id: "t2", name: "Rivals" }],
+        leagues: [{
+          fixtures: [{
+            id: "f1", date: "2026-07-05", home_team_id: "t2", away_team_id: "t1",
+            status: "Completed", result: { home_wins: 0, away_wins: 2 },
+          }],
+        }],
+      },
+    });
+
+    render(<HookHarness hasMatchToday={false} defaultMatchMode="live" />);
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+
+    await waitFor(function (): void {
+      expect(screen.getByTestId("match-played-notice")).toHaveTextContent("Rivals");
+    });
+    expect(screen.getByTestId("match-played-notice")).toHaveTextContent("2-0");
   });
 });

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GameStateData } from "../store/gameStore";
 import { useGameStore } from "../store/gameStore";
-import type { BlockerModal } from "./useAdvanceTime.helpers";
+import i18n from "@/i18n";
+import { latestUserMatchSummary, type BlockerModal } from "./useAdvanceTime.helpers";
 import {
   advanceTimeWithMode,
   checkBlockingActions,
@@ -29,6 +30,13 @@ export function useAdvanceTime(
   const [matchMode, setMatchMode] = useState<MatchModeType>("live");
   const [blockerModal, setBlockerModal] = useState<BlockerModal | null>(null);
   const [autoDelegationNotice, setAutoDelegationNotice] = useState<string | null>(null);
+  const [matchPlayedNotice, setMatchPlayedNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!matchPlayedNotice) return;
+    const timer = window.setTimeout(() => setMatchPlayedNotice(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [matchPlayedNotice]);
 
   useEffect(() => {
     if (!autoDelegationNotice) return;
@@ -475,6 +483,14 @@ export function useAdvanceTime(
         return;
       }
       if (result.game) setGameState(result.game as GameStateData);
+      if (result.match_simulated) {
+        const summary = result.game ? latestUserMatchSummary(result.game as GameStateData) : null;
+        setMatchPlayedNotice(
+          summary
+            ? i18n.t("dashboard.matchPlayedByStaff", { ...summary, defaultValue: "Your staff played the match." })
+            : i18n.t("dashboard.matchPlayedByStaffNoScore", { defaultValue: "Your staff played the match." }),
+        );
+      }
       const hasScrimDecisionBlocker = (result.blockers ?? []).some((blocker) => blocker.id === "scrim_decision_required");
       if (result.action === "blocked" && hasScrimDecisionBlocker && scrimReviewMode === "assistant") {
         try {
@@ -514,6 +530,7 @@ export function useAdvanceTime(
     matchMode, setMatchMode,
     blockerModal, setBlockerModal,
     autoDelegationNotice,
+    matchPlayedNotice,
     handleContinue,
     handleConfirmMatch,
     handleSkipToMatchDay,

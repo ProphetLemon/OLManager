@@ -217,6 +217,8 @@
   "dashboard": {
     "home": "Início",
     "inbox": "Caixa de Entrada",
+    "matchPlayedByStaff": "Sua comissão técnica jogou a partida contra {{opponent}}: {{score}}. Abra o calendário para ver o resultado.",
+    "matchPlayedByStaffNoScore": "Sua comissão técnica jogou a partida. Abra o calendário para ver o resultado.",
     "manager": "Head Coach",
     "squad": "Elenco",
     "tactics": "Táticas",

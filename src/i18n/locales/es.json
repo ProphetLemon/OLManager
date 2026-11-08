@@ -248,6 +248,8 @@
   "dashboard": {
     "home": "Inicio",
     "inbox": "Bandeja",
+    "matchPlayedByStaff": "Tu cuerpo técnico jugó el partido contra {{opponent}}: {{score}}. Abre el calendario para ver el resultado.",
+    "matchPlayedByStaffNoScore": "Tu cuerpo técnico jugó el partido. Abre el calendario para ver el resultado.",
     "manager": "Head Coach",
     "squad": "Plantilla",
     "tactics": "Táctica",
