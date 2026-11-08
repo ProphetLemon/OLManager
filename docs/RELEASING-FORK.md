@@ -56,3 +56,8 @@ install our updates. Once:
 
 `.github/workflows/release.yml` builds asset URLs from `github.repository`, so it works on the fork, but it
 needs the signing secrets and the pinned `data` commit to be reachable on GitHub. The local script does not.
+
+The workflow signs with the CI secrets (`TAURI_SIGNING_PRIVATE_KEY` and its password), not with
+`~/.config/olmanager/tauri-updater.key`. A CI-built release only updates installed builds if those secrets hold
+the same key as `assets/updater/olmanager-updater.pub`; otherwise every signature is rejected. The supported
+path is `npm run release:fork`.
