@@ -65,13 +65,23 @@ const AMATEUR_LEVEL: u8 = 43;
 /// Same value as `JITTER` in `scripts/world/lib/generate.mjs`.
 const JITTER: i16 = 4;
 
+/// Number of distinct jitter values, `-JITTER..=JITTER`.
+const JITTER_SPAN: u64 = 2 * JITTER as u64 + 1;
+const _: () = assert!(JITTER > 0);
+
 /// Valid attribute range for an estimate (OVR itself clamps to 1..=99).
 const MIN_ATTRIBUTE: i16 = 1;
 const MAX_ATTRIBUTE: i16 = 99;
 
-/// The nine attribute names, in the order [`attribute_array`] returns them. Also the
-/// jitter keys, so each attribute of a player gets an independent offset.
-const ATTRIBUTE_KEYS: [&str; 9] = [
+/// Number of rating attributes a player has.
+const ATTRIBUTE_COUNT: usize = 9;
+
+/// The "no data" value the source data uses for every attribute of a placeholder.
+const PLACEHOLDER_ATTRIBUTE: u8 = 50;
+
+/// The nine attribute names, in the order [`PlayerAttributes::as_array`] returns them.
+/// Also the jitter keys, so each attribute of a player gets an independent offset.
+const ATTRIBUTE_KEYS: [&str; ATTRIBUTE_COUNT] = [
     "mechanics",
     "laning",
     "teamfighting",
@@ -95,7 +105,11 @@ pub struct PlaceholderRatingReport {
 /// True when every attribute is exactly 50: the "no data" signature. A real player
 /// with some 50s is not a placeholder.
 pub fn is_placeholder_rating(player: &Player) -> bool {
-    attribute_array(&player.attributes) == [50; 9]
+    is_placeholder_row(&player.attributes.as_array())
+}
+
+fn is_placeholder_row(row: &[u8; ATTRIBUTE_COUNT]) -> bool {
+    *row == [PLACEHOLDER_ATTRIBUTE; ATTRIBUTE_COUNT]
 }
 
 /// Replaces the flat-50 ratings of placeholder players with estimates (see the module
@@ -128,7 +142,7 @@ pub fn estimate_placeholder_ratings(
             }
             None => {
                 report.free_agents += 1;
-                [AMATEUR_LEVEL; 9]
+                [AMATEUR_LEVEL; ATTRIBUTE_COUNT]
             }
         };
         apply_estimate(player, base);
@@ -138,8 +152,8 @@ pub fn estimate_placeholder_ratings(
 
 /// Attribute rows of rostered players with real ratings, grouped for median lookup.
 struct RealRatingPools<'a> {
-    by_competition: HashMap<&'a str, Vec<[u8; 9]>>,
-    by_competition_role: HashMap<(&'a str, LolRole), Vec<[u8; 9]>>,
+    by_competition: HashMap<&'a str, Vec<[u8; ATTRIBUTE_COUNT]>>,
+    by_competition_role: HashMap<(&'a str, LolRole), Vec<[u8; ATTRIBUTE_COUNT]>>,
 }
 
 impl<'a> RealRatingPools<'a> {
@@ -147,13 +161,14 @@ impl<'a> RealRatingPools<'a> {
         players: &[Player],
         competition_by_team: &HashMap<&'a str, Option<&'a str>>,
     ) -> Self {
-        let mut by_competition: HashMap<&str, Vec<[u8; 9]>> = HashMap::new();
-        let mut by_competition_role: HashMap<(&str, LolRole), Vec<[u8; 9]>> = HashMap::new();
+        let mut by_competition: HashMap<&str, Vec<[u8; ATTRIBUTE_COUNT]>> = HashMap::new();
+        let mut by_competition_role: HashMap<(&str, LolRole), Vec<[u8; ATTRIBUTE_COUNT]>> =
+            HashMap::new();
         for player in players {
-            let row = attribute_array(&player.attributes);
+            let row = player.attributes.as_array();
             // Flat 50 is a placeholder and all-zero is an unrated row: neither says
             // anything about the league's level.
-            if row == [50; 9] || row == [0; 9] {
+            if is_placeholder_row(&row) || row == [0; ATTRIBUTE_COUNT] {
                 continue;
             }
             let Some(competition) = player
@@ -177,9 +192,9 @@ impl<'a> RealRatingPools<'a> {
 
     /// Base attribute levels for a rostered placeholder: the competition's real
     /// medians when it has enough real players, else the explicit tier table.
-    fn base_for(&self, competition: Option<&str>, role: LolRole) -> [u8; 9] {
+    fn base_for(&self, competition: Option<&str>, role: LolRole) -> [u8; ATTRIBUTE_COUNT] {
         let Some(competition) = competition else {
-            return [UNLISTED_LEAGUE_LEVEL; 9];
+            return [UNLISTED_LEAGUE_LEVEL; ATTRIBUTE_COUNT];
         };
         if let Some(rows) = self.by_competition.get(competition)
             && rows.len() >= MIN_REAL_PLAYERS_PER_COMPETITION
@@ -196,45 +211,42 @@ impl<'a> RealRatingPools<'a> {
             .iter()
             .find(|(id, _)| *id == competition)
             .map_or(UNLISTED_LEAGUE_LEVEL, |(_, level)| *level);
-        [level; 9]
+        [level; ATTRIBUTE_COUNT]
     }
 }
 
 /// Per-attribute median; an even count averages the two middle values and rounds,
 /// like `median` in `scripts/world/lib/generate.mjs`.
-fn attribute_medians(rows: &[[u8; 9]]) -> [u8; 9] {
-    let mut medians = [0u8; 9];
+///
+/// `rows` must not be empty: the median of no values is undefined. Both callers only
+/// pass pools that already met a minimum player count.
+fn attribute_medians(rows: &[[u8; ATTRIBUTE_COUNT]]) -> [u8; ATTRIBUTE_COUNT] {
+    debug_assert!(!rows.is_empty(), "median of an empty pool is undefined");
+    let mut medians = [0u8; ATTRIBUTE_COUNT];
     for (index, slot) in medians.iter_mut().enumerate() {
         let mut column: Vec<u16> = rows.iter().map(|row| u16::from(row[index])).collect();
         column.sort_unstable();
         let mid = column.len() / 2;
-        *slot = if column.len() % 2 == 1 {
+        let median = if column.len() % 2 == 1 {
             column[mid]
         } else {
             (column[mid - 1] + column[mid]).div_ceil(2)
-        } as u8;
+        };
+        // Lossless: the median of `u8` values never exceeds `u8::MAX`.
+        *slot = median as u8;
     }
     medians
 }
 
 /// Writes `base` plus the id-seeded jitter into the player's attributes and keeps the
 /// cached `lol_ovr` in step. `potential_base` is left as shipped.
-fn apply_estimate(player: &mut Player, base: [u8; 9]) {
-    let mut estimated = [0u8; 9];
+fn apply_estimate(player: &mut Player, base: [u8; ATTRIBUTE_COUNT]) {
+    let mut estimated = [0u8; ATTRIBUTE_COUNT];
     for (index, slot) in estimated.iter_mut().enumerate() {
         let jitter = seeded_jitter(&player.id, ATTRIBUTE_KEYS[index]);
         *slot = (i16::from(base[index]) + jitter).clamp(MIN_ATTRIBUTE, MAX_ATTRIBUTE) as u8;
     }
-    let attrs = &mut player.attributes;
-    attrs.mechanics = estimated[0];
-    attrs.laning = estimated[1];
-    attrs.teamfighting = estimated[2];
-    attrs.macro_play = estimated[3];
-    attrs.consistency = estimated[4];
-    attrs.shotcalling = estimated[5];
-    attrs.champion_pool = estimated[6];
-    attrs.discipline = estimated[7];
-    attrs.mental_resilience = estimated[8];
+    player.attributes = PlayerAttributes::from_array(estimated);
     player.lol_ovr = calculate_lol_ovr(player);
 }
 
@@ -252,21 +264,7 @@ fn seeded_jitter(seed: &str, key: &str) -> i16 {
     hash ^= hash >> 27;
     hash = hash.wrapping_mul(0x94d0_49bb_1331_11eb);
     hash ^= hash >> 31;
-    (hash % (2 * JITTER as u64 + 1)) as i16 - JITTER
-}
-
-fn attribute_array(attrs: &PlayerAttributes) -> [u8; 9] {
-    [
-        attrs.mechanics,
-        attrs.laning,
-        attrs.teamfighting,
-        attrs.macro_play,
-        attrs.consistency,
-        attrs.shotcalling,
-        attrs.champion_pool,
-        attrs.discipline,
-        attrs.mental_resilience,
-    ]
+    (hash % JITTER_SPAN) as i16 - JITTER
 }
 
 #[cfg(test)]
@@ -369,16 +367,13 @@ mod tests {
         let report = estimate_placeholder_ratings(&mut players, &teams);
 
         assert_eq!(report, PlaceholderRatingReport::default());
+        assert_eq!(players[0].attributes.as_array(), real.attributes.as_array());
         assert_eq!(
-            attribute_array(&players[0].attributes),
-            attribute_array(&real.attributes)
+            players[1].attributes.as_array(),
+            some_fifties.attributes.as_array()
         );
         assert_eq!(
-            attribute_array(&players[1].attributes),
-            attribute_array(&some_fifties.attributes)
-        );
-        assert_eq!(
-            attribute_array(&players[2].attributes),
+            players[2].attributes.as_array(),
             [0; 9],
             "unrated all-zero rows are left alone"
         );
@@ -509,20 +504,17 @@ mod tests {
         let (mut a, mut b) = (build(), build());
         estimate_placeholder_ratings(&mut a, &teams);
         estimate_placeholder_ratings(&mut b, &teams);
-        assert_eq!(
-            attribute_array(&a[0].attributes),
-            attribute_array(&b[0].attributes)
-        );
+        assert_eq!(a[0].attributes.as_array(), b[0].attributes.as_array());
         assert_ne!(
-            attribute_array(&a[0].attributes),
-            attribute_array(&a[1].attributes),
+            a[0].attributes.as_array(),
+            a[1].attributes.as_array(),
             "different ids get different jitter"
         );
 
-        let before = attribute_array(&a[0].attributes);
+        let before = a[0].attributes.as_array();
         let again = estimate_placeholder_ratings(&mut a, &teams);
         assert_eq!(again, PlaceholderRatingReport::default());
-        assert_eq!(attribute_array(&a[0].attributes), before);
+        assert_eq!(a[0].attributes.as_array(), before);
     }
 
     #[test]
@@ -542,5 +534,88 @@ mod tests {
             false,
         );
         assert_eq!(players[0].market_value, expected);
+    }
+
+    #[test]
+    fn seeded_jitter_matches_pinned_golden_values() {
+        let golden: [(&str, &str, i16); 9] = [
+            ("p1", "mechanics", 3),
+            ("p1", "laning", 0),
+            ("p1", "mental_resilience", -2),
+            ("player-abc", "mechanics", -4),
+            ("lck-faker", "laning", -4),
+            ("lck-faker", "mental_resilience", 2),
+            ("x", "laning", 4),
+            ("", "laning", 2),
+            ("", "mechanics", 0),
+        ];
+        for (id, key, expected) in golden {
+            assert_eq!(seeded_jitter(id, key), expected, "id {id:?} key {key}");
+        }
+    }
+
+    #[test]
+    fn seeded_jitter_stays_within_the_jitter_range() {
+        let mut seen = [false; JITTER_SPAN as usize];
+        for id in 0..2_000 {
+            for key in ATTRIBUTE_KEYS {
+                let jitter = seeded_jitter(&format!("player-{id}"), key);
+                assert!(
+                    (-JITTER..=JITTER).contains(&jitter),
+                    "{jitter} out of range"
+                );
+                seen[(jitter + JITTER) as usize] = true;
+            }
+        }
+        assert!(seen.iter().all(|hit| *hit), "every offset should occur");
+    }
+
+    #[test]
+    fn apply_estimate_matches_pinned_golden_attributes() {
+        let mut p = player("dump-1", LolRole::Mid, Some("t"), 50);
+        apply_estimate(&mut p, [70, 71, 72, 73, 74, 75, 76, 77, 78]);
+        assert_eq!(
+            p.attributes.as_array(),
+            [71, 73, 68, 71, 77, 78, 76, 79, 77]
+        );
+        assert_eq!(p.lol_ovr, 74);
+    }
+
+    #[test]
+    fn apply_estimate_clamps_to_the_attribute_range() {
+        let mut high = player("clamp-high", LolRole::Mid, Some("t"), 50);
+        apply_estimate(&mut high, [99; ATTRIBUTE_COUNT]);
+        let mut low = player("clamp-low", LolRole::Mid, Some("t"), 50);
+        apply_estimate(&mut low, [1; ATTRIBUTE_COUNT]);
+        let (min, max) = (MIN_ATTRIBUTE as u8, MAX_ATTRIBUTE as u8);
+        assert!(
+            high.attributes
+                .as_array()
+                .iter()
+                .all(|v| (max - 8..=max).contains(v))
+        );
+        assert!(
+            low.attributes
+                .as_array()
+                .iter()
+                .all(|v| (min..=min + 8).contains(v))
+        );
+        assert!(
+            high.attributes.as_array().contains(&max),
+            "some jittered attribute should reach the upper clamp"
+        );
+        assert!(
+            low.attributes.as_array().contains(&min),
+            "some jittered attribute should reach the lower clamp"
+        );
+    }
+
+    #[test]
+    fn attribute_keys_follow_the_attribute_array_order() {
+        let attributes = PlayerAttributes::from_array([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        let json = serde_json::to_value(&attributes).expect("attributes serialize");
+        for (index, key) in ATTRIBUTE_KEYS.iter().enumerate() {
+            assert_eq!(json[*key], index as u64 + 1, "key {key} at index {index}");
+        }
     }
 }
