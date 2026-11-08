@@ -88,6 +88,8 @@ where
         info!("[turn] process_day {}: matchday", today);
         simulate_matchday_with_capture(game, &today, on_capture);
         maybe_schedule_playoffs(game);
+        // A matchday still gives part of a rest day's recovery.
+        training::process_matchday_recovery(game);
     } else {
         let weekday_num = game.clock.current_date.weekday().num_days_from_monday();
         training::process_training(game, weekday_num);
@@ -141,6 +143,8 @@ pub fn finish_live_match_day(game: &mut Game) {
     info!("[turn] finish_live_match_day: {}", today);
     generate_matchday_news(game, &today);
     maybe_schedule_playoffs(game);
+    // The live-match day recovers like any other matchday.
+    training::process_matchday_recovery(game);
 
     crate::contracts::process_contract_expiries(game);
 

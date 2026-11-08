@@ -965,13 +965,13 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
 
             // Recovery amount: rest days get boosted recovery (like mental reset days)
             let recovery_base: f64 = if !is_training_day {
-                9.0 * plan.bonus.physio_mult * plan.medical_facility_mult
+                REST_DAY_RECOVERY_BASE * plan.bonus.physio_mult * plan.medical_facility_mult
             } else {
                 match player_focus {
                     TrainingFocus::MentalResetRecovery => {
                         9.0 * plan.bonus.physio_mult * plan.medical_facility_mult
                     }
-                    _ => 4.0 * plan.bonus.physio_mult * plan.medical_facility_mult,
+                    _ => 5.0 * plan.bonus.physio_mult * plan.medical_facility_mult,
                 }
             };
 
@@ -981,18 +981,11 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
             let age = estimate_age(&player.date_of_birth, current_year);
             let age_rec = recovery_factor_from_age(age);
             let morale_rec = recovery_factor_from_morale(player.morale);
-            let condition_rec = recovery_factor_from_condition(player.condition);
             let fitness_rec = recovery_factor_from_fitness(player.fitness);
 
             // On rest days: only recovery, no attribute gains
             if !is_training_day {
-                let stamina_factor = player.attributes.mental_resilience as f64 / 100.0;
-                let recovery = (recovery_base
-                    * (0.5 + stamina_factor * 0.5)
-                    * age_rec
-                    * morale_rec
-                    * condition_rec
-                    * fitness_rec) as u8;
+                let recovery = condition_recovery(player, recovery_base, current_year);
                 player.condition = (player.condition + recovery).min(100);
                 continue;
             }
@@ -1342,6 +1335,63 @@ fn estimate_age(dob: &str, current_year: u32) -> u32 {
     let birth_year: u32 = parts[0].parse().unwrap_or(2000);
     // Rough estimate from the birth year against the game clock's year.
     current_year.saturating_sub(birth_year)
+}
+
+/// Base condition recovery on a rest day, before staff, facility and player factors.
+const REST_DAY_RECOVERY_BASE: f64 = 9.0;
+
+/// Share of a rest day's recovery that a matchday still gives. A team that plays
+/// three days in a row would otherwise never recover between matches and drain
+/// to zero over a split (ported from upstream OLManager PR #325, which used
+/// about 60 % of its rest-day base).
+const MATCHDAY_RECOVERY_SHARE: f64 = 0.6;
+
+/// Condition points a player regains from `recovery_base`, scaled by the
+/// player's resilience, age, morale, current condition and fitness.
+fn condition_recovery(
+    player: &crate::domain::player::Player,
+    recovery_base: f64,
+    current_year: u32,
+) -> u8 {
+    let age = estimate_age(&player.date_of_birth, current_year);
+    let stamina_factor = player.attributes.mental_resilience as f64 / 100.0;
+    (recovery_base
+        * (0.5 + stamina_factor * 0.5)
+        * recovery_factor_from_age(age)
+        * recovery_factor_from_morale(player.morale)
+        * recovery_factor_from_condition(player.condition)
+        * recovery_factor_from_fitness(player.fitness)) as u8
+}
+
+/// Partial condition recovery applied to every player on a matchday, after the
+/// matches were simulated (and their stamina depleted). It never trains and
+/// never costs condition: it only gives back [`MATCHDAY_RECOVERY_SHARE`] of a
+/// rest day, so teams that play on consecutive days stop draining to zero.
+pub fn process_matchday_recovery(game: &mut Game) {
+    let current_year = u32::try_from(game.clock.current_date.year()).unwrap_or(0);
+    let team_multipliers: HashMap<String, f64> = game
+        .teams
+        .iter()
+        .map(|team| {
+            let bonus = compute_coaching_bonus(game, &team.id, &team.training_focus);
+            let multiplier =
+                bonus.physio_mult * team.facilities.recovery_suite_condition_multiplier();
+            (team.id.clone(), multiplier)
+        })
+        .collect();
+
+    for player in game.players.iter_mut() {
+        let Some(multiplier) = player
+            .team_id
+            .as_ref()
+            .and_then(|team_id| team_multipliers.get(team_id))
+        else {
+            continue;
+        };
+        let base = REST_DAY_RECOVERY_BASE * MATCHDAY_RECOVERY_SHARE * multiplier;
+        let recovery = condition_recovery(player, base, current_year);
+        player.condition = (player.condition + recovery).min(100);
+    }
 }
 
 /// Recovery multiplier from age: younger players bounce back faster.

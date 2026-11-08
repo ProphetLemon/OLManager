@@ -1727,3 +1727,78 @@ fn process_day_enforces_daily_ai_transfer_cap() {
         );
     }
 }
+
+// ---------------------------------------------------------------------------
+// Matchday recovery (upstream OLManager PR #325)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn matchday_gives_players_who_sat_out_partial_recovery() {
+    let mut game = make_game_with_match();
+    for p in game.players.iter_mut() {
+        p.condition = 50;
+    }
+
+    turn::process_day(&mut game);
+
+    // Each side fields five of its eleven players; the other twelve sat out and
+    // would stay at 50 if a matchday gave no recovery at all.
+    let recovered = game.players.iter().filter(|p| p.condition > 50).count();
+    assert!(
+        recovered >= 12,
+        "players who sat out should recover on a matchday, only {recovered} did"
+    );
+}
+
+#[test]
+fn matchday_recovery_is_smaller_than_a_rest_day() {
+    let mut matchday = make_game_with_match();
+    let mut rest_day = make_game_with_match();
+    rest_day.leagues[0].fixtures.clear();
+    for game in [&mut matchday, &mut rest_day] {
+        for p in game.players.iter_mut() {
+            p.condition = 40;
+        }
+    }
+
+    turn::process_day(&mut matchday);
+    turn::process_day(&mut rest_day);
+
+    let benched = |game: &Game| -> u32 {
+        game.players
+            .iter()
+            .filter(|p| p.team_id.as_deref() == Some("team2"))
+            .map(|p| u32::from(p.condition))
+            .max()
+            .unwrap()
+    };
+    assert!(benched(&matchday) > 40, "a matchday still recovers some condition");
+    assert!(
+        benched(&matchday) < benched(&rest_day),
+        "a matchday recovers less than a rest day ({} vs {})",
+        benched(&matchday),
+        benched(&rest_day)
+    );
+}
+
+#[test]
+fn a_short_stint_still_costs_condition() {
+    let mut game = make_game_with_match();
+    let mut report = empty_report(1, 0);
+    report.player_stats.insert(
+        "t1_gk".to_string(),
+        PlayerMatchStats {
+            minutes_played: 1,
+            ..Default::default()
+        },
+    );
+
+    turn::apply_match_report(&mut game, 0, "team1", "team2", &report);
+
+    let player = game.players.iter().find(|p| p.id == "t1_gk").unwrap();
+    assert!(
+        player.condition < 100,
+        "one minute of play should cost at least one point, got {}",
+        player.condition
+    );
+}

@@ -872,7 +872,8 @@ fn deplete_match_stamina(game: &mut Game, team_id: &str, report: &crate::engine:
             let minutes_factor = minutes as f64 / 90.0;
             let stamina_factor = player.attributes.mental_resilience as f64 / 100.0;
             let base_depletion = 15.0 * (1.0 - stamina_factor * 0.25);
-            let depletion = (base_depletion * minutes_factor) as u8;
+            // Round up so even a short stint costs at least one point.
+            let depletion = (base_depletion * minutes_factor).ceil() as u8;
             player.condition = player.condition.saturating_sub(depletion);
 
             if minutes >= 60 {
