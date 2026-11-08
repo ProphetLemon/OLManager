@@ -19,6 +19,11 @@ export function defaultCredentialsPath() {
   return path.join(os.homedir(), ".config", "olmanager", "leaguepedia-bot.env");
 }
 
+function unquote(value) {
+  const first = value[0];
+  return value.length >= 2 && (first === '"' || first === "'") && value.at(-1) === first ? value.slice(1, -1) : value;
+}
+
 /** Parses KEY=VALUE lines; blank lines and lines starting with # are ignored, whitespace is trimmed. */
 export function parseCredentialsText(text) {
   const values = {};
@@ -27,7 +32,7 @@ export function parseCredentialsText(text) {
     if (line === "" || line.startsWith("#")) continue;
     const eq = line.indexOf("=");
     if (eq <= 0) continue;
-    values[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
+    values[line.slice(0, eq).trim()] = unquote(line.slice(eq + 1).trim());
   }
   return values;
 }
@@ -39,16 +44,22 @@ export function parseCredentialsText(text) {
  */
 export function readBotCredentials(file = defaultCredentialsPath(), options = {}) {
   const platform = options.platform ?? process.platform;
-  let stat;
+  let fd;
   try {
-    stat = fs.statSync(file);
+    fd = fs.openSync(file, "r");
   } catch {
     throw new CredentialsError(`Leaguepedia credentials file not found at ${file}. ${SETUP_HINT}`);
   }
-  if (platform !== "win32" && (stat.mode & 0o077) !== 0) {
-    throw new CredentialsError(`${file} is readable by other users. Run: chmod 600 ${file}`);
+  let text;
+  try {
+    if (platform !== "win32" && (fs.fstatSync(fd).mode & 0o077) !== 0) {
+      throw new CredentialsError(`${file} is readable by other users. Run: chmod 600 ${file}`);
+    }
+    text = fs.readFileSync(fd, "utf-8");
+  } finally {
+    fs.closeSync(fd);
   }
-  const values = parseCredentialsText(fs.readFileSync(file, "utf8"));
+  const values = parseCredentialsText(text);
   for (const key of [USER_KEY, PASSWORD_KEY]) {
     if (!values[key]) throw new CredentialsError(`${file} has no ${key} line. ${SETUP_HINT}`);
   }

@@ -132,6 +132,45 @@ describe("MediaWikiClient.login", () => {
     expect(log).toHaveBeenCalledWith(expect.stringMatching(/skipped/));
   });
 
+  it("offline login with a non-fandom apiUrl returns without fetching or throwing", async () => {
+    const fetchImpl = vi.fn();
+    const client = make(fetchImpl as unknown as FetchImpl, { offline: true, apiUrl: "https://example.com/api.php" });
+    await expect(client.login(creds)).resolves.toBe(false);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("clears the cookie jar when login fails, so a later get() sends no Cookie header", async () => {
+    const fetchImpl = loginFetch({ result: "Failed", reason: "nope" });
+    const client = make(fetchImpl as unknown as FetchImpl);
+    await expect(client.login(creds)).rejects.toThrow(/login failed/);
+    fetchImpl.mockResolvedValueOnce(reply({ ok: true }));
+    await client.get({ action: "query", titles: "A" });
+    expect(fetchImpl.mock.calls[2][1].headers.Cookie).toBeUndefined();
+  });
+
+  it("clears the jar when the token step fails with HTTP or network errors, and leaks no secrets in the message", async () => {
+    const httpFetch = vi
+      .fn<(url: string, init: Init) => Promise<Response>>()
+      .mockResolvedValueOnce(reply({ query: { tokens: { logintoken: "tok" } } }, ["wikiSession=abc; Path=/"]))
+      .mockResolvedValueOnce(new Response("x", { status: 500, headers: { "set-cookie": "wikiUserID=7; Path=/" } }));
+    const httpClient = make(httpFetch as unknown as FetchImpl);
+    const httpError = await httpClient.login(creds).catch((e) => e);
+    expect(httpError.message).toMatch(/HTTP 500/);
+    for (const secret of [PASSWORD, "abc", "wikiSession", "wikiUserID"]) expect(httpError.message).not.toContain(secret);
+    expect((httpClient as unknown as { cookies: Map<string, string> }).cookies.size).toBe(0);
+
+    const netFetch = vi
+      .fn<(url: string, init: Init) => Promise<Response>>()
+      .mockResolvedValueOnce(reply({ query: { tokens: { logintoken: "tok" } } }, ["wikiSession=abc; Path=/"]))
+      .mockRejectedValueOnce(new Error("socket hang up"));
+    const netClient = make(netFetch as unknown as FetchImpl);
+    const netError = await netClient.login(creds).catch((e) => e);
+    expect(netError.message).toBe("socket hang up");
+    expect(JSON.stringify([netError.message, netError.stack])).not.toContain(PASSWORD);
+    expect(netError.message).not.toContain("abc");
+    expect((netClient as unknown as { cookies: Map<string, string> }).cookies.size).toBe(0);
+  });
+
   it("logs a success line without the user name", async () => {
     const file = path.join(dir, "bot.env");
     fs.writeFileSync(file, `LEAGUEPEDIA_BOT_USER=${creds.user}\nLEAGUEPEDIA_BOT_PASSWORD=${PASSWORD}\n`, { mode: 0o600 });
@@ -174,6 +213,29 @@ describe("bot credentials file", () => {
     expect(error).toBeInstanceOf(CredentialsError);
     expect(error?.message).toMatch(/chmod 600/);
     expect(error?.message).not.toContain("pw\n");
+  });
+
+  it("strips one pair of matching surrounding quotes from values", () => {
+    const text = "LEAGUEPEDIA_BOT_USER='Alice@olmanager'\nLEAGUEPEDIA_BOT_PASSWORD=\"abc\"\nOTHER=\"x'\nQ=''a''\n";
+    expect(parseCredentialsText(text)).toEqual({
+      LEAGUEPEDIA_BOT_USER: "Alice@olmanager",
+      LEAGUEPEDIA_BOT_PASSWORD: "abc",
+      OTHER: "\"x'",
+      Q: "'a'",
+    });
+  });
+
+  it("sends the unquoted password read from a quoted file", () => {
+    const file = write('LEAGUEPEDIA_BOT_USER="Alice@olmanager"\nLEAGUEPEDIA_BOT_PASSWORD="abc"\n');
+    expect(readBotCredentials(file)).toEqual({ user: "Alice@olmanager", password: "abc" });
+  });
+
+  it("still refuses a 0644 file and closes the descriptor", () => {
+    const file = write("LEAGUEPEDIA_BOT_USER=a\nLEAGUEPEDIA_BOT_PASSWORD=b\n", 0o644);
+    const close = vi.spyOn(fs, "closeSync");
+    expect(() => readBotCredentials(file)).toThrow(/chmod 600/);
+    expect(close).toHaveBeenCalledTimes(1);
+    close.mockRestore();
   });
 
   it("reports a missing key or file with a pointer to the docs, never the password", () => {

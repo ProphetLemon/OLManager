@@ -143,8 +143,17 @@ export class MediaWikiClient {
    * Errors carry login.result and login.reason only, never the password, token or cookies.
    */
   async login({ user, password }) {
-    assertLoginTarget(this.apiUrl);
     if (this.offline) return false;
+    assertLoginTarget(this.apiUrl);
+    try {
+      return await this.performLogin(user, password);
+    } catch (error) {
+      this.cookies.clear();
+      throw error;
+    }
+  }
+
+  async performLogin(user, password) {
     const tokenQuery = new URLSearchParams({ action: "query", meta: "tokens", type: "login", format: "json" });
     const tokenData = await this.loginRequest(`${this.apiUrl}?${tokenQuery}`, { headers: this.requestHeaders() });
     const token = tokenData?.query?.tokens?.logintoken;

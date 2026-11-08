@@ -33,7 +33,7 @@ It is unverified whether a logged-in normal account avoids the Cargo rate limit;
 
    ```bash
    mkdir -p ~/.config/olmanager
-   install -m 600 /dev/null ~/.config/olmanager/leaguepedia-bot.env
+   test -e ~/.config/olmanager/leaguepedia-bot.env || install -m 600 /dev/null ~/.config/olmanager/leaguepedia-bot.env
    ```
 
    ```
