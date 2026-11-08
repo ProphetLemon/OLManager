@@ -652,6 +652,10 @@
     "playStyleImpactTitle": "Cosa cambia",
     "detailsTitle": "Squad Details",
     "activeLineup": "Active Lineup",
+    "importBadge": "Import",
+    "importTooltip": "Import: non residente nella regione di questa lega. Un quintetto titolare ammette al massimo {{max}} import.",
+    "tooManyImports": "Un quintetto titolare ammette al massimo {{max}} import. Questo ne avrebbe {{count}}.",
+    "importsInLineup": "Import nel quintetto titolare: {{count}} / {{max}}",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
     "noRoleAvailable": "No player available"

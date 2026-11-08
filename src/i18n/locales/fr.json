@@ -801,6 +801,10 @@
     "noLineupMatches": "Aucun titulaire ne correspond aux filtres actuels.",
     "playStyleImpactTitle": "Ce que cela change",
     "activeLineup": "Active Lineup",
+    "importBadge": "Import",
+    "importTooltip": "Import : non résident de la région de cette ligue. Un cinq de départ compte au plus {{max}} imports.",
+    "tooManyImports": "Un cinq de départ compte au plus {{max}} imports. Celui-ci en aurait {{count}}.",
+    "importsInLineup": "Imports dans le cinq de départ : {{count}} / {{max}}",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
     "noRoleAvailable": "No player available"

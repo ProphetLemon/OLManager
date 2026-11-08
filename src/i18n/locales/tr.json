@@ -801,6 +801,10 @@
     "noLineupMatches": "Mevcut filtrelerle eşleşen ilk 5 oyuncusu yok.",
     "playStyleImpactTitle": "Bu neyi değiştirir?",
     "activeLineup": "Active Lineup",
+    "importBadge": "Yabancı",
+    "importTooltip": "Yabancı: bu ligin bölgesinde ikamet etmiyor. Bir ilk beşte en fazla {{max}} yabancı oyuncu olabilir.",
+    "tooManyImports": "Bir ilk beşte en fazla {{max}} yabancı oyuncu olabilir. Bu beşte {{count}} olurdu.",
+    "importsInLineup": "İlk beşteki yabancılar: {{count}} / {{max}}",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
     "noRoleAvailable": "No player available"

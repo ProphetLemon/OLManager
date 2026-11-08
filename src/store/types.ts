@@ -373,6 +373,10 @@ export interface PlayerData {
   champion_training_target?: string | null;
   champion_training_targets?: string[];
   lol_ovr?: number;
+  /** Region the player is resident of (grandfathered at game start); null when unset. */
+  resident_region?: string | null;
+  /** Import for the team he is on: at most two imports may start. */
+  is_import?: boolean;
   soloq_lp?: number;
 }
 

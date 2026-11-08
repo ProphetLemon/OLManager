@@ -929,6 +929,10 @@
     "playStyleImpactTitle": "Qué cambia esto",
     "dropPlayerHere": "Drop player here",
     "activeLineup": "Active Lineup",
+    "importBadge": "Importado",
+    "importTooltip": "Importado: no es residente de la región de esta liga. Un equipo titular admite como máximo {{max}} importados.",
+    "tooManyImports": "Un equipo titular admite como máximo {{max}} importados. Este tendría {{count}}.",
+    "importsInLineup": "Importados entre los titulares: {{count}} / {{max}}",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
     "noRoleAvailable": "No player available"

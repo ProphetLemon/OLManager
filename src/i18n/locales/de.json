@@ -801,6 +801,10 @@
     "noLineupMatches": "Keine Stammspieler entsprechen den aktuellen Filtern.",
     "playStyleImpactTitle": "Was sich dadurch ändert",
     "activeLineup": "Active Lineup",
+    "importBadge": "Import",
+    "importTooltip": "Import: kein Resident der Region dieser Liga. Eine Startfünf darf höchstens {{max}} Imports enthalten.",
+    "tooManyImports": "Eine Startfünf darf höchstens {{max}} Imports enthalten. Diese hätte {{count}}.",
+    "importsInLineup": "Imports in der Startfünf: {{count}} / {{max}}",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
     "noRoleAvailable": "No player available"

@@ -801,6 +801,10 @@
     "noLineupMatches": "Nenhum titular corresponde aos filtros atuais.",
     "playStyleImpactTitle": "O que isso muda",
     "activeLineup": "Active Lineup",
+    "importBadge": "Importado",
+    "importTooltip": "Importado: não é residente da região desta liga. Um time titular aceita no máximo {{max}} importados.",
+    "tooManyImports": "Um time titular aceita no máximo {{max}} importados. Este teria {{count}}.",
+    "importsInLineup": "Importados entre os titulares: {{count}} / {{max}}",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
     "noRoleAvailable": "No player available"

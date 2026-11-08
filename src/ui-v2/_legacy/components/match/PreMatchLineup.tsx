@@ -6,6 +6,7 @@ import { ArrowUpDown, AlertTriangle, Wand2 } from "lucide-react";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { calcOvr } from "@/lib/players/lolPlayerStats";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
+import { MAX_IMPORTS_IN_STARTING_FIVE, countImports, isImportPlayer } from "@/lib/squad/imports";
 
 export type LolRole = "TOP" | "JUNGLE" | "MID" | "ADC" | "SUPPORT";
 
@@ -105,6 +106,23 @@ interface PreMatchLineupProps {
   onSelectStarter: (id: string | null) => void;
   onSwap: (benchPlayerId: string) => void;
   onAutoSelect: () => void;
+  /** Refusal shown above the lineup when a swap would exceed the import limit. */
+  importNotice?: string | null;
+}
+
+/** Marks a player who is not a resident of the league's region. */
+export function ImportBadge({ player }: { player: { is_import?: boolean } }): JSX.Element | null {
+  const { t } = useTranslation();
+  if (!isImportPlayer(player)) return null;
+  return (
+    <span
+      data-testid="import-badge"
+      title={t("squad.importTooltip", { max: MAX_IMPORTS_IN_STARTING_FIVE })}
+      className="flex-shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px text-[9px] font-heading font-bold uppercase tracking-wider text-amber-400"
+    >
+      {t("squad.importBadge")}
+    </span>
+  );
 }
 
 /** Renders a full lineup + bench column for one team. */
@@ -209,6 +227,7 @@ function TeamLineupColumn({
                     <span className="text-sm text-foreground font-medium flex-1 truncate">
                       {p.name}
                     </span>
+                    <ImportBadge player={p} />
                     <img src={LOL_ROLE_ICON_URLS[role]} alt={role} className="w-5 h-5 object-contain" title={role} />
                     {isSelected && <ArrowUpDown className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
                     <div className="flex items-center gap-0">
@@ -303,6 +322,7 @@ function TeamLineupColumn({
                   <span className="text-sm text-foreground font-medium flex-1 truncate">
                     {bp.name}
                   </span>
+                  <ImportBadge player={bp} />
                   <img
                     src={LOL_ROLE_ICON_URLS[role]}
                     alt={role}
@@ -347,8 +367,11 @@ export default function PreMatchLineup({
   onSelectStarter,
   onSwap,
   onAutoSelect,
+  importNotice = null,
 }: PreMatchLineupProps) {
   const { t } = useTranslation();
+  const userStarters = userSide === "Home" ? homeTeam.players : awayTeam.players;
+  const userImports = countImports(userStarters);
   const autoSelectLabel = t("match.autoSelectXI").replace(/XI/g, "5");
 
   return (
@@ -379,6 +402,14 @@ export default function PreMatchLineup({
             );
           })}
         </div>
+        <span
+          data-testid="import-count"
+          className={`text-2xs font-heading uppercase tracking-widest ${
+            userImports >= MAX_IMPORTS_IN_STARTING_FIVE ? "text-amber-400" : "text-muted-foreground"
+          }`}
+        >
+          {t("squad.importsInLineup", { count: userImports, max: MAX_IMPORTS_IN_STARTING_FIVE })}
+        </span>
         <button
           onClick={onAutoSelect}
           disabled={isAutoSelecting}
@@ -392,6 +423,16 @@ export default function PreMatchLineup({
           {isAutoSelecting ? t("match.selecting") : autoSelectLabel}
         </button>
       </div>
+
+      {importNotice && (
+        <p
+          role="alert"
+          data-testid="import-notice"
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-heading uppercase tracking-wider text-amber-400"
+        >
+          {importNotice}
+        </p>
+      )}
 
       {/* Two-column grid: HOME left, AWAY right */}
       <div className="grid grid-cols-2 gap-4">

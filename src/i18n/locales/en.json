@@ -929,6 +929,10 @@
     "noLineupMatches": "No starters match the current filters.",
     "playStyleImpactTitle": "What this changes",
     "activeLineup": "Active Lineup",
+    "importBadge": "Import",
+    "importTooltip": "Import: not a resident of this league's region. A starting five can hold at most {{max}} imports.",
+    "tooManyImports": "A starting five can hold at most {{max}} imports. This one would have {{count}}.",
+    "importsInLineup": "Imports in the starting five: {{count}} / {{max}}",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
     "noRoleAvailable": "No player available"

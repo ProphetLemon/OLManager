@@ -18,6 +18,13 @@ import {
   LOL_ACTIVE_ROLES,
   LOL_ROLE_LABELS,
 } from "@/lib/squad/helpers";
+import {
+  MAX_IMPORTS_IN_STARTING_FIVE,
+  countImports,
+  isImportPlayer,
+  parseImportLimitError,
+  wouldExceedImportLimit,
+} from "@/lib/squad/imports";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolvePlayerLolRole, type LolRoleTag } from "@/lib/players/lolIdentity";
@@ -77,6 +84,7 @@ export function SquadTabV2({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
+  const [lineupNotice, setLineupNotice] = useState<string | null>(null);
 
   const handleToggleTransfer = useCallback(async (playerId: string) => {
     try {
@@ -189,7 +197,23 @@ export function SquadTabV2({
   const lowestCondition = roster.length > 0 ? Math.min(...roster.map((p) => p.condition)) : 0;
   const lowestConditionPlayer = roster.find((p) => p.condition === lowestCondition);
 
+  const lineupImports = countImports(
+    activeLineupSlots.flatMap((slot) => (slot.player ? [slot.player] : [])),
+  );
+
   const handleSlotChange = useCallback(async (slotIndex: number, playerId: string) => {
+    const incoming = roster.find((p) => p.id === playerId);
+    const outgoingId = activeLineupIds[slotIndex] ?? null;
+    const starters = activeLineupIds
+      .map((id) => roster.find((p) => p.id === id))
+      .filter((p): p is (typeof roster)[number] => p !== undefined);
+    if (incoming && wouldExceedImportLimit(starters, outgoingId, incoming)) {
+      setLineupNotice(
+        t("squad.tooManyImports", { count: MAX_IMPORTS_IN_STARTING_FIVE + 1, max: MAX_IMPORTS_IN_STARTING_FIVE }),
+      );
+      return;
+    }
+    setLineupNotice(null);
     const newIds = [...activeLineupIds];
     newIds[slotIndex] = playerId;
     for (let i = 0; i < newIds.length; i++) {
@@ -204,11 +228,15 @@ export function SquadTabV2({
       console.debug("[SquadTab] set_active_lineup response", updated);
       onGameUpdate(updated);
     } catch (err) {
+      const refusal = parseImportLimitError(err);
+      if (refusal) {
+        setLineupNotice(t("squad.tooManyImports", { count: refusal.count, max: refusal.max }));
+      }
       console.error("[SquadTab] Failed to set active lineup:", err);
     } finally {
       setSavingSlot(null);
     }
-  }, [activeLineupIds, onGameUpdate]);
+  }, [activeLineupIds, onGameUpdate, roster, t]);
 
   // ─── Render ──────────────────────────────────────────────────────
   return (
@@ -247,11 +275,31 @@ export function SquadTabV2({
               {t("squad.activeLineup", { defaultValue: "Alineación titular" })}
             </CardTitle>
             {hasRoster && (
-              <span className="text-xs tabular-nums text-muted-foreground/70">
-                {activeLineupSlots.filter((s) => s.player).length} / {LOL_ACTIVE_ROLES.length}
-              </span>
+              <div className="flex items-center gap-3">
+                <span
+                  data-testid="lineup-import-count"
+                  className={cn(
+                    "text-xs tabular-nums",
+                    lineupImports >= MAX_IMPORTS_IN_STARTING_FIVE ? "text-amber-400" : "text-muted-foreground/70",
+                  )}
+                >
+                  {t("squad.importsInLineup", { count: lineupImports, max: MAX_IMPORTS_IN_STARTING_FIVE })}
+                </span>
+                <span className="text-xs tabular-nums text-muted-foreground/70">
+                  {activeLineupSlots.filter((s) => s.player).length} / {LOL_ACTIVE_ROLES.length}
+                </span>
+              </div>
             )}
           </div>
+          {lineupNotice && (
+            <p
+              role="alert"
+              data-testid="lineup-import-notice"
+              className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-400"
+            >
+              {lineupNotice}
+            </p>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           {!hasRoster ? (
@@ -292,7 +340,7 @@ export function SquadTabV2({
                             })
                             .map((p) => (
                               <option key={p.id} value={p.id}>
-                                {p.match_name} — {resolvePlayerLolRole(p)} ({calculateLolOvr(p)})
+                                {p.match_name} — {resolvePlayerLolRole(p)} ({calculateLolOvr(p)}){isImportPlayer(p) ? ` · ${t("squad.importBadge")}` : ""}
                               </option>
                             ))}
                         </select>
@@ -321,6 +369,15 @@ export function SquadTabV2({
                         <button type="button" onClick={() => onSelectPlayer(player.id)} className="truncate text-left">
                           <p className="truncate font-heading text-base font-bold text-foreground hover:text-primary transition-colors">{player.match_name}</p>
                         </button>
+                        {isImportPlayer(player) && (
+                          <span
+                            data-testid="import-badge"
+                            title={t("squad.importTooltip", { max: MAX_IMPORTS_IN_STARTING_FIVE })}
+                            className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px font-heading text-[9px] font-bold uppercase tracking-wider text-amber-400"
+                          >
+                            {t("squad.importBadge")}
+                          </span>
+                        )}
                         {outOfPosition && (
                           <span className="shrink-0 text-amber-400" title={t("squad.outOfPositionTooltip", { defaultValue: "Fuera de rol" })}>
                             <AlertTriangle className="size-4" />
@@ -342,7 +399,7 @@ export function SquadTabV2({
                             })
                             .map((p) => (
                               <option key={p.id} value={p.id}>
-                                {p.match_name} — {resolvePlayerLolRole(p)} ({calculateLolOvr(p)} OVR)
+                                {p.match_name} — {resolvePlayerLolRole(p)} ({calculateLolOvr(p)} OVR){isImportPlayer(p) ? ` · ${t("squad.importBadge")}` : ""}
                               </option>
                             ))}
                         </select>
@@ -609,6 +666,15 @@ export function SquadTabV2({
                           <p className="truncate font-heading text-base font-bold text-foreground">
                             {player.match_name}
                           </p>
+                          {isImportPlayer(player) && (
+                            <span
+                              data-testid="import-badge"
+                              title={t("squad.importTooltip", { max: MAX_IMPORTS_IN_STARTING_FIVE })}
+                              className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px font-heading text-[9px] font-bold uppercase tracking-wider text-amber-400"
+                            >
+                              {t("squad.importBadge")}
+                            </span>
+                          )}
                           {player.transfer_listed && (
                             <span className="shrink-0 rounded bg-red-500/10 px-1 py-0.5 text-[9px] font-heading font-bold uppercase tracking-wider text-red-400">
                               {t("common.transferListed", { defaultValue: "TR" })}
