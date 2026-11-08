@@ -63,6 +63,7 @@ export function useUpdater(checkOnMount = true) {
     setState((prev) => ({ ...prev, downloading: true, error: null, progress: null }));
     try {
       let totalBytes = 0;
+      let downloadedBytes = 0;
       await downloadAndInstallUpdate((event: DownloadEvent) => {
         switch (event.event) {
           case "Started":
@@ -72,20 +73,18 @@ export function useUpdater(checkOnMount = true) {
               progress: { percent: 0, contentLength: totalBytes },
             }));
             break;
-          case "Progress":
-            setState((prev) => {
-              const current =
-                prev.progress && prev.progress.percent !== undefined
-                  ? prev.progress.percent + event.data.chunkLength
-                  : event.data.chunkLength;
-              const percent =
-                totalBytes > 0 ? Math.min(100, Math.round((current / totalBytes) * 100)) : 0;
-              return {
-                ...prev,
-                progress: { percent, contentLength: totalBytes },
-              };
-            });
+          case "Progress": {
+            downloadedBytes += event.data.chunkLength;
+            const percent =
+              totalBytes > 0
+                ? Math.min(100, Math.round((downloadedBytes / totalBytes) * 100))
+                : 0;
+            setState((prev) => ({
+              ...prev,
+              progress: { percent, contentLength: totalBytes },
+            }));
             break;
+          }
           case "Finished":
             setState((prev) => ({
               ...prev,
