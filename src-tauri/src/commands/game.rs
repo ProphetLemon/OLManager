@@ -51,6 +51,19 @@ pub(crate) struct NewGameWorldInputs<'a> {
     pub overlay: Option<&'a WorldOverlay>,
 }
 
+/// Day a new game starts: the season after the roster snapshot in use (the
+/// overlay, or the bundled one when none was resolved). Keeps the legacy start
+/// only when no snapshot date can be read at all.
+pub(crate) fn new_game_start_for(overlay: Option<&WorldOverlay>) -> chrono::DateTime<chrono::Utc> {
+    let as_of = match overlay {
+        Some(overlay) => Some(overlay.as_of.clone()),
+        None => olm_core::world_overlay::bundled_world_overlay()
+            .ok()
+            .map(|bundled| bundled.as_of),
+    };
+    game_setup::new_game_start_date(as_of.as_deref())
+}
+
 /// Flow C world setup, free of Tauri I/O: assemble teams, players and staff
 /// from the modular data, apply the roster overlay, make every Main team
 /// playable and auto-fill the user team's lineup.
@@ -58,12 +71,17 @@ pub(crate) fn build_new_game_world(
     game: &mut Game,
     inputs: &NewGameWorldInputs<'_>,
 ) -> Result<(), String> {
+    // The new game starts in the season after the roster snapshot, so ages,
+    // contracts and the schedule all line up with that year.
+    game.clock = GameClock::new(new_game_start_for(inputs.overlay));
+
     // Assemble teams, players, staff from modular data
     let (assembled_teams, assembled_players, assembled_staff) = assemble_world_from_modular_data(
         inputs.data_dir,
         inputs.manifests,
         inputs.competition_id,
         inputs.team_id,
+        game.clock.current_date.date_naive(),
     )?;
 
     game.teams = assembled_teams;
@@ -175,6 +193,7 @@ pub(crate) fn assemble_world_from_modular_data(
     manifests: &[CompetitionManifest],
     competition_id: &str,
     team_id: &str,
+    start_date: chrono::NaiveDate,
 ) -> Result<AssembledWorld, String> {
     info!(
         "[game] assemble_world_from_modular_data: competition={}, team_id={}",
@@ -281,7 +300,7 @@ pub(crate) fn assemble_world_from_modular_data(
     );
 
     // 2. Bootstrap academy seeds from ERL catalog (JSON or legacy .txt fallback)
-    let academy_bootstrap_date = "2026-01-01".to_string();
+    let academy_bootstrap_date = start_date.format("%Y-%m-%d").to_string();
     let pre_count = all_teams.len();
     game_setup::bootstrap_example_academy_pool_from_example(
         &mut all_teams,
@@ -300,8 +319,14 @@ pub(crate) fn assemble_world_from_modular_data(
     // 4. Inject free agent players from JSON
     game_setup::inject_json_free_agents(&mut all_players);
 
-    // 5. Apply default contract ends
-    game_setup::apply_default_initial_contract_end(&mut all_players);
+    // 5. Apply default contract ends (and keep contracts over by the start date alive)
+    let contracts = game_setup::apply_default_initial_contract_end(&mut all_players, start_date);
+    info!(
+        "[game] contract ends: {} filled, {} extended to the end of the {} season",
+        contracts.filled,
+        contracts.extended,
+        start_date.year()
+    );
 
     // 6. Recalculate market_value for players who have 0 (data issue in regional leagues)
     game_setup::apply_default_market_values(&mut all_players);
@@ -359,7 +384,10 @@ fn resolve_world_overlay(app_handle: &tauri::AppHandle) -> Option<WorldOverlay> 
 fn apply_roster_overlay(game: &mut Game, overlay: &WorldOverlay) -> OverlayApplyReport {
     let report = apply_world_overlay(&mut game.teams, &mut game.players, &mut game.staff, overlay);
     // Added players arrive without a contract end or market value.
-    game_setup::apply_default_initial_contract_end(&mut game.players);
+    game_setup::apply_default_initial_contract_end(
+        &mut game.players,
+        game.clock.current_date.date_naive(),
+    );
     game_setup::apply_default_market_values(&mut game.players);
 
     game.moved_player_ids
@@ -584,7 +612,7 @@ pub(crate) fn prepare_new_game_season(
 /// Used when the frontend wants to show league/team selection first.
 #[tauri::command]
 pub async fn start_new_game_lightweight(
-    _app_handle: tauri::AppHandle,
+    app_handle: tauri::AppHandle,
     state: State<'_, StateManager>,
     nickname: Option<String>,
     first_name: String,
@@ -614,7 +642,7 @@ pub async fn start_new_game_lightweight(
         return Err("Nationality is required.".to_string());
     }
 
-    let start_date = chrono::Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap();
+    let start_date = new_game_start_for(resolve_world_overlay(&app_handle).as_ref());
 
     let birth_date = chrono::NaiveDate::parse_from_str(&dob, "%Y-%m-%d")
         .map_err(|_| "Invalid date of birth. Use YYYY-MM-DD format.".to_string())?;
@@ -1344,7 +1372,14 @@ mod tests {
                 .map(|m| m.id.clone())
                 .collect();
             let (catalog_teams, catalog, _staff) =
-                assemble_world_from_modular_data(&data, &manifests, "", "").expect("catalog");
+                assemble_world_from_modular_data(
+                    &data,
+                    &manifests,
+                    "",
+                    "",
+                    chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+                )
+                .expect("catalog");
             let user_team = {
                 let found: Vec<_> = catalog_teams.iter().filter(|t| t.name == "Kiwoom DRX").collect();
                 assert_eq!(found.len(), 1, "expected exactly one team named Kiwoom DRX");
@@ -1391,6 +1426,85 @@ mod tests {
 
         fn annual_bill(game: &Game, team_id: &str) -> i64 {
             olm_core::contract_wage_policy::annual_team_wage_bill(game, team_id)
+        }
+
+        fn known_ids_and_manifests() -> (Vec<CompetitionManifest>, Vec<String>) {
+            let manifests =
+                olm_core::competitions::scan_competitions(&data_base().join("competitions"));
+            let known = manifests
+                .iter()
+                .filter(|m| !m.legacy)
+                .map(|m| m.id.clone())
+                .collect();
+            (manifests, known)
+        }
+
+        #[test]
+        fn new_game_starts_on_january_first_of_the_season_after_the_snapshot() {
+            let (game, _catalog, overlay, _user) = new_game();
+
+            let expected = game_setup::new_game_start_date(Some(&overlay.as_of));
+            assert_eq!(game.clock.current_date, expected);
+            assert_eq!(game.clock.start_date, expected);
+            assert_eq!(
+                (game.clock.current_date.month(), game.clock.current_date.day()),
+                (1, 1)
+            );
+            assert!(
+                game.clock.current_date.year() > 2026,
+                "the bundled snapshot is dated {}",
+                overlay.as_of
+            );
+        }
+
+        #[test]
+        fn new_game_schedule_is_generated_for_the_start_year() {
+            let (mut game, _catalog, _overlay, user_team) = new_game();
+            let (manifests, known) = known_ids_and_manifests();
+            let year = game.clock.current_date.year();
+
+            let season = prepare_new_game_season(&mut game, &manifests, &known, &user_team)
+                .expect("season setup");
+
+            assert_eq!(season.season_year, year);
+            assert!(!game.leagues.is_empty());
+            let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+            for league in &game.leagues {
+                assert_eq!(league.season as i32, year, "{} season", league.id);
+                assert!(!league.fixtures.is_empty(), "{} has fixtures", league.id);
+                let first = league.fixtures.iter().map(|f| f.date.as_str()).min().unwrap();
+                assert!(
+                    first >= today.as_str(),
+                    "{} schedules {first} before the start {today}",
+                    league.id
+                );
+                assert!(
+                    first.starts_with(&year.to_string()),
+                    "{} starts on {first}, not in {year}",
+                    league.id
+                );
+            }
+        }
+
+        #[test]
+        fn new_game_has_no_expired_contract_at_the_start_date() {
+            let (game, _catalog, _overlay, _user) = new_game();
+            let today = game.clock.current_date.date_naive();
+
+            let expired: Vec<&str> = game
+                .players
+                .iter()
+                .filter(|p| p.team_id.is_some())
+                .filter(|p| {
+                    p.contract_end
+                        .as_deref()
+                        .and_then(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
+                        .is_none_or(|end| end <= today)
+                })
+                .map(|p| p.match_name.as_str())
+                .collect();
+
+            assert!(expired.is_empty(), "{} rostered players start expired", expired.len());
         }
 
         #[test]

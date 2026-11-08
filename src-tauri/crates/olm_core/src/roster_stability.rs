@@ -306,7 +306,10 @@ pub fn fill_new_game_rosters(game: &mut Game) -> Vec<NewGameRosterFill> {
                 let player = &mut game.players[index];
                 player.team_id = Some(team_id.clone());
                 player.contract_end = None;
-                crate::game_setup::apply_default_initial_contract_end(std::slice::from_mut(player));
+                crate::game_setup::apply_default_initial_contract_end(
+                    std::slice::from_mut(player),
+                    current_date,
+                );
                 fills.push(NewGameRosterFill {
                     team_id: team_id.clone(),
                     player_id,

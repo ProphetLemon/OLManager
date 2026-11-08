@@ -875,6 +875,8 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
         crate::champions::ensure_training_targets_from_mastery(game, &player_id);
     }
 
+    let current_year = u32::try_from(game.clock.current_date.year()).unwrap_or(0);
+
     // Collect plans for all teams (immutable borrow)
     let team_plans: Vec<TeamTrainingPlan> = game
         .teams
@@ -976,7 +978,7 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
             // Age, morale, and current condition all affect recovery rate.
             // Older players recover more slowly; high morale aids recovery;
             // severely fatigued players have a harder time bouncing back.
-            let age = estimate_age(&player.date_of_birth);
+            let age = estimate_age(&player.date_of_birth, current_year);
             let age_rec = recovery_factor_from_age(age);
             let morale_rec = recovery_factor_from_morale(player.morale);
             let condition_rec = recovery_factor_from_condition(player.condition);
@@ -1332,15 +1334,13 @@ pub fn apply_post_scrim_decision(
 }
 
 /// Estimate player age from date_of_birth string ("YYYY-MM-DD").
-fn estimate_age(dob: &str) -> u32 {
+fn estimate_age(dob: &str, current_year: u32) -> u32 {
     let parts: Vec<&str> = dob.split('-').collect();
     if parts.is_empty() {
         return 25; // fallback
     }
     let birth_year: u32 = parts[0].parse().unwrap_or(2000);
-    // Use a rough estimate — the game clock year would be ideal but
-    // this is close enough for growth factor purposes.
-    let current_year: u32 = 2026;
+    // Rough estimate from the birth year against the game clock's year.
     current_year.saturating_sub(birth_year)
 }
 
@@ -1567,9 +1567,15 @@ pub fn estimate_team_lol_ovr(game: &crate::game::Game, team_id: &str) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use super::{apply_focus_gains, is_lol_training_capped};
+    use super::{apply_focus_gains, estimate_age, is_lol_training_capped};
     use crate::domain::player::{LolRole, Player, PlayerAttributes};
     use crate::domain::team::TrainingFocus;
+
+    #[test]
+    fn estimated_age_follows_the_game_year() {
+        assert_eq!(estimate_age("2000-05-05", 2026), 26);
+        assert_eq!(estimate_age("2000-05-05", 2027), 27);
+    }
 
     fn attrs(stat: u8) -> PlayerAttributes {
         PlayerAttributes {

@@ -3,7 +3,7 @@ use crate::domain::player::{Player, PlayerAttributes};
 use crate::domain::team::{
     AcademyLifecycle, AcademyMetadata, ErlAssignment, ErlAssignmentRule, Team, TeamKind,
 };
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, NaiveDate, TimeZone};
 use log::{info, warn};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -493,22 +493,78 @@ pub fn apply_seed_potential_defaults(players: &mut [Player]) {
 // ---------------------------------------------------------------------------
 
 pub fn default_initial_contract_end_for_start_year(start_year: i32) -> String {
-    format!("{}-11-30", start_year + 1)
+    format!("{}-{}", start_year + 1, SEASON_END_MONTH_DAY)
 }
 
-pub fn apply_default_initial_contract_end(players: &mut [Player]) {
-    let default_initial_contract_end = default_initial_contract_end_for_start_year(2026);
-    let min_start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+/// Contract-end changes made by [`apply_default_initial_contract_end`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ContractDefaultsReport {
+    /// Players with no readable contract end that were given the default one.
+    pub filled: usize,
+    /// Players whose contract would already be over on the start date and now
+    /// run to the end of the start season.
+    pub extended: usize,
+}
+
+/// Month and day a season's contracts end on (the renewal convention).
+const SEASON_END_MONTH_DAY: &str = "11-30";
+
+/// First day of a new game when no roster snapshot can be read.
+pub fn legacy_new_game_start_date() -> chrono::DateTime<chrono::Utc> {
+    chrono::Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap()
+}
+
+/// Day a new game starts for a roster snapshot dated `as_of` (`YYYY-MM-DD`):
+/// January 1 of the following year, or of the same year when the snapshot falls
+/// before July 1 (the season is still ahead). An unreadable date keeps the
+/// legacy 2026-01-01 start.
+pub fn new_game_start_date(as_of: Option<&str>) -> chrono::DateTime<chrono::Utc> {
+    let Some(as_of) = as_of.and_then(|raw| NaiveDate::parse_from_str(raw.trim(), "%Y-%m-%d").ok())
+    else {
+        return legacy_new_game_start_date();
+    };
+    let year = if as_of.month() < 7 {
+        as_of.year()
+    } else {
+        as_of.year() + 1
+    };
+    chrono::Utc
+        .with_ymd_and_hms(year, 1, 1, 0, 0, 0)
+        .single()
+        .unwrap_or_else(legacy_new_game_start_date)
+}
+
+/// Give every player a usable contract on `start_date`: a missing or unreadable
+/// end becomes the default for that start year, and one that is over by the start
+/// date (`contract_end <= start_date`, the same test the daily expiry uses) is
+/// extended to the end of the start season so the snapshot's rosters do not
+/// turn into free agents on day one.
+pub fn apply_default_initial_contract_end(
+    players: &mut [Player],
+    start_date: NaiveDate,
+) -> ContractDefaultsReport {
+    let default_initial_contract_end = default_initial_contract_end_for_start_year(start_date.year());
+    let start_season_end = format!("{}-{}", start_date.year(), SEASON_END_MONTH_DAY);
+    let mut report = ContractDefaultsReport::default();
 
     for player in players.iter_mut() {
         let current = player
             .contract_end
             .as_deref()
             .and_then(|s| NaiveDate::parse_from_str(s.trim(), "%Y-%m-%d").ok());
-        if current.is_none() || current.is_some_and(|d| d < min_start) {
-            player.contract_end = Some(default_initial_contract_end.clone());
+        match current {
+            None => {
+                player.contract_end = Some(default_initial_contract_end.clone());
+                report.filled += 1;
+            }
+            Some(end) if end <= start_date => {
+                player.contract_end = Some(start_season_end.clone());
+                report.extended += 1;
+            }
+            Some(_) => {}
         }
     }
+    report
 }
 
 pub fn apply_default_market_values(players: &mut [Player]) {
@@ -901,8 +957,10 @@ pub fn ensure_example_academy_pool(game: &mut Game) {
 mod tests {
     use super::{
         apply_default_initial_contract_end, calculate_age_on_date,
-        default_initial_contract_end_for_start_year,
+        default_initial_contract_end_for_start_year, legacy_new_game_start_date,
+        new_game_start_date,
     };
+    use chrono::{Datelike, NaiveDate};
     use crate::domain::player::{Player, PlayerAttributes};
     use crate::domain::stats::LolRole;
 
@@ -987,10 +1045,61 @@ mod tests {
             player_with_contract("existing", Some("2028-11-30")),
         ];
 
-        apply_default_initial_contract_end(&mut players);
+        let start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let report = apply_default_initial_contract_end(&mut players, start);
 
         assert_eq!(players[0].contract_end.as_deref(), Some("2027-11-30"));
         assert_eq!(players[1].contract_end.as_deref(), Some("2028-11-30"));
+        assert_eq!((report.filled, report.extended), (1, 0));
+    }
+
+    #[test]
+    fn contracts_over_by_the_start_date_run_to_the_end_of_the_start_season() {
+        let start = NaiveDate::from_ymd_opt(2027, 1, 1).unwrap();
+        let mut players = vec![
+            player_with_contract("lapsed", Some("2026-11-16")),
+            player_with_contract("ends-on-day-one", Some("2027-01-01")),
+            player_with_contract("still-running", Some("2027-11-16")),
+            player_with_contract("blank", Some("")),
+            player_with_contract("missing", None),
+        ];
+
+        let report = apply_default_initial_contract_end(&mut players, start);
+
+        let ends: Vec<_> = players.iter().map(|p| p.contract_end.as_deref()).collect();
+        assert_eq!(
+            ends,
+            vec![
+                Some("2027-11-30"),
+                Some("2027-11-30"),
+                Some("2027-11-16"),
+                Some("2028-11-30"),
+                Some("2028-11-30"),
+            ]
+        );
+        assert_eq!((report.filled, report.extended), (2, 2));
+    }
+
+    #[test]
+    fn new_game_starts_on_january_first_of_the_season_after_the_snapshot() {
+        let start = |as_of| new_game_start_date(Some(as_of)).date_naive();
+        let jan1 = |year| NaiveDate::from_ymd_opt(year, 1, 1).unwrap();
+
+        assert_eq!(start("2026-11-07"), jan1(2027));
+        assert_eq!(start("2026-07-01"), jan1(2027));
+        assert_eq!(start("2026-06-30"), jan1(2026));
+        assert_eq!(start("2027-03-10"), jan1(2027));
+        assert_eq!(start(" 2025-12-31 "), jan1(2026));
+    }
+
+    #[test]
+    fn new_game_start_falls_back_to_the_legacy_date_without_a_readable_snapshot() {
+        let legacy = legacy_new_game_start_date();
+        assert_eq!(legacy.date_naive(), NaiveDate::from_ymd_opt(2026, 1, 1).unwrap());
+        assert_eq!(new_game_start_date(None), legacy);
+        assert_eq!(new_game_start_date(Some("soon")), legacy);
+        assert_eq!(new_game_start_date(Some("")), legacy);
+        assert_eq!(new_game_start_date(Some("2026-11-07")).year(), 2027);
     }
 
     #[test]
