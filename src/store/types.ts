@@ -725,7 +725,18 @@ export interface CompetitionSummary {
   legacy: boolean;
   active: boolean;
   team_count: number;
+  /** True when the player may replace one of this league's clubs with their own. */
+  custom_team_allowed?: boolean;
   teams: TeamSummary[];
+}
+
+/** User-defined club sent to `select_team`; mirrors the Rust `CustomTeamSpec`. */
+export interface CustomTeamSpec {
+  name: string;
+  short_name: string;
+  primary_color: string;
+  secondary_color: string;
+  country: string;
 }
 
 export interface TeamSummary {

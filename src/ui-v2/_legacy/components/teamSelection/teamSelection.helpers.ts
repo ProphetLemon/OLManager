@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { LeagueSelectionData, GameStateData } from "@/store/gameStore";
+import type { CustomTeamSpec } from "@/store/types";
 import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
 
 export function formatFinance(val: number): string {
@@ -27,6 +28,19 @@ export async function loadLeagueSelectionData(): Promise<LeagueSelectionData> {
   return invoke<LeagueSelectionData>("get_league_selection_data");
 }
 
-export async function selectTeam(teamId: string, lang?: string): Promise<GameStateData> {
-  return invoke<GameStateData>("select_team", { teamId, lang: lang ?? "en" });
+/**
+ * Confirm the managed club. When `customTeam` is set, `teamId` is the league
+ * slot the new club replaces. The key is omitted when absent so existing
+ * callers keep sending exactly `{ teamId, lang }`.
+ */
+export async function selectTeam(
+  teamId: string,
+  lang?: string,
+  customTeam?: CustomTeamSpec,
+): Promise<GameStateData> {
+  return invoke<GameStateData>("select_team", {
+    teamId,
+    lang: lang ?? "en",
+    ...(customTeam ? { customTeam } : {}),
+  });
 }

@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { describe, expect, it, vi } from "vitest";
 
-import { loadLeagueSelectionData } from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
+import { loadLeagueSelectionData, selectTeam } from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
@@ -38,5 +38,33 @@ describe("teamSelection.helpers", () => {
 
     await expect(loadLeagueSelectionData()).resolves.toBe(data);
     expect(mockedInvoke).toHaveBeenCalledTimes(1);
+  });
+
+  it("selectTeam omits customTeam when absent", async () => {
+    mockedInvoke.mockReset();
+    mockedInvoke.mockResolvedValue({});
+    await selectTeam("les-a", "es");
+    expect(mockedInvoke).toHaveBeenCalledWith("select_team", { teamId: "les-a", lang: "es" });
+    expect(Object.keys(mockedInvoke.mock.calls[0][1] as object)).not.toContain("customTeam");
+    await selectTeam("les-a");
+    expect(mockedInvoke).toHaveBeenLastCalledWith("select_team", { teamId: "les-a", lang: "en" });
+  });
+
+  it("selectTeam passes the custom team spec through in snake_case", async () => {
+    mockedInvoke.mockReset();
+    mockedInvoke.mockResolvedValue({});
+    const spec = {
+      name: "Ray Gaming",
+      short_name: "RAY",
+      primary_color: "#f97316",
+      secondary_color: "#18181b",
+      country: "ES",
+    };
+    await selectTeam("les-a", "es", spec);
+    expect(mockedInvoke).toHaveBeenCalledWith("select_team", {
+      teamId: "les-a",
+      lang: "es",
+      customTeam: spec,
+    });
   });
 });
