@@ -45,6 +45,7 @@ pub(super) fn test_champion(
         gameplay_score: 70.0,
         iq_score: 70.0,
         competitive_score: 70.0,
+        role_edge: 0.0,
         staff_execution: 1.0,
         summoner_spells: vec![
             RuntimeSummonerSpellSlot {

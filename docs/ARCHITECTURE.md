@@ -84,7 +84,7 @@ The Rust backend is a workspace declared in `src-tauri/Cargo.toml` with a single
 - **`db/`** — SQLite persistence. Contains `GameDatabase` (per-save SQLite with migrations up to V55), `repositories/`, `GamePersistenceReader`/`GamePersistenceWriter`, `SaveManager`.
 - **`game.rs`** — Central career object (`Game`), clock, club systems, contracts, finances, training, scouting, transfers, schedules.
 - **`state.rs`** — Runtime session state (`StateManager` with unified `Mutex<Session>`).
-- **`sim_live.rs` / `sim_live/`** — Live match engine (25+ submodules).
+- **`sim_live.rs` / `sim_live/`** — Live match engine (25+ submodules). Team strength (visible stats and the role-impact edge) acts through one persistent champion-vs-champion damage factor, `exp(K * (power(attacker) - power(defender)))` (`champion_strength_damage_multiplier`), so it survives level scaling; the outcome targets and the opt-in sweep are in `sim_live/strength_tests.rs`.
 - Plus modules for: academy, champions, social, news, messages, turn logic, time blockers, player events, scrims, season awards, etc.
 
 ### Tauri app crate
