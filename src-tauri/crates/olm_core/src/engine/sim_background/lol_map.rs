@@ -1,13 +1,15 @@
 use rand::{Rng, RngExt};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::f64::consts::PI;
 use std::sync::OnceLock;
 
 use crate::engine::event::{EventType, MatchEvent};
 use crate::engine::types::{Side, TeamData, Zone};
 
 use super::{LiveMatchState, MatchPhase};
+
+mod nav;
+use nav::{lane_point, mirror, step_toward};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LolDragonKind {
@@ -70,6 +72,11 @@ pub struct LolLaneState {
     pub blue_wave: f64,
     #[serde(default = "default_wave")]
     pub red_wave: f64,
+    /// Where the lane is being contested, as an arc-length fraction of the lane
+    /// from the blue base (0) to the red base (1). Saves written before this
+    /// field deserialize to the neutral middle.
+    #[serde(default = "default_front")]
+    pub front: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -161,6 +168,10 @@ fn default_wave() -> f64 {
     1.0
 }
 
+fn default_front() -> f64 {
+    0.5
+}
+
 fn default_condition() -> u8 {
     100
 }
@@ -216,6 +227,7 @@ impl LolMapState {
             inhibitor_respawn_minute: None,
             blue_wave: 1.0,
             red_wave: 1.0,
+            front: default_front(),
         };
 
         let team_structures = || LolTeamStructuresState {
@@ -463,8 +475,9 @@ impl LiveMatchState {
         };
 
         for lane in [LaneKey::Top, LaneKey::Mid, LaneKey::Bot] {
-            let home_anchor = lane_anchor(Side::Home, lane);
-            let away_anchor = lane_anchor(Side::Away, lane);
+            let front = lane_front(&self.lol_map, lane);
+            let home_anchor = lane_anchor(lane, front, Side::Home);
+            let away_anchor = lane_anchor(lane, front, Side::Away);
             let home_presence = lane_presence(&self.lol_map.units, Side::Home, lane, home_anchor);
             let away_presence = lane_presence(&self.lol_map.units, Side::Away, lane, away_anchor);
 
@@ -504,13 +517,20 @@ impl LiveMatchState {
         }
     }
 
-    fn tick_movement<R: Rng>(&mut self, minute: u8, rng: &mut R) {
-        let dragon_alive = self.lol_map.objectives.dragon.alive;
-        let herald_alive = self.lol_map.objectives.herald.alive;
-        let baron_alive = self.lol_map.objectives.baron.alive;
-        let grubs_alive = self.lol_map.objectives.grubs.alive;
+    fn tick_movement<R: Rng>(&mut self, minute: u8, _rng: &mut R) {
+        let view = MapView {
+            dragon_alive: self.lol_map.objectives.dragon.alive,
+            herald_alive: self.lol_map.objectives.herald.alive,
+            baron_alive: self.lol_map.objectives.baron.alive,
+            grubs_alive: self.lol_map.objectives.grubs.alive,
+            fronts: [
+                self.lol_map.blue.top.front,
+                self.lol_map.blue.mid.front,
+                self.lol_map.blue.bot.front,
+            ],
+        };
 
-        for _ in 0..8 {
+        for _ in 0..MOVE_SUBSTEPS {
             for unit in &mut self.lol_map.units {
                 if !unit.alive {
                     continue;
@@ -523,38 +543,23 @@ impl LiveMatchState {
                     } else {
                         red_spawn(unit.spawn_slot as usize)
                     };
-                    move_unit_with_walls(unit, base, 0.012, rng);
-                    if distance((unit.x, unit.y), base) < 0.02 {
+                    let (pos, _) = step_toward((unit.x, unit.y), base, RECALL_SPEED);
+                    (unit.x, unit.y) = pos;
+                    if distance(pos, base) < 0.02 {
                         unit.hp = 80.0;
                         unit.recall_available_minute = minute.saturating_add(6);
                     }
                     continue;
                 }
 
-                let route = role_route(
-                    unit.side,
-                    unit.role,
-                    minute,
-                    dragon_alive,
-                    herald_alive,
-                    baron_alive,
-                    grubs_alive,
-                );
-                if route.is_empty() {
-                    continue;
-                }
-
-                let idx = (unit.path_index as usize).min(route.len() - 1);
-                let target = route[idx];
+                let target = role_target(unit.side, unit.role, minute, &view);
                 unit.target_x = target.0;
                 unit.target_y = target.1;
+                unit.path_index = 0;
 
                 let speed = movement_speed(unit.role, unit.level, unit.item_tier);
-                move_unit_with_walls(unit, target, speed, rng);
-
-                if distance((unit.x, unit.y), target) < 0.025 {
-                    unit.path_index = ((idx + 1) % route.len()) as u8;
-                }
+                let (pos, _) = step_toward((unit.x, unit.y), target, speed);
+                (unit.x, unit.y) = pos;
             }
         }
     }
@@ -860,28 +865,36 @@ fn blue_spawn(slot: usize) -> (f64, f64) {
     P[slot.min(4)]
 }
 
+/// Red spawns mirror the blue ones across the base-swap diagonal, so both
+/// teams start the same walking distance from every lane.
 fn red_spawn(slot: usize) -> (f64, f64) {
-    const P: [(f64, f64); 5] = [
-        (0.86, 0.10),
-        (0.82, 0.12),
-        (0.78, 0.14),
-        (0.82, 0.07),
-        (0.76, 0.09),
-    ];
-    P[slot.min(4)]
+    mirror(blue_spawn(slot))
 }
 
-fn lane_anchor(side: Side, lane: LaneKey) -> (f64, f64) {
-    match (side, lane) {
-        (Side::Home, LaneKey::Top) => (0.30, 0.20),
-        (Side::Home, LaneKey::Mid) => (0.47, 0.53),
-        (Side::Home, LaneKey::Bot) => (0.30, 0.78),
-        (Side::Away, LaneKey::Top) => (0.70, 0.80),
-        (Side::Away, LaneKey::Mid) => (0.53, 0.47),
-        (Side::Away, LaneKey::Bot) => (0.70, 0.22),
+/// Contested point of `lane` for one side: each team stands slightly on its own
+/// side of the lane front so that opponents face each other.
+fn lane_anchor(lane: LaneKey, front: f64, side: Side) -> (f64, f64) {
+    let t = if side == Side::Home {
+        front - LANE_STANCE
+    } else {
+        front + LANE_STANCE
+    };
+    lane_point(lane, t)
+}
+
+/// Arc-length offset (fraction of the lane) between a team and the lane front.
+/// [PLACEHOLDER]
+const LANE_STANCE: f64 = 0.015;
+
+/// Camp the jungler clears before the first objective spawns. [PLACEHOLDER]
+fn jungle_camp(side: Side) -> (f64, f64) {
+    let home = (0.30, 0.66);
+    if side == Side::Home {
+        home
+    } else {
+        mirror(home)
     }
 }
-
 fn objective_anchor(name: &str) -> (f64, f64) {
     match name {
         "baron" => (0.3274739583333333, 0.2981770833333333),
@@ -892,84 +905,75 @@ fn objective_anchor(name: &str) -> (f64, f64) {
     }
 }
 
-fn role_route(
-    side: Side,
-    role: LolRole,
-    minute: u8,
+/// Objective and lane state a unit decides its destination from.
+struct MapView {
     dragon_alive: bool,
     herald_alive: bool,
     baron_alive: bool,
     grubs_alive: bool,
-) -> Vec<(f64, f64)> {
-    match (side, role) {
-        (_, LolRole::Top) => {
-            let route = vec![(0.30, 0.20), (0.55, 0.14), (0.78, 0.10)];
-            if side == Side::Home {
-                route
+    fronts: [f64; 3],
+}
+
+fn lane_slot(lane: LaneKey) -> usize {
+    match lane {
+        LaneKey::Top => 0,
+        LaneKey::Mid => 1,
+        LaneKey::Bot => 2,
+    }
+}
+
+/// Where a unit wants to be this minute. Laners stand on their lane front;
+/// the jungler farms, then takes objectives, then rotates between lanes; the
+/// support stays with the bot lane until it rotates to an objective.
+fn role_target(side: Side, role: LolRole, minute: u8, view: &MapView) -> (f64, f64) {
+    let on_lane = |lane: LaneKey| lane_anchor(lane, view.fronts[lane_slot(lane)], side);
+    match role {
+        LolRole::Top => on_lane(LaneKey::Top),
+        LolRole::Mid => on_lane(LaneKey::Mid),
+        LolRole::Adc => on_lane(LaneKey::Bot),
+        LolRole::Support => {
+            if minute >= 14 && view.dragon_alive {
+                objective_anchor("dragon")
+            } else if minute >= 14 && view.baron_alive {
+                objective_anchor("baron")
             } else {
-                route.into_iter().map(|(x, y)| (1.0 - x, 1.0 - y)).collect()
+                on_lane(LaneKey::Bot)
             }
         }
-        (_, LolRole::Mid) => {
-            let route = vec![(0.47, 0.53), (0.58, 0.42), (0.70, 0.30)];
-            if side == Side::Home {
-                route
+        LolRole::Jungle => {
+            if minute >= 20 && view.baron_alive {
+                objective_anchor("baron")
+            } else if minute >= 14 && view.herald_alive {
+                objective_anchor("herald")
+            } else if view.grubs_alive {
+                objective_anchor("grubs")
+            } else if view.dragon_alive {
+                objective_anchor("dragon")
+            } else if minute < 3 {
+                jungle_camp(side)
             } else {
-                route.into_iter().map(|(x, y)| (1.0 - x, 1.0 - y)).collect()
-            }
-        }
-        (_, LolRole::Adc) => {
-            let route = vec![(0.30, 0.78), (0.54, 0.84), (0.78, 0.90)];
-            if side == Side::Home {
-                route
-            } else {
-                route.into_iter().map(|(x, y)| (1.0 - x, 1.0 - y)).collect()
-            }
-        }
-        (_, LolRole::Support) => {
-            if minute < 14 {
-                let route = vec![(0.33, 0.77), (0.52, 0.83), (0.75, 0.88)];
-                if side == Side::Home {
-                    route
-                } else {
-                    route.into_iter().map(|(x, y)| (1.0 - x, 1.0 - y)).collect()
-                }
-            } else if dragon_alive {
-                vec![(0.46, 0.70), objective_anchor("dragon")]
-            } else if baron_alive {
-                vec![(0.44, 0.42), objective_anchor("baron")]
-            } else {
-                vec![(0.42, 0.60), (0.58, 0.42)]
-            }
-        }
-        (_, LolRole::Jungle) => {
-            if minute >= 20 && baron_alive {
-                vec![(0.43, 0.43), objective_anchor("baron")]
-            } else if minute >= 14 && herald_alive {
-                vec![(0.40, 0.40), objective_anchor("herald")]
-            } else if grubs_alive {
-                vec![(0.37, 0.36), objective_anchor("grubs")]
-            } else if dragon_alive {
-                vec![(0.56, 0.56), objective_anchor("dragon")]
-            } else {
-                let route = vec![(0.25, 0.46), (0.26, 0.56), (0.48, 0.64), (0.53, 0.74)];
-                if side == Side::Home {
-                    route
-                } else {
-                    route.into_iter().map(|(x, y)| (1.0 - x, 1.0 - y)).collect()
-                }
+                const GANK_ORDER: [LaneKey; 3] = [LaneKey::Top, LaneKey::Mid, LaneKey::Bot];
+                on_lane(GANK_ORDER[(minute as usize / 3) % GANK_ORDER.len()])
             }
         }
     }
 }
 
+/// Map units a unit walks per movement sub-step (8 per minute). Six times the
+/// first calibration so that crossing the map takes about two minutes instead of
+/// twelve; respawning champions rejoin their lane within a few minutes. [PLACEHOLDER]
+const MOVE_SUBSTEPS: usize = 8;
+
+/// Map units per sub-step while recalling. [PLACEHOLDER]
+const RECALL_SPEED: f64 = 0.07;
+
 fn movement_speed(role: LolRole, level: u8, item_tier: u8) -> f64 {
     let base = match role {
-        LolRole::Top => 0.0068,
-        LolRole::Jungle => 0.0078,
-        LolRole::Mid => 0.0072,
-        LolRole::Adc => 0.0070,
-        LolRole::Support => 0.0072,
+        LolRole::Top => 0.0408,
+        LolRole::Jungle => 0.0468,
+        LolRole::Mid => 0.0432,
+        LolRole::Adc => 0.0420,
+        LolRole::Support => 0.0432,
     };
     base * (1.0 + level.saturating_sub(1) as f64 * 0.004 + item_tier as f64 * 0.01)
 }
@@ -1126,11 +1130,11 @@ fn tower_team_gold(target: StructureTarget) -> f64 {
 /// differently. [PLACEHOLDER]
 fn role_income_weight(role: LolRole) -> f64 {
     match role {
-        LolRole::Top => 0.98,
+        LolRole::Top => 1.03,
         LolRole::Jungle => 0.83,
         LolRole::Mid => 1.19,
         LolRole::Adc => 1.45,
-        LolRole::Support => 0.56,
+        LolRole::Support => 0.50,
     }
 }
 
@@ -1422,6 +1426,14 @@ fn push_event(
     minute_events.push(evt);
 }
 
+fn lane_front(state: &LolMapState, lane: LaneKey) -> f64 {
+    match lane {
+        LaneKey::Top => state.blue.top.front,
+        LaneKey::Mid => state.blue.mid.front,
+        LaneKey::Bot => state.blue.bot.front,
+    }
+}
+
 fn lane_waves(state: &LolMapState, lane: LaneKey) -> (f64, f64) {
     let lane_state = match lane {
         LaneKey::Top => &state.blue.top,
@@ -1440,44 +1452,27 @@ fn lane_waves_mut(state: &mut LolMapState, lane: LaneKey) -> (&mut f64, &mut f64
     (&mut lane_state.blue_wave, &mut lane_state.red_wave)
 }
 
-fn move_unit_with_walls<R: Rng>(
-    unit: &mut LolUnitState,
-    target: (f64, f64),
-    speed: f64,
-    rng: &mut R,
-) {
-    let dx = target.0 - unit.x;
-    let dy = target.1 - unit.y;
-    let dist = (dx * dx + dy * dy).sqrt();
-    if dist <= 1e-6 {
-        return;
-    }
-
-    let step = speed.min(dist);
-    let angle = dy.atan2(dx);
-
-    for offset in [0.0, PI / 8.0, -PI / 8.0, PI / 5.0, -PI / 5.0] {
-        let a = angle + offset + rng.random_range(-0.01..0.01);
-        let nx = (unit.x + a.cos() * step).clamp(0.0, 1.0);
-        let ny = (unit.y + a.sin() * step).clamp(0.0, 1.0);
-        if segment_blocked((unit.x, unit.y), (nx, ny)) {
-            continue;
-        }
-        unit.x = nx;
-        unit.y = ny;
-        return;
-    }
-}
-
 fn segment_blocked(a: (f64, f64), b: (f64, f64)) -> bool {
     if point_in_active_wall(b) {
         return true;
     }
-    active_walls().iter().any(|w| {
-        polygon_edges(&w.points)
-            .iter()
-            .any(|(p1, p2)| segments_intersect(a, b, *p1, *p2))
-    })
+    active_wall_edges()
+        .iter()
+        .any(|(p1, p2)| segments_intersect(a, b, *p1, *p2))
+}
+
+/// Edges of every active wall, flattened once (the lists are queried every
+/// movement sub-step).
+fn active_wall_edges() -> &'static [WallEdge] {
+    static EDGES: OnceLock<Vec<WallEdge>> = OnceLock::new();
+    EDGES
+        .get_or_init(|| {
+            active_walls()
+                .iter()
+                .flat_map(|w| polygon_edges(&w.points))
+                .collect()
+        })
+        .as_slice()
 }
 
 fn point_in_active_wall(point: (f64, f64)) -> bool {
@@ -1511,7 +1506,9 @@ fn active_walls() -> &'static [WallPolygon] {
         .as_slice()
 }
 
-fn polygon_edges(points: &[WallPoint]) -> Vec<((f64, f64), (f64, f64))> {
+type WallEdge = ((f64, f64), (f64, f64));
+
+fn polygon_edges(points: &[WallPoint]) -> Vec<WallEdge> {
     if points.len() < 2 {
         return Vec::new();
     }
@@ -1568,3 +1565,8 @@ fn distance(a: (f64, f64), b: (f64, f64)) -> f64 {
 
 #[cfg(test)]
 mod economy_unit_tests;
+
+#[cfg(test)]
+mod mobility_tests;
+#[cfg(test)]
+mod test_support;
