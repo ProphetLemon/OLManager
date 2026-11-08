@@ -582,6 +582,19 @@ mod tests {
         assert_eq!(ids, vec![("lec", 1), ("les", 2)]);
     }
 
+    #[test]
+    fn league_selection_hides_stale_competitions_without_a_teams_file() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_competition(dir.path(), "lec", 1, false, true);
+        write_competition(dir.path(), "stale", 2, false, true);
+        std::fs::remove_file(dir.path().join("teams").join("stale.json")).expect("remove teams");
+
+        let data = build_league_selection(dir.path());
+        let ids: Vec<_> = data.competitions.iter().map(|c| c.id.as_str()).collect();
+
+        assert_eq!(ids, vec!["lec"]);
+    }
+
     fn write_staff_file(path: &std::path::Path) {
         std::fs::write(
             path,
