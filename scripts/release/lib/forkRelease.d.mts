@@ -1,6 +1,7 @@
 export const DEFAULT_REPO: string;
 export const WINDOWS_TARGET: string;
 export const UPDATER_PLATFORM: string;
+export const LINUX_UPDATER_PLATFORM: string;
 export const NSIS_HINT: string;
 export const NSIS_X86_HINT: string;
 export function makensisCpu(hdrInfo: string): string | null;
@@ -8,6 +9,7 @@ export function releaseAssetName(fileName: string): string;
 export function encodeAssetName(assetName: string): string;
 export function tagFor(version: string): string;
 export function assetUrl(repo: string, version: string, assetName: string): string;
+export function findBundle(fileNames: string[], version: string, suffix: string): { file: string; sig: string };
 export function findInstaller(fileNames: string[], version: string): { setup: string; sig: string };
 export interface LatestJson {
   version: string;
@@ -19,8 +21,7 @@ export function buildLatestJson(input: {
   version: string;
   notes: string;
   pubDate: string;
-  signature: string;
-  assetName: string;
+  platforms: { platform: string; signature: string; assetName: string }[];
   repo?: string;
 }): LatestJson;
 export function buildReleaseNotes(input: {

@@ -6,6 +6,7 @@ import { delimiter, join } from "node:path";
 export const DEFAULT_REPO = "ProphetLemon/OLManager";
 export const WINDOWS_TARGET = "x86_64-pc-windows-msvc";
 export const UPDATER_PLATFORM = "windows-x86_64";
+export const LINUX_UPDATER_PLATFORM = "linux-x86_64";
 export const NSIS_HINT = "install NSIS: paru -S nsis";
 export const NSIS_X86_HINT =
   "Tauri's installer needs an x86 makensis, and the AUR nsis package is built for amd64 only. " +
@@ -40,41 +41,45 @@ export function assetUrl(repo, version, assetName) {
 }
 
 /**
- * Picks the NSIS installer and its signature out of a directory listing.
- * Only the installer of `version` counts, so stale builds are never published.
+ * Picks a bundle file ending in `suffix` and its `.sig` out of a directory listing.
+ * Only the bundle of `version` counts, so stale builds are never published.
  */
-export function findInstaller(fileNames, version) {
-  const setups = fileNames.filter(
-    (name) => name.endsWith("-setup.exe") && name.includes(`_${version}_`),
-  );
-  if (setups.length === 0) {
-    throw new Error(`No *-setup.exe for version ${version} in the NSIS bundle directory.`);
+export function findBundle(fileNames, version, suffix) {
+  const files = fileNames.filter((name) => name.endsWith(suffix) && name.includes(`_${version}_`));
+  if (files.length === 0) {
+    throw new Error(`No *${suffix} for version ${version} in the bundle directory.`);
   }
-  if (setups.length > 1) {
-    throw new Error(`More than one installer for version ${version}: ${setups.join(", ")}`);
+  if (files.length > 1) {
+    throw new Error(`More than one *${suffix} for version ${version}: ${files.join(", ")}`);
   }
-  const setup = setups[0];
-  const sig = `${setup}.sig`;
+  const file = files[0];
+  const sig = `${file}.sig`;
   if (!fileNames.includes(sig)) {
     throw new Error(
       `Missing ${sig}. The build was not signed: check TAURI_SIGNING_PRIVATE_KEY and bundle.createUpdaterArtifacts.`,
     );
   }
-  return { setup, sig };
+  return { file, sig };
 }
 
-/** Tauri v2 static updater manifest. */
-export function buildLatestJson({ version, notes, pubDate, signature, assetName, repo = DEFAULT_REPO }) {
+/** The NSIS installer of `version` and its signature. */
+export function findInstaller(fileNames, version) {
+  const { file, sig } = findBundle(fileNames, version, "-setup.exe");
+  return { setup: file, sig };
+}
+
+/** Tauri v2 static updater manifest, one `platforms` entry per `{ platform, signature, assetName }`. */
+export function buildLatestJson({ version, notes, pubDate, platforms, repo = DEFAULT_REPO }) {
   return {
     version,
     notes,
     pub_date: pubDate,
-    platforms: {
-      [UPDATER_PLATFORM]: {
-        signature: signature.trim(),
-        url: assetUrl(repo, version, assetName),
-      },
-    },
+    platforms: Object.fromEntries(
+      platforms.map(({ platform, signature, assetName }) => [
+        platform,
+        { signature: signature.trim(), url: assetUrl(repo, version, assetName) },
+      ]),
+    ),
   };
 }
 

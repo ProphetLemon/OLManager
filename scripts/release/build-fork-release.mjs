@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Builds the signed Windows x64 NSIS installer from Linux and stages a GitHub
-// release (installer, latest.json, RELEASE_NOTES.md). It never publishes: the
+// Builds the signed Windows x64 NSIS installer (cross-compiled) and the signed
+// Linux x64 AppImage (native) and stages one GitHub release (both assets,
+// latest.json, RELEASE_NOTES.md). It never publishes: the
 // final git/gh commands are only printed, because publishing is a remote
 // operation the owner authorizes separately.
 //
@@ -16,9 +17,12 @@ import { fileURLToPath } from "node:url";
 import {
   NSIS_HINT,
   NSIS_X86_HINT,
+  LINUX_UPDATER_PLATFORM,
+  UPDATER_PLATFORM,
   WINDOWS_TARGET,
   buildLatestJson,
   buildReleaseNotes,
+  findBundle,
   findInstaller,
   findOnPath,
   makensisCpu,
@@ -34,6 +38,7 @@ const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf-8"));
 const conf = JSON.parse(readFileSync(join(root, "src-tauri", "tauri.conf.json"), "utf-8"));
 const version = pkg.version;
 const nsisDir = join(root, "src-tauri", "target", WINDOWS_TARGET, "release", "bundle", "nsis");
+const appImageDir = join(root, "src-tauri", "target", "release", "bundle", "appimage");
 const outDir = join(root, "src-tauri", "target", "fork-release", tagFor(version));
 
 function fail(message) {
@@ -84,15 +89,16 @@ const checks = [
   ["updater private key", existsSync(keyPath), `generate it: npx tauri signer generate -w ${keyPath} --ci`],
 ];
 
-console.log(`release:fork: ${conf.productName} ${version} -> ${opts.repo} (${WINDOWS_TARGET})`);
+console.log(`release:fork: ${conf.productName} ${version} -> ${opts.repo} (${WINDOWS_TARGET} + linux x64 AppImage)`);
 for (const [name, ok, hint] of checks) console.log(`  ${ok ? "ok     " : "MISSING"} ${name}${ok ? "" : ` (${hint})`}`);
 
 if (opts.dryRun) {
-  const expected = releaseAssetName(`${conf.productName}_${version}_x64-setup.exe`);
+  const expectedExe = releaseAssetName(`${conf.productName}_${version}_x64-setup.exe`);
+  const expectedAppImage = releaseAssetName(`${conf.productName}_${version}_amd64.AppImage`);
   console.log(`\nDry run: stopping before the build. Would write to ${outDir}:`);
-  console.log(`  ${expected}\n  latest.json\n  RELEASE_NOTES.md`);
+  console.log(`  ${expectedExe}\n  ${expectedAppImage}\n  latest.json\n  RELEASE_NOTES.md`);
   console.log("\nPublish commands (printed, never run by this script):");
-  for (const cmd of publishCommands({ version, repo: opts.repo, files: [expected, "latest.json"], notesFile: "RELEASE_NOTES.md" })) {
+  for (const cmd of publishCommands({ version, repo: opts.repo, files: [expectedExe, expectedAppImage, "latest.json"], notesFile: "RELEASE_NOTES.md" })) {
     console.log(`  ${cmd}`);
   }
   process.exit(0);
@@ -111,24 +117,36 @@ const env = {
   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "",
 };
 // beforeBuildCommand in tauri.conf.json already runs scripts/sync-data.mjs.
-const build = spawnSync(
-  "npm",
-  ["run", "tauri", "--", "build", "--runner", "cargo-xwin", "--target", WINDOWS_TARGET, "--bundles", "nsis"],
-  { cwd: root, env, stdio: "inherit" },
-);
-if (build.status !== 0) fail(`the build failed (exit ${build.status ?? "signal"}).`);
-
-let found;
-try {
-  found = findInstaller(readdirSync(nsisDir), version);
-} catch (err) {
-  fail(err.message);
+function runBuild(label, tauriArgs) {
+  const res = spawnSync("npm", ["run", "tauri", "--", "build", ...tauriArgs], { cwd: root, env, stdio: "inherit" });
+  if (res.status !== 0) fail(`the ${label} build failed (exit ${res.status ?? "signal"}).`);
 }
 
-const assetName = releaseAssetName(found.setup);
+function locate(label, find) {
+  try {
+    return find();
+  } catch (err) {
+    return fail(`${label}: ${err.message}`);
+  }
+}
+
+runBuild("Windows", ["--runner", "cargo-xwin", "--target", WINDOWS_TARGET, "--bundles", "nsis"]);
+// Native build: the first one downloads linuxdeploy from GitHub.
+runBuild("Linux AppImage", ["--bundles", "appimage"]);
+
+const exe = locate("Windows", () => {
+  const { setup, sig } = findInstaller(readdirSync(nsisDir), version);
+  return { dir: nsisDir, file: setup, sig, platform: UPDATER_PLATFORM };
+});
+const appImage = locate("Linux", () => {
+  const { file, sig } = findBundle(readdirSync(appImageDir), version, ".AppImage");
+  return { dir: appImageDir, file, sig, platform: LINUX_UPDATER_PLATFORM };
+});
+const bundles = [exe, appImage].map((b) => ({ ...b, assetName: releaseAssetName(b.file) }));
+
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
-copyFileSync(join(nsisDir, found.setup), join(outDir, assetName));
+for (const b of bundles) copyFileSync(join(b.dir, b.file), join(outDir, b.assetName));
 
 const notes = releaseNotes(opts);
 writeFileSync(join(outDir, "RELEASE_NOTES.md"), notes);
@@ -136,8 +154,11 @@ const latest = buildLatestJson({
   version,
   notes,
   pubDate: new Date().toISOString(),
-  signature: readFileSync(join(nsisDir, found.sig), "utf-8"),
-  assetName,
+  platforms: bundles.map((b) => ({
+    platform: b.platform,
+    signature: readFileSync(join(b.dir, b.sig), "utf-8"),
+    assetName: b.assetName,
+  })),
   repo: opts.repo,
 });
 writeFileSync(join(outDir, "latest.json"), `${JSON.stringify(latest, null, 2)}\n`);
@@ -147,7 +168,7 @@ console.log("Publish commands (not run; publishing is your call):");
 for (const cmd of publishCommands({
   version,
   repo: opts.repo,
-  files: [join(outDir, assetName), join(outDir, "latest.json")],
+  files: [...bundles.map((b) => join(outDir, b.assetName)), join(outDir, "latest.json")],
   notesFile: join(outDir, "RELEASE_NOTES.md"),
 })) {
   console.log(`  ${cmd}`);

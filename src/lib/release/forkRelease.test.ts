@@ -5,6 +5,7 @@ import {
   buildLatestJson,
   buildReleaseNotes,
   encodeAssetName,
+  findBundle,
   findInstaller,
   findOnPath,
   makensisCpu,
@@ -14,6 +15,7 @@ import {
 } from "../../../scripts/release/lib/forkRelease.mjs";
 
 const SETUP = "Open League Manager_0.4.0_x64-setup.exe";
+const APPIMAGE = "Open League Manager_0.4.0_amd64.AppImage";
 
 describe("fork release helpers", () => {
   it("names the asset the way GitHub will store it", () => {
@@ -45,13 +47,36 @@ describe("fork release helpers", () => {
     );
   });
 
+  it("finds the AppImage of the requested version and its signature", () => {
+    const files = [
+      "Open League Manager_0.3.1_amd64.AppImage",
+      "Open League Manager_0.3.1_amd64.AppImage.sig",
+      APPIMAGE,
+      `${APPIMAGE}.sig`,
+    ];
+    expect(findBundle(files, "0.4.0", ".AppImage")).toEqual({ file: APPIMAGE, sig: `${APPIMAGE}.sig` });
+  });
+
+  it("refuses an unsigned, missing or ambiguous AppImage", () => {
+    expect(() => findBundle([APPIMAGE], "0.4.0", ".AppImage")).toThrow(/Missing .*\.AppImage\.sig/);
+    expect(() => findBundle([`${APPIMAGE}.sig`], "0.4.0", ".AppImage")).toThrow(/No \*\.AppImage/);
+    expect(() =>
+      findBundle([APPIMAGE, APPIMAGE.replace("Open", "Open2"), `${APPIMAGE}.sig`], "0.4.0", ".AppImage"),
+    ).toThrow(/More than one/);
+  });
+
   it("builds a Tauri v2 static latest.json", () => {
     const json = buildLatestJson({
       version: "0.4.0",
       notes: "notes",
       pubDate: "2026-11-08T10:00:00.000Z",
-      signature: "  c2lnbmF0dXJl\n",
-      assetName: "Open.League.Manager_0.4.0_x64-setup.exe",
+      platforms: [
+        {
+          platform: "windows-x86_64",
+          signature: "  c2lnbmF0dXJl\n",
+          assetName: "Open.League.Manager_0.4.0_x64-setup.exe",
+        },
+      ],
     });
     expect(json).toEqual({
       version: "0.4.0",
@@ -64,6 +89,24 @@ describe("fork release helpers", () => {
         },
       },
     });
+  });
+
+  it("lists one entry per platform in latest.json", () => {
+    const json = buildLatestJson({
+      version: "0.4.0",
+      notes: "notes",
+      pubDate: "2026-11-08T10:00:00.000Z",
+      platforms: [
+        { platform: "windows-x86_64", signature: "d2lu", assetName: "Open.League.Manager_0.4.0_x64-setup.exe" },
+        { platform: "linux-x86_64", signature: " bGludXg=\n", assetName: "Open.League.Manager_0.4.0_amd64.AppImage" },
+      ],
+    });
+    expect(Object.keys(json.platforms)).toEqual(["windows-x86_64", "linux-x86_64"]);
+    expect(json.platforms["linux-x86_64"]).toEqual({
+      signature: "bGludXg=",
+      url: "https://github.com/ProphetLemon/OLManager/releases/download/v0.4.0/Open.League.Manager_0.4.0_amd64.AppImage",
+    });
+    expect(json.platforms["windows-x86_64"].signature).toBe("d2lu");
   });
 
   it("prints publish commands without running them", () => {

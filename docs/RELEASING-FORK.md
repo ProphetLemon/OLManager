@@ -39,9 +39,11 @@ that starts at 1 for each day.
   across years, because `2027.111.1` would get a lower code than `2026.1231.1`. Set `bundle.android.versionCode`
   by hand before shipping an APK.
 
-## Build (Linux, cross-compiling for Windows x64)
+## Build (Linux host: Windows x64 installer + Linux x64 AppImage)
 
-Requirements: an x86 `makensis` (see below), `cargo-xwin`, the `x86_64-pc-windows-msvc` Rust target.
+Requirements: an x86 `makensis` (see below), `cargo-xwin`, the `x86_64-pc-windows-msvc` Rust target. The AppImage
+is a native build on the Linux x86_64 host and needs nothing extra, but the first one downloads `linuxdeploy`
+from GitHub, so it needs network access.
 
 ### x86 NSIS
 
@@ -68,11 +70,13 @@ Run scons without `-j`: a parallel install races on two bitmap files. The data p
    refresh `Cargo.lock`), `src-tauri/tauri.conf.json` (also the window title), `src/lib/common/appInfo.ts` and
    the `CHANGELOG.md` heading. `src/lib/release/releaseConfig.test.ts` checks that they match and follow the scheme.
 2. `npm run release:fork -- --dry-run` checks the tools and key and shows the plan without building.
-3. `npm run release:fork` builds the NSIS installer, then writes `src-tauri/target/fork-release/v<version>/`
-   with the installer, `latest.json` and `RELEASE_NOTES.md`. Use `--notes notes.md` to supply your own notes.
+3. `npm run release:fork` builds the NSIS installer, then the AppImage, both signed with the same key, and writes
+   `src-tauri/target/fork-release/v<version>/` with both files, a single `latest.json` (`windows-x86_64` and
+   `linux-x86_64`) and `RELEASE_NOTES.md`. It fails if either build or either `.sig` is missing. Use `--notes notes.md` to supply your own notes.
 
-The installer is named with dots instead of spaces (`Open.League.Manager_<v>_x64-setup.exe`), which is what
-GitHub stores, so the URL in `latest.json` matches the real asset.
+The assets are named with dots instead of spaces (`Open.League.Manager_<v>_x64-setup.exe` and
+`Open.League.Manager_<v>_amd64.AppImage`), which is what GitHub stores, so the URLs in `latest.json` match the
+real assets.
 
 ## Publish
 
@@ -82,12 +86,17 @@ The script only prints these commands; run them yourself once you are happy:
 git tag v<version>
 git push origin v<version>
 gh release create v<version> --repo ProphetLemon/OLManager --title "Open League Manager <version>" \
-  --notes-file <dir>/RELEASE_NOTES.md <dir>/<installer> <dir>/latest.json
+  --notes-file <dir>/RELEASE_NOTES.md <dir>/<installer> <dir>/<appimage> <dir>/latest.json
 ```
 
 Once the release is the latest one, every installed build from 2026.1108.1 on offers it at the next start (or from
 Settings, "Check for updates"). Saves are kept. Before the first release exists, the check just finds nothing
 and shows no error.
+
+## Linux players
+
+Download `Open.League.Manager_<v>_amd64.AppImage`, `chmod +x` it and run it directly. The updater replaces that
+file in place, so always launch the AppImage itself (not an extracted copy), from a location the user can write to.
 
 ## One-time migration for the friend
 
