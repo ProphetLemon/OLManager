@@ -1,7 +1,7 @@
 {
   "name": "openleaguemanager",
   "private": true,
-  "version": "0.4.0",
+  "version": "2026.1108.1",
   "type": "module",
   "scripts": {
     "verify:champion-timings": "node scripts/verify-champion-timings.mjs",

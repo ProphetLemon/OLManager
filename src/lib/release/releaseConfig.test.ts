@@ -10,6 +10,7 @@ const readText = (rel: string) => readFileSync(resolve(root, rel), "utf-8");
 const tauriConf = JSON.parse(readText("src-tauri/tauri.conf.json")) as {
   version: string;
   app: { windows: { title: string }[] };
+  bundle: { targets: string | string[] };
   plugins: { updater: { pubkey: string; endpoints: string[] } };
 };
 const pkg = JSON.parse(readText("package.json")) as { version: string };
@@ -23,8 +24,23 @@ describe("release configuration", () => {
     expect(tauriConf.app.windows[0].title).toContain(pkg.version);
   });
 
-  it("uses a plain semver version so a prerelease never ranks below an installed build", () => {
-    expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
+  it("uses a YYYY.MMDD.N calendar version that semver orders by date", () => {
+    // No leading zeros (semver forbids them) and no prerelease suffix (it would rank below the plain release).
+    const match = /^(\d{4})\.([1-9]\d{2,3})\.([1-9]\d*)$/.exec(pkg.version);
+    expect(match, `${pkg.version} is not YYYY.MMDD.N`).not.toBeNull();
+    const monthDay = Number(match?.[2]);
+    const month = Math.floor(monthDay / 100);
+    const day = monthDay % 100;
+    expect(month).toBeGreaterThanOrEqual(1);
+    expect(month).toBeLessThanOrEqual(12);
+    expect(day).toBeGreaterThanOrEqual(1);
+    expect(day).toBeLessThanOrEqual(31);
+  });
+
+  it("skips the MSI bundle, whose version fields cannot hold a calendar year", () => {
+    expect(Array.isArray(tauriConf.bundle.targets)).toBe(true);
+    expect(tauriConf.bundle.targets).not.toContain("msi");
+    expect(tauriConf.bundle.targets).toContain("nsis");
   });
 
   it("verifies updates with the committed fork public key", () => {

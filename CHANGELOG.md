@@ -4,7 +4,7 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
-## [0.4.0] - 2026-11-08
+## [2026.1108.1] - 2026-11-08
 
 ### Added
 
