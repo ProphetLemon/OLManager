@@ -379,6 +379,18 @@ pub fn load_external_more_fa_seed() -> Option<DraftSeedRoot> {
     None
 }
 
+/// Parse `free_agents.json`. Like the competition loader, a player without a
+/// `natural_position` takes it from `position`, so champion masteries seed for them.
+fn parse_free_agent_players(content: &str) -> Option<Vec<Player>> {
+    let mut data = serde_json::from_str::<PlayerDataFile>(content).ok()?;
+    for player in &mut data.players {
+        if player.natural_position == crate::domain::stats::LolRole::Unknown {
+            player.natural_position = player.position;
+        }
+    }
+    Some(data.players)
+}
+
 /// Load and cache free agent players from `data/players/free_agents.json`.
 /// Uses OnceLock for lazy init — file is read once per process lifetime.
 pub fn load_free_agent_players() -> &'static Vec<Player> {
@@ -408,13 +420,13 @@ pub fn load_free_agent_players() -> &'static Vec<Player> {
 
         for path in candidates.iter().flatten() {
             if let Ok(content) = std::fs::read_to_string(path)
-                && let Ok(data) = serde_json::from_str::<PlayerDataFile>(&content) {
+                && let Some(players) = parse_free_agent_players(&content) {
                     info!(
                         "[game] loaded {} free agent players from {:?}",
-                        data.players.len(),
+                        players.len(),
                         path
                     );
-                    return data.players;
+                    return players;
                 }
         }
 
@@ -1051,6 +1063,19 @@ mod tests {
         apply_default_market_values(&mut players);
         let after_second: Vec<u64> = players.iter().map(|p| p.market_value).collect();
         assert_eq!(after_first, after_second, "the pass is idempotent");
+    }
+
+    #[test]
+    fn free_agent_without_natural_position_takes_it_from_position() {
+        let mut template = serde_json::to_value(player_with_contract("fa-1", None)).unwrap();
+        template["position"] = serde_json::json!("Mid");
+        template.as_object_mut().unwrap().remove("natural_position");
+        let json = serde_json::json!({ "players": [template] }).to_string();
+
+        let players = super::parse_free_agent_players(&json).expect("valid file");
+
+        assert_eq!(players[0].position, LolRole::Mid);
+        assert_eq!(players[0].natural_position, LolRole::Mid);
     }
 
     #[test]
