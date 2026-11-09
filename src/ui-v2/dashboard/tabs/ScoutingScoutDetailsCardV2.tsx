@@ -64,7 +64,7 @@ export default function ScoutingScoutDetailsCardV2({
                       <span>{countryName(scout.nationality, i18n.language)}</span>
                     </p>
                   </div>
-                  <Badge className={isFull ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"}>
+                  <Badge className={isFull ? "border-warning/30 bg-warning/10 text-warning" : "border-positive/30 bg-positive/10 text-positive"}>
                     {count}/{maxSlots}
                   </Badge>
                 </div>

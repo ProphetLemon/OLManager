@@ -254,9 +254,9 @@ export function SquadTabV2({
                 </div>
               ))}
               {lowestCondition < 50 && lowestConditionPlayer && (
-                <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5">
-                  <AlertTriangle className="size-4 text-amber-400" />
-                  <span className="font-heading text-2xs uppercase tracking-wider text-amber-400">
+                <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-1.5">
+                  <AlertTriangle className="size-4 text-warning" />
+                  <span className="font-heading text-2xs uppercase tracking-wider text-warning">
                     {lowestConditionPlayer.match_name}: {lowestCondition}% energía
                   </span>
                 </div>
@@ -280,7 +280,7 @@ export function SquadTabV2({
                   data-testid="lineup-import-count"
                   className={cn(
                     "text-xs tabular-nums",
-                    lineupImports >= MAX_IMPORTS_IN_STARTING_FIVE ? "text-amber-400" : "text-muted-foreground/70",
+                    lineupImports >= MAX_IMPORTS_IN_STARTING_FIVE ? "text-warning" : "text-muted-foreground/70",
                   )}
                 >
                   {t("squad.importsInLineup", { count: lineupImports, max: MAX_IMPORTS_IN_STARTING_FIVE })}
@@ -295,7 +295,7 @@ export function SquadTabV2({
             <p
               role="alert"
               data-testid="lineup-import-notice"
-              className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-400"
+              className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning"
             >
               {lineupNotice}
             </p>
@@ -373,13 +373,13 @@ export function SquadTabV2({
                           <span
                             data-testid="import-badge"
                             title={t("squad.importTooltip", { max: MAX_IMPORTS_IN_STARTING_FIVE })}
-                            className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px font-heading text-2xs font-bold uppercase tracking-wider text-amber-400"
+                            className="shrink-0 rounded border border-warning/40 bg-warning/10 px-1 py-px font-heading text-2xs font-bold uppercase tracking-wider text-warning"
                           >
                             {t("squad.importBadge")}
                           </span>
                         )}
                         {outOfPosition && (
-                          <span className="shrink-0 text-amber-400" title={t("squad.outOfPositionTooltip", { defaultValue: "Fuera de rol" })}>
+                          <span className="shrink-0 text-warning" title={t("squad.outOfPositionTooltip", { defaultValue: "Fuera de rol" })}>
                             <AlertTriangle className="size-4" />
                           </span>
                         )}
@@ -670,7 +670,7 @@ export function SquadTabV2({
                             <span
                               data-testid="import-badge"
                               title={t("squad.importTooltip", { max: MAX_IMPORTS_IN_STARTING_FIVE })}
-                              className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px font-heading text-2xs font-bold uppercase tracking-wider text-amber-400"
+                              className="shrink-0 rounded border border-warning/40 bg-warning/10 px-1 py-px font-heading text-2xs font-bold uppercase tracking-wider text-warning"
                             >
                               {t("squad.importBadge")}
                             </span>

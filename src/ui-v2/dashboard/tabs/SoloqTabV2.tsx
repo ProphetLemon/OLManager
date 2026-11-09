@@ -444,7 +444,7 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
                       <span
                         className={cn(
                           "ml-1",
-                          soloQ.delta >= 0 ? "text-emerald-400" : "text-red-400",
+                          soloQ.delta >= 0 ? "text-positive" : "text-negative",
                         )}
                       >
                         {soloQ.delta >= 0 ? `+${soloQ.delta}` : soloQ.delta}

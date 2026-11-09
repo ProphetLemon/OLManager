@@ -121,7 +121,7 @@ export default function WageNegotiationDialog({
               })}
             </p>
             {showCurrentWage && wageValue > target.player.wage ? (
-              <p className="text-xs text-emerald-500">
+              <p className="text-xs text-positive">
                 {t("transfers.wageIncrease", {
                   pct: Math.round((wageValue / target.player.wage - 1) * 100),
                   defaultValue: "Aumento: +{{pct}}%",

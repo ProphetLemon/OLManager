@@ -625,7 +625,7 @@ export function PlayersTabV2({
                               ovr >= 75
                                 ? "text-primary"
                                 : ovr >= 55
-                                  ? "text-amber-400"
+                                  ? "text-warning"
                                   : "text-muted-foreground",
                             )}
                           >

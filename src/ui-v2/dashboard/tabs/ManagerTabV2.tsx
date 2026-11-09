@@ -224,10 +224,10 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                 <Badge
                   className={cn(
                     "mt-1.5",
-                    mgr.satisfaction >= 80 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" :
+                    mgr.satisfaction >= 80 ? "border-positive/30 bg-positive/10 text-positive" :
                     mgr.satisfaction >= 50 ? "border-primary/30 bg-primary/10 text-primary" :
-                    mgr.satisfaction >= 30 ? "border-amber-500/30 bg-amber-500/10 text-amber-400" :
-                    "border-red-500/30 bg-red-500/10 text-red-400",
+                    mgr.satisfaction >= 30 ? "border-warning/30 bg-warning/10 text-warning" :
+                    "border-negative/30 bg-negative/10 text-negative",
                   )}
                 >
                   {mgr.satisfaction >= 80 ? t("manager.boardVeryPleased") :
@@ -251,10 +251,10 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                   <Badge
                   className={cn(
                     "mt-1.5",
-                    (mgr.fan_approval ?? 50) >= 80 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" :
+                    (mgr.fan_approval ?? 50) >= 80 ? "border-positive/30 bg-positive/10 text-positive" :
                     (mgr.fan_approval ?? 50) >= 60 ? "border-primary/30 bg-primary/10 text-primary" :
-                    (mgr.fan_approval ?? 50) >= 40 ? "border-amber-500/30 bg-amber-500/10 text-amber-400" :
-                    "border-red-500/30 bg-red-500/10 text-red-400",
+                    (mgr.fan_approval ?? 50) >= 40 ? "border-warning/30 bg-warning/10 text-warning" :
+                    "border-negative/30 bg-negative/10 text-negative",
                   )}
                 >
                   {(mgr.fan_approval ?? 50) >= 80 ? t("manager.fanAdore") :
@@ -295,8 +295,8 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                         {entry.start_date.substring(0, 4)}–{entry.end_date?.substring(0, 4) || t("common.present")}
                       </td>
                       <td className="px-3 py-3 text-center text-xs tabular-nums text-muted-foreground">{entry.matches}</td>
-                      <td className="px-3 py-3 text-center text-xs tabular-nums text-emerald-400">{entry.wins}</td>
-                      <td className="px-3 py-3 text-center text-xs tabular-nums text-red-400">{entry.losses}</td>
+                      <td className="px-3 py-3 text-center text-xs tabular-nums text-positive">{entry.wins}</td>
+                      <td className="px-3 py-3 text-center text-xs tabular-nums text-negative">{entry.losses}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -373,7 +373,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                             key={f.id}
                             className={cn(
                               "flex size-8 items-center justify-center rounded-md text-xs font-heading font-bold tabular-nums",
-                              won ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400",
+                              won ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative",
                             )}
                             title={`${getTeamName(gameState.teams, f.home_team_id)} ${f.result?.home_wins ?? 0}-${f.result?.away_wins ?? 0} ${getTeamName(gameState.teams, f.away_team_id)}`}
                           >
@@ -425,8 +425,8 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                     {t("manager.winRate", "Efectividad")}
                   </p>
                   <div className="flex h-3 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full bg-emerald-400 transition-all" style={{ width: `${(stats.wins / stats.matches_managed) * 100}%` }} />
-                    <div className="h-full bg-red-400 transition-all" style={{ width: `${(stats.losses / stats.matches_managed) * 100}%` }} />
+                    <div className="h-full bg-positive transition-all" style={{ width: `${(stats.wins / stats.matches_managed) * 100}%` }} />
+                    <div className="h-full bg-negative transition-all" style={{ width: `${(stats.losses / stats.matches_managed) * 100}%` }} />
                   </div>
                   <div className="mt-1 flex justify-between text-2xs text-muted-foreground">
                     <span>{Math.round((stats.wins / stats.matches_managed) * 100)}% {t("manager.wins")}</span>

@@ -608,10 +608,10 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                                   className={cn(
                                     "h-full rounded-full transition-all",
                                     (player.condition ?? 0) >= 70
-                                      ? "bg-emerald-400"
+                                      ? "bg-positive"
                                       : (player.condition ?? 0) >= 40
-                                        ? "bg-amber-400"
-                                        : "bg-red-400",
+                                        ? "bg-warning"
+                                        : "bg-negative",
                                   )}
                                   style={{ width: `${player.condition ?? 0}%` }}
                                 />

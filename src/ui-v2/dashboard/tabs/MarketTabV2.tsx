@@ -166,7 +166,7 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
                           </>
                         )}
                         {isFreeAgent && (
-                          <span className="text-emerald-500">{t("market.freeAgent")}</span>
+                          <span className="text-positive">{t("market.freeAgent")}</span>
                         )}
                         <span className="text-muted-foreground/50">→</span>
                         <img
@@ -213,7 +213,7 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
                     <span
                       className={cn(
                         "font-semibold",
-                        entry.is_user_buying ? "text-emerald-500" : "text-amber-500",
+                        entry.is_user_buying ? "text-positive" : "text-warning",
                       )}
                     >
                       {entry.is_user_buying ? t("market.youBought") : t("market.youSold")}

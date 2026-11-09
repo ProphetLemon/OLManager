@@ -256,8 +256,8 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                     <div key={f.id}
                       className={cn(
                         "group flex items-center gap-2 px-5 py-3 transition-all duration-200 md:gap-3",
-                        userWon === true && "bg-emerald-500/5",
-                        userWon === false && "bg-red-500/5",
+                        userWon === true && "bg-positive/5",
+                        userWon === false && "bg-negative/5",
                         userWon === null && isUserMatch && "bg-primary/5",
                         !isUserMatch && "hover:bg-muted/20",
                       )}>
@@ -281,7 +281,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                         {score ? (
                           <span className={cn(
                             "font-heading text-xl font-black tabular-nums md:text-2xl",
-                            userWon === true ? "text-emerald-400" : userWon === false ? "text-red-400" : "text-foreground",
+                            userWon === true ? "text-positive" : userWon === false ? "text-negative" : "text-foreground",
                           )}>
                             {score.home} - {score.away}
                           </span>

@@ -806,7 +806,7 @@ export function TransfersTabV2({
                         <span
                           className={cn(
                             "font-heading text-base font-bold tabular-nums",
-                            ovr >= 75 ? "text-primary" : ovr >= 55 ? "text-amber-400" : "text-muted-foreground",
+                            ovr >= 75 ? "text-primary" : ovr >= 55 ? "text-warning" : "text-muted-foreground",
                           )}
                         >
                           {ovr}
@@ -861,21 +861,21 @@ export function TransfersTabV2({
                                     <div className="flex gap-0.5">
                                       <button
                                         onClick={(e) => { e.stopPropagation(); handleRespondOffer(player.id, offer.id, true); }}
-                                        className="flex size-5 items-center justify-center rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                                        className="flex size-5 items-center justify-center rounded bg-positive/20 text-positive hover:bg-positive/30"
                                         title={t("transfers.acceptOffer")}
                                       >
                                         <Check className="size-3" />
                                       </button>
                                       <button
                                         onClick={(e) => { e.stopPropagation(); handleRespondOffer(player.id, offer.id, false); }}
-                                        className="flex size-5 items-center justify-center rounded bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                                        className="flex size-5 items-center justify-center rounded bg-negative/20 text-negative hover:bg-negative/30"
                                         title={t("transfers.rejectOffer")}
                                       >
                                         <X className="size-3" />
                                       </button>
                                       <button
                                         onClick={(e) => { e.stopPropagation(); openCounterNegotiation(player, offer); }}
-                                        className="flex items-center gap-0.5 rounded bg-amber-500/20 px-1.5 text-2xs text-amber-400 hover:bg-amber-500/30"
+                                        className="flex items-center gap-0.5 rounded bg-warning/20 px-1.5 text-2xs text-warning hover:bg-warning/30"
                                         aria-label={t("transfers.counterOffer")}
                                         title={t("transfers.counterOffer")}
                                       >

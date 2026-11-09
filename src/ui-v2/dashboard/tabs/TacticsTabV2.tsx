@@ -653,8 +653,8 @@ export function TacticsTabV2({ gameState, onGameUpdate }: TacticsTabV2Props) {
                       className={cn(
                         "font-heading font-bold",
                         item.delta >= 0
-                          ? "text-emerald-400"
-                          : "text-rose-400",
+                          ? "text-positive"
+                          : "text-negative",
                       )}
                     >
                       {item.delta > 0 ? "+" : ""}
@@ -716,7 +716,7 @@ export function TacticsTabV2({ gameState, onGameUpdate }: TacticsTabV2Props) {
                               <div className="flex h-1.5 w-12 justify-end overflow-hidden rounded-l-full bg-muted">
                                 {row.modifier < 0 && (
                                   <div
-                                    className="h-full rounded-l-full bg-rose-400 transition-all duration-500"
+                                    className="h-full rounded-l-full bg-negative transition-all duration-500"
                                     style={{
                                       width: `${(Math.abs(row.modifier) / maxAbsModifier) * 100}%`,
                                     }}
@@ -729,7 +729,7 @@ export function TacticsTabV2({ gameState, onGameUpdate }: TacticsTabV2Props) {
                               <div className="flex h-1.5 w-12 overflow-hidden rounded-r-full bg-muted">
                                 {row.modifier >= 0 && (
                                   <div
-                                    className="h-full rounded-r-full bg-emerald-400 transition-all duration-500"
+                                    className="h-full rounded-r-full bg-positive transition-all duration-500"
                                     style={{
                                       width: `${(row.modifier / maxAbsModifier) * 100}%`,
                                     }}
@@ -741,8 +741,8 @@ export function TacticsTabV2({ gameState, onGameUpdate }: TacticsTabV2Props) {
                               className={cn(
                                 "font-heading text-xl font-black leading-none",
                                 row.modifier >= 0
-                                  ? "text-emerald-400"
-                                  : "text-rose-400",
+                                  ? "text-positive"
+                                  : "text-negative",
                               )}
                             >
                               {row.modifier >= 0 ? "+" : ""}

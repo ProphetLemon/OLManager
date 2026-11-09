@@ -467,7 +467,7 @@ function DetailPane({
         </div>
 
         {effect && (
-          <div className="mt-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          <div className="mt-4 rounded-md border border-positive/30 bg-positive/10 px-3 py-2 text-sm text-positive">
             {effect}
           </div>
         )}

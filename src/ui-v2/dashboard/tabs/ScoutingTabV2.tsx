@@ -154,8 +154,8 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                 <div className="flex size-14 items-center justify-center rounded-xl bg-muted/70">
                   <GraduationCap className="size-7 text-muted-foreground/30" />
                 </div>
-                <div className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-amber-500/20 ring-2 ring-background">
-                  <span className="font-heading text-2xs font-bold text-amber-400">!</span>
+                <div className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-warning/20 ring-2 ring-background">
+                  <span className="font-heading text-2xs font-bold text-warning">!</span>
                 </div>
               </div>
 
@@ -225,8 +225,8 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                 <div className="flex size-20 items-center justify-center rounded-2xl bg-muted/70">
                   <ScanSearch className="size-10 text-muted-foreground/30" />
                 </div>
-                <div className="absolute -right-1.5 -top-1.5 flex size-7 items-center justify-center rounded-full bg-amber-500/20 ring-2 ring-background">
-                  <span className="font-heading text-xs font-bold text-amber-400 tabular-nums">0</span>
+                <div className="absolute -right-1.5 -top-1.5 flex size-7 items-center justify-center rounded-full bg-warning/20 ring-2 ring-background">
+                  <span className="font-heading text-xs font-bold text-warning tabular-nums">0</span>
                 </div>
               </div>
 

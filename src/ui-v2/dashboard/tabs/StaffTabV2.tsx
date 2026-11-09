@@ -413,7 +413,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                         type="button"
                         disabled={actionLoading === staff.id}
                         onClick={(e) => { e.stopPropagation(); handleRelease(staff.id); }}
-                        className="flex size-8 items-center justify-center rounded-lg bg-red-500/10 text-red-500 transition-colors hover:bg-red-500/20 disabled:pointer-events-none disabled:opacity-50"
+                        className="flex size-8 items-center justify-center rounded-lg bg-negative/10 text-negative transition-colors hover:bg-negative/20 disabled:pointer-events-none disabled:opacity-50"
                         title={t("staff.releaseStaff")}
                       >
                         {actionLoading === staff.id ? (
@@ -472,12 +472,12 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
 function AttrBar({ label, value }: { label: string; value: number }) {
   const pct = Math.max(0, Math.min(100, value));
-  const color = value >= 70 ? "bg-emerald-400" : value >= 50 ? "bg-amber-400" : "bg-muted-foreground/40";
+  const color = value >= 70 ? "bg-positive" : value >= 50 ? "bg-warning" : "bg-muted-foreground/40";
   return (
     <div>
       <div className="mb-0.5 flex justify-between text-xs">
         <span className="text-muted-foreground">{label}</span>
-        <span className={`font-heading font-bold tabular-nums ${value >= 70 ? "text-emerald-400" : value >= 50 ? "text-amber-400" : "text-muted-foreground"}`}>
+        <span className={`font-heading font-bold tabular-nums ${value >= 70 ? "text-positive" : value >= 50 ? "text-warning" : "text-muted-foreground"}`}>
           {value}
         </span>
       </div>

@@ -369,8 +369,8 @@ function NextOpponentCard({
 
 function FormPill({ result }: { result: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    W: { label: "W", cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
-    L: { label: "L", cls: "bg-red-500/20 text-red-400 border-red-500/30" },
+    W: { label: "W", cls: "bg-positive/20 text-positive border-positive/30" },
+    L: { label: "L", cls: "bg-negative/20 text-negative border-negative/30" },
     D: { label: "D", cls: "bg-zinc-500/20 text-zinc-300 border-zinc-500/30" },
   };
   const m = map[result] ?? map.D;
@@ -511,10 +511,10 @@ function FullStandingsCard({
                         </span>
                       </div>
                     </td>
-                    <td className="px-2 py-2.5 text-center font-heading text-base font-semibold tabular-nums text-emerald-400">
+                    <td className="px-2 py-2.5 text-center font-heading text-base font-semibold tabular-nums text-positive">
                       {s.won ?? "—"}
                     </td>
-                    <td className="px-3 py-2.5 text-center font-heading text-base font-semibold tabular-nums text-red-400">
+                    <td className="px-3 py-2.5 text-center font-heading text-base font-semibold tabular-nums text-negative">
                       {s.lost ?? "—"}
                     </td>
                   </tr>
@@ -649,13 +649,13 @@ function FinancesCard({
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
             <div className="text-xs uppercase tracking-wider text-muted-foreground">{t("home.income")}</div>
-            <div className="text-emerald-400 tabular-nums">
+            <div className="text-positive tabular-nums">
               {formatCompactCurrency(seasonNet.income)}
             </div>
           </div>
           <div>
             <div className="text-xs uppercase tracking-wider text-muted-foreground">{t("home.expenses")}</div>
-            <div className="text-red-400 tabular-nums">
+            <div className="text-negative tabular-nums">
               {formatCompactCurrency(-seasonNet.expenses)}
             </div>
           </div>
@@ -664,7 +664,7 @@ function FinancesCard({
             <div
               className={cn(
                 "font-heading text-lg tabular-nums",
-                seasonNet.net >= 0 ? "text-emerald-400" : "text-red-400",
+                seasonNet.net >= 0 ? "text-positive" : "text-negative",
               )}
             >
               {formatCompactCurrency(seasonNet.net)}

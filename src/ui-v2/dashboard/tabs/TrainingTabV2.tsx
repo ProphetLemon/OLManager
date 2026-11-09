@@ -447,8 +447,8 @@ export function TrainingTabV2({
                         className={cn(
                           "ml-1 tabular-nums",
                           soloQ.delta >= 0
-                            ? "text-emerald-400"
-                            : "text-red-400",
+                            ? "text-positive"
+                            : "text-negative",
                         )}
                       >
                         {soloQ.delta >= 0
@@ -501,27 +501,27 @@ export function TrainingTabV2({
               className={cn(
                 "flex items-start gap-3 rounded-xl border-2 p-4",
                 staffAdvice.level === "critical" &&
-                  "border-red-500/40 bg-red-500/10",
+                  "border-negative/40 bg-negative/10",
                 staffAdvice.level === "warn" &&
-                  "border-amber-500/40 bg-amber-500/10",
+                  "border-warning/40 bg-warning/10",
                 staffAdvice.level === "ok" &&
-                  "border-emerald-500/40 bg-emerald-500/10",
+                  "border-positive/40 bg-positive/10",
               )}
             >
               {staffAdvice.level === "critical" ? (
-                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-red-400" />
+                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-negative" />
               ) : staffAdvice.level === "warn" ? (
-                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-400" />
+                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" />
               ) : (
-                <Info className="mt-0.5 size-5 shrink-0 text-emerald-400" />
+                <Info className="mt-0.5 size-5 shrink-0 text-positive" />
               )}
               <div>
                 <p
                   className={cn(
                     "mb-0.5 font-heading text-xs font-bold uppercase tracking-wider",
-                    staffAdvice.level === "critical" && "text-red-400",
-                    staffAdvice.level === "warn" && "text-amber-400",
-                    staffAdvice.level === "ok" && "text-emerald-400",
+                    staffAdvice.level === "critical" && "text-negative",
+                    staffAdvice.level === "warn" && "text-warning",
+                    staffAdvice.level === "ok" && "text-positive",
                   )}
                 >
                   {staffAdvice.level === "critical"
@@ -847,7 +847,7 @@ export function TrainingTabV2({
                 {(exhaustedCount > 0 || criticalCount > 0) && (
                   <div className="border-t border-border pt-2">
                     {criticalCount > 0 && (
-                      <p className="flex items-center gap-1 text-xs text-red-400">
+                      <p className="flex items-center gap-1 text-xs text-negative">
                         <AlertTriangle className="size-3 shrink-0" />
                         {t("training.criticalCondition", {
                           defaultValue: "{{count}} player(s) critical condition",
@@ -856,7 +856,7 @@ export function TrainingTabV2({
                       </p>
                     )}
                     {exhaustedCount > 0 && (
-                      <p className="mt-0.5 flex items-center gap-1 text-xs text-amber-400">
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-warning">
                         <AlertTriangle className="size-3 shrink-0" />
                         {t("training.exhaustedPlayers", {
                           defaultValue: "{{count}} player(s) exhausted",
@@ -903,7 +903,7 @@ export function TrainingTabV2({
                         type="button"
                         onClick={() => handleDeleteGroup(group.id)}
                         disabled={isSaving}
-                        className="ml-1 flex size-4 items-center justify-center rounded-full text-muted-foreground/50 hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                        className="ml-1 flex size-4 items-center justify-center rounded-full text-muted-foreground/50 hover:bg-negative/20 hover:text-negative transition-colors"
                       >
                         <X className="size-3" />
                       </button>

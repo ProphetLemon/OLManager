@@ -72,18 +72,18 @@ function riskLevel(opponentOvr: number, ownOvr: number, repGap: number): RiskLev
 
 function riskColor(risk: RiskLevel): string {
   switch (risk) {
-    case "high": return "text-red-400 border-red-500/30 bg-red-500/10";
-    case "medium": return "text-amber-400 border-amber-500/30 bg-amber-500/10";
-    case "low": return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
+    case "high": return "text-negative border-negative/30 bg-negative/10";
+    case "medium": return "text-warning border-warning/30 bg-warning/10";
+    case "low": return "text-positive border-positive/30 bg-positive/10";
   }
 }
 
 function stateBorder(state: string): string {
   switch (state) {
-    case "PlayedNeedsReview": return "border-amber-500/30 bg-amber-500/5";
-    case "Reviewed": return "border-emerald-500/30 bg-emerald-500/5";
+    case "PlayedNeedsReview": return "border-warning/30 bg-warning/5";
+    case "Reviewed": return "border-positive/30 bg-positive/5";
     case "Planned": return "border-primary/30 bg-primary/5";
-    case "Cancelled": return "border-red-500/30 bg-red-500/5";
+    case "Cancelled": return "border-negative/30 bg-negative/5";
     default: return "border-border bg-muted/20";
   }
 }
@@ -99,10 +99,10 @@ function stateIcon(state: string): LucideIcon {
 }
 
 const DECISION_META: Record<DailyScrimAction, { icon: LucideIcon; color: string }> = {
-  ContinueToBlock2: { icon: TrendingUp, color: "text-emerald-400" },
-  OfferRest: { icon: Brain, color: "text-blue-400" },
-  PushThrough: { icon: Zap, color: "text-amber-400" },
-  CancelScrims: { icon: Lightbulb, color: "text-red-400" },
+  ContinueToBlock2: { icon: TrendingUp, color: "text-positive" },
+  OfferRest: { icon: Brain, color: "text-info" },
+  PushThrough: { icon: Zap, color: "text-warning" },
+  CancelScrims: { icon: Lightbulb, color: "text-negative" },
   VodReview: { icon: Video, color: "text-purple-400" },
   MentalReset: { icon: Brain, color: "text-cyan-400" },
   TargetedDrills: { icon: Target, color: "text-orange-400" },
@@ -314,15 +314,15 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                 {/* W/L gauge */}
                 <div className="flex-1 min-w-0 rounded-lg border border-border bg-muted/30 px-2 py-2 text-center">
                   <p className="font-heading text-base font-bold tabular-nums">
-                    <span className="text-emerald-400">{wins}</span>
+                    <span className="text-positive">{wins}</span>
                     <span className="text-muted-foreground/40">-</span>
-                    <span className="text-red-400">{losses}</span>
+                    <span className="text-negative">{losses}</span>
                   </p>
                   <div className="mt-1 flex h-1 overflow-hidden rounded-full bg-muted">
                     {played > 0 && (
                       <>
-                        <div className="h-full bg-emerald-400 transition-all" style={{ width: `${(wins / played) * 100}%` }} />
-                        <div className="h-full bg-red-400 transition-all" style={{ width: `${(losses / played) * 100}%` }} />
+                        <div className="h-full bg-positive transition-all" style={{ width: `${(wins / played) * 100}%` }} />
+                        <div className="h-full bg-negative transition-all" style={{ width: `${(losses / played) * 100}%` }} />
                       </>
                     )}
                   </div>
@@ -433,10 +433,10 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
               <div className="space-y-3">
                 {/* State badge */}
                 <div className="flex items-center gap-2">
-                  {todayState === "PlayedNeedsReview" && <Badge className="border-amber-500/30 bg-amber-500/10 text-amber-400">{t("scrims.pendingReview")}</Badge>}
-                  {todayState === "Reviewed" && <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400">{t("scrims.reviewed")}</Badge>}
+                  {todayState === "PlayedNeedsReview" && <Badge className="border-warning/30 bg-warning/10 text-warning">{t("scrims.pendingReview")}</Badge>}
+                  {todayState === "Reviewed" && <Badge className="border-positive/30 bg-positive/10 text-positive">{t("scrims.reviewed")}</Badge>}
                   {todayState === "Planned" && <Badge className="border-primary/30 bg-primary/10 text-primary">{t("scrims.planned")}</Badge>}
-                  {todayState === "Cancelled" && <Badge className="border-red-500/30 bg-red-500/10 text-red-400">{t("scrims.cancelled")}</Badge>}
+                  {todayState === "Cancelled" && <Badge className="border-negative/30 bg-negative/10 text-negative">{t("scrims.cancelled")}</Badge>}
                   {todayState !== "PlayedNeedsReview" && todayState !== "Reviewed" && todayState !== "Planned" && todayState !== "Cancelled" && (
                     <Badge variant="outline" className="text-muted-foreground">{t("scrims.noScrim")}</Badge>
                   )}
@@ -493,7 +493,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                                     variant="outline"
                                     className={cn(
                                       "text-2xs",
-                                      tag.includes("+") ? "border-emerald-500/20 text-emerald-400" : "border-red-500/20 text-red-400",
+                                      tag.includes("+") ? "border-positive/20 text-positive" : "border-negative/20 text-negative",
                                     )}
                                   >
                                     {tag}
@@ -542,7 +542,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                           key={`${r.week_key}-${r.slot_index}-${i}`}
                           className={cn(
                             "flex-1 rounded-sm transition-all",
-                            r.won ? "bg-emerald-500/60" : "bg-red-500/60",
+                            r.won ? "bg-positive/60" : "bg-negative/60",
                           )}
                           title={`${teamNameById.get(r.opponent_team_id) ?? r.opponent_team_id}: ${r.won ? "W" : "L"}`}
                         />
@@ -564,7 +564,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                             <p className="truncate text-xs font-medium text-foreground">
                               {teamNameById.get(r.opponent_team_id) ?? r.opponent_team_id}
                             </p>
-                            <span className={cn("text-2xs font-bold", r.won ? "text-emerald-400" : "text-red-400")}>
+                            <span className={cn("text-2xs font-bold", r.won ? "text-positive" : "text-negative")}>
                               {r.won ? "W" : "L"}
                             </span>
                           </div>
@@ -589,7 +589,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                         <p className="text-xs text-muted-foreground">{wins}-{losses}</p>
                       </div>
                       {weeklyContext.lossStreak > 1 && (
-                        <Badge className="border-red-500/30 bg-red-500/10 text-2xs text-red-400">
+                        <Badge className="border-negative/30 bg-negative/10 text-2xs text-negative">
                           {weeklyContext.lossStreak}L streak
                         </Badge>
                       )}

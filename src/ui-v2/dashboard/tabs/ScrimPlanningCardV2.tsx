@@ -118,7 +118,7 @@ export default function ScrimPlanningCardV2({
             {t("training.scrims.weekCapacity")}: {slots}
           </span>
           {streak > 0 && (
-            <span className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-0.5 font-heading text-2xs font-bold tabular-nums text-red-400">
+            <span className="rounded-md border border-negative/30 bg-negative/10 px-2 py-0.5 font-heading text-2xs font-bold tabular-nums text-negative">
               {streak}L
             </span>
           )}
@@ -151,9 +151,9 @@ export default function ScrimPlanningCardV2({
                 className={cn(
                   "rounded-xl border p-4 transition-colors",
                   hasResult && slotContext?.resultWon
-                    ? "border-emerald-500/20 bg-emerald-500/5"
+                    ? "border-positive/20 bg-positive/5"
                     : hasResult
-                      ? "border-red-500/20 bg-red-500/5"
+                      ? "border-negative/20 bg-negative/5"
                       : "border-border bg-muted/20",
                 )}
               >
@@ -176,7 +176,7 @@ export default function ScrimPlanningCardV2({
                       <img src={primaryLogo} alt="" className="size-8 rounded-lg object-contain" />
                     )}
                     {hasResult ? (
-                      <Badge className={slotContext?.resultWon ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}>
+                      <Badge className={slotContext?.resultWon ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative"}>
                         {slotContext?.resultWon ? "W" : "L"}
                       </Badge>
                     ) : (

@@ -190,11 +190,11 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                             </div>
                           </td>
                           <td className="px-3 py-3 text-center text-xs tabular-nums text-muted-foreground">{entry.played}</td>
-                          <td className="px-3 py-3 text-center text-xs tabular-nums text-emerald-400 font-medium">{entry.won}</td>
-                          <td className="px-3 py-3 text-center text-xs tabular-nums text-red-400 font-medium">{entry.lost}</td>
+                          <td className="px-3 py-3 text-center text-xs tabular-nums text-positive font-medium">{entry.won}</td>
+                          <td className="px-3 py-3 text-center text-xs tabular-nums text-negative font-medium">{entry.lost}</td>
                           <td className="hidden px-3 py-3 text-center text-xs tabular-nums text-muted-foreground md:table-cell">{entry.maps_won ?? entry.kills_for ?? 0}</td>
                           <td className="hidden px-3 py-3 text-center text-xs tabular-nums text-muted-foreground md:table-cell">{entry.maps_lost ?? entry.kills_against ?? 0}</td>
-                          <td className={cn("px-3 py-3 text-center text-xs tabular-nums font-medium", diff >= 0 ? "text-emerald-400" : "text-red-400")}>{diff >= 0 ? "+" : ""}{diff}</td>
+                          <td className={cn("px-3 py-3 text-center text-xs tabular-nums font-medium", diff >= 0 ? "text-positive" : "text-negative")}>{diff >= 0 ? "+" : ""}{diff}</td>
                           <td className="hidden px-3 py-3 lg:table-cell">
                             <div className="flex items-center gap-2">
                               <div className="h-1.5 w-full max-w-16 overflow-hidden rounded-full bg-muted">
