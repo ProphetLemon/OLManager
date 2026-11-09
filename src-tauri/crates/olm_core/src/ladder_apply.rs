@@ -44,7 +44,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use log::info;
+use log::{info, warn};
 
 use crate::domain::league::League;
 use crate::domain::league::StandingEntry;
@@ -282,7 +282,9 @@ fn apply_link(
 
     crate::residency::refresh_import_flags(game);
     crate::season_context::refresh_game_context(game);
-    let _ = repair_league(game, RosterStabilityReason::SeasonTransition);
+    if let Err(error) = repair_league(game, RosterStabilityReason::SeasonTransition) {
+        warn!("[ladder] {lower_id}->{upper_id} season {season}: roster repair failed: {error}");
+    }
 
     info!("[ladder] {lower_id}->{upper_id} season {season}: {promoted:?} up, {relegated:?} down");
     movement.promoted = promoted;
