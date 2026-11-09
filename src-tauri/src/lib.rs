@@ -218,6 +218,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             start_new_game_lightweight,
             select_team,
+            preview_founding_squad,
             get_saves,
             load_game,
             get_active_game,
