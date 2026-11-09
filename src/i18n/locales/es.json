@@ -3981,6 +3981,7 @@
       "daysToGo_one": "Falta {{count}} día",
       "daysToGo_other": "Faltan {{count}} días",
       "matchDay": "Día de partida",
+      "restsOn": "Tu club descansa en la jornada {{n}}",
       "formAfterFirst": "La forma de {{team}} aparece tras su primera partida",
       "yourClub": "Tu club",
       "startingFive": "Quinteto titular",

@@ -3975,6 +3975,7 @@
       "daysToGo_one": "{{count}} gün kaldı",
       "daysToGo_other": "{{count}} gün kaldı",
       "matchDay": "Maç günü",
+      "restsOn": "Kulübün {{n}}. maç gününde dinlenir",
       "formAfterFirst": "{{team}} takımının formu ilk maçından sonra görünür",
       "yourClub": "Kulübün",
       "startingFive": "İlk beşli",

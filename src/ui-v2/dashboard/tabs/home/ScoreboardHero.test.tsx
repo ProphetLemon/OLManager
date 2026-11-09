@@ -53,6 +53,7 @@ function makeData(overrides: Partial<ScoreboardData> = {}): ScoreboardData {
     competitionName: "LEC",
     season: 2028,
     daysToGo: 84,
+    restsOnMatchday: null,
     you: side({ prefix: "Bar", name: "Barcelona Esports", shortName: "BAR" }),
     opponent: side({ prefix: "Navi", name: "Natus Vincere", shortName: "NAVI" }),
     ...overrides,
@@ -86,6 +87,14 @@ describe("ScoreboardHero", () => {
     unmount();
     renderHero(makeData({ kind: "League", bestOf: 3 }));
     expect(screen.queryByText("Best of 3")).toBeNull();
+  });
+
+  it("says the club rests when the league plays a round without it", () => {
+    const { unmount } = renderHero(makeData({ restsOnMatchday: 6 }));
+    expect(screen.getByText("Your club rests on matchday 6")).toBeInTheDocument();
+    unmount();
+    renderHero(makeData({ restsOnMatchday: null }));
+    expect(screen.queryByText(/rests on matchday/)).toBeNull();
   });
 
   it("uses the vs word at home and the at word away", () => {

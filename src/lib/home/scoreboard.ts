@@ -8,7 +8,7 @@
 import type { FixtureData, GameStateData, LeagueData, PlayerData, TeamData } from "@/store/types";
 import { resolveActiveLineupIds } from "@/store/types";
 import { getDaysUntil } from "@/lib/common/contractUtils";
-import { findNextFixture } from "@/lib/common/fixtures";
+import { findNextFixture, isCompetitiveFixture } from "@/lib/common/fixtures";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { LOL_ACTIVE_ROLES, buildActiveLineupIds } from "@/lib/squad/helpers";
@@ -62,6 +62,11 @@ export interface ScoreboardData {
   competitionName: string;
   season: number | string | null;
   daysToGo: number;
+  /**
+   * Matchday of the league's next round when the user's club has no fixture in
+   * it (an odd-sized league gives one club a bye each round), otherwise null.
+   */
+  restsOnMatchday: number | null;
   you: SideData;
   opponent: SideData;
 }
@@ -183,6 +188,22 @@ function activeLeague(gameState: GameStateData): LeagueData | null {
   return leagues[0] ?? null;
 }
 
+/** First unplayed league fixture dated before `next` that the club does not play in. */
+function findRestRound(league: LeagueData, teamId: string, next: FixtureData): FixtureData | undefined {
+  if (!isCompetitiveFixture(next)) return undefined;
+  const nextDay = next.date.slice(0, 10);
+  return (league.fixtures ?? [])
+    .filter(
+      (fixture) =>
+        isCompetitiveFixture(fixture) &&
+        fixture.status !== "Completed" &&
+        fixture.date.slice(0, 10) < nextDay &&
+        fixture.home_team_id !== teamId &&
+        fixture.away_team_id !== teamId,
+    )
+    .sort((left, right) => left.date.localeCompare(right.date))[0];
+}
+
 export function getScoreboardData(gameState: GameStateData, opts: { highContrast: boolean }): ScoreboardData | null {
   const teamId = gameState.manager?.team_id;
   const league = activeLeague(gameState);
@@ -212,6 +233,7 @@ export function getScoreboardData(gameState: GameStateData, opts: { highContrast
     competitionName: league.name,
     season: league.season ?? null,
     daysToGo: Math.max(0, getDaysUntil(fixture.date.slice(0, 10), today)),
+    restsOnMatchday: findRestRound(league, teamId, fixture)?.matchday ?? null,
     you: buildSide(myTeam, players, youPalette),
     opponent: buildSide(opponentTeam, players, opponentPalette),
   };

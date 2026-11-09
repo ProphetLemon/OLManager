@@ -251,6 +251,14 @@ export function ScoreboardHero({ data, onOpenSchedule, onOpenSquad }: Scoreboard
           <TagBlock size="sm" tone="info">
             {`${vsAtWord} ${opponent.shortName}`}
           </TagBlock>
+          {data.restsOnMatchday != null ? (
+            <TagBlock size="sm" tone="warning">
+              {t("onAir.home.restsOn", {
+                n: data.restsOnMatchday,
+                defaultValue: `Your club rests on matchday ${data.restsOnMatchday}`,
+              })}
+            </TagBlock>
+          ) : null}
           <time dateTime={data.date.slice(0, 10)} className="ms-auto text-sm font-semibold text-foreground">
             {formatMatchDate(data.date, i18n.language)}
           </time>

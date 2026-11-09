@@ -3975,6 +3975,7 @@
       "daysToGo_one": "Falta {{count}} dia",
       "daysToGo_other": "Faltam {{count}} dias",
       "matchDay": "Dia de jogo",
+      "restsOn": "Seu clube folga na rodada {{n}}",
       "formAfterFirst": "A forma de {{team}} aparece após o primeiro jogo",
       "yourClub": "Seu clube",
       "startingFive": "Cinco titulares",
