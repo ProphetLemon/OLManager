@@ -17,6 +17,8 @@ interface ClubShieldProps {
   size?: ShieldSize
   /** CSS colour for the monogram background. Defaults to the club accent. */
   accent?: string
+  /** CSS colour for the monogram text; pair it with `accent` for another club's palette. */
+  foreground?: string
   /** Decorative shields hide from assistive tech (the name sits next to them). */
   decorative?: boolean
   className?: string
@@ -33,6 +35,7 @@ function ClubShield({
   logoUrl,
   size = "md",
   accent = "var(--club)",
+  foreground = "var(--club-foreground)",
   decorative = true,
   className,
 }: ClubShieldProps) {
@@ -53,9 +56,9 @@ function ClubShield({
         data-slot="club-shield"
         data-fallback="true"
         data-size={size}
-        style={{ backgroundColor: accent }}
+        style={{ backgroundColor: accent, color: foreground }}
         className={cn(
-          "inline-flex shrink-0 items-center justify-center rounded-md font-heading font-bold leading-none text-club-foreground select-none",
+          "inline-flex shrink-0 items-center justify-center rounded-md font-heading font-bold leading-none select-none",
           SIZE_CLASS[size],
           className
         )}

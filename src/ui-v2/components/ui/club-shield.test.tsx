@@ -39,6 +39,16 @@ describe("ClubShield", () => {
     expect(screen.getByText("NO")).toHaveStyle({ backgroundColor: "rgb(1, 2, 3)" });
   });
 
+  it("colours the monogram with the foreground paired to a custom accent", () => {
+    render(<ClubShield name="Nova" accent="rgb(250, 204, 21)" foreground="rgb(10, 10, 10)" />);
+    expect(screen.getByText("NO")).toHaveStyle({ backgroundColor: "rgb(250, 204, 21)", color: "rgb(10, 10, 10)" });
+  });
+
+  it("defaults the monogram foreground to the club foreground token", () => {
+    render(<ClubShield name="Nova" />);
+    expect(screen.getByText("NO")).toHaveStyle({ color: "var(--club-foreground)" });
+  });
+
   it("names the monogram when not decorative", () => {
     render(<ClubShield name="Nova" decorative={false} />);
     expect(screen.getByRole("img", { name: "Nova" })).toHaveTextContent("NO");
