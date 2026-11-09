@@ -632,6 +632,60 @@
         "lowContrast": "Estas cores são muito próximas e a sigla pode ser difícil de ler. Podes continuar na mesma.",
         "title": "Não foi possível criar o clube"
       }
+    },
+    "founders": {
+      "stepTitle": "Plantel fundador",
+      "intro": "Estes cinco jogadores começam com o teu clube. Edita o nome, a nacionalidade ou a data de nascimento de um jogador, ou sorteia de novo para obteres outro plantel.",
+      "loading": "A gerar o teu plantel...",
+      "loadFailed": "Não foi possível gerar o plantel.",
+      "retry": "Tentar de novo",
+      "listLabel": "Plantel fundador",
+      "edited": "Editado",
+      "age": "{{age}} anos",
+      "ovrLabel": "Global",
+      "wage": "Salário {{value}}",
+      "edit": "Editar",
+      "editAria": "Editar {{nick}}, {{role}}",
+      "attributes": "Atributos",
+      "editsDropped": "As tuas edições já não se adequam a este clube, por isso o plantel gerado foi restaurado.",
+      "installFailed": "Plantel rejeitado. {{role}}, {{field}}: {{reason}}",
+      "budget": {
+        "label": "Massa salarial face ao orçamento",
+        "text": "{{bill}} de {{budget}}"
+      },
+      "reroll": {
+        "action": "Sortear de novo ({{count}} restantes)",
+        "none": "Sem sorteios restantes",
+        "noneReason": "Usaste os {{max}} sorteios deste clube.",
+        "confirmLabel": "Confirmar novo sorteio",
+        "confirmText": "Um novo sorteio gera outro plantel e descarta as tuas edições.",
+        "confirm": "Sortear mesmo assim",
+        "keep": "Manter este plantel"
+      },
+      "dialog": {
+        "title": "Editar {{role}}",
+        "fields": {
+          "nick": "Nick",
+          "full_name": "Nome completo",
+          "nationality": "Nacionalidade",
+          "birth_date": "Data de nascimento"
+        },
+        "birthHint": "Nascido entre {{min}} e {{max}} para continuar com {{age}} anos.",
+        "restore": "Restaurar o gerado",
+        "cancel": "Cancelar",
+        "save": "Guardar"
+      },
+      "errors": {
+        "empty": "Este campo não pode estar vazio.",
+        "tooShort": "Usa pelo menos {{min}} caracteres.",
+        "tooLong": "Usa no máximo {{max}} caracteres.",
+        "invalidCharacter": "Este texto tem um carácter não permitido.",
+        "taken": "Outro jogador já usa este nome.",
+        "notInRegion": "Escolhe uma nacionalidade da região desta liga.",
+        "invalidDate": "Introduz uma data de nascimento válida.",
+        "ageChanged": "A data de nascimento tem de manter a idade do jogador.",
+        "general": "Não foi possível verificar esta edição. Tenta de novo."
+      }
     }
   },
   "youthAcademy": {

@@ -633,6 +633,60 @@
         "lowContrast": "Diese Farben liegen nah beieinander, das Kürzel ist eventuell schwer lesbar. Du kannst trotzdem fortfahren.",
         "title": "Verein konnte nicht erstellt werden"
       }
+    },
+    "founders": {
+      "stepTitle": "Gründerkader",
+      "intro": "Diese fünf Spieler starten mit deinem Verein. Ändere Name, Nationalität oder Geburtsdatum eines Spielers oder würfle einen neuen Kader aus.",
+      "loading": "Kader wird erstellt...",
+      "loadFailed": "Der Kader konnte nicht erstellt werden.",
+      "retry": "Erneut versuchen",
+      "listLabel": "Gründerkader",
+      "edited": "Bearbeitet",
+      "age": "Alter {{age}}",
+      "ovrLabel": "Gesamtwertung",
+      "wage": "Gehalt {{value}}",
+      "edit": "Bearbeiten",
+      "editAria": "{{nick}} bearbeiten, {{role}}",
+      "attributes": "Attribute",
+      "editsDropped": "Deine Änderungen passen nicht mehr zu diesem Verein, deshalb wurde der erzeugte Kader wiederhergestellt.",
+      "installFailed": "Kader abgelehnt. {{role}}, {{field}}: {{reason}}",
+      "budget": {
+        "label": "Gehaltssumme im Verhältnis zum Budget",
+        "text": "{{bill}} von {{budget}}"
+      },
+      "reroll": {
+        "action": "Neu auswürfeln ({{count}} übrig)",
+        "none": "Keine Würfe mehr übrig",
+        "noneReason": "Du hast alle {{max}} Würfe für diesen Verein verbraucht.",
+        "confirmLabel": "Neuen Wurf bestätigen",
+        "confirmText": "Ein neuer Wurf erzeugt einen anderen Kader und verwirft deine Änderungen.",
+        "confirm": "Trotzdem auswürfeln",
+        "keep": "Diesen Kader behalten"
+      },
+      "dialog": {
+        "title": "{{role}} bearbeiten",
+        "fields": {
+          "nick": "Nick",
+          "full_name": "Vollständiger Name",
+          "nationality": "Nationalität",
+          "birth_date": "Geburtsdatum"
+        },
+        "birthHint": "Geboren zwischen {{min}} und {{max}}, damit der Spieler {{age}} Jahre alt bleibt.",
+        "restore": "Erzeugte Werte wiederherstellen",
+        "cancel": "Abbrechen",
+        "save": "Speichern"
+      },
+      "errors": {
+        "empty": "Dieses Feld darf nicht leer sein.",
+        "tooShort": "Verwende mindestens {{min}} Zeichen.",
+        "tooLong": "Verwende höchstens {{max}} Zeichen.",
+        "invalidCharacter": "Dieser Text enthält ein nicht erlaubtes Zeichen.",
+        "taken": "Ein anderer Spieler verwendet diesen Namen bereits.",
+        "notInRegion": "Wähle eine Nationalität aus der Region dieser Liga.",
+        "invalidDate": "Gib ein gültiges Geburtsdatum ein.",
+        "ageChanged": "Das Geburtsdatum muss das Alter des Spielers beibehalten.",
+        "general": "Diese Änderung konnte nicht geprüft werden. Versuche es erneut."
+      }
     }
   },
   "youthAcademy": {

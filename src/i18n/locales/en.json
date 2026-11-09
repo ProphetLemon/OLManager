@@ -761,6 +761,60 @@
         "lowContrast": "These colours are close together, so the tag may be hard to read. You can still continue.",
         "title": "Could not create the club"
       }
+    },
+    "founders": {
+      "stepTitle": "Founding squad",
+      "intro": "These five players start with your club. Edit a player's name, nationality or birth date, or reroll to draw a different squad.",
+      "loading": "Generating your squad...",
+      "loadFailed": "The squad could not be generated.",
+      "retry": "Try again",
+      "listLabel": "Founding squad",
+      "edited": "Edited",
+      "age": "Age {{age}}",
+      "ovrLabel": "Overall",
+      "wage": "Wage {{value}}",
+      "edit": "Edit",
+      "editAria": "Edit {{nick}}, {{role}}",
+      "attributes": "Attributes",
+      "editsDropped": "Your edits no longer fit this club, so the generated squad was restored.",
+      "installFailed": "Squad rejected. {{role}}, {{field}}: {{reason}}",
+      "budget": {
+        "label": "Wage bill against budget",
+        "text": "{{bill}} of {{budget}}"
+      },
+      "reroll": {
+        "action": "Reroll squad ({{count}} left)",
+        "none": "No rerolls left",
+        "noneReason": "You have used all {{max}} rerolls for this club.",
+        "confirmLabel": "Confirm reroll",
+        "confirmText": "Rerolling draws a new squad and discards your edits.",
+        "confirm": "Reroll anyway",
+        "keep": "Keep this squad"
+      },
+      "dialog": {
+        "title": "Edit {{role}}",
+        "fields": {
+          "nick": "Nick",
+          "full_name": "Full name",
+          "nationality": "Nationality",
+          "birth_date": "Birth date"
+        },
+        "birthHint": "Born between {{min}} and {{max}} to stay {{age}} years old.",
+        "restore": "Restore generated",
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "errors": {
+        "empty": "This field cannot be empty.",
+        "tooShort": "Use at least {{min}} characters.",
+        "tooLong": "Use at most {{max}} characters.",
+        "invalidCharacter": "This text has a character that is not allowed.",
+        "taken": "Another player already uses this name.",
+        "notInRegion": "Choose a nationality from this league's region.",
+        "invalidDate": "Enter a valid birth date.",
+        "ageChanged": "The birth date must keep the player's age.",
+        "general": "Could not check this edit. Try again."
+      }
     }
   },
   "youthAcademy": {

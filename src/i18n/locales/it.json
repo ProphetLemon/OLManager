@@ -484,6 +484,60 @@
         "lowContrast": "Questi colori sono vicini e la sigla potrebbe essere difficile da leggere. Puoi continuare comunque.",
         "title": "Impossibile creare il club"
       }
+    },
+    "founders": {
+      "stepTitle": "Rosa fondatrice",
+      "intro": "Questi cinque giocatori iniziano con il tuo club. Modifica nome, nazionalità o data di nascita di un giocatore, oppure rilancia per ottenere un'altra rosa.",
+      "loading": "Generazione della rosa...",
+      "loadFailed": "Non è stato possibile generare la rosa.",
+      "retry": "Riprova",
+      "listLabel": "Rosa fondatrice",
+      "edited": "Modificato",
+      "age": "{{age}} anni",
+      "ovrLabel": "Valutazione",
+      "wage": "Stipendio {{value}}",
+      "edit": "Modifica",
+      "editAria": "Modifica {{nick}}, {{role}}",
+      "attributes": "Attributi",
+      "editsDropped": "Le tue modifiche non sono più adatte a questo club, quindi è stata ripristinata la rosa generata.",
+      "installFailed": "Rosa rifiutata. {{role}}, {{field}}: {{reason}}",
+      "budget": {
+        "label": "Monte stipendi rispetto al budget",
+        "text": "{{bill}} su {{budget}}"
+      },
+      "reroll": {
+        "action": "Rilancia ({{count}} rimasti)",
+        "none": "Nessun rilancio rimasto",
+        "noneReason": "Hai usato tutti i {{max}} rilanci per questo club.",
+        "confirmLabel": "Conferma il rilancio",
+        "confirmText": "Un rilancio genera un'altra rosa e annulla le tue modifiche.",
+        "confirm": "Rilancia comunque",
+        "keep": "Mantieni questa rosa"
+      },
+      "dialog": {
+        "title": "Modifica {{role}}",
+        "fields": {
+          "nick": "Nick",
+          "full_name": "Nome completo",
+          "nationality": "Nazionalità",
+          "birth_date": "Data di nascita"
+        },
+        "birthHint": "Nato tra il {{min}} e il {{max}} per restare a {{age}} anni.",
+        "restore": "Ripristina il generato",
+        "cancel": "Annulla",
+        "save": "Salva"
+      },
+      "errors": {
+        "empty": "Questo campo non può essere vuoto.",
+        "tooShort": "Usa almeno {{min}} caratteri.",
+        "tooLong": "Usa al massimo {{max}} caratteri.",
+        "invalidCharacter": "Questo testo contiene un carattere non consentito.",
+        "taken": "Un altro giocatore usa già questo nome.",
+        "notInRegion": "Scegli una nazionalità della regione di questa lega.",
+        "invalidDate": "Inserisci una data di nascita valida.",
+        "ageChanged": "La data di nascita deve mantenere l'età del giocatore.",
+        "general": "Impossibile controllare questa modifica. Riprova."
+      }
     }
   },
   "youthAcademy": {
