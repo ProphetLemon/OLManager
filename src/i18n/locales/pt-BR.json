@@ -699,6 +699,7 @@
     "all": "Todos",
     "allPlayers": "Todos os jogadores",
     "cancel": "Cancelar",
+    "close": "Fechar",
     "done": "Concluído",
     "confirm": "Confirmar",
     "save": "Salvar",
@@ -3844,6 +3845,14 @@
       "standingsGap": "Salto na tabela",
       "standingsPreseason": "A temporada ainda não começou",
       "bestOf": "Melhor de {{count}}",
+      "formWin": "Vitória",
+      "formLoss": "Derrota",
+      "formDraw": "Empate",
+      "needsEmptyHint": "Você pode continuar quando estiver pronto.",
+      "moreContracts_one": "Mais {{count}} renovação de contrato não exibida",
+      "moreContracts_other": "Mais {{count}} renovações de contrato não exibidas",
+      "unreadRow": "Não lida",
+      "position": "Posição",
       "vsAt": {
         "home": "vs",
         "away": "em"

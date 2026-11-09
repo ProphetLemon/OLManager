@@ -699,6 +699,7 @@
     "all": "Tümü",
     "allPlayers": "Tüm Oyuncular",
     "cancel": "İptal",
+    "close": "Kapat",
     "done": "Bitti",
     "confirm": "Onayla",
     "save": "Kaydet",
@@ -3844,6 +3845,14 @@
       "standingsGap": "Tabloda boşluk",
       "standingsPreseason": "Sezon başlamadı",
       "bestOf": "{{count}} maçlık seri",
+      "formWin": "Galibiyet",
+      "formLoss": "Mağlubiyet",
+      "formDraw": "Beraberlik",
+      "needsEmptyHint": "Hazır olduğunda devam edebilirsin.",
+      "moreContracts_one": "{{count}} sözleşme yenileme daha gösterilmiyor",
+      "moreContracts_other": "{{count}} sözleşme yenileme daha gösterilmiyor",
+      "unreadRow": "Okunmadı",
+      "position": "Konum",
       "vsAt": {
         "home": "vs",
         "away": "deplasman"

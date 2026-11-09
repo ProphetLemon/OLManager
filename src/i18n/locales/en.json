@@ -827,6 +827,7 @@
     "all": "All",
     "allPlayers": "All Players",
     "cancel": "Cancel",
+    "close": "Close",
     "done": "Done",
     "confirm": "Confirm",
     "save": "Save",
@@ -3885,6 +3886,14 @@
       "standingsGap": "Gap in the table",
       "standingsPreseason": "Season not started",
       "bestOf": "Best of {{count}}",
+      "formWin": "Win",
+      "formLoss": "Loss",
+      "formDraw": "Draw",
+      "needsEmptyHint": "You can continue whenever you are ready.",
+      "moreContracts_one": "{{count}} more contract renewal not shown",
+      "moreContracts_other": "{{count}} more contract renewals not shown",
+      "unreadRow": "Unread",
+      "position": "Position",
       "vsAt": {
         "home": "vs",
         "away": "at"
