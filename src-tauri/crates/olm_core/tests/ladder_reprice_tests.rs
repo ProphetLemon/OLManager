@@ -223,6 +223,15 @@ fn a_promoted_club_sponsorship_above_the_median_is_not_lowered() {
     assert_eq!(sponsorship_of(&game, "reg1"), Some(9_000_000));
 }
 
+/// Bundled world data has no sponsors at all, so repricing cannot give a promoted club one.
+#[test]
+fn a_promoted_club_without_any_sponsor_among_its_peers_stays_unsponsored() {
+    let mut game = after_swap("lec1");
+    reprice(&mut game);
+
+    assert_eq!(sponsorship_of(&game, "reg1"), None);
+}
+
 #[test]
 fn a_promote_relegate_promote_yo_yo_ends_no_lower_than_it_started() {
     let mut game = sponsored_swap();

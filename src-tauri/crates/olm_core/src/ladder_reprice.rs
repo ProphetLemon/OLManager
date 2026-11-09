@@ -16,6 +16,12 @@
 //!   because wages are contracted, and the sponsorship is scaled down.
 //! - The user's board is happier after a promotion and unhappier after a relegation.
 //!
+//! The sponsorship steps only touch a club that already has a sponsor, and the median is 0
+//! when no peer has one. The bundled world data ships every club with `sponsorship: null`
+//! and nothing seeds one, so on that data the sponsorship repricing is inert: a promoted
+//! club gains no income stream here. Seeding tier-aware sponsors is an open product
+//! decision, tracked as a follow-up.
+//!
 //! Peers are the destination league's other main clubs, so a league that has no peer
 //! left leaves the moved clubs unchanged.
 

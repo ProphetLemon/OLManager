@@ -3699,9 +3699,14 @@ mod tests {
         }
 
         /// One full calendar year of finance processing for the median-reputation custom club.
+        ///
+        /// This only checks internal consistency (signs, scale, a recorded ledger). It does
+        /// not prove sustainability: bundled clubs have no sponsor, so a LES club earns far
+        /// less than its wage bill and drains its treasury. That economy gap is tracked as a
+        /// follow-up, not asserted away here.
         #[test]
         #[ignore = "real-data end-to-end, run explicitly"]
-        fn a_custom_club_finances_stay_sane_for_a_full_year() {
+        fn a_custom_club_year_keeps_finances_consistent_but_does_not_prove_they_are_sustainable() {
             let (mut game, id) = custom_career();
             let start = game.teams.iter().find(|t| t.id == id).expect("club").clone();
             let peers_finance: Vec<i64> = les_peers(&game, &id).iter().map(|t| t.finance).collect();
