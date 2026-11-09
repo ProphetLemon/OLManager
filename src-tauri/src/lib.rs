@@ -218,6 +218,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             start_new_game_lightweight,
             select_team,
+            preview_founding_squad,
+            prepare_custom_logo,
             get_saves,
             load_game,
             get_active_game,
@@ -257,6 +259,7 @@ pub fn run() {
             choose_daily_scrim_action,
             delegate_scrim_decision,
             set_player_training_focus,
+            rename_player,
             set_player_champion_training_target,
             delegate_champion_training,
             get_soloq_statuses,

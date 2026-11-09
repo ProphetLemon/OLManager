@@ -19,9 +19,13 @@ import {
 } from "@/lib/customTeam";
 import type { CustomTeamField, ValidationCode } from "@/lib/customTeam";
 import { allNationalities } from "@/lib/common/countries";
+import { isEmptyOverrides, parseFounderError } from "@/lib/customTeam/founders";
 import type { CompetitionSummary, CustomTeamSpec, TeamSummary } from "@/store/types";
 import { Card, CardContent, CardHeader } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
+import LogoUploadControl from "@/ui-v2/pages/customTeam/LogoUploadControl";
+import FoundersStep from "./founders/FoundersStep";
+import { useFoundingSquad } from "./founders/useFoundingSquad";
 import {
   getReputationLabel,
   getTeamLogoPath,
@@ -36,8 +40,9 @@ export interface CustomTeamWizardV2Props {
   error: string | null;
 }
 
-type Step = 0 | 1 | 2;
-const LAST_STEP: Step = 2;
+type Step = 0 | 1 | 2 | 3;
+const LAST_STEP: Step = 3;
+const FOUNDERS_STEP: Step = 3;
 
 /** Colour pairs offered as one-click badge presets: [primary, secondary]. */
 export const BADGE_PRESETS: ReadonlyArray<readonly [string, string]> = [
@@ -58,6 +63,7 @@ const FIELD_STEP: Record<CustomTeamField, Step> = {
   primary: 1,
   secondary: 1,
   replaces: 2,
+  logo: 1,
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -149,11 +155,18 @@ export default function CustomTeamWizardV2({
   const [shortName, setShortName] = useState("");
   const [shortEdited, setShortEdited] = useState(false);
   const [country, setCountry] = useState(() => leagueCountry(teams, nationalities));
+  const [logoDataUri, setLogoDataUri] = useState<string | null>(null);
   const [primary, setPrimary] = useState(BADGE_PRESETS[0][0]);
   const [secondary, setSecondary] = useState(BADGE_PRESETS[0][1]);
   const [replacesId, setReplacesId] = useState<string | null>(() => defaultReplacementId(teams));
   const [touched, setTouched] = useState<ReadonlySet<CustomTeamField>>(new Set());
   const [ackedError, setAckedError] = useState<string | null>(null);
+  const squad = useFoundingSquad({
+    enabled: step === FOUNDERS_STEP,
+    competitionId: competition.id,
+    replacedTeamId: replacesId,
+    shortName: normalizeShortName(shortName),
+  });
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const draft = { name, shortName, primary, secondary, country, replacesTeamId: replacesId };
@@ -171,6 +184,21 @@ export default function CustomTeamWizardV2({
   useEffect(() => {
     if (backend) setStep(FIELD_STEP[backend.field]);
   }, [backend?.field, backend?.code, error]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A founder rejection from creating the club belongs on the squad step.
+  const founderError = error && error !== ackedError ? parseFounderError(error) : null;
+  useEffect(() => {
+    if (founderError) setStep(FOUNDERS_STEP);
+  }, [founderError?.kind, error]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Any new squad (reroll or edit) answers a founder rejection.
+  const squadKey = `${squad.seed}:${JSON.stringify(squad.overrides)}`;
+  const lastSquadKey = useRef(squadKey);
+  useEffect(() => {
+    if (lastSquadKey.current === squadKey) return;
+    lastSquadKey.current = squadKey;
+    if (error) setAckedError(error);
+  }, [squadKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A fresh submission clears the error; forget the acknowledgement so an
   // identical rejection is shown again.
@@ -253,14 +281,18 @@ export default function CustomTeamWizardV2({
   };
 
   const handleConfirm = () => {
-    if (!validation.ok || isSubmitting || !replacesId) return;
+    if (!validation.ok || isSubmitting || !replacesId || !squad.inSync) return;
     onConfirm(
       {
         name: name.trim(),
         short_name: normalizeShortName(shortName),
         primary_color: normalizeColor(primary),
         secondary_color: normalizeColor(secondary),
+        ...(logoDataUri ? { logo_data_uri: logoDataUri } : {}),
         country,
+        // The install reproduces the last preview: same seed and same edits.
+        founding_seed: squad.seed,
+        ...(isEmptyOverrides(squad.overrides) ? {} : { founder_overrides: squad.overrides }),
       },
       replacesId,
     );
@@ -269,7 +301,7 @@ export default function CustomTeamWizardV2({
   const badgeTag = normalizeShortName(shortName).replace(/[^A-Z0-9]/g, "").slice(0, SHORT_NAME_MAX) || "TAG";
   const badgePrimary = HEX.test(primary.trim()) ? normalizeColor(primary) : BADGE_PRESETS[0][0];
   const badgeSecondary = HEX.test(secondary.trim()) ? normalizeColor(secondary) : BADGE_PRESETS[0][1];
-  const badgeSrc = buildBadgeDataUri(badgeTag, badgePrimary, badgeSecondary);
+  const badgeSrc = logoDataUri ?? buildBadgeDataUri(badgeTag, badgePrimary, badgeSecondary);
   const lowContrast = contrastRatio(badgePrimary, badgeSecondary) < LOW_CONTRAST_RATIO;
   const replaced = teams.find((team) => team.id === replacesId);
   const countryLabel = nationalities.find((option) => option.code === country)?.name ?? country;
@@ -278,6 +310,7 @@ export default function CustomTeamWizardV2({
     t("teamSelect.custom.steps.identity"),
     t("teamSelect.custom.steps.badge"),
     t("teamSelect.custom.steps.replace"),
+    t("teamSelect.founders.stepTitle"),
   ];
 
   const colorField = (
@@ -338,10 +371,14 @@ export default function CustomTeamWizardV2({
             </div>
             <img
               src={badgeSrc}
-              alt={t("teamSelect.custom.previewAlt", { tag: badgeTag })}
+              alt={
+                logoDataUri
+                  ? t("teamSelect.customLogo.previewAlt")
+                  : t("teamSelect.custom.previewAlt", { tag: badgeTag })
+              }
               width={96}
               height={96}
-              className="size-24 shrink-0"
+              className="size-24 shrink-0 object-contain"
               data-testid="badge-preview-large"
             />
           </div>
@@ -500,13 +537,23 @@ export default function CustomTeamWizardV2({
                 </div>
               </fieldset>
 
+              <LogoUploadControl
+                value={logoDataUri}
+                onChange={setLogoDataUri}
+                backendError={backend?.field === "logo" ? error : null}
+                onInteract={() => {
+                  if (backend?.field === "logo") ackBackend();
+                }}
+                disabled={isSubmitting}
+              />
+
               <div className="flex items-center gap-4 rounded-lg border border-border bg-muted/30 p-4">
                 <img
                   src={badgeSrc}
                   alt=""
                   width={32}
                   height={32}
-                  className="size-8"
+                  className="size-8 object-contain"
                   data-testid="badge-preview-small"
                 />
                 <p className="text-sm text-muted-foreground">
@@ -593,7 +640,7 @@ export default function CustomTeamWizardV2({
                 aria-labelledby="custom-team-summary"
                 className="flex items-center gap-4 rounded-lg border border-border bg-muted/30 p-4"
               >
-                <img src={badgeSrc} alt="" width={32} height={32} className="size-12" />
+                <img src={badgeSrc} alt="" width={32} height={32} className="size-12 object-contain" />
                 <div className="min-w-0">
                   <h3
                     id="custom-team-summary"
@@ -611,8 +658,14 @@ export default function CustomTeamWizardV2({
                   </p>
                 </div>
               </section>
+            </div>
+          )}
 
-              {error && !backend && (
+          {step === FOUNDERS_STEP && (
+            <div className="space-y-6">
+              <FoundersStep state={squad} installError={founderError} />
+
+              {error && !backend && !founderError && (
                 <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
                   <p className="font-heading text-sm font-bold uppercase tracking-wide">
                     {t("teamSelect.custom.errors.title")}
@@ -647,7 +700,7 @@ export default function CustomTeamWizardV2({
               <button
                 type="button"
                 onClick={handleConfirm}
-                disabled={!validation.ok || isSubmitting}
+                disabled={!validation.ok || isSubmitting || !squad.inSync}
                 className="flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
               >
                 {isSubmitting && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}

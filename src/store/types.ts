@@ -1,3 +1,5 @@
+import type { FounderOverrides } from "@/lib/customTeam/founders";
+
 export interface TeamColors {
   primary: string;
   secondary: string;
@@ -734,10 +736,16 @@ export interface CompetitionSummary {
 /** User-defined club sent to `select_team`; mirrors the Rust `CustomTeamSpec`. */
 export interface CustomTeamSpec {
   name: string;
+  /** Normalized `data:image/png;base64,...` badge from `prepare_custom_logo`; omitted for the generated one. */
+  logo_data_uri?: string;
   short_name: string;
   primary_color: string;
   secondary_color: string;
   country: string;
+  /** Seed of the squad the wizard previewed; the install reproduces it. */
+  founding_seed?: number;
+  /** Identity edits to the generated founders, per role. */
+  founder_overrides?: FounderOverrides;
 }
 
 export interface TeamSummary {

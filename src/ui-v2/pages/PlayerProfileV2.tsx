@@ -9,6 +9,7 @@ import {
   type LolRole,
 } from "@/lib/playerProfile/champions";
 import { getPlayerAge, getPlayerTeamName } from "@/lib/playerProfile/helpers";
+import { canRenameFounder } from "@/lib/customTeam/founders";
 import { getScoutAvailability, type PlayerProfileScoutStatus } from "@/lib/playerProfile/scouting";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
@@ -32,6 +33,7 @@ import PlayerProfileContractCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfi
 import PlayerProfileHeroCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileHeroCardV2";
 import PlayerProfileMatchHistoryCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileMatchHistoryCardV2";
 import PlayerProfileReleaseModalV2 from "@/ui-v2/pages/playerProfile/PlayerProfileReleaseModalV2";
+import PlayerProfileRenameModalV2 from "@/ui-v2/pages/playerProfile/PlayerProfileRenameModalV2";
 import PlayerProfileRenewalModalV2 from "@/ui-v2/pages/playerProfile/PlayerProfileRenewalModalV2";
 import PlayerProfileStatsCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileStatsCardV2";
 import PlayerProfileTraitsCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileTraitsCardV2";
@@ -133,6 +135,7 @@ function PlayerProfileContent({
   const [playerHistory, setPlayerHistory] = useState<PlayerMatchHistoryEntryData[]>([]);
   const [rerollingRole, setRerollingRole] = useState(false);
   const [potentialResearchSubmitting, setPotentialResearchSubmitting] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
 
   const ovr = calculateLolOvr(player);
   const age = getPlayerAge(player.date_of_birth, gameState.clock.current_date);
@@ -151,6 +154,7 @@ function PlayerProfileContent({
   const isOwnAcademyPlayer =
     player.team_id !== null && managedTeamIds.has(player.team_id) && !isOwnMainPlayer;
   const isOwnClub = isOwnMainPlayer || isOwnAcademyPlayer;
+  const canRename = Boolean(onGameUpdate) && canRenameFounder(player, managerTeamId);
   const seasonContext = resolveSeasonContext(gameState);
   const isTransferWindowOpen =
     seasonContext.transfer_window.status === "Open" ||
@@ -340,6 +344,7 @@ function PlayerProfileContent({
         onToggleLoanList={
           onGameUpdate && isOwnClub ? () => void handleToggleList("toggle_loan_list") : undefined
         }
+        onRename={canRename ? () => setShowRenameModal(true) : undefined}
         t={t}
       />
 
@@ -422,6 +427,17 @@ function PlayerProfileContent({
         onDelegate={() => void renewal.handleDelegateRenewal()}
         onSubmit={() => void renewal.handleRenewalSubmit()}
       />
+
+      {showRenameModal ? (
+        <PlayerProfileRenameModalV2
+          player={player}
+          onClose={() => setShowRenameModal(false)}
+          onRenamed={(updated) => {
+            onGameUpdate?.(updated);
+            setShowRenameModal(false);
+          }}
+        />
+      ) : null}
 
       {transfer.showReleaseContractModal ? (
         <PlayerProfileReleaseModalV2

@@ -14,7 +14,10 @@ use ts_rs::TS;
 
 use crate::academy;
 use crate::competitions::is_selectable_competition;
+use crate::custom_logo::{self, LogoError};
+use crate::domain::player::Player;
 use crate::domain::team::{AcademyLifecycle, Facilities, Team, TeamColors, TeamKind};
+use crate::founder_identity::FounderOverrides;
 use crate::game::Game;
 use crate::game_setup;
 use crate::generator::definitions::CompetitionManifest;
@@ -45,6 +48,24 @@ pub struct CustomTeamSpec {
     pub secondary_color: String,
     /// Country code or name; must not be empty.
     pub country: String,
+    /// Optional uploaded badge as a `data:image/png;base64,...` URI. Validated
+    /// and re-encoded by [`custom_logo::normalize_logo`]; when absent the club
+    /// gets the generated SVG badge. Optional so older payloads still parse.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(optional))]
+    pub logo_data_uri: Option<String>,
+    /// Seed of the generated founding squad. Optional so payloads and saves
+    /// written before the squad existed still parse; when absent the caller
+    /// picks one. The generated players are stored in the game, so the seed is
+    /// never needed again after world build.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(optional))]
+    pub founding_seed: Option<u32>,
+    /// Identity edits for the generated founders, per role. Optional so older
+    /// payloads still parse; see [`crate::founder_identity`] for the rules.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(optional))]
+    pub founder_overrides: Option<FounderOverrides>,
 }
 
 /// Why a custom club could not be created.
@@ -68,6 +89,8 @@ pub enum CustomTeamError {
     ReplacedTeamNotInCompetition,
     /// Only main clubs can be replaced, never academies.
     NotCustomizableTeamKind,
+    /// The uploaded badge was rejected; the reason is the machine code.
+    InvalidLogo(LogoError),
 }
 
 impl fmt::Display for CustomTeamError {
@@ -86,6 +109,7 @@ impl fmt::Display for CustomTeamError {
                 write!(f, "The replaced team is not in this competition")
             }
             Self::NotCustomizableTeamKind => write!(f, "Only main clubs can be replaced"),
+            Self::InvalidLogo(reason) => write!(f, "Invalid club logo: {}", reason.reason()),
         }
     }
 }
@@ -106,6 +130,11 @@ pub fn custom_team_allowed(manifest: &CompetitionManifest) -> bool {
         .tier
         .is_some_and(|tier| tier >= MIN_CUSTOM_TEAM_TIER)
         && is_selectable_competition(manifest)
+}
+
+/// Whether `team_id` has the shape [`custom_team_id`] produces.
+pub fn is_custom_team_id(team_id: &str) -> bool {
+    team_id.contains("-custom-")
 }
 
 /// Id of a custom club: `{competition_id}-custom-{slug}`, where the slug is the
@@ -157,6 +186,13 @@ pub fn validate_spec(
         return Err(CustomTeamError::MissingCountry);
     }
 
+    let logo_data_uri = spec
+        .logo_data_uri
+        .as_deref()
+        .map(custom_logo::normalize_logo)
+        .transpose()
+        .map_err(CustomTeamError::InvalidLogo)?;
+
     let lowered_name = name.to_lowercase();
     let lowered_short = short_name.to_lowercase();
     let mut real_others = others
@@ -178,6 +214,9 @@ pub fn validate_spec(
         primary_color,
         secondary_color,
         country: country.to_string(),
+        logo_data_uri,
+        founding_seed: spec.founding_seed,
+        founder_overrides: spec.founder_overrides.clone(),
     })
 }
 
@@ -294,6 +333,93 @@ pub fn league_median_profile(peers: &[&Team]) -> ClubProfile {
         ))
         .unwrap_or(defaults.stadium_capacity),
         sponsorship: pick(|t| t.sponsorship.as_ref().map_or(0, |s| s.base_value), 0),
+    }
+}
+
+/// Fewest Main peer teams for the peer OVR percentiles to be trusted.
+const MIN_PEER_TEAMS_FOR_PERCENTILES: usize = 4;
+/// Fewest rostered peer players for the peer OVR percentiles to be trusted.
+const MIN_PEER_PLAYERS_FOR_PERCENTILES: usize = 20;
+
+/// Natural OVR distribution of the players under contract at a competition's
+/// Main clubs. Anchors the strength of a generated founding squad.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OvrPercentiles {
+    /// 10th percentile.
+    pub p10: u8,
+    /// 25th percentile.
+    pub p25: u8,
+    /// Median.
+    pub p50: u8,
+    /// 75th percentile.
+    pub p75: u8,
+    /// 90th percentile.
+    pub p90: u8,
+    /// `true` when measured from peers, `false` for the default window.
+    pub from_peers: bool,
+}
+
+impl OvrPercentiles {
+    /// Default window used when a competition has too few peers: `[60, 78]`.
+    pub const FALLBACK: OvrPercentiles = OvrPercentiles {
+        p10: 60,
+        p25: 64,
+        p50: 69,
+        p75: 73,
+        p90: 78,
+        from_peers: false,
+    };
+}
+
+/// Value at quantile `q` (0.0..=1.0) of an ascending, non-empty slice, linearly
+/// interpolated between the two nearest ranks and rounded to the nearest OVR.
+fn quantile(sorted: &[u8], q: f64) -> u8 {
+    let last = sorted.len().saturating_sub(1);
+    let position = q.clamp(0.0, 1.0) * last as f64;
+    let lower = position.floor() as usize;
+    let upper = position.ceil() as usize;
+    let weight = position - lower as f64;
+    let low = f64::from(sorted[lower.min(last)]);
+    let high = f64::from(sorted[upper.min(last)]);
+    (low + (high - low) * weight).round() as u8
+}
+
+/// Percentiles (p10, p25, p50, p75, p90) of the natural OVR of the players under
+/// contract on the Main clubs among `peers`.
+///
+/// Academies and players without a team (or on a team outside `peers`) are
+/// ignored. With fewer than 4 Main peers, or fewer than 20 rostered players,
+/// the result is [`OvrPercentiles::FALLBACK`].
+pub fn peer_ovr_percentiles(peers: &[&Team], players: &[Player]) -> OvrPercentiles {
+    let main_ids: std::collections::HashSet<&str> = peers
+        .iter()
+        .filter(|team| team.team_kind == TeamKind::Main)
+        .map(|team| team.id.as_str())
+        .collect();
+    if main_ids.len() < MIN_PEER_TEAMS_FOR_PERCENTILES {
+        return OvrPercentiles::FALLBACK;
+    }
+    let mut ovrs: Vec<u8> = players
+        .iter()
+        .filter(|player| {
+            player
+                .team_id
+                .as_deref()
+                .is_some_and(|id| main_ids.contains(id))
+        })
+        .map(|player| crate::player_rating::natural_ovr(player).round().clamp(1.0, 99.0) as u8)
+        .collect();
+    if ovrs.len() < MIN_PEER_PLAYERS_FOR_PERCENTILES {
+        return OvrPercentiles::FALLBACK;
+    }
+    ovrs.sort_unstable();
+    OvrPercentiles {
+        p10: quantile(&ovrs, 0.10),
+        p25: quantile(&ovrs, 0.25),
+        p50: quantile(&ovrs, 0.50),
+        p75: quantile(&ovrs, 0.75),
+        p90: quantile(&ovrs, 0.90),
+        from_peers: true,
     }
 }
 
@@ -425,11 +551,9 @@ pub fn replace_team_with_custom(
     team.transfer_budget = profile.transfer_budget;
     team.reputation = profile.reputation;
     team.competition_id = Some(competition_id.to_string());
-    team.logo_url = Some(badge_data_uri(
-        &spec.short_name,
-        &spec.primary_color,
-        &spec.secondary_color,
-    ));
+    team.logo_url = Some(spec.logo_data_uri.clone().unwrap_or_else(|| {
+        badge_data_uri(&spec.short_name, &spec.primary_color, &spec.secondary_color)
+    }));
     team.colors = TeamColors {
         primary: spec.primary_color.clone(),
         secondary: spec.secondary_color.clone(),

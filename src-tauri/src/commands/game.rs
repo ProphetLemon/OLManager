@@ -38,6 +38,11 @@ pub struct TeamSelectionData {
 
 use olm_core::competitions::{competition_id_from_team_id_known, sanitize_competition_references};
 use olm_core::custom_team::{self, CustomTeamSpec};
+use olm_core::founder_identity::{FounderError, FounderOverrides};
+use olm_core::founding_squad::{
+    FoundingSquadError, FoundingSquadOutcome, FoundingSquadSummary, install_founding_squad_with,
+    plan_founding_squad,
+};
 
 /// Plain inputs for [`build_new_game_world`]: everything the Flow C world
 /// assembly needs, with no Tauri handle involved.
@@ -91,6 +96,58 @@ pub(crate) fn build_new_game_world_with_rating_overrides(
     inputs: &NewGameWorldInputs<'_>,
     rating_overrides: &PlayerRatingOverrides,
 ) -> Result<String, String> {
+    assemble_base_world(game, inputs, rating_overrides)?;
+
+    // The custom club takes its slot after the overlay (so roster moves into the
+    // replaced club are released with the rest) and before the fill. Its founding
+    // squad is generated right away, so the fill finds all five roles covered; if
+    // the generator fails, the fill signs free agents like it does for any club.
+    let user_team_id = match inputs.custom_team {
+        Some(spec) => {
+            let team_id = install_custom_club(game, inputs, spec)?;
+            install_generated_squad(game, inputs, spec, &team_id)
+                .map_err(|error| error.to_wire())?;
+            team_id
+        }
+        None => inputs.team_id.to_string(),
+    };
+
+    // The overlay can leave a team short; make every Main team playable.
+    fill_short_rosters(game);
+    if inputs.custom_team.is_some() {
+        ensure_custom_club_roster(game, &user_team_id)?;
+    }
+
+    // Whoever is still without a team (including players detached as orphans) starts
+    // contract-free with no stale seed wage; their ask comes from the wage scale.
+    let cleared = game_setup::clear_free_agent_contracts(&mut game.players);
+    info!("[game] {} free agents start without a contract or wage", cleared);
+
+    // Rostered players the data ships without a wage get one from the LEC wage scale.
+    seed_missing_wages(game);
+
+    // Everyone on a team now is a resident of that team's league region; only
+    // later signings can be imports.
+    let grandfathered = olm_core::residency::grandfather_rostered_players(game);
+    olm_core::residency::refresh_import_flags(game);
+    info!("[game] grandfathered residency for {} rostered players", grandfathered);
+
+    auto_fill_user_lineup(game, &user_team_id);
+    eprintln!(
+        "[select_team] AFTER assembly: staff.len={}",
+        game.staff.len()
+    );
+    Ok(user_team_id)
+}
+
+/// The part of the world build the founding squad depends on, shared by
+/// [`build_new_game_world`] and the squad preview so both see the same world: the
+/// game clock, the modular data and the roster overlay.
+fn assemble_base_world(
+    game: &mut Game,
+    inputs: &NewGameWorldInputs<'_>,
+    rating_overrides: &PlayerRatingOverrides,
+) -> Result<(), String> {
     // The new game starts in the season after the roster snapshot, so ages,
     // contracts and the schedule all line up with that year.
     game.clock = GameClock::new(new_game_start_for(inputs.overlay));
@@ -129,41 +186,7 @@ pub(crate) fn build_new_game_world_with_rating_overrides(
             game_setup::apply_default_market_values(&mut game.players);
         }
     }
-
-    // The custom club takes its slot after the overlay (so roster moves into the
-    // replaced club are released with the rest) and before the fill (so it is
-    // filled from the released players and the free-agent pool like any club).
-    let user_team_id = match inputs.custom_team {
-        Some(spec) => install_custom_club(game, inputs, spec)?,
-        None => inputs.team_id.to_string(),
-    };
-
-    // The overlay can leave a team short; make every Main team playable.
-    fill_short_rosters(game);
-    if inputs.custom_team.is_some() {
-        ensure_custom_club_roster(game, &user_team_id)?;
-    }
-
-    // Whoever is still without a team (including players detached as orphans) starts
-    // contract-free with no stale seed wage; their ask comes from the wage scale.
-    let cleared = game_setup::clear_free_agent_contracts(&mut game.players);
-    info!("[game] {} free agents start without a contract or wage", cleared);
-
-    // Rostered players the data ships without a wage get one from the LEC wage scale.
-    seed_missing_wages(game);
-
-    // Everyone on a team now is a resident of that team's league region; only
-    // later signings can be imports.
-    let grandfathered = olm_core::residency::grandfather_rostered_players(game);
-    olm_core::residency::refresh_import_flags(game);
-    info!("[game] grandfathered residency for {} rostered players", grandfathered);
-
-    auto_fill_user_lineup(game, &user_team_id);
-    eprintln!(
-        "[select_team] AFTER assembly: staff.len={}",
-        game.staff.len()
-    );
-    Ok(user_team_id)
+    Ok(())
 }
 
 /// Replace `inputs.team_id` with the custom club and return the new club's id.
@@ -200,6 +223,189 @@ fn install_custom_club(
         outcome.released_staff_ids.len()
     );
     Ok(outcome.team_id)
+}
+
+/// Fresh seed for a founding squad the request did not seed. The app crate owns
+/// this non-determinism; `olm_core` only ever sees the resulting number.
+fn random_founding_seed() -> u32 {
+    use rand::RngExt;
+    rand::rng().random::<u32>()
+}
+
+/// Everything the founding squad is generated from besides the world: the seed
+/// (random when the spec has none), the competition's home country and the
+/// identity edits. The preview and the install both read it from here.
+struct FoundingArgs<'a> {
+    seed: u32,
+    home_country: Option<&'a str>,
+    overrides: FounderOverrides,
+}
+
+fn founding_args<'a>(inputs: &NewGameWorldInputs<'a>, spec: &CustomTeamSpec) -> FoundingArgs<'a> {
+    FoundingArgs {
+        seed: spec.founding_seed.unwrap_or_else(random_founding_seed),
+        home_country: inputs
+            .manifests
+            .iter()
+            .find(|manifest| manifest.id == inputs.competition_id)
+            .and_then(|manifest| manifest.country.as_deref()),
+        overrides: spec.founder_overrides.clone().unwrap_or_default(),
+    }
+}
+
+/// Gives the new custom club its generated founding squad and the wage budget
+/// derived from it.
+///
+/// A generator error never fails club creation: it logs a warning and returns
+/// `Ok(None)`, leaving the club to the free-agent roster fill. A broken identity
+/// override is the user's input, so it returns `Err` and the creation is rejected
+/// instead of falling back.
+fn install_generated_squad(
+    game: &mut Game,
+    inputs: &NewGameWorldInputs<'_>,
+    spec: &CustomTeamSpec,
+    team_id: &str,
+) -> Result<Option<FoundingSquadOutcome>, FounderError> {
+    let args = founding_args(inputs, spec);
+    match install_founding_squad_with(
+        game,
+        inputs.competition_id,
+        team_id,
+        args.home_country,
+        u64::from(args.seed),
+        &args.overrides,
+    ) {
+        Ok(outcome) => {
+            info!(
+                "[game] founding squad for {} (seed {}): {} players, wage budget {} (peer median {}, {} peers{})",
+                team_id,
+                args.seed,
+                outcome.player_ids.len(),
+                outcome.wage_budget,
+                outcome.peer_median_wage_budget,
+                outcome.peer_count,
+                if outcome.percentiles_from_peers {
+                    ""
+                } else {
+                    ", default OVR window"
+                }
+            );
+            Ok(Some(outcome))
+        }
+        Err(FoundingSquadError::Edit(error)) => Err(FounderError::InvalidField(error)),
+        Err(error) => {
+            warn!(
+                "[game] founding squad for {} failed ({}); falling back to the free-agent fill",
+                team_id, error
+            );
+            Ok(None)
+        }
+    }
+}
+
+/// Name of the stand-in club a squad preview builds around; it never reaches a game.
+const PREVIEW_CLUB_NAME: &str = "Founding Preview";
+
+/// The founding squad `build_new_game_world` would install for the same inputs,
+/// built on a scratch game and returned as the wizard's summary.
+///
+/// It runs the real world build up to the squad: the same clock, data, roster
+/// overlay and custom-club replacement, so the peers and the taken names (the
+/// replaced club's released players included) are exactly the install's. Then it
+/// calls the same [`plan_founding_squad`] the install does. `inputs.custom_team`
+/// must be set. Nothing is created, saved or put in the session.
+pub(crate) fn preview_founding_squad_world(
+    inputs: &NewGameWorldInputs<'_>,
+) -> Result<FoundingSquadSummary, String> {
+    let spec = inputs
+        .custom_team
+        .ok_or_else(|| "A squad preview needs a custom club".to_string())?;
+    let manager = Manager::new(
+        "preview".to_string(),
+        String::new(),
+        String::new(),
+        "1990-01-01".to_string(),
+        "ES".to_string(),
+    );
+    let mut game = Game::new(
+        GameClock::new(chrono::Utc::now()),
+        manager,
+        vec![],
+        vec![],
+        vec![],
+        vec![],
+    );
+    // The same bundled ratings the install uses, so the preview equals the install.
+    assemble_base_world(
+        &mut game,
+        inputs,
+        olm_core::player_rating_overrides::bundled(),
+    )?;
+    let team_id = install_custom_club(&mut game, inputs, spec)?;
+    let args = founding_args(inputs, spec);
+    plan_founding_squad(
+        &game,
+        inputs.competition_id,
+        &team_id,
+        args.home_country,
+        u64::from(args.seed),
+        &args.overrides,
+    )
+    .map(|plan| plan.summary())
+    .map_err(|error| match error {
+        FoundingSquadError::Edit(edit) => FounderError::InvalidField(edit).to_wire(),
+        other => other.to_string(),
+    })
+}
+
+/// Preview of the generated founding squad for the creation wizard.
+///
+/// Returns the five founders (visible data only, never the hidden potential), the
+/// derived `wage_budget` and the yearly `bill`. It is read-only: it builds a
+/// scratch world, so it does not create, mutate or save a game and never touches
+/// the session. With the same `seed`, `short_name` and `founder_overrides`, the
+/// players `select_team` installs for the same custom club are exactly these.
+///
+/// `founder_overrides` are validated like the install's; a broken one is an `Err`
+/// holding the JSON of a [`FounderError`] (see `olm_core::founder_identity`).
+#[tauri::command]
+pub async fn preview_founding_squad(
+    app_handle: tauri::AppHandle,
+    competition_id: String,
+    replaced_team_id: String,
+    short_name: String,
+    seed: u32,
+    founder_overrides: Option<FounderOverrides>,
+) -> Result<FoundingSquadSummary, String> {
+    info!(
+        "[cmd] preview_founding_squad: competition={}, replaces={}, short_name={}, seed={}",
+        competition_id, replaced_team_id, short_name, seed
+    );
+    let manifests = crate::commands::competitions::scan_competitions(&app_handle);
+    let data_dir = crate::commands::competitions::require_data_base(&app_handle)?;
+    let overlay = resolve_world_overlay(&app_handle);
+    tauri::async_runtime::spawn_blocking(move || {
+        let spec = CustomTeamSpec {
+            name: PREVIEW_CLUB_NAME.to_string(),
+            short_name,
+            primary_color: "#000000".to_string(),
+            secondary_color: "#ffffff".to_string(),
+            country: "ES".to_string(),
+            logo_data_uri: None,
+            founding_seed: Some(seed),
+            founder_overrides,
+        };
+        preview_founding_squad_world(&NewGameWorldInputs {
+            data_dir: &data_dir,
+            manifests: &manifests,
+            competition_id: &competition_id,
+            team_id: &replaced_team_id,
+            overlay: overlay.as_ref(),
+            custom_team: Some(&spec),
+        })
+    })
+    .await
+    .map_err(|error| format!("Squad preview failed: {error}"))?
 }
 
 /// Fail unless the custom club covers the five roles with players under
@@ -1558,6 +1764,7 @@ mod tests {
     mod bundled_overlay_new_game {
         use super::*;
         use olm_core::db::save_manager::SaveManager;
+        use olm_core::founder_identity::FounderIdentityOverride;
         use std::collections::{HashMap, HashSet};
 
         const ROLES: [LolRole; 5] = [
@@ -2813,6 +3020,9 @@ mod tests {
                 primary_color: "#f97316".to_string(),
                 secondary_color: "#111111".to_string(),
                 country: "ES".to_string(),
+                logo_data_uri: None,
+                founding_seed: None,
+                founder_overrides: None,
             }
         }
 
@@ -2891,7 +3101,9 @@ mod tests {
             let med = |extract: fn(&Team) -> i64| median(peers.iter().map(|t| extract(t)).collect());
 
             assert_eq!(club.finance, med(|t| t.finance));
-            assert_eq!(club.wage_budget, med(|t| t.wage_budget));
+            // The wage budget is the exception: it is derived from the founding squad's bill.
+            let squad: Vec<Player> = founders(&game, &id).into_iter().cloned().collect();
+            assert_eq!(club.wage_budget, olm_core::squad_generator::founding_wage_budget(&squad));
             assert_eq!(club.transfer_budget, med(|t| t.transfer_budget));
             assert_eq!(i64::from(club.reputation), med(|t| i64::from(t.reputation)));
             assert!(club.finance > 0, "the median ignores clubs shipped without finances");
@@ -3070,6 +3282,569 @@ mod tests {
             }
             let bill: i64 = roster.iter().map(|p| i64::from(p.wage)).sum();
             assert!(bill <= club.wage_budget, "generated bill {bill} over {}", club.wage_budget);
+        }
+
+        fn seeded_rayo(seed: u32) -> CustomTeamSpec {
+            CustomTeamSpec {
+                logo_data_uri: None,
+                founding_seed: Some(seed),
+                founder_overrides: None,
+                ..rayo()
+            }
+        }
+
+        fn founders<'a>(game: &'a Game, id: &str) -> Vec<&'a Player> {
+            game.players
+                .iter()
+                .filter(|p| p.team_id.as_deref() == Some(id))
+                .collect()
+        }
+
+        /// Everything a seed decides about a squad, in role order.
+        fn squad_fingerprint(game: &Game, id: &str) -> Vec<(String, String, String, String, u32, u8)> {
+            let mut squad: Vec<_> = founders(game, id)
+                .into_iter()
+                .map(|p| {
+                    (
+                        p.id.clone(),
+                        p.match_name.clone(),
+                        p.full_name.clone(),
+                        p.date_of_birth.clone(),
+                        p.wage,
+                        p.lol_ovr,
+                    )
+                })
+                .collect();
+            squad.sort();
+            squad
+        }
+
+        /// A new custom club starts with five generated players: one per role at the wage
+        /// floor, a wage budget derived from their bill, names that exist nowhere else in the
+        /// world, a legal and valid lineup, and the replaced club's real players left on the
+        /// market instead of being signed by the custom club.
+        #[test]
+        fn a_new_custom_club_gets_the_generated_founding_squad() {
+            let (plain, _overlay, _) = try_build_world(LES_SLOT, None).expect("plain world");
+            let replaced_players = roster_ids(&plain, LES_SLOT);
+            assert!(!replaced_players.is_empty());
+
+            let (game, _overlay, id) =
+                try_build_world(LES_SLOT, Some(&seeded_rayo(7))).expect("custom club world");
+
+            let squad = founders(&game, &id);
+            assert_eq!(squad.len(), 5);
+            assert!(squad.iter().all(|p| p.id.starts_with("gen-ray-")), "only generated players");
+            for role in ROLES {
+                assert_eq!(squad.iter().filter(|p| p.natural_position == role).count(), 1);
+            }
+            assert!(squad.iter().all(|p| p.wage >= olm_core::wage_scale::scale_wage_for_market_value(p.market_value)));
+            let owned: Vec<Player> = squad.iter().map(|p| (*p).clone()).collect();
+            let club = game.teams.iter().find(|t| t.id == id).expect("club");
+            assert_eq!(club.wage_budget, olm_core::squad_generator::founding_wage_budget(&owned));
+            assert!(annual_bill(&game, &id) <= club.wage_budget);
+
+            // The replaced club's players go back to the market: the custom club never signs
+            // them (other clubs' short rosters may, exactly as before this feature).
+            let released: Vec<&Player> = game
+                .players
+                .iter()
+                .filter(|p| replaced_players.contains(&p.id))
+                .collect();
+            assert_eq!(released.len(), replaced_players.len(), "released players are kept");
+            assert!(released.iter().all(|p| p.team_id.as_deref() != Some(id.as_str())));
+            assert!(released.iter().filter(|p| p.team_id.is_none()).all(|p| p.contract_end.is_none()));
+
+            let generated_ids: HashSet<&str> = squad.iter().map(|p| p.id.as_str()).collect();
+            let others: Vec<&Player> = game
+                .players
+                .iter()
+                .filter(|p| !generated_ids.contains(p.id.as_str()))
+                .collect();
+            for new in &squad {
+                assert!(!others.iter().any(|p| p.match_name.eq_ignore_ascii_case(&new.match_name)), "{}", new.match_name);
+                assert!(!others.iter().any(|p| p.full_name.eq_ignore_ascii_case(&new.full_name)), "{}", new.full_name);
+            }
+
+            assert_eq!(club.active_lineup_ids.len(), 5);
+            let lineup: HashSet<&str> = club.active_lineup_ids.iter().map(String::as_str).collect();
+            assert_eq!(lineup, generated_ids);
+            assert!(olm_core::residency::validate_lineup_imports(&game, &id, &club.active_lineup_ids).is_ok());
+            assert!(squad.iter().all(|p| !p.is_import));
+            assert!(duplicate_player_ids(&game.players).is_empty());
+            ensure_custom_club_roster(&game, &id).expect("full roster");
+
+            // The season setup that follows must leave the squad and its budget alone.
+            let budget = club.wage_budget;
+            let before = squad_fingerprint(&game, &id);
+            let mut game = game;
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &id).expect("season setup");
+            assert_eq!(squad_fingerprint(&game, &id), before);
+            assert_eq!(game.teams.iter().find(|t| t.id == id).map(|t| t.wage_budget), Some(budget));
+        }
+
+        #[test]
+        fn the_same_founding_seed_builds_the_same_squad() {
+            let (a, _, id_a) = try_build_world(LES_SLOT, Some(&seeded_rayo(21))).expect("a");
+            let (b, _, id_b) = try_build_world(LES_SLOT, Some(&seeded_rayo(21))).expect("b");
+            let (c, _, id_c) = try_build_world(LES_SLOT, Some(&seeded_rayo(22))).expect("c");
+
+            assert_eq!(squad_fingerprint(&a, &id_a), squad_fingerprint(&b, &id_b));
+            assert_ne!(squad_fingerprint(&a, &id_a), squad_fingerprint(&c, &id_c));
+        }
+
+        /// The wizard's preview for `slot`, built the way the `preview_founding_squad`
+        /// command does it, with a spec that differs from the real one in everything
+        /// the squad does not depend on.
+        fn preview_for(
+            slot: &str,
+            short_name: &str,
+            seed: u32,
+            overrides: Option<FounderOverrides>,
+        ) -> Result<FoundingSquadSummary, String> {
+            let data = data_base();
+            let (manifests, known) = known_ids_and_manifests();
+            let overlay = olm_core::world_overlay::bundled_world_overlay().expect("bundled overlay");
+            let spec = CustomTeamSpec {
+                name: PREVIEW_CLUB_NAME.to_string(),
+                short_name: short_name.to_string(),
+                primary_color: "#000000".to_string(),
+                secondary_color: "#ffffff".to_string(),
+                country: "ES".to_string(),
+                logo_data_uri: None,
+                founding_seed: Some(seed),
+                founder_overrides: overrides,
+            };
+            preview_founding_squad_world(&NewGameWorldInputs {
+                data_dir: &data,
+                manifests: &manifests,
+                competition_id: competition_id_from_team_id_known(slot, &known).expect("competition"),
+                team_id: slot,
+                overlay: Some(&overlay),
+                custom_team: Some(&spec),
+            })
+        }
+
+        fn install_spec(
+            short_name: &str,
+            seed: u32,
+            overrides: Option<FounderOverrides>,
+        ) -> CustomTeamSpec {
+            CustomTeamSpec {
+                short_name: short_name.to_string(),
+                logo_data_uri: None,
+                founding_seed: Some(seed),
+                founder_overrides: overrides,
+                ..rayo()
+            }
+        }
+
+        /// What a preview shows must be what the install creates, field by field.
+        fn assert_preview_matches_install(summary: &FoundingSquadSummary, game: &Game, id: &str) {
+            let club = game.teams.iter().find(|t| t.id == id).expect("club");
+            let mut installed = founders(game, id);
+            installed.sort_by_key(|p| ROLES.iter().position(|r| *r == p.natural_position));
+            assert_eq!(summary.players.len(), installed.len());
+            for (shown, real) in summary.players.iter().zip(installed) {
+                assert_eq!(shown.id, real.id);
+                assert_eq!(shown.role, real.natural_position);
+                assert_eq!(shown.nick, real.match_name);
+                assert_eq!(shown.full_name, real.full_name);
+                assert_eq!(shown.nationality, real.nationality);
+                assert_eq!(shown.date_of_birth, real.date_of_birth);
+                assert_eq!(shown.ovr, real.lol_ovr);
+                assert_eq!(shown.attributes.as_array(), real.attributes.as_array());
+                assert_eq!(shown.wage, real.wage);
+                assert_eq!(Some(shown.contract_end.as_str()), real.contract_end.as_deref());
+                assert_eq!(shown.market_value, real.market_value);
+            }
+            assert_eq!(summary.wage_budget, club.wage_budget);
+            assert_eq!(summary.bill, annual_bill(game, id));
+        }
+
+        /// PREVIEW MUST EQUAL INSTALL: same seed and inputs, same players, on two replaced
+        /// slots (the second one is a different club with different released players).
+        #[test]
+        fn the_preview_equals_the_installed_squad_for_several_seeds() {
+            for slot in [LES_SLOT, "les-team-8baee3fd"] {
+                for seed in [7_u32, 21, 1_234, 987_654] {
+                    let started = std::time::Instant::now();
+                    let summary = preview_for(slot, "RAY", seed, None).expect("preview");
+                    eprintln!("[preview] {slot} seed {seed}: {:?}", started.elapsed());
+                    let (game, _overlay, id) =
+                        try_build_world(slot, Some(&install_spec("RAY", seed, None))).expect("install");
+                    assert_preview_matches_install(&summary, &game, &id);
+                }
+            }
+        }
+
+        /// The preview reproduces the install's identity edits and the budget derived after them.
+        #[test]
+        fn the_preview_equals_the_installed_squad_with_identity_edits() {
+            let region = olm_core::residency::region_for_competition("les").expect("region");
+            let nationality = olm_core::residency::region_nationality_codes(region)
+                .pop()
+                .expect("a region code");
+            let overrides = FounderOverrides {
+                top: Some(FounderIdentityOverride {
+                    nick: Some("  Zed_77 ".to_string()),
+                    full_name: Some("Ana   Núñez-Ruiz".to_string()),
+                    nationality: Some(nationality.to_lowercase()),
+                    birth_date: None,
+                }),
+                support: Some(FounderIdentityOverride {
+                    birth_date: None,
+                    ..FounderIdentityOverride::default()
+                }),
+                ..FounderOverrides::default()
+            };
+            for seed in [3_u32, 55] {
+                // Birth dates are locked to the generated age: take the ends of each range.
+                let plain = preview_for(LES_SLOT, "RAY", seed, None).expect("plain preview");
+                let bounds = |role| {
+                    let founder = plain.players.iter().find(|p| p.role == role).expect("founder");
+                    (founder.birth_date_min.clone(), founder.birth_date_max.clone())
+                };
+                let mut overrides = overrides.clone();
+                if let Some(top) = overrides.top.as_mut() {
+                    top.birth_date = Some(bounds(LolRole::Top).0);
+                }
+                if let Some(support) = overrides.support.as_mut() {
+                    support.birth_date = Some(bounds(LolRole::Support).1);
+                }
+                let summary =
+                    preview_for(LES_SLOT, "RAY", seed, Some(overrides.clone())).expect("preview");
+                let (game, _overlay, id) = try_build_world(
+                    LES_SLOT,
+                    Some(&install_spec("RAY", seed, Some(overrides.clone()))),
+                )
+                .expect("install");
+                assert_preview_matches_install(&summary, &game, &id);
+                let top = summary.players.iter().find(|p| p.role == LolRole::Top).expect("top");
+                assert_eq!((top.nick.as_str(), top.full_name.as_str()), ("Zed_77", "Ana Núñez-Ruiz"));
+                assert_eq!(top.nationality, nationality);
+                let plain_top = plain.players.iter().find(|p| p.role == LolRole::Top).expect("top");
+                assert_eq!(top.age, plain_top.age);
+                assert_eq!(top.wage, plain_top.wage);
+                assert_eq!(top.market_value, plain_top.market_value);
+                assert_eq!(summary.wage_budget, plain.wage_budget);
+                for shown in &summary.players {
+                    let real = game.players.iter().find(|p| p.id == shown.id).expect("player");
+                    assert!(
+                        real.wage >= olm_core::wage_scale::scale_wage_for_market_value(real.market_value),
+                        "{} is paid under the wage floor",
+                        real.id
+                    );
+                }
+            }
+        }
+
+        /// Wire errors are JSON: `{"kind":"invalid_field","role":..,"field":..,"reason":..}`.
+        fn wire_error(error: &str) -> serde_json::Value {
+            serde_json::from_str(error).unwrap_or_else(|_| panic!("not a wire error: {error}"))
+        }
+
+        fn nick_override(nick: &str) -> Option<FounderOverrides> {
+            Some(FounderOverrides {
+                top: Some(FounderIdentityOverride {
+                    nick: Some(nick.to_string()),
+                    ..FounderIdentityOverride::default()
+                }),
+                ..FounderOverrides::default()
+            })
+        }
+
+        /// The names of the replaced club's released players are taken in the preview and in
+        /// the install alike, so an edit to one of them is rejected on both sides.
+        #[test]
+        fn an_edit_to_a_released_players_nick_is_rejected_by_preview_and_install() {
+            let (plain, _overlay, _) = try_build_world(LES_SLOT, None).expect("plain world");
+            let released = plain
+                .players
+                .iter()
+                .find(|p| p.team_id.as_deref() == Some(LES_SLOT))
+                .expect("a player of the replaced club");
+            let typed = released.match_name.to_uppercase();
+
+            let preview = preview_for(LES_SLOT, "RAY", 5, nick_override(&typed)).expect_err("preview");
+            let install = try_build_world(LES_SLOT, Some(&install_spec("RAY", 5, nick_override(&typed))))
+                .map(|(_, _, id)| id)
+                .expect_err("install");
+            for error in [preview, install] {
+                let wire = wire_error(&error);
+                assert_eq!(wire["kind"], "invalid_field");
+                assert_eq!(wire["role"], "TOP");
+                assert_eq!(wire["field"], "nick");
+                assert_eq!(wire["reason"], "taken");
+            }
+        }
+
+        /// An invalid edit rejects the creation: no silent fallback to the generated name.
+        #[test]
+        fn an_invalid_edit_rejects_the_creation_with_a_field_level_error() {
+            let error = try_build_world(LES_SLOT, Some(&install_spec("RAY", 5, nick_override("x"))))
+                .map(|(_, _, id)| id)
+                .expect_err("creation must be rejected");
+            let wire = wire_error(&error);
+            assert_eq!((wire["field"].as_str(), wire["reason"].as_str()), (Some("nick"), Some("too_short")));
+        }
+
+        /// A preview is a scratch build: it leaves a live session alone and only reads the world.
+        #[test]
+        fn a_preview_leaves_the_live_session_alone() {
+            let state = StateManager::new();
+            state.set_game(empty_session());
+            let before = state.get_game(|g| serde_json::to_value(g).expect("json")).expect("game");
+            preview_for(LES_SLOT, "RAY", 9, None).expect("preview");
+            let after = state.get_game(|g| serde_json::to_value(g).expect("json")).expect("game");
+            assert_eq!(before, after);
+            assert!(state.get_game(|g| g.teams.is_empty()).expect("game"));
+        }
+
+        /// A preview for a club the world cannot host is a plain error, not a wire error.
+        #[test]
+        fn a_preview_for_a_slot_outside_the_competition_fails() {
+            let error = preview_for(LEC_SLOT, "RAY", 9, None).expect_err("LEC takes no custom club");
+            assert!(serde_json::from_str::<serde_json::Value>(&error).is_err(), "{error}");
+        }
+
+        fn session_with_custom_club(seed: u32) -> (StateManager, String) {
+            let (mut game, _overlay, id) =
+                try_build_world(LES_SLOT, Some(&install_spec("RAY", seed, None))).expect("world");
+            game.manager.team_id = Some(id.clone());
+            let state = StateManager::new();
+            state.set_game(game);
+            (state, id)
+        }
+
+        fn state_player(state: &StateManager, player_id: &str) -> Player {
+            state
+                .get_game(|g| g.players.iter().find(|p| p.id == player_id).cloned())
+                .flatten()
+                .expect("player")
+        }
+
+        /// A valid rename updates the session and, once the game is saved, the save.
+        #[test]
+        fn renaming_a_founder_updates_the_session_and_the_save() {
+            let (state, id) = session_with_custom_club(11);
+            let founder = state
+                .get_game(|g| founders(g, &id).first().map(|p| p.id.clone()))
+                .flatten()
+                .expect("founder");
+            let returned = crate::commands::squad::rename_player_in_session(
+                &state,
+                &founder,
+                Some(" Zed_9 "),
+                Some("Ana  Ruiz"),
+            )
+            .expect("rename");
+            assert_eq!(returned.players.iter().find(|p| p.id == founder).map(|p| p.match_name.as_str()), Some("Zed_9"));
+            let live = state_player(&state, &founder);
+            assert_eq!((live.match_name.as_str(), live.full_name.as_str()), ("Zed_9", "Ana Ruiz"));
+
+            let dir = tempfile::tempdir().expect("temp dir");
+            let mut saves = olm_core::db::save_manager::SaveManager::init(dir.path()).expect("saves");
+            let game = state.get_game(|g| g.clone()).expect("game");
+            let save_id = saves.create_save(&game, "Rename").expect("create save");
+            let loaded = saves.load_game(&save_id).expect("load");
+            let saved = loaded.players.iter().find(|p| p.id == founder).expect("saved founder");
+            assert_eq!((saved.match_name.as_str(), saved.full_name.as_str()), ("Zed_9", "Ana Ruiz"));
+        }
+
+        #[test]
+        fn renaming_a_player_who_is_not_a_founder_is_rejected_and_changes_nothing() {
+            let (state, id) = session_with_custom_club(11);
+            let other = state
+                .get_game(|g| {
+                    g.players
+                        .iter()
+                        .find(|p| {
+                            p.team_id.as_deref().is_some_and(|team| team != id && team.starts_with("les-"))
+                        })
+                        .map(|p| p.id.clone())
+                })
+                .flatten()
+                .expect("another club's player");
+            let before = state_player(&state, &other);
+            let error = crate::commands::squad::rename_player_in_session(&state, &other, Some("Zed"), None)
+                .expect_err("rejected");
+            assert_eq!(wire_error(&error)["kind"], "not_a_founder");
+            assert_eq!(state_player(&state, &other).match_name, before.match_name);
+        }
+
+        #[test]
+        fn renaming_a_founder_to_a_taken_nick_is_rejected() {
+            let (state, id) = session_with_custom_club(11);
+            let (founder, taken) = state
+                .get_game(|g| {
+                    let founder = founders(g, &id).first().map(|p| p.id.clone());
+                    let taken = g
+                        .players
+                        .iter()
+                        .filter(|p| p.team_id.as_deref() != Some(id.as_str()))
+                        .find(|p| olm_core::founder_identity::normalize_nick(&p.match_name).is_ok())
+                        .map(|p| p.match_name.to_uppercase());
+                    (founder, taken)
+                })
+                .expect("game");
+            let error = crate::commands::squad::rename_player_in_session(
+                &state,
+                &founder.expect("founder"),
+                Some(&taken.expect("a nick")),
+                None,
+            )
+            .expect_err("duplicate");
+            let wire = wire_error(&error);
+            assert_eq!((wire["kind"].as_str(), wire["reason"].as_str()), (Some("invalid_field"), Some("taken")));
+        }
+
+        /// Without a seed the app picks one, and the squad is still generated.
+        #[test]
+        fn an_unseeded_custom_club_still_gets_a_generated_squad() {
+            let (game, id) = custom_game();
+            assert_eq!(founders(&game, &id).len(), 5);
+            assert!(founders(&game, &id).iter().all(|p| p.id.starts_with("gen-ray-")));
+        }
+
+        /// The founding squad is stored in the game: a save round trip does not need the seed.
+        #[test]
+        fn the_founding_squad_survives_a_serde_round_trip_without_the_seed() {
+            let (game, id) = custom_game();
+            let json = serde_json::to_string(&game).expect("serialize");
+            let loaded: Game = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(squad_fingerprint(&game, &id), squad_fingerprint(&loaded, &id));
+        }
+
+        /// When the generator refuses (a league median above what it supports), club
+        /// creation goes on with today's free-agent fill and the league-median budget.
+        #[test]
+        fn a_failed_generation_falls_back_to_the_free_agent_fill() {
+            let data = data_base();
+            let (manifests, known) = known_ids_and_manifests();
+            let overlay = olm_core::world_overlay::bundled_world_overlay().expect("bundled overlay");
+            let mut game = empty_session();
+            game.clock = GameClock::new(new_game_start_for(Some(&overlay)));
+            let (teams, players, staff) = assemble_world_from_modular_data(
+                &data,
+                &manifests,
+                "les",
+                LES_SLOT,
+                game.clock.current_date.date_naive(),
+            )
+            .expect("catalog");
+            game.teams = teams;
+            game.players = players;
+            game.staff = staff;
+            apply_roster_overlay(&mut game, &overlay);
+            let spec = rayo();
+            let inputs = NewGameWorldInputs {
+                data_dir: &data,
+                manifests: &manifests,
+                competition_id: competition_id_from_team_id_known(LES_SLOT, &known).expect("les"),
+                team_id: LES_SLOT,
+                overlay: Some(&overlay),
+                custom_team: Some(&spec),
+            };
+            let id = install_custom_club(&mut game, &inputs, &spec).expect("install");
+            for player in game.players.iter_mut().filter(|p| {
+                p.team_id
+                    .as_deref()
+                    .is_some_and(|team| team != id && team.starts_with("les-"))
+            }) {
+                player.attributes = PlayerAttributes::from_array([95; 9]);
+            }
+            let players_before = game.players.len();
+            let budget_before = game.teams.iter().find(|t| t.id == id).map(|t| t.wage_budget);
+
+            assert!(install_generated_squad(&mut game, &inputs, &spec, &id).expect("no edit error").is_none());
+
+            assert_eq!(game.players.len(), players_before);
+            assert_eq!(game.teams.iter().find(|t| t.id == id).map(|t| t.wage_budget), budget_before);
+            fill_short_rosters(&mut game);
+            ensure_custom_club_roster(&game, &id).expect("the free-agent fill still staffs the club");
+        }
+
+        /// Every competition that accepts a custom club generates a founding squad from the
+        /// real data. Skipped when `data/` is missing.
+        #[test]
+        fn every_custom_club_competition_generates_a_founding_squad() {
+            let data = data_base();
+            if !data.join("competitions").is_dir() {
+                eprintln!("data directory not found at {}; skipping", data.display());
+                return;
+            }
+            let (manifests, _known) = known_ids_and_manifests();
+            let overlay = olm_core::world_overlay::bundled_world_overlay().expect("bundled overlay");
+            let mut base = empty_session();
+            base.clock = GameClock::new(new_game_start_for(Some(&overlay)));
+            let (teams, players, staff) = assemble_world_from_modular_data(
+                &data,
+                &manifests,
+                "",
+                "",
+                base.clock.current_date.date_naive(),
+            )
+            .expect("catalog");
+            base.teams = teams;
+            base.players = players;
+            base.staff = staff;
+            apply_roster_overlay(&mut base, &overlay);
+
+            // Today only the competitions with a configured schedule accept custom clubs. The
+            // squad is also checked for every other active tier 2+ league, so enabling more of them
+            // later cannot hit an unsupported region or an empty peer set unnoticed.
+            let allowed: Vec<&CompetitionManifest> = manifests
+                .iter()
+                .filter(|m| {
+                    !m.legacy
+                        && (custom_team::custom_team_allowed(m)
+                            || (m.active && m.tier.is_some_and(|tier| tier >= 2)))
+                })
+                .collect();
+            assert!(
+                allowed.iter().any(|m| m.id == "les"),
+                "the LES must accept custom clubs, got {:?}",
+                allowed.iter().map(|m| m.id.as_str()).collect::<Vec<_>>()
+            );
+
+            let mut failures = Vec::new();
+            for manifest in allowed {
+                let Some(slot) = base
+                    .teams
+                    .iter()
+                    .find(|t| t.team_kind == TeamKind::Main && t.competition_id.as_deref() == Some(manifest.id.as_str()))
+                    .map(|t| t.id.clone())
+                else {
+                    failures.push(format!("{}: no Main team to replace", manifest.id));
+                    continue;
+                };
+                let mut game = base.clone();
+                let outcome = custom_team::replace_team_with_custom(&mut game, &manifest.id, &slot, &seeded_rayo(1))
+                    .expect("custom club");
+                match olm_core::founding_squad::install_founding_squad(
+                    &mut game,
+                    &manifest.id,
+                    &outcome.team_id,
+                    manifest.country.as_deref(),
+                    1,
+                ) {
+                    Ok(installed) => {
+                        let club = game.teams.iter().find(|t| t.id == outcome.team_id).expect("club");
+                        let region = olm_core::residency::team_region(club);
+                        let imports = founders(&game, &outcome.team_id)
+                            .iter()
+                            .filter(|p| olm_core::residency::is_import(p, region))
+                            .count();
+                        if installed.player_ids.len() != 5 || imports != 0 {
+                            failures.push(format!("{}: {} players, {imports} imports", manifest.id, installed.player_ids.len()));
+                        }
+                    }
+                    Err(error) => failures.push(format!("{}: {error}", manifest.id)),
+                }
+            }
+            assert!(failures.is_empty(), "founding squad failures: {failures:#?}");
         }
 
         /// The median club's reputation sits inside the range of its LES peers, so every

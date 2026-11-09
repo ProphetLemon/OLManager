@@ -2,6 +2,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { previewInvoke } from "@/ui-v2/pages/customTeam/founders/foundersTestKit";
+import type { PreviewCall } from "@/ui-v2/pages/customTeam/founders/foundersTestKit";
+
 const mocks = vi.hoisted(() => ({
   loadLeagueSelectionData: vi.fn(),
   selectTeam: vi.fn(),
@@ -108,16 +111,26 @@ async function openWizard() {
   fireEvent.click(await screen.findByRole("button", { name: /Create your team/i }));
 }
 
-function walkWizard() {
+/** Identity, badge and replace steps, then the founding squad step once its preview is in. */
+async function walkWizard() {
   fireEvent.change(screen.getByLabelText("Club name"), { target: { value: "Ray Esports" } });
   fireEvent.change(screen.getByLabelText("Country"), { target: { value: "ES" } });
   fireEvent.click(screen.getByRole("button", { name: "Next" }));
   fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  await screen.findByTestId("founder-mid");
 }
+
+let previewCalls: PreviewCall[] = [];
 
 describe("TeamSelectionV2", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    previewCalls = [];
+    const preview = previewInvoke(previewCalls);
+    mocks.invoke.mockImplementation(async (command: string, args?: unknown) =>
+      command === "preview_founding_squad" ? preview(command, args) : customGame(),
+    );
     mocks.rosterStatus = "idle";
     mocks.loadLeagueSelectionData.mockResolvedValue({
       competitions: [
@@ -285,9 +298,8 @@ describe("TeamSelectionV2", () => {
 
     it("confirms the replaced slot with the spec and builds the lineup from manager.team_id", async () => {
       mocks.selectTeam.mockResolvedValue(customGame());
-      mocks.invoke.mockResolvedValue(customGame());
       await openWizard();
-      walkWizard();
+      await walkWizard();
       fireEvent.click(screen.getByRole("button", { name: "Create club" }));
 
       await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith("/dashboard"));
@@ -297,6 +309,8 @@ describe("TeamSelectionV2", () => {
         primary_color: "#f97316",
         secondary_color: "#18181b",
         country: "ES",
+        // The seed of the last preview travels with the spec, so the install equals what was shown.
+        founding_seed: previewCalls[previewCalls.length - 1].seed,
       });
       // selectedTeamId was never set; the lineup must come from the generated club.
       expect(mocks.invoke).toHaveBeenCalledWith("set_active_lineup", {
@@ -307,12 +321,26 @@ describe("TeamSelectionV2", () => {
     it("keeps the wizard open and localizes a backend rejection", async () => {
       mocks.selectTeam.mockRejectedValue("Another team already uses this name");
       await openWizard();
-      walkWizard();
+      await walkWizard();
       fireEvent.click(screen.getByRole("button", { name: "Create club" }));
 
       expect(await screen.findByText("Another club already uses this name.")).toBeInTheDocument();
       expect(screen.getByRole("heading", { name: "Identity" })).toBeInTheDocument();
       expect(mocks.navigate).not.toHaveBeenCalledWith("/dashboard");
+    });
+
+    it("shows a founder rejection of the install on the squad step, not as raw JSON", async () => {
+      const raw = JSON.stringify({ kind: "invalid_field", role: "MID", field: "nick", reason: "taken" });
+      mocks.selectTeam.mockRejectedValue(raw);
+      await openWizard();
+      await walkWizard();
+      fireEvent.click(screen.getByRole("button", { name: "Create club" }));
+
+      expect(
+        await screen.findByText("Squad rejected. Mid, Nick: Another player already uses this name."),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(raw)).not.toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Founding squad" })).toBeInTheDocument();
     });
 
     it("returns to the team grid on Escape from the wizard", async () => {
@@ -326,7 +354,7 @@ describe("TeamSelectionV2", () => {
     it("disables Create club while the roster overlay is updating", async () => {
       mocks.rosterStatus = "updating";
       await openWizard();
-      walkWizard();
+      await walkWizard();
       expect(screen.getByRole("button", { name: "Create club" })).toBeDisabled();
     });
   });

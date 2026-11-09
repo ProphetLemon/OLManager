@@ -888,6 +888,77 @@ fn settlement_keeps_the_wage_budget_a_total_bill_budget_of_the_initial_order() {
     assert!(team2.wage_budget <= initial_budget * 12 / 10, "{}", team2.wage_budget);
 }
 
+/// Renames `team2` to a custom-club id everywhere the helper game refers to it.
+fn rename_team2_to_custom(game: &mut Game, custom_id: &str) {
+    for team in game.teams.iter_mut().filter(|team| team.id == "team2") {
+        team.id = custom_id.to_string();
+    }
+    for player in game.players.iter_mut() {
+        if player.team_id.as_deref() == Some("team2") {
+            player.team_id = Some(custom_id.to_string());
+        }
+    }
+    for league in game.leagues.iter_mut() {
+        for standing in league.standings.iter_mut().filter(|s| s.team_id == "team2") {
+            standing.team_id = custom_id.to_string();
+        }
+        for fixture in league.fixtures.iter_mut() {
+            if fixture.home_team_id == "team2" {
+                fixture.home_team_id = custom_id.to_string();
+            }
+            if fixture.away_team_id == "team2" {
+                fixture.away_team_id = custom_id.to_string();
+            }
+        }
+    }
+}
+
+#[test]
+fn settlement_keeps_a_custom_club_wage_budget_at_its_bill_over_the_derived_share() {
+    // 50% of a thin treasury would leave the bill above the budget and block every
+    // signing; the custom club keeps the budget its bill was derived for.
+    let mut game = make_completed_season_game();
+    let custom_id = "les-custom-zz";
+    rename_team2_to_custom(&mut game, custom_id);
+    for team in game.teams.iter_mut() {
+        team.finance = 400_000;
+    }
+    for player in game.players.iter_mut() {
+        if player.team_id.as_deref() == Some(custom_id) {
+            player.wage = 2_000_000;
+        }
+    }
+    let bill = olm_core::finances::calc_annual_wages(&game, custom_id);
+    assert!(bill > 0);
+
+    process_end_of_season(&mut game);
+
+    let custom = game.teams.iter().find(|team| team.id == custom_id).unwrap();
+    assert_eq!(
+        custom.wage_budget,
+        olm_core::squad_generator::wage_budget_for_bill(bill)
+    );
+    assert!(custom.wage_budget as f64 * 0.95 >= bill as f64);
+}
+
+#[test]
+fn settlement_still_sets_other_clubs_to_half_the_treasury() {
+    let mut game = make_completed_season_game();
+    rename_team2_to_custom(&mut game, "les-custom-zz");
+    for team in game.teams.iter_mut() {
+        team.finance = 400_000;
+    }
+    for player in game.players.iter_mut() {
+        player.wage = 2_000_000;
+    }
+
+    process_end_of_season(&mut game);
+
+    let other = game.teams.iter().find(|team| team.id == "team1").unwrap();
+    let share = (other.finance.max(0) as f64 * 0.5).round() as i64;
+    assert_eq!(other.wage_budget, share);
+}
+
 #[test]
 fn season_end_sends_scoped_prize_and_board_health_finance_mail_once() {
     let mut game = make_completed_season_game();

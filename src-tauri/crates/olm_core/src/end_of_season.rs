@@ -3,10 +3,12 @@ use crate::domain::message::*;
 use crate::domain::player::PlayerSeasonStats;
 use crate::domain::team::{FinancialTransactionKind, TeamSeasonRecord};
 use crate::finances::{
-    BudgetImpact, FinanceTransactionInput, push_board_financial_health_mail,
+    BudgetImpact, FinanceTransactionInput, calc_annual_wages, push_board_financial_health_mail,
     push_prize_payout_mail, record_transaction,
 };
+use crate::custom_team::is_custom_team_id;
 use crate::game::Game;
+use crate::squad_generator::wage_budget_for_bill;
 use crate::generator::definitions::CompetitionManifest;
 use crate::roster_stability::{RosterStabilityReason, repair_league};
 use crate::schedule::{
@@ -213,11 +215,15 @@ const WAGE_BUDGET_SHARE_OF_FINANCE: f64 = 0.50;
 /// 0.04 and 0.33 of cash (median 0.20), so 22% is already of the initial order.
 const TRANSFER_BUDGET_SHARE_OF_FINANCE: f64 = 0.22;
 
-fn refresh_hiring_cycle_budgets(team: &mut crate::domain::team::Team) {
+/// `bill_floor` is the lowest wage budget the club may be left with (0 for none).
+/// A custom club passes the budget its current bill needs to stay at the derived
+/// 95%, so the founding room under the cap survives the yearly refresh.
+fn refresh_hiring_cycle_budgets(team: &mut crate::domain::team::Team, bill_floor: i64) {
     // After split settlements (prize/objectives), rebalance next-cycle planning
     // budgets from current treasury so offseason hiring decisions have coherent funds.
     let treasury = team.finance.max(0) as f64;
-    team.wage_budget = (treasury * WAGE_BUDGET_SHARE_OF_FINANCE).round() as i64;
+    team.wage_budget =
+        ((treasury * WAGE_BUDGET_SHARE_OF_FINANCE).round() as i64).max(bill_floor);
     team.transfer_budget = (treasury * TRANSFER_BUDGET_SHARE_OF_FINANCE).round() as i64;
 }
 
@@ -551,6 +557,18 @@ fn process_end_of_season_inner(
         ..Default::default()
     };
 
+    // Custom clubs keep the wage budget their bill was derived for (see
+    // `refresh_hiring_cycle_budgets`); computed here because the loop below
+    // borrows the teams mutably.
+    let custom_bill_floors: HashMap<String, i64> = final_standings
+        .iter()
+        .filter(|standing| is_custom_team_id(&standing.team_id))
+        .map(|standing| {
+            let bill = calc_annual_wages(game, &standing.team_id);
+            (standing.team_id.clone(), wage_budget_for_bill(bill))
+        })
+        .collect();
+
     // 4. Record team season history
     for (idx, standing) in final_standings.iter().enumerate() {
         if let Some(team) = game.teams.iter_mut().find(|t| t.id == standing.team_id) {
@@ -593,7 +611,8 @@ fn process_end_of_season_inner(
                 .ok();
             }
 
-            refresh_hiring_cycle_budgets(team);
+            let bill_floor = custom_bill_floors.get(&team.id).copied().unwrap_or(0);
+            refresh_hiring_cycle_budgets(team, bill_floor);
         }
     }
 

@@ -424,6 +424,24 @@
     "teamCount_one": "1 squadra",
     "teamCount_other": "{{count}} squadre",
     "teams": "Squadre",
+    "customLogo": {
+        "heading": "Il tuo stemma",
+        "upload": "Carica il tuo stemma",
+        "replace": "Cambia immagine",
+        "remove": "Rimuovi immagine",
+        "hint": "PNG, JPEG o WebP, fino a 2 MB. L'immagine viene ridotta per stare in 256 per 256 pixel. Senza immagine si usa lo stemma generato.",
+        "processing": "Preparazione dello stemma...",
+        "inUse": "La tua immagine sostituisce lo stemma generato. Rimuovila per tornare indietro.",
+        "previewAlt": "Il tuo stemma caricato",
+        "errors": {
+            "unsupportedType": "Usa un'immagine PNG, JPEG o WebP. SVG e altri formati non sono accettati.",
+            "fileTooLarge": "Il file supera i 2 MB. Scegli un'immagine più piccola.",
+            "unreadable": "Impossibile leggere l'immagine. Prova con un altro file.",
+            "invalid": "Questa immagine non può essere usata come stemma. Prova con un altro file.",
+            "tooBig": "L'immagine è troppo grande. Prova con una più piccola.",
+            "failed": "Impossibile preparare lo stemma. Riprova."
+        }
+    },
     "custom": {
       "create": "Crea la tua squadra",
       "createHint": "Sostituisci un club di questa lega con il tuo.",
@@ -483,6 +501,65 @@
         "replaceRequired": "Scegli il club che vuoi sostituire.",
         "lowContrast": "Questi colori sono vicini e la sigla potrebbe essere difficile da leggere. Puoi continuare comunque.",
         "title": "Impossibile creare il club"
+      }
+    },
+    "founders": {
+      "stepTitle": "Rosa fondatrice",
+      "intro": "Questi cinque giocatori iniziano con il tuo club. Modifica nome, nazionalità o data di nascita di un giocatore, oppure rilancia per ottenere un'altra rosa.",
+      "loading": "Generazione della rosa...",
+      "loadFailed": "Non è stato possibile generare la rosa.",
+      "retry": "Riprova",
+      "listLabel": "Rosa fondatrice",
+      "edited": "Modificato",
+      "age": "{{age}} anni",
+      "ovrLabel": "Valutazione",
+      "wage": "Stipendio {{value}}",
+      "edit": "Modifica",
+      "editAria": "Modifica {{nick}}, {{role}}",
+      "attributes": "Attributi",
+      "editsDropped": "Le tue modifiche non sono più adatte a questo club, quindi è stata ripristinata la rosa generata.",
+      "installFailed": "Rosa rifiutata. {{role}}, {{field}}: {{reason}}",
+      "budget": {
+        "label": "Monte stipendi rispetto al budget",
+        "text": "{{bill}} su {{budget}}"
+      },
+      "reroll": {
+        "action_one": "Rilancia ({{count}} rimasto)",
+        "action_other": "Rilancia ({{count}} rimasti)",
+        "none": "Nessun rilancio rimasto",
+        "noneReason": "Hai usato tutti i {{max}} rilanci per questo club.",
+        "confirmLabel": "Conferma il rilancio",
+        "confirmText": "Un rilancio genera un'altra rosa e annulla le tue modifiche.",
+        "confirm": "Rilancia comunque",
+        "keep": "Mantieni questa rosa",
+        "ready_one": "Nuova rosa pronta. {{count}} rilancio rimasto.",
+        "ready_other": "Nuova rosa pronta. {{count}} rilanci rimasti."
+      },
+      "dialog": {
+        "title": "Modifica {{role}}",
+        "fields": {
+          "nick": "Nick",
+          "full_name": "Nome completo",
+          "nationality": "Nazionalità",
+          "birth_date": "Data di nascita"
+        },
+        "birthHint": "Nato tra il {{min}} e il {{max}} per restare a {{age}} anni.",
+        "nickHint": "Da {{min}} a {{max}} caratteri: lettere, cifre, _ . e -",
+        "fullNameHint": "Da {{min}} a {{max}} caratteri: lettere, spazi, apostrofi e trattini",
+        "restore": "Ripristina il generato",
+        "cancel": "Annulla",
+        "save": "Salva"
+      },
+      "errors": {
+        "empty": "Questo campo non può essere vuoto.",
+        "tooShort": "Usa almeno {{min}} caratteri.",
+        "tooLong": "Usa al massimo {{max}} caratteri.",
+        "invalidCharacter": "Questo testo contiene un carattere non consentito.",
+        "taken": "Un altro giocatore usa già questo nome.",
+        "notInRegion": "Scegli una nazionalità della regione di questa lega.",
+        "invalidDate": "Inserisci una data di nascita valida.",
+        "ageChanged": "La data di nascita deve mantenere l'età del giocatore.",
+        "general": "Impossibile controllare questa modifica. Riprova."
       }
     }
   },
@@ -1521,6 +1598,28 @@
     "allTeams": "All teams"
   },
   "playerProfile": {
+    "rename": {
+      "action": "Rinomina",
+      "actionAria": "Rinomina {{nick}}",
+      "title": "Rinomina giocatore",
+      "hint": "Cambia solo il nome. Ruolo, età e nazionalità restano uguali.",
+      "nickHint": "Da {{min}} a {{max}} caratteri: lettere, cifre, _ . e -",
+      "fullNameHint": "Da {{min}} a {{max}} caratteri: lettere, spazi, apostrofi e trattini",
+      "nick": "Nick",
+      "fullName": "Nome completo",
+      "save": "Salva nome",
+      "cancel": "Annulla",
+      "errors": {
+        "empty": "Questo campo non può essere vuoto.",
+        "tooShort": "Usa almeno {{min}} caratteri.",
+        "tooLong": "Usa al massimo {{max}} caratteri.",
+        "invalidCharacter": "Questo testo contiene un carattere non consentito.",
+        "taken": "Un altro giocatore usa già questo nome.",
+        "nothingToChange": "Cambia prima il nick o il nome completo.",
+        "notAFounder": "Si possono rinominare solo i giocatori con cui il tuo club è partito.",
+        "general": "Impossibile rinominare il giocatore. Riprova."
+      }
+    },
     "contractInfo": "Contratto e info",
     "dateOfBirth": "Data di nascita",
     "noContract": "Nessun contratto",

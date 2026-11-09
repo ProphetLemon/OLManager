@@ -194,6 +194,19 @@ pub fn region_for_competition(competition_id: &str) -> Option<Region> {
     lookup(COMPETITION_REGIONS, competition_id)
 }
 
+/// ISO-2 codes (uppercase) of the countries that belong to `region`, in table
+/// order. The source for nationalities of players invented for a league of that
+/// region: every one of them is a resident there, never an import.
+pub fn region_nationality_codes(region: Region) -> Vec<String> {
+    NATIONALITY_REGIONS
+        .iter()
+        .filter(|(table_region, _)| *table_region == region)
+        .flat_map(|(_, keys)| keys.iter())
+        .filter(|key| key.len() == 2)
+        .map(|key| key.to_ascii_uppercase())
+        .collect()
+}
+
 /// Region of a nationality (ISO-2 code or English country name), `None` when
 /// the value is empty or not recognised.
 pub fn region_for_nationality(nationality: &str) -> Option<Region> {

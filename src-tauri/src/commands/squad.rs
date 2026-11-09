@@ -1804,6 +1804,41 @@ pub fn set_player_training_focus(
     Ok(crate::client_game::game_for_client(&game))
 }
 
+/// Renames a founder of the user's custom club (nick and/or full name).
+///
+/// Only the generated players (`gen-` ids) on the manager's own custom club can
+/// be renamed; any other player is rejected. Names follow the creation rules,
+/// including world-wide uniqueness. Like the other squad commands it updates the
+/// session game and returns it; the change reaches the save with the next save.
+/// Errors are the JSON of a `FounderError` (see `olm_core::founder_identity`).
+#[tauri::command]
+pub fn rename_player(
+    state: State<'_, StateManager>,
+    player_id: String,
+    nick: Option<String>,
+    full_name: Option<String>,
+) -> Result<Game, String> {
+    info!("[cmd] rename_player: player={}", player_id);
+    rename_player_in_session(&state, &player_id, nick.as_deref(), full_name.as_deref())
+}
+
+/// [`rename_player`] on a session: the game is only replaced when the rename
+/// is valid.
+pub(crate) fn rename_player_in_session(
+    state: &StateManager,
+    player_id: &str,
+    nick: Option<&str>,
+    full_name: Option<&str>,
+) -> Result<Game, String> {
+    let mut game = state
+        .get_game(|g| g.clone())
+        .ok_or("No active game session".to_string())?;
+    olm_core::founder_identity::rename_founder(&mut game, player_id, nick, full_name)
+        .map_err(|error| error.to_wire())?;
+    state.set_game(game.clone());
+    Ok(crate::client_game::game_for_client(&game))
+}
+
 #[tauri::command]
 pub fn set_player_champion_training_target(
     state: State<'_, StateManager>,

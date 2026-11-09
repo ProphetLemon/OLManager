@@ -701,6 +701,24 @@
     "teamCount_one": "1 team",
     "teamCount_other": "{{count}} teams",
     "teams": "Teams",
+    "customLogo": {
+        "heading": "Your own badge",
+        "upload": "Upload your badge",
+        "replace": "Change image",
+        "remove": "Remove image",
+        "hint": "PNG, JPEG or WebP, up to 2 MB. It is resized to fit 256 by 256 pixels. Without an image, the generated shield is used.",
+        "processing": "Preparing your badge...",
+        "inUse": "Your image replaces the generated shield. Remove it to go back.",
+        "previewAlt": "Your uploaded badge",
+        "errors": {
+            "unsupportedType": "Use a PNG, JPEG or WebP image. SVG and other formats are not accepted.",
+            "fileTooLarge": "That file is larger than 2 MB. Pick a smaller image.",
+            "unreadable": "That image could not be read. Try another file.",
+            "invalid": "That image could not be used as a badge. Try another file.",
+            "tooBig": "That image is too large to use. Try a smaller one.",
+            "failed": "The badge could not be prepared. Try again."
+        }
+    },
     "custom": {
       "create": "Create your team",
       "createHint": "Replace one club in this league with your own.",
@@ -760,6 +778,65 @@
         "replaceRequired": "Choose the club you want to replace.",
         "lowContrast": "These colours are close together, so the tag may be hard to read. You can still continue.",
         "title": "Could not create the club"
+      }
+    },
+    "founders": {
+      "stepTitle": "Founding squad",
+      "intro": "These five players start with your club. Edit a player's name, nationality or birth date, or reroll to draw a different squad.",
+      "loading": "Generating your squad...",
+      "loadFailed": "The squad could not be generated.",
+      "retry": "Try again",
+      "listLabel": "Founding squad",
+      "edited": "Edited",
+      "age": "Age {{age}}",
+      "ovrLabel": "Overall",
+      "wage": "Wage {{value}}",
+      "edit": "Edit",
+      "editAria": "Edit {{nick}}, {{role}}",
+      "attributes": "Attributes",
+      "editsDropped": "Your edits no longer fit this club, so the generated squad was restored.",
+      "installFailed": "Squad rejected. {{role}}, {{field}}: {{reason}}",
+      "budget": {
+        "label": "Wage bill against budget",
+        "text": "{{bill}} of {{budget}}"
+      },
+      "reroll": {
+        "action_one": "Reroll squad ({{count}} left)",
+        "action_other": "Reroll squad ({{count}} left)",
+        "none": "No rerolls left",
+        "noneReason": "You have used all {{max}} rerolls for this club.",
+        "confirmLabel": "Confirm reroll",
+        "confirmText": "Rerolling draws a new squad and discards your edits.",
+        "confirm": "Reroll anyway",
+        "keep": "Keep this squad",
+        "ready_one": "New squad ready. {{count}} reroll left.",
+        "ready_other": "New squad ready. {{count}} rerolls left."
+      },
+      "dialog": {
+        "title": "Edit {{role}}",
+        "fields": {
+          "nick": "Nick",
+          "full_name": "Full name",
+          "nationality": "Nationality",
+          "birth_date": "Birth date"
+        },
+        "birthHint": "Born between {{min}} and {{max}} to stay {{age}} years old.",
+        "nickHint": "{{min}} to {{max}} characters: letters, digits, _ . and -",
+        "fullNameHint": "{{min}} to {{max}} characters: letters, spaces, apostrophes and hyphens",
+        "restore": "Restore generated",
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "errors": {
+        "empty": "This field cannot be empty.",
+        "tooShort": "Use at least {{min}} characters.",
+        "tooLong": "Use at most {{max}} characters.",
+        "invalidCharacter": "This text has a character that is not allowed.",
+        "taken": "Another player already uses this name.",
+        "notInRegion": "Choose a nationality from this league's region.",
+        "invalidDate": "Enter a valid birth date.",
+        "ageChanged": "The birth date must keep the player's age.",
+        "general": "Could not check this edit. Try again."
       }
     }
   },
@@ -1820,6 +1897,28 @@
     "currentlyPlaying": "Currently playing:"
   },
   "playerProfile": {
+    "rename": {
+      "action": "Rename",
+      "actionAria": "Rename {{nick}}",
+      "title": "Rename player",
+      "hint": "Only the name changes. Role, age and nationality stay as they are.",
+      "nickHint": "{{min}} to {{max}} characters: letters, digits, _ . and -",
+      "fullNameHint": "{{min}} to {{max}} characters: letters, spaces, apostrophes and hyphens",
+      "nick": "Nick",
+      "fullName": "Full name",
+      "save": "Save name",
+      "cancel": "Cancel",
+      "errors": {
+        "empty": "This field cannot be empty.",
+        "tooShort": "Use at least {{min}} characters.",
+        "tooLong": "Use at most {{max}} characters.",
+        "invalidCharacter": "This text has a character that is not allowed.",
+        "taken": "Another player already uses this name.",
+        "nothingToChange": "Change the nick or the full name first.",
+        "notAFounder": "Only the players your club started with can be renamed.",
+        "general": "Could not rename the player. Try again."
+      }
+    },
     "contractInfo": "Contract & Info",
     "dateOfBirth": "Date of Birth",
     "noContract": "No contract",
