@@ -9,9 +9,12 @@ const CLUB_PROPERTIES = ["--club", "--club-foreground", "--club-text", "--club-s
 /**
  * Publishes the managed club's palette as CSS custom properties on <html>, so
  * portals mounted on body inherit them. With no managed team the properties
- * are removed and the theme defaults apply.
+ * are removed and the theme defaults apply. `enabled` is false on screens
+ * outside a game (main menu, team selection): the store can still hold the
+ * last game there, because DashboardV2 re-probes the backend after an exit
+ * without saving.
  */
-export function useClubTheme(): void {
+export function useClubTheme(enabled = true): void {
   const gameState = useGameStore((s) => s.gameState);
   const highContrast = useSettingsStore((s) => s.settings.high_contrast);
   const managerTeamId = gameState?.manager.team_id ?? null;
@@ -30,14 +33,14 @@ export function useClubTheme(): void {
 
   const palette = useMemo(
     () =>
-      id
+      enabled && id
         ? resolveClubPalette(
             { id, name, logo_url: logoUrl, colors: { primary, secondary } },
             TEAM_LOGO_PALETTE,
             { highContrast },
           )
         : null,
-    [id, name, logoUrl, primary, secondary, highContrast],
+    [enabled, id, name, logoUrl, primary, secondary, highContrast],
   );
 
   useEffect(() => {

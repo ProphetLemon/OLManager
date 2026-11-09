@@ -51,8 +51,12 @@ const DASHBOARD_TAB_ROUTES = [
 
 const DASHBOARD_ROUTES = ["/dashboard", ...DASHBOARD_TAB_ROUTES];
 
+// Screens outside a game keep the theme colours, whatever the store holds.
+const OUT_OF_GAME_ROUTES = ["/", "/select-team"];
+
 export function AppContent() {
   const location = useLocation();
+  useClubTheme(!OUT_OF_GAME_ROUTES.includes(location.pathname));
   const setCurrentRoute = useBugReportStore((s) => s.setCurrentRoute);
   const setCurrentDashboardTab = useBugReportStore((s) => s.setCurrentDashboardTab);
   const showBugButton = ["/dashboard", "/match", "/select-team", ...DASHBOARD_TAB_ROUTES].includes(location.pathname);
@@ -112,8 +116,6 @@ export default function AppV2() {
   } = useUpdater(AUTO_CHECK_UPDATES);
 
   const [ready, setReady] = useState(false);
-
-  useClubTheme();
 
   useEffect(() => {
     if (!loaded) loadSettings();

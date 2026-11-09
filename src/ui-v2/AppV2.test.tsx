@@ -1,8 +1,10 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, useNavigate } from "react-router-dom";
 
 import { useBugReportStore } from "@/store/bugReportStore";
+import { useGameStore } from "@/store/gameStore";
+import type { GameStateData } from "@/store/types";
 import { useSettingsStore } from "@/store/settingsStore";
 import AppV2, { AppContent } from "./AppV2";
 
@@ -147,5 +149,49 @@ describe("AppV2 high contrast", () => {
     await waitFor(() =>
       expect(document.documentElement.dataset.contrast).toBeUndefined(),
     );
+  });
+});
+
+describe("AppContent club colours", () => {
+  const RAYO = {
+    id: "lec-custom-rayo",
+    name: "Rayo",
+    logo_url: "data:image/svg+xml;utf8,badge",
+    colors: { primary: "#047857", secondary: "#fde047" },
+  };
+
+  beforeEach(() => {
+    useGameStore.setState({
+      gameState: { manager: { team_id: RAYO.id }, teams: [RAYO] } as unknown as GameStateData,
+    });
+  });
+
+  afterEach(() => {
+    useGameStore.setState({ gameState: null });
+    for (const name of ["--club", "--club-foreground", "--club-text", "--club-secondary"]) {
+      document.documentElement.style.removeProperty(name);
+    }
+    delete document.documentElement.dataset.clubSource;
+  });
+
+  it("applies the managed club colours on in-game routes", async () => {
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <AppContent />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(document.documentElement.dataset.clubSource).toBe("custom"));
+    expect(document.documentElement.style.getPropertyValue("--club")).not.toBe("");
+  });
+
+  it("keeps the theme colours on the main menu even if the store still holds a game", async () => {
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <AppContent />
+      </MemoryRouter>,
+    );
+    await screen.findByTestId("main-menu");
+    expect(document.documentElement.dataset.clubSource).toBeUndefined();
+    expect(document.documentElement.style.getPropertyValue("--club")).toBe("");
   });
 });
