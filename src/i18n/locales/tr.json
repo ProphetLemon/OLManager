@@ -3866,6 +3866,7 @@
       "contractDays_one": "{{count}} gün kaldı",
       "contractDays_other": "{{count}} gün kaldı",
       "inboxTitle": "Gelen kutusu",
+      "inboxTitleShort": "Gelen",
       "inboxEmpty": "Gelen kutun boş",
       "unreadCount_one": "{{count}} okunmamış",
       "unreadCount_other": "{{count}} okunmamış",
@@ -3966,6 +3967,22 @@
       "sortAscending": "artan",
       "sortDescending": "azalan",
       "importLimit": "İçe aktarma sınırına ulaşıldı"
+    }
+  },
+  "advance": {
+    "blockers": {
+      "scrimSetup": "Devam etmek için haftalık scrim kurulumunu (hedef ve rakipler) belirle ya da ilerlemeyi devret.",
+      "scrimDecision": "Devam etmeden önce bir scrim kararı ver.",
+      "scrimAutoFailed": "Otomatik devir scrim kararını çözemedi. Kararı elle incele.",
+      "advanceBlocked": "Otomatik olarak ilerlenemedi. Bekleyen engelleri incele.",
+      "assistantLimit": "Yardımcı Antrenör otomatik ilerleme deneme sınırına ulaştı. Durumu elle incele."
+    },
+    "notices": {
+      "assistantResolvedDecision": "Yardımcı Antrenör ilerlemenin önünü açmak için scrim sonrası kararı otomatik olarak çözdü.",
+      "assistantConfiguredSetup": "Yardımcı Antrenör haftalık scrim kurulumunu otomatik olarak yaptı.",
+      "assistantResolvedDayBoth": "Yardımcı Antrenör günü ilerletmek için haftalık kurulumu ve scrim sonrası kararı otomatik olarak çözdü.",
+      "assistantResolvedDaySetup": "Yardımcı Antrenör günü ilerletmek için haftalık kurulumu otomatik olarak çözdü.",
+      "assistantResolvedDayDecision": "Yardımcı Antrenör günü ilerletmek için scrim sonrası kararı otomatik olarak çözdü."
     }
   }
 }

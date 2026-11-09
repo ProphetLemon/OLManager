@@ -3865,6 +3865,7 @@
       "contractDays_one": "Resta {{count}} giorno",
       "contractDays_other": "Restano {{count}} giorni",
       "inboxTitle": "Posta in arrivo",
+      "inboxTitleShort": "Posta",
       "inboxEmpty": "La tua posta è vuota",
       "unreadCount_one": "{{count}} non letto",
       "unreadCount_other": "{{count}} non letti",
@@ -3965,6 +3966,22 @@
       "sortAscending": "crescente",
       "sortDescending": "decrescente",
       "importLimit": "Limite di importati raggiunto"
+    }
+  },
+  "advance": {
+    "blockers": {
+      "scrimSetup": "Definisci la configurazione settimanale degli scrim (obiettivo e rivali) o delega l'avanzamento per continuare.",
+      "scrimDecision": "Prendi una decisione sullo scrim prima di continuare.",
+      "scrimAutoFailed": "La delega automatica non ha potuto risolvere la decisione sullo scrim. Controllala manualmente.",
+      "advanceBlocked": "Impossibile avanzare automaticamente. Controlla i blocchi in sospeso.",
+      "assistantLimit": "Il vice allenatore ha raggiunto il limite di tentativi di avanzamento automatico. Controlla lo stato manualmente."
+    },
+    "notices": {
+      "assistantResolvedDecision": "Il vice allenatore ha risolto automaticamente la decisione post-scrim per sbloccare l'avanzamento.",
+      "assistantConfiguredSetup": "Il vice allenatore ha configurato automaticamente la configurazione settimanale degli scrim.",
+      "assistantResolvedDayBoth": "Il vice allenatore ha risolto automaticamente la configurazione settimanale e la decisione post-scrim per far avanzare la giornata.",
+      "assistantResolvedDaySetup": "Il vice allenatore ha risolto automaticamente la configurazione settimanale per far avanzare la giornata.",
+      "assistantResolvedDayDecision": "Il vice allenatore ha risolto automaticamente la decisione post-scrim per far avanzare la giornata."
     }
   }
 }

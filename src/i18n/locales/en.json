@@ -3907,6 +3907,7 @@
       "contractDays_one": "{{count}} day left",
       "contractDays_other": "{{count}} days left",
       "inboxTitle": "Inbox",
+      "inboxTitleShort": "Inbox",
       "inboxEmpty": "Your inbox is clear",
       "unreadCount_one": "{{count}} unread",
       "unreadCount_other": "{{count}} unread",
@@ -4007,6 +4008,22 @@
       "sortAscending": "ascending",
       "sortDescending": "descending",
       "importLimit": "Import limit reached"
+    }
+  },
+  "advance": {
+    "blockers": {
+      "scrimSetup": "Define the weekly scrim setup (objective and rivals) or delegate the advance to continue.",
+      "scrimDecision": "Make a scrim decision before continuing.",
+      "scrimAutoFailed": "Automatic delegation could not resolve the scrim decision. Review it manually.",
+      "advanceBlocked": "Could not advance automatically. Review the pending blockers.",
+      "assistantLimit": "Assistant Coach reached the automatic advance attempt limit. Review the state manually."
+    },
+    "notices": {
+      "assistantResolvedDecision": "Assistant Coach resolved the post-scrim decision automatically to unblock the advance.",
+      "assistantConfiguredSetup": "Assistant Coach configured the weekly scrim setup automatically.",
+      "assistantResolvedDayBoth": "Assistant Coach resolved the weekly setup and the post-scrim decision automatically to advance the day.",
+      "assistantResolvedDaySetup": "Assistant Coach resolved the weekly setup automatically to advance the day.",
+      "assistantResolvedDayDecision": "Assistant Coach resolved the post-scrim decision automatically to advance the day."
     }
   }
 }

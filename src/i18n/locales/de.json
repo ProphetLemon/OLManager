@@ -3866,6 +3866,7 @@
       "contractDays_one": "Noch {{count}} Tag",
       "contractDays_other": "Noch {{count}} Tage",
       "inboxTitle": "Posteingang",
+      "inboxTitleShort": "Posteingang",
       "inboxEmpty": "Dein Posteingang ist leer",
       "unreadCount_one": "{{count}} ungelesen",
       "unreadCount_other": "{{count}} ungelesen",
@@ -3966,6 +3967,22 @@
       "sortAscending": "aufsteigend",
       "sortDescending": "absteigend",
       "importLimit": "Importlimit erreicht"
+    }
+  },
+  "advance": {
+    "blockers": {
+      "scrimSetup": "Lege das wöchentliche Scrim-Setup (Ziel und Gegner) fest oder delegiere das Weiterschalten, um fortzufahren.",
+      "scrimDecision": "Triff eine Scrim-Entscheidung, bevor du fortfährst.",
+      "scrimAutoFailed": "Die automatische Delegation konnte die Scrim-Entscheidung nicht lösen. Prüfe sie manuell.",
+      "advanceBlocked": "Automatisches Weiterschalten war nicht möglich. Prüfe die offenen Blockaden.",
+      "assistantLimit": "Der Co-Trainer hat das Limit für automatische Weiterschalt-Versuche erreicht. Prüfe den Zustand manuell."
+    },
+    "notices": {
+      "assistantResolvedDecision": "Der Co-Trainer hat die Entscheidung nach dem Scrim automatisch getroffen, um das Weiterschalten freizugeben.",
+      "assistantConfiguredSetup": "Der Co-Trainer hat das wöchentliche Scrim-Setup automatisch eingerichtet.",
+      "assistantResolvedDayBoth": "Der Co-Trainer hat das Wochen-Setup und die Entscheidung nach dem Scrim automatisch gelöst, um den Tag weiterzuschalten.",
+      "assistantResolvedDaySetup": "Der Co-Trainer hat das Wochen-Setup automatisch gelöst, um den Tag weiterzuschalten.",
+      "assistantResolvedDayDecision": "Der Co-Trainer hat die Entscheidung nach dem Scrim automatisch gelöst, um den Tag weiterzuschalten."
     }
   }
 }

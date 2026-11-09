@@ -3872,6 +3872,7 @@
       "contractDays_one": "Queda {{count}} día",
       "contractDays_other": "Quedan {{count}} días",
       "inboxTitle": "Bandeja de entrada",
+      "inboxTitleShort": "Bandeja",
       "inboxEmpty": "Tu bandeja está al día",
       "unreadCount_one": "{{count}} sin leer",
       "unreadCount_other": "{{count}} sin leer",
@@ -3972,6 +3973,22 @@
       "sortAscending": "ascendente",
       "sortDescending": "descendente",
       "importLimit": "Límite de importados alcanzado"
+    }
+  },
+  "advance": {
+    "blockers": {
+      "scrimSetup": "Define la configuración semanal de scrims (objetivo y rivales) o delega el avance para continuar.",
+      "scrimDecision": "Toma una decisión sobre el scrim antes de continuar.",
+      "scrimAutoFailed": "La delegación automática no pudo resolver la decisión del scrim. Revísala manualmente.",
+      "advanceBlocked": "No se pudo avanzar automáticamente. Revisa los bloqueos pendientes.",
+      "assistantLimit": "El Entrenador Asistente alcanzó el límite de intentos de avance automático. Revisa el estado manualmente."
+    },
+    "notices": {
+      "assistantResolvedDecision": "El Entrenador Asistente resolvió automáticamente la decisión posterior al scrim para desbloquear el avance.",
+      "assistantConfiguredSetup": "El Entrenador Asistente configuró automáticamente la configuración semanal de scrims.",
+      "assistantResolvedDayBoth": "El Entrenador Asistente resolvió automáticamente la configuración semanal y la decisión posterior al scrim para avanzar el día.",
+      "assistantResolvedDaySetup": "El Entrenador Asistente resolvió automáticamente la configuración semanal para avanzar el día.",
+      "assistantResolvedDayDecision": "El Entrenador Asistente resolvió automáticamente la decisión posterior al scrim para avanzar el día."
     }
   }
 }

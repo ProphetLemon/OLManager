@@ -3866,6 +3866,7 @@
       "contractDays_one": "Il reste {{count}} jour",
       "contractDays_other": "Il reste {{count}} jours",
       "inboxTitle": "Boîte de réception",
+      "inboxTitleShort": "Réception",
       "inboxEmpty": "Votre boîte est vide",
       "unreadCount_one": "{{count}} non lu",
       "unreadCount_other": "{{count}} non lus",
@@ -3966,6 +3967,22 @@
       "sortAscending": "croissant",
       "sortDescending": "décroissant",
       "importLimit": "Limite d'import atteinte"
+    }
+  },
+  "advance": {
+    "blockers": {
+      "scrimSetup": "Définissez la configuration hebdomadaire des scrims (objectif et rivaux) ou déléguez l'avancement pour continuer.",
+      "scrimDecision": "Prenez une décision sur le scrim avant de continuer.",
+      "scrimAutoFailed": "La délégation automatique n'a pas pu résoudre la décision du scrim. Vérifiez-la manuellement.",
+      "advanceBlocked": "Impossible d'avancer automatiquement. Vérifiez les blocages en attente.",
+      "assistantLimit": "L'entraîneur adjoint a atteint la limite de tentatives d'avancement automatique. Vérifiez l'état manuellement."
+    },
+    "notices": {
+      "assistantResolvedDecision": "L'entraîneur adjoint a résolu automatiquement la décision d'après-scrim pour débloquer l'avancement.",
+      "assistantConfiguredSetup": "L'entraîneur adjoint a configuré automatiquement la configuration hebdomadaire des scrims.",
+      "assistantResolvedDayBoth": "L'entraîneur adjoint a résolu automatiquement la configuration hebdomadaire et la décision d'après-scrim pour faire avancer la journée.",
+      "assistantResolvedDaySetup": "L'entraîneur adjoint a résolu automatiquement la configuration hebdomadaire pour faire avancer la journée.",
+      "assistantResolvedDayDecision": "L'entraîneur adjoint a résolu automatiquement la décision d'après-scrim pour faire avancer la journée."
     }
   }
 }
