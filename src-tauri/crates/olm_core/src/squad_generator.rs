@@ -63,6 +63,13 @@ const BLOOMER_POTENTIAL_FLOOR: u8 = 84;
 const MIN_SUPPORTED_MEDIAN: u8 = 20;
 /// Highest median the attribute template can express without clamping.
 const MAX_SUPPORTED_MEDIAN: u8 = 90;
+/// Day-1 wage bill window, in percent of the league-median wage budget.
+///
+/// Wages never drop below the wage floor; they are scaled up to land here. The
+/// window leaves less room under the 110% soft cap than the cheapest elite free
+/// agent asks for (see the calibration report), so a day-1 star signing is out
+/// of reach.
+pub const BILL_WINDOW_PCT: std::ops::RangeInclusive<i64> = 94..=97;
 /// Reputation of the neutral club used to price wages.
 const REFERENCE_CLUB_REPUTATION: u32 = 100;
 /// Attempts at a free nick before the name pool counts as exhausted.
@@ -94,7 +101,10 @@ impl fmt::Display for SquadError {
             SquadError::EmptyClubSlug => write!(f, "club slug has no letters or digits"),
             SquadError::NoNationalities => write!(f, "no nationality to draw players from"),
             SquadError::UnsupportedMedian(median) => {
-                write!(f, "league median OVR {median} is outside the supported range")
+                write!(
+                    f,
+                    "league median OVR {median} is outside the supported range"
+                )
             }
             SquadError::NamesExhausted => write!(f, "no free nick left in the name pool"),
             SquadError::WindowUnsatisfied {
@@ -126,6 +136,9 @@ pub struct SquadSpec<'a> {
     pub taken_match_names: &'a HashSet<String>,
     /// The `n` of the ids `gen-<slug>-<role>-<n>`.
     pub serial: u32,
+    /// League-median wage budget. When set, wages are raised above the wage
+    /// floor until the bill sits inside [`BILL_WINDOW_PCT`] of it.
+    pub wage_budget: Option<i64>,
 }
 
 /// A squad member before it becomes a [`Player`].
@@ -155,10 +168,17 @@ pub fn generate_founding_squad(spec: &SquadSpec<'_>, seed: u64) -> Result<Vec<Pl
 
     let mut last_violations = Vec::new();
     for attempt in 0..MAX_ATTEMPTS {
-        let attempt_seed = seed.wrapping_add(u64::from(attempt).wrapping_mul(0x9E37_79B9_7F4A_7C15));
+        let attempt_seed =
+            seed.wrapping_add(u64::from(attempt).wrapping_mul(0x9E37_79B9_7F4A_7C15));
         let mut rng = StdRng::seed_from_u64(attempt_seed);
-        let squad = build_squad(spec, &slug, &mut rng)?;
-        let violations = validate_squad(&squad, &spec.percentiles, spec.today);
+        let mut squad = build_squad(spec, &slug, &mut rng)?;
+        if let Some(budget) = spec.wage_budget.filter(|budget| *budget > 0) {
+            raise_bill_into_window(&mut squad, budget, &mut rng);
+        }
+        let mut violations = validate_squad(&squad, &spec.percentiles, spec.today);
+        if let Some(budget) = spec.wage_budget.filter(|budget| *budget > 0) {
+            violations.extend(bill_violation(&squad, budget));
+        }
         if violations.is_empty() {
             return Ok(squad);
         }
@@ -175,7 +195,11 @@ pub fn generate_founding_squad(spec: &SquadSpec<'_>, seed: u64) -> Result<Vec<Pl
 /// Checks the OVR band (`median-5..=median`, one starter may reach
 /// `min(median+1, p75)`, none above p75), the mean (about `median-3`), the
 /// weakest starter, ages, the single late bloomer and the 2-year contracts.
-pub fn validate_squad(squad: &[Player], percentiles: &OvrPercentiles, today: NaiveDate) -> Vec<String> {
+pub fn validate_squad(
+    squad: &[Player],
+    percentiles: &OvrPercentiles,
+    today: NaiveDate,
+) -> Vec<String> {
     let mut problems = Vec::new();
     if squad.len() != SQUAD_ROLES.len() {
         problems.push(format!("expected 5 players, got {}", squad.len()));
@@ -183,7 +207,10 @@ pub fn validate_squad(squad: &[Player], percentiles: &OvrPercentiles, today: Nai
     }
     let median = i32::from(percentiles.p50);
     let ceiling = median.max((median + 1).min(i32::from(percentiles.p75)));
-    let ovrs: Vec<i32> = squad.iter().map(|p| i32::from(calculate_lol_ovr(p))).collect();
+    let ovrs: Vec<i32> = squad
+        .iter()
+        .map(|p| i32::from(calculate_lol_ovr(p)))
+        .collect();
 
     for (player, ovr) in squad.iter().zip(&ovrs) {
         if *ovr < median - MAX_OFFSET_BELOW_MEDIAN {
@@ -196,7 +223,10 @@ pub fn validate_squad(squad: &[Player], percentiles: &OvrPercentiles, today: Nai
             problems.push(format!("{} OVR {ovr} above the ceiling", player.id));
         }
         if i32::from(player.lol_ovr) != *ovr {
-            problems.push(format!("{} cached OVR differs from its attributes", player.id));
+            problems.push(format!(
+                "{} cached OVR differs from its attributes",
+                player.id
+            ));
         }
     }
     if ovrs.iter().filter(|ovr| **ovr > median).count() > 1 {
@@ -207,7 +237,10 @@ pub fn validate_squad(squad: &[Player], percentiles: &OvrPercentiles, today: Nai
     let low = count * (median - *MEAN_OFFSET_WINDOW.end());
     let high = count * (median - *MEAN_OFFSET_WINDOW.start());
     if !(low..=high).contains(&sum) {
-        problems.push(format!("squad mean {:.1} outside the window", f64::from(sum) / f64::from(count)));
+        problems.push(format!(
+            "squad mean {:.1} outside the window",
+            f64::from(sum) / f64::from(count)
+        ));
     }
     let bloomers = squad
         .iter()
@@ -226,6 +259,46 @@ pub fn validate_squad(squad: &[Player], percentiles: &OvrPercentiles, today: Nai
         }
     }
     problems
+}
+
+/// Yearly wage bill of `squad`.
+pub fn squad_bill(squad: &[Player]) -> i64 {
+    squad.iter().map(|p| i64::from(p.wage)).sum()
+}
+
+/// Draws a bill target inside [`BILL_WINDOW_PCT`] and scales every wage up
+/// proportionally (rounded up to 1k). A bill already above the target stays:
+/// wages never go below the floor.
+fn raise_bill_into_window(squad: &mut [Player], budget: i64, rng: &mut StdRng) {
+    let pct = rng.random_range(BILL_WINDOW_PCT);
+    let target = i128::from(budget) * i128::from(pct) / 100;
+    let natural = i128::from(squad_bill(squad));
+    if natural <= 0 || target <= natural {
+        return;
+    }
+    for player in squad.iter_mut() {
+        let scaled = i128::from(player.wage) * target / natural;
+        let rounded = (scaled + 999) / 1_000 * 1_000;
+        player.wage = u32::try_from(rounded).unwrap_or(u32::MAX).max(player.wage);
+    }
+}
+
+/// Why the bill of `squad` is outside [`BILL_WINDOW_PCT`] of `budget`, if it is.
+///
+/// Rounding the five wages up to 1k can overshoot the top by at most 5k, which
+/// the check tolerates.
+pub fn bill_violation(squad: &[Player], budget: i64) -> Option<String> {
+    let bill = i128::from(squad_bill(squad));
+    let budget = i128::from(budget.max(1));
+    let low = budget * i128::from(*BILL_WINDOW_PCT.start()) / 100;
+    let high = budget * i128::from(*BILL_WINDOW_PCT.end()) / 100 + 5_000;
+    (!(low..=high).contains(&bill)).then(|| {
+        format!(
+            "bill {bill} outside {}-{}% of the wage budget {budget}",
+            BILL_WINDOW_PCT.start(),
+            BILL_WINDOW_PCT.end()
+        )
+    })
 }
 
 /// Full years between `date_of_birth` (`%Y-%m-%d`) and `today`, counted the
@@ -428,7 +501,11 @@ fn wage_for(player: &Player, today: NaiveDate) -> u32 {
     expected_signing_wage(player, &reference, today).max(floor)
 }
 
-fn build_squad(spec: &SquadSpec<'_>, slug: &str, rng: &mut StdRng) -> Result<Vec<Player>, SquadError> {
+fn build_squad(
+    spec: &SquadSpec<'_>,
+    slug: &str,
+    rng: &mut StdRng,
+) -> Result<Vec<Player>, SquadError> {
     let plans = plan_squad(rng, &spec.percentiles);
     let mut used: HashSet<String> = HashSet::new();
     let mut squad = Vec::with_capacity(plans.len());
@@ -459,7 +536,8 @@ fn build_squad(spec: &SquadSpec<'_>, slug: &str, rng: &mut StdRng) -> Result<Vec
             rng.random_range(BLOOMER_POTENTIAL_RANGE)
         } else {
             // Never below the current level, or the player would have no growth.
-            rng.random_range(POTENTIAL_RANGE).max(ovr.saturating_add(1).min(99))
+            rng.random_range(POTENTIAL_RANGE)
+                .max(ovr.saturating_add(1).min(99))
         };
         player.market_value = market_value_for(ovr, player.potential_base, age);
         player.contract_end = Some(contract_end(spec.today));
@@ -507,14 +585,38 @@ struct NamePool {
 /// Name pool for an ISO-2 nationality; unknown codes get the mixed European one.
 fn name_pool(nationality: &str) -> NamePool {
     match nationality.trim().to_ascii_uppercase().as_str() {
-        "ES" => NamePool { first: ES_FIRST, last: ES_LAST },
-        "FR" => NamePool { first: FR_FIRST, last: FR_LAST },
-        "DE" => NamePool { first: DE_FIRST, last: DE_LAST },
-        "DK" | "SE" | "NO" | "FI" => NamePool { first: NORDIC_FIRST, last: NORDIC_LAST },
-        "PL" => NamePool { first: PL_FIRST, last: PL_LAST },
-        "GB" | "UK" | "IE" => NamePool { first: GB_FIRST, last: GB_LAST },
-        "IT" | "PT" => NamePool { first: IT_FIRST, last: IT_LAST },
-        _ => NamePool { first: EU_FIRST, last: EU_LAST },
+        "ES" => NamePool {
+            first: ES_FIRST,
+            last: ES_LAST,
+        },
+        "FR" => NamePool {
+            first: FR_FIRST,
+            last: FR_LAST,
+        },
+        "DE" => NamePool {
+            first: DE_FIRST,
+            last: DE_LAST,
+        },
+        "DK" | "SE" | "NO" | "FI" => NamePool {
+            first: NORDIC_FIRST,
+            last: NORDIC_LAST,
+        },
+        "PL" => NamePool {
+            first: PL_FIRST,
+            last: PL_LAST,
+        },
+        "GB" | "UK" | "IE" => NamePool {
+            first: GB_FIRST,
+            last: GB_LAST,
+        },
+        "IT" | "PT" => NamePool {
+            first: IT_FIRST,
+            last: IT_LAST,
+        },
+        _ => NamePool {
+            first: EU_FIRST,
+            last: EU_LAST,
+        },
     }
 }
 
@@ -536,33 +638,166 @@ pub fn name_combinations() -> usize {
 }
 
 const ES_FIRST: &[&str] = &[
-    "Alejandro", "Adrián", "Álvaro", "Andrés", "Antonio", "Carlos", "César", "Daniel", "David",
-    "Diego", "Eduardo", "Enrique", "Ernesto", "Fernando", "Francisco", "Gabriel", "Gonzalo",
-    "Guillermo", "Héctor", "Hugo", "Iván", "Javier", "Jorge", "José", "Juan", "Julián", "Lucas",
-    "Manuel", "Marcos", "Mario", "Martín", "Miguel", "Nicolás", "Óscar", "Pablo", "Pedro",
-    "Rafael", "Raúl", "Rubén", "Sergio",
+    "Alejandro",
+    "Adrián",
+    "Álvaro",
+    "Andrés",
+    "Antonio",
+    "Carlos",
+    "César",
+    "Daniel",
+    "David",
+    "Diego",
+    "Eduardo",
+    "Enrique",
+    "Ernesto",
+    "Fernando",
+    "Francisco",
+    "Gabriel",
+    "Gonzalo",
+    "Guillermo",
+    "Héctor",
+    "Hugo",
+    "Iván",
+    "Javier",
+    "Jorge",
+    "José",
+    "Juan",
+    "Julián",
+    "Lucas",
+    "Manuel",
+    "Marcos",
+    "Mario",
+    "Martín",
+    "Miguel",
+    "Nicolás",
+    "Óscar",
+    "Pablo",
+    "Pedro",
+    "Rafael",
+    "Raúl",
+    "Rubén",
+    "Sergio",
 ];
 const ES_LAST: &[&str] = &[
-    "Aguilar", "Alonso", "Arroyo", "Báez", "Blanco", "Bravo", "Cabrera", "Calvo", "Campos",
-    "Castaño", "Crespo", "Delgado", "Domínguez", "Esteban", "Fuentes", "Gallardo", "Gil",
-    "Guerrero", "Herrero", "Ibáñez", "Iglesias", "Lozano", "Marín", "Medina", "Mora", "Moreno",
-    "Navarro", "Ortega", "Pascual", "Peña", "Prieto", "Rivas", "Robles", "Rubio", "Salinas",
-    "Santana", "Soler", "Sosa", "Vargas", "Vidal",
+    "Aguilar",
+    "Alonso",
+    "Arroyo",
+    "Báez",
+    "Blanco",
+    "Bravo",
+    "Cabrera",
+    "Calvo",
+    "Campos",
+    "Castaño",
+    "Crespo",
+    "Delgado",
+    "Domínguez",
+    "Esteban",
+    "Fuentes",
+    "Gallardo",
+    "Gil",
+    "Guerrero",
+    "Herrero",
+    "Ibáñez",
+    "Iglesias",
+    "Lozano",
+    "Marín",
+    "Medina",
+    "Mora",
+    "Moreno",
+    "Navarro",
+    "Ortega",
+    "Pascual",
+    "Peña",
+    "Prieto",
+    "Rivas",
+    "Robles",
+    "Rubio",
+    "Salinas",
+    "Santana",
+    "Soler",
+    "Sosa",
+    "Vargas",
+    "Vidal",
 ];
 const FR_FIRST: &[&str] = &[
-    "Adrien", "Alexandre", "Antoine", "Arthur", "Baptiste", "Benjamin", "Clément", "Damien",
-    "Étienne", "Florian", "Guillaume", "Hugo", "Julien", "Kévin", "Lucas", "Mathieu", "Maxime",
-    "Nicolas", "Olivier", "Pierre", "Quentin", "Romain", "Théo", "Thibault",
+    "Adrien",
+    "Alexandre",
+    "Antoine",
+    "Arthur",
+    "Baptiste",
+    "Benjamin",
+    "Clément",
+    "Damien",
+    "Étienne",
+    "Florian",
+    "Guillaume",
+    "Hugo",
+    "Julien",
+    "Kévin",
+    "Lucas",
+    "Mathieu",
+    "Maxime",
+    "Nicolas",
+    "Olivier",
+    "Pierre",
+    "Quentin",
+    "Romain",
+    "Théo",
+    "Thibault",
 ];
 const FR_LAST: &[&str] = &[
-    "Bernard", "Blanchard", "Bonnet", "Chevalier", "Colin", "Dubois", "Dupuis", "Fabre", "Faure",
-    "Gauthier", "Girard", "Lambert", "Lefèvre", "Lemaire", "Marchand", "Morel", "Perrin",
-    "Renard", "Rousseau", "Roux", "Simon", "Vidal", "Vincent", "Weber",
+    "Bernard",
+    "Blanchard",
+    "Bonnet",
+    "Chevalier",
+    "Colin",
+    "Dubois",
+    "Dupuis",
+    "Fabre",
+    "Faure",
+    "Gauthier",
+    "Girard",
+    "Lambert",
+    "Lefèvre",
+    "Lemaire",
+    "Marchand",
+    "Morel",
+    "Perrin",
+    "Renard",
+    "Rousseau",
+    "Roux",
+    "Simon",
+    "Vidal",
+    "Vincent",
+    "Weber",
 ];
 const DE_FIRST: &[&str] = &[
-    "Alexander", "Benedikt", "Christian", "Dennis", "Felix", "Florian", "Jan", "Jonas", "Kai",
-    "Lars", "Leon", "Lukas", "Marcel", "Moritz", "Niklas", "Pascal", "Philipp", "Sebastian",
-    "Simon", "Stefan", "Tim", "Tobias", "Tom", "Yannick",
+    "Alexander",
+    "Benedikt",
+    "Christian",
+    "Dennis",
+    "Felix",
+    "Florian",
+    "Jan",
+    "Jonas",
+    "Kai",
+    "Lars",
+    "Leon",
+    "Lukas",
+    "Marcel",
+    "Moritz",
+    "Niklas",
+    "Pascal",
+    "Philipp",
+    "Sebastian",
+    "Simon",
+    "Stefan",
+    "Tim",
+    "Tobias",
+    "Tom",
+    "Yannick",
 ];
 const DE_LAST: &[&str] = &[
     "Albrecht", "Bauer", "Becker", "Brandt", "Engel", "Fischer", "Graf", "Hartmann", "Hoffmann",
@@ -575,24 +810,83 @@ const NORDIC_FIRST: &[&str] = &[
     "Victor", "William", "Ville", "Viggo",
 ];
 const NORDIC_LAST: &[&str] = &[
-    "Andersen", "Berg", "Bjørnsen", "Christensen", "Dahl", "Eriksen", "Hansen", "Holm", "Jensen",
-    "Johansson", "Karlsson", "Larsen", "Lindberg", "Lund", "Madsen", "Nielsen", "Nyberg",
-    "Olsen", "Pedersen", "Rasmussen", "Sørensen", "Strand", "Svensson", "Thomsen",
+    "Andersen",
+    "Berg",
+    "Bjørnsen",
+    "Christensen",
+    "Dahl",
+    "Eriksen",
+    "Hansen",
+    "Holm",
+    "Jensen",
+    "Johansson",
+    "Karlsson",
+    "Larsen",
+    "Lindberg",
+    "Lund",
+    "Madsen",
+    "Nielsen",
+    "Nyberg",
+    "Olsen",
+    "Pedersen",
+    "Rasmussen",
+    "Sørensen",
+    "Strand",
+    "Svensson",
+    "Thomsen",
 ];
 const PL_FIRST: &[&str] = &[
-    "Adam", "Bartosz", "Damian", "Dawid", "Filip", "Grzegorz", "Jakub", "Kamil", "Konrad",
-    "Krzysztof", "Łukasz", "Maciej", "Marcin", "Mateusz", "Michał", "Paweł", "Piotr", "Rafał",
-    "Sebastian", "Szymon", "Tomasz", "Wojciech",
+    "Adam",
+    "Bartosz",
+    "Damian",
+    "Dawid",
+    "Filip",
+    "Grzegorz",
+    "Jakub",
+    "Kamil",
+    "Konrad",
+    "Krzysztof",
+    "Łukasz",
+    "Maciej",
+    "Marcin",
+    "Mateusz",
+    "Michał",
+    "Paweł",
+    "Piotr",
+    "Rafał",
+    "Sebastian",
+    "Szymon",
+    "Tomasz",
+    "Wojciech",
 ];
 const PL_LAST: &[&str] = &[
-    "Adamski", "Baran", "Chmielewski", "Dąbrowski", "Duda", "Górski", "Jankowski", "Kaczmarek",
-    "Kowalczyk", "Krawczyk", "Lewandowski", "Majewski", "Mazur", "Nowak", "Piotrowski", "Sadowski",
-    "Sikora", "Szymański", "Walczak", "Wiśniewski", "Wróbel", "Zając",
+    "Adamski",
+    "Baran",
+    "Chmielewski",
+    "Dąbrowski",
+    "Duda",
+    "Górski",
+    "Jankowski",
+    "Kaczmarek",
+    "Kowalczyk",
+    "Krawczyk",
+    "Lewandowski",
+    "Majewski",
+    "Mazur",
+    "Nowak",
+    "Piotrowski",
+    "Sadowski",
+    "Sikora",
+    "Szymański",
+    "Walczak",
+    "Wiśniewski",
+    "Wróbel",
+    "Zając",
 ];
 const GB_FIRST: &[&str] = &[
-    "Aaron", "Callum", "Connor", "Dominic", "Elliot", "Finley", "George", "Harry", "Jack",
-    "Jamie", "Joshua", "Kieran", "Liam", "Mason", "Nathan", "Oliver", "Owen", "Reece", "Ryan",
-    "Samuel", "Tyler", "Zach",
+    "Aaron", "Callum", "Connor", "Dominic", "Elliot", "Finley", "George", "Harry", "Jack", "Jamie",
+    "Joshua", "Kieran", "Liam", "Mason", "Nathan", "Oliver", "Owen", "Reece", "Ryan", "Samuel",
+    "Tyler", "Zach",
 ];
 const GB_LAST: &[&str] = &[
     "Ashworth", "Barnes", "Bennett", "Carter", "Chapman", "Dawson", "Ellis", "Fletcher", "Foster",
@@ -600,23 +894,82 @@ const GB_LAST: &[&str] = &[
     "Thornton", "Walsh", "Whitaker", "Wilkes",
 ];
 const IT_FIRST: &[&str] = &[
-    "Alessandro", "Andrea", "Davide", "Diogo", "Edoardo", "Federico", "Filippo", "Francesco",
-    "Gabriele", "Giacomo", "João", "Leonardo", "Lorenzo", "Luca", "Marco", "Matteo", "Nuno",
-    "Paolo", "Pedro", "Riccardo", "Rui", "Simone", "Tiago", "Vincenzo",
+    "Alessandro",
+    "Andrea",
+    "Davide",
+    "Diogo",
+    "Edoardo",
+    "Federico",
+    "Filippo",
+    "Francesco",
+    "Gabriele",
+    "Giacomo",
+    "João",
+    "Leonardo",
+    "Lorenzo",
+    "Luca",
+    "Marco",
+    "Matteo",
+    "Nuno",
+    "Paolo",
+    "Pedro",
+    "Riccardo",
+    "Rui",
+    "Simone",
+    "Tiago",
+    "Vincenzo",
 ];
 const IT_LAST: &[&str] = &[
-    "Almeida", "Barbieri", "Bianchi", "Carvalho", "Conti", "Costa", "De Luca", "Esposito",
-    "Ferrari", "Fontana", "Gallo", "Greco", "Lombardi", "Moretti", "Pereira", "Ricci", "Rinaldi",
-    "Rossi", "Santos", "Serra", "Silva", "Teixeira", "Valentini", "Villa",
+    "Almeida",
+    "Barbieri",
+    "Bianchi",
+    "Carvalho",
+    "Conti",
+    "Costa",
+    "De Luca",
+    "Esposito",
+    "Ferrari",
+    "Fontana",
+    "Gallo",
+    "Greco",
+    "Lombardi",
+    "Moretti",
+    "Pereira",
+    "Ricci",
+    "Rinaldi",
+    "Rossi",
+    "Santos",
+    "Serra",
+    "Silva",
+    "Teixeira",
+    "Valentini",
+    "Villa",
 ];
 const EU_FIRST: &[&str] = &[
     "Adrian", "Alexis", "Andrei", "Bruno", "Dario", "Dimitri", "Emre", "Erik", "Gabor", "Ivan",
     "Jakub", "Kristof", "Lukas", "Marko", "Milan", "Nikola", "Petar", "Stefan", "Tomas", "Viktor",
 ];
 const EU_LAST: &[&str] = &[
-    "Horvat", "Ivanov", "Jovanovic", "Kovac", "Kovalenko", "Marek", "Nagy", "Novak", "Petrov",
-    "Popescu", "Radu", "Sokolov", "Stoica", "Toth", "Varga", "Yilmaz", "Zielinski", "Zoric",
-    "Dvorak", "Kral",
+    "Horvat",
+    "Ivanov",
+    "Jovanovic",
+    "Kovac",
+    "Kovalenko",
+    "Marek",
+    "Nagy",
+    "Novak",
+    "Petrov",
+    "Popescu",
+    "Radu",
+    "Sokolov",
+    "Stoica",
+    "Toth",
+    "Varga",
+    "Yilmaz",
+    "Zielinski",
+    "Zoric",
+    "Dvorak",
+    "Kral",
 ];
 
 /// Gamer tags; a nick never equals the full name of the player who wears it.
@@ -630,9 +983,9 @@ const NICKS: &[&str] = &[
     "Radar", "Raven", "Razor", "Rift", "Rogue", "Rune", "Saga", "Sable", "Scout", "Shade",
     "Sierra", "Slate", "Spark", "Spike", "Sprout", "Storm", "Talon", "Tempo", "Terra", "Thorn",
     "Tidal", "Titan", "Torque", "Umbra", "Vandal", "Vapor", "Vector", "Velvet", "Vertex", "Viper",
-    "Volt", "Vortex", "Warden", "Wisp", "Wolf", "Xeno", "Yeti", "Zap", "Zenith", "Zephyr",
-    "Zinc", "Zorro", "Bruma", "Cuervo", "Duende", "Estela", "Faro", "Gato", "Hielo", "Jaguar",
-    "Lobo", "Marea", "Niebla", "Ola", "Pirata", "Rayo", "Sol", "Tigre", "Trueno", "Volcan",
+    "Volt", "Vortex", "Warden", "Wisp", "Wolf", "Xeno", "Yeti", "Zap", "Zenith", "Zephyr", "Zinc",
+    "Zorro", "Bruma", "Cuervo", "Duende", "Estela", "Faro", "Gato", "Hielo", "Jaguar", "Lobo",
+    "Marea", "Niebla", "Ola", "Pirata", "Rayo", "Sol", "Tigre", "Trueno", "Volcan",
 ];
 
 #[cfg(test)]
@@ -674,12 +1027,16 @@ mod tests {
             today: date(),
             taken_match_names: &taken,
             serial: 1,
+            wage_budget: None,
         };
         generate_founding_squad(&spec, seed).expect("squad")
     }
 
     fn ovrs(squad: &[Player]) -> Vec<i32> {
-        squad.iter().map(|p| i32::from(calculate_lol_ovr(p))).collect()
+        squad
+            .iter()
+            .map(|p| i32::from(calculate_lol_ovr(p)))
+            .collect()
     }
 
     #[test]
@@ -688,7 +1045,16 @@ mod tests {
         let b = squad_for(les(), &["ES"], 42);
         let key = |s: &[Player]| {
             s.iter()
-                .map(|p| (p.id.clone(), p.match_name.clone(), p.full_name.clone(), p.wage, p.date_of_birth.clone(), p.potential_base))
+                .map(|p| {
+                    (
+                        p.id.clone(),
+                        p.match_name.clone(),
+                        p.full_name.clone(),
+                        p.wage,
+                        p.date_of_birth.clone(),
+                        p.potential_base,
+                    )
+                })
                 .collect::<Vec<_>>()
         };
         assert_eq!(key(&a), key(&b));
@@ -716,13 +1082,31 @@ mod tests {
         for seed in 0..400u64 {
             let squad = squad_for(percentiles, nationalities, seed);
             let values = ovrs(&squad);
-            assert!(values.iter().all(|v| *v >= median - 5), "seed {seed}: {values:?}");
-            assert!(values.iter().all(|v| *v >= median - 7), "seed {seed}: {values:?}");
-            assert!(values.iter().all(|v| *v <= i32::from(percentiles.p75)), "seed {seed}: {values:?}");
-            assert!(values.iter().filter(|v| **v > median).count() <= 1, "seed {seed}: {values:?}");
+            assert!(
+                values.iter().all(|v| *v >= median - 5),
+                "seed {seed}: {values:?}"
+            );
+            assert!(
+                values.iter().all(|v| *v >= median - 7),
+                "seed {seed}: {values:?}"
+            );
+            assert!(
+                values.iter().all(|v| *v <= i32::from(percentiles.p75)),
+                "seed {seed}: {values:?}"
+            );
+            assert!(
+                values.iter().filter(|v| **v > median).count() <= 1,
+                "seed {seed}: {values:?}"
+            );
             let mean = f64::from(values.iter().sum::<i32>()) / 5.0;
-            assert!((f64::from(median) - 4.0..=f64::from(median) - 2.0).contains(&mean), "seed {seed}: {mean}");
-            assert!(validate_squad(&squad, &percentiles, date()).is_empty(), "seed {seed}");
+            assert!(
+                (f64::from(median) - 4.0..=f64::from(median) - 2.0).contains(&mean),
+                "seed {seed}: {mean}"
+            );
+            assert!(
+                validate_squad(&squad, &percentiles, date()).is_empty(),
+                "seed {seed}"
+            );
         }
     }
 
@@ -748,8 +1132,15 @@ mod tests {
                 let template = role_template(player.natural_position);
                 let a = &player.attributes;
                 let values = [
-                    a.mechanics, a.laning, a.teamfighting, a.macro_play, a.consistency,
-                    a.shotcalling, a.champion_pool, a.discipline, a.mental_resilience,
+                    a.mechanics,
+                    a.laning,
+                    a.teamfighting,
+                    a.macro_play,
+                    a.consistency,
+                    a.shotcalling,
+                    a.champion_pool,
+                    a.discipline,
+                    a.mental_resilience,
                 ];
                 let ovr = i32::from(player.lol_ovr);
                 let weak = i32::from(values[template.weak]) - ovr;
@@ -770,15 +1161,26 @@ mod tests {
             assert_eq!(bloomers.len(), 1, "seed {seed}");
             let bloomer = bloomers[0];
             assert!((84..=88).contains(&bloomer.potential_base));
-            assert!((66..=68).contains(&bloomer.lol_ovr), "seed {seed}: {}", bloomer.lol_ovr);
+            assert!(
+                (66..=68).contains(&bloomer.lol_ovr),
+                "seed {seed}: {}",
+                bloomer.lol_ovr
+            );
         }
     }
 
     #[test]
     fn regular_players_have_potential_between_70_and_82_and_above_their_ovr() {
         for seed in 0..200u64 {
-            for p in squad_for(lec(), &["FR"], seed).iter().filter(|p| p.potential_base < 84) {
-                assert!((70..=83).contains(&p.potential_base), "seed {seed}: {}", p.potential_base);
+            for p in squad_for(lec(), &["FR"], seed)
+                .iter()
+                .filter(|p| p.potential_base < 84)
+            {
+                assert!(
+                    (70..=83).contains(&p.potential_base),
+                    "seed {seed}: {}",
+                    p.potential_base
+                );
                 assert!(p.potential_base > p.lol_ovr);
             }
         }
@@ -803,7 +1205,10 @@ mod tests {
     fn wage_is_never_below_the_wage_scale_floor() {
         for seed in 0..300u64 {
             for p in squad_for(lec(), &["FR", "DE"], seed) {
-                assert!(p.wage >= scale_wage_for_market_value(p.market_value), "seed {seed}");
+                assert!(
+                    p.wage >= scale_wage_for_market_value(p.market_value),
+                    "seed {seed}"
+                );
                 assert!(p.market_value > 0);
             }
         }
@@ -818,7 +1223,10 @@ mod tests {
 
     #[test]
     fn ids_follow_the_club_slug_role_and_serial() {
-        let ids: Vec<String> = squad_for(les(), &["ES"], 5).iter().map(|p| p.id.clone()).collect();
+        let ids: Vec<String> = squad_for(les(), &["ES"], 5)
+            .iter()
+            .map(|p| p.id.clone())
+            .collect();
         assert_eq!(
             ids,
             vec![
@@ -835,7 +1243,8 @@ mod tests {
     fn nicks_differ_from_full_names_and_are_unique() {
         for seed in 0..300u64 {
             let squad = squad_for(les(), &["ES"], seed);
-            let nicks: HashSet<String> = squad.iter().map(|p| p.match_name.to_lowercase()).collect();
+            let nicks: HashSet<String> =
+                squad.iter().map(|p| p.match_name.to_lowercase()).collect();
             assert_eq!(nicks.len(), 5, "seed {seed}");
             for p in &squad {
                 assert_ne!(p.match_name.to_lowercase(), p.full_name.to_lowercase());
@@ -853,10 +1262,15 @@ mod tests {
             today: date(),
             taken_match_names: &taken,
             serial: 1,
+            wage_budget: None,
         };
         for seed in 0..200u64 {
             let squad = generate_founding_squad(&spec, seed).expect("squad");
-            assert!(squad.iter().all(|p| !taken.contains(&p.match_name.to_lowercase())));
+            assert!(
+                squad
+                    .iter()
+                    .all(|p| !taken.contains(&p.match_name.to_lowercase()))
+            );
         }
     }
 
@@ -883,11 +1297,18 @@ mod tests {
             today: date(),
             taken_match_names: &taken,
             serial: 1,
+            wage_budget: None,
         };
-        assert_eq!(generate_founding_squad(&spec, 1).err(), Some(SquadError::EmptyClubSlug));
+        assert_eq!(
+            generate_founding_squad(&spec, 1).err(),
+            Some(SquadError::EmptyClubSlug)
+        );
         spec.club_slug = "rayo";
         spec.nationalities = &[];
-        assert_eq!(generate_founding_squad(&spec, 1).err(), Some(SquadError::NoNationalities));
+        assert_eq!(
+            generate_founding_squad(&spec, 1).err(),
+            Some(SquadError::NoNationalities)
+        );
     }
 
     #[test]
@@ -895,13 +1316,21 @@ mod tests {
         let taken = HashSet::new();
         let spec = SquadSpec {
             club_slug: "rayo",
-            percentiles: OvrPercentiles { p50: 95, p75: 97, ..les() },
+            percentiles: OvrPercentiles {
+                p50: 95,
+                p75: 97,
+                ..les()
+            },
             nationalities: &["ES"],
             today: date(),
             taken_match_names: &taken,
             serial: 1,
+            wage_budget: None,
         };
-        assert_eq!(generate_founding_squad(&spec, 1).err(), Some(SquadError::UnsupportedMedian(95)));
+        assert_eq!(
+            generate_founding_squad(&spec, 1).err(),
+            Some(SquadError::UnsupportedMedian(95))
+        );
     }
 
     #[test]
@@ -915,9 +1344,13 @@ mod tests {
             today: date(),
             taken_match_names: &taken,
             serial: 1,
+            wage_budget: None,
         };
         match generate_founding_squad(&spec, 1) {
-            Err(SquadError::WindowUnsatisfied { attempts, violations }) => {
+            Err(SquadError::WindowUnsatisfied {
+                attempts,
+                violations,
+            }) => {
                 assert_eq!(attempts, MAX_ATTEMPTS);
                 assert!(!violations.is_empty());
             }
@@ -932,6 +1365,79 @@ mod tests {
         squad[0].lol_ovr = 90;
         let problems = validate_squad(&squad, &les(), date());
         assert!(problems.iter().any(|p| p.contains("above the ceiling")));
+    }
+
+    fn squad_with_budget(
+        percentiles: OvrPercentiles,
+        nationalities: &[&str],
+        budget: i64,
+        seed: u64,
+    ) -> Vec<Player> {
+        let taken = HashSet::new();
+        let spec = SquadSpec {
+            club_slug: "rayo",
+            percentiles,
+            nationalities,
+            today: date(),
+            taken_match_names: &taken,
+            serial: 1,
+            wage_budget: Some(budget),
+        };
+        generate_founding_squad(&spec, seed).expect("squad")
+    }
+
+    #[test]
+    fn bill_lands_inside_the_window_for_les_and_lec_budgets() {
+        for (percentiles, nats, budget) in [
+            (les(), vec!["ES"], 1_297_570i64),
+            (lec(), vec!["FR", "DE"], 1_750_000i64),
+        ] {
+            for seed in 0..300u64 {
+                let squad = squad_with_budget(percentiles, &nats, budget, seed);
+                assert_eq!(
+                    bill_violation(&squad, budget),
+                    None,
+                    "seed {seed}: {}",
+                    squad_bill(&squad)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn scaled_wages_stay_at_or_above_the_wage_floor() {
+        for seed in 0..300u64 {
+            for p in squad_with_budget(lec(), &["FR"], 1_750_000, seed) {
+                assert!(
+                    p.wage >= scale_wage_for_market_value(p.market_value),
+                    "seed {seed}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_tiny_budget_cannot_pull_wages_under_the_floor() {
+        let taken = HashSet::new();
+        let spec = SquadSpec {
+            club_slug: "rayo",
+            percentiles: les(),
+            nationalities: &["ES"],
+            today: date(),
+            taken_match_names: &taken,
+            serial: 1,
+            wage_budget: Some(100_000),
+        };
+        assert!(matches!(
+            generate_founding_squad(&spec, 1),
+            Err(SquadError::WindowUnsatisfied { .. })
+        ));
+    }
+
+    #[test]
+    fn bill_violation_reports_a_bill_outside_the_window() {
+        let squad = squad_for(les(), &["ES"], 4);
+        assert!(bill_violation(&squad, 1_000_000_000).is_some());
     }
 
     #[test]
