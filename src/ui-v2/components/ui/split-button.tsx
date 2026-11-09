@@ -50,7 +50,7 @@ export function SplitButton({
         className="gap-2 rounded-e-none px-5 font-heading text-[1.25rem] font-extrabold [&_svg:not([class*='size-'])]:size-5"
         disabled={disabled || loading}
         aria-busy={loading || undefined}
-        onClick={onClick}
+        onClick={() => onClick()}
       >
         {loading ? <Loader2 aria-hidden="true" className="animate-spin" /> : icon}
         {label}
@@ -74,7 +74,7 @@ export function SplitButton({
                 <Menu.Item
                   key={item.id}
                   disabled={item.disabled}
-                  onClick={item.onSelect}
+                  onClick={() => item.onSelect()}
                   className="flex min-h-[var(--hit)] cursor-default items-center gap-2 rounded-md px-3 text-sm outline-none data-[disabled]:opacity-50 data-[highlighted]:bg-muted data-[highlighted]:text-foreground [&_svg]:size-4"
                 >
                   {item.icon}

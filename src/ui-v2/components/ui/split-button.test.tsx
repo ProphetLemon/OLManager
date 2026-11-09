@@ -26,6 +26,8 @@ describe("SplitButton", () => {
     const { onClick, chevron } = setup()
     fireEvent.click(screen.getByRole("button", { name: "Continue" }))
     expect(onClick).toHaveBeenCalledTimes(1)
+    // Regression: the click event must never leak into handlers with optional params.
+    expect(onClick).toHaveBeenCalledWith()
     expect(chevron).toHaveAttribute("aria-expanded", "false")
     expect(screen.queryByRole("menu")).toBeNull()
   })
@@ -38,6 +40,7 @@ describe("SplitButton", () => {
     expect(await screen.findByRole("menu")).toBeInTheDocument()
     fireEvent.click(screen.getByRole("menuitem", { name: "Skip to match day" }))
     expect(onSkip).toHaveBeenCalledTimes(1)
+    expect(onSkip).toHaveBeenCalledWith()
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull())
   })
 
