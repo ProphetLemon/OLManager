@@ -160,7 +160,7 @@ export default function PlayerProfileHeroCardV2({
                   type="button"
                   onClick={onRename}
                   aria-label={t("playerProfile.rename.actionAria", { nick: player.match_name })}
-                  className="inline-flex h-6 items-center gap-1 rounded-md border border-white/15 px-2 text-xs font-bold text-foreground/90 transition-colors hover:border-primary/60 hover:text-club-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="inline-flex h-6 items-center gap-1 rounded-md border border-line px-2 text-xs font-bold text-foreground/90 transition-colors hover:border-primary/60 hover:text-club-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Pencil className="size-3.5" aria-hidden="true" />
                   {t("playerProfile.rename.action")}

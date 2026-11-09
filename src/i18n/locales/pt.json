@@ -1748,7 +1748,7 @@
   "playerProfile": {
     "rename": {
       "action": "Mudar nome",
-      "actionAria": "Mudar o nome de {{nick}}",
+      "actionAria": "Mudar nome de {{nick}}",
       "title": "Mudar o nome do jogador",
       "hint": "Só o nome muda. A função, a idade e a nacionalidade mantêm-se.",
       "nickHint": "{{min}} a {{max}} caracteres: letras, dígitos, _ . e -",

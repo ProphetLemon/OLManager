@@ -123,3 +123,12 @@ describe.each(NAMESPACES)("$prefix locale keys", ({ path, prefix, sources }) => 
     expect(unknown).toEqual([]);
   });
 });
+
+describe("Rename button accessible name", () => {
+  it.each(["en", ...Object.keys(LOCALES)])("%s: the aria-label contains the visible label (WCAG 2.5.3)", (code) => {
+    const rename = ((code === "en" ? (en as Tree) : LOCALES[code]).playerProfile as Tree).rename as Tree;
+    const visible = String(rename.action).trim().toLowerCase();
+    const accessible = String(rename.actionAria).replace(/{{\s*nick\s*}}/g, "").toLowerCase();
+    expect(accessible).toContain(visible);
+  });
+});
