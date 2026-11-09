@@ -5,6 +5,7 @@ use olm_core::domain::staff::Staff;
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::{Team, TeamKind};
 use serde::Serialize;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use tauri::State;
 
@@ -14,6 +15,7 @@ use olm_core::domain::manager::Manager;
 use olm_core::domain::stats::StatsState;
 use olm_core::game::Game;
 use olm_core::game_setup;
+use olm_core::player_rating_overrides::{PlayerRatingOverrides, apply_player_rating_overrides};
 use olm_core::wage_scale;
 use olm_core::generator::definitions::CompetitionManifest;
 use olm_core::roster_stability;
@@ -75,18 +77,34 @@ pub(crate) fn build_new_game_world(
     game: &mut Game,
     inputs: &NewGameWorldInputs<'_>,
 ) -> Result<String, String> {
+    build_new_game_world_with_rating_overrides(
+        game,
+        inputs,
+        olm_core::player_rating_overrides::bundled(),
+    )
+}
+
+/// [`build_new_game_world`] with an explicit stat-derived rating overrides
+/// document instead of the bundled one, so tests can inject a fixture.
+pub(crate) fn build_new_game_world_with_rating_overrides(
+    game: &mut Game,
+    inputs: &NewGameWorldInputs<'_>,
+    rating_overrides: &PlayerRatingOverrides,
+) -> Result<String, String> {
     // The new game starts in the season after the roster snapshot, so ages,
     // contracts and the schedule all line up with that year.
     game.clock = GameClock::new(new_game_start_for(inputs.overlay));
 
     // Assemble teams, players, staff from modular data
-    let (assembled_teams, assembled_players, assembled_staff) = assemble_world_from_modular_data(
-        inputs.data_dir,
-        inputs.manifests,
-        inputs.competition_id,
-        inputs.team_id,
-        game.clock.current_date.date_naive(),
-    )?;
+    let (assembled_teams, assembled_players, assembled_staff) =
+        assemble_world_with_rating_overrides(
+            inputs.data_dir,
+            inputs.manifests,
+            inputs.competition_id,
+            inputs.team_id,
+            game.clock.current_date.date_naive(),
+            rating_overrides,
+        )?;
 
     game.teams = assembled_teams;
     game.players = assembled_players;
@@ -94,7 +112,22 @@ pub(crate) fn build_new_game_world(
 
     // Bring the bundled snapshot up to date before lineups are built from it.
     if let Some(overlay) = inputs.overlay {
-        apply_roster_overlay(game, overlay);
+        let report = apply_roster_overlay(game, overlay);
+        // Players the overlay added never went through the assembly pass; give them
+        // the same stat-derived ratings, then re-run the market values the pass cleared.
+        if !report.added_player_ids.is_empty() {
+            let added: HashSet<String> = report.added_player_ids.iter().cloned().collect();
+            let applied = apply_player_rating_overrides(
+                &mut game.players,
+                rating_overrides,
+                Some(&added),
+            );
+            info!(
+                "[game] rating overrides for overlay-added players: {} applied, {} stale",
+                applied.applied, applied.skipped_stale
+            );
+            game_setup::apply_default_market_values(&mut game.players);
+        }
     }
 
     // The custom club takes its slot after the overlay (so roster moves into the
@@ -292,13 +325,36 @@ type AssembledWorld = (Vec<Team>, Vec<Player>, Vec<Staff>);
 
 /// Assemble teams, players, and staff from modular competition data files.
 /// Used by Flow C: the game was created lightweight (empty teams/players),
-/// and now we need to load the selected competition's data.
+/// and now we need to load the selected competition's data. Production goes through
+/// [`build_new_game_world`]; this wrapper (bundled rating overrides) serves the tests
+/// that assemble the catalog directly.
+#[cfg(test)]
 pub(crate) fn assemble_world_from_modular_data(
     data_dir: &Path,
     manifests: &[CompetitionManifest],
     competition_id: &str,
     team_id: &str,
     start_date: chrono::NaiveDate,
+) -> Result<AssembledWorld, String> {
+    assemble_world_with_rating_overrides(
+        data_dir,
+        manifests,
+        competition_id,
+        team_id,
+        start_date,
+        olm_core::player_rating_overrides::bundled(),
+    )
+}
+
+/// [`assemble_world_from_modular_data`] with an explicit stat-derived rating
+/// overrides document instead of the bundled one.
+pub(crate) fn assemble_world_with_rating_overrides(
+    data_dir: &Path,
+    manifests: &[CompetitionManifest],
+    competition_id: &str,
+    team_id: &str,
+    start_date: chrono::NaiveDate,
+    rating_overrides: &PlayerRatingOverrides,
 ) -> Result<AssembledWorld, String> {
     info!(
         "[game] assemble_world_from_modular_data: competition={}, team_id={}",
@@ -441,8 +497,24 @@ pub(crate) fn assemble_world_from_modular_data(
     // 6. Players shipped with every attribute at exactly 50 have no rating data: estimate
     // them from their league and role (free agents at an amateur level). This must run
     // before market values and wages are seeded so both follow the estimated OVR.
-    let estimated =
-        olm_core::placeholder_ratings::estimate_placeholder_ratings(&mut all_players, &all_teams);
+    //
+    // 5b. Stat-derived ratings go first: they replace authored ratings with estimates
+    // built from real stats, and the low-confidence ones must not set the league
+    // medians a placeholder is estimated from. Wages stay authored; a cleared market
+    // value is recomputed by step 7.
+    let rated = apply_player_rating_overrides(&mut all_players, rating_overrides, None);
+    info!(
+        "[game] rating overrides: {} applied, {} stale, {} missing, {} low confidence",
+        rated.applied,
+        rated.skipped_stale,
+        rated.skipped_missing,
+        rated.low_confidence_ids.len()
+    );
+    let estimated = olm_core::placeholder_ratings::estimate_placeholder_ratings_excluding(
+        &mut all_players,
+        &all_teams,
+        &rated.low_confidence_ids,
+    );
     info!(
         "[game] estimated ratings for {} rostered and {} free-agent placeholder players",
         estimated.rostered, estimated.free_agents
@@ -1703,6 +1775,175 @@ mod tests {
                 "the ladder link is read from the current manifests"
             );
             assert_eq!(loaded.ladder.movements.len(), 1);
+        }
+
+        /// A new world built the way `select_team` does, but with the given rating
+        /// overrides instead of the bundled ones.
+        fn world_with_rating_overrides(
+            overrides: &PlayerRatingOverrides,
+            overlay: &WorldOverlay,
+            slot_id: &str,
+        ) -> Game {
+            let mut game = empty_session();
+            let data = data_base();
+            let (manifests, known_ids) = known_ids_and_manifests();
+            let competition_id = competition_id_from_team_id_known(slot_id, &known_ids)
+                .expect("competition prefix");
+            build_new_game_world_with_rating_overrides(
+                &mut game,
+                &NewGameWorldInputs {
+                    data_dir: &data,
+                    manifests: &manifests,
+                    competition_id,
+                    team_id: slot_id,
+                    overlay: Some(overlay),
+                    custom_team: None,
+                },
+                overrides,
+            )
+            .expect("build new game world");
+            game
+        }
+
+        /// One-entry overrides document that sets every attribute of `id` to `value`.
+        fn single_override(id: &str, authored_ovr: u8, value: u8) -> PlayerRatingOverrides {
+            PlayerRatingOverrides::parse(&format!(
+                r#"{{"version":1,"method":"stat-blend-v1","source":"test",
+                "window":{{"since":"2025-01-01","until":"2026-01-01"}},"league_levels":{{}},
+                "entries":[{{"id":"{id}","authored_ovr":{authored_ovr},"games":60,
+                "confidence":0.8,"attributes":{{"mechanics":{value},"laning":{value},
+                "teamfighting":{value},"macro_play":{value},"consistency":{value},
+                "shotcalling":{value},"champion_pool":{value},"discipline":{value},
+                "mental_resilience":{value}}},"potential_floor":{value}}}]}}"#
+            ))
+            .expect("fixture overrides parse")
+        }
+
+        /// The fields a rating override may touch, plus the wage it must not.
+        fn rating_snapshot(game: &Game) -> HashMap<String, ([u8; 9], u8, u8, u64, u32)> {
+            game.players
+                .iter()
+                .map(|p| {
+                    (
+                        p.id.clone(),
+                        (p.attributes.as_array(), p.lol_ovr, p.potential_base, p.market_value, p.wage),
+                    )
+                })
+                .collect()
+        }
+
+        /// A rostered player with an authored wage and an OVR of at most 90, from the
+        /// assembled catalog: the state the override guard compares against. An authored
+        /// wage keeps the downstream wage seeding out of the comparison.
+        fn rated_catalog_player(catalog: &[Player]) -> (String, u8) {
+            let p = catalog
+                .iter()
+                .find(|p| {
+                    p.team_id.is_some()
+                        && p.wage > 0
+                        && olm_core::potential::calculate_lol_ovr(p) <= 90
+                })
+                .expect("a rostered player with an authored wage");
+            (p.id.clone(), olm_core::potential::calculate_lol_ovr(p))
+        }
+
+        #[test]
+        fn bundled_rating_overrides_leave_a_new_world_unchanged() {
+            // Update this regression when the generated asset is bundled (T7).
+            assert!(
+                olm_core::player_rating_overrides::bundled().is_empty(),
+                "the bundled asset is empty until the generated one ships"
+            );
+            let (baseline, _, overlay, user_team) = new_game();
+            let explicit = world_with_rating_overrides(
+                &PlayerRatingOverrides::default(),
+                &overlay,
+                &user_team,
+            );
+            assert_eq!(rating_snapshot(&baseline), rating_snapshot(&explicit));
+        }
+
+        #[test]
+        fn a_listed_player_gets_the_override_and_an_unlisted_one_does_not_change() {
+            let (baseline, catalog, overlay, user_team) = new_game();
+            let (id, ovr) = rated_catalog_player(&catalog);
+            let new_ovr = ovr.saturating_add(6).min(99);
+
+            let world = world_with_rating_overrides(
+                &single_override(&id, ovr, new_ovr),
+                &overlay,
+                &user_team,
+            );
+
+            let (before, after) = (rating_snapshot(&baseline), rating_snapshot(&world));
+            let (old, new) = (&before[&id], &after[&id]);
+            assert_eq!(new.0, [new_ovr; 9]);
+            assert_eq!(new.1, new_ovr);
+            assert!(new.2 >= new_ovr, "potential is floored at the new OVR");
+            assert_eq!(new.4, old.4, "wages are never changed");
+            let was_derived = old.3 == 0
+                || (old.4 > 0 && old.3 == 15 * u64::from(old.4))
+                || old.3 == game_setup::suggested_seed_market_value(ovr, old.2.max(ovr), false)
+                || old.3 == game_setup::suggested_seed_market_value(ovr, old.2.max(ovr), true);
+            let expected_value = if was_derived {
+                game_setup::suggested_seed_market_value(new_ovr, new.2.max(new_ovr), false)
+            } else {
+                old.3
+            };
+            assert_eq!(new.3, expected_value);
+            for (other, row) in &before {
+                if *other != id {
+                    assert_eq!(Some(row), after.get(other), "{other} must not change");
+                }
+            }
+        }
+
+        #[test]
+        fn a_stale_override_is_skipped() {
+            let (baseline, catalog, overlay, user_team) = new_game();
+            let (id, ovr) = rated_catalog_player(&catalog);
+            let stale_ovr = if ovr > 50 { ovr - 1 } else { ovr + 1 };
+
+            let world = world_with_rating_overrides(
+                &single_override(&id, stale_ovr, 99),
+                &overlay,
+                &user_team,
+            );
+
+            assert_eq!(rating_snapshot(&baseline), rating_snapshot(&world));
+        }
+
+        #[test]
+        fn a_player_added_by_the_overlay_gets_the_override_too() {
+            let (baseline, _, bundled_overlay, user_team) = new_game();
+            let overlay = WorldOverlay::parse(&format!(
+                r#"{{"schemaVersion":1,"as_of":"{}",
+                "source":{{"name":"Leaguepedia","license":"CC BY-SA 3.0","license_url":"https://www.fandom.com/licensing"}},
+                "players":[{{"op":"add","player":{{"id":"overlay-rookie","match_name":"Rookie",
+                "full_name":"Rookie","position":"Top","team_id":"{user_team}","contract_end":"",
+                "date_of_birth":"2005-01-01"}}}}]}}"#,
+                bundled_overlay.as_of
+            ))
+            .expect("overlay");
+            let plain = world_with_rating_overrides(
+                &PlayerRatingOverrides::default(),
+                &overlay,
+                &user_team,
+            );
+            let rookie = plain.players.iter().find(|p| p.id == "overlay-rookie").expect("rookie");
+            let ovr = olm_core::potential::calculate_lol_ovr(rookie);
+            let new_ovr = if ovr < 90 { ovr + 7 } else { ovr - 7 };
+            assert!(baseline.players.iter().all(|p| p.id != "overlay-rookie"));
+
+            let world = world_with_rating_overrides(
+                &single_override("overlay-rookie", ovr, new_ovr),
+                &overlay,
+                &user_team,
+            );
+
+            let rookie = world.players.iter().find(|p| p.id == "overlay-rookie").expect("rookie");
+            assert_eq!(rookie.attributes.as_array(), [new_ovr; 9]);
+            assert_eq!(rookie.lol_ovr, new_ovr);
         }
 
         #[test]
