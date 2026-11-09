@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GameStateData } from "@/store/types";
-import { getStandingsPanelData } from "./standings";
+import { getStandingsPanelData, shortCompetitionName } from "./standings";
 
 function build(opts: { count?: number; myRank?: number; phase?: "Preseason" | "InSeason"; ladder?: unknown } = {}) {
   const count = opts.count ?? 14;
@@ -108,5 +108,20 @@ describe("getStandingsPanelData", () => {
   it("gives no movement tag without a ladder", () => {
     const rows = getStandingsPanelData(build())!.rows;
     expect(rows.every((r) => r.movement === null)).toBe(true);
+  });
+});
+
+describe("shortCompetitionName", () => {
+  it("keeps names that already fit", () => {
+    expect(shortCompetitionName("LEC")).toBe("LEC");
+  });
+
+  it("collapses long names to their initials", () => {
+    expect(shortCompetitionName("League of Legends Championship")).toBe("LOLC");
+    expect(shortCompetitionName("Liga Espanola Superior")).toBe("LES");
+  });
+
+  it("falls back to a prefix for a single long word", () => {
+    expect(shortCompetitionName("Superliga")).toBe("SUPE");
   });
 });

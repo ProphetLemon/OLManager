@@ -73,6 +73,27 @@ describe("NeedsYourCallPanel", () => {
     expect(screen.getByText(/continue whenever/i)).toBeInTheDocument()
   })
 
+  it("keeps the empty state to one compact line with a good-news tag and no duplicate heading", () => {
+    const { container } = render(
+      <NeedsYourCallPanel items={[]} total={0} hiddenContracts={0} onAct={vi.fn()} />,
+    )
+    const empty = container.querySelector('[data-slot="needs-your-call-empty"]') as HTMLElement
+    expect(within(empty).getByText("All clear")).toBeInTheDocument()
+    expect(within(empty).queryByText("Nothing needs your call")).toBeNull()
+    expect(screen.getAllByRole("heading")).toHaveLength(1)
+    expect(empty.className).toContain("min-h-16")
+  })
+
+  it("shows the subtitle and count only when something needs a call", () => {
+    const { rerender } = render(
+      <NeedsYourCallPanel items={items(3)} total={3} hiddenContracts={0} onAct={vi.fn()} />,
+    )
+    expect(screen.getByText("Resolve these before you continue.")).toBeInTheDocument()
+    expect(screen.getByText("3", { selector: '[data-slot="needs-your-call-count"]' })).toBeInTheDocument()
+    rerender(<NeedsYourCallPanel items={[]} total={0} hiddenContracts={0} onAct={vi.fn()} />)
+    expect(screen.queryByText("Resolve these before you continue.")).toBeNull()
+  })
+
   it("announces the total through a polite live region that follows updates", () => {
     const { rerender } = render(
       <NeedsYourCallPanel items={items(1)} total={1} hiddenContracts={0} onAct={vi.fn()} />,

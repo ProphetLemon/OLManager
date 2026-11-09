@@ -179,10 +179,33 @@ describe("ScoreboardHero", () => {
 
   it("fires the schedule and squad actions", () => {
     const { handlers } = renderHero(makeData());
-    fireEvent.click(screen.getByRole("button", { name: "Schedule" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open schedule" }));
     fireEvent.click(screen.getByRole("button", { name: "Squad" }));
     expect(handlers.onOpenSchedule).toHaveBeenCalledTimes(1);
     expect(handlers.onOpenSquad).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows one centred role label per row instead of a tag on each plate", () => {
+    const { container } = renderHero(makeData());
+    const column = container.querySelector('[data-slot="role-column"]') as HTMLElement;
+    expect(column).toHaveAttribute("aria-hidden", "true");
+    expect(within(column).getAllByText(/^(TOP|JUNGLE|MID|ADC|SUPPORT)$/)).toHaveLength(5);
+    expect(container.querySelectorAll('[data-slot="tag-block"][data-size="sm"] + [title]').length).toBe(0);
+    for (const plate of container.querySelectorAll('[data-slot="lineup-plate"]')) {
+      expect(plate.className).toContain("-[3px]");
+    }
+  });
+
+  it("labels the form line, or shows the honest empty message in the same slot", () => {
+    const { container, unmount } = renderHero(
+      makeData({ opponent: side({ prefix: "Navi", name: "Natus Vincere", shortName: "NAVI", form: ["W"] }) }),
+    );
+    expect(within(container.querySelector('[data-slot="opponent-form"]') as HTMLElement).getByText("Form")).toBeInTheDocument();
+    unmount();
+    const empty = renderHero(makeData());
+    const slot = empty.container.querySelector('[data-slot="opponent-form"]') as HTMLElement;
+    expect(slot).toHaveTextContent("form appears after their first match");
+    expect(within(slot).queryByText("W")).toBeNull();
   });
 
   it("keeps muted text off the club and opponent wash", () => {

@@ -6,7 +6,8 @@ import { StandingsPanel } from "./StandingsPanel"
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? key,
+    t: (key: string, opts?: { defaultValue?: string; season?: number }) =>
+      (opts?.defaultValue ?? key).replace("{{season}}", String(opts?.season ?? "")),
   }),
 }))
 
@@ -32,6 +33,7 @@ function data(overrides: Partial<StandingsPanelData> = {}): StandingsPanelData {
     gapBefore: null,
     preseason: false,
     competitionName: "LEC",
+    competitionShortName: "LEC",
     season: 2026,
     ...overrides,
   }
@@ -104,5 +106,13 @@ describe("StandingsPanel", () => {
     const meRow = document.querySelector('tr[data-me="true"]') as HTMLElement
     expect(meRow.className).toContain("bg-club-wash")
     expect(meRow.innerHTML).not.toContain("text-muted-foreground")
+  })
+
+  it("shows a league tag with the full name as tooltip and a season chip", () => {
+    const { container } = render(<StandingsPanel data={data({ competitionName: "League of Legends Championship", competitionShortName: "LOLC", season: 2028 })} onOpenTeams={vi.fn()} />)
+    const tag = container.querySelector('[data-slot="standings-league-tag"]') as HTMLElement
+    expect(tag).toHaveTextContent("LOLC")
+    expect(tag).toHaveAttribute("title", "League of Legends Championship")
+    expect(container.querySelector('[data-slot="standings-season"]')).toHaveTextContent("S2028")
   })
 })

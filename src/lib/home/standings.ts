@@ -23,10 +23,23 @@ export interface StandingsPanelData {
   gapBefore: number | null;
   preseason: boolean;
   competitionName: string;
+  /** Compact league tag for the panel header (LEC, LES); the full name stays in `competitionName`. */
+  competitionShortName: string;
   season: number | string | null;
 }
 
 const DEFAULT_LIMIT = 8;
+const SHORT_NAME_MAX = 4;
+
+/** Names that already fit are kept; longer ones collapse to their initials (or a prefix for one word). */
+export function shortCompetitionName(name: string): string {
+  const trimmed = name.trim();
+  if (Array.from(trimmed).length <= SHORT_NAME_MAX) return trimmed;
+  const words = trimmed.split(/\s+/).filter((word) => /^[\p{L}\p{N}]/u.test(word));
+  const initials = words.length > 1 ? words.map((word) => Array.from(word)[0]).join("").toUpperCase() : "";
+  const source = initials.length >= 2 ? initials : trimmed.toUpperCase();
+  return Array.from(source).slice(0, SHORT_NAME_MAX).join("");
+}
 
 function activeLeague(gameState: GameStateData): LeagueData | null {
   const leagues = gameState.leagues ?? [];
@@ -101,6 +114,7 @@ export function getStandingsPanelData(
     gapBefore,
     preseason: !hasCompetitiveStandings(gameState),
     competitionName: league.name,
+    competitionShortName: shortCompetitionName(league.name),
     season: league.season ?? null,
   };
 }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 
 import { InboxPanel, type InboxPanelMessage } from "./InboxPanel"
@@ -32,13 +32,26 @@ function msg(n: number, overrides: Partial<InboxPanelMessage> = {}): InboxPanelM
 }
 
 describe("InboxPanel", () => {
-  it("shows at most three rows and the unread count", () => {
+  it("shows at most five rows and the unread count", () => {
     render(
-      <InboxPanel messages={[msg(1), msg(2), msg(3), msg(4)]} unreadCount={5} onOpen={vi.fn()} />,
+      <InboxPanel
+        messages={[msg(1), msg(2), msg(3), msg(4), msg(5), msg(6)]}
+        unreadCount={5}
+        onOpen={vi.fn()}
+      />,
     )
-    expect(screen.getAllByRole("listitem")).toHaveLength(3)
-    expect(screen.queryByText("Subject 4")).toBeNull()
+    expect(screen.getAllByRole("listitem")).toHaveLength(5)
+    expect(screen.queryByText("Subject 6")).toBeNull()
     expect(screen.getByText("5 unread")).toBeInTheDocument()
+  })
+
+  it("puts the category tag before the subject and shows no raw date", () => {
+    render(<InboxPanel messages={[msg(1, { date: "2027-10-05T09:00:00Z" })]} unreadCount={0} onOpen={vi.fn()} />)
+    const row = screen.getByRole("button", { name: /Subject 1/ })
+    const tag = within(row).getByText("Finance")
+    const subject = within(row).getByText("Subject 1")
+    expect(tag.compareDocumentPosition(subject) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByText(/2027-10-05/)).toBeNull()
   })
 
   it("hides the unread count when nothing is unread", () => {

@@ -28,7 +28,7 @@ interface Props {
   unreadCount?: number;
 }
 
-const INBOX_ROWS = 3;
+const INBOX_ROWS = 5;
 const NO_ALERTS: DashboardAlert[] = [];
 const NO_BLOCKERS: BlockerData[] = [];
 
@@ -113,21 +113,33 @@ export function HomeTabV2({
   };
 
   return (
-    <div data-slot="home" className="@container flex flex-col gap-4 p-4">
-      <ScoreboardHero
-        data={scoreboard}
-        onOpenSchedule={() => onNavigate?.("Schedule")}
-        onOpenSquad={() => onNavigate?.("Squad")}
-      />
+    <div data-slot="home" className="@container p-4">
+      {/* 2x2 on wide containers (hero | standings, calls | inbox); one column when narrow. */}
+      <div className="grid grid-cols-1 gap-4 @4xl:grid-cols-[minmax(0,1fr)_24rem]">
+        <div className={standings ? "min-w-0" : "min-w-0 @4xl:col-span-2"}>
+          <ScoreboardHero
+            data={scoreboard}
+            onOpenSchedule={() => onNavigate?.("Schedule")}
+            onOpenSquad={() => onNavigate?.("Squad")}
+          />
+        </div>
 
-      <div className="grid grid-cols-1 gap-4 @3xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <div className="flex min-w-0 flex-col gap-4">
+        <div className="min-w-0">
           <NeedsYourCallPanel
             items={calls.items}
             total={calls.total}
             hiddenContracts={calls.hiddenContracts}
             onAct={handleAct}
           />
+        </div>
+
+        {standings ? (
+          <div className="min-w-0 @4xl:col-start-2 @4xl:row-start-1">
+            <StandingsPanel data={standings} onOpenTeams={() => onNavigate?.("Teams")} />
+          </div>
+        ) : null}
+
+        <div className="min-w-0">
           <InboxPanel
             messages={inboxMessages}
             unreadCount={unreadCount}
@@ -136,12 +148,9 @@ export function HomeTabV2({
             }
           />
         </div>
-        {standings ? (
-          <div className="min-w-0">
-            <StandingsPanel data={standings} onOpenTeams={() => onNavigate?.("Teams")} />
-          </div>
-        ) : (
-          <p aria-live="polite" className="text-sm text-muted-foreground">
+
+        {standings ? null : (
+          <p aria-live="polite" className="text-sm text-muted-foreground @4xl:col-span-2">
             {t("onAir.home.standingsEmpty", { defaultValue: "No standings yet" })}
           </p>
         )}

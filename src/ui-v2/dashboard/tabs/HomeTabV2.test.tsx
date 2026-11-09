@@ -148,7 +148,7 @@ describe("HomeTabV2", () => {
     const onNavigate = vi.fn();
     render(<HomeTabV2 gameState={stateWithFixture()} onNavigate={onNavigate} />);
     fireEvent.click(screen.getByRole("button", { name: "Squad" }));
-    fireEvent.click(screen.getByRole("button", { name: "Schedule" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open schedule" }));
     expect(onNavigate).toHaveBeenNthCalledWith(1, "Squad");
     expect(onNavigate).toHaveBeenNthCalledWith(2, "Schedule");
   });
@@ -199,12 +199,15 @@ describe("HomeTabV2", () => {
     expect(onSelectPlayer).toHaveBeenCalledWith("team-1-TOP", { openRenewal: true });
   });
 
-  it("shows the latest three messages and marks High priority as urgent", () => {
+  it("shows the latest five messages and marks High priority as urgent", () => {
     const messages = [
       message("m1", "2025-03-10"),
       message("m2", "2025-03-11"),
       message("m3", "2025-03-12", { priority: "High" }),
       message("m4", "2025-03-13"),
+      message("m5", "2025-03-14"),
+      message("m6", "2025-03-15"),
+      message("m7", "2025-03-16"),
     ];
     const onNavigate = vi.fn();
     render(
@@ -215,9 +218,9 @@ describe("HomeTabV2", () => {
       />,
     );
     const inbox = document.querySelector('[data-slot="inbox-panel"]') as HTMLElement;
-    expect(within(inbox).getByText("Subject m4")).toBeInTheDocument();
+    expect(within(inbox).getByText("Subject m7")).toBeInTheDocument();
     expect(within(inbox).getByText("Subject m3")).toBeInTheDocument();
-    expect(within(inbox).getByText("Subject m2")).toBeInTheDocument();
+    expect(within(inbox).queryByText("Subject m2")).not.toBeInTheDocument();
     expect(within(inbox).queryByText("Subject m1")).not.toBeInTheDocument();
     expect(within(inbox).getByText("4 unread")).toBeInTheDocument();
     // m3 is the only message with the backend's capitalised "High" priority.

@@ -27,15 +27,31 @@ export function StandingsPanel({ data, onOpenTeams }: StandingsPanelProps) {
       aria-label={title}
       className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 text-card-foreground"
     >
-      <header className="flex flex-col gap-0.5">
-        <h2 className="font-heading text-section font-semibold leading-tight">{title}</h2>
-        {subtitle ? <p className="text-sm text-muted-foreground">{subtitle}</p> : null}
-        {data.preseason ? (
-          <p data-slot="standings-preseason" className="text-sm text-dim">
-            {t("onAir.home.standingsPreseason", { defaultValue: "Season not started" })}
-          </p>
+      <header className="flex items-center gap-3">
+        <span
+          data-slot="standings-league-tag"
+          title={data.competitionName}
+          className="inline-flex min-h-8 max-w-24 shrink-0 items-center rounded-md bg-club-wash px-2 font-heading text-base font-bold uppercase text-club-text"
+        >
+          <span className="truncate">{data.competitionShortName}</span>
+        </span>
+        <h2 className="min-w-0 flex-1 truncate font-heading text-section font-bold uppercase leading-tight tracking-wide">
+          {title}
+        </h2>
+        {data.season != null ? (
+          <span
+            data-slot="standings-season"
+            className="shrink-0 rounded-full bg-secondary px-3 py-1 font-heading text-sm font-bold tabular-nums text-foreground"
+          >
+            {t("onAir.home.seasonChip", { season: data.season, defaultValue: "S{{season}}" })}
+          </span>
         ) : null}
       </header>
+      {data.preseason ? (
+        <p data-slot="standings-preseason" className="-mt-1 text-sm text-dim">
+          {t("onAir.home.standingsPreseason", { defaultValue: "Season not started" })}
+        </p>
+      ) : null}
 
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">{`${title}: ${subtitle}`}</caption>
