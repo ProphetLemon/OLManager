@@ -38,9 +38,11 @@ export default function FloatingBugButton({
         </button>
       )}
 
-      {!show && placement === "floating" && (
+      {placement === "floating" && (
         <button
+          type="button"
           onClick={() => setShow(true)}
+          aria-label={label}
           className="fixed bottom-6 right-6 z-[9999] flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-orange-500 text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl active:scale-95"
           title={label}
         >
