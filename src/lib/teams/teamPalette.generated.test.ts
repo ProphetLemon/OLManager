@@ -1,6 +1,7 @@
 import { readdirSync } from "fs";
 import { resolve } from "path";
 import { describe, expect, it } from "vitest";
+import { TEAM_PALETTE_OVERRIDES } from "../../../scripts/team-palette-overrides";
 import { TEAM_LOGO_PALETTE } from "./teamPalette.generated";
 
 const logos = readdirSync(resolve("public/teams-icons")).filter((f) => /\.(webp|png)$/.test(f));
@@ -23,6 +24,19 @@ describe("TEAM_LOGO_PALETTE", () => {
       for (const v of [primary, secondary]) {
         expect(v === null || HEX.test(v), `${file}: ${v}`).toBe(true);
       }
+    }
+  });
+
+  it("only overrides files that exist in public/teams-icons", () => {
+    const known = new Set(logos);
+    const unknown = Object.keys(TEAM_PALETTE_OVERRIDES).filter((k) => !known.has(k));
+    expect(unknown).toEqual([]);
+  });
+
+  it("applies every override to the generated map", () => {
+    for (const [file, override] of Object.entries(TEAM_PALETTE_OVERRIDES)) {
+      const expected = override ?? { primary: null, secondary: null };
+      expect(TEAM_LOGO_PALETTE[file], file).toEqual(expected);
     }
   });
 });
