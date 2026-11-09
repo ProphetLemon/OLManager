@@ -39,14 +39,12 @@ function ScoreNumeral({
       aria-label={label}
       aria-hidden={label ? undefined : true}
       role={label ? "img" : undefined}
-      // The size utility is joined outside cn(): tailwind-merge reads the custom
-      // text-ovr / text-scoreboard / text-title scales as colours and would drop
-      // them in favour of the tone class.
-      className={`${SIZE_CLASS[size]} ${cn(
+      className={cn(
         "inline-block font-heading font-extrabold tabular-nums leading-none",
+        SIZE_CLASS[size],
         TONE_CLASS[tone],
         className
-      )}`}
+      )}
     >
       {value}
     </span>
