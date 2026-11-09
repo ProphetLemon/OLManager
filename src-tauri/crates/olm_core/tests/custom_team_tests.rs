@@ -3,7 +3,7 @@ use olm_core::clock::GameClock;
 use olm_core::competitions::competition_id_from_team_id_known;
 use olm_core::custom_team::{
     CustomTeamError, CustomTeamSpec, badge_data_uri, custom_team_allowed, custom_team_id, is_custom_team_id,
-    OvrPercentiles, league_median_profile, peer_ovr_percentiles, replace_team_with_custom,
+    OvrPercentiles, join_team_with_custom, league_median_profile, peer_ovr_percentiles, replace_team_with_custom,
     validate_spec,
 };
 use olm_core::domain::manager::Manager;
@@ -768,4 +768,109 @@ fn the_invalid_logo_error_names_its_reason() {
     let error = CustomTeamError::InvalidLogo(olm_core::custom_logo::LogoError::TooBigDimensions);
 
     assert_eq!(error.to_string(), "Invalid club logo: too_big_dimensions");
+}
+
+#[test]
+fn join_team_adds_a_club_and_releases_nobody() {
+    let mut game = world();
+    let teams_before = game.teams.len();
+    let players_before: Vec<_> = game
+        .players
+        .iter()
+        .map(|p| (p.id.clone(), p.team_id.clone()))
+        .collect();
+
+    let outcome = join_team_with_custom(&mut game, "les", &spec()).unwrap();
+
+    assert_eq!(game.teams.len(), teams_before + 1);
+    assert_eq!(outcome.team_id, "les-custom-ray");
+    assert!(outcome.released_player_ids.is_empty());
+    assert!(outcome.released_staff_ids.is_empty());
+    assert!(game.removed_team_ids.is_empty());
+    assert!(game.moved_player_ids.is_empty());
+    for id in ["les-a", "les-b", "les-c", "les-d"] {
+        assert!(game.teams.iter().any(|t| t.id == id), "{id} must stay");
+    }
+    let players_after: Vec<_> = game
+        .players
+        .iter()
+        .map(|p| (p.id.clone(), p.team_id.clone()))
+        .collect();
+    assert_eq!(players_after, players_before);
+    assert_eq!(game.staff.iter().filter(|s| s.team_id.is_some()).count(), 2);
+}
+
+#[test]
+fn join_team_builds_the_club_from_the_median_of_every_league_club() {
+    let mut game = world();
+
+    join_team_with_custom(&mut game, "les", &spec()).unwrap();
+
+    let custom = game
+        .teams
+        .iter()
+        .find(|t| t.id == "les-custom-ray")
+        .unwrap();
+    // All four clubs count: finance 100/300/500/999 (median 400), reputation
+    // 200/0/400/999 with the zero ignored (median 400).
+    assert_eq!(custom.finance, 400);
+    assert_eq!(custom.reputation, 400);
+    assert_eq!(custom.competition_id.as_deref(), Some("les"));
+    assert_eq!(custom.team_kind, TeamKind::Main);
+    assert_eq!(custom.academy_team_id, None);
+    assert!(custom.sponsorship.is_none());
+    assert_eq!(custom.founded_year, 2026);
+    assert!(
+        custom
+            .logo_url
+            .as_deref()
+            .is_some_and(|logo| logo.starts_with("data:image/svg+xml"))
+    );
+}
+
+#[test]
+fn join_team_matches_the_replace_install_for_identity_and_look() {
+    let mut joined = world();
+    let mut replaced = world();
+
+    join_team_with_custom(&mut joined, "les", &spec()).unwrap();
+    replace_team_with_custom(&mut replaced, "les", "les-b", &spec()).unwrap();
+
+    let find = |game: &Game| {
+        game.teams
+            .iter()
+            .find(|t| t.id == "les-custom-ray")
+            .cloned()
+            .unwrap()
+    };
+    let (a, b) = (find(&joined), find(&replaced));
+    assert_eq!(
+        (a.name, a.short_name, a.country, a.logo_url, a.colors.primary),
+        (b.name, b.short_name, b.country, b.logo_url, b.colors.primary)
+    );
+}
+
+#[test]
+fn join_team_validates_names_against_every_club() {
+    let mut game = world();
+    let mut clash = spec();
+    clash.name = "bravo club".to_string();
+
+    // Unlike replace mode, no club is removed, so the name of a rival stays taken.
+    assert_eq!(
+        join_team_with_custom(&mut game, "les", &clash).unwrap_err(),
+        CustomTeamError::DuplicateName
+    );
+    assert_eq!(game.teams.len(), 10);
+}
+
+#[test]
+fn join_team_refuses_a_competition_without_clubs() {
+    let mut game = world();
+
+    assert_eq!(
+        join_team_with_custom(&mut game, "nowhere", &spec()).unwrap_err(),
+        CustomTeamError::UnknownCompetition("nowhere".to_string())
+    );
+    assert_eq!(game.teams.len(), 10);
 }
