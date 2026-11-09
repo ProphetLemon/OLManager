@@ -7,10 +7,14 @@ export const DEFAULT_MAX_CACHE_AGE_DAYS: number;
 export class OfflineCacheMissError extends Error {
   params: Record<string, string>;
 }
-export class RequestBudgetExceededError extends Error {}
+export class RequestBudgetExceededError extends Error {
+  stats?: ClientStats;
+}
 export class MediaWikiError extends Error {
   status?: number;
   code?: string;
+  /** Snapshot of the client counters taken when the error was thrown. */
+  stats?: ClientStats;
 }
 
 export interface MediaWikiClientOptions {
@@ -24,18 +28,33 @@ export interface MediaWikiClientOptions {
   sleep?: (ms: number) => Promise<void>;
   maxCacheAgeDays?: number;
   now?: () => number;
+  /** Told about every failed attempt; silent by default. Never receives URLs, params or credentials. */
+  log?: (message: string, event: RetryEvent) => void;
+}
+export interface RetryEvent {
+  attempt: number;
+  maxAttempts: number;
+  reason: string;
+  /** Wait before the next attempt in ms; undefined when the request gives up. */
+  delayMs?: number;
 }
 export interface ClientStats {
   network: number;
   cacheHits: number;
   retries: number;
+  /** Failed attempts by short reason: "HTTP 429", "api:ratelimited", "TimeoutError", ... */
+  retryReasons: Record<string, number>;
 }
+
+export function describeThrown(error: unknown): string;
+export function formatStats(stats: ClientStats): string;
 
 export function cacheKey(params: Record<string, string>): string;
 
 export class MediaWikiClient {
   constructor(options: MediaWikiClientOptions);
   stats: ClientStats;
+  statsSnapshot(): ClientStats;
   offline: boolean;
   cachePath(params: Record<string, string>): string;
   maxCacheAgeDays: number;

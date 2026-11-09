@@ -11,7 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loginFromFile } from "../world/lib/bot-credentials.mjs";
-import { MediaWikiClient } from "../world/lib/mediawiki-client.mjs";
+import { MediaWikiClient, formatStats } from "../world/lib/mediawiki-client.mjs";
 import {
   DEFAULT_MIN_GAMES,
   DEFAULT_MIN_LOWER_BOUND,
@@ -112,8 +112,18 @@ async function main() {
     console.log(HELP);
     return;
   }
-  const client = new MediaWikiClient({ cacheDir: args.cacheDir, offline: args.offline, maxRequests: args.maxRequests, maxCacheAgeDays: 30 });
-  if (args.login) await loginFromFile(client, { log: (message) => console.error(`[pro-matchups] ${message}`) });
+  const log = (message) => console.error(`[pro-matchups] ${message}`);
+  const client = new MediaWikiClient({ cacheDir: args.cacheDir, offline: args.offline, maxRequests: args.maxRequests, maxCacheAgeDays: 30, log });
+  try {
+    await run(args, client, log);
+  } finally {
+    // Printed on success and on failure; errors thrown by the client also carry `stats`.
+    log(`requests: ${formatStats(client.stats)}`);
+  }
+}
+
+async function run(args, client, log) {
+  if (args.login) await loginFromFile(client, { log });
   const fetched = await fetchAllRows(client, args);
   const championList = JSON.parse(fs.readFileSync(path.join(root, "assets/simulation/champion-list.json"), "utf8")).champions;
   const resolve = createChampionResolver(championList);
