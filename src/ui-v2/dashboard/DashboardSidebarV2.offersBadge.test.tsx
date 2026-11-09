@@ -7,7 +7,7 @@ vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
   useTranslation: () => ({
     i18n: { language: "es" },
-    t: (key: string) => key,
+    t: (key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? key,
   }),
 }));
 
@@ -26,15 +26,19 @@ function renderSidebar(pendingOffersCount?: number) {
       pendingOffersCount={pendingOffersCount}
     />,
   );
-  return screen.getByRole("button", { name: /dashboard\.transfers/ });
+  return screen.getByRole("button", { name: /^Market/ });
 }
 
-describe("DashboardSidebarV2 transfers badge", () => {
-  it("shows the pending incoming offer count on the transfers item", () => {
-    expect(renderSidebar(3)).toHaveTextContent("3");
+describe("DashboardSidebarV2 market launcher badge", () => {
+  it("shows the pending incoming offer count on the market launcher", () => {
+    const launcher = renderSidebar(3);
+    expect(launcher).toHaveTextContent("3");
+    expect(launcher).toHaveAccessibleName("Market, 3");
   });
 
   it("hides the badge when there are no pending offers", () => {
-    expect(renderSidebar(0)).not.toHaveTextContent(/\d/);
+    const launcher = renderSidebar(0);
+    expect(launcher).not.toHaveTextContent(/\d/);
+    expect(launcher).toHaveAccessibleName("Market");
   });
 });
