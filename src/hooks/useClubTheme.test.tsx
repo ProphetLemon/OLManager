@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -93,5 +93,25 @@ describe("useClubTheme", () => {
     const high = resolveClubPalette(CUSTOM_TEAM, TEAM_LOGO_PALETTE, { highContrast: true });
     expect(read("--club")).toBe(high.accent);
     expect(read("--club-text")).toBe(high.accentText);
+  });
+
+  it("does not rewrite the properties when the game state refreshes with the same club", () => {
+    useGameStore.setState({ gameState: gameWith(CUSTOM_TEAM) });
+    renderHook(() => useClubTheme());
+    const setProperty = vi.spyOn(document.documentElement.style, "setProperty");
+
+    act(() => useGameStore.setState({ gameState: gameWith({ ...CUSTOM_TEAM }) }));
+    expect(setProperty).not.toHaveBeenCalled();
+
+    act(() =>
+      useGameStore.setState({
+        gameState: gameWith({ ...CUSTOM_TEAM, colors: { primary: "#1971c2", secondary: "#f08c00" } }),
+      }),
+    );
+    expect(read("--club")).toBe(
+      resolveClubPalette({ ...CUSTOM_TEAM, colors: { primary: "#1971c2", secondary: "#f08c00" } }, TEAM_LOGO_PALETTE)
+        .accent,
+    );
+    setProperty.mockRestore();
   });
 });

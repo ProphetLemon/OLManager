@@ -17,14 +17,27 @@ export function useClubTheme(): void {
   const managerTeamId = gameState?.manager.team_id ?? null;
   const teams = gameState?.teams;
 
-  const team = useMemo(
-    () => (managerTeamId ? (teams?.find((t) => t.id === managerTeamId) ?? null) : null),
-    [managerTeamId, teams],
-  );
+  const team = managerTeamId ? teams?.find((t) => t.id === managerTeamId) : undefined;
+
+  // Key the memo on the fields the resolver reads: gameState.teams is replaced
+  // on every refresh, so the team object identity changes even when its
+  // colours do not.
+  const id = team?.id ?? null;
+  const name = team?.name ?? null;
+  const logoUrl = team?.logo_url ?? null;
+  const primary = team?.colors?.primary ?? null;
+  const secondary = team?.colors?.secondary ?? null;
 
   const palette = useMemo(
-    () => (team ? resolveClubPalette(team, TEAM_LOGO_PALETTE, { highContrast }) : null),
-    [team, highContrast],
+    () =>
+      id
+        ? resolveClubPalette(
+            { id, name, logo_url: logoUrl, colors: { primary, secondary } },
+            TEAM_LOGO_PALETTE,
+            { highContrast },
+          )
+        : null,
+    [id, name, logoUrl, primary, secondary, highContrast],
   );
 
   useEffect(() => {
