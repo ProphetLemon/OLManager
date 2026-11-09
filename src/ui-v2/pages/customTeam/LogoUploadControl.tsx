@@ -43,6 +43,7 @@ export default function LogoUploadControl({
 }: LogoUploadControlProps) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
+  const uploadRef = useRef<HTMLButtonElement>(null);
   const latestRequest = useRef(0);
   const mounted = useRef(true);
   const [busy, setBusy] = useState(false);
@@ -84,7 +85,8 @@ export default function LogoUploadControl({
     setErrorCode(null);
     onInteract?.();
     onChange(null);
-    inputRef.current?.focus();
+    // The visible Upload button, not the hidden file input, so the focus ring stays on screen.
+    uploadRef.current?.focus();
   };
 
   return (
@@ -115,13 +117,13 @@ export default function LogoUploadControl({
             accept={LOGO_ACCEPT_ATTRIBUTE}
             disabled={disabled || busy}
             onChange={(event) => void handleFile(event)}
-            aria-label={t("teamSelect.customLogo.upload")}
-            aria-describedby="custom-team-logo-hint"
+            aria-hidden="true"
             className="sr-only"
             tabIndex={-1}
             data-testid="logo-file-input"
           />
           <Button
+            ref={uploadRef}
             type="button"
             variant="outline"
             disabled={disabled || busy}
@@ -143,7 +145,7 @@ export default function LogoUploadControl({
           )}
         </div>
       </div>
-      <p id="custom-team-logo-hint" className="text-xs text-muted-foreground/80">
+      <p id="custom-team-logo-hint" className="text-xs text-muted-foreground">
         {t("teamSelect.customLogo.hint")}
       </p>
       <div aria-live="polite" className="min-h-0 text-xs">

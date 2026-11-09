@@ -101,6 +101,22 @@ describe("LogoUploadControl", () => {
     expect(onInteract).toHaveBeenCalled();
   });
 
+  it("returns focus to the visible upload button after removing, never to the hidden input", () => {
+    setup({ value: LOGO });
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove image" }));
+
+    expect(screen.getByRole("button", { name: "Change image" })).toHaveFocus();
+    expect(screen.getByTestId("logo-file-input")).not.toHaveFocus();
+  });
+
+  it("hides the file input from assistive technology so the button is the only control", () => {
+    setup();
+
+    expect(screen.getByTestId("logo-file-input")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByTestId("logo-file-input")).toHaveAttribute("tabindex", "-1");
+  });
+
   it.each([
     ["unsupportedType", "Use a PNG, JPEG or WebP image. SVG and other formats are not accepted."],
     ["fileTooLarge", "That file is larger than 2 MB. Pick a smaller image."],
