@@ -14,6 +14,8 @@ export const LOGO_ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"] as 
 export const LOGO_ACCEPT_ATTRIBUTE = ".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp";
 export const LOGO_MAX_FILE_BYTES = 2 * 1024 * 1024;
 export const LOGO_MAX_SIDE = 256;
+/** Largest declared width or height accepted before the browser decodes the image. */
+export const LOGO_MAX_SOURCE_SIDE = 4096;
 
 /** Why a badge could not be used. Each code maps to one localized message. */
 export type LogoErrorCode =
@@ -100,8 +102,78 @@ export async function prepareCustomLogo(dataUri: string): Promise<string> {
   }
 }
 
+const ascii = (bytes: Uint8Array, start: number, text: string): boolean =>
+  text.length + start <= bytes.length && [...text].every((ch, i) => bytes[start + i] === ch.charCodeAt(0));
+const u16be = (b: Uint8Array, i: number) => (b[i] << 8) | b[i + 1];
+const u32be = (b: Uint8Array, i: number) => ((b[i] << 24) | (b[i + 1] << 16) | (b[i + 2] << 8) | b[i + 3]) >>> 0;
+const u24le = (b: Uint8Array, i: number) => b[i] | (b[i + 1] << 8) | (b[i + 2] << 16);
+
+function jpegDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+  let i = 2;
+  while (i + 4 <= bytes.length) {
+    if (bytes[i] !== 0xff) return null;
+    const marker = bytes[i + 1];
+    if (marker === 0xff) {
+      i += 1; // fill byte
+      continue;
+    }
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd8)) {
+      i += 2; // standalone marker, no length
+      continue;
+    }
+    if (marker === 0xd9 || marker === 0xda) return null; // end of image or scan before any frame header
+    const length = u16be(bytes, i + 2);
+    if (length < 2) return null;
+    const isFrame = marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
+    if (isFrame) {
+      if (i + 9 > bytes.length) return null;
+      return { width: u16be(bytes, i + 7), height: u16be(bytes, i + 5) };
+    }
+    i += 2 + length;
+  }
+  return null;
+}
+
+function webpDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+  if (!ascii(bytes, 0, "RIFF") || !ascii(bytes, 8, "WEBP")) return null;
+  if (ascii(bytes, 12, "VP8X") && bytes.length >= 30) {
+    return { width: u24le(bytes, 24) + 1, height: u24le(bytes, 27) + 1 };
+  }
+  if (ascii(bytes, 12, "VP8L") && bytes.length >= 25 && bytes[20] === 0x2f) {
+    const bits = (bytes[21] | (bytes[22] << 8) | (bytes[23] << 16) | (bytes[24] << 24)) >>> 0;
+    return { width: (bits & 0x3fff) + 1, height: ((bits >>> 14) & 0x3fff) + 1 };
+  }
+  if (ascii(bytes, 12, "VP8 ") && bytes.length >= 30 && bytes[23] === 0x9d && bytes[24] === 0x01 && bytes[25] === 0x2a) {
+    return { width: (bytes[26] | (bytes[27] << 8)) & 0x3fff, height: (bytes[28] | (bytes[29] << 8)) & 0x3fff };
+  }
+  return null;
+}
+
+/**
+ * Declared pixel size read from the container header (PNG IHDR, JPEG frame
+ * header, WebP VP8/VP8L/VP8X) without decoding, or null when the header cannot
+ * be parsed. Lets the picker refuse a tiny file that declares a huge canvas
+ * before `createImageBitmap` allocates it.
+ */
+export function readImageDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+  if (bytes.length >= 24 && u32be(bytes, 0) === 0x89504e47 && u32be(bytes, 4) === 0x0d0a1a0a && ascii(bytes, 12, "IHDR")) {
+    return { width: u32be(bytes, 16), height: u32be(bytes, 20) };
+  }
+  if (bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8) return jpegDimensions(bytes);
+  return webpDimensions(bytes);
+}
+
+/** Rejects a file whose header is unreadable, empty or declares more than the allowed side. */
+async function checkDeclaredSize(file: Blob): Promise<void> {
+  const size = readImageDimensions(new Uint8Array(await file.arrayBuffer()));
+  if (!size) throw new LogoUploadError("unreadable");
+  if (size.width < 1 || size.height < 1) throw new LogoUploadError("unreadable");
+  if (size.width > LOGO_MAX_SOURCE_SIDE || size.height > LOGO_MAX_SOURCE_SIDE) throw new LogoUploadError("tooBig");
+}
+
 /** Decodes `file`, draws it fitted into 256x256 on a canvas and exports a PNG data URI. */
 export async function rasterizeToPngDataUri(file: Blob): Promise<string> {
+  await checkDeclaredSize(file);
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file);

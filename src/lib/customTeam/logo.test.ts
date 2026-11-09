@@ -12,7 +12,42 @@ import {
   parseLogoError,
   prepareCustomLogo,
   rasterizeToPngDataUri,
+  readImageDimensions,
 } from "./logo";
+
+/** Header-only fixtures: just enough bytes for the dimension parser. */
+function pngHeader(width: number, height: number): Uint8Array {
+  const b = new Uint8Array(33);
+  b.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
+  new DataView(b.buffer).setUint32(16, width);
+  new DataView(b.buffer).setUint32(20, height);
+  return b;
+}
+function jpegHeader(width: number, height: number): Uint8Array {
+  // SOI, APP0 (length 16), SOF0 (length 17).
+  const b = new Uint8Array(2 + 18 + 19);
+  b.set([0xff, 0xd8, 0xff, 0xe0, 0, 16]);
+  b.set([0xff, 0xc0, 0, 17, 8], 20);
+  new DataView(b.buffer).setUint16(25, height);
+  new DataView(b.buffer).setUint16(27, width);
+  return b;
+}
+function webpHeader(kind: "VP8X" | "VP8L" | "VP8 ", width: number, height: number): Uint8Array {
+  const b = new Uint8Array(40);
+  b.set([...("RIFF" as string)].map((c) => c.charCodeAt(0)), 0);
+  b.set([...("WEBP" + kind)].map((c) => c.charCodeAt(0)), 8);
+  if (kind === "VP8X") {
+    const w = width - 1;
+    const h = height - 1;
+    b.set([w & 255, (w >> 8) & 255, (w >> 16) & 255, h & 255, (h >> 8) & 255, (h >> 16) & 255], 24);
+  } else if (kind === "VP8L") {
+    const bits = ((width - 1) | ((height - 1) << 14)) >>> 0;
+    b.set([0x2f, bits & 255, (bits >> 8) & 255, (bits >> 16) & 255, (bits >>> 24) & 255], 20);
+  } else {
+    b.set([0x9d, 0x01, 0x2a, width & 255, width >> 8, height & 255, height >> 8], 23);
+  }
+  return b;
+}
 
 /** The error a promise rejects with, or fails the test when it resolves. */
 async function rejection(promise: Promise<unknown>): Promise<unknown> {
@@ -115,7 +150,26 @@ describe("prepareCustomLogo", () => {
   });
 });
 
+describe("readImageDimensions", () => {
+  it("reads PNG, JPEG and the three WebP flavours", () => {
+    expect(readImageDimensions(pngHeader(30000, 20))).toEqual({ width: 30000, height: 20 });
+    expect(readImageDimensions(jpegHeader(640, 480))).toEqual({ width: 640, height: 480 });
+    expect(readImageDimensions(webpHeader("VP8X", 12000, 40))).toEqual({ width: 12000, height: 40 });
+    expect(readImageDimensions(webpHeader("VP8L", 300, 200))).toEqual({ width: 300, height: 200 });
+    expect(readImageDimensions(webpHeader("VP8 ", 64, 32))).toEqual({ width: 64, height: 32 });
+  });
+
+  it("returns null for anything it cannot parse", () => {
+    expect(readImageDimensions(new Uint8Array())).toBeNull();
+    expect(readImageDimensions(new TextEncoder().encode("<svg/>"))).toBeNull();
+    expect(readImageDimensions(pngHeader(1, 1).slice(0, 20))).toBeNull();
+    expect(readImageDimensions(new Uint8Array([0xff, 0xd8, 0xff, 0xda, 0, 2]))).toBeNull();
+  });
+});
+
 describe("rasterizeToPngDataUri", () => {
+  const validPng = () => new Blob([pngHeader(1024, 512)], { type: "image/png" });
+
   const drawImage = vi.fn();
   const close = vi.fn();
   let canvas: { width: number; height: number; getContext: () => unknown; toDataURL: ReturnType<typeof vi.fn> };
@@ -138,7 +192,7 @@ describe("rasterizeToPngDataUri", () => {
   });
 
   it("draws the image fitted into 256x256 and exports a PNG", async () => {
-    await expect(rasterizeToPngDataUri(new Blob(["x"], { type: "image/png" }))).resolves.toBe(PNG_URI);
+    await expect(rasterizeToPngDataUri(validPng())).resolves.toBe(PNG_URI);
 
     expect(canvas.width).toBe(256);
     expect(canvas.height).toBe(128);
@@ -150,13 +204,34 @@ describe("rasterizeToPngDataUri", () => {
   it("reports unreadable when the browser cannot decode the file", async () => {
     vi.stubGlobal("createImageBitmap", vi.fn().mockRejectedValue(new Error("decode")));
 
+    expect(await rejection(rasterizeToPngDataUri(validPng()))).toMatchObject({ code: "unreadable" });
+  });
+
+  it("refuses a small file that declares a huge canvas before decoding it", async () => {
+    const decode = vi.fn();
+    vi.stubGlobal("createImageBitmap", decode);
+
+    expect(await rejection(rasterizeToPngDataUri(new Blob([pngHeader(30000, 30000)])))).toMatchObject({ code: "tooBig" });
+    expect(await rejection(rasterizeToPngDataUri(new Blob([jpegHeader(4097, 10)])))).toMatchObject({ code: "tooBig" });
+    expect(decode).not.toHaveBeenCalled();
+  });
+
+  it("accepts the largest allowed side", async () => {
+    await expect(rasterizeToPngDataUri(new Blob([pngHeader(4096, 4096)]))).resolves.toBe(PNG_URI);
+  });
+
+  it("refuses a header it cannot parse without decoding", async () => {
+    const decode = vi.fn();
+    vi.stubGlobal("createImageBitmap", decode);
+
     expect(await rejection(rasterizeToPngDataUri(new Blob(["x"])))).toMatchObject({ code: "unreadable" });
+    expect(decode).not.toHaveBeenCalled();
   });
 
   it("reports unreadable when the canvas does not export a PNG", async () => {
     canvas.toDataURL.mockReturnValue("data:,");
 
-    expect(await rejection(rasterizeToPngDataUri(new Blob(["x"])))).toMatchObject({ code: "unreadable" });
+    expect(await rejection(rasterizeToPngDataUri(validPng()))).toMatchObject({ code: "unreadable" });
     expect(close).toHaveBeenCalled();
   });
 });
