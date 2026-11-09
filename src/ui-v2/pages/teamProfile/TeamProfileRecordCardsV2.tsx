@@ -99,7 +99,7 @@ export function TeamProfileHistoryCardV2({ history }: { history: TeamData["histo
                 <TableCell className="px-5 font-semibold text-foreground">
                   {record.season}/{record.season + 1}
                 </TableCell>
-                <TableCell className="px-5 text-center font-heading font-bold text-primary">
+                <TableCell className="px-5 text-center font-heading font-bold text-club-text">
                   #{record.league_position}
                 </TableCell>
                 {[record.played, record.won, record.lost, formatWinRate(record.won, record.lost), `${record.won}-${record.lost}`].map(

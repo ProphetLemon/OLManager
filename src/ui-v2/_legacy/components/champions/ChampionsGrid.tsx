@@ -84,7 +84,7 @@ export default function ChampionsGrid({ champions, onChampionClick }: ChampionsG
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
             placeholder={t("champions.searchPlaceholder", "Buscar campeón...")}
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-white dark:bg-navy-800 border border-gray-200 dark:border-navy-600 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50"
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-white dark:bg-navy-800 border border-gray-200 dark:border-navy-600 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400"
           />
         </div>
         <div className="flex gap-1.5">
@@ -166,7 +166,7 @@ export default function ChampionsGrid({ champions, onChampionClick }: ChampionsG
                             return (
                               <span
                                 key={role}
-                                className={`inline-flex items-center gap-1 font-bold font-heading uppercase tracking-wider rounded-md px-2 py-0.5 text-[10px] ${badgeStyle}`}
+                                className={`inline-flex items-center gap-1 font-bold font-heading uppercase tracking-wider rounded-md px-2 py-0.5 text-2xs ${badgeStyle}`}
                                 title={role}
                               >
                                 <img src={iconUrl} alt={role} className="h-3 w-3" />

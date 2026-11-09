@@ -22,7 +22,7 @@
 //! | Weakest pro leagues (HM, NLC, RL, ROL, LPLOL)| 60 to 61   |
 //! | Free agents with no activity record          | 40 to 45   |
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::domain::player::{Player, PlayerAttributes};
 use crate::domain::stats::LolRole;
@@ -120,6 +120,18 @@ pub fn estimate_placeholder_ratings(
     players: &mut [Player],
     teams: &[Team],
 ) -> PlaceholderRatingReport {
+    estimate_placeholder_ratings_excluding(players, teams, &HashSet::new())
+}
+
+/// Like [`estimate_placeholder_ratings`], but players whose id is in `excluded` do
+/// not feed the real-rating pools the medians come from. Used for ratings that are
+/// themselves low-confidence estimates (see `player_rating_overrides`), so one
+/// noisy rating cannot shift the level a placeholder is estimated at.
+pub fn estimate_placeholder_ratings_excluding(
+    players: &mut [Player],
+    teams: &[Team],
+    excluded: &HashSet<String>,
+) -> PlaceholderRatingReport {
     let competition_by_team: HashMap<&str, Option<&str>> = teams
         .iter()
         .map(|team| (team.id.as_str(), team.competition_id.as_deref()))
@@ -127,7 +139,7 @@ pub fn estimate_placeholder_ratings(
 
     // Medians come from the world as it is before any estimate is written, so one
     // estimated player never feeds another.
-    let pools = RealRatingPools::collect(players, &competition_by_team);
+    let pools = RealRatingPools::collect(players, &competition_by_team, excluded);
 
     let mut report = PlaceholderRatingReport::default();
     for player in players.iter_mut().filter(|p| is_placeholder_rating(p)) {
@@ -160,11 +172,12 @@ impl<'a> RealRatingPools<'a> {
     fn collect(
         players: &[Player],
         competition_by_team: &HashMap<&'a str, Option<&'a str>>,
+        excluded: &HashSet<String>,
     ) -> Self {
         let mut by_competition: HashMap<&str, Vec<[u8; ATTRIBUTE_COUNT]>> = HashMap::new();
         let mut by_competition_role: HashMap<(&str, LolRole), Vec<[u8; ATTRIBUTE_COUNT]>> =
             HashMap::new();
-        for player in players {
+        for player in players.iter().filter(|p| !excluded.contains(&p.id)) {
             let row = player.attributes.as_array();
             // Flat 50 is a placeholder and all-zero is an unrated row: neither says
             // anything about the league's level.
@@ -419,6 +432,35 @@ mod tests {
             (78..=82).contains(&ovr(estimated)),
             "OVR {} should follow the league median of 80",
             ovr(estimated)
+        );
+    }
+
+    #[test]
+    fn excluded_ids_do_not_feed_the_real_rating_pools() {
+        let teams = vec![team("lfl-t", Some("lfl"))];
+        // 10 real players is exactly the minimum for the competition's own median.
+        let build = || {
+            let mut players = real_roster("lfl-real", "lfl-t", 2, 80);
+            players.push(player("lfl-ph", LolRole::Top, Some("lfl-t"), 50));
+            players
+        };
+
+        let mut included = build();
+        estimate_placeholder_ratings_excluding(&mut included, &teams, &HashSet::new());
+        let mut excluded = build();
+        let skip = HashSet::from(["lfl-real-0-0".to_string()]);
+        estimate_placeholder_ratings_excluding(&mut excluded, &teams, &skip);
+
+        let level = |players: &[Player]| ovr(players.last().unwrap());
+        assert!(
+            (78..=82).contains(&level(&included)),
+            "OVR {}",
+            level(&included)
+        );
+        assert!(
+            (58..=62).contains(&level(&excluded)),
+            "with 9 pool players the unlisted level 60 applies, got {}",
+            level(&excluded)
         );
     }
 

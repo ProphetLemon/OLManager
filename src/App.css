@@ -13,10 +13,6 @@
 @import "@fontsource/barlow-condensed/600.css";
 @import "@fontsource/barlow-condensed/700.css";
 @import "@fontsource/barlow-condensed/800.css";
-@import "@fontsource/oswald/400.css";
-@import "@fontsource/oswald/500.css";
-@import "@fontsource/oswald/600.css";
-@import "@fontsource/oswald/700.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -41,7 +37,7 @@
 
   body {
     margin: 0;
-    @apply antialiased dark:bg-navy-900 dark:text-gray-100 transition-colors duration-300 bg-background text-foreground;
+    @apply antialiased transition-colors duration-300 bg-background text-foreground;
   }
 
   h1,
@@ -54,6 +50,13 @@
   }
   * {
     @apply border-border outline-ring/50;
+  }
+  /* Global keyboard focus ring. Outranks the `*` rule above (which only dims
+     the colour) and yields to primitives that opt out with `outline-none`
+     and draw their own ring. Width is raised to 3px in high contrast. */
+  :focus-visible {
+    outline: var(--focus-ring-width, 2px) solid var(--ring);
+    outline-offset: 2px;
   }
   html {
     @apply font-sans;

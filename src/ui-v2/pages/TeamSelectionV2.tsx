@@ -147,7 +147,7 @@ export default function TeamSelectionV2() {
     return (
       <div className="flex h-full items-center justify-center bg-background">
         <div className="text-center">
-          <Loader2 className="mx-auto mb-3 size-8 animate-spin text-primary" />
+          <Loader2 className="mx-auto mb-3 size-8 animate-spin text-club-text" />
           <p className="text-sm text-muted-foreground">{t("worldSelect.creatingWorld")}</p>
         </div>
       </div>
@@ -158,7 +158,7 @@ export default function TeamSelectionV2() {
     return (
       <div className="flex h-full items-center justify-center bg-background">
         <div className="mx-auto max-w-md p-8 text-center">
-          <p className="mb-4 text-sm text-red-400">{error || t("teamSelect.noLeaguesDesc")}</p>
+          <p className="mb-4 text-sm text-negative">{error || t("teamSelect.noLeaguesDesc")}</p>
           <button type="button" onClick={handleBackToMenu}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >

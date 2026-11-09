@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
 import { useUpdater } from "@/hooks/useUpdater";
+import { useClubTheme } from "@/hooks/useClubTheme";
 import { invoke } from "@tauri-apps/api/core";
 import UpdateModal from "@/ui-v2/_legacy/components/updater/UpdateModal";
 import { LazyFallback } from "./components/LazyFallback";
@@ -50,11 +51,20 @@ const DASHBOARD_TAB_ROUTES = [
 
 const DASHBOARD_ROUTES = ["/dashboard", ...DASHBOARD_TAB_ROUTES];
 
+const FLOATING_BUG_ROUTES = ["/match", "/select-team"];
+
+// Only in-game screens take the club colours. Every other screen (main menu,
+// team selection, settings) keeps the theme colours, whatever the store holds.
+const CLUB_THEMED_ROUTES = [...DASHBOARD_ROUTES, "/match"];
+
 export function AppContent() {
   const location = useLocation();
+  useClubTheme(CLUB_THEMED_ROUTES.includes(location.pathname));
   const setCurrentRoute = useBugReportStore((s) => s.setCurrentRoute);
   const setCurrentDashboardTab = useBugReportStore((s) => s.setCurrentDashboardTab);
-  const showBugButton = ["/dashboard", "/match", "/select-team", ...DASHBOARD_TAB_ROUTES].includes(location.pathname);
+  // The dashboard rail hosts its own bug button, so the floating one only
+  // appears on the screens without a rail.
+  const showBugButton = FLOATING_BUG_ROUTES.includes(location.pathname);
 
   // Keep bug-report context in sync with the current route.
   // Dashboard tabs are only meaningful while on a dashboard route; clear the
@@ -125,10 +135,31 @@ export default function AppV2() {
 
   useEffect(() => {
     if (!ready) return;
+    if (settings.high_contrast) {
+      document.documentElement.dataset.contrast = "high";
+    } else {
+      delete document.documentElement.dataset.contrast;
+    }
+  }, [settings.high_contrast, ready]);
+
+  useEffect(() => {
+    if (!ready) return;
     if (settings.language && settings.language !== i18n.language) {
       i18n.changeLanguage(settings.language);
     }
   }, [ready, settings.language]);
+
+  useEffect(() => {
+    const syncLang = (lng?: string) => {
+      const lang = lng || i18n.language;
+      if (lang) document.documentElement.lang = lang;
+    };
+    syncLang();
+    i18n.on("languageChanged", syncLang);
+    return () => {
+      i18n.off("languageChanged", syncLang);
+    };
+  }, []);
 
   useEffect(() => {
     if (!ready) return;

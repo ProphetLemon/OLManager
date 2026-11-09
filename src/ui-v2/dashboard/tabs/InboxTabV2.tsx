@@ -177,7 +177,7 @@ export function InboxTabV2({
       <Card>
         <CardContent className="flex flex-wrap items-center gap-3 py-3">
           <div className="flex items-center gap-2">
-            <InboxIcon className="size-5 text-primary" />
+            <InboxIcon className="size-5 text-club-text" />
             <span className="font-heading text-base font-bold uppercase tracking-wider">
               {t("inbox.title")}
             </span>
@@ -198,7 +198,7 @@ export function InboxTabV2({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("common.search")}
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground"
             />
           </div>
 
@@ -320,7 +320,7 @@ function FilterChip({
       className={cn(
         "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
         active
-          ? "border-primary bg-primary/10 text-primary"
+          ? "border-primary bg-primary/10 text-club-text"
           : accent
             ? "border-border bg-card text-foreground hover:bg-muted"
             : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -356,7 +356,7 @@ function MessageRow({
         <div
           className={cn(
             "flex size-9 shrink-0 items-center justify-center rounded-lg font-heading text-sm font-bold overflow-hidden",
-            message.read ? "bg-muted text-muted-foreground" : "bg-primary/15 text-primary",
+            message.read ? "bg-muted text-muted-foreground" : "bg-primary/15 text-club-text",
           )}
         >
           {message.sender_icon ? (
@@ -384,7 +384,7 @@ function MessageRow({
             >
               {message.subject}
             </div>
-            <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+            <span className="shrink-0 text-2xs text-muted-foreground tabular-nums">
               {formatDateShort(message.date, lang)}
             </span>
           </div>
@@ -467,7 +467,7 @@ function DetailPane({
         </div>
 
         {effect && (
-          <div className="mt-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          <div className="mt-4 rounded-md border border-positive/30 bg-positive/10 px-3 py-2 text-sm text-positive">
             {effect}
           </div>
         )}

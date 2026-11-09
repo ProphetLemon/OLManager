@@ -185,6 +185,7 @@ export interface TeamData {
   weekly_scrim_opponent_ids?: string[];
   weekly_scrim_plan_team_ids?: string[][];
   scrim_weekly_objective?: ScrimFocus | null;
+  scrim_setup_locked_week_key?: string | null;
   logo_url?: string | null;
   /** Competition/league this team belongs to (multi-league system). */
   competition_id?: string | null;

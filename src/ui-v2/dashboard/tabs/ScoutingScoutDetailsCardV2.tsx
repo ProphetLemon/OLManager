@@ -52,19 +52,19 @@ export default function ScoutingScoutDetailsCardV2({
                         loading="lazy"
                       />
                     ) : (
-                      <Eye className="size-4 text-primary" />
+                      <Eye className="size-4 text-club-text" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-heading text-sm font-bold text-foreground">
                       {scout.first_name} {scout.last_name}
                     </p>
-                    <p className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <p className="mt-0.5 flex items-center gap-1 text-2xs text-muted-foreground">
                       <CountryFlag code={scout.nationality} locale={i18n.language} className="text-xs leading-none" />
                       <span>{countryName(scout.nationality, i18n.language)}</span>
                     </p>
                   </div>
-                  <Badge className={isFull ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"}>
+                  <Badge className={isFull ? "border-warning/30 bg-warning/10 text-warning" : "border-positive/30 bg-positive/10 text-positive"}>
                     {count}/{maxSlots}
                   </Badge>
                 </div>
@@ -72,25 +72,25 @@ export default function ScoutingScoutDetailsCardV2({
                 {/* Judging bars */}
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div>
-                    <p className="mb-1 font-heading text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <p className="mb-1 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                       {t("scouting.judgingAbility")}
                     </p>
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                         <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${scout.attributes.judging_ability}%` }} />
                       </div>
-                      <span className="font-heading text-[10px] tabular-nums text-muted-foreground">{scout.attributes.judging_ability}</span>
+                      <span className="font-heading text-2xs tabular-nums text-muted-foreground">{scout.attributes.judging_ability}</span>
                     </div>
                   </div>
                   <div>
-                    <p className="mb-1 font-heading text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <p className="mb-1 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                       {t("scouting.judgingPotential")}
                     </p>
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                         <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${scout.attributes.judging_potential}%` }} />
                       </div>
-                      <span className="font-heading text-[10px] tabular-nums text-muted-foreground">{scout.attributes.judging_potential}</span>
+                      <span className="font-heading text-2xs tabular-nums text-muted-foreground">{scout.attributes.judging_potential}</span>
                     </div>
                   </div>
                 </div>

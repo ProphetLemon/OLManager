@@ -3,6 +3,8 @@ import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { BlockerModal } from "@/hooks/useAdvanceTime.helpers";
+import { canContinueAnyway } from "@/lib/home/blockerRules";
+import { Dialog, DialogContent, DialogTitle } from "@/ui-v2/components/ui/dialog";
 import { cn } from "@/ui-v2/lib/utils";
 
 interface DashboardBlockerModalProps {
@@ -31,22 +33,29 @@ export default function DashboardBlockerModal({
   const { t } = useTranslation();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div
-        className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent aria-modal="true">
         <div className="mb-4 flex items-start gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20">
-            <AlertCircle className="size-5 text-amber-400" />
+            <AlertCircle className="size-5 text-amber-400" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between">
-              <h3 className="font-heading text-lg font-bold uppercase tracking-wide text-foreground">
+              <DialogTitle className="text-lg text-foreground">
                 {t("notifications.attentionRequired")}
-              </h3>
-              <button type="button" onClick={onClose} className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                <X className="size-4" />
+              </DialogTitle>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={t("common.close", { defaultValue: "Close" })}
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+              >
+                <X className="size-4" aria-hidden="true" />
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -66,7 +75,7 @@ export default function DashboardBlockerModal({
               <p className={cn("text-sm font-medium", blockerTextColor(blocker.severity))}>
                 {blocker.text}
               </p>
-              <p className="mt-1 font-heading text-[10px] uppercase tracking-widest text-muted-foreground/60">
+              <p className="mt-1 font-heading text-2xs uppercase tracking-widest text-muted-foreground/60">
                 {t("notifications.goTo")} {blocker.tab} →
               </p>
             </button>
@@ -81,7 +90,7 @@ export default function DashboardBlockerModal({
           >
             {t("notifications.reviewIssues")}
           </button>
-          {onContinueAnyway && (
+          {onContinueAnyway && canContinueAnyway(blockerModal.blockers) && (
             <button
               type="button"
               onClick={onContinueAnyway}
@@ -91,7 +100,7 @@ export default function DashboardBlockerModal({
             </button>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { DEFAULT_MAX_CACHE_AGE_DAYS, DEFAULT_THROTTLE_MS, MediaWikiClient } from "./lib/mediawiki-client.mjs";
+import { DEFAULT_MAX_CACHE_AGE_DAYS, DEFAULT_THROTTLE_MS, MediaWikiClient, formatStats } from "./lib/mediawiki-client.mjs";
 import { loginFromFile } from "./lib/bot-credentials.mjs";
 import { loadGateExceptions } from "./lib/gates.mjs";
 import { serializeOverlay } from "./lib/overlay.mjs";
@@ -69,6 +69,7 @@ const client = new MediaWikiClient({
   throttleMs: Number(values["throttle-ms"]),
   maxRequests: Number(values["max-requests"]),
   maxCacheAgeDays: Number(values["max-cache-age-days"]),
+  log,
 });
 const competitions = values.competitions ? values.competitions.split(",").map((s) => s.trim()).filter(Boolean) : undefined;
 const writeFile = (file, text) => {
@@ -130,6 +131,7 @@ try {
   else await refresh();
 } catch (error) {
   console.error(`[world] ${error.name}: ${error.message}`);
+  log(`requests: ${formatStats(client.stats)}`);
   process.exitCode = 2;
 }
 

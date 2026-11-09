@@ -258,12 +258,12 @@ export default function LolResultScreen({
           </h1>
           <div className="mt-4 flex items-center justify-center gap-4 text-3xl font-black">
             <span className="text-foreground">{snapshot.home_team.name}</span>
-            <span className="text-primary">{displayHomeKills}</span>
+            <span className="text-club-text">{displayHomeKills}</span>
             <span className="text-muted-foreground/70">-</span>
             <span className="text-orange-400">{displayAwayKills}</span>
             <span className="text-foreground">{snapshot.away_team.name}</span>
           </div>
-          <div className="mt-3 inline-flex items-center gap-3 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm text-primary">
+          <div className="mt-3 inline-flex items-center gap-3 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm text-club-text">
             <span className="font-heading uppercase tracking-wider">{t("match.draftResult.mvp")}</span>
             <span>{mvp?.name ?? "-"}</span>
             <span className="text-muted-foreground">· {durationMin}:{String(Math.max(0, Math.floor((runtime?.timeSec ?? 0) % 60))).padStart(2, "0")}</span>
@@ -308,7 +308,7 @@ export default function LolResultScreen({
             </p>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div className="rounded-xl border border-border bg-muted/50 p-3">
-                <p className="text-primary font-heading mb-2">{snapshot.home_team.name}</p>
+                <p className="text-club-text font-heading mb-2">{snapshot.home_team.name}</p>
                 {(homeChampions.length ? homeChampions : []).map((champion) => {
                   const isMvp = mvp?.id === champion.id;
                   return (
@@ -341,14 +341,14 @@ export default function LolResultScreen({
             <div className="space-y-2 text-sm">
               {statRows.map((row) => (
                 <div key={row.label} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg bg-muted/30 px-3 py-2">
-                  <span className="text-primary font-semibold">{row.home}</span>
+                  <span className="text-club-text font-semibold">{row.home}</span>
                   <span className="text-center uppercase tracking-wider text-muted-foreground">{row.label}</span>
                   <span className="text-orange-400 font-semibold text-right">{row.away}</span>
                 </div>
               ))}
             </div>
             {dragonSummary && <p className="mt-3 text-xs text-muted-foreground">{dragonSummary}</p>}
-            <p className="mt-2 text-xs text-muted-foreground">{t("match.neutralObjectives")}: <span className="text-primary">{homeObjectives}</span> - <span className="text-orange-400">{awayObjectives}</span></p>
+            <p className="mt-2 text-xs text-muted-foreground">{t("match.neutralObjectives")}: <span className="text-club-text">{homeObjectives}</span> - <span className="text-orange-400">{awayObjectives}</span></p>
           </div>
         </section>
 
@@ -383,7 +383,7 @@ export default function LolResultScreen({
           </div>
           <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
             <span>0:00</span>
-            <span className="text-primary">{snapshot.home_team.name} {homeGold - awayGold >= 0 ? `+${homeGold - awayGold}` : homeGold - awayGold}</span>
+            <span className="text-club-text">{snapshot.home_team.name} {homeGold - awayGold >= 0 ? `+${homeGold - awayGold}` : homeGold - awayGold}</span>
             <span>{durationMin}:00</span>
           </div>
         </section>
@@ -397,7 +397,7 @@ export default function LolResultScreen({
               <div key={evt.key} className="text-sm text-foreground flex items-center justify-between gap-3">
                 <span>{evt.minute}'</span>
                 <span className="flex-1 truncate">{evt.label}</span>
-                <span className={evt.side === "Home" ? "text-primary" : evt.side === "Away" ? "text-orange-400" : "text-muted-foreground"}>
+                <span className={evt.side === "Home" ? "text-club-text" : evt.side === "Away" ? "text-orange-400" : "text-muted-foreground"}>
                   {evt.side === "Home" ? t("match.home") : evt.side === "Away" ? t("match.away") : "-"}
                 </span>
               </div>

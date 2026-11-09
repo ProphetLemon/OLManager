@@ -139,7 +139,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
             <p className="font-heading text-xs font-bold uppercase tracking-wider text-foreground">
               {t("dashboard.worldStaff", { defaultValue: "Staffs" })}
             </p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               {filtered.length} / {gameState.staff.length}
             </p>
           </div>
@@ -150,7 +150,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
               onClick={() => setView("mystaff")}
               className={`rounded-lg border px-3 py-1.5 font-heading text-xs font-bold uppercase tracking-wider transition-all ${
                 view === "mystaff"
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-primary/10 text-club-text"
                   : "border-border bg-card text-muted-foreground"
               }`}
             >
@@ -162,7 +162,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
               onClick={() => setView("available")}
               className={`rounded-lg border px-3 py-1.5 font-heading text-xs font-bold uppercase tracking-wider transition-all ${
                 view === "available"
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-primary/10 text-club-text"
                   : "border-border bg-card text-muted-foreground"
               }`}
             >
@@ -178,7 +178,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("staff.searchStaff")}
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground"
           />
         </div>
 
@@ -199,7 +199,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
             onClick={() => setRoleFilter(null)}
             className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
               !roleFilter
-                ? "border-primary bg-primary/10 text-primary"
+                ? "border-primary bg-primary/10 text-club-text"
                 : "border-border bg-card text-muted-foreground"
             }`}
           >
@@ -212,7 +212,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
               onClick={() => setRoleFilter(roleFilter === r ? null : r)}
               className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
                 roleFilter === r
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-primary/10 text-club-text"
                   : "border-border bg-card text-muted-foreground"
               }`}
             >
@@ -225,7 +225,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
       {/* Team impact banner */}
       {view === "mystaff" && myStaff.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
-          <span className="font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <span className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
             {t("staff.lolImpactTeamTitle")}
           </span>
           {[
@@ -237,7 +237,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
           ].map((row) => (
             <span
               key={row.key}
-              className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-heading text-[10px] uppercase tracking-wider text-primary"
+              className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-heading text-2xs uppercase tracking-wider text-club-text"
             >
               <span>{t(row.labelKey)}</span>
               <span className="font-bold tabular-nums">
@@ -329,7 +329,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                       </h3>
                       <Badge
                         variant={ovr >= 65 ? "default" : ovr >= 45 ? "secondary" : "outline"}
-                        className="text-[10px]"
+                        className="text-2xs"
                       >
                         {ovr} OVR
                       </Badge>
@@ -362,12 +362,12 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                     {/* Specialization + Wage */}
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       {staff.specialization && (
-                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                           <Star className="size-3" /> {t(`staff.specializations.${staff.specialization}`)}
                         </span>
                       )}
                       {staff.wage > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                           {activeCurrencySymbol()}{staff.wage.toLocaleString()}/año
                         </span>
                       )}
@@ -389,10 +389,10 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                           {impactRows.map((row) => (
                             <span
                               key={row.labelKey}
-                              className="inline-flex items-center gap-1 rounded bg-primary/5 px-1.5 py-0.5 font-heading text-[10px] uppercase tracking-wider text-muted-foreground"
+                              className="inline-flex items-center gap-1 rounded bg-primary/5 px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground"
                             >
                               <span>{t(row.labelKey)}</span>
-                              <span className="font-bold text-primary tabular-nums">
+                              <span className="font-bold text-club-text tabular-nums">
                                 {formatStaffEffectPercent(row.value)}
                               </span>
                             </span>
@@ -413,7 +413,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                         type="button"
                         disabled={actionLoading === staff.id}
                         onClick={(e) => { e.stopPropagation(); handleRelease(staff.id); }}
-                        className="flex size-8 items-center justify-center rounded-lg bg-red-500/10 text-red-500 transition-colors hover:bg-red-500/20 disabled:pointer-events-none disabled:opacity-50"
+                        className="flex size-8 items-center justify-center rounded-lg bg-negative/10 text-negative transition-colors hover:bg-negative/20 disabled:pointer-events-none disabled:opacity-50"
                         title={t("staff.releaseStaff")}
                       >
                         {actionLoading === staff.id ? (
@@ -428,7 +428,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                         type="button"
                         disabled={actionLoading === staff.id}
                         onClick={(e) => { e.stopPropagation(); handleHire(staff.id); }}
-                        className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
+                        className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-club-text transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
                         title={t("staff.hireStaff")}
                       >
                         {actionLoading === staff.id ? (
@@ -472,12 +472,12 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
 function AttrBar({ label, value }: { label: string; value: number }) {
   const pct = Math.max(0, Math.min(100, value));
-  const color = value >= 70 ? "bg-emerald-400" : value >= 50 ? "bg-amber-400" : "bg-muted-foreground/40";
+  const color = value >= 70 ? "bg-positive" : value >= 50 ? "bg-warning" : "bg-muted-foreground/40";
   return (
     <div>
       <div className="mb-0.5 flex justify-between text-xs">
         <span className="text-muted-foreground">{label}</span>
-        <span className={`font-heading font-bold tabular-nums ${value >= 70 ? "text-emerald-400" : value >= 50 ? "text-amber-400" : "text-muted-foreground"}`}>
+        <span className={`font-heading font-bold tabular-nums ${value >= 70 ? "text-positive" : value >= 50 ? "text-warning" : "text-muted-foreground"}`}>
           {value}
         </span>
       </div>

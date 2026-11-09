@@ -238,7 +238,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
     <div className="flex h-full flex-col gap-4 p-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-club-text">
           {academyTeam ? (
             (() => {
               const academyLogo = academyTeam.logo_url
@@ -262,11 +262,11 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
             {t("youthAcademy.title")}
           </h2>
           <div className="mt-0.5 flex items-center gap-2">
-            <Badge variant="secondary" className="text-[10px]">
+            <Badge variant="secondary" className="text-2xs">
               {youthPlayers.length} {t("youthAcademy.academyPlayers")}
             </Badge>
             {academyTeam && (
-              <Badge variant="outline" className="text-[10px] text-muted-foreground">
+              <Badge variant="outline" className="text-2xs text-muted-foreground">
                 {academyTeam.name}
               </Badge>
             )}
@@ -280,19 +280,19 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
           <CardContent className="flex flex-col items-center py-4">
             <Users className="mb-1 size-5 text-muted-foreground" />
             <p className={KPI_CLASS}>{youthPlayers.length}</p>
-            <p className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+            <p className="mt-0.5 text-2xs uppercase tracking-widest text-muted-foreground">
               {t("youthAcademy.academyPlayersStartingMayus")}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex flex-col items-center py-4">
-            <Star className="mb-1 size-5 text-primary" />
+            <Star className="mb-1 size-5 text-club-text" />
             <p className={KPI_CLASS}>{avgOvr}</p>
             <div className="mt-1 h-1 w-20 overflow-hidden rounded-full bg-muted">
               <div className="h-full rounded-full bg-primary" style={{ width: `${avgOvr}%` }} />
             </div>
-            <p className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+            <p className="mt-0.5 text-2xs uppercase tracking-widest text-muted-foreground">
               {t("youthAcademy.avgOvr")}
             </p>
           </CardContent>
@@ -318,21 +318,21 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                 <div className="mt-1 h-1 w-20 overflow-hidden rounded-full bg-muted" />
               </>
             )}
-            <p className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+            <p className="mt-0.5 text-2xs uppercase tracking-widest text-muted-foreground">
               {t("youthAcademy.avgPotential")}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex flex-col items-center py-4">
-            <Sparkles className="mb-1 size-5 text-primary" />
+            <Sparkles className="mb-1 size-5 text-club-text" />
             <p className={KPI_CLASS}>{highPotential}</p>
             {highPotential > 0 && (
-              <Badge variant="default" className="mt-0.5 text-[10px]">
+              <Badge variant="default" className="mt-0.5 text-2xs">
                 {t("youthAcademy.highPotentialBadge", "Talento")}
               </Badge>
             )}
-            <p className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+            <p className="mt-0.5 text-2xs uppercase tracking-widest text-muted-foreground">
               {t("youthAcademy.highPotential")}
             </p>
           </CardContent>
@@ -343,10 +343,10 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
       {youthCoach.length > 0 && (
         <Card>
           <CardContent className="flex items-center gap-2 py-2.5">
-            <GraduationCap className="size-3.5 text-primary" />
+            <GraduationCap className="size-3.5 text-club-text" />
             <span className="text-xs text-muted-foreground">{t("youthAcademy.youthCoach")}</span>
             {youthCoach.map((staff) => (
-              <Badge key={staff.id} variant="secondary" className="text-[10px]">
+              <Badge key={staff.id} variant="secondary" className="text-2xs">
                 {staff.first_name} {staff.last_name} ({staff.attributes.coaching})
               </Badge>
             ))}
@@ -446,7 +446,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                               setAcquiringSourceId(null);
                             }
                           }}
-                          className="shrink-0 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-heading uppercase tracking-wider text-primary transition-all hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="shrink-0 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-heading uppercase tracking-wider text-club-text transition-all hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {acquiringSourceId === option.source_team_id ? (
                             <span className="inline-flex items-center gap-1">
@@ -590,14 +590,14 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                           </TableCell>
                           <TableCell className="text-center">
                             {player.potential != null ? (
-                              <span className="font-heading font-bold tabular-nums text-primary">{player.potential}</span>
+                              <span className="font-heading font-bold tabular-nums text-club-text">{player.potential}</span>
                             ) : (
                               <span
                                 className="inline-flex items-center gap-1 text-muted-foreground/60"
                                 title={t("youthAcademy.potentialHiddenHint")}
                               >
                                 <EyeOff className="size-3.5" />
-                                <span className="text-[10px] font-heading font-bold">{t("youthAcademy.hidden")}</span>
+                                <span className="text-2xs font-heading font-bold">{t("youthAcademy.hidden")}</span>
                               </span>
                             )}
                           </TableCell>
@@ -608,10 +608,10 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                                   className={cn(
                                     "h-full rounded-full transition-all",
                                     (player.condition ?? 0) >= 70
-                                      ? "bg-emerald-400"
+                                      ? "bg-positive"
                                       : (player.condition ?? 0) >= 40
-                                        ? "bg-amber-400"
-                                        : "bg-red-400",
+                                        ? "bg-warning"
+                                        : "bg-negative",
                                   )}
                                   style={{ width: `${player.condition ?? 0}%` }}
                                 />
@@ -639,7 +639,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                                 "rounded-md border px-2.5 py-1 text-xs font-heading uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed",
                                 promotingPlayerId === player.id
                                   ? "border-border bg-muted/30 text-muted-foreground"
-                                  : "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20",
+                                  : "border-primary/30 bg-primary/10 text-club-text hover:bg-primary/20",
                               )}
                             >
                               {promotingPlayerId === player.id ? (

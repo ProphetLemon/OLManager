@@ -58,7 +58,7 @@ const TIER_BADGE_CLASS: Record<string, string> = {
   S: "bg-emerald-600 text-white",
   A: "bg-lime-500 text-white",
   B: "bg-amber-500 text-white",
-  C: "bg-orange-500 text-white",
+  C: "bg-orange-500 text-primary-foreground",
   D: "bg-red-500 text-white",
 };
 
@@ -164,7 +164,7 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
               </div>
               <div className="flex items-center gap-2">
                 <Search className="size-3.5 text-muted-foreground" />
-                <span className="font-heading text-sm tabular-nums text-primary">{discoveredPct}%</span>
+                <span className="font-heading text-sm tabular-nums text-club-text">{discoveredPct}%</span>
                 <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-primary transition-all duration-700"
@@ -253,7 +253,7 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
             <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
               {t("meta.discoveryStats")}
             </CardTitle>
-            <span className="font-heading text-xs tabular-nums text-primary">{discoveredPct}% {t("meta.complete")}</span>
+            <span className="font-heading text-xs tabular-nums text-club-text">{discoveredPct}% {t("meta.complete")}</span>
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col">
             <div className="flex flex-1 flex-col justify-between gap-2">
@@ -263,7 +263,7 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
                   <div key={tier}>
                     <div className="mb-1 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className={cn("inline-flex size-5 items-center justify-center rounded text-[10px] font-heading font-bold", TIER_BADGE_CLASS[tier])}>{tier}</span>
+                        <span className={cn("inline-flex size-5 items-center justify-center rounded text-2xs font-heading font-bold", TIER_BADGE_CLASS[tier])}>{tier}</span>
                         <span className="text-xs text-muted-foreground">
                           {discovered} discovered
                         </span>
@@ -285,7 +285,7 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
               type="button"
               onClick={handleDelegateTraining}
               disabled={delegating}
-              className="rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-heading uppercase tracking-wider text-primary transition-all hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-heading uppercase tracking-wider text-club-text transition-all hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {delegating ? t("champions.delegating") : t("champions.delegateToCoach")}
             </button>

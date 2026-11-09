@@ -293,14 +293,14 @@ export default function DraftResultScreenV2({
                 <div key={idx} className="absolute top-0 flex flex-col items-center" style={{ left: leftPct, transform: 'translateX(-50%)', height: '100%' }}>
                   <div className="flex flex-col items-center justify-end flex-1 overflow-visible pb-2">
                     {row.blue.map((event, eIdx) => (
-                    <span key={`blue-${eIdx}`} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] whitespace-nowrap mt-1 ${eventPillClass(event)}`}>
+                    <span key={`blue-${eIdx}`} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-2xs whitespace-nowrap mt-1 ${eventPillClass(event)}`}>
                       <span>{event.label}</span>
                     </span>
                     ))}
                   </div>
                   <div className="flex flex-col items-center justify-start flex-1 overflow-visible pt-2">
                     {row.red.map((event, eIdx) => (
-                      <span key={`red-${eIdx}`} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] whitespace-nowrap mb-1 ${eventPillClass(event)}`}>
+                      <span key={`red-${eIdx}`} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-2xs whitespace-nowrap mb-1 ${eventPillClass(event)}`}>
                         <span>{event.label}</span>
                       </span>
                     ))}
@@ -313,7 +313,7 @@ export default function DraftResultScreenV2({
             {rows.map((row, idx) => (
               <span
                 key={`marker-${idx}`}
-                className="absolute text-[9px] font-bold text-foreground/30 whitespace-nowrap -translate-x-1/2"
+                className="absolute text-2xs font-bold text-foreground/30 whitespace-nowrap -translate-x-1/2"
                 style={{ left: `${((row.minute - effectiveStart) / effectiveRange) * 100}%` }}
               >
                 {row.minute}m
@@ -330,12 +330,12 @@ export default function DraftResultScreenV2({
       <Card size="sm">
         <CardContent className="flex flex-col items-center gap-3 py-5">
           <p className="text-xs font-heading font-bold uppercase tracking-[0.3em] text-muted-foreground/70">{t("match.matchOver")}</p>
-          <h1 className={cn("text-4xl font-heading font-black uppercase", controlledWon ? "text-emerald-400" : "text-red-400")}>
+          <h1 className={cn("text-4xl font-heading font-black uppercase", controlledWon ? "text-positive" : "text-negative")}>
             {title}
           </h1>
 
           <div className="flex items-center justify-center gap-4 text-3xl font-black">
-            {blueLogo ? <img src={blueLogo} alt="" className="w-9 h-9 object-contain" loading="lazy" /> : <span className="text-primary">{blueTri}</span>}
+            {blueLogo ? <img src={blueLogo} alt="" className="w-9 h-9 object-contain" loading="lazy" /> : <span className="text-club-text">{blueTri}</span>}
             <span>{selectedResult.blueKills}</span>
             <span className="text-muted-foreground">-</span>
             <span>{selectedResult.redKills}</span>
@@ -399,17 +399,17 @@ export default function DraftResultScreenV2({
           </Card>
 
           {controlledPrepInsight ? (
-            <Card size="sm" className="border-emerald-400/25 bg-emerald-500/10">
+            <Card size="sm" className="border-positive/25 bg-positive/10">
               <CardContent className="py-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-heading font-bold uppercase tracking-wider text-emerald-200">
+                  <p className="text-xs font-heading font-bold uppercase tracking-wider text-positive">
                     {t(controlledPrepInsight.title.key, { defaultValue: controlledPrepInsight.title.defaultValue })}
                   </p>
-                  <span className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-2 py-0.5 text-xs font-bold text-emerald-100">
+                  <span className="rounded-full border border-positive/30 bg-positive/10 px-2 py-0.5 text-xs font-bold text-positive">
                     +{controlledPrepInsight.totalSignal}
                   </span>
                 </div>
-                <p className="mt-2 text-sm text-emerald-50/90">
+                <p className="mt-2 text-sm text-positive/90">
                   {t(controlledPrepInsight.summary.key, {
                     ...controlledPrepInsight.summary.values,
                     focus: controlledPrepFocus ?? controlledPrepInsight.focusLabel.defaultValue,
@@ -420,7 +420,7 @@ export default function DraftResultScreenV2({
                   {controlledPrepInsight.details.map((detail) => (
                     <span
                       key={detail.key}
-                      className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-xs text-emerald-100"
+                      className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-xs text-positive"
                     >
                       {t(detail.key, {
                         ...detail.values,
@@ -624,7 +624,7 @@ export default function DraftResultScreenV2({
                         </div>
                         <span className="text-sm text-muted-foreground/50">{row.kills}/{row.deaths}/{row.assists}</span>
                         <span className="text-sm text-muted-foreground/50">{row.gold}</span>
-                        <span className="text-sm font-bold text-primary">{row.rating.toFixed(1)}</span>
+                        <span className="text-sm font-bold text-club-text">{row.rating.toFixed(1)}</span>
                       </div>
                     );
                   })}

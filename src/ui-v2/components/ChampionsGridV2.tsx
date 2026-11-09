@@ -79,7 +79,7 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
             value={search}
             onChange={(e) => { setSearch(e.target.value); resetPage(); }}
             placeholder={t("champions.searchPlaceholder", "Buscar campeón...")}
-            className="h-full w-full rounded-lg border border-border bg-muted/30 pl-9 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary/50 focus:bg-muted/50"
+            className="h-full w-full rounded-lg border border-border bg-muted/30 pl-9 pr-3 text-sm text-foreground transition-colors placeholder:text-muted-foreground/40 focus:border-primary/50 focus:bg-muted/50"
           />
         </div>
 
@@ -89,7 +89,7 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
             onClick={() => { setRoleFilter("ALL"); resetPage(); }}
             title={t("common.all", "All")}
           >
-            <span className="font-heading text-[10px] font-bold uppercase tracking-widest">All</span>
+            <span className="font-heading text-2xs font-bold uppercase tracking-widest">All</span>
           </RoleButton>
           {LOL_ROLE_ORDER.map((role) => (
             <RoleButton
@@ -140,7 +140,7 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
                 )}
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 px-2 py-2">
-                  <p className="truncate text-center font-heading text-[11px] font-bold uppercase tracking-wider text-white drop-shadow">
+                  <p className="truncate text-center font-heading text-caption font-bold uppercase tracking-wider text-white drop-shadow">
                     {champion.champion_key}
                   </p>
                 </div>
@@ -174,7 +174,7 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
           <button
             type="button"
             onClick={() => { setSearch(""); setRoleFilter("ALL"); }}
-            className="mt-2 text-xs text-primary hover:underline"
+            className="mt-2 text-xs text-club-text hover:underline"
           >
             {t("championsGrid.clearFilters")}
           </button>
@@ -219,7 +219,7 @@ function RoleButton({ active, onClick, children, title }: { active: boolean; onC
       className={cn(
         "flex size-9 items-center justify-center rounded-lg border text-xs font-medium transition-all",
         active
-          ? "border-primary bg-primary/10 text-primary shadow-sm shadow-primary/10"
+          ? "border-primary bg-primary/10 text-club-text shadow-sm shadow-primary/10"
           : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground",
       )}
     >

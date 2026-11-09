@@ -316,8 +316,8 @@ export default function SquadRosterView({
 
                     <div className="hidden xl:block min-w-36">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] uppercase tracking-wide text-blue-200/60">{t("common.morale")}</p>
-                        <p className="text-[11px] font-heading font-bold text-emerald-300">{player.morale}</p>
+                        <p className="text-2xs uppercase tracking-wide text-blue-200/60">{t("common.morale")}</p>
+                        <p className="text-caption font-heading font-bold text-emerald-300">{player.morale}</p>
                       </div>
                       <div className="w-full h-1.5 rounded-full bg-navy-950 overflow-hidden">
                         <div className="h-full bg-emerald-400" style={{ width: `${clampBar(player.morale)}%` }} />
@@ -326,8 +326,8 @@ export default function SquadRosterView({
 
                     <div className="hidden xl:block min-w-36">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] uppercase tracking-wide text-blue-200/60">{t("common.condition")}</p>
-                        <p className="text-[11px] font-heading font-bold text-amber-300">{player.condition}</p>
+                        <p className="text-2xs uppercase tracking-wide text-blue-200/60">{t("common.condition")}</p>
+                        <p className="text-caption font-heading font-bold text-amber-300">{player.condition}</p>
                       </div>
                       <div className="w-full h-1.5 rounded-full bg-navy-950 overflow-hidden">
                         <div className="h-full bg-amber-400" style={{ width: `${clampBar(player.condition)}%` }} />
@@ -336,8 +336,8 @@ export default function SquadRosterView({
 
                     <div className="hidden xl:block min-w-36">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] uppercase tracking-wide text-blue-200/60">{t("common.fitness")}</p>
-                        <p className="text-[11px] font-heading font-bold text-green-300">{player.fitness ?? 75}</p>
+                        <p className="text-2xs uppercase tracking-wide text-blue-200/60">{t("common.fitness")}</p>
+                        <p className="text-caption font-heading font-bold text-green-300">{player.fitness ?? 75}</p>
                       </div>
                       <div className="w-full h-1.5 rounded-full bg-navy-950 overflow-hidden">
                         <div className="h-full bg-green-400" style={{ width: `${clampBar(player.fitness ?? 75)}%` }} />
@@ -346,7 +346,7 @@ export default function SquadRosterView({
 
                     <div className="hidden xl:block text-right min-w-24">
                       <p className="text-sm font-heading font-bold text-white">{formatVal(annualWage)}</p>
-                      <p className="text-[11px] text-blue-200/60">{t("common.per_year_with_slash")}</p>
+                      <p className="text-caption text-blue-200/60">{t("common.per_year_with_slash")}</p>
                     </div>
 
                     <div className="hidden xl:flex items-center justify-end gap-2 min-w-24 text-blue-200/70">

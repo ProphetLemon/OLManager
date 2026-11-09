@@ -60,7 +60,7 @@ export default function ScoutingAssignmentsListV2({
                   <button
                     type="button"
                     onClick={() => onSelectPlayer?.(player.id)}
-                    className="block truncate text-left font-heading text-sm font-bold text-foreground transition-colors hover:text-primary"
+                    className="block truncate text-left font-heading text-sm font-bold text-foreground transition-colors hover:text-club-text"
                   >
                     {player.match_name}
                   </button>
@@ -73,8 +73,8 @@ export default function ScoutingAssignmentsListV2({
                     {scout.first_name} {scout.last_name}
                   </p>
                   <div className="mt-0.5 flex items-center justify-end gap-1.5">
-                    <Clock className="size-3 text-primary" />
-                    <span className="font-heading text-xs font-bold tabular-nums text-primary">
+                    <Clock className="size-3 text-club-text" />
+                    <span className="font-heading text-xs font-bold tabular-nums text-club-text">
                       {assignment.days_remaining}d
                     </span>
                   </div>

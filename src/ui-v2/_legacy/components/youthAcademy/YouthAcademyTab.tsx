@@ -437,7 +437,7 @@ export default function YouthAcademyTab({ gameState, onSelectPlayer, onGameUpdat
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t("youthAcademy.searchPlaceholder", "Buscar por nombre o posición...")}
-                  className="w-full pl-9 pr-3 py-1.5 text-sm bg-gray-50 dark:bg-navy-700 border border-gray-200 dark:border-navy-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/50 text-gray-800 dark:text-gray-100 placeholder-gray-400"
+                  className="w-full pl-9 pr-3 py-1.5 text-sm bg-gray-50 dark:bg-navy-700 border border-gray-200 dark:border-navy-600 rounded-lg text-gray-800 dark:text-gray-100 placeholder-gray-400"
                 />
               </div>
               <div className="overflow-x-auto">

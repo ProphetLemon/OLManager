@@ -135,7 +135,7 @@ export interface ScoutingRepository {
 
 export interface TimeRepository {
   advance(args: { mode: unknown }): Promise<AdvanceTimeWithModeResponse>
-  checkBlockers(): Promise<BlockerData[]>
+  checkBlockers(args?: { mode?: string; includeScrimStops?: boolean }): Promise<BlockerData[]>
   skipToMatchDay(): Promise<SkipToMatchDayResponse>
 }
 

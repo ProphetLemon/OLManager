@@ -11,9 +11,9 @@ interface PlayerProfileChampionsCardV2Props {
 }
 
 function winRateTone(wr: number): { text: string; bar: string } {
-  if (wr >= 55) return { text: "text-emerald-300", bar: "bg-emerald-400" };
-  if (wr >= 48) return { text: "text-amber-300", bar: "bg-amber-400" };
-  return { text: "text-rose-300", bar: "bg-rose-400" };
+  if (wr >= 55) return { text: "text-positive", bar: "bg-positive" };
+  if (wr >= 48) return { text: "text-warning", bar: "bg-warning" };
+  return { text: "text-negative", bar: "bg-negative" };
 }
 
 export default function PlayerProfileChampionsCardV2({
@@ -32,7 +32,7 @@ export default function PlayerProfileChampionsCardV2({
               type="button"
               key={`${item.rank}-${item.championId}`}
               onClick={() => onViewChampion?.(item.championId)}
-              className="relative min-h-[192px] cursor-pointer overflow-hidden rounded-xl border border-border bg-card text-left transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:shadow-lg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="relative min-h-[192px] cursor-pointer overflow-hidden rounded-xl border border-border bg-card text-left transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:shadow-lg"
             >
               <div
                 className="absolute inset-0 bg-cover bg-center"

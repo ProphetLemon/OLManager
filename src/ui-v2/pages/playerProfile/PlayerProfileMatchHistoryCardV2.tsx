@@ -63,7 +63,7 @@ export default function PlayerProfileMatchHistoryCardV2({ history, t, language }
                 <span
                   className={cn(
                     "flex size-8 shrink-0 items-center justify-center rounded-md font-heading text-xs font-bold tabular-nums",
-                    isWin ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400",
+                    isWin ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative",
                   )}
                 >
                   {isWin ? "W" : "L"}
@@ -77,7 +77,7 @@ export default function PlayerProfileMatchHistoryCardV2({ history, t, language }
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">vs {entry.opponentName}</p>
-                  <p className="text-[11px] text-muted-foreground">{formatDateShort(entry.date, language)}</p>
+                  <p className="text-caption text-muted-foreground">{formatDateShort(entry.date, language)}</p>
                 </div>
 
                 <span className="shrink-0 text-xs tabular-nums text-foreground/70">

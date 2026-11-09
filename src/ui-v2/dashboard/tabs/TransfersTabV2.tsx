@@ -508,10 +508,10 @@ export function TransfersTabV2({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-foreground">
-                  <TrendingUp className="mr-2 inline size-5 text-primary" />
+                  <TrendingUp className="mr-2 inline size-5 text-club-text" />
                   {t("transfers.centre")}
                 </h2>
-                <Badge variant={transferWindowVariant} className="text-[10px]">
+                <Badge variant={transferWindowVariant} className="text-2xs">
                   {t(`season.transferWindowStatus.${transferWindow.status}`)}
                 </Badge>
               </div>
@@ -529,14 +529,14 @@ export function TransfersTabV2({
             </div>
             <div className="flex gap-3">
               <div className="min-w-[100px] rounded-lg bg-muted/30 px-3 py-2 text-center">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                <p className="text-2xs uppercase tracking-widest text-muted-foreground">
                   {t("finances.transferBudgetRemaining", "Transfer budget remaining")}
                 </p>
-                <p className="font-heading text-lg font-bold tabular-nums text-primary">{formatVal(transferBudgetSummary.remaining)}</p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                <p className="font-heading text-lg font-bold tabular-nums text-club-text">{formatVal(transferBudgetSummary.remaining)}</p>
+                <p className="mt-0.5 text-2xs text-muted-foreground">
                   {t("finances.transferSpendThisSeason", "Transfer spend this season")}
                 </p>
-                <p className="text-[10px] tabular-nums text-muted-foreground">
+                <p className="text-2xs tabular-nums text-muted-foreground">
                   {t("finances.transferSpentAmount", {
                     amount: formatVal(transferBudgetSummary.spend),
                     defaultValue: `${formatVal(transferBudgetSummary.spend)} spent`,
@@ -552,16 +552,16 @@ export function TransfersTabV2({
                 )}
               </div>
               <div className="min-w-[100px] rounded-lg bg-muted/30 px-3 py-2 text-center">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                <p className="text-2xs uppercase tracking-widest text-muted-foreground">
                   {t("finances.annualWageBudget", "Annual wage budget")}
                 </p>
                 <p className="font-heading text-lg font-bold tabular-nums text-foreground">
                   {formatVal(annualWageBudget)} {annualSuffix}
                 </p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                <p className="mt-0.5 text-2xs text-muted-foreground">
                   {t("finances.annualWageBill", "Annual wage bill")}
                 </p>
-                <p className="text-[10px] tabular-nums text-muted-foreground">
+                <p className="text-2xs tabular-nums text-muted-foreground">
                   {formatVal(totalAnnualWages)} {annualSuffix}
                 </p>
                 {totalAnnualWages > 0 && (
@@ -574,7 +574,7 @@ export function TransfersTabV2({
                 )}
               </div>
               <div className="min-w-[60px] rounded-lg bg-muted/30 px-3 py-2 text-center">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                <p className="text-2xs uppercase tracking-widest text-muted-foreground">
                   {t("transfers.listed")}
                 </p>
                 <p className="font-heading text-lg font-bold tabular-nums text-foreground">
@@ -597,7 +597,7 @@ export function TransfersTabV2({
             <TabsTrigger key={tab.id} value={tab.id} className="gap-1.5">
               {tab.icon}
               <span className="hidden sm:inline">{t(tab.labelKey)}</span>
-              <span className="font-heading text-[10px] tabular-nums text-muted-foreground">
+              <span className="font-heading text-2xs tabular-nums text-muted-foreground">
                 ({tabCounts[tab.id]})
               </span>
             </TabsTrigger>
@@ -615,7 +615,7 @@ export function TransfersTabV2({
             placeholder={t("transfers.searchByName")}
             className="h-full w-full rounded-md border border-border bg-muted/30 pl-8 pr-8 text-xs text-foreground placeholder:text-muted-foreground/50"
           />
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1 py-0.5 font-heading text-[10px] tabular-nums text-muted-foreground">
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1 py-0.5 font-heading text-2xs tabular-nums text-muted-foreground">
             {filteredList.length}
           </span>
         </div>
@@ -655,7 +655,7 @@ export function TransfersTabV2({
           t("transfers.noPlayersListed"),
           <button
             onClick={() => setView("market")}
-            className="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-heading uppercase tracking-wider text-primary transition-all hover:bg-primary/20"
+            className="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-heading uppercase tracking-wider text-club-text transition-all hover:bg-primary/20"
           >
             <TrendingUp className="mr-1 inline size-3" /> {t("transfers.browseMarket")}
           </button>,
@@ -788,7 +788,7 @@ export function TransfersTabV2({
                         {player.team_id ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); onSelectTeam(player.team_id!); }}
-                            className="text-left text-sm font-medium text-foreground transition-colors hover:text-primary truncate block max-w-[140px]"
+                            className="text-left text-sm font-medium text-foreground transition-colors hover:text-club-text truncate block max-w-[140px]"
                           >
                             {getTeamName(gameState.teams, player.team_id!)}
                           </button>
@@ -806,7 +806,7 @@ export function TransfersTabV2({
                         <span
                           className={cn(
                             "font-heading text-base font-bold tabular-nums",
-                            ovr >= 75 ? "text-primary" : ovr >= 55 ? "text-amber-400" : "text-muted-foreground",
+                            ovr >= 75 ? "text-club-text" : ovr >= 55 ? "text-warning" : "text-muted-foreground",
                           )}
                         >
                           {ovr}
@@ -815,12 +815,12 @@ export function TransfersTabV2({
                       <TableCell className="text-center">
                         <div className="flex flex-wrap justify-center gap-1">
                           {player.transfer_listed && (
-                            <Badge variant="secondary" className="text-[10px]">
+                            <Badge variant="secondary" className="text-2xs">
                               {t("transfers.transfer")}
                             </Badge>
                           )}
                           {player.loan_listed && (
-                            <Badge variant="outline" className="text-[10px]">
+                            <Badge variant="outline" className="text-2xs">
                               {t("transfers.loan")}
                             </Badge>
                           )}
@@ -853,7 +853,7 @@ export function TransfersTabV2({
                                       : offer.status === "Accepted" ? "secondary"
                                       : "outline"
                                     }
-                                    className="text-[10px]"
+                                    className="text-2xs"
                                   >
                                     {formatVal(offer.fee)} — {getTransferOfferStatusLabel(t, offer.status)}
                                   </Badge>
@@ -861,21 +861,21 @@ export function TransfersTabV2({
                                     <div className="flex gap-0.5">
                                       <button
                                         onClick={(e) => { e.stopPropagation(); handleRespondOffer(player.id, offer.id, true); }}
-                                        className="flex size-5 items-center justify-center rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                                        className="flex size-5 items-center justify-center rounded bg-positive/20 text-positive hover:bg-positive/30"
                                         title={t("transfers.acceptOffer")}
                                       >
                                         <Check className="size-3" />
                                       </button>
                                       <button
                                         onClick={(e) => { e.stopPropagation(); handleRespondOffer(player.id, offer.id, false); }}
-                                        className="flex size-5 items-center justify-center rounded bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                                        className="flex size-5 items-center justify-center rounded bg-negative/20 text-negative hover:bg-negative/30"
                                         title={t("transfers.rejectOffer")}
                                       >
                                         <X className="size-3" />
                                       </button>
                                       <button
                                         onClick={(e) => { e.stopPropagation(); openCounterNegotiation(player, offer); }}
-                                        className="flex items-center gap-0.5 rounded bg-amber-500/20 px-1.5 text-[10px] text-amber-400 hover:bg-amber-500/30"
+                                        className="flex items-center gap-0.5 rounded bg-warning/20 px-1.5 text-2xs text-warning hover:bg-warning/30"
                                         aria-label={t("transfers.counterOffer")}
                                         title={t("transfers.counterOffer")}
                                       >
@@ -897,7 +897,7 @@ export function TransfersTabV2({
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between border-t border-border px-4 py-3">
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-2xs text-muted-foreground">
                 {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filteredList.length)} / {filteredList.length}
               </span>
               <div className="flex items-center gap-2">

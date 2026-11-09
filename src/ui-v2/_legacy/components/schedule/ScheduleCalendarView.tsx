@@ -232,7 +232,7 @@ function FixtureChip({
         <Badge
           variant="accent"
           size="sm"
-          className={isFull ? "" : "!text-[7px] !px-1 !py-0"}
+          className={isFull ? "" : "!text-2xs !px-1 !py-0"}
         >
           {competitionLabel}
         </Badge>
@@ -382,7 +382,7 @@ export default function ScheduleCalendarView({
             type="button"
             onClick={goPrev}
             aria-label={t("schedule.previousMonth", "Mes anterior")}
-            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-gray-500 dark:text-gray-300 hover:text-primary hover:bg-white dark:hover:bg-navy-700 transition-colors"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-gray-500 dark:text-gray-300 hover:text-club-text hover:bg-white dark:hover:bg-navy-700 transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -393,7 +393,7 @@ export default function ScheduleCalendarView({
             type="button"
             onClick={goNext}
             aria-label={t("schedule.nextMonth", "Mes siguiente")}
-            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-gray-500 dark:text-gray-300 hover:text-primary hover:bg-white dark:hover:bg-navy-700 transition-colors"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-gray-500 dark:text-gray-300 hover:text-club-text hover:bg-white dark:hover:bg-navy-700 transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -401,7 +401,7 @@ export default function ScheduleCalendarView({
         <button
           type="button"
           onClick={goToday}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-card border border-border text-xs font-heading font-bold uppercase tracking-wider text-foreground/80 hover:text-primary transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-card border border-border text-xs font-heading font-bold uppercase tracking-wider text-foreground/80 hover:text-club-text transition-colors"
         >
           <CalendarIcon className="w-3.5 h-3.5" />
           {t("schedule.today", "Hoy")}
@@ -454,7 +454,7 @@ export default function ScheduleCalendarView({
                   <span
                     className={`text-xs font-heading font-bold tabular-nums ${
                       isToday
-                        ? "text-primary"
+                        ? "text-club-text"
                         : inMonth
                           ? "text-foreground/80"
                           : "text-muted-foreground/60"
@@ -514,7 +514,7 @@ export default function ScheduleCalendarView({
                     <button
                       type="button"
                       onClick={() => setOpenDayKey(cellKey)}
-                      className="text-2xs font-heading font-bold uppercase tracking-wider text-primary hover:text-primary px-1 text-left transition-colors"
+                      className="text-2xs font-heading font-bold uppercase tracking-wider text-club-text hover:text-club-text px-1 text-left transition-colors"
                     >
                       +{overflow} {t("schedule.moreMatches", "más")}
                     </button>
@@ -548,7 +548,7 @@ export default function ScheduleCalendarView({
                 type="button"
                 onClick={() => setOpenDayKey(null)}
                 aria-label={t("common.close", "Cerrar")}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-gray-500 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-navy-700 transition-colors"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-gray-500 dark:text-gray-300 hover:text-club-text hover:bg-gray-100 dark:hover:bg-navy-700 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>

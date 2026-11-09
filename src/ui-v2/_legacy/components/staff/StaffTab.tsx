@@ -274,7 +274,7 @@ export default function StaffTab({ gameState, onGameUpdate, mode = "club" }: Sta
             placeholder={t("staff.searchStaff")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-white dark:bg-navy-800 border border-gray-200 dark:border-navy-600 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50"
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-white dark:bg-navy-800 border border-gray-200 dark:border-navy-600 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
           />
         </div>
 
@@ -415,7 +415,7 @@ export default function StaffTab({ gameState, onGameUpdate, mode = "club" }: Sta
                           </span>
                         )}
                         {staff.wage > 0 && (
-                          <span className="text-[10px] bg-gray-100 dark:bg-navy-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded font-heading uppercase tracking-wider">
+                          <span className="text-2xs bg-gray-100 dark:bg-navy-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded font-heading uppercase tracking-wider">
                             {activeCurrencySymbol()}{staff.wage.toLocaleString()}/año
                           </span>
                         )}
