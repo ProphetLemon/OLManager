@@ -30,12 +30,34 @@ export function canContinueAnyway(blockers: ReadonlyArray<{ id: string }>): bool
   return !blockers.some(isBackendEnforcedBlocker);
 }
 
-/** Builds a blocker modal that offers "Continue anyway" only when it can work. */
+/**
+ * The advance paths that can raise a blocker modal, and what the backend does
+ * when the user insists:
+ * - `continue` and `skipToNextDay` both run `advance_time_with_mode`, which only
+ *   refuses for the enforced ids above and lets every other blocker through.
+ * - `skipToMatchDay` runs `skip_to_match_day`, which answers "blocked" whenever
+ *   `compute_blocking_actions` is non-empty, so no blocker can be skipped there.
+ */
+export type AdvancePath = "continue" | "skipToNextDay" | "skipToMatchDay";
+
+const PATHS_THAT_ENFORCE_EVERY_BLOCKER: ReadonlySet<AdvancePath> = new Set(["skipToMatchDay"]);
+
+/** Whether pressing "Continue anyway" on `path` would actually advance. */
+export function canContinueAnywayOnPath(
+  path: AdvancePath,
+  blockers: ReadonlyArray<{ id: string }>,
+): boolean {
+  if (PATHS_THAT_ENFORCE_EVERY_BLOCKER.has(path)) return false;
+  return canContinueAnyway(blockers);
+}
+
+/** Builds a blocker modal that offers "Continue anyway" only when the path lets it work. */
 export function buildBlockerModal(
   blockers: BlockerData[],
+  path: AdvancePath,
   continueAnyway?: () => void,
 ): BlockerModal {
-  return canContinueAnyway(blockers) && continueAnyway
+  return canContinueAnywayOnPath(path, blockers) && continueAnyway
     ? { blockers, pendingAction: continueAnyway }
     : { blockers };
 }

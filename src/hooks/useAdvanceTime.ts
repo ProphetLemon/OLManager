@@ -10,25 +10,13 @@ import {
   buildBlockerModal,
   resolveAdvanceMode,
 } from "../lib/home/blockerRules";
+import { scrimBlockerText } from "../lib/home/scrimBlockerText";
 import { advanceTimeWithMode, skipToMatchDay } from "../services/advanceTimeService";
 import { collectAdvanceBlockers } from "../lib/home/advanceBlockers";
 import { autoConfigureWeeklyScrimSetup, delegateScrimDecision } from "../services/trainingService";
 import { effectiveWeeklyScrimSlots, scrimSlotWeekdays, weekdayMondayBased } from "../lib/scrims/scrimContext";
 
 export type MatchModeType = "live" | "spectator" | "delegate";
-
-function textScrimSetup(): string {
-  return i18n.t("advance.blockers.scrimSetup", {
-    defaultValue:
-      "Define the weekly scrim setup (objective and rivals) or delegate the advance to continue.",
-  });
-}
-
-function textScrimDecision(): string {
-  return i18n.t("advance.blockers.scrimDecision", {
-    defaultValue: "Make a scrim decision before continuing.",
-  });
-}
 
 function textAdvanceBlocked(): string {
   return i18n.t("advance.blockers.advanceBlocked", {
@@ -311,7 +299,7 @@ export function useAdvanceTime(
             id: SCRIM_DECISION_BLOCKER_ID,
             severity: "warn",
             tab: "Scrims",
-            text: textScrimDecision(),
+            text: scrimBlockerText(SCRIM_DECISION_BLOCKER_ID),
           }],
         });
       } else if (result.action === "blocked_scrim_setup" && result.game) {
@@ -335,7 +323,7 @@ export function useAdvanceTime(
             id: SCRIM_SETUP_BLOCKER_ID,
             severity: "warn",
             tab: "Scrims",
-            text: textScrimSetup(),
+            text: scrimBlockerText(SCRIM_SETUP_BLOCKER_ID),
           }],
         });
       } else if ((result.action === "advanced" || result.action === "phase_advanced") && result.game) {
@@ -371,7 +359,7 @@ export function useAdvanceTime(
     if (isAdvancing) return;
     const blockers = await collectBlockers("handleContinue", resolvedMode);
     if (blockers.length > 0) {
-      setBlockerModal(buildBlockerModal(blockers, () => doAdvance(resolvedMode)));
+      setBlockerModal(buildBlockerModal(blockers, "continue", () => doAdvance(resolvedMode)));
       return;
     }
     doAdvance(resolvedMode);
@@ -392,7 +380,7 @@ export function useAdvanceTime(
       false,
     );
     if (blockers.length > 0) {
-      setBlockerModal(buildBlockerModal(blockers, doSkipToMatchDay));
+      setBlockerModal(buildBlockerModal(blockers, "skipToMatchDay"));
       return;
     }
     doSkipToMatchDay();
@@ -406,7 +394,7 @@ export function useAdvanceTime(
       resolveAdvanceMode(isUnemployed, matchMode),
     );
     if (blockers.length > 0) {
-      setBlockerModal(buildBlockerModal(blockers, doSkipToNextDay));
+      setBlockerModal(buildBlockerModal(blockers, "skipToNextDay", doSkipToNextDay));
       return;
     }
     doSkipToNextDay();
@@ -468,7 +456,7 @@ export function useAdvanceTime(
               id: SCRIM_SETUP_BLOCKER_ID,
               severity: "warn",
               tab: "Scrims",
-              text: textScrimSetup(),
+              text: scrimBlockerText(SCRIM_SETUP_BLOCKER_ID),
             }],
           });
           return;
@@ -487,7 +475,7 @@ export function useAdvanceTime(
               id: SCRIM_DECISION_BLOCKER_ID,
               severity: "warn",
               tab: "Scrims",
-              text: textScrimDecision(),
+              text: scrimBlockerText(SCRIM_DECISION_BLOCKER_ID),
             }],
           });
           return;
@@ -554,7 +542,7 @@ export function useAdvanceTime(
           }
           if (retry.game) setGameState(retry.game as GameStateData);
           if (retry.action === "blocked" && retry.blockers && retry.blockers.length > 0) {
-            setBlockerModal(buildBlockerModal(retry.blockers, doSkipToMatchDay));
+            setBlockerModal(buildBlockerModal(retry.blockers, "skipToMatchDay"));
           }
           return;
         } catch (error) {
@@ -562,7 +550,7 @@ export function useAdvanceTime(
         }
       }
       if (result.action === "blocked" && result.blockers && result.blockers.length > 0) {
-        setBlockerModal(buildBlockerModal(result.blockers, doSkipToMatchDay));
+        setBlockerModal(buildBlockerModal(result.blockers, "skipToMatchDay"));
       }
     } catch (err) {
       console.error("Failed to skip to match day:", err);

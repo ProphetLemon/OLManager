@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   buildBlockerModal,
   canContinueAnyway,
+  canContinueAnywayOnPath,
   isBackendEnforcedBlocker,
   resolveAdvanceMode,
 } from "./blockerRules";
@@ -34,8 +35,26 @@ describe("backend-enforced blockers", () => {
 
   it("builds a modal with pendingAction only when Continue anyway can work", () => {
     const action = vi.fn();
-    expect(buildBlockerModal([lineup], action).pendingAction).toBe(action);
-    expect(buildBlockerModal([lineup, decision], action).pendingAction).toBeUndefined();
-    expect(buildBlockerModal([lineup]).pendingAction).toBeUndefined();
+    expect(buildBlockerModal([lineup], "continue", action).pendingAction).toBe(action);
+    expect(buildBlockerModal([lineup, decision], "continue", action).pendingAction).toBeUndefined();
+    expect(buildBlockerModal([lineup], "continue").pendingAction).toBeUndefined();
   });
+
+  it.each([
+    ["continue", true],
+    ["skipToNextDay", true],
+    ["skipToMatchDay", false],
+  ] as const)("applies the per-path rule on %s for a non-enforced blocker", (path, expected) => {
+    const action = vi.fn();
+    expect(canContinueAnywayOnPath(path, [lineup])).toBe(expected);
+    expect(buildBlockerModal([lineup], path, action).pendingAction).toBe(expected ? action : undefined);
+  });
+
+  it.each(["continue", "skipToNextDay", "skipToMatchDay"] as const)(
+    "never offers Continue anyway on %s over an enforced blocker",
+    (path) => {
+      expect(canContinueAnywayOnPath(path, [setup])).toBe(false);
+      expect(buildBlockerModal([setup], path, vi.fn()).pendingAction).toBeUndefined();
+    },
+  );
 });

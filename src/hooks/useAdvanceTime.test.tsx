@@ -38,6 +38,7 @@ function HookHarness(props: {
     handleConfirmMatch,
     handleContinue,
     handleSkipToMatchDay,
+    handleSkipToNextDay,
     showMatchConfirm,
   } =
     useAdvanceTime(
@@ -54,6 +55,7 @@ function HookHarness(props: {
       <button onClick={() => void handleContinue()}>Continue</button>
       <button onClick={handleConfirmMatch}>Confirm Match</button>
       <button onClick={() => void handleSkipToMatchDay()}>Skip</button>
+      <button onClick={() => void handleSkipToNextDay()}>Skip day</button>
       <div data-testid="show-match-confirm">{String(showMatchConfirm)}</div>
       <div data-testid="blocker-count">
         {blockerModal?.blockers.length ?? 0}
@@ -202,6 +204,40 @@ describe("useAdvanceTime", function (): void {
 
     expect(screen.getByTestId("blocker-count")).toHaveTextContent("1");
     expect(mockedInvoke).toHaveBeenCalledTimes(1);
+    // skip_to_match_day enforces every blocker, so Continue anyway would loop back here.
+    expect(screen.getByTestId("can-continue-anyway")).toHaveTextContent("false");
+  });
+
+  it("does not offer Continue anyway when skip_to_match_day itself answers blocked", async function (): Promise<void> {
+    mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({
+      action: "blocked",
+      days_skipped: 2,
+      blockers: [{ id: "incomplete_lineup", severity: "warn", tab: "Squad", text: "Lineup" }],
+    });
+
+    render(<HookHarness hasMatchToday={false} defaultMatchMode="live" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+
+    await waitFor(function (): void {
+      expect(screen.getByTestId("blocker-count")).toHaveTextContent("1");
+    });
+    expect(mockedInvoke).toHaveBeenNthCalledWith(2, "skip_to_match_day");
+    expect(screen.getByTestId("can-continue-anyway")).toHaveTextContent("false");
+  });
+
+  it("still offers Continue anyway when skipping a day over a blocker the backend lets through", async function (): Promise<void> {
+    mockedInvoke.mockResolvedValueOnce([
+      { id: "incomplete_lineup", severity: "warn", tab: "Squad", text: "Lineup" },
+    ]);
+
+    render(<HookHarness hasMatchToday={false} defaultMatchMode="live" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Skip day" }));
+
+    await waitFor(function (): void {
+      expect(screen.getByTestId("can-continue-anyway")).toHaveTextContent("true");
+    });
   });
 
   it("shows scrim decision blocker when backend returns blocked_scrim_decision", async function (): Promise<void> {

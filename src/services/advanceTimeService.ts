@@ -1,6 +1,6 @@
 import { getApiClientSync } from "../api/client";
-import i18n from "@/i18n";
-import { SCRIM_DECISION_BLOCKER_ID, SCRIM_SETUP_BLOCKER_ID } from "@/lib/home/blockerRules";
+import { SCRIM_BLOCKER_IDS } from "@/lib/home/blockerRules";
+import { scrimBlockerText } from "@/lib/home/scrimBlockerText";
 import type { GameStateData } from "../store/gameStore";
 
 export interface BlockerData {
@@ -39,24 +39,9 @@ export async function advanceTimeWithMode(
  * Every other blocker keeps the text the backend sent.
  */
 export function localizeAdvanceBlocker(blocker: BlockerData): BlockerData {
-  if (blocker.id === SCRIM_SETUP_BLOCKER_ID) {
-    return {
-      ...blocker,
-      text: i18n.t("advance.blockers.scrimSetup", {
-        defaultValue:
-          "Define the weekly scrim setup (objective and rivals) or delegate the advance to continue.",
-      }),
-    };
-  }
-  if (blocker.id === SCRIM_DECISION_BLOCKER_ID) {
-    return {
-      ...blocker,
-      text: i18n.t("advance.blockers.scrimDecision", {
-        defaultValue: "Make a scrim decision before continuing.",
-      }),
-    };
-  }
-  return blocker;
+  return SCRIM_BLOCKER_IDS.has(blocker.id)
+    ? { ...blocker, text: scrimBlockerText(blocker.id) }
+    : blocker;
 }
 
 export interface CheckBlockingOptions {
