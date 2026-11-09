@@ -1,8 +1,15 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildBadgeDataUri } from "@/lib/customTeam";
 import type { CompetitionSummary } from "@/store/types";
+import { previewInvoke } from "./founders/foundersTestKit";
+import type { PreviewCall } from "./founders/foundersTestKit";
+
+const mocks = vi.hoisted(() => ({ invoke: vi.fn() }));
+vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
+
+let previewCalls: PreviewCall[] = [];
 
 vi.mock("react-i18next", async () => {
   const { translateFromEnglish } = await import("@/test-i18n");
@@ -72,6 +79,14 @@ function toBadgeStep() {
   fireEvent.click(next());
 }
 
+/** From the badge step to the squad step, with the replace choice made. */
+async function toSquadStep() {
+  fireEvent.click(next());
+  fireEvent.click(screen.getByRole("radio", { name: /Falke Esports/ }));
+  fireEvent.click(next());
+  await screen.findByTestId("founder-mid");
+}
+
 async function uploadLogo() {
   fireEvent.change(screen.getByTestId("logo-file-input"), {
     target: { files: [new File(["x"], "logo.png", { type: "image/png" })] },
@@ -83,6 +98,9 @@ describe("CustomTeamWizardV2 badge upload", () => {
   beforeEach(() => {
     build.mockReset();
     build.mockResolvedValue(LOGO);
+    previewCalls = [];
+    mocks.invoke.mockReset();
+    mocks.invoke.mockImplementation(previewInvoke(previewCalls));
   });
 
   it("offers the upload control on the badge step only", () => {
@@ -143,8 +161,7 @@ describe("CustomTeamWizardV2 badge upload", () => {
     const { onConfirm } = setup();
     toBadgeStep();
     await uploadLogo();
-    fireEvent.click(next());
-    fireEvent.click(screen.getByRole("radio", { name: /Falke Esports/ }));
+    await toSquadStep();
     fireEvent.click(screen.getByRole("button", { name: "Create club" }));
 
     expect(onConfirm).toHaveBeenCalledWith(
@@ -155,6 +172,7 @@ describe("CustomTeamWizardV2 badge upload", () => {
         secondary_color: "#18181b",
         logo_data_uri: LOGO,
         country: "ES",
+        founding_seed: previewCalls[previewCalls.length - 1].seed,
       },
       "les-a",
     );
@@ -165,7 +183,7 @@ describe("CustomTeamWizardV2 badge upload", () => {
     toBadgeStep();
     await uploadLogo();
     fireEvent.click(screen.getByRole("button", { name: "Remove image" }));
-    fireEvent.click(next());
+    await toSquadStep();
     fireEvent.click(screen.getByRole("button", { name: "Create club" }));
 
     const [spec] = onConfirm.mock.calls[0];
@@ -184,22 +202,68 @@ describe("CustomTeamWizardV2 badge upload", () => {
     expect(image?.className).toContain("object-contain");
   });
 
-  it("returns to the badge step and explains a backend logo rejection", () => {
+  const rejected = (error: string) => (
+    <CustomTeamWizardV2
+      competition={competition}
+      onCancel={vi.fn()}
+      onConfirm={vi.fn()}
+      isSubmitting={false}
+      error={error}
+    />
+  );
+
+  it("returns from the squad step to the badge step on a backend logo rejection", async () => {
     const { rerender } = setup();
     toBadgeStep();
-    fireEvent.click(next());
+    await toSquadStep();
+    expect(screen.getByRole("heading", { name: "Founding squad" })).toBeInTheDocument();
 
-    rerender(
-      <CustomTeamWizardV2
-        competition={competition}
-        onCancel={vi.fn()}
-        onConfirm={vi.fn()}
-        isSubmitting={false}
-        error="Invalid club logo: not_png"
-      />,
-    );
+    rerender(rejected("Invalid club logo: not_png"));
 
     expect(screen.getByRole("alert")).toHaveTextContent("That image could not be used as a badge");
     expect(screen.getByTestId("logo-file-input")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Founding squad" })).toBeNull();
+  });
+
+  it("keeps a founder rejection on the squad step when a logo is set", async () => {
+    const raw = JSON.stringify({ kind: "invalid_field", role: "MID", field: "nick", reason: "taken" });
+    const { rerender } = setup();
+    toBadgeStep();
+    await uploadLogo();
+    await toSquadStep();
+
+    rerender(rejected(raw));
+
+    expect(screen.getByRole("heading", { name: "Founding squad" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Another player already uses this name.");
+    expect(screen.queryByTestId("logo-file-input")).toBeNull();
+  });
+
+  it("sends the logo, the seed and the founder edits together", async () => {
+    const { onConfirm } = setup();
+    toBadgeStep();
+    await uploadLogo();
+    await toSquadStep();
+    fireEvent.click(screen.getByRole("button", { name: /^Edit .*Mid$/ }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Nick"), { target: { value: "Ray" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Create club" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Create club" }));
+
+    expect(onConfirm).toHaveBeenCalledWith(
+      {
+        name: "Ray Esports",
+        short_name: "RAY",
+        primary_color: "#f97316",
+        secondary_color: "#18181b",
+        logo_data_uri: LOGO,
+        country: "ES",
+        founding_seed: previewCalls[previewCalls.length - 1].seed,
+        founder_overrides: { mid: { nick: "Ray" } },
+      },
+      "les-a",
+    );
   });
 });
