@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
 import { exportBugReport } from "@/services/bugReportService";
-import DashboardModalFrame from "@/ui-v2/_legacy/components/dashboard/DashboardModalFrame";
+import { Dialog, DialogContent, DialogTitle } from "@/ui-v2/components/ui/dialog";
 
 interface ContextData {
   appVersion: string;
@@ -66,15 +66,21 @@ export default function ReportBugModal({
   };
 
   return (
-    <DashboardModalFrame maxWidthClassName="max-w-md">
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent aria-modal="true">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-orange-500 text-white">
-          <Bug className="h-5 w-5" />
+          <Bug className="h-5 w-5" aria-hidden="true" />
         </div>
         <div>
-          <h3 className="text-lg font-heading font-bold uppercase tracking-wide text-gray-900 dark:text-white">
+          <DialogTitle className="text-lg tracking-wide text-gray-900 dark:text-white">
             {t("bugReport.title", "Reportar Bug / Sugerir Mejora")}
-          </h3>
+          </DialogTitle>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {t("bugReport.subtitle", "Compartí el archivo ZIP con el equipo de desarrollo")}
           </p>
@@ -89,6 +95,7 @@ export default function ReportBugModal({
             placeholder={t("bugReport.placeholder", "Describí qué pasó, qué esperabas que pase, y cómo reproducirlo...")}
             className="mb-3 w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-800 placeholder-gray-400 dark:border-navy-600 dark:bg-navy-800 dark:text-gray-200 dark:placeholder-gray-500"
             rows={4}
+            aria-label={t("bugReport.placeholder", "Describí qué pasó, qué esperabas que pase, y cómo reproducirlo...")}
           />
 
           <details className="mb-4">
@@ -168,6 +175,7 @@ export default function ReportBugModal({
           </button>
         </div>
       )}
-    </DashboardModalFrame>
+    </DialogContent>
+    </Dialog>
   );
 }

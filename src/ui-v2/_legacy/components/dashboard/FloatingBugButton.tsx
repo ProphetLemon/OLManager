@@ -26,7 +26,7 @@ export default function FloatingBugButton({
 
   return (
     <>
-      {!show && placement === "rail" && (
+      {placement === "rail" && (
         <button
           type="button"
           onClick={() => setShow(true)}
