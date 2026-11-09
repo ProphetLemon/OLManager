@@ -435,7 +435,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                 <div className="flex items-center gap-2">
                   {todayState === "PlayedNeedsReview" && <Badge className="border-warning/30 bg-warning/10 text-warning">{t("scrims.pendingReview")}</Badge>}
                   {todayState === "Reviewed" && <Badge className="border-positive/30 bg-positive/10 text-positive">{t("scrims.reviewed")}</Badge>}
-                  {todayState === "Planned" && <Badge className="border-primary/30 bg-primary/10 text-primary">{t("scrims.planned")}</Badge>}
+                  {todayState === "Planned" && <Badge className="border-primary/30 bg-primary/10 text-club-text">{t("scrims.planned")}</Badge>}
                   {todayState === "Cancelled" && <Badge className="border-negative/30 bg-negative/10 text-negative">{t("scrims.cancelled")}</Badge>}
                   {todayState !== "PlayedNeedsReview" && todayState !== "Reviewed" && todayState !== "Planned" && todayState !== "Cancelled" && (
                     <Badge variant="outline" className="text-muted-foreground">{t("scrims.noScrim")}</Badge>
@@ -509,7 +509,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                 )}
 
                 {decisionFeedback && (
-                  <p className="rounded-md bg-primary/10 px-2 py-1 text-xs text-primary">{decisionFeedback}</p>
+                  <p className="rounded-md bg-primary/10 px-2 py-1 text-xs text-club-text">{decisionFeedback}</p>
                 )}
               </div>
             </CardContent>

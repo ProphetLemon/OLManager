@@ -136,7 +136,7 @@ export function DashboardSidebarV2({
           <div className="truncate text-xs uppercase tracking-widest text-muted-foreground">
             {t("dashboard.brandTitle")}
           </div>
-          <div className="truncate font-heading text-base font-bold text-primary">{t("dashboard.brandSubtitle")}</div>
+          <div className="truncate font-heading text-base font-bold text-club-text">{t("dashboard.brandSubtitle")}</div>
         </div>
       </div>
 

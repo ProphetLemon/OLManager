@@ -365,7 +365,7 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
           type="button"
           onClick={handleDelegateTraining}
           disabled={delegating}
-          className="rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-heading uppercase tracking-wider text-primary transition-all hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-heading uppercase tracking-wider text-club-text transition-all hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {delegating ? t("champions.delegating") : t("champions.delegateToCoach")}
         </button>
@@ -428,7 +428,7 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
                     )}
                   </div>
                   <div>
-                    <p className="cursor-pointer text-sm font-semibold text-foreground hover:text-primary" onClick={() => onSelectPlayer?.(player.id)}>{player.match_name}</p>
+                    <p className="cursor-pointer text-sm font-semibold text-foreground hover:text-club-text" onClick={() => onSelectPlayer?.(player.id)}>{player.match_name}</p>
                     <div className="mt-0.5 flex size-5 items-center justify-center rounded border border-border bg-muted/70">
                       <img src={ROLE_ICON_URLS[role]} alt={role} className="size-3 object-contain" />
                     </div>

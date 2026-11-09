@@ -138,7 +138,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
             </button>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
-                <span className="font-heading text-3xl font-bold tabular-nums text-primary">{mgr.reputation}</span>
+                <span className="font-heading text-3xl font-bold tabular-nums text-club-text">{mgr.reputation}</span>
               </div>
               <div className="relative mx-auto mt-1 h-1.5 w-20 overflow-hidden rounded-full">
                   <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(to right, #14b8a6, #2dd4bf 25%, #5eead4 50%)' }} />
@@ -175,7 +175,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
               </span>
               <span>{t("manager.born")} {formatDate(mgr.date_of_birth, i18n.language)}</span>
               {myTeam && (
-                <span className="font-medium text-primary">{t("manager.managerOf", { team: myTeam.name })}</span>
+                <span className="font-medium text-club-text">{t("manager.managerOf", { team: myTeam.name })}</span>
               )}
             </div>
           </div>
@@ -225,7 +225,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                   className={cn(
                     "mt-1.5",
                     mgr.satisfaction >= 80 ? "border-positive/30 bg-positive/10 text-positive" :
-                    mgr.satisfaction >= 50 ? "border-primary/30 bg-primary/10 text-primary" :
+                    mgr.satisfaction >= 50 ? "border-primary/30 bg-primary/10 text-club-text" :
                     mgr.satisfaction >= 30 ? "border-warning/30 bg-warning/10 text-warning" :
                     "border-negative/30 bg-negative/10 text-negative",
                   )}
@@ -252,7 +252,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                   className={cn(
                     "mt-1.5",
                     (mgr.fan_approval ?? 50) >= 80 ? "border-positive/30 bg-positive/10 text-positive" :
-                    (mgr.fan_approval ?? 50) >= 60 ? "border-primary/30 bg-primary/10 text-primary" :
+                    (mgr.fan_approval ?? 50) >= 60 ? "border-primary/30 bg-primary/10 text-club-text" :
                     (mgr.fan_approval ?? 50) >= 40 ? "border-warning/30 bg-warning/10 text-warning" :
                     "border-negative/30 bg-negative/10 text-negative",
                   )}
@@ -332,7 +332,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                     <p className="font-heading text-base font-bold uppercase tracking-wide text-foreground">{myTeam.name}</p>
                     {teamPosition && (
                       <p className="text-xs text-muted-foreground">
-                        {t("manager.leaguePosition", "Posición")}: <span className="font-semibold text-primary">#{teamPosition}</span>
+                        {t("manager.leaguePosition", "Posición")}: <span className="font-semibold text-club-text">#{teamPosition}</span>
                         {league?.standings && <span> · {league.standings.length} {t("manager.teams", "equipos")}</span>}
                       </p>
                     )}
@@ -340,7 +340,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
-                    <Users className="mx-auto mb-1 size-4 text-primary" />
+                    <Users className="mx-auto mb-1 size-4 text-club-text" />
                     <p className="font-heading text-lg font-bold tabular-nums text-foreground">{teamPlayers.length}</p>
                     <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.players", "Jugadores")}</p>
                   </div>
@@ -550,9 +550,9 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                       {filteredNationalities.map((nat) => (
                         <button key={nat.code} type="button" onMouseDown={(e) => { e.preventDefault(); setFormData((p) => ({ ...p, nationality: nat.code })); setNationalityOpen(false); setNationalitySearch(""); }}
                           className={cn("flex w-full items-center justify-between px-3 py-2 text-left text-xs transition-colors",
-                            formData.nationality === nat.code ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted")}>
+                            formData.nationality === nat.code ? "bg-primary/10 text-club-text" : "text-muted-foreground hover:bg-muted")}>
                           <span className="flex items-center gap-2"><CountryFlag code={nat.code} locale={i18n.language} className="text-base leading-none" /><span>{nat.name}</span></span>
-                          {formData.nationality === nat.code && <Check className="size-3.5 text-primary" />}
+                          {formData.nationality === nat.code && <Check className="size-3.5 text-club-text" />}
                         </button>
                       ))}
                     </div>

@@ -34,7 +34,7 @@ export function StatBox({
       <p
         className={cn(
           "font-heading text-lg font-bold tabular-nums",
-          highlight ? "text-primary" : "text-foreground",
+          highlight ? "text-club-text" : "text-foreground",
         )}
       >
         {value}

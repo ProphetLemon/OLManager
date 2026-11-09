@@ -177,7 +177,7 @@ export function InboxTabV2({
       <Card>
         <CardContent className="flex flex-wrap items-center gap-3 py-3">
           <div className="flex items-center gap-2">
-            <InboxIcon className="size-5 text-primary" />
+            <InboxIcon className="size-5 text-club-text" />
             <span className="font-heading text-base font-bold uppercase tracking-wider">
               {t("inbox.title")}
             </span>
@@ -320,7 +320,7 @@ function FilterChip({
       className={cn(
         "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
         active
-          ? "border-primary bg-primary/10 text-primary"
+          ? "border-primary bg-primary/10 text-club-text"
           : accent
             ? "border-border bg-card text-foreground hover:bg-muted"
             : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -356,7 +356,7 @@ function MessageRow({
         <div
           className={cn(
             "flex size-9 shrink-0 items-center justify-center rounded-lg font-heading text-sm font-bold overflow-hidden",
-            message.read ? "bg-muted text-muted-foreground" : "bg-primary/15 text-primary",
+            message.read ? "bg-muted text-muted-foreground" : "bg-primary/15 text-club-text",
           )}
         >
           {message.sender_icon ? (

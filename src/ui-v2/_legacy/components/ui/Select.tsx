@@ -238,7 +238,7 @@ export function Select({
     muted:
       "bg-muted/50 border-border text-foreground/80",
     highlighted:
-      "bg-primary/10 border-primary/40 text-primary font-bold",
+      "bg-primary/10 border-primary/40 text-club-text font-bold",
     placeholder:
       "bg-muted/50 border-border text-muted-foreground/70",
     glass:
@@ -341,7 +341,7 @@ export function Select({
                   role="option"
                   aria-selected={isSelected}
                   disabled={option.disabled}
-                  className={`${optionTextSize} flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors ${isSelected ? "bg-primary/10 text-primary" : "text-foreground/80 hover:bg-muted"} ${option.disabled ? "cursor-not-allowed opacity-50" : ""}`}
+                  className={`${optionTextSize} flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors ${isSelected ? "bg-primary/10 text-club-text" : "text-foreground/80 hover:bg-muted"} ${option.disabled ? "cursor-not-allowed opacity-50" : ""}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     if (!option.disabled) {

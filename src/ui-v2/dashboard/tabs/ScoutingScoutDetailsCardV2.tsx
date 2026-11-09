@@ -52,7 +52,7 @@ export default function ScoutingScoutDetailsCardV2({
                         loading="lazy"
                       />
                     ) : (
-                      <Eye className="size-4 text-primary" />
+                      <Eye className="size-4 text-club-text" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">

@@ -69,7 +69,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
     <div className="flex h-full flex-col gap-4 overflow-y-auto p-6 scrollbar-v2">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <ScanSearch className="size-5 text-primary" />
+        <ScanSearch className="size-5 text-club-text" />
         <h2 className="font-heading text-lg font-bold uppercase tracking-wider text-foreground">
           {t("scouting.title")}
         </h2>
@@ -81,7 +81,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
           {scouts.length > 0 && (
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-lg border border-border bg-card px-3 py-3 text-center">
-                <Eye className="mx-auto mb-1 size-4 text-primary" />
+                <Eye className="mx-auto mb-1 size-4 text-club-text" />
                 <p className="font-heading text-xl font-bold text-foreground tabular-nums">{scouts.length}</p>
                 <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("scouting.scouts")}</p>
               </div>
@@ -129,7 +129,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                         return logo ? (
                           <img src={logo} alt={academyTeam.name} className="size-7 object-contain" />
                         ) : (
-                          <GraduationCap className="size-5 text-primary" />
+                          <GraduationCap className="size-5 text-club-text" />
                         );
                       })()}
                     </div>
@@ -173,7 +173,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
               <button
                 type="button"
                 onClick={() => onNavigate?.("Youth")}
-                className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-2 font-heading text-xs font-bold uppercase tracking-wider text-primary transition-all hover:bg-primary/20 active:translate-y-px"
+                className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-2 font-heading text-xs font-bold uppercase tracking-wider text-club-text transition-all hover:bg-primary/20 active:translate-y-px"
               >
                 <GraduationCap className="size-4" />
                 {t("scouting.viewAcquisitionOptions")}
@@ -244,7 +244,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
               <button
                 type="button"
                 onClick={() => onNavigate?.("Staff")}
-                className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wider text-primary transition-all hover:bg-primary/20 hover:shadow-sm hover:shadow-primary/10 active:translate-y-px"
+                className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wider text-club-text transition-all hover:bg-primary/20 hover:shadow-sm hover:shadow-primary/10 active:translate-y-px"
               >
                 <User className="size-4" />
                 {t("scouting.hireScoutCta", { defaultValue: "Contratar ojeador" })}

@@ -78,7 +78,7 @@ export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
       {/* Header row */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <Swords className="size-5 text-primary" />
+          <Swords className="size-5 text-club-text" />
           <h2 className="font-heading text-lg font-bold uppercase tracking-wider text-foreground">
             {t("dashboard.teams", "Equipos")}
           </h2>
@@ -118,7 +118,7 @@ export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
             <button key={key} type="button" onClick={() => toggleSort(key)}
               className={cn(
                 "flex items-center gap-1 text-caption font-heading font-bold uppercase tracking-wider transition-colors",
-                active ? "text-primary" : "text-muted-foreground/50 hover:text-foreground",
+                active ? "text-club-text" : "text-muted-foreground/50 hover:text-foreground",
               )}>
               {t(labelKey)}
               {active && (asc ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />)}

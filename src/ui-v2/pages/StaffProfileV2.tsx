@@ -170,7 +170,7 @@ export default function StaffProfileV2({
                   <button
                     type="button"
                     onClick={() => onSelectTeam?.(staff.team_id as string)}
-                    className="text-muted-foreground/80 underline-offset-2 hover:text-primary hover:underline"
+                    className="text-muted-foreground/80 underline-offset-2 hover:text-club-text hover:underline"
                   >
                     {getTeamName(gameState.teams, staff.team_id)}
                   </button>
@@ -215,7 +215,7 @@ export default function StaffProfileV2({
                   type="button"
                   disabled={actionLoading}
                   onClick={() => runAction(hireStaff)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 font-heading text-sm font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 font-heading text-sm font-bold uppercase tracking-wider text-club-text transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
                 >
                   {actionLoading ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
                   {t("staff.hireStaff")}
@@ -262,7 +262,7 @@ export default function StaffProfileV2({
                   className="inline-flex items-center gap-1.5 rounded bg-primary/5 px-2.5 py-1 font-heading text-xs uppercase tracking-wider text-muted-foreground"
                 >
                   <span>{t(row.labelKey)}</span>
-                  <span className="font-bold text-primary tabular-nums">
+                  <span className="font-bold text-club-text tabular-nums">
                     {formatStaffEffectPercent(row.value)}
                   </span>
                 </span>

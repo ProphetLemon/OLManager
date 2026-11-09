@@ -367,7 +367,7 @@ export function SquadTabV2({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <button type="button" onClick={() => onSelectPlayer(player.id)} className="truncate text-left">
-                          <p className="truncate font-heading text-base font-bold text-foreground hover:text-primary transition-colors">{player.match_name}</p>
+                          <p className="truncate font-heading text-base font-bold text-foreground hover:text-club-text transition-colors">{player.match_name}</p>
                         </button>
                         {isImportPlayer(player) && (
                           <span
@@ -407,7 +407,7 @@ export function SquadTabV2({
                       </div>
                     </div>
                     <div className="hidden w-12 shrink-0 text-center md:block">
-                      <p className="font-heading text-xl font-black text-primary tabular-nums">{ovr}</p>
+                      <p className="font-heading text-xl font-black text-club-text tabular-nums">{ovr}</p>
                       <p className="text-2xs uppercase tracking-wider text-muted-foreground">OVR</p>
                     </div>
                     <div className="hidden w-14 shrink-0 text-center md:block">
@@ -475,7 +475,7 @@ export function SquadTabV2({
                         )}>
                         <Repeat className="size-3.5" />
                       </button>
-                      <button type="button" onClick={() => onSelectPlayer(player.id)} className="shrink-0 text-muted-foreground/50 hover:text-primary">
+                      <button type="button" onClick={() => onSelectPlayer(player.id)} className="shrink-0 text-muted-foreground/50 hover:text-club-text">
                         <ChevronRight className="size-4" />
                       </button>
                     </div>
@@ -536,7 +536,7 @@ export function SquadTabV2({
                   className={cn(
                     "rounded-md border px-2.5 py-1 font-heading text-xs font-bold uppercase tracking-wide transition-colors",
                     sortKey === key
-                      ? "border-primary bg-primary/10 text-primary"
+                      ? "border-primary bg-primary/10 text-club-text"
                       : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground",
                   )}
                 >
@@ -693,7 +693,7 @@ export function SquadTabV2({
 
                       {/* OVR — visible md+ */}
                       <div className="hidden w-12 shrink-0 text-center md:block">
-                        <p className="font-heading text-xl font-black text-primary tabular-nums">
+                        <p className="font-heading text-xl font-black text-club-text tabular-nums">
                           {ovr}
                         </p>
                         <p className="text-2xs uppercase tracking-wider text-muted-foreground">

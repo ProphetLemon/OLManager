@@ -169,7 +169,7 @@ export default function ScoutingPlayerSearchCardV2({
                       <button
                         type="button"
                         onClick={() => onSelectPlayer?.(player.id)}
-                        className="text-left font-heading text-sm font-bold text-foreground hover:text-primary transition-colors"
+                        className="text-left font-heading text-sm font-bold text-foreground hover:text-club-text transition-colors"
                       >
                         {player.match_name}
                       </button>
@@ -197,7 +197,7 @@ export default function ScoutingPlayerSearchCardV2({
                     </td>
                     <td className="px-2 py-2.5 text-right">
                       {isScouting ? (
-                        <Badge variant="outline" className="text-2xs text-primary">{t("scouting.scoutingBadge")}</Badge>
+                        <Badge variant="outline" className="text-2xs text-club-text">{t("scouting.scoutingBadge")}</Badge>
                       ) : availableScoutCount === 0 ? (
                         <span className="text-2xs text-muted-foreground/60">{t("scouting.noScoutsFree")}</span>
                       ) : (
@@ -205,7 +205,7 @@ export default function ScoutingPlayerSearchCardV2({
                           type="button"
                           disabled={sendingPlayerId === player.id}
                           onClick={() => onSendScout(player.id)}
-                          className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-2xs font-heading font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-2xs font-heading font-bold uppercase tracking-wider text-club-text transition-colors hover:bg-primary/20 disabled:opacity-50"
                         >
                           <ScanSearch className="size-3" />
                           {sendingPlayerId === player.id ? "..." : t("scouting.scoutBtn")}
@@ -261,6 +261,6 @@ export default function ScoutingPlayerSearchCardV2({
 function SortIcon({ sortKey, asc, thisKey }: { sortKey: SortKey | null; asc: boolean; thisKey: SortKey }) {
   if (sortKey !== thisKey) return <ArrowUpDown className="ml-0.5 inline size-3 text-muted-foreground/40" />;
   return asc
-    ? <ArrowUp className="ml-0.5 inline size-3 text-primary" />
-    : <ArrowDown className="ml-0.5 inline size-3 text-primary" />;
+    ? <ArrowUp className="ml-0.5 inline size-3 text-club-text" />
+    : <ArrowDown className="ml-0.5 inline size-3 text-club-text" />;
 }

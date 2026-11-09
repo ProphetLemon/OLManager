@@ -97,7 +97,7 @@ function MovementTeams({
             key={team.id}
             className={cn(
               "flex items-center gap-2 text-sm",
-              team.id === userTeamId && "font-bold text-primary",
+              team.id === userTeamId && "font-bold text-club-text",
             )}
           >
             <TeamBadge teams={teams} team={team} size="sm" />

@@ -508,7 +508,7 @@ export function TransfersTabV2({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-foreground">
-                  <TrendingUp className="mr-2 inline size-5 text-primary" />
+                  <TrendingUp className="mr-2 inline size-5 text-club-text" />
                   {t("transfers.centre")}
                 </h2>
                 <Badge variant={transferWindowVariant} className="text-2xs">
@@ -532,7 +532,7 @@ export function TransfersTabV2({
                 <p className="text-2xs uppercase tracking-widest text-muted-foreground">
                   {t("finances.transferBudgetRemaining", "Transfer budget remaining")}
                 </p>
-                <p className="font-heading text-lg font-bold tabular-nums text-primary">{formatVal(transferBudgetSummary.remaining)}</p>
+                <p className="font-heading text-lg font-bold tabular-nums text-club-text">{formatVal(transferBudgetSummary.remaining)}</p>
                 <p className="mt-0.5 text-2xs text-muted-foreground">
                   {t("finances.transferSpendThisSeason", "Transfer spend this season")}
                 </p>
@@ -655,7 +655,7 @@ export function TransfersTabV2({
           t("transfers.noPlayersListed"),
           <button
             onClick={() => setView("market")}
-            className="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-heading uppercase tracking-wider text-primary transition-all hover:bg-primary/20"
+            className="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-heading uppercase tracking-wider text-club-text transition-all hover:bg-primary/20"
           >
             <TrendingUp className="mr-1 inline size-3" /> {t("transfers.browseMarket")}
           </button>,
@@ -788,7 +788,7 @@ export function TransfersTabV2({
                         {player.team_id ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); onSelectTeam(player.team_id!); }}
-                            className="text-left text-sm font-medium text-foreground transition-colors hover:text-primary truncate block max-w-[140px]"
+                            className="text-left text-sm font-medium text-foreground transition-colors hover:text-club-text truncate block max-w-[140px]"
                           >
                             {getTeamName(gameState.teams, player.team_id!)}
                           </button>
@@ -806,7 +806,7 @@ export function TransfersTabV2({
                         <span
                           className={cn(
                             "font-heading text-base font-bold tabular-nums",
-                            ovr >= 75 ? "text-primary" : ovr >= 55 ? "text-warning" : "text-muted-foreground",
+                            ovr >= 75 ? "text-club-text" : ovr >= 55 ? "text-warning" : "text-muted-foreground",
                           )}
                         >
                           {ovr}

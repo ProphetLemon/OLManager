@@ -70,13 +70,13 @@ export function getPositionOvr(p: EnginePlayerData): number {
 }
 
 export function condColor(c: number): string {
-  if (c >= 75) return "text-primary";
+  if (c >= 75) return "text-club-text";
   if (c >= 50) return "text-amber-400";
   return "text-red-400";
 }
 
 export function statColor(v: number): string {
-  if (v >= 75) return "text-primary font-bold";
+  if (v >= 75) return "text-club-text font-bold";
   if (v >= 60) return "text-foreground";
   return "text-muted-foreground";
 }
@@ -170,7 +170,7 @@ function TeamLineupColumn({
       </div>
 
       {selectedStarterId && isUserSide && (
-        <p className="text-2xs text-primary font-heading uppercase tracking-wider mb-2">
+        <p className="text-2xs text-club-text font-heading uppercase tracking-wider mb-2">
           {t("match.swapPrompt")}
         </p>
       )}
@@ -229,11 +229,11 @@ function TeamLineupColumn({
                     </span>
                     <ImportBadge player={p} />
                     <img src={LOL_ROLE_ICON_URLS[role]} alt={role} className="w-5 h-5 object-contain" title={role} />
-                    {isSelected && <ArrowUpDown className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+                    {isSelected && <ArrowUpDown className="w-3.5 h-3.5 text-club-text flex-shrink-0" />}
                     <div className="flex items-center gap-0">
                       <span
                         className={`text-2xs font-heading font-bold tabular-nums w-7 text-center ${
-                          ovr >= 70 ? "text-primary" : ovr >= 50 ? "text-muted-foreground" : "text-red-400"
+                          ovr >= 70 ? "text-club-text" : ovr >= 50 ? "text-muted-foreground" : "text-red-400"
                         }`}
                       >
                         {ovr}
@@ -393,7 +393,7 @@ export default function PreMatchLineup({
                   {role === "JUNGLE" ? "JG" : role}
                 </span>
                 <span
-                  className={`text-sm font-heading font-bold tabular-nums ${ok ? "text-primary" : "text-amber-400"}`}
+                  className={`text-sm font-heading font-bold tabular-nums ${ok ? "text-club-text" : "text-amber-400"}`}
                 >
                   {actual}/1
                 </span>
@@ -416,7 +416,7 @@ export default function PreMatchLineup({
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-heading font-bold uppercase tracking-wider transition-all ${
             isAutoSelecting
               ? "bg-muted text-muted-foreground cursor-wait"
-              : "bg-primary/10 text-primary hover:bg-primary/20"
+              : "bg-primary/10 text-club-text hover:bg-primary/20"
           }`}
         >
           <Wand2 className="w-3.5 h-3.5" />

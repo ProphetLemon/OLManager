@@ -112,7 +112,7 @@ export function DashboardHeaderV2({
       </div>
 
       <div className="flex items-center gap-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-1">
-        <CalendarIcon className="size-3.5 text-primary" />
+        <CalendarIcon className="size-3.5 text-club-text" />
         <span className="text-caption font-medium tabular-nums text-muted-foreground">
           {currentDate}
         </span>
@@ -164,7 +164,7 @@ export function DashboardHeaderV2({
                   onClick={() => handleSelect(onContinue)}
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors hover:bg-muted"
                 >
-                  <Swords className="size-3.5 text-primary" />
+                  <Swords className="size-3.5 text-club-text" />
                   <span className="font-medium text-foreground">{t("continueMenu.goToField", { defaultValue: "Jugar partido" })}</span>
                 </button>
               )}

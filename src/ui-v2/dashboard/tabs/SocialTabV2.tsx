@@ -102,7 +102,7 @@ function SocialFeed({ gameState, onGameUpdate }: SocialTabV2Props) {
   if (posts.length === 0) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center justify-center py-16 text-center">
-        <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-club-text">
           <Sparkles className="size-7" />
         </div>
         <h2 className="font-heading text-xl font-bold uppercase tracking-wider">

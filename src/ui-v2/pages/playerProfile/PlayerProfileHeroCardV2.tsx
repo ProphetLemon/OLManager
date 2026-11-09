@@ -124,7 +124,7 @@ export default function PlayerProfileHeroCardV2({
                   </div>
                 )}
               </div>
-              <div className="absolute -bottom-2 right-0 rounded-lg border border-border bg-card px-2 py-0.5 font-heading text-lg font-bold leading-none text-primary">
+              <div className="absolute -bottom-2 right-0 rounded-lg border border-border bg-card px-2 py-0.5 font-heading text-lg font-bold leading-none text-club-text">
                 {ovr}
               </div>
             </div>
@@ -133,7 +133,7 @@ export default function PlayerProfileHeroCardV2({
                 type="button"
                 onClick={onAcademyAction}
                 disabled={academyActionLoading}
-                className="rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-2xs font-heading font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+                className="rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-2xs font-heading font-bold uppercase tracking-wider text-club-text transition-colors hover:bg-primary/20 disabled:opacity-50"
               >
                 {academyActionLoading ? "..." : academyActionLabel}
               </button>
@@ -163,7 +163,7 @@ export default function PlayerProfileHeroCardV2({
                 <button
                   type="button"
                   onClick={() => setEditingRole((prev) => !prev)}
-                  className="inline-flex size-6 items-center justify-center rounded-md border border-white/15 text-foreground/90 transition-colors hover:border-primary/60 hover:text-primary"
+                  className="inline-flex size-6 items-center justify-center rounded-md border border-white/15 text-foreground/90 transition-colors hover:border-primary/60 hover:text-club-text"
                   title={t("playerProfile.editPosition")}
                 >
                   <Pencil className="size-3.5" />
@@ -184,7 +184,7 @@ export default function PlayerProfileHeroCardV2({
                       onClick={() => { onRerollRole?.(r); setEditingRole(false); }}
                       className={cn(
                         "rounded-md border px-2.5 py-1 text-xs font-heading font-bold uppercase tracking-wide transition-colors",
-                        r === role ? "border-primary bg-primary/15 text-primary" : "border-white/15 text-foreground/90 hover:border-primary/60",
+                        r === role ? "border-primary bg-primary/15 text-club-text" : "border-white/15 text-foreground/90 hover:border-primary/60",
                         rerollingRole && "cursor-not-allowed opacity-60",
                       )}
                     >
@@ -202,7 +202,7 @@ export default function PlayerProfileHeroCardV2({
                   return logoUrl ? <img src={logoUrl} alt="" className="size-4 object-contain" /> : <Shield className="size-4" />;
                 })()}
                 {player.team_id ? (
-                  <button onClick={() => onSelectTeam?.(player.team_id!)} className="hover:text-primary transition-colors underline underline-offset-2">{teamName}</button>
+                  <button onClick={() => onSelectTeam?.(player.team_id!)} className="hover:text-club-text transition-colors underline underline-offset-2">{teamName}</button>
                 ) : (
                   <span>{teamName}</span>
                 )}
@@ -232,12 +232,12 @@ export default function PlayerProfileHeroCardV2({
             {isOwnClub && (
               <div className="inline-flex items-center gap-3 rounded-lg border border-white/15 bg-black/20 px-3 py-2 text-sm">
                 <span className="font-heading font-bold uppercase tracking-wider text-muted-foreground/70">{t("common.potential")}</span>
-                <span className="font-heading font-bold text-primary">{potentialValueLabel}</span>
+                <span className="font-heading font-bold text-club-text">{potentialValueLabel}</span>
                 {potentialActive ? (
                   <span className="text-xs text-muted-foreground/80">{t("playerProfile.potentialResearchProgress", { current: potentialProgress, total: 7 })}</span>
                 ) : canStartPotentialResearch ? (
                   <button type="button" onClick={onStartPotentialResearch} disabled={potentialResearchSubmitting}
-                    className="rounded-md border border-primary/60 px-2 py-1 text-xs font-heading font-bold uppercase tracking-wide text-primary/80 hover:bg-primary/20 disabled:opacity-60">
+                    className="rounded-md border border-primary/60 px-2 py-1 text-xs font-heading font-bold uppercase tracking-wide text-club-text/80 hover:bg-primary/20 disabled:opacity-60">
                     {t("playerProfile.startPotentialResearch")}
                   </button>
                 ) : null}
@@ -250,10 +250,10 @@ export default function PlayerProfileHeroCardV2({
           {/* Right: quick stats */}
           <div className="hidden md:block">
             <div className="grid grid-cols-2 gap-2">
-              <QuickStatV2 label={t("common.ovr")} value={String(ovr)} color="text-primary" />
+              <QuickStatV2 label={t("common.ovr")} value={String(ovr)} color="text-club-text" />
               <QuickStatV2 label={t("common.condition")} value={`${player.condition}%`} color={player.condition >= 70 ? "text-positive" : "text-negative"} />
               <QuickStatV2 label={t("common.fitness")} value={`${player.fitness ?? 75}%`} color={player.fitness != null && player.fitness >= 70 ? "text-positive" : "text-negative"} />
-              <QuickStatV2 label={t("common.morale")} value={`${player.morale}%`} color={player.morale >= 70 ? "text-primary" : "text-negative"} />
+              <QuickStatV2 label={t("common.morale")} value={`${player.morale}%`} color={player.morale >= 70 ? "text-club-text" : "text-negative"} />
               <QuickStatV2 label={t("common.potential")} value={potentialValueLabel} color="text-foreground/90" icon={potentialRevealed === null ? <EyeOff className="size-4" /> : undefined} />
               <QuickStatV2 label={t("common.value")} value={formatPlayerMarketValue(player.market_value)} color="text-foreground" />
               <QuickStatV2 label={t("common.wage")} value={formatPlayerWage(player.wage, annualSuffix)} color="text-foreground" />

@@ -150,7 +150,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
               onClick={() => setView("mystaff")}
               className={`rounded-lg border px-3 py-1.5 font-heading text-xs font-bold uppercase tracking-wider transition-all ${
                 view === "mystaff"
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-primary/10 text-club-text"
                   : "border-border bg-card text-muted-foreground"
               }`}
             >
@@ -162,7 +162,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
               onClick={() => setView("available")}
               className={`rounded-lg border px-3 py-1.5 font-heading text-xs font-bold uppercase tracking-wider transition-all ${
                 view === "available"
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-primary/10 text-club-text"
                   : "border-border bg-card text-muted-foreground"
               }`}
             >
@@ -199,7 +199,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
             onClick={() => setRoleFilter(null)}
             className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
               !roleFilter
-                ? "border-primary bg-primary/10 text-primary"
+                ? "border-primary bg-primary/10 text-club-text"
                 : "border-border bg-card text-muted-foreground"
             }`}
           >
@@ -212,7 +212,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
               onClick={() => setRoleFilter(roleFilter === r ? null : r)}
               className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
                 roleFilter === r
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-primary/10 text-club-text"
                   : "border-border bg-card text-muted-foreground"
               }`}
             >
@@ -237,7 +237,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
           ].map((row) => (
             <span
               key={row.key}
-              className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-heading text-2xs uppercase tracking-wider text-primary"
+              className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-heading text-2xs uppercase tracking-wider text-club-text"
             >
               <span>{t(row.labelKey)}</span>
               <span className="font-bold tabular-nums">
@@ -392,7 +392,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                               className="inline-flex items-center gap-1 rounded bg-primary/5 px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground"
                             >
                               <span>{t(row.labelKey)}</span>
-                              <span className="font-bold text-primary tabular-nums">
+                              <span className="font-bold text-club-text tabular-nums">
                                 {formatStaffEffectPercent(row.value)}
                               </span>
                             </span>
@@ -428,7 +428,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                         type="button"
                         disabled={actionLoading === staff.id}
                         onClick={(e) => { e.stopPropagation(); handleHire(staff.id); }}
-                        className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
+                        className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-club-text transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
                         title={t("staff.hireStaff")}
                       >
                         {actionLoading === staff.id ? (

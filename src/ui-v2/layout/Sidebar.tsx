@@ -62,7 +62,7 @@ export function Sidebar() {
         <div className="size-14 rounded-full bg-muted ring-2 ring-primary" />
         <div className="mt-2 text-sm font-medium">{t("sidebar.usernamePlaceholder", { username: "ScudettoMan" })}</div>
         <div className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-          <Trophy className="size-3 text-primary" /> 32
+          <Trophy className="size-3 text-club-text" /> 32
         </div>
       </div>
 
@@ -117,7 +117,7 @@ function NavSection({ item }: { item: NavItem }) {
                 cn(
                   "block rounded-md px-2 py-1 text-xs transition-colors",
                   isActive
-                    ? "text-primary"
+                    ? "text-club-text"
                     : "text-muted-foreground hover:text-foreground",
                 )
               }

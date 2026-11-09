@@ -9,7 +9,7 @@ interface BadgeProps {
 
 export function Badge({ children, variant = "neutral", size = "sm", className = "" }: BadgeProps) {
   const variants = {
-    primary: "bg-primary/10 text-primary",
+    primary: "bg-primary/10 text-club-text",
     accent: "bg-secondary text-secondary-foreground",
     success: "bg-emerald-500/10 text-emerald-400",
     danger: "bg-red-500/10 text-red-400",

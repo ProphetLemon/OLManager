@@ -89,7 +89,7 @@ export function RosterOverlayPanel({ info, status, error, onUpdate }: RosterOver
           </span>
         )}
         {status === "updated" && (
-          <span className="text-primary">
+          <span className="text-club-text">
             {t("rosterOverlay.updated", "Rosters updated to {{date}}", { date: asOf })}
           </span>
         )}

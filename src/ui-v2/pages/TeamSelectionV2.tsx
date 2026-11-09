@@ -147,7 +147,7 @@ export default function TeamSelectionV2() {
     return (
       <div className="flex h-full items-center justify-center bg-background">
         <div className="text-center">
-          <Loader2 className="mx-auto mb-3 size-8 animate-spin text-primary" />
+          <Loader2 className="mx-auto mb-3 size-8 animate-spin text-club-text" />
           <p className="text-sm text-muted-foreground">{t("worldSelect.creatingWorld")}</p>
         </div>
       </div>

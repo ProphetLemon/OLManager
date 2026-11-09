@@ -65,7 +65,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
       {/* ─── League selector pills ─── */}
       <div className="sticky top-0 z-10 border-b border-border bg-background/80 px-6 py-3 backdrop-blur-sm">
         <div className="flex items-center gap-2 mb-3">
-          <Globe className="size-5 text-primary" />
+          <Globe className="size-5 text-club-text" />
           <h2 className="font-heading text-lg font-bold uppercase tracking-wider text-foreground">{t("competitions.title", "Competiciones")}</h2>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -86,7 +86,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                   <CompetitionLogo league={league} cid={lcid} />
                 </div>
                 <div>
-                  <p className={cn("font-heading text-xs font-bold uppercase tracking-wide", sel ? "text-primary" : "text-foreground")}>{league.name}</p>
+                  <p className={cn("font-heading text-xs font-bold uppercase tracking-wide", sel ? "text-club-text" : "text-foreground")}>{league.name}</p>
                   <p className="text-2xs text-muted-foreground/60">S{league.season} · {played}/{fixtures.length}</p>
                 </div>
               </button>
@@ -184,7 +184,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2.5">
                               {logo && <img src={logo} alt="" className="size-5 object-contain" />}
-                              <span className={cn("text-sm", isUser ? "font-bold text-primary" : "font-medium text-foreground")}>
+                              <span className={cn("text-sm", isUser ? "font-bold text-club-text" : "font-medium text-foreground")}>
                                 {team?.name ?? entry.team_id}
                               </span>
                             </div>

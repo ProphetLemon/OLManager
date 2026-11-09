@@ -160,7 +160,7 @@ export default function ScrimPlanningCardV2({
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <CalendarDays className="size-4 text-primary" />
+                      <CalendarDays className="size-4 text-club-text" />
                     </div>
                     <div>
                       <p className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">

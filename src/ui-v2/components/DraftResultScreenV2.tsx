@@ -335,7 +335,7 @@ export default function DraftResultScreenV2({
           </h1>
 
           <div className="flex items-center justify-center gap-4 text-3xl font-black">
-            {blueLogo ? <img src={blueLogo} alt="" className="w-9 h-9 object-contain" loading="lazy" /> : <span className="text-primary">{blueTri}</span>}
+            {blueLogo ? <img src={blueLogo} alt="" className="w-9 h-9 object-contain" loading="lazy" /> : <span className="text-club-text">{blueTri}</span>}
             <span>{selectedResult.blueKills}</span>
             <span className="text-muted-foreground">-</span>
             <span>{selectedResult.redKills}</span>
@@ -624,7 +624,7 @@ export default function DraftResultScreenV2({
                         </div>
                         <span className="text-sm text-muted-foreground/50">{row.kills}/{row.deaths}/{row.assists}</span>
                         <span className="text-sm text-muted-foreground/50">{row.gold}</span>
-                        <span className="text-sm font-bold text-primary">{row.rating.toFixed(1)}</span>
+                        <span className="text-sm font-bold text-club-text">{row.rating.toFixed(1)}</span>
                       </div>
                     );
                   })}

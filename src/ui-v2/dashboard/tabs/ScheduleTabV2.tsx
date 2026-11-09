@@ -185,7 +185,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                             <button onClick={() => onSelectTeam(f.home_team_id)}
                               className={cn(
                                 "flex min-w-0 flex-1 items-center justify-end gap-1.5 text-sm font-semibold transition-colors hover:underline md:gap-2",
-                                f.home_team_id === userTeamId ? "text-primary" : "text-foreground",
+                                f.home_team_id === userTeamId ? "text-club-text" : "text-foreground",
                               )}>
                               {homeLogo && <img src={homeLogo} alt="" className="size-5 shrink-0 object-contain" />}
                               <span className="truncate">{homeName}</span>
@@ -199,7 +199,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                             <button onClick={() => onSelectTeam(f.away_team_id)}
                               className={cn(
                                 "flex min-w-0 flex-1 items-center gap-1.5 text-sm font-semibold transition-colors hover:underline md:gap-2",
-                                f.away_team_id === userTeamId ? "text-primary" : "text-foreground",
+                                f.away_team_id === userTeamId ? "text-club-text" : "text-foreground",
                               )}>
                               <span className="truncate">{awayName}</span>
                               {awayLogo && <img src={awayLogo} alt="" className="size-5 shrink-0 object-contain" />}
@@ -270,7 +270,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                       <button onClick={() => onSelectTeam(f.home_team_id)}
                         className={cn(
                           "flex min-w-0 flex-1 items-center justify-end gap-1.5 text-sm font-semibold transition-colors hover:underline md:gap-2",
-                          f.home_team_id === userTeamId ? "text-primary" : "text-foreground",
+                          f.home_team_id === userTeamId ? "text-club-text" : "text-foreground",
                         )}>
                         {homeLogo && <img src={homeLogo} alt="" className="size-5 shrink-0 object-contain" />}
                         <span className="truncate">{getTeamName(gameState.teams, f.home_team_id)}</span>
@@ -297,7 +297,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                       <button onClick={() => onSelectTeam(f.away_team_id)}
                         className={cn(
                           "flex min-w-0 flex-1 items-center gap-1.5 text-sm font-semibold transition-colors hover:underline md:gap-2",
-                          f.away_team_id === userTeamId ? "text-primary" : "text-foreground",
+                          f.away_team_id === userTeamId ? "text-club-text" : "text-foreground",
                         )}>
                         <span className="truncate">{getTeamName(gameState.teams, f.away_team_id)}</span>
                         {awayLogo && <img src={awayLogo} alt="" className="size-5 shrink-0 object-contain" />}
@@ -308,7 +308,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                         {completed && (
                           <button type="button" onClick={() => { const s = readStoredFixtureDraftResult(f.id); if (s) setFixtureResultView(s); }}
                             disabled={!hasStoredResult}
-                            className="flex size-7 items-center justify-center rounded-md text-muted-foreground/30 transition-all hover:text-primary group-hover:translate-x-0.5 disabled:pointer-events-none disabled:opacity-20">
+                            className="flex size-7 items-center justify-center rounded-md text-muted-foreground/30 transition-all hover:text-club-text group-hover:translate-x-0.5 disabled:pointer-events-none disabled:opacity-20">
                             <ChevronRight className="size-4" />
                           </button>
                         )}
@@ -430,7 +430,7 @@ function WeekScheduleCard({
                 <div
                   className={cn(
                     "mt-1 font-heading text-base font-bold tabular-nums",
-                    d.isToday && "text-primary",
+                    d.isToday && "text-club-text",
                   )}
                 >
                   {d.date.getDate()}
@@ -440,7 +440,7 @@ function WeekScheduleCard({
                     oppLogo ? (
                       <img src={oppLogo} alt="" className="size-7 object-contain" />
                     ) : (
-                      <span className="font-heading text-2xs font-bold text-primary">
+                      <span className="font-heading text-2xs font-bold text-club-text">
                         {t("schedule.match")}
                       </span>
                     )

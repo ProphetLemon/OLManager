@@ -590,7 +590,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                     type="button"
                     disabled={actionLoading === "delegate-renewals" || selectedRiskPlayers.length === 0}
                     onClick={handleDelegateRenewals}
-                    className="rounded-md border border-primary bg-primary/10 px-2 py-1 text-2xs font-medium text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
+                    className="rounded-md border border-primary bg-primary/10 px-2 py-1 text-2xs font-medium text-club-text transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
                   >
                     {actionLoading === "delegate-renewals" ? (
                       <RefreshCw className="mr-1 inline size-3 animate-spin" />
@@ -766,7 +766,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                 type="button"
                 disabled={!canExpandMainHub || actionLoading === "expand-main-hub"}
                 onClick={handleExpandMainHub}
-                className="shrink-0 rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
+                className="shrink-0 rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-club-text transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
               >
                 {actionLoading === "expand-main-hub" ? (
                   <RefreshCw className="mr-1 inline size-3 animate-spin" />
@@ -814,7 +814,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                       type="button"
                       disabled={!canUpgrade || isLoading}
                       onClick={() => facility.upgradeFacility && handleUpgradeFacility(facility.upgradeFacility)}
-                      className="rounded-md border border-primary bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
+                      className="rounded-md border border-primary bg-primary/10 px-3 py-1 text-xs font-medium text-club-text transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
                     >
                       {isLoading ? <RefreshCw className="mr-1 inline size-3 animate-spin" /> : null}
                       {t("finances.upgradeFacility")}

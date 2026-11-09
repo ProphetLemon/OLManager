@@ -80,7 +80,7 @@ export function RosterLineupV2({ roster, championMasteries = [], onNavigate, onS
         <button
           type="button"
           onClick={() => onNavigate?.("Squad")}
-          className="font-heading text-xs font-bold uppercase tracking-wider text-primary hover:underline"
+          className="font-heading text-xs font-bold uppercase tracking-wider text-club-text hover:underline"
         >
           5 titular
         </button>
@@ -148,7 +148,7 @@ export function RosterLineupV2({ roster, championMasteries = [], onNavigate, onS
                         OVR {ovr ?? "—"}
                       </p>
                       {topChampion && (
-                        <p className="truncate text-caption text-primary">{topChampion}</p>
+                        <p className="truncate text-caption text-club-text">{topChampion}</p>
                       )}
                     </div>
                   </div>

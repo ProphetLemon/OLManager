@@ -110,7 +110,7 @@ export default function TeamProfileRosterCardV2({
                     />
                   </TableCell>
                   <TableCell className="px-5">
-                    <span className="font-semibold text-foreground transition-colors group-hover:text-primary">
+                    <span className="font-semibold text-foreground transition-colors group-hover:text-club-text">
                       {player.match_name || player.full_name}
                     </span>
                   </TableCell>
@@ -133,7 +133,7 @@ export default function TeamProfileRosterCardV2({
                     <span
                       className={cn(
                         "font-heading text-lg font-bold tabular-nums",
-                        ovr >= 55 ? "text-primary" : "text-muted-foreground",
+                        ovr >= 55 ? "text-club-text" : "text-muted-foreground",
                       )}
                     >
                       {ovr}

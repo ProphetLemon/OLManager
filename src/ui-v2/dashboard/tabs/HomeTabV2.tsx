@@ -191,7 +191,7 @@ function NextOpponentCard({
           <button
             type="button"
             onClick={() => onNavigate?.("Competitions")}
-            className="text-xs text-primary hover:underline"
+            className="text-xs text-club-text hover:underline"
           >
             {t("home.viewCompetitions", { defaultValue: "Ver competiciones" })}
           </button>
@@ -489,7 +489,7 @@ function FullStandingsCard({
                     onClick={() => team && onNavigate?.("Teams")}
                     className={cn(
                       "border-b border-border/30 last:border-0 transition-colors",
-                      isMe ? "bg-primary/10 text-primary" : "hover:bg-muted/40",
+                      isMe ? "bg-primary/10 text-club-text" : "hover:bg-muted/40",
                       team && "cursor-pointer",
                     )}
                   >
@@ -620,7 +620,7 @@ function FinancesCard({
         <button
           type="button"
           onClick={() => onNavigate?.("Finances")}
-          className="text-xs text-primary hover:underline"
+          className="text-xs text-club-text hover:underline"
         >
           {t("home.finances.detail")}
         </button>
@@ -698,7 +698,7 @@ function MessagesCard({
         <button
           type="button"
           onClick={() => onNavigate?.("Inbox")}
-          className="text-xs text-primary hover:underline"
+          className="text-xs text-club-text hover:underline"
         >
           {t("home.messages.inbox")}
         </button>
@@ -726,7 +726,7 @@ function MessagesCard({
                       "flex size-9 shrink-0 items-center justify-center rounded-lg font-heading text-sm font-bold",
                       m.read
                         ? "bg-muted text-muted-foreground"
-                        : "bg-primary/15 text-primary",
+                        : "bg-primary/15 text-club-text",
                     )}
                   >
                     {m.sender.charAt(0).toUpperCase()}
@@ -769,7 +769,7 @@ function MessagesCard({
             <button
               type="button"
               onClick={() => onNavigate?.("Inbox")}
-              className="text-xs font-heading font-bold uppercase tracking-wider text-primary hover:underline"
+              className="text-xs font-heading font-bold uppercase tracking-wider text-club-text hover:underline"
             >
               {t("home.viewAll")} ({messages.length})
             </button>
@@ -802,7 +802,7 @@ function NewsCard({
         <button
           type="button"
           onClick={() => onNavigate?.("News")}
-          className="text-xs text-primary hover:underline"
+          className="text-xs text-club-text hover:underline"
         >
           {t("home.news.viewAll")}
         </button>
@@ -875,7 +875,7 @@ function getPhaseMeta(t: (key: string) => string): Record<
       label: t("dashboard.phaseLabels.scrimBlock"),
       title: t("home.phase.scrimBlock.title"),
       description: t("home.phase.scrimBlock.description"),
-      accent: "text-primary",
+      accent: "text-club-text",
       actionLabel: t("home.phase.scrimBlock.actionLabel"),
       actionTab: "Scrims",
     },
@@ -935,7 +935,7 @@ function TodayPhaseCard({
     return (
       <Card className="overflow-hidden border-primary/30">
         <CardContent className="flex items-center gap-4 py-3">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-club-text">
             <Trophy className="size-6" />
           </div>
           <div className="min-w-0 flex-1">

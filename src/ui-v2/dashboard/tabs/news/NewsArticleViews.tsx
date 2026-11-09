@@ -74,7 +74,7 @@ function ScoreLine({
       )}
     >
       <span className="font-heading text-sm font-bold">{getTeamName(teams, score.home_team_id)}</span>
-      <span className="rounded-lg bg-primary/10 px-3 py-1 font-heading text-lg font-bold tabular-nums text-primary">
+      <span className="rounded-lg bg-primary/10 px-3 py-1 font-heading text-lg font-bold tabular-nums text-club-text">
         {score.home_goals} – {score.away_goals}
       </span>
       <span className="font-heading text-sm font-bold">{getTeamName(teams, score.away_team_id)}</span>
@@ -101,7 +101,7 @@ function TeamChips({
           key={tid}
           type="button"
           onClick={() => onSelectTeam(tid)}
-          className="rounded-md bg-primary/5 px-2 py-0.5 font-heading text-2xs font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/10"
+          className="rounded-md bg-primary/5 px-2 py-0.5 font-heading text-2xs font-bold uppercase tracking-wider text-club-text transition-colors hover:bg-primary/10"
         >
           {getTeamName(teams, tid)}
         </button>
@@ -129,7 +129,7 @@ export function HeroArticle({
             <CategoryBadge category={article.category} />
             <ArticleDate date={article.date} />
           </span>
-          <h2 className="font-heading text-xl font-bold uppercase leading-tight transition-colors group-hover:text-primary">
+          <h2 className="font-heading text-xl font-bold uppercase leading-tight transition-colors group-hover:text-club-text">
             {article.headline}
           </h2>
           <ScoreLine article={article} teams={teams} size="md" />
@@ -157,7 +157,7 @@ export function ArticleCard({
     <Card className="group gap-0 py-0 transition-shadow hover:shadow-md">
       <button type="button" onClick={onSelect} className="flex h-full flex-col gap-2 p-4 text-left">
         <CategoryBadge category={article.category} />
-        <h3 className="font-heading text-sm font-bold uppercase leading-snug transition-colors group-hover:text-primary">
+        <h3 className="font-heading text-sm font-bold uppercase leading-snug transition-colors group-hover:text-club-text">
           {article.headline}
         </h3>
         <ScoreLine article={article} teams={teams} size="sm" />

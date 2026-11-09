@@ -52,7 +52,7 @@ export function TeamGridV2({
               onClick={onCreateTeam}
               className="group flex min-h-40 flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border p-5 text-center transition-colors hover:border-primary/60 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+              <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-club-text transition-colors group-hover:bg-primary/20">
                 <Plus className="size-6" aria-hidden="true" />
               </span>
               <span className="font-heading text-base font-bold uppercase tracking-wide text-foreground">{createLabel}</span>
@@ -112,10 +112,10 @@ export function TeamGridV2({
                     {team.ovr != null && (
                       <div className={cn(
                         "shrink-0 rounded-lg px-3 py-2 text-center transition-all",
-                        isSelected ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary group-hover:bg-primary/20",
+                        isSelected ? "bg-primary text-primary-foreground" : "bg-primary/10 text-club-text group-hover:bg-primary/20",
                       )}>
                         <p className={cn("font-heading text-xl font-black tabular-nums", isSelected && "text-primary-foreground")}>{team.ovr}</p>
-                        <p className={cn("text-2xs font-bold uppercase tracking-wider", isSelected ? "text-primary-foreground/70" : "text-primary/60")}>OVR</p>
+                        <p className={cn("text-2xs font-bold uppercase tracking-wider", isSelected ? "text-primary-foreground/70" : "text-club-text/60")}>OVR</p>
                       </div>
                     )}
                   </div>

@@ -65,7 +65,7 @@ export function TitleBarV2() {
         <span aria-hidden="true" className="text-xs text-muted-foreground/60">
           ·
         </span>
-        <span className="truncate font-heading text-xs font-bold uppercase tracking-widest text-primary">
+        <span className="truncate font-heading text-xs font-bold uppercase tracking-widest text-club-text">
           {APP_EDITION}
         </span>
       </div>

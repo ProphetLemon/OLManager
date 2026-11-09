@@ -571,8 +571,8 @@ export function TrainingTabV2({
                     >
                       <div
                         className={cn(
-                          "text-primary",
-                          isActive && "text-primary",
+                          "text-club-text",
+                          isActive && "text-club-text",
                         )}
                       >
                         {SCHEDULE_ICONS[scheduleId]}
@@ -932,7 +932,7 @@ export function TrainingTabV2({
                             <button
                               type="button"
                               onClick={() => setShowCreateGroup(true)}
-                              className="rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                              className="rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-club-text transition-colors hover:bg-primary/20"
                             >
                               + {t("training.groups.addGroup", "Añadir grupo")}
                             </button>
@@ -973,7 +973,7 @@ export function TrainingTabV2({
                               type="button"
                               onClick={handleAddGroup}
                               disabled={!newGroupName.trim()}
-                              className="rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+                              className="rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-club-text transition-colors hover:bg-primary/20 disabled:opacity-50"
                             >
                               {t("common.create", "Crear")}
                             </button>
@@ -1057,7 +1057,7 @@ export function TrainingTabV2({
                               className={cn(
                                 "inline-block rounded px-2 py-0.5 font-heading text-caption uppercase tracking-wider",
                                 hasIndividualFocus
-                                  ? "border border-primary/30 bg-primary/10 text-primary"
+                                  ? "border border-primary/30 bg-primary/10 text-club-text"
                                   : "text-muted-foreground",
                               )}
                             >

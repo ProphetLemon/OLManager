@@ -174,7 +174,7 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
           <button
             type="button"
             onClick={() => { setSearch(""); setRoleFilter("ALL"); }}
-            className="mt-2 text-xs text-primary hover:underline"
+            className="mt-2 text-xs text-club-text hover:underline"
           >
             {t("championsGrid.clearFilters")}
           </button>
@@ -219,7 +219,7 @@ function RoleButton({ active, onClick, children, title }: { active: boolean; onC
       className={cn(
         "flex size-9 items-center justify-center rounded-lg border text-xs font-medium transition-all",
         active
-          ? "border-primary bg-primary/10 text-primary shadow-sm shadow-primary/10"
+          ? "border-primary bg-primary/10 text-club-text shadow-sm shadow-primary/10"
           : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground",
       )}
     >

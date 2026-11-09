@@ -81,7 +81,7 @@ export function LeaguePickerV2({ competitions, onSelect }: LeaguePickerV2Props) 
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="truncate font-heading text-base font-bold uppercase tracking-wide text-foreground group-hover:text-primary transition-colors">
+            <h3 className="truncate font-heading text-base font-bold uppercase tracking-wide text-foreground group-hover:text-club-text transition-colors">
               {comp.name}
             </h3>
             <p className="mt-0.5 text-xs text-muted-foreground">{comp.region}</p>
