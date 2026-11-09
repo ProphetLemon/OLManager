@@ -72,6 +72,39 @@ describe("getStandingsPanelData", () => {
     expect(rows.find((r) => r.teamId === "t9")).toBeUndefined();
   });
 
+  it("tags only the latest promotion in a multi-season history", () => {
+    const ladder = {
+      movements: [
+        { link_lower: "lfl", link_upper: "lec", season: 0, promoted: ["t3", "t5"], relegated: [], status: "Applied" },
+        { link_lower: "lfl", link_upper: "lec", season: 1, promoted: ["t6"], relegated: ["t5"], status: "Applied" },
+      ],
+    };
+    const rows = getStandingsPanelData(build({ ladder }))!.rows;
+    const tag = (id: string) => rows.find((r) => r.teamId === id)?.movement;
+    expect(tag("t6")).toBe("promoted");
+    expect(tag("t3")).toBeNull();
+    expect(tag("t5")).toBeNull();
+  });
+
+  it("drops the tag once the promotion is older than the previous season", () => {
+    const ladder = {
+      movements: [
+        { link_lower: "lfl", link_upper: "lec", season: 0, promoted: ["t3"], relegated: [], status: "Applied" },
+      ],
+    };
+    expect(getStandingsPanelData(build({ ladder }))!.rows.every((r) => r.movement === null)).toBe(true);
+  });
+
+  it("does not tag when the latest movement was skipped", () => {
+    const ladder = {
+      movements: [
+        { link_lower: "lfl", link_upper: "lec", season: 0, promoted: ["t3"], relegated: [], status: "Applied" },
+        { link_lower: "lfl", link_upper: "lec", season: 1, promoted: ["t4"], relegated: [], status: "SkippedLate" },
+      ],
+    };
+    expect(getStandingsPanelData(build({ ladder }))!.rows.every((r) => r.movement === null)).toBe(true);
+  });
+
   it("gives no movement tag without a ladder", () => {
     const rows = getStandingsPanelData(build())!.rows;
     expect(rows.every((r) => r.movement === null)).toBe(true);

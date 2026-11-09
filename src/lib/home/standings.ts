@@ -36,6 +36,24 @@ function activeLeague(gameState: GameStateData): LeagueData | null {
   return leagues[0] ?? null;
 }
 
+/**
+ * Teams promoted into `league` by its latest ladder movement. A movement is recorded
+ * with the season that just closed, so it only applies to the league's next season;
+ * older movements, skipped ones and teams relegated again do not tag.
+ */
+function latestPromotedIds(gameState: GameStateData, league: LeagueData): Set<string> {
+  if (league.competition_id == null) return new Set();
+  const into = (gameState.ladder?.movements ?? []).filter(
+    (movement) => movement.link_upper === league.competition_id,
+  );
+  if (into.length === 0) return new Set();
+  const latestSeason = Math.max(...into.map((movement) => movement.season));
+  if (typeof league.season === "number" && latestSeason < league.season - 1) return new Set();
+  const latest = into.filter((movement) => movement.season === latestSeason && movement.status === "Applied");
+  const relegated = new Set(latest.flatMap((movement) => movement.relegated ?? []));
+  return new Set(latest.flatMap((movement) => movement.promoted ?? []).filter((id) => !relegated.has(id)));
+}
+
 export function getStandingsPanelData(
   gameState: GameStateData,
   opts: { limit?: number } = {},
@@ -46,11 +64,7 @@ export function getStandingsPanelData(
   const limit = Math.max(1, opts.limit ?? DEFAULT_LIMIT);
   const myTeamId = gameState.manager?.team_id ?? null;
   const teams = new Map((gameState.teams ?? []).map((team) => [team.id, team]));
-  const promotedIds = new Set(
-    (gameState.ladder?.movements ?? [])
-      .filter((movement) => league.competition_id != null && movement.link_upper === league.competition_id)
-      .flatMap((movement) => movement.promoted ?? []),
-  );
+  const promotedIds = latestPromotedIds(gameState, league);
 
   const sorted = [...(league.standings ?? [])].sort(compareStandingsByLolScore);
   const all: StandingRow[] = sorted.map((entry, index) => {
