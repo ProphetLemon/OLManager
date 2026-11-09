@@ -175,6 +175,116 @@ fn a_relegated_club_loses_a_fifth_of_its_sponsorship() {
     );
 }
 
+fn sponsor(team: &mut Team, base_value: i64) {
+    team.sponsorship = Some(Sponsorship {
+        sponsor_name: "Acme".to_string(),
+        base_value,
+        remaining_months: 12,
+        bonus_criteria: vec![],
+    });
+}
+
+fn sponsorship_of(game: &Game, team_id: &str) -> Option<i64> {
+    let team = game.teams.iter().find(|t| t.id == team_id).expect("team");
+    team.sponsorship.as_ref().map(|s| s.base_value)
+}
+
+/// `lec` clubs sponsor at 4M a year, `reg1` at 1M.
+fn sponsored_swap() -> Game {
+    let mut game = after_swap("lec1");
+    for team in &mut game.teams {
+        match team.id.as_str() {
+            "reg1" => sponsor(team, 1_000_000),
+            "lec1" | "lec2" | "lec3" => sponsor(team, 4_000_000),
+            _ => {}
+        }
+    }
+    game
+}
+
+#[test]
+fn a_promoted_club_sponsorship_steps_toward_the_upper_league_median() {
+    let mut game = sponsored_swap();
+    reprice(&mut game);
+
+    assert_eq!(sponsorship_of(&game, "reg1"), Some(2_500_000));
+}
+
+#[test]
+fn a_promoted_club_sponsorship_above_the_median_is_not_lowered() {
+    let mut game = sponsored_swap();
+    for team in &mut game.teams {
+        if team.id == "reg1" {
+            sponsor(team, 9_000_000);
+        }
+    }
+    reprice(&mut game);
+
+    assert_eq!(sponsorship_of(&game, "reg1"), Some(9_000_000));
+}
+
+#[test]
+fn a_promote_relegate_promote_yo_yo_ends_no_lower_than_it_started() {
+    let mut game = sponsored_swap();
+    reprice(&mut game);
+    set_league(&mut game, "reg1", "reg");
+    reprice_moved_clubs(&mut game, &[], &ids(&["reg1"]), "reg", "lec");
+    set_league(&mut game, "reg1", "lec");
+    reprice_moved_clubs(&mut game, &ids(&["reg1"]), &[], "reg", "lec");
+
+    let end = sponsorship_of(&game, "reg1").expect("sponsorship");
+    assert!(end >= 1_000_000, "yo-yo ended at {end}");
+}
+
+fn set_league(game: &mut Game, team_id: &str, league: &str) {
+    for team in &mut game.teams {
+        if team.id == team_id {
+            team.competition_id = Some(league.to_string());
+        }
+    }
+}
+
+/// Spread `total` of annual wages over the players of `team_id`.
+fn set_wage_bill(game: &mut Game, team_id: &str, total: i64) {
+    let squad: Vec<usize> = (0..game.players.len())
+        .filter(|&i| game.players[i].team_id.as_deref() == Some(team_id))
+        .collect();
+    let each = u32::try_from(total / i64::try_from(squad.len()).expect("len")).expect("wage");
+    for i in squad {
+        game.players[i].wage = each;
+    }
+}
+
+#[test]
+fn a_relegated_wage_budget_never_drops_below_the_wage_bill_it_already_pays() {
+    let mut game = after_swap("lec1");
+    set_wage_bill(&mut game, "lec4", 4_000_000);
+    reprice(&mut game);
+
+    let relegated = game.teams.iter().find(|t| t.id == "lec4").expect("team");
+    assert_eq!(relegated.wage_budget, 4_000_000);
+}
+
+#[test]
+fn a_relegated_wage_budget_floor_is_capped_by_the_previous_budget() {
+    let mut game = after_swap("lec1");
+    set_wage_bill(&mut game, "lec4", 8_000_000);
+    reprice(&mut game);
+
+    let relegated = game.teams.iter().find(|t| t.id == "lec4").expect("team");
+    assert_eq!(relegated.wage_budget, 5_000_000);
+}
+
+#[test]
+fn a_relegated_club_whose_wages_fit_the_stepped_budget_is_unchanged() {
+    let mut game = after_swap("lec1");
+    set_wage_bill(&mut game, "lec4", 1_000_000);
+    reprice(&mut game);
+
+    let relegated = game.teams.iter().find(|t| t.id == "lec4").expect("team");
+    assert_eq!(relegated.wage_budget, 3_000_000);
+}
+
 #[test]
 fn a_destination_league_without_peers_leaves_the_club_unchanged() {
     let mut game = after_swap("lec1");

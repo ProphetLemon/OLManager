@@ -238,6 +238,8 @@ pub struct ClubProfile {
     pub reputation: u32,
     /// Stadium capacity.
     pub stadium_capacity: u32,
+    /// Annual sponsorship value; `0` when no peer has a sponsor.
+    pub sponsorship: i64,
 }
 
 /// Median of the non-zero values, or `None` when there are none. An even count
@@ -289,6 +291,7 @@ pub fn league_median_profile(peers: &[&Team]) -> ClubProfile {
             i64::from(defaults.stadium_capacity),
         ))
         .unwrap_or(defaults.stadium_capacity),
+        sponsorship: pick(|t| t.sponsorship.as_ref().map_or(0, |s| s.base_value), 0),
     }
 }
 

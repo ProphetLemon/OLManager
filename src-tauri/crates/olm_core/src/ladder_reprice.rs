@@ -6,12 +6,13 @@
 //! numbers take one step of [`STEP_DIVISOR`] of the gap, so the move is felt without
 //! teleporting a regional club to a giant's budget or zeroing a fallen giant.
 //!
-//! - Promoted clubs: reputation, wage budget, transfer budget and treasury move up
+//! - Promoted clubs: reputation, wage budget, transfer budget, sponsorship and treasury move up
 //!   toward the destination median. Anything already above the median stays. The
 //!   treasury top-up is a ledger transaction (source `ladder`) that is not counted in
 //!   the season income.
 //! - Relegated clubs: reputation, wage budget and transfer budget move down toward the
-//!   destination median; anything already below it stays. The treasury is untouched
+//!   destination median; anything already below it stays. The wage budget keeps at
+//!   least the current wage bill (capped by the old budget). The treasury is untouched
 //!   because wages are contracted, and the sponsorship is scaled down.
 //! - The user's board is happier after a promotion and unhappier after a relegation.
 //!
@@ -20,7 +21,9 @@
 
 use crate::custom_team::league_median_profile;
 use crate::domain::team::{FinancialTransactionKind, Team, TeamKind};
-use crate::finances::{BudgetImpact, FinanceTransactionInput, record_transaction};
+use crate::finances::{
+    BudgetImpact, FinanceTransactionInput, calc_annual_wages, record_transaction,
+};
 use crate::game::Game;
 
 /// A moved club covers one over this many of the gap to the destination median.
@@ -79,8 +82,16 @@ pub fn reprice_moved_clubs(
         }
     }
     if let Some(profile) = &lower {
+        let wage_bills: Vec<(String, i64)> = relegated
+            .iter()
+            .map(|id| (id.clone(), calc_annual_wages(game, id)))
+            .collect();
         for team in game.teams.iter_mut().filter(|t| relegated.contains(&t.id)) {
-            relegate_economy(team, profile);
+            let wage_bill = wage_bills
+                .iter()
+                .find(|(id, _)| *id == team.id)
+                .map_or(0, |(_, bill)| *bill);
+            relegate_economy(team, profile, wage_bill);
         }
     }
 
@@ -109,6 +120,11 @@ fn promote_economy(team: &mut Team, target: &crate::custom_team::ClubProfile, da
     if target.transfer_budget > team.transfer_budget {
         team.transfer_budget = step_toward(team.transfer_budget, target.transfer_budget);
     }
+    if let Some(sponsorship) = team.sponsorship.as_mut()
+        && target.sponsorship > sponsorship.base_value
+    {
+        sponsorship.base_value = step_toward(sponsorship.base_value, target.sponsorship);
+    }
     if target.finance > team.finance {
         let top_up = step_toward(team.finance, target.finance) - team.finance;
         if top_up > 0 {
@@ -133,14 +149,18 @@ fn promote_economy(team: &mut Team, target: &crate::custom_team::ClubProfile, da
     }
 }
 
-fn relegate_economy(team: &mut Team, target: &crate::custom_team::ClubProfile) {
+/// `wage_bill` is the club's current annual wage bill. The stepped wage budget never
+/// drops below it (capped by the old budget), so existing contracts stay affordable
+/// and the lower budget bites as they expire.
+fn relegate_economy(team: &mut Team, target: &crate::custom_team::ClubProfile, wage_bill: i64) {
     let reputation = i64::from(team.reputation);
     let goal = i64::from(target.reputation);
     if goal < reputation {
         team.reputation = u32::try_from(step_toward(reputation, goal)).unwrap_or(team.reputation);
     }
     if target.wage_budget < team.wage_budget {
-        team.wage_budget = step_toward(team.wage_budget, target.wage_budget);
+        let stepped = step_toward(team.wage_budget, target.wage_budget);
+        team.wage_budget = stepped.max(wage_bill.min(team.wage_budget));
     }
     if target.transfer_budget < team.transfer_budget {
         team.transfer_budget = step_toward(team.transfer_budget, target.transfer_budget);
