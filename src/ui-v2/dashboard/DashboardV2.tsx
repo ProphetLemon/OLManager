@@ -265,7 +265,11 @@ export default function DashboardV2() {
         (league) => league.competition_id === gameState.user_competition_id,
       ) ?? gameState.leagues[0]
     : gameState?.leagues[0];
-  const seasonComplete = isLeagueSeasonComplete(activeLeague);
+  const pendingSeasonSummary = useGameStore((s) => s.pendingSeasonSummary);
+  // After advance_to_next_season the new league is not complete, but the wrap
+  // summary must stay on Home until the user dismisses it.
+  const showSeasonSummary =
+    isLeagueSeasonComplete(activeLeague) || pendingSeasonSummary !== null;
 
   const {
     isAdvancing,
@@ -425,7 +429,7 @@ export default function DashboardV2() {
     ? createDashboardTabContentModel({
         activeTab: profileNavigation.activeTab,
         gameState,
-        seasonComplete,
+        seasonComplete: showSeasonSummary,
         visitedOnboardingTabs: new Set<string>(),
         initialMessageId: profileNavigation.initialMessageId,
         handlers: {
@@ -523,7 +527,7 @@ export default function DashboardV2() {
         !viewingChampionKey &&
         !profileNavigation.selectedPlayerId &&
         !profileNavigation.selectedTeamId &&
-        !seasonComplete ? (
+        !showSeasonSummary ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <HomeTabV2 gameState={gameState} onNavigate={handleNavigate} onSelectPlayer={selectPlayer} />
           </div>
