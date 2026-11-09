@@ -334,7 +334,7 @@ export function PlayersTabV2({
                 placeholder={t("players.searchPlaceholder")}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full rounded-lg border border-border bg-muted/30 py-1.5 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                className="w-full rounded-lg border border-border bg-muted/30 py-1.5 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/50"
               />
             </div>
 
@@ -401,7 +401,7 @@ export function PlayersTabV2({
               onChange={(e) => setCompetitionFilter(e.target.value || null)}
               className={cn(
                 "min-w-32 rounded-md border border-border bg-card px-2.5 py-1 font-heading text-xs font-bold uppercase tracking-wide text-foreground transition-colors",
-                "focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30",
+                "focus:border-primary/50",
               )}
             >
               <option value="">{t("players.allCompetitions")}</option>
@@ -418,7 +418,7 @@ export function PlayersTabV2({
               onChange={(e) => setTeamFilter(e.target.value || null)}
               className={cn(
                 "min-32 rounded-md border border-border bg-card px-2.5 py-1 font-heading text-xs font-bold uppercase tracking-wide text-foreground transition-colors",
-                "focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30",
+                "focus:border-primary/50",
               )}
             >
               <option value="">{t("players.allTeams")}</option>

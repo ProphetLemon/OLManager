@@ -228,7 +228,7 @@ export function Select({
   };
 
   const base =
-    "rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 disabled:cursor-not-allowed";
+    "rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variants = {
     default:

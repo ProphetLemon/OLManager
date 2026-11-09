@@ -149,7 +149,7 @@ export default function ScoutingPlayerSearchCard({
             placeholder={t("scouting.searchPlaceholder")}
             value={searchQuery}
             onChange={(event) => onSearchQueryChange(event.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 dark:bg-navy-700 border border-gray-200 dark:border-navy-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/50 text-gray-800 dark:text-gray-100 placeholder:text-gray-400"
+            className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 dark:bg-navy-700 border border-gray-200 dark:border-navy-600 rounded-lg text-gray-800 dark:text-gray-100 placeholder:text-gray-400"
           />
         </div>
 

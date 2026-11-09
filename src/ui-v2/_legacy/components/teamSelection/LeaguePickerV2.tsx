@@ -108,7 +108,7 @@ export function LeaguePickerV2({ competitions, onSelect }: LeaguePickerV2Props) 
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("teamSelect.searchLeague", "Search leagues...")}
-            className="h-10 w-full rounded-lg border border-border bg-muted/50 pl-9 pr-9 text-sm text-foreground placeholder:text-muted-foreground/40 transition-colors focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+            className="h-10 w-full rounded-lg border border-border bg-muted/50 pl-9 pr-9 text-sm text-foreground placeholder:text-muted-foreground/40 transition-colors focus:border-primary/50"
           />
           {query && (
             <button

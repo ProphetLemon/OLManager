@@ -87,7 +87,7 @@ export default function ReportBugModal({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder={t("bugReport.placeholder", "Describí qué pasó, qué esperabas que pase, y cómo reproducirlo...")}
-            className="mb-3 w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:border-navy-600 dark:bg-navy-800 dark:text-gray-200 dark:placeholder-gray-500"
+            className="mb-3 w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-800 placeholder-gray-400 dark:border-navy-600 dark:bg-navy-800 dark:text-gray-200 dark:placeholder-gray-500"
             rows={4}
           />
 

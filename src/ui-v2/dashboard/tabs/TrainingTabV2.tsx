@@ -1036,7 +1036,7 @@ export function TrainingTabV2({
                               disabled={isSaving}
                                 className={cn(
                                   "w-full max-w-[130px] rounded-md border bg-transparent pl-2 pr-8 py-1 font-heading text-xs uppercase tracking-wider text-foreground transition-colors",
-                                "border-border focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary",
+                                "border-border focus:border-primary",
                                 isSaving && "pointer-events-none opacity-50",
                               )}
                             >
