@@ -9,7 +9,7 @@
 //! What a swap changes: `Team::competition_id` of the moved clubs, the standings and
 //! next-season calendar of both leagues, and `Game::user_competition_id` when the
 //! user's club moves. Team ids never change, so players, staff, history and saves stay
-//! valid.
+//! valid. The moved clubs are then repriced by [`crate::ladder_reprice`].
 //!
 //! Rules:
 //! - Promotion order is the lower league's final order (champion, finalist, then the
@@ -278,6 +278,7 @@ fn apply_link(
         }
     }
     move_user_with_club(game, &promoted, &relegated, lower_id, upper_id);
+    crate::ladder_reprice::reprice_moved_clubs(game, &promoted, &relegated, lower_id, upper_id);
 
     crate::residency::refresh_import_flags(game);
     crate::season_context::refresh_game_context(game);

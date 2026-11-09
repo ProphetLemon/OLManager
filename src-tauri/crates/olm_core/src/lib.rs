@@ -25,6 +25,7 @@ pub mod firing;
 pub mod game;
 pub mod ladder;
 pub mod ladder_apply;
+pub mod ladder_reprice;
 pub mod game_setup;
 pub mod generator;
 pub mod identity_upgrade;
