@@ -19,13 +19,16 @@ const MODEL: PlayerCardModel = {
   age: 28,
   wage: 354000,
   wageLabel: "€354,000",
+  wageCompact: "€354K",
   energy: 80,
   morale: 70,
   fitness: 90,
   contractEnd: "2027-06-30",
+  contractEndLabel: "30 Jun 2027",
   contractRisk: "ok",
   isImport: false,
   nationalityCode: null,
+  nationalityName: "South Korea",
   photo: null,
   transferListed: false,
 }
@@ -137,9 +140,59 @@ describe("PlayerCardV2", () => {
     expect(trigger).toHaveAttribute("aria-busy", "true")
   })
 
-  it("disables the swap trigger when there are no candidates", () => {
-    setup({ candidates: [] })
-    expect(screen.getByRole("button", { name: "Swap Mid" })).toBeDisabled()
+  it("keeps the swap control focusable but aria-disabled, with a reason, when there are no candidates", () => {
+    const { onSwap } = setup({ candidates: [] })
+    const trigger = screen.getByRole("button", { name: "Swap Mid" })
+    expect(trigger).not.toBeDisabled()
+    expect(trigger).toHaveAttribute("aria-disabled", "true")
+    const reasonId = trigger.getAttribute("aria-describedby") as string
+    expect(document.getElementById(reasonId)).toHaveTextContent("No substitutes available to swap in")
+    fireEvent.click(trigger)
+    expect(screen.queryByRole("menu")).toBeNull()
+    expect(onSwap).not.toHaveBeenCalled()
+  })
+
+  it("renders the banner anatomy: role tag, OVR with caption, age and compact wage", () => {
+    setup()
+    const banner = document.querySelector("[data-slot='player-card-banner']") as HTMLElement
+    expect(within(banner).getByText("Mid")).toBeInTheDocument()
+    expect(within(banner).getByRole("img", { name: "OVR 88" })).toBeInTheDocument()
+    expect(within(banner).getByText("OVR")).toBeInTheDocument()
+    expect(screen.getByText("28")).toBeInTheDocument()
+    expect(screen.getByText("€354K")).toHaveAttribute("title", "€354,000")
+    expect(screen.getByText("per year")).toBeInTheDocument()
+  })
+
+  it("prints a visible label beside each meter", () => {
+    setup()
+    for (const label of ["Energy", "Morale", "Fitness"]) {
+      expect(screen.getAllByText(label).length).toBeGreaterThanOrEqual(1)
+    }
+  })
+
+  it("falls back to the silhouette when there is no photo", () => {
+    setup({}, { photo: null })
+    expect(document.querySelector("[data-slot='player-silhouette']")).not.toBeNull()
+  })
+
+  it("changes outline, numeral and tag together when selected", () => {
+    const { unmount } = render(
+      <PlayerCardV2
+        model={MODEL}
+        slotRole="MID"
+        selected={false}
+        onSelect={vi.fn()}
+        candidates={[]}
+        onSwap={vi.fn()}
+      />,
+    )
+    const idle = screen.getByRole("img", { name: "OVR 88" })
+    expect(idle).not.toHaveClass("text-club-secondary")
+    expect(document.querySelector("[data-slot='player-card']")).toHaveClass("ring-1")
+    unmount()
+    setup({ selected: true })
+    expect(screen.getByRole("img", { name: "OVR 88" })).toHaveClass("text-club-secondary")
+    expect(document.querySelector("[data-slot='player-card']")).toHaveClass("ring-2")
   })
 
   it("flags a player who fills a slot outside his role", () => {

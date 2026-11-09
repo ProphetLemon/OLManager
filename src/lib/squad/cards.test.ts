@@ -51,6 +51,18 @@ describe("getPlayerCardModel", () => {
     expect(getPlayerCardModel(make({ wage: 1250000 }), CTX).wageLabel).toBe("$1,250,000");
   });
 
+  it("derives a compact wage, a readable contract date and the country name", () => {
+    const model = getPlayerCardModel(make(), CTX);
+    expect(model.wageCompact).toBe("€354K");
+    expect(model.contractEndLabel).toMatch(/Jun/);
+    expect(model.contractEndLabel).toMatch(/30/);
+    expect(model.contractEndLabel).toBe(new Date("2028-06-30T00:00:00Z").toLocaleDateString("en", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }));
+    expect(model.nationalityName).toBe("Denmark");
+    const bare = getPlayerCardModel(make({ contract_end: null, nationality: "", nationality_code: undefined }), CTX);
+    expect(bare.contractEndLabel).toBeNull();
+    expect(bare.nationalityName).toBeNull();
+  });
+
   it("keeps a missing fitness as null instead of inventing one", () => {
     expect(getPlayerCardModel(make(), CTX).fitness).toBeNull();
     expect(getPlayerCardModel(make({ fitness: 64 }), CTX).fitness).toBe(64);

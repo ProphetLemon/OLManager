@@ -1,9 +1,11 @@
 import { X } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
+import { shortRoleKey, type PlayerCardModel } from "@/lib/squad/cards"
 import { Button } from "@/ui-v2/components/ui/button"
 import { TagBlock } from "@/ui-v2/components/ui/tag-block"
-import type { PlayerCardModel } from "@/lib/squad/cards"
+
+import { ROLE_DEFAULT } from "./PlayerCardV2"
 
 interface SelectedPlayerBarProps {
   model: PlayerCardModel
@@ -11,6 +13,24 @@ interface SelectedPlayerBarProps {
   onRenew: (id: string) => void
   onToggleTransferList: (id: string) => void
   onClose: () => void
+}
+
+function Chip({ children }: { children: string }) {
+  return (
+    <span className="inline-flex min-h-6 items-center rounded-full border border-border bg-muted px-2.5 text-xs font-semibold text-foreground">
+      {children}
+    </span>
+  )
+}
+
+/** One fact: value above, label below. The label comes first in the DOM for the dl semantics. */
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col-reverse">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="font-semibold tabular-nums">{value}</dd>
+    </div>
+  )
 }
 
 export function SelectedPlayerBar({
@@ -21,61 +41,62 @@ export function SelectedPlayerBar({
   onClose,
 }: SelectedPlayerBarProps) {
   const { t } = useTranslation()
-  const contractDate = model.contractEnd ? model.contractEnd.slice(0, 10) : null
+  const roleLabel = t(shortRoleKey(model.role), { defaultValue: ROLE_DEFAULT[model.role] })
 
   return (
     <section
       data-slot="selected-player-bar"
       aria-label={t("onAir.squad.selectedAria", { defaultValue: "Selected player" })}
-      className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-lg border-s-[0.1875rem] border-s-club bg-card py-3 pe-3 ps-4 text-card-foreground"
+      className="flex flex-wrap items-stretch gap-y-3 overflow-hidden rounded-xl border border-line bg-card text-card-foreground"
     >
-      <div className="flex min-w-0 flex-1 basis-60 flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <TagBlock tone="club" size="sm">
-            {t("onAir.tags.selected", { defaultValue: "Selected" })}
-          </TagBlock>
-          {model.contractRisk === "critical" || model.contractRisk === "warning" ? (
-            <TagBlock tone={model.contractRisk === "critical" ? "negative" : "warning"} size="sm">
-              {model.contractRisk === "critical"
-                ? t("onAir.tags.alert", { defaultValue: "Alert" })
-                : t("onAir.tags.contract", { defaultValue: "Contract" })}
-            </TagBlock>
-          ) : null}
-        </div>
-        <h3 className="truncate font-heading text-section font-semibold" title={model.name}>
+      {/* Slanted lower-third plate: club fill, so its text uses the club foreground. */}
+      <div className="relative z-10 flex items-center bg-club py-3 ps-5 pe-9 font-heading text-section font-bold text-club-foreground [clip-path:polygon(0_0,100%_0,calc(100%-0.875rem)_100%,0_100%)]">
+        {t("onAir.tags.selected", { defaultValue: "Selected" })}
+      </div>
+
+      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 ps-3 pe-4">
+        <h3
+          className="min-w-0 truncate font-heading text-title font-bold uppercase leading-none"
+          title={model.name}
+        >
           {model.name}
         </h3>
-        <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-          {model.age !== null ? (
-            <div className="flex gap-1.5">
-              <dt className="text-muted-foreground">
-                {t("onAir.squad.age", { defaultValue: "Age" })}
-              </dt>
-              <dd className="font-semibold tabular-nums">{model.age}</dd>
-            </div>
-          ) : null}
-          <div className="flex gap-1.5">
-            <dt className="text-muted-foreground">
-              {t("onAir.squad.contractUntil", { defaultValue: "Contract until" })}
-            </dt>
-            <dd className="font-semibold tabular-nums">{contractDate ?? "-"}</dd>
-          </div>
-          <div className="flex gap-1.5">
-            <dt className="text-muted-foreground">
-              {t("onAir.squad.wageFull", { defaultValue: "Full wage" })}
-            </dt>
-            <dd className="font-semibold tabular-nums">
-              {model.wageLabel}
-              {t("onAir.squad.perYear", { defaultValue: "/yr" })}
-            </dd>
-          </div>
-        </dl>
+        <Chip>{roleLabel}</Chip>
+        {model.nationalityName ? <Chip>{model.nationalityName}</Chip> : null}
+        {model.contractRisk === "critical" || model.contractRisk === "warning" ? (
+          <TagBlock tone={model.contractRisk === "critical" ? "negative" : "warning"} size="sm">
+            {model.contractRisk === "critical"
+              ? t("onAir.tags.alert", { defaultValue: "Alert" })
+              : t("onAir.tags.contract", { defaultValue: "Contract" })}
+          </TagBlock>
+        ) : null}
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+
+      <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 border-s border-line px-4 py-2 text-sm">
+        {model.age !== null ? (
+          <Fact label={t("onAir.squad.age", { defaultValue: "Age" })} value={String(model.age)} />
+        ) : null}
+        <Fact
+          label={t("onAir.squad.contractUntil", { defaultValue: "Contract until" })}
+          value={model.contractEndLabel ?? "-"}
+        />
+        <Fact
+          label={t("onAir.squad.wagePerYear", { defaultValue: "Wage per year" })}
+          value={model.wageLabel}
+        />
+      </dl>
+
+      <div className="ms-auto flex flex-wrap items-center gap-2 px-3 py-2">
         <Button type="button" variant="club" size="touch" onClick={() => onOpenProfile(model.id)}>
           {t("onAir.squad.profile", { defaultValue: "Profile" })}
         </Button>
-        <Button type="button" variant="outline" size="touch" onClick={() => onRenew(model.id)}>
+        <Button
+          type="button"
+          variant="outline"
+          size="touch"
+          className="text-club-text"
+          onClick={() => onRenew(model.id)}
+        >
           {t("onAir.squad.renew", { defaultValue: "Renew" })}
         </Button>
         <Button

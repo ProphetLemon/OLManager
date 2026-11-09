@@ -18,13 +18,16 @@ const MODEL: PlayerCardModel = {
   age: 28,
   wage: 354000,
   wageLabel: "€354,000",
+  wageCompact: "€354K",
   energy: 80,
   morale: 70,
   fitness: 90,
   contractEnd: "2027-06-30T00:00:00Z",
+  contractEndLabel: "30 Jun 2027",
   contractRisk: "ok",
   isImport: false,
   nationalityCode: null,
+  nationalityName: "South Korea",
   photo: null,
   transferListed: false,
 }
@@ -45,8 +48,21 @@ describe("SelectedPlayerBar", () => {
     setup()
     expect(screen.getByRole("region", { name: "Selected player" })).toBeInTheDocument()
     expect(screen.getByText("Faker")).toBeInTheDocument()
-    expect(screen.getByText("2027-06-30")).toBeInTheDocument()
+    expect(screen.getByText("30 Jun 2027")).toBeInTheDocument()
     expect(screen.getByText(/€354,000/)).toBeInTheDocument()
+  })
+
+  it("shows the role and nationality chips and the per-year wage label", () => {
+    setup()
+    expect(screen.getByText("Mid")).toBeInTheDocument()
+    expect(screen.getByText("South Korea")).toBeInTheDocument()
+    expect(screen.getByText("Wage per year")).toBeInTheDocument()
+    expect(screen.getByText("Contract until")).toBeInTheDocument()
+  })
+
+  it("omits the nationality chip when the save has none", () => {
+    setup({ nationalityName: null })
+    expect(screen.queryByText("South Korea")).toBeNull()
   })
 
   it("fires each action with the player id", () => {
@@ -84,7 +100,7 @@ describe("SelectedPlayerBar", () => {
   })
 
   it("handles a missing age and contract end without inventing values", () => {
-    setup({ age: null, contractEnd: null })
+    setup({ age: null, contractEnd: null, contractEndLabel: null })
     expect(screen.queryByText("Age")).toBeNull()
     expect(screen.getByText("-")).toBeInTheDocument()
   })
