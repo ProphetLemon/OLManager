@@ -3294,5 +3294,486 @@ mod tests {
                 assert_eq!(count_ids(&loaded, &news_id), (1, 0));
             }
         }
+
+        // -- Custom club career, end to end (B7) -------------------------------------
+
+        /// Name of the club the custom one replaces, as the data ships it.
+        const REPLACED_NAME: &str = "UB Alma Mater";
+
+        /// A custom LES club after the season setup, ready for the turn loop.
+        fn custom_career() -> (Game, String) {
+            let (mut game, id) = custom_game();
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &id).expect("season setup");
+            (game, id)
+        }
+
+        fn mentions_replaced(text: &str) -> bool {
+            text.contains(REPLACED_NAME) || text.contains(LES_SLOT)
+        }
+
+        /// Dashboard home: the manager runs the club, whose identity and next match are intact.
+        /// The board sets its objectives on the first processed day, so `after_days` gates that check.
+        fn dashboard_problems(game: &Game, id: &str, after_days: bool) -> Vec<String> {
+            use olm_core::domain::league::FixtureStatus;
+            let mut problems = Vec::new();
+            if game.manager.team_id.as_deref() != Some(id) {
+                problems.push(format!("manager.team_id is {:?}", game.manager.team_id));
+            }
+            if game.user_competition_id.as_deref() != Some("les") {
+                problems.push(format!("user_competition_id is {:?}", game.user_competition_id));
+            }
+            let spec = rayo();
+            match game.teams.iter().find(|t| t.id == id) {
+                None => problems.push("the custom club is not in game.teams".to_string()),
+                Some(club) => {
+                    if club.name != spec.name || club.short_name != spec.short_name {
+                        problems.push(format!("identity is {} / {}", club.name, club.short_name));
+                    }
+                    if club.colors.primary != spec.primary_color
+                        || club.colors.secondary != spec.secondary_color
+                    {
+                        problems.push(format!("colours are {:?}", club.colors));
+                    }
+                    if !club.logo_url.as_deref().is_some_and(|l| l.starts_with("data:image/svg+xml")) {
+                        problems.push("no generated badge in logo_url".to_string());
+                    }
+                    if club.country != spec.country {
+                        problems.push(format!("country is {}", club.country));
+                    }
+                }
+            }
+            if game.active_league().and_then(|l| l.competition_id.as_deref()) != Some("les") {
+                problems.push("the active league is not the LES".to_string());
+            }
+            if after_days && game.board_objectives.is_empty() {
+                problems.push("the board set no objectives".to_string());
+            }
+            let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+            let next = les_league(game).fixtures.iter().find(|f| {
+                (f.home_team_id == id || f.away_team_id == id)
+                    && f.status == FixtureStatus::Scheduled
+                    && f.date >= today
+            });
+            if next.is_none() {
+                problems.push("no upcoming fixture for the next-match card".to_string());
+            }
+            problems
+        }
+
+        /// Teams tab: one active club under the new name, and nothing of the replaced one.
+        fn teams_problems(game: &Game, id: &str) -> Vec<String> {
+            let mut problems = Vec::new();
+            let spec = rayo();
+            if game.teams.iter().filter(|t| t.name == spec.name).count() != 1 {
+                problems.push("the custom name is not unique".to_string());
+            }
+            if game.teams.iter().filter(|t| t.id == id).count() != 1 {
+                problems.push("the custom id is not unique".to_string());
+            }
+            if !id.contains("-custom-") {
+                problems.push(format!("the id {id} lacks -custom-"));
+            }
+            for team in &game.teams {
+                if team.id == LES_SLOT || (team.name == REPLACED_NAME && team.team_kind != TeamKind::Academy) {
+                    problems.push(format!("replaced team still present: {}", team.id));
+                }
+                if team.parent_team_id.as_deref() == Some(LES_SLOT)
+                    || team.academy_team_id.as_deref() == Some(LES_SLOT)
+                {
+                    problems.push(format!("{} still links to the replaced team", team.id));
+                }
+            }
+            if game.players.iter().any(|p| p.team_id.as_deref() == Some(LES_SLOT))
+                || game.staff.iter().any(|s| s.team_id.as_deref() == Some(LES_SLOT))
+            {
+                problems.push("people are still attached to the replaced team".to_string());
+            }
+            let known: HashSet<&str> = game.teams.iter().map(|t| t.id.as_str()).collect();
+            for player in &game.players {
+                if player.team_id.as_deref().is_some_and(|t| !known.contains(t)) {
+                    problems.push(format!("{} points at a missing team", player.id));
+                }
+            }
+            problems
+        }
+
+        /// Standings and fixtures: the club is in the table and plays; nobody plays a ghost.
+        fn standings_problems(game: &Game, id: &str, min_played: u32) -> Vec<String> {
+            use olm_core::domain::league::FixtureStatus;
+            let mut problems = Vec::new();
+            let known: HashSet<&str> = game.teams.iter().map(|t| t.id.as_str()).collect();
+            let les = les_league(game);
+            if les.standings.len() != 8 {
+                problems.push(format!("{} standings rows", les.standings.len()));
+            }
+            match les.standings.iter().find(|s| s.team_id == id) {
+                None => problems.push("the club has no standings row".to_string()),
+                Some(row) if row.played < min_played => {
+                    problems.push(format!("the club played {} < {min_played}", row.played));
+                }
+                Some(_) => {}
+            }
+            for league in &game.leagues {
+                for row in &league.standings {
+                    if !known.contains(row.team_id.as_str()) {
+                        problems.push(format!("standings row for unknown team {}", row.team_id));
+                    }
+                }
+                for fixture in &league.fixtures {
+                    for side in [&fixture.home_team_id, &fixture.away_team_id] {
+                        if side == LES_SLOT || !known.contains(side.as_str()) {
+                            problems.push(format!("fixture {} names unknown team {side}", fixture.id));
+                        }
+                    }
+                }
+            }
+            let played = les
+                .fixtures
+                .iter()
+                .filter(|f| {
+                    f.counts_for_league_standings()
+                        && (f.home_team_id == id || f.away_team_id == id)
+                        && f.status == FixtureStatus::Completed
+                })
+                .count() as u32;
+            if played < min_played {
+                problems.push(format!("only {played} completed fixtures for the club"));
+            }
+            if played > 0
+                && !les.fixtures.iter().any(|f| {
+                    (f.home_team_id == id || f.away_team_id == id)
+                        && f.status == FixtureStatus::Completed
+                        && f.result.is_some()
+                })
+            {
+                problems.push("completed fixtures carry no result".to_string());
+            }
+            problems
+        }
+
+        /// Transfer and market history: every entry names real teams, with the current name.
+        fn market_problems(game: &Game, id: &str) -> Vec<String> {
+            let mut problems = Vec::new();
+            let known: HashSet<&str> = game.teams.iter().map(|t| t.id.as_str()).collect();
+            for entry in &game.transfer_history.entries {
+                for (team_id, team_name) in [
+                    (&entry.from_team_id, &entry.from_team_name),
+                    (&entry.to_team_id, &entry.to_team_name),
+                ] {
+                    if team_id.is_empty() {
+                        continue;
+                    }
+                    if team_id == LES_SLOT || mentions_replaced(team_name) {
+                        problems.push(format!("history entry {} names the replaced team", entry.id));
+                    } else if team_id == id && team_name != &rayo().name {
+                        problems.push(format!("entry {} calls the club {team_name:?}", entry.id));
+                    } else if !known.contains(team_id.as_str()) && team_id != "free_agent" {
+                        problems.push(format!("entry {} names unknown team {team_id}", entry.id));
+                    }
+                }
+            }
+            problems
+        }
+
+        /// Social: posts and accounts reference only existing teams, never the replaced one.
+        fn social_problems(game: &Game) -> Vec<String> {
+            let mut problems = Vec::new();
+            let known: HashSet<&str> = game.teams.iter().map(|t| t.id.as_str()).collect();
+            for post in &game.social_posts {
+                if post.team_ids.iter().any(|t| !known.contains(t.as_str())) {
+                    problems.push(format!("post {} references an unknown team", post.id));
+                }
+                if mentions_replaced(&post.body) || mentions_replaced(&post.author_name) {
+                    problems.push(format!("post {} names the replaced team", post.id));
+                }
+            }
+            for account in &game.social_accounts {
+                if account.favorite_team_ids.iter().any(|t| t == LES_SLOT) {
+                    problems.push(format!("account {} still favours the replaced team", account.id));
+                }
+            }
+            problems
+        }
+
+        /// News: articles reference only existing teams and never name the replaced one.
+        fn news_problems(game: &Game) -> Vec<String> {
+            let mut problems = Vec::new();
+            let known: HashSet<&str> = game.teams.iter().map(|t| t.id.as_str()).collect();
+            for article in &game.news {
+                if article.team_ids.iter().any(|t| !known.contains(t.as_str())) {
+                    problems.push(format!("article {} references an unknown team", article.id));
+                }
+                if mentions_replaced(&article.headline)
+                    || mentions_replaced(&article.body)
+                    || article.i18n_params.values().any(|v| mentions_replaced(v))
+                {
+                    problems.push(format!("article {} names the replaced team", article.id));
+                }
+            }
+            problems
+        }
+
+        /// Inbox: messages address the new club and never the replaced one.
+        fn message_problems(game: &Game, id: &str) -> Vec<String> {
+            let mut problems = Vec::new();
+            let known: HashSet<&str> = game.teams.iter().map(|t| t.id.as_str()).collect();
+            let name = rayo().name;
+            for message in &game.messages {
+                if let Some(team_id) = message.context.team_id.as_deref() {
+                    if !known.contains(team_id) {
+                        problems.push(format!("message {} context names unknown team {team_id}", message.id));
+                    }
+                }
+                if mentions_replaced(&message.subject)
+                    || mentions_replaced(&message.body)
+                    || mentions_replaced(&message.sender)
+                {
+                    problems.push(format!("message {} names the replaced team", message.id));
+                }
+            }
+            let addressed = game.messages.iter().any(|m| {
+                m.context.team_id.as_deref() == Some(id)
+                    || m.body.contains(&name)
+                    || m.subject.contains(&name)
+            });
+            if !addressed {
+                problems.push("no message addresses the custom club".to_string());
+            }
+            problems
+        }
+
+        /// Residency: the club counts as an LES (EMEA) team and no LES starting five breaks the
+        /// import rule.
+        fn residency_problems(game: &Game, id: &str) -> Vec<String> {
+            use olm_core::residency;
+            let mut problems = Vec::new();
+            let club = game.teams.iter().find(|t| t.id == id).expect("club");
+            let les_region = residency::region_for_competition("les");
+            if les_region.is_none() || residency::team_region(club) != les_region {
+                problems.push(format!("team_region is {:?}, LES is {les_region:?}", residency::team_region(club)));
+            }
+            for team in game.teams.iter().filter(|t| t.competition_id.as_deref() == Some("les")) {
+                if let Err(error) = residency::validate_lineup_imports(game, &team.id, &team.active_lineup_ids) {
+                    problems.push(format!("{} starts {} imports (max {})", team.id, error.imports, error.max));
+                }
+            }
+            problems
+        }
+
+        fn assert_surface(surface: &str, problems: Vec<String>) {
+            let verdict = if problems.is_empty() { "PASS" } else { "FAIL" };
+            eprintln!("[B7] {verdict} {surface}: {problems:?}");
+            assert!(problems.is_empty(), "{surface}: {problems:?}");
+        }
+
+        /// A custom LES club through the first matchdays of the real turn loop: every surface
+        /// the UI reads shows the new club and nothing of the one it replaced.
+        #[test]
+        #[ignore = "real-data end-to-end, run explicitly"]
+        fn a_custom_club_shows_up_on_every_surface_through_the_first_matchdays() {
+            let (mut game, id) = custom_career();
+            assert_surface("dashboard (start)", dashboard_problems(&game, &id, false));
+            assert_surface("teams (start)", teams_problems(&game, &id));
+            for team in game.teams.iter().filter(|t| t.name == REPLACED_NAME) {
+                eprintln!("[B7] orphan {}: kind {:?} parent {:?} competition {:?} players {}", team.id, team.team_kind, team.parent_team_id, team.competition_id, game.players.iter().filter(|p| p.team_id.as_deref() == Some(team.id.as_str())).count());
+            }
+
+            // Winter opens on Jan 17 and runs one round per week: 45 days is about 4 rounds.
+            for _ in 0..45 {
+                olm_core::turn::process_day(&mut game);
+            }
+
+            assert_surface("dashboard", dashboard_problems(&game, &id, true));
+            assert_surface("teams", teams_problems(&game, &id));
+            assert_surface("standings and fixtures", standings_problems(&game, &id, 2));
+            assert_surface("market and transfer history", market_problems(&game, &id));
+            // The turn loop writes no social posts: they come from the live-match flow, so
+            // feed that flow the club's first completed fixture.
+            let fixture_index = les_league(&game)
+                .fixtures
+                .iter()
+                .position(|f| {
+                    (f.home_team_id == id || f.away_team_id == id)
+                        && f.status == olm_core::domain::league::FixtureStatus::Completed
+                })
+                .expect("a completed fixture of the club");
+            let mut report = olm_core::engine::report::MatchReport::from_events(Vec::new(), 1, 1, 0);
+            report.home_wins = 2;
+            report.away_wins = 0;
+            olm_core::social::generate_match_social_posts(
+                &mut game,
+                fixture_index,
+                &report,
+                Some("en"),
+                Some(&data_base()),
+            );
+            let about_club = game
+                .social_posts
+                .iter()
+                .filter(|p| p.team_ids.iter().any(|t| t == &id))
+                .count();
+            assert!(about_club > 0, "no social post references the custom club");
+            assert_surface("social", social_problems(&game));
+            let club_news = game.news.iter().filter(|a| a.team_ids.iter().any(|t| t == &id)).count();
+            eprintln!("[B7] {club_news} news articles reference the custom club");
+            assert!(club_news > 0, "no news article references the custom club");
+            assert_surface("news", news_problems(&game));
+            assert_surface("messages", message_problems(&game, &id));
+            assert_surface("residency", residency_problems(&game, &id));
+            eprintln!(
+                "[B7] volumes: {} news, {} social posts, {} messages, {} transfers",
+                game.news.len(),
+                game.social_posts.len(),
+                game.messages.len(),
+                game.transfer_history.entries.len()
+            );
+        }
+
+        /// The custom club and its competition survive the real save and load flow in the
+        /// middle of a career, and the turn loop keeps running on the loaded game.
+        #[test]
+        #[ignore = "real-data end-to-end, run explicitly"]
+        fn a_custom_club_career_survives_save_and_load_mid_season() {
+            let (mut game, id) = custom_career();
+            for _ in 0..30 {
+                olm_core::turn::process_day(&mut game);
+            }
+            let roster = roster_ids(&game, &id);
+            let played_before = les_league(&game)
+                .standings
+                .iter()
+                .find(|s| s.team_id == id)
+                .map_or(0, |s| s.played);
+
+            let dir = tempfile::tempdir().expect("tempdir");
+            let mut manager = SaveManager::init(dir.path()).expect("save manager");
+            let save_id = manager.create_save(&game, "custom career").expect("create save");
+            let mut loaded = manager.load_game(&save_id).expect("load save");
+
+            // The steps `load_game` runs after reading the file.
+            let data = data_base();
+            let scanned = olm_core::competitions::scan_competitions(&data.join("competitions"));
+            let (catalog_teams, catalog_players, catalog_staff) = assemble_world_from_modular_data(
+                &data,
+                &scanned,
+                "",
+                "",
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+            )
+            .expect("catalog");
+            crate::commands::import::apply_catalog_to_game(
+                &mut loaded,
+                catalog_teams,
+                catalog_players,
+                catalog_staff,
+            );
+            let current: Vec<_> = scanned.into_iter().filter(|m| !m.legacy).collect();
+            let known_now: Vec<String> = current.iter().map(|m| m.id.clone()).collect();
+            loaded.competition_configs.clear();
+            for manifest in &current {
+                loaded.competition_configs.insert(manifest.id.clone(), manifest.clone());
+            }
+            sanitize_competition_references(&mut loaded, &known_now);
+
+            assert_surface("load: dashboard", dashboard_problems(&loaded, &id, true));
+            assert_surface("load: teams", teams_problems(&loaded, &id));
+            assert_surface("load: standings", standings_problems(&loaded, &id, 1));
+            assert_surface("load: news", news_problems(&loaded));
+            assert_surface("load: social", social_problems(&loaded));
+            assert_surface("load: messages", message_problems(&loaded, &id));
+            assert_surface("load: market", market_problems(&loaded, &id));
+            assert_eq!(roster_ids(&loaded, &id), roster, "the roster changed through the load");
+            let club = loaded.teams.iter().find(|t| t.id == id).expect("club");
+            assert_eq!(club.competition_id.as_deref(), Some("les"));
+            let les = loaded.active_league().expect("active league");
+            assert_eq!(les.competition_id.as_deref(), Some("les"));
+            let played = les.standings.iter().find(|s| s.team_id == id).map_or(0, |s| s.played);
+            assert_eq!(played, played_before, "the table changed through the load");
+
+            for _ in 0..14 {
+                olm_core::turn::process_day(&mut loaded);
+            }
+            assert_surface("load: standings after more days", standings_problems(&loaded, &id, 1));
+            assert_surface("load: teams after more days", teams_problems(&loaded, &id));
+        }
+
+        /// One full calendar year of finance processing for the median-reputation custom club.
+        #[test]
+        #[ignore = "real-data end-to-end, run explicitly"]
+        fn a_custom_club_finances_stay_sane_for_a_full_year() {
+            let (mut game, id) = custom_career();
+            let start = game.teams.iter().find(|t| t.id == id).expect("club").clone();
+            let peers_finance: Vec<i64> = les_peers(&game, &id).iter().map(|t| t.finance).collect();
+            eprintln!(
+                "[B7] finance start: treasury {} wage_budget {} transfer_budget {} rep {} sponsorship {:?}",
+                start.finance,
+                start.wage_budget,
+                start.transfer_budget,
+                start.reputation,
+                start.sponsorship.as_ref().map(|s| (s.base_value, s.remaining_months))
+            );
+            assert!(start.wage_budget > 0 && start.finance > 0);
+
+            let mut lowest = start.finance;
+            let mut highest = start.finance;
+            for day in 1..=365 {
+                olm_core::turn::process_day(&mut game);
+                let club = game.teams.iter().find(|t| t.id == id).expect("club");
+                lowest = lowest.min(club.finance);
+                highest = highest.max(club.finance);
+                if day % 60 == 0 {
+                    eprintln!(
+                        "[B7] day {day}: treasury {} income {} expenses {} bill {}",
+                        club.finance,
+                        club.season_income,
+                        club.season_expenses,
+                        annual_bill(&game, &id)
+                    );
+                }
+            }
+
+            let club = game.teams.iter().find(|t| t.id == id).expect("club");
+            let bill = annual_bill(&game, &id);
+            eprintln!(
+                "[B7] finance end: treasury {} (min {lowest}, max {highest}) wage_budget {} transfer_budget {} \
+                 income {} expenses {} bill {bill} sponsorship {:?} peers' start treasuries {peers_finance:?}",
+                club.finance,
+                club.wage_budget,
+                club.transfer_budget,
+                club.season_income,
+                club.season_expenses,
+                club.sponsorship.as_ref().map(|s| (s.base_value, s.remaining_months)),
+            );
+            for peer in les_peers(&game, &id) {
+                eprintln!(
+                    "[B7] peer {}: treasury {} income {} expenses {} sponsorship {:?}",
+                    peer.name,
+                    peer.finance,
+                    peer.season_income,
+                    peer.season_expenses,
+                    peer.sponsorship.as_ref().map(|s| s.base_value)
+                );
+            }
+            assert!(club.wage_budget > 0, "the wage budget stayed positive");
+            assert!(club.transfer_budget >= 0, "the transfer budget went negative");
+            assert!(bill <= club.wage_budget, "wage bill {bill} over budget {}", club.wage_budget);
+            assert!(club.season_income >= 0 && club.season_expenses >= 0, "season totals have a sign");
+            assert!(
+                club.season_expenses <= 3 * start.wage_budget.max(1) + start.finance,
+                "expenses {} are out of scale",
+                club.season_expenses
+            );
+            assert!(
+                club.season_income <= 20 * start.finance.max(1),
+                "income {} is out of scale",
+                club.season_income
+            );
+            assert!(club.finance > -start.finance, "the treasury collapsed to {}", club.finance);
+            assert_ne!(club.finance, start.finance, "the treasury never moved");
+            assert!(!club.financial_ledger.is_empty(), "no transactions were recorded");
+            assert!(ensure_custom_club_roster(&game, &id).is_ok());
+            assert_surface("finance year: teams", teams_problems(&game, &id));
+        }
     }
 }
