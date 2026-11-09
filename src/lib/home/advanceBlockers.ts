@@ -37,7 +37,7 @@ export function deriveScrimAdvanceBlockers(
 
   if (options.mode !== "delegate" && phase === "Morning") {
     const firstDay = Math.min(...scrimSlotWeekdays(effectiveWeeklyScrimSlots(team)));
-    const lockedWeek = (team as { scrim_setup_locked_week_key?: string | null }).scrim_setup_locked_week_key;
+    const lockedWeek = team.scrim_setup_locked_week_key;
     const inStartWindow = weekdayMondayBased(game.clock.current_date) === firstDay;
     const locked = lockedWeek === isoWeekKey(game.clock.current_date);
     const hasObjective = Boolean(team.scrim_weekly_objective);
