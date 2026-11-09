@@ -16,14 +16,14 @@ import {
 } from "./logo";
 
 /** Header-only fixtures: just enough bytes for the dimension parser. */
-function pngHeader(width: number, height: number): Uint8Array {
+function pngHeader(width: number, height: number): Uint8Array<ArrayBuffer> {
   const b = new Uint8Array(33);
   b.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
   new DataView(b.buffer).setUint32(16, width);
   new DataView(b.buffer).setUint32(20, height);
   return b;
 }
-function jpegHeader(width: number, height: number): Uint8Array {
+function jpegHeader(width: number, height: number): Uint8Array<ArrayBuffer> {
   // SOI, APP0 (length 16), SOF0 (length 17).
   const b = new Uint8Array(2 + 18 + 19);
   b.set([0xff, 0xd8, 0xff, 0xe0, 0, 16]);
@@ -32,7 +32,7 @@ function jpegHeader(width: number, height: number): Uint8Array {
   new DataView(b.buffer).setUint16(27, width);
   return b;
 }
-function webpHeader(kind: "VP8X" | "VP8L" | "VP8 ", width: number, height: number): Uint8Array {
+function webpHeader(kind: "VP8X" | "VP8L" | "VP8 ", width: number, height: number): Uint8Array<ArrayBuffer> {
   const b = new Uint8Array(40);
   b.set([...("RIFF" as string)].map((c) => c.charCodeAt(0)), 0);
   b.set([...("WEBP" + kind)].map((c) => c.charCodeAt(0)), 8);
