@@ -184,13 +184,16 @@ describe("AppContent club colours", () => {
     expect(document.documentElement.style.getPropertyValue("--club")).not.toBe("");
   });
 
-  it("keeps the theme colours on the main menu even if the store still holds a game", async () => {
+  it.each([
+    ["/", "main-menu"],
+    ["/settings", "settings"],
+  ])("keeps the theme colours on %s even if the store still holds a game", async (route, testId) => {
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={[route]}>
         <AppContent />
       </MemoryRouter>,
     );
-    await screen.findByTestId("main-menu");
+    await screen.findByTestId(testId);
     expect(document.documentElement.dataset.clubSource).toBeUndefined();
     expect(document.documentElement.style.getPropertyValue("--club")).toBe("");
   });
