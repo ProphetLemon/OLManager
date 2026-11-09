@@ -3,6 +3,7 @@ use tauri::State;
 
 use crate::application::time_advancement::advance_time_with_mode as advance_time_with_mode_service;
 pub use crate::application::time_advancement::AdvanceTimeWithModeResponse;
+use crate::application::advance_blockers::{advance_block, DEFAULT_ADVANCE_MODE};
 use olm_core::game::Game;
 use olm_core::state::StateManager;
 
@@ -57,17 +58,49 @@ pub fn compute_blocking_actions(game: &Game) -> Vec<serde_json::Value> {
     olm_core::time_blockers::compute_blocking_actions(game)
 }
 
+/// Every blocker "Continue" would hit in `mode`: the roster and contract
+/// blockers plus the scrim stops the advance command itself raises.
+pub fn blockers_for_advance(game: &Game, mode: &str) -> Vec<serde_json::Value> {
+    let mut blockers = compute_blocking_actions(game);
+    if let Some(block) = advance_block(game, mode) {
+        blockers.push(block.to_blocker());
+    }
+    blockers
+}
+
+/// `mode` is the match mode the advance would run with; when absent the
+/// frontend's Continue default applies. `include_scrim_stops` defaults to
+/// true; `skip_to_match_day` never raises the scrim stops, so its pre-check
+/// turns them off.
 #[tauri::command]
-pub fn check_blocking_actions(state: State<'_, StateManager>) -> Result<serde_json::Value, String> {
-    log::debug!("[cmd] check_blocking_actions");
+pub fn check_blocking_actions(
+    state: State<'_, StateManager>,
+    mode: Option<String>,
+    include_scrim_stops: Option<bool>,
+) -> Result<serde_json::Value, String> {
+    check_blocking_actions_internal(&state, mode.as_deref(), include_scrim_stops.unwrap_or(true))
+}
+
+fn check_blocking_actions_internal(
+    state: &StateManager,
+    mode: Option<&str>,
+    include_scrim_stops: bool,
+) -> Result<serde_json::Value, String> {
+    let mode = mode.unwrap_or(DEFAULT_ADVANCE_MODE);
+    log::debug!("[cmd] check_blocking_actions: mode={}", mode);
     let game = state
         .get_game(|g| g.clone())
         .ok_or("No active game session")?;
 
-    let blockers = compute_blocking_actions(&game);
+    let blockers = if include_scrim_stops {
+        blockers_for_advance(&game, mode)
+    } else {
+        compute_blocking_actions(&game)
+    };
     info!(
-        "[cmd] check_blocking_actions: date={}, blocker_count={}",
+        "[cmd] check_blocking_actions: date={}, mode={}, blocker_count={}",
         game.clock.current_date.format("%Y-%m-%d"),
+        mode,
         blockers.len()
     );
     Ok(serde_json::json!(blockers))
@@ -213,7 +246,8 @@ fn skip_to_match_day_internal(state: &StateManager) -> Result<serde_json::Value,
 #[cfg(test)]
 mod tests {
     use super::{
-        advance_time_with_mode_internal, compute_blocking_actions, skip_to_match_day_internal,
+        advance_time_with_mode_internal, blockers_for_advance, check_blocking_actions_internal,
+        compute_blocking_actions, skip_to_match_day_internal,
     };
     use chrono::{TimeZone, Utc};
     use olm_core::clock::GameClock;
@@ -986,5 +1020,158 @@ mod tests {
             today_can_review(&state),
             (true, "PlayedNeedsReview".to_string())
         );
+    }
+
+    fn blocker_ids(blockers: &[Value]) -> Vec<String> {
+        blockers
+            .iter()
+            .filter_map(|blocker| blocker["id"].as_str().map(str::to_string))
+            .collect()
+    }
+
+    /// A game on the Wednesday that opens the weekly scrim window, nothing planned.
+    fn make_unplanned_scrim_window_game() -> Game {
+        let mut game = make_game(11);
+        game.clock.current_date = Utc.with_ymd_and_hms(2025, 6, 18, 12, 0, 0).unwrap();
+        game
+    }
+
+    fn scrim_blocker_ids(game: &Game, mode: &str) -> Vec<String> {
+        blocker_ids(&blockers_for_advance(game, mode))
+            .into_iter()
+            .filter(|id| id.starts_with("scrim_"))
+            .collect()
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_in_the_normal_case() {
+        let game = make_unplanned_scrim_window_game();
+        assert_eq!(scrim_blocker_ids(&game, "live"), vec!["scrim_setup_required"]);
+    }
+
+    #[test]
+    fn advance_blockers_skip_scrim_setup_on_a_match_day() {
+        let mut game = make_game_with_matchday();
+        game.clock.current_date = Utc.with_ymd_and_hms(2025, 6, 18, 12, 0, 0).unwrap();
+        game.leagues[0].fixtures[0].date = "2025-06-18".to_string();
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_skip_scrim_setup_when_delegating() {
+        let game = make_unplanned_scrim_window_game();
+        assert!(scrim_blocker_ids(&game, "delegate").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_skip_scrim_setup_for_an_unemployed_manager() {
+        let mut game = make_unplanned_scrim_window_game();
+        game.manager.team_id = None;
+        assert!(blockers_for_advance(&game, "delegate").is_empty());
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_skip_scrim_setup_once_the_week_has_an_objective() {
+        let mut game = make_unplanned_scrim_window_game();
+        game.teams[0].scrim_weekly_objective = Some(olm_core::domain::team::ScrimFocus::Macro);
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_report_an_unresolved_review_in_the_scrim_block() {
+        let state = make_manual_scrim_day();
+        advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        let game = state.get_game(|g| g.clone()).expect("game");
+        assert_eq!(game.day_phase, DayPhase::ScrimBlock);
+        assert_eq!(
+            scrim_blocker_ids(&game, "live"),
+            vec!["scrim_decision_required"]
+        );
+        // The decision blocks in delegate mode too: only the setup is delegable.
+        assert_eq!(
+            scrim_blocker_ids(&game, "delegate"),
+            vec!["scrim_decision_required"]
+        );
+    }
+
+    #[test]
+    fn advance_blockers_report_no_decision_once_the_review_is_resolved() {
+        let state = make_manual_scrim_day();
+        advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        force_scrim_win(&state, 0);
+        crate::commands::squad::choose_daily_scrim_action_internal(
+            &state,
+            0,
+            "OfferRest".to_string(),
+        )
+        .expect("offer rest");
+        let game = state.get_game(|g| g.clone()).expect("game");
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_report_nothing_in_the_evening() {
+        let mut game = make_unplanned_scrim_window_game();
+        game.day_phase = DayPhase::Evening;
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_agree_with_the_advance_command() {
+        let state = StateManager::new();
+        state.set_game(make_unplanned_scrim_window_game());
+        assert_eq!(
+            scrim_blocker_ids(&state.get_game(|g| g.clone()).expect("game"), "live"),
+            vec!["scrim_setup_required"]
+        );
+        let response = advance_time_with_mode_internal(&state, "live").expect("blocked setup");
+        assert_eq!(response.action, "blocked_scrim_setup");
+
+        let state = make_manual_scrim_day();
+        advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        let game = state.get_game(|g| g.clone()).expect("game");
+        assert_eq!(scrim_blocker_ids(&game, "live"), vec!["scrim_decision_required"]);
+        let response = advance_time_with_mode_internal(&state, "live").expect("blocked decision");
+        assert_eq!(response.action, "blocked_scrim_decision");
+    }
+
+    #[test]
+    fn advance_blockers_check_does_not_mutate_the_game() {
+        let state = StateManager::new();
+        state.set_game(make_unplanned_scrim_window_game());
+        let before = state.get_game(|g| g.day_phase.clone()).expect("game");
+        check_blocking_actions_internal(&state, Some("live"), true).expect("check");
+        let after = state.get_game(|g| g.day_phase.clone()).expect("game");
+        assert_eq!(before, after);
+    }
+
+    #[test]
+    fn check_blocking_actions_defaults_to_the_live_mode_when_none_is_given() {
+        let state = StateManager::new();
+        state.set_game(make_unplanned_scrim_window_game());
+        let default = check_blocking_actions_internal(&state, None, true).expect("default");
+        let live = check_blocking_actions_internal(&state, Some("live"), true).expect("live");
+        assert_eq!(default, live);
+        assert!(blocker_ids(default.as_array().expect("array"))
+            .contains(&"scrim_setup_required".to_string()));
+    }
+
+    #[test]
+    fn check_blocking_actions_drops_the_scrim_setup_when_the_mode_is_delegate() {
+        let state = StateManager::new();
+        state.set_game(make_unplanned_scrim_window_game());
+        let delegated = check_blocking_actions_internal(&state, Some("delegate"), true).expect("delegate");
+        assert!(!blocker_ids(delegated.as_array().expect("array"))
+            .contains(&"scrim_setup_required".to_string()));
+    }
+
+    #[test]
+    fn check_blocking_actions_can_leave_the_scrim_stops_out_for_skip_to_match_day() {
+        let state = StateManager::new();
+        state.set_game(make_unplanned_scrim_window_game());
+        let without = check_blocking_actions_internal(&state, Some("live"), false).expect("skip");
+        assert!(!blocker_ids(without.as_array().expect("array"))
+            .contains(&"scrim_setup_required".to_string()));
     }
 }
