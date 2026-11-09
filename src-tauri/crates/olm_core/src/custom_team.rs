@@ -12,9 +12,11 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "typescript")]
 use ts_rs::TS;
 
+use crate::academy;
 use crate::competitions::is_selectable_competition;
-use crate::domain::team::{Facilities, Team, TeamColors, TeamKind};
+use crate::domain::team::{AcademyLifecycle, Facilities, Team, TeamColors, TeamKind};
 use crate::game::Game;
+use crate::game_setup;
 use crate::generator::definitions::CompetitionManifest;
 
 /// Lowest tier (inclusive) whose competitions may host a custom club.
@@ -295,6 +297,58 @@ pub fn league_median_profile(peers: &[&Team]) -> ClubProfile {
     }
 }
 
+/// Academy teams that belong to `replaced`: linked from it, parented to it, or
+/// an unparented seed academy named after the club (or its known alias).
+/// Returns the one the custom club inherits, if it has no academy of its own,
+/// and the ids to dissolve.
+fn split_replaced_academies(
+    game: &Game,
+    replaced: &Team,
+    custom_id: &str,
+) -> (Option<String>, Vec<String>) {
+    let club_key = academy::normalize_key(&replaced.name);
+    let alias_key = game_setup::academy_team_alias_for_parent(&replaced.name);
+    let mut found: Vec<String> = game
+        .teams
+        .iter()
+        .filter(|t| t.team_kind == TeamKind::Academy)
+        .filter(|t| {
+            let key = academy::normalize_key(&t.name);
+            replaced.academy_team_id.as_deref() == Some(t.id.as_str())
+                || t.parent_team_id.as_deref() == Some(replaced.id.as_str())
+                || (t.parent_team_id.is_none()
+                    && (key == club_key || alias_key == Some(key.as_str())))
+        })
+        .map(|t| t.id.clone())
+        .collect();
+    let custom_has_academy = game.teams.iter().any(|t| {
+        t.team_kind == TeamKind::Academy && t.parent_team_id.as_deref() == Some(custom_id)
+    });
+    if custom_has_academy || found.is_empty() {
+        return (None, found);
+    }
+    let inherited = found.remove(0);
+    (Some(inherited), found)
+}
+
+/// Re-parents an inherited academy to the custom club, naming and configuring
+/// it as the academy bootstrap does for a linked academy.
+fn adopt_academy(academy: &mut Team, custom_id: &str, spec: &CustomTeamSpec, today: &str) {
+    academy.name = format!("{} Academy", spec.name);
+    academy.short_name = format!("{}A", spec.short_name);
+    academy.stadium_name = format!("{} Academy Arena", spec.short_name);
+    academy.parent_team_id = Some(custom_id.to_string());
+    academy.manager_id = None;
+    academy.reputation = 6_200;
+    if let Some(metadata) = academy.academy.as_mut() {
+        metadata.lifecycle = AcademyLifecycle::Active;
+        metadata.erl_assignment.reputation = 62;
+        metadata.erl_assignment.acquired_at = today.to_string();
+        metadata.erl_assignment.created_at = today.to_string();
+        metadata.acquired_at = today.to_string();
+    }
+}
+
 /// What [`replace_team_with_custom`] changed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CustomTeamOutcome {
@@ -314,7 +368,11 @@ pub struct CustomTeamOutcome {
 /// and staff become teamless (their contracts are cleared later by the usual
 /// free-agent pass) and are recorded in `moved_player_ids`; the replaced id is
 /// recorded in `removed_team_ids` so catalog rehydration never restores it.
-/// Academy links to the replaced club are cut on both sides.
+/// Academy links to the replaced club are cut on both sides. The replaced
+/// club's academy team (linked by id, or an unparented seed academy named after
+/// the club) passes to the new club when it has no academy of its own, keeping
+/// its players and staff; otherwise it is dissolved and its people are released
+/// like the replaced club's.
 pub fn replace_team_with_custom(
     game: &mut Game,
     competition_id: &str,
@@ -351,6 +409,8 @@ pub fn replace_team_with_custom(
         .unwrap_or(FALLBACK_SCRIM_REPUTATION);
 
     let team_id = custom_team_id(competition_id, &spec.short_name);
+    let (inherited_academy_id, dissolved_academy_ids) =
+        split_replaced_academies(game, replaced, &team_id);
     let mut team = Team::new(
         team_id.clone(),
         spec.name.clone(),
@@ -380,11 +440,17 @@ pub fn replace_team_with_custom(
     team.facilities = Facilities::default();
     team.scrim_reputation = scrim_reputation;
 
+    let released_from = |team_id: Option<&str>| {
+        team_id.is_some_and(|id| {
+            id == replaces_team_id || dissolved_academy_ids.iter().any(|d| d == id)
+        })
+    };
+
     let mut released_player_ids = Vec::new();
     for player in game
         .players
         .iter_mut()
-        .filter(|p| p.team_id.as_deref() == Some(replaces_team_id))
+        .filter(|p| released_from(p.team_id.as_deref()))
     {
         player.team_id = None;
         released_player_ids.push(player.id.clone());
@@ -396,7 +462,7 @@ pub fn replace_team_with_custom(
     for member in game
         .staff
         .iter_mut()
-        .filter(|s| s.team_id.as_deref() == Some(replaces_team_id))
+        .filter(|s| released_from(s.team_id.as_deref()))
     {
         member.team_id = None;
         released_staff_ids.push(member.id.clone());
@@ -411,14 +477,23 @@ pub fn replace_team_with_custom(
         }
     }
 
-    game.teams.retain(|t| t.id != replaces_team_id);
+    if let Some(academy_id) = &inherited_academy_id {
+        let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+        if let Some(academy) = game.teams.iter_mut().find(|t| &t.id == academy_id) {
+            adopt_academy(academy, &team_id, &spec, &today);
+        }
+        team.academy_team_id = Some(academy_id.clone());
+    }
+
+    game.teams
+        .retain(|t| t.id != replaces_team_id && !dissolved_academy_ids.contains(&t.id));
     game.teams.push(team);
-    if !game
-        .removed_team_ids
-        .iter()
-        .any(|id| id == replaces_team_id)
+    for removed in
+        std::iter::once(replaces_team_id).chain(dissolved_academy_ids.iter().map(String::as_str))
     {
-        game.removed_team_ids.push(replaces_team_id.to_string());
+        if !game.removed_team_ids.iter().any(|id| id == removed) {
+            game.removed_team_ids.push(removed.to_string());
+        }
     }
 
     Ok(CustomTeamOutcome {

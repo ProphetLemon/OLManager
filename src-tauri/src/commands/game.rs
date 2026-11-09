@@ -3375,7 +3375,7 @@ mod tests {
                 problems.push(format!("the id {id} lacks -custom-"));
             }
             for team in &game.teams {
-                if team.id == LES_SLOT || (team.name == REPLACED_NAME && team.team_kind != TeamKind::Academy) {
+                if team.id == LES_SLOT || team.name == REPLACED_NAME {
                     problems.push(format!("replaced team still present: {}", team.id));
                 }
                 if team.parent_team_id.as_deref() == Some(LES_SLOT)
@@ -3383,6 +3383,15 @@ mod tests {
                 {
                     problems.push(format!("{} still links to the replaced team", team.id));
                 }
+            }
+            let academy = game
+                .teams
+                .iter()
+                .find(|t| t.id == id)
+                .and_then(|club| club.academy_team_id.as_deref())
+                .and_then(|academy_id| game.teams.iter().find(|t| t.id == academy_id));
+            if academy.is_none_or(|a| a.parent_team_id.as_deref() != Some(id)) {
+                problems.push("the custom club does not own the inherited academy".to_string());
             }
             if game.players.iter().any(|p| p.team_id.as_deref() == Some(LES_SLOT))
                 || game.staff.iter().any(|s| s.team_id.as_deref() == Some(LES_SLOT))
@@ -3575,9 +3584,6 @@ mod tests {
             let (mut game, id) = custom_career();
             assert_surface("dashboard (start)", dashboard_problems(&game, &id, false));
             assert_surface("teams (start)", teams_problems(&game, &id));
-            for team in game.teams.iter().filter(|t| t.name == REPLACED_NAME) {
-                eprintln!("[B7] orphan {}: kind {:?} parent {:?} competition {:?} players {}", team.id, team.team_kind, team.parent_team_id, team.competition_id, game.players.iter().filter(|p| p.team_id.as_deref() == Some(team.id.as_str())).count());
-            }
 
             // Winter opens on Jan 17 and runs one round per week: 45 days is about 4 rounds.
             for _ in 0..45 {

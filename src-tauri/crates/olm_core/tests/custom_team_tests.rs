@@ -403,7 +403,7 @@ fn replace_team_builds_the_club_from_the_league_median() {
 }
 
 #[test]
-fn replace_team_clears_academy_links_to_the_replaced_team() {
+fn replace_team_clears_links_to_the_replaced_team() {
     let mut game = world();
     let mut academy = team("les-b-acad", "Bravo Academy", "BRA", "les");
     academy.team_kind = TeamKind::Academy;
@@ -417,10 +417,102 @@ fn replace_team_clears_academy_links_to_the_replaced_team() {
     replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
 
     let academy = game.teams.iter().find(|t| t.id == "les-b-acad").unwrap();
-    assert_eq!(academy.parent_team_id, None);
+    assert_eq!(academy.parent_team_id.as_deref(), Some("les-custom-ray"));
     let sister = game.teams.iter().find(|t| t.id == "les-e").unwrap();
     assert_eq!(sister.academy_team_id, None);
     assert_eq!(sister.parent_team_id, None);
+}
+
+/// An unparented seed academy named after the replaced club, with one player
+/// and one staff member, as the academy bootstrap leaves it.
+fn orphan_seed_academy(game: &mut Game) {
+    let mut academy = team("academy-les-bravo-club", "Bravo Club", "BRV", "les");
+    academy.competition_id = None;
+    academy.team_kind = TeamKind::Academy;
+    academy.reputation = 6_000;
+    game.teams.push(academy);
+    game.players
+        .push(player("p-acad1", Some("academy-les-bravo-club")));
+    game.staff.push(coach("s-acad1", "academy-les-bravo-club"));
+}
+
+#[test]
+fn replace_team_hands_the_replaced_clubs_academy_to_the_custom_club() {
+    let mut game = world();
+    orphan_seed_academy(&mut game);
+
+    let outcome = replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+
+    let academy = game
+        .teams
+        .iter()
+        .find(|t| t.id == "academy-les-bravo-club")
+        .unwrap();
+    assert_eq!(academy.parent_team_id.as_deref(), Some("les-custom-ray"));
+    assert_eq!(academy.name, "Ray Esports Academy");
+    assert_eq!(academy.team_kind, TeamKind::Academy);
+    let custom = game
+        .teams
+        .iter()
+        .find(|t| t.id == "les-custom-ray")
+        .unwrap();
+    assert_eq!(
+        custom.academy_team_id.as_deref(),
+        Some("academy-les-bravo-club")
+    );
+    assert!(game.teams.iter().all(|t| t.name != "Bravo Club"));
+    assert_eq!(outcome.released_player_ids, vec!["p-b1", "p-b2"]);
+}
+
+#[test]
+fn replace_team_keeps_the_inherited_academys_people() {
+    let mut game = world();
+    orphan_seed_academy(&mut game);
+
+    replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+
+    let player = game.players.iter().find(|p| p.id == "p-acad1").unwrap();
+    assert_eq!(player.team_id.as_deref(), Some("academy-les-bravo-club"));
+    let member = game.staff.iter().find(|s| s.id == "s-acad1").unwrap();
+    assert_eq!(member.team_id.as_deref(), Some("academy-les-bravo-club"));
+    assert!(
+        !game
+            .removed_team_ids
+            .contains(&"academy-les-bravo-club".to_string())
+    );
+}
+
+#[test]
+fn replace_team_dissolves_the_orphan_academy_when_the_custom_club_has_one() {
+    let mut game = world();
+    orphan_seed_academy(&mut game);
+    let mut own = team("own-acad", "Ray Youth", "RYY", "les");
+    own.team_kind = TeamKind::Academy;
+    own.parent_team_id = Some("les-custom-ray".to_string());
+    game.teams.push(own);
+
+    let outcome = replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+
+    assert!(game.teams.iter().all(|t| t.id != "academy-les-bravo-club"));
+    assert!(
+        game.removed_team_ids
+            .contains(&"academy-les-bravo-club".to_string())
+    );
+    let player = game.players.iter().find(|p| p.id == "p-acad1").unwrap();
+    assert_eq!(player.team_id, None);
+    assert!(game.moved_player_ids.contains("p-acad1"));
+    assert_eq!(
+        game.staff
+            .iter()
+            .find(|s| s.id == "s-acad1")
+            .unwrap()
+            .team_id,
+        None
+    );
+    assert!(outcome.released_player_ids.contains(&"p-acad1".to_string()));
+    assert!(outcome.released_staff_ids.contains(&"s-acad1".to_string()));
+    let own = game.teams.iter().find(|t| t.id == "own-acad").unwrap();
+    assert_eq!(own.parent_team_id.as_deref(), Some("les-custom-ray"));
 }
 
 #[test]
