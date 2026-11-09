@@ -3,7 +3,8 @@ use olm_core::clock::GameClock;
 use olm_core::competitions::competition_id_from_team_id_known;
 use olm_core::custom_team::{
     CustomTeamError, CustomTeamSpec, badge_data_uri, custom_team_allowed, custom_team_id,
-    league_median_profile, replace_team_with_custom, validate_spec,
+    OvrPercentiles, league_median_profile, peer_ovr_percentiles, replace_team_with_custom,
+    validate_spec,
 };
 use olm_core::domain::manager::Manager;
 use olm_core::domain::player::{LolRole, Player, PlayerAttributes};
@@ -583,4 +584,83 @@ fn custom_team_allowed_is_false_for_legacy_inactive_or_unscheduled_leagues() {
 #[test]
 fn custom_team_allowed_is_true_for_a_tier_two_league_with_splits() {
     assert!(custom_team_allowed(&manifest(Some(2), true, false, true)));
+}
+
+fn rated_player(id: &str, team_id: Option<&str>, value: u8) -> Player {
+    let mut p = player(id, team_id);
+    p.attributes = PlayerAttributes {
+        mechanics: value,
+        laning: value,
+        teamfighting: value,
+        macro_play: value,
+        consistency: value,
+        shotcalling: value,
+        champion_pool: value,
+        discipline: value,
+        mental_resilience: value,
+    };
+    p
+}
+
+/// `teams` Main clubs with `per_team` players each; OVR runs 60, 61, 62...
+fn peer_world(teams: usize, per_team: usize) -> (Vec<Team>, Vec<Player>) {
+    let clubs: Vec<Team> = (0..teams)
+        .map(|i| team(&format!("t{i}"), &format!("Club {i}"), &format!("C{i}"), "les"))
+        .collect();
+    let mut players = Vec::new();
+    for i in 0..teams {
+        for j in 0..per_team {
+            let ovr = 60 + (i * per_team + j) as u8;
+            players.push(rated_player(&format!("p{i}-{j}"), Some(&format!("t{i}")), ovr));
+        }
+    }
+    (clubs, players)
+}
+
+#[test]
+fn peer_percentiles_are_measured_from_rostered_main_players() {
+    let (clubs, players) = peer_world(5, 5);
+    let peers: Vec<&Team> = clubs.iter().collect();
+    let result = peer_ovr_percentiles(&peers, &players);
+    // OVR 60..=84, 25 values: rank q*24 above 60.
+    assert_eq!(
+        (result.p10, result.p25, result.p50, result.p75, result.p90),
+        (62, 66, 72, 78, 82)
+    );
+    assert!(result.from_peers);
+}
+
+#[test]
+fn peer_percentiles_fall_back_with_fewer_than_four_peers() {
+    let (clubs, players) = peer_world(3, 10);
+    let peers: Vec<&Team> = clubs.iter().collect();
+    assert_eq!(peer_ovr_percentiles(&peers, &players), OvrPercentiles::FALLBACK);
+}
+
+#[test]
+fn peer_percentiles_fall_back_with_too_few_players() {
+    let (clubs, players) = peer_world(4, 4);
+    let peers: Vec<&Team> = clubs.iter().collect();
+    assert_eq!(peer_ovr_percentiles(&peers, &players), OvrPercentiles::FALLBACK);
+}
+
+#[test]
+fn peer_percentiles_ignore_academies_and_free_agents() {
+    let (mut clubs, mut players) = peer_world(5, 5);
+    clubs[0].team_kind = TeamKind::Academy;
+    players.push(rated_player("free", None, 99));
+    let peers: Vec<&Team> = clubs.iter().collect();
+    // Four Main peers remain with 20 players; the free agent never counts.
+    let result = peer_ovr_percentiles(&peers, &players);
+    assert!(result.from_peers);
+    assert!(result.p90 < 99);
+    assert!(result.p10 >= 65);
+}
+
+#[test]
+fn fallback_window_is_ordered_and_inside_60_to_78() {
+    let f = OvrPercentiles::FALLBACK;
+    assert!(f.p10 == 60 && f.p90 == 78);
+    assert!(f.p10 <= f.p25 && f.p25 <= f.p50 && f.p50 <= f.p75 && f.p75 <= f.p90);
+    assert!(!f.from_peers);
 }

@@ -14,6 +14,7 @@ use ts_rs::TS;
 
 use crate::academy;
 use crate::competitions::is_selectable_competition;
+use crate::domain::player::Player;
 use crate::domain::team::{AcademyLifecycle, Facilities, Team, TeamColors, TeamKind};
 use crate::game::Game;
 use crate::game_setup;
@@ -294,6 +295,93 @@ pub fn league_median_profile(peers: &[&Team]) -> ClubProfile {
         ))
         .unwrap_or(defaults.stadium_capacity),
         sponsorship: pick(|t| t.sponsorship.as_ref().map_or(0, |s| s.base_value), 0),
+    }
+}
+
+/// Fewest Main peer teams for the peer OVR percentiles to be trusted.
+const MIN_PEER_TEAMS_FOR_PERCENTILES: usize = 4;
+/// Fewest rostered peer players for the peer OVR percentiles to be trusted.
+const MIN_PEER_PLAYERS_FOR_PERCENTILES: usize = 20;
+
+/// Natural OVR distribution of the players under contract at a competition's
+/// Main clubs. Anchors the strength of a generated founding squad.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OvrPercentiles {
+    /// 10th percentile.
+    pub p10: u8,
+    /// 25th percentile.
+    pub p25: u8,
+    /// Median.
+    pub p50: u8,
+    /// 75th percentile.
+    pub p75: u8,
+    /// 90th percentile.
+    pub p90: u8,
+    /// `true` when measured from peers, `false` for the default window.
+    pub from_peers: bool,
+}
+
+impl OvrPercentiles {
+    /// Default window used when a competition has too few peers: `[60, 78]`.
+    pub const FALLBACK: OvrPercentiles = OvrPercentiles {
+        p10: 60,
+        p25: 64,
+        p50: 69,
+        p75: 73,
+        p90: 78,
+        from_peers: false,
+    };
+}
+
+/// Value at quantile `q` (0.0..=1.0) of an ascending, non-empty slice, linearly
+/// interpolated between the two nearest ranks and rounded to the nearest OVR.
+fn quantile(sorted: &[u8], q: f64) -> u8 {
+    let last = sorted.len().saturating_sub(1);
+    let position = q.clamp(0.0, 1.0) * last as f64;
+    let lower = position.floor() as usize;
+    let upper = position.ceil() as usize;
+    let weight = position - lower as f64;
+    let low = f64::from(sorted[lower.min(last)]);
+    let high = f64::from(sorted[upper.min(last)]);
+    (low + (high - low) * weight).round() as u8
+}
+
+/// Percentiles (p10, p25, p50, p75, p90) of the natural OVR of the players under
+/// contract on the Main clubs among `peers`.
+///
+/// Academies and players without a team (or on a team outside `peers`) are
+/// ignored. With fewer than 4 Main peers, or fewer than 20 rostered players,
+/// the result is [`OvrPercentiles::FALLBACK`].
+pub fn peer_ovr_percentiles(peers: &[&Team], players: &[Player]) -> OvrPercentiles {
+    let main_ids: std::collections::HashSet<&str> = peers
+        .iter()
+        .filter(|team| team.team_kind == TeamKind::Main)
+        .map(|team| team.id.as_str())
+        .collect();
+    if main_ids.len() < MIN_PEER_TEAMS_FOR_PERCENTILES {
+        return OvrPercentiles::FALLBACK;
+    }
+    let mut ovrs: Vec<u8> = players
+        .iter()
+        .filter(|player| {
+            player
+                .team_id
+                .as_deref()
+                .is_some_and(|id| main_ids.contains(id))
+        })
+        .map(|player| crate::player_rating::natural_ovr(player).round().clamp(1.0, 99.0) as u8)
+        .collect();
+    if ovrs.len() < MIN_PEER_PLAYERS_FOR_PERCENTILES {
+        return OvrPercentiles::FALLBACK;
+    }
+    ovrs.sort_unstable();
+    OvrPercentiles {
+        p10: quantile(&ovrs, 0.10),
+        p25: quantile(&ovrs, 0.25),
+        p50: quantile(&ovrs, 0.50),
+        p75: quantile(&ovrs, 0.75),
+        p90: quantile(&ovrs, 0.90),
+        from_peers: true,
     }
 }
 
