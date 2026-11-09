@@ -499,14 +499,17 @@ export default function Settings() {
         title: t("settings.about"),
         icon: <Zap className="w-5 h-5" />,
         content: (
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">{APP_NAME}</p>
-              <p className="text-xs text-muted-foreground/70 mt-0.5">{APP_VERSION}</p>
+          <div className="py-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium text-foreground">{APP_NAME}</p>
+                <p className="text-xs text-muted-foreground/70 mt-0.5">{APP_VERSION}</p>
+              </div>
+              <span className="text-2xs font-heading uppercase tracking-widest text-muted-foreground">
+                Open League Manager Community
+              </span>
             </div>
-            <span className="text-2xs font-heading uppercase tracking-widest text-muted-foreground">
-              Open League Manager Community
-            </span>
+            <p className="text-xs text-muted-foreground/70 mt-4">{t("settings.statsCredit")}</p>
           </div>
         ),
       },

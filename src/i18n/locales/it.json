@@ -1671,6 +1671,7 @@
     "clear": "Cancella",
     "savesCleared": "Salvataggi cancellati!",
     "about": "Informazioni",
+    "statsCredit": "Le valutazioni dei giocatori nelle nuove partite derivano dalle statistiche delle partite professionistiche di Leaguepedia (lol.fandom.com), con licenza CC BY-SA 3.0.",
     "matchModes": {
       "live": "Vai sulla Rift",
       "liveDesc": "Controllo completo della partita",

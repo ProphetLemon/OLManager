@@ -1959,6 +1959,7 @@
     "clear": "Borrar",
     "savesCleared": "¡Guardados borrados!",
     "about": "Acerca de",
+    "statsCredit": "Las valoraciones de los jugadores en partidas nuevas se derivan de estadísticas de partidos profesionales de Leaguepedia (lol.fandom.com), con licencia CC BY-SA 3.0.",
     "matchModes": {
       "live": "Ir a la Grieta",
       "liveDesc": "Control total del partido",

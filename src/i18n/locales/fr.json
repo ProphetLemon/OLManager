@@ -1820,6 +1820,7 @@
     "clear": "Supprimer",
     "savesCleared": "Sauvegardes supprimées !",
     "about": "À propos",
+    "statsCredit": "Les notes des joueurs dans les nouvelles parties sont dérivées des statistiques de matchs professionnels de Leaguepedia (lol.fandom.com), sous licence CC BY-SA 3.0.",
     "matchModes": {
       "live": "Aller sur la Faille",
       "liveDesc": "Contrôle total du match",

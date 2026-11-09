@@ -1820,6 +1820,7 @@
     "clear": "Temizle",
     "savesCleared": "Kayıtlar temizlendi!",
     "about": "Hakkında",
+    "statsCredit": "Yeni oyunlardaki oyuncu derecelendirmeleri, CC BY-SA 3.0 lisanslı Leaguepedia'nın (lol.fandom.com) profesyonel maç istatistiklerinden türetilir.",
     "matchModes": {
       "live": "Vadi'ye İn",
       "liveDesc": "Tam maç kontrolü",

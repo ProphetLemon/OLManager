@@ -1820,6 +1820,7 @@
     "clear": "Löschen",
     "savesCleared": "Speicherstände gelöscht!",
     "about": "Über",
+    "statsCredit": "Die Spielerwertungen in neuen Spielen werden aus Profi-Matchstatistiken von Leaguepedia (lol.fandom.com) abgeleitet, lizenziert unter CC BY-SA 3.0.",
     "matchModes": {
       "live": "Zum Rift",
       "liveDesc": "Volle Spielkontrolle",
