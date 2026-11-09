@@ -2663,5 +2663,636 @@ mod tests {
                 .unwrap_or(0);
             assert!(played >= 1, "the custom club played a match");
         }
+
+        // -- Promotion and relegation end to end (C8) ---------------------------------
+
+        /// Headless promotion and relegation with the real LEC and LES: real data, real
+        /// calendars, real season wrap. Results are injected instead of simulated so the
+        /// checks stay fast: the regular season of each league's final split is filled with
+        /// "the better-ranked team wins", and the playoff final is set by hand.
+        mod ladder_e2e {
+            use super::*;
+            use olm_core::domain::league::{Fixture, FixtureStatus, League, MatchResult, MatchType};
+            use olm_core::ladder::LadderMovementStatus;
+            use olm_core::ladder_report::UserLadderResult;
+            use olm_core::roster_stability::{RosterStabilityReason, evaluate_team};
+
+            /// Wins a team needs to take a series of `best_of` maps.
+            fn series_wins(best_of: u8) -> u8 {
+                best_of / 2 + 1
+            }
+
+            fn team<'a>(game: &'a Game, id: &str) -> &'a Team {
+                game.teams.iter().find(|t| t.id == id).expect("team")
+            }
+
+            fn les_club(game: &Game, name: &str) -> String {
+                let found: Vec<_> = game
+                    .teams
+                    .iter()
+                    .filter(|t| t.competition_id.as_deref() == Some("les") && t.name == name)
+                    .collect();
+                assert_eq!(found.len(), 1, "expected exactly one LES club named {name}");
+                found[0].id.clone()
+            }
+
+            fn league<'a>(game: &'a Game, competition_id: &str) -> &'a League {
+                game.leagues
+                    .iter()
+                    .find(|l| l.competition_id.as_deref() == Some(competition_id))
+                    .expect("league")
+            }
+
+            fn members(game: &Game, competition_id: &str) -> Vec<String> {
+                league(game, competition_id)
+                    .standings
+                    .iter()
+                    .map(|s| s.team_id.clone())
+                    .collect()
+            }
+
+            fn sorted_members(game: &Game, competition_id: &str) -> Vec<String> {
+                let mut ids = members(game, competition_id);
+                ids.sort();
+                ids
+            }
+
+            fn new_world(slot_id: &str) -> Game {
+                let (mut game, _overlay, user_team) =
+                    try_build_world(slot_id, None).expect("build new game world");
+                let (manifests, known) = known_ids_and_manifests();
+                prepare_new_game_season(&mut game, &manifests, &known, &user_team).expect("season setup");
+                game
+            }
+
+            /// Every member, best first: `first`, `second`, then the rest by id.
+            fn strength_order(mut ids: Vec<String>, first: &str, second: &str) -> Vec<String> {
+                ids.sort();
+                ids.retain(|id| id != first && id != second);
+                ids.insert(0, second.to_string());
+                ids.insert(0, first.to_string());
+                ids
+            }
+
+            fn playoff_fixture(
+                id: &str,
+                matchday: u32,
+                date: chrono::NaiveDate,
+                home: &str,
+                away: &str,
+                winner_is_home: bool,
+            ) -> Fixture {
+                let (home_wins, away_wins) = if winner_is_home { (3, 1) } else { (1, 3) };
+                Fixture {
+                    id: id.to_string(),
+                    matchday,
+                    date: date.format("%Y-%m-%d").to_string(),
+                    home_team_id: home.to_string(),
+                    away_team_id: away.to_string(),
+                    match_type: MatchType::Playoffs,
+                    best_of: 5,
+                    status: FixtureStatus::Completed,
+                    result: Some(MatchResult {
+                        home_wins,
+                        away_wins,
+                        ..MatchResult::default()
+                    }),
+                }
+            }
+
+            /// Replaces the league of `competition_id` with the real calendar of its last
+            /// split, plays the whole regular season so that `order` (best first) is the
+            /// table, and adds a completed playoff in which the second seed beats the first
+            /// in the final. The LES gets the full four-team bracket, other leagues just the
+            /// final. Returns the date of the last playoff fixture.
+            fn finish_final_split(
+                game: &mut Game,
+                competition_id: &str,
+                order: &[String],
+            ) -> chrono::NaiveDate {
+                let manifest = game
+                    .competition_configs
+                    .get(competition_id)
+                    .cloned()
+                    .expect("manifest");
+                let index = game
+                    .leagues
+                    .iter()
+                    .position(|l| l.competition_id.as_deref() == Some(competition_id))
+                    .expect("league index");
+                let last_split = manifest.schedule.splits.len() - 1;
+                let previous = game.leagues[index].clone();
+                let mut fresh = olm_core::end_of_season::build_split_league(
+                    &previous,
+                    &manifest,
+                    previous.season,
+                    last_split,
+                    None,
+                );
+                assert_eq!(fresh.split_index, last_split);
+                assert_eq!(fresh.standings.len(), order.len());
+
+                let rank = |id: &str| order.iter().position(|o| o == id).expect("ranked team");
+                let mut last_date = chrono::NaiveDate::MIN;
+                let mut last_matchday = 0;
+                let mut results: Vec<(String, String, u8, u8)> = Vec::new();
+                for fixture in fresh.fixtures.iter_mut() {
+                    let date =
+                        chrono::NaiveDate::parse_from_str(&fixture.date, "%Y-%m-%d").expect("fixture date");
+                    last_date = last_date.max(date);
+                    last_matchday = last_matchday.max(fixture.matchday);
+                    if !fixture.counts_for_league_standings() {
+                        continue;
+                    }
+                    let wins = series_wins(fixture.best_of);
+                    let home_better = rank(&fixture.home_team_id) < rank(&fixture.away_team_id);
+                    let (home_wins, away_wins) = if home_better { (wins, 0) } else { (0, wins) };
+                    fixture.result = Some(MatchResult {
+                        home_wins,
+                        away_wins,
+                        ..MatchResult::default()
+                    });
+                    fixture.status = FixtureStatus::Completed;
+                    results.push((
+                        fixture.home_team_id.clone(),
+                        fixture.away_team_id.clone(),
+                        home_wins,
+                        away_wins,
+                    ));
+                }
+                for (home, away, home_wins, away_wins) in results {
+                    for standing in &mut fresh.standings {
+                        if standing.team_id == home {
+                            standing.record_result(home_wins, away_wins);
+                        } else if standing.team_id == away {
+                            standing.record_result(away_wins, home_wins);
+                        }
+                    }
+                }
+
+                let seeds: Vec<String> = fresh
+                    .sorted_standings()
+                    .into_iter()
+                    .map(|s| s.team_id)
+                    .collect();
+                assert_eq!(
+                    &seeds[..],
+                    order,
+                    "the injected results produce the intended table"
+                );
+                let day = |n: i64| last_date + chrono::Duration::days(n);
+                let playoffs = if competition_id == "les" {
+                    vec![
+                        playoff_fixture(
+                            "po4-e2e-sf1",
+                            last_matchday + 1,
+                            day(7),
+                            &seeds[0],
+                            &seeds[3],
+                            true,
+                        ),
+                        playoff_fixture(
+                            "po4-e2e-sf2",
+                            last_matchday + 1,
+                            day(7),
+                            &seeds[1],
+                            &seeds[2],
+                            true,
+                        ),
+                        playoff_fixture(
+                            "po4-e2e-final",
+                            last_matchday + 2,
+                            day(14),
+                            &seeds[0],
+                            &seeds[1],
+                            false,
+                        ),
+                    ]
+                } else {
+                    vec![playoff_fixture(
+                        "e2e-final",
+                        last_matchday + 1,
+                        day(7),
+                        &seeds[0],
+                        &seeds[1],
+                        false,
+                    )]
+                };
+                let finished = playoffs
+                    .iter()
+                    .map(|f| f.date.clone())
+                    .max()
+                    .expect("playoffs");
+                fresh.fixtures.extend(playoffs);
+                assert!(
+                    olm_core::end_of_season::is_league_complete(&fresh),
+                    "the injected {competition_id} split is complete"
+                );
+                game.leagues[index] = fresh;
+                chrono::NaiveDate::parse_from_str(&finished, "%Y-%m-%d").expect("date")
+            }
+
+            /// Finishes the last split of both leagues with the given top two seeds and the
+            /// rest by id, then puts the clock on the day after the later playoff final.
+            fn finish_both_leagues(game: &mut Game, les_top: (&str, &str), lec_top: (&str, &str)) {
+                let les_order = strength_order(members(game, "les"), les_top.0, les_top.1);
+                let lec_order = strength_order(members(game, "lec"), lec_top.0, lec_top.1);
+                let les_done = finish_final_split(game, "les", &les_order);
+                let lec_done = finish_final_split(game, "lec", &lec_order);
+                let day_after = les_done.max(lec_done) + chrono::Duration::days(1);
+                game.clock.current_date =
+                    chrono::Utc.from_utc_datetime(&day_after.and_hms_opt(0, 0, 0).expect("midnight"));
+            }
+
+            /// (news, inbox messages) whose id starts with `prefix`.
+            fn count_ids(game: &Game, prefix: &str) -> (usize, usize) {
+                (
+                    game.news
+                        .iter()
+                        .filter(|n| n.id.starts_with(prefix))
+                        .count(),
+                    game.messages
+                        .iter()
+                        .filter(|m| m.id.starts_with(prefix))
+                        .count(),
+                )
+            }
+
+            fn round_trip(game: &Game, label: &str) -> Game {
+                let dir = tempfile::tempdir().expect("tempdir");
+                let mut manager = SaveManager::init(dir.path()).expect("save manager");
+                let save_id = manager.create_save(game, label).expect("create save");
+                manager.load_game(&save_id).expect("load save")
+            }
+
+            fn assert_playable_roster(game: &Game, team_id: &str) {
+                let evaluation = evaluate_team(game, team_id, RosterStabilityReason::SeasonTransition)
+                    .expect("team exists");
+                assert!(
+                    evaluation.match_eligible,
+                    "{} is not match eligible after the swap: {evaluation:?}",
+                    team(game, team_id).name
+                );
+                for role in ROLES {
+                    assert!(
+                        game.players
+                            .iter()
+                            .any(|p| p.team_id.as_deref() == Some(team_id) && p.natural_position == role),
+                        "{} lacks a {role:?}",
+                        team(game, team_id).name
+                    );
+                }
+            }
+
+            /// The rebuilt league starts the next season at its first split, keeps `size`
+            /// members, has a complete schedule and every fixture is dated after the clock.
+            fn assert_next_season_calendar(game: &Game, competition_id: &str, season: u32, size: usize) {
+                let rebuilt = league(game, competition_id);
+                let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+                assert_eq!(rebuilt.season, season + 1, "{competition_id} season");
+                assert_eq!(
+                    rebuilt.split_index, 0,
+                    "{competition_id} starts at its first split"
+                );
+                assert_eq!(
+                    rebuilt.standings.len(),
+                    size,
+                    "{competition_id} keeps its size"
+                );
+                assert!(
+                    olm_core::end_of_season::has_full_schedule(rebuilt),
+                    "{competition_id} has a complete S+1 schedule"
+                );
+                assert!(!rebuilt.fixtures.is_empty());
+                for fixture in &rebuilt.fixtures {
+                    assert!(
+                        fixture.date.as_str() > today.as_str(),
+                        "{competition_id} fixture {} on {} is not after {today}",
+                        fixture.id,
+                        fixture.date
+                    );
+                    assert_eq!(fixture.status, FixtureStatus::Scheduled);
+                }
+                for standing in &rebuilt.standings {
+                    assert_eq!(standing.played, 0, "{competition_id} standings start clean");
+                }
+            }
+
+            fn feeder_ids(game: &Game) -> Vec<String> {
+                game.competition_configs["les"]
+                    .promotion
+                    .as_ref()
+                    .expect("the LES declares its ladder link")
+                    .feeders
+                    .iter()
+                    .map(|f| f.team.clone())
+                    .collect()
+            }
+
+            fn economy(game: &Game, id: &str) -> String {
+                let t = team(game, id);
+                format!(
+                    "{}: rep {} finance {} wage_budget {} transfer_budget {} wage_bill {}",
+                    t.name,
+                    t.reputation,
+                    t.finance,
+                    t.wage_budget,
+                    t.transfer_budget,
+                    annual_bill(game, id)
+                )
+            }
+
+            fn champion(game: &Game, competition_id: &str, season: u32) -> Option<String> {
+                game.ladder
+                    .outcome(competition_id, season)
+                    .and_then(|o| o.champion_id.clone())
+            }
+
+            /// Case A: an LEC user whose club is neither promoted nor relegated. The LES
+            /// rolls first through the daily turn and waits; the user's season wrap then
+            /// applies the swap. With `feeder_champion` the LES champion is a feeder of an
+            /// LEC club, so the beaten finalist has to go up instead.
+            fn ai_only_swap(feeder_champion: bool) {
+                let mut game = new_world(LEC_SLOT);
+                assert_eq!(game.user_competition_id.as_deref(), Some("lec"));
+                let season = league(&game, "lec").season;
+                let koi_fenix = "les-team-8baee3fd".to_string();
+                let barcelona = les_club(&game, "Barcelona Esports");
+                let ucam = les_club(&game, "UCAM Esports");
+                // The second seed wins the final (upset), so it is the champion.
+                let (les_seed_one, les_champion, expected_up) = if feeder_champion {
+                    (barcelona.clone(), koi_fenix.clone(), barcelona.clone())
+                } else {
+                    (barcelona.clone(), ucam.clone(), ucam.clone())
+                };
+
+                let others: Vec<String> = sorted_members(&game, "lec")
+                    .into_iter()
+                    .filter(|id| id != LEC_SLOT)
+                    .collect();
+                let lec_size = others.len() + 1;
+                let lec_seed_one = others[0].clone();
+                let expected_down = others.last().expect("LEC teams").clone();
+                let les_size = members(&game, "les").len();
+                assert_eq!((lec_size, les_size), (10, 8), "sizes as authored");
+
+                finish_both_leagues(
+                    &mut game,
+                    (&les_seed_one, &les_champion),
+                    (&lec_seed_one, LEC_SLOT),
+                );
+                let feeders = feeder_ids(&game);
+                let up_before = economy(&game, &expected_up);
+                let down_before = economy(&game, &expected_down);
+
+                // The LES closes first and rolls through the daily turn; the ladder waits
+                // for the LEC.
+                olm_core::turn::process_day(&mut game);
+                assert_eq!(
+                    league(&game, "les").season,
+                    season + 1,
+                    "the LES rolled in the background"
+                );
+                assert_eq!(
+                    league(&game, "lec").season,
+                    season,
+                    "the LEC has not rolled yet"
+                );
+                assert!(
+                    game.ladder.movements.is_empty(),
+                    "nothing moves before both leagues close"
+                );
+                assert_eq!(count_ids(&game, "ladder_"), (0, 0));
+
+                let outcome = olm_core::season_rollover::advance_season(&mut game);
+                assert!(outcome.was_season_end);
+
+                assert_eq!(champion(&game, "les", season), Some(les_champion.clone()));
+                assert_eq!(game.ladder.movements.len(), 1);
+                let movement = &game.ladder.movements[0];
+                assert_eq!(
+                    movement.status,
+                    LadderMovementStatus::Applied,
+                    "the real calendars leave room for the swap"
+                );
+                assert_eq!(movement.promoted, vec![expected_up.clone()]);
+                assert_eq!(movement.relegated, vec![expected_down.clone()]);
+                assert!(
+                    movement.promoted.iter().all(|id| !feeders.contains(id)),
+                    "a feeder went up"
+                );
+                if feeder_champion {
+                    assert!(
+                        feeders.contains(&les_champion),
+                        "the champion is a declared feeder"
+                    );
+                }
+
+                let lec_now = members(&game, "lec");
+                let les_now = members(&game, "les");
+                assert!(lec_now.contains(&expected_up) && !lec_now.contains(&expected_down));
+                assert!(les_now.contains(&expected_down) && !les_now.contains(&expected_up));
+                assert_eq!(
+                    team(&game, &expected_up).competition_id.as_deref(),
+                    Some("lec")
+                );
+                assert_eq!(
+                    team(&game, &expected_down).competition_id.as_deref(),
+                    Some("les")
+                );
+                assert_next_season_calendar(&game, "lec", season, lec_size);
+                assert_next_season_calendar(&game, "les", season, les_size);
+                assert_eq!(game.user_competition_id.as_deref(), Some("lec"));
+                assert_eq!(game.manager.team_id.as_deref(), Some(LEC_SLOT));
+
+                assert_playable_roster(&game, &expected_down);
+                assert_playable_roster(&game, &expected_up);
+                eprintln!("[c8 A feeder={feeder_champion}] promoted before:  {up_before}");
+                eprintln!(
+                    "[c8 A feeder={feeder_champion}] promoted after:   {}",
+                    economy(&game, &expected_up)
+                );
+                eprintln!("[c8 A feeder={feeder_champion}] relegated before: {down_before}");
+                eprintln!(
+                    "[c8 A feeder={feeder_champion}] relegated after:  {}",
+                    economy(&game, &expected_down)
+                );
+
+                // Communications are created once, and stay single after more reporting and
+                // another day of the turn loop.
+                let key = format!("les_lec_{season}");
+                let news_id = format!("ladder_news_{key}");
+                let swap_id = format!("ladder_swap_{key}");
+                assert_eq!(count_ids(&game, &news_id), (1, 0));
+                assert_eq!(
+                    count_ids(&game, &swap_id),
+                    (0, 1),
+                    "an uninvolved user gets the league notice"
+                );
+                assert_eq!(count_ids(&game, "ladder_user_"), (0, 0));
+                olm_core::ladder_report::announce_ladder_movements(&mut game);
+                olm_core::turn::process_day(&mut game);
+                assert_eq!(count_ids(&game, &news_id), (1, 0));
+                assert_eq!(count_ids(&game, &swap_id), (0, 1));
+                assert_eq!(game.ladder.movements.len(), 1, "the swap is not repeated");
+                assert_eq!(outcome.summary.ladder_movements.len(), 1);
+                assert_eq!(
+                    outcome.summary.user_ladder.as_ref().map(|u| u.result),
+                    Some(UserLadderResult::Stayed)
+                );
+
+                let loaded = round_trip(&game, "ladder A");
+                assert_eq!(members(&loaded, "lec"), lec_now);
+                assert_eq!(members(&loaded, "les"), les_now);
+                assert_eq!(loaded.ladder.movements.len(), 1);
+                assert_eq!(loaded.ladder.announced, game.ladder.announced);
+                assert_eq!(count_ids(&loaded, &news_id), (1, 0));
+                assert_eq!(count_ids(&loaded, &swap_id), (0, 1));
+                assert_eq!(
+                    team(&loaded, &expected_up).competition_id.as_deref(),
+                    Some("lec")
+                );
+                assert_eq!(
+                    team(&loaded, &expected_down).competition_id.as_deref(),
+                    Some("les")
+                );
+                assert_eq!(loaded.user_competition_id.as_deref(), Some("lec"));
+                assert_eq!(
+                    league(&loaded, "lec").fixtures.len(),
+                    league(&game, "lec").fixtures.len()
+                );
+            }
+
+            #[test]
+            #[ignore = "real-data end-to-end, run explicitly"]
+            fn an_ai_only_swap_skips_a_feeder_champion_and_relegates_the_last_placed_lec_club() {
+                ai_only_swap(true);
+            }
+
+            #[test]
+            #[ignore = "real-data end-to-end, run explicitly"]
+            fn an_ai_only_swap_promotes_the_real_les_champion() {
+                ai_only_swap(false);
+            }
+
+            /// Case B: the user manages an LES club that wins the LES. The wrap promotes the
+            /// club, moves the user to the LEC and builds the LEC calendar and objectives.
+            #[test]
+            #[ignore = "real-data end-to-end, run explicitly"]
+            fn a_user_who_wins_the_les_is_promoted_into_the_lec() {
+                const USER: &str = "les-team-06974122";
+                let mut game = new_world(USER);
+                assert_eq!(game.user_competition_id.as_deref(), Some("les"));
+                let season = league(&game, "les").season;
+                let ucam = les_club(&game, "UCAM Esports");
+                let lec_sorted = sorted_members(&game, "lec");
+                let lec_size = lec_sorted.len();
+                let expected_down = lec_sorted.last().expect("LEC teams").clone();
+                // The user wins the final as the second seed against UCAM.
+                finish_both_leagues(&mut game, (&ucam, USER), (&lec_sorted[2], &lec_sorted[3]));
+                let up_before = economy(&game, USER);
+                let down_before = economy(&game, &expected_down);
+
+                let outcome = olm_core::season_rollover::advance_season(&mut game);
+                assert!(outcome.was_season_end);
+
+                assert_eq!(champion(&game, "les", season), Some(USER.to_string()));
+                assert_eq!(game.ladder.movements.len(), 1);
+                let movement = &game.ladder.movements[0];
+                assert_eq!(movement.status, LadderMovementStatus::Applied);
+                assert_eq!(movement.promoted, vec![USER.to_string()]);
+                assert_eq!(movement.relegated, vec![expected_down.clone()]);
+                assert_eq!(game.user_competition_id.as_deref(), Some("lec"));
+                assert_eq!(team(&game, USER).competition_id.as_deref(), Some("lec"));
+                assert_eq!(game.manager.team_id.as_deref(), Some(USER));
+
+                // The user's active league is the LEC with its S+1 calendar.
+                let active = game.active_league().expect("active league");
+                assert_eq!(active.competition_id.as_deref(), Some("lec"));
+                assert!(active.standings.iter().any(|s| s.team_id == USER));
+                assert!(
+                    active
+                        .fixtures
+                        .iter()
+                        .any(|f| f.home_team_id == USER || f.away_team_id == USER)
+                );
+                assert_next_season_calendar(&game, "lec", season, lec_size);
+                assert_next_season_calendar(&game, "les", season, 8);
+                assert!(!members(&game, "les").contains(&USER.to_string()));
+                assert!(members(&game, "les").contains(&expected_down));
+
+                let ladder = outcome
+                    .summary
+                    .user_ladder
+                    .as_ref()
+                    .expect("the user moved");
+                assert_eq!(ladder.result, UserLadderResult::Promoted);
+                assert_eq!(ladder.from_competition_id, "les");
+                assert_eq!(ladder.to_competition_id, "lec");
+                let key = format!("les_lec_{season}");
+                let promoted_msg = format!("ladder_user_promoted_{key}");
+                let news_id = format!("ladder_news_{key}");
+                assert_eq!(count_ids(&game, &promoted_msg), (0, 1));
+                assert_eq!(count_ids(&game, &news_id), (1, 0));
+                assert_eq!(count_ids(&game, "ladder_swap_"), (0, 0));
+
+                // Board objectives follow the LEC: the swap cleared the LES ones and the next
+                // day of the turn loop writes them again for the ten-club league.
+                assert!(
+                    game.board_objectives.is_empty(),
+                    "the swap cleared the old objectives"
+                );
+                olm_core::turn::process_day(&mut game);
+                assert!(
+                    !game.board_objectives.is_empty(),
+                    "objectives were regenerated"
+                );
+                let position = game
+                    .board_objectives
+                    .iter()
+                    .find(|o| o.id == "obj_position")
+                    .expect("position objective");
+                assert!(
+                    (1..=lec_size as i64).contains(&(position.target as i64)),
+                    "position target {} fits a ten-club league",
+                    position.target
+                );
+                let active_season = game.active_league().expect("league").season;
+                assert!(
+                    game.messages
+                        .iter()
+                        .any(|m| m.id == format!("board_objectives_{active_season}")),
+                    "the board wrote to the user for the new season"
+                );
+                assert_eq!(count_ids(&game, &promoted_msg), (0, 1));
+                assert_playable_roster(&game, USER);
+                assert_playable_roster(&game, &expected_down);
+                eprintln!("[c8 B] promoted before:  {up_before}");
+                eprintln!("[c8 B] promoted after:   {}", economy(&game, USER));
+                eprintln!("[c8 B] relegated before: {down_before}");
+                eprintln!(
+                    "[c8 B] relegated after:  {}",
+                    economy(&game, &expected_down)
+                );
+
+                // Save round trip, then the reference sanitising `load_game` runs.
+                let mut loaded = round_trip(&game, "ladder B");
+                let (_, known) = known_ids_and_manifests();
+                sanitize_competition_references(&mut loaded, &known);
+                assert_eq!(loaded.user_competition_id.as_deref(), Some("lec"));
+                assert_eq!(
+                    loaded
+                        .active_league()
+                        .and_then(|l| l.competition_id.clone())
+                        .as_deref(),
+                    Some("lec")
+                );
+                assert_eq!(team(&loaded, USER).competition_id.as_deref(), Some("lec"));
+                assert_eq!(loaded.board_objectives.len(), game.board_objectives.len());
+                assert_eq!(loaded.ladder.movements.len(), 1);
+                assert_eq!(count_ids(&loaded, &promoted_msg), (0, 1));
+                assert_eq!(count_ids(&loaded, &news_id), (1, 0));
+            }
+        }
     }
 }
