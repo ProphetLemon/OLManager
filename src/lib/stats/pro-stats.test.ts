@@ -171,10 +171,19 @@ describe("prefix-map.json", () => {
 
   it("keeps the unconfirmed names open and unmapped", () => {
     const mapped = Object.values(prefixMap.competitions).flat().join("|");
-    for (const name of ["LCK Academy Series", "Superliga Domino's", "Equal Esports Cup 2025", "Equal Esports Cup 2026", "LTA North", "LTA South"]) {
+    for (const name of ["LCK Academy Series", "Equal Esports Cup 2025", "Equal Esports Cup 2026"]) {
       expect(prefixMap.open?.[name], name).toMatch(/\S/);
       expect(mapped.includes(name), name).toBe(false);
     }
     expect(prefixMap.competitions.eec).toBeUndefined();
+  });
+
+  it("maps the 2025 predecessors the user confirmed", () => {
+    expect(prefixMap.competitions.les).toEqual(["LES/", "Superliga Domino's/"]);
+    expect(prefixMap.competitions.lcs).toEqual(["LCS/", "LTA North/"]);
+    expect(prefixMap.competitions.cblol).toEqual(["CBLOL/", "LTA South/"]);
+    for (const name of ["Superliga Domino's", "LTA North", "LTA South"]) {
+      expect(prefixMap.open?.[name], name).toBeUndefined();
+    }
   });
 });

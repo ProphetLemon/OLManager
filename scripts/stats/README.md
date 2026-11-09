@@ -54,8 +54,9 @@ dropped rows by reason, plus the `open` list and the network stats.
 
 `prefix-map.json` maps competition ids to `OverviewPage` prefixes. Prefixes end with `/` so `LPL/` never matches
 `LPLOL/`. Names that are not confirmed stay out of `competitions` and are listed under `open` with a reason: LCK
-Academy Series (vs LCK CL), Superliga Domino's (2025 LES?), the Equal Esports Cup, LTA North, LTA South and TransIP
-Road Of Legends. The map is inferred from tournament names.
+Academy Series (vs LCK CL), the Equal Esports Cup and TransIP Road Of Legends. The map is inferred from tournament
+names. Three 2025 predecessors were confirmed by the user and are listed under `confirmed`: Superliga Domino's (LES),
+LTA North (LCS) and LTA South (CBLOL; in 2025 it also held LLA teams).
 
 ## Request forecast
 
