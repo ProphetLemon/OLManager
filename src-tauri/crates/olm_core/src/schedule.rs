@@ -905,4 +905,55 @@ mod tests {
         assert_eq!(dates.len(), 9);
         assert_eq!(dates[8], "2026-03-14");
     }
+
+    #[test]
+    fn nine_club_double_round_robin_plays_a_return_leg_with_one_bye_per_club() {
+        let manifest: CompetitionManifest = serde_json::from_str(
+            r#"{"id":"les","name":"LES","region":"ES","teams_file":"t.json","players_file":"p.json",
+                "schedule":{"format":"double_round_robin","team_count":9,"preseason_friendlies":0,
+                "splits":[{"name":"Winter","best_of":1,"season_start":{"month":1,"day":17},
+                "superweek_offsets":[0,7,14,21,28,35,42]}]}}"#,
+        )
+        .expect("manifest parses");
+        let teams = club_ids(9);
+        let league = generate_schedule_from_config(&manifest, 2026, &teams, 0);
+
+        // Nine weekly rounds per leg; the return leg starts a week after the first.
+        let mut dates: Vec<&str> = league.fixtures.iter().map(|f| f.date.as_str()).collect();
+        dates.dedup();
+        assert_eq!(dates.len(), 18);
+        assert_eq!(dates[8], "2026-03-14");
+        assert_eq!(dates[9], "2026-03-21");
+
+        let (first_leg, return_leg): (Vec<&Fixture>, Vec<&Fixture>) = league
+            .fixtures
+            .iter()
+            .partition(|f| f.date.as_str() <= dates[8]);
+        assert_eq!((first_leg.len(), return_leg.len()), (36, 36));
+
+        for team in &teams {
+            for (name, leg) in [("first", &first_leg), ("return", &return_leg)] {
+                let rested = (0..9)
+                    .filter(|round| {
+                        !leg.iter().any(|f| {
+                            f.date == dates[*round + if name == "first" { 0 } else { 9 }]
+                                && (f.home_team_id == *team || f.away_team_id == *team)
+                        })
+                    })
+                    .count();
+                assert_eq!(rested, 1, "{team} must rest once in the {name} leg");
+            }
+        }
+        // Every first-leg pairing is replayed with the sides swapped.
+        for fixture in &first_leg {
+            assert!(
+                return_leg.iter().any(|r| {
+                    r.home_team_id == fixture.away_team_id && r.away_team_id == fixture.home_team_id
+                }),
+                "no return fixture for {} v {}",
+                fixture.home_team_id,
+                fixture.away_team_id
+            );
+        }
+    }
 }
