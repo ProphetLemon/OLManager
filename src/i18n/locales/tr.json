@@ -651,6 +651,60 @@
         "lowContrast": "Bu renkler birbirine yakın, kısaltma zor okunabilir. Yine de devam edebilirsin.",
         "title": "Kulüp oluşturulamadı"
       }
+    },
+    "founders": {
+      "stepTitle": "Kurucu kadro",
+      "intro": "Bu beş oyuncu kulübünle birlikte başlar. Bir oyuncunun adını, uyruğunu veya doğum tarihini düzenle ya da farklı bir kadro için yeniden çek.",
+      "loading": "Kadron oluşturuluyor...",
+      "loadFailed": "Kadro oluşturulamadı.",
+      "retry": "Tekrar dene",
+      "listLabel": "Kurucu kadro",
+      "edited": "Düzenlendi",
+      "age": "{{age}} yaş",
+      "ovrLabel": "Genel",
+      "wage": "Maaş {{value}}",
+      "edit": "Düzenle",
+      "editAria": "{{nick}} oyuncusunu düzenle, {{role}}",
+      "attributes": "Özellikler",
+      "editsDropped": "Düzenlemelerin bu kulübe artık uymuyor, bu yüzden oluşturulan kadro geri yüklendi.",
+      "installFailed": "Kadro reddedildi. {{role}}, {{field}}: {{reason}}",
+      "budget": {
+        "label": "Bütçeye karşı maaş yükü",
+        "text": "{{bill}} / {{budget}}"
+      },
+      "reroll": {
+        "action": "Yeniden çek ({{count}} hak kaldı)",
+        "none": "Yeniden çekme hakkı kalmadı",
+        "noneReason": "Bu kulüp için {{max}} yeniden çekme hakkının hepsini kullandın.",
+        "confirmLabel": "Yeniden çekmeyi onayla",
+        "confirmText": "Yeniden çekmek yeni bir kadro oluşturur ve düzenlemelerini siler.",
+        "confirm": "Yine de yeniden çek",
+        "keep": "Bu kadroyu koru"
+      },
+      "dialog": {
+        "title": "{{role}} düzenle",
+        "fields": {
+          "nick": "Takma ad",
+          "full_name": "Tam ad",
+          "nationality": "Uyruk",
+          "birth_date": "Doğum tarihi"
+        },
+        "birthHint": "{{age}} yaşında kalması için {{min}} ile {{max}} arasında doğmuş olmalı.",
+        "restore": "Oluşturulanı geri yükle",
+        "cancel": "İptal",
+        "save": "Kaydet"
+      },
+      "errors": {
+        "empty": "Bu alan boş bırakılamaz.",
+        "tooShort": "En az {{min}} karakter kullan.",
+        "tooLong": "En fazla {{max}} karakter kullan.",
+        "invalidCharacter": "Bu metinde izin verilmeyen bir karakter var.",
+        "taken": "Başka bir oyuncu bu adı zaten kullanıyor.",
+        "notInRegion": "Bu ligin bölgesinden bir uyruk seç.",
+        "invalidDate": "Geçerli bir doğum tarihi gir.",
+        "ageChanged": "Doğum tarihi oyuncunun yaşını korumalı.",
+        "general": "Bu düzenleme denetlenemedi. Tekrar dene."
+      }
     }
   },
   "youthAcademy": {
@@ -1688,6 +1742,26 @@
     }
   },
   "playerProfile": {
+    "rename": {
+      "action": "Yeniden adlandır",
+      "actionAria": "{{nick}} oyuncusunu yeniden adlandır",
+      "title": "Oyuncuyu yeniden adlandır",
+      "hint": "Yalnızca ad değişir. Rol, yaş ve uyruk aynı kalır.",
+      "nick": "Takma ad",
+      "fullName": "Tam ad",
+      "save": "Adı kaydet",
+      "cancel": "İptal",
+      "errors": {
+        "empty": "Bu alan boş bırakılamaz.",
+        "tooShort": "En az {{min}} karakter kullan.",
+        "tooLong": "En fazla {{max}} karakter kullan.",
+        "invalidCharacter": "Bu metinde izin verilmeyen bir karakter var.",
+        "taken": "Başka bir oyuncu bu adı zaten kullanıyor.",
+        "nothingToChange": "Önce takma adı veya tam adı değiştir.",
+        "notAFounder": "Yalnızca kulübünün başladığı oyuncular yeniden adlandırılabilir.",
+        "general": "Oyuncu yeniden adlandırılamadı. Tekrar dene."
+      }
+    },
     "contractInfo": "Sözleşme ve Bilgi",
     "dateOfBirth": "Doğum Tarihi",
     "noContract": "Sözleşme yok",

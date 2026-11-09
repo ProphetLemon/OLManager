@@ -651,6 +651,60 @@
         "lowContrast": "Ces couleurs sont proches, le sigle risque d'être difficile à lire. Vous pouvez continuer.",
         "title": "Impossible de créer le club"
       }
+    },
+    "founders": {
+      "stepTitle": "Effectif fondateur",
+      "intro": "Ces cinq joueurs démarrent avec ton club. Modifie le nom, la nationalité ou la date de naissance d'un joueur, ou relance le tirage pour obtenir un autre effectif.",
+      "loading": "Génération de ton effectif...",
+      "loadFailed": "L'effectif n'a pas pu être généré.",
+      "retry": "Réessayer",
+      "listLabel": "Effectif fondateur",
+      "edited": "Modifié",
+      "age": "{{age}} ans",
+      "ovrLabel": "Note globale",
+      "wage": "Salaire {{value}}",
+      "edit": "Modifier",
+      "editAria": "Modifier {{nick}}, {{role}}",
+      "attributes": "Attributs",
+      "editsDropped": "Tes modifications ne conviennent plus à ce club : l'effectif généré a été rétabli.",
+      "installFailed": "Effectif refusé. {{role}}, {{field}} : {{reason}}",
+      "budget": {
+        "label": "Masse salariale face au budget",
+        "text": "{{bill}} sur {{budget}}"
+      },
+      "reroll": {
+        "action": "Relancer le tirage ({{count}} restants)",
+        "none": "Plus aucun tirage",
+        "noneReason": "Tu as utilisé les {{max}} tirages de ce club.",
+        "confirmLabel": "Confirmer le nouveau tirage",
+        "confirmText": "Un nouveau tirage génère un autre effectif et annule tes modifications.",
+        "confirm": "Relancer quand même",
+        "keep": "Garder cet effectif"
+      },
+      "dialog": {
+        "title": "Modifier {{role}}",
+        "fields": {
+          "nick": "Pseudo",
+          "full_name": "Nom complet",
+          "nationality": "Nationalité",
+          "birth_date": "Date de naissance"
+        },
+        "birthHint": "Né entre le {{min}} et le {{max}} pour garder {{age}} ans.",
+        "restore": "Rétablir la version générée",
+        "cancel": "Annuler",
+        "save": "Enregistrer"
+      },
+      "errors": {
+        "empty": "Ce champ ne peut pas être vide.",
+        "tooShort": "Utilise au moins {{min}} caractères.",
+        "tooLong": "Utilise au plus {{max}} caractères.",
+        "invalidCharacter": "Ce texte contient un caractère non autorisé.",
+        "taken": "Un autre joueur utilise déjà ce nom.",
+        "notInRegion": "Choisis une nationalité de la région de cette ligue.",
+        "invalidDate": "Saisis une date de naissance valide.",
+        "ageChanged": "La date de naissance doit conserver l'âge du joueur.",
+        "general": "Impossible de vérifier cette modification. Réessaie."
+      }
     }
   },
   "youthAcademy": {
@@ -1688,6 +1742,26 @@
     }
   },
   "playerProfile": {
+    "rename": {
+      "action": "Renommer",
+      "actionAria": "Renommer {{nick}}",
+      "title": "Renommer le joueur",
+      "hint": "Seul le nom change. Le rôle, l'âge et la nationalité restent identiques.",
+      "nick": "Pseudo",
+      "fullName": "Nom complet",
+      "save": "Enregistrer le nom",
+      "cancel": "Annuler",
+      "errors": {
+        "empty": "Ce champ ne peut pas être vide.",
+        "tooShort": "Utilise au moins {{min}} caractères.",
+        "tooLong": "Utilise au plus {{max}} caractères.",
+        "invalidCharacter": "Ce texte contient un caractère non autorisé.",
+        "taken": "Un autre joueur utilise déjà ce nom.",
+        "nothingToChange": "Modifie d'abord le pseudo ou le nom complet.",
+        "notAFounder": "Seuls les joueurs avec lesquels ton club a démarré peuvent être renommés.",
+        "general": "Impossible de renommer le joueur. Réessaie."
+      }
+    },
     "contractInfo": "Contrat et Infos",
     "dateOfBirth": "Date de Naissance",
     "noContract": "Sans contrat",

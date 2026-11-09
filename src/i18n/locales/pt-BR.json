@@ -651,6 +651,60 @@
         "lowContrast": "Essas cores são muito próximas e a sigla pode ser difícil de ler. Você pode continuar mesmo assim.",
         "title": "Não foi possível criar o clube"
       }
+    },
+    "founders": {
+      "stepTitle": "Elenco fundador",
+      "intro": "Estes cinco jogadores começam com o seu clube. Edite o nome, a nacionalidade ou a data de nascimento de um jogador, ou sorteie de novo para obter outro elenco.",
+      "loading": "Gerando o seu elenco...",
+      "loadFailed": "Não foi possível gerar o elenco.",
+      "retry": "Tentar de novo",
+      "listLabel": "Elenco fundador",
+      "edited": "Editado",
+      "age": "{{age}} anos",
+      "ovrLabel": "Geral",
+      "wage": "Salário {{value}}",
+      "edit": "Editar",
+      "editAria": "Editar {{nick}}, {{role}}",
+      "attributes": "Atributos",
+      "editsDropped": "Suas edições não combinam mais com este clube, então o elenco gerado foi restaurado.",
+      "installFailed": "Elenco recusado. {{role}}, {{field}}: {{reason}}",
+      "budget": {
+        "label": "Folha salarial frente ao orçamento",
+        "text": "{{bill}} de {{budget}}"
+      },
+      "reroll": {
+        "action": "Sortear de novo ({{count}} restantes)",
+        "none": "Sem sorteios restantes",
+        "noneReason": "Você usou os {{max}} sorteios deste clube.",
+        "confirmLabel": "Confirmar novo sorteio",
+        "confirmText": "Um novo sorteio gera outro elenco e descarta as suas edições.",
+        "confirm": "Sortear mesmo assim",
+        "keep": "Manter este elenco"
+      },
+      "dialog": {
+        "title": "Editar {{role}}",
+        "fields": {
+          "nick": "Nick",
+          "full_name": "Nome completo",
+          "nationality": "Nacionalidade",
+          "birth_date": "Data de nascimento"
+        },
+        "birthHint": "Nascido entre {{min}} e {{max}} para continuar com {{age}} anos.",
+        "restore": "Restaurar o gerado",
+        "cancel": "Cancelar",
+        "save": "Salvar"
+      },
+      "errors": {
+        "empty": "Este campo não pode ficar vazio.",
+        "tooShort": "Use pelo menos {{min}} caracteres.",
+        "tooLong": "Use no máximo {{max}} caracteres.",
+        "invalidCharacter": "Este texto tem um caractere não permitido.",
+        "taken": "Outro jogador já usa este nome.",
+        "notInRegion": "Escolha uma nacionalidade da região desta liga.",
+        "invalidDate": "Informe uma data de nascimento válida.",
+        "ageChanged": "A data de nascimento precisa manter a idade do jogador.",
+        "general": "Não foi possível verificar esta edição. Tente de novo."
+      }
     }
   },
   "youthAcademy": {
@@ -1688,6 +1742,26 @@
     }
   },
   "playerProfile": {
+    "rename": {
+      "action": "Renomear",
+      "actionAria": "Renomear {{nick}}",
+      "title": "Renomear jogador",
+      "hint": "Só o nome muda. A função, a idade e a nacionalidade continuam iguais.",
+      "nick": "Nick",
+      "fullName": "Nome completo",
+      "save": "Salvar nome",
+      "cancel": "Cancelar",
+      "errors": {
+        "empty": "Este campo não pode ficar vazio.",
+        "tooShort": "Use pelo menos {{min}} caracteres.",
+        "tooLong": "Use no máximo {{max}} caracteres.",
+        "invalidCharacter": "Este texto tem um caractere não permitido.",
+        "taken": "Outro jogador já usa este nome.",
+        "nothingToChange": "Altere primeiro o nick ou o nome completo.",
+        "notAFounder": "Só dá para renomear os jogadores com que o seu clube começou.",
+        "general": "Não foi possível renomear o jogador. Tente de novo."
+      }
+    },
     "contractInfo": "Contrato e Info",
     "dateOfBirth": "Data de Nascimento",
     "noContract": "Sem contrato",

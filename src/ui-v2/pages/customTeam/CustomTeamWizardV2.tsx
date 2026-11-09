@@ -19,10 +19,13 @@ import {
 } from "@/lib/customTeam";
 import type { CustomTeamField, ValidationCode } from "@/lib/customTeam";
 import { allNationalities } from "@/lib/common/countries";
+import { isEmptyOverrides, parseFounderError } from "@/lib/customTeam/founders";
 import type { CompetitionSummary, CustomTeamSpec, TeamSummary } from "@/store/types";
 import { Card, CardContent, CardHeader } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
 import LogoUploadControl from "@/ui-v2/pages/customTeam/LogoUploadControl";
+import FoundersStep from "./founders/FoundersStep";
+import { useFoundingSquad } from "./founders/useFoundingSquad";
 import {
   getReputationLabel,
   getTeamLogoPath,
@@ -37,8 +40,9 @@ export interface CustomTeamWizardV2Props {
   error: string | null;
 }
 
-type Step = 0 | 1 | 2;
-const LAST_STEP: Step = 2;
+type Step = 0 | 1 | 2 | 3;
+const LAST_STEP: Step = 3;
+const FOUNDERS_STEP: Step = 3;
 
 /** Colour pairs offered as one-click badge presets: [primary, secondary]. */
 export const BADGE_PRESETS: ReadonlyArray<readonly [string, string]> = [
@@ -157,6 +161,12 @@ export default function CustomTeamWizardV2({
   const [replacesId, setReplacesId] = useState<string | null>(() => defaultReplacementId(teams));
   const [touched, setTouched] = useState<ReadonlySet<CustomTeamField>>(new Set());
   const [ackedError, setAckedError] = useState<string | null>(null);
+  const squad = useFoundingSquad({
+    enabled: step === FOUNDERS_STEP,
+    competitionId: competition.id,
+    replacedTeamId: replacesId,
+    shortName: normalizeShortName(shortName),
+  });
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const draft = { name, shortName, primary, secondary, country, replacesTeamId: replacesId };
@@ -174,6 +184,21 @@ export default function CustomTeamWizardV2({
   useEffect(() => {
     if (backend) setStep(FIELD_STEP[backend.field]);
   }, [backend?.field, backend?.code, error]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A founder rejection from creating the club belongs on the squad step.
+  const founderError = error && error !== ackedError ? parseFounderError(error) : null;
+  useEffect(() => {
+    if (founderError) setStep(FOUNDERS_STEP);
+  }, [founderError?.kind, error]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Any new squad (reroll or edit) answers a founder rejection.
+  const squadKey = `${squad.seed}:${JSON.stringify(squad.overrides)}`;
+  const lastSquadKey = useRef(squadKey);
+  useEffect(() => {
+    if (lastSquadKey.current === squadKey) return;
+    lastSquadKey.current = squadKey;
+    if (error) setAckedError(error);
+  }, [squadKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A fresh submission clears the error; forget the acknowledgement so an
   // identical rejection is shown again.
@@ -256,7 +281,7 @@ export default function CustomTeamWizardV2({
   };
 
   const handleConfirm = () => {
-    if (!validation.ok || isSubmitting || !replacesId) return;
+    if (!validation.ok || isSubmitting || !replacesId || !squad.inSync) return;
     onConfirm(
       {
         name: name.trim(),
@@ -265,6 +290,9 @@ export default function CustomTeamWizardV2({
         secondary_color: normalizeColor(secondary),
         ...(logoDataUri ? { logo_data_uri: logoDataUri } : {}),
         country,
+        // The install reproduces the last preview: same seed and same edits.
+        founding_seed: squad.seed,
+        ...(isEmptyOverrides(squad.overrides) ? {} : { founder_overrides: squad.overrides }),
       },
       replacesId,
     );
@@ -282,6 +310,7 @@ export default function CustomTeamWizardV2({
     t("teamSelect.custom.steps.identity"),
     t("teamSelect.custom.steps.badge"),
     t("teamSelect.custom.steps.replace"),
+    t("teamSelect.founders.stepTitle"),
   ];
 
   const colorField = (
@@ -625,8 +654,14 @@ export default function CustomTeamWizardV2({
                   </p>
                 </div>
               </section>
+            </div>
+          )}
 
-              {error && !backend && (
+          {step === FOUNDERS_STEP && (
+            <div className="space-y-6">
+              <FoundersStep state={squad} installError={founderError} />
+
+              {error && !backend && !founderError && (
                 <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
                   <p className="font-heading text-sm font-bold uppercase tracking-wide">
                     {t("teamSelect.custom.errors.title")}
@@ -661,7 +696,7 @@ export default function CustomTeamWizardV2({
               <button
                 type="button"
                 onClick={handleConfirm}
-                disabled={!validation.ok || isSubmitting}
+                disabled={!validation.ok || isSubmitting || !squad.inSync}
                 className="flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
               >
                 {isSubmitting && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
