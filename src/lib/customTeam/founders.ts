@@ -270,10 +270,12 @@ export function overrideCount(overrides: FounderOverrides): number {
 // ------------------------------------------------------------ rename rule
 
 export const FOUNDER_ID_PREFIX = "gen-";
+/** Substring that marks a custom club id (`is_custom_team_id` in olm_core). */
+export const CUSTOM_TEAM_ID_MARKER = "-custom-";
 
 /**
- * Whether the profile may offer Rename: the manager's own club player whose id
- * is a generated founder id. The backend enforces the same rule.
+ * Whether the profile may offer Rename: the manager's own custom club player
+ * whose id is a generated founder id. Mirrors `is_user_club_founder` in olm_core.
  */
 export function canRenameFounder(
   player: { id: string; team_id: string | null },
@@ -282,6 +284,7 @@ export function canRenameFounder(
   return (
     managerTeamId !== null &&
     player.team_id === managerTeamId &&
-    player.id.startsWith(FOUNDER_ID_PREFIX)
+    player.id.startsWith(FOUNDER_ID_PREFIX) &&
+    managerTeamId.includes(CUSTOM_TEAM_ID_MARKER)
   );
 }

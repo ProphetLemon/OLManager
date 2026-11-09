@@ -164,5 +164,7 @@ describe("canRenameFounder", () => {
     expect(canRenameFounder({ id: "p-123", team_id: "les-custom-ray" }, "les-custom-ray")).toBe(false);
     expect(canRenameFounder({ id: "gen-ray-mid-1", team_id: null }, "les-custom-ray")).toBe(false);
     expect(canRenameFounder({ id: "gen-ray-mid-1", team_id: "les-custom-ray" }, null)).toBe(false);
+    // A generated id on a club that is not a custom club is rejected by the backend too.
+    expect(canRenameFounder({ id: "gen-ray-mid-1", team_id: "les-b" }, "les-b")).toBe(false);
   });
 });
