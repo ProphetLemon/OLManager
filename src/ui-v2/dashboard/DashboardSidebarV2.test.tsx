@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/ui-v2/_legacy/components/dashboard/FloatingBugButton", () => ({
@@ -186,5 +186,56 @@ describe("DashboardSidebarV2 rail", () => {
     expect(latest).toHaveBeenCalledWith("Inbox");
     expect(props.onNavClick).not.toHaveBeenCalled();
     outside.remove();
+  });
+
+  it("acts on the focused stop, not the stale roving index (cancelled Exit confirm)", () => {
+    const { props } = setup({ activeTab: "Home" });
+    // Focus lands on Exit without any arrow key (click, then the confirm is cancelled).
+    act(() => stop(/^Exit/).focus());
+    expect(stop(/^Exit/)).toHaveAttribute("tabindex", "0");
+    fireEvent.keyDown(stop(/^Exit/), { key: "Enter" });
+    expect(props.onExitClick).toHaveBeenCalledTimes(1);
+    expect(props.onNavClick).not.toHaveBeenCalled();
+    fireEvent.keyDown(stop(/^Exit/), { key: "ArrowUp" });
+    expect(stop(/^Settings/)).toHaveFocus();
+  });
+
+  it("renders no club shield in the rail", () => {
+    setup({ teamName: "Night Owls" });
+    expect(nav().parentElement?.querySelector('[data-slot="club-shield"]')).toBeNull();
+    expect(nav().parentElement?.firstElementChild).toBe(nav());
+  });
+
+  it("scrolls the focused stop into view with block nearest", () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    setup({ activeTab: "Home" });
+    stop(/^Home/).focus();
+    fireEvent.keyDown(stop(/^Home/), { key: "ArrowDown" });
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+    expect(scrollIntoView.mock.contexts[scrollIntoView.mock.contexts.length - 1]).toBe(stop(/^Inbox/));
+  });
+
+  it("shows fade cues only while the stops area overflows", () => {
+    setup();
+    const scroller = nav().querySelector('[data-slot="rail-stops"]') as HTMLElement;
+    expect(scroller).not.toHaveAttribute("data-overflow-bottom");
+    Object.defineProperty(scroller, "clientHeight", { configurable: true, value: 100 });
+    Object.defineProperty(scroller, "scrollHeight", { configurable: true, value: 300 });
+    fireEvent.scroll(scroller);
+    expect(scroller).toHaveAttribute("data-overflow-bottom", "true");
+    expect(scroller).not.toHaveAttribute("data-overflow-top");
+    scroller.scrollTop = 200;
+    fireEvent.scroll(scroller);
+    expect(scroller).toHaveAttribute("data-overflow-top", "true");
+    expect(scroller).not.toHaveAttribute("data-overflow-bottom");
+  });
+
+  it("describes each launcher by its children", () => {
+    setup();
+    expect(stop(/^Club/)).toHaveAttribute("aria-description", expect.stringMatching(/^Squad, Tactics, Training/));
+    expect(stop(/^Market/)).toHaveAttribute("aria-description", "Market, Transfers");
+    expect(stop(/^World/).getAttribute("title")).toContain("Competitions, Players");
+    expect(stop(/^Home/)).not.toHaveAttribute("aria-description");
   });
 });

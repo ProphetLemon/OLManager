@@ -10,6 +10,8 @@ interface RailItemProps {
   active?: boolean;
   /** Count shown on the icon; also appended to the accessible name. */
   badge?: number;
+  /** Short description of what the stop opens (a launcher's children). */
+  hint?: string;
   tabIndex?: 0 | -1;
   onClick: () => void;
   /** Hides the visible label (still exposed through the accessible name). */
@@ -27,6 +29,7 @@ export function RailItem({
   label,
   active = false,
   badge,
+  hint,
   tabIndex,
   onClick,
   compact = false,
@@ -46,7 +49,8 @@ export function RailItem({
       onClick={onClick}
       aria-label={accessibleName}
       aria-current={active ? "page" : undefined}
-      title={label}
+      aria-description={hint}
+      title={hint ? `${label}: ${hint}` : label}
       data-slot="rail-item"
       data-active={active ? "true" : undefined}
       data-rail-stop={rest["data-rail-stop"]}
@@ -56,7 +60,7 @@ export function RailItem({
         tone === "danger"
           ? "text-negative hover:bg-negative/10"
           : active
-            ? "bg-[color-mix(in_srgb,var(--club)_16%,transparent)] text-foreground"
+            ? "bg-[color-mix(in_srgb,var(--club)_16%,transparent)] text-foreground [[data-contrast=high]_&]:data-[active=true]:outline-2 [[data-contrast=high]_&]:data-[active=true]:-outline-offset-2 [[data-contrast=high]_&]:data-[active=true]:outline-solid [[data-contrast=high]_&]:data-[active=true]:outline-club-text"
             : "text-muted-foreground hover:bg-accent hover:text-foreground",
       )}
     >
@@ -82,7 +86,7 @@ export function RailItem({
       <span
         aria-hidden="true"
         className={cn(
-          "w-full truncate font-heading text-xs leading-4",
+          "w-full truncate font-heading text-[0.75rem] leading-4",
           active ? "font-bold" : "font-medium",
           compact && "sr-only",
         )}

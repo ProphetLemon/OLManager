@@ -45,4 +45,23 @@ describe("RailItem", () => {
     render(<RailItem icon={Mail} label="Inbox" compact onClick={vi.fn()} />);
     expect(screen.getByRole("button", { name: "Inbox" })).toBeInTheDocument();
   });
+
+  it("gives the active stop a high-contrast outline besides the bar and fill", () => {
+    render(<RailItem icon={Mail} label="Inbox" active onClick={vi.fn()} />);
+    const cls = screen.getByRole("button", { name: "Inbox" }).className;
+    expect(cls).toContain("[[data-contrast=high]_&]:data-[active=true]:outline-2");
+    expect(cls).toContain("[[data-contrast=high]_&]:data-[active=true]:outline-solid");
+  });
+
+  it("keeps labels at 0.75rem or larger", () => {
+    render(<RailItem icon={Mail} label="Inbox" onClick={vi.fn()} />);
+    expect(screen.getByText("Inbox").className).toContain("text-[0.75rem]");
+  });
+
+  it("describes a launcher through aria-description and the tooltip", () => {
+    render(<RailItem icon={Mail} label="Club" hint="Squad, Tactics" onClick={vi.fn()} />);
+    const button = screen.getByRole("button", { name: "Club" });
+    expect(button).toHaveAttribute("aria-description", "Squad, Tactics");
+    expect(button).toHaveAttribute("title", "Club: Squad, Tactics");
+  });
 });

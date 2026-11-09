@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LogOut, Settings } from "lucide-react";
 
 import { useRovingFocus } from "@/hooks/useRovingFocus";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
-import { ClubShield } from "@/ui-v2/components/ui/club-shield";
 import { RailItem } from "@/ui-v2/shell/RailItem";
 import {
   RAIL_DIRECT,
@@ -51,8 +50,6 @@ export function DashboardSidebarV2({
   managerName,
   managerFullName,
   managerAvatar,
-  teamName,
-  teamLogo,
   isUnemployed,
   onNavigateSettings,
   onExitClick,
@@ -106,7 +103,7 @@ export function DashboardSidebarV2({
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const stopsRef = useRef(stops);
   stopsRef.current = stops;
-  const { activeIndex, shouldFocus, handleKeyDown, getTabIndex } = useRovingFocus({
+  const { activeIndex, shouldFocus, setActiveIndex, handleKeyDown, getTabIndex } = useRovingFocus({
     itemCount: stops.length,
     columns: 1,
     index: controlledIndex,
@@ -125,11 +122,47 @@ export function DashboardSidebarV2({
 
   // Only keys pressed on a roving stop drive the widget. The bug button and its modal
   // (a React descendant of the nav) keep their own Enter, Space and typing.
+  const stopIndexOf = (target: EventTarget) =>
+    stops.findIndex((s) => itemRefs.current[s.id] === target);
+
   const onNavKeyDown = (e: React.KeyboardEvent) => {
-    const target = e.target as HTMLElement;
-    const isStop = Object.values(itemRefs.current).some((el) => el === target);
-    if (isStop) handleKeyDown(e);
+    if (stopIndexOf(e.target) >= 0) handleKeyDown(e);
   };
+
+  // Focus can land on a stop without the roving index moving (a click, Tab after a
+  // cancelled confirm). Enter and Space act on the roving index, so keep it on the
+  // focused stop, and keep that stop visible inside the scrolling area.
+  const onNavFocus = (e: React.FocusEvent) => {
+    const i = stopIndexOf(e.target);
+    if (i < 0) return;
+    if (i !== activeIndex) setActiveIndex(i);
+    (e.target as HTMLElement).scrollIntoView?.({ block: "nearest" });
+  };
+
+  // Fade cues that only show while the stops area has more content past an edge.
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [overflow, setOverflow] = useState({ top: false, bottom: false });
+  const measure = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const top = el.scrollTop > 1;
+    const bottom = el.scrollHeight - el.clientHeight - el.scrollTop > 1;
+    setOverflow((prev) => (prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
+  }, []);
+  useEffect(() => {
+    measure();
+    const el = scrollerRef.current;
+    window.addEventListener("resize", measure);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    if (el) observer?.observe(el);
+    return () => {
+      window.removeEventListener("resize", measure);
+      observer?.disconnect();
+    };
+  }, [measure, stops.length]);
+  const fadeMask = `linear-gradient(to bottom, ${overflow.top ? "transparent 0, #000 1.5rem" : "#000 0"}, ${
+    overflow.bottom ? "#000 calc(100% - 1.5rem), transparent 100%" : "#000 100%"
+  })`;
 
   const indexOf = (id: string) => stops.findIndex((s) => s.id === id);
   const itemProps = (id: string) => ({
@@ -143,6 +176,8 @@ export function DashboardSidebarV2({
     t(item.labelKey, { defaultValue: item.defaultLabel });
   const badgeOf = (item: NavItem) => (item.badge ? badges[item.badge] : undefined);
 
+  const hintOf = (g: { items: { labelKey: string; defaultLabel: string }[] }) =>
+    g.items.map(labelOf).join(", ");
   const groupBadge = (id: RailGroupId) => (id === "market" ? badges.offers : undefined);
   const managerLabel = t("onAir.nav.manager", { defaultValue: "Manager profile" });
   const initials = Array.from((managerName ?? "").trim()).slice(0, 2).join("").toUpperCase();
@@ -150,21 +185,23 @@ export function DashboardSidebarV2({
   return (
     <aside
       className={cn(
-        "flex h-full shrink-0 flex-col border-e border-line bg-rail text-sidebar-foreground",
+        "flex h-full min-h-0 shrink-0 flex-col border-e border-line bg-rail text-sidebar-foreground",
         compact ? "w-14" : "w-[4.75rem]",
       )}
     >
-      <div className="flex shrink-0 justify-center py-3">
-        <ClubShield name={teamName ?? ""} logoUrl={teamLogo} size="md" decorative />
-      </div>
-
       <nav
         aria-label={t("onAir.nav.rail", { defaultValue: "Main navigation" })}
         className="flex min-h-0 flex-1 flex-col"
         onKeyDown={onNavKeyDown}
+        onFocus={onNavFocus}
       >
         <div
+          ref={scrollerRef}
           data-slot="rail-stops"
+          data-overflow-top={overflow.top ? "true" : undefined}
+          data-overflow-bottom={overflow.bottom ? "true" : undefined}
+          onScroll={measure}
+          style={{ maskImage: fadeMask, WebkitMaskImage: fadeMask }}
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {RAIL_DIRECT.map((item) => (
@@ -185,6 +222,7 @@ export function DashboardSidebarV2({
               key={g.id}
               icon={g.icon}
               label={labelOf(g)}
+              hint={hintOf(g)}
               active={groupForTab(activeTab) === g.id}
               badge={groupBadge(g.id)}
               compact={compact}
