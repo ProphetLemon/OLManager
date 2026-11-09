@@ -3841,6 +3841,7 @@
       "unreadCount_other": "{{count}} non letti",
       "openInbox": "Apri la posta",
       "standingsTitle": "Classifica",
+      "standingsEmpty": "Nessuna classifica per ora",
       "standingsGap": "Salto in classifica",
       "standingsPreseason": "Stagione non iniziata",
       "bestOf": "Al meglio di {{count}}",
@@ -3918,6 +3919,15 @@
       "clearFilter": "Rimuovi filtro",
       "filterAllRoles": "Tutti i ruoli",
       "selectedAria": "Giocatore selezionato",
+      "fill": "Assegna slot",
+      "fillSlot": "Assegna lo slot {{role}}",
+      "slotEmpty": "Nessun giocatore in questo slot",
+      "transferListedTag": "In lista trasferimenti",
+      "loanListedTag": "In lista prestiti",
+      "roleFilter": "Filtra la panchina per ruolo",
+      "sortBy": "Ordina la panchina per",
+      "sortAscending": "crescente",
+      "sortDescending": "decrescente",
       "importLimit": "Limite di importati raggiunto"
     }
   }

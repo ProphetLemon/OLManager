@@ -3842,6 +3842,7 @@
       "unreadCount_other": "{{count}} não lidas",
       "openInbox": "Abrir caixa de entrada",
       "standingsTitle": "Classificação",
+      "standingsEmpty": "Ainda sem classificação",
       "standingsGap": "Salto na tabela",
       "standingsPreseason": "A temporada ainda não começou",
       "bestOf": "Melhor de {{count}}",
@@ -3919,6 +3920,15 @@
       "clearFilter": "Limpar filtro",
       "filterAllRoles": "Todas as funções",
       "selectedAria": "Jogador selecionado",
+      "fill": "Preencher vaga",
+      "fillSlot": "Preencher vaga de {{role}}",
+      "slotEmpty": "Nenhum jogador nesta vaga",
+      "transferListedTag": "Na lista de transferências",
+      "loanListedTag": "Na lista de empréstimos",
+      "roleFilter": "Filtrar reservas por função",
+      "sortBy": "Ordenar reservas por",
+      "sortAscending": "crescente",
+      "sortDescending": "decrescente",
       "importLimit": "Limite de importados atingido"
     }
   }

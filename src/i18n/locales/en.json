@@ -3883,6 +3883,7 @@
       "unreadCount_other": "{{count}} unread",
       "openInbox": "Open inbox",
       "standingsTitle": "Standings",
+      "standingsEmpty": "No standings yet",
       "standingsGap": "Gap in the table",
       "standingsPreseason": "Season not started",
       "bestOf": "Best of {{count}}",
@@ -3960,6 +3961,15 @@
       "clearFilter": "Clear filter",
       "filterAllRoles": "All roles",
       "selectedAria": "Selected player",
+      "fill": "Fill slot",
+      "fillSlot": "Fill {{role}} slot",
+      "slotEmpty": "No player in this slot",
+      "transferListedTag": "Transfer listed",
+      "loanListedTag": "Loan listed",
+      "roleFilter": "Filter bench by role",
+      "sortBy": "Sort bench by",
+      "sortAscending": "ascending",
+      "sortDescending": "descending",
       "importLimit": "Import limit reached"
     }
   }

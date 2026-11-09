@@ -3842,6 +3842,7 @@
       "unreadCount_other": "{{count}} okunmamış",
       "openInbox": "Gelen kutusunu aç",
       "standingsTitle": "Puan durumu",
+      "standingsEmpty": "Henüz puan durumu yok",
       "standingsGap": "Tabloda boşluk",
       "standingsPreseason": "Sezon başlamadı",
       "bestOf": "{{count}} maçlık seri",
@@ -3919,6 +3920,15 @@
       "clearFilter": "Filtreyi temizle",
       "filterAllRoles": "Tüm roller",
       "selectedAria": "Seçili oyuncu",
+      "fill": "Boşluğu doldur",
+      "fillSlot": "{{role}} boşluğunu doldur",
+      "slotEmpty": "Bu pozisyonda oyuncu yok",
+      "transferListedTag": "Transfer listesinde",
+      "loanListedTag": "Kiralık listesinde",
+      "roleFilter": "Yedekleri role göre filtrele",
+      "sortBy": "Yedekleri sırala",
+      "sortAscending": "artan",
+      "sortDescending": "azalan",
       "importLimit": "İçe aktarma sınırına ulaşıldı"
     }
   }
