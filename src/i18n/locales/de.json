@@ -2286,7 +2286,21 @@
     "nGoals": "{{count}} Kills",
     "playerOfYear": "Spieler des Jahres",
     "avgRating": "Durchschnittsbewertung: {{rating}}",
-    "continueDashboard": "Weiter zum Dashboard"
+    "continueDashboard": "Weiter zum Dashboard",
+    "ladder": {
+      "title": "Auf- und Abstieg",
+      "promotedTitle": "Aufgestiegen",
+      "promotedBody": "{{team}} steigt für die nächste Saison in die {{league}} auf.",
+      "relegatedTitle": "Abgestiegen",
+      "relegatedBody": "{{team}} steigt für die nächste Saison in die {{league}} ab.",
+      "stayedBody": "{{team}} bleibt in der {{league}}. Andere Teams haben die Liga gewechselt.",
+      "movementsTitle": "Ligawechsel",
+      "between": "{{upper}} und {{lower}}",
+      "promotedTo": "Aufstieg in die {{league}}",
+      "relegatedTo": "Abstieg in die {{league}}",
+      "skippedLate": "Nicht umgesetzt: Die untere Liga hatte ihre Saison noch nicht beendet.",
+      "noEligible": "Kein berechtigtes Team: keine Änderung in dieser Saison."
+    }
   },
   "notifications": {
     "attentionRequired": "Aufmerksamkeit erforderlich",

@@ -2233,7 +2233,21 @@
     "nGoals": "{{count}} abates",
     "playerOfYear": "Jogador do Ano",
     "avgRating": "Nota média: {{rating}}",
-    "continueDashboard": "Continuar para o Painel"
+    "continueDashboard": "Continuar para o Painel",
+    "ladder": {
+      "title": "Acessos e rebaixamentos",
+      "promotedTitle": "Acesso",
+      "promotedBody": "{{team}} sobe para {{league}} na próxima temporada.",
+      "relegatedTitle": "Rebaixamento",
+      "relegatedBody": "{{team}} cai para {{league}} na próxima temporada.",
+      "stayedBody": "{{team}} continua em {{league}}. Outros times mudaram de liga.",
+      "movementsTitle": "Movimentações entre ligas",
+      "between": "{{upper}} e {{lower}}",
+      "promotedTo": "Sobem para {{league}}",
+      "relegatedTo": "Caem para {{league}}",
+      "skippedLate": "Não aplicado: a liga inferior ainda não tinha terminado a temporada.",
+      "noEligible": "Nenhum time elegível: sem mudanças nesta temporada."
+    }
   },
   "notifications": {
     "attentionRequired": "Atenção Necessária",

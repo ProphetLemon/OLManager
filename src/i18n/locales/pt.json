@@ -2285,7 +2285,21 @@
     "nGoals": "{{count}} abates",
     "playerOfYear": "Jogador do Ano",
     "avgRating": "Classificação média: {{rating}}",
-    "continueDashboard": "Continuar para o Painel"
+    "continueDashboard": "Continuar para o Painel",
+    "ladder": {
+      "title": "Subidas e descidas",
+      "promotedTitle": "Promovido",
+      "promotedBody": "{{team}} sobe para {{league}} na próxima época.",
+      "relegatedTitle": "Despromovido",
+      "relegatedBody": "{{team}} desce para {{league}} na próxima época.",
+      "stayedBody": "{{team}} continua em {{league}}. Outras equipas mudaram de liga.",
+      "movementsTitle": "Movimentos entre ligas",
+      "between": "{{upper}} e {{lower}}",
+      "promotedTo": "Sobem para {{league}}",
+      "relegatedTo": "Descem para {{league}}",
+      "skippedLate": "Não aplicado: a liga inferior ainda não tinha terminado a época.",
+      "noEligible": "Nenhuma equipa elegível: sem alterações nesta época."
+    }
   },
   "notifications": {
     "attentionRequired": "Atenção Necessária",

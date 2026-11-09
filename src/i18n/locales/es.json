@@ -2431,7 +2431,21 @@
     "nGoals": "{{count}} bajas",
     "playerOfYear": "Jugador del Año",
     "avgRating": "Puntuación media: {{rating}}",
-    "continueDashboard": "Continuar al Panel"
+    "continueDashboard": "Continuar al Panel",
+    "ladder": {
+      "title": "Ascensos y descensos",
+      "promotedTitle": "Ascenso",
+      "promotedBody": "{{team}} sube a {{league}} para la próxima temporada.",
+      "relegatedTitle": "Descenso",
+      "relegatedBody": "{{team}} baja a {{league}} para la próxima temporada.",
+      "stayedBody": "{{team}} sigue en {{league}}. Otros clubes cambiaron de liga.",
+      "movementsTitle": "Movimientos entre ligas",
+      "between": "{{upper}} y {{lower}}",
+      "promotedTo": "Ascienden a {{league}}",
+      "relegatedTo": "Descienden a {{league}}",
+      "skippedLate": "No aplicado: la liga inferior no había terminado su temporada.",
+      "noEligible": "Ningún club elegible: sin cambios esta temporada."
+    }
   },
   "notifications": {
     "attentionRequired": "Atención Requerida",

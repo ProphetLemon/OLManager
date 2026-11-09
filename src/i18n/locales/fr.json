@@ -2286,7 +2286,21 @@
     "nGoals": "{{count}} kills",
     "playerOfYear": "Joueur de l'Année",
     "avgRating": "Note moyenne : {{rating}}",
-    "continueDashboard": "Continuer vers le Tableau de Bord"
+    "continueDashboard": "Continuer vers le Tableau de Bord",
+    "ladder": {
+      "title": "Promotion et relégation",
+      "promotedTitle": "Promu",
+      "promotedBody": "{{team}} monte en {{league}} pour la saison prochaine.",
+      "relegatedTitle": "Relégué",
+      "relegatedBody": "{{team}} descend en {{league}} pour la saison prochaine.",
+      "stayedBody": "{{team}} reste en {{league}}. D'autres équipes ont changé de ligue.",
+      "movementsTitle": "Mouvements entre ligues",
+      "between": "{{upper}} et {{lower}}",
+      "promotedTo": "Promus en {{league}}",
+      "relegatedTo": "Relégués en {{league}}",
+      "skippedLate": "Non appliqué : la ligue inférieure n'avait pas terminé sa saison.",
+      "noEligible": "Aucune équipe éligible : pas de changement cette saison."
+    }
   },
   "notifications": {
     "attentionRequired": "Attention Requise",

@@ -2286,7 +2286,21 @@
     "nGoals": "{{count}} skor",
     "playerOfYear": "Yılın Oyuncusu",
     "avgRating": "OVR. reyting: {{rating}}",
-    "continueDashboard": "Ana Ekrana Devam Et"
+    "continueDashboard": "Ana Ekrana Devam Et",
+    "ladder": {
+      "title": "Yükselme ve düşme",
+      "promotedTitle": "Yükseldi",
+      "promotedBody": "{{team}} gelecek sezon {{league}} ligine yükseliyor.",
+      "relegatedTitle": "Düştü",
+      "relegatedBody": "{{team}} gelecek sezon {{league}} ligine düşüyor.",
+      "stayedBody": "{{team}} {{league}} ligindeki yerini koruyor. Diğer takımlar lig değiştirdi.",
+      "movementsTitle": "Lig geçişleri",
+      "between": "{{upper}} ve {{lower}}",
+      "promotedTo": "{{league}} ligine yükselenler",
+      "relegatedTo": "{{league}} ligine düşenler",
+      "skippedLate": "Uygulanmadı: alt lig sezonunu henüz bitirmemişti.",
+      "noEligible": "Uygun takım yok: bu sezon değişiklik olmadı."
+    }
   },
   "notifications": {
     "attentionRequired": "Dikkat Gerekiyor",

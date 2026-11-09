@@ -2442,7 +2442,21 @@
     "nGoals": "{{count}} kills",
     "playerOfYear": "Player of the Year",
     "avgRating": "Avg rating: {{rating}}",
-    "continueDashboard": "Continue to Dashboard"
+    "continueDashboard": "Continue to Dashboard",
+    "ladder": {
+      "title": "Promotion and relegation",
+      "promotedTitle": "Promoted",
+      "promotedBody": "{{team}} moves up to {{league}} for the next season.",
+      "relegatedTitle": "Relegated",
+      "relegatedBody": "{{team}} drops down to {{league}} for the next season.",
+      "stayedBody": "{{team}} stays in {{league}}. Other clubs changed league.",
+      "movementsTitle": "League movements",
+      "between": "{{upper}} and {{lower}}",
+      "promotedTo": "Promoted to {{league}}",
+      "relegatedTo": "Relegated to {{league}}",
+      "skippedLate": "Not applied: the lower league had not finished its season.",
+      "noEligible": "No eligible club: no change this season."
+    }
   },
   "notifications": {
     "attentionRequired": "Attention Required",

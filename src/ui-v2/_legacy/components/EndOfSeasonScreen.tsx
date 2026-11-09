@@ -3,32 +3,16 @@ import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { compareStandingsByLolScore, GameStateData } from "@/store/gameStore";
 import { useGameStore } from "@/store/gameStore";
+import type { EndOfSeasonSummaryData } from "@/store/types";
+import { PromotionRelegationCard } from "@/ui-v2/components/season/PromotionRelegationCard";
 import { Card, CardBody } from "@/ui-v2/_legacy/components/ui";
 import PlayoffBracketBoard from "@/ui-v2/_legacy/components/playoffs/PlayoffBracketBoard";
 import { Trophy, Award, Star, ArrowRight, Crown } from "lucide-react";
 
-interface EndOfSeasonSummary {
-  season: number;
-  league_name: string;
-  champion_id: string;
-  champion_name: string;
-  user_position: number;
-  user_points: number;
-  user_won: number;
-  user_lost: number;
-  user_maps_won: number;
-  user_maps_lost: number;
-  golden_boot_player: string;
-  golden_boot_goals: number;
-  poty_player: string;
-  poty_rating: number;
-  total_teams: number;
-}
-
 type AdvanceToNextSeasonResult = {
   action?: "fired";
   game: GameStateData;
-  summary: EndOfSeasonSummary;
+  summary: EndOfSeasonSummaryData;
 };
 
 interface EndOfSeasonScreenProps {
@@ -56,7 +40,7 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
   const { t } = useTranslation();
   const setShowFiredModal = useGameStore((s) => s.setShowFiredModal);
   const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState<EndOfSeasonSummary | null>(null);
+  const [summary, setSummary] = useState<EndOfSeasonSummaryData | null>(null);
   const [step, setStep] = useState<"review" | "done">("review");
 
   const league = gameState?.user_competition_id
@@ -238,6 +222,13 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
           <p className="text-gray-500 dark:text-gray-400 mb-8">
             {t('endOfSeason.newScheduleReleased')}
           </p>
+
+          <PromotionRelegationCard
+            summary={summary}
+            teams={gameState.teams}
+            leagues={gameState.leagues}
+            userTeamId={userTeamId}
+          />
 
           {/* Season summary awards */}
           {(summary.golden_boot_player || summary.poty_player) && (
