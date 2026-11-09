@@ -300,6 +300,9 @@ fn fold_char_into(c: char, out: &mut String) {
             'æ' => out.push_str("ae"),
             'œ' => out.push_str("oe"),
             'þ' => out.push_str("th"),
+            // Stored names may predate the input normalization, so the key
+            // folds typographic apostrophes too.
+            '\u{2018}' | '\u{2019}' | '\u{02BC}' => out.push('\''),
             mark if is_combining_mark(mark) => {}
             other => out.push(other),
         }

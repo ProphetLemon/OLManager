@@ -1368,6 +1368,17 @@ fn full_name_normalizes_typographic_apostrophes() {
 }
 
 #[test]
+fn fold_key_treats_typographic_and_ascii_apostrophes_alike() {
+    for quote in ['\u{2019}', '\u{2018}', '\u{02BC}'] {
+        assert_eq!(
+            fold_key(&format!("Conan O{quote}Brien")),
+            fold_key("conan o'brien"),
+            "{quote:?}"
+        );
+    }
+}
+
+#[test]
 fn a_typographic_apostrophe_is_stored_as_ascii_on_install() {
     let mut game = with_custom_club();
     let edit = FounderIdentityOverride {
