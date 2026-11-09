@@ -3911,6 +3911,491 @@ mod tests {
             assert_eq!(club.active_lineup_ids.len(), 5);
         }
 
+        // -- Whole LES seasons (J3) ----------------------------------------------------
+
+        /// Plays whole LES seasons day by day through the app's own entry points
+        /// (`process_day_with_capture`, `advance_season`, a save and load in between)
+        /// and records what actually happened.
+        mod full_season {
+            use super::*;
+            use olm_core::domain::league::{FixtureStatus, League, MatchType};
+            use olm_core::ladder::LadderMovementStatus;
+
+            /// The user's league the day a split closed, and what the rollover did next.
+            #[derive(Debug)]
+            struct ClosedSplit {
+                season: u32,
+                split: usize,
+                clubs: usize,
+                last_regular_day: String,
+                last_playoff_day: String,
+                /// Clock date when the league first counted as complete.
+                closed_on: String,
+                champion: String,
+                was_season_end: bool,
+                /// Earliest league fixture of the split the rollover generated.
+                next_first_day: String,
+            }
+
+            /// When the run saves the game and loads it back.
+            #[derive(Debug, Clone, Copy, PartialEq)]
+            enum ReloadWhen {
+                /// Three regular-season matchdays into the split.
+                MidSplit,
+                /// Playoffs scheduled and not all played.
+                InPlayoffs,
+            }
+
+            #[derive(Debug, Clone, Copy)]
+            struct Reload {
+                split: usize,
+                when: ReloadWhen,
+            }
+
+            /// Everything a loaded game must give back unchanged.
+            #[derive(Debug, PartialEq)]
+            struct Snapshot {
+                date: String,
+                season: u32,
+                split: usize,
+                les_clubs: Vec<String>,
+                standings: Vec<(String, u32, u32)>,
+                fixtures: Vec<(String, String, bool)>,
+                lineup: Vec<String>,
+            }
+
+            fn snapshot(game: &Game, user_id: &str) -> Snapshot {
+                let les = les_league(game);
+                let mut les_clubs: Vec<String> = les_main_ids(game).into_iter().collect();
+                les_clubs.sort();
+                Snapshot {
+                    date: game.clock.current_date.format("%Y-%m-%d").to_string(),
+                    season: les.season,
+                    split: les.split_index,
+                    les_clubs,
+                    standings: les
+                        .standings
+                        .iter()
+                        .map(|s| (s.team_id.clone(), s.played, s.points))
+                        .collect(),
+                    fixtures: les
+                        .fixtures
+                        .iter()
+                        .map(|f| (f.id.clone(), f.date.clone(), f.status == FixtureStatus::Completed))
+                        .collect(),
+                    lineup: game
+                        .teams
+                        .iter()
+                        .find(|t| t.id == user_id)
+                        .map(|t| t.active_lineup_ids.clone())
+                        .unwrap_or_default(),
+                }
+            }
+
+            fn regular_fixtures(league: &League) -> Vec<&olm_core::domain::league::Fixture> {
+                league.fixtures.iter().filter(|f| f.counts_for_league_standings()).collect()
+            }
+
+            fn last_day(league: &League, playoffs: bool) -> String {
+                league
+                    .fixtures
+                    .iter()
+                    .filter(|f| {
+                        if playoffs {
+                            f.match_type == MatchType::Playoffs
+                        } else {
+                            f.counts_for_league_standings()
+                        }
+                    })
+                    .map(|f| f.date.clone())
+                    .max()
+                    .unwrap_or_default()
+            }
+
+            fn first_regular_day(league: &League) -> String {
+                regular_fixtures(league).iter().map(|f| f.date.clone()).min().unwrap_or_default()
+            }
+
+            fn today(game: &Game) -> String {
+                game.clock.current_date.format("%Y-%m-%d").to_string()
+            }
+
+            fn reload_like_load_game(game: &Game) -> Game {
+                let dir = tempfile::tempdir().expect("tempdir");
+                let mut manager = SaveManager::init(dir.path()).expect("save manager");
+                let save_id = manager.create_save(game, "season run").expect("create save");
+                let mut loaded = manager.load_game(&save_id).expect("load save");
+
+                let data = data_base();
+                let scanned = olm_core::competitions::scan_competitions(&data.join("competitions"));
+                let (teams, players, staff) = assemble_world_from_modular_data(
+                    &data,
+                    &scanned,
+                    "",
+                    "",
+                    chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+                )
+                .expect("catalog");
+                crate::commands::import::apply_catalog_to_game(&mut loaded, teams, players, staff);
+                let current: Vec<_> = scanned.into_iter().filter(|m| !m.legacy).collect();
+                let known: Vec<String> = current.iter().map(|m| m.id.clone()).collect();
+                loaded.competition_configs.clear();
+                for manifest in &current {
+                    loaded.competition_configs.insert(manifest.id.clone(), manifest.clone());
+                }
+                sanitize_competition_references(&mut loaded, &known);
+                olm_core::champions::bootstrap_champion_state(&mut loaded);
+                for player in &mut loaded.players {
+                    player.lol_ovr = olm_core::potential::calculate_lol_ovr(player);
+                }
+                roster_stability::repair_league(
+                    &mut loaded,
+                    roster_stability::RosterStabilityReason::LoadMigration,
+                )
+                .expect("load migration repair");
+                loaded
+            }
+
+            fn reload_is_due(game: &Game, reload: Reload) -> bool {
+                let les = les_league(game);
+                if les.split_index != reload.split {
+                    return false;
+                }
+                let playoffs = les.fixtures.iter().any(|f| f.match_type == MatchType::Playoffs);
+                match reload.when {
+                    ReloadWhen::MidSplit => {
+                        let played = regular_fixtures(les)
+                            .iter()
+                            .filter(|f| f.status == FixtureStatus::Completed)
+                            .count();
+                        played >= 12 && !playoffs
+                    }
+                    ReloadWhen::InPlayoffs => {
+                        playoffs
+                            && les
+                                .fixtures
+                                .iter()
+                                .any(|f| f.match_type == MatchType::Playoffs && f.status != FixtureStatus::Completed)
+                    }
+                }
+            }
+
+            /// Every pair met exactly once, everybody played `clubs - 1` matches on distinct
+            /// days, and the table agrees.
+            fn assert_every_pair_met(league: &League, clubs: usize) {
+                let regular = regular_fixtures(league);
+                assert_eq!(league.standings.len(), clubs);
+                assert_eq!(regular.len(), clubs * (clubs - 1) / 2);
+                assert!(regular.iter().all(|f| f.status == FixtureStatus::Completed));
+                let pairs: HashSet<(String, String)> = regular
+                    .iter()
+                    .map(|f| {
+                        let mut pair = [f.home_team_id.clone(), f.away_team_id.clone()];
+                        pair.sort();
+                        let [a, b] = pair;
+                        (a, b)
+                    })
+                    .collect();
+                assert_eq!(pairs.len(), regular.len(), "a pair met twice");
+                for entry in &league.standings {
+                    assert_eq!(entry.played as usize, clubs - 1, "{} played {}", entry.team_id, entry.played);
+                    let days: HashSet<&str> = regular
+                        .iter()
+                        .filter(|f| f.home_team_id == entry.team_id || f.away_team_id == entry.team_id)
+                        .map(|f| f.date.as_str())
+                        .collect();
+                    assert_eq!(days.len(), clubs - 1, "{} played twice on a day", entry.team_id);
+                }
+            }
+
+            /// The day-by-day sanity checks over every league of the world.
+            fn assert_no_league_is_stuck(game: &Game, complete_days: &mut HashMap<String, u32>) {
+                let now = game.clock.current_date.date_naive();
+                let active = game.active_league_index();
+                for (index, league) in game.leagues.iter().enumerate() {
+                    let name = league.competition_id.clone().unwrap_or_else(|| league.id.clone());
+                    for fixture in &league.fixtures {
+                        if !matches!(fixture.match_type, MatchType::League | MatchType::Playoffs)
+                            || fixture.status != FixtureStatus::Scheduled
+                        {
+                            continue;
+                        }
+                        let day = chrono::NaiveDate::parse_from_str(&fixture.date, "%Y-%m-%d").unwrap();
+                        assert!(day >= now, "{name}: fixture {} of {} was never played (today {now})", fixture.id, fixture.date);
+                    }
+                    if index != active && game.competition_configs.contains_key(&name) {
+                        let days = complete_days.entry(name.clone()).or_default();
+                        if olm_core::end_of_season::is_league_complete(league) {
+                            *days += 1;
+                            assert!(*days <= 2, "{name} stayed complete without rolling");
+                        } else {
+                            *days = 0;
+                        }
+                    }
+                }
+            }
+
+            struct SeasonRun {
+                game: Game,
+                splits: Vec<ClosedSplit>,
+                reloads: usize,
+                fired: bool,
+            }
+
+            /// Plays the user's LES career from the start of `game` until the first season has
+            /// closed, the LES-LEC ladder has been applied and the next season's first split
+            /// has played `extra_matchdays` matchdays.
+            fn play_season(
+                mut game: Game,
+                user_id: &str,
+                clubs: usize,
+                mut reloads: Vec<Reload>,
+                extra_matchdays: usize,
+            ) -> SeasonRun {
+                let year = les_league(&game).season;
+                let splits_per_season = game.competition_configs["les"].schedule.splits.len();
+                let mut closed = Vec::new();
+                let mut complete_days = HashMap::new();
+                let mut reload_count = 0;
+                let mut fired = false;
+                let mut season_closed = false;
+                let started = std::time::Instant::now();
+
+                for _ in 0..800 {
+                    olm_core::turn::process_day_with_capture(&mut game, &mut |_| {});
+                    assert_no_league_is_stuck(&game, &mut complete_days);
+
+                    if let Some(position) = reloads.iter().position(|r| reload_is_due(&game, *r)) {
+                        let reload = reloads.remove(position);
+                        let before = snapshot(&game, user_id);
+                        game = reload_like_load_game(&game);
+                        assert_eq!(snapshot(&game, user_id), before, "{reload:?}: the loaded game differs");
+                        reload_count += 1;
+                        eprintln!("[season run] {} saved and loaded at {reload:?}", today(&game));
+                    }
+
+                    if olm_core::end_of_season::is_season_complete(&game) {
+                        let les = les_league(&game);
+                        assert_every_pair_met(les, clubs);
+                        let playoffs: Vec<_> =
+                            les.fixtures.iter().filter(|f| f.match_type == MatchType::Playoffs).collect();
+                        assert_eq!(playoffs.len(), 3, "two semifinals and a final");
+                        assert!(playoffs.iter().all(|f| f.status == FixtureStatus::Completed));
+                        let champion = olm_core::end_of_season::playoff_champion_id(les)
+                            .expect("a decided final has a champion");
+                        let field: HashSet<&str> = playoffs
+                            .iter()
+                            .flat_map(|f| [f.home_team_id.as_str(), f.away_team_id.as_str()])
+                            .collect();
+                        let ranked = les.sorted_standings();
+                        let top_four: HashSet<&str> = ranked.iter().take(4).map(|s| s.team_id.as_str()).collect();
+                        assert_eq!(field, top_four, "the playoffs take the four best clubs");
+                        assert!(field.contains(champion.as_str()));
+                        if let Some(previous) = closed.last() {
+                            let previous: &ClosedSplit = previous;
+                            assert!(
+                                first_regular_day(les) > previous.closed_on,
+                                "split {} started before split {} had closed",
+                                les.split_index, previous.split
+                            );
+                        }
+                        let (season, split) = (les.season, les.split_index);
+                        let last_regular_day = last_day(les, false);
+                        let last_playoff_day = last_day(les, true);
+                        let closed_on = today(&game);
+
+                        let outcome = olm_core::season_rollover::advance_season(&mut game);
+                        if outcome.was_season_end && olm_core::firing::check_manager_firing(&mut game) {
+                            // Board satisfaction is random here and unrelated to the league size.
+                            fired = true;
+                            game.manager.hire(user_id.to_string());
+                        }
+                        let after = les_league(&game);
+                        closed.push(ClosedSplit {
+                            season,
+                            split,
+                            clubs,
+                            last_regular_day,
+                            last_playoff_day,
+                            closed_on,
+                            champion,
+                            was_season_end: outcome.was_season_end,
+                            next_first_day: first_regular_day(after),
+                        });
+                        season_closed |= outcome.was_season_end;
+                        let last = closed.last().unwrap();
+                        eprintln!(
+                            "[season run] {} S{} split {}: regular season ended {}, playoffs ended {}, closed {}, champion {}, next split starts {}",
+                            clubs, last.season, last.split, last.last_regular_day, last.last_playoff_day,
+                            last.closed_on, last.champion, last.next_first_day
+                        );
+                    }
+
+                    if season_closed && closed.len() >= splits_per_season {
+                        let les = les_league(&game);
+                        let ladder_done = game.ladder.movements.iter().any(|m| {
+                            m.link_lower == "les" && m.link_upper == "lec" && m.season == year
+                        });
+                        let played = les
+                            .fixtures
+                            .iter()
+                            .filter(|f| f.counts_for_league_standings() && f.status == FixtureStatus::Completed)
+                            .map(|f| f.date.clone())
+                            .collect::<HashSet<_>>()
+                            .len();
+                        if les.season == year + 1 && ladder_done && played >= extra_matchdays {
+                            break;
+                        }
+                    }
+                }
+                eprintln!("[season run] {clubs}-club run took {:?}, ended {}", started.elapsed(), today(&game));
+                SeasonRun { game, splits: closed, reloads: reload_count, fired }
+            }
+
+            /// What a finished run must show, for `clubs` LES clubs (9 with a joined club,
+            /// 8 for the control): the exact calendar of every split, a champion each, the
+            /// ladder swap, the league sizes after it and a playable next season.
+            fn assert_season_run(run: SeasonRun, year: u32, user_id: &str, clubs: usize, expected_reloads: usize) {
+                use chrono::{Duration, NaiveDate};
+                let SeasonRun { game, splits, reloads, fired } = run;
+                assert_eq!(reloads, expected_reloads);
+                assert_eq!(splits.len(), 3, "Winter, Spring and Summer");
+                let rounds = if clubs % 2 == 1 { clubs } else { clubs - 1 };
+                let manifest = &game.competition_configs["les"];
+                let start_of = |split: usize, season: u32| {
+                    let start = &manifest.schedule.splits[split].season_start;
+                    NaiveDate::from_ymd_opt(season as i32, start.month, start.day).unwrap()
+                };
+                let text = |day: NaiveDate| day.format("%Y-%m-%d").to_string();
+                for (index, split) in splits.iter().enumerate() {
+                    assert_eq!((split.season, split.split, split.clubs), (year, index, clubs));
+                    assert_eq!(split.was_season_end, index == 2);
+                    let last_regular = start_of(index, year) + Duration::days(7 * (rounds as i64 - 1));
+                    let final_day = last_regular + Duration::days(8);
+                    assert_eq!(split.last_regular_day, text(last_regular), "split {index} regular season");
+                    assert_eq!(split.last_playoff_day, text(final_day), "split {index} playoffs");
+                    assert_eq!(split.closed_on, text(final_day + Duration::days(1)), "split {index} close");
+                    let next = if index < 2 { start_of(index + 1, year) } else { start_of(0, year + 1) };
+                    assert_eq!(split.next_first_day, text(next), "split {index} successor");
+                    assert!(split.closed_on < split.next_first_day);
+                    assert!(!split.champion.is_empty());
+                }
+
+                // The ladder: one club up, one down, the sizes unchanged.
+                let movement = game
+                    .ladder
+                    .movements
+                    .iter()
+                    .find(|m| m.link_lower == "les" && m.link_upper == "lec" && m.season == year)
+                    .expect("the LES-LEC ladder ran");
+                assert_eq!(movement.status, LadderMovementStatus::Applied);
+                assert_eq!((movement.promoted.len(), movement.relegated.len()), (1, 1));
+                let main_clubs = |competition: &str| {
+                    game.teams
+                        .iter()
+                        .filter(|t| t.competition_id.as_deref() == Some(competition) && t.team_kind == TeamKind::Main)
+                        .count()
+                };
+                assert_eq!(main_clubs("les"), clubs);
+                assert_eq!(main_clubs("lec"), 10);
+                assert_eq!(
+                    game.teams.iter().find(|t| t.id == movement.promoted[0]).and_then(|t| t.competition_id.as_deref()),
+                    Some("lec")
+                );
+                assert_eq!(
+                    game.teams.iter().find(|t| t.id == movement.relegated[0]).and_then(|t| t.competition_id.as_deref()),
+                    Some("les")
+                );
+
+                // The next season's first split is a full calendar for these clubs.
+                let les = les_league(&game);
+                assert_eq!((les.season, les.split_index, les.standings.len()), (year + 1, 0, clubs));
+                let regular = regular_fixtures(les);
+                assert_eq!(regular.len(), clubs * (clubs - 1) / 2);
+                assert_eq!(league_dates(les).len(), rounds);
+                for entry in &les.standings {
+                    let own = regular
+                        .iter()
+                        .filter(|f| f.home_team_id == entry.team_id || f.away_team_id == entry.team_id)
+                        .count();
+                    assert_eq!(own, clubs - 1, "{} plays everybody once", entry.team_id);
+                }
+                // Matchdays already played: the clubs resting on them have one match fewer.
+                let played_days = regular
+                    .iter()
+                    .filter(|f| f.status == FixtureStatus::Completed)
+                    .map(|f| f.date.as_str())
+                    .collect::<HashSet<_>>()
+                    .len();
+                assert!(played_days >= 2, "the new season played {played_days} matchdays");
+                let rested = les.standings.iter().filter(|s| s.played as usize == played_days - 1).count();
+                let full = les.standings.iter().filter(|s| s.played as usize == played_days).count();
+                let byes_so_far = if clubs % 2 == 1 { played_days } else { 0 };
+                assert_eq!(rested, byes_so_far, "one club rests on each matchday, never the same twice");
+                assert_eq!(rested + full, clubs);
+
+                // The other leagues closed their season too.
+                for league in &game.leagues {
+                    let name = league.competition_id.clone().unwrap_or_default();
+                    assert_eq!(league.season, year + 1, "{name} did not roll into the next season");
+                    if game.competition_configs.contains_key(&name) {
+                        assert!(game.ladder.outcome(&name, year).is_some(), "{name} never closed season {year}");
+                    }
+                }
+
+                // The user's club is still there and can still field a team.
+                let club = game.teams.iter().find(|t| t.id == user_id).expect("the user's club exists");
+                if olm_core::custom_team::is_custom_team_id(user_id) {
+                    // A created club carries an explicit lineup; a catalog club's stays empty.
+                    assert_eq!(club.active_lineup_ids.len(), 5);
+                    assert!(olm_core::residency::validate_lineup_imports(&game, user_id, &club.active_lineup_ids).is_ok());
+                    assert!(club
+                        .active_lineup_ids
+                        .iter()
+                        .all(|p| game.players.iter().any(|q| &q.id == p && q.team_id.as_deref() == Some(user_id))));
+                } else {
+                    // No human renews contracts in this run, so a catalog club's roster thins
+                    // out over a season; the real Continue stops on those contracts. Only
+                    // report the size here.
+                    let roster = game.players.iter().filter(|p| p.team_id.as_deref() == Some(user_id)).count();
+                    eprintln!("[season run] {clubs} clubs: the user's catalog club ends with {roster} players");
+                }
+                assert_eq!(game.manager.team_id.as_deref(), Some(user_id));
+                eprintln!("[season run] {clubs} clubs: manager fired and re-hired at the season end: {fired}");
+            }
+
+            #[test]
+            #[ignore = "plays a whole nine-club LES season and the start of the next in a debug build (about 14 minutes); cd src-tauri && cargo test -p openleaguemanager --lib nine_club_les_career -- --ignored --nocapture"]
+            fn nine_club_les_career_plays_a_full_season_and_starts_the_next() {
+                let (mut game, id) = try_build_join_world("les", &seeded_rayo(7)).expect("join world");
+                let (manifests, known) = known_ids_and_manifests();
+                prepare_new_game_season(&mut game, &manifests, &known, &id).expect("season");
+                let year = les_league(&game).season;
+
+                let reloads = vec![
+                    Reload { split: 0, when: ReloadWhen::MidSplit },
+                    Reload { split: 1, when: ReloadWhen::InPlayoffs },
+                ];
+                let run = play_season(game, &id, 9, reloads, 2);
+                assert_season_run(run, year, &id, 9, 2);
+            }
+
+            /// The same run for the plain eight-club LES: a failure of the nine-club run
+            /// that also fails here is not about the size.
+            #[test]
+            #[ignore = "control: plays a whole eight-club LES season in a debug build (about 14 minutes); cd src-tauri && cargo test -p openleaguemanager --lib eight_club_les_career -- --ignored --nocapture"]
+            fn eight_club_les_career_plays_the_same_season_as_a_control() {
+                let (mut game, _catalog, _overlay, id) =
+                    new_game_as("Barcelona Esports", Some("les-team-06974122"));
+                let (manifests, known) = known_ids_and_manifests();
+                prepare_new_game_season(&mut game, &manifests, &known, &id).expect("season");
+                let year = les_league(&game).season;
+
+                let run = play_season(game, &id, 8, Vec::new(), 2);
+                assert_season_run(run, year, &id, 8, 0);
+            }
+        }
+
         #[test]
         fn joining_a_top_tier_league_is_rejected_by_the_backend() {
             let error = try_build_join_world("lec", &rayo()).expect_err("LEC is tier 1");
