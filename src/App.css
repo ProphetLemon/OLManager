@@ -55,6 +55,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Global keyboard focus ring. Outranks the `*` rule above (which only dims
+     the colour) and yields to primitives that opt out with `outline-none`
+     and draw their own ring. Width is raised to 3px in high contrast. */
+  :focus-visible {
+    outline: var(--focus-ring-width, 2px) solid var(--ring);
+    outline-offset: 2px;
+  }
   html {
     @apply font-sans;
   }

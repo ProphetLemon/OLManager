@@ -1836,7 +1836,7 @@
     "uiScale": "Escala da Interface",
     "uiScaleDesc": "Ajuste o tamanho da fonte e espaçamento para melhor leitura",
     "highContrast": "Alto Contraste",
-    "highContrastDesc": "Aumentar contraste do texto no modo escuro para melhor leitura",
+    "highContrastDesc": "Reforçar o texto, as bordas e o contorno de foco para melhorar a legibilidade",
     "fullscreen": "Tela Cheia",
     "fullscreenDesc": "Ativar modo tela cheia para uma experiência imersiva",
     "enterFullscreen": "Entrar",

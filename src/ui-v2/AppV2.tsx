@@ -125,6 +125,15 @@ export default function AppV2() {
 
   useEffect(() => {
     if (!ready) return;
+    if (settings.high_contrast) {
+      document.documentElement.dataset.contrast = "high";
+    } else {
+      delete document.documentElement.dataset.contrast;
+    }
+  }, [settings.high_contrast, ready]);
+
+  useEffect(() => {
+    if (!ready) return;
     if (settings.language && settings.language !== i18n.language) {
       i18n.changeLanguage(settings.language);
     }

@@ -108,6 +108,14 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-positive-foreground: var(--positive-foreground);
+  --color-positive: var(--positive);
+  --color-negative-foreground: var(--negative-foreground);
+  --color-negative: var(--negative);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning: var(--warning);
+  --color-info-foreground: var(--info-foreground);
+  --color-info: var(--info);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -141,26 +149,35 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   --primary: #F97316;
-  --primary-foreground: oklch(0.985 0 0);
+  --primary-foreground: #0a0a0a;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: #F97316;
-  --accent-foreground: oklch(0.985 0 0);
+  --accent-foreground: #0a0a0a;
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: #F97316;
+  --ring: #c2410c;
+  --positive: #15803d;
+  --positive-foreground: #ffffff;
+  --negative: #b91c1c;
+  --negative-foreground: #ffffff;
+  --warning: #a16207;
+  --warning-foreground: #ffffff;
+  --info: #1d4ed8;
+  --info-foreground: #ffffff;
+  --focus-ring-width: 2px;
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: #F97316;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary-foreground: #0a0a0a;
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: #F97316;
+  --sidebar-ring: #c2410c;
 }
 
 /* ── Dark mode ─────────────────────────────────────────────── */
@@ -173,23 +190,60 @@
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
   --primary: #F97316;
-  --primary-foreground: oklch(0.985 0 0);
+  --primary-foreground: #0a0a0a;
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.274 0.006 286.033);
   --muted-foreground: oklch(0.705 0.015 286.067);
   --accent: #F97316;
-  --accent-foreground: oklch(0.985 0 0);
+  --accent-foreground: #0a0a0a;
   --destructive: oklch(0.637 0.237 25.331);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: #F97316;
+  --positive: #4ade80;
+  --positive-foreground: #09090b;
+  --negative: #f87171;
+  --negative-foreground: #09090b;
+  --warning: #fbbf24;
+  --warning-foreground: #09090b;
+  --info: #60a5fa;
+  --info-foreground: #09090b;
   --sidebar: oklch(0.21 0.006 285.885);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: #F97316;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary-foreground: #0a0a0a;
   --sidebar-accent: oklch(0.274 0.006 286.033);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: #F97316;
+}
+
+/* ── High contrast (data-contrast set on <html> by AppV2) ───────
+   Same specificity as `.dark[...]`, so the dark block must stay last. */
+
+:root[data-contrast="high"] {
+  --foreground: oklch(0.1 0 0);
+  --card-foreground: oklch(0.1 0 0);
+  --popover-foreground: oklch(0.1 0 0);
+  --muted-foreground: oklch(0.4 0 0);
+  --border: oklch(0.45 0 0);
+  --input: oklch(0.45 0 0);
+  --sidebar-border: oklch(0.45 0 0);
+  --ring: #9a3412;
+  --sidebar-ring: #9a3412;
+  --focus-ring-width: 3px;
+}
+
+.dark[data-contrast="high"] {
+  --foreground: oklch(1 0 0);
+  --card-foreground: oklch(1 0 0);
+  --popover-foreground: oklch(1 0 0);
+  --muted-foreground: oklch(0.86 0.015 286);
+  --border: oklch(0.7 0 0);
+  --input: oklch(0.7 0 0);
+  --sidebar-border: oklch(0.7 0 0);
+  --ring: #fb923c;
+  --sidebar-ring: #fb923c;
+  --focus-ring-width: 3px;
 }

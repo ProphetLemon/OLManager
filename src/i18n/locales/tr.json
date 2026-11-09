@@ -1836,7 +1836,7 @@
     "uiScale": "Arayüz Ölçeği",
     "uiScaleDesc": "Okunabilirlik için yazı tipi boyutunu ve boşlukları ayarlayın",
     "highContrast": "Yüksek Kontrast",
-    "highContrastDesc": "Daha iyi okunabilirlik için karanlık modda metin kontrastını artırın",
+    "highContrastDesc": "Daha iyi okunabilirlik için metni, kenarlıkları ve odak çerçevesini güçlendirin",
     "fullscreen": "Tam Ekran",
     "fullscreenDesc": "Sürükleyici bir deneyim için tam ekran modunu açıp kapatın",
     "enterFullscreen": "Geç",

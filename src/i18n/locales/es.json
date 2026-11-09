@@ -1975,7 +1975,7 @@
     "uiScale": "Escala de UI",
     "uiScaleDesc": "Ajustar tamaño de fuente y espaciado para legibilidad",
     "highContrast": "Alto Contraste",
-    "highContrastDesc": "Mejorar contraste de texto en modo oscuro",
+    "highContrastDesc": "Reforzar el texto, los bordes y el contorno de foco para mejorar la legibilidad",
     "fullscreen": "Pantalla Completa",
     "fullscreenDesc": "Alternar modo de pantalla completa",
     "enterFullscreen": "Entrar",

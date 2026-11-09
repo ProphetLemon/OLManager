@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, useNavigate } from "react-router-dom";
 
 import { useBugReportStore } from "@/store/bugReportStore";
-import { AppContent } from "./AppV2";
+import { useSettingsStore } from "@/store/settingsStore";
+import AppV2, { AppContent } from "./AppV2";
 
 // ─── Mocks ───────────────────────────────────────────────────────────────
 
@@ -117,5 +118,34 @@ describe("AppContent route/tab sync", () => {
       expect(useBugReportStore.getState().currentRoute).toBe("/match"),
     );
     expect(useBugReportStore.getState().currentDashboardTab).toBe("");
+  });
+});
+
+describe("AppV2 high contrast", () => {
+  beforeEach(() => {
+    delete document.documentElement.dataset.contrast;
+  });
+
+  function renderWithContrast(highContrast: boolean) {
+    useSettingsStore.setState({
+      loaded: true,
+      settings: { ...useSettingsStore.getState().settings, high_contrast: highContrast },
+    });
+    return render(<AppV2 />);
+  }
+
+  it("sets data-contrast=high on the root element when high_contrast is on", async () => {
+    renderWithContrast(true);
+    await waitFor(() =>
+      expect(document.documentElement.dataset.contrast).toBe("high"),
+    );
+  });
+
+  it("removes data-contrast when high_contrast is off", async () => {
+    document.documentElement.dataset.contrast = "high";
+    renderWithContrast(false);
+    await waitFor(() =>
+      expect(document.documentElement.dataset.contrast).toBeUndefined(),
+    );
   });
 });

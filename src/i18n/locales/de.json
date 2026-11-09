@@ -1836,7 +1836,7 @@
     "uiScale": "UI-Skalierung",
     "uiScaleDesc": "Schriftgröße und Abstand für bessere Lesbarkeit anpassen",
     "highContrast": "Hoher Kontrast",
-    "highContrastDesc": "Textkontrast im Dunkelmodus verbessern",
+    "highContrastDesc": "Text, Rahmen und Fokusumrandung für bessere Lesbarkeit verstärken",
     "fullscreen": "Vollbild",
     "fullscreenDesc": "Vollbildmodus umschalten",
     "enterFullscreen": "Aktivieren",

@@ -1836,7 +1836,7 @@
     "uiScale": "Échelle de l'UI",
     "uiScaleDesc": "Ajuster la taille de police et l'espacement pour la lisibilité",
     "highContrast": "Contraste Élevé",
-    "highContrastDesc": "Améliorer le contraste du texte en mode sombre",
+    "highContrastDesc": "Renforcer le texte, les bordures et le contour de focus pour une meilleure lisibilité",
     "fullscreen": "Plein Écran",
     "fullscreenDesc": "Basculer en mode plein écran",
     "enterFullscreen": "Entrer",

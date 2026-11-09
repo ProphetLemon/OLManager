@@ -1687,7 +1687,7 @@
     "uiScale": "Scala interfaccia",
     "uiScaleDesc": "Regola dimensione del testo e spaziatura per migliorare la leggibilità",
     "highContrast": "Alto contrasto",
-    "highContrastDesc": "Aumenta il contrasto del testo in modalità scura per migliorare la leggibilità",
+    "highContrastDesc": "Rafforza testo, bordi e contorno del focus per una migliore leggibilità",
     "fullscreen": "Schermo intero",
     "fullscreenDesc": "Attiva la modalità schermo intero per un'esperienza immersiva",
     "enterFullscreen": "Entra",
