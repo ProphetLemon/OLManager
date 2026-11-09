@@ -3666,6 +3666,137 @@ mod tests {
             assert_eq!(own_dates.len(), 8, "never twice on a day");
         }
 
+        /// Plays the first LES split of a nine-club league on its match days: the club
+        /// with a bye never plays on its rest day, the regular season completes, the
+        /// playoffs are scheduled and played, the league reports complete, and all of it
+        /// ends before the next split starts. Only match days are simulated (the empty
+        /// days in between add nothing to this proof); the full season is task J3's.
+        #[test]
+        fn a_nine_club_les_split_plays_through_the_playoffs() {
+            use olm_core::domain::league::{FixtureStatus, MatchType};
+
+            let (mut game, id) = try_build_join_world("les", &seeded_rayo(7)).expect("join world");
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &id).expect("season");
+            let next_split_start = {
+                let spring = manifests
+                    .iter()
+                    .find(|m| m.id == "les")
+                    .and_then(|m| m.schedule.splits.get(1))
+                    .expect("Spring split");
+                format!(
+                    "{:04}-{:02}-{:02}",
+                    game.clock.current_date.year(),
+                    spring.season_start.month,
+                    spring.season_start.day
+                )
+            };
+
+            let mut bye_days = 0;
+            let mut last_day = String::new();
+            for _ in 0..30 {
+                let Some(next) = les_league(&game)
+                    .fixtures
+                    .iter()
+                    .filter(|f| f.status == FixtureStatus::Scheduled)
+                    .map(|f| f.date.clone())
+                    .min()
+                else {
+                    break;
+                };
+                let target = chrono::NaiveDate::parse_from_str(&next, "%Y-%m-%d").unwrap();
+                let gap = (target - game.clock.current_date.date_naive()).num_days();
+                assert!(gap >= 0, "the clock passed a scheduled fixture on {next}");
+                game.clock.advance_days(gap);
+
+                let played_before = les_league(&game)
+                    .standings
+                    .iter()
+                    .find(|s| s.team_id == id)
+                    .map_or(0, |s| s.played);
+                let regular_day = les_league(&game)
+                    .fixtures
+                    .iter()
+                    .any(|f| f.date == next && f.match_type == MatchType::League);
+                let rested = regular_day
+                    && !les_league(&game)
+                        .fixtures
+                        .iter()
+                        .any(|f| f.date == next && (f.home_team_id == id || f.away_team_id == id));
+                olm_core::turn::process_day_with_capture(&mut game, &mut |_| {});
+                let les = les_league(&game);
+                assert!(
+                    les.fixtures
+                        .iter()
+                        .filter(|f| f.date == next)
+                        .all(|f| f.status == FixtureStatus::Completed),
+                    "the matches of {next} were not all played"
+                );
+                if rested {
+                    bye_days += 1;
+                    let played_after = les
+                        .standings
+                        .iter()
+                        .find(|s| s.team_id == id)
+                        .map_or(0, |s| s.played);
+                    assert_eq!(played_after, played_before, "the club with a bye played on {next}");
+                }
+                last_day = next;
+            }
+
+            let les = les_league(&game);
+            assert_eq!(bye_days, 1, "one bye in the nine-matchday regular season");
+            assert_eq!(
+                les.fixtures
+                    .iter()
+                    .filter(|f| f.match_type == MatchType::Playoffs)
+                    .count(),
+                3,
+                "two semifinals and a final"
+            );
+            assert!(olm_core::end_of_season::is_league_complete(les), "the split should be complete");
+            assert!(les.standings.iter().all(|s| s.played >= 8));
+            assert!(last_day < next_split_start, "{last_day} must precede {next_split_start}");
+            eprintln!("[nine-club split] regular season ends and playoffs finish on {last_day}; Spring starts {next_split_start}");
+        }
+
+        /// A save with a joined club survives a reload and the catalog rehydration:
+        /// the extra club is kept, no catalog club is dropped or duplicated.
+        #[test]
+        fn a_joined_club_survives_save_round_trip_and_catalog_rehydration() {
+            let (game, id) = try_build_join_world("les", &seeded_rayo(7)).expect("join world");
+            let roster = roster_ids(&game, &id);
+            let les_before = les_main_ids(&game);
+            assert_eq!(les_before.len(), 9);
+
+            let dir = tempfile::tempdir().expect("tempdir");
+            let mut manager = SaveManager::init(dir.path()).expect("save manager");
+            let save_id = manager.create_save(&game, "joined club").expect("create save");
+            let mut loaded = manager.load_game(&save_id).expect("load save");
+
+            let data = data_base();
+            let manifests = olm_core::competitions::scan_competitions(&data.join("competitions"));
+            let (catalog_teams, catalog_players, catalog_staff) = assemble_world_from_modular_data(
+                &data,
+                &manifests,
+                "",
+                "",
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+            )
+            .expect("catalog");
+            crate::commands::import::apply_catalog_to_game(
+                &mut loaded,
+                catalog_teams,
+                catalog_players,
+                catalog_staff,
+            );
+
+            assert_eq!(les_main_ids(&loaded), les_before);
+            assert_eq!(loaded.teams.iter().filter(|t| t.id == id).count(), 1);
+            assert_eq!(roster_ids(&loaded, &id), roster, "rehydration changed the roster");
+            assert!(loaded.removed_team_ids.is_empty());
+        }
+
         #[test]
         fn joining_a_top_tier_league_is_rejected_by_the_backend() {
             let error = try_build_join_world("lec", &rayo()).expect_err("LEC is tier 1");
