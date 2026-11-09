@@ -164,6 +164,73 @@ describe("build-overrides end to end", () => {
   });
 });
 
+describe("runBuild window", () => {
+  it.each([{}, { since: "2025-01-01" }, { since: "2025-01-01", until: "later" }, { since: 20250101, until: "2026-01-01" }])("rejects rows without a YYYY-MM-DD window %j", (window) => {
+    const d = fs.mkdtempSync(path.join(os.tmpdir(), "build-window-"));
+    try {
+      fs.writeFileSync(path.join(d, "rows.json"), JSON.stringify({ rows: [], ...window }));
+      fs.writeFileSync(path.join(d, "rows.players.json"), JSON.stringify({ players: {} }));
+      expect(() => runBuild(parseArgs(["--rows", path.join(d, "rows.json"), "--out", path.join(d, "o.json"), "--report-dir", d]), () => {})).toThrow(/YYYY-MM-DD/);
+    } finally {
+      fs.rmSync(d, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("league movers", () => {
+  const gp = (id: string, competition: string, team: string, ovr: number) => ({
+    id, match_name: id, full_name: id, team_id: team, competition, position: "Top", attributes: attrs([ovr, ovr + 5, ovr - 5, ovr + 2, ovr - 2, ovr + 7, ovr - 7, ovr + 1, ovr - 1]), potential_base: ovr + 5, market_value: 1, wage: 1, authoredOvr: ovr, isFlat50: false, isAllZero: false,
+  });
+  const entry = (team: string, competition: string) => ({ names: [], teams: [{ team, competition, games: GAMES, lastDate: "2026-06-14" }], roles: { Top: GAMES }, games: GAMES, firstDate: "2026-06-01", lastDate: "2026-06-14" });
+
+  it("targets the level of the league the player plays in now, not the league his stats come from", () => {
+    const players = [] as ReturnType<typeof gp>[];
+    const links: Record<string, unknown> = {};
+    const rows: unknown[] = [];
+    for (let i = 1; i <= 20; i += 1) {
+      players.push(gp(`lec${i}`, "lec", "lec-team", 70 + (i % 5)));
+      players.push(gp(`lck${i}`, "lck", "lck-team", 85 + (i % 5)));
+      links[`lec${i}`] = { ...entry("Lec Team", "lec"), names: [`lec${i}`] };
+      rows.push(...playerRows(`lec${i}`, i / 20, GAMES, "lec"));
+    }
+    players.push(gp("mover", "lck", "lck-team", 72));
+    links.mover = { ...entry("Lck Team", "lck"), names: ["mover"] };
+    rows.push(...playerRows("mover", 1.1, GAMES, "lec"));
+    const teamMap = { schemaVersion: 1, teams: { "lec-team": { title: "Lec Team", name: "Lec Team", competition: "lec" }, "lck-team": { title: "Lck Team", name: "Lck Team", competition: "lck" } } };
+    const { report } = buildOverrides({ rows: rows as never, window: { since: "2025-01-01", until: "2026-11-10" }, index: links as never, players: players as never, teamMap, pins: {} });
+    const m = report.mismatches.find((x) => x.id === "mover");
+    expect(m).toBeDefined();
+    expect(m).toMatchObject({ statCompetition: "lec", gameCompetition: "lck", levelUsed: "game" });
+    expect(m!.gameLevel).toBe(report.levels.lck.median);
+    expect(m!.statLevel).toBe(report.levels.lec.median);
+    expect(m!.gameLevel).toBeGreaterThan(m!.statLevel + 10);
+    // target = gameMedian + clamp(sd) * rho * z, with a positive z: above the game median, well above the stat level
+    expect(m!.target).toBeGreaterThan(m!.gameLevel);
+    expect(m!.target - m!.gameLevel).toBeLessThan(15);
+  });
+
+  it("still estimates a player without a current competition, and keeps the asset levels to median and sd", () => {
+    const players = [] as ReturnType<typeof gp>[];
+    const links: Record<string, unknown> = {};
+    const rows: unknown[] = [];
+    for (let i = 1; i <= 20; i += 1) {
+      players.push(gp(`lec${i}`, "lec", "lec-team", 70 + (i % 5)));
+      links[`lec${i}`] = { ...entry("Lec Team", "lec"), names: [`lec${i}`] };
+      rows.push(...playerRows(`lec${i}`, i / 20, GAMES, "lec"));
+    }
+    const free = { ...gp("free", "lec", "lec-team", 72), competition: null, team_id: null, position: "Top" };
+    players.push(free as never);
+    links.free = { ...entry("Lec Team", "lec"), names: ["free"] };
+    rows.push(...playerRows("free", 0.9, GAMES, "lec"));
+    const teamMap = { schemaVersion: 1, teams: { "lec-team": { title: "Lec Team", name: "Lec Team", competition: "lec" } } };
+    const { asset, report } = buildOverrides({ rows: rows as never, window: { since: "2025-01-01", until: "2026-11-10" }, index: links as never, players: players as never, teamMap, pins: {} });
+    expect(report.totals.estimated).toBeGreaterThan(0);
+    expect(report.totals.competitionMismatch).toBe(0);
+    expect(report.levels.lec).toMatchObject({ n_used: 20, n_excluded: 0 });
+    expect(Object.keys(asset.league_levels.lec)).toEqual(["median", "sd"]);
+  });
+});
+
 describe("buildOverrides", () => {
   it("returns an empty entry list for no rows", () => {
     const { asset } = buildOverrides({ rows: [], window: { since: "2025-01-01", until: "2026-01-01" }, index: {}, players: [], teamMap: { teams: {} }, pins: {} });

@@ -1,6 +1,6 @@
 import type { GamePlayer } from "./lib/game-world.mjs";
 import type { MatchResult } from "./lib/identity.mjs";
-import type { LeagueLevel } from "./lib/levels.mjs";
+import type { LeagueLevel, LeagueLevelCounts } from "./lib/levels.mjs";
 import type { PlayerIndex } from "./lib/normalize.mjs";
 import type { GameRow } from "./lib/skill.mjs";
 
@@ -30,7 +30,7 @@ export interface BuildReport {
   method: string;
   window: { since: string; until: string };
   referenceDate: string;
-  levels: Record<string, LeagueLevel>;
+  levels: Record<string, LeagueLevel & LeagueLevelCounts>;
   totals: Record<string, any>;
   competitions: Array<{ competition: string; players: number; matched: number; estimated: number; entries: number; meanAbsDelta: number; maxAbsDelta: number }>;
   thresholds: Array<{ ovr: number; up: number; down: number }>;

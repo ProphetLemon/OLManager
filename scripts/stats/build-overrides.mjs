@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 import { deriveAttributes } from "./lib/attributes.mjs";
 import { ATTRIBUTE_NAMES, DEFAULT_DATA_DIR, DEFAULT_OVERLAY_FILE, loadGamePlayers } from "./lib/game-world.mjs";
 import { matchPlayers } from "./lib/identity.mjs";
-import { leagueLevels, poolOfLevels } from "./lib/levels.mjs";
+import { leagueLevelStats, poolOfLevels } from "./lib/levels.mjs";
 import { blendRating, estimateSkill, isSuspect } from "./lib/skill.mjs";
 import { compactKey } from "../world/lib/text.mjs";
 
@@ -33,7 +33,6 @@ export const SPOTLIGHT = Object.freeze(["Boal", "Minous", "Winner"]);
 
 const compare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const round = (v, digits) => Math.round(v * 10 ** digits) / 10 ** digits;
-const clampOvr = (v) => Math.min(99, Math.max(1, Math.round(v)));
 
 /** The estimate that decides a matched player: most effective games, then most raw games, then competition id. */
 function bestEstimate(estimates) {
@@ -51,7 +50,7 @@ function bestEstimate(estimates) {
  * @returns {asset, report}
  */
 export function buildOverrides({ rows, window, index, players, teamMap, pins = {}, includePlaceholders = false }) {
-  const levels = leagueLevels(players);
+  const { levels, counts } = leagueLevelStats(players);
   const identity = matchPlayers({ index, players, teamMap, pins });
   const playerById = new Map(players.map((p) => [p.id, p]));
   const linkOf = new Map(identity.matches.map((m) => [m.playerId, m]));
@@ -85,7 +84,12 @@ export function buildOverrides({ rows, window, index, players, teamMap, pins = {
       records.push({ ...base, reason: "placeholder_skipped", statCompetition: best.competition });
       continue;
     }
-    const level = levels[best.competition];
+    // Stats only place a player inside his league: the target level is the league he plays in now, the stat
+    // competition's level is only the fallback when he has no current competition or it has no level.
+    const statLevel = levels[best.competition];
+    const gameLevel = player.competition ? levels[player.competition] : undefined;
+    const level = gameLevel ?? statLevel;
+    const levelUsed = gameLevel ? "game" : "stat";
     // A placeholder has no rating data of its own: its baseline is the median of its league, and it is always suspect.
     const baseline = placeholder ? (own?.median ?? level.median) : player.authoredOvr;
     const suspect = placeholder || isSuspect({ attributes: player.attributes, authoredOvr: player.authoredOvr, leagueMedian: own?.median });
@@ -101,7 +105,11 @@ export function buildOverrides({ rows, window, index, players, teamMap, pins = {
       reason: null,
       role: best.role,
       statCompetition: best.competition,
+      gameCompetition: player.competition,
       competitionMismatch: player.competition !== null && best.competition !== player.competition,
+      statLevel: statLevel.median,
+      gameLevel: gameLevel?.median ?? null,
+      levelUsed,
       games: best.games,
       effectiveGames: round(best.effectiveGames, 2),
       cohort: best.cohort,
@@ -131,10 +139,10 @@ export function buildOverrides({ rows, window, index, players, teamMap, pins = {
   entries.sort((a, b) => compare(a.id, b.id));
 
   const asset = { version: ASSET_VERSION, method: METHOD, source: SOURCE, window: { since: window.since, until: window.until }, league_levels: levels, entries };
-  return { asset, report: buildReport({ levels, players, identity, records, entries, noEstimate, window, referenceDate, estimates }) };
+  return { asset, report: buildReport({ levels, counts, players, identity, records, entries, noEstimate, window, referenceDate, estimates }) };
 }
 
-function buildReport({ levels, players, identity, records, entries, noEstimate, window, referenceDate, estimates }) {
+function buildReport({ levels, counts, players, identity, records, entries, noEstimate, window, referenceDate, estimates }) {
   const estimated = records.filter((r) => r.reason === null);
   const entryIds = new Set(entries.map((e) => e.id));
   const matchedIds = new Set(identity.matches.map((m) => m.playerId));
@@ -180,7 +188,7 @@ function buildReport({ levels, players, identity, records, entries, noEstimate, 
     method: METHOD,
     window,
     referenceDate,
-    levels,
+    levels: Object.fromEntries(Object.entries(levels).map(([id, l]) => [id, { ...l, ...counts[id] }])),
     totals: {
       gamePlayers: players.length,
       rostered: players.filter((p) => p.team_id).length,
@@ -204,7 +212,7 @@ function buildReport({ levels, players, identity, records, entries, noEstimate, 
     review: identity.review,
     unmatched: identity.unmatched.slice(0, 50),
     pinIssues: identity.pinIssues,
-    mismatches: estimated.filter((r) => r.competitionMismatch).map(slim),
+    mismatches: estimated.filter((r) => r.competitionMismatch).map((r) => ({ ...slim(r), gameCompetition: r.gameCompetition, statLevel: r.statLevel, gameLevel: r.gameLevel, levelUsed: r.levelUsed, target: r.target })),
     spotlight,
   };
 }
@@ -231,7 +239,7 @@ export function renderReport(report) {
     "",
     "## League levels (fixed ladder)",
     "",
-    table(["competition", "median", "sd"], Object.entries(report.levels).map(([id, l]) => [id, l.median, l.sd])),
+    table(["competition", "median", "sd", "n used", "n excluded"], Object.entries(report.levels).map(([id, l]) => [id, l.median, l.sd, l.n_used, l.n_excluded])),
     "",
     "## Per competition",
     "",
@@ -274,7 +282,10 @@ export function renderReport(report) {
     ...(report.pinIssues.length ? ["## Pin issues", "", ...report.pinIssues.map((i) => `- ${i}`), ""] : []),
     "## Stat competition differs from game competition",
     "",
-    table(playerHeaders, report.mismatches.map(player)),
+    table(
+      ["player", "game competition", "stat competition", "game level", "stat level", "level used", "target", "before", "after", "delta"],
+      report.mismatches.map((m) => [m.matchName, m.gameCompetition ?? "-", m.statCompetition, m.gameLevel ?? "-", m.statLevel, m.levelUsed, m.target, m.authoredOvr, m.newOvr, m.delta > 0 ? `+${m.delta}` : m.delta]),
+    ),
     "",
   ];
   return lines.join("\n");
@@ -332,6 +343,10 @@ const writeText = (file, text) => {
 /** Reads the inputs, builds, and writes the asset, report.json and report.md. */
 export function runBuild(args, log = () => {}) {
   const rowsFile = readJson(args.rows);
+  const isDay = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  if (!isDay(rowsFile.since) || !isDay(rowsFile.until)) {
+    throw new Error(`rows file ${args.rows} needs since and until as YYYY-MM-DD strings (got ${JSON.stringify(rowsFile.since)} and ${JSON.stringify(rowsFile.until)})`);
+  }
   const indexFile = readJson(args.players);
   const { players, report: worldReport } = loadGamePlayers({ dataDir: args.data, overlayFile: args.overlay });
   log(`game players: ${players.length} (overlay moved ${worldReport.overlay.moved}, retired ${worldReport.overlay.retired}, added ${worldReport.overlay.added})`);

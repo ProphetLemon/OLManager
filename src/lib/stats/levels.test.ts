@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { POOL_BUCKET, leagueLevels, poolOfLevels } from "../../../scripts/stats/lib/levels.mjs";
+import { POOL_BUCKET, leagueLevelStats, leagueLevels, poolOfLevels } from "../../../scripts/stats/lib/levels.mjs";
 import type { GamePlayer } from "../../../scripts/stats/lib/game-world.mjs";
 
 const player = (id: string, competition: string | null, ovr: number, over: Partial<GamePlayer> = {}): GamePlayer =>
@@ -30,6 +30,21 @@ describe("leagueLevels", () => {
   it("omits competitions with no usable player and sorts keys", () => {
     const levels = leagueLevels([player("z", "zzz", 60), player("f", "lck", 50, { isFlat50: true }), player("a", "aaa", 60)]);
     expect(Object.keys(levels)).toEqual(["aaa", "zzz"]);
+  });
+});
+
+describe("jittered placeholders", () => {
+  const ATTRS = ["mechanics", "laning", "teamfighting", "macro_play", "consistency", "shotcalling", "champion_pool", "discipline", "mental_resilience"];
+  const attrs = (values: number[]) => Object.fromEntries(ATTRS.map((name, i) => [name, values[i]]));
+  const real = (id: string, ovr: number) => player(id, "lec", ovr, { attributes: attrs([60, 70, 80, 65, 75, 62, 72, 68, 77]) as never });
+  const jitter = (id: string) => player(id, "lec", 51, { attributes: attrs([46, 53, 48, 51, 49, 50, 52, 47, 50]) as never });
+
+  it("leaves flat-band rows out of the median and sd and counts them", () => {
+    const players = [real("a", 70), real("b", 80), real("c", 90), jitter("j1"), jitter("j2"), player("f", "lec", 50, { isFlat50: true })];
+    const { levels, counts } = leagueLevelStats(players);
+    expect(levels).toEqual({ lec: { median: 80, sd: 8.16 } });
+    expect(counts).toEqual({ lec: { n_used: 3, n_excluded: 3 } });
+    expect(leagueLevels(players)).toEqual(levels);
   });
 });
 
