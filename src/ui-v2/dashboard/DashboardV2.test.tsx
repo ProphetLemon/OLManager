@@ -514,6 +514,51 @@ describe("DashboardV2 shell wiring", () => {
     await waitFor(() => expect(shell.header?.callCount).toBe(1));
   });
 
+  it("keeps a scrim setup blocker the advance path reports until its condition is fixed", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>
+    );
+    const scrimSetup = {
+      id: "scrim_setup_required",
+      severity: "warn",
+      text: "Set up the weekly scrims",
+      tab: "Scrims",
+    };
+    // Wednesday morning, the first scrim day, with no objective and no plan.
+    const wednesday = (team: Record<string, unknown> = {}) => {
+      const state = minimalGameState();
+      return {
+        ...state,
+        clock: { ...state.clock, current_date: "2025-06-18" },
+        teams: [{ id: "team-1", name: "Test Team", ...team }],
+      } as unknown as GameStateData;
+    };
+    const view = render(tree());
+    await screen.findByTestId("home-tab-v2");
+    act(() => useGameStore.setState({ gameState: wednesday() }));
+
+    shell.blockerModal = { blockers: [scrimSetup], pendingAction: vi.fn() };
+    view.rerender(tree());
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    // The modal closes. check_blocking_actions answers [] for this blocker (only
+    // the advance command raises it), yet it must survive the refresh.
+    shell.blockerModal = null;
+    view.rerender(tree());
+    shell.checkBlockingActions.mockClear();
+    act(() => useGameStore.setState({ gameState: wednesday() }));
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", { rethrow: true }));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(shell.header?.callCount).toBe(1);
+
+    // The manager sets a weekly objective: the advance path would no longer block.
+    act(() => useGameStore.setState({ gameState: wednesday({ scrim_weekly_objective: "Draft" }) }));
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
   it("keeps the retained blockers when the refresh check fails", async () => {
     const DashboardV2 = (await import("./DashboardV2")).default;
     const tree = () => (

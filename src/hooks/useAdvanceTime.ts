@@ -9,6 +9,7 @@ import {
   checkBlockingActions,
   skipToMatchDay,
 } from "../services/advanceTimeService";
+import { collectAdvanceBlockers } from "../lib/home/advanceBlockers";
 import { autoConfigureWeeklyScrimSetup, delegateScrimDecision } from "../services/trainingService";
 import { effectiveWeeklyScrimSlots, scrimSlotWeekdays, weekdayMondayBased } from "../lib/scrims/scrimContext";
 
@@ -316,7 +317,7 @@ export function useAdvanceTime(
       return;
     }
     if (isAdvancing) return;
-    const blockers = await checkBlockingActions("handleContinue");
+    const blockers = await collectAdvanceBlockers("handleContinue", useGameStore.getState().gameState, { mode: resolvedMode });
     if (blockers.length > 0) {
       if (shouldBypassBlockersForAssistant(blockers)) {
         doAdvance(resolvedMode);
@@ -351,7 +352,7 @@ export function useAdvanceTime(
   const handleSkipToNextDay = async () => {
     if (isAdvancing) return;
     console.info("[useAdvanceTime] handleSkipToNextDay:start");
-    const blockers = await checkBlockingActions("handleSkipToNextDay");
+    const blockers = await collectAdvanceBlockers("handleSkipToNextDay", useGameStore.getState().gameState, { mode: matchMode });
     if (blockers.length > 0) {
       if (shouldBypassBlockersForAssistant(blockers)) {
         doSkipToNextDay();

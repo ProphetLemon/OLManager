@@ -15,7 +15,8 @@ import { assetUrl } from "@/lib/assetUrl";
 import { DEFAULT_MANAGER_ICON_PATH } from "@/lib/common/managerAvatars";
 import { buildCallItems } from "@/lib/dashboard/needsYourCall";
 import { buildActiveLineupIds } from "@/lib/squad/helpers";
-import { checkBlockingActions, type BlockerData } from "@/services/advanceTimeService";
+import type { BlockerData } from "@/services/advanceTimeService";
+import { collectAdvanceBlockers } from "@/lib/home/advanceBlockers";
 import type { PlayerData } from "@/store/gameStore";
 import { resolveActiveLineupIds } from "@/store/types";
 import type { ShellBadges } from "@/ui-v2/shell/shellTypes";
@@ -344,7 +345,7 @@ export default function DashboardV2() {
     let cancelled = false;
     const timer = setTimeout(() => {
       // A failed check is not "everything resolved": rethrow and keep the retained list.
-      checkBlockingActions("dashboard-refresh", { rethrow: true }).then(
+      collectAdvanceBlockers("dashboard-refresh", gameState, { rethrow: true }).then(
         (fresh) => {
           if (cancelled) return;
           setLastBlockers((prev) => {
@@ -353,7 +354,9 @@ export default function DashboardV2() {
             const same =
               fresh.length === prev.blockers.length &&
               fresh.every((b, i) => b.id === prev.blockers[i].id && b.text === prev.blockers[i].text);
-            return same ? prev : { ...prev, blockers: fresh };
+            // Keep the retained entry (and its copy) for ids that still block.
+            const kept = fresh.map((b) => prev.blockers.find((p) => p.id === b.id) ?? b);
+            return same ? prev : { ...prev, blockers: kept };
           });
         },
         () => {
@@ -686,7 +689,7 @@ export default function DashboardV2() {
         !profileNavigation.selectedPlayerId &&
         !profileNavigation.selectedTeamId &&
         !showSeasonSummary ? (
-          <div className="flex-1 overflow-y-auto scrollbar-v2">
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-v2">
             <HomeTabV2
               gameState={gameState}
               onNavigate={handleNavigate}
