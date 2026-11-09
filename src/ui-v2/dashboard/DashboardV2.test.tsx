@@ -514,48 +514,71 @@ describe("DashboardV2 shell wiring", () => {
     await waitFor(() => expect(shell.header?.callCount).toBe(1));
   });
 
-  it("keeps a scrim setup blocker the advance path reports until its condition is fixed", async () => {
+  const scrimSetup = {
+    id: "scrim_setup_required",
+    severity: "warn",
+    text: "Set up the weekly scrims",
+    tab: "Scrims",
+  };
+
+  async function renderWithRetainedScrimSetup() {
     const DashboardV2 = (await import("./DashboardV2")).default;
     const tree = () => (
       <MemoryRouter initialEntries={["/dashboard"]}>
         <DashboardV2 />
       </MemoryRouter>
     );
-    const scrimSetup = {
-      id: "scrim_setup_required",
-      severity: "warn",
-      text: "Set up the weekly scrims",
-      tab: "Scrims",
-    };
-    // Wednesday morning, the first scrim day, with no objective and no plan.
-    const wednesday = (team: Record<string, unknown> = {}) => {
-      const state = minimalGameState();
-      return {
-        ...state,
-        clock: { ...state.clock, current_date: "2025-06-18" },
-        teams: [{ id: "team-1", name: "Test Team", ...team }],
-      } as unknown as GameStateData;
-    };
+    shell.blockerModal = { blockers: [scrimSetup] };
     const view = render(tree());
-    await screen.findByTestId("home-tab-v2");
-    act(() => useGameStore.setState({ gameState: wednesday() }));
-
-    shell.blockerModal = { blockers: [scrimSetup], pendingAction: vi.fn() };
-    view.rerender(tree());
     await waitFor(() => expect(shell.header?.callCount).toBe(1));
-
-    // The modal closes. check_blocking_actions answers [] for this blocker (only
-    // the advance command raises it), yet it must survive the refresh.
     shell.blockerModal = null;
     view.rerender(tree());
     shell.checkBlockingActions.mockClear();
-    act(() => useGameStore.setState({ gameState: wednesday() }));
-    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", { rethrow: true }));
+    return view;
+  }
+
+  it("keeps a scrim blocker only while the backend check still reports it", async () => {
+    await renderWithRetainedScrimSetup();
+    shell.checkBlockingActions.mockResolvedValue([scrimSetup]);
+    act(() => useGameStore.setState({ gameState: { ...minimalGameState() } }));
+    await waitFor(() =>
+      expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", {
+        rethrow: true,
+        mode: "live",
+      }),
+    );
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(shell.header?.callCount).toBe(1);
 
-    // The manager sets a weekly objective: the advance path would no longer block.
-    act(() => useGameStore.setState({ gameState: wednesday({ scrim_weekly_objective: "Draft" }) }));
+    // The manager sets a weekly objective: the backend no longer blocks.
+    shell.checkBlockingActions.mockResolvedValue([]);
+    act(() => useGameStore.setState({ gameState: { ...minimalGameState() } }));
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("asks the backend with the delegate mode when the manager is unemployed", async () => {
+    await renderWithRetainedScrimSetup();
+    shell.checkBlockingActions.mockResolvedValue([]);
+    act(() =>
+      useGameStore.setState({
+        gameState: { ...minimalGameState(), manager: { ...minimalGameState().manager, team_id: null } },
+      }),
+    );
+    await waitFor(() =>
+      expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", {
+        rethrow: true,
+        mode: "delegate",
+      }),
+    );
+  });
+
+  it("re-runs the refresh and clears the scrim blocker when the scrims delegation is switched to auto", async () => {
+    await renderWithRetainedScrimSetup();
+    // The game state does not change: only the settings store fires.
+    shell.checkBlockingActions.mockResolvedValue([scrimSetup]);
+    act(() => useSettingsStore.setState({ settings: { ...useSettingsStore.getState().settings, scrim_review_mode: "assistant" } }));
+
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalled());
     await waitFor(() => expect(shell.header?.callCount).toBe(0));
   });
 
@@ -578,7 +601,7 @@ describe("DashboardV2 shell wiring", () => {
       useGameStore.setState({ gameState: { ...minimalGameState() } });
     });
 
-    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", { rethrow: true }));
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", { rethrow: true, mode: "live" }));
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(shell.header?.callCount).toBe(1);
   });

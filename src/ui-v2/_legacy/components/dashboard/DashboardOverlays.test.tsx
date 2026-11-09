@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { BlockerModal } from "@/hooks/useAdvanceTime.helpers";
 import DashboardBlockerModal from "./DashboardBlockerModal";
+import DashboardOverlays from "./DashboardOverlays";
 import DashboardExitConfirmModal from "./DashboardExitConfirmModal";
 import DashboardExitSavingModal from "./DashboardExitSavingModal";
 
@@ -105,5 +106,82 @@ describe("DashboardBlockerModal", () => {
     );
     fireEvent.keyDown(await screen.findByRole("dialog"), { key: "Escape" });
     await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("offers Continue anyway for blockers the backend does not enforce", async () => {
+    render(
+      <DashboardBlockerModal
+        blockerModal={blockerModal}
+        onClose={vi.fn()}
+        onContinueAnyway={vi.fn()}
+        onNavigate={vi.fn()}
+      />,
+    );
+    expect(await screen.findByRole("button", { name: "notifications.continueAnyway" })).toBeInTheDocument();
+  });
+
+  it.each(["scrim_setup_required", "scrim_decision_required"])(
+    "never offers Continue anyway for the enforced %s blocker",
+    async (id) => {
+      const enforced = {
+        blockers: [
+          { id: "b1", tab: "Squad", text: "Pick a lineup", severity: "warn" },
+          { id, tab: "Scrims", text: "Scrims", severity: "warn" },
+        ],
+      } as unknown as BlockerModal;
+      render(
+        <DashboardBlockerModal
+          blockerModal={enforced}
+          onClose={vi.fn()}
+          onContinueAnyway={vi.fn()}
+          onNavigate={vi.fn()}
+        />,
+      );
+      await screen.findByRole("dialog");
+      expect(screen.queryByRole("button", { name: "notifications.continueAnyway" })).toBeNull();
+    },
+  );
+});
+
+describe("DashboardOverlays blocker modal", () => {
+  function renderOverlays(modal: BlockerModal) {
+    return render(
+      <DashboardOverlays
+        blockerModal={modal}
+        currentModeMeta={{} as never}
+        handleConfirmMatch={vi.fn()}
+        handleExitToMenu={vi.fn()}
+        handleNavigate={vi.fn()}
+        handleCloseQuit={vi.fn()}
+        isExitingToMenu={false}
+        matchMode="live"
+        setBlockerModal={vi.fn()}
+        setShowCloseConfirm={vi.fn()}
+        setShowExitConfirm={vi.fn()}
+        setShowMatchConfirm={vi.fn()}
+        showCloseConfirm={false}
+        showExitConfirm={false}
+        showMatchConfirm={false}
+        teams={[]}
+        todayMatchFixture={null}
+      />,
+    );
+  }
+
+  it("drops the pending action when an enforced scrim blocker is listed", async () => {
+    renderOverlays({
+      blockers: [{ id: "scrim_decision_required", tab: "Scrims", text: "Decide", severity: "warn" }],
+      pendingAction: vi.fn(),
+    });
+    await screen.findByRole("dialog");
+    expect(screen.queryByRole("button", { name: "notifications.continueAnyway" })).toBeNull();
+  });
+
+  it("passes the pending action through for a soft blocker", async () => {
+    renderOverlays({
+      blockers: [{ id: "incomplete_lineup", tab: "Squad", text: "Lineup", severity: "warn" }],
+      pendingAction: vi.fn(),
+    });
+    expect(await screen.findByRole("button", { name: "notifications.continueAnyway" })).toBeInTheDocument();
   });
 });

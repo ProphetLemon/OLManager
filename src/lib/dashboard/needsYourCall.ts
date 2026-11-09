@@ -2,6 +2,7 @@ import type { TFunction } from "i18next";
 import type { DashboardAlert } from "@/lib/dashboard/helpers";
 import type { BlockerData } from "@/services/advanceTimeService";
 import type { PlayerData } from "@/store/gameStore";
+import { isBackendEnforcedBlocker } from "@/lib/home/blockerRules";
 import { getContractRiskLevel, getDaysUntil } from "@/lib/common/contractUtils";
 
 export type CallSeverity = "hard" | "soft" | "info";
@@ -155,7 +156,11 @@ function blockerItem(
   t: TFunction,
 ): CallItem {
   const rule = BLOCKER_RULES[blocker.id];
-  const severity: CallSeverity = !rule
+  // Blockers the backend enforces are hard whatever the modal offered.
+  const enforced = isBackendEnforcedBlocker(blocker);
+  const severity: CallSeverity = enforced
+    ? "hard"
+    : !rule
     ? blocker.severity === "info"
       ? "info"
       : canContinueAnyway

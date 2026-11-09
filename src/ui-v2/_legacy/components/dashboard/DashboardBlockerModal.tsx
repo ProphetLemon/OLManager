@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { BlockerModal } from "@/hooks/useAdvanceTime.helpers";
+import { canContinueAnyway } from "@/lib/home/blockerRules";
 import { Dialog, DialogContent, DialogTitle } from "@/ui-v2/components/ui/dialog";
 import { cn } from "@/ui-v2/lib/utils";
 
@@ -89,7 +90,7 @@ export default function DashboardBlockerModal({
           >
             {t("notifications.reviewIssues")}
           </button>
-          {onContinueAnyway && (
+          {onContinueAnyway && canContinueAnyway(blockerModal.blockers) && (
             <button
               type="button"
               onClick={onContinueAnyway}

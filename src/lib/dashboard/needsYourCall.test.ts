@@ -84,6 +84,14 @@ describe("buildCallItems", () => {
     expect(items[0].target.tab).toBe("Scrims");
   });
 
+  it("keeps every backend-enforced blocker hard even when Continue anyway was offered", () => {
+    const { items } = build({
+      canContinueAnyway: true,
+      blockers: [blocker("scrim_decision_required"), blocker("advance_blocked")],
+    });
+    expect(items.map((i) => i.severity)).toEqual(["hard", "hard"]);
+  });
+
   it("degrades unknown blockers to review and keeps the backend tab", () => {
     const [item] = build({ blockers: [blocker("zzz", { tab: "Finances" })] }).items;
     expect(item.actionLabelKey).toBe("onAir.calls.actions.review");

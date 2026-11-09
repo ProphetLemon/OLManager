@@ -17,6 +17,10 @@ import { buildCallItems } from "@/lib/dashboard/needsYourCall";
 import { buildActiveLineupIds } from "@/lib/squad/helpers";
 import type { BlockerData } from "@/services/advanceTimeService";
 import { collectAdvanceBlockers } from "@/lib/home/advanceBlockers";
+import {
+  canContinueAnyway as canOfferContinueAnyway,
+  resolveAdvanceMode,
+} from "@/lib/home/blockerRules";
 import type { PlayerData } from "@/store/gameStore";
 import { resolveActiveLineupIds } from "@/store/types";
 import type { ShellBadges } from "@/ui-v2/shell/shellTypes";
@@ -328,7 +332,9 @@ export default function DashboardV2() {
       blockerModal.blockers.length > 0
         ? {
             blockers: blockerModal.blockers,
-            canContinueAnyway: blockerModal.pendingAction !== undefined,
+            canContinueAnyway:
+              blockerModal.pendingAction !== undefined &&
+              canOfferContinueAnyway(blockerModal.blockers),
           }
         : null,
     );
@@ -340,12 +346,20 @@ export default function DashboardV2() {
   // state update and keep only what is still blocking.
   const hasRetainedBlockers = lastBlockers !== null;
   const blockerModalOpen = blockerModal !== null && blockerModal !== undefined;
+  // Same effective mode Continue resolves, so the refresh asks the backend the
+  // question the advance command will answer.
+  const refreshMode = resolveAdvanceMode(isUnemployed ?? false, matchMode);
+  const assistantResolvesScrims = settings.scrim_review_mode === "assistant";
   useEffect(() => {
     if (!hasRetainedBlockers || blockerModalOpen) return;
     let cancelled = false;
     const timer = setTimeout(() => {
       // A failed check is not "everything resolved": rethrow and keep the retained list.
-      collectAdvanceBlockers("dashboard-refresh", gameState, { rethrow: true }).then(
+      collectAdvanceBlockers("dashboard-refresh", {
+        rethrow: true,
+        mode: refreshMode,
+        assistantResolvesScrims,
+      }).then(
         (fresh) => {
           if (cancelled) return;
           setLastBlockers((prev) => {
@@ -368,7 +382,9 @@ export default function DashboardV2() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [gameState, hasRetainedBlockers, blockerModalOpen]);
+    // gameState changes when the scrim setup is saved; the delegation toggle
+    // changes the settings store instead, so it is a dependency of its own.
+  }, [gameState, hasRetainedBlockers, blockerModalOpen, refreshMode, assistantResolvesScrims]);
 
   useEffect(
     () => () => {
