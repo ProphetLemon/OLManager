@@ -116,6 +116,11 @@ pub fn custom_team_allowed(manifest: &CompetitionManifest) -> bool {
         && is_selectable_competition(manifest)
 }
 
+/// Whether `team_id` has the shape [`custom_team_id`] produces.
+pub fn is_custom_team_id(team_id: &str) -> bool {
+    team_id.contains("-custom-")
+}
+
 /// Id of a custom club: `{competition_id}-custom-{slug}`, where the slug is the
 /// lowercase ASCII alphanumerics of the short name. The competition prefix
 /// keeps the id resolvable by `competition_id_from_team_id_known`.

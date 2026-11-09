@@ -292,7 +292,13 @@ pub fn squad_bill(squad: &[Player]) -> i64 {
 /// floor, and the room under the 110% soft cap is about 16% of the bill, so
 /// elite free agents stay out of reach without inflating wages.
 pub fn founding_wage_budget(squad: &[Player]) -> i64 {
-    let bill = u64::try_from(squad_bill(squad)).unwrap_or(0);
+    wage_budget_for_bill(squad_bill(squad))
+}
+
+/// Wage budget at which `bill` is [`DERIVED_BUDGET_BILL_PCT`] of the budget,
+/// rounded up to 10k. A negative bill counts as zero.
+pub fn wage_budget_for_bill(bill: i64) -> i64 {
+    let bill = u64::try_from(bill).unwrap_or(0);
     let exact = (bill * 100).div_ceil(DERIVED_BUDGET_BILL_PCT.unsigned_abs());
     let rounded =
         exact.div_ceil(DERIVED_BUDGET_STEP.unsigned_abs()) * DERIVED_BUDGET_STEP.unsigned_abs();
@@ -1743,6 +1749,13 @@ mod tests {
     #[test]
     fn derived_budget_of_an_empty_squad_is_zero() {
         assert_eq!(founding_wage_budget(&[]), 0);
+    }
+
+    #[test]
+    fn budget_for_a_bill_keeps_the_bill_at_95_percent_rounded_up_to_10k() {
+        assert_eq!(wage_budget_for_bill(950_000), 1_000_000);
+        assert_eq!(wage_budget_for_bill(1_000_000), 1_060_000);
+        assert_eq!(wage_budget_for_bill(-5), 0);
     }
 
     #[test]

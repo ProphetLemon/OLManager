@@ -2,7 +2,7 @@ use chrono::TimeZone;
 use olm_core::clock::GameClock;
 use olm_core::competitions::competition_id_from_team_id_known;
 use olm_core::custom_team::{
-    CustomTeamError, CustomTeamSpec, badge_data_uri, custom_team_allowed, custom_team_id,
+    CustomTeamError, CustomTeamSpec, badge_data_uri, custom_team_allowed, custom_team_id, is_custom_team_id,
     OvrPercentiles, league_median_profile, peer_ovr_percentiles, replace_team_with_custom,
     validate_spec,
 };
@@ -273,6 +273,13 @@ fn replace_rejects_a_name_used_by_another_competition() {
         replace_team_with_custom(&mut game, "les", "les-b", &s).unwrap_err(),
         CustomTeamError::DuplicateName
     );
+}
+
+#[test]
+fn is_custom_team_id_matches_generated_ids_only() {
+    assert!(is_custom_team_id(&custom_team_id("les", "RAY")));
+    assert!(is_custom_team_id(&custom_team_id("emea-masters", "R-4Y")));
+    assert!(!is_custom_team_id("les-fnc"));
 }
 
 #[test]
