@@ -206,6 +206,9 @@ pub struct CompetitionSummary {
     #[serde(default)]
     pub active: bool,
     pub team_count: u32,
+    /// Whether the player may replace one of this league's clubs with their own
+    /// (see `custom_team::custom_team_allowed`).
+    pub custom_team_allowed: bool,
     pub teams: Vec<TeamSummary>,
 }
 

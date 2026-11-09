@@ -1186,7 +1186,7 @@ pub fn rehydrate_game_from_catalog(
     )
 }
 
-fn apply_catalog_to_game(
+pub(crate) fn apply_catalog_to_game(
     game: &mut Game,
     catalog_teams: Vec<Team>,
     catalog_players: Vec<Player>,

@@ -300,6 +300,7 @@ fn competition_summary(
         })
         .collect();
 
+    let custom_team_allowed = crate::custom_team::custom_team_allowed(&manifest);
     Some(CompetitionSummary {
         id: manifest.id,
         name: manifest.name,
@@ -309,6 +310,7 @@ fn competition_summary(
         legacy: manifest.legacy,
         active: manifest.active,
         team_count: manifest.schedule.team_count,
+        custom_team_allowed,
         teams: team_summaries,
     })
 }
@@ -580,6 +582,24 @@ mod tests {
 
         // tier-2 with splits kept, tier-2 without splits and legacy dropped
         assert_eq!(ids, vec![("lec", 1), ("les", 2)]);
+    }
+
+    #[test]
+    fn league_selection_flags_only_tier_two_playable_leagues_as_custom_team_hosts() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_competition(dir.path(), "lec", 1, false, true);
+        write_competition(dir.path(), "les", 2, false, true);
+
+        let data = build_league_selection(dir.path());
+        let flag = |id: &str| {
+            data.competitions
+                .iter()
+                .find(|c| c.id == id)
+                .map(|c| c.custom_team_allowed)
+        };
+
+        assert_eq!(flag("lec"), Some(false));
+        assert_eq!(flag("les"), Some(true));
     }
 
     #[test]
