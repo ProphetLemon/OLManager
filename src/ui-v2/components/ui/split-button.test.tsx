@@ -68,4 +68,12 @@ describe("SplitButton", () => {
     expect(chevron.className).toContain("bg-club")
     expect(chevron.className).toContain("size-[var(--hit)]")
   })
+
+  it("sets the label in Barlow extra-bold at 1.25rem", () => {
+    setup()
+    const main = screen.getByRole("button", { name: "Continue" })
+    expect(main.className).toContain("font-heading")
+    expect(main.className).toContain("font-extrabold")
+    expect(main.className).toContain("text-[1.25rem]")
+  })
 })

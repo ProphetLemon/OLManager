@@ -47,13 +47,19 @@ export function SectionStripV2({ group, activeTab, onNavClick, badges, label }: 
     <nav
       aria-label={t("onAir.nav.strip", { group: label, defaultValue: "{{group}} sections" })}
       data-slot="section-strip"
-      className="h-[2.875rem] shrink-0 border-b border-line bg-rail"
+      className="h-[2.875rem] shrink-0 border-b border-line bg-background"
     >
       <div className="flex h-full items-stretch gap-1 overflow-x-auto px-4" onKeyDown={handleKeyDown}>
+        <span
+          aria-hidden="true"
+          data-slot="section-strip-group"
+          className="mr-2.5 flex shrink-0 select-none items-center text-[0.8125rem] font-semibold text-dim"
+        >
+          {label}
+        </span>
         {items.map((item, i) => {
           const active = item.tab === activeTab;
           const count = item.badge ? badges[item.badge] : 0;
-          const Icon = item.icon;
           return (
             <button
               key={item.tab}
@@ -66,14 +72,13 @@ export function SectionStripV2({ group, activeTab, onNavClick, badges, label }: 
               onClick={() => onNavClick(item.tab)}
               onFocus={(e) => e.currentTarget.scrollIntoView?.({ block: "nearest", inline: "nearest" })}
               className={cn(
-                "flex shrink-0 items-center gap-2 border-b-2 px-3 font-heading text-sm transition-colors",
+                "flex shrink-0 items-center gap-2 border-b-[3px] px-3.5 text-[0.9375rem] transition-colors",
                 "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                 active
-                  ? "border-club font-bold text-foreground"
+                  ? "border-club font-bold text-foreground [[data-contrast=high]_&]:outline-2 [[data-contrast=high]_&]:-outline-offset-2 [[data-contrast=high]_&]:outline-foreground"
                   : "border-transparent font-medium text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon aria-hidden="true" className="size-4" />
               <span>{t(item.labelKey, { defaultValue: item.defaultLabel })}</span>
               {count > 0 && <Badge variant="secondary">{count}</Badge>}
             </button>

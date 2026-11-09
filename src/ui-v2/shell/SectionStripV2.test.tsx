@@ -33,6 +33,25 @@ describe("SectionStripV2", () => {
     expect(screen.getByRole("navigation", { name: "Market sections" })).toBeInTheDocument();
   });
 
+  it("shows the group as a muted, non-focusable label before the tabs", () => {
+    setup();
+    const group = document.querySelector('[data-slot="section-strip-group"]') as HTMLElement;
+    expect(group).toHaveTextContent("Market");
+    expect(group.tagName).toBe("SPAN");
+    expect(group).not.toHaveAttribute("tabindex");
+    expect(screen.getAllByRole("button").every((b) => !group.contains(b))).toBe(true);
+    expect(group.nextElementSibling?.tagName).toBe("BUTTON");
+  });
+
+  it("underlines the active tab in the club colour and adds an outline in high contrast", () => {
+    setup("Transfers");
+    const active = screen.getByRole("button", { name: /Transfers/ });
+    expect(active.className).toContain("border-club");
+    expect(active.className).toContain("font-bold");
+    expect(active.className).toContain("[[data-contrast=high]_&]:outline-2");
+    expect(screen.getByRole("button", { name: /Market/ }).className).not.toContain("border-club");
+  });
+
   it("marks only the active tab with aria-current", () => {
     setup("Transfers");
     expect(screen.getByRole("button", { name: /Transfers/ })).toHaveAttribute("aria-current", "page");

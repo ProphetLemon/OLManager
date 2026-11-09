@@ -47,7 +47,7 @@ export function SplitButton({
         type="button"
         variant={variant}
         size={size}
-        className="gap-2 rounded-e-none"
+        className="gap-2 rounded-e-none px-5 font-heading text-[1.25rem] font-extrabold [&_svg:not([class*='size-'])]:size-5"
         disabled={disabled || loading}
         aria-busy={loading || undefined}
         onClick={onClick}
@@ -62,7 +62,7 @@ export function SplitButton({
           disabled={disabled || loading}
           className={cn(
             buttonVariants({ variant, size: chevronSize }),
-            "rounded-s-none border-s border-s-background/40 px-0",
+            "rounded-s-none border-s border-s-club-foreground/25 px-0 [&_svg:not([class*='size-'])]:size-5",
           )}
         >
           <ChevronDown aria-hidden="true" />

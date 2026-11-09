@@ -1,4 +1,3 @@
-import { Calendar as CalendarIcon, ClipboardCheck, Clock, Dumbbell, Moon, Sunrise, Swords, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { TagBlock } from "@/ui-v2/components/ui/tag-block";
 import { cn } from "@/ui-v2/lib/utils";
@@ -9,36 +8,36 @@ export interface ClockPlateProps {
   className?: string;
 }
 
-// The phase is told apart by icon and text, never by colour.
-const PHASE_ICONS: Record<string, LucideIcon> = {
-  Morning: Sunrise,
-  ScrimBlock: Swords,
-  ReviewBlock: ClipboardCheck,
-  TrainingBlock: Dumbbell,
-  Evening: Moon,
-};
-
-/** Game date plus the current day phase, as one labelled group in the broadcast bar. */
+/**
+ * Game date on a panel plate, joined to a slanted club-colour tag with the day phase.
+ * The phase is always spelled out in text; the dot is decoration.
+ */
 export function ClockPlate({ dateLabel, phase, className }: ClockPlateProps) {
   const { t } = useTranslation();
-  const PhaseIcon = phase ? (PHASE_ICONS[phase.key] ?? Clock) : null;
 
   return (
     <div
       role="group"
       aria-label={t("onAir.bar.clock", { defaultValue: "Game date and phase" })}
       data-slot="clock-plate"
-      className={cn(
-        "flex min-h-[var(--hit)] shrink-0 items-center gap-3 rounded-md border border-line bg-muted/40 px-3",
-        className,
-      )}
+      className={cn("flex h-10 shrink-0 items-stretch", className)}
     >
-      <span className="flex items-center gap-1.5">
-        <CalendarIcon aria-hidden="true" className="size-4 text-club-text" />
-        <span className="font-heading text-sm font-bold tabular-nums text-foreground">{dateLabel}</span>
+      <span
+        data-slot="clock-plate-date"
+        className={cn(
+          "flex items-center bg-muted py-0 pl-3.5 pr-[1.125rem] font-heading text-[1.25rem] font-bold tabular-nums tracking-[0.01em] text-foreground",
+          phase ? "rounded-s-lg" : "rounded-lg",
+        )}
+      >
+        {dateLabel}
       </span>
-      {phase && PhaseIcon && (
-        <TagBlock tone="neutral" size="sm" icon={<PhaseIcon />}>
+      {phase && (
+        <TagBlock
+          tone="club"
+          size="lg"
+          icon={<span className="size-2 rounded-full bg-club-foreground" />}
+          className="-ml-2.5 min-h-0 gap-2 self-stretch pl-6 pr-[1.125rem] text-[1.25rem]"
+        >
           {phase.label}
         </TagBlock>
       )}

@@ -3,10 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DashboardHeaderV2 } from "@/ui-v2/dashboard/DashboardHeaderV2";
 
+const requestedKeys = vi.hoisted(() => [] as string[]);
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (_k: string, o?: { defaultValue?: string; count?: number; group?: string }) =>
-      (o?.defaultValue ?? _k).replace("{{count}}", String(o?.count ?? "")).replace("{{group}}", o?.group ?? ""),
+      (requestedKeys.push(_k), o?.defaultValue ?? _k).replace("{{count}}", String(o?.count ?? "")).replace("{{group}}", o?.group ?? ""),
   }),
 }));
 
@@ -129,5 +131,23 @@ describe("DashboardHeaderV2", () => {
   it("hides the Club strip while unemployed", () => {
     setup({ activeTab: "Squad", isUnemployed: true });
     expect(screen.queryByRole("navigation")).toBeNull();
+  });
+
+  it("routes each day phase through onAir.bar.phase keys with English defaults", () => {
+    setup({ dayPhase: "ScrimBlock" });
+    expect(screen.getByRole("group", { name: "Game date and phase" })).toHaveTextContent("Scrims");
+    for (const k of ["morning", "scrimBlock", "reviewBlock", "trainingBlock", "evening"]) {
+      expect(requestedKeys).toContain(`onAir.bar.phase.${k}`);
+    }
+  });
+
+  it("draws a 2px club rule under the bar and gives the chip a dot", () => {
+    setup({ callCount: 2 });
+    const rule = document.querySelector('[data-slot="bar-rule"]');
+    expect(rule?.className).toContain("h-0.5");
+    expect(rule?.className).toContain("bg-club");
+    const chip = screen.getByRole("button", { name: "2 to resolve" });
+    expect(chip.className).toContain("rounded-full");
+    expect(chip.querySelector("span[aria-hidden='true']")).not.toBeNull();
   });
 });

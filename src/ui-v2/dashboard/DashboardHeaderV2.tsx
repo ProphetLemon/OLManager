@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowLeft, ChevronRight, Loader2, Play, Save, SkipForward, Swords } from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2, Play, Save, SkipForward, Swords } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/ui-v2/components/ui/button";
 import { ClubShield } from "@/ui-v2/components/ui/club-shield";
@@ -70,11 +70,11 @@ export function DashboardHeaderV2({
   const { t } = useTranslation();
 
   const phaseLabels: Record<string, string> = {
-    Morning: t("dashboard.phaseLabels.morning"),
-    ScrimBlock: t("dashboard.phaseLabels.scrimBlock"),
-    ReviewBlock: t("dashboard.phaseLabels.reviewBlock"),
-    TrainingBlock: t("dashboard.phaseLabels.trainingBlock"),
-    Evening: t("dashboard.phaseLabels.evening"),
+    Morning: t("onAir.bar.phase.morning", { defaultValue: "Morning" }),
+    ScrimBlock: t("onAir.bar.phase.scrimBlock", { defaultValue: "Scrims" }),
+    ReviewBlock: t("onAir.bar.phase.reviewBlock", { defaultValue: "Review" }),
+    TrainingBlock: t("onAir.bar.phase.trainingBlock", { defaultValue: "Training" }),
+    Evening: t("onAir.bar.phase.evening", { defaultValue: "Evening" }),
   };
   const phase = dayPhase ? { key: dayPhase, label: phaseLabels[dayPhase] ?? dayPhase } : undefined;
 
@@ -90,9 +90,7 @@ export function DashboardHeaderV2({
 
   return (
     <header className="shrink-0 bg-card">
-      <div
-        className={`flex h-[3.75rem] items-center border-b border-line ${compact ? "gap-2 px-3" : "gap-3 px-4"}`}
-      >
+      <div className={`flex h-[3.75rem] items-center ${compact ? "gap-2 px-3" : "gap-3 px-4"}`}>
         {hasProfileHistory && (
           <>
             <Button variant="ghost" size="icon-touch" onClick={onBack} aria-label={t("common.back")}>
@@ -119,9 +117,10 @@ export function DashboardHeaderV2({
             variant="outline"
             size="touch"
             onClick={onShowCalls}
-            className="shrink-0 gap-2 border-warning/40 text-warning"
+            data-slot="resolve-chip"
+            className="shrink-0 gap-2 rounded-full border-warning/40 bg-warning/10 px-3.5 text-warning hover:bg-warning/20 hover:text-warning"
           >
-            <AlertCircle aria-hidden="true" className="size-4" />
+            <span aria-hidden="true" className="size-2 rounded-full bg-warning" />
             {t("onAir.bar.toResolve", { count: callCount, defaultValue: "{{count}} to resolve" })}
           </Button>
         )}
@@ -174,6 +173,7 @@ export function DashboardHeaderV2({
           ]}
         />
       </div>
+      <div aria-hidden="true" data-slot="bar-rule" className="h-0.5 bg-club" />
 
       {showStrip && group && groupDef && (
         <SectionStripV2
