@@ -701,6 +701,24 @@
     "teamCount_one": "1 team",
     "teamCount_other": "{{count}} teams",
     "teams": "Teams",
+    "customLogo": {
+        "heading": "Your own badge",
+        "upload": "Upload your badge",
+        "replace": "Change image",
+        "remove": "Remove image",
+        "hint": "PNG, JPEG or WebP, up to 2 MB. It is resized to fit 256 by 256 pixels. Without an image, the generated shield is used.",
+        "processing": "Preparing your badge...",
+        "inUse": "Your image replaces the generated shield. Remove it to go back.",
+        "previewAlt": "Your uploaded badge",
+        "errors": {
+            "unsupportedType": "Use a PNG, JPEG or WebP image. SVG and other formats are not accepted.",
+            "fileTooLarge": "That file is larger than 2 MB. Pick a smaller image.",
+            "unreadable": "That image could not be read. Try another file.",
+            "invalid": "That image could not be used as a badge. Try another file.",
+            "tooBig": "That image is too large to use. Try a smaller one.",
+            "failed": "The badge could not be prepared. Try again."
+        }
+    },
     "custom": {
       "create": "Create your team",
       "createHint": "Replace one club in this league with your own.",

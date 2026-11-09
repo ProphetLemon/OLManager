@@ -424,6 +424,24 @@
     "teamCount_one": "1 squadra",
     "teamCount_other": "{{count}} squadre",
     "teams": "Squadre",
+    "customLogo": {
+        "heading": "Il tuo stemma",
+        "upload": "Carica il tuo stemma",
+        "replace": "Cambia immagine",
+        "remove": "Rimuovi immagine",
+        "hint": "PNG, JPEG o WebP, fino a 2 MB. L'immagine viene ridotta per stare in 256 per 256 pixel. Senza immagine si usa lo stemma generato.",
+        "processing": "Preparazione dello stemma...",
+        "inUse": "La tua immagine sostituisce lo stemma generato. Rimuovila per tornare indietro.",
+        "previewAlt": "Il tuo stemma caricato",
+        "errors": {
+            "unsupportedType": "Usa un'immagine PNG, JPEG o WebP. SVG e altri formati non sono accettati.",
+            "fileTooLarge": "Il file supera i 2 MB. Scegli un'immagine più piccola.",
+            "unreadable": "Impossibile leggere l'immagine. Prova con un altro file.",
+            "invalid": "Questa immagine non può essere usata come stemma. Prova con un altro file.",
+            "tooBig": "L'immagine è troppo grande. Prova con una più piccola.",
+            "failed": "Impossibile preparare lo stemma. Riprova."
+        }
+    },
     "custom": {
       "create": "Crea la tua squadra",
       "createHint": "Sostituisci un club di questa lega con il tuo.",

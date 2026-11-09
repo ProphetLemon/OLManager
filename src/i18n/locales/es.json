@@ -701,6 +701,24 @@
     "teamCount_one": "1 equipo",
     "teamCount_other": "{{count}} equipos",
     "teams": "Equipos",
+    "customLogo": {
+        "heading": "Tu propio escudo",
+        "upload": "Subir tu escudo",
+        "replace": "Cambiar imagen",
+        "remove": "Quitar imagen",
+        "hint": "PNG, JPEG o WebP, de hasta 2 MB. Se ajusta a un máximo de 256 por 256 píxeles. Sin imagen se usa el escudo generado.",
+        "processing": "Preparando tu escudo...",
+        "inUse": "Tu imagen sustituye al escudo generado. Quítala para volver a él.",
+        "previewAlt": "Tu escudo subido",
+        "errors": {
+            "unsupportedType": "Usa una imagen PNG, JPEG o WebP. No se aceptan SVG ni otros formatos.",
+            "fileTooLarge": "Ese archivo pesa más de 2 MB. Elige una imagen más pequeña.",
+            "unreadable": "No se pudo leer esa imagen. Prueba con otro archivo.",
+            "invalid": "Esa imagen no se puede usar como escudo. Prueba con otro archivo.",
+            "tooBig": "Esa imagen es demasiado grande. Prueba con una más pequeña.",
+            "failed": "No se pudo preparar el escudo. Inténtalo de nuevo."
+        }
+    },
     "custom": {
       "create": "Crea tu equipo",
       "createHint": "Sustituye a un club de esta liga por el tuyo.",

@@ -22,6 +22,7 @@ import { allNationalities } from "@/lib/common/countries";
 import type { CompetitionSummary, CustomTeamSpec, TeamSummary } from "@/store/types";
 import { Card, CardContent, CardHeader } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
+import LogoUploadControl from "@/ui-v2/pages/customTeam/LogoUploadControl";
 import {
   getReputationLabel,
   getTeamLogoPath,
@@ -58,6 +59,7 @@ const FIELD_STEP: Record<CustomTeamField, Step> = {
   primary: 1,
   secondary: 1,
   replaces: 2,
+  logo: 1,
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -149,6 +151,7 @@ export default function CustomTeamWizardV2({
   const [shortName, setShortName] = useState("");
   const [shortEdited, setShortEdited] = useState(false);
   const [country, setCountry] = useState(() => leagueCountry(teams, nationalities));
+  const [logoDataUri, setLogoDataUri] = useState<string | null>(null);
   const [primary, setPrimary] = useState(BADGE_PRESETS[0][0]);
   const [secondary, setSecondary] = useState(BADGE_PRESETS[0][1]);
   const [replacesId, setReplacesId] = useState<string | null>(() => defaultReplacementId(teams));
@@ -260,6 +263,7 @@ export default function CustomTeamWizardV2({
         short_name: normalizeShortName(shortName),
         primary_color: normalizeColor(primary),
         secondary_color: normalizeColor(secondary),
+        ...(logoDataUri ? { logo_data_uri: logoDataUri } : {}),
         country,
       },
       replacesId,
@@ -269,7 +273,7 @@ export default function CustomTeamWizardV2({
   const badgeTag = normalizeShortName(shortName).replace(/[^A-Z0-9]/g, "").slice(0, SHORT_NAME_MAX) || "TAG";
   const badgePrimary = HEX.test(primary.trim()) ? normalizeColor(primary) : BADGE_PRESETS[0][0];
   const badgeSecondary = HEX.test(secondary.trim()) ? normalizeColor(secondary) : BADGE_PRESETS[0][1];
-  const badgeSrc = buildBadgeDataUri(badgeTag, badgePrimary, badgeSecondary);
+  const badgeSrc = logoDataUri ?? buildBadgeDataUri(badgeTag, badgePrimary, badgeSecondary);
   const lowContrast = contrastRatio(badgePrimary, badgeSecondary) < LOW_CONTRAST_RATIO;
   const replaced = teams.find((team) => team.id === replacesId);
   const countryLabel = nationalities.find((option) => option.code === country)?.name ?? country;
@@ -341,7 +345,7 @@ export default function CustomTeamWizardV2({
               alt={t("teamSelect.custom.previewAlt", { tag: badgeTag })}
               width={96}
               height={96}
-              className="size-24 shrink-0"
+              className="size-24 shrink-0 object-contain"
               data-testid="badge-preview-large"
             />
           </div>
@@ -500,13 +504,23 @@ export default function CustomTeamWizardV2({
                 </div>
               </fieldset>
 
+              <LogoUploadControl
+                value={logoDataUri}
+                onChange={setLogoDataUri}
+                backendError={backend?.field === "logo" ? error : null}
+                onInteract={() => {
+                  if (backend?.field === "logo") ackBackend();
+                }}
+                disabled={isSubmitting}
+              />
+
               <div className="flex items-center gap-4 rounded-lg border border-border bg-muted/30 p-4">
                 <img
                   src={badgeSrc}
                   alt=""
                   width={32}
                   height={32}
-                  className="size-8"
+                  className="size-8 object-contain"
                   data-testid="badge-preview-small"
                 />
                 <p className="text-sm text-muted-foreground">
@@ -593,7 +607,7 @@ export default function CustomTeamWizardV2({
                 aria-labelledby="custom-team-summary"
                 className="flex items-center gap-4 rounded-lg border border-border bg-muted/30 p-4"
               >
-                <img src={badgeSrc} alt="" width={32} height={32} className="size-12" />
+                <img src={badgeSrc} alt="" width={32} height={32} className="size-12 object-contain" />
                 <div className="min-w-0">
                   <h3
                     id="custom-team-summary"

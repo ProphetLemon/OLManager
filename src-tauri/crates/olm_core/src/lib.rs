@@ -12,6 +12,7 @@ pub mod team_overrides;
 pub mod competitions;
 pub mod contract_wage_policy;
 pub mod contracts;
+pub mod custom_logo;
 pub mod custom_team;
 pub mod db;
 pub mod delegated_renewals;

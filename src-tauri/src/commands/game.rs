@@ -391,6 +391,7 @@ pub async fn preview_founding_squad(
             primary_color: "#000000".to_string(),
             secondary_color: "#ffffff".to_string(),
             country: "ES".to_string(),
+            logo_data_uri: None,
             founding_seed: Some(seed),
             founder_overrides,
         };
@@ -3019,6 +3020,7 @@ mod tests {
                 primary_color: "#f97316".to_string(),
                 secondary_color: "#111111".to_string(),
                 country: "ES".to_string(),
+                logo_data_uri: None,
                 founding_seed: None,
                 founder_overrides: None,
             }
@@ -3284,6 +3286,7 @@ mod tests {
 
         fn seeded_rayo(seed: u32) -> CustomTeamSpec {
             CustomTeamSpec {
+                logo_data_uri: None,
                 founding_seed: Some(seed),
                 founder_overrides: None,
                 ..rayo()
@@ -3409,6 +3412,7 @@ mod tests {
                 primary_color: "#000000".to_string(),
                 secondary_color: "#ffffff".to_string(),
                 country: "ES".to_string(),
+                logo_data_uri: None,
                 founding_seed: Some(seed),
                 founder_overrides: overrides,
             };
@@ -3429,6 +3433,7 @@ mod tests {
         ) -> CustomTeamSpec {
             CustomTeamSpec {
                 short_name: short_name.to_string(),
+                logo_data_uri: None,
                 founding_seed: Some(seed),
                 founder_overrides: overrides,
                 ..rayo()

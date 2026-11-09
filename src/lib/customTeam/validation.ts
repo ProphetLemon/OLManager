@@ -3,7 +3,7 @@ import type { TeamSummary } from "@/store/types";
 /** Machine-readable validation outcome; the UI maps each code to an i18n key. */
 export type ValidationCode = "required" | "tooShort" | "tooLong" | "format" | "duplicate";
 
-export type CustomTeamField = "name" | "shortName" | "primary" | "secondary" | "country" | "replaces";
+export type CustomTeamField = "name" | "shortName" | "primary" | "secondary" | "country" | "replaces" | "logo";
 
 export interface CustomTeamDraft {
   name: string;
@@ -153,6 +153,7 @@ export const BACKEND_ERROR_TABLE: ReadonlyArray<{
   { pattern: /team '.*' was not found/, field: "replaces", code: "format" },
   { pattern: /the replaced team is not in this competition/, field: "replaces", code: "format" },
   { pattern: /only main clubs can be replaced/, field: "replaces", code: "format" },
+  { pattern: /invalid club logo/, field: "logo", code: "format" },
 ];
 
 /** Map a backend error string to a field error, or `null` when it is not one we localise. */
