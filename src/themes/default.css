@@ -223,7 +223,9 @@
 }
 
 /* ── High contrast (data-contrast set on <html> by AppV2) ───────
-   Same specificity as `.dark[...]`, so the dark block must stay last. */
+   AppV2 also puts `.dark` on its inner wrapper, which redeclares the dark
+   tokens, so the dark block targets `.dark` descendants as well. It has the
+   same specificity as `:root[...]` on <html>, so it must stay last. */
 
 :root[data-contrast="high"] {
   --foreground: oklch(0.1 0 0);
@@ -238,7 +240,8 @@
   --focus-ring-width: 3px;
 }
 
-.dark[data-contrast="high"] {
+.dark[data-contrast="high"],
+[data-contrast="high"] .dark {
   --foreground: oklch(1 0 0);
   --card-foreground: oklch(1 0 0);
   --popover-foreground: oklch(1 0 0);
