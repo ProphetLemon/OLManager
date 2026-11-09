@@ -22,6 +22,10 @@ Open-source governance model. Documents `main` as stable/release-only, `developm
 
 Provenance policy for inherited OpenFootManager assets and external data sources such as Leaguepedia. Defines required source URL, terms, attribution, extraction date, redistribution permission, and generated/cache status records.
 
+### [STAT_RATINGS.md](STAT_RATINGS.md)
+
+How player ratings are derived from Leaguepedia pro stats: method, results, known limits, the refresh procedure and rate-limit findings.
+
 ### [RELEASE_PROCESS.md](RELEASE_PROCESS.md)
 
 Maintainer release workflow. Covers release PRs from `development` to `main`, version sync across `package.json`, `src-tauri/Cargo.toml`, and `tauri.conf.json`, tags, source artifacts, checksums, and unsigned/signing status rules.

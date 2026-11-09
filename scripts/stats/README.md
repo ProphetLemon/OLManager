@@ -3,7 +3,7 @@
 `pro-stats.mjs` downloads per-game player rows from Leaguepedia (Cargo tables `ScoreboardPlayers` joined to
 `ScoreboardGames`) and normalizes them into the input of the skill model (`lib/skill.mjs`).
 
-Data: Leaguepedia (lol.fandom.com), CC BY-SA 3.0.
+Data: Leaguepedia (lol.fandom.com), CC BY-SA 3.0. Method, results and refresh checklist: [`docs/STAT_RATINGS.md`](../../docs/STAT_RATINGS.md).
 
 ```bash
 node scripts/stats/pro-stats.mjs --offline                     # cache only; fails on a miss

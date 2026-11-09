@@ -239,3 +239,7 @@ Start with [`CONTRIBUTING.md`](CONTRIBUTING.md), then review:
 ---
 
 <i>Built with Rust + Tauri + React + TypeScript + Community + Passion</i>
+
+### Third-party data credits
+
+Player ratings in new games are derived from pro match statistics from [Leaguepedia](https://lol.fandom.com), licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Method and refresh steps: [`docs/STAT_RATINGS.md`](docs/STAT_RATINGS.md). Whether ShareAlike applies to the derived rating asset is an open question for the owner.
