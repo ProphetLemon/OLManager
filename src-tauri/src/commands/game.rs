@@ -3797,6 +3797,120 @@ mod tests {
             assert!(loaded.removed_team_ids.is_empty());
         }
 
+        /// Every split of a nine-club LES ends, playoffs included, before the next one
+        /// starts, and the eight-club calendar keeps its slack. The playoffs open the day
+        /// after the last regular match and the final is a week later (`schedule_playoffs_for`).
+        #[test]
+        fn nine_club_les_splits_close_before_the_next_one_starts() {
+            let (manifests, _known) = known_ids_and_manifests();
+            let les = manifests.iter().find(|m| m.id == "les").expect("LES manifest");
+            let day = |text: &str| chrono::NaiveDate::parse_from_str(text, "%Y-%m-%d").unwrap();
+
+            for clubs in [8usize, 9] {
+                let ids: Vec<String> = (0..clubs).map(|i| format!("c{i}")).collect();
+                let splits = les.schedule.splits.len();
+                let leagues: Vec<_> = (0..splits)
+                    .map(|split| olm_core::schedule::generate_schedule_from_config(les, 2027, &ids, split))
+                    .collect();
+                for (split, league) in leagues.iter().enumerate() {
+                    let dates = league_dates(league);
+                    assert_eq!(dates.len(), if clubs == 9 { 9 } else { 7 }, "{clubs} clubs, split {split}");
+                    let final_day = day(dates.last().unwrap()) + chrono::Duration::days(1 + 7);
+                    if let Some(next) = leagues.get(split + 1) {
+                        let next_start = day(&league_dates(next)[0]);
+                        assert!(final_day < next_start, "{clubs} clubs: split {split} ends {final_day}, next starts {next_start}");
+                    } else {
+                        let next_winter = day(&league_dates(&leagues[0])[0]) + chrono::Duration::days(365);
+                        assert!(final_day < next_winter, "{clubs} clubs: the season runs into the next Winter");
+                    }
+                    eprintln!("[calendar] {clubs} clubs split {split}: regular season {} to {}, final about {final_day}", dates[0], dates.last().unwrap());
+                }
+            }
+        }
+
+        /// The custom club that joined the LES wins it and goes up: the LEC keeps ten
+        /// clubs, the LES keeps nine (the relegated LEC club takes the custom club's
+        /// place), and both rebuilt calendars have the right size.
+        #[test]
+        fn a_joined_club_promoted_to_the_lec_keeps_the_les_at_nine() {
+            use olm_core::domain::league::StandingEntry;
+            use olm_core::ladder::SeasonOutcome;
+
+            let (mut game, id) = try_build_join_world("les", &seeded_rayo(7)).expect("join world");
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &id).expect("season");
+            // Early enough that both rebuilt calendars start after the clock.
+            game.clock = GameClock::new(chrono::Utc.with_ymd_and_hms(2025, 12, 1, 0, 0, 0).unwrap());
+
+            let season = les_league(&game).season;
+            let lec_ids: Vec<String> = game
+                .leagues
+                .iter()
+                .find(|l| l.competition_id.as_deref() == Some("lec"))
+                .map(|l| l.standings.iter().map(|s| s.team_id.clone()).collect())
+                .expect("the LEC has a league");
+            let mut les_order = vec![id.clone()];
+            les_order.extend(les_league(&game).standings.iter().map(|s| s.team_id.clone()).filter(|t| *t != id));
+            assert_eq!(les_order.len(), 9);
+            let relegated = lec_ids[0].clone();
+            let mut table: Vec<StandingEntry> = lec_ids
+                .iter()
+                .enumerate()
+                .map(|(rank, club)| {
+                    let mut row = StandingEntry::new(club.clone());
+                    row.points = 3 * (rank as u32 + 1);
+                    row
+                })
+                .collect();
+            table.reverse();
+            game.ladder.outcomes = vec![
+                SeasonOutcome {
+                    competition_id: "les".to_string(),
+                    season: season - 1,
+                    champion_id: Some(id.clone()),
+                    final_order: les_order,
+                    season_table: vec![],
+                },
+                SeasonOutcome {
+                    competition_id: "lec".to_string(),
+                    season: season - 1,
+                    champion_id: None,
+                    final_order: lec_ids.clone(),
+                    season_table: table,
+                },
+            ];
+            let configs = game.competition_configs.clone();
+            let applied = olm_core::ladder_apply::apply_ladders(&mut game, &configs);
+
+            assert_eq!(applied.len(), 1, "the swap applies");
+            assert_eq!(applied[0].promoted, vec![id.clone()]);
+            assert_eq!(applied[0].relegated, vec![relegated.clone()]);
+            assert_eq!(game.user_competition_id.as_deref(), Some("lec"));
+            let main_clubs = |competition: &str| -> HashSet<String> {
+                game.teams
+                    .iter()
+                    .filter(|t| t.competition_id.as_deref() == Some(competition) && t.team_kind == TeamKind::Main)
+                    .map(|t| t.id.clone())
+                    .collect()
+            };
+            let (les_clubs, lec_clubs) = (main_clubs("les"), main_clubs("lec"));
+            assert_eq!(les_clubs.len(), 9);
+            assert!(les_clubs.contains(&relegated) && !les_clubs.contains(&id));
+            assert_eq!(lec_clubs.len(), 10);
+            assert!(lec_clubs.contains(&id) && !lec_clubs.contains(&relegated));
+
+            let les = les_league(&game);
+            assert_eq!(les.standings.len(), 9);
+            assert_eq!(les.fixtures.iter().filter(|f| f.counts_for_league_standings()).count(), 36);
+            assert_eq!(league_dates(les).len(), 9);
+            let lec = game.active_league().expect("active league");
+            assert_eq!(lec.competition_id.as_deref(), Some("lec"));
+            assert_eq!(lec.standings.len(), 10);
+            assert!(lec.standings.iter().any(|s| s.team_id == id));
+            let club = game.teams.iter().find(|t| t.id == id).expect("the custom club survives");
+            assert_eq!(club.active_lineup_ids.len(), 5);
+        }
+
         #[test]
         fn joining_a_top_tier_league_is_rejected_by_the_backend() {
             let error = try_build_join_world("lec", &rayo()).expect_err("LEC is tier 1");
