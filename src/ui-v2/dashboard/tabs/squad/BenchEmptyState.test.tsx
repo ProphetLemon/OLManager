@@ -47,7 +47,7 @@ describe("BenchEmptyState", () => {
 })
 
 describe("StartingFiveGrid", () => {
-  it("is a container-query wrapper with an auto-fit grid and no viewport breakpoints", () => {
+  it("is a container-query wrapper with 2 / 3 / 5 column tiers and no viewport breakpoints", () => {
     const { container } = render(
       <StartingFiveGrid>
         <div>one</div>
@@ -57,7 +57,9 @@ describe("StartingFiveGrid", () => {
     const wrapper = container.firstElementChild as HTMLElement
     expect(wrapper.className).toContain("[container-type:inline-size]")
     const grid = wrapper.firstElementChild as HTMLElement
-    expect(grid.className).toContain("repeat(auto-fit,minmax(11rem,1fr))")
+    expect(grid.className).toContain("grid-cols-2")
+    expect(grid.className).toContain("@[26rem]:grid-cols-3")
+    expect(grid.className).toContain("@[58rem]:grid-cols-5")
     expect(wrapper.outerHTML).not.toMatch(/(?:^|[\s"'])(?:sm|md|lg|xl):/)
     expect(grid.children).toHaveLength(2)
   })

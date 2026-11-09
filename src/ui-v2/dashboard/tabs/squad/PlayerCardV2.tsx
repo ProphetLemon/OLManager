@@ -12,7 +12,7 @@ import { ScoreNumeral } from "@/ui-v2/components/ui/score-numeral"
 import { TagBlock } from "@/ui-v2/components/ui/tag-block"
 import { cn } from "@/ui-v2/lib/utils"
 
-const ROLE_DEFAULT: Record<LolRole, string> = {
+export const ROLE_DEFAULT: Record<LolRole, string> = {
   TOP: "Top",
   JUNGLE: "Jungle",
   MID: "Mid",
@@ -35,6 +35,8 @@ interface PlayerCardV2Props {
   candidates: SwapCandidate[]
   onSwap: (playerId: string) => void
   saving?: boolean
+  /** The player's natural role differs from the slot he fills. */
+  outOfPosition?: boolean
 }
 
 export function PlayerCardV2({
@@ -45,6 +47,7 @@ export function PlayerCardV2({
   candidates,
   onSwap,
   saving = false,
+  outOfPosition = false,
 }: PlayerCardV2Props) {
   const { t } = useTranslation()
   const roleLabel = t(shortRoleKey(slotRole), { defaultValue: ROLE_DEFAULT[slotRole] })
@@ -78,6 +81,11 @@ export function PlayerCardV2({
               {t("onAir.tags.selected", { defaultValue: "Selected" })}
             </TagBlock>
           ) : null}
+          {outOfPosition ? (
+            <TagBlock tone="warning" size="sm">
+              {t("squad.outOfPosition", { defaultValue: "Out of position" })}
+            </TagBlock>
+          ) : null}
           {model.isImport ? (
             <span data-testid="import-badge" className="inline-flex">
               <TagBlock tone="info" size="sm">
@@ -88,7 +96,12 @@ export function PlayerCardV2({
         </span>
         <span className="flex items-center gap-3">
           <PlayerAvatar src={model.photo} alt="" className="size-12" />
-          <ScoreNumeral value={model.ovr} size="ovr" tone="club" />
+          <ScoreNumeral
+            value={model.ovr}
+            size="ovr"
+            tone="club"
+            label={`${t("common.ovr", { defaultValue: "OVR" })} ${model.ovr}`}
+          />
         </span>
         <span className="flex min-w-0 items-center gap-2">
           {model.nationalityCode ? (

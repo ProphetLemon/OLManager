@@ -141,4 +141,19 @@ describe("PlayerCardV2", () => {
     setup({ candidates: [] })
     expect(screen.getByRole("button", { name: "Swap Mid" })).toBeDisabled()
   })
+
+  it("flags a player who fills a slot outside his role", () => {
+    setup({ outOfPosition: true })
+    expect(screen.getByText("Out of position")).toBeInTheDocument()
+  })
+
+  it("does not flag an in-position player", () => {
+    setup()
+    expect(screen.queryByText("Out of position")).toBeNull()
+  })
+
+  it("exposes the OVR to assistive tech", () => {
+    setup()
+    expect(screen.getByRole("img", { name: "OVR 88" })).toBeInTheDocument()
+  })
 })
