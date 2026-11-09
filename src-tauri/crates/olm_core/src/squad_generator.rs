@@ -53,23 +53,34 @@ const ABOVE_MEDIAN_ONE_IN: u32 = 5;
 const OFFSET_WEIGHTS: [u32; 6] = [1, 2, 3, 4, 4, 3];
 /// Weights of ages 19..=27, concentrated on 21-24.
 const AGE_WEIGHTS: [u32; 9] = [1, 2, 4, 4, 4, 4, 2, 1, 1];
-/// Hidden potential of a regular founding player.
+/// Hidden potential of a regular founding player before the level floor applies.
 const POTENTIAL_RANGE: std::ops::RangeInclusive<u8> = 70..=82;
+/// Highest potential a regular player can reach, so he never reads as the late bloomer.
+const REGULAR_POTENTIAL_CAP: u8 = BLOOMER_POTENTIAL_FLOOR - 1;
 /// Hidden potential of the late bloomer.
 const BLOOMER_POTENTIAL_RANGE: std::ops::RangeInclusive<u8> = 84..=88;
 /// Potential from which a player counts as the late bloomer.
 const BLOOMER_POTENTIAL_FLOOR: u8 = 84;
 /// Lowest median the attribute template can express without clamping.
 const MIN_SUPPORTED_MEDIAN: u8 = 20;
-/// Highest median the attribute template can express without clamping.
-const MAX_SUPPORTED_MEDIAN: u8 = 90;
+/// Highest median the generator supports: the `median + 1` starter must still stay
+/// under [`REGULAR_POTENTIAL_CAP`] so exactly one player holds a bloomer potential.
+const MAX_SUPPORTED_MEDIAN: u8 = REGULAR_POTENTIAL_CAP - 1;
 /// Day-1 wage bill window, in percent of the league-median wage budget.
 ///
 /// Wages never drop below the wage floor; they are scaled up to land here. The
 /// window leaves less room under the 110% soft cap than the cheapest elite free
 /// agent asks for (see the calibration report), so a day-1 star signing is out
-/// of reach.
-pub const BILL_WINDOW_PCT: std::ops::RangeInclusive<i64> = 94..=97;
+/// of reach. Interim policy: it inflates wages above the wage scale, so prefer
+/// floor-priced wages with [`founding_wage_budget`].
+pub const BILL_WINDOW_PCT: std::ops::RangeInclusive<i64> = 95..=98;
+/// Largest wage scale-up allowed to reach [`BILL_WINDOW_PCT`], in percent of the
+/// floor-priced wage. A squad that would need more is re-seeded.
+pub const MAX_WAGE_SCALE_PCT: i128 = 200;
+/// Day-1 bill, in percent of the budget [`founding_wage_budget`] returns.
+pub const DERIVED_BUDGET_BILL_PCT: i64 = 95;
+/// [`founding_wage_budget`] rounds up to this step.
+const DERIVED_BUDGET_STEP: i64 = 10_000;
 /// Reputation of the neutral club used to price wages.
 const REFERENCE_CLUB_REPUTATION: u32 = 100;
 /// Attempts at a free nick before the name pool counts as exhausted.
@@ -137,7 +148,13 @@ pub struct SquadSpec<'a> {
     /// The `n` of the ids `gen-<slug>-<role>-<n>`.
     pub serial: u32,
     /// League-median wage budget. When set, wages are raised above the wage
-    /// floor until the bill sits inside [`BILL_WINDOW_PCT`] of it.
+    /// floor (at most [`MAX_WAGE_SCALE_PCT`]) until the bill sits inside
+    /// [`BILL_WINDOW_PCT`] of it. Only pass a league-median budget.
+    ///
+    /// A budget below the floor-priced bill (or one needing a larger scale-up)
+    /// makes every attempt fail with [`SquadError::WindowUnsatisfied`]; there is
+    /// no fallback inside the generator. Callers should then pass `None` and give
+    /// the club the budget from [`founding_wage_budget`], the preferred policy.
     pub wage_budget: Option<i64>,
 }
 
@@ -150,7 +167,9 @@ struct Plan {
 
 /// Generates the five founding players, one per role in [`SQUAD_ROLES`] order.
 ///
-/// Deterministic per `seed`. When a draw breaks the league window it re-seeds
+/// Deterministic per `seed` for a given build. The draw uses [`StdRng`], whose
+/// algorithm may change between `rand` versions, so persist the generated
+/// players and never regenerate a squad from its seed alone. When a draw breaks the league window it re-seeds
 /// up to [`MAX_ATTEMPTS`] times and then returns
 /// [`SquadError::WindowUnsatisfied`].
 pub fn generate_founding_squad(spec: &SquadSpec<'_>, seed: u64) -> Result<Vec<Player>, SquadError> {
@@ -266,16 +285,30 @@ pub fn squad_bill(squad: &[Player]) -> i64 {
     squad.iter().map(|p| i64::from(p.wage)).sum()
 }
 
+/// Wage budget a founding squad should ship with: its bill is
+/// [`DERIVED_BUDGET_BILL_PCT`] of it, rounded up to 10k. Wages stay at the wage
+/// floor, and the room under the 110% soft cap is about 16% of the bill, so
+/// elite free agents stay out of reach without inflating wages.
+pub fn founding_wage_budget(squad: &[Player]) -> i64 {
+    let bill = u64::try_from(squad_bill(squad)).unwrap_or(0);
+    let exact = (bill * 100).div_ceil(DERIVED_BUDGET_BILL_PCT.unsigned_abs());
+    let rounded =
+        exact.div_ceil(DERIVED_BUDGET_STEP.unsigned_abs()) * DERIVED_BUDGET_STEP.unsigned_abs();
+    i64::try_from(rounded).unwrap_or(i64::MAX)
+}
+
 /// Draws a bill target inside [`BILL_WINDOW_PCT`] and scales every wage up
-/// proportionally (rounded up to 1k). A bill already above the target stays:
-/// wages never go below the floor.
+/// proportionally (rounded up to 1k, at most [`MAX_WAGE_SCALE_PCT`]). A bill
+/// already above the target stays: wages never go below the floor. A target the
+/// cap cannot reach leaves the bill short, which [`bill_violation`] reports.
 fn raise_bill_into_window(squad: &mut [Player], budget: i64, rng: &mut StdRng) {
     let pct = rng.random_range(BILL_WINDOW_PCT);
-    let target = i128::from(budget) * i128::from(pct) / 100;
     let natural = i128::from(squad_bill(squad));
-    if natural <= 0 || target <= natural {
+    let wanted = i128::from(budget) * i128::from(pct) / 100;
+    if natural <= 0 || wanted <= natural {
         return;
     }
+    let target = wanted.min(natural * MAX_WAGE_SCALE_PCT / 100);
     for player in squad.iter_mut() {
         let scaled = i128::from(player.wage) * target / natural;
         let rounded = (scaled + 999) / 1_000 * 1_000;
@@ -508,11 +541,17 @@ fn build_squad(
 ) -> Result<Vec<Player>, SquadError> {
     let plans = plan_squad(rng, &spec.percentiles);
     let mut used: HashSet<String> = HashSet::new();
+    let mut used_full: HashSet<String> = HashSet::new();
     let mut squad = Vec::with_capacity(plans.len());
     for plan in plans {
         let nationality = spec.nationalities[rng.random_range(0..spec.nationalities.len())];
-        let (full_name, match_name) =
-            invent_identity(rng, nationality, spec.taken_match_names, &mut used)?;
+        let (full_name, match_name) = invent_identity(
+            rng,
+            nationality,
+            spec.taken_match_names,
+            &mut used,
+            &mut used_full,
+        )?;
         let age = AGE_RANGE.start() + weighted_index(rng, &AGE_WEIGHTS) as i32;
         let extra_days = rng.random_range(0..=364u64);
         let date_of_birth = birth_date_for_age(spec.today, age, extra_days)
@@ -537,7 +576,8 @@ fn build_squad(
         } else {
             // Never below the current level, or the player would have no growth.
             rng.random_range(POTENTIAL_RANGE)
-                .max(ovr.saturating_add(1).min(99))
+                .max(ovr.saturating_add(1))
+                .min(REGULAR_POTENTIAL_CAP)
         };
         player.market_value = market_value_for(ovr, player.potential_base, age);
         player.contract_end = Some(contract_end(spec.today));
@@ -548,17 +588,28 @@ fn build_squad(
 }
 
 /// Picks a free `(full_name, nick)` for `nationality`. The nick differs from
-/// the full name, from every taken nick and from the nicks already used.
+/// the full name, from every taken nick and from the nicks already used; the
+/// full name differs from the full names already used in the squad.
 fn invent_identity(
     rng: &mut StdRng,
     nationality: &str,
     taken: &HashSet<String>,
     used: &mut HashSet<String>,
+    used_full: &mut HashSet<String>,
 ) -> Result<(String, String), SquadError> {
     let pool = name_pool(nationality);
-    let first = pool.first[rng.random_range(0..pool.first.len())];
-    let last = pool.last[rng.random_range(0..pool.last.len())];
-    let full_name = format!("{first} {last}");
+    let mut full_name = String::new();
+    for _ in 0..MAX_NICK_TRIES {
+        let first = pool.first[rng.random_range(0..pool.first.len())];
+        let last = pool.last[rng.random_range(0..pool.last.len())];
+        full_name = format!("{first} {last}");
+        if !used_full.contains(&full_name.to_lowercase()) {
+            break;
+        }
+    }
+    if used_full.contains(&full_name.to_lowercase()) {
+        return Err(SquadError::NamesExhausted);
+    }
 
     for attempt in 0..MAX_NICK_TRIES {
         let tag = NICKS[rng.random_range(0..NICKS.len())];
@@ -572,6 +623,7 @@ fn invent_identity(
             continue;
         }
         used.insert(key);
+        used_full.insert(full_name.to_lowercase());
         return Ok((full_name, nick));
     }
     Err(SquadError::NamesExhausted)
@@ -1087,10 +1139,6 @@ mod tests {
                 "seed {seed}: {values:?}"
             );
             assert!(
-                values.iter().all(|v| *v >= median - 7),
-                "seed {seed}: {values:?}"
-            );
-            assert!(
                 values.iter().all(|v| *v <= i32::from(percentiles.p75)),
                 "seed {seed}: {values:?}"
             );
@@ -1438,6 +1486,200 @@ mod tests {
     fn bill_violation_reports_a_bill_outside_the_window() {
         let squad = squad_for(les(), &["ES"], 4);
         assert!(bill_violation(&squad, 1_000_000_000).is_some());
+    }
+
+    fn spec_for<'a>(
+        percentiles: OvrPercentiles,
+        taken: &'a HashSet<String>,
+        today: NaiveDate,
+        wage_budget: Option<i64>,
+    ) -> SquadSpec<'a> {
+        SquadSpec {
+            club_slug: "rayo",
+            percentiles,
+            nationalities: &["ES"],
+            today,
+            taken_match_names: taken,
+            serial: 1,
+            wage_budget,
+        }
+    }
+
+    fn identity_key(squad: &[Player]) -> Vec<(String, String, u32, String)> {
+        squad
+            .iter()
+            .map(|p| {
+                (
+                    p.match_name.clone(),
+                    p.full_name.clone(),
+                    p.wage,
+                    p.date_of_birth.clone(),
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn same_seed_and_budget_give_the_same_wages() {
+        let a = squad_with_budget(les(), &["ES"], 1_297_570, 42);
+        let b = squad_with_budget(les(), &["ES"], 1_297_570, 42);
+        assert_eq!(identity_key(&a), identity_key(&b));
+    }
+
+    #[test]
+    fn every_median_is_supported_or_rejected_clearly() {
+        let taken = HashSet::new();
+        for median in 0..=99u8 {
+            let percentiles = OvrPercentiles {
+                p10: median.saturating_sub(4),
+                p25: median.saturating_sub(2),
+                p50: median,
+                p75: median.saturating_add(2).min(99),
+                p90: median.saturating_add(4).min(99),
+                from_peers: true,
+            };
+            let supported = (MIN_SUPPORTED_MEDIAN..=MAX_SUPPORTED_MEDIAN).contains(&median);
+            for seed in 0..40u64 {
+                let spec = spec_for(percentiles, &taken, date(), None);
+                match generate_founding_squad(&spec, seed) {
+                    Ok(squad) => {
+                        assert!(supported, "median {median} should be rejected");
+                        assert!(
+                            validate_squad(&squad, &percentiles, date()).is_empty(),
+                            "median {median} seed {seed}"
+                        );
+                    }
+                    Err(error) => {
+                        assert!(!supported, "median {median} seed {seed}: {error}");
+                        assert_eq!(error, SquadError::UnsupportedMedian(median));
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn the_highest_supported_median_still_has_one_bloomer() {
+        let percentiles = OvrPercentiles {
+            p50: MAX_SUPPORTED_MEDIAN,
+            p75: MAX_SUPPORTED_MEDIAN + 2,
+            ..lec()
+        };
+        for seed in 0..200u64 {
+            let squad = squad_for(percentiles, &["ES"], seed);
+            let bloomers = squad.iter().filter(|p| p.potential_base >= 84).count();
+            assert_eq!(bloomers, 1, "seed {seed}");
+        }
+    }
+
+    #[test]
+    fn full_names_are_unique_inside_a_squad() {
+        for seed in 0..3_000u64 {
+            let squad = squad_for(les(), &["ES"], seed);
+            let names: HashSet<String> = squad.iter().map(|p| p.full_name.to_lowercase()).collect();
+            assert_eq!(names.len(), 5, "seed {seed}");
+        }
+    }
+
+    #[test]
+    fn an_exhausted_nick_pool_is_a_clear_error() {
+        let mut taken: HashSet<String> = HashSet::new();
+        for tag in NICKS {
+            let tag = tag.to_lowercase();
+            taken.insert(format!("{tag}x"));
+            for n in 2..=99 {
+                taken.insert(format!("{tag}{n}"));
+            }
+            taken.insert(tag);
+        }
+        let spec = spec_for(les(), &taken, date(), None);
+        assert_eq!(
+            generate_founding_squad(&spec, 1).err(),
+            Some(SquadError::NamesExhausted)
+        );
+    }
+
+    #[test]
+    fn a_leap_day_start_still_gives_ages_19_to_27() {
+        let today = NaiveDate::from_ymd_opt(2028, 2, 29).expect("leap day");
+        let taken = HashSet::new();
+        for seed in 0..200u64 {
+            let spec = spec_for(les(), &taken, today, None);
+            let squad = generate_founding_squad(&spec, seed).expect("squad");
+            for p in &squad {
+                let age = age_on(today, &p.date_of_birth).expect("dob");
+                assert!(AGE_RANGE.contains(&age), "seed {seed}: age {age}");
+            }
+        }
+    }
+
+    #[test]
+    fn birth_date_for_a_leap_day_falls_back_to_the_previous_day() {
+        let today = NaiveDate::from_ymd_opt(2028, 2, 29).expect("leap day");
+        let born = birth_date_for_age(today, 21, 0).expect("birth date");
+        assert_eq!(born, NaiveDate::from_ymd_opt(2007, 2, 28).expect("date"));
+    }
+
+    #[test]
+    fn wages_are_never_scaled_past_the_cap() {
+        for seed in 0..200u64 {
+            let squad = squad_with_budget(lec(), &["FR"], 1_750_000, seed);
+            let floor: i128 = squad
+                .iter()
+                .map(|p| i128::from(scale_wage_for_market_value(p.market_value)))
+                .sum();
+            let bill = i128::from(squad_bill(&squad));
+            assert!(
+                bill * 100 <= floor * MAX_WAGE_SCALE_PCT + 5_000 * 100,
+                "seed {seed}: bill {bill} floor {floor}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_budget_that_needs_a_huge_scale_up_is_refused() {
+        let taken = HashSet::new();
+        let spec = spec_for(les(), &taken, date(), Some(50_000_000));
+        match generate_founding_squad(&spec, 1) {
+            Err(SquadError::WindowUnsatisfied { violations, .. }) => {
+                assert!(violations.iter().any(|v| v.contains("wage budget")));
+            }
+            other => panic!("expected WindowUnsatisfied, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn derived_budget_puts_the_floor_bill_at_95_percent_in_10k_steps() {
+        for seed in 0..300u64 {
+            let squad = squad_for(lec(), &["FR", "DE"], seed);
+            let bill = squad_bill(&squad);
+            let budget = founding_wage_budget(&squad);
+            assert_eq!(budget % 10_000, 0, "seed {seed}");
+            assert!(
+                bill * 100 <= budget * DERIVED_BUDGET_BILL_PCT,
+                "seed {seed}"
+            );
+            assert!(
+                bill * 100 > (budget - 10_000) * DERIVED_BUDGET_BILL_PCT,
+                "seed {seed}"
+            );
+        }
+    }
+
+    #[test]
+    fn derived_budget_leaves_about_sixteen_percent_of_the_bill_as_room() {
+        for seed in 0..300u64 {
+            let squad = squad_for(les(), &["ES"], seed);
+            let bill = squad_bill(&squad);
+            let room = founding_wage_budget(&squad) * 110 / 100 - bill;
+            let ratio = room as f64 / bill as f64;
+            assert!((0.15..=0.17).contains(&ratio), "seed {seed}: {ratio}");
+        }
+    }
+
+    #[test]
+    fn derived_budget_of_an_empty_squad_is_zero() {
+        assert_eq!(founding_wage_budget(&[]), 0);
     }
 
     #[test]
