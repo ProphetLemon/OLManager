@@ -11,13 +11,17 @@ interface RovingFocusOptions {
   onEdgeDown?: () => void;
   /** Controlled active index: the internal state follows it whenever it changes. */
   index?: number;
-  /** When false, `shouldFocus` stays false until the user navigates. Defaults to true. */
+  /**
+   * When false, `shouldFocus` is true only right after the user navigated inside the
+   * widget. A controlled `index` change from outside never moves focus. Defaults to true.
+   */
   focusOnMount?: boolean;
   /** "horizontal" maps Left/Right only; "vertical" (default) keeps Up/Down by `columns`. */
   orientation?: "vertical" | "horizontal";
 }
 
 interface RovingFocusResult {
+  /** Current item, or -1 when none is current (the first item is then the tab stop). */
   activeIndex: number;
   /** Callers gate their `.focus()` effect on this so the first render does not steal focus. */
   shouldFocus: boolean;
@@ -39,15 +43,25 @@ export function useRovingFocus({
   focusOnMount = true,
   orientation = "vertical",
 }: RovingFocusOptions): RovingFocusResult {
-  const [activeIndex, setActiveIndexState] = useState(index ?? initialIndex);
+  const [rawIndex, setActiveIndexState] = useState(index ?? initialIndex);
+  // True only while the latest index change came from the user inside the widget.
   const [interacted, setInteracted] = useState(false);
+  // True once a controlled `index` change arrived from outside the widget.
+  const [external, setExternal] = useState(false);
   const [syncedIndex, setSyncedIndex] = useState(index);
   if (index !== syncedIndex) {
     setSyncedIndex(index);
-    if (index !== undefined) setActiveIndexState(index);
+    if (index !== undefined) {
+      setActiveIndexState(index);
+      setInteracted(false);
+      setExternal(true);
+    }
   }
+  // -1 means "no current item"; anything past the end is pulled back in range.
+  const activeIndex = rawIndex < 0 || itemCount === 0 ? -1 : Math.min(rawIndex, itemCount - 1);
   const setActiveIndex = useCallback((next: number) => {
     setInteracted(true);
+    setExternal(false);
     setActiveIndexState(next);
   }, []);
   const searchBuffer = useRef("");
@@ -67,7 +81,9 @@ export function useRovingFocus({
   const moveBy = useCallback(
     (delta: number) => {
       setInteracted(true);
-      setActiveIndexState((prev) => {
+      setExternal(false);
+      setActiveIndexState((rawPrev) => {
+        const prev = rawPrev < 0 ? -1 : Math.min(rawPrev, itemCount - 1);
         if (!loop && itemCount > 0) {
           if (prev + delta < 0) {
             onEdgeUp?.();
@@ -118,7 +134,7 @@ export function useRovingFocus({
         case "Enter":
         case " ":
           e.preventDefault();
-          if (onSelect) onSelect(activeIndex);
+          if (onSelect && activeIndex >= 0) onSelect(activeIndex);
           break;
         default:
           if (e.key.length === 1 && e.key.match(/[a-zA-Z0-9]/)) {
@@ -149,13 +165,13 @@ export function useRovingFocus({
   );
 
   const getTabIndex = useCallback(
-    (index: number): 0 | -1 => (index === activeIndex ? 0 : -1),
+    (index: number): 0 | -1 => (index === (activeIndex < 0 ? 0 : activeIndex) ? 0 : -1),
     [activeIndex],
   );
 
   return {
     activeIndex,
-    shouldFocus: focusOnMount || interacted,
+    shouldFocus: interacted || (focusOnMount && !external),
     setActiveIndex,
     handleKeyDown,
     getTabIndex,

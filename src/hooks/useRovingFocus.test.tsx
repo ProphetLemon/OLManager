@@ -132,4 +132,30 @@ describe("useRovingFocus", () => {
     fireEvent.keyDown(screen.getByText("item 0"), { key: "ArrowDown" });
     expect(screen.getByText("item 1")).toHaveFocus();
   });
+
+  it("does not request focus after an external controlled index change", () => {
+    const { result, rerender } = setup({ focusOnMount: false, index: 0 });
+    act(() => result.current.handleKeyDown(key("ArrowDown")));
+    expect(result.current.shouldFocus).toBe(true);
+    rerender({ index: 3 });
+    expect(result.current.activeIndex).toBe(3);
+    expect(result.current.shouldFocus).toBe(false);
+    act(() => result.current.handleKeyDown(key("ArrowUp")));
+    expect(result.current.shouldFocus).toBe(true);
+  });
+
+  it("keeps one tab stop and marks nothing current when index is -1", () => {
+    const { result } = setup({ index: -1 });
+    expect(result.current.activeIndex).toBe(-1);
+    expect([0, 1, 2, 3].map(result.current.getTabIndex)).toEqual([0, -1, -1, -1]);
+    act(() => result.current.handleKeyDown(key("ArrowDown")));
+    expect(result.current.activeIndex).toBe(0);
+  });
+
+  it("clamps an index past the end when the item count shrinks", () => {
+    const { result, rerender } = setup({ index: 3 });
+    rerender({ itemCount: 2, index: 3 });
+    expect(result.current.activeIndex).toBe(1);
+    expect([0, 1].map(result.current.getTabIndex)).toEqual([-1, 0]);
+  });
 });
