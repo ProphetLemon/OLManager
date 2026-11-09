@@ -1970,6 +1970,7 @@
     "clear": "Clear",
     "savesCleared": "Saves cleared!",
     "about": "About",
+    "statsCredit": "Player ratings in new games are derived from pro match statistics from Leaguepedia (lol.fandom.com), licensed under CC BY-SA 3.0.",
     "matchModes": {
       "live": "Go to the Rift",
       "liveDesc": "Full match control",

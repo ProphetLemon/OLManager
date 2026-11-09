@@ -249,4 +249,34 @@ describe("bot credentials file", () => {
     }
     expect(() => readBotCredentials(path.join(dir, "nope.env"))).toThrow(/not found.*Logging in/);
   });
+
+  it("never puts the password or token into a log message, a stats snapshot or an error", async () => {
+    const make = (fetchImpl: FetchImpl, extra: Partial<MediaWikiClientOptions> = {}) =>
+      new MediaWikiClient({ cacheDir: os.tmpdir(), throttleMs: 0, sleep: async () => {}, fetchImpl, ...extra });
+    const logs: string[] = [];
+    const fetchImpl = vi
+      .fn<(url: string, init: Init) => Promise<Response>>()
+      .mockResolvedValueOnce(reply({ query: { tokens: { logintoken: "tok+\\" } } }))
+      .mockRejectedValueOnce(Object.assign(new TypeError("fetch failed"), { cause: { code: "ECONNRESET" } }));
+    const client = make(fetchImpl as unknown as FetchImpl, { log: (message) => logs.push(message) });
+    const error = await client.login(creds).catch((e) => e);
+    const dump = JSON.stringify([logs, error.message, error.stats]);
+    expect(dump).not.toContain(PASSWORD);
+    expect(dump).not.toContain("tok+");
+    expect(error.stats.retryReasons).toEqual({ "TypeError: fetch failed (ECONNRESET)": 1 });
+    expect(logs).toEqual(["attempt 1/1 failed: TypeError: fetch failed (ECONNRESET); giving up"]);
+  });
+
+  it("records a rejected login HTTP status without any request details", async () => {
+    const make = (fetchImpl: FetchImpl, extra: Partial<MediaWikiClientOptions> = {}) =>
+      new MediaWikiClient({ cacheDir: os.tmpdir(), throttleMs: 0, sleep: async () => {}, fetchImpl, ...extra });
+    const logs: string[] = [];
+    const fetchImpl = vi
+      .fn<(url: string, init: Init) => Promise<Response>>()
+      .mockResolvedValueOnce(new Response("{}", { status: 403 }));
+    const client = make(fetchImpl as unknown as FetchImpl, { log: (message) => logs.push(message) });
+    await expect(client.login(creds)).rejects.toThrow("login request failed: HTTP 403");
+    expect(client.stats.retryReasons).toEqual({ "HTTP 403": 1 });
+    expect(logs.join()).not.toContain(PASSWORD);
+  });
 });

@@ -1820,6 +1820,7 @@
     "clear": "Apagar",
     "savesCleared": "Saves apagados!",
     "about": "Sobre",
+    "statsCredit": "As notas dos jogadores em novos jogos são derivadas de estatísticas de partidas profissionais da Leaguepedia (lol.fandom.com), licenciadas sob CC BY-SA 3.0.",
     "matchModes": {
       "live": "Ir para o Rift",
       "liveDesc": "Controle total da partida",

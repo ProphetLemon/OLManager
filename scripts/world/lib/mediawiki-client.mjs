@@ -34,6 +34,31 @@ export class RequestBudgetExceededError extends Error {
   }
 }
 
+/**
+ * Short, secret-free reason for a thrown request error: the error name, plus the message for a bare
+ * TypeError ("fetch failed") and the network error code when present. URLs are never included.
+ */
+export function describeThrown(error) {
+  const name = typeof error?.name === "string" && error.name ? error.name : "Error";
+  const parts = [name];
+  if (name === "TypeError" && typeof error?.message === "string") {
+    const message = error.message.replace(/\S*:\/\/\S*/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
+    if (message) parts[0] = `${name}: ${message}`;
+  }
+  const code = error?.cause?.code;
+  if (typeof code === "string" && /^[A-Z0-9_]{2,40}$/.test(code)) parts.push(`(${code})`);
+  return parts.join(" ");
+}
+
+/** One-line summary of client stats, e.g. `800 live, 12 cached, 285 retries (HTTP 429: 200, api:maxlag: 85)`. */
+export function formatStats(stats) {
+  const reasons = Object.entries(stats.retryReasons ?? {})
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([reason, count]) => `${reason}: ${count}`)
+    .join(", ");
+  return `${stats.network} live, ${stats.cacheHits} cached, ${stats.retries} retries${reasons ? ` (${reasons})` : ""}`;
+}
+
 export class MediaWikiError extends Error {
   constructor(message, details = {}) {
     super(message);
@@ -88,6 +113,7 @@ export class MediaWikiClient {
    * @param {(ms: number) => Promise<void>} [options.sleep]
    * @param {number} [options.maxCacheAgeDays] live runs re-fetch cache entries older than this
    * @param {() => number} [options.now] clock in ms, injectable for tests
+   * @param {(message: string, event: object) => void} [options.log] told about every failed attempt (reason, attempt, delay); silent by default
    */
   constructor(options) {
     this.apiUrl = options.apiUrl ?? DEFAULT_API_URL;
@@ -102,11 +128,30 @@ export class MediaWikiClient {
     this.now = options.now ?? (() => Date.now());
     /** Fetch time (ms) of every cache entry used by this run, by cache key. */
     this.fetchedAt = new Map();
-    this.stats = { network: 0, cacheHits: 0, retries: 0 };
+    this.log = options.log ?? (() => {});
+    this.stats = { network: 0, cacheHits: 0, retries: 0, retryReasons: {} };
     this.lastRequestAt = 0;
     /** In-memory cookie jar (name -> value). Never written to disk. */
     this.cookies = new Map();
     this.loggedIn = false;
+  }
+
+  /** Copy of the counters, safe to keep after the run throws. */
+  statsSnapshot() {
+    return { ...this.stats, retryReasons: { ...this.stats.retryReasons } };
+  }
+
+  /** Attach the stats snapshot to an error on its way out; returns the same error. */
+  withStats(error) {
+    if (error && typeof error === "object") error.stats = this.statsSnapshot();
+    return error;
+  }
+
+  /** Count a failed attempt under its reason and tell `options.log`. Never receives URLs, params or credentials. */
+  recordFailure(reason, attempt, maxAttempts, delayMs) {
+    this.stats.retryReasons[reason] = (this.stats.retryReasons[reason] ?? 0) + 1;
+    const next = delayMs === undefined ? "giving up" : `retrying in ${delayMs} ms`;
+    this.log(`attempt ${attempt}/${maxAttempts} failed: ${reason}; ${next}`, { attempt, maxAttempts, reason, delayMs });
   }
 
   storeCookies(response) {
@@ -129,12 +174,22 @@ export class MediaWikiClient {
 
   /** One uncached login-flow request: same throttle, budget and User-Agent as ordinary ones. */
   async loginRequest(url, init) {
-    if (this.stats.network >= this.maxRequests) throw new RequestBudgetExceededError(this.maxRequests);
+    if (this.stats.network >= this.maxRequests) throw this.withStats(new RequestBudgetExceededError(this.maxRequests));
     await this.waitForThrottle();
     this.stats.network += 1;
-    const response = await this.fetchImpl(url, { ...init, redirect: "error", signal: AbortSignal.timeout(40_000) });
+    let response;
+    try {
+      response = await this.fetchImpl(url, { ...init, redirect: "error", signal: AbortSignal.timeout(40_000) });
+    } catch (error) {
+      this.recordFailure(describeThrown(error), 1, 1);
+      throw this.withStats(error);
+    }
     this.storeCookies(response);
-    if (!response.ok) throw new MediaWikiError(`login request failed: HTTP ${response.status}`, { status: response.status });
+    if (!response.ok) {
+      const reason = `HTTP ${response.status}`;
+      this.recordFailure(reason, 1, 1);
+      throw this.withStats(new MediaWikiError(`login request failed: ${reason}`, { status: response.status }));
+    }
     return response.json();
   }
 
@@ -227,11 +282,14 @@ export class MediaWikiClient {
 
   async fetchWithRetry(params) {
     let lastError;
+    const maxAttempts = this.maxRetries + 1;
     for (let attempt = 0; attempt <= this.maxRetries; attempt += 1) {
-      if (this.stats.network >= this.maxRequests) throw new RequestBudgetExceededError(this.maxRequests);
+      if (this.stats.network >= this.maxRequests) throw this.withStats(new RequestBudgetExceededError(this.maxRequests));
       await this.waitForThrottle();
       this.stats.network += 1;
       let retryAfterMs = 0;
+      let reason;
+      let fatal = false;
       try {
         const response = await this.fetchImpl(this.buildUrl(params), {
           headers: this.requestHeaders(),
@@ -239,26 +297,38 @@ export class MediaWikiClient {
         });
         if (response.status === 429 || response.status >= 500) {
           retryAfterMs = Number(response.headers.get("retry-after") ?? 0) * 1000;
+          reason = `HTTP ${response.status}`;
           lastError = new MediaWikiError(`HTTP ${response.status}`, { status: response.status });
         } else if (!response.ok) {
-          throw new MediaWikiError(`HTTP ${response.status}`, { status: response.status, fatal: true });
+          reason = `HTTP ${response.status}`;
+          fatal = true;
+          lastError = new MediaWikiError(`HTTP ${response.status}`, { status: response.status });
         } else {
           const data = await response.json();
           if (!data.error) return data;
+          reason = `api:${data.error.code}`;
           lastError = new MediaWikiError(`API error ${data.error.code}: ${data.error.info}`, { code: data.error.code });
-          if (!RETRYABLE_API_ERRORS.has(data.error.code)) throw Object.assign(lastError, { fatal: true });
-          retryAfterMs = Number(response.headers.get("retry-after") ?? 0) * 1000;
+          if (RETRYABLE_API_ERRORS.has(data.error.code)) retryAfterMs = Number(response.headers.get("retry-after") ?? 0) * 1000;
+          else fatal = true;
         }
       } catch (error) {
-        if (error?.fatal) throw error;
+        reason = describeThrown(error);
         lastError = error;
       }
+      if (fatal) {
+        this.recordFailure(reason, attempt + 1, maxAttempts);
+        throw this.withStats(lastError);
+      }
       if (attempt < this.maxRetries) {
+        const delayMs = Math.max(retryAfterMs, this.throttleMs * 2 ** (attempt + 1));
         this.stats.retries += 1;
-        await this.sleep(Math.max(retryAfterMs, this.throttleMs * 2 ** (attempt + 1)));
+        this.recordFailure(reason, attempt + 1, maxAttempts, delayMs);
+        await this.sleep(delayMs);
+      } else {
+        this.recordFailure(reason, attempt + 1, maxAttempts);
       }
     }
-    throw lastError ?? new MediaWikiError("request failed");
+    throw this.withStats(lastError ?? new MediaWikiError("request failed"));
   }
 
   async waitForThrottle() {
