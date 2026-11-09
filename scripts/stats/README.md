@@ -71,6 +71,41 @@ is about 70 minutes. The default cap of 450 requests leaves room for retries. Th
 The live run needs `--login`: anonymous Cargo queries were rate-limited on the first request. It also needs the
 user's explicit authorization (destination, operation and credential). Tests use fake clients only.
 
+## Building the overrides asset
+
+`npm run stats:build` (`scripts/stats/build-overrides.mjs`) turns the rows, the player index and the game world into
+`assets/world/player-rating-overrides.json` plus `report.md` and `report.json` (default
+`src-tauri/target/olm-scratch/stat-ratings`). It is offline and deterministic.
+
+1. **Game players** (`lib/game-world.mjs`): `data/` through `scripts/world/lib/world.mjs` (catalog corrections,
+   effective team ids, free agents) plus the roster overlay (moves, retirements, adds, same rules as
+   `apply_world_overlay`). Not reproduced from the Rust assembly: ERL academy bootstrap, short-roster fills,
+   `scrub_departed_players`, placeholder estimation (flat-50 rows are only flagged) and contract or market-value
+   defaults.
+2. **League ladder** (`lib/levels.mjs`): per competition, median and sd of the authored OVR of rostered players,
+   without flat-50 and all-zero rows. Fixed; stats never move it.
+3. **Identity** (`lib/identity.mjs`): a Link matches a game player when the compact IGN (Link without parenthetical,
+   or any seen name) equals his `match_name` and either his latest Leaguepedia team maps to his team through
+   `scripts/world/team-map.json`, or his main role (ADC is Bot) and latest competition equal the player's, and the
+   pairing is unique on both sides. Anything else with an IGN candidate goes to the review list. `pins.json`
+   (`{ "<Link>": "<player id>" | null }`, committed empty) forces a match or, with `null`, forbids one; a pin that
+   points nowhere is reported and its link stays out.
+4. **Estimate**: `estimateSkill` over all rows. Fallback cohorts pool the competitions whose level falls in the same
+   5-point bucket. A matched player takes the cohort with the most effective games; the target is the fixed level of
+   that competition (`blendRating`), with the suspect rule applied to his authored row against the median of his
+   current competition. Players whose stat competition differs from their game competition are flagged.
+5. **Attributes** (`lib/attributes.mjs`): mechanics, laning and teamfighting take the full OVR delta; macro_play,
+   consistency and champion_pool do too from 25 raw games on. The others follow with `skill_carry` 0.75 x delta. A
+   rounding correction (measured attributes first) makes `round(mean of 9)` equal `round(finalOvr)` exactly.
+   `potential_floor` is the larger of the new OVR and the authored `potential_base`.
+6. Only matched players with an estimate and changed attributes get an entry. Flat-50 and all-zero rows are skipped
+   (the game estimates them itself); `--include-placeholders` writes entries for them too, blended from their league
+   median as suspect rows.
+
+The report lists per competition the players, matches, estimates and mean and max |delta|, the crossings of OVR 65,
+70 and 80, the top 25 risers and fallers, every suspect row, the review list, the unmatched links with the most games
+and explicit rows for Boal, Minous and Winner. Data: Leaguepedia, CC BY-SA 3.0.
+
 ## Outputs
 
 The cache, rows and coverage stay under `src-tauri/target/olm-scratch` (gitignored). Never commit them.
