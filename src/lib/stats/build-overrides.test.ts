@@ -250,6 +250,38 @@ describe("league movers", () => {
     expect(calculateLolOvr(entryOf.attributes)).toBe(66);
   });
 
+  it("counts a change as capped only when the clamp moves the rounded OVR", () => {
+    for (let step = 0; step <= 60; step += 1) {
+      const players = [] as ReturnType<typeof gp>[];
+      const links: Record<string, unknown> = {};
+      const rows: unknown[] = [];
+      for (let i = 1; i <= 20; i += 1) {
+        players.push(gp(`lec${i}`, "lec", "lec-team", 60 + (i % 5) * 5));
+        links[`lec${i}`] = { ...entry("Lec Team", "lec"), names: [`lec${i}`] };
+        rows.push(...playerRows(`lec${i}`, i / 20, GAMES, "lec"));
+      }
+      players.push(gp("star", "lec", "lec-team", 60));
+      links.star = { ...entry("Lec Team", "lec"), names: ["star"] };
+      rows.push(...playerRows("star", 1 + step / 30, GAMES, "lec"));
+      const { report } = buildOverrides({ rows: rows as never, window: WINDOW, index: links as never, players: players as never, teamMap: TEAM_MAP, pins: {} });
+      for (const c of report.capped) {
+        expect(Math.abs(c.uncappedOvr - c.authoredOvr), `quality step ${step}`).toBeGreaterThan(MAX_DELTA);
+        expect(c.uncappedOvr).not.toBe(c.newOvr);
+      }
+    }
+  });
+
+  it("reports the mean change by authored band and by role so a compression at the top is visible", () => {
+    const { report } = moverWorld(88, 0.1);
+    const total = report.bands.reduce((sum: number, b: { n: number }) => sum + b.n, 0);
+    expect(total).toBe(report.totals.estimated);
+    expect(report.roles.reduce((sum: number, b: { n: number }) => sum + b.n, 0)).toBe(report.totals.estimated);
+    for (const b of report.bands) expect(b.up + b.down + b.unchanged).toBe(b.n);
+    const md = renderReport(report);
+    expect(md).toContain("## Mean change by authored OVR band");
+    expect(md).toContain("## Mean change by role");
+  });
+
   it("does not cap a suspect row", () => {
     const { report } = moverWorld(60, 2);
     const m = report.mismatches.find((x) => x.id === "mover");

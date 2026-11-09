@@ -28,6 +28,7 @@ export interface OverridesAsset {
   league_levels: Record<string, LeagueLevel>;
   entries: OverrideEntry[];
 }
+export interface DeltaSummary { label: string; n: number; meanDelta: number; up: number; down: number; unchanged: number; atFloor: number; atCeiling: number }
 export interface BuildReport {
   method: string;
   window: { since: string; until: string };
@@ -36,6 +37,8 @@ export interface BuildReport {
   totals: Record<string, any>;
   competitions: Array<{ competition: string; players: number; matched: number; estimated: number; entries: number; meanAbsDelta: number; maxAbsDelta: number }>;
   thresholds: Array<{ ovr: number; up: number; down: number }>;
+  bands: DeltaSummary[];
+  roles: DeltaSummary[];
   risers: Array<Record<string, any>>;
   fallers: Array<Record<string, any>>;
   suspects: Array<Record<string, any>>;

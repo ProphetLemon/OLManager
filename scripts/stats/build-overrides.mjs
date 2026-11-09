@@ -36,6 +36,8 @@ export const SPOTLIGHT = Object.freeze(["Boal", "Minous", "Winner"]);
  * their league median) are exempt: their authored value carries no information to protect.
  */
 export const MAX_DELTA = 6;
+/** Authored OVR bands [label, from, to) for the mean-change table in the report. */
+const OVR_BANDS = [["under 70", -Infinity, 70], ["70-79", 70, 80], ["80-84", 80, 85], ["85-89", 85, 90], ["90+", 90, Infinity]];
 
 const compare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const round = (v, digits) => Math.round(v * 10 ** digits) / 10 ** digits;
@@ -143,7 +145,8 @@ export function buildOverrides({ rows, window, index, players, teamMap, pins = {
     }
     const uncappedOvr = blend.finalOvr;
     const finalOvr = suspect ? uncappedOvr : Math.min(player.authoredOvr + MAX_DELTA, Math.max(player.authoredOvr - MAX_DELTA, uncappedOvr));
-    const capped = finalOvr !== uncappedOvr;
+    // Count only a visible clip: a clamp that moves the value by a fraction of a point leaves the rounded OVR unchanged.
+    const capped = Math.round(finalOvr) !== Math.round(uncappedOvr);
     const derived = deriveAttributes({ attributes: player.attributes, authoredOvr: baseline, finalOvr, games: best.games, potentialBase: player.potential_base });
     const record = {
       ...base,
@@ -215,6 +218,19 @@ function buildReport({ levels, counts, players, identity, records, entries, noEs
     down: estimated.filter((r) => r.authoredOvr >= ovr && r.newOvr < ovr).length,
   }));
   const kept = records.filter((r) => r.reason === "kept_league_mover");
+  // Mean change per group, so a systematic drift (for example stars pulled down) shows up instead of hiding in the totals.
+  const summarize = (label, group) => ({
+    label,
+    n: group.length,
+    meanDelta: group.length ? round(group.reduce((sum, r) => sum + r.delta, 0) / group.length, 2) : 0,
+    up: group.filter((r) => r.delta > 0).length,
+    down: group.filter((r) => r.delta < 0).length,
+    unchanged: group.filter((r) => r.delta === 0).length,
+    atFloor: group.filter((r) => !r.suspect && r.delta <= -MAX_DELTA).length,
+    atCeiling: group.filter((r) => !r.suspect && r.delta >= MAX_DELTA).length,
+  });
+  const bands = OVR_BANDS.map(([label, lo, hi]) => summarize(label, estimated.filter((r) => r.authoredOvr >= lo && r.authoredOvr < hi)));
+  const roles = [...new Set(estimated.map((r) => r.role))].sort(compare).map((role) => summarize(role ?? "-", estimated.filter((r) => r.role === role)));
   const cappedRecords = estimated.filter((r) => r.capped);
   const slim = (r) => ({ id: r.id, matchName: r.matchName, link: r.link, competition: r.competition, statCompetition: r.statCompetition, role: r.role, games: r.games, authoredOvr: r.authoredOvr, newOvr: r.newOvr, delta: r.delta, confidence: r.confidence, suspect: r.suspect });
   const byDelta = [...estimated].sort((a, b) => b.delta - a.delta || compare(a.id, b.id));
@@ -259,6 +275,8 @@ function buildReport({ levels, counts, players, identity, records, entries, noEs
     },
     competitions,
     thresholds,
+    bands,
+    roles,
     risers: byDelta.slice(0, 25).map(slim),
     fallers: [...byDelta].reverse().slice(0, 25).map(slim),
     suspects,
@@ -282,6 +300,8 @@ export function renderReport(report) {
   const t = report.totals;
   const player = (p) => [p.matchName, p.competition ?? "-", p.statCompetition ?? "-", p.role ?? "-", p.games, p.authoredOvr, p.newOvr, p.delta > 0 ? `+${p.delta}` : p.delta, p.confidence, p.suspect ? "yes" : ""];
   const playerHeaders = ["player", "competition", "stat competition", "role", "games", "before", "after", "delta", "w", "suspect"];
+  const deltaHeaders = ["group", "n", "mean delta", "up", "down", "unchanged", `at -${MAX_DELTA}`, `at +${MAX_DELTA}`];
+  const deltaRow = (g) => [g.label, g.n, g.meanDelta, g.up, g.down, g.unchanged, g.atFloor, g.atCeiling];
   const lines = [
     "# Stat-based ratings: before and after",
     "",
@@ -305,6 +325,14 @@ export function renderReport(report) {
       ["competition", "players", "matched", "estimated", "entries", "mean abs delta", "max abs delta"],
       report.competitions.map((c) => [c.competition, c.players, c.matched, c.estimated, c.entries, c.meanAbsDelta, c.maxAbsDelta]),
     ),
+    "",
+    "## Mean change by authored OVR band",
+    "",
+    table(deltaHeaders, report.bands.map(deltaRow)),
+    "",
+    "## Mean change by role",
+    "",
+    table(deltaHeaders, report.roles.map(deltaRow)),
     "",
     "## Threshold crossings (OVR)",
     "",
