@@ -515,7 +515,7 @@ export default function CustomTeamWizardV2({
               </div>
 
               {lowContrast && (
-                <p role="status" className="flex items-start gap-2 text-sm text-amber-400">
+                <p role="status" className="flex items-start gap-2 text-sm text-warning">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                   {t("teamSelect.custom.errors.lowContrast")}
                 </p>

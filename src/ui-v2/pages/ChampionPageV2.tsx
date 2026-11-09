@@ -92,7 +92,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
           {/* Hero stats — glass cards */}
           <div className="grid grid-cols-4 gap-3">
             {[
-              { label: "WR", val: s ? `${s.win_rate}%` : "—", acc: s && s.win_rate >= 50 ? "text-emerald-400" : "text-red-400" },
+              { label: "WR", val: s ? `${s.win_rate}%` : "—", acc: s && s.win_rate >= 50 ? "text-positive" : "text-negative" },
               { label: "PR", val: s ? `${s.pick_rate}%` : "—", acc: "text-primary" },
               { label: "BR", val: s ? `${s.ban_rate}%` : "—", acc: "text-amber-400" },
               { label: "KDA", val: s ? s.avg_kda.toFixed(1) : "—", acc: s ? "text-white" : "text-white/40" },
@@ -264,7 +264,7 @@ function MatchupBlock({ title, items, type }: {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className={cn("font-heading text-xs uppercase tracking-widest", type === "best" ? "text-emerald-400" : "text-red-400")}>
+        <CardTitle className={cn("font-heading text-xs uppercase tracking-widest", type === "best" ? "text-positive" : "text-negative")}>
           {title}
         </CardTitle>
       </CardHeader>

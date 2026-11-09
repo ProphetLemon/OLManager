@@ -34,9 +34,9 @@ interface PlayerProfileTransferOfferModalV2Props {
 }
 
 const DECISION_TONE: Record<TransferOfferFeedbackState["decision"], string> = {
-  accepted: "text-emerald-500",
+  accepted: "text-positive",
   rejected: "text-destructive",
-  counter_offer: "text-amber-500",
+  counter_offer: "text-warning",
 };
 
 export default function PlayerProfileTransferOfferModalV2({

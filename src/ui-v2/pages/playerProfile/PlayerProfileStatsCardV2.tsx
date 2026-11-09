@@ -23,8 +23,8 @@ export default function PlayerProfileStatsCardV2({ stats, t }: Props) {
 
   const items = [
     { icon: Swords, label: t("common.games"), value: String(games) },
-    { icon: TrendingUp, label: t("common.wins"), value: String(wins), color: "text-emerald-400" },
-    { icon: Crosshair, label: t("common.losses"), value: String(losses), color: "text-red-400" },
+    { icon: TrendingUp, label: t("common.wins"), value: String(wins), color: "text-positive" },
+    { icon: Crosshair, label: t("common.losses"), value: String(losses), color: "text-negative" },
     { icon: Star, label: "KDA", value: kda ?? "—" },
     { icon: Pickaxe, label: "CS", value: String(stats.cs ?? 0) },
     { icon: Eye, label: t("common.vision"), value: String(stats.vision_score ?? 0) },

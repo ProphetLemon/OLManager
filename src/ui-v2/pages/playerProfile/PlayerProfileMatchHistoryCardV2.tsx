@@ -63,7 +63,7 @@ export default function PlayerProfileMatchHistoryCardV2({ history, t, language }
                 <span
                   className={cn(
                     "flex size-8 shrink-0 items-center justify-center rounded-md font-heading text-xs font-bold tabular-nums",
-                    isWin ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400",
+                    isWin ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative",
                   )}
                 >
                   {isWin ? "W" : "L"}

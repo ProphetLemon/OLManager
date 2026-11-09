@@ -91,7 +91,7 @@ export function TitleBarV2() {
         <button
           type="button"
           onClick={handleClose}
-          className="flex h-9 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-red-500 hover:text-white"
+          className="flex h-9 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-negative hover:text-negative-foreground"
           aria-label={t("titleBar.close")}
         >
           <X className="size-3.5" />

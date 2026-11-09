@@ -173,8 +173,8 @@ export default function PlayerProfileHeroCardV2({
             </div>
 
             {isOwnClub && editingRole && (
-              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-                <p className="mb-2 text-xs text-amber-200">{t("playerProfile.rerollWarning")}</p>
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
+                <p className="mb-2 text-xs text-warning">{t("playerProfile.rerollWarning")}</p>
                 <div className="flex flex-wrap gap-2">
                   {(["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"] as const).map((r) => (
                     <button
@@ -251,9 +251,9 @@ export default function PlayerProfileHeroCardV2({
           <div className="hidden md:block">
             <div className="grid grid-cols-2 gap-2">
               <QuickStatV2 label={t("common.ovr")} value={String(ovr)} color="text-primary" />
-              <QuickStatV2 label={t("common.condition")} value={`${player.condition}%`} color={player.condition >= 70 ? "text-emerald-400" : "text-red-400"} />
-              <QuickStatV2 label={t("common.fitness")} value={`${player.fitness ?? 75}%`} color={player.fitness != null && player.fitness >= 70 ? "text-emerald-400" : "text-red-400"} />
-              <QuickStatV2 label={t("common.morale")} value={`${player.morale}%`} color={player.morale >= 70 ? "text-primary" : "text-red-400"} />
+              <QuickStatV2 label={t("common.condition")} value={`${player.condition}%`} color={player.condition >= 70 ? "text-positive" : "text-negative"} />
+              <QuickStatV2 label={t("common.fitness")} value={`${player.fitness ?? 75}%`} color={player.fitness != null && player.fitness >= 70 ? "text-positive" : "text-negative"} />
+              <QuickStatV2 label={t("common.morale")} value={`${player.morale}%`} color={player.morale >= 70 ? "text-primary" : "text-negative"} />
               <QuickStatV2 label={t("common.potential")} value={potentialValueLabel} color="text-foreground/90" icon={potentialRevealed === null ? <EyeOff className="size-4" /> : undefined} />
               <QuickStatV2 label={t("common.value")} value={formatPlayerMarketValue(player.market_value)} color="text-foreground" />
               <QuickStatV2 label={t("common.wage")} value={formatPlayerWage(player.wage, annualSuffix)} color="text-foreground" />

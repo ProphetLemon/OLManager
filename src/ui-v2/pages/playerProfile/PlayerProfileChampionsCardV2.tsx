@@ -11,9 +11,9 @@ interface PlayerProfileChampionsCardV2Props {
 }
 
 function winRateTone(wr: number): { text: string; bar: string } {
-  if (wr >= 55) return { text: "text-emerald-300", bar: "bg-emerald-400" };
-  if (wr >= 48) return { text: "text-amber-300", bar: "bg-amber-400" };
-  return { text: "text-rose-300", bar: "bg-rose-400" };
+  if (wr >= 55) return { text: "text-positive", bar: "bg-positive" };
+  if (wr >= 48) return { text: "text-warning", bar: "bg-warning" };
+  return { text: "text-negative", bar: "bg-negative" };
 }
 
 export default function PlayerProfileChampionsCardV2({

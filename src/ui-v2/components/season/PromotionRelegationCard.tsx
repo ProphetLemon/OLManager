@@ -81,8 +81,8 @@ function MovementTeams({
         className={cn(
           "mb-1 flex items-center gap-1.5 text-xs font-semibold",
           direction === "up"
-            ? "text-emerald-600 dark:text-emerald-400"
-            : "text-red-600 dark:text-red-400",
+            ? "text-positive"
+            : "text-negative",
         )}
       >
         <Icon aria-hidden="true" className="size-4" />
@@ -157,7 +157,7 @@ export function PromotionRelegationCard({
             data-testid="ladder-user-result"
             className={cn(
               "flex items-center gap-4 rounded-lg border-l-4 bg-muted/40 p-4",
-              moved.result === "Promoted" ? "border-emerald-500" : "border-red-500",
+              moved.result === "Promoted" ? "border-positive" : "border-negative",
             )}
           >
             <TeamBadge teams={teams} team={userRef} size="lg" />
@@ -166,8 +166,8 @@ export function PromotionRelegationCard({
                 className={cn(
                   "flex items-center gap-2 font-heading text-2xl font-bold uppercase tracking-wide",
                   moved.result === "Promoted"
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-red-600 dark:text-red-400",
+                    ? "text-positive"
+                    : "text-negative",
                 )}
               >
                 {moved.result === "Promoted" ? (

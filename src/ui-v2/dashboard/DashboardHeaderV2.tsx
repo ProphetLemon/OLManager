@@ -97,7 +97,7 @@ export function DashboardHeaderV2({
         const alert = alerts[0];
         return (
           <button onClick={() => onNavigate(alert.tab)}
-            className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-2xs font-heading font-bold uppercase tracking-wider transition-all border-amber-500/20 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400"
+            className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-2xs font-heading font-bold uppercase tracking-wider transition-all border-warning/20 bg-warning/10 text-warning hover:bg-warning/20 dark:text-warning"
           >
             <AlertCircle className="h-3 w-3 shrink-0" />
             <span className="truncate max-w-32">{alert.text}</span>

@@ -158,7 +158,7 @@ export default function TeamSelectionV2() {
     return (
       <div className="flex h-full items-center justify-center bg-background">
         <div className="mx-auto max-w-md p-8 text-center">
-          <p className="mb-4 text-sm text-red-400">{error || t("teamSelect.noLeaguesDesc")}</p>
+          <p className="mb-4 text-sm text-negative">{error || t("teamSelect.noLeaguesDesc")}</p>
           <button type="button" onClick={handleBackToMenu}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >

@@ -330,7 +330,7 @@ export default function DraftResultScreenV2({
       <Card size="sm">
         <CardContent className="flex flex-col items-center gap-3 py-5">
           <p className="text-xs font-heading font-bold uppercase tracking-[0.3em] text-muted-foreground/70">{t("match.matchOver")}</p>
-          <h1 className={cn("text-4xl font-heading font-black uppercase", controlledWon ? "text-emerald-400" : "text-red-400")}>
+          <h1 className={cn("text-4xl font-heading font-black uppercase", controlledWon ? "text-positive" : "text-negative")}>
             {title}
           </h1>
 
@@ -399,17 +399,17 @@ export default function DraftResultScreenV2({
           </Card>
 
           {controlledPrepInsight ? (
-            <Card size="sm" className="border-emerald-400/25 bg-emerald-500/10">
+            <Card size="sm" className="border-positive/25 bg-positive/10">
               <CardContent className="py-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-heading font-bold uppercase tracking-wider text-emerald-200">
+                  <p className="text-xs font-heading font-bold uppercase tracking-wider text-positive">
                     {t(controlledPrepInsight.title.key, { defaultValue: controlledPrepInsight.title.defaultValue })}
                   </p>
-                  <span className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-2 py-0.5 text-xs font-bold text-emerald-100">
+                  <span className="rounded-full border border-positive/30 bg-positive/10 px-2 py-0.5 text-xs font-bold text-positive">
                     +{controlledPrepInsight.totalSignal}
                   </span>
                 </div>
-                <p className="mt-2 text-sm text-emerald-50/90">
+                <p className="mt-2 text-sm text-positive/90">
                   {t(controlledPrepInsight.summary.key, {
                     ...controlledPrepInsight.summary.values,
                     focus: controlledPrepFocus ?? controlledPrepInsight.focusLabel.defaultValue,
@@ -420,7 +420,7 @@ export default function DraftResultScreenV2({
                   {controlledPrepInsight.details.map((detail) => (
                     <span
                       key={detail.key}
-                      className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-xs text-emerald-100"
+                      className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-xs text-positive"
                     >
                       {t(detail.key, {
                         ...detail.values,

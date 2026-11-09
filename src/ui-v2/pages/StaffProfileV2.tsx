@@ -51,12 +51,12 @@ interface StaffProfileV2Props {
 
 function AttrBar({ label, value }: { label: string; value: number }) {
   const pct = Math.max(0, Math.min(100, value));
-  const color = value >= 70 ? "bg-emerald-400" : value >= 50 ? "bg-amber-400" : "bg-muted-foreground/40";
+  const color = value >= 70 ? "bg-positive" : value >= 50 ? "bg-warning" : "bg-muted-foreground/40";
   return (
     <div>
       <div className="mb-0.5 flex justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
-        <span className={`font-heading font-bold tabular-nums ${value >= 70 ? "text-emerald-400" : value >= 50 ? "text-amber-400" : "text-muted-foreground"}`}>
+        <span className={`font-heading font-bold tabular-nums ${value >= 70 ? "text-positive" : value >= 50 ? "text-warning" : "text-muted-foreground"}`}>
           {value}
         </span>
       </div>
@@ -205,7 +205,7 @@ export default function StaffProfileV2({
                   type="button"
                   disabled={actionLoading}
                   onClick={() => runAction(releaseStaff)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-4 py-2 font-heading text-sm font-bold uppercase tracking-wider text-red-500 transition-colors hover:bg-red-500/20 disabled:pointer-events-none disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg bg-negative/10 px-4 py-2 font-heading text-sm font-bold uppercase tracking-wider text-negative transition-colors hover:bg-negative/20 disabled:pointer-events-none disabled:opacity-50"
                 >
                   {actionLoading ? <Loader2 className="size-4 animate-spin" /> : <UserMinus className="size-4" />}
                   {t("staff.releaseStaff")}
@@ -221,7 +221,7 @@ export default function StaffProfileV2({
                   {t("staff.hireStaff")}
                 </button>
               )}
-              {error && <p className="max-w-[220px] text-right text-xs text-red-500">{error}</p>}
+              {error && <p className="max-w-[220px] text-right text-xs text-negative">{error}</p>}
             </div>
           )}
         </CardContent>

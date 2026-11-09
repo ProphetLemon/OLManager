@@ -37,8 +37,8 @@ interface PlayerProfileContractCardV2Props {
 
 const RISK_BADGE: Record<ContractRiskLevel, { variant: "destructive" | "outline"; className?: string }> = {
   critical: { variant: "destructive" },
-  warning: { variant: "outline", className: "border-amber-500/40 text-amber-500" },
-  stable: { variant: "outline", className: "border-emerald-500/40 text-emerald-500" },
+  warning: { variant: "outline", className: "border-warning/40 text-warning" },
+  stable: { variant: "outline", className: "border-positive/40 text-positive" },
 };
 
 function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {

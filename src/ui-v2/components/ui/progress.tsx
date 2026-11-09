@@ -4,7 +4,7 @@ type ProgressTone = "primary" | "success" | "danger"
 
 const TONE_CLASS: Record<ProgressTone, string> = {
   primary: "bg-primary",
-  success: "bg-emerald-500",
+  success: "bg-positive",
   danger: "bg-destructive",
 }
 

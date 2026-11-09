@@ -23,7 +23,7 @@ const HEAD = "px-5 font-heading text-xs font-bold uppercase tracking-wider text-
 
 function ConditionBar({ value }: { value: number }) {
   const clamped = Math.max(0, Math.min(100, value));
-  const color = clamped >= 70 ? "bg-emerald-400" : clamped >= 40 ? "bg-amber-400" : "bg-red-500";
+  const color = clamped >= 70 ? "bg-positive" : clamped >= 40 ? "bg-warning" : "bg-negative";
 
   return (
     <div className="flex max-w-[100px] items-center gap-2">
