@@ -75,14 +75,14 @@ export function RosterLineupV2({ roster, championMasteries = [], onNavigate, onS
     <Card className="flex h-full flex-col overflow-hidden">
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
-          Plantilla
+          {t("dashboard.squad", { defaultValue: "Squad" })}
         </CardTitle>
         <button
           type="button"
           onClick={() => onNavigate?.("Squad")}
           className="font-heading text-xs font-bold uppercase tracking-wider text-club-text hover:underline"
         >
-          5 titular
+          {t("onAir.home.startingFive", { defaultValue: "Starting five" })}
         </button>
       </CardHeader>
       <CardContent className="flex-1">
