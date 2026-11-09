@@ -547,6 +547,7 @@
     }
   },
   "teamSelect": {
+    "searchLeague": "Pesquisar ligas...",
     "regionalLeagues": "Ligas regionais",
     "title": "Escolhe o Teu Clube",
     "subtitle": "Seleciona a equipa que queres treinar",

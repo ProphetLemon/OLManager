@@ -548,6 +548,7 @@
     }
   },
   "teamSelect": {
+    "searchLeague": "Ligen suchen...",
     "regionalLeagues": "Regionale Ligen",
     "title": "Wähle Deinen Verein",
     "subtitle": "Wähle das Team, das du trainieren möchtest",

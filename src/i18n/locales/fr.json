@@ -548,6 +548,7 @@
     }
   },
   "teamSelect": {
+    "searchLeague": "Rechercher des ligues...",
     "regionalLeagues": "Ligues régionales",
     "title": "Choisissez Votre Club",
     "subtitle": "Sélectionnez l'équipe que vous voulez entraîner",

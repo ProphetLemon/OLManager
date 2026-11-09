@@ -548,6 +548,7 @@
     }
   },
   "teamSelect": {
+    "searchLeague": "Buscar ligas...",
     "regionalLeagues": "Ligas regionais",
     "title": "Escolha Seu Clube",
     "subtitle": "Selecione o time que você quer comandar",

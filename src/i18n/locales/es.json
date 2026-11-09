@@ -676,6 +676,7 @@
     }
   },
   "teamSelect": {
+    "searchLeague": "Buscar ligas...",
     "regionalLeagues": "Ligas regionales",
     "title": "Elige Tu Club",
     "subtitle": "Selecciona el equipo que quieres dirigir",
