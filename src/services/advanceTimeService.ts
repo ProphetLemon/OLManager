@@ -32,8 +32,17 @@ export async function advanceTimeWithMode(
   return getApiClientSync().time.advance({ mode });
 }
 
+export interface CheckBlockingOptions {
+  /**
+   * Rethrow a failed check instead of answering `[]`. Callers that keep state
+   * between checks need this so "the check failed" is not read as "all resolved".
+   */
+  rethrow?: boolean;
+}
+
 export async function checkBlockingActions(
   logContext: string,
+  options: CheckBlockingOptions = {},
 ): Promise<BlockerData[]> {
   try {
     const blockers = await getApiClientSync().time.checkBlockers();
@@ -47,6 +56,7 @@ export async function checkBlockingActions(
     return blockers;
   } catch (err) {
     console.warn(`[useAdvanceTime] ${logContext}:blockerCheckFailed`, err);
+    if (options.rethrow) throw err;
     return [];
   }
 }

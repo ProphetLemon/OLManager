@@ -50,6 +50,12 @@ describe("advanceTimeService", () => {
     await expect(checkBlockingActions("test")).resolves.toEqual([]);
   });
 
+  it("rethrows a failed blocker check when asked to, so callers can keep their state", async () => {
+    mockedInvoke.mockRejectedValueOnce(new Error("boom"));
+
+    await expect(checkBlockingActions("test", { rethrow: true })).rejects.toThrow("boom");
+  });
+
   it("calls the skip-to-match-day backend command", async () => {
     const response = { action: "advanced", days_skipped: 3 };
     mockedInvoke.mockResolvedValueOnce(response);

@@ -343,17 +343,23 @@ export default function DashboardV2() {
     if (!hasRetainedBlockers || blockerModalOpen) return;
     let cancelled = false;
     const timer = setTimeout(() => {
-      void checkBlockingActions("dashboard-refresh").then((fresh) => {
-        if (cancelled) return;
-        setLastBlockers((prev) => {
-          if (!prev) return prev;
-          if (fresh.length === 0) return null;
-          const same =
-            fresh.length === prev.blockers.length &&
-            fresh.every((b, i) => b.id === prev.blockers[i].id && b.text === prev.blockers[i].text);
-          return same ? prev : { ...prev, blockers: fresh };
-        });
-      });
+      // A failed check is not "everything resolved": rethrow and keep the retained list.
+      checkBlockingActions("dashboard-refresh", { rethrow: true }).then(
+        (fresh) => {
+          if (cancelled) return;
+          setLastBlockers((prev) => {
+            if (!prev) return prev;
+            if (fresh.length === 0) return null;
+            const same =
+              fresh.length === prev.blockers.length &&
+              fresh.every((b, i) => b.id === prev.blockers[i].id && b.text === prev.blockers[i].text);
+            return same ? prev : { ...prev, blockers: fresh };
+          });
+        },
+        () => {
+          // Keep the previous blockers; the next game state update retries.
+        },
+      );
     }, BLOCKER_REFRESH_DEBOUNCE_MS);
     return () => {
       cancelled = true;

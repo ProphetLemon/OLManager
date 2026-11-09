@@ -514,6 +514,30 @@ describe("DashboardV2 shell wiring", () => {
     await waitFor(() => expect(shell.header?.callCount).toBe(1));
   });
 
+  it("keeps the retained blockers when the refresh check fails", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>
+    );
+
+    shell.blockerModal = { blockers: [lineupBlocker], pendingAction: vi.fn() };
+    const view = render(tree());
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    shell.blockerModal = null;
+    view.rerender(tree());
+    shell.checkBlockingActions.mockRejectedValue(new Error("backend down"));
+    act(() => {
+      useGameStore.setState({ gameState: { ...minimalGameState() } });
+    });
+
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", { rethrow: true }));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(shell.header?.callCount).toBe(1);
+  });
+
   it("does not re-check blockers while none are retained or the modal is open", async () => {
     await renderDashboard();
     await screen.findByTestId("home-tab-v2");
