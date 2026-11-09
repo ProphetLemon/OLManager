@@ -207,7 +207,7 @@ export default function ScrimPlanningCardV2({
                           onChange={(e) => setSlotPlan(index, priorityIndex, e.target.value)}
                           disabled={isLocked}
                           className={cn(
-                            "w-full rounded-md border px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors",
+                            "w-full rounded-md border px-2.5 py-1.5 text-xs text-foreground transition-colors",
                             priorityIndex === 0
                               ? "border-primary/40 bg-primary/5"
                               : "border-border bg-muted/30",

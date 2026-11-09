@@ -247,7 +247,7 @@ export default function Settings() {
               label={t("settings.highContrast", "High Contrast")}
               description={t(
                 "settings.highContrastDesc",
-                "Boost text contrast in dark mode for improved readability",
+                "Strengthen text, borders and the focus outline for improved readability",
               )}
             >
               <GameToggle

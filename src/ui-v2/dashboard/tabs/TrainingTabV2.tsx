@@ -948,12 +948,12 @@ export function TrainingTabV2({
                             value={newGroupName}
                             onChange={(e) => setNewGroupName(e.target.value)}
                             placeholder={t("training.groups.groupNamePlaceholder", "Nombre del grupo")}
-                            className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs text-foreground outline-none"
+                            className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs text-foreground"
                           />
                           <select
                             value={newGroupFocus}
                             onChange={(e) => setNewGroupFocus(e.target.value)}
-                            className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs text-foreground outline-none"
+                            className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs text-foreground"
                           >
                             {TRAINING_FOCUS_IDS.map((f) => (
                               <option key={f} value={f}>

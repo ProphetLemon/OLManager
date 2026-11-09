@@ -79,7 +79,7 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
             value={search}
             onChange={(e) => { setSearch(e.target.value); resetPage(); }}
             placeholder={t("champions.searchPlaceholder", "Buscar campeón...")}
-            className="h-full w-full rounded-lg border border-border bg-muted/30 pl-9 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary/50 focus:bg-muted/50"
+            className="h-full w-full rounded-lg border border-border bg-muted/30 pl-9 pr-3 text-sm text-foreground transition-colors placeholder:text-muted-foreground/40 focus:border-primary/50 focus:bg-muted/50"
           />
         </div>
 

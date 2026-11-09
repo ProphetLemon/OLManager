@@ -323,7 +323,7 @@ export default function CustomTeamWizardV2({
               <h2
                 ref={headingRef}
                 tabIndex={-1}
-                className="font-heading text-2xl font-black uppercase tracking-widest text-foreground outline-none"
+                className="font-heading text-2xl font-black uppercase tracking-widest text-foreground"
               >
                 {stepTitles[step]}
               </h2>

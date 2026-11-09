@@ -178,7 +178,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("staff.searchStaff")}
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground"
           />
         </div>
 

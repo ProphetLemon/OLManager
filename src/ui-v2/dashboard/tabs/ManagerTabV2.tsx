@@ -507,30 +507,30 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
               <div>
                 <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.nickname")}</label>
                 <input maxLength={20} value={formData.nickname} onChange={(e) => setFormData((p) => ({ ...p, nickname: e.target.value }))}
-                  className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50" />
+                  className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:border-primary/50" />
               </div>
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.firstName")}</label>
                   <input maxLength={30} value={formData.firstName} onChange={(e) => setFormData((p) => ({ ...p, firstName: e.target.value }))}
-                    className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50" />
+                    className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:border-primary/50" />
                 </div>
                 <div className="flex-1">
                   <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.lastName")}</label>
                   <input maxLength={30} value={formData.lastName} onChange={(e) => setFormData((p) => ({ ...p, lastName: e.target.value }))}
-                    className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50" />
+                    className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:border-primary/50" />
                 </div>
               </div>
               <div>
                 <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.dob")}</label>
                 <input type="date" value={formData.dob} onChange={(e) => setFormData((p) => ({ ...p, dob: e.target.value }))}
-                  className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50" />
+                  className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:border-primary/50" />
               </div>
               <div ref={nationalityRef}>
                 <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.countryOfOrigin")}</label>
                 <div className="relative">
                   <button type="button" onClick={() => setNationalityOpen(!nationalityOpen)}
-                    className="flex w-full items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-left text-foreground outline-none transition-colors hover:border-primary/50">
+                    className="flex w-full items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-left text-foreground transition-colors hover:border-primary/50">
                     <span className="flex items-center gap-2">
                       {formData.nationality ? (
                         <><CountryFlag code={formData.nationality} locale={i18n.language} className="text-lg leading-none" /><span>{countryName(formData.nationality, i18n.language) || formData.nationality}</span></>
@@ -545,7 +545,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                       <div className="border-b border-border p-2">
                         <input type="text" autoFocus placeholder={t("createManager.searchNationalities")} value={nationalitySearch}
                           onChange={(e) => setNationalitySearch(e.target.value)}
-                          className="w-full rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-foreground outline-none" />
+                          className="w-full rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-foreground" />
                       </div>
                       {filteredNationalities.map((nat) => (
                         <button key={nat.code} type="button" onMouseDown={(e) => { e.preventDefault(); setFormData((p) => ({ ...p, nationality: nat.code })); setNationalityOpen(false); setNationalitySearch(""); }}

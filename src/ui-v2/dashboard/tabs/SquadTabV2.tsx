@@ -511,7 +511,7 @@ export function SquadTabV2({
                 type="text"
                 placeholder={t("common.search", { defaultValue: "Buscar jugador..." })}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-8 flex-1 min-w-[140px] max-w-[200px] rounded-md border border-border bg-muted/30 px-2.5 text-xs text-foreground outline-none placeholder:text-muted-foreground/40"
+                className="h-8 flex-1 min-w-[140px] max-w-[200px] rounded-md border border-border bg-muted/30 px-2.5 text-xs text-foreground placeholder:text-muted-foreground/40"
               />
               {(
                 [

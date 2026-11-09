@@ -119,7 +119,7 @@ export default function ScoutingPlayerSearchCardV2({
             placeholder={t("scouting.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
-            className="w-full rounded-lg border border-border bg-muted/30 py-2 pl-9 pr-4 text-xs text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/50"
+            className="w-full rounded-lg border border-border bg-muted/30 py-2 pl-9 pr-4 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50"
           />
         </div>
 

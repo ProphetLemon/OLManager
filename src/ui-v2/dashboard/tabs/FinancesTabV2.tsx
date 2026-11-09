@@ -468,14 +468,14 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                   value={ledgerSearch}
                   onChange={(event) => setLedgerSearch(event.target.value)}
                   placeholder={t("finances.ledgerSearchPlaceholder")}
-                  className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+                  className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus:border-primary"
                 />
                 <label className="sr-only" htmlFor="ledger-kind-filter">{t("finances.ledgerKindFilter")}</label>
                 <select
                   id="ledger-kind-filter"
                   value={ledgerKindFilter}
                   onChange={(event) => setLedgerKindFilter(event.target.value as FinancialTransactionKind | "all")}
-                  className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground focus:border-primary"
                 >
                   <option value="all">{t("finances.ledgerAllKinds")}</option>
                   {(Object.keys(LEDGER_KIND_LABELS) as FinancialTransactionKind[]).map((kind) => (
@@ -487,7 +487,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                   id="ledger-source-filter"
                   value={ledgerSourceFilter}
                   onChange={(event) => setLedgerSourceFilter(event.target.value)}
-                  className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground focus:border-primary"
                 >
                   <option value="all">{t("finances.ledgerAllSources")}</option>
                   {ledgerSources.map((source) => (

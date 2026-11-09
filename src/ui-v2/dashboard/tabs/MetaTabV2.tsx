@@ -58,7 +58,7 @@ const TIER_BADGE_CLASS: Record<string, string> = {
   S: "bg-emerald-600 text-white",
   A: "bg-lime-500 text-white",
   B: "bg-amber-500 text-white",
-  C: "bg-orange-500 text-white",
+  C: "bg-orange-500 text-primary-foreground",
   D: "bg-red-500 text-white",
 };
 

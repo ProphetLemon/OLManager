@@ -362,7 +362,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                     value={objective ?? ""}
                     onChange={(e) => handleSetObjective((e.target.value || null) as ScrimFocus | null)}
                     disabled={isSaving || setupLocked || assistantControls}
-                    className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs text-foreground outline-none disabled:opacity-50"
+                    className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs text-foreground disabled:opacity-50"
                   >
                     <option value="">{t("training.scrims.objectives.none")}</option>
                     {SCRIM_OBJECTIVES.map((f) => (

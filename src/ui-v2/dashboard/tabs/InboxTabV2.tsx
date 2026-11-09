@@ -198,7 +198,7 @@ export function InboxTabV2({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("common.search")}
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground"
             />
           </div>
 

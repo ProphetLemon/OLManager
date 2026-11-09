@@ -89,11 +89,11 @@ export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50" />
           <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }}
             placeholder={t("teams.searchPlaceholder")}
-            className="h-8 w-full rounded-lg border border-border bg-muted/30 pl-8 pr-3 text-xs text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/50" />
+            className="h-8 w-full rounded-lg border border-border bg-muted/30 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground/40 focus:border-primary/50" />
         </div>
 
         <select value={filter ?? ""} onChange={(e) => { setFilter(e.target.value || null); setPage(0); }}
-          className="h-8 rounded-lg border border-border bg-muted/30 px-3 text-xs text-foreground outline-none">
+          className="h-8 rounded-lg border border-border bg-muted/30 px-3 text-xs text-foreground">
           <option value="">{t("common.all")}</option>
           {leagues.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
         </select>

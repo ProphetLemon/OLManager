@@ -231,7 +231,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                   <div className="relative max-w-xs">
                     <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50" />
                     <input type="text" value={teamSearch} onChange={(e) => { setTeamSearch(e.target.value); setTeamPage(0); }}
-                      placeholder={t("competitions.searchTeam")} className="h-8 w-full rounded-lg border border-border bg-muted/30 pl-8 pr-3 text-xs text-foreground outline-none placeholder:text-muted-foreground/40" />
+                      placeholder={t("competitions.searchTeam")} className="h-8 w-full rounded-lg border border-border bg-muted/30 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground/40" />
                   </div>
                 )}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -279,7 +279,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                   <div className="relative max-w-xs">
                     <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50" />
                     <input type="text" value={playerSearch} onChange={(e) => { setPlayerSearch(e.target.value); setPlayerPage(0); }}
-                      placeholder={t("competitions.searchPlayer")} className="h-8 w-full rounded-lg border border-border bg-muted/30 pl-8 pr-3 text-xs text-foreground outline-none" />
+                      placeholder={t("competitions.searchPlayer")} className="h-8 w-full rounded-lg border border-border bg-muted/30 pl-8 pr-3 text-xs text-foreground" />
                   </div>
                 )}
                 <div className="overflow-hidden rounded-xl border border-border">
