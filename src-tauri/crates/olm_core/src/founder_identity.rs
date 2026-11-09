@@ -12,7 +12,19 @@
 //! | full name | 2-40 chars, letters, spaces and `' -`, NFC, trimmed, spaces collapsed |
 //! | nick and full name | unique world-wide (case and accent insensitive), released players included |
 //! | nationality | an ISO-2 code of the competition region (never an import) |
-//! | birth date | ISO `YYYY-MM-DD`, aged 19-27 on the game start date |
+//! | birth date | ISO `YYYY-MM-DD`, the same age as the generated one on the game start date |
+//!
+//! # Ages are locked
+//!
+//! Age drives market value, wage and training speed, so a free birth date would
+//! be an economic lever (an all-19 squad is worth more and trains faster). A
+//! birth date edit is therefore cosmetic: it must give the same age on the game
+//! start date as the generated one, under both age conventions the game uses
+//! (see [`birth_date_bounds`]). Because the generator only makes founders aged
+//! 19-27, the old 19-27 check is implied by the lock and was removed rather
+//! than kept as a dead guard. With the age locked no identity edit changes
+//! wage, market value, potential, training or the wage budget, so nothing
+//! reprices after an edit.
 //!
 //! # Errors on the wire
 //!
@@ -43,12 +55,16 @@ use ts_rs::TS;
 use crate::domain::player::Player;
 use crate::domain::stats::LolRole;
 use crate::game::Game;
-use crate::squad_generator::{AGE_RANGE, FOUNDER_ID_PREFIX, full_years_between, reprice_player};
+use crate::game_setup::calculate_age_on_date;
+use crate::squad_generator::{FOUNDER_ID_PREFIX, full_years_between};
 
 /// Nick length bounds, in characters, after normalization.
 pub const NICK_LEN: RangeInclusive<usize> = 2..=16;
 /// Full name length bounds, in characters, after normalization.
 pub const FULL_NAME_LEN: RangeInclusive<usize> = 2..=40;
+/// Days searched on each side of a birth date for its same-age interval; an
+/// age spans at most 366 days, so this always covers it.
+const AGE_SEARCH_DAYS: i64 = 400;
 
 /// Optional identity edits for one founder; every field may be left out.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -153,10 +169,8 @@ pub enum FounderEditReason {
     NotInRegion,
     /// The birth date is not a valid `YYYY-MM-DD` date.
     InvalidDate,
-    /// The player would be under 19 on the game start date.
-    TooYoung,
-    /// The player would be over 27 on the game start date.
-    TooOld,
+    /// The birth date would change the founder's age on the game start date.
+    AgeChanged,
 }
 
 /// A rejected edit: which founder, which field and why.
@@ -332,10 +346,24 @@ pub fn normalize_nick(raw: &str) -> Result<String, FounderEditReason> {
     Ok(text)
 }
 
-/// Normalizes and validates a full name: trimmed, NFC, runs of spaces
-/// collapsed, 2-40 letters, spaces, `'` or `-`, with at least one letter. Uniqueness is the caller's check.
+/// Replaces the typographic apostrophes (U+2018, U+2019, U+02BC) with ASCII `'`.
+fn ascii_apostrophes(text: &str) -> String {
+    text.chars()
+        .map(|c| {
+            if matches!(c, '\u{2018}' | '\u{2019}' | '\u{02BC}') {
+                '\''
+            } else {
+                c
+            }
+        })
+        .collect()
+}
+
+/// Normalizes and validates a full name: typographic apostrophes become `'`,
+/// trimmed, NFC, runs of spaces collapsed, 2-40 letters, spaces, `'` or `-`,
+/// with at least one letter. Uniqueness is the caller's check.
 pub fn normalize_full_name(raw: &str) -> Result<String, FounderEditReason> {
-    let text = compose(raw).trim().to_string();
+    let text = compose(&ascii_apostrophes(raw)).trim().to_string();
     if text.is_empty() {
         return Err(FounderEditReason::Empty);
     }
@@ -369,8 +397,40 @@ pub fn validate_nationality(
     }
 }
 
-/// Validates a birth date: strict ISO `YYYY-MM-DD`, aged 19-27 on `today`.
-pub fn validate_birth_date(raw: &str, today: NaiveDate) -> Result<String, FounderEditReason> {
+/// Whether `candidate` gives the same age on `today` as `anchor`, under both
+/// age conventions in the game: the ordinal-day one used by contracts and
+/// awards ([`full_years_between`]) and the month-and-day one
+/// ([`calculate_age_on_date`]). They disagree around leap years, so the lock
+/// holds only where both agree with the anchor's own ages.
+fn keeps_age(today: NaiveDate, anchor: NaiveDate, candidate: NaiveDate) -> bool {
+    full_years_between(today, candidate) == full_years_between(today, anchor)
+        && calculate_age_on_date(candidate, today) == calculate_age_on_date(anchor, today)
+}
+
+/// The inclusive range of birth dates that keep `anchor`'s age on `today`.
+/// The anchor is always inside it. Each convention's same-age dates are one
+/// interval, so their intersection is one interval too.
+pub fn birth_date_bounds(today: NaiveDate, anchor: NaiveDate) -> (NaiveDate, NaiveDate) {
+    let mut bounds = (anchor, anchor);
+    for offset in -AGE_SEARCH_DAYS..=AGE_SEARCH_DAYS {
+        let Some(day) = anchor.checked_add_signed(chrono::Duration::days(offset)) else {
+            continue;
+        };
+        if keeps_age(today, anchor, day) {
+            bounds.0 = bounds.0.min(day);
+            bounds.1 = bounds.1.max(day);
+        }
+    }
+    bounds
+}
+
+/// Validates a birth date: strict ISO `YYYY-MM-DD` that keeps the age of the
+/// `generated` birth date on `today`.
+pub fn validate_birth_date(
+    raw: &str,
+    today: NaiveDate,
+    generated: &str,
+) -> Result<String, FounderEditReason> {
     let text = raw.trim();
     if text.is_empty() {
         return Err(FounderEditReason::Empty);
@@ -379,13 +439,12 @@ pub fn validate_birth_date(raw: &str, today: NaiveDate) -> Result<String, Founde
         .ok()
         .filter(|date| date.format("%Y-%m-%d").to_string() == text)
         .ok_or(FounderEditReason::InvalidDate)?;
-    let age = full_years_between(today, date);
-    if age < *AGE_RANGE.start() {
-        Err(FounderEditReason::TooYoung)
-    } else if age > *AGE_RANGE.end() {
-        Err(FounderEditReason::TooOld)
-    } else {
+    let anchor = NaiveDate::parse_from_str(generated, "%Y-%m-%d")
+        .map_err(|_| FounderEditReason::AgeChanged)?;
+    if keeps_age(today, anchor, date) {
         Ok(text.to_string())
+    } else {
+        Err(FounderEditReason::AgeChanged)
     }
 }
 
@@ -425,7 +484,7 @@ impl NameIndex {
 /// Everything the edit rules need besides the squad.
 #[derive(Debug, Clone, Copy)]
 pub struct EditContext<'a> {
-    /// Game start date, for ages and repricing.
+    /// Game start date, for the age lock.
     pub today: NaiveDate,
     /// ISO-2 codes of the competition region.
     pub region_codes: &'a [String],
@@ -492,7 +551,7 @@ fn validate_edit(
     }
     if let Some(raw) = &edit.birth_date {
         validated.birth_date = Some(
-            validate_birth_date(raw, context.today)
+            validate_birth_date(raw, context.today, &squad[index].date_of_birth)
                 .map_err(|reason| fail(FounderField::BirthDate, reason))?,
         );
     }
@@ -500,8 +559,8 @@ fn validate_edit(
 }
 
 /// Applies `overrides` to a freshly generated `squad`, role by role in squad
-/// order. A birth date or nationality change reprices the founder with the same
-/// functions the generator uses, so wages never fall below the wage floor.
+/// order. Edits are cosmetic: the age lock keeps every economic and
+/// competitive field as generated, so nothing is repriced.
 ///
 /// Edits are validated in order (nick, full name, nationality, birth date) and
 /// the first failure is returned; it never falls back to the generated value.
@@ -523,15 +582,11 @@ pub fn apply_founder_overrides(
         if let Some(full_name) = validated.full_name {
             player.full_name = full_name;
         }
-        let reprice = validated.nationality.is_some() || validated.birth_date.is_some();
         if let Some(nationality) = validated.nationality {
             player.nationality = nationality;
         }
         if let Some(birth_date) = validated.birth_date {
             player.date_of_birth = birth_date;
-        }
-        if reprice {
-            reprice_player(player, context.today);
         }
     }
     Ok(())

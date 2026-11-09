@@ -3023,21 +3023,9 @@ mod tests {
             }
         }
 
-        /// Birth date of someone `age` full years and `extra_days` days old on `start`.
-        fn birth_date_aged(start: chrono::NaiveDate, age: i32, extra_days: u64) -> String {
-            start
-                .with_year(start.year() - age)
-                .and_then(|date| date.checked_sub_days(chrono::Days::new(extra_days)))
-                .expect("a valid birth date")
-                .format("%Y-%m-%d")
-                .to_string()
-        }
-
         /// The preview reproduces the install's identity edits and the budget derived after them.
         #[test]
         fn the_preview_equals_the_installed_squad_with_identity_edits() {
-            let overlay = olm_core::world_overlay::bundled_world_overlay().expect("bundled overlay");
-            let start = new_game_start_for(Some(&overlay)).date_naive();
             let region = olm_core::residency::region_for_competition("les").expect("region");
             let nationality = olm_core::residency::region_nationality_codes(region)
                 .pop()
@@ -3047,15 +3035,28 @@ mod tests {
                     nick: Some("  Zed_77 ".to_string()),
                     full_name: Some("Ana   Núñez-Ruiz".to_string()),
                     nationality: Some(nationality.to_lowercase()),
-                    birth_date: Some(birth_date_aged(start, 19, 1)),
+                    birth_date: None,
                 }),
                 support: Some(FounderIdentityOverride {
-                    birth_date: Some(birth_date_aged(start, 27, 300)),
+                    birth_date: None,
                     ..FounderIdentityOverride::default()
                 }),
                 ..FounderOverrides::default()
             };
             for seed in [3_u32, 55] {
+                // Birth dates are locked to the generated age: take the ends of each range.
+                let plain = preview_for(LES_SLOT, "RAY", seed, None).expect("plain preview");
+                let bounds = |role| {
+                    let founder = plain.players.iter().find(|p| p.role == role).expect("founder");
+                    (founder.birth_date_min.clone(), founder.birth_date_max.clone())
+                };
+                let mut overrides = overrides.clone();
+                if let Some(top) = overrides.top.as_mut() {
+                    top.birth_date = Some(bounds(LolRole::Top).0);
+                }
+                if let Some(support) = overrides.support.as_mut() {
+                    support.birth_date = Some(bounds(LolRole::Support).1);
+                }
                 let summary =
                     preview_for(LES_SLOT, "RAY", seed, Some(overrides.clone())).expect("preview");
                 let (game, _overlay, id) = try_build_world(
@@ -3067,7 +3068,11 @@ mod tests {
                 let top = summary.players.iter().find(|p| p.role == LolRole::Top).expect("top");
                 assert_eq!((top.nick.as_str(), top.full_name.as_str()), ("Zed_77", "Ana Núñez-Ruiz"));
                 assert_eq!(top.nationality, nationality);
-                assert_eq!(top.age, 19);
+                let plain_top = plain.players.iter().find(|p| p.role == LolRole::Top).expect("top");
+                assert_eq!(top.age, plain_top.age);
+                assert_eq!(top.wage, plain_top.wage);
+                assert_eq!(top.market_value, plain_top.market_value);
+                assert_eq!(summary.wage_budget, plain.wage_budget);
                 for shown in &summary.players {
                     let real = game.players.iter().find(|p| p.id == shown.id).expect("player");
                     assert!(

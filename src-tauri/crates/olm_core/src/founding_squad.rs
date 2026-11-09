@@ -41,6 +41,7 @@ use crate::domain::stats::LolRole;
 use crate::domain::team::{Team, TeamKind};
 use crate::founder_identity::{
     EditContext, FounderEditError, FounderOverrides, NameIndex, apply_founder_overrides,
+    birth_date_bounds,
 };
 use crate::game::Game;
 use crate::residency::{self, Region};
@@ -202,6 +203,10 @@ pub struct FounderSummary {
     pub date_of_birth: String,
     /// Full years old on the game date.
     pub age: i32,
+    /// Earliest birth date (`YYYY-MM-DD`) that keeps `age` on the game date.
+    pub birth_date_min: String,
+    /// Latest birth date (`YYYY-MM-DD`) that keeps `age` on the game date.
+    pub birth_date_max: String,
     /// Overall rating.
     pub ovr: u8,
     /// The nine visible attributes.
@@ -216,8 +221,13 @@ pub struct FounderSummary {
 
 impl FounderSummary {
     fn of(player: &Player, today: NaiveDate) -> Self {
-        let age = NaiveDate::parse_from_str(&player.date_of_birth, "%Y-%m-%d")
+        let dob = NaiveDate::parse_from_str(&player.date_of_birth, "%Y-%m-%d").ok();
+        let age = dob
             .map(|dob| full_years_between(today, dob))
+            .unwrap_or_default();
+        let (min, max) = dob
+            .map(|dob| birth_date_bounds(today, dob))
+            .map(|(min, max)| (min.to_string(), max.to_string()))
             .unwrap_or_default();
         Self {
             id: player.id.clone(),
@@ -227,6 +237,8 @@ impl FounderSummary {
             nationality: player.nationality.clone(),
             date_of_birth: player.date_of_birth.clone(),
             age,
+            birth_date_min: min,
+            birth_date_max: max,
             ovr: player.lol_ovr,
             attributes: player.attributes.clone(),
             wage: player.wage,

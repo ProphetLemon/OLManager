@@ -6,15 +6,15 @@ use olm_core::domain::player::{LolRole, Player, PlayerAttributes};
 use olm_core::domain::team::Team;
 use olm_core::founder_identity::{
     FounderEditError, FounderEditReason as Reason, FounderError, FounderField as Field,
-    FounderIdentityOverride, FounderOverrides, fold_key, normalize_full_name, normalize_nick,
-    rename_founder, validate_birth_date, validate_nationality,
+    FounderIdentityOverride, FounderOverrides, birth_date_bounds, fold_key, normalize_full_name,
+    normalize_nick, rename_founder, validate_birth_date, validate_nationality,
 };
 use olm_core::founding_squad::{
     FoundingSquadError, install_founding_squad, install_founding_squad_with, plan_founding_squad,
 };
 use olm_core::game::Game;
 use olm_core::squad_generator::{DERIVED_BUDGET_BILL_PCT, SQUAD_ROLES, squad_bill};
-use olm_core::wage_scale::scale_wage_for_market_value;
+use serde_json::Value;
 
 const CUSTOM: &str = "les-custom-ray";
 
@@ -50,8 +50,9 @@ fn player(id: &str, team_id: Option<&str>, role: LolRole) -> Player {
     player
 }
 
-fn world() -> Game {
-    let clock = GameClock::new(chrono::Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap());
+fn world_on(date: NaiveDate) -> Game {
+    let at = date.and_hms_opt(12, 0, 0).expect("time");
+    let clock = GameClock::new(chrono::Utc.from_utc_datetime(&at));
     let manager = Manager::new(
         "manager-1".to_string(),
         "Test".to_string(),
@@ -83,7 +84,11 @@ fn world() -> Game {
 }
 
 fn with_custom_club() -> Game {
-    let mut game = world();
+    custom_club_on(today())
+}
+
+fn custom_club_on(date: NaiveDate) -> Game {
+    let mut game = world_on(date);
     replace_team_with_custom(&mut game, "les", "les-t0", &spec()).expect("custom club");
     game
 }
@@ -315,37 +320,45 @@ fn nationality_must_be_a_region_code() {
     assert_eq!(validate_nationality("  ", &codes), Err(Reason::Empty));
 }
 
+fn day(text: &str) -> NaiveDate {
+    NaiveDate::parse_from_str(text, "%Y-%m-%d").expect("date")
+}
+
+/// Generated birth date used by the unit tests: 23 on 2026-08-01.
+const ANCHOR: &str = "2003-03-15";
+
 #[test]
-fn birth_date_accepts_the_age_limits() {
-    // Today is 2026-08-01: 19 on his birthday, 27 the day before turning 28.
-    assert_eq!(
-        validate_birth_date("2007-08-01", today()).as_deref(),
-        Ok("2007-08-01")
-    );
-    assert_eq!(
-        validate_birth_date("1998-08-02", today()).as_deref(),
-        Ok("1998-08-02")
-    );
+fn birth_date_accepts_the_bounds_of_the_generated_age() {
+    // 23 from 2002-08-02 (turned 24 the day before) to 2003-08-01.
+    for ok in ["2002-08-02", "2003-03-15", "2003-08-01"] {
+        assert_eq!(
+            validate_birth_date(ok, today(), ANCHOR).as_deref(),
+            Ok(ok),
+            "{ok}"
+        );
+    }
 }
 
 #[test]
-fn birth_date_rejects_one_day_outside_the_age_limits() {
-    assert_eq!(
-        validate_birth_date("2007-08-02", today()),
-        Err(Reason::TooYoung)
-    );
-    assert_eq!(
-        validate_birth_date("1998-08-01", today()),
-        Err(Reason::TooOld)
-    );
+fn birth_date_rejects_one_day_outside_the_generated_age() {
+    for bad in ["2002-08-01", "2003-08-02"] {
+        assert_eq!(
+            validate_birth_date(bad, today(), ANCHOR),
+            Err(Reason::AgeChanged),
+            "{bad}"
+        );
+    }
 }
 
 #[test]
-fn birth_date_rejects_future_dates() {
-    assert_eq!(
-        validate_birth_date("2030-01-01", today()),
-        Err(Reason::TooYoung)
-    );
+fn birth_date_rejects_other_ages_and_future_dates() {
+    for bad in ["1990-01-01", "2007-08-01", "1998-08-02", "2030-01-01"] {
+        assert_eq!(
+            validate_birth_date(bad, today(), ANCHOR),
+            Err(Reason::AgeChanged),
+            "{bad}"
+        );
+    }
 }
 
 #[test]
@@ -358,12 +371,69 @@ fn birth_date_must_be_a_strict_iso_date() {
         "2000-01-01T00:00:00",
     ] {
         assert_eq!(
-            validate_birth_date(bad, today()),
+            validate_birth_date(bad, today(), ANCHOR),
             Err(Reason::InvalidDate),
             "{bad}"
         );
     }
-    assert_eq!(validate_birth_date("  ", today()), Err(Reason::Empty));
+    assert_eq!(
+        validate_birth_date("  ", today(), ANCHOR),
+        Err(Reason::Empty)
+    );
+}
+
+#[test]
+fn birth_date_bounds_are_accepted_and_their_neighbours_rejected() {
+    // Includes leap days on both sides and a birthday today.
+    let cases = [
+        ("2026-08-01", "2003-03-15"),
+        ("2026-08-01", "2007-08-01"),
+        ("2028-02-29", "2005-02-28"),
+        ("2028-02-29", "2004-02-29"),
+        ("2028-02-29", "2001-03-01"),
+        ("2027-03-01", "2004-02-29"),
+        ("2027-02-28", "2004-02-29"),
+        ("2026-12-31", "2000-02-29"),
+        ("2029-03-01", "2008-03-01"),
+    ];
+    for (today_text, anchor_text) in cases {
+        let (today, anchor) = (day(today_text), day(anchor_text));
+        let (min, max) = birth_date_bounds(today, anchor);
+        assert!(min <= anchor && anchor <= max, "{today_text} {anchor_text}");
+        let check = |date: NaiveDate| validate_birth_date(&date.to_string(), today, anchor_text);
+        assert!(check(min).is_ok(), "{today_text} {anchor_text}: min {min}");
+        assert!(check(max).is_ok(), "{today_text} {anchor_text}: max {max}");
+        assert_eq!(
+            check(min.pred_opt().expect("day")),
+            Err(Reason::AgeChanged),
+            "{today_text} {anchor_text}: min-1"
+        );
+        assert_eq!(
+            check(max.succ_opt().expect("day")),
+            Err(Reason::AgeChanged),
+            "{today_text} {anchor_text}: max+1"
+        );
+    }
+}
+
+#[test]
+fn birth_date_bounds_span_about_one_year() {
+    let (min, max) = birth_date_bounds(today(), day(ANCHOR));
+    assert_eq!((min, max), (day("2002-08-02"), day("2003-08-01")));
+}
+
+#[test]
+fn a_leap_day_birth_date_keeps_the_age_on_leap_day() {
+    // Turns 24 on 2028-02-29 itself.
+    let today = day("2028-02-29");
+    assert_eq!(
+        validate_birth_date("2004-02-29", today, "2004-02-28").as_deref(),
+        Ok("2004-02-29")
+    );
+    assert_eq!(
+        validate_birth_date("2004-03-01", today, "2004-02-28"),
+        Err(Reason::AgeChanged)
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -413,7 +483,7 @@ fn overrides_replace_the_identity_of_that_role_only() {
         nick: Some("  Zed_01 ".to_string()),
         full_name: Some("Ana   María  Núñez".to_string()),
         nationality: Some("fr".to_string()),
-        birth_date: Some("2003-03-15".to_string()),
+        birth_date: Some(birth_bounds(5, LolRole::Top).0),
     };
     install_founding_squad_with(&mut game, "les", CUSTOM, Some("ES"), 5, &only(edit))
         .expect("squad");
@@ -424,7 +494,7 @@ fn overrides_replace_the_identity_of_that_role_only() {
     assert_eq!(top.match_name, "Zed_01");
     assert_eq!(top.full_name, "Ana María Núñez");
     assert_eq!(top.nationality, "FR");
-    assert_eq!(top.date_of_birth, "2003-03-15");
+    assert_eq!(top.date_of_birth, birth_bounds(5, LolRole::Top).0);
     let untouched = founders(&game)
         .into_iter()
         .filter(|p| p.natural_position != LolRole::Top)
@@ -439,7 +509,7 @@ fn overrides_never_change_stats_role_or_potential() {
     install_founding_squad(&mut plain, "les", CUSTOM, Some("ES"), 9).expect("plain");
     let edit = FounderIdentityOverride {
         nick: Some("Zed".to_string()),
-        birth_date: Some("2000-06-01".to_string()),
+        birth_date: Some(birth_bounds(9, LolRole::Top).1),
         ..FounderIdentityOverride::default()
     };
     install_founding_squad_with(&mut edited, "les", CUSTOM, Some("ES"), 9, &only(edit))
@@ -453,56 +523,15 @@ fn overrides_never_change_stats_role_or_potential() {
 }
 
 #[test]
-fn a_birth_date_edit_reprices_the_founder_above_the_wage_floor() {
-    for dob in ["2007-08-01", "1998-08-02", "2002-01-01", "2004-12-31"] {
-        let mut game = with_custom_club();
-        let edit = FounderIdentityOverride {
-            birth_date: Some(dob.to_string()),
-            ..FounderIdentityOverride::default()
-        };
-        install_founding_squad_with(&mut game, "les", CUSTOM, Some("ES"), 3, &only(edit))
-            .expect(dob);
-        for p in founders(&game) {
-            assert!(
-                p.wage >= scale_wage_for_market_value(p.market_value),
-                "{dob}: {} wage {} below the floor of {}",
-                p.id,
-                p.wage,
-                p.market_value
-            );
-        }
-    }
-}
-
-#[test]
-fn a_younger_birth_date_raises_the_market_value() {
-    let value_at = |dob: &str| {
-        let mut game = with_custom_club();
-        let edit = FounderIdentityOverride {
-            birth_date: Some(dob.to_string()),
-            ..FounderIdentityOverride::default()
-        };
-        install_founding_squad_with(&mut game, "les", CUSTOM, Some("ES"), 3, &only(edit))
-            .expect(dob);
-        founders(&game)
-            .into_iter()
-            .find(|p| p.natural_position == LolRole::Top)
-            .map(|p| p.market_value)
-            .expect("top")
-    };
-    assert!(value_at("2007-08-01") > value_at("1998-08-02"));
-}
-
-#[test]
 fn the_wage_budget_is_derived_after_the_edits() {
     let mut game = with_custom_club();
     let edits = FounderOverrides {
         top: Some(FounderIdentityOverride {
-            birth_date: Some("2007-08-01".to_string()),
+            birth_date: Some(birth_bounds(3, LolRole::Top).0),
             ..FounderIdentityOverride::default()
         }),
         support: Some(FounderIdentityOverride {
-            birth_date: Some("1998-08-02".to_string()),
+            birth_date: Some(birth_bounds(3, LolRole::Support).1),
             ..FounderIdentityOverride::default()
         }),
         ..FounderOverrides::default()
@@ -683,7 +712,7 @@ fn a_nationality_outside_the_region_is_rejected_not_defaulted() {
 }
 
 #[test]
-fn an_out_of_band_birth_date_is_rejected() {
+fn a_birth_date_that_changes_the_age_is_rejected() {
     let game = with_custom_club();
     let error = edit_error(plan_founding_squad(
         &game,
@@ -704,7 +733,7 @@ fn an_out_of_band_birth_date_is_rejected() {
         FounderEditError {
             role: LolRole::Support,
             field: Field::BirthDate,
-            reason: Reason::TooOld
+            reason: Reason::AgeChanged
         }
     );
 }
@@ -1127,45 +1156,6 @@ fn a_no_op_nationality_edit_leaves_wage_and_value_unchanged() {
     assert_eq!(key(&plain), key(&edited));
 }
 
-#[test]
-fn an_older_birth_date_does_not_raise_the_wage() {
-    let mut plain = with_custom_club();
-    install_founding_squad_with(
-        &mut plain,
-        "les",
-        CUSTOM,
-        Some("ES"),
-        6,
-        &FounderOverrides::default(),
-    )
-    .expect("plain");
-    let edit = FounderIdentityOverride {
-        birth_date: Some("1999-01-01".to_string()),
-        ..FounderIdentityOverride::default()
-    };
-    let mut edited = with_custom_club();
-    install_founding_squad_with(&mut edited, "les", CUSTOM, Some("ES"), 6, &only(edit))
-        .expect("edited");
-    let wage_of = |g: &Game| {
-        founders(g)
-            .into_iter()
-            .find(|p| p.natural_position == LolRole::Top)
-            .map(|p| p.wage)
-            .expect("top")
-    };
-    let youngest = {
-        let mut game = with_custom_club();
-        let edit = FounderIdentityOverride {
-            birth_date: Some("2007-08-01".to_string()),
-            ..FounderIdentityOverride::default()
-        };
-        install_founding_squad_with(&mut game, "les", CUSTOM, Some("ES"), 6, &only(edit))
-            .expect("young");
-        wage_of(&game)
-    };
-    assert!(wage_of(&edited) <= youngest);
-}
-
 fn same_nationality(game: &Game, role: LolRole) -> FounderIdentityOverride {
     let nationality = founders(game)
         .into_iter()
@@ -1176,4 +1166,219 @@ fn same_nationality(game: &Game, role: LolRole) -> FounderIdentityOverride {
         nationality: Some(nationality),
         ..FounderIdentityOverride::default()
     }
+}
+
+// ---------------------------------------------------------------------------
+// Age lock and economic neutrality
+// ---------------------------------------------------------------------------
+
+/// `(birth_date_min, birth_date_max)` of the generated `role` founder.
+fn birth_bounds(seed: u64, role: LolRole) -> (String, String) {
+    let plan = plan_founding_squad(
+        &with_custom_club(),
+        "les",
+        CUSTOM,
+        Some("ES"),
+        seed,
+        &FounderOverrides::default(),
+    )
+    .expect("plan");
+    let summary = plan.summary();
+    let founder = summary
+        .players
+        .iter()
+        .find(|p| p.role == role)
+        .expect("founder");
+    (
+        founder.birth_date_min.clone(),
+        founder.birth_date_max.clone(),
+    )
+}
+
+/// A founder as JSON without the four editable identity fields.
+fn without_identity(player: &Player) -> Value {
+    let mut value = serde_json::to_value(player).expect("json");
+    let object = value.as_object_mut().expect("object");
+    for field in ["match_name", "full_name", "nationality", "date_of_birth"] {
+        assert!(object.remove(field).is_some(), "{field}");
+    }
+    value
+}
+
+/// Edits every founder, each with a different combination of fields.
+fn edits_for(game: &Game, seed: u64, variant: usize) -> FounderOverrides {
+    let plan = plan_founding_squad(
+        game,
+        "les",
+        CUSTOM,
+        Some("ES"),
+        seed,
+        &FounderOverrides::default(),
+    )
+    .expect("plan");
+    let summary = plan.summary();
+    let edit_for = |role: LolRole, slot: usize| {
+        let founder = summary.players.iter().find(|p| p.role == role)?;
+        let pick_max = (variant + slot).is_multiple_of(2);
+        let mut edit = FounderIdentityOverride::default();
+        if (variant + slot) % 3 != 1 {
+            edit.nick = Some(format!("Edit{variant}x{slot}"));
+        }
+        if (variant + slot) % 3 != 2 {
+            edit.full_name = Some(format!(
+                "Nueva D\u{2019}Prueba {}",
+                ["Uno", "Dos", "Tres", "Cuatro", "Cinco"][slot]
+            ));
+        }
+        if (variant + slot).is_multiple_of(2) {
+            edit.nationality =
+                Some(["FR", "DE", "PT", "IT", "ES"][(variant + slot) % 5].to_string());
+        }
+        edit.birth_date = Some(if pick_max {
+            founder.birth_date_max.clone()
+        } else {
+            founder.birth_date_min.clone()
+        });
+        Some(edit)
+    };
+    FounderOverrides {
+        top: edit_for(LolRole::Top, 0),
+        jungle: edit_for(LolRole::Jungle, 1),
+        mid: edit_for(LolRole::Mid, 2),
+        adc: edit_for(LolRole::Adc, 3),
+        support: edit_for(LolRole::Support, 4),
+    }
+}
+
+fn assert_edits_are_economically_neutral(date: NaiveDate) {
+    for seed in 0..8u64 {
+        for variant in 0..3usize {
+            let game = custom_club_on(date);
+            let plain = plan_founding_squad(
+                &game,
+                "les",
+                CUSTOM,
+                Some("ES"),
+                seed,
+                &FounderOverrides::default(),
+            )
+            .expect("plain");
+            let edits = edits_for(&game, seed, variant);
+            let edited = plan_founding_squad(&game, "les", CUSTOM, Some("ES"), seed, &edits)
+                .unwrap_or_else(|e| panic!("{date} seed {seed} variant {variant}: {e:?}"));
+            assert_eq!(edited.bill(), plain.bill(), "{date} seed {seed}");
+            assert_eq!(edited.wage_budget, plain.wage_budget, "{date} seed {seed}");
+            let mut changed = false;
+            for (before, after) in plain.players.iter().zip(&edited.players) {
+                assert_eq!(
+                    without_identity(before),
+                    without_identity(after),
+                    "{date} seed {seed} variant {variant}: {}",
+                    before.id
+                );
+                changed |= before.match_name != after.match_name
+                    || before.full_name != after.full_name
+                    || before.nationality != after.nationality
+                    || before.date_of_birth != after.date_of_birth;
+            }
+            assert!(changed, "the edits must really change the identity");
+        }
+    }
+}
+
+#[test]
+fn identity_edits_change_no_economic_or_competitive_field() {
+    assert_edits_are_economically_neutral(today());
+}
+
+#[test]
+fn identity_edits_are_neutral_when_the_game_starts_on_a_leap_day() {
+    assert_edits_are_economically_neutral(day("2028-02-29"));
+}
+
+#[test]
+fn identity_edits_are_neutral_the_day_after_a_leap_day() {
+    assert_edits_are_economically_neutral(day("2028-03-01"));
+}
+
+#[test]
+fn a_birth_date_one_day_past_the_bounds_is_rejected_on_install() {
+    let (min, max) = birth_bounds(4, LolRole::Mid);
+    let past_max = day(&max).succ_opt().expect("day").to_string();
+    let before_min = day(&min).pred_opt().expect("day").to_string();
+    for bad in [past_max, before_min] {
+        let game = with_custom_club();
+        let error = edit_error(plan_founding_squad(
+            &game,
+            "les",
+            CUSTOM,
+            Some("ES"),
+            4,
+            &FounderOverrides {
+                mid: Some(FounderIdentityOverride {
+                    birth_date: Some(bad.clone()),
+                    ..FounderIdentityOverride::default()
+                }),
+                ..FounderOverrides::default()
+            },
+        ));
+        assert_eq!(
+            error,
+            FounderEditError {
+                role: LolRole::Mid,
+                field: Field::BirthDate,
+                reason: Reason::AgeChanged
+            },
+            "{bad}"
+        );
+    }
+}
+
+#[test]
+fn the_preview_bounds_keep_the_age_and_name_the_generated_date() {
+    let plan = plan_founding_squad(
+        &with_custom_club(),
+        "les",
+        CUSTOM,
+        Some("ES"),
+        11,
+        &FounderOverrides::default(),
+    )
+    .expect("plan");
+    for founder in plan.summary().players {
+        let (dob, min, max) = (
+            day(&founder.date_of_birth),
+            day(&founder.birth_date_min),
+            day(&founder.birth_date_max),
+        );
+        assert!(min <= dob && dob <= max, "{}", founder.id);
+        assert!((max - min).num_days() <= 366, "{}", founder.id);
+    }
+}
+
+#[test]
+fn full_name_normalizes_typographic_apostrophes() {
+    for quote in ['\u{2019}', '\u{2018}', '\u{02BC}'] {
+        assert_eq!(
+            normalize_full_name(&format!("Conan O{quote}Brien")).as_deref(),
+            Ok("Conan O'Brien"),
+            "{quote:?}"
+        );
+    }
+}
+
+#[test]
+fn a_typographic_apostrophe_is_stored_as_ascii_on_install() {
+    let mut game = with_custom_club();
+    let edit = FounderIdentityOverride {
+        full_name: Some("Mar\u{00ED}a D\u{2019}Arc".to_string()),
+        ..FounderIdentityOverride::default()
+    };
+    install_founding_squad_with(&mut game, "les", CUSTOM, Some("ES"), 5, &only(edit))
+        .expect("squad");
+    let top = founders(&game)
+        .into_iter()
+        .find(|p| p.natural_position == LolRole::Top)
+        .expect("top");
+    assert_eq!(top.full_name, "María D'Arc");
 }
