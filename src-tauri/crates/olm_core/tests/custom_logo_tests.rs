@@ -1,7 +1,8 @@
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
 use olm_core::custom_logo::{
-    LogoError, MAX_INPUT_BASE64_LEN, MAX_LOGO_SIDE, PNG_DATA_URI_PREFIX, normalize_logo,
+    LogoError, MAX_INPUT_BASE64_LEN, MAX_LOGO_SIDE, PNG_DATA_URI_PREFIX, TARGET_OUTPUT_PNG_BYTES,
+    normalize_logo,
 };
 use png::{BitDepth, ColorType, Decoder, Encoder};
 
@@ -499,11 +500,10 @@ fn surrounding_whitespace_is_ignored() {
     assert!(normalize_logo(&padded).is_ok());
 }
 
-#[test]
-fn the_noisiest_allowed_logo_stays_within_the_stored_size_budget() {
-    // Pseudo random bytes do not compress: the worst case for the output size.
+/// Pseudo random bytes do not compress: the worst case for the output size.
+fn noise_rgba(width: u32, height: u32) -> Vec<u8> {
     let mut state = 0x2545_F491u32;
-    let data: Vec<u8> = (0..256 * 256 * 4)
+    let data: Vec<u8> = (0..width * height * 4)
         .map(|_| {
             state ^= state << 13;
             state ^= state >> 17;
@@ -511,11 +511,49 @@ fn the_noisiest_allowed_logo_stays_within_the_stored_size_budget() {
             state.to_le_bytes()[0]
         })
         .collect();
-    let png = encode(256, 256, ColorType::Rgba, BitDepth::Eight, &data);
+    encode(width, height, ColorType::Rgba, BitDepth::Eight, &data)
+}
+
+#[test]
+fn the_noisiest_allowed_logo_stays_within_the_stored_size_budget() {
+    let png = noise_rgba(256, 256);
 
     let output = normalize_logo(&uri(&png)).unwrap();
 
     assert!(output.len() < 400_000, "{}", output.len());
+}
+
+#[test]
+fn a_noisy_logo_steps_down_until_its_png_fits_the_target() {
+    let output = normalize_logo(&uri(&noise_rgba(256, 256))).unwrap();
+
+    let image = decode_output(&output);
+    let stored = STANDARD
+        .decode(output.strip_prefix(PNG_DATA_URI_PREFIX).unwrap())
+        .unwrap();
+    assert!(stored.len() <= TARGET_OUTPUT_PNG_BYTES, "{}", stored.len());
+    assert!(
+        image.width < MAX_LOGO_SIDE && image.width >= 64,
+        "{}",
+        image.width
+    );
+    assert_eq!(image.width, image.height);
+}
+
+#[test]
+fn stepping_down_is_deterministic() {
+    let input = uri(&noise_rgba(256, 256));
+
+    assert_eq!(normalize_logo(&input), normalize_logo(&input));
+}
+
+#[test]
+fn a_normal_flat_logo_keeps_the_full_256_box() {
+    let png = solid_rgba(256, 256, [200, 30, 30, 255]);
+
+    let image = decode_output(&normalize_logo(&uri(&png)).unwrap());
+
+    assert_eq!((image.width, image.height), (256, 256));
 }
 
 #[test]

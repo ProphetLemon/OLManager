@@ -6,7 +6,8 @@
 //! rejects everything that is not a PNG, bounds the input size and the image
 //! dimensions *before* any pixel is decoded (decompression bombs), downsizes
 //! to at most [`MAX_LOGO_SIDE`] pixels per side with area averaging on
-//! premultiplied alpha, and re-encodes a fresh RGBA8 PNG that carries only
+//! premultiplied alpha (stepping the box down further when the encoded PNG
+//! would exceed [`TARGET_OUTPUT_PNG_BYTES`]), and re-encodes a fresh RGBA8 PNG that carries only
 //! `IHDR`, `IDAT` and `IEND` chunks (no text, time, colour profile or EXIF
 //! metadata). The result is a `data:image/png;base64,...` URI that is stored in
 //! `Team::logo_url`; its size is bounded, so it can ride in every `Game`
@@ -32,10 +33,18 @@ pub const MAX_INPUT_BASE64_LEN: usize = 700_000;
 pub const MAX_INPUT_SIDE: u32 = 1_024;
 /// Widest and tallest stored logo, in pixels.
 pub const MAX_LOGO_SIDE: u32 = 256;
-/// Upper bound for the stored PNG, in bytes. A 256x256 RGBA PNG of pure noise
-/// stays well below it, so this is a defensive check, not a quality knob.
+/// Upper bound for the stored PNG, in bytes. The step-down below keeps the
+/// result far under it, so this is a defensive check, not a quality knob.
 pub const MAX_OUTPUT_PNG_BYTES: usize = 400_000;
-/// Memory the PNG decoder may allocate for intermediate buffers.
+/// Size the stored PNG should stay under. The logo is cloned and serialized in
+/// every `Game` sent to the frontend and in each save, so a noisy image is
+/// shrunk through [`LOGO_SIDE_STEPS`] until it fits. Flat logos stay at 256.
+pub const TARGET_OUTPUT_PNG_BYTES: usize = 100_000;
+/// Boxes tried in order, largest first; the first whose PNG fits the target wins.
+const LOGO_SIDE_STEPS: [u32; 5] = [MAX_LOGO_SIDE, 192, 128, 96, 64];
+/// Secondary cap handed to the PNG decoder for its intermediate buffers. It does
+/// not bound the pixel buffer: that is bounded by the [`MAX_INPUT_SIDE`] header
+/// check, which runs before the frame buffer is allocated, and by the input cap.
 const DECODER_LIMIT_BYTES: usize = 16 * 1024 * 1024;
 const CHANNELS: usize = 4;
 
@@ -95,8 +104,7 @@ pub fn normalize_logo(input: &str) -> Result<String, LogoError> {
     let bytes = STANDARD.decode(payload).map_err(|_| LogoError::Malformed)?;
 
     let image = decode_rgba(&bytes)?;
-    let image = fit_within(image, MAX_LOGO_SIDE);
-    let png = encode_rgba(&image)?;
+    let png = encode_within_budget(&image)?;
     if png.len() > MAX_OUTPUT_PNG_BYTES {
         return Err(LogoError::TooLarge);
     }
@@ -199,12 +207,32 @@ fn fitted_size(width: u32, height: u32, limit: u32) -> (u32, u32) {
     (scale(width), scale(height))
 }
 
+/// Encodes `image` fitted into the largest box of [`LOGO_SIDE_STEPS`] whose PNG
+/// stays within [`TARGET_OUTPUT_PNG_BYTES`]. Each box is resampled from the
+/// original pixels, so quality does not compound. Deterministic.
+fn encode_within_budget(image: &Rgba8) -> Result<Vec<u8>, LogoError> {
+    let mut last = None;
+    for limit in LOGO_SIDE_STEPS {
+        let png = encode_rgba(&fit_within(image, limit))?;
+        if png.len() <= TARGET_OUTPUT_PNG_BYTES {
+            return Ok(png);
+        }
+        last = Some(png);
+    }
+    // Even the smallest box missed the target: hand it to the hard cap check.
+    last.ok_or(LogoError::Malformed)
+}
+
 /// Downscales to fit `limit`, if needed, by exact area averaging on
 /// premultiplied alpha, so transparent pixels never darken the edges.
-fn fit_within(image: Rgba8, limit: u32) -> Rgba8 {
+fn fit_within(image: &Rgba8, limit: u32) -> Rgba8 {
     let (dst_w, dst_h) = fitted_size(image.width, image.height, limit);
     if (dst_w, dst_h) == (image.width, image.height) {
-        return image;
+        return Rgba8 {
+            width: image.width,
+            height: image.height,
+            pixels: image.pixels.clone(),
+        };
     }
     let (src_w, src_h) = (u64::from(image.width), u64::from(image.height));
     let (dw, dh) = (u64::from(dst_w), u64::from(dst_h));
