@@ -655,18 +655,20 @@
       "groupLabel": "Como o teu clube entra na liga",
       "join": {
         "label": "Entrar na liga",
-        "description": "Ninguém é substituído. A liga passará a ter {{total}} clubes.",
-        "descriptionOdd": "Ninguém é substituído. A liga passará a ter {{total}} clubes, por isso um clube descansa em cada jornada e o split tem mais jornadas."
+        "description": "Ninguém é substituído. A liga passará a ter {{total}} clubes. O teu clube começa com o orçamento e a reputação medianos da liga, um plantel fundador gerado e sem academia.",
+        "descriptionOdd": "Ninguém é substituído. A liga passará a ter {{total}} clubes e em cada jornada um descansa: o teu descansa uma vez por split, e há menos dias entre splits para contratar jogadores. O teu clube começa com o orçamento e a reputação medianos da liga, um plantel fundador gerado e sem academia."
       },
       "replace": {
         "label": "Substituir um clube",
-        "description": "O clube que escolheres sai da liga e os seus jogadores e equipa técnica passam a agentes livres."
+        "description": "O clube que escolheres sai da liga e os seus jogadores e staff passam a agentes livres."
       },
       "summary": "{{name}} ({{tag}}), de {{country}}, entra em {{league}} como clube número {{position}}.",
       "errors": {
         "notAccepted": "Esta liga não aceita novos clubes. Volta atrás e escolhe outra liga ou uma equipa existente.",
         "noClubs": "Esta liga não tem clubes a que se juntar. Volta atrás e escolhe outra liga.",
-        "badRequest": "O pedido para entrar na liga não era válido. Volta um passo atrás e tenta de novo."
+        "badRequest": "O pedido para entrar na liga não era válido. Volta um passo atrás e tenta de novo.",
+        "clash": "Um dado de um passo anterior coincide agora com um clube que fica na liga.",
+        "fixClash": "Voltar e alterar"
       }
     },
     "founders": {
@@ -3972,6 +3974,7 @@
       "daysToGo_one": "Falta {{count}} dia",
       "daysToGo_other": "Faltam {{count}} dias",
       "matchDay": "Dia de jogo",
+      "restsOn": "O teu clube descansa na jornada {{n}}",
       "formAfterFirst": "A forma de {{team}} aparece após o primeiro jogo",
       "yourClub": "O teu clube",
       "startingFive": "Cinco titulares",

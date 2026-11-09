@@ -112,6 +112,36 @@ describe("getScoreboardData", () => {
     expect(getScoreboardData(state({ date: "2026-04-01" }), HC)?.daysToGo).toBe(0);
   });
 
+  describe("rest round", () => {
+    const rounds = [
+      fixture({ id: "md6-a", matchday: 6, date: "2026-03-10", home_team_id: "x", away_team_id: "y" }),
+      fixture({ id: "md7-me", matchday: 7, date: "2026-03-17" }),
+    ];
+
+    it("flags the matchday the club sits out when the league plays before its next fixture", () => {
+      expect(getScoreboardData(state({ fixtures: rounds }), HC)?.restsOnMatchday).toBe(6);
+    });
+
+    it("is null when the club plays in the league's next round, as in an even league", () => {
+      const evenLeague = [
+        fixture({ id: "md6-me", matchday: 6, date: "2026-03-10" }),
+        fixture({ id: "md6-b", matchday: 6, date: "2026-03-10", home_team_id: "x", away_team_id: "y" }),
+        fixture({ id: "md7-me", matchday: 7, date: "2026-03-17" }),
+      ];
+      expect(getScoreboardData(state({ fixtures: evenLeague }), HC)?.restsOnMatchday).toBeNull();
+      expect(getScoreboardData(state(), HC)?.restsOnMatchday).toBeNull();
+    });
+
+    it("ignores played rounds, friendlies and a non-league next fixture", () => {
+      const played = [{ ...rounds[0], status: "Completed" as const }, rounds[1]];
+      expect(getScoreboardData(state({ fixtures: played }), HC)?.restsOnMatchday).toBeNull();
+      const friendlyElsewhere = [{ ...rounds[0], match_type: "Friendly" as const }, rounds[1]];
+      expect(getScoreboardData(state({ fixtures: friendlyElsewhere }), HC)?.restsOnMatchday).toBeNull();
+      const playoffNext = [rounds[0], { ...rounds[1], match_type: "Playoffs" as const }];
+      expect(getScoreboardData(state({ fixtures: playoffNext }), HC)?.restsOnMatchday).toBeNull();
+    });
+  });
+
   it("reflects home or away and competition info", () => {
     const away = getScoreboardData(state({ fixtures: [fixture({ home_team_id: "opp", away_team_id: "me" })] }), HC);
     expect(away?.isHome).toBe(false);

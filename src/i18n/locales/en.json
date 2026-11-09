@@ -784,8 +784,8 @@
       "groupLabel": "How your club enters the league",
       "join": {
         "label": "Join the league",
-        "description": "Nobody is replaced. The league will have {{total}} clubs.",
-        "descriptionOdd": "Nobody is replaced. The league will have {{total}} clubs, so one club rests each matchday and the split has more matchdays."
+        "description": "Nobody is replaced. The league will have {{total}} clubs. Your club starts with the league's median budget and reputation, a generated founding squad and no academy.",
+        "descriptionOdd": "Nobody is replaced. The league will have {{total}} clubs and one rests each matchday: yours rests once per split, and there are fewer days between splits to sign players. Your club starts with the league's median budget and reputation, a generated founding squad and no academy."
       },
       "replace": {
         "label": "Replace a club",
@@ -795,7 +795,9 @@
       "errors": {
         "notAccepted": "This league does not accept new clubs. Go back and choose another league or an existing team.",
         "noClubs": "This league has no clubs to join. Go back and choose another league.",
-        "badRequest": "The request to join the league was not valid. Go back a step and try again."
+        "badRequest": "The request to join the league was not valid. Go back a step and try again.",
+        "clash": "A detail from an earlier step now matches a club that stays in the league.",
+        "fixClash": "Go back and change it"
       }
     },
     "founders": {
@@ -4014,6 +4016,7 @@
       "daysToGo_one": "{{count}} day to go",
       "daysToGo_other": "{{count}} days to go",
       "matchDay": "Match day",
+      "restsOn": "Your club rests on matchday {{n}}",
       "formAfterFirst": "{{team}}'s form appears after their first match",
       "yourClub": "Your club",
       "startingFive": "Starting five",

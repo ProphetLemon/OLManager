@@ -784,8 +784,8 @@
       "groupLabel": "Cómo entra tu club en la liga",
       "join": {
         "label": "Unirse a la liga",
-        "description": "No se sustituye a nadie. La liga tendrá {{total}} clubes.",
-        "descriptionOdd": "No se sustituye a nadie. La liga tendrá {{total}} clubes, así que un club descansa en cada jornada y el split tiene más jornadas."
+        "description": "No se sustituye a nadie. La liga tendrá {{total}} clubes. Tu club empieza con el presupuesto y la reputación medios de la liga, una plantilla fundadora generada y sin academia.",
+        "descriptionOdd": "No se sustituye a nadie. La liga tendrá {{total}} clubes y en cada jornada descansa uno: el tuyo lo hará una vez por split, y habrá menos días entre splits para fichar. Tu club empieza con el presupuesto y la reputación medios de la liga, una plantilla fundadora generada y sin academia."
       },
       "replace": {
         "label": "Sustituir a un club",
@@ -795,7 +795,9 @@
       "errors": {
         "notAccepted": "Esta liga no admite clubes nuevos. Vuelve atrás y elige otra liga o un equipo existente.",
         "noClubs": "Esta liga no tiene clubes a los que unirse. Vuelve atrás y elige otra liga.",
-        "badRequest": "La solicitud para unirse a la liga no es válida. Vuelve un paso atrás e inténtalo de nuevo."
+        "badRequest": "La solicitud para unirse a la liga no es válida. Vuelve un paso atrás e inténtalo de nuevo.",
+        "clash": "Algún dato de un paso anterior coincide ahora con un club que se queda en la liga.",
+        "fixClash": "Volver y cambiarlo"
       }
     },
     "founders": {
@@ -3979,6 +3981,7 @@
       "daysToGo_one": "Falta {{count}} día",
       "daysToGo_other": "Faltan {{count}} días",
       "matchDay": "Día de partida",
+      "restsOn": "Tu club descansa en la jornada {{n}}",
       "formAfterFirst": "La forma de {{team}} aparece tras su primera partida",
       "yourClub": "Tu club",
       "startingFive": "Quinteto titular",

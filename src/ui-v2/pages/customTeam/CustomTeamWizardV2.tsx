@@ -179,6 +179,11 @@ export default function CustomTeamWizardV2({
   const validation = validateCustomTeam(draft, teams);
   const stepFields = (Object.keys(FIELD_STEP) as CustomTeamField[]).filter((f) => FIELD_STEP[f] === step);
   const stepValid = stepFields.every((field) => !validation.errors[field]);
+  // Fields of earlier steps that collide with a club which stays in the league. Joining keeps
+  // every club, so switching the mode can turn a valid name or tag into a clash.
+  const modeClashes = (Object.keys(validation.errors) as CustomTeamField[]).filter(
+    (field) => FIELD_STEP[field] < MODE_STEP && validation.errors[field] === "duplicate",
+  );
 
   // Move focus to the step heading whenever the step changes so keyboard and
   // screen reader users land on the new content.
@@ -273,7 +278,19 @@ export default function CustomTeamWizardV2({
     else setStep((step - 1) as Step);
   };
 
+  /** Takes the player to the earliest step that holds a clashing field, with its error shown. */
+  const fixModeClash = () => {
+    modeClashes.forEach(touch);
+    setStep(Math.min(...modeClashes.map((field) => FIELD_STEP[field])) as Step);
+  };
+
   const goNext = () => {
+    if (step === MODE_STEP && modeClashes.length > 0) {
+      fixModeClash();
+      return;
+    }
+    // Moving on is an answer to a refusal of the join request: do not leave it hidden behind the next step.
+    if (step === MODE_STEP && joinErrorCode) ackBackend();
     if (step < LAST_STEP && stepValid) setStep((step + 1) as Step);
     else stepFields.forEach(touch);
   };
@@ -370,6 +387,7 @@ export default function CustomTeamWizardV2({
               <h2
                 ref={headingRef}
                 tabIndex={-1}
+                aria-describedby={step === MODE_STEP && joinErrorCode ? "custom-team-mode-error" : undefined}
                 className="font-heading text-2xl font-black uppercase tracking-widest text-foreground"
               >
                 {stepTitles[step]}
@@ -664,6 +682,32 @@ export default function CustomTeamWizardV2({
                 )}
               </fieldset>
 
+              {modeClashes.length > 0 && (
+                <div
+                  id="custom-team-mode-clash"
+                  role="alert"
+                  className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
+                >
+                  <p className="flex items-start gap-1.5 font-medium">
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    {t("teamSelect.joinMode.errors.clash")}
+                  </p>
+                  <ul className="list-disc space-y-0.5 ps-10 text-xs">
+                    {modeClashes.map((field) => (
+                      <li key={field}>{message(field, "duplicate")}</li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={fixModeClash}
+                    className="flex h-9 items-center gap-2 rounded-lg border border-destructive/40 px-3 text-xs font-bold uppercase tracking-wider transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    <ArrowLeft className="size-4" aria-hidden="true" />
+                    {t("teamSelect.joinMode.errors.fixClash")}
+                  </button>
+                </div>
+              )}
+
               {mode === "replace" && (
                 <fieldset aria-describedby="custom-team-replace-notice">
                   <legend className="mb-1 font-heading text-sm font-bold uppercase tracking-wider text-foreground">
@@ -682,52 +726,52 @@ export default function CustomTeamWizardV2({
                           className={cn(
                             "flex cursor-pointer items-center gap-3 rounded-lg border-2 p-3 transition-colors focus-within:ring-2 focus-within:ring-primary",
                             checked ? "border-primary bg-primary/10" : "border-border hover:border-primary/40",
-                        )}
-                      >
-                        <input
-                          type="radio"
-                          name="custom-team-replace"
-                          value={team.id}
-                          checked={checked}
-                          onChange={() => {
-                            setReplacesId(team.id);
-                            touch("replaces");
-                            if (backend?.field === "replaces") ackBackend();
-                          }}
-                          className="size-4 accent-primary"
-                        />
-                        {logo && <img src={logo} alt="" className="size-8 shrink-0 object-contain" />}
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate font-heading text-sm font-bold uppercase tracking-wide">
-                            {team.name}
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            name="custom-team-replace"
+                            value={team.id}
+                            checked={checked}
+                            onChange={() => {
+                              setReplacesId(team.id);
+                              touch("replaces");
+                              if (backend?.field === "replaces") ackBackend();
+                            }}
+                            className="size-4 accent-primary"
+                          />
+                          {logo && <img src={logo} alt="" className="size-8 shrink-0 object-contain" />}
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-heading text-sm font-bold uppercase tracking-wide">
+                              {team.name}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              {team.short_name}
+                              {" · "}
+                              {team.reputation == null
+                                ? "—"
+                                : t("teamSelect.custom.replace.reputation", {
+                                    value: team.reputation,
+                                  })}
+                              {" · "}
+                              {t(getReputationLabel(team.reputation ?? 0).labelKey)}
+                            </span>
                           </span>
-                          <span className="block text-xs text-muted-foreground">
-                            {team.short_name}
-                            {" · "}
-                            {team.reputation == null
-                              ? "—"
-                              : t("teamSelect.custom.replace.reputation", {
-                                  value: team.reputation,
-                                })}
-                            {" · "}
-                            {t(getReputationLabel(team.reputation ?? 0).labelKey)}
-                          </span>
-                        </span>
-                        {team.id === defaultReplacementId(teams) && (
-                          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-muted-foreground">
-                            {t("teamSelect.custom.replace.lowestReputation")}
-                          </span>
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
-                {errorFor("replaces") && (
-                  <p id="custom-team-replaces-error" role="alert" className="mt-2 text-xs font-medium text-destructive">
-                    {errorFor("replaces")}
-                  </p>
-                )}
-              </fieldset>
+                          {team.id === defaultReplacementId(teams) && (
+                            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-muted-foreground">
+                              {t("teamSelect.custom.replace.lowestReputation")}
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {errorFor("replaces") && (
+                    <p id="custom-team-replaces-error" role="alert" className="mt-2 text-xs font-medium text-destructive">
+                      {errorFor("replaces")}
+                    </p>
+                  )}
+                </fieldset>
               )}
 
               <section
@@ -742,7 +786,7 @@ export default function CustomTeamWizardV2({
                   >
                     {t("teamSelect.custom.summary.heading")}
                   </h3>
-                  <p aria-live="polite" className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {mode === "join"
                       ? t("teamSelect.joinMode.summary", {
                           name: name.trim(),

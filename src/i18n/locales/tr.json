@@ -653,21 +653,23 @@
       }
     },
     "joinMode": {
-      "groupLabel": "Kulübün lige nasıl katılıyor",
+      "groupLabel": "Kulübün lige nasıl katılsın?",
       "join": {
         "label": "Lige katıl",
-        "description": "Hiçbir kulüp değiştirilmez. Ligde {{total}} kulüp olacak.",
-        "descriptionOdd": "Hiçbir kulüp değiştirilmez. Ligde {{total}} kulüp olacak; bu yüzden her maç gününde bir kulüp dinlenir ve split'te daha fazla maç günü olur."
+        "description": "Hiçbir kulüp değiştirilmez. Ligde {{total}} kulüp olacak. Kulübün, ligin ortanca bütçesi ve itibarıyla, oluşturulmuş bir kurucu kadroyla ve akademisiz başlar.",
+        "descriptionOdd": "Hiçbir kulüp değiştirilmez. Ligde {{total}} kulüp olacak ve her maç gününde biri dinlenir: seninki split başına bir kez dinlenir, ayrıca splitler arasında oyuncu almak için daha az gün kalır. Kulübün, ligin ortanca bütçesi ve itibarıyla, oluşturulmuş bir kurucu kadroyla ve akademisiz başlar."
       },
       "replace": {
         "label": "Bir kulübü değiştir",
-        "description": "Seçtiğin kulüp ligden ayrılır; oyuncuları ve personeli serbest oyuncu olur."
+        "description": "Seçtiğin kulüp ligden ayrılır; oyuncuları ve personeli serbest kalır."
       },
-      "summary": "{{country}} ülkesinden {{name}} ({{tag}}), {{league}} ligine {{position}}. kulüp olarak katılır.",
+      "summary": "{{country}} ülkesinden {{name}} ({{tag}}), lige {{position}}. kulüp olarak katılır ({{league}}).",
       "errors": {
         "notAccepted": "Bu lig yeni kulüp kabul etmiyor. Geri dön ve başka bir lig ya da mevcut bir takım seç.",
         "noClubs": "Bu ligde katılabileceğin kulüp yok. Geri dön ve başka bir lig seç.",
-        "badRequest": "Lige katılma isteği geçerli değildi. Bir adım geri dön ve tekrar dene."
+        "badRequest": "Lige katılma isteği geçerli değildi. Bir adım geri dön ve tekrar dene.",
+        "clash": "Önceki bir adımdaki bir bilgi artık ligde kalan bir kulüple aynı.",
+        "fixClash": "Geri dön ve değiştir"
       }
     },
     "founders": {
@@ -3973,6 +3975,7 @@
       "daysToGo_one": "{{count}} gün kaldı",
       "daysToGo_other": "{{count}} gün kaldı",
       "matchDay": "Maç günü",
+      "restsOn": "Kulübün {{n}}. maç gününde dinlenir",
       "formAfterFirst": "{{team}} takımının formu ilk maçından sonra görünür",
       "yourClub": "Kulübün",
       "startingFive": "İlk beşli",
