@@ -9,10 +9,18 @@ interface RovingFocusOptions {
   initialIndex?: number;
   onEdgeUp?: () => void;
   onEdgeDown?: () => void;
+  /** Controlled active index: the internal state follows it whenever it changes. */
+  index?: number;
+  /** When false, `shouldFocus` stays false until the user navigates. Defaults to true. */
+  focusOnMount?: boolean;
+  /** "horizontal" maps Left/Right only; "vertical" (default) keeps Up/Down by `columns`. */
+  orientation?: "vertical" | "horizontal";
 }
 
 interface RovingFocusResult {
   activeIndex: number;
+  /** Callers gate their `.focus()` effect on this so the first render does not steal focus. */
+  shouldFocus: boolean;
   setActiveIndex: (index: number) => void;
   handleKeyDown: (e: React.KeyboardEvent) => void;
   getTabIndex: (index: number) => 0 | -1;
@@ -27,8 +35,21 @@ export function useRovingFocus({
   initialIndex = 0,
   onEdgeUp,
   onEdgeDown,
+  index,
+  focusOnMount = true,
+  orientation = "vertical",
 }: RovingFocusOptions): RovingFocusResult {
-  const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const [activeIndex, setActiveIndexState] = useState(index ?? initialIndex);
+  const [interacted, setInteracted] = useState(false);
+  const [syncedIndex, setSyncedIndex] = useState(index);
+  if (index !== syncedIndex) {
+    setSyncedIndex(index);
+    if (index !== undefined) setActiveIndexState(index);
+  }
+  const setActiveIndex = useCallback((next: number) => {
+    setInteracted(true);
+    setActiveIndexState(next);
+  }, []);
   const searchBuffer = useRef("");
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -45,7 +66,8 @@ export function useRovingFocus({
 
   const moveBy = useCallback(
     (delta: number) => {
-      setActiveIndex((prev) => {
+      setInteracted(true);
+      setActiveIndexState((prev) => {
         if (!loop && itemCount > 0) {
           if (prev + delta < 0) {
             onEdgeUp?.();
@@ -68,10 +90,12 @@ export function useRovingFocus({
 
       switch (e.key) {
         case "ArrowDown":
+          if (orientation === "horizontal") break;
           e.preventDefault();
           moveBy(columns);
           break;
         case "ArrowUp":
+          if (orientation === "horizontal") break;
           e.preventDefault();
           moveBy(-columns);
           break;
@@ -121,7 +145,7 @@ export function useRovingFocus({
           break;
       }
     },
-    [itemCount, columns, activeIndex, onSelect, moveBy, getItemLabel, clamp],
+    [itemCount, columns, activeIndex, onSelect, moveBy, getItemLabel, setActiveIndex, orientation],
   );
 
   const getTabIndex = useCallback(
@@ -131,6 +155,7 @@ export function useRovingFocus({
 
   return {
     activeIndex,
+    shouldFocus: focusOnMount || interacted,
     setActiveIndex,
     handleKeyDown,
     getTabIndex,

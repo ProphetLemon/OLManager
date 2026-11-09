@@ -21,7 +21,9 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/dashboardHelpers", () => ({
 }));
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? key,
+  }),
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -111,5 +113,23 @@ describe("FloatingBugButton", () => {
     expect(exportedContext.route).toBe("/match");
     expect(exportedContext.activeTab).toBe("");
     expect(exportedContext.activeTab).not.toBe("Finances");
+  });
+
+  it("renders a 44px accessible icon button in the rail placement", () => {
+    render(<FloatingBugButton placement="rail" />);
+
+    const button = screen.getByRole("button", { name: "Reportar Bug" });
+    expect(button).toHaveAttribute("title", "Reportar Bug");
+    expect(button.className).toContain("size-[var(--hit)]");
+    expect(button.className).not.toContain("fixed");
+
+    fireEvent.click(button);
+    expect(screen.queryByRole("button", { name: "Reportar Bug" })).not.toBeInTheDocument();
+    expect(screen.getByText("bugReport.title")).toBeInTheDocument();
+  });
+
+  it("keeps the floating placement fixed by default", () => {
+    render(<FloatingBugButton />);
+    expect(screen.getByTitle("Reportar Bug").className).toContain("fixed");
   });
 });
