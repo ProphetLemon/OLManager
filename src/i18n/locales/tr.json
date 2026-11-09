@@ -673,13 +673,16 @@
         "text": "{{bill}} / {{budget}}"
       },
       "reroll": {
-        "action": "Yeniden çek ({{count}} hak kaldı)",
+        "action_one": "Yeniden çek ({{count}} hak kaldı)",
+        "action_other": "Yeniden çek ({{count}} hak kaldı)",
         "none": "Yeniden çekme hakkı kalmadı",
         "noneReason": "Bu kulüp için {{max}} yeniden çekme hakkının hepsini kullandın.",
         "confirmLabel": "Yeniden çekmeyi onayla",
         "confirmText": "Yeniden çekmek yeni bir kadro oluşturur ve düzenlemelerini siler.",
         "confirm": "Yine de yeniden çek",
-        "keep": "Bu kadroyu koru"
+        "keep": "Bu kadroyu koru",
+        "ready_one": "Yeni kadro hazır. {{count}} yeniden çekme hakkı kaldı.",
+        "ready_other": "Yeni kadro hazır. {{count}} yeniden çekme hakkı kaldı."
       },
       "dialog": {
         "title": "{{role}} düzenle",

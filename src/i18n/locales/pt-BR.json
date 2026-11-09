@@ -673,13 +673,16 @@
         "text": "{{bill}} de {{budget}}"
       },
       "reroll": {
-        "action": "Sortear de novo ({{count}} restantes)",
+        "action_one": "Sortear de novo ({{count}} restante)",
+        "action_other": "Sortear de novo ({{count}} restantes)",
         "none": "Sem sorteios restantes",
         "noneReason": "Você usou os {{max}} sorteios deste clube.",
         "confirmLabel": "Confirmar novo sorteio",
         "confirmText": "Um novo sorteio gera outro elenco e descarta as suas edições.",
         "confirm": "Sortear mesmo assim",
-        "keep": "Manter este elenco"
+        "keep": "Manter este elenco",
+        "ready_one": "Novo elenco pronto. {{count}} sorteio restante.",
+        "ready_other": "Novo elenco pronto. {{count}} sorteios restantes."
       },
       "dialog": {
         "title": "Editar {{role}}",

@@ -673,13 +673,16 @@
         "text": "{{bill}} sur {{budget}}"
       },
       "reroll": {
-        "action": "Relancer le tirage ({{count}} restants)",
+        "action_one": "Relancer le tirage ({{count}} restant)",
+        "action_other": "Relancer le tirage ({{count}} restants)",
         "none": "Plus aucun tirage",
         "noneReason": "Tu as utilisé les {{max}} tirages de ce club.",
         "confirmLabel": "Confirmer le nouveau tirage",
         "confirmText": "Un nouveau tirage génère un autre effectif et annule tes modifications.",
         "confirm": "Relancer quand même",
-        "keep": "Garder cet effectif"
+        "keep": "Garder cet effectif",
+        "ready_one": "Nouvel effectif prêt. {{count}} tirage restant.",
+        "ready_other": "Nouvel effectif prêt. {{count}} tirages restants."
       },
       "dialog": {
         "title": "Modifier {{role}}",

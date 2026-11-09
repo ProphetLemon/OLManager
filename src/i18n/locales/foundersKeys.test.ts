@@ -111,11 +111,14 @@ describe.each(NAMESPACES)("$prefix locale keys", ({ path, prefix, sources }) => 
 
   it("uses every key defined in en.json and defines every key used", () => {
     const { literal, families } = usage(prefix, sources);
+    // Plural forms are looked up through the base key (`action_one` is used as `action`).
+    const base = (key: string) => key.replace(/_(one|other)$/, "");
     const covered = (key: string) =>
-      literal.has(key) || families.some((family) => key.startsWith(`${family}.`));
+      literal.has(base(key)) || families.some((family) => key.startsWith(`${family}.`));
     expect(Object.keys(enKeys).filter((key) => !covered(key))).toEqual([]);
+    const defined = new Set(Object.keys(enKeys).map(base));
     const unknown = [...literal].filter(
-      (key) => !(key in enKeys) && !Object.keys(enKeys).some((candidate) => candidate.startsWith(`${key}.`)),
+      (key) => !defined.has(key) && !Object.keys(enKeys).some((candidate) => candidate.startsWith(`${key}.`)),
     );
     expect(unknown).toEqual([]);
   });

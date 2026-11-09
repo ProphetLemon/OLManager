@@ -673,13 +673,16 @@
         "text": "{{bill}} von {{budget}}"
       },
       "reroll": {
-        "action": "Neu auswürfeln ({{count}} übrig)",
+        "action_one": "Neu auswürfeln ({{count}} übrig)",
+        "action_other": "Neu auswürfeln ({{count}} übrig)",
         "none": "Keine Würfe mehr übrig",
         "noneReason": "Du hast alle {{max}} Würfe für diesen Verein verbraucht.",
         "confirmLabel": "Neuen Wurf bestätigen",
         "confirmText": "Ein neuer Wurf erzeugt einen anderen Kader und verwirft deine Änderungen.",
         "confirm": "Trotzdem auswürfeln",
-        "keep": "Diesen Kader behalten"
+        "keep": "Diesen Kader behalten",
+        "ready_one": "Neuer Kader bereit. Noch {{count}} Wurf übrig.",
+        "ready_other": "Neuer Kader bereit. Noch {{count}} Würfe übrig."
       },
       "dialog": {
         "title": "{{role}} bearbeiten",

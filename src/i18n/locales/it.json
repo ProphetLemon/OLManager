@@ -524,13 +524,16 @@
         "text": "{{bill}} su {{budget}}"
       },
       "reroll": {
-        "action": "Rilancia ({{count}} rimasti)",
+        "action_one": "Rilancia ({{count}} rimasto)",
+        "action_other": "Rilancia ({{count}} rimasti)",
         "none": "Nessun rilancio rimasto",
         "noneReason": "Hai usato tutti i {{max}} rilanci per questo club.",
         "confirmLabel": "Conferma il rilancio",
         "confirmText": "Un rilancio genera un'altra rosa e annulla le tue modifiche.",
         "confirm": "Rilancia comunque",
-        "keep": "Mantieni questa rosa"
+        "keep": "Mantieni questa rosa",
+        "ready_one": "Nuova rosa pronta. {{count}} rilancio rimasto.",
+        "ready_other": "Nuova rosa pronta. {{count}} rilanci rimasti."
       },
       "dialog": {
         "title": "Modifica {{role}}",

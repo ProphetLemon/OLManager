@@ -801,13 +801,16 @@
         "text": "{{bill}} of {{budget}}"
       },
       "reroll": {
-        "action": "Reroll squad ({{count}} left)",
+        "action_one": "Reroll squad ({{count}} left)",
+        "action_other": "Reroll squad ({{count}} left)",
         "none": "No rerolls left",
         "noneReason": "You have used all {{max}} rerolls for this club.",
         "confirmLabel": "Confirm reroll",
         "confirmText": "Rerolling draws a new squad and discards your edits.",
         "confirm": "Reroll anyway",
-        "keep": "Keep this squad"
+        "keep": "Keep this squad",
+        "ready_one": "New squad ready. {{count}} reroll left.",
+        "ready_other": "New squad ready. {{count}} rerolls left."
       },
       "dialog": {
         "title": "Edit {{role}}",

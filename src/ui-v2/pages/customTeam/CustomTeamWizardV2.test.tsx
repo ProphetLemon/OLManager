@@ -393,7 +393,8 @@ describe("CustomTeamWizardV2 founding squad step", () => {
     }
 
     const exhausted = screen.getByRole("button", { name: "No rerolls left" });
-    expect(exhausted).toBeDisabled();
+    // Unavailable but still focusable, so focus is not lost when the last reroll is used.
+    expect(exhausted).toHaveAttribute("aria-disabled", "true");
     expect(exhausted).toHaveAccessibleDescription("You have used all 3 rerolls for this club.");
     expect(new Set(seeds).size).toBe(4);
   });
@@ -494,5 +495,98 @@ describe("CustomTeamWizardV2 founding squad step", () => {
 
     expect(previewCalls.length).toBeGreaterThan(before);
     expect(previewCalls[previewCalls.length - 1]?.shortName).toBe("RYO");
+  });
+});
+
+describe("CustomTeamWizardV2 founding squad step: focus and announcements", () => {
+  const reroll = () => screen.getByRole("button", { name: /^Reroll squad/ });
+
+  async function editTopFullName() {
+    fireEvent.click(screen.getByRole("button", { name: /^Edit .*Top$/ }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Full name"), { target: { value: "Ana Pons" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  }
+
+  it("keeps focus on Reroll and announces the new squad with the rerolls left", async () => {
+    setup();
+    await toSquadStep();
+
+    fireEvent.click(reroll());
+
+    expect(reroll()).toHaveFocus();
+    expect(await screen.findByText("New squad ready. 2 rerolls left.")).toBeInTheDocument();
+    expect(reroll()).toHaveFocus();
+  });
+
+  it("does not announce a new squad before the reroll has been answered", async () => {
+    setup();
+    await toSquadStep();
+
+    fireEvent.click(reroll());
+
+    expect(screen.queryByText(/New squad ready/)).not.toBeInTheDocument();
+    await screen.findByText("New squad ready. 2 rerolls left.");
+  });
+
+  it("moves focus to the confirmation, and back to Reroll when it is answered", async () => {
+    setup();
+    await toSquadStep();
+    await editTopFullName();
+
+    fireEvent.click(reroll());
+    expect(screen.getByRole("group", { name: "Confirm reroll" })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep this squad" }));
+    expect(reroll()).toHaveFocus();
+
+    fireEvent.click(reroll());
+    fireEvent.click(screen.getByRole("button", { name: "Reroll anyway" }));
+    expect(reroll()).toHaveFocus();
+    await screen.findByText("New squad ready. 2 rerolls left.");
+  });
+
+  it("keeps focus on the page when the last reroll is used", async () => {
+    setup();
+    await toSquadStep();
+    for (const left of [2, 1, 0]) {
+      fireEvent.click(reroll());
+      await screen.findByText(new RegExp(`New squad ready. ${left} reroll`));
+    }
+
+    expect(screen.getByRole("button", { name: "No rerolls left" })).toHaveFocus();
+  });
+
+  it("returns focus to Reroll when Try again is pressed", async () => {
+    mocks.invoke.mockRejectedValueOnce("backend down");
+    setup();
+    toReviewStep();
+    fireEvent.click(next());
+    fireEvent.click(await screen.findByRole("button", { name: "Try again" }));
+
+    expect(reroll()).toHaveFocus();
+    await screen.findByTestId("founder-mid");
+  });
+
+  it("disables Edit while the shown squad is stale after a failed refetch", async () => {
+    setup();
+    await toSquadStep();
+    const fake = previewInvoke(previewCalls);
+    mocks.invoke.mockImplementation(async () => {
+      throw "backend down";
+    });
+
+    fireEvent.click(reroll());
+    await screen.findByText("The squad could not be generated.");
+
+    // The old squad is still listed, but it can no longer be edited against a stale baseline.
+    const edits = screen.getAllByRole("button", { name: /^Edit / });
+    expect(edits).toHaveLength(5);
+    for (const edit of edits) expect(edit).toBeDisabled();
+
+    mocks.invoke.mockImplementation(fake);
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(screen.getAllByRole("button", { name: /^Edit / })[0]).toBeEnabled());
   });
 });

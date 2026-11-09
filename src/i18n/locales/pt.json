@@ -672,13 +672,16 @@
         "text": "{{bill}} de {{budget}}"
       },
       "reroll": {
-        "action": "Sortear de novo ({{count}} restantes)",
+        "action_one": "Sortear de novo ({{count}} restante)",
+        "action_other": "Sortear de novo ({{count}} restantes)",
         "none": "Sem sorteios restantes",
         "noneReason": "Usaste os {{max}} sorteios deste clube.",
         "confirmLabel": "Confirmar novo sorteio",
         "confirmText": "Um novo sorteio gera outro plantel e descarta as tuas edições.",
         "confirm": "Sortear mesmo assim",
-        "keep": "Manter este plantel"
+        "keep": "Manter este plantel",
+        "ready_one": "Novo plantel pronto. {{count}} sorteio restante.",
+        "ready_other": "Novo plantel pronto. {{count}} sorteios restantes."
       },
       "dialog": {
         "title": "Editar {{role}}",

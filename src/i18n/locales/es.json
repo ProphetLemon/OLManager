@@ -801,13 +801,16 @@
         "text": "{{bill}} de {{budget}}"
       },
       "reroll": {
-        "action": "Volver a sortear ({{count}} restantes)",
+        "action_one": "Volver a sortear ({{count}} restante)",
+        "action_other": "Volver a sortear ({{count}} restantes)",
         "none": "Sin sorteos restantes",
         "noneReason": "Has usado los {{max}} sorteos de este club.",
         "confirmLabel": "Confirmar nuevo sorteo",
         "confirmText": "Un nuevo sorteo genera otra plantilla y descarta tus ediciones.",
         "confirm": "Sortear de todos modos",
-        "keep": "Mantener esta plantilla"
+        "keep": "Mantener esta plantilla",
+        "ready_one": "Nueva plantilla lista. Queda {{count}} sorteo.",
+        "ready_other": "Nueva plantilla lista. Quedan {{count}} sorteos."
       },
       "dialog": {
         "title": "Editar {{role}}",

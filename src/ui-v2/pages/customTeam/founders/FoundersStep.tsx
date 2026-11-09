@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, Dices, Loader2, Pencil } from "lucide-react";
 
@@ -40,16 +40,55 @@ export default function FoundersStep({ state, installError }: FoundersStepProps)
   const { t, i18n } = useTranslation();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmingReroll, setConfirmingReroll] = useState(false);
+  const [readyMessage, setReadyMessage] = useState("");
+  const rerollRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLDivElement>(null);
+  // "asked" once the user requests a new squad, "loading" once that load is seen
+  // in flight; only then does the next ready state count as the answer to announce.
+  const announceNext = useRef<"idle" | "asked" | "loading">("idle");
 
   const { squad, generated, status, overrides, rerollsLeft } = state;
   const editedCount = overrideCount(overrides);
   const noRerolls = rerollsLeft <= 0;
   const busy = status === "loading";
 
+  useEffect(() => {
+    if (status === "loading" && announceNext.current === "asked") announceNext.current = "loading";
+    if (status === "ready" && announceNext.current === "loading") {
+      announceNext.current = "idle";
+      setReadyMessage(t("teamSelect.founders.reroll.ready", { count: rerollsLeft }));
+    }
+  }, [status, rerollsLeft, t]);
+
+  // The confirmation appears where the user is not looking: move focus to it.
+  useEffect(() => {
+    if (confirmingReroll) confirmRef.current?.focus();
+  }, [confirmingReroll]);
+
+  const startReroll = () => {
+    announceNext.current = "asked";
+    setReadyMessage("");
+    state.reroll();
+    // The button that was pressed (or its group) is about to unmount or disable.
+    rerollRef.current?.focus();
+  };
+
+  const closeConfirm = () => {
+    setConfirmingReroll(false);
+    rerollRef.current?.focus();
+  };
+
+  const handleRetry = () => {
+    announceNext.current = "asked";
+    setReadyMessage("");
+    state.retry();
+    rerollRef.current?.focus();
+  };
+
   const handleReroll = () => {
     if (noRerolls || busy) return;
     if (editedCount > 0) setConfirmingReroll(true);
-    else state.reroll();
+    else startReroll();
   };
 
   const editing = squad?.players.find((player) => player.id === editingId) ?? null;
@@ -65,10 +104,14 @@ export default function FoundersStep({ state, installError }: FoundersStepProps)
 
       <div className="flex flex-wrap items-center gap-3">
         <Button
+          ref={rerollRef}
           type="button"
           variant="outline"
           onClick={handleReroll}
           disabled={noRerolls || busy || status === "error"}
+          // Stays focusable while unavailable so focus is not lost to the page.
+          focusableWhenDisabled
+          className="aria-disabled:opacity-50"
           aria-describedby={noRerolls ? "founders-reroll-reason" : undefined}
         >
           <Dices aria-hidden="true" />
@@ -85,23 +128,28 @@ export default function FoundersStep({ state, installError }: FoundersStepProps)
 
       {confirmingReroll && (
         <div
+          ref={confirmRef}
           role="group"
+          tabIndex={-1}
           aria-label={t("teamSelect.founders.reroll.confirmLabel")}
+          aria-describedby="founders-reroll-confirm-text"
           className="space-y-3 rounded-lg border border-warning/40 bg-warning/10 p-4"
         >
-          <p className="text-sm text-foreground">{t("teamSelect.founders.reroll.confirmText")}</p>
+          <p id="founders-reroll-confirm-text" className="text-sm text-foreground">
+            {t("teamSelect.founders.reroll.confirmText")}
+          </p>
           <div className="flex gap-2">
             <Button
               type="button"
               variant="club"
               onClick={() => {
                 setConfirmingReroll(false);
-                state.reroll();
+                startReroll();
               }}
             >
               {t("teamSelect.founders.reroll.confirm")}
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setConfirmingReroll(false)}>
+            <Button type="button" variant="ghost" onClick={closeConfirm}>
               {t("teamSelect.founders.reroll.keep")}
             </Button>
           </div>
@@ -118,18 +166,20 @@ export default function FoundersStep({ state, installError }: FoundersStepProps)
       {status === "error" && (
         <div role="alert" className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4">
           <p className="text-sm font-medium text-destructive">{t("teamSelect.founders.loadFailed")}</p>
-          <Button type="button" variant="outline" onClick={state.retry}>
+          <Button type="button" variant="outline" onClick={handleRetry}>
             {t("teamSelect.founders.retry")}
           </Button>
         </div>
       )}
 
       <p role="status" className="min-h-5 text-sm text-muted-foreground">
-        {busy && (
+        {busy ? (
           <span className="inline-flex items-center gap-2">
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
             {t("teamSelect.founders.loading")}
           </span>
+        ) : (
+          readyMessage
         )}
       </p>
 
@@ -158,7 +208,7 @@ export default function FoundersStep({ state, installError }: FoundersStepProps)
                   player={player}
                   edited={Boolean(overrides[roleKey(player.role)])}
                   language={i18n.language}
-                  disabled={busy}
+                  disabled={status !== "ready"}
                   onEdit={() => setEditingId(player.id)}
                 />
               );
@@ -261,12 +311,13 @@ function FounderRow({ player, edited, language, disabled, onEdit }: FounderRowPr
         </Button>
       </div>
       <dl
+        role="group"
         aria-label={t("teamSelect.founders.attributes")}
-        className="mt-3 grid grid-cols-3 gap-x-4 gap-y-1 text-xs sm:grid-cols-5 lg:grid-cols-9"
+        className="mt-3 grid grid-cols-3 gap-x-4 gap-y-1 text-xs"
       >
         {ATTRIBUTE_LABELS.map(([field, labelKey]) => (
           <div key={field} className="flex items-baseline justify-between gap-2 border-b border-line">
-            <dt className="truncate text-muted-foreground">{t(`playerProfile.lolStats.${labelKey}`)}</dt>
+            <dt className="min-w-0 break-words text-muted-foreground">{t(`playerProfile.lolStats.${labelKey}`)}</dt>
             <dd className="font-bold tabular-nums text-foreground">{player.attributes[field]}</dd>
           </div>
         ))}
