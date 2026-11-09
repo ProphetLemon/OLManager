@@ -39,7 +39,7 @@ explains the method, its limits and how to refresh the data. Data: Leaguepedia (
 
 | Rule | Why |
 |------|-----|
-| A player whose stat league differs from his game league keeps his authored rating. | Neither anchor is reliable. The game anchor sent Sharvel 74 to 90 in the LCK. The stat anchor sent re0 86 to 69, because the LDL level rests on 16 rows. |
+| A non-suspect player whose stat league differs from his game league keeps his authored rating (47 players). | Neither anchor is reliable. The game anchor sent Sharvel 74 to 90 in the LCK. The stat anchor sent re0 86 to 69, because the LDL level rests on 16 rows. |
 | A suspect mover gets the mean of both anchors. | A flat-50 row has nothing better to keep. |
 | Non-suspect changes are capped at 6 points. | Limits damage from noisy stats. |
 | Suspect rows are not capped. | They are the rows the method exists to fix. |

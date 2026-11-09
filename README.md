@@ -204,6 +204,10 @@ This repository is licensed under the **GNU General Public License v3.0**. See [
 
 Code and assets inherited from OpenFootManager are treated as GPL-3.0-compatible unless a later audit documents otherwise. Third-party datasets, generated caches, and source-derived content such as Leaguepedia data are **not** automatically GPL by inheritance; they require separate provenance, attribution, and redistribution review. See [`docs/DATA_PROVENANCE.md`](docs/DATA_PROVENANCE.md).
 
+### Third-party data credits
+
+Player ratings in new games are derived from pro match statistics from [Leaguepedia](https://lol.fandom.com), licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Method and refresh steps: [`docs/STAT_RATINGS.md`](docs/STAT_RATINGS.md). Whether ShareAlike applies to the derived rating asset is an open question for the owner.
+
 ---
 
 ## 8. Contributing
@@ -239,7 +243,3 @@ Start with [`CONTRIBUTING.md`](CONTRIBUTING.md), then review:
 ---
 
 <i>Built with Rust + Tauri + React + TypeScript + Community + Passion</i>
-
-### Third-party data credits
-
-Player ratings in new games are derived from pro match statistics from [Leaguepedia](https://lol.fandom.com), licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Method and refresh steps: [`docs/STAT_RATINGS.md`](docs/STAT_RATINGS.md). Whether ShareAlike applies to the derived rating asset is an open question for the owner.
