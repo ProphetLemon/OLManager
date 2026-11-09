@@ -99,7 +99,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
             ].map((st) => (
               <div key={st.label}
                 className="rounded-xl border border-white/15 bg-black/50 px-3 py-2.5 text-center backdrop-blur-md transition-all hover:border-primary/40 hover:bg-black/60">
-                <p className="font-heading text-[10px] font-bold uppercase tracking-widest text-white/50">{st.label}</p>
+                <p className="font-heading text-2xs font-bold uppercase tracking-widest text-white/50">{st.label}</p>
                 <p className={cn("font-heading text-xl font-black tabular-nums drop-shadow", st.acc)}>{st.val}</p>
               </div>
             ))}
@@ -130,7 +130,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
                     <st.icon className="size-4" />
                   </div>
                   <div>
-                    <p className="font-heading text-[10px] uppercase tracking-widest text-muted-foreground">{st.label}</p>
+                    <p className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">{st.label}</p>
                     <p className="font-heading text-lg font-black tabular-nums text-foreground">
                       {st.val}
                     </p>
@@ -216,11 +216,11 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
           {s && (
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-border bg-card p-4 text-center">
-                <p className="font-heading text-[10px] uppercase tracking-widest text-muted-foreground">{t("championPage.vision")}</p>
+                <p className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">{t("championPage.vision")}</p>
                 <p className="font-heading text-2xl font-black tabular-nums text-purple-400">{s.avg_vision.toFixed(0)}</p>
               </div>
               <div className="rounded-xl border border-border bg-card p-4 text-center">
-                <p className="font-heading text-[10px] uppercase tracking-widest text-muted-foreground">{t("championPage.duration")}</p>
+                <p className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">{t("championPage.duration")}</p>
                 <p className="font-heading text-2xl font-black tabular-nums text-foreground">{Math.round(s.avg_duration / 60)}m</p>
               </div>
             </div>

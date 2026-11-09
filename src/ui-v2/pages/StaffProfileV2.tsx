@@ -180,17 +180,17 @@ export default function StaffProfileV2({
 
             <div className="mt-2 flex flex-wrap gap-1.5">
               {staff.specialization && (
-                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-caption uppercase tracking-wider text-muted-foreground">
                   <Star className="size-3" /> {t(`staff.specializations.${staff.specialization}`)}
                 </span>
               )}
               {staff.wage > 0 && (
-                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-caption uppercase tracking-wider text-muted-foreground">
                   {activeCurrencySymbol()}{staff.wage.toLocaleString()}/año
                 </span>
               )}
               {staff.contract_end && (
-                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-caption uppercase tracking-wider text-muted-foreground">
                   {t("staff.contractUntil", { defaultValue: "Contrato" })}: {staff.contract_end}
                 </span>
               )}

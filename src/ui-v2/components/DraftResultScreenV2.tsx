@@ -293,14 +293,14 @@ export default function DraftResultScreenV2({
                 <div key={idx} className="absolute top-0 flex flex-col items-center" style={{ left: leftPct, transform: 'translateX(-50%)', height: '100%' }}>
                   <div className="flex flex-col items-center justify-end flex-1 overflow-visible pb-2">
                     {row.blue.map((event, eIdx) => (
-                    <span key={`blue-${eIdx}`} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] whitespace-nowrap mt-1 ${eventPillClass(event)}`}>
+                    <span key={`blue-${eIdx}`} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-2xs whitespace-nowrap mt-1 ${eventPillClass(event)}`}>
                       <span>{event.label}</span>
                     </span>
                     ))}
                   </div>
                   <div className="flex flex-col items-center justify-start flex-1 overflow-visible pt-2">
                     {row.red.map((event, eIdx) => (
-                      <span key={`red-${eIdx}`} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] whitespace-nowrap mb-1 ${eventPillClass(event)}`}>
+                      <span key={`red-${eIdx}`} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-2xs whitespace-nowrap mb-1 ${eventPillClass(event)}`}>
                         <span>{event.label}</span>
                       </span>
                     ))}
@@ -313,7 +313,7 @@ export default function DraftResultScreenV2({
             {rows.map((row, idx) => (
               <span
                 key={`marker-${idx}`}
-                className="absolute text-[9px] font-bold text-foreground/30 whitespace-nowrap -translate-x-1/2"
+                className="absolute text-2xs font-bold text-foreground/30 whitespace-nowrap -translate-x-1/2"
                 style={{ left: `${((row.minute - effectiveStart) / effectiveRange) * 100}%` }}
               >
                 {row.minute}m

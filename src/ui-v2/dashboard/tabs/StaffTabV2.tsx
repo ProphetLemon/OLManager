@@ -139,7 +139,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
             <p className="font-heading text-xs font-bold uppercase tracking-wider text-foreground">
               {t("dashboard.worldStaff", { defaultValue: "Staffs" })}
             </p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               {filtered.length} / {gameState.staff.length}
             </p>
           </div>
@@ -225,7 +225,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
       {/* Team impact banner */}
       {view === "mystaff" && myStaff.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
-          <span className="font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <span className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
             {t("staff.lolImpactTeamTitle")}
           </span>
           {[
@@ -237,7 +237,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
           ].map((row) => (
             <span
               key={row.key}
-              className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-heading text-[10px] uppercase tracking-wider text-primary"
+              className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-heading text-2xs uppercase tracking-wider text-primary"
             >
               <span>{t(row.labelKey)}</span>
               <span className="font-bold tabular-nums">
@@ -329,7 +329,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                       </h3>
                       <Badge
                         variant={ovr >= 65 ? "default" : ovr >= 45 ? "secondary" : "outline"}
-                        className="text-[10px]"
+                        className="text-2xs"
                       >
                         {ovr} OVR
                       </Badge>
@@ -362,12 +362,12 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                     {/* Specialization + Wage */}
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       {staff.specialization && (
-                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                           <Star className="size-3" /> {t(`staff.specializations.${staff.specialization}`)}
                         </span>
                       )}
                       {staff.wage > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                           {activeCurrencySymbol()}{staff.wage.toLocaleString()}/año
                         </span>
                       )}
@@ -389,7 +389,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                           {impactRows.map((row) => (
                             <span
                               key={row.labelKey}
-                              className="inline-flex items-center gap-1 rounded bg-primary/5 px-1.5 py-0.5 font-heading text-[10px] uppercase tracking-wider text-muted-foreground"
+                              className="inline-flex items-center gap-1 rounded bg-primary/5 px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground"
                             >
                               <span>{t(row.labelKey)}</span>
                               <span className="font-bold text-primary tabular-nums">

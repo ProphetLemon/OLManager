@@ -66,7 +66,7 @@ export default function DashboardBlockerModal({
               <p className={cn("text-sm font-medium", blockerTextColor(blocker.severity))}>
                 {blocker.text}
               </p>
-              <p className="mt-1 font-heading text-[10px] uppercase tracking-widest text-muted-foreground/60">
+              <p className="mt-1 font-heading text-2xs uppercase tracking-widest text-muted-foreground/60">
                 {t("notifications.goTo")} {blocker.tab} →
               </p>
             </button>

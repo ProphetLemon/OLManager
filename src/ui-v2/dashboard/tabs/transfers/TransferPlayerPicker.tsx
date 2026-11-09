@@ -63,7 +63,7 @@ export default function TransferPlayerPicker({
                   : "border-transparent bg-muted hover:border-border",
               )}
             >
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary" className="text-2xs">
                 {roleLabel(player)}
               </Badge>
               <span className="flex-1 truncate text-left text-foreground">

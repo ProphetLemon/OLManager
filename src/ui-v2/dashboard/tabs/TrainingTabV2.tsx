@@ -592,7 +592,7 @@ export function TrainingTabV2({
                           <span
                             key={idx}
                             className={cn(
-                              "flex size-4 items-center justify-center rounded-full text-[8px] font-heading font-bold",
+                              "flex size-4 items-center justify-center rounded-full text-2xs font-heading font-bold",
                               activeDays.includes(idx)
                                 ? "bg-primary text-primary-foreground"
                                 : "bg-muted text-muted-foreground/50",
@@ -670,7 +670,7 @@ export function TrainingTabV2({
                           {attrs.map((attr) => (
                             <span
                               key={attr}
-                              className="rounded bg-muted px-1.5 py-0.5 font-heading text-[10px] uppercase tracking-wider text-muted-foreground"
+                              className="rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground"
                             >
                               {statLabel(attr)}
                             </span>
@@ -896,7 +896,7 @@ export function TrainingTabV2({
                       <span className="font-heading text-xs font-bold uppercase tracking-wider text-foreground">
                         {group.name}
                       </span>
-                      <span className="font-heading text-[10px] tabular-nums text-muted-foreground">
+                      <span className="font-heading text-2xs tabular-nums text-muted-foreground">
                         {group.player_ids.length}
                       </span>
                       <button
@@ -987,18 +987,18 @@ export function TrainingTabV2({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="font-heading text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      <TableHead className="font-heading text-2xs font-bold uppercase tracking-widest text-muted-foreground">
                         {t("common.player", { defaultValue: "Player" })}
                       </TableHead>
-                      <TableHead className="font-heading text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      <TableHead className="font-heading text-2xs font-bold uppercase tracking-widest text-muted-foreground">
                         {t("common.position", { defaultValue: "Pos" })}
                       </TableHead>
-                      <TableHead className="font-heading text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      <TableHead className="font-heading text-2xs font-bold uppercase tracking-widest text-muted-foreground">
                         {t("training.groups.group", {
                           defaultValue: "Group",
                         })}
                       </TableHead>
-                      <TableHead className="font-heading text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      <TableHead className="font-heading text-2xs font-bold uppercase tracking-widest text-muted-foreground">
                         {t("training.effectiveFocus", {
                           defaultValue: "Focus",
                         })}
@@ -1055,7 +1055,7 @@ export function TrainingTabV2({
                           <TableCell>
                             <span
                               className={cn(
-                                "inline-block rounded px-2 py-0.5 font-heading text-[11px] uppercase tracking-wider",
+                                "inline-block rounded px-2 py-0.5 font-heading text-caption uppercase tracking-wider",
                                 hasIndividualFocus
                                   ? "border border-primary/30 bg-primary/10 text-primary"
                                   : "text-muted-foreground",

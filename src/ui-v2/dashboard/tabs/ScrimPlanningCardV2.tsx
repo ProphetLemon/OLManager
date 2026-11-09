@@ -114,11 +114,11 @@ export default function ScrimPlanningCardV2({
           {t("training.scrims.title")}
         </CardTitle>
         <div className="flex items-center gap-2">
-          <span className="rounded-md border border-border px-2 py-0.5 font-heading text-[10px] tabular-nums text-muted-foreground">
+          <span className="rounded-md border border-border px-2 py-0.5 font-heading text-2xs tabular-nums text-muted-foreground">
             {t("training.scrims.weekCapacity")}: {slots}
           </span>
           {streak > 0 && (
-            <span className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-0.5 font-heading text-[10px] font-bold tabular-nums text-red-400">
+            <span className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-0.5 font-heading text-2xs font-bold tabular-nums text-red-400">
               {streak}L
             </span>
           )}
@@ -126,7 +126,7 @@ export default function ScrimPlanningCardV2({
             type="button"
             disabled={isSaving || readOnly || !weeklyContext.slots.every((slot) => slot.canEdit)}
             onClick={autofillPlansFromObjective}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 font-heading text-[10px] text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 font-heading text-2xs text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
           >
             <WandSparkles className="size-3" />
             Rellenar
@@ -163,7 +163,7 @@ export default function ScrimPlanningCardV2({
                       <CalendarDays className="size-4 text-primary" />
                     </div>
                     <div>
-                      <p className="font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <p className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                         {t("training.scrims.slot", "Slot")} {index + 1}
                       </p>
                       <p className="font-heading text-sm font-bold uppercase tracking-wide text-foreground">
@@ -198,7 +198,7 @@ export default function ScrimPlanningCardV2({
 
                     return (
                       <div key={`scrim-slot-${index}-plan-${priorityIndex}`}>
-                        <label className="mb-1 flex items-center gap-1 font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        <label className="mb-1 flex items-center gap-1 font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                           <Icon className="size-3" />
                           {label}
                         </label>

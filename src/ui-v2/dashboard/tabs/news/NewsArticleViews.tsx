@@ -34,7 +34,7 @@ function CategoryBadge({ category }: { category: string }) {
     <Badge
       variant="ghost"
       className={cn(
-        "h-auto gap-1.5 px-2.5 py-1 font-heading text-[10px] font-bold uppercase tracking-widest",
+        "h-auto gap-1.5 px-2.5 py-1 font-heading text-2xs font-bold uppercase tracking-widest",
         style.color,
         style.bg,
       )}
@@ -48,7 +48,7 @@ function CategoryBadge({ category }: { category: string }) {
 function ArticleDate({ date }: { date: string }) {
   const { i18n } = useTranslation();
   return (
-    <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+    <span className="flex items-center gap-1 text-2xs text-muted-foreground">
       <Clock className="size-3" />
       {formatMatchDate(date, i18n.language)}
     </span>
@@ -101,7 +101,7 @@ function TeamChips({
           key={tid}
           type="button"
           onClick={() => onSelectTeam(tid)}
-          className="rounded-md bg-primary/5 px-2 py-0.5 font-heading text-[10px] font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/10"
+          className="rounded-md bg-primary/5 px-2 py-0.5 font-heading text-2xs font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/10"
         >
           {getTeamName(teams, tid)}
         </button>
@@ -136,7 +136,7 @@ export function HeroArticle({
           <span className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">{article.body}</span>
         </button>
         <div className="flex items-center justify-between border-t pt-3">
-          <p className="font-heading text-[10px] uppercase tracking-widest text-muted-foreground">— {article.source}</p>
+          <p className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">— {article.source}</p>
           <TeamChips article={article} teams={teams} limit={3} onSelectTeam={onSelectTeam} />
         </div>
       </CardContent>
@@ -163,7 +163,7 @@ export function ArticleCard({
         <ScoreLine article={article} teams={teams} size="sm" />
         <span className="line-clamp-2 flex-1 text-xs leading-relaxed text-muted-foreground">{article.body}</span>
         <span className="mt-1 flex items-center justify-between border-t pt-2">
-          <span className="font-heading text-[10px] uppercase tracking-widest text-muted-foreground">
+          <span className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">
             {article.source}
           </span>
           <ArticleDate date={article.date} />
@@ -206,7 +206,7 @@ export function ArticleDetail({
           <ScoreLine article={article} teams={teams} size="lg" />
           <div className="whitespace-pre-line text-sm leading-relaxed text-foreground/80">{article.body}</div>
           <div className="flex items-center justify-between border-t pt-4">
-            <p className="font-heading text-[10px] uppercase tracking-widest text-muted-foreground">
+            <p className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">
               — {article.source}
             </p>
             <TeamChips article={article} teams={teams} onSelectTeam={onSelectTeam} />

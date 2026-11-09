@@ -89,7 +89,7 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
             onClick={() => { setRoleFilter("ALL"); resetPage(); }}
             title={t("common.all", "All")}
           >
-            <span className="font-heading text-[10px] font-bold uppercase tracking-widest">All</span>
+            <span className="font-heading text-2xs font-bold uppercase tracking-widest">All</span>
           </RoleButton>
           {LOL_ROLE_ORDER.map((role) => (
             <RoleButton
@@ -140,7 +140,7 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
                 )}
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 px-2 py-2">
-                  <p className="truncate text-center font-heading text-[11px] font-bold uppercase tracking-wider text-white drop-shadow">
+                  <p className="truncate text-center font-heading text-caption font-bold uppercase tracking-wider text-white drop-shadow">
                     {champion.champion_key}
                   </p>
                 </div>

@@ -276,7 +276,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
               <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 p-3">
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">{t("scrims.delegation")}</p>
-                  <p className="mt-0.5 font-heading text-[10px] uppercase tracking-wider text-muted-foreground/60">
+                  <p className="mt-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground/60">
                     {settings.scrim_review_mode === "assistant" ? t("scrims.autoMode") : t("scrims.manualControl")}
                   </p>
                 </div>
@@ -309,7 +309,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                       style={{ width: `${weeklyCapacity > 0 ? (plannedScrims / weeklyCapacity) * 100 : 0}%` }}
                     />
                   </div>
-                  <p className="mt-1 font-heading text-[8px] uppercase tracking-wider text-muted-foreground">{t("scrims.planned")}</p>
+                  <p className="mt-1 font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("scrims.planned")}</p>
                 </div>
                 {/* W/L gauge */}
                 <div className="flex-1 min-w-0 rounded-lg border border-border bg-muted/30 px-2 py-2 text-center">
@@ -326,7 +326,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                       </>
                     )}
                   </div>
-                  <p className="mt-1 font-heading text-[8px] uppercase tracking-wider text-muted-foreground">{t("scrims.weekRecord")}</p>
+                  <p className="mt-1 font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("scrims.weekRecord")}</p>
                 </div>
                 {/* Rep gauge */}
                 <div className="flex-1 min-w-0 rounded-lg border border-border bg-muted/30 px-2 py-2 text-center">
@@ -337,7 +337,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                       style={{ width: `${Math.min(100, weeklyContext.reputation * 10)}%` }}
                     />
                   </div>
-                  <p className="mt-1 font-heading text-[8px] uppercase tracking-wider text-muted-foreground">{t("scrims.reputation")}</p>
+                  <p className="mt-1 font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("scrims.reputation")}</p>
                 </div>
               </div>
             </CardContent>
@@ -354,7 +354,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
             <CardContent>
               <div className="flex flex-col gap-4 md:flex-row md:items-end">
                 <div className="flex-1 space-y-2">
-                  <label className="font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <label className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                     <Target className="mr-1 inline size-3.5" />
                     {t("training.scrims.weeklyObjective")}
                   </label>
@@ -372,7 +372,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                   {objective && <p className="text-xs text-muted-foreground">{scrimFocusImpactText(t, objective)}</p>}
                 </div>
                 <div className="space-y-2">
-                  <p className="font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("scrims.weeklyVolume")}</p>
+                  <p className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("scrims.weeklyVolume")}</p>
                   <div className="flex gap-2">
                     {SCRIM_SLOT_OPTIONS.map((slots) => (
                       <button
@@ -408,7 +408,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
               </div>
               {staffSuggestions.length > 0 && (
                 <div className="mt-4 border-t border-border pt-3">
-                  <p className="mb-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-2 flex items-center gap-1 text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                     <Lightbulb className="size-3.5" />
                     {t("training.scrims.staffSuggestions")}
                   </p>
@@ -444,12 +444,12 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
 
                 {todayOpponentName && (
                   <div className="rounded-lg border border-border bg-muted/20 p-3">
-                    <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("scrims.todayOpponent")}</p>
+                    <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("scrims.todayOpponent")}</p>
                     <p className="font-heading text-sm font-bold uppercase tracking-wide text-foreground">{todayOpponentName}</p>
                     {todayContext.state === "Planned" && (
                       <div className="mt-2 flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">{t("scrims.todayRisk")}:</span>
-                        <span className={cn("rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider", riskColor(todayRisk))}>
+                        <span className={cn("rounded-md border px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wider", riskColor(todayRisk))}>
                           {t(`scrims.risk.${todayRisk}`)}
                         </span>
                       </div>
@@ -460,7 +460,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                 {/* Post-scrim review decisions */}
                 {todayContext.state === "PlayedNeedsReview" && todayContext.report && todayContext.canReview && (
                   <div className="space-y-2">
-                    <p className="font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <p className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                       {isFirstBlock ? (showCancelFollowups ? t("scrims.cancelFollowupTitle") : t("scrims.blockDecisionTitle")) : t("scrims.closeDayTitle")}
                     </p>
                     {decisionOptions.map((opt) => {
@@ -492,7 +492,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                                     key={tag}
                                     variant="outline"
                                     className={cn(
-                                      "text-[9px]",
+                                      "text-2xs",
                                       tag.includes("+") ? "border-emerald-500/20 text-emerald-400" : "border-red-500/20 text-red-400",
                                     )}
                                   >
@@ -529,10 +529,10 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                 {played > 0 && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <span className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                         {t("scrims.streaks")}
                       </span>
-                      <span className="font-heading text-[10px] tabular-nums text-muted-foreground/60">
+                      <span className="font-heading text-2xs tabular-nums text-muted-foreground/60">
                         {t("scrims.played")}: {played}
                       </span>
                     </div>
@@ -553,7 +553,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
 
                 {/* Recent reports */}
                 <div>
-                  <p className="mb-2 font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-2 font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                     {t("scrims.recentReports")}
                   </p>
                   {latestReports.length > 0 ? (
@@ -564,11 +564,11 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                             <p className="truncate text-xs font-medium text-foreground">
                               {teamNameById.get(r.opponent_team_id) ?? r.opponent_team_id}
                             </p>
-                            <span className={cn("text-[10px] font-bold", r.won ? "text-emerald-400" : "text-red-400")}>
+                            <span className={cn("text-2xs font-bold", r.won ? "text-emerald-400" : "text-red-400")}>
                               {r.won ? "W" : "L"}
                             </span>
                           </div>
-                          <p className="mt-0.5 text-[10px] text-muted-foreground">{r.focus} · Q{r.quality}</p>
+                          <p className="mt-0.5 text-2xs text-muted-foreground">{r.focus} · Q{r.quality}</p>
                         </div>
                       ))}
                     </div>
@@ -581,15 +581,15 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                 {weeklyContext.avgQuality > 0 && (
                   <div className="rounded-lg border border-border bg-muted/20 p-3">
                     <div className="flex items-center justify-between">
-                      <p className="font-heading text-[10px] font-bold uppercase tracking-wider text-foreground">{t("scrims.weeklyObjective")}</p>
-                      <span className="font-heading text-[10px] tabular-nums text-muted-foreground">Q: {weeklyContext.avgQuality}</span>
+                      <p className="font-heading text-2xs font-bold uppercase tracking-wider text-foreground">{t("scrims.weeklyObjective")}</p>
+                      <span className="font-heading text-2xs tabular-nums text-muted-foreground">Q: {weeklyContext.avgQuality}</span>
                     </div>
                     <div className="mt-1 flex items-center gap-2">
                       <div className="flex-1">
                         <p className="text-xs text-muted-foreground">{wins}-{losses}</p>
                       </div>
                       {weeklyContext.lossStreak > 1 && (
-                        <Badge className="border-red-500/30 bg-red-500/10 text-[10px] text-red-400">
+                        <Badge className="border-red-500/30 bg-red-500/10 text-2xs text-red-400">
                           {weeklyContext.lossStreak}L streak
                         </Badge>
                       )}

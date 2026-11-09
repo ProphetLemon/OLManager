@@ -357,7 +357,7 @@ export default function CustomTeamWizardV2({
               >
                 <span
                   className={cn(
-                    "flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] tabular-nums",
+                    "flex size-5 shrink-0 items-center justify-center rounded-full text-2xs tabular-nums",
                     index < step ? "bg-primary text-primary-foreground" : "bg-muted",
                   )}
                 >
@@ -574,7 +574,7 @@ export default function CustomTeamWizardV2({
                           </span>
                         </span>
                         {team.id === defaultReplacementId(teams) && (
-                          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                             {t("teamSelect.custom.replace.lowestReputation")}
                           </span>
                         )}

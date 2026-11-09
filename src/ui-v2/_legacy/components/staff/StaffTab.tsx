@@ -415,7 +415,7 @@ export default function StaffTab({ gameState, onGameUpdate, mode = "club" }: Sta
                           </span>
                         )}
                         {staff.wage > 0 && (
-                          <span className="text-[10px] bg-gray-100 dark:bg-navy-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded font-heading uppercase tracking-wider">
+                          <span className="text-2xs bg-gray-100 dark:bg-navy-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded font-heading uppercase tracking-wider">
                             {activeCurrencySymbol()}{staff.wage.toLocaleString()}/año
                           </span>
                         )}

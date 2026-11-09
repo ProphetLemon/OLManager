@@ -232,7 +232,7 @@ function FixtureChip({
         <Badge
           variant="accent"
           size="sm"
-          className={isFull ? "" : "!text-[7px] !px-1 !py-0"}
+          className={isFull ? "" : "!text-2xs !px-1 !py-0"}
         >
           {competitionLabel}
         </Badge>

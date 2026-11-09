@@ -237,7 +237,7 @@ function Group({
               {it.label}
             </span>
             {it.badge !== undefined && it.badge > 0 && (
-              <Badge className="h-5 px-1.5 text-[10px]">{it.badge}</Badge>
+              <Badge className="h-5 px-1.5 text-2xs">{it.badge}</Badge>
             )}
           </button>
         );
@@ -248,7 +248,7 @@ function Group({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-3 pt-4 pb-1 font-heading text-[10px] uppercase tracking-widest text-muted-foreground/70">
+    <div className="px-3 pt-4 pb-1 font-heading text-2xs uppercase tracking-widest text-muted-foreground/70">
       {children}
     </div>
   );

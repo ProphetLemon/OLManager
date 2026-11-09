@@ -83,7 +83,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
               <div className="rounded-lg border border-border bg-card px-3 py-3 text-center">
                 <Eye className="mx-auto mb-1 size-4 text-primary" />
                 <p className="font-heading text-xl font-bold text-foreground tabular-nums">{scouts.length}</p>
-                <p className="font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{t("scouting.scouts")}</p>
+                <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("scouting.scouts")}</p>
               </div>
               <div className="rounded-lg border border-border bg-card px-3 py-3 text-center">
                 <Clock className="mx-auto mb-1 size-4 text-amber-400" />
@@ -94,7 +94,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                     style={{ width: `${totalCapacity > 0 ? (assignments.length / totalCapacity) * 100 : 0}%` }}
                   />
                 </div>
-                <p className="mt-1 font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{t("scouting.activeAssignments")}</p>
+                <p className="mt-1 font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("scouting.activeAssignments")}</p>
               </div>
               <div className="rounded-lg border border-border bg-card px-3 py-3 text-center">
                 <User className="mx-auto mb-1 size-4 text-emerald-400" />
@@ -105,7 +105,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                     style={{ width: `${scouts.length > 0 ? (availableScouts.length / scouts.length) * 100 : 0}%` }}
                   />
                 </div>
-                <p className="mt-1 font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{t("scouting.freeSlots")}</p>
+                <p className="mt-1 font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("scouting.freeSlots")}</p>
               </div>
             </div>
           )}
@@ -134,7 +134,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                       })()}
                     </div>
                     <div>
-                      <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                         {t("scouting.academyScoutingTag")}
                       </p>
                       <p className="mt-1 font-heading text-sm font-bold text-foreground">
@@ -155,7 +155,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                   <GraduationCap className="size-7 text-muted-foreground/30" />
                 </div>
                 <div className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-amber-500/20 ring-2 ring-background">
-                  <span className="font-heading text-[10px] font-bold text-amber-400">!</span>
+                  <span className="font-heading text-2xs font-bold text-amber-400">!</span>
                 </div>
               </div>
 
@@ -273,10 +273,10 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                     className="rounded-lg border border-border/40 bg-card/60 px-3 py-3 text-center transition-colors hover:border-border/80"
                   >
                     <benefit.icon className="mx-auto size-4 text-muted-foreground/50" />
-                    <p className="mt-1.5 font-heading text-[11px] font-bold uppercase tracking-wider text-foreground/80">
+                    <p className="mt-1.5 font-heading text-caption font-bold uppercase tracking-wider text-foreground/80">
                       {benefit.label}
                     </p>
-                    <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground/60">
+                    <p className="mt-0.5 text-2xs leading-relaxed text-muted-foreground/60">
                       {benefit.desc}
                     </p>
                   </div>

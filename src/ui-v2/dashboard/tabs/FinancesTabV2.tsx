@@ -310,13 +310,13 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
         <CardContent>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
             <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.clubBalance")}</p>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.clubBalance")}</p>
               <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", teamBalance >= 0 ? "text-emerald-400" : "text-red-400")}>{formatVal(teamBalance)}</p>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.annualWageBudget", "Annual wage budget")}</p>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.annualWageBudget", "Annual wage budget")}</p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">{formatVal(annualWageBudget)}</p>
-              <p className="mt-1 text-[10px] text-muted-foreground">
+              <p className="mt-1 text-2xs text-muted-foreground">
                 {t("finances.monthlyCommitment", "Monthly commitment")}: {activeCurrencySymbol()}{financeSnapshot.monthlyWageBudget.toLocaleString()}{monthlySuffix}
               </p>
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
@@ -324,9 +324,9 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
               </div>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.transferBudgetRemaining", "Transfer budget remaining")}</p>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.transferBudgetRemaining", "Transfer budget remaining")}</p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">{formatVal(teamTransferBudget)}</p>
-              <p className="mt-1 text-[10px] text-muted-foreground">
+              <p className="mt-1 text-2xs text-muted-foreground">
                 {t("finances.transferSpendThisSeason", "Transfer spend this season")}: {formatVal(transferBudgetSummary.spend)} spent
               </p>
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
@@ -334,17 +334,17 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
               </div>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.seasonIncome")}</p>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.seasonIncome")}</p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-emerald-400">{formatVal(seasonNetSummary.income)}</p>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.seasonExpenses")}</p>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.seasonExpenses")}</p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-red-400">{formatVal(seasonNetSummary.expenses)}</p>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.seasonNet", "Season net")}</p>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.seasonNet", "Season net")}</p>
               <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", seasonNetSummary.net >= 0 ? "text-emerald-400" : "text-red-400")}>{formatVal(seasonNetSummary.net)}</p>
-              <p className="mt-1 text-[10px] text-muted-foreground">{t("finances.squadValue")}: {formatVal(totalValue)}</p>
+              <p className="mt-1 text-2xs text-muted-foreground">{t("finances.squadValue")}: {formatVal(totalValue)}</p>
             </div>
           </div>
         </CardContent>
@@ -410,23 +410,23 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.annualWageSpend")}</p>
+                <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.annualWageSpend")}</p>
                 <p className="mt-1 font-heading text-lg font-bold text-red-400 tabular-nums">{activeCurrencySymbol()}{totalWages.toLocaleString()}{annualSuffix}</p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.annualSponsorIncome")}</p>
+                <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.annualSponsorIncome")}</p>
                 <p className="mt-1 font-heading text-lg font-bold text-emerald-400 tabular-nums">{activeCurrencySymbol()}{annualSponsorIncome.toLocaleString()}{annualSuffix}</p>
               </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.projectedAnnualNet")}</p>
+                <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.projectedAnnualNet")}</p>
                 <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", projectedAnnualNet >= 0 ? "text-emerald-400" : "text-red-400")}>
                   {activeCurrencySymbol()}{projectedAnnualNet.toLocaleString()}{annualSuffix}
                 </p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.cashRunway")}</p>
+                <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.cashRunway")}</p>
                 <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", cashRunwayMonths !== null && cashRunwayMonths < 12 ? "text-red-400" : cashRunwayMonths !== null && cashRunwayMonths < 52 ? "text-amber-400" : "text-foreground")}>
                   {cashRunwayMonths === null ? t("finances.runwayStable") : t("finances.runwayMonths", { count: cashRunwayMonths })}
                 </p>
@@ -497,14 +497,14 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
               </div>
               {ledgerGroups.length > 0 ? ledgerGroups.map((group) => (
                 <section key={group.date} className="space-y-2">
-                  <h4 className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground tabular-nums">{group.date}</h4>
+                  <h4 className="font-heading text-2xs uppercase tracking-wider text-muted-foreground tabular-nums">{group.date}</h4>
                   {group.entries.map((entry, index) => {
                     const balanceAfter = getLedgerEntryBalanceAfter(entry);
                     return (
                       <div key={`${entry.id ?? entry.date}-${entry.kind}-${index}`} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg bg-muted/40 px-3 py-2 text-sm md:grid-cols-[1fr_8rem_auto]">
                         <div className="min-w-0">
                           <span className="block truncate text-foreground">{entry.description || (LEDGER_KIND_LABELS[entry.kind] ?? entry.kind)}</span>
-                          <span className="mt-0.5 inline-flex gap-2 text-[11px] text-muted-foreground">
+                          <span className="mt-0.5 inline-flex gap-2 text-caption text-muted-foreground">
                             <span>{LEDGER_KIND_LABELS[entry.kind] ?? entry.kind}</span>
                             <span>·</span>
                             <span>{t(getLedgerEntrySourceLabelKey(entry), getLedgerEntrySource(entry))}</span>
@@ -551,7 +551,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                     <h3 className="truncate font-heading text-base font-bold uppercase tracking-wide text-foreground">
                       {activeSponsorship.sponsorName}
                     </h3>
-                    <Badge variant={activeSponsorship.theme === "esports" ? "default" : "secondary"} className="text-[10px]">
+                    <Badge variant={activeSponsorship.theme === "esports" ? "default" : "secondary"} className="text-2xs">
                       {activeSponsorship.theme === "esports" ? t("finances.esportsSponsor") : t("finances.standardSponsor")}
                     </Badge>
                   </div>
@@ -582,7 +582,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                   <button
                     type="button"
                     onClick={handleToggleAllRiskPlayers}
-                    className="rounded-md border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted"
+                    className="rounded-md border border-border px-2 py-1 text-2xs font-medium text-muted-foreground transition-colors hover:bg-muted"
                   >
                     {t("finances.selectAllAtRisk")}
                   </button>
@@ -590,7 +590,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                     type="button"
                     disabled={actionLoading === "delegate-renewals" || selectedRiskPlayers.length === 0}
                     onClick={handleDelegateRenewals}
-                    className="rounded-md border border-primary bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
+                    className="rounded-md border border-primary bg-primary/10 px-2 py-1 text-2xs font-medium text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
                   >
                     {actionLoading === "delegate-renewals" ? (
                       <RefreshCw className="mr-1 inline size-3 animate-spin" />
@@ -632,10 +632,10 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                               style={{ width: `${Math.min(100, (yearsRemaining / 5) * 100)}%` }}
                             />
                           </div>
-                          <span className="font-heading text-[10px] tabular-nums text-muted-foreground">{yearsRemaining.toFixed(1)}y</span>
+                          <span className="font-heading text-2xs tabular-nums text-muted-foreground">{yearsRemaining.toFixed(1)}y</span>
                         </div>
                       </div>
-                      <Badge variant={riskLevel === "critical" ? "destructive" : "secondary"} className="text-[10px]">
+                      <Badge variant={riskLevel === "critical" ? "destructive" : "secondary"} className="text-2xs">
                         {riskLevel === "critical" ? t("finances.contractRiskCritical") : t("finances.contractRiskWarning")}
                       </Badge>
                       <p className="font-heading text-xs font-bold tabular-nums text-foreground">
@@ -645,7 +645,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                         <button
                           type="button"
                           onClick={() => onSelectPlayer(player.id, { openRenewal: true })}
-                          className="rounded-md border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted"
+                          className="rounded-md border border-border px-2 py-1 text-2xs font-medium text-muted-foreground transition-colors hover:bg-muted"
                         >
                           {t("common.renewContract")}
                         </button>
@@ -715,7 +715,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                         <span className="text-sm font-medium text-foreground">{p.match_name}</span>
                       </TableCell>
                       <TableCell className={cn(i % 2 === 1 && "bg-muted/20")}>
-                        <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-heading text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                           {role}
                         </span>
                       </TableCell>
@@ -794,7 +794,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                         <h3 className="font-heading text-sm font-bold uppercase tracking-wide text-foreground">
                           {t(facility.labelKey, facility.label)}
                         </h3>
-                        <span className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 font-heading text-[10px] tabular-nums text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 font-heading text-2xs tabular-nums text-muted-foreground">
                           Lv.{level}
                         </span>
                       </div>
@@ -807,7 +807,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                     </div>
                   </div>
                   <div className="mt-auto space-y-1">
-                    <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                       {t("finances.nextUpgradeCost", { amount: nextCost.toLocaleString() })}
                     </p>
                     <button
@@ -820,12 +820,12 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                       {t("finances.upgradeFacility")}
                     </button>
                     {(!facility.upgradeFacility || !unlocksNextLevel) && (
-                      <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <p className="flex items-center gap-1 text-2xs text-muted-foreground">
                         <Lock className="size-3" /> {t("finances.hubExpansionRequired")}
                       </p>
                     )}
                     {canUpgrade === false && facility.upgradeFacility && unlocksNextLevel && (
-                      <p className="text-[10px] text-red-400">{t("finances.insufficientFunds")}</p>
+                      <p className="text-2xs text-red-400">{t("finances.insufficientFunds")}</p>
                     )}
                   </div>
                 </div>

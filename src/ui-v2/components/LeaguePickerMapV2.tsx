@@ -329,7 +329,7 @@ export default function LeaguePickerMapV2() {
                       </div>
                       <div className="min-w-0">
                         <p className="truncate font-heading text-sm font-bold text-foreground">{team.short_name || team.name}</p>
-                        <p className="text-[10px] text-muted-foreground/60">{team.country}</p>
+                        <p className="text-2xs text-muted-foreground/60">{team.country}</p>
                       </div>
                       {team.ovr && (
                         <div className="rounded-md bg-primary/15 px-2 py-0.5 font-heading text-xs font-bold tabular-nums text-primary">{team.ovr} OVR</div>

@@ -179,7 +179,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                               "group flex items-center gap-2 px-5 py-3 transition-all duration-200 md:gap-3",
                               isUserMatch && "bg-primary/5",
                             )}>
-                            <Badge variant="outline" className="hidden w-10 shrink-0 text-center text-[10px] md:block">
+                            <Badge variant="outline" className="hidden w-10 shrink-0 text-center text-2xs md:block">
                               BO{inferBestOf(f, bestOfContext)}
                             </Badge>
                             <button onClick={() => onSelectTeam(f.home_team_id)}
@@ -193,7 +193,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                             <div className="flex w-16 shrink-0 items-center justify-center md:w-20">
                               <div className="flex flex-col items-center">
                                 <span className="font-heading text-xs font-bold uppercase tracking-widest text-muted-foreground/30">VS</span>
-                                <span className="text-[9px] text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date)}</span>
+                                <span className="text-2xs text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date)}</span>
                               </div>
                             </div>
                             <button onClick={() => onSelectTeam(f.away_team_id)}
@@ -262,7 +262,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                         !isUserMatch && "hover:bg-muted/20",
                       )}>
                       {/* BO badge */}
-                      <Badge variant="outline" className="hidden w-10 shrink-0 text-center text-[10px] md:block">
+                      <Badge variant="outline" className="hidden w-10 shrink-0 text-center text-2xs md:block">
                         BO{bo}
                       </Badge>
 
@@ -288,7 +288,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                         ) : (
                           <div className="flex flex-col items-center">
                             <span className="font-heading text-xs font-bold uppercase tracking-widest text-muted-foreground/30">VS</span>
-                            <span className="text-[9px] text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date)}</span>
+                            <span className="text-2xs text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date)}</span>
                           </div>
                         )}
                       </div>
@@ -424,7 +424,7 @@ function WeekScheduleCard({
                         : "border-border bg-card/60",
                 )}
               >
-                <div className="font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <div className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                   {d.label}
                 </div>
                 <div
@@ -440,12 +440,12 @@ function WeekScheduleCard({
                     oppLogo ? (
                       <img src={oppLogo} alt="" className="size-7 object-contain" />
                     ) : (
-                      <span className="font-heading text-[10px] font-bold text-primary">
+                      <span className="font-heading text-2xs font-bold text-primary">
                         {t("schedule.match")}
                       </span>
                     )
                   ) : (
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
+                    <span className="text-2xs uppercase tracking-wider text-muted-foreground/60">
                       ·
                     </span>
                   )}

@@ -1045,7 +1045,7 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
                 </div>
               </div>
 
-              <div className="text-2xl font-black italic tracking-[1px] text-white sm:text-[32px]">{clock}</div>
+              <div className="text-2xl font-black italic tracking-[1px] text-white sm:text-[2rem]">{clock}</div>
 
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 text-xl font-bold text-white/70">

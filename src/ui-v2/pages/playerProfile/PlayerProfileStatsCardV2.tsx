@@ -46,7 +46,7 @@ export default function PlayerProfileStatsCardV2({ stats, t }: Props) {
             <div key={label} className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
               <Icon className="size-5 shrink-0 text-muted-foreground/70" />
               <div className="min-w-0">
-                <p className="font-heading text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <p className="font-heading text-caption font-bold uppercase tracking-wider text-muted-foreground">
                   {label}
                 </p>
                 <p className={cn("font-heading text-lg font-bold tabular-nums", color ?? "text-foreground")}>

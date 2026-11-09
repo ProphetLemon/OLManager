@@ -384,7 +384,7 @@ function MessageRow({
             >
               {message.subject}
             </div>
-            <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+            <span className="shrink-0 text-2xs text-muted-foreground tabular-nums">
               {formatDateShort(message.date, lang)}
             </span>
           </div>

@@ -316,7 +316,7 @@ function NextOpponentCard({
                   </span>
                 </div>
 
-                <div className="px-2 text-center font-heading text-[10px] uppercase tracking-widest text-muted-foreground">
+                <div className="px-2 text-center font-heading text-2xs uppercase tracking-widest text-muted-foreground">
                   {role}
                 </div>
 
@@ -345,7 +345,7 @@ function NextOpponentCard({
         {/* Footer: form + cta */}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+            <div className="mb-1 text-2xs uppercase tracking-widest text-muted-foreground">
               {t("home.nextMatchCard.opponentForm")}
             </div>
             <div className="flex gap-1.5">
@@ -436,7 +436,7 @@ function FullStandingsCard({
             </div>
           )}
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            <div className="text-2xs uppercase tracking-widest text-muted-foreground">
               {t("home.standings.title")}
             </div>
             <div className="truncate font-heading text-base font-bold uppercase tracking-wider">
@@ -454,7 +454,7 @@ function FullStandingsCard({
           </p>
         ) : (
           <table className="w-full">
-            <thead className="bg-muted/30 text-[10px] uppercase tracking-widest text-muted-foreground">
+            <thead className="bg-muted/30 text-2xs uppercase tracking-widest text-muted-foreground">
               <tr className="border-b border-border/60">
                 <th className="w-8 px-2 py-2 text-right">{t("home.standings.hash")}</th>
                 <th className="px-2 py-2 text-left">{t("home.standings.team")}</th>
@@ -742,7 +742,7 @@ function MessagesCard({
                         {m.subject}
                       </div>
                       {m.priority === "high" && (
-                        <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[9px] font-heading font-bold uppercase tracking-wider text-destructive">
+                        <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-2xs font-heading font-bold uppercase tracking-wider text-destructive">
                           {t("inbox.urgent")}
                         </span>
                       )}
@@ -756,7 +756,7 @@ function MessagesCard({
                       {m.body}
                     </div>
                   </div>
-                  <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+                  <span className="shrink-0 text-2xs text-muted-foreground tabular-nums">
                     {formatDateShort(m.date, lang)}
                   </span>
                 </button>
@@ -983,7 +983,7 @@ function TodayPhaseCard({
           <div className="font-heading text-lg font-bold">{meta.title}</div>
           <div className="truncate text-sm text-muted-foreground">{meta.description}</div>
           <div className={cn(
-            "mt-1 font-heading text-[10px] font-bold uppercase tracking-widest",
+            "mt-1 font-heading text-2xs font-bold uppercase tracking-widest",
             meta.accent,
           )}>
             {t("home.currentPhase")} · {meta.label}

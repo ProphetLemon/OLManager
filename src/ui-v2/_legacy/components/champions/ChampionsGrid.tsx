@@ -166,7 +166,7 @@ export default function ChampionsGrid({ champions, onChampionClick }: ChampionsG
                             return (
                               <span
                                 key={role}
-                                className={`inline-flex items-center gap-1 font-bold font-heading uppercase tracking-wider rounded-md px-2 py-0.5 text-[10px] ${badgeStyle}`}
+                                className={`inline-flex items-center gap-1 font-bold font-heading uppercase tracking-wider rounded-md px-2 py-0.5 text-2xs ${badgeStyle}`}
                                 title={role}
                               >
                                 <img src={iconUrl} alt={role} className="h-3 w-3" />

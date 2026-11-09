@@ -10,6 +10,7 @@
   --font-sans: "Inter", "Avenir", "Helvetica", "Arial", sans-serif;
   --font-heading: "Oswald", "Impact", "Arial Narrow", sans-serif;
   --text-2xs: 0.625rem;
+  --text-caption: 0.6875rem;
 
   /* Primary: Emerald Green (static — used by legacy/main menu) */
   --color-primary-50: #ecfdf5;

@@ -99,7 +99,7 @@ export default function ScoutingPlayerSearchCardV2({
               type="button"
               onClick={() => onPositionFilterChange(position)}
               className={cn(
-                "rounded-md px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider transition-colors",
+                "rounded-md px-2 py-1 text-2xs font-heading font-bold uppercase tracking-wider transition-colors",
                 posFilter === position
                   ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -127,7 +127,7 @@ export default function ScoutingPlayerSearchCardV2({
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-border text-[10px] uppercase tracking-widest text-muted-foreground">
+              <tr className="border-b border-border text-2xs uppercase tracking-widest text-muted-foreground">
                 <th className="w-12 px-2 py-2.5 font-heading font-bold" />
                 <th className="cursor-pointer px-2 py-2.5 font-heading font-bold hover:text-foreground" onClick={() => toggleSort("name")}>
                   <span className="flex items-center gap-1">{t("scouting.player")}<SortIcon sortKey={sortKey} asc={sortAsc} thisKey="name" /></span>
@@ -173,8 +173,8 @@ export default function ScoutingPlayerSearchCardV2({
                       >
                         {player.match_name}
                       </button>
-                      <p className="text-[10px] text-muted-foreground">{player.full_name}</p>
-                      <p className="mt-0.5 text-[10px] text-muted-foreground/60">
+                      <p className="text-2xs text-muted-foreground">{player.full_name}</p>
+                      <p className="mt-0.5 text-2xs text-muted-foreground/60">
                         {countryName(player.nationality, i18n.language)}
                       </p>
                     </td>
@@ -197,15 +197,15 @@ export default function ScoutingPlayerSearchCardV2({
                     </td>
                     <td className="px-2 py-2.5 text-right">
                       {isScouting ? (
-                        <Badge variant="outline" className="text-[10px] text-primary">{t("scouting.scoutingBadge")}</Badge>
+                        <Badge variant="outline" className="text-2xs text-primary">{t("scouting.scoutingBadge")}</Badge>
                       ) : availableScoutCount === 0 ? (
-                        <span className="text-[10px] text-muted-foreground/60">{t("scouting.noScoutsFree")}</span>
+                        <span className="text-2xs text-muted-foreground/60">{t("scouting.noScoutsFree")}</span>
                       ) : (
                         <button
                           type="button"
                           disabled={sendingPlayerId === player.id}
                           onClick={() => onSendScout(player.id)}
-                          className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-heading font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-2xs font-heading font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
                         >
                           <ScanSearch className="size-3" />
                           {sendingPlayerId === player.id ? "..." : t("scouting.scoutBtn")}
@@ -225,7 +225,7 @@ export default function ScoutingPlayerSearchCardV2({
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-2xs text-muted-foreground">
               {t("scouting.showingRange", { from: safePage * pageSize + 1, to: Math.min((safePage + 1) * pageSize, totalPlayers), total: totalPlayers })}
             </span>
             <div className="flex items-center gap-2">

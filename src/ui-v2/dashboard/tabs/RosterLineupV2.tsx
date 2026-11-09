@@ -124,7 +124,7 @@ export function RosterLineupV2({ roster, championMasteries = [], onNavigate, onS
                 )}
 
                 <div className="relative z-10 p-3">
-                  <p className="font-heading text-[10px] font-bold uppercase tracking-widest text-white/70">
+                  <p className="font-heading text-2xs font-bold uppercase tracking-widest text-white/70">
                     {t(`tactics.lol.roles.${role}`, { defaultValue: role })}
                   </p>
 
@@ -144,11 +144,11 @@ export function RosterLineupV2({ roster, championMasteries = [], onNavigate, onS
                       <p className="truncate font-heading text-sm font-bold text-white">
                         {player?.match_name ?? "—"}
                       </p>
-                      <p className="text-[11px] text-white/70 tabular-nums">
+                      <p className="text-caption text-white/70 tabular-nums">
                         OVR {ovr ?? "—"}
                       </p>
                       {topChampion && (
-                        <p className="truncate text-[11px] text-primary">{topChampion}</p>
+                        <p className="truncate text-caption text-primary">{topChampion}</p>
                       )}
                     </div>
                   </div>
@@ -182,7 +182,7 @@ function StatBox({
   };
   return (
     <div className="rounded-md bg-black/40 px-2 py-1 text-center">
-      <div className="text-[10px] uppercase tracking-wider text-white/60">{label}</div>
+      <div className="text-2xs uppercase tracking-wider text-white/60">{label}</div>
       <div className={cn("font-heading text-sm font-bold tabular-nums", colorMap[accent])}>
         {value !== null ? `${value}%` : "—"}
       </div>

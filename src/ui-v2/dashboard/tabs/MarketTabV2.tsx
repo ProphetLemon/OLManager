@@ -189,13 +189,13 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
                     <p className="text-sm font-bold text-foreground">
                       {entry.fee > 0 ? formatVal(entry.fee) : t("market.freeAgent")}
                     </p>
-                    <p className="text-[11px] text-muted-foreground/70">
+                    <p className="text-caption text-muted-foreground/70">
                       {formatDate(entry.date)}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-2 flex items-center gap-3 border-t border-border pt-2 text-[11px] text-muted-foreground">
+                <div className="mt-2 flex items-center gap-3 border-t border-border pt-2 text-caption text-muted-foreground">
                   <span>
                     {t("market.wage")}: {formatVal(entry.annual_wage)}/yr
                   </span>
@@ -223,7 +223,7 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
 
                 {entry.included_players && entry.included_players.length > 0 && (
                   <div className="mt-2 border-t border-border pt-2">
-                    <p className="mb-1.5 font-heading text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p className="mb-1.5 font-heading text-caption font-semibold uppercase tracking-wider text-muted-foreground">
                       {t("market.includedPlayers")}
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -256,7 +256,7 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
                               <p className="truncate text-xs font-semibold text-foreground">
                                 {inc.player_name}
                               </p>
-                              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <div className="flex items-center gap-1 text-2xs text-muted-foreground">
                                 <span className="text-muted-foreground/50">→</span>
                                 <img
                                   src={incToTeamLogo ?? undefined}

@@ -262,11 +262,11 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
             {t("youthAcademy.title")}
           </h2>
           <div className="mt-0.5 flex items-center gap-2">
-            <Badge variant="secondary" className="text-[10px]">
+            <Badge variant="secondary" className="text-2xs">
               {youthPlayers.length} {t("youthAcademy.academyPlayers")}
             </Badge>
             {academyTeam && (
-              <Badge variant="outline" className="text-[10px] text-muted-foreground">
+              <Badge variant="outline" className="text-2xs text-muted-foreground">
                 {academyTeam.name}
               </Badge>
             )}
@@ -280,7 +280,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
           <CardContent className="flex flex-col items-center py-4">
             <Users className="mb-1 size-5 text-muted-foreground" />
             <p className={KPI_CLASS}>{youthPlayers.length}</p>
-            <p className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+            <p className="mt-0.5 text-2xs uppercase tracking-widest text-muted-foreground">
               {t("youthAcademy.academyPlayersStartingMayus")}
             </p>
           </CardContent>
@@ -292,7 +292,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
             <div className="mt-1 h-1 w-20 overflow-hidden rounded-full bg-muted">
               <div className="h-full rounded-full bg-primary" style={{ width: `${avgOvr}%` }} />
             </div>
-            <p className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+            <p className="mt-0.5 text-2xs uppercase tracking-widest text-muted-foreground">
               {t("youthAcademy.avgOvr")}
             </p>
           </CardContent>
@@ -318,7 +318,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                 <div className="mt-1 h-1 w-20 overflow-hidden rounded-full bg-muted" />
               </>
             )}
-            <p className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+            <p className="mt-0.5 text-2xs uppercase tracking-widest text-muted-foreground">
               {t("youthAcademy.avgPotential")}
             </p>
           </CardContent>
@@ -328,11 +328,11 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
             <Sparkles className="mb-1 size-5 text-primary" />
             <p className={KPI_CLASS}>{highPotential}</p>
             {highPotential > 0 && (
-              <Badge variant="default" className="mt-0.5 text-[10px]">
+              <Badge variant="default" className="mt-0.5 text-2xs">
                 {t("youthAcademy.highPotentialBadge", "Talento")}
               </Badge>
             )}
-            <p className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+            <p className="mt-0.5 text-2xs uppercase tracking-widest text-muted-foreground">
               {t("youthAcademy.highPotential")}
             </p>
           </CardContent>
@@ -346,7 +346,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
             <GraduationCap className="size-3.5 text-primary" />
             <span className="text-xs text-muted-foreground">{t("youthAcademy.youthCoach")}</span>
             {youthCoach.map((staff) => (
-              <Badge key={staff.id} variant="secondary" className="text-[10px]">
+              <Badge key={staff.id} variant="secondary" className="text-2xs">
                 {staff.first_name} {staff.last_name} ({staff.attributes.coaching})
               </Badge>
             ))}
@@ -597,7 +597,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                                 title={t("youthAcademy.potentialHiddenHint")}
                               >
                                 <EyeOff className="size-3.5" />
-                                <span className="text-[10px] font-heading font-bold">{t("youthAcademy.hidden")}</span>
+                                <span className="text-2xs font-heading font-bold">{t("youthAcademy.hidden")}</span>
                               </span>
                             )}
                           </TableCell>

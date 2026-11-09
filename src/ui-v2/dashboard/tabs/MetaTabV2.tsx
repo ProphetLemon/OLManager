@@ -263,7 +263,7 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
                   <div key={tier}>
                     <div className="mb-1 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className={cn("inline-flex size-5 items-center justify-center rounded text-[10px] font-heading font-bold", TIER_BADGE_CLASS[tier])}>{tier}</span>
+                        <span className={cn("inline-flex size-5 items-center justify-center rounded text-2xs font-heading font-bold", TIER_BADGE_CLASS[tier])}>{tier}</span>
                         <span className="text-xs text-muted-foreground">
                           {discovered} discovered
                         </span>

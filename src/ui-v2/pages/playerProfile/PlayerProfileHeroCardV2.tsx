@@ -133,7 +133,7 @@ export default function PlayerProfileHeroCardV2({
                 type="button"
                 onClick={onAcademyAction}
                 disabled={academyActionLoading}
-                className="rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+                className="rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-2xs font-heading font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
               >
                 {academyActionLoading ? "..." : academyActionLabel}
               </button>
@@ -210,7 +210,7 @@ export default function PlayerProfileHeroCardV2({
               {isOwnClub && (
                 <>
                   <button type="button" onClick={onToggleTransferList} disabled={!onToggleTransferList}
-                    className={cn("rounded px-1.5 py-0.5 text-[10px] font-heading font-bold uppercase tracking-wider border transition-colors",
+                    className={cn("rounded px-1.5 py-0.5 text-2xs font-heading font-bold uppercase tracking-wider border transition-colors",
                       player.transfer_listed
                         ? "border-red-500/30 bg-red-500/10 text-red-400"
                         : "border-border text-muted-foreground/60 hover:border-red-500/30 hover:text-red-400"
@@ -218,7 +218,7 @@ export default function PlayerProfileHeroCardV2({
                     {player.transfer_listed ? t("playerProfile.transferListed") : t("squad.addToTransferList", { defaultValue: "Añadir a transferibles" })}
                   </button>
                   <button type="button" onClick={onToggleLoanList} disabled={!onToggleLoanList}
-                    className={cn("rounded px-1.5 py-0.5 text-[10px] font-heading font-bold uppercase tracking-wider border transition-colors",
+                    className={cn("rounded px-1.5 py-0.5 text-2xs font-heading font-bold uppercase tracking-wider border transition-colors",
                       player.loan_listed
                         ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
                         : "border-border text-muted-foreground/60 hover:border-blue-500/30 hover:text-blue-400"
@@ -268,7 +268,7 @@ export default function PlayerProfileHeroCardV2({
 function QuickStatV2({ label, value, color, icon }: { label: string; value: string; color: string; icon?: React.ReactNode }) {
   return (
     <div className="min-w-20 rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-center backdrop-blur-xs">
-      <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground/70">{label}</p>
+      <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground/70">{label}</p>
       <p className={cn("mt-0.5 inline-flex items-center justify-center gap-1 font-heading text-lg font-bold", color)}>
         {icon ?? value}
       </p>

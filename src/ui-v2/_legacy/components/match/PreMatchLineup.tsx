@@ -118,7 +118,7 @@ export function ImportBadge({ player }: { player: { is_import?: boolean } }): JS
     <span
       data-testid="import-badge"
       title={t("squad.importTooltip", { max: MAX_IMPORTS_IN_STARTING_FIVE })}
-      className="flex-shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px text-[9px] font-heading font-bold uppercase tracking-wider text-amber-400"
+      className="flex-shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px text-2xs font-heading font-bold uppercase tracking-wider text-amber-400"
     >
       {t("squad.importBadge")}
     </span>
@@ -157,7 +157,7 @@ function TeamLineupColumn({
           {selectedStarterId && isUserSide && (
             <button
               onClick={() => onSelectStarter(null)}
-              className="text-[10px] text-muted-foreground hover:text-foreground font-heading uppercase tracking-wider"
+              className="text-2xs text-muted-foreground hover:text-foreground font-heading uppercase tracking-wider"
             >
               {t("match.cancel")}
             </button>
@@ -170,7 +170,7 @@ function TeamLineupColumn({
       </div>
 
       {selectedStarterId && isUserSide && (
-        <p className="text-[10px] text-primary font-heading uppercase tracking-wider mb-2">
+        <p className="text-2xs text-primary font-heading uppercase tracking-wider mb-2">
           {t("match.swapPrompt")}
         </p>
       )}
@@ -182,7 +182,7 @@ function TeamLineupColumn({
         return (
           <div key={role} className="mb-1">
             {players.length === 0 ? (
-              <div className="flex items-center gap-2 py-1.5 px-2 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-2 py-1.5 px-2 text-caption text-muted-foreground">
                 <img src={LOL_ROLE_ICON_URLS[role]} alt={role} className="w-5 h-5 object-contain flex-shrink-0" title={role} />
                 {t("match.noBenchAvailable2")}
               </div>
@@ -215,7 +215,7 @@ function TeamLineupColumn({
                       />
                     ) : (
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-heading font-bold flex-shrink-0"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-2xs font-heading font-bold flex-shrink-0"
                         style={{
                           backgroundColor: teamColor + "30",
                           color: teamColor,
@@ -232,7 +232,7 @@ function TeamLineupColumn({
                     {isSelected && <ArrowUpDown className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
                     <div className="flex items-center gap-0">
                       <span
-                        className={`text-[10px] font-heading font-bold tabular-nums w-7 text-center ${
+                        className={`text-2xs font-heading font-bold tabular-nums w-7 text-center ${
                           ovr >= 70 ? "text-primary" : ovr >= 50 ? "text-muted-foreground" : "text-red-400"
                         }`}
                       >
@@ -241,7 +241,7 @@ function TeamLineupColumn({
                       {keyStats.map((s) => (
                         <span
                           key={s.label}
-                          className={`text-[10px] font-heading tabular-nums w-7 text-center ${statColor(
+                          className={`text-2xs font-heading tabular-nums w-7 text-center ${statColor(
                             getStatVal(p, s.key),
                           )}`}
                         >
@@ -277,13 +277,13 @@ function TeamLineupColumn({
             <div className="flex items-center gap-2 px-2 pb-1">
               <span className="w-7" />
               <span className="flex-1" />
-              <span className="text-[8px] font-heading uppercase tracking-widest text-muted-foreground/70 w-8 text-center">
+              <span className="text-2xs font-heading uppercase tracking-widest text-muted-foreground/70 w-8 text-center">
                 POS
               </span>
-              <span className="text-[8px] font-heading uppercase tracking-widest text-muted-foreground w-[84px] text-center">
+              <span className="text-2xs font-heading uppercase tracking-widest text-muted-foreground w-[84px] text-center">
                 {t("match.keyStats")}
               </span>
-              <span className="text-[8px] font-heading uppercase tracking-widest text-muted-foreground w-8 text-right">
+              <span className="text-2xs font-heading uppercase tracking-widest text-muted-foreground w-8 text-right">
                 FIT
               </span>
             </div>
@@ -315,7 +315,7 @@ function TeamLineupColumn({
                       loading="lazy"
                     />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-heading font-bold text-muted-foreground flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-2xs font-heading font-bold text-muted-foreground flex-shrink-0">
                       {bp.name.substring(0, 1).toUpperCase()}
                     </div>
                   )}
@@ -333,7 +333,7 @@ function TeamLineupColumn({
                     {keyStats.map((s) => (
                       <span
                         key={s.label}
-                        className={`text-[10px] font-heading tabular-nums w-7 text-center ${statColor(
+                        className={`text-2xs font-heading tabular-nums w-7 text-center ${statColor(
                           getStatVal(bp, s.key),
                         )}`}
                       >

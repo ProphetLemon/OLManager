@@ -250,13 +250,13 @@ export function SquadTabV2({
                 <div key={role} className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-1.5">
                   <img src={ROLE_ICON_URLS[role]} alt={role} className="size-4 object-contain" />
                   <span className="font-heading text-xs font-bold tabular-nums text-foreground">{roleCounts[role]}</span>
-                  <span className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{role}</span>
+                  <span className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{role}</span>
                 </div>
               ))}
               {lowestCondition < 50 && lowestConditionPlayer && (
                 <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5">
                   <AlertTriangle className="size-4 text-amber-400" />
-                  <span className="font-heading text-[10px] uppercase tracking-wider text-amber-400">
+                  <span className="font-heading text-2xs uppercase tracking-wider text-amber-400">
                     {lowestConditionPlayer.match_name}: {lowestCondition}% energía
                   </span>
                 </div>
@@ -373,7 +373,7 @@ export function SquadTabV2({
                           <span
                             data-testid="import-badge"
                             title={t("squad.importTooltip", { max: MAX_IMPORTS_IN_STARTING_FIVE })}
-                            className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px font-heading text-[9px] font-bold uppercase tracking-wider text-amber-400"
+                            className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px font-heading text-2xs font-bold uppercase tracking-wider text-amber-400"
                           >
                             {t("squad.importBadge")}
                           </span>
@@ -408,15 +408,15 @@ export function SquadTabV2({
                     </div>
                     <div className="hidden w-12 shrink-0 text-center md:block">
                       <p className="font-heading text-xl font-black text-primary tabular-nums">{ovr}</p>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">OVR</p>
+                      <p className="text-2xs uppercase tracking-wider text-muted-foreground">OVR</p>
                     </div>
                     <div className="hidden w-14 shrink-0 text-center md:block">
                       <span className="font-heading text-sm font-bold text-muted-foreground">{slot.role}</span>
                     </div>
                     <div className="hidden w-28 shrink-0 lg:block">
                       <div className="mb-0.5 flex items-center justify-between">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Energía</span>
-                        <span className="font-heading text-[11px] font-bold text-amber-400 tabular-nums">{condition}</span>
+                        <span className="text-2xs uppercase tracking-wider text-muted-foreground">Energía</span>
+                        <span className="font-heading text-caption font-bold text-amber-400 tabular-nums">{condition}</span>
                       </div>
                       <div className="relative h-1.5 w-full overflow-hidden rounded-full">
                         <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(to right, #f59e0b, #22c55e)' }} />
@@ -428,8 +428,8 @@ export function SquadTabV2({
                     </div>
                     <div className="hidden w-28 shrink-0 lg:block">
                       <div className="mb-0.5 flex items-center justify-between">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Moral</span>
-                        <span className="font-heading text-[11px] font-bold text-emerald-400 tabular-nums">{morale}</span>
+                        <span className="text-2xs uppercase tracking-wider text-muted-foreground">Moral</span>
+                        <span className="font-heading text-caption font-bold text-emerald-400 tabular-nums">{morale}</span>
                       </div>
                       <div className="relative h-1.5 w-full overflow-hidden rounded-full">
                         <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(to right, #3b82f6, #38bdf8)' }} />
@@ -441,8 +441,8 @@ export function SquadTabV2({
                     </div>
                     <div className="hidden w-28 shrink-0 lg:block">
                       <div className="mb-0.5 flex items-center justify-between">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Fitness</span>
-                        <span className="font-heading text-[11px] font-bold text-green-400 tabular-nums">{fitness}</span>
+                        <span className="text-2xs uppercase tracking-wider text-muted-foreground">Fitness</span>
+                        <span className="font-heading text-caption font-bold text-green-400 tabular-nums">{fitness}</span>
                       </div>
                       <div className="relative h-1.5 w-full overflow-hidden rounded-full">
                         <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(to right, #14b8a6, #2dd4bf 25%, #5eead4 50%)' }} />
@@ -454,11 +454,11 @@ export function SquadTabV2({
                     </div>
                     <div className="hidden w-12 shrink-0 text-center lg:block">
                       <p className="font-heading text-sm font-bold text-foreground tabular-nums">{age}</p>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Edad</p>
+                      <p className="text-2xs uppercase tracking-wider text-muted-foreground">Edad</p>
                     </div>
                     <div className="hidden w-20 shrink-0 text-right lg:block">
                       <p className="font-heading text-sm font-bold text-foreground tabular-nums">{formatVal(annualWage)}</p>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">/año</p>
+                      <p className="text-2xs uppercase tracking-wider text-muted-foreground">/año</p>
                     </div>
                     <div className="flex items-center gap-1">
                       <button type="button" onClick={(e) => { e.stopPropagation(); handleToggleTransfer(player.id); }}
@@ -670,18 +670,18 @@ export function SquadTabV2({
                             <span
                               data-testid="import-badge"
                               title={t("squad.importTooltip", { max: MAX_IMPORTS_IN_STARTING_FIVE })}
-                              className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px font-heading text-[9px] font-bold uppercase tracking-wider text-amber-400"
+                              className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px font-heading text-2xs font-bold uppercase tracking-wider text-amber-400"
                             >
                               {t("squad.importBadge")}
                             </span>
                           )}
                           {player.transfer_listed && (
-                            <span className="shrink-0 rounded bg-red-500/10 px-1 py-0.5 text-[9px] font-heading font-bold uppercase tracking-wider text-red-400">
+                            <span className="shrink-0 rounded bg-red-500/10 px-1 py-0.5 text-2xs font-heading font-bold uppercase tracking-wider text-red-400">
                               {t("common.transferListed", { defaultValue: "TR" })}
                             </span>
                           )}
                           {player.loan_listed && (
-                            <span className="shrink-0 rounded bg-blue-500/10 px-1 py-0.5 text-[9px] font-heading font-bold uppercase tracking-wider text-blue-400">
+                            <span className="shrink-0 rounded bg-blue-500/10 px-1 py-0.5 text-2xs font-heading font-bold uppercase tracking-wider text-blue-400">
                               {t("common.loanListed", { defaultValue: "CD" })}
                             </span>
                           )}
@@ -696,7 +696,7 @@ export function SquadTabV2({
                         <p className="font-heading text-xl font-black text-primary tabular-nums">
                           {ovr}
                         </p>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <p className="text-2xs uppercase tracking-wider text-muted-foreground">
                           OVR
                         </p>
                       </div>
@@ -711,10 +711,10 @@ export function SquadTabV2({
                       {/* Condition bar — visible lg+ */}
                       <div className="hidden w-28 shrink-0 lg:block">
                         <div className="mb-0.5 flex items-center justify-between">
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          <span className="text-2xs uppercase tracking-wider text-muted-foreground">
                             {t("common.condition", { defaultValue: "Energía" })}
                           </span>
-                          <span className="font-heading text-[11px] font-bold text-amber-400 tabular-nums">
+                          <span className="font-heading text-caption font-bold text-amber-400 tabular-nums">
                             {condition}
                           </span>
                         </div>
@@ -736,10 +736,10 @@ export function SquadTabV2({
                       {/* Morale bar — visible lg+ */}
                       <div className="hidden w-28 shrink-0 lg:block">
                         <div className="mb-0.5 flex items-center justify-between">
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          <span className="text-2xs uppercase tracking-wider text-muted-foreground">
                             {t("common.morale", { defaultValue: "Moral" })}
                           </span>
-                          <span className="font-heading text-[11px] font-bold text-emerald-400 tabular-nums">
+                          <span className="font-heading text-caption font-bold text-emerald-400 tabular-nums">
                             {morale}
                           </span>
                         </div>
@@ -761,10 +761,10 @@ export function SquadTabV2({
                       {/* Fitness bar — visible lg+ */}
                       <div className="hidden w-28 shrink-0 lg:block">
                         <div className="mb-0.5 flex items-center justify-between">
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          <span className="text-2xs uppercase tracking-wider text-muted-foreground">
                             {t("common.fitness", { defaultValue: "Fitness" })}
                           </span>
-                          <span className="font-heading text-[11px] font-bold text-green-400 tabular-nums">
+                          <span className="font-heading text-caption font-bold text-green-400 tabular-nums">
                             {fitness}
                           </span>
                         </div>
@@ -788,7 +788,7 @@ export function SquadTabV2({
                         <p className="font-heading text-sm font-bold text-foreground tabular-nums">
                           {age}
                         </p>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <p className="text-2xs uppercase tracking-wider text-muted-foreground">
                           {t("common.age", { defaultValue: "Edad" })}
                         </p>
                       </div>
@@ -798,7 +798,7 @@ export function SquadTabV2({
                         <p className="font-heading text-sm font-bold text-foreground tabular-nums">
                           {formatVal(annualWage)}
                         </p>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <p className="text-2xs uppercase tracking-wider text-muted-foreground">
                           {t("common.per_year_with_slash", {
                             defaultValue: "/año",
                           })}
