@@ -3148,6 +3148,97 @@ mod tests {
             assert!(serde_json::from_str::<serde_json::Value>(&error).is_err(), "{error}");
         }
 
+        fn session_with_custom_club(seed: u32) -> (StateManager, String) {
+            let (mut game, _overlay, id) =
+                try_build_world(LES_SLOT, Some(&install_spec("RAY", seed, None))).expect("world");
+            game.manager.team_id = Some(id.clone());
+            let state = StateManager::new();
+            state.set_game(game);
+            (state, id)
+        }
+
+        fn state_player(state: &StateManager, player_id: &str) -> Player {
+            state
+                .get_game(|g| g.players.iter().find(|p| p.id == player_id).cloned())
+                .flatten()
+                .expect("player")
+        }
+
+        /// A valid rename updates the session and, once the game is saved, the save.
+        #[test]
+        fn renaming_a_founder_updates_the_session_and_the_save() {
+            let (state, id) = session_with_custom_club(11);
+            let founder = state
+                .get_game(|g| founders(g, &id).first().map(|p| p.id.clone()))
+                .flatten()
+                .expect("founder");
+            let returned = crate::commands::squad::rename_player_in_session(
+                &state,
+                &founder,
+                Some(" Zed_9 "),
+                Some("Ana  Ruiz"),
+            )
+            .expect("rename");
+            assert_eq!(returned.players.iter().find(|p| p.id == founder).map(|p| p.match_name.as_str()), Some("Zed_9"));
+            let live = state_player(&state, &founder);
+            assert_eq!((live.match_name.as_str(), live.full_name.as_str()), ("Zed_9", "Ana Ruiz"));
+
+            let dir = tempfile::tempdir().expect("temp dir");
+            let mut saves = olm_core::db::save_manager::SaveManager::init(dir.path()).expect("saves");
+            let game = state.get_game(|g| g.clone()).expect("game");
+            let save_id = saves.create_save(&game, "Rename").expect("create save");
+            let loaded = saves.load_game(&save_id).expect("load");
+            let saved = loaded.players.iter().find(|p| p.id == founder).expect("saved founder");
+            assert_eq!((saved.match_name.as_str(), saved.full_name.as_str()), ("Zed_9", "Ana Ruiz"));
+        }
+
+        #[test]
+        fn renaming_a_player_who_is_not_a_founder_is_rejected_and_changes_nothing() {
+            let (state, id) = session_with_custom_club(11);
+            let other = state
+                .get_game(|g| {
+                    g.players
+                        .iter()
+                        .find(|p| {
+                            p.team_id.as_deref().is_some_and(|team| team != id && team.starts_with("les-"))
+                        })
+                        .map(|p| p.id.clone())
+                })
+                .flatten()
+                .expect("another club's player");
+            let before = state_player(&state, &other);
+            let error = crate::commands::squad::rename_player_in_session(&state, &other, Some("Zed"), None)
+                .expect_err("rejected");
+            assert_eq!(wire_error(&error)["kind"], "not_a_founder");
+            assert_eq!(state_player(&state, &other).match_name, before.match_name);
+        }
+
+        #[test]
+        fn renaming_a_founder_to_a_taken_nick_is_rejected() {
+            let (state, id) = session_with_custom_club(11);
+            let (founder, taken) = state
+                .get_game(|g| {
+                    let founder = founders(g, &id).first().map(|p| p.id.clone());
+                    let taken = g
+                        .players
+                        .iter()
+                        .filter(|p| p.team_id.as_deref() != Some(id.as_str()))
+                        .find(|p| olm_core::founder_identity::normalize_nick(&p.match_name).is_ok())
+                        .map(|p| p.match_name.to_uppercase());
+                    (founder, taken)
+                })
+                .expect("game");
+            let error = crate::commands::squad::rename_player_in_session(
+                &state,
+                &founder.expect("founder"),
+                Some(&taken.expect("a nick")),
+                None,
+            )
+            .expect_err("duplicate");
+            let wire = wire_error(&error);
+            assert_eq!((wire["kind"].as_str(), wire["reason"].as_str()), (Some("invalid_field"), Some("taken")));
+        }
+
         /// Without a seed the app picks one, and the squad is still generated.
         #[test]
         fn an_unseeded_custom_club_still_gets_a_generated_squad() {
