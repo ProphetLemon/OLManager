@@ -94,6 +94,23 @@ describe("InboxPanel", () => {
     expect(screen.getByText("Mystery")).toBeInTheDocument()
   })
 
+  it("keeps the header on one line: the title truncates while the pill and link hold their width", () => {
+    render(<InboxPanel messages={[msg(1)]} unreadCount={13} onOpen={vi.fn()} />)
+    const title = screen.getByRole("heading", { name: "Inbox" })
+    expect(title).toHaveClass("min-w-0", "truncate", "whitespace-nowrap")
+    expect(title).toHaveAttribute("title", "Inbox")
+    expect(document.querySelector('[data-slot="inbox-unread-count"]')).toHaveClass("shrink-0", "whitespace-nowrap")
+    expect(screen.getByRole("button", { name: "Open inbox" })).toHaveClass("shrink-0", "whitespace-nowrap")
+  })
+
+  it("truncates the subject while the category tag keeps its width, and scrolls inside the panel", () => {
+    render(<InboxPanel messages={[msg(1)]} unreadCount={0} onOpen={vi.fn()} />)
+    expect(screen.getByText("Subject 1")).toHaveClass("min-w-0", "flex-1", "truncate")
+    expect(screen.getByText("Finance").closest("span.w-20")).toHaveClass("shrink-0", "min-w-20")
+    expect(document.querySelector('[data-slot="inbox-panel"]')).toHaveClass("h-full", "min-h-0")
+    expect(document.querySelector('[data-slot="inbox-list"]')).toHaveClass("min-h-0", "flex-1", "overflow-y-auto")
+  })
+
   it("opens the message from a row and the inbox from the action", () => {
     const onOpen = vi.fn()
     render(<InboxPanel messages={[msg(1), msg(2)]} unreadCount={0} onOpen={onOpen} />)

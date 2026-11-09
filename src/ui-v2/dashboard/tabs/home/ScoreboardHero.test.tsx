@@ -96,18 +96,32 @@ describe("ScoreboardHero", () => {
     expect(screen.getByText("at NAVI")).toBeInTheDocument();
   });
 
-  it("uses singular and plural days to go", () => {
+  it("pairs the number with a natural, pluralised label", () => {
     const { unmount } = renderHero(makeData({ daysToGo: 1 }));
-    expect(screen.getByText("1 day to go")).toBeInTheDocument();
+    expect(screen.getByText("1 day to the match")).toHaveClass("sr-only");
+    expect(screen.getByText("day to the match")).toBeInTheDocument();
     unmount();
     renderHero(makeData({ daysToGo: 84 }));
-    expect(screen.getByText("84 days to go")).toBeInTheDocument();
+    expect(screen.getByText("84 days to the match")).toHaveClass("sr-only");
+    const pair = document.querySelector('[data-slot="countdown-pair"]') as HTMLElement;
+    expect(pair).toHaveClass("gap-0");
+    expect(pair).toHaveTextContent("84days to the match");
+  });
+
+  it("keeps the hero compact: 1.875rem lineup rows and a 3.5rem countdown numeral", () => {
+    renderHero(makeData());
+    for (const plate of document.querySelectorAll('[data-slot="lineup-plate"]')) {
+      expect(plate).toHaveClass("h-[1.875rem]");
+    }
+    expect(document.querySelector('[data-slot="countdown-pair"] [data-size="ovr"]')).toHaveClass("text-[3.5rem]");
+    expect(document.querySelector('[data-slot="countdown-pair"]')?.closest("header")).toBeNull();
+    expect(screen.getByRole("region").querySelector(":scope > .p-4")).not.toBeNull();
   });
 
   it("shows a match day tag instead of a countdown on day zero", () => {
     renderHero(makeData({ daysToGo: 0 }));
     expect(screen.getByText("Match day")).toBeInTheDocument();
-    expect(screen.queryByText(/to go/)).toBeNull();
+    expect(screen.queryByText(/to the match/)).toBeNull();
     expect(screen.getByRole("region")).toHaveAttribute("data-match-day", "true");
   });
 
@@ -133,11 +147,11 @@ describe("ScoreboardHero", () => {
   });
 
   it("shrinks the short name by length", () => {
-    expect(shortNameSizeClass("BAR")).toContain("text-scoreboard");
+    expect(shortNameSizeClass("BAR")).toContain("text-[3.5rem]");
     expect(shortNameSizeClass("NAVI")).not.toBe(shortNameSizeClass("BAR"));
     const nine = shortNameSizeClass("ABCDEFGHI");
-    expect(nine).toContain("text-[2rem]");
-    expect(nine).not.toContain("text-scoreboard");
+    expect(nine).toContain("text-[1.75rem]");
+    expect(nine).not.toContain("text-[3.5rem]");
   });
 
   it("shows the opponent form with text for every result", () => {

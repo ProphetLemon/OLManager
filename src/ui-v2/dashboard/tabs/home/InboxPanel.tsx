@@ -51,21 +51,23 @@ export function InboxPanel({ messages, unreadCount, onOpen }: InboxPanelProps) {
     <section
       data-slot="inbox-panel"
       aria-label={t("onAir.home.inboxTitle", { defaultValue: "Inbox" })}
-      className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 text-card-foreground"
+      className="flex h-full min-h-0 flex-col gap-3 rounded-xl border border-line bg-card p-4 text-card-foreground"
     >
-      <header className="flex items-center gap-3">
-        <h2 className="min-w-0 flex-1 font-heading text-section font-bold uppercase leading-tight tracking-wide">
+      <header className="flex items-center gap-2">
+        <h2
+          title={t("onAir.home.inboxTitle", { defaultValue: "Inbox" })}
+          className="min-w-0 flex-1 truncate whitespace-nowrap font-heading text-section font-bold uppercase leading-tight tracking-wide">
           {t("onAir.home.inboxTitle", { defaultValue: "Inbox" })}
         </h2>
         {unreadCount > 0 ? (
           <span
             data-slot="inbox-unread-count"
-            className="shrink-0 rounded-full bg-club px-3 py-1 font-heading text-sm font-bold tabular-nums text-club-foreground"
+            className="shrink-0 whitespace-nowrap rounded-full bg-club px-2.5 py-1 font-heading text-sm font-bold tabular-nums text-club-foreground"
           >
             {t("onAir.home.unreadCount", { count: unreadCount, defaultValue: "{{count}} unread" })}
           </span>
         ) : null}
-        <Button type="button" variant="ghost" size="touch" className="shrink-0 text-club-text" onClick={() => onOpen()}>
+        <Button type="button" variant="ghost" size="touch" className="shrink-0 whitespace-nowrap px-2 text-club-text" onClick={() => onOpen()}>
           {t("onAir.home.openInbox", { defaultValue: "Open inbox" })}
         </Button>
       </header>
@@ -75,9 +77,9 @@ export function InboxPanel({ messages, unreadCount, onOpen }: InboxPanelProps) {
           {t("onAir.home.inboxEmpty", { defaultValue: "Your inbox is clear" })}
         </p>
       ) : (
-        <ul className="flex flex-col divide-y divide-line/60">
+        <ul data-slot="inbox-list" className="flex min-h-0 flex-1 flex-col divide-y divide-line/60 overflow-y-auto scrollbar-v2">
           {rows.map((message) => (
-            <li key={message.id}>
+            <li key={message.id} className="shrink-0">
               <button
                 type="button"
                 onClick={() => onOpen(message.id)}
@@ -86,7 +88,7 @@ export function InboxPanel({ messages, unreadCount, onOpen }: InboxPanelProps) {
                 {message.unread ? (
                   <span className="sr-only">{t("onAir.home.unreadRow", { defaultValue: "Unread" })}</span>
                 ) : null}
-                <span className="w-20 shrink-0">
+                <span className="w-20 shrink-0 min-w-20">
                   <TagBlock tone="neutral" size="sm" className="max-w-full">
                     <span className="truncate" title={resolveCategoryLabel(t, message)}>
                       {resolveCategoryLabel(t, message)}
@@ -103,7 +105,7 @@ export function InboxPanel({ messages, unreadCount, onOpen }: InboxPanelProps) {
                   {message.subject}
                 </span>
                 {message.urgent ? (
-                  <TagBlock tone="negative" size="sm" icon={<AlertTriangle />}>
+                  <TagBlock tone="negative" size="sm" icon={<AlertTriangle />} className="shrink-0">
                     {t("inbox.urgent", { defaultValue: "Urgent" })}
                   </TagBlock>
                 ) : null}

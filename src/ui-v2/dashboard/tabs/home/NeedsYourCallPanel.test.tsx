@@ -39,6 +39,14 @@ describe("NeedsYourCallPanel", () => {
     expect(screen.getByText("Consequence 1")).toBeInTheDocument()
   })
 
+  it("fills its cell and scrolls the rows inside the panel", () => {
+    render(<NeedsYourCallPanel items={items(6)} total={6} hiddenContracts={0} onAct={vi.fn()} />)
+    expect(screen.getByRole("region", { name: "Needs your call" })).toHaveClass("h-full", "min-h-0")
+    const list = document.querySelector('[data-slot="needs-list"]') as HTMLElement
+    expect(list).toHaveClass("min-h-0", "flex-1", "overflow-y-auto")
+    for (const row of within(list).getAllByRole("listitem")) expect(row).toHaveClass("shrink-0")
+  })
+
   it("passes the exact item to onAct when its action is pressed", () => {
     const onAct = vi.fn()
     const list = items(2)

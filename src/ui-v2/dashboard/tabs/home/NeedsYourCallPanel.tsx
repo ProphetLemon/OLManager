@@ -79,7 +79,7 @@ export function NeedsYourCallPanel({ items, total, hiddenContracts, onAct }: Nee
       tabIndex={-1}
       aria-labelledby={headingId}
       data-slot="needs-your-call"
-      className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 text-card-foreground"
+      className="flex h-full min-h-0 flex-col gap-3 rounded-xl border border-line bg-card p-4 text-card-foreground"
     >
       <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 id={headingId} className="font-heading text-section font-bold uppercase leading-tight tracking-wide">
@@ -120,14 +120,14 @@ export function NeedsYourCallPanel({ items, total, hiddenContracts, onAct }: Nee
           </p>
         </div>
       ) : (
-        <ul id={listId} className="flex flex-col gap-2">
+        <ul id={listId} data-slot="needs-list" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto scrollbar-v2">
           {visible.map((item) => (
             <li
               key={item.id}
               data-slot="lower-third"
               data-severity={item.severity}
               className={cn(
-                "flex min-h-16 flex-wrap items-stretch gap-x-4 overflow-hidden rounded-lg bg-secondary text-card-foreground",
+                "flex min-h-16 shrink-0 flex-wrap items-stretch gap-x-4 overflow-hidden rounded-lg bg-secondary text-card-foreground",
                 ROW_SEVERITY[item.severity],
               )}
             >

@@ -25,13 +25,13 @@ export function StandingsPanel({ data, onOpenTeams }: StandingsPanelProps) {
     <section
       data-slot="standings-panel"
       aria-label={title}
-      className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 text-card-foreground"
+      className="flex h-full min-h-0 flex-col gap-3 rounded-xl border border-line bg-card p-4 text-card-foreground"
     >
       <header className="flex items-center gap-3">
         <span
           data-slot="standings-league-tag"
           title={data.competitionName}
-          className="inline-flex min-h-8 max-w-24 shrink-0 items-center rounded-md bg-club-wash px-2 font-heading text-base font-bold uppercase text-club-text"
+          className="inline-flex min-h-8 max-w-24 shrink-0 items-center rounded-md bg-club px-2 font-heading text-base font-bold uppercase text-club-foreground"
         >
           <span className="truncate">{data.competitionShortName}</span>
         </span>
@@ -53,6 +53,7 @@ export function StandingsPanel({ data, onOpenTeams }: StandingsPanelProps) {
         </p>
       ) : null}
 
+      <div data-slot="standings-scroll" className="min-h-0 flex-1 overflow-y-auto scrollbar-v2">
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">{`${title}: ${subtitle}`}</caption>
         <thead>
@@ -86,7 +87,7 @@ export function StandingsPanel({ data, onOpenTeams }: StandingsPanelProps) {
                 aria-current={row.isMe ? "true" : undefined}
                 data-me={row.isMe ? "true" : undefined}
                 className={cn(
-                  "h-[2.375rem] border-b border-line/60 last:border-b-0",
+                  "h-8 border-b border-line/60 last:border-b-0",
                   row.isMe && "bg-club-wash font-bold shadow-[inset_0.1875rem_0_0_var(--club-text)]"
                 )}
               >
@@ -121,6 +122,7 @@ export function StandingsPanel({ data, onOpenTeams }: StandingsPanelProps) {
           ))}
         </tbody>
       </table>
+      </div>
     </section>
   )
 }

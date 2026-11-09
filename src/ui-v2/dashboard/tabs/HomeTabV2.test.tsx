@@ -129,6 +129,22 @@ function message(id: string, date: string, extra: Record<string, unknown> = {}) 
 }
 
 describe("HomeTabV2", () => {
+  it("fits the scroller: the grid fills the height and panels scroll inside from 64rem", () => {
+    render(<HomeTabV2 gameState={stateWithFixture()} />);
+    const root = document.querySelector('[data-slot="home"]') as HTMLElement;
+    const grid = document.querySelector('[data-slot="home-grid"]') as HTMLElement;
+    // The root fills the scroller instead of growing past it.
+    expect(root).toHaveClass("flex", "min-h-0", "flex-1", "flex-col");
+    expect(grid).toHaveClass("@5xl:flex-1", "@5xl:grid-rows-[minmax(0,auto)_minmax(0,1fr)]");
+    // One column below 64rem (@5xl), two columns from it.
+    expect(grid).toHaveClass("grid-cols-1", "@5xl:grid-cols-[minmax(0,1fr)_24rem]");
+    expect(grid.className).not.toContain("@4xl");
+    for (const slot of ["needs-your-call", "inbox-panel", "standings-panel"]) {
+      expect(document.querySelector(`[data-slot="${slot}"]`)).toHaveClass("h-full", "min-h-0");
+    }
+    expect(document.querySelector('[data-slot="standings-scroll"]')).toHaveClass("overflow-y-auto");
+  });
+
   it("renders the scoreboard hero when a fixture exists", () => {
     render(<HomeTabV2 gameState={stateWithFixture()} />);
     const hero = document.querySelector('[data-slot="scoreboard-hero"]');

@@ -108,6 +108,20 @@ describe("StandingsPanel", () => {
     expect(meRow.innerHTML).not.toContain("text-muted-foreground")
   })
 
+  it("paints the league tag as a solid club fill with the paired foreground", () => {
+    const { container } = render(<StandingsPanel data={data()} onOpenTeams={vi.fn()} />)
+    const tag = container.querySelector('[data-slot="standings-league-tag"]') as HTMLElement
+    expect(tag).toHaveClass("bg-club", "text-club-foreground")
+    expect(tag.className).not.toContain("club-wash")
+    expect(tag.className).not.toContain("text-club-text")
+  })
+
+  it("scrolls the table inside the panel", () => {
+    const { container } = render(<StandingsPanel data={data()} onOpenTeams={vi.fn()} />)
+    expect(container.querySelector('[data-slot="standings-panel"]')).toHaveClass("h-full", "min-h-0")
+    expect(container.querySelector('[data-slot="standings-scroll"]')).toHaveClass("min-h-0", "flex-1", "overflow-y-auto")
+  })
+
   it("shows a league tag with the full name as tooltip and a season chip", () => {
     const { container } = render(<StandingsPanel data={data({ competitionName: "League of Legends Championship", competitionShortName: "LOLC", season: 2028 })} onOpenTeams={vi.fn()} />)
     const tag = container.querySelector('[data-slot="standings-league-tag"]') as HTMLElement

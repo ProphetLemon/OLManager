@@ -21,10 +21,10 @@ interface ScoreboardHeroProps {
 /** Short names shrink with length so five to nine characters still fit a side. */
 export function shortNameSizeClass(shortName: string): string {
   const length = Array.from(shortName.trim()).length;
-  if (length <= 3) return "text-[3.75rem] @2xl:text-scoreboard";
-  if (length === 4) return "text-[3.25rem] @2xl:text-[4.5rem]";
-  if (length <= 6) return "text-[2.5rem] @2xl:text-[3.5rem]";
-  return "text-[2rem] @2xl:text-[2.5rem]";
+  if (length <= 3) return "text-[3.25rem] @2xl:text-[3.5rem]";
+  if (length === 4) return "text-[2.75rem] @2xl:text-[3.25rem]";
+  if (length <= 6) return "text-[2.25rem] @2xl:text-[2.75rem]";
+  return "text-[1.75rem] @2xl:text-[2.25rem]";
 }
 
 const FORM_TONE: Record<"W" | "L" | "D", { tone: TagTone; key: string; fallback: string }> = {
@@ -32,12 +32,6 @@ const FORM_TONE: Record<"W" | "L" | "D", { tone: TagTone; key: string; fallback:
   L: { tone: "negative", key: "onAir.home.formLoss", fallback: "Loss" },
   D: { tone: "neutral", key: "onAir.home.formDraw", fallback: "Draw" },
 };
-
-/** The count is rendered as a numeral, so keep only the words of "N days to go". */
-function captionWithoutCount(label: string, count: number): string {
-  const stripped = label.replace(String(count), "").replace(/\s{2,}/g, " ").trim();
-  return stripped || label;
-}
 
 const ROLE_ORDER = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"] as const;
 
@@ -48,7 +42,7 @@ const ROLE_ORDER = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"] as const;
 function SidePlates({ side, mirrored, label }: { side: SideData; mirrored: boolean; label: string }) {
   const { t } = useTranslation();
   return (
-    <ul aria-label={label} className="flex min-w-0 flex-col gap-1">
+    <ul aria-label={label} className="flex min-w-0 flex-col gap-0.5">
       {side.lineup.map((plate) => {
         const empty = !plate.playerId;
         const roleLabel = t(`onAir.roles.${plate.role}`, { defaultValue: plate.role });
@@ -59,7 +53,7 @@ function SidePlates({ side, mirrored, label }: { side: SideData; mirrored: boole
             data-role={plate.role}
             data-empty={empty ? "true" : undefined}
             className={cn(
-              "flex h-8 min-w-0 items-center gap-2 bg-background/40",
+              "flex h-[1.875rem] min-w-0 items-center gap-2 bg-background/40",
               mirrored
                 ? "flex-row-reverse border-e-[3px] pe-2 ps-1 text-end border-e-[color:var(--side-accent)]"
                 : "border-s-[3px] border-s-club ps-2 pe-1"
@@ -99,10 +93,10 @@ function RoleColumn() {
     <div
       aria-hidden="true"
       data-slot="role-column"
-      className="hidden min-w-16 flex-col gap-1 text-center @lg:flex"
+      className="hidden min-w-16 flex-col gap-0.5 text-center @lg:flex"
     >
       {ROLE_ORDER.map((role) => (
-        <span key={role} className="flex h-8 items-center justify-center text-sm font-semibold text-foreground">
+        <span key={role} className="flex h-[1.875rem] items-center justify-center text-sm font-semibold text-foreground">
           {t(`onAir.roles.${role}`, { defaultValue: role })}
         </span>
       ))}
@@ -125,7 +119,7 @@ function SideHeader({ side, mirrored, caption }: { side: SideData; mirrored: boo
         size="lg"
         accent={accent}
         foreground={foreground}
-        className="@2xl:size-20"
+        className="@2xl:size-16"
       />
       <div className="min-w-0">
         <span title={side.name} className="block max-w-full overflow-hidden">
@@ -208,9 +202,9 @@ export function ScoreboardHero({ data, onOpenSchedule, onOpenSquad }: Scoreboard
   const vsAtWord = data.isHome
     ? t("onAir.home.vsAt.home", { defaultValue: "vs" })
     : t("onAir.home.vsAt.away", { defaultValue: "at" });
-  const daysLabel = t("onAir.home.daysToGo", {
+  const daysLabel = t("onAir.home.daysToMatch", {
     count: daysToGo,
-    defaultValue: daysToGo === 1 ? "{{count}} day to go" : "{{count}} days to go",
+    defaultValue: daysToGo === 1 ? "day to the match" : "days to the match",
   });
   const isMatchDay = daysToGo <= 0;
   const sideStyle = {
@@ -240,7 +234,7 @@ export function ScoreboardHero({ data, onOpenSchedule, onOpenSquad }: Scoreboard
         className="pointer-events-none absolute inset-y-0 end-0 -z-10 w-[58%] bg-[color-mix(in_srgb,var(--side-accent)_36%,transparent)] [clip-path:polygon(38%_0,100%_0,100%_100%,0_100%)] [[data-contrast=high]_&]:hidden"
       />
 
-      <div className="flex flex-col gap-4 p-5">
+      <div className="flex flex-col gap-2 p-4">
         <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h2 id={headingId} className="font-heading text-section font-bold">
             {t("home.nextMatchCard.title", { defaultValue: "Next Match" })}
@@ -262,7 +256,7 @@ export function ScoreboardHero({ data, onOpenSchedule, onOpenSquad }: Scoreboard
           </time>
         </header>
 
-        <div className="grid grid-cols-1 items-start gap-x-4 gap-y-3 @lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 items-start gap-x-4 gap-y-2 @lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
           <SideHeader side={you} mirrored={false} caption={t("onAir.home.yourClub", { defaultValue: "Your club" })} />
           <div data-slot="countdown" className="flex flex-col items-center self-center px-1 text-center">
             {isMatchDay ? (
@@ -271,10 +265,10 @@ export function ScoreboardHero({ data, onOpenSchedule, onOpenSquad }: Scoreboard
               </TagBlock>
             ) : (
               <>
-                <span className="sr-only">{daysLabel}</span>
-                <span aria-hidden="true" className="flex flex-col items-center gap-1">
-                  <ScoreNumeral value={daysToGo} size="ovr" className="text-[5rem]" />
-                  <span className="text-sm text-foreground">{captionWithoutCount(daysLabel, daysToGo)}</span>
+                <span className="sr-only">{`${daysToGo} ${daysLabel}`}</span>
+                <span aria-hidden="true" data-slot="countdown-pair" className="flex flex-col items-center gap-0 leading-none">
+                  <ScoreNumeral value={daysToGo} size="ovr" className="text-[3.5rem] leading-[0.9]" />
+                  <span className="text-sm leading-tight text-foreground">{daysLabel}</span>
                 </span>
               </>
             )}

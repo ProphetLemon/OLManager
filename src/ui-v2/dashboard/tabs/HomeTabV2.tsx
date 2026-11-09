@@ -113,10 +113,17 @@ export function HomeTabV2({
   };
 
   return (
-    <div data-slot="home" className="@container p-4">
-      {/* 2x2 on wide containers (hero | standings, calls | inbox); one column when narrow. */}
-      <div className="grid grid-cols-1 gap-4 @4xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <div className={standings ? "min-w-0" : "min-w-0 @4xl:col-span-2"}>
+    <div data-slot="home" className="@container flex min-h-0 flex-1 flex-col">
+      {/*
+        2x2 from 64rem up (hero | standings, calls | inbox), one stacked column below.
+        Wide: the grid fills the scroller (no page scroll at 1280x800 / 16px): the hero
+        row is content-sized and the second row takes the rest; panels scroll inside.
+      */}
+      <div
+        data-slot="home-grid"
+        className="grid flex-none grid-cols-1 gap-4 p-4 @5xl:min-h-[36rem] @5xl:flex-1 @5xl:grid-cols-[minmax(0,1fr)_24rem] @5xl:grid-rows-[minmax(0,auto)_minmax(0,1fr)]"
+      >
+        <div className={standings ? "min-h-0 min-w-0" : "min-h-0 min-w-0 @5xl:col-span-2"}>
           <ScoreboardHero
             data={scoreboard}
             onOpenSchedule={() => onNavigate?.("Schedule")}
@@ -124,7 +131,7 @@ export function HomeTabV2({
           />
         </div>
 
-        <div className="min-w-0">
+        <div className="min-h-0 min-w-0">
           <NeedsYourCallPanel
             items={calls.items}
             total={calls.total}
@@ -134,12 +141,12 @@ export function HomeTabV2({
         </div>
 
         {standings ? (
-          <div className="min-w-0 @4xl:col-start-2 @4xl:row-start-1">
+          <div className="min-h-0 min-w-0 @5xl:col-start-2 @5xl:row-start-1">
             <StandingsPanel data={standings} onOpenTeams={() => onNavigate?.("Teams")} />
           </div>
         ) : null}
 
-        <div className="min-w-0">
+        <div className="min-h-0 min-w-0">
           <InboxPanel
             messages={inboxMessages}
             unreadCount={unreadCount}
@@ -150,7 +157,7 @@ export function HomeTabV2({
         </div>
 
         {standings ? null : (
-          <p aria-live="polite" className="text-sm text-muted-foreground @4xl:col-span-2">
+          <p aria-live="polite" className="text-sm text-muted-foreground @5xl:col-span-2">
             {t("onAir.home.standingsEmpty", { defaultValue: "No standings yet" })}
           </p>
         )}
