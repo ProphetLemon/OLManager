@@ -3801,6 +3801,13 @@
       "openGroup": "{{group}}"
     },
     "bar": {
+      "phase": {
+        "morning": "Sabah",
+        "scrimBlock": "Scrim",
+        "reviewBlock": "İnceleme",
+        "trainingBlock": "Antrenman",
+        "evening": "Akşam"
+      },
       "save": "Kaydet",
       "saved": "Kaydedildi",
       "toResolve_one": "{{count}} çözülecek",
@@ -3823,6 +3830,11 @@
       "you": "Sen"
     },
     "home": {
+      "needsSubtitle": "Devam etmeden önce bunları çöz.",
+      "needsEmptyTag": "Hepsi tamam",
+      "seasonChip": "S{{season}}",
+      "formLabel": "Form",
+      "openSchedule": "Takvimi aç",
       "daysToGo_one": "{{count}} gün kaldı",
       "daysToGo_other": "{{count}} gün kaldı",
       "matchDay": "Maç günü",
@@ -3893,6 +3905,13 @@
       }
     },
     "squad": {
+      "substitutes": "Yedekler",
+      "searchSubstitutes": "Yedek ara",
+      "perYearLabel": "yıllık",
+      "wagePerYear": "Yıllık maaş",
+      "swapUnavailable": "Değiştirilecek yedek oyuncu yok",
+      "transferListToggle": "Transfer listesi",
+      "loanListToggle": "Kiralık listesi",
       "startingFive": "İlk beşli",
       "slotsFilled": "5 yuvadan {{count}} tanesi dolu",
       "benchCount": "{{shown}} / {{total}}",

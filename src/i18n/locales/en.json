@@ -3842,6 +3842,13 @@
       "openGroup": "{{group}}"
     },
     "bar": {
+      "phase": {
+        "morning": "Morning",
+        "scrimBlock": "Scrims",
+        "reviewBlock": "Review",
+        "trainingBlock": "Training",
+        "evening": "Evening"
+      },
       "save": "Save",
       "saved": "Saved",
       "toResolve_one": "{{count}} to resolve",
@@ -3864,6 +3871,11 @@
       "you": "You"
     },
     "home": {
+      "needsSubtitle": "Resolve these before you continue.",
+      "needsEmptyTag": "All clear",
+      "seasonChip": "S{{season}}",
+      "formLabel": "Form",
+      "openSchedule": "Open schedule",
       "daysToGo_one": "{{count}} day to go",
       "daysToGo_other": "{{count}} days to go",
       "matchDay": "Match day",
@@ -3934,6 +3946,13 @@
       }
     },
     "squad": {
+      "substitutes": "Substitutes",
+      "searchSubstitutes": "Search substitutes",
+      "perYearLabel": "per year",
+      "wagePerYear": "Wage per year",
+      "swapUnavailable": "No substitutes available to swap in",
+      "transferListToggle": "Transfer list",
+      "loanListToggle": "Loan list",
       "startingFive": "Starting five",
       "slotsFilled": "{{count}} of 5 slots filled",
       "benchCount": "{{shown}} of {{total}}",

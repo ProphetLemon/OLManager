@@ -3801,6 +3801,13 @@
       "openGroup": "{{group}}"
     },
     "bar": {
+      "phase": {
+        "morning": "Morgen",
+        "scrimBlock": "Scrims",
+        "reviewBlock": "Analyse",
+        "trainingBlock": "Training",
+        "evening": "Abend"
+      },
       "save": "Speichern",
       "saved": "Gespeichert",
       "toResolve_one": "{{count}} offen",
@@ -3823,6 +3830,11 @@
       "you": "Du"
     },
     "home": {
+      "needsSubtitle": "Klär das, bevor du weitermachst.",
+      "needsEmptyTag": "Alles klar",
+      "seasonChip": "S{{season}}",
+      "formLabel": "Form",
+      "openSchedule": "Spielplan öffnen",
       "daysToGo_one": "Noch {{count}} Tag",
       "daysToGo_other": "Noch {{count}} Tage",
       "matchDay": "Spieltag",
@@ -3893,6 +3905,13 @@
       }
     },
     "squad": {
+      "substitutes": "Ersatzspieler",
+      "searchSubstitutes": "Ersatzspieler suchen",
+      "perYearLabel": "pro Jahr",
+      "wagePerYear": "Gehalt pro Jahr",
+      "swapUnavailable": "Keine Ersatzspieler zum Einwechseln verfügbar",
+      "transferListToggle": "Transferliste",
+      "loanListToggle": "Leihliste",
       "startingFive": "Startfünf",
       "slotsFilled": "{{count}} von 5 Plätzen besetzt",
       "benchCount": "{{shown}} von {{total}}",
