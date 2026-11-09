@@ -119,6 +119,10 @@
   --color-warning: var(--warning);
   --color-info-foreground: var(--info-foreground);
   --color-info: var(--info);
+  --color-club-secondary: var(--club-secondary);
+  --color-club-text: var(--club-text);
+  --color-club-foreground: var(--club-foreground);
+  --color-club: var(--club);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -145,6 +149,14 @@
 /* ── Light mode ────────────────────────────────────────────── */
 
 :root {
+  /* Managed-club accent (resolveClubPalette fallback values). Declared ONLY
+     here: AppV2 sets the club values inline on <html>, and a declaration in
+     `.dark` (applied to an inner wrapper) would shadow them. */
+  --club: #f97316;
+  --club-foreground: #0a0a0a;
+  --club-text: #f97316;
+  --club-secondary: #a1a1aa;
+
   --background: oklch(0.985 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

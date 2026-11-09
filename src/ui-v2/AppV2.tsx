@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
 import { useUpdater } from "@/hooks/useUpdater";
+import { useClubTheme } from "@/hooks/useClubTheme";
 import { invoke } from "@tauri-apps/api/core";
 import UpdateModal from "@/ui-v2/_legacy/components/updater/UpdateModal";
 import { LazyFallback } from "./components/LazyFallback";
@@ -111,6 +112,8 @@ export default function AppV2() {
   } = useUpdater(AUTO_CHECK_UPDATES);
 
   const [ready, setReady] = useState(false);
+
+  useClubTheme();
 
   useEffect(() => {
     if (!loaded) loadSettings();
