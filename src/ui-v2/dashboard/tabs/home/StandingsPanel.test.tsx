@@ -129,4 +129,14 @@ describe("StandingsPanel", () => {
     expect(tag).toHaveAttribute("title", "League of Legends Championship")
     expect(container.querySelector('[data-slot="standings-season"]')).toHaveTextContent("S2028")
   })
+
+  it("gives the name column the room: fixed-layout table, fixed short tag, name flexes", () => {
+    const { container } = render(
+      <StandingsPanel data={data({ rows: [row(1, { isMe: true })] })} onOpenTeams={vi.fn()} />,
+    )
+    expect(container.querySelector("table")).toHaveClass("table-fixed")
+    expect(container.querySelector('[data-slot="standings-short"]')).toHaveClass("w-10", "shrink-0", "font-heading")
+    expect(container.querySelector('[data-slot="standings-name"]')).toHaveClass("min-w-0", "flex-1", "truncate")
+    expect(screen.getByText("You").closest('[data-slot="tag-block"]')).toHaveClass("shrink-0")
+  })
 })

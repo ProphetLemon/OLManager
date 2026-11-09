@@ -54,8 +54,13 @@ export function StandingsPanel({ data, onOpenTeams }: StandingsPanelProps) {
       ) : null}
 
       <div data-slot="standings-scroll" className="min-h-0 flex-1 overflow-y-auto scrollbar-v2">
-      <table className="w-full border-collapse text-sm">
+      <table className="w-full table-fixed border-collapse text-sm">
         <caption className="sr-only">{`${title}: ${subtitle}`}</caption>
+        <colgroup>
+          <col className="w-8" />
+          <col />
+          <col className="w-14" />
+        </colgroup>
         <thead>
           <tr className="border-b border-line text-start text-xs text-muted-foreground">
             <th scope="col" className="w-8 py-1.5 pe-2 text-end font-medium">
@@ -92,25 +97,25 @@ export function StandingsPanel({ data, onOpenTeams }: StandingsPanelProps) {
                 )}
               >
                 <td className="w-8 pe-2 text-end tabular-nums">{row.position}</td>
-                <td className="max-w-0 py-1">
+                <td className="min-w-0 py-1">
                   <button
                     type="button"
                     onClick={onOpenTeams}
                     title={row.name}
-                    className="flex min-h-6 w-full min-w-0 items-center gap-2 rounded-md text-start hover:underline"
+                    className="flex min-h-6 w-full min-w-0 items-center gap-1.5 rounded-md text-start hover:underline"
                   >
                     <ClubShield name={row.name} logoUrl={row.logoUrl} size="sm" />
-                    <span className="shrink-0 font-heading text-base font-semibold">{row.shortName}</span>
-                    <span className="min-w-0 truncate text-xs font-normal text-foreground">
+                    <span data-slot="standings-short" className="w-10 shrink-0 font-heading text-base font-semibold uppercase leading-none tracking-wide">{row.shortName}</span>
+                    <span data-slot="standings-name" className="min-w-0 flex-1 truncate text-xs font-normal text-foreground">
                       {row.name}
                     </span>
                     {row.isMe ? (
-                      <TagBlock tone="club" size="sm">
+                      <TagBlock tone="club" size="sm" className="shrink-0">
                         {t("onAir.tags.you", { defaultValue: "You" })}
                       </TagBlock>
                     ) : null}
                     {row.movement === "promoted" ? (
-                      <TagBlock tone="positive" size="sm">
+                      <TagBlock tone="positive" size="sm" className="shrink-0">
                         {t("onAir.tags.promoted", { defaultValue: "Promoted" })}
                       </TagBlock>
                     ) : null}

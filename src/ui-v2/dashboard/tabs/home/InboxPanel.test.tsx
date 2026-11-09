@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, within } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { act, fireEvent, render, screen, within } from "@testing-library/react"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { InboxPanel, type InboxPanelMessage } from "./InboxPanel"
+import { fitRowCount, InboxPanel, type InboxPanelMessage } from "./InboxPanel"
 
 const LABELS: Record<string, string> = {
   "inbox.categories.training": "Training",
@@ -94,21 +94,29 @@ describe("InboxPanel", () => {
     expect(screen.getByText("Mystery")).toBeInTheDocument()
   })
 
+  it("uses the short inbox heading key so the title never truncates", () => {
+    render(<InboxPanel messages={[msg(1)]} unreadCount={13} onOpen={vi.fn()} />)
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Inbox")
+  })
+
   it("keeps the header on one line: the title truncates while the pill and link hold their width", () => {
     render(<InboxPanel messages={[msg(1)]} unreadCount={13} onOpen={vi.fn()} />)
     const title = screen.getByRole("heading", { name: "Inbox" })
     expect(title).toHaveClass("min-w-0", "truncate", "whitespace-nowrap")
-    expect(title).toHaveAttribute("title", "Inbox")
     expect(document.querySelector('[data-slot="inbox-unread-count"]')).toHaveClass("shrink-0", "whitespace-nowrap")
     expect(screen.getByRole("button", { name: "Open inbox" })).toHaveClass("shrink-0", "whitespace-nowrap")
   })
 
-  it("truncates the subject while the category tag keeps its width, and scrolls inside the panel", () => {
+  it("truncates the subject while the category tag keeps its width, with no scrollbar over rows", () => {
     render(<InboxPanel messages={[msg(1)]} unreadCount={0} onOpen={vi.fn()} />)
     expect(screen.getByText("Subject 1")).toHaveClass("min-w-0", "flex-1", "truncate")
-    expect(screen.getByText("Finance").closest("span.w-20")).toHaveClass("shrink-0", "min-w-20")
+    const category = screen.getByText("Finance").closest('[data-slot="inbox-category"]')
+    expect(category).toHaveClass("shrink-0")
+    expect(screen.getByText("Finance").closest('[data-slot="tag-block"]')).toHaveClass("whitespace-nowrap")
+    expect(screen.getByText("Finance")).not.toHaveClass("truncate")
     expect(document.querySelector('[data-slot="inbox-panel"]')).toHaveClass("h-full", "min-h-0")
-    expect(document.querySelector('[data-slot="inbox-list"]')).toHaveClass("min-h-0", "flex-1", "overflow-y-auto")
+    expect(document.querySelector('[data-slot="inbox-list"]')).toHaveClass("min-h-0", "flex-1", "overflow-hidden")
+    expect(document.querySelector('[data-slot="inbox-list"]')).not.toHaveClass("overflow-y-auto")
   })
 
   it("opens the message from a row and the inbox from the action", () => {
@@ -125,5 +133,58 @@ describe("InboxPanel", () => {
     expect(screen.getByText("Your inbox is clear")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Open inbox" })).toBeInTheDocument()
     expect(screen.queryByRole("list")).toBeNull()
+  })
+})
+
+describe("fitRowCount", () => {
+  it("returns whole rows only", () => {
+    expect(fitRowCount(150, 36)).toBe(4)
+    expect(fitRowCount(180, 36)).toBe(5)
+    expect(fitRowCount(179, 36)).toBe(4)
+  })
+
+  it("clamps to at least one row and to the maximum", () => {
+    expect(fitRowCount(10, 36)).toBe(1)
+    expect(fitRowCount(900, 36, 8)).toBe(8)
+  })
+
+  it("keeps the fallback while the list is unmeasured", () => {
+    expect(fitRowCount(0, 36)).toBe(5)
+    expect(fitRowCount(100, 0)).toBe(5)
+  })
+})
+
+describe("InboxPanel row fitting", () => {
+  const originalRO = globalThis.ResizeObserver
+  const clientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientHeight")
+  const offsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight")
+
+  afterEach(() => {
+    globalThis.ResizeObserver = originalRO
+    if (clientHeight) Object.defineProperty(HTMLElement.prototype, "clientHeight", clientHeight)
+    if (offsetHeight) Object.defineProperty(HTMLElement.prototype, "offsetHeight", offsetHeight)
+  })
+
+  it("renders only the rows that fit whole and re-fits when the list resizes", () => {
+    let height = 150
+    let notify: () => void = () => {}
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, get: () => height })
+    Object.defineProperty(HTMLElement.prototype, "offsetHeight", { configurable: true, get: () => 36 })
+    globalThis.ResizeObserver = class {
+      constructor(cb: () => void) {
+        notify = cb
+      }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    } as unknown as typeof ResizeObserver
+
+    const messages = Array.from({ length: 8 }, (_, i) => msg(i + 1))
+    render(<InboxPanel messages={messages} unreadCount={0} onOpen={vi.fn()} />)
+    expect(screen.getAllByRole("listitem")).toHaveLength(4)
+
+    height = 216
+    act(() => notify())
+    expect(screen.getAllByRole("listitem")).toHaveLength(6)
   })
 })

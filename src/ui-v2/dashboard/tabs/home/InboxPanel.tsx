@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react"
 import { AlertTriangle } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
@@ -23,7 +24,12 @@ export interface InboxPanelProps {
   onOpen: (messageId?: string) => void
 }
 
+/** Rows rendered before the list is measured (and when it cannot be measured). */
 const VISIBLE_ROWS = 5
+/** Upper bound of rows when the panel is tall enough for more than the default. */
+const MAX_ROWS = 8
+/** Fallback row height in px, matching the `h-9` row class. */
+const ROW_HEIGHT_PX = 36
 const MISSING = "\u0000"
 
 /**
@@ -42,10 +48,45 @@ function resolveCategoryLabel(t: TFunction, message: InboxPanelMessage): string 
   return category
 }
 
+/**
+ * How many whole rows fit in `containerHeight`. An unmeasured container (height 0,
+ * e.g. before layout or in jsdom) keeps `fallback` so the list never renders empty.
+ */
+export function fitRowCount(
+  containerHeight: number,
+  rowHeight: number,
+  max: number = MAX_ROWS,
+  fallback: number = VISIBLE_ROWS
+): number {
+  if (!(containerHeight > 0) || !(rowHeight > 0)) return fallback
+  return Math.max(1, Math.min(max, Math.floor(containerHeight / rowHeight)))
+}
+
 /** Compact Home inbox: the latest messages with unread, urgent and category cues. */
 export function InboxPanel({ messages, unreadCount, onOpen }: InboxPanelProps) {
   const { t } = useTranslation()
-  const rows = messages.slice(0, VISIBLE_ROWS)
+  const listRef = useRef<HTMLUListElement>(null)
+  const [fit, setFit] = useState(VISIBLE_ROWS)
+  const hasRows = messages.length > 0
+
+  // Render only the rows that fit whole, so no row is ever cut mid-text and the
+  // list needs no scrollbar; "Open inbox" in the header covers the rest.
+  useLayoutEffect(() => {
+    const list = listRef.current
+    if (!list) return
+    const measure = () => {
+      const firstRow = list.querySelector("li")
+      const rowHeight = firstRow instanceof HTMLElement && firstRow.offsetHeight > 0 ? firstRow.offsetHeight : ROW_HEIGHT_PX
+      setFit(fitRowCount(list.clientHeight, rowHeight))
+    }
+    measure()
+    if (typeof ResizeObserver === "undefined") return
+    const observer = new ResizeObserver(measure)
+    observer.observe(list)
+    return () => observer.disconnect()
+  }, [hasRows])
+
+  const rows = messages.slice(0, fit)
 
   return (
     <section
@@ -55,9 +96,8 @@ export function InboxPanel({ messages, unreadCount, onOpen }: InboxPanelProps) {
     >
       <header className="flex items-center gap-2">
         <h2
-          title={t("onAir.home.inboxTitle", { defaultValue: "Inbox" })}
           className="min-w-0 flex-1 truncate whitespace-nowrap font-heading text-section font-bold uppercase leading-tight tracking-wide">
-          {t("onAir.home.inboxTitle", { defaultValue: "Inbox" })}
+          {t("onAir.home.inboxTitleShort", { defaultValue: "Inbox" })}
         </h2>
         {unreadCount > 0 ? (
           <span
@@ -77,22 +117,20 @@ export function InboxPanel({ messages, unreadCount, onOpen }: InboxPanelProps) {
           {t("onAir.home.inboxEmpty", { defaultValue: "Your inbox is clear" })}
         </p>
       ) : (
-        <ul data-slot="inbox-list" className="flex min-h-0 flex-1 flex-col divide-y divide-line/60 overflow-y-auto scrollbar-v2">
+        <ul ref={listRef} data-slot="inbox-list" className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {rows.map((message) => (
-            <li key={message.id} className="shrink-0">
+            <li key={message.id} className="box-border h-9 shrink-0 border-b border-line/60 last:border-b-0">
               <button
                 type="button"
                 onClick={() => onOpen(message.id)}
-                className="flex min-h-9 w-full items-center gap-3 rounded-md py-1.5 text-start hover:bg-muted/60"
+                className="flex h-full w-full items-center gap-3 rounded-md text-start hover:bg-muted/60"
               >
                 {message.unread ? (
                   <span className="sr-only">{t("onAir.home.unreadRow", { defaultValue: "Unread" })}</span>
                 ) : null}
-                <span className="w-20 shrink-0 min-w-20">
-                  <TagBlock tone="neutral" size="sm" className="max-w-full">
-                    <span className="truncate" title={resolveCategoryLabel(t, message)}>
-                      {resolveCategoryLabel(t, message)}
-                    </span>
+                <span data-slot="inbox-category" className="min-w-28 shrink-0">
+                  <TagBlock tone="neutral" size="sm" className="whitespace-nowrap">
+                    {resolveCategoryLabel(t, message)}
                   </TagBlock>
                 </span>
                 <span
