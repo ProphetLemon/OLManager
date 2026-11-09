@@ -795,7 +795,9 @@
       "errors": {
         "notAccepted": "This league does not accept new clubs. Go back and choose another league or an existing team.",
         "noClubs": "This league has no clubs to join. Go back and choose another league.",
-        "badRequest": "The request to join the league was not valid. Go back a step and try again."
+        "badRequest": "The request to join the league was not valid. Go back a step and try again.",
+        "clash": "A detail from an earlier step now matches a club that stays in the league.",
+        "fixClash": "Go back and change it"
       }
     },
     "founders": {

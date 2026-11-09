@@ -667,7 +667,9 @@
       "errors": {
         "notAccepted": "Cette ligue n'accepte pas de nouveaux clubs. Revenez en arrière et choisissez une autre ligue ou une équipe existante.",
         "noClubs": "Cette ligue n'a aucun club à rejoindre. Revenez en arrière et choisissez une autre ligue.",
-        "badRequest": "La demande pour rejoindre la ligue n'était pas valide. Revenez d'une étape et réessayez."
+        "badRequest": "La demande pour rejoindre la ligue n'était pas valide. Revenez d'une étape et réessayez.",
+        "clash": "Une information d'une étape précédente correspond désormais à un club qui reste dans la ligue.",
+        "fixClash": "Revenir et la modifier"
       }
     },
     "founders": {

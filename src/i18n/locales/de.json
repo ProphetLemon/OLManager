@@ -667,7 +667,9 @@
       "errors": {
         "notAccepted": "Diese Liga nimmt keine neuen Vereine auf. Gehe zurück und wähle eine andere Liga oder ein bestehendes Team.",
         "noClubs": "Diese Liga hat keine Vereine, denen du beitreten könntest. Gehe zurück und wähle eine andere Liga.",
-        "badRequest": "Die Anfrage zum Beitritt zur Liga war ungültig. Gehe einen Schritt zurück und versuche es erneut."
+        "badRequest": "Die Anfrage zum Beitritt zur Liga war ungültig. Gehe einen Schritt zurück und versuche es erneut.",
+        "clash": "Eine Angabe aus einem früheren Schritt stimmt jetzt mit einem Verein überein, der in der Liga bleibt.",
+        "fixClash": "Zurück und ändern"
       }
     },
     "founders": {

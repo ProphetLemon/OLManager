@@ -518,7 +518,9 @@
       "errors": {
         "notAccepted": "Questa lega non accetta nuovi club. Torna indietro e scegli un'altra lega o una squadra esistente.",
         "noClubs": "Questa lega non ha club a cui unirsi. Torna indietro e scegli un'altra lega.",
-        "badRequest": "La richiesta di unirsi alla lega non era valida. Torna indietro di un passo e riprova."
+        "badRequest": "La richiesta di unirsi alla lega non era valida. Torna indietro di un passo e riprova.",
+        "clash": "Un dato di un passaggio precedente coincide ora con un club che resta nella lega.",
+        "fixClash": "Torna indietro e modificalo"
       }
     },
     "founders": {

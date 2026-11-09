@@ -795,7 +795,9 @@
       "errors": {
         "notAccepted": "Esta liga no admite clubes nuevos. Vuelve atrás y elige otra liga o un equipo existente.",
         "noClubs": "Esta liga no tiene clubes a los que unirse. Vuelve atrás y elige otra liga.",
-        "badRequest": "La solicitud para unirse a la liga no es válida. Vuelve un paso atrás e inténtalo de nuevo."
+        "badRequest": "La solicitud para unirse a la liga no es válida. Vuelve un paso atrás e inténtalo de nuevo.",
+        "clash": "Algún dato de un paso anterior coincide ahora con un club que se queda en la liga.",
+        "fixClash": "Volver y cambiarlo"
       }
     },
     "founders": {

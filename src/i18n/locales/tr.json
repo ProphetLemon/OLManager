@@ -667,7 +667,9 @@
       "errors": {
         "notAccepted": "Bu lig yeni kulüp kabul etmiyor. Geri dön ve başka bir lig ya da mevcut bir takım seç.",
         "noClubs": "Bu ligde katılabileceğin kulüp yok. Geri dön ve başka bir lig seç.",
-        "badRequest": "Lige katılma isteği geçerli değildi. Bir adım geri dön ve tekrar dene."
+        "badRequest": "Lige katılma isteği geçerli değildi. Bir adım geri dön ve tekrar dene.",
+        "clash": "Önceki bir adımdaki bir bilgi artık ligde kalan bir kulüple aynı.",
+        "fixClash": "Geri dön ve değiştir"
       }
     },
     "founders": {

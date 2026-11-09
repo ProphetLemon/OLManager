@@ -667,7 +667,9 @@
       "errors": {
         "notAccepted": "Esta liga não aceita novos clubes. Volte e escolha outra liga ou um time existente.",
         "noClubs": "Esta liga não tem clubes para entrar. Volte e escolha outra liga.",
-        "badRequest": "O pedido para entrar na liga não era válido. Volte uma etapa e tente de novo."
+        "badRequest": "O pedido para entrar na liga não era válido. Volte uma etapa e tente de novo.",
+        "clash": "Um dado de uma etapa anterior coincide agora com um clube que fica na liga.",
+        "fixClash": "Voltar e alterar"
       }
     },
     "founders": {

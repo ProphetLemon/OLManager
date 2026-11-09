@@ -783,6 +783,61 @@ describe("CustomTeamWizardV2 join or replace choice", () => {
     expect(document.querySelector("pre")).toBeNull();
   });
 
+  describe("when switching the mode makes an earlier step invalid", () => {
+    /** A name that is free while replacing "Other Club", then the mode step again. */
+    function toModeStepWithReplacedClubName() {
+      toReviewStep();
+      fireEvent.click(screen.getByRole("button", { name: "Back" }));
+      fireEvent.click(screen.getByRole("button", { name: "Back" }));
+      fillIdentity("Other Club");
+      fireEvent.click(next());
+      fireEvent.click(next());
+    }
+
+    it("explains the clash on the mode step and takes the player to the field", () => {
+      setup();
+      toModeStepWithReplacedClubName();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+      fireEvent.click(joinRadio());
+      const alert = screen.getByRole("alert");
+      expect(alert).toHaveTextContent("A detail from an earlier step now matches a club that stays in the league.");
+      expect(alert).toHaveTextContent("Another club already uses this name.");
+      expect(alert).toHaveTextContent("Another club already uses this short name.");
+
+      fireEvent.click(within(alert).getByRole("button", { name: "Go back and change it" }));
+      expect(screen.getByRole("heading", { name: "Identity" })).toBeInTheDocument();
+      expect(screen.getByLabelText("Club name")).toHaveAccessibleDescription(/Another club already uses this name\./);
+      expect(next()).toBeDisabled();
+    });
+
+    it("sends Next on the mode step to the clashing field instead of the squad step", () => {
+      setup();
+      toModeStepWithReplacedClubName();
+      fireEvent.click(joinRadio());
+
+      fireEvent.click(next());
+      expect(screen.getByRole("heading", { name: "Identity" })).toBeInTheDocument();
+      expect(screen.getByLabelText("Club name")).toHaveAttribute("aria-invalid", "true");
+    });
+
+    it("drops the message as soon as the player switches back", () => {
+      setup();
+      toModeStepWithReplacedClubName();
+      fireEvent.click(joinRadio());
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+      fireEvent.click(replaceRadio());
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+  });
+
+  it("describes the step heading with a refusal of the join request", () => {
+    setup({ error: "Competition 'les' does not accept custom clubs" });
+    const heading = screen.getByRole("heading", { name: "Join or replace" });
+    expect(heading).toHaveAttribute("aria-describedby", "custom-team-mode-error");
+    expect(document.getElementById("custom-team-mode-error")).toHaveTextContent("This league does not accept new clubs.");
+  });
+
   it("brings the player back to the mode step from the squad step and clears the message on a new choice", async () => {
     const { rerender } = setup();
     await toJoinSquadStep();
