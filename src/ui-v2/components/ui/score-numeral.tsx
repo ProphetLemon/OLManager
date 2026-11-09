@@ -40,8 +40,10 @@ function ScoreNumeral({
       aria-hidden={label ? undefined : true}
       role={label ? "img" : undefined}
       className={cn(
-        "inline-block font-heading font-extrabold tabular-nums leading-none",
+        "inline-block font-heading font-extrabold tabular-nums",
         SIZE_CLASS[size],
+        // After the size: a font size would otherwise drop an earlier leading class.
+        "leading-none",
         TONE_CLASS[tone],
         className
       )}
