@@ -692,6 +692,8 @@
           "birth_date": "Data de nascimento"
         },
         "birthHint": "Nascido entre {{min}} e {{max}} para continuar com {{age}} anos.",
+        "nickHint": "{{min}} a {{max}} caracteres: letras, dígitos, _ . e -",
+        "fullNameHint": "{{min}} a {{max}} caracteres: letras, espaços, apóstrofos e hífenes",
         "restore": "Restaurar o gerado",
         "cancel": "Cancelar",
         "save": "Guardar"
@@ -1749,6 +1751,8 @@
       "actionAria": "Mudar o nome de {{nick}}",
       "title": "Mudar o nome do jogador",
       "hint": "Só o nome muda. A função, a idade e a nacionalidade mantêm-se.",
+      "nickHint": "{{min}} a {{max}} caracteres: letras, dígitos, _ . e -",
+      "fullNameHint": "{{min}} a {{max}} caracteres: letras, espaços, apóstrofos e hífenes",
       "nick": "Nick",
       "fullName": "Nome completo",
       "save": "Guardar nome",

@@ -76,6 +76,9 @@ export interface FoundingSquadSummary {
   allowed_nationalities: string[];
 }
 
+/** Result of an edit whose preview was replaced by a newer request: nothing was kept. */
+export const SUPERSEDED = "superseded" as const;
+
 /** Product cap on rerolls per club creation (a UI rule, not a backend one). */
 export const MAX_REROLLS = 3;
 

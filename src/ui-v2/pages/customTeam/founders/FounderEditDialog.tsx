@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 import { countryName } from "@/lib/common/countries";
-import { diffOverride, limitsFor, reasonKey, withRoleOverride } from "@/lib/customTeam/founders";
+import { SUPERSEDED, diffOverride, limitsFor, reasonKey, withRoleOverride } from "@/lib/customTeam/founders";
 import type {
   FounderError,
   FounderField,
@@ -23,7 +23,7 @@ export interface FounderEditDialogProps {
   overrides: FounderOverrides;
   allowedNationalities: readonly string[];
   /** Previews the candidate overrides; resolves with the backend's field error or null. */
-  onApply: (next: FounderOverrides) => Promise<FounderError | null>;
+  onApply: (next: FounderOverrides) => Promise<FounderError | typeof SUPERSEDED | null>;
   onClose: () => void;
 }
 
@@ -39,18 +39,26 @@ export default function FounderEditDialog({
 }: FounderEditDialogProps) {
   const { t, i18n } = useTranslation();
   const baseId = useId();
-  const [draft, setDraft] = useState<Draft>({
+  const initial: Draft = {
     nick: founder.nick,
     full_name: founder.full_name,
     nationality: founder.nationality,
     birth_date: founder.date_of_birth,
-  });
+  };
+  const [draft, setDraft] = useState<Draft>(initial);
   const [fieldError, setFieldError] = useState<{ field: FounderField; message: string } | null>(null);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const roleName = t(`onAir.roles.${founder.role}`);
   const generatedMatches = diffOverride(generated, draft) === null;
+  const dirty = (Object.keys(initial) as FounderField[]).some((field) => initial[field] !== draft[field]);
+  const formatDate = (iso: string) => {
+    const date = new Date(`${iso}T00:00:00Z`);
+    return Number.isNaN(date.getTime())
+      ? iso
+      : new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeZone: "UTC" }).format(date);
+  };
   const nationalityOptions = Array.from(
     new Set([...allowedNationalities, founder.nationality]),
   ).map((code) => ({ code, name: countryName(code, i18n.language) || code }));
@@ -77,6 +85,11 @@ export default function FounderEditDialog({
     setGeneralError(null);
     try {
       const error = await onApply(next);
+      if (error === SUPERSEDED) {
+        // A newer request replaced this one, so nothing was saved: keep the dialog open.
+        setGeneralError(t("teamSelect.founders.errors.general"));
+        return;
+      }
       if (!error) {
         onClose();
         return;
@@ -106,8 +119,9 @@ export default function FounderEditDialog({
 
   const idFor = (field: FounderField) => `${baseId}-${field}`;
   const errorFor = (field: FounderField) => (fieldError?.field === field ? fieldError.message : null);
+  const hasHint = (field: FounderField) => field === "birth_date" || field === "nick" || field === "full_name";
   const describedBy = (field: FounderField) =>
-    [field === "birth_date" ? `${idFor(field)}-hint` : null, errorFor(field) ? `${idFor(field)}-error` : null]
+    [hasHint(field) ? `${idFor(field)}-hint` : null, errorFor(field) ? `${idFor(field)}-error` : null]
       .filter(Boolean)
       .join(" ") || undefined;
 
@@ -121,7 +135,15 @@ export default function FounderEditDialog({
   });
 
   return (
-    <Dialog open onOpenChange={(open) => (open || saving ? undefined : onClose())}>
+    <Dialog
+      open
+      onOpenChange={(open, details) => {
+        if (open || saving) return;
+        // A stray click on the backdrop must not silently throw away typed edits.
+        if (dirty && details.reason === "outside-press") return;
+        onClose();
+      }}
+    >
       <DialogContent onKeyDown={handleKeyDown} className="space-y-4">
         <DialogTitle>{t("teamSelect.founders.dialog.title", { role: roleName })}</DialogTitle>
         <form onSubmit={(event) => void submit(event)} className="space-y-4" noValidate>
@@ -136,6 +158,9 @@ export default function FounderEditDialog({
               spellCheck={false}
               onChange={(event) => set("nick", event.target.value)}
             />
+            <p id={`${idFor("nick")}-hint`} className="mt-1 text-xs text-muted-foreground">
+              {t("teamSelect.founders.dialog.nickHint", limitsFor("nick"))}
+            </p>
             <FieldError id={`${idFor("nick")}-error`} message={errorFor("nick")} />
           </div>
 
@@ -149,6 +174,9 @@ export default function FounderEditDialog({
               autoComplete="off"
               onChange={(event) => set("full_name", event.target.value)}
             />
+            <p id={`${idFor("full_name")}-hint`} className="mt-1 text-xs text-muted-foreground">
+              {t("teamSelect.founders.dialog.fullNameHint", limitsFor("full_name"))}
+            </p>
             <FieldError id={`${idFor("full_name")}-error`} message={errorFor("full_name")} />
           </div>
 
@@ -180,8 +208,8 @@ export default function FounderEditDialog({
             <p id={`${idFor("birth_date")}-hint`} className="mt-1 text-xs text-muted-foreground">
               {t("teamSelect.founders.dialog.birthHint", {
                 age: founder.age,
-                min: founder.birth_date_min,
-                max: founder.birth_date_max,
+                min: formatDate(founder.birth_date_min),
+                max: formatDate(founder.birth_date_max),
               })}
             </p>
             <FieldError id={`${idFor("birth_date")}-error`} message={errorFor("birth_date")} />
@@ -194,7 +222,7 @@ export default function FounderEditDialog({
             </p>
           )}
 
-          <DialogFooter className="items-center justify-between">
+          <DialogFooter className="flex-wrap items-center justify-between">
             <Button
               type="button"
               variant="ghost"
@@ -210,7 +238,7 @@ export default function FounderEditDialog({
             >
               {t("teamSelect.founders.dialog.restore")}
             </Button>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button type="button" variant="ghost" disabled={saving} onClick={onClose}>
                 {t("teamSelect.founders.dialog.cancel")}
               </Button>

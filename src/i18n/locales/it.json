@@ -544,6 +544,8 @@
           "birth_date": "Data di nascita"
         },
         "birthHint": "Nato tra il {{min}} e il {{max}} per restare a {{age}} anni.",
+        "nickHint": "Da {{min}} a {{max}} caratteri: lettere, cifre, _ . e -",
+        "fullNameHint": "Da {{min}} a {{max}} caratteri: lettere, spazi, apostrofi e trattini",
         "restore": "Ripristina il generato",
         "cancel": "Annulla",
         "save": "Salva"
@@ -1601,6 +1603,8 @@
       "actionAria": "Rinomina {{nick}}",
       "title": "Rinomina giocatore",
       "hint": "Cambia solo il nome. Ruolo, età e nazionalità restano uguali.",
+      "nickHint": "Da {{min}} a {{max}} caratteri: lettere, cifre, _ . e -",
+      "fullNameHint": "Da {{min}} a {{max}} caratteri: lettere, spazi, apostrofi e trattini",
       "nick": "Nick",
       "fullName": "Nome completo",
       "save": "Salva nome",

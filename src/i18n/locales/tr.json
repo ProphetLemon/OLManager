@@ -693,6 +693,8 @@
           "birth_date": "Doğum tarihi"
         },
         "birthHint": "{{age}} yaşında kalması için {{min}} ile {{max}} arasında doğmuş olmalı.",
+        "nickHint": "{{min}} ile {{max}} karakter: harf, rakam, _ . ve -",
+        "fullNameHint": "{{min}} ile {{max}} karakter: harf, boşluk, kesme işareti ve tire",
         "restore": "Oluşturulanı geri yükle",
         "cancel": "İptal",
         "save": "Kaydet"
@@ -1750,6 +1752,8 @@
       "actionAria": "{{nick}} oyuncusunu yeniden adlandır",
       "title": "Oyuncuyu yeniden adlandır",
       "hint": "Yalnızca ad değişir. Rol, yaş ve uyruk aynı kalır.",
+      "nickHint": "{{min}} ile {{max}} karakter: harf, rakam, _ . ve -",
+      "fullNameHint": "{{min}} ile {{max}} karakter: harf, boşluk, kesme işareti ve tire",
       "nick": "Takma ad",
       "fullName": "Tam ad",
       "save": "Adı kaydet",

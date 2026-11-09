@@ -821,6 +821,8 @@
           "birth_date": "Fecha de nacimiento"
         },
         "birthHint": "Nacido entre {{min}} y {{max}} para mantener {{age}} años.",
+        "nickHint": "De {{min}} a {{max}} caracteres: letras, dígitos, _ . y -",
+        "fullNameHint": "De {{min}} a {{max}} caracteres: letras, espacios, apóstrofos y guiones",
         "restore": "Restaurar generado",
         "cancel": "Cancelar",
         "save": "Guardar"
@@ -1889,6 +1891,8 @@
       "actionAria": "Renombrar a {{nick}}",
       "title": "Renombrar jugador",
       "hint": "Solo cambia el nombre. El rol, la edad y la nacionalidad se mantienen.",
+      "nickHint": "De {{min}} a {{max}} caracteres: letras, dígitos, _ . y -",
+      "fullNameHint": "De {{min}} a {{max}} caracteres: letras, espacios, apóstrofos y guiones",
       "nick": "Nick",
       "fullName": "Nombre completo",
       "save": "Guardar nombre",

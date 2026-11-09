@@ -150,6 +150,19 @@ describe("PlayerProfileV2 rename", () => {
     expect(onGameUpdate).not.toHaveBeenCalled();
   });
 
+  it("states the name constraints under each field before any submit", async () => {
+    open(player("gen-ray-mid-1", OWN));
+    fireEvent.click(renameButton()!);
+    const dialog = await screen.findByRole("dialog");
+
+    expect(within(dialog).getByLabelText("playerProfile.rename.nick")).toHaveAccessibleDescription(
+      "playerProfile.rename.nickHint",
+    );
+    expect(within(dialog).getByLabelText("playerProfile.rename.fullName")).toHaveAccessibleDescription(
+      "playerProfile.rename.fullNameHint",
+    );
+  });
+
   it("shows the backend's field error at the field and keeps the dialog open", async () => {
     vi.mocked(invoke).mockImplementation(async (command: string) => {
       if (command === "rename_player") {

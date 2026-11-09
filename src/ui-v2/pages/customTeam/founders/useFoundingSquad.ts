@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   MAX_REROLLS,
+  SUPERSEDED,
   isEmptyOverrides,
   newFoundingSeed,
   parseFounderError,
@@ -43,9 +44,10 @@ export interface FoundingSquadState {
   retry: () => void;
   /**
    * Validates `next` by previewing it. Resolves with the backend's field error,
-   * or `null` once the overrides are kept.
+   * `SUPERSEDED` when a newer request replaced this one (nothing was kept), or
+   * `null` once the overrides are kept.
    */
-  applyOverrides: (next: FounderOverrides) => Promise<FounderError | null>;
+  applyOverrides: (next: FounderOverrides) => Promise<FounderError | typeof SUPERSEDED | null>;
 }
 
 const inputsKey = (
@@ -138,7 +140,7 @@ export function useFoundingSquad({
   const retry = useCallback(() => setRetryTick((tick) => tick + 1), []);
 
   const applyOverrides = useCallback(
-    async (next: FounderOverrides): Promise<FounderError | null> => {
+    async (next: FounderOverrides): Promise<FounderError | typeof SUPERSEDED | null> => {
       if (!replacedTeamId) return null;
       const id = ++requestId.current;
       try {
@@ -149,7 +151,7 @@ export function useFoundingSquad({
           seed,
           founderOverrides: next,
         });
-        if (id !== requestId.current) return null;
+        if (id !== requestId.current) return SUPERSEDED;
         setSquad(result);
         setOverrides(next);
         setPreviewKey(inputsKey(competitionId, replacedTeamId, shortName, seed, next));

@@ -821,6 +821,8 @@
           "birth_date": "Birth date"
         },
         "birthHint": "Born between {{min}} and {{max}} to stay {{age}} years old.",
+        "nickHint": "{{min}} to {{max}} characters: letters, digits, _ . and -",
+        "fullNameHint": "{{min}} to {{max}} characters: letters, spaces, apostrophes and hyphens",
         "restore": "Restore generated",
         "cancel": "Cancel",
         "save": "Save"
@@ -1900,6 +1902,8 @@
       "actionAria": "Rename {{nick}}",
       "title": "Rename player",
       "hint": "Only the name changes. Role, age and nationality stay as they are.",
+      "nickHint": "{{min}} to {{max}} characters: letters, digits, _ . and -",
+      "fullNameHint": "{{min}} to {{max}} characters: letters, spaces, apostrophes and hyphens",
       "nick": "Nick",
       "fullName": "Full name",
       "save": "Save name",

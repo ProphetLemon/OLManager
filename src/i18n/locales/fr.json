@@ -693,6 +693,8 @@
           "birth_date": "Date de naissance"
         },
         "birthHint": "Né entre le {{min}} et le {{max}} pour garder {{age}} ans.",
+        "nickHint": "{{min}} à {{max}} caractères : lettres, chiffres, _ . et -",
+        "fullNameHint": "{{min}} à {{max}} caractères : lettres, espaces, apostrophes et traits d'union",
         "restore": "Rétablir la version générée",
         "cancel": "Annuler",
         "save": "Enregistrer"
@@ -1750,6 +1752,8 @@
       "actionAria": "Renommer {{nick}}",
       "title": "Renommer le joueur",
       "hint": "Seul le nom change. Le rôle, l'âge et la nationalité restent identiques.",
+      "nickHint": "{{min}} à {{max}} caractères : lettres, chiffres, _ . et -",
+      "fullNameHint": "{{min}} à {{max}} caractères : lettres, espaces, apostrophes et traits d'union",
       "nick": "Pseudo",
       "fullName": "Nom complet",
       "save": "Enregistrer le nom",

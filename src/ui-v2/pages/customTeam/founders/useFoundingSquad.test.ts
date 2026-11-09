@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const invoke = vi.hoisted(() => vi.fn());
 vi.mock("@tauri-apps/api/core", () => ({ invoke }));
 
-import { MAX_REROLLS } from "@/lib/customTeam/founders";
+import { MAX_REROLLS, SUPERSEDED } from "@/lib/customTeam/founders";
 import { useFoundingSquad } from "./useFoundingSquad";
 import { TAKEN_NICK, previewInvoke, squadFor } from "./foundersTestKit";
 import type { PreviewCall } from "./foundersTestKit";
@@ -58,19 +58,64 @@ describe("useFoundingSquad", () => {
     expect(result.current.rerollsLeft).toBe(0);
   });
 
-  it("keeps the shown squad and the edits when a candidate is rejected", async () => {
+  it("keeps the shown squad and the earlier edit when a later candidate is rejected", async () => {
     const { result } = renderHook(() => useFoundingSquad(input));
     await waitFor(() => expect(result.current.inSync).toBe(true));
+    await act(async () => {
+      await result.current.applyOverrides({ mid: { nick: "Ray" } });
+    });
     const shown = result.current.squad;
+    expect(result.current.overrides).toEqual({ mid: { nick: "Ray" } });
 
     let error: unknown;
     await act(async () => {
-      error = await result.current.applyOverrides({ mid: { nick: TAKEN_NICK } });
+      error = await result.current.applyOverrides({ mid: { nick: "Ray" }, top: { nick: TAKEN_NICK } });
     });
-    expect(error).toEqual({ kind: "invalid_field", role: "MID", field: "nick", reason: "taken" });
+    expect(error).toEqual({ kind: "invalid_field", role: "TOP", field: "nick", reason: "taken" });
+    expect(result.current.squad).toBe(shown);
+    expect(result.current.overrides).toEqual({ mid: { nick: "Ray" } });
+    expect(result.current.inSync).toBe(true);
+  });
+
+  it("rethrows a failure that is not a field error and keeps the shown squad", async () => {
+    const { result } = renderHook(() => useFoundingSquad(input));
+    await waitFor(() => expect(result.current.inSync).toBe(true));
+    const shown = result.current.squad;
+    invoke.mockRejectedValueOnce("backend down");
+
+    await act(async () => {
+      await expect(result.current.applyOverrides({ mid: { nick: "Ray" } })).rejects.toBe("backend down");
+    });
     expect(result.current.squad).toBe(shown);
     expect(result.current.overrides).toEqual({});
-    expect(result.current.inSync).toBe(true);
+  });
+
+  it("reports an edit that a newer request replaced instead of calling it saved", async () => {
+    const { result } = renderHook(() => useFoundingSquad(input));
+    await waitFor(() => expect(result.current.inSync).toBe(true));
+
+    const resolvers: Array<() => void> = [];
+    const fake = previewInvoke(calls);
+    invoke.mockImplementation(
+      (command: string, args?: unknown) =>
+        new Promise((resolve) => {
+          resolvers.push(() => resolve(fake(command, args)));
+        }),
+    );
+    let outcome: Promise<unknown> = Promise.resolve();
+    act(() => {
+      outcome = result.current.applyOverrides({ mid: { nick: "Ray" } });
+    });
+    await waitFor(() => expect(resolvers).toHaveLength(1));
+    // A reroll starts a newer request before the edit's preview answers.
+    act(() => result.current.reroll());
+    await waitFor(() => expect(resolvers.length).toBeGreaterThan(1));
+
+    await act(async () => {
+      resolvers[0]();
+      await expect(outcome).resolves.toBe(SUPERSEDED);
+    });
+    expect(result.current.overrides).toEqual({});
   });
 
   it("is in sync only with the inputs the last preview used", async () => {

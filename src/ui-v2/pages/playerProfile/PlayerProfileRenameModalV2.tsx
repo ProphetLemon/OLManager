@@ -108,7 +108,7 @@ export default function PlayerProfileRenameModalV2({
               autoComplete="off"
               spellCheck={false}
               aria-invalid={nickError ? true : undefined}
-              aria-describedby={nickError ? `${nickId}-error` : undefined}
+              aria-describedby={nickError ? `${nickId}-hint ${nickId}-error` : `${nickId}-hint`}
               onChange={(event) => {
                 setNick(event.target.value);
                 if (nickError) setFieldError(null);
@@ -116,6 +116,9 @@ export default function PlayerProfileRenameModalV2({
               }}
               className={fieldClass}
             />
+            <p id={`${nickId}-hint`} className="mt-1 text-xs text-muted-foreground">
+              {t("playerProfile.rename.nickHint", FIELD_LIMITS.nick)}
+            </p>
             {nickError && <FieldError id={`${nickId}-error`} message={nickError} />}
           </div>
           <div>
@@ -129,7 +132,7 @@ export default function PlayerProfileRenameModalV2({
               disabled={saving}
               autoComplete="off"
               aria-invalid={fullNameError ? true : undefined}
-              aria-describedby={fullNameError ? `${fullNameId}-error` : undefined}
+              aria-describedby={fullNameError ? `${fullNameId}-hint ${fullNameId}-error` : `${fullNameId}-hint`}
               onChange={(event) => {
                 setFullName(event.target.value);
                 if (fullNameError) setFieldError(null);
@@ -137,10 +140,13 @@ export default function PlayerProfileRenameModalV2({
               }}
               className={fieldClass}
             />
+            <p id={`${fullNameId}-hint`} className="mt-1 text-xs text-muted-foreground">
+              {t("playerProfile.rename.fullNameHint", FIELD_LIMITS.full_name)}
+            </p>
             {fullNameError && <FieldError id={`${fullNameId}-error`} message={fullNameError} />}
           </div>
           {generalError && <FieldError message={generalError} />}
-          <DialogFooter className="justify-end">
+          <DialogFooter className="flex-wrap justify-end">
             <Button type="button" variant="ghost" disabled={saving} onClick={onClose}>
               {t("playerProfile.rename.cancel")}
             </Button>
