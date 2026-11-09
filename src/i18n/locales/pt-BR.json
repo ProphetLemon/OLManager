@@ -593,15 +593,15 @@
     },
     "custom": {
       "create": "Crie seu time",
-      "createHint": "Substitua um clube desta liga pelo seu.",
+      "createHint": "Adicione seu clube a esta liga ou substitua um.",
       "title": "Crie seu time",
-      "subtitle": "Substitua um clube desta liga pelo seu",
+      "subtitle": "Adicione seu clube a esta liga ou substitua um dos clubes dela",
       "stepOf": "Etapa {{current}} de {{total}}",
       "stepsLabel": "Progresso",
       "steps": {
         "identity": "Identidade",
         "badge": "Escudo",
-        "replace": "Substituir e revisar"
+        "replace": "Entrar ou substituir"
       },
       "fields": {
         "name": "Nome do clube",
@@ -650,6 +650,24 @@
         "replaceRequired": "Escolha o clube que você quer substituir.",
         "lowContrast": "Essas cores são muito próximas e a sigla pode ser difícil de ler. Você pode continuar mesmo assim.",
         "title": "Não foi possível criar o clube"
+      }
+    },
+    "joinMode": {
+      "groupLabel": "Como seu clube entra na liga",
+      "join": {
+        "label": "Entrar na liga",
+        "description": "Ninguém é substituído. A liga passará a ter {{total}} clubes.",
+        "descriptionOdd": "Ninguém é substituído. A liga passará a ter {{total}} clubes, por isso um clube folga em cada rodada e o split tem mais rodadas."
+      },
+      "replace": {
+        "label": "Substituir um clube",
+        "description": "O clube escolhido sai da liga e seus jogadores e comissão técnica viram agentes livres."
+      },
+      "summary": "{{name}} ({{tag}}), de {{country}}, entra em {{league}} como clube número {{position}}.",
+      "errors": {
+        "notAccepted": "Esta liga não aceita novos clubes. Volte e escolha outra liga ou um time existente.",
+        "noClubs": "Esta liga não tem clubes para entrar. Volte e escolha outra liga.",
+        "badRequest": "O pedido para entrar na liga não era válido. Volte uma etapa e tente de novo."
       }
     },
     "founders": {

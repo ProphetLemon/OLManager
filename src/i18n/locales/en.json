@@ -721,15 +721,15 @@
     },
     "custom": {
       "create": "Create your team",
-      "createHint": "Replace one club in this league with your own.",
+      "createHint": "Add your own club to this league, or replace one.",
       "title": "Create your team",
-      "subtitle": "Replace one club in this league with your own",
+      "subtitle": "Add your own club to this league, or replace one of its clubs",
       "stepOf": "Step {{current}} of {{total}}",
       "stepsLabel": "Progress",
       "steps": {
         "identity": "Identity",
         "badge": "Badge",
-        "replace": "Replace and review"
+        "replace": "Join or replace"
       },
       "fields": {
         "name": "Club name",
@@ -778,6 +778,24 @@
         "replaceRequired": "Choose the club you want to replace.",
         "lowContrast": "These colours are close together, so the tag may be hard to read. You can still continue.",
         "title": "Could not create the club"
+      }
+    },
+    "joinMode": {
+      "groupLabel": "How your club enters the league",
+      "join": {
+        "label": "Join the league",
+        "description": "Nobody is replaced. The league will have {{total}} clubs.",
+        "descriptionOdd": "Nobody is replaced. The league will have {{total}} clubs, so one club rests each matchday and the split has more matchdays."
+      },
+      "replace": {
+        "label": "Replace a club",
+        "description": "The club you choose leaves the league, and its players and staff are released as free agents."
+      },
+      "summary": "{{name}} ({{tag}}) from {{country}} joins {{league}} as club number {{position}}.",
+      "errors": {
+        "notAccepted": "This league does not accept new clubs. Go back and choose another league or an existing team.",
+        "noClubs": "This league has no clubs to join. Go back and choose another league.",
+        "badRequest": "The request to join the league was not valid. Go back a step and try again."
       }
     },
     "founders": {

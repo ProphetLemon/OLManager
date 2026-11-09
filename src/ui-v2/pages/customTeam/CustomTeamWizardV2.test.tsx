@@ -80,11 +80,19 @@ function fillIdentity(name = "Ray Esports", country = "ES") {
   fireEvent.change(screen.getByLabelText("Country"), { target: { value: country } });
 }
 
-/** Walks to the replace step. */
-function toReviewStep() {
+/** Walks to the mode and review step, with joining still selected. */
+function toModeStep() {
   fillIdentity();
   fireEvent.click(next());
   fireEvent.click(next());
+}
+
+const chooseReplace = () => fireEvent.click(screen.getByRole("radio", { name: "Replace a club" }));
+
+/** Walks to the mode step and chooses to replace a club. */
+function toReviewStep() {
+  toModeStep();
+  chooseReplace();
 }
 
 /** Walks to the founding squad step and waits for the preview. */
@@ -230,6 +238,7 @@ describe("CustomTeamWizardV2 replace and review step", () => {
     fireEvent.click(next());
     fireEvent.click(screen.getByRole("button", { name: "Colours #b91c1c and #fafafa" }));
     fireEvent.click(next());
+    chooseReplace();
     fireEvent.click(screen.getByRole("radio", { name: /Falke Esports/ }));
     fireEvent.click(next());
     await screen.findByTestId("founder-mid");
@@ -588,5 +597,208 @@ describe("CustomTeamWizardV2 founding squad step: focus and announcements", () =
     mocks.invoke.mockImplementation(fake);
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(screen.getAllByRole("button", { name: /^Edit / })[0]).toBeEnabled());
+  });
+});
+
+describe("CustomTeamWizardV2 join or replace choice", () => {
+  const joinRadio = () => screen.getByRole("radio", { name: "Join the league" });
+  const replaceRadio = () => screen.getByRole("radio", { name: "Replace a club" });
+
+  /** From the mode step, with joining selected, to the squad step and its first preview. */
+  async function toJoinSquadStep() {
+    toModeStep();
+    fireEvent.click(next());
+    await screen.findByTestId("founder-mid");
+  }
+
+  it("preselects joining and offers both modes in a labelled group, joining first", () => {
+    setup();
+    toModeStep();
+
+    const group = screen.getByRole("group", { name: "How your club enters the league" });
+    const radios = within(group).getAllByRole("radio");
+    expect(radios.slice(0, 2).map((radio) => radio.getAttribute("aria-labelledby"))).toEqual([
+      "custom-team-mode-join-label",
+      "custom-team-mode-replace-label",
+    ]);
+    expect(joinRadio()).toBeChecked();
+    expect(replaceRadio()).not.toBeChecked();
+    expect(next()).toBeEnabled();
+  });
+
+  it("ties each option to its description and counts the real league size", () => {
+    setup();
+    toModeStep();
+    expect(joinRadio()).toHaveAccessibleDescription("Nobody is replaced. The league will have 4 clubs.");
+    expect(replaceRadio()).toHaveAccessibleDescription(
+      "The club you choose leaves the league, and its players and staff are released as free agents.",
+    );
+  });
+
+  it("says one club rests each matchday when the league ends up with an odd number of clubs", () => {
+    const four = {
+      ...competition,
+      teams: [...competition.teams, team("les-d", "Fourth Club", "FOU", 250)],
+    };
+    setup({ competition: four });
+    toModeStep();
+    expect(joinRadio()).toHaveAccessibleDescription(
+      "Nobody is replaced. The league will have 5 clubs, so one club rests each matchday and the split has more matchdays.",
+    );
+  });
+
+  it("hides the club picker while joining and shows it, preselected, when replacing", () => {
+    setup();
+    toModeStep();
+    expect(screen.queryByRole("radio", { name: /Falke Esports/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("Club to replace")).not.toBeInTheDocument();
+
+    fireEvent.click(replaceRadio());
+    expect(screen.getByText("Club to replace")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Other Club/ })).toBeChecked();
+
+    fireEvent.click(screen.getByRole("radio", { name: /Falke Esports/ }));
+    fireEvent.click(joinRadio());
+    expect(screen.queryByText("Club to replace")).not.toBeInTheDocument();
+    fireEvent.click(replaceRadio());
+    // The choice made before switching is still there.
+    expect(screen.getByRole("radio", { name: /Falke Esports/ })).toBeChecked();
+  });
+
+  it("puts both modes in one native radio group, so the arrow keys move between them", () => {
+    setup();
+    toModeStep();
+    expect(joinRadio()).toHaveAttribute("name", "custom-team-mode");
+    expect(replaceRadio()).toHaveAttribute("name", "custom-team-mode");
+    // The club picker is a different group, so its arrows never leave the picker.
+    fireEvent.click(replaceRadio());
+    expect(screen.getByRole("radio", { name: /Falke Esports/ })).toHaveAttribute("name", "custom-team-replace");
+  });
+
+  it("states the mode in the summary", () => {
+    setup();
+    toModeStep();
+    const summary = () => screen.getByRole("region", { name: "Summary" });
+    expect(summary()).toHaveTextContent("Ray Esports (RAY) from Spain joins LES as club number 4.");
+
+    fireEvent.click(replaceRadio());
+    expect(summary()).toHaveTextContent("Ray Esports (RAY) from Spain will replace Other Club.");
+  });
+
+  it("confirms a join with no replaced club and the previewed seed", async () => {
+    const { onConfirm } = setup();
+    await toJoinSquadStep();
+    fireEvent.click(screen.getByRole("button", { name: "Create club" }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Ray Esports", short_name: "RAY", founding_seed: lastSeed() }),
+      null,
+    );
+  });
+
+  it("previews without a replaced club when joining, and with it when replacing", async () => {
+    setup();
+    await toJoinSquadStep();
+    expect(previewCalls).toHaveLength(1);
+    expect(previewCalls[0]).toMatchObject({ competitionId: "les", shortName: "RAY" });
+    expect(Object.keys(previewCalls[0])).not.toContain("replacedTeamId");
+
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    fireEvent.click(replaceRadio());
+    fireEvent.click(next());
+    await waitFor(() => expect(previewCalls.length).toBeGreaterThan(1));
+    expect(previewCalls[previewCalls.length - 1]).toMatchObject({ replacedTeamId: "les-b" });
+  });
+
+  it("previews again after a mode switch and keeps Create club closed until it lands", async () => {
+    setup();
+    await toJoinSquadStep();
+    const seed = lastSeed();
+    expect(screen.getByRole("button", { name: "Create club" })).toBeEnabled();
+
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const fake = previewInvoke(previewCalls);
+    mocks.invoke.mockImplementation(async (command: string, args?: unknown) => {
+      await gate;
+      return fake(command, args);
+    });
+    const before = previewCalls.length;
+
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    fireEvent.click(replaceRadio());
+    fireEvent.click(next());
+
+    expect(screen.getByRole("button", { name: "Create club" })).toBeDisabled();
+    expect(screen.getByText("Generating your squad...")).toBeInTheDocument();
+    release();
+    await screen.findByTestId("founder-mid");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Create club" })).toBeEnabled());
+
+    expect(previewCalls.length).toBeGreaterThan(before);
+    // Same rule as changing the replaced club: the seed, the rerolls used and the edits carry over.
+    expect(lastSeed()).toBe(seed);
+  });
+
+  it("keeps the rerolls used when the mode changes", async () => {
+    setup();
+    await toJoinSquadStep();
+    fireEvent.click(screen.getByRole("button", { name: /^Reroll squad/ }));
+    await screen.findByText("New squad ready. 2 rerolls left.");
+    const seed = lastSeed();
+
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    fireEvent.click(replaceRadio());
+    fireEvent.click(next());
+    await screen.findByRole("button", { name: "Reroll squad (2 left)" });
+    expect(lastSeed()).toBe(seed);
+  });
+
+  it("sends the replaced club, not null, once the player switches back to replacing", async () => {
+    const { onConfirm } = setup();
+    await toJoinSquadStep();
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    fireEvent.click(replaceRadio());
+    fireEvent.click(next());
+    await waitFor(() => expect(previewCalls[previewCalls.length - 1].replacedTeamId).toBe("les-b"));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Create club" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Create club" }));
+
+    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ founding_seed: lastSeed() }), "les-b");
+  });
+
+  it.each([
+    ["Competition 'lec' does not accept custom clubs", "This league does not accept new clubs. Go back and choose another league or an existing team."],
+    ["Competition 'les' has no clubs to join", "This league has no clubs to join. Go back and choose another league."],
+    ["Joining a league needs a custom club", "The request to join the league was not valid. Go back a step and try again."],
+  ])("shows %j as a readable message on the mode step", (raw, readable) => {
+    setup({ error: raw });
+    expect(screen.getByRole("heading", { name: "Join or replace" })).toBeInTheDocument();
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent(readable);
+    expect(screen.queryByText(raw)).not.toBeInTheDocument();
+    expect(document.querySelector("pre")).toBeNull();
+  });
+
+  it("brings the player back to the mode step from the squad step and clears the message on a new choice", async () => {
+    const { rerender } = setup();
+    await toJoinSquadStep();
+    rerender(
+      <CustomTeamWizardV2
+        competition={competition}
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+        isSubmitting={false}
+        error="Competition 'les' does not accept custom clubs"
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "Join or replace" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("This league does not accept new clubs.");
+
+    fireEvent.click(replaceRadio());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

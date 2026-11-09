@@ -13,11 +13,12 @@ import {
   contrastRatio,
   defaultReplacementId,
   mapBackendCustomTeamError,
+  mapBackendJoinError,
   normalizeColor,
   normalizeShortName,
   validateCustomTeam,
 } from "@/lib/customTeam";
-import type { CustomTeamField, ValidationCode } from "@/lib/customTeam";
+import type { CustomTeamField, CustomTeamMode, ValidationCode } from "@/lib/customTeam";
 import { allNationalities } from "@/lib/common/countries";
 import { isEmptyOverrides, parseFounderError } from "@/lib/customTeam/founders";
 import type { CompetitionSummary, CustomTeamSpec, TeamSummary } from "@/store/types";
@@ -34,7 +35,8 @@ import {
 export interface CustomTeamWizardV2Props {
   competition: CompetitionSummary;
   onCancel: () => void;
-  onConfirm: (spec: CustomTeamSpec, replacesTeamId: string) => void;
+  /** `replacesTeamId` is null when the club joins the league and replaces nobody. */
+  onConfirm: (spec: CustomTeamSpec, replacesTeamId: string | null) => void;
   isSubmitting: boolean;
   /** Raw backend rejection, shown inside the wizard instead of navigating away. */
   error: string | null;
@@ -43,6 +45,7 @@ export interface CustomTeamWizardV2Props {
 type Step = 0 | 1 | 2 | 3;
 const LAST_STEP: Step = 3;
 const FOUNDERS_STEP: Step = 3;
+const MODE_STEP: Step = 2;
 
 /** Colour pairs offered as one-click badge presets: [primary, secondary]. */
 export const BADGE_PRESETS: ReadonlyArray<readonly [string, string]> = [
@@ -158,6 +161,8 @@ export default function CustomTeamWizardV2({
   const [logoDataUri, setLogoDataUri] = useState<string | null>(null);
   const [primary, setPrimary] = useState(BADGE_PRESETS[0][0]);
   const [secondary, setSecondary] = useState(BADGE_PRESETS[0][1]);
+  // Joining is the default; the replace choice below keeps its preselected club across mode switches.
+  const [mode, setMode] = useState<CustomTeamMode>("join");
   const [replacesId, setReplacesId] = useState<string | null>(() => defaultReplacementId(teams));
   const [touched, setTouched] = useState<ReadonlySet<CustomTeamField>>(new Set());
   const [ackedError, setAckedError] = useState<string | null>(null);
@@ -165,11 +170,12 @@ export default function CustomTeamWizardV2({
     enabled: step === FOUNDERS_STEP,
     competitionId: competition.id,
     replacedTeamId: replacesId,
+    joinsLeague: mode === "join",
     shortName: normalizeShortName(shortName),
   });
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  const draft = { name, shortName, primary, secondary, country, replacesTeamId: replacesId };
+  const draft = { name, shortName, primary, secondary, country, replacesTeamId: replacesId, mode };
   const validation = validateCustomTeam(draft, teams);
   const stepFields = (Object.keys(FIELD_STEP) as CustomTeamField[]).filter((f) => FIELD_STEP[f] === step);
   const stepValid = stepFields.every((field) => !validation.errors[field]);
@@ -184,6 +190,12 @@ export default function CustomTeamWizardV2({
   useEffect(() => {
     if (backend) setStep(FIELD_STEP[backend.field]);
   }, [backend?.field, backend?.code, error]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A refusal of the join request itself belongs on the step that chooses the mode.
+  const joinErrorCode = error && error !== ackedError ? mapBackendJoinError(error) : null;
+  useEffect(() => {
+    if (joinErrorCode) setStep(MODE_STEP);
+  }, [joinErrorCode, error]);
 
   // A founder rejection from creating the club belongs on the squad step.
   const founderError = error && error !== ackedError ? parseFounderError(error) : null;
@@ -281,7 +293,8 @@ export default function CustomTeamWizardV2({
   };
 
   const handleConfirm = () => {
-    if (!validation.ok || isSubmitting || !replacesId || !squad.inSync) return;
+    if (!validation.ok || isSubmitting || !squad.inSync) return;
+    if (mode === "replace" && !replacesId) return;
     onConfirm(
       {
         name: name.trim(),
@@ -294,7 +307,7 @@ export default function CustomTeamWizardV2({
         founding_seed: squad.seed,
         ...(isEmptyOverrides(squad.overrides) ? {} : { founder_overrides: squad.overrides }),
       },
-      replacesId,
+      mode === "join" ? null : replacesId,
     );
   };
 
@@ -304,6 +317,7 @@ export default function CustomTeamWizardV2({
   const badgeSrc = logoDataUri ?? buildBadgeDataUri(badgeTag, badgePrimary, badgeSecondary);
   const lowContrast = contrastRatio(badgePrimary, badgeSecondary) < LOW_CONTRAST_RATIO;
   const replaced = teams.find((team) => team.id === replacesId);
+  const leagueSize = teams.length + 1;
   const countryLabel = nationalities.find((option) => option.code === country)?.name ?? country;
 
   const stepTitles = [
@@ -572,23 +586,102 @@ export default function CustomTeamWizardV2({
 
           {step === 2 && (
             <div className="space-y-6">
-              <fieldset aria-describedby="custom-team-replace-notice">
-                <legend className="mb-1 font-heading text-sm font-bold uppercase tracking-wider text-foreground">
-                  {t("teamSelect.custom.replace.heading")}
+              <fieldset aria-describedby={joinErrorCode ? "custom-team-mode-error" : undefined}>
+                <legend className="mb-2 font-heading text-sm font-bold uppercase tracking-wider text-foreground">
+                  {t("teamSelect.joinMode.groupLabel")}
                 </legend>
-                <p id="custom-team-replace-notice" className="mb-3 text-sm text-muted-foreground">
-                  {t("teamSelect.custom.replace.notice")}
-                </p>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {teams.map((team) => {
-                    const checked = team.id === replacesId;
-                    const logo = getTeamLogoPath(team.id, team.logo_url);
+                  {(
+                    [
+                      {
+                        value: "join",
+                        label: t("teamSelect.joinMode.join.label"),
+                        description:
+                          leagueSize % 2 === 1
+                            ? t("teamSelect.joinMode.join.descriptionOdd", { total: leagueSize })
+                            : t("teamSelect.joinMode.join.description", { total: leagueSize }),
+                      },
+                      {
+                        value: "replace",
+                        label: t("teamSelect.joinMode.replace.label"),
+                        description: t("teamSelect.joinMode.replace.description"),
+                      },
+                    ] as const
+                  ).map((option) => {
+                    const checked = mode === option.value;
                     return (
                       <label
-                        key={team.id}
+                        key={option.value}
                         className={cn(
-                          "flex cursor-pointer items-center gap-3 rounded-lg border-2 p-3 transition-colors focus-within:ring-2 focus-within:ring-primary",
+                          "flex cursor-pointer items-start gap-3 rounded-lg border-2 p-3 transition-colors focus-within:ring-2 focus-within:ring-primary",
                           checked ? "border-primary bg-primary/10" : "border-border hover:border-primary/40",
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="custom-team-mode"
+                          value={option.value}
+                          checked={checked}
+                          aria-labelledby={`custom-team-mode-${option.value}-label`}
+                          aria-describedby={`custom-team-mode-${option.value}-description`}
+                          onChange={() => {
+                            setMode(option.value);
+                            if (joinErrorCode) ackBackend();
+                          }}
+                          className="mt-0.5 size-4 shrink-0 accent-primary"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span
+                            id={`custom-team-mode-${option.value}-label`}
+                            className="block font-heading text-sm font-bold uppercase tracking-wide"
+                          >
+                            {option.label}
+                          </span>
+                          <span
+                            id={`custom-team-mode-${option.value}-description`}
+                            className="block text-xs text-muted-foreground"
+                          >
+                            {option.description}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {joinErrorCode && (
+                  <p
+                    id="custom-team-mode-error"
+                    role="alert"
+                    className="mt-2 flex items-center gap-1.5 text-xs font-medium text-destructive"
+                  >
+                    <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
+                    {joinErrorCode === "notAccepted"
+                      ? t("teamSelect.joinMode.errors.notAccepted")
+                      : joinErrorCode === "noClubs"
+                        ? t("teamSelect.joinMode.errors.noClubs")
+                        : t("teamSelect.joinMode.errors.badRequest")}
+                  </p>
+                )}
+              </fieldset>
+
+              {mode === "replace" && (
+                <fieldset aria-describedby="custom-team-replace-notice">
+                  <legend className="mb-1 font-heading text-sm font-bold uppercase tracking-wider text-foreground">
+                    {t("teamSelect.custom.replace.heading")}
+                  </legend>
+                  <p id="custom-team-replace-notice" className="mb-3 text-sm text-muted-foreground">
+                    {t("teamSelect.custom.replace.notice")}
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {teams.map((team) => {
+                      const checked = team.id === replacesId;
+                      const logo = getTeamLogoPath(team.id, team.logo_url);
+                      return (
+                        <label
+                          key={team.id}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-3 rounded-lg border-2 p-3 transition-colors focus-within:ring-2 focus-within:ring-primary",
+                            checked ? "border-primary bg-primary/10" : "border-border hover:border-primary/40",
                         )}
                       >
                         <input
@@ -635,6 +728,7 @@ export default function CustomTeamWizardV2({
                   </p>
                 )}
               </fieldset>
+              )}
 
               <section
                 aria-labelledby="custom-team-summary"
@@ -648,13 +742,21 @@ export default function CustomTeamWizardV2({
                   >
                     {t("teamSelect.custom.summary.heading")}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {t("teamSelect.custom.summary.text", {
-                      name: name.trim(),
-                      tag: badgeTag,
-                      country: countryLabel,
-                      replaced: replaced?.name ?? "—",
-                    })}
+                  <p aria-live="polite" className="text-sm text-muted-foreground">
+                    {mode === "join"
+                      ? t("teamSelect.joinMode.summary", {
+                          name: name.trim(),
+                          tag: badgeTag,
+                          country: countryLabel,
+                          league: competition.name,
+                          position: leagueSize,
+                        })
+                      : t("teamSelect.custom.summary.text", {
+                          name: name.trim(),
+                          tag: badgeTag,
+                          country: countryLabel,
+                          replaced: replaced?.name ?? "—",
+                        })}
                   </p>
                 </div>
               </section>
@@ -665,7 +767,7 @@ export default function CustomTeamWizardV2({
             <div className="space-y-6">
               <FoundersStep state={squad} installError={founderError} />
 
-              {error && !backend && !founderError && (
+              {error && !backend && !founderError && !joinErrorCode && (
                 <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
                   <p className="font-heading text-sm font-bold uppercase tracking-wide">
                     {t("teamSelect.custom.errors.title")}

@@ -593,15 +593,15 @@
     },
     "custom": {
       "create": "Créer votre équipe",
-      "createHint": "Remplacez un club de cette ligue par le vôtre.",
+      "createHint": "Ajoutez votre propre club à cette ligue, ou remplacez-en un.",
       "title": "Créer votre équipe",
-      "subtitle": "Remplacez un club de cette ligue par le vôtre",
+      "subtitle": "Ajoutez votre propre club à cette ligue, ou remplacez l'un de ses clubs",
       "stepOf": "Étape {{current}} sur {{total}}",
       "stepsLabel": "Progression",
       "steps": {
         "identity": "Identité",
         "badge": "Écusson",
-        "replace": "Remplacer et vérifier"
+        "replace": "Rejoindre ou remplacer"
       },
       "fields": {
         "name": "Nom du club",
@@ -650,6 +650,24 @@
         "replaceRequired": "Choisissez le club que vous voulez remplacer.",
         "lowContrast": "Ces couleurs sont proches, le sigle risque d'être difficile à lire. Vous pouvez continuer.",
         "title": "Impossible de créer le club"
+      }
+    },
+    "joinMode": {
+      "groupLabel": "Comment votre club entre dans la ligue",
+      "join": {
+        "label": "Rejoindre la ligue",
+        "description": "Personne n'est remplacé. La ligue comptera {{total}} clubs.",
+        "descriptionOdd": "Personne n'est remplacé. La ligue comptera {{total}} clubs : un club se repose à chaque journée et le split compte davantage de journées."
+      },
+      "replace": {
+        "label": "Remplacer un club",
+        "description": "Le club choisi quitte la ligue ; ses joueurs et son staff deviennent agents libres."
+      },
+      "summary": "{{name}} ({{tag}}), de {{country}}, rejoint {{league}} en tant que club n° {{position}}.",
+      "errors": {
+        "notAccepted": "Cette ligue n'accepte pas de nouveaux clubs. Revenez en arrière et choisissez une autre ligue ou une équipe existante.",
+        "noClubs": "Cette ligue n'a aucun club à rejoindre. Revenez en arrière et choisissez une autre ligue.",
+        "badRequest": "La demande pour rejoindre la ligue n'était pas valide. Revenez d'une étape et réessayez."
       }
     },
     "founders": {
