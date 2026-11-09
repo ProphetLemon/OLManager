@@ -507,8 +507,8 @@
       "groupLabel": "Come il tuo club entra nella lega",
       "join": {
         "label": "Unisciti alla lega",
-        "description": "Nessun club viene sostituito. La lega avrà {{total}} club.",
-        "descriptionOdd": "Nessun club viene sostituito. La lega avrà {{total}} club, quindi a ogni giornata un club riposa e lo split ha più giornate."
+        "description": "Nessun club viene sostituito. La lega avrà {{total}} club. Il tuo club parte con il budget e la reputazione medi della lega, una rosa fondatrice generata e senza Academy.",
+        "descriptionOdd": "Nessun club viene sostituito. La lega avrà {{total}} club e a ogni giornata uno riposa: il tuo lo farà una volta per split, e tra uno split e l'altro ci saranno meno giorni per ingaggiare giocatori. Il tuo club parte con il budget e la reputazione medi della lega, una rosa fondatrice generata e senza Academy."
       },
       "replace": {
         "label": "Sostituisci un club",

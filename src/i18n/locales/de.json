@@ -656,12 +656,12 @@
       "groupLabel": "Wie dein Verein in die Liga kommt",
       "join": {
         "label": "Der Liga beitreten",
-        "description": "Niemand wird ersetzt. Die Liga hat dann {{total}} Vereine.",
-        "descriptionOdd": "Niemand wird ersetzt. Die Liga hat dann {{total}} Vereine, daher setzt an jedem Spieltag ein Verein aus und der Split hat mehr Spieltage."
+        "description": "Niemand wird ersetzt. Die Liga hat dann {{total}} Vereine. Dein Verein startet mit dem mittleren Budget und Ansehen der Liga, einem generierten Gründungskader und ohne Jugendakademie.",
+        "descriptionOdd": "Niemand wird ersetzt. Die Liga hat dann {{total}} Vereine und an jedem Spieltag setzt einer aus: deiner einmal pro Split, und zwischen den Splits bleiben weniger Tage für Verpflichtungen. Dein Verein startet mit dem mittleren Budget und Ansehen der Liga, einem generierten Gründungskader und ohne Jugendakademie."
       },
       "replace": {
         "label": "Einen Verein ersetzen",
-        "description": "Der gewählte Verein verlässt die Liga; seine Spieler und sein Personal werden vereinslos."
+        "description": "Der gewählte Verein verlässt die Liga; seine Spieler und sein Personal werden vertragslos."
       },
       "summary": "{{name}} ({{tag}}) aus {{country}} tritt {{league}} als Verein Nummer {{position}} bei.",
       "errors": {

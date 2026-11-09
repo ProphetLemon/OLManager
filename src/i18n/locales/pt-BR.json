@@ -656,12 +656,12 @@
       "groupLabel": "Como seu clube entra na liga",
       "join": {
         "label": "Entrar na liga",
-        "description": "Ninguém é substituído. A liga passará a ter {{total}} clubes.",
-        "descriptionOdd": "Ninguém é substituído. A liga passará a ter {{total}} clubes, por isso um clube folga em cada rodada e o split tem mais rodadas."
+        "description": "Ninguém é substituído. A liga passará a ter {{total}} clubes. Seu clube começa com o orçamento e a reputação medianos da liga, um elenco fundador gerado e sem Academy.",
+        "descriptionOdd": "Ninguém é substituído. A liga passará a ter {{total}} clubes e em cada rodada um folga: o seu folga uma vez por split, e há menos dias entre os splits para contratar jogadores. Seu clube começa com o orçamento e a reputação medianos da liga, um elenco fundador gerado e sem Academy."
       },
       "replace": {
         "label": "Substituir um clube",
-        "description": "O clube escolhido sai da liga e seus jogadores e comissão técnica viram agentes livres."
+        "description": "O clube escolhido sai da liga e seus jogadores e equipe técnica viram agentes livres."
       },
       "summary": "{{name}} ({{tag}}), de {{country}}, entra em {{league}} como clube número {{position}}.",
       "errors": {

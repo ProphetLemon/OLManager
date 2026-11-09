@@ -656,12 +656,12 @@
       "groupLabel": "Comment votre club entre dans la ligue",
       "join": {
         "label": "Rejoindre la ligue",
-        "description": "Personne n'est remplacé. La ligue comptera {{total}} clubs.",
-        "descriptionOdd": "Personne n'est remplacé. La ligue comptera {{total}} clubs : un club se repose à chaque journée et le split compte davantage de journées."
+        "description": "Personne n'est remplacé. La ligue comptera {{total}} clubs. Votre club démarre avec le budget et la réputation médians de la ligue, un effectif fondateur généré et sans académie.",
+        "descriptionOdd": "Personne n'est remplacé. La ligue comptera {{total}} clubs et l'un d'eux se repose à chaque journée : le vôtre le fera une fois par split, et il y aura moins de jours entre les splits pour recruter. Votre club démarre avec le budget et la réputation médians de la ligue, un effectif fondateur généré et sans académie."
       },
       "replace": {
         "label": "Remplacer un club",
-        "description": "Le club choisi quitte la ligue ; ses joueurs et son staff deviennent agents libres."
+        "description": "Le club choisi quitte la ligue ; ses joueurs et son personnel deviennent agents libres."
       },
       "summary": "{{name}} ({{tag}}), de {{country}}, rejoint {{league}} en tant que club n° {{position}}.",
       "errors": {

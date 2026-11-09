@@ -784,8 +784,8 @@
       "groupLabel": "Cómo entra tu club en la liga",
       "join": {
         "label": "Unirse a la liga",
-        "description": "No se sustituye a nadie. La liga tendrá {{total}} clubes.",
-        "descriptionOdd": "No se sustituye a nadie. La liga tendrá {{total}} clubes, así que un club descansa en cada jornada y el split tiene más jornadas."
+        "description": "No se sustituye a nadie. La liga tendrá {{total}} clubes. Tu club empieza con el presupuesto y la reputación medios de la liga, una plantilla fundadora generada y sin academia.",
+        "descriptionOdd": "No se sustituye a nadie. La liga tendrá {{total}} clubes y en cada jornada descansa uno: el tuyo lo hará una vez por split, y habrá menos días entre splits para fichar. Tu club empieza con el presupuesto y la reputación medios de la liga, una plantilla fundadora generada y sin academia."
       },
       "replace": {
         "label": "Sustituir a un club",

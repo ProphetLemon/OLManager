@@ -629,7 +629,9 @@ describe("CustomTeamWizardV2 join or replace choice", () => {
   it("ties each option to its description and counts the real league size", () => {
     setup();
     toModeStep();
-    expect(joinRadio()).toHaveAccessibleDescription("Nobody is replaced. The league will have 4 clubs.");
+    expect(joinRadio()).toHaveAccessibleDescription(
+      "Nobody is replaced. The league will have 4 clubs. Your club starts with the league's median budget and reputation, a generated founding squad and no academy.",
+    );
     expect(replaceRadio()).toHaveAccessibleDescription(
       "The club you choose leaves the league, and its players and staff are released as free agents.",
     );
@@ -643,7 +645,7 @@ describe("CustomTeamWizardV2 join or replace choice", () => {
     setup({ competition: four });
     toModeStep();
     expect(joinRadio()).toHaveAccessibleDescription(
-      "Nobody is replaced. The league will have 5 clubs, so one club rests each matchday and the split has more matchdays.",
+      "Nobody is replaced. The league will have 5 clubs and one rests each matchday: yours rests once per split, and there are fewer days between splits to sign players. Your club starts with the league's median budget and reputation, a generated founding squad and no academy.",
     );
   });
 
