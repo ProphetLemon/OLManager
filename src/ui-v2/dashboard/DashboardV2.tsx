@@ -719,6 +719,7 @@ export default function DashboardV2() {
               gameState={gameState}
               onGameUpdate={setGameState}
               onSelectPlayer={selectPlayer}
+              onNavigate={handleNavigate}
             />
           </div>
         ) : profileNavigation.activeTab === "Training" &&
