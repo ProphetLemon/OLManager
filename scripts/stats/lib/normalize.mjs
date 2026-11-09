@@ -84,6 +84,7 @@ export function normalizeRows(rows, { competition }) {
       kept.push({
         gameId: row.gameId,
         side: row.side ?? 0,
+        source: row,
         out: {
           playerKey: row.link,
           competition,
@@ -116,6 +117,7 @@ export function normalizeRows(rows, { competition }) {
   const out = kept.map((k) => k.out);
   return {
     rows: out,
+    index: indexPlayers(kept),
     dropped: Object.fromEntries(Object.entries(dropped).sort(([a], [b]) => compare(a, b))),
     stats: {
       inputRows: rows.length,
@@ -124,4 +126,72 @@ export function normalizeRows(rows, { competition }) {
       players: new Set(out.map((r) => r.playerKey)).size,
     },
   };
+}
+
+const emptyEntry = () => ({ names: new Set(), teams: new Map(), roles: new Map(), games: 0, firstDate: null, lastDate: null });
+
+function addTeam(entry, { team, competition, games, lastDate }) {
+  if (!team) return;
+  const key = `${team}\u0000${competition}`;
+  const seen = entry.teams.get(key) ?? { team, competition, games: 0, lastDate: null };
+  seen.games += games;
+  if (seen.lastDate === null || lastDate > seen.lastDate) seen.lastDate = lastDate;
+  entry.teams.set(key, seen);
+}
+
+function addRole(entry, role, games) {
+  entry.roles.set(role, (entry.roles.get(role) ?? 0) + games);
+  entry.games += games;
+}
+
+function widen(entry, firstDate, lastDate) {
+  if (entry.firstDate === null || firstDate < entry.firstDate) entry.firstDate = firstDate;
+  if (entry.lastDate === null || lastDate > entry.lastDate) entry.lastDate = lastDate;
+}
+
+/** Sorted, JSON-ready index: links, names, roles in fixed order; teams newest first (then most games, then name). */
+function finalizeIndex(entries) {
+  const out = {};
+  for (const link of [...entries.keys()].sort(compare)) {
+    const e = entries.get(link);
+    out[link] = {
+      names: [...e.names].sort(compare),
+      teams: [...e.teams.values()].sort((a, b) => compare(b.lastDate, a.lastDate) || b.games - a.games || compare(a.team, b.team) || compare(a.competition, b.competition)),
+      roles: Object.fromEntries(ROLE_ORDER.filter((role) => e.roles.has(role)).map((role) => [role, e.roles.get(role)])),
+      games: e.games,
+      firstDate: e.firstDate,
+      lastDate: e.lastDate,
+    };
+  }
+  return out;
+}
+
+/** Per Leaguepedia Link, built from the rows that survived validation: one kept row is one game of that player. */
+function indexPlayers(kept) {
+  const entries = new Map();
+  for (const { source, out } of kept) {
+    if (!entries.has(out.playerKey)) entries.set(out.playerKey, emptyEntry());
+    const entry = entries.get(out.playerKey);
+    if (source.name) entry.names.add(source.name);
+    addTeam(entry, { team: source.team, competition: out.competition, games: 1, lastDate: out.date });
+    addRole(entry, out.role, 1);
+    widen(entry, out.date, out.date);
+  }
+  return finalizeIndex(entries);
+}
+
+/** Merges per-competition indexes (as returned in `normalizeRows(...).index`) into one, with the same ordering rules. */
+export function mergePlayerIndexes(indexes) {
+  const entries = new Map();
+  for (const index of indexes) {
+    for (const [link, e] of Object.entries(index)) {
+      if (!entries.has(link)) entries.set(link, emptyEntry());
+      const entry = entries.get(link);
+      for (const name of e.names) entry.names.add(name);
+      for (const team of e.teams) addTeam(entry, team);
+      for (const [role, games] of Object.entries(e.roles)) addRole(entry, role, games);
+      widen(entry, e.firstDate, e.lastDate);
+    }
+  }
+  return finalizeIndex(entries);
 }

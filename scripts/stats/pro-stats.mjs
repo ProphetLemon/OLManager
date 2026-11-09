@@ -11,7 +11,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loginFromFile } from "../world/lib/bot-credentials.mjs";
 import { MediaWikiClient, formatStats } from "../world/lib/mediawiki-client.mjs";
-import { normalizeRows } from "./lib/normalize.mjs";
+import { mergePlayerIndexes, normalizeRows } from "./lib/normalize.mjs";
 import { MAX_PAGE_SIZE, isValidIsoDate, rowsFromCargo, scoreboardPageParams } from "./lib/queries.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -33,7 +33,8 @@ const HELP = `Usage: node scripts/stats/pro-stats.mjs [flags]
                           "Logging in"); ignored with --offline
   --cache-dir <dir>       HTTP cache (default src-tauri/target/olm-scratch/lp-stats-cache)
   --out <file>            normalized rows (default src-tauri/target/olm-scratch/stat-ratings/rows.json);
-                          the coverage report is written next to it as <name>.coverage.json
+                          the coverage report is written next to it as <name>.coverage.json and the
+                          per-Link player index (names, teams, roles, games) as <name>.players.json
   --max-requests <n>      cap on live requests (default 450)
   --page-size <n>         Cargo page size (default 500; above ${ANONYMOUS_PAGE_SIZE} needs --login, max ${MAX_PAGE_SIZE})
   -h, --help              show this help
@@ -112,17 +113,24 @@ export function coveragePath(out) {
   return out.replace(/(\.json)?$/, ".coverage.json");
 }
 
+/** Where the per-link player index goes: next to the rows file, `<name>.players.json`. */
+export function playersPath(out) {
+  return out.replace(/(\.json)?$/, ".players.json");
+}
+
 /** Fetches, normalizes and writes rows plus coverage. Returns { rows, coverage }. */
 export async function runProStats(args, client, log, prefixMap = loadPrefixMap()) {
   if (args.login && !args.offline) await loginFromFile(client, { log });
   const allRows = [];
+  const indexes = [];
   const competitions = {};
   for (const id of args.competitions) {
     log(`${id}: fetching ${prefixMap.competitions[id].join(", ")}`);
     const raw = await fetchCompetitionRows(client, { prefixes: prefixMap.competitions[id], since: args.since, until: args.until, pageSize: args.pageSize, log });
-    const { rows, dropped, stats } = normalizeRows(raw, { competition: id });
+    const { rows, dropped, stats, index } = normalizeRows(raw, { competition: id });
     competitions[id] = { games: stats.games, rows: stats.rows, players: stats.players, inputRows: stats.inputRows, dropped };
     allRows.push(...rows);
+    indexes.push(index);
     log(`${id}: ${stats.games} games, ${stats.rows}/${stats.inputRows} rows kept, ${stats.players} players`);
   }
   const coverage = {
@@ -140,6 +148,7 @@ export async function runProStats(args, client, log, prefixMap = loadPrefixMap()
   };
   fs.mkdirSync(path.dirname(args.out), { recursive: true });
   fs.writeFileSync(args.out, `${JSON.stringify({ source: SOURCE, since: args.since, until: args.until, competitions: args.competitions, rows: allRows }, null, 2)}\n`);
+  fs.writeFileSync(playersPath(args.out), `${JSON.stringify({ source: SOURCE, since: args.since, until: args.until, players: mergePlayerIndexes(indexes) }, null, 2)}\n`);
   fs.writeFileSync(coveragePath(args.out), `${JSON.stringify(coverage, null, 2)}\n`);
   log(`wrote ${allRows.length} rows -> ${args.out}`);
   return { rows: allRows, coverage };

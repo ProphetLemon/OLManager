@@ -28,6 +28,11 @@ npm run stats:fetch -- --help
 Next to `--out` it writes `<name>.coverage.json`: per competition the games, kept rows, players, input rows and
 dropped rows by reason, plus the `open` list and the network stats.
 
+It also writes `<name>.players.json` (`{ source, since, until, players }`): per Leaguepedia `Link` the in-game names
+seen, the teams (`team`, `competition`, `games`, `lastDate`; newest first), games per role, total games and first and
+last date. It is built from the rows that survive validation, so `games` equals that player's rows in `<name>.json`.
+`build-overrides.mjs` uses it to match Leaguepedia players to game players.
+
 ## How it works
 
 - One query per page: `ScoreboardPlayers=SP` joined to `ScoreboardGames=SG` on `GameId`, filtered by the date window

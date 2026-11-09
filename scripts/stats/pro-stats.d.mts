@@ -48,6 +48,7 @@ export function fetchCompetitionRows(
   options: { prefixes: string[]; since: string; until: string; pageSize: number; log?: (message: string) => void },
 ): Promise<RawRow[]>;
 export function coveragePath(out: string): string;
+export function playersPath(out: string): string;
 export function runProStats(
   args: ProStatsArgs,
   client: Pick<MediaWikiClient, "get"> & Partial<Pick<MediaWikiClient, "stats" | "statsSnapshot">>,
