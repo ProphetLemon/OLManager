@@ -3,6 +3,7 @@ use crate::domain::player::Player;
 use crate::domain::staff::Staff;
 use crate::domain::team::Team;
 use crate::game::Game;
+use crate::team_overrides;
 use log::{info, warn};
 use std::collections::HashMap;
 use std::path::Path;
@@ -275,17 +276,27 @@ fn competition_summary(
     };
     let prefix = format!("{}-", manifest.id);
 
+    // Rosters key their players by the raw team id; the preview uses the prefixed one.
+    let player_counts: Vec<Option<usize>> = teams
+        .iter()
+        .map(|team| player_count_by_team.get(&team.id).copied())
+        .collect();
+    let mut teams = teams;
+    for team in &mut teams {
+        if !team.id.starts_with(&prefix) {
+            team.id = format!("{prefix}{}", team.id);
+        }
+    }
+    // The metadata layer a new game applies, so the preview shows the reputation,
+    // finances, country and city the game will use.
+    team_overrides::bundled().apply_known(&mut teams);
+
     let team_summaries: Vec<TeamSummary> = teams
         .into_iter()
-        .map(|team| {
-            let id = if team.id.starts_with(&prefix) {
-                team.id.clone()
-            } else {
-                format!("{}-{}", manifest.id, team.id)
-            };
-            let player_count = player_count_by_team.get(&team.id).copied();
+        .zip(player_counts)
+        .map(|(team, player_count)| {
             TeamSummary {
-                id,
+                id: team.id,
                 name: team.name,
                 short_name: team.short_name,
                 logo_url: team.logo_url,
@@ -911,5 +922,27 @@ mod tests {
     #[test]
     fn competition_id_from_team_id_known_returns_none_for_empty_known_list() {
         assert_eq!(competition_id_from_team_id_known("lec-g2", &[]), None);
+    }
+
+    #[test]
+    fn league_selection_preview_applies_team_overrides_like_a_new_game() {
+        let data_base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../data");
+        let selection = build_league_selection(&data_base);
+        let les = selection
+            .competitions
+            .iter()
+            .find(|c| c.id == "les")
+            .expect("les is selectable");
+
+        for (id, country, city, reputation, finance) in [
+            ("les-team-854f6893", "ES", "Madrid", 315, 1_960_000),
+            ("les-team-ac846213", "ES", "Barcelona", 300, 2_600_000),
+        ] {
+            let team = les.teams.iter().find(|t| t.id == id).expect("team listed");
+            assert_eq!(team.country, country, "{id} country");
+            assert_eq!(team.city.as_deref(), Some(city), "{id} city");
+            assert_eq!(team.reputation, Some(reputation), "{id} reputation");
+            assert_eq!(team.finance, Some(finance), "{id} finance");
+        }
     }
 }

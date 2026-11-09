@@ -186,6 +186,16 @@ impl TeamOverrides {
     /// Fill `teams` from the valid entries. Invalid entries and unknown ids are
     /// logged and skipped. Returns how many teams changed.
     pub fn apply_all(&self, teams: &mut [Team]) -> usize {
+        self.apply(teams, true)
+    }
+
+    /// Like [`apply_all`](Self::apply_all) for one competition's teams: entries
+    /// for ids outside `teams` are skipped silently instead of logged as unknown.
+    pub fn apply_known(&self, teams: &mut [Team]) -> usize {
+        self.apply(teams, false)
+    }
+
+    fn apply(&self, teams: &mut [Team], warn_unknown: bool) -> usize {
         for error in &self.parse_errors {
             warn!("[team-overrides] skipping unparseable entry: {error}");
         }
@@ -197,7 +207,9 @@ impl TeamOverrides {
                 continue;
             }
             let Some(team) = teams.iter_mut().find(|t| &t.id == id) else {
-                warn!("[team-overrides] skipping '{id}': unknown team id");
+                if warn_unknown {
+                    warn!("[team-overrides] skipping '{id}': unknown team id");
+                }
                 continue;
             };
             if entry.fill(team) {
