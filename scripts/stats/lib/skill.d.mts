@@ -113,8 +113,8 @@ export function isSuspect(
   input: { attributes: number[] | Record<string, number>; authoredOvr: number; leagueMedian: number },
   thresholds?: Partial<SuspectThresholds>,
 ): boolean;
-export function ovrTarget(leagueMedian: number, leagueSd: number, zShrunk: number, sdClamp?: { min: number; max: number }): number;
+export function ovrTarget(leagueMedian: number, leagueSd: number, zShrunk: number, sdClamp?: { min: number; max: number }): number | null;
 export function blendRating(
-  input: { authoredOvr: number; leagueMedian: number; leagueSd: number; z: number; rho: number; suspect?: boolean },
+  input: { authoredOvr: number; leagueMedian: number; leagueSd: number; z: number | null | undefined; rho: number | null | undefined; suspect?: boolean },
   options?: Partial<BlendOptions>,
-): BlendResult;
+): BlendResult | null;

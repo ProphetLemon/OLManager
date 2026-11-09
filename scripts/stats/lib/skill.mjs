@@ -310,17 +310,24 @@ export function isSuspect({ attributes, authoredOvr, leagueMedian }, thresholds 
   return isNum(authoredOvr) && isNum(leagueMedian) && authoredOvr <= leagueMedian - t.belowMedian;
 }
 
-/** OVR implied by the stats on the fixed ladder: median + clamp(sd, 3, 5) * zShrunk. */
+/**
+ * OVR implied by the stats on the fixed ladder: median + clamp(sd, 3, 5) * zShrunk.
+ * Returns null when any input is not a finite number.
+ */
 export function ovrTarget(leagueMedian, leagueSd, zShrunk, sdClamp = DEFAULT_SD_CLAMP) {
+  if (!isNum(leagueMedian) || !isNum(leagueSd) || !isNum(zShrunk)) return null;
   return leagueMedian + Math.min(sdClamp.max, Math.max(sdClamp.min, leagueSd)) * zShrunk;
 }
 
 /**
  * Blend authored and stat OVR. w0 = rho; w = w0 / (w0 + (1 - w0) * tau) with tau 1
  * normally and suspectTau (0.35) for suspect rows, capped at maxTrust (0.9).
- * Returns every intermediate so a report can show them.
+ * Returns every intermediate so a report can show them. Returns null when z, rho,
+ * authoredOvr, leagueMedian or leagueSd is not a finite number (for example the
+ * null z/rho of a no-estimate row), so such a row is never blended.
  */
 export function blendRating({ authoredOvr, leagueMedian, leagueSd, z, rho: rhoValue, suspect = false }, options = {}) {
+  if (![authoredOvr, leagueMedian, leagueSd, z, rhoValue].every(isNum)) return null;
   const o = { ...DEFAULT_BLEND_OPTIONS, ...options };
   const zShrunk = rhoValue * z;
   const target = ovrTarget(leagueMedian, leagueSd, zShrunk, o.sdClamp);

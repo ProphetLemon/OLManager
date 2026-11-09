@@ -285,7 +285,7 @@ describe("ovrTarget and blendRating", () => {
   });
 
   it("blends authored and target with the trust weight", () => {
-    const b = blendRating({ authoredOvr: 70, leagueMedian: 80, leagueSd: 4, z: 1, rho: 0.5 });
+    const b = blendRating({ authoredOvr: 70, leagueMedian: 80, leagueSd: 4, z: 1, rho: 0.5 })!;
     expect(b.zShrunk).toBeCloseTo(0.5);
     expect(b.target).toBeCloseTo(82);
     expect(b.w).toBeCloseTo(0.5);
@@ -293,14 +293,14 @@ describe("ovrTarget and blendRating", () => {
   });
 
   it("caps the trust weight at 0.9", () => {
-    const b = blendRating({ authoredOvr: 60, leagueMedian: 80, leagueSd: 4, z: 0, rho: 0.99 });
+    const b = blendRating({ authoredOvr: 60, leagueMedian: 80, leagueSd: 4, z: 0, rho: 0.99 })!;
     expect(b.w).toBe(0.9);
     expect(b.finalOvr).toBeCloseTo(0.1 * 60 + 0.9 * 80);
   });
 
   it("leans more on stats for suspect rows (tau 0.35)", () => {
-    const normal = blendRating({ authoredOvr: 50, leagueMedian: 75, leagueSd: 4, z: 0, rho: 0.4 });
-    const suspect = blendRating({ authoredOvr: 50, leagueMedian: 75, leagueSd: 4, z: 0, rho: 0.4, suspect: true });
+    const normal = blendRating({ authoredOvr: 50, leagueMedian: 75, leagueSd: 4, z: 0, rho: 0.4 })!;
+    const suspect = blendRating({ authoredOvr: 50, leagueMedian: 75, leagueSd: 4, z: 0, rho: 0.4, suspect: true })!;
     expect(normal.w).toBeCloseTo(0.4);
     expect(suspect.w).toBeCloseTo(0.4 / (0.4 + 0.6 * 0.35));
     expect(suspect.w).toBeGreaterThan(normal.w);
@@ -308,8 +308,21 @@ describe("ovrTarget and blendRating", () => {
   });
 
   it("gives no stat weight at rho 0", () => {
-    const b = blendRating({ authoredOvr: 66, leagueMedian: 80, leagueSd: 4, z: 2, rho: 0 });
+    const b = blendRating({ authoredOvr: 66, leagueMedian: 80, leagueSd: 4, z: 2, rho: 0 })!;
     expect(b.w).toBe(0);
     expect(b.finalOvr).toBe(66);
+  });
+
+  it("returns null instead of NaN or a silent authored fallback for non-finite inputs", () => {
+    const ok = { authoredOvr: 60, leagueMedian: 50, leagueSd: 4, z: 1, rho: 0.5 };
+    expect(blendRating({ ...ok, z: null, rho: null })).toBeNull();
+    expect(blendRating({ ...ok, z: undefined })).toBeNull();
+    expect(blendRating({ ...ok, rho: Number.NaN })).toBeNull();
+    expect(blendRating({ ...ok, authoredOvr: Number.NaN })).toBeNull();
+    expect(blendRating({ ...ok, leagueMedian: undefined as unknown as number })).toBeNull();
+    expect(blendRating({ ...ok, leagueSd: Number.POSITIVE_INFINITY })).toBeNull();
+    expect(blendRating(ok)).not.toBeNull();
+    expect(ovrTarget(50, undefined as unknown as number, 0.5)).toBeNull();
+    expect(ovrTarget(50, 4, Number.NaN)).toBeNull();
   });
 });
