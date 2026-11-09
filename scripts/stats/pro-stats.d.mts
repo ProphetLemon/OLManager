@@ -3,6 +3,7 @@ import type { RawRow } from "./lib/queries.mjs";
 import type { MediaWikiClient } from "../world/lib/mediawiki-client.mjs";
 
 export const SOURCE: string;
+export const ANONYMOUS_PAGE_SIZE: number;
 
 export interface PrefixMap {
   version: number;
@@ -40,7 +41,8 @@ export interface Coverage {
 }
 
 export function loadPrefixMap(file?: string): PrefixMap;
-export function parseArgs(argv: string[], prefixMap?: PrefixMap): ProStatsArgs;
+export function defaultUntil(now?: Date): string;
+export function parseArgs(argv: string[], prefixMap?: PrefixMap, now?: Date): ProStatsArgs;
 export function fetchCompetitionRows(
   client: Pick<MediaWikiClient, "get">,
   options: { prefixes: string[]; since: string; until: string; pageSize: number; log?: (message: string) => void },

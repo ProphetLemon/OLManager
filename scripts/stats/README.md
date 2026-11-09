@@ -16,14 +16,14 @@ npm run stats:fetch -- --help
 | Flag | Default | Meaning |
 |------|---------|---------|
 | `--since YYYY-MM-DD` | `2025-01-01` | first game date |
-| `--until YYYY-MM-DD` | `2027-01-01` | end date, exclusive |
+| `--until YYYY-MM-DD` | tomorrow (UTC), at most `2027-01-01` | end date, exclusive |
 | `--competitions <ids>` | all mapped | comma-separated OLManager competition ids from `prefix-map.json` |
 | `--offline` | off | read the cache only; a miss fails with the request that was missing |
 | `--login` | off | log in with the Leaguepedia bot password (see `scripts/champions/README.md`, "Logging in") |
 | `--cache-dir <dir>` | `src-tauri/target/olm-scratch/lp-stats-cache` | HTTP cache (separate from `lp-cargo-cache`) |
 | `--out <file>` | `src-tauri/target/olm-scratch/stat-ratings/rows.json` | normalized rows |
 | `--max-requests <n>` | `450` | cap on live requests |
-| `--page-size <n>` | `500` | Cargo page size (1 to 5000; 500 is the anonymous maximum) |
+| `--page-size <n>` | `500` | Cargo page size (1 to 5000; above 500 needs `--login`, because Cargo caps pages at 500 without high limits) |
 
 Next to `--out` it writes `<name>.coverage.json`: per competition the games, kept rows, players, input rows and
 dropped rows by reason, plus the `open` list and the network stats.
@@ -36,8 +36,13 @@ dropped rows by reason, plus the `open` list and the network stats.
 - Pages are ordered by `SP.GameId, SP.Side, SP.Role, SP.Name`. `SP.GameRoleId` is not used because its uniqueness per
   row is unverified. The run goes competition by competition, page by page, and stops at the first page shorter than
   the page size.
+- Paging is by offset and a page shorter than `--page-size` ends a competition, so the page size must not exceed
+  the server cap (500 without `--login`; the script refuses a larger value without it).
 - Every page is cached (30 days), so a rerun after a failure or a request-cap stop resumes from the cache. Nothing is
-  written to `--out` until every selected competition is complete.
+  written to `--out` until every selected competition is complete. Offsets shift when a new game sorts into the
+  middle of the `GameId` order, so pages cached on different days can skip or repeat rows. When new games have been
+  played since the cache was filled (ongoing competitions), rerun with a fresh `--cache-dir`. A high count of
+  "team without exactly 5 rows" drops is the symptom. The default `--until` stops at tomorrow to limit this.
 - There is no team-damage field, so `teamDamageToChampions` is summed over the 5 rows of the same team and game.
   A team without exactly 5 rows, or with a missing damage value, is dropped whole.
 - Rows are dropped, and counted by reason, for: duplicate row, team without exactly 5 rows, team damage incomplete,

@@ -18,12 +18,15 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const scratch = path.join(root, "src-tauri/target/olm-scratch");
 const PREFIX_MAP_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), "prefix-map.json");
 
+/** Cargo caps `limit` at 500 for accounts without high limits; a larger page would come back short and look like the last one. */
+export const ANONYMOUS_PAGE_SIZE = 500;
+
 export const SOURCE = "Leaguepedia ScoreboardPlayers + ScoreboardGames (CC BY-SA 3.0, https://lol.fandom.com)";
 
 const HELP = `Usage: node scripts/stats/pro-stats.mjs [flags]
 
   --since YYYY-MM-DD      first game date (default 2025-01-01)
-  --until YYYY-MM-DD      end date, exclusive (default 2027-01-01)
+  --until YYYY-MM-DD      end date, exclusive (default tomorrow UTC, capped at 2027-01-01)
   --competitions <ids>    comma-separated OLManager competition ids (default: all mapped in prefix-map.json)
   --offline               read the cache only; fail on a miss
   --login                 log in with the Leaguepedia bot password (opt-in; see scripts/champions/README.md,
@@ -32,7 +35,7 @@ const HELP = `Usage: node scripts/stats/pro-stats.mjs [flags]
   --out <file>            normalized rows (default src-tauri/target/olm-scratch/stat-ratings/rows.json);
                           the coverage report is written next to it as <name>.coverage.json
   --max-requests <n>      cap on live requests (default 450)
-  --page-size <n>         Cargo page size (default 500, max ${MAX_PAGE_SIZE})
+  --page-size <n>         Cargo page size (default 500; above ${ANONYMOUS_PAGE_SIZE} needs --login, max ${MAX_PAGE_SIZE})
   -h, --help              show this help
 `;
 
@@ -40,10 +43,16 @@ export function loadPrefixMap(file = PREFIX_MAP_FILE) {
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
-export function parseArgs(argv, prefixMap = loadPrefixMap()) {
+/** Default --until: tomorrow (UTC, exclusive) so the window never reaches into days that are still gaining games, capped at 2027-01-01. */
+export function defaultUntil(now = new Date()) {
+  const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)).toISOString().slice(0, 10);
+  return tomorrow < "2027-01-01" ? tomorrow : "2027-01-01";
+}
+
+export function parseArgs(argv, prefixMap = loadPrefixMap(), now = new Date()) {
   const args = {
     since: "2025-01-01",
-    until: "2027-01-01",
+    until: defaultUntil(now),
     competitions: null,
     offline: false,
     login: false,
@@ -77,6 +86,7 @@ export function parseArgs(argv, prefixMap = loadPrefixMap()) {
   if (args.since >= args.until) throw new Error("--since must be earlier than --until");
   if (!Number.isInteger(args.maxRequests) || args.maxRequests < 1) throw new Error("--max-requests must be a positive integer");
   if (!Number.isInteger(args.pageSize) || args.pageSize < 1 || args.pageSize > MAX_PAGE_SIZE) throw new Error(`--page-size must be an integer from 1 to ${MAX_PAGE_SIZE}`);
+  if (args.pageSize > ANONYMOUS_PAGE_SIZE && !args.login) throw new Error(`--page-size above ${ANONYMOUS_PAGE_SIZE} needs --login: without high limits Cargo caps pages at ${ANONYMOUS_PAGE_SIZE}, so a short page would be mistaken for the last one`);
   const mapped = Object.keys(prefixMap.competitions).sort();
   const wanted = args.competitions ?? mapped;
   const unknown = wanted.filter((id) => !mapped.includes(id));

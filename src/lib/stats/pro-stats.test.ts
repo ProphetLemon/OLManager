@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MediaWikiClient, OfflineCacheMissError } from "../../../scripts/world/lib/mediawiki-client.mjs";
-import { coveragePath, fetchCompetitionRows, loadPrefixMap, parseArgs, runProStats } from "../../../scripts/stats/pro-stats.mjs";
+import { coveragePath, defaultUntil, fetchCompetitionRows, loadPrefixMap, parseArgs, runProStats } from "../../../scripts/stats/pro-stats.mjs";
 import type { PrefixMap } from "../../../scripts/stats/pro-stats.mjs";
 
 const map: PrefixMap = { version: 1, competitions: { lec: ["LEC/"], lck: ["LCK/"] }, open: { "LTA North": "unconfirmed" } };
@@ -65,8 +65,8 @@ describe("fetchCompetitionRows", () => {
 
 describe("parseArgs", () => {
   it("applies the documented defaults", () => {
-    const args = parseArgs([], map);
-    expect(args).toMatchObject({ since: "2025-01-01", until: "2027-01-01", offline: false, login: false, maxRequests: 450, pageSize: 500 });
+    const args = parseArgs([], map, new Date("2026-11-09T10:00:00Z"));
+    expect(args).toMatchObject({ since: "2025-01-01", until: "2026-11-10", offline: false, login: false, maxRequests: 450, pageSize: 500 });
     expect(args.competitions).toEqual(["lck", "lec"]);
     expect(args.cacheDir.endsWith(path.join("src-tauri/target/olm-scratch/lp-stats-cache"))).toBe(true);
     expect(args.cacheDir.includes("lp-cargo-cache")).toBe(false);
@@ -81,9 +81,20 @@ describe("parseArgs", () => {
     expect(() => parseArgs(["--since", "2027-01-01"], map)).toThrow(/earlier/);
     expect(() => parseArgs(["--page-size", "0"], map)).toThrow(/--page-size/);
     expect(() => parseArgs(["--max-requests", "x"], map)).toThrow(/--max-requests/);
+    expect(() => parseArgs(["--page-size", "501"], map)).toThrow(/needs --login/);
+    expect(parseArgs(["--page-size", "500"], map).pageSize).toBe(500);
+    expect(parseArgs(["--login", "--page-size", "5000"], map).pageSize).toBe(5000);
     expect(() => parseArgs(["--bogus"], map)).toThrow(/unknown flag/);
     expect(() => parseArgs(["--out"], map)).toThrow(/needs a value/);
     expect(parseArgs(["--help"], map).help).toBe(true);
+  });
+});
+
+describe("defaultUntil", () => {
+  it("is tomorrow in UTC, capped at 2027-01-01", () => {
+    expect(defaultUntil(new Date("2026-11-09T23:30:00Z"))).toBe("2026-11-10");
+    expect(defaultUntil(new Date("2026-12-31T00:00:00Z"))).toBe("2027-01-01");
+    expect(defaultUntil(new Date("2028-03-01T00:00:00Z"))).toBe("2027-01-01");
   });
 });
 
