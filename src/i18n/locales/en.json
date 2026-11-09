@@ -277,6 +277,7 @@
     "noResults": "No results found.",
     "searchPlaceholder": "Search players, teams...",
     "sectionClub": "Club",
+    "sectionMarket": "Market",
     "sectionWorld": "World",
     "searchTeams": "Teams",
     "searchPlayers": "Players",
@@ -3827,5 +3828,130 @@
     "appName": "OL Manager",
     "close": "Close",
     "minimize": "Minimize"
+  },
+  "onAir": {
+    "nav": {
+      "rail": "Main navigation",
+      "strip": "{{group}} sections",
+      "skip": "Skip to main content",
+      "bug": "Report bug",
+      "manager": "Manager profile",
+      "settings": "Settings",
+      "exit": "Exit",
+      "openGroup": "{{group}}"
+    },
+    "bar": {
+      "save": "Save",
+      "saved": "Saved",
+      "toResolve_one": "{{count}} to resolve",
+      "toResolve_other": "{{count}} to resolve",
+      "continueMenu": "More ways to advance",
+      "continue": "Continue",
+      "matchDay": "Match day",
+      "skipToMatchDay": "Skip to match day",
+      "skipToNextDay": "Skip to next day",
+      "clock": "Game date and phase"
+    },
+    "tags": {
+      "blocker": "Blocker",
+      "contract": "Contract",
+      "alert": "Alert",
+      "selected": "Selected",
+      "promoted": "Promoted",
+      "relegated": "Relegated",
+      "opponent": "Opponent",
+      "you": "You"
+    },
+    "home": {
+      "daysToGo_one": "{{count}} day to go",
+      "daysToGo_other": "{{count}} days to go",
+      "matchDay": "Match day",
+      "formAfterFirst": "{{team}}'s form appears after their first match",
+      "yourClub": "Your club",
+      "startingFive": "Starting five",
+      "notSet": "Not set",
+      "needsTitle": "Needs your call",
+      "needsEmpty": "Nothing needs your call",
+      "seeAll": "See all {{count}}",
+      "showLess": "Show less",
+      "contractDays_one": "{{count}} day left",
+      "contractDays_other": "{{count}} days left",
+      "inboxTitle": "Inbox",
+      "inboxEmpty": "Your inbox is clear",
+      "unreadCount_one": "{{count}} unread",
+      "unreadCount_other": "{{count}} unread",
+      "openInbox": "Open inbox",
+      "standingsTitle": "Standings",
+      "standingsGap": "Gap in the table",
+      "standingsPreseason": "Season not started",
+      "bestOf": "Best of {{count}}",
+      "vsAt": {
+        "home": "vs",
+        "away": "at"
+      }
+    },
+    "roles": {
+      "TOP": "Top",
+      "JUNGLE": "Jungle",
+      "MID": "Mid",
+      "ADC": "ADC",
+      "SUPPORT": "Support"
+    },
+    "calls": {
+      "actions": {
+        "fixLineup": "Fix lineup",
+        "openSquad": "Open squad",
+        "openScrims": "Open scrims",
+        "openFinances": "Open finances",
+        "openContracts": "Open contracts",
+        "openInbox": "Open inbox",
+        "renew": "Renew",
+        "review": "Review"
+      },
+      "consequence": {
+        "incomplete_lineup": "Your starting five is incomplete.",
+        "main_roster_minimum": "The main roster is below the minimum size.",
+        "main_missing_roles": "The main roster is missing required roles.",
+        "academy_missing_roles": "The academy roster is missing required roles.",
+        "key_contract_risk": "A key player's contract is close to expiring.",
+        "contract_wage_risk": "Wage commitments are putting the budget at risk.",
+        "scrim_setup_required": "Scrim setup is required before the next match.",
+        "scrim_decision_required": "A scrim decision is waiting for you.",
+        "urgent_messages": "Urgent messages are waiting in your inbox.",
+        "contract_one": "Expires in {{count}} day",
+        "contract_other": "Expires in {{count}} days",
+        "generic": "Review this before you continue."
+      }
+    },
+    "squad": {
+      "startingFive": "Starting five",
+      "slotsFilled": "{{count}} of 5 slots filled",
+      "benchCount": "{{shown}} of {{total}}",
+      "energy": "Energy",
+      "morale": "Morale",
+      "fitness": "Fitness",
+      "age": "Age",
+      "perYear": "/yr",
+      "wageFull": "Full wage",
+      "contractUntil": "Contract until",
+      "openContract": "Open contract",
+      "renew": "Renew",
+      "profile": "Profile",
+      "transferList": "List for transfer",
+      "removeFromTransferList": "Remove from transfer list",
+      "swap": "Swap",
+      "swapPlayer": "Swap {{role}}",
+      "lowEnergy": "{{names}}: energy {{pct}}%",
+      "benchEmptyTitle": "The bench is empty",
+      "benchEmptyBody": "Sign players from the market or promote talent from your academy.",
+      "benchFilteredTitle": "No bench players for this role",
+      "benchFilteredBody": "No bench player matches this role filter. Try another role or clear the filter.",
+      "browseMarket": "Browse market",
+      "openAcademy": "Open academy",
+      "clearFilter": "Clear filter",
+      "filterAllRoles": "All roles",
+      "selectedAria": "Selected player",
+      "importLimit": "Import limit reached"
+    }
   }
 }

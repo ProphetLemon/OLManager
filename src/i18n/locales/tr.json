@@ -242,6 +242,7 @@
     "noResults": "Sonuç bulunamadı.",
     "searchPlaceholder": "Oyuncu, takım ara...",
     "sectionClub": "Kulüp",
+    "sectionMarket": "Piyasa",
     "sectionWorld": "Dünya",
     "searchTeams": "Takımlar",
     "searchPlayers": "Oyuncular",
@@ -3786,5 +3787,130 @@
     "appName": "OL Manager",
     "close": "Close",
     "minimize": "Minimize"
+  },
+  "onAir": {
+    "nav": {
+      "rail": "Ana gezinme",
+      "strip": "{{group}} bölümleri",
+      "skip": "Ana içeriğe geç",
+      "bug": "Hata bildir",
+      "manager": "Menajer profili",
+      "settings": "Ayarlar",
+      "exit": "Çıkış",
+      "openGroup": "{{group}}"
+    },
+    "bar": {
+      "save": "Kaydet",
+      "saved": "Kaydedildi",
+      "toResolve_one": "{{count}} çözülecek",
+      "toResolve_other": "{{count}} çözülecek",
+      "continueMenu": "Daha fazla ilerleme seçeneği",
+      "continue": "Devam",
+      "matchDay": "Maç günü",
+      "skipToMatchDay": "Maç gününe atla",
+      "skipToNextDay": "Sonraki güne atla",
+      "clock": "Oyun tarihi ve aşaması"
+    },
+    "tags": {
+      "blocker": "Engel",
+      "contract": "Sözleşme",
+      "alert": "Uyarı",
+      "selected": "Seçili",
+      "promoted": "Yükseldi",
+      "relegated": "Düştü",
+      "opponent": "Rakip",
+      "you": "Sen"
+    },
+    "home": {
+      "daysToGo_one": "{{count}} gün kaldı",
+      "daysToGo_other": "{{count}} gün kaldı",
+      "matchDay": "Maç günü",
+      "formAfterFirst": "{{team}} takımının formu ilk maçından sonra görünür",
+      "yourClub": "Kulübün",
+      "startingFive": "İlk beşli",
+      "notSet": "Ayarlanmadı",
+      "needsTitle": "Kararın gerekiyor",
+      "needsEmpty": "Karar bekleyen bir şey yok",
+      "seeAll": "{{count}} öğenin tümünü gör",
+      "showLess": "Daha az göster",
+      "contractDays_one": "{{count}} gün kaldı",
+      "contractDays_other": "{{count}} gün kaldı",
+      "inboxTitle": "Gelen kutusu",
+      "inboxEmpty": "Gelen kutun boş",
+      "unreadCount_one": "{{count}} okunmamış",
+      "unreadCount_other": "{{count}} okunmamış",
+      "openInbox": "Gelen kutusunu aç",
+      "standingsTitle": "Puan durumu",
+      "standingsGap": "Tabloda boşluk",
+      "standingsPreseason": "Sezon başlamadı",
+      "bestOf": "{{count}} maçlık seri",
+      "vsAt": {
+        "home": "vs",
+        "away": "deplasman"
+      }
+    },
+    "roles": {
+      "TOP": "Top",
+      "JUNGLE": "Orman",
+      "MID": "Mid",
+      "ADC": "ADC",
+      "SUPPORT": "Destek"
+    },
+    "calls": {
+      "actions": {
+        "fixLineup": "Kadroyu düzelt",
+        "openSquad": "Kadroyu aç",
+        "openScrims": "Scrimleri aç",
+        "openFinances": "Finansı aç",
+        "openContracts": "Sözleşmeleri aç",
+        "openInbox": "Gelen kutusunu aç",
+        "renew": "Yenile",
+        "review": "İncele"
+      },
+      "consequence": {
+        "incomplete_lineup": "İlk beşlin eksik.",
+        "main_roster_minimum": "Ana kadro asgari sayının altında.",
+        "main_missing_roles": "Ana kadroda gerekli roller eksik.",
+        "academy_missing_roles": "Akademi kadrosunda gerekli roller eksik.",
+        "key_contract_risk": "Kilit bir oyuncunun sözleşmesi bitmek üzere.",
+        "contract_wage_risk": "Maaş yükümlülükleri bütçeyi riske atıyor.",
+        "scrim_setup_required": "Sonraki maçtan önce scrim hazırlanmalı.",
+        "scrim_decision_required": "Bekleyen bir scrim kararın var.",
+        "urgent_messages": "Gelen kutunda acil mesajlar var.",
+        "contract_one": "{{count}} gün sonra bitiyor",
+        "contract_other": "{{count}} gün sonra bitiyor",
+        "generic": "Devam etmeden önce bunu incele."
+      }
+    },
+    "squad": {
+      "startingFive": "İlk beşli",
+      "slotsFilled": "5 yuvadan {{count}} tanesi dolu",
+      "benchCount": "{{shown}} / {{total}}",
+      "energy": "Enerji",
+      "morale": "Moral",
+      "fitness": "Kondisyon",
+      "age": "Yaş",
+      "perYear": "/yıl",
+      "wageFull": "Tam maaş",
+      "contractUntil": "Sözleşme bitişi",
+      "openContract": "Sözleşmeyi aç",
+      "renew": "Yenile",
+      "profile": "Profil",
+      "transferList": "Transfer listesine ekle",
+      "removeFromTransferList": "Transfer listesinden çıkar",
+      "swap": "Değiştir",
+      "swapPlayer": "{{role}} değiştir",
+      "lowEnergy": "{{names}}: enerji %{{pct}}",
+      "benchEmptyTitle": "Yedek kulübesi boş",
+      "benchEmptyBody": "Piyasadan oyuncu al veya akademiden yetenek yükselt.",
+      "benchFilteredTitle": "Bu rol için yedek yok",
+      "benchFilteredBody": "Bu rol filtresine uyan yedek yok. Başka bir rol dene veya filtreyi temizle.",
+      "browseMarket": "Piyasaya göz at",
+      "openAcademy": "Akademiyi aç",
+      "clearFilter": "Filtreyi temizle",
+      "filterAllRoles": "Tüm roller",
+      "selectedAria": "Seçili oyuncu",
+      "importLimit": "İçe aktarma sınırına ulaşıldı"
+    }
   }
 }

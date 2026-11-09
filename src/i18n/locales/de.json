@@ -246,6 +246,7 @@
     "noResults": "Keine Ergebnisse gefunden.",
     "searchPlaceholder": "Spieler, Teams suchen...",
     "sectionClub": "Verein",
+    "sectionMarket": "Markt",
     "sectionWorld": "Welt",
     "searchTeams": "Teams",
     "searchPlayers": "Spieler",
@@ -3786,5 +3787,130 @@
     "appName": "OL Manager",
     "close": "Close",
     "minimize": "Minimize"
+  },
+  "onAir": {
+    "nav": {
+      "rail": "Hauptnavigation",
+      "strip": "Bereiche: {{group}}",
+      "skip": "Zum Hauptinhalt springen",
+      "bug": "Fehler melden",
+      "manager": "Managerprofil",
+      "settings": "Einstellungen",
+      "exit": "Beenden",
+      "openGroup": "{{group}}"
+    },
+    "bar": {
+      "save": "Speichern",
+      "saved": "Gespeichert",
+      "toResolve_one": "{{count}} offen",
+      "toResolve_other": "{{count}} offen",
+      "continueMenu": "Weitere Optionen zum Fortfahren",
+      "continue": "Weiter",
+      "matchDay": "Spieltag",
+      "skipToMatchDay": "Zum Spieltag springen",
+      "skipToNextDay": "Zum nächsten Tag springen",
+      "clock": "Spieldatum und Phase"
+    },
+    "tags": {
+      "blocker": "Blocker",
+      "contract": "Vertrag",
+      "alert": "Hinweis",
+      "selected": "Gewählt",
+      "promoted": "Aufgestiegen",
+      "relegated": "Abgestiegen",
+      "opponent": "Gegner",
+      "you": "Du"
+    },
+    "home": {
+      "daysToGo_one": "Noch {{count}} Tag",
+      "daysToGo_other": "Noch {{count}} Tage",
+      "matchDay": "Spieltag",
+      "formAfterFirst": "Die Form von {{team}} erscheint nach dem ersten Spiel",
+      "yourClub": "Dein Verein",
+      "startingFive": "Startfünf",
+      "notSet": "Nicht gesetzt",
+      "needsTitle": "Braucht deine Entscheidung",
+      "needsEmpty": "Nichts braucht deine Entscheidung",
+      "seeAll": "Alle {{count}} anzeigen",
+      "showLess": "Weniger anzeigen",
+      "contractDays_one": "Noch {{count}} Tag",
+      "contractDays_other": "Noch {{count}} Tage",
+      "inboxTitle": "Posteingang",
+      "inboxEmpty": "Dein Posteingang ist leer",
+      "unreadCount_one": "{{count}} ungelesen",
+      "unreadCount_other": "{{count}} ungelesen",
+      "openInbox": "Posteingang öffnen",
+      "standingsTitle": "Tabelle",
+      "standingsGap": "Lücke in der Tabelle",
+      "standingsPreseason": "Saison noch nicht gestartet",
+      "bestOf": "Best of {{count}}",
+      "vsAt": {
+        "home": "vs",
+        "away": "bei"
+      }
+    },
+    "roles": {
+      "TOP": "Top",
+      "JUNGLE": "Jungle",
+      "MID": "Mid",
+      "ADC": "ADC",
+      "SUPPORT": "Support"
+    },
+    "calls": {
+      "actions": {
+        "fixLineup": "Aufstellung korrigieren",
+        "openSquad": "Kader öffnen",
+        "openScrims": "Scrims öffnen",
+        "openFinances": "Finanzen öffnen",
+        "openContracts": "Verträge öffnen",
+        "openInbox": "Posteingang öffnen",
+        "renew": "Verlängern",
+        "review": "Prüfen"
+      },
+      "consequence": {
+        "incomplete_lineup": "Deine Startfünf ist unvollständig.",
+        "main_roster_minimum": "Der Hauptkader liegt unter der Mindestgröße.",
+        "main_missing_roles": "Im Hauptkader fehlen erforderliche Rollen.",
+        "academy_missing_roles": "Im Akademie-Kader fehlen erforderliche Rollen.",
+        "key_contract_risk": "Der Vertrag eines Schlüsselspielers läuft bald aus.",
+        "contract_wage_risk": "Die Gehaltsverpflichtungen gefährden das Budget.",
+        "scrim_setup_required": "Das Scrim muss vor dem nächsten Spiel eingerichtet werden.",
+        "scrim_decision_required": "Eine Scrim-Entscheidung wartet auf dich.",
+        "urgent_messages": "Dringende Nachrichten warten in deinem Posteingang.",
+        "contract_one": "Läuft in {{count}} Tag aus",
+        "contract_other": "Läuft in {{count}} Tagen aus",
+        "generic": "Prüfe das, bevor du fortfährst."
+      }
+    },
+    "squad": {
+      "startingFive": "Startfünf",
+      "slotsFilled": "{{count}} von 5 Plätzen besetzt",
+      "benchCount": "{{shown}} von {{total}}",
+      "energy": "Energie",
+      "morale": "Moral",
+      "fitness": "Fitness",
+      "age": "Alter",
+      "perYear": "/Jahr",
+      "wageFull": "Volles Gehalt",
+      "contractUntil": "Vertrag bis",
+      "openContract": "Vertrag öffnen",
+      "renew": "Verlängern",
+      "profile": "Profil",
+      "transferList": "Auf Transferliste setzen",
+      "removeFromTransferList": "Von Transferliste nehmen",
+      "swap": "Tauschen",
+      "swapPlayer": "{{role}} tauschen",
+      "lowEnergy": "{{names}}: Energie {{pct}}%",
+      "benchEmptyTitle": "Die Bank ist leer",
+      "benchEmptyBody": "Verpflichte Spieler auf dem Markt oder befördere Talente aus deiner Akademie.",
+      "benchFilteredTitle": "Keine Ersatzspieler für diese Rolle",
+      "benchFilteredBody": "Kein Ersatzspieler passt zu diesem Rollenfilter. Wähle eine andere Rolle oder setze den Filter zurück.",
+      "browseMarket": "Markt durchsuchen",
+      "openAcademy": "Akademie öffnen",
+      "clearFilter": "Filter zurücksetzen",
+      "filterAllRoles": "Alle Rollen",
+      "selectedAria": "Ausgewählter Spieler",
+      "importLimit": "Importlimit erreicht"
+    }
   }
 }
