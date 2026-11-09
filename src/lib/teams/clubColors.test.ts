@@ -1,8 +1,11 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   FALLBACK_ACCENT,
   FALLBACK_SECONDARY,
   SURFACE,
+  SURFACE_HEX,
   contrastRatio,
   ensureContrast,
   formatHex,
@@ -43,9 +46,12 @@ describe("colour maths", () => {
     }
   });
 
-  it("exports the dark surface near #27272a", () => {
+  it("exports the dark surface that equals the --surface-clamp token", () => {
     expect(SURFACE).toMatch(/^#[0-9a-f]{6}$/);
-    expect(contrastRatio(SURFACE, "#27272a")).toBeLessThan(1.05);
+    expect(SURFACE).toBe(SURFACE_HEX.toLowerCase());
+    const css = readFileSync(resolve(__dirname, "../../themes/default.css"), "utf8");
+    const token = css.match(/--surface-clamp:\s*(#[0-9a-fA-F]{6})\s*;/);
+    expect(token?.[1].toLowerCase()).toBe(SURFACE);
   });
 
   it("distinguishes chromatic colours from placeholders", () => {

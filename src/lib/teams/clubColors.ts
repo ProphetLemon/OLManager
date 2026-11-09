@@ -165,10 +165,12 @@ export function oklchToHex(l: number, c: number, h: number): string {
 // ---------------------------------------------------------------------------
 
 /**
- * The dark `--secondary` token, oklch(0.274 0.006 286.033): the lightest
- * common surface in the dark theme, so contrast against it is the worst case.
+ * The lightest common dark surface (the dark `--border`/`--line` and
+ * `--surface-clamp` token in themes/default.css), so contrast against it is
+ * the worst case. A test parses default.css to keep the two in sync.
  */
-export const SURFACE: string = oklchToHex(0.274, 0.006, 286.033);
+export const SURFACE_HEX = "#2A3347";
+export const SURFACE: string = SURFACE_HEX.toLowerCase();
 
 export const FALLBACK_ACCENT = "#f97316";
 export const FALLBACK_SECONDARY = "#a1a1aa";
