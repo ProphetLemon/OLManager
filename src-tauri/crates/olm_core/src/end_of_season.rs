@@ -423,6 +423,9 @@ pub fn roll_completed_background_leagues(
             game.leagues[i] = next;
         }
     }
+
+    // Both linked leagues may have just closed their season: apply the ladder.
+    crate::ladder_apply::apply_ladders(game, manifests);
 }
 
 /// Moves every fixture of `league` forward by the same number of days so the earliest one

@@ -1597,6 +1597,114 @@ mod tests {
             (manifests, known)
         }
 
+        /// A user promoted from the LES to the LEC at a season wrap keeps the LEC after the
+        /// save is written and read back through the load path: the save round trip, catalog
+        /// rehydration, the rebuilt competition configs and the reference sanitising.
+        #[test]
+        fn a_promoted_user_stays_in_the_lec_through_save_and_load() {
+            use olm_core::domain::league::StandingEntry;
+            use olm_core::ladder::SeasonOutcome;
+
+            const USER: &str = "les-team-ac846213";
+            let (mut game, catalog_players, _overlay, user_team) =
+                new_game_as("UB Alma Mater", Some(USER));
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &user_team).expect("season setup");
+            // Early enough that both rebuilt calendars start after the clock.
+            game.clock = GameClock::new(chrono::Utc.with_ymd_and_hms(2025, 12, 1, 0, 0, 0).unwrap());
+
+            let season = les_league(&game).season;
+            let lec_ids: Vec<String> = game
+                .leagues
+                .iter()
+                .find(|l| l.competition_id.as_deref() == Some("lec"))
+                .map(|l| l.standings.iter().map(|s| s.team_id.clone()).collect())
+                .expect("the LEC has a league");
+            let les_ids: Vec<String> =
+                les_league(&game).standings.iter().map(|s| s.team_id.clone()).collect();
+            let mut les_order = vec![USER.to_string()];
+            les_order.extend(les_ids.iter().filter(|id| id.as_str() != USER).cloned());
+            let relegated = lec_ids[0].clone();
+            let mut table: Vec<StandingEntry> = lec_ids
+                .iter()
+                .enumerate()
+                .map(|(rank, id)| {
+                    let mut row = StandingEntry::new(id.clone());
+                    row.points = 3 * (rank as u32 + 1);
+                    row
+                })
+                .collect();
+            table.reverse();
+            game.ladder.outcomes = vec![
+                SeasonOutcome {
+                    competition_id: "les".to_string(),
+                    season: season - 1,
+                    champion_id: Some(USER.to_string()),
+                    final_order: les_order,
+                    season_table: vec![],
+                },
+                SeasonOutcome {
+                    competition_id: "lec".to_string(),
+                    season: season - 1,
+                    champion_id: None,
+                    final_order: lec_ids.clone(),
+                    season_table: table,
+                },
+            ];
+            let configs = game.competition_configs.clone();
+            let applied = olm_core::ladder_apply::apply_ladders(&mut game, &configs);
+            assert_eq!(applied.len(), 1, "the swap applies");
+            assert_eq!(applied[0].promoted, vec![USER.to_string()]);
+            assert_eq!(applied[0].relegated, vec![relegated.clone()]);
+            assert_eq!(game.user_competition_id.as_deref(), Some("lec"));
+
+            let dir = tempfile::tempdir().expect("tempdir");
+            let mut manager = SaveManager::init(dir.path()).expect("save manager");
+            let save_id = manager.create_save(&game, "promoted").expect("create save");
+            let mut loaded = manager.load_game(&save_id).expect("load save");
+
+            // The same steps `load_game` runs after reading the file.
+            let data = data_base();
+            let scanned = olm_core::competitions::scan_competitions(&data.join("competitions"));
+            let (catalog_teams, _players, catalog_staff) = assemble_world_from_modular_data(
+                &data,
+                &scanned,
+                "",
+                "",
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+            )
+            .expect("catalog");
+            crate::commands::import::apply_catalog_to_game(
+                &mut loaded,
+                catalog_teams,
+                catalog_players,
+                catalog_staff,
+            );
+            let current: Vec<_> = scanned.into_iter().filter(|m| !m.legacy).collect();
+            let known_now: Vec<String> = current.iter().map(|m| m.id.clone()).collect();
+            loaded.competition_configs.clear();
+            for manifest in &current {
+                loaded.competition_configs.insert(manifest.id.clone(), manifest.clone());
+            }
+            sanitize_competition_references(&mut loaded, &known_now);
+
+            let team_competition = |id: &str| {
+                loaded.teams.iter().find(|t| t.id == id).and_then(|t| t.competition_id.clone())
+            };
+            assert_eq!(loaded.user_competition_id.as_deref(), Some("lec"));
+            assert_eq!(team_competition(USER).as_deref(), Some("lec"));
+            assert_eq!(team_competition(&relegated).as_deref(), Some("les"));
+            let active = loaded.active_league().expect("active league");
+            assert_eq!(active.competition_id.as_deref(), Some("lec"));
+            assert!(active.standings.iter().any(|s| s.team_id == USER));
+            assert!(active.standings.iter().all(|s| s.team_id != relegated));
+            assert!(
+                loaded.competition_configs.get("les").is_some_and(|m| m.promotion.is_some()),
+                "the ladder link is read from the current manifests"
+            );
+            assert_eq!(loaded.ladder.movements.len(), 1);
+        }
+
         #[test]
         fn les_clubs_without_metadata_get_it_from_team_overrides_and_seeded_wages() {
             let (game, _, _, _) = new_game();
