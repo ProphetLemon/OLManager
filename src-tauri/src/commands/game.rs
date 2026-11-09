@@ -2088,14 +2088,35 @@ mod tests {
 
         /// Plays days with the same `process_day` the app calls until the user's league
         /// is complete (regular season and playoffs), and returns the days it took.
-        fn play_until_split_complete(game: &mut Game, max_days: u32) -> u32 {
+        fn play_until_split_complete(
+            game: &mut Game,
+            max_days: u32,
+            playoffs_played: &mut HashSet<String>,
+        ) -> u32 {
             let mut days = 0;
             while !olm_core::end_of_season::is_season_complete(game) {
                 assert!(days < max_days, "split not complete after {max_days} days");
                 olm_core::turn::process_day(game);
                 days += 1;
+                note_completed_playoffs(game, playoffs_played);
             }
             days
+        }
+
+        /// Records the competitions that have a completed playoff fixture right now. A
+        /// league's fixtures are replaced when it rolls, so this has to be sampled daily.
+        fn note_completed_playoffs(game: &Game, playoffs_played: &mut HashSet<String>) {
+            use olm_core::domain::league::{FixtureStatus, MatchType};
+            for league in &game.leagues {
+                let Some(competition_id) = league.competition_id.as_deref() else {
+                    continue;
+                };
+                if league.fixtures.iter().any(|f| {
+                    f.match_type == MatchType::Playoffs && f.status == FixtureStatus::Completed
+                }) {
+                    playoffs_played.insert(competition_id.to_string());
+                }
+            }
         }
 
         fn les_league(game: &Game) -> &olm_core::domain::league::League {
@@ -2140,7 +2161,8 @@ mod tests {
             assert_les_players_are_paid_or_free(&game);
 
             // Winter.
-            play_until_split_complete(&mut game, 120);
+            let mut playoffs_played = HashSet::new();
+            play_until_split_complete(&mut game, 120, &mut playoffs_played);
             let les = les_league(&game);
             let regular: Vec<_> = les.fixtures.iter().filter(|f| f.counts_for_league_standings()).collect();
             assert_eq!(regular.len(), 28);
@@ -2160,7 +2182,7 @@ mod tests {
                 assert!(!outcome.was_season_end);
                 assert_eq!(les_league(&game).split_index, expected_split);
                 assert_eq!(les_league(&game).season as i32, year);
-                play_until_split_complete(&mut game, 150);
+                play_until_split_complete(&mut game, 150, &mut playoffs_played);
                 assert!(olm_core::end_of_season::playoff_champion_id(les_league(&game)).is_some());
             }
             let outcome = olm_core::season_rollover::advance_season(&mut game);
@@ -2184,22 +2206,48 @@ mod tests {
             }
             assert_les_players_are_paid_or_free(&game);
 
-            // The LEC finished at least its first split in the background. It does not yet
-            // follow the LES through every split: a background league only rolls inside the
-            // user's `advance_season`, so its Spring fixtures are generated already in the
-            // past and never played (see task C3, which makes background leagues roll daily).
-            // Tighten this to `season == year + 1` once C3 lands.
+            // Background leagues run their own playoffs and roll on their own. The LEC is
+            // mid-Summer of the same season the LES just closed, so it has rolled twice.
+            assert!(
+                playoffs_played.contains("lec"),
+                "the LEC never played playoffs in the background"
+            );
             let lec = game
                 .leagues
                 .iter()
                 .find(|l| l.competition_id.as_deref() == Some("lec"))
                 .expect("the LEC has a league");
+            assert_eq!(lec.season as i32, year);
+            assert_eq!(lec.split_index, 2, "the LEC is in its third split");
+
+            // The ladder ledger is ready: the LES season is closed with a champion, a full
+            // final order and a summed table, and the LEC carries both closed splits.
+            let outcome = game
+                .ladder
+                .outcome("les", year as u32)
+                .expect("the LES season is in the ledger");
+            assert!(outcome.champion_id.is_some());
+            assert_eq!(outcome.final_order.len(), 8);
+            assert_eq!(outcome.season_table.len(), 8);
             assert!(
-                lec.season as i32 > year || lec.split_index >= 1,
-                "the LEC never finished a split in the background (season {}, split {})",
-                lec.season,
-                lec.split_index
+                outcome.season_table.iter().all(|row| row.played == 3 * 7),
+                "the season table sums all three splits of 7 matches per team"
             );
+            let lec_tally = game
+                .ladder
+                .tallies
+                .get("lec")
+                .expect("the LEC has a running tally");
+            assert_eq!(lec_tally.season as i32, year);
+            assert_eq!(lec_tally.splits, 2);
+
+            // A one-split background league closed its season through the daily roll.
+            let prime = game
+                .ladder
+                .outcome("prime_league", year as u32)
+                .expect("the Prime League season is in the ledger");
+            assert!(prime.champion_id.is_some());
+            assert_eq!(prime.final_order.len(), prime.season_table.len());
         }
 
         // -- Custom club (B3) ---------------------------------------------------------
