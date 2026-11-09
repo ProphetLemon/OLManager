@@ -2433,6 +2433,7 @@ mod tests {
             assert_eq!(game.manager.team_id.as_deref(), Some(id.as_str()));
             let les = les_league(&game);
             assert_eq!(les.standings.len(), 8);
+                founding_seed: None,
             assert!(les.standings.iter().any(|s| s.team_id == id));
             assert!(les
                 .fixtures

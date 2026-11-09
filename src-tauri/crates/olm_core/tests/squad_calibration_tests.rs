@@ -245,6 +245,7 @@ fn run_league(
             nationalities: league.nationalities,
             today,
             taken_match_names: &empty,
+            taken_full_names: &empty,
             serial: 1,
             wage_budget: (mode == WageMode::Window).then_some(budget),
         };
@@ -256,6 +257,7 @@ fn run_league(
         }
         let spec = SquadSpec {
             taken_match_names: taken,
+            taken_full_names: &empty,
             ..raw_spec
         };
         let squad = match generate_founding_squad(&spec, seed) {

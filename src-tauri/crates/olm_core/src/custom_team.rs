@@ -46,6 +46,13 @@ pub struct CustomTeamSpec {
     pub secondary_color: String,
     /// Country code or name; must not be empty.
     pub country: String,
+    /// Seed of the generated founding squad. Optional so payloads and saves
+    /// written before the squad existed still parse; when absent the caller
+    /// picks one. The generated players are stored in the game, so the seed is
+    /// never needed again after world build.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(optional))]
+    pub founding_seed: Option<u32>,
 }
 
 /// Why a custom club could not be created.
@@ -179,6 +186,7 @@ pub fn validate_spec(
         primary_color,
         secondary_color,
         country: country.to_string(),
+        founding_seed: spec.founding_seed,
     })
 }
 

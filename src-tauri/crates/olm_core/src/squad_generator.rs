@@ -145,6 +145,8 @@ pub struct SquadSpec<'a> {
     pub today: NaiveDate,
     /// Lowercase `match_name`s already in the world; none may be reused.
     pub taken_match_names: &'a HashSet<String>,
+    /// Lowercase `full_name`s already in the world; none may be reused.
+    pub taken_full_names: &'a HashSet<String>,
     /// The `n` of the ids `gen-<slug>-<role>-<n>`.
     pub serial: u32,
     /// League-median wage budget. When set, wages are raised above the wage
@@ -549,6 +551,7 @@ fn build_squad(
             rng,
             nationality,
             spec.taken_match_names,
+            spec.taken_full_names,
             &mut used,
             &mut used_full,
         )?;
@@ -589,11 +592,13 @@ fn build_squad(
 
 /// Picks a free `(full_name, nick)` for `nationality`. The nick differs from
 /// the full name, from every taken nick and from the nicks already used; the
-/// full name differs from the full names already used in the squad.
+/// full name differs from every taken full name and from the full names already
+/// used in the squad.
 fn invent_identity(
     rng: &mut StdRng,
     nationality: &str,
     taken: &HashSet<String>,
+    taken_full: &HashSet<String>,
     used: &mut HashSet<String>,
     used_full: &mut HashSet<String>,
 ) -> Result<(String, String), SquadError> {
@@ -603,11 +608,11 @@ fn invent_identity(
         let first = pool.first[rng.random_range(0..pool.first.len())];
         let last = pool.last[rng.random_range(0..pool.last.len())];
         full_name = format!("{first} {last}");
-        if !used_full.contains(&full_name.to_lowercase()) {
+        if !full_name_taken(&full_name, taken_full, used_full) {
             break;
         }
     }
-    if used_full.contains(&full_name.to_lowercase()) {
+    if full_name_taken(&full_name, taken_full, used_full) {
         return Err(SquadError::NamesExhausted);
     }
 
@@ -629,6 +634,17 @@ fn invent_identity(
     Err(SquadError::NamesExhausted)
 }
 
+/// Whether `full_name` (compared case-insensitively) is already in the world or
+/// in the squad being built.
+fn full_name_taken(
+    full_name: &str,
+    taken_full: &HashSet<String>,
+    used_full: &HashSet<String>,
+) -> bool {
+    let key = full_name.to_lowercase();
+    taken_full.contains(&key) || used_full.contains(&key)
+}
+
 struct NamePool {
     first: &'static [&'static str],
     last: &'static [&'static str],
@@ -637,7 +653,8 @@ struct NamePool {
 /// Name pool for an ISO-2 nationality; unknown codes get the mixed European one.
 fn name_pool(nationality: &str) -> NamePool {
     match nationality.trim().to_ascii_uppercase().as_str() {
-        "ES" => NamePool {
+        "ES" | "MX" | "AR" | "CL" | "CO" | "PE" | "UY" | "VE" | "EC" | "CR" | "GT" | "HN"
+        | "SV" | "DO" | "CU" | "BO" | "PY" | "PA" | "NI" => NamePool {
             first: ES_FIRST,
             last: ES_LAST,
         },
@@ -661,7 +678,7 @@ fn name_pool(nationality: &str) -> NamePool {
             first: GB_FIRST,
             last: GB_LAST,
         },
-        "IT" | "PT" => NamePool {
+        "IT" | "PT" | "BR" => NamePool {
             first: IT_FIRST,
             last: IT_LAST,
         },
@@ -1044,6 +1061,10 @@ const NICKS: &[&str] = &[
 mod tests {
     use super::*;
 
+    /// Shared empty set for specs that reserve no full names.
+    static NO_FULL_NAMES: std::sync::LazyLock<HashSet<String>> =
+        std::sync::LazyLock::new(HashSet::new);
+
     fn date() -> NaiveDate {
         NaiveDate::from_ymd_opt(2026, 11, 9).expect("valid date")
     }
@@ -1078,6 +1099,7 @@ mod tests {
             nationalities,
             today: date(),
             taken_match_names: &taken,
+            taken_full_names: &NO_FULL_NAMES,
             serial: 1,
             wage_budget: None,
         };
@@ -1309,6 +1331,7 @@ mod tests {
             nationalities: &["ES"],
             today: date(),
             taken_match_names: &taken,
+            taken_full_names: &NO_FULL_NAMES,
             serial: 1,
             wage_budget: None,
         };
@@ -1320,6 +1343,40 @@ mod tests {
                     .all(|p| !taken.contains(&p.match_name.to_lowercase()))
             );
         }
+    }
+
+    #[test]
+    fn full_names_never_clash_with_taken_full_names() {
+        let reserved: HashSet<String> = (0..50u64)
+            .flat_map(|seed| squad_for(les(), &["ES"], seed))
+            .map(|p| p.full_name.to_lowercase())
+            .collect();
+        let no_nicks = HashSet::new();
+        let spec = SquadSpec {
+            club_slug: "rayo",
+            percentiles: les(),
+            nationalities: &["ES"],
+            today: date(),
+            taken_match_names: &no_nicks,
+            taken_full_names: &reserved,
+            serial: 1,
+            wage_budget: None,
+        };
+        for seed in 0..50u64 {
+            let squad = generate_founding_squad(&spec, seed).expect("squad");
+            assert!(
+                squad
+                    .iter()
+                    .all(|p| !reserved.contains(&p.full_name.to_lowercase())),
+                "seed {seed}"
+            );
+        }
+    }
+
+    #[test]
+    fn latam_and_brazil_codes_use_their_own_name_pools() {
+        assert_eq!(name_pool("MX").first, ES_FIRST);
+        assert_eq!(name_pool("br").last, IT_LAST);
     }
 
     #[test]
@@ -1344,6 +1401,7 @@ mod tests {
             nationalities: &["ES"],
             today: date(),
             taken_match_names: &taken,
+            taken_full_names: &NO_FULL_NAMES,
             serial: 1,
             wage_budget: None,
         };
@@ -1372,6 +1430,7 @@ mod tests {
             nationalities: &["ES"],
             today: date(),
             taken_match_names: &taken,
+            taken_full_names: &NO_FULL_NAMES,
             serial: 1,
             wage_budget: None,
         };
@@ -1391,6 +1450,7 @@ mod tests {
             nationalities: &["ES"],
             today: date(),
             taken_match_names: &taken,
+            taken_full_names: &NO_FULL_NAMES,
             serial: 1,
             wage_budget: None,
         };
@@ -1428,6 +1488,7 @@ mod tests {
             nationalities,
             today: date(),
             taken_match_names: &taken,
+            taken_full_names: &NO_FULL_NAMES,
             serial: 1,
             wage_budget: Some(budget),
         };
@@ -1473,6 +1534,7 @@ mod tests {
             nationalities: &["ES"],
             today: date(),
             taken_match_names: &taken,
+            taken_full_names: &NO_FULL_NAMES,
             serial: 1,
             wage_budget: Some(100_000),
         };
@@ -1500,6 +1562,7 @@ mod tests {
             nationalities: &["ES"],
             today,
             taken_match_names: taken,
+            taken_full_names: &NO_FULL_NAMES,
             serial: 1,
             wage_budget,
         }
