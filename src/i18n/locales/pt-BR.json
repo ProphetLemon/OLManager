@@ -2245,7 +2245,7 @@
       "between": "{{upper}} e {{lower}}",
       "promotedTo": "Sobem para {{league}}",
       "relegatedTo": "Caem para {{league}}",
-      "skippedLate": "Não aplicado: a liga inferior ainda não tinha terminado a temporada.",
+      "skippedLate": "O calendário da próxima temporada já estava em andamento, então a promoção e o rebaixamento não foram aplicados neste ano.",
       "noEligible": "Nenhum time elegível: sem mudanças nesta temporada."
     }
   },

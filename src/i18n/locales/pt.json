@@ -2297,7 +2297,7 @@
       "between": "{{upper}} e {{lower}}",
       "promotedTo": "Sobem para {{league}}",
       "relegatedTo": "Descem para {{league}}",
-      "skippedLate": "Não aplicado: a liga inferior ainda não tinha terminado a época.",
+      "skippedLate": "O calendário da época seguinte já estava em curso, por isso a promoção e a despromoção não foram aplicadas este ano.",
       "noEligible": "Nenhuma equipa elegível: sem alterações nesta época."
     }
   },

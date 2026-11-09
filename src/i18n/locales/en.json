@@ -2454,7 +2454,7 @@
       "between": "{{upper}} and {{lower}}",
       "promotedTo": "Promoted to {{league}}",
       "relegatedTo": "Relegated to {{league}}",
-      "skippedLate": "Not applied: the lower league had not finished its season.",
+      "skippedLate": "The next season's calendar was already under way, so promotion and relegation were not applied this year.",
       "noEligible": "No eligible club: no change this season."
     }
   },

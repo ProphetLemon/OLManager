@@ -2298,7 +2298,7 @@
       "between": "{{upper}} und {{lower}}",
       "promotedTo": "Aufstieg in die {{league}}",
       "relegatedTo": "Abstieg in die {{league}}",
-      "skippedLate": "Nicht umgesetzt: Die untere Liga hatte ihre Saison noch nicht beendet.",
+      "skippedLate": "Der Kalender der nächsten Saison lief bereits, daher wurden Aufstieg und Abstieg in diesem Jahr nicht umgesetzt.",
       "noEligible": "Kein berechtigtes Team: keine Änderung in dieser Saison."
     }
   },

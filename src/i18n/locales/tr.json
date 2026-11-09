@@ -2298,7 +2298,7 @@
       "between": "{{upper}} ve {{lower}}",
       "promotedTo": "{{league}} ligine yükselenler",
       "relegatedTo": "{{league}} ligine düşenler",
-      "skippedLate": "Uygulanmadı: alt lig sezonunu henüz bitirmemişti.",
+      "skippedLate": "Bir sonraki sezonun takvimi zaten başlamıştı, bu yüzden bu yıl yükselme ve küme düşme uygulanmadı.",
       "noEligible": "Uygun takım yok: bu sezon değişiklik olmadı."
     }
   },

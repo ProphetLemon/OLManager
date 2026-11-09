@@ -96,7 +96,7 @@ describe("PromotionRelegationCard", () => {
       screen.getByText("Mine Esports stays in LEC. Other clubs changed league."),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Not applied: the lower league had not finished its season."),
+      screen.getByText("The next season's calendar was already under way, so promotion and relegation were not applied this year."),
     ).toBeInTheDocument();
   });
 
