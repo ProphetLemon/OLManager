@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
 import { exportBugReport } from "@/services/bugReportService";
+import { Button } from "@/ui-v2/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/ui-v2/components/ui/dialog";
 
 interface ContextData {
@@ -74,7 +75,7 @@ export default function ReportBugModal({
     >
       <DialogContent aria-modal="true">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-orange-500 text-white">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-club text-club-foreground">
           <Bug className="h-5 w-5" aria-hidden="true" />
         </div>
         <div>
@@ -108,20 +109,20 @@ export default function ReportBugModal({
           </details>
 
           <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-heading font-bold uppercase tracking-wider text-gray-700 transition-colors hover:bg-gray-200 dark:bg-navy-700 dark:text-gray-300 dark:hover:bg-navy-600"
-            >
+            <Button type="button" variant="secondary" size="touch" onClick={onClose} className="flex-1 font-heading font-bold uppercase tracking-wider">
               {t("common.cancel")}
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="club"
+              size="touch"
               onClick={handleGenerate}
               disabled={description.trim().length === 0}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-orange-500 px-4 py-2.5 text-sm font-heading font-bold uppercase tracking-wider text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 font-heading font-bold uppercase tracking-wider"
             >
-              <Bug className="h-4 w-4" />
+              <Bug aria-hidden="true" />
               {t("bugReport.generate", { defaultValue: "Generate report" })}
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -145,18 +146,12 @@ export default function ReportBugModal({
             {zipPath}
           </p>
           <div className="flex gap-3 mt-2">
-            <button
-              onClick={handleOpenFolder}
-              className="flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-heading font-bold uppercase tracking-wider text-white transition-colors hover:bg-primary-600"
-            >
+            <Button type="button" variant="club" size="touch" onClick={handleOpenFolder} className="font-heading font-bold uppercase tracking-wider">
               {t("bugReport.openFolder", { defaultValue: "Open location" })}
-            </button>
-            <button
-              onClick={onClose}
-              className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-heading font-bold uppercase tracking-wider text-gray-700 transition-colors hover:bg-gray-200 dark:bg-navy-700 dark:text-gray-300 dark:hover:bg-navy-600"
-            >
+            </Button>
+            <Button type="button" variant="secondary" size="touch" onClick={onClose} className="font-heading font-bold uppercase tracking-wider">
               {t("common.close")}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -167,12 +162,9 @@ export default function ReportBugModal({
             {t("bugReport.error", { defaultValue: "Failed to generate the report" })}
           </p>
           <p className="text-xs text-red-400 text-center break-all">{error}</p>
-          <button
-            onClick={() => setStatus("form")}
-            className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-heading font-bold uppercase tracking-wider text-white transition-colors hover:bg-primary-600"
-          >
+          <Button type="button" variant="club" size="touch" onClick={() => setStatus("form")} className="font-heading font-bold uppercase tracking-wider">
             {t("common.retry")}
-          </button>
+          </Button>
         </div>
       )}
     </DialogContent>

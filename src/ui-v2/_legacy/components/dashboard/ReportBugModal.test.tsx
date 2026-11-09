@@ -72,4 +72,15 @@ describe("ReportBugModal dialog semantics", () => {
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
     await waitFor(() => expect(screen.getByRole("button", { name: "Opener" })).toBeInTheDocument());
   });
+
+  it("uses the standard club Button for Generate, with no gradient, and normal disabled styling", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Opener" }));
+    await screen.findByRole("dialog");
+    const generate = screen.getByRole("button", { name: "Generate report" });
+    expect(generate).toHaveAttribute("data-slot", "button");
+    expect(generate).toBeDisabled();
+    expect(generate).toHaveClass("bg-club", "disabled:opacity-50");
+    expect(generate.className).not.toMatch(/gradient|from-red|to-orange/);
+  });
 });
