@@ -1575,6 +1575,26 @@
     "allTeams": "All teams"
   },
   "playerProfile": {
+    "rename": {
+      "action": "Rinomina",
+      "actionAria": "Rinomina {{nick}}",
+      "title": "Rinomina giocatore",
+      "hint": "Cambia solo il nome. Ruolo, età e nazionalità restano uguali.",
+      "nick": "Nick",
+      "fullName": "Nome completo",
+      "save": "Salva nome",
+      "cancel": "Annulla",
+      "errors": {
+        "empty": "Questo campo non può essere vuoto.",
+        "tooShort": "Usa almeno {{min}} caratteri.",
+        "tooLong": "Usa al massimo {{max}} caratteri.",
+        "invalidCharacter": "Questo testo contiene un carattere non consentito.",
+        "taken": "Un altro giocatore usa già questo nome.",
+        "nothingToChange": "Cambia prima il nick o il nome completo.",
+        "notAFounder": "Si possono rinominare solo i giocatori con cui il tuo club è partito.",
+        "general": "Impossibile rinominare il giocatore. Riprova."
+      }
+    },
     "contractInfo": "Contratto e info",
     "dateOfBirth": "Data di nascita",
     "noContract": "Nessun contratto",

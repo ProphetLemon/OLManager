@@ -1724,6 +1724,26 @@
     }
   },
   "playerProfile": {
+    "rename": {
+      "action": "Umbenennen",
+      "actionAria": "{{nick}} umbenennen",
+      "title": "Spieler umbenennen",
+      "hint": "Nur der Name ändert sich. Rolle, Alter und Nationalität bleiben unverändert.",
+      "nick": "Nick",
+      "fullName": "Vollständiger Name",
+      "save": "Namen speichern",
+      "cancel": "Abbrechen",
+      "errors": {
+        "empty": "Dieses Feld darf nicht leer sein.",
+        "tooShort": "Verwende mindestens {{min}} Zeichen.",
+        "tooLong": "Verwende höchstens {{max}} Zeichen.",
+        "invalidCharacter": "Dieser Text enthält ein nicht erlaubtes Zeichen.",
+        "taken": "Ein anderer Spieler verwendet diesen Namen bereits.",
+        "nothingToChange": "Ändere zuerst den Nick oder den vollständigen Namen.",
+        "notAFounder": "Nur die Spieler, mit denen dein Verein gestartet ist, können umbenannt werden.",
+        "general": "Der Spieler konnte nicht umbenannt werden. Versuche es erneut."
+      }
+    },
     "contractInfo": "Vertrag & Info",
     "dateOfBirth": "Geburtsdatum",
     "noContract": "Kein Vertrag",

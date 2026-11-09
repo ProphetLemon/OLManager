@@ -1874,6 +1874,26 @@
     "currentlyPlaying": "Currently playing:"
   },
   "playerProfile": {
+    "rename": {
+      "action": "Rename",
+      "actionAria": "Rename {{nick}}",
+      "title": "Rename player",
+      "hint": "Only the name changes. Role, age and nationality stay as they are.",
+      "nick": "Nick",
+      "fullName": "Full name",
+      "save": "Save name",
+      "cancel": "Cancel",
+      "errors": {
+        "empty": "This field cannot be empty.",
+        "tooShort": "Use at least {{min}} characters.",
+        "tooLong": "Use at most {{max}} characters.",
+        "invalidCharacter": "This text has a character that is not allowed.",
+        "taken": "Another player already uses this name.",
+        "nothingToChange": "Change the nick or the full name first.",
+        "notAFounder": "Only the players your club started with can be renamed.",
+        "general": "Could not rename the player. Try again."
+      }
+    },
     "contractInfo": "Contract & Info",
     "dateOfBirth": "Date of Birth",
     "noContract": "No contract",

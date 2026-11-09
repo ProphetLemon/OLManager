@@ -1724,6 +1724,26 @@
     }
   },
   "playerProfile": {
+    "rename": {
+      "action": "Renommer",
+      "actionAria": "Renommer {{nick}}",
+      "title": "Renommer le joueur",
+      "hint": "Seul le nom change. Le rôle, l'âge et la nationalité restent identiques.",
+      "nick": "Pseudo",
+      "fullName": "Nom complet",
+      "save": "Enregistrer le nom",
+      "cancel": "Annuler",
+      "errors": {
+        "empty": "Ce champ ne peut pas être vide.",
+        "tooShort": "Utilise au moins {{min}} caractères.",
+        "tooLong": "Utilise au plus {{max}} caractères.",
+        "invalidCharacter": "Ce texte contient un caractère non autorisé.",
+        "taken": "Un autre joueur utilise déjà ce nom.",
+        "nothingToChange": "Modifie d'abord le pseudo ou le nom complet.",
+        "notAFounder": "Seuls les joueurs avec lesquels ton club a démarré peuvent être renommés.",
+        "general": "Impossible de renommer le joueur. Réessaie."
+      }
+    },
     "contractInfo": "Contrat et Infos",
     "dateOfBirth": "Date de Naissance",
     "noContract": "Sans contrat",

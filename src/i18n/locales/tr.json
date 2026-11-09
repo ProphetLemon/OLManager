@@ -1724,6 +1724,26 @@
     }
   },
   "playerProfile": {
+    "rename": {
+      "action": "Yeniden adlandır",
+      "actionAria": "{{nick}} oyuncusunu yeniden adlandır",
+      "title": "Oyuncuyu yeniden adlandır",
+      "hint": "Yalnızca ad değişir. Rol, yaş ve uyruk aynı kalır.",
+      "nick": "Takma ad",
+      "fullName": "Tam ad",
+      "save": "Adı kaydet",
+      "cancel": "İptal",
+      "errors": {
+        "empty": "Bu alan boş bırakılamaz.",
+        "tooShort": "En az {{min}} karakter kullan.",
+        "tooLong": "En fazla {{max}} karakter kullan.",
+        "invalidCharacter": "Bu metinde izin verilmeyen bir karakter var.",
+        "taken": "Başka bir oyuncu bu adı zaten kullanıyor.",
+        "nothingToChange": "Önce takma adı veya tam adı değiştir.",
+        "notAFounder": "Yalnızca kulübünün başladığı oyuncular yeniden adlandırılabilir.",
+        "general": "Oyuncu yeniden adlandırılamadı. Tekrar dene."
+      }
+    },
     "contractInfo": "Sözleşme ve Bilgi",
     "dateOfBirth": "Doğum Tarihi",
     "noContract": "Sözleşme yok",

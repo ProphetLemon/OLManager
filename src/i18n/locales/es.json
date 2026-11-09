@@ -1863,6 +1863,26 @@
     "currentlyPlaying": "Jugando actualmente:"
   },
   "playerProfile": {
+    "rename": {
+      "action": "Renombrar",
+      "actionAria": "Renombrar a {{nick}}",
+      "title": "Renombrar jugador",
+      "hint": "Solo cambia el nombre. El rol, la edad y la nacionalidad se mantienen.",
+      "nick": "Nick",
+      "fullName": "Nombre completo",
+      "save": "Guardar nombre",
+      "cancel": "Cancelar",
+      "errors": {
+        "empty": "Este campo no puede estar vacío.",
+        "tooShort": "Usa al menos {{min}} caracteres.",
+        "tooLong": "Usa como máximo {{max}} caracteres.",
+        "invalidCharacter": "Este texto tiene un carácter no permitido.",
+        "taken": "Otro jugador ya usa este nombre.",
+        "nothingToChange": "Cambia primero el nick o el nombre completo.",
+        "notAFounder": "Solo se pueden renombrar los jugadores con los que empezó tu club.",
+        "general": "No se pudo renombrar al jugador. Inténtalo de nuevo."
+      }
+    },
     "contractInfo": "Contrato e Info",
     "dateOfBirth": "Fecha de Nacimiento",
     "noContract": "Sin contrato",

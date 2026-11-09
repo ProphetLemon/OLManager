@@ -34,6 +34,15 @@ const NAMESPACES: Array<{ path: string[]; prefix: string; sources: string[] }> =
       "../../ui-v2/pages/customTeam/founders/FounderEditDialog.tsx",
     ],
   },
+  {
+    path: ["playerProfile", "rename"],
+    prefix: "playerProfile.rename",
+    sources: [
+      "../../ui-v2/pages/PlayerProfileV2.tsx",
+      "../../ui-v2/pages/playerProfile/PlayerProfileHeroCardV2.tsx",
+      "../../ui-v2/pages/playerProfile/PlayerProfileRenameModalV2.tsx",
+    ],
+  },
 ];
 
 function leaves(tree: unknown, prefix = ""): Record<string, string> {
