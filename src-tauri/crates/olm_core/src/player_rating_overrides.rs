@@ -432,7 +432,8 @@ mod tests {
 
     #[test]
     fn bundled_accessor_matches_the_asset() {
-        assert_eq!(bundled().len(), 0);
+        assert!(!bundled().is_empty(), "the shipped asset lists players");
+        assert_eq!(bundled().skipped_entries(), &[] as &[String]);
         assert_eq!(bundled().method(), "stat-blend-v1");
     }
 
