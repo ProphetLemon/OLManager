@@ -1,0 +1,66 @@
+# Per-game pro stats (stat-derived ratings)
+
+`pro-stats.mjs` downloads per-game player rows from Leaguepedia (Cargo tables `ScoreboardPlayers` joined to
+`ScoreboardGames`) and normalizes them into the input of the skill model (`lib/skill.mjs`).
+
+Data: Leaguepedia (lol.fandom.com), CC BY-SA 3.0.
+
+```bash
+node scripts/stats/pro-stats.mjs --offline                     # cache only; fails on a miss
+node scripts/stats/pro-stats.mjs --login --competitions lck,lec  # live run: needs the user's authorization
+npm run stats:fetch -- --help
+```
+
+## Flags
+
+| Flag | Default | Meaning |
+|------|---------|---------|
+| `--since YYYY-MM-DD` | `2025-01-01` | first game date |
+| `--until YYYY-MM-DD` | `2027-01-01` | end date, exclusive |
+| `--competitions <ids>` | all mapped | comma-separated OLManager competition ids from `prefix-map.json` |
+| `--offline` | off | read the cache only; a miss fails with the request that was missing |
+| `--login` | off | log in with the Leaguepedia bot password (see `scripts/champions/README.md`, "Logging in") |
+| `--cache-dir <dir>` | `src-tauri/target/olm-scratch/lp-stats-cache` | HTTP cache (separate from `lp-cargo-cache`) |
+| `--out <file>` | `src-tauri/target/olm-scratch/stat-ratings/rows.json` | normalized rows |
+| `--max-requests <n>` | `450` | cap on live requests |
+| `--page-size <n>` | `500` | Cargo page size (1 to 5000; 500 is the anonymous maximum) |
+
+Next to `--out` it writes `<name>.coverage.json`: per competition the games, kept rows, players, input rows and
+dropped rows by reason, plus the `open` list and the network stats.
+
+## How it works
+
+- One query per page: `ScoreboardPlayers=SP` joined to `ScoreboardGames=SG` on `GameId`, filtered by the date window
+  and one competition's `OverviewPage` prefixes (OR of `LIKE 'prefix%'`). Prefixes are validated (letters, digits,
+  spaces and `/ . _ - '`) and single quotes are doubled.
+- Pages are ordered by `SP.GameId, SP.Side, SP.Role, SP.Name`. `SP.GameRoleId` is not used because its uniqueness per
+  row is unverified. The run goes competition by competition, page by page, and stops at the first page shorter than
+  the page size.
+- Every page is cached (30 days), so a rerun after a failure or a request-cap stop resumes from the cache. Nothing is
+  written to `--out` until every selected competition is complete.
+- There is no team-damage field, so `teamDamageToChampions` is summed over the 5 rows of the same team and game.
+  A team without exactly 5 rows, or with a missing damage value, is dropped whole.
+- Rows are dropped, and counted by reason, for: duplicate row, team without exactly 5 rows, team damage incomplete,
+  bad role (only Top, Jungle, Mid, Bot, Support), bad date (strict `YYYY-MM-DD`, so `2024-13-45` is rejected),
+  missing minutes, missing player link, missing stat.
+- `playerKey` is the Leaguepedia `Link`. Output order is deterministic.
+
+## Prefix map
+
+`prefix-map.json` maps competition ids to `OverviewPage` prefixes. Prefixes end with `/` so `LPL/` never matches
+`LPLOL/`. Names that are not confirmed stay out of `competitions` and are listed under `open` with a reason: LCK
+Academy Series (vs LCK CL), Superliga Domino's (2025 LES?), the Equal Esports Cup, LTA North, LTA South and TransIP
+Road Of Legends. The map is inferred from tournament names.
+
+## Request forecast
+
+About 333 pages for the covered competitions in 2025-2026. At about 12 s per page (4 s throttle plus retries) that
+is about 70 minutes. The default cap of 450 requests leaves room for retries. The run is resumable.
+
+The live run needs `--login`: anonymous Cargo queries were rate-limited on the first request. It also needs the
+user's explicit authorization (destination, operation and credential). Tests use fake clients only.
+
+## Outputs
+
+The cache, rows and coverage stay under `src-tauri/target/olm-scratch` (gitignored). Never commit them.
+Tests: `npx vitest run src/lib/stats`.

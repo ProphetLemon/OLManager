@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "note": "OLManager competition id -> Leaguepedia OverviewPage prefixes (SQL LIKE 'prefix%'). Every prefix ends with '/' so 'LPL/' never matches 'LPLOL/' and 'LCK/' never matches 'LCK CL/'. Inferred from tournament names, not verified per season.",
+  "competitions": {
+    "al": ["Arabian League/"],
+    "cblol": ["CBLOL/"],
+    "cd": ["Circuito Desafiante/"],
+    "ebl": ["Esports Balkan League/"],
+    "hll": ["Hellenic Legends League/"],
+    "hm": ["Hitpoint Masters/"],
+    "lck": ["LCK/"],
+    "lckcl": ["LCK CL/"],
+    "lcp": ["LCP/"],
+    "lcs": ["LCS/"],
+    "ldl": ["LDL/"],
+    "lec": ["LEC/"],
+    "les": ["LES/"],
+    "lfl": ["LFL/"],
+    "lit": ["LIT/"],
+    "ljl": ["LJL/"],
+    "lpl": ["LPL/"],
+    "lplol": ["LPLOL/"],
+    "lrn": ["Liga Regional Norte/"],
+    "lrs": ["Liga Regional Sur/"],
+    "nacl": ["North American Challengers League/"],
+    "nlc": ["NLC/"],
+    "pcs": ["PCS/"],
+    "prm": ["Prime League 1st Division/"],
+    "rl": ["Rift Legends/"],
+    "rol": ["Road Of Legends/"],
+    "tcl": ["TCL/"],
+    "vcs": ["VCS/"]
+  },
+  "open": {
+    "LCK Academy Series": "Unconfirmed whether it is the same competition as LCK CL (both have about 1,000 games in 2025-2026); not mapped to lckcl.",
+    "Superliga Domino's": "Possibly the 2025 edition of LES (254 games in 2025); LES/ only covers 2026, unconfirmed.",
+    "Equal Esports Cup 2025": "Unconfirmed mapping to the eec competition; eec stays unmapped.",
+    "Equal Esports Cup 2026": "Unconfirmed mapping to the eec competition; eec stays unmapped.",
+    "LTA North": "Unconfirmed as the 2025 CBLOL/LCS predecessor; neither cblol nor lcs gets 2025 games from it.",
+    "LTA South": "Unconfirmed as the 2025 CBLOL predecessor; cblol gets no 2025 games from it.",
+    "TransIP Road Of Legends": "Unconfirmed whether it is the sponsored name of Road Of Legends (rol); not merged."
+  }
+}
