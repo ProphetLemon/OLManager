@@ -12,8 +12,8 @@ interface LabelledMeterProps {
  */
 export function LabelledMeter({ label, value }: LabelledMeterProps) {
   return (
-    <div className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-2">
-      <span aria-hidden="true" className="truncate text-xs font-medium text-muted-foreground">
+    <div className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2">
+      <span aria-hidden="true" className="text-xs leading-tight font-medium text-muted-foreground [overflow-wrap:anywhere]">
         {label}
       </span>
       <Meter size="sm" label={label} value={value} />

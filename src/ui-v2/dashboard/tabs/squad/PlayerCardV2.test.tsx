@@ -170,6 +170,28 @@ describe("PlayerCardV2", () => {
     }
   })
 
+  it("lets meter labels wrap instead of truncating", () => {
+    setup()
+    const label = screen.getAllByText("Energy").find((el) => el.getAttribute("aria-hidden") === "true")
+    expect(label).toBeDefined()
+    expect(label).not.toHaveClass("truncate")
+    expect(label?.className).toContain("[overflow-wrap:anywhere]")
+    expect(label?.parentElement?.className).toContain("grid-cols-[5rem_")
+  })
+
+  it("adds a soft club glow to the selected card only", () => {
+    const { unmount } = render(
+      <PlayerCardV2 model={MODEL} slotRole="MID" selected={false} onSelect={vi.fn()} candidates={[]} onSwap={vi.fn()} />,
+    )
+    expect(document.querySelector("[data-slot='player-card']")?.className).not.toContain("shadow-[")
+    unmount()
+    render(
+      <PlayerCardV2 model={MODEL} slotRole="MID" selected onSelect={vi.fn()} candidates={[]} onSwap={vi.fn()} />,
+    )
+    expect(document.querySelector("[data-slot='player-card']")?.className).toContain("var(--club)_45%")
+    expect(screen.getByText("Selected")).toBeInTheDocument()
+  })
+
   it("falls back to the silhouette when there is no photo", () => {
     setup({}, { photo: null })
     expect(document.querySelector("[data-slot='player-silhouette']")).not.toBeNull()

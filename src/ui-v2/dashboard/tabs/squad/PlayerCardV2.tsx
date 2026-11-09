@@ -70,7 +70,7 @@ export function PlayerCardV2({
         // Selection is never colour-only: a thicker club outline, the numeral
         // highlight and the visible Selected tag all change together.
         selected
-          ? "ring-2 ring-club-text [[data-contrast=high]_&]:ring-[0.1875rem]"
+          ? "ring-2 ring-club-text shadow-[0_0_1.25rem_color-mix(in_srgb,var(--club)_45%,transparent)] [[data-contrast=high]_&]:ring-[0.1875rem]"
           : "ring-1 ring-line",
       )}
     >

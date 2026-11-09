@@ -116,6 +116,15 @@ beforeEach(() => {
 // ─── Tests ───────────────────────────────────────────────────────
 
 describe("SquadTabV2", () => {
+  it("styles the Starting five and Substitutes headings identically", () => {
+    setup(makeState([...baseStarters(), ...BENCH]));
+    const a = screen.getByRole("heading", { name: "Starting five" });
+    const b = screen.getByRole("heading", { name: "Substitutes" });
+    expect(a.className).toBe(b.className);
+    expect(a.className).toContain("uppercase");
+    expect(a.className).toContain("font-heading");
+  });
+
   it("renders five player cards with the lineup summary and the preserved test ids", () => {
     setup(makeState([...baseStarters(), ...BENCH]));
     const lineup = screen.getByTestId("active-lineup");

@@ -330,7 +330,7 @@ export function SquadTabV2({
       <section aria-labelledby="squad-lineup-title" className="flex flex-col gap-4">
         <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
           <div className="flex flex-col gap-1">
-            <h2 id="squad-lineup-title" className="font-heading text-title font-semibold">
+            <h2 id="squad-lineup-title" className="font-heading text-section font-semibold uppercase">
               {t("onAir.squad.startingFive", { defaultValue: "Starting five" })}
             </h2>
             {hasRoster ? (
