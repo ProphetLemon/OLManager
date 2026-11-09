@@ -40,8 +40,11 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
   const { t } = useTranslation();
   const setShowFiredModal = useGameStore((s) => s.setShowFiredModal);
   const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState<EndOfSeasonSummaryData | null>(null);
-  const [step, setStep] = useState<"review" | "done">("review");
+  // The summary lives in the store so it survives the game update (which makes the
+  // season look incomplete and would otherwise unmount this screen) and tab switches.
+  const summary = useGameStore((s) => s.pendingSeasonSummary);
+  const setPendingSeasonSummary = useGameStore((s) => s.setPendingSeasonSummary);
+  const step: "review" | "done" = summary ? "done" : "review";
 
   const league = gameState?.user_competition_id
     ? gameState.leagues.find(l => l.competition_id === gameState.user_competition_id)
@@ -75,9 +78,8 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
         setShowFiredModal(true);
         return;
       }
-      setSummary(result.summary);
+      setPendingSeasonSummary(result.summary);
       onGameUpdate(result.game);
-      setStep("done");
     } catch (err) {
       console.error("Failed to advance season:", err);
     } finally {
@@ -261,11 +263,7 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
           )}
 
           <button
-            onClick={() => {
-              // Game state is already updated via onGameUpdate, just force re-render
-              // by calling onGameUpdate again with the current state
-              if (gameState) onGameUpdate(gameState);
-            }}
+            onClick={() => setPendingSeasonSummary(null)}
             className="px-8 py-3 bg-primary-500 text-white rounded-xl font-heading font-bold uppercase tracking-wider hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20"
           >
             {t('endOfSeason.continueDashboard')}

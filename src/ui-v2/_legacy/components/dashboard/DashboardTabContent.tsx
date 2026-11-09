@@ -14,6 +14,7 @@ import ChampionsTab from "@/ui-v2/_legacy/components/champions/ChampionsTab";
 import ChampionsWorldTab from "@/ui-v2/_legacy/components/world/ChampionsWorldTab";
 import ScrimsTab from "@/ui-v2/_legacy/components/scrims/ScrimsTab";
 import MarketTab from "@/ui-v2/_legacy/components/market/MarketTab";
+import { useGameStore } from "@/store/gameStore";
 import EndOfSeasonScreen from "@/ui-v2/_legacy/components/EndOfSeasonScreen";
 import type { DashboardTabContentModel } from "@/ui-v2/_legacy/components/dashboard/dashboardTabContentModel";
 
@@ -38,11 +39,12 @@ export default function DashboardTabContent({
       onViewChampion,
     },
   } = viewModel;
+  const hasPendingSeasonSummary = useGameStore((s) => s.pendingSeasonSummary !== null);
 
   return (
     <div key={activeTab} className="animate-fade-in-up">
       {/* End-of-season screen when all fixtures are complete */}
-      {seasonComplete && activeTab === "Home" && (
+      {(seasonComplete || hasPendingSeasonSummary) && activeTab === "Home" && (
         <EndOfSeasonScreen gameState={gameState} onGameUpdate={onGameUpdate} />
       )}
 
