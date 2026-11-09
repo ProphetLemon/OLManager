@@ -104,20 +104,32 @@ export function DashboardSidebarV2({
   const controlledIndex = stops.findIndex((s) => s.id === currentStopId);
 
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const stopsRef = useRef(stops);
+  stopsRef.current = stops;
   const { activeIndex, shouldFocus, handleKeyDown, getTabIndex } = useRovingFocus({
     itemCount: stops.length,
     columns: 1,
     index: controlledIndex,
     focusOnMount: false,
     orientation: "vertical",
-    onSelect: (i) => stops[i]?.activate(),
+    onSelect: (i) => stopsRef.current[i]?.activate(),
     getItemLabel: (i) => itemRefs.current[stops[i]?.id ?? ""]?.title ?? "",
   });
 
+  // Depends on the focus intent only: `stops` is rebuilt whenever the parent passes new
+  // callbacks, and re-running on that would pull focus back into the rail.
   useEffect(() => {
     if (!shouldFocus || activeIndex < 0) return;
-    itemRefs.current[stops[activeIndex]?.id ?? ""]?.focus();
-  }, [shouldFocus, activeIndex, stops]);
+    itemRefs.current[stopsRef.current[activeIndex]?.id ?? ""]?.focus();
+  }, [shouldFocus, activeIndex]);
+
+  // Only keys pressed on a roving stop drive the widget. The bug button and its modal
+  // (a React descendant of the nav) keep their own Enter, Space and typing.
+  const onNavKeyDown = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+    const isStop = Object.values(itemRefs.current).some((el) => el === target);
+    if (isStop) handleKeyDown(e);
+  };
 
   const indexOf = (id: string) => stops.findIndex((s) => s.id === id);
   const itemProps = (id: string) => ({
@@ -149,7 +161,7 @@ export function DashboardSidebarV2({
       <nav
         aria-label={t("onAir.nav.rail", { defaultValue: "Main navigation" })}
         className="flex min-h-0 flex-1 flex-col"
-        onKeyDown={handleKeyDown}
+        onKeyDown={onNavKeyDown}
       >
         <div
           data-slot="rail-stops"

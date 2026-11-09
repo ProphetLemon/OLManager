@@ -1,6 +1,15 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/ui-v2/_legacy/components/dashboard/FloatingBugButton", () => ({
+  default: () => (
+    <div>
+      <button type="button">Report bug</button>
+      <textarea aria-label="Bug description" />
+    </div>
+  ),
+}));
+
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 
 vi.mock("react-i18next", () => ({
@@ -146,5 +155,36 @@ describe("DashboardSidebarV2 rail", () => {
     expect(scroller.className).toContain("overflow-y-auto");
     expect(scroller.contains(stop(/^Settings/))).toBe(false);
     expect(pinned.contains(stop(/^Settings/))).toBe(true);
+  });
+
+  it("leaves keys from the bug button and its dialog alone", () => {
+    const { props } = setup({ activeTab: "Home" });
+    const bug = screen.getByRole("button", { name: "Report bug" });
+    expect(fireEvent.keyDown(bug, { key: "Enter" })).toBe(true);
+    expect(props.onNavClick).not.toHaveBeenCalled();
+    const field = screen.getByRole("textbox", { name: "Bug description" });
+    expect(fireEvent.keyDown(field, { key: "m" })).toBe(true);
+    expect(fireEvent.keyDown(field, { key: " " })).toBe(true);
+    expect(stop(/^Home/)).toHaveAttribute("tabindex", "0");
+  });
+
+  it("does not pull focus back into the rail when callbacks change identity", () => {
+    const { props, rerender } = setup({ activeTab: "Home" });
+    stop(/^Home/).focus();
+    fireEvent.keyDown(stop(/^Home/), { key: "ArrowDown" });
+    expect(stop(/^Inbox/)).toHaveFocus();
+    const outside = document.createElement("input");
+    document.body.appendChild(outside);
+    outside.focus();
+    rerender({ onNavClick: vi.fn(), onNavigateSettings: vi.fn(), onExitClick: vi.fn() });
+    expect(outside).toHaveFocus();
+    // Enter still uses the latest callback.
+    const latest = vi.fn();
+    rerender({ onNavClick: latest });
+    stop(/^Inbox/).focus();
+    fireEvent.keyDown(stop(/^Inbox/), { key: "Enter" });
+    expect(latest).toHaveBeenCalledWith("Inbox");
+    expect(props.onNavClick).not.toHaveBeenCalled();
+    outside.remove();
   });
 });
