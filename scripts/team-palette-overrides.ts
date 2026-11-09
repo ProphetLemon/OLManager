@@ -24,4 +24,12 @@ export const TEAM_PALETTE_OVERRIDES: Readonly<Record<string, PaletteOverride>> =
   "b50e625743b622b5.webp": null,
   // Discord icon, not a club colour
   "e70bb7aaf8ae9385.webp": null,
+  // FC Barcelona crest: blue and garnet are the club colours, the gold is trim
+  "barcelona-esports.webp": { primary: "#074c94", secondary: "#c81036" },
+  // Blue ring badge: the 34% blue cluster outweighs the small red detail
+  "dbfbb56b4744d9b7.webp": { primary: "#26478f", secondary: "#f62c2d" },
+  // Black and white badge: the 2% orange-red cluster is a fringe detail
+  "g2-esports.webp": null,
+  // Black wordmark: the 3% cyan cluster is a fringe or outline
+  "malvinas-gaming.webp": null,
 };
