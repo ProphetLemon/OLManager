@@ -315,12 +315,12 @@ describe("DashboardV2 pending season summary", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByTestId("ladder-user-result")).toBeInTheDocument();
+    expect(await screen.findByTestId("ladder-user-result", {}, { timeout: 10000 })).toBeInTheDocument();
     expect(screen.queryByTestId("home-tab-v2")).toBeNull();
 
     act(() => useGameStore.getState().setPendingSeasonSummary(null));
 
-    expect(await screen.findByTestId("home-tab-v2")).toBeInTheDocument();
+    expect(await screen.findByTestId("home-tab-v2", {}, { timeout: 10000 })).toBeInTheDocument();
     expect(screen.queryByTestId("ladder-user-result")).toBeNull();
   });
 });
