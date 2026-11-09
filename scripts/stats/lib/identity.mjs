@@ -7,7 +7,8 @@
 // AND the pairing is unique on both sides (the link has exactly one qualifying player and that player is claimed by
 // exactly one link). Everything else with at least one IGN candidate goes to the review list with its reason.
 // Links without any IGN candidate are `unmatched`. scripts/stats/pins.json overrides everything:
-// { "<Link>": "<player id>" } forces a match, { "<Link>": null } never matches.
+// { "<Link>": "<player id>" } forces a match, { "<Link>": null } never matches. A player is pinned by at most one link
+// (the first in link order wins, the others are reported as pin issues), so asset entry ids stay unique.
 import { compactKey, stripParenthetical } from "../../world/lib/text.mjs";
 
 const POSITION_ROLE = Object.freeze({ top: "Top", jungle: "Jungle", mid: "Mid", bot: "Bot", adc: "Bot", support: "Support" });
@@ -68,6 +69,7 @@ export function matchPlayers({ index, players, teamMap, pins = {} }) {
     if (!index[link]) pinIssues.push(`${link}: link is not in the Leaguepedia index`);
     else if (target === null) continue;
     else if (!playerById.has(target)) pinIssues.push(`${link}: pinned player ${JSON.stringify(target)} is not in the game world`);
+    else if (pinnedPlayers.has(target)) pinIssues.push(`${link}: player ${JSON.stringify(target)} is already pinned by another link`);
     else {
       matches.push({ link, playerId: target, via: "pin" });
       pinnedPlayers.add(target);

@@ -110,6 +110,14 @@ describe("matchPlayers", () => {
     expect(bad.matches).toEqual([]);
   });
 
+  it("keeps one match per game player when two links are pinned to it", () => {
+    const players = [player("p1", "Caps")];
+    const r = run({ Alpha: entry(), Beta: entry() }, players, { Alpha: "p1", Beta: "p1" });
+    expect(r.matches).toEqual([{ link: "Alpha", playerId: "p1", via: "pin" }]);
+    expect(r.pinIssues).toEqual(["Beta: player \"p1\" is already pinned by another link"]);
+    expect(new Set(r.matches.map((m: { playerId: string }) => m.playerId)).size).toBe(r.matches.length);
+  });
+
   it("does not let an automatic match steal a pinned player", () => {
     const r = run({ Caps: entry(), Pinned: entry({ names: ["Pinned"] }) }, [player("p1", "Caps")], { Pinned: "p1" });
     expect(r.matches).toEqual([{ link: "Pinned", playerId: "p1", via: "pin" }]);
