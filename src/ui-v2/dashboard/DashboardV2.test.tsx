@@ -19,6 +19,11 @@ const shell = vi.hoisted(() => ({
   header: null as Record<string, unknown> | null,
   sidebar: null as Record<string, unknown> | null,
   blockerModal: null as BlockerModalMock | null,
+  checkBlockingActions: vi.fn(),
+}));
+
+vi.mock("@/services/advanceTimeService", () => ({
+  checkBlockingActions: shell.checkBlockingActions,
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -350,6 +355,8 @@ describe("DashboardV2 shell wiring", () => {
     shell.header = null;
     shell.sidebar = null;
     shell.blockerModal = null;
+    shell.checkBlockingActions.mockReset();
+    shell.checkBlockingActions.mockResolvedValue([]);
     useGameStore.setState({
       hasActiveGame: true,
       managerName: "Coach",
@@ -458,6 +465,63 @@ describe("DashboardV2 shell wiring", () => {
     shell.blockerModal = { blockers: [] };
     view.rerender(tree());
     await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("drops retained blockers once a game state update shows they are resolved", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>
+    );
+
+    shell.blockerModal = { blockers: [lineupBlocker], pendingAction: vi.fn() };
+    const view = render(tree());
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    // The modal is dismissed and the user fixes the lineup: same day, new state.
+    shell.blockerModal = null;
+    view.rerender(tree());
+    shell.checkBlockingActions.mockResolvedValue([]);
+    act(() => {
+      useGameStore.setState({ gameState: { ...minimalGameState() } });
+    });
+
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalled());
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("keeps the blockers that are still unresolved after a refresh", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>
+    );
+    const rosterBlocker = { id: "main_roster_minimum", severity: "warn", text: "Roster too small", tab: "Squad" };
+
+    shell.blockerModal = { blockers: [lineupBlocker, rosterBlocker], pendingAction: vi.fn() };
+    const view = render(tree());
+    await waitFor(() => expect(shell.header?.callCount).toBe(2));
+
+    shell.blockerModal = null;
+    view.rerender(tree());
+    shell.checkBlockingActions.mockResolvedValue([rosterBlocker]);
+    act(() => {
+      useGameStore.setState({ gameState: { ...minimalGameState() } });
+    });
+
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+  });
+
+  it("does not re-check blockers while none are retained or the modal is open", async () => {
+    await renderDashboard();
+    await screen.findByTestId("home-tab-v2");
+    act(() => {
+      useGameStore.setState({ gameState: { ...minimalGameState() } });
+    });
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(shell.checkBlockingActions).not.toHaveBeenCalled();
   });
 
   it("flags compact while a season summary is pending", async () => {

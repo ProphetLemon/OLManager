@@ -15,7 +15,7 @@ import { assetUrl } from "@/lib/assetUrl";
 import { DEFAULT_MANAGER_ICON_PATH } from "@/lib/common/managerAvatars";
 import { buildCallItems } from "@/lib/dashboard/needsYourCall";
 import { buildActiveLineupIds } from "@/lib/squad/helpers";
-import type { BlockerData } from "@/services/advanceTimeService";
+import { checkBlockingActions, type BlockerData } from "@/services/advanceTimeService";
 import type { PlayerData } from "@/store/gameStore";
 import { resolveActiveLineupIds } from "@/store/types";
 import type { ShellBadges } from "@/ui-v2/shell/shellTypes";
@@ -146,6 +146,7 @@ const TAB_TO_DISCORD_KEY: Record<string, string> = {
 
 /** DOM id of the Home "Needs your call" panel (owned by NeedsYourCallPanel). */
 const NEEDS_YOUR_CALL_ID = "needs-your-call";
+const BLOCKER_REFRESH_DEBOUNCE_MS = 400;
 const MAIN_CONTENT_ID = "main-content";
 /** The panel mounts after a lazy Home chunk resolves, so look for it for a short while. */
 const FOCUS_CALLS_ATTEMPTS = 40;
@@ -331,6 +332,34 @@ export default function DashboardV2() {
         : null,
     );
   }, [blockerModal]);
+
+  // Retained blockers go stale once the user fixes the problem (for example a
+  // lineup completed in Squad) without the day changing. While any are retained
+  // and the modal is closed, re-run the backend check shortly after each game
+  // state update and keep only what is still blocking.
+  const hasRetainedBlockers = lastBlockers !== null;
+  const blockerModalOpen = blockerModal !== null && blockerModal !== undefined;
+  useEffect(() => {
+    if (!hasRetainedBlockers || blockerModalOpen) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void checkBlockingActions("dashboard-refresh").then((fresh) => {
+        if (cancelled) return;
+        setLastBlockers((prev) => {
+          if (!prev) return prev;
+          if (fresh.length === 0) return null;
+          const same =
+            fresh.length === prev.blockers.length &&
+            fresh.every((b, i) => b.id === prev.blockers[i].id && b.text === prev.blockers[i].text);
+          return same ? prev : { ...prev, blockers: fresh };
+        });
+      });
+    }, BLOCKER_REFRESH_DEBOUNCE_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [gameState, hasRetainedBlockers, blockerModalOpen]);
 
   useEffect(
     () => () => {
@@ -652,7 +681,15 @@ export default function DashboardV2() {
         !profileNavigation.selectedTeamId &&
         !showSeasonSummary ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
-            <HomeTabV2 gameState={gameState} onNavigate={handleNavigate} onSelectPlayer={selectPlayer} />
+            <HomeTabV2
+              gameState={gameState}
+              onNavigate={handleNavigate}
+              onSelectPlayer={selectPlayer}
+              alerts={dashboardAlerts}
+              blockers={lastBlockers?.blockers}
+              canContinueAnyway={Boolean(lastBlockers?.canContinueAnyway)}
+              unreadCount={unreadMessagesCount}
+            />
           </div>
         ) : profileNavigation.activeTab === "Inbox" &&
           !viewingChampionKey &&
