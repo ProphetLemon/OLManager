@@ -126,8 +126,14 @@ export default function LogoUploadControl({
             ref={uploadRef}
             type="button"
             variant="outline"
-            disabled={disabled || busy}
-            onClick={() => inputRef.current?.click()}
+            // While the file is prepared the button stays focusable (aria-disabled, not disabled):
+            // disabling the focused element makes the browser drop focus to <body>.
+            disabled={disabled}
+            aria-disabled={busy || undefined}
+            className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+            onClick={() => {
+              if (!busy) inputRef.current?.click();
+            }}
             aria-describedby="custom-team-logo-hint"
           >
             {busy ? (

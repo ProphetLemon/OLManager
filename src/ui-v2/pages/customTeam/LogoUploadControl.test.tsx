@@ -77,7 +77,7 @@ describe("LogoUploadControl", () => {
     pick(png());
 
     expect(await screen.findByText("Preparing your badge...")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Upload your badge" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Upload your badge" })).toHaveAttribute("aria-disabled", "true");
     finish(LOGO);
     await waitFor(() => expect(screen.queryByText("Preparing your badge...")).toBeNull());
   });
@@ -99,6 +99,40 @@ describe("LogoUploadControl", () => {
 
     expect(onChange).toHaveBeenCalledWith(null);
     expect(onInteract).toHaveBeenCalled();
+  });
+
+  it("keeps the upload button focusable while the file is prepared, so focus is not dropped to body", async () => {
+    let finish!: (logo: string) => void;
+    build.mockReturnValue(new Promise<string>((resolve) => (finish = resolve)));
+    const { rerender, onChange } = setup();
+    const button = screen.getByRole("button", { name: "Upload your badge" });
+    button.focus();
+
+    pick(png());
+
+    // A truly disabled button would lose focus in a real browser; jsdom does not model that blur,
+    // so assert the cause: the button is aria-disabled, never `disabled`, while busy.
+    await waitFor(() => expect(button).toHaveAttribute("aria-disabled", "true"));
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveFocus();
+
+    finish(LOGO);
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(LOGO));
+    rerender(<LogoUploadControl value={LOGO} onChange={onChange} />);
+    expect(screen.getByRole("button", { name: "Change image" })).toHaveFocus();
+  });
+
+  it("keeps focus on the upload button after a rejected file", async () => {
+    build.mockRejectedValue(new LogoUploadError("unsupportedType"));
+    setup();
+    const button = screen.getByRole("button", { name: "Upload your badge" });
+    button.focus();
+
+    pick(png());
+
+    await screen.findByRole("alert");
+    expect(button).not.toHaveAttribute("aria-disabled");
+    expect(button).toHaveFocus();
   });
 
   it("returns focus to the visible upload button after removing, never to the hidden input", () => {
