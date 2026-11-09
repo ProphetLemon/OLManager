@@ -275,32 +275,36 @@ fn round_count(team_count: usize) -> usize {
     }
 }
 
-/// Day offsets for exactly `rounds` rounds.
+/// Day offsets for exactly `rounds` rounds, or `None` to use weekly dates.
 ///
 /// A list that already has `rounds` entries is used as is. A shorter list that
 /// is a regular progression (two or more entries, constant positive step) is
 /// extended by that step, so a league that grew by one club keeps its weekly
-/// rhythm. Any other length mismatch is inconsistent data and panics.
-fn resolve_round_offsets(offsets: &[i64], rounds: usize) -> std::borrow::Cow<'_, [i64]> {
+/// rhythm. Any other length mismatch is inconsistent data: it is logged and
+/// the caller falls back to the weekly default instead of failing the game.
+fn resolve_round_offsets(offsets: &[i64], rounds: usize) -> Option<std::borrow::Cow<'_, [i64]>> {
     if offsets.len() == rounds {
-        return std::borrow::Cow::Borrowed(offsets);
+        return Some(std::borrow::Cow::Borrowed(offsets));
     }
     let step = match offsets {
         [.., prev, last] => last - prev,
         _ => 0,
     };
     let is_regular = step > 0 && offsets.windows(2).all(|pair| pair[1] - pair[0] == step);
-    assert!(
-        is_regular && offsets.len() < rounds,
-        "round_day_offsets length must match round count"
-    );
+    if !is_regular || offsets.len() > rounds {
+        log::warn!(
+            "[schedule] {} round day offsets cannot cover {rounds} rounds; using weekly dates",
+            offsets.len()
+        );
+        return None;
+    }
     let mut extended = offsets.to_vec();
     let mut next = offsets[offsets.len() - 1];
     while extended.len() < rounds {
         next += step;
         extended.push(next);
     }
-    std::borrow::Cow::Owned(extended)
+    Some(std::borrow::Cow::Owned(extended))
 }
 
 /// Same as `generate_single_round_league_with_offsets_and_bo` but accepts
@@ -337,7 +341,8 @@ pub fn generate_single_round_league_with_offsets_and_bo_with_id(
     let rounds = n - 1;
     let half = n / 2;
 
-    let round_day_offsets = round_day_offsets.map(|offsets| resolve_round_offsets(offsets, rounds));
+    let round_day_offsets =
+        round_day_offsets.and_then(|offsets| resolve_round_offsets(offsets, rounds));
 
     let mut indices: Vec<usize> = (0..n).collect();
     let mut matchday: u32 = 1;
@@ -484,13 +489,13 @@ pub fn generate_schedule_from_config(
                 },
                 split.best_of as u8,
             );
+            let weekly_last_offset = 7 * (team_ids.len() as i64 - 1);
             let last_offset = if split.superweek_offsets.is_empty() {
-                7 * (team_ids.len() as i64 - 1)
+                weekly_last_offset
             } else {
                 resolve_round_offsets(&split.superweek_offsets, round_count(team_ids.len()))
-                    .last()
-                    .copied()
-                    .unwrap_or_default()
+                    .and_then(|offsets| offsets.last().copied())
+                    .unwrap_or(weekly_last_offset)
             };
             let return_start = season_start + Duration::days(last_offset + 7);
             let return_league = generate_single_round_league_with_offsets_and_bo(
@@ -853,30 +858,51 @@ mod tests {
     #[test]
     fn regular_offsets_are_extended_by_their_step() {
         assert_eq!(
-            resolve_round_offsets(&LES_OFFSETS, 9).as_ref(),
-            [0, 7, 14, 21, 28, 35, 42, 49, 56]
+            resolve_round_offsets(&LES_OFFSETS, 9).as_deref(),
+            Some([0, 7, 14, 21, 28, 35, 42, 49, 56].as_slice())
         );
         assert_eq!(
-            resolve_round_offsets(&[0, 3, 6], 5).as_ref(),
-            [0, 3, 6, 9, 12]
+            resolve_round_offsets(&[0, 3, 6], 5).as_deref(),
+            Some([0, 3, 6, 9, 12].as_slice())
         );
     }
 
     #[test]
-    #[should_panic(expected = "round_day_offsets length must match round count")]
-    fn irregular_offsets_are_not_extended() {
-        resolve_round_offsets(&[0, 7, 15, 21], 7);
+    fn offsets_that_match_the_round_count_are_used_as_is() {
+        assert_eq!(
+            resolve_round_offsets(&[0, 7, 15, 21], 4).as_deref(),
+            Some([0, 7, 15, 21].as_slice())
+        );
     }
 
     #[test]
-    #[should_panic(expected = "round_day_offsets length must match round count")]
-    fn offsets_longer_than_the_round_count_are_rejected() {
-        resolve_round_offsets(&LES_OFFSETS, 5);
+    fn irregular_offsets_fall_back_to_weekly_dates() {
+        assert_eq!(resolve_round_offsets(&[0, 7, 15, 21], 7), None);
     }
 
     #[test]
-    #[should_panic(expected = "round_day_offsets length must match round count")]
+    fn offsets_longer_than_the_round_count_fall_back_to_weekly_dates() {
+        assert_eq!(resolve_round_offsets(&LES_OFFSETS, 5), None);
+    }
+
+    #[test]
     fn a_single_offset_cannot_define_a_step() {
-        resolve_round_offsets(&[0], 3);
+        assert_eq!(resolve_round_offsets(&[0], 3), None);
+    }
+
+    #[test]
+    fn a_nine_club_league_with_an_irregular_offset_list_plays_weekly() {
+        let irregular = [0, 7, 14, 22, 28, 35, 42];
+        let league = generate_single_round_league_with_offsets(
+            "LES",
+            2026,
+            &club_ids(9),
+            les_start(),
+            Some(&irregular),
+        );
+        let mut dates: Vec<&str> = league.fixtures.iter().map(|f| f.date.as_str()).collect();
+        dates.dedup();
+        assert_eq!(dates.len(), 9);
+        assert_eq!(dates[8], "2026-03-14");
     }
 }
