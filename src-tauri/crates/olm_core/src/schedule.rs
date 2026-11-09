@@ -393,6 +393,28 @@ pub fn generate_single_round_league_with_offsets_and_bo_with_id(
     league
 }
 
+/// Team order used to build the schedule of one split.
+///
+/// With an odd club count the circle method gives the bye to a club decided by
+/// its slot, so a fixed list would make the same club rest on the same matchday
+/// in every split. The list is rotated by the global split number (season times
+/// splits per season plus split index) so consecutive splits and seasons move
+/// the bye to different clubs. Even leagues are returned unchanged.
+fn rotated_for_odd_league(
+    team_ids: &[String],
+    year: u32,
+    split_index: usize,
+    splits_per_season: usize,
+) -> Vec<String> {
+    let mut ordered = team_ids.to_vec();
+    if !ordered.len().is_multiple_of(2) {
+        let split_number = year as usize * splits_per_season + split_index;
+        let shift = split_number % ordered.len();
+        ordered.rotate_left(shift);
+    }
+    ordered
+}
+
 /// Generate a league schedule from a competition manifest.
 /// Supports "single_round_robin" and "double_round_robin" formats.
 /// League name is set to the manifest's name (no split suffix).
@@ -420,6 +442,9 @@ pub fn generate_schedule_from_config(
         return league;
     }
     let split = &config.splits[split_index];
+    let original_ids = team_ids;
+    let rotated = rotated_for_odd_league(team_ids, year, split_index, config.splits.len());
+    let team_ids = rotated.as_slice();
     let season_start = Utc
         .with_ymd_and_hms(
             year as i32,
@@ -511,6 +536,11 @@ pub fn generate_schedule_from_config(
             )
         }
     };
+    // The schedule was built from the rotated order; standings keep the order
+    // the caller passed so the next split starts from the same list.
+    league
+        .standings
+        .sort_by_key(|entry| original_ids.iter().position(|id| *id == entry.team_id));
     league.competition_id = Some(manifest.id.clone());
     league.split_index = split_index;
     league
@@ -809,6 +839,15 @@ mod tests {
                 .count();
             assert_eq!(played, 8, "{team} meets each rival once and rests once");
         }
+    }
+
+    #[test]
+    fn only_odd_leagues_rotate_their_team_order_between_splits() {
+        let even = club_ids(8);
+        assert_eq!(rotated_for_odd_league(&even, 2026, 2, 3), even);
+        let odd = club_ids(9);
+        assert_eq!(rotated_for_odd_league(&odd, 2026, 0, 3)[0], "t3");
+        assert_eq!(rotated_for_odd_league(&odd, 2026, 1, 3)[0], "t4");
     }
 
     #[test]

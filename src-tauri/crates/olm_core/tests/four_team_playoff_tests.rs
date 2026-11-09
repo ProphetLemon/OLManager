@@ -566,3 +566,57 @@ fn a_les_user_plays_a_split_with_playoffs_and_the_next_split_starts() {
         28
     );
 }
+
+/// Matchday (1-based) on which `club` has no regular-season fixture.
+fn bye_matchday(league: &League, club: &str) -> u32 {
+    let rounds = league
+        .fixtures
+        .iter()
+        .filter(|f| f.match_type == MatchType::League)
+        .map(|f| f.matchday)
+        .max()
+        .expect("fixtures");
+    let resting: Vec<u32> = (1..=rounds)
+        .filter(|day| {
+            !league.fixtures.iter().any(|f| {
+                f.match_type == MatchType::League
+                    && f.matchday == *day
+                    && (f.home_team_id == club || f.away_team_id == club)
+            })
+        })
+        .collect();
+    assert_eq!(resting.len(), 1, "{club} must rest exactly once");
+    resting[0]
+}
+
+/// The club that joined the league is the last team of the list, and the
+/// split calendar is regenerated from the same list every time. Its bye must
+/// not fall on the same matchday in every split and season.
+#[test]
+fn the_joined_club_does_not_rest_on_the_same_matchday_in_every_split() {
+    let manifest = les_manifest();
+    let ids = team_ids(9);
+    let joined = ids.last().expect("nine clubs").clone();
+    let byes: Vec<u32> = [(2026, 0), (2026, 1), (2026, 2), (2027, 0)]
+        .into_iter()
+        .map(|(year, split)| {
+            bye_matchday(
+                &generate_schedule_from_config(&manifest, year, &ids, split),
+                &joined,
+            )
+        })
+        .collect();
+    eprintln!("[bye] joined club rests on matchdays {byes:?}");
+    let distinct: std::collections::BTreeSet<u32> = byes.iter().copied().collect();
+    assert_eq!(distinct.len(), byes.len(), "a bye matchday repeats: {byes:?}");
+}
+
+#[test]
+fn rotating_the_odd_league_schedule_keeps_the_standings_order() {
+    let manifest = les_manifest();
+    let ids = team_ids(9);
+    let league = generate_schedule_from_config(&manifest, 2026, &ids, 1);
+    let standings: Vec<&str> = league.standings.iter().map(|s| s.team_id.as_str()).collect();
+    let expected: Vec<&str> = ids.iter().map(String::as_str).collect();
+    assert_eq!(standings, expected);
+}
