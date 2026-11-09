@@ -329,6 +329,7 @@
     "message": "Dein Spiel wird automatisch gespeichert, bevor du zum Hauptmenü zurückkehrst.",
     "cancel": "Abbrechen",
     "saveExit": "Speichern & Beenden",
+    "exitNoSave": "Ohne Speichern beenden",
     "savingTitle": "Spiel wird gespeichert...",
     "savingMessage": "Bitte warte, während dein Fortschritt gespeichert wird und du zum Hauptmenü zurückkehrst."
   },
@@ -699,6 +700,7 @@
     "all": "Alle",
     "allPlayers": "Alle Spieler",
     "cancel": "Abbrechen",
+    "retry": "Erneut versuchen",
     "close": "Schließen",
     "done": "Fertig",
     "confirm": "Bestätigen",
@@ -3783,11 +3785,24 @@
     "serieA": "Serie A",
     "usernamePlaceholder": "{{username}}"
   },
+  "bugReport": {
+    "title": "Fehler melden / Verbesserung vorschlagen",
+    "subtitle": "Teile die ZIP-Datei mit dem Entwicklungsteam",
+    "placeholder": "Beschreibe, was passiert ist, was du erwartet hast und wie man es reproduzieren kann...",
+    "contextPreview": "Enthaltener Kontext",
+    "generate": "Bericht erstellen",
+    "exporting": "ZIP-Datei wird erstellt...",
+    "done": "Bericht erfolgreich erstellt",
+    "openFolder": "Speicherort öffnen",
+    "error": "Der Bericht konnte nicht erstellt werden"
+  },
   "titleBar": {
     "appLogoAlt": "App logo",
     "appName": "OL Manager",
-    "close": "Close",
-    "minimize": "Minimize"
+    "close": "Schließen",
+    "minimize": "Minimieren",
+    "maximize": "Maximieren",
+    "restore": "Wiederherstellen"
   },
   "onAir": {
     "nav": {
@@ -3835,6 +3850,8 @@
       "seasonChip": "S{{season}}",
       "formLabel": "Form",
       "openSchedule": "Spielplan öffnen",
+      "daysToMatch_one": "Tag bis zum Spiel",
+      "daysToMatch_other": "Tage bis zum Spiel",
       "daysToGo_one": "Noch {{count}} Tag",
       "daysToGo_other": "Noch {{count}} Tage",
       "matchDay": "Spieltag",

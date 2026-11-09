@@ -335,6 +335,7 @@
     "message": "Votre partie sera sauvegardée automatiquement avant de revenir au menu principal.",
     "cancel": "Annuler",
     "saveExit": "Sauvegarder et Quitter",
+    "exitNoSave": "Quitter sans enregistrer",
     "savingTitle": "Sauvegarde de votre partie...",
     "savingMessage": "Veuillez patienter pendant que nous sauvegardons votre progression et revenons au menu principal."
   },
@@ -699,6 +700,7 @@
     "all": "Tous",
     "allPlayers": "Tous les joueurs",
     "cancel": "Annuler",
+    "retry": "Réessayer",
     "close": "Fermer",
     "done": "Terminé",
     "confirm": "Confirmer",
@@ -3783,11 +3785,24 @@
     "serieA": "Serie A",
     "usernamePlaceholder": "{{username}}"
   },
+  "bugReport": {
+    "title": "Signaler un bug / suggérer une amélioration",
+    "subtitle": "Partagez le fichier ZIP avec l'équipe de développement",
+    "placeholder": "Décrivez ce qui s'est passé, ce que vous attendiez et comment le reproduire...",
+    "contextPreview": "Contexte qui sera inclus",
+    "generate": "Générer le rapport",
+    "exporting": "Génération du fichier ZIP...",
+    "done": "Rapport généré avec succès",
+    "openFolder": "Ouvrir l'emplacement",
+    "error": "Échec de la génération du rapport"
+  },
   "titleBar": {
     "appLogoAlt": "App logo",
     "appName": "OL Manager",
-    "close": "Close",
-    "minimize": "Minimize"
+    "close": "Fermer",
+    "minimize": "Réduire",
+    "maximize": "Agrandir",
+    "restore": "Restaurer"
   },
   "onAir": {
     "nav": {
@@ -3835,6 +3850,8 @@
       "seasonChip": "S{{season}}",
       "formLabel": "Forme",
       "openSchedule": "Ouvrir le calendrier",
+      "daysToMatch_one": "jour avant le match",
+      "daysToMatch_other": "jours avant le match",
       "daysToGo_one": "Encore {{count}} jour",
       "daysToGo_other": "Encore {{count}} jours",
       "matchDay": "Jour de match",

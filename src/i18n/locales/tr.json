@@ -329,6 +329,7 @@
     "message": "Ana menüye dönmeden önce oyununuz otomatik olarak kaydedilecektir.",
     "cancel": "İptal",
     "saveExit": "Kaydet ve Çık",
+    "exitNoSave": "Kaydetmeden çık",
     "savingTitle": "Oyununuz kaydediliyor...",
     "savingMessage": "İlerlemeniz kaydedilip ana menüye dönülürken lütfen bekleyin."
   },
@@ -699,6 +700,7 @@
     "all": "Tümü",
     "allPlayers": "Tüm Oyuncular",
     "cancel": "İptal",
+    "retry": "Tekrar dene",
     "close": "Kapat",
     "done": "Bitti",
     "confirm": "Onayla",
@@ -3783,11 +3785,24 @@
     "serieA": "Serie A",
     "usernamePlaceholder": "{{username}}"
   },
+  "bugReport": {
+    "title": "Hata bildir / iyileştirme öner",
+    "subtitle": "ZIP dosyasını geliştirme ekibiyle paylaş",
+    "placeholder": "Ne olduğunu, ne beklediğini ve nasıl yeniden oluşturulacağını anlat...",
+    "contextPreview": "Eklenecek bağlam",
+    "generate": "Rapor oluştur",
+    "exporting": "ZIP dosyası oluşturuluyor...",
+    "done": "Rapor başarıyla oluşturuldu",
+    "openFolder": "Konumu aç",
+    "error": "Rapor oluşturulamadı"
+  },
   "titleBar": {
     "appLogoAlt": "App logo",
     "appName": "OL Manager",
-    "close": "Close",
-    "minimize": "Minimize"
+    "close": "Kapat",
+    "minimize": "Küçült",
+    "maximize": "Büyüt",
+    "restore": "Geri yükle"
   },
   "onAir": {
     "nav": {
@@ -3835,6 +3850,8 @@
       "seasonChip": "S{{season}}",
       "formLabel": "Form",
       "openSchedule": "Takvimi aç",
+      "daysToMatch_one": "maça kalan gün",
+      "daysToMatch_other": "maça kalan gün",
       "daysToGo_one": "{{count}} gün kaldı",
       "daysToGo_other": "{{count}} gün kaldı",
       "matchDay": "Maç günü",

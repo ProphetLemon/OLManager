@@ -63,6 +63,8 @@ describe("onAir i18n keys", () => {
       "onAir.bar.toResolve_one",
       "onAir.bar.toResolve_other",
       "onAir.home.daysToGo_other",
+      "onAir.home.daysToMatch_one",
+      "onAir.home.daysToMatch_other",
       "onAir.calls.consequence.generic",
       "onAir.squad.importLimit",
       "dashboard.sectionMarket",

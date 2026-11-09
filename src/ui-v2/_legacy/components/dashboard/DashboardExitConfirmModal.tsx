@@ -57,7 +57,7 @@ export default function DashboardExitConfirmModal({
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-destructive px-4 py-2.5 text-sm font-heading font-bold uppercase tracking-wider text-destructive-foreground transition-colors hover:bg-destructive/90"
             >
               <LogOut className="size-4" aria-hidden="true" />
-              {t("exitConfirm.exitNoSave", "Salir sin guardar")}
+              {t("exitConfirm.exitNoSave", { defaultValue: "Exit without saving" })}
             </button>
           )}
           <button

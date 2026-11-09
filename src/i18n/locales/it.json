@@ -149,6 +149,7 @@
     "message": "La tua partita verrà salvata automaticamente prima di tornare al menu principale.",
     "cancel": "Annulla",
     "saveExit": "Salva ed esci",
+    "exitNoSave": "Esci senza salvare",
     "savingTitle": "Salvataggio della partita...",
     "savingMessage": "Attendi mentre salviamo i tuoi progressi e torniamo al menu principale."
   },
@@ -550,6 +551,7 @@
     "all": "Tutti",
     "allPlayers": "Tutti i giocatori",
     "cancel": "Annulla",
+    "retry": "Riprova",
     "close": "Chiudi",
     "done": "Fatto",
     "confirm": "Conferma",
@@ -3782,11 +3784,24 @@
     "serieA": "Serie A",
     "usernamePlaceholder": "{{username}}"
   },
+  "bugReport": {
+    "title": "Segnala un bug / suggerisci un miglioramento",
+    "subtitle": "Condividi il file ZIP con il team di sviluppo",
+    "placeholder": "Descrivi cosa è successo, cosa ti aspettavi e come riprodurlo...",
+    "contextPreview": "Contesto che verrà incluso",
+    "generate": "Genera rapporto",
+    "exporting": "Generazione del file ZIP...",
+    "done": "Rapporto generato con successo",
+    "openFolder": "Apri posizione",
+    "error": "Impossibile generare il rapporto"
+  },
   "titleBar": {
     "appLogoAlt": "App logo",
     "appName": "OL Manager",
-    "close": "Close",
-    "minimize": "Minimize"
+    "close": "Chiudi",
+    "minimize": "Riduci a icona",
+    "maximize": "Ingrandisci",
+    "restore": "Ripristina"
   },
   "onAir": {
     "nav": {
@@ -3834,6 +3849,8 @@
       "seasonChip": "S{{season}}",
       "formLabel": "Forma",
       "openSchedule": "Apri il calendario",
+      "daysToMatch_one": "giorno alla partita",
+      "daysToMatch_other": "giorni alla partita",
       "daysToGo_one": "Manca {{count}} giorno",
       "daysToGo_other": "Mancano {{count}} giorni",
       "matchDay": "Giorno di gara",

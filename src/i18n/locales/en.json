@@ -359,6 +359,7 @@
     "message": "Your game will be saved automatically before returning to the main menu.",
     "cancel": "Cancel",
     "saveExit": "Save & Exit",
+    "exitNoSave": "Exit without saving",
     "savingTitle": "Saving your game...",
     "savingMessage": "Please wait while we save your progress and return to the main menu."
   },
@@ -827,6 +828,7 @@
     "all": "All",
     "allPlayers": "All Players",
     "cancel": "Cancel",
+    "retry": "Retry",
     "close": "Close",
     "done": "Done",
     "confirm": "Confirm",
@@ -3824,11 +3826,24 @@
     "serieA": "Serie A",
     "usernamePlaceholder": "{{username}}"
   },
+  "bugReport": {
+    "title": "Report bug / suggest improvement",
+    "subtitle": "Share the ZIP file with the development team",
+    "placeholder": "Describe what happened, what you expected, and how to reproduce it...",
+    "contextPreview": "Context that will be included",
+    "generate": "Generate report",
+    "exporting": "Generating ZIP file...",
+    "done": "Report generated successfully",
+    "openFolder": "Open location",
+    "error": "Failed to generate the report"
+  },
   "titleBar": {
     "appLogoAlt": "App logo",
     "appName": "OL Manager",
     "close": "Close",
-    "minimize": "Minimize"
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore"
   },
   "onAir": {
     "nav": {
@@ -3876,6 +3891,8 @@
       "seasonChip": "S{{season}}",
       "formLabel": "Form",
       "openSchedule": "Open schedule",
+      "daysToMatch_one": "day to the match",
+      "daysToMatch_other": "days to the match",
       "daysToGo_one": "{{count}} day to go",
       "daysToGo_other": "{{count}} days to go",
       "matchDay": "Match day",
