@@ -135,6 +135,7 @@ export function HomeTabV2({
           <NeedsYourCallPanel
             items={calls.items}
             total={calls.total}
+            decisions={calls.decisions}
             hiddenContracts={calls.hiddenContracts}
             onAct={handleAct}
           />

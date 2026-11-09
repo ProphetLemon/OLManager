@@ -28,6 +28,39 @@ function makeItem(n: number, overrides: Partial<CallItem> = {}): CallItem {
 
 const items = (count: number) => Array.from({ length: count }, (_, i) => makeItem(i + 1))
 
+describe("NeedsYourCallPanel notices", () => {
+  const notice = makeItem(1, {
+    id: "alert:scrim_auto_delegate_notice",
+    kind: "alert",
+    severity: "info",
+    tagTone: "info",
+    tagKey: "onAir.tags.alert",
+  })
+
+  it("uses a neutral heading, no count and no resolve copy when only notices are present", () => {
+    render(<NeedsYourCallPanel items={[notice]} total={1} decisions={0} hiddenContracts={0} onAct={vi.fn()} />)
+    expect(screen.getByRole("region", { name: "Worth a look" })).toBeInTheDocument()
+    expect(screen.queryByText("Resolve these before you continue.")).toBeNull()
+    expect(document.querySelector('[data-slot="needs-your-call-count"]')).toBeNull()
+    expect(screen.getByText("Worth a look", { selector: '[data-slot="needs-your-call-live"]' })).toBeInTheDocument()
+    expect(screen.getByText("Headline 1")).toBeInTheDocument()
+  })
+
+  it("counts only decisions when a notice sits next to a blocker", () => {
+    render(<NeedsYourCallPanel items={[makeItem(2), notice]} total={2} decisions={1} hiddenContracts={0} onAct={vi.fn()} />)
+    expect(screen.getByRole("region", { name: "Needs your call" })).toBeInTheDocument()
+    expect(screen.getByText("Resolve these before you continue.")).toBeInTheDocument()
+    expect(document.querySelector('[data-slot="needs-your-call-count"]')).toHaveTextContent("1")
+  })
+
+  it("keeps the review action working for a notice", () => {
+    const onAct = vi.fn()
+    render(<NeedsYourCallPanel items={[notice]} total={1} decisions={0} hiddenContracts={0} onAct={onAct} />)
+    fireEvent.click(screen.getByRole("button", { name: "Fix lineup" }))
+    expect(onAct).toHaveBeenCalledWith(notice)
+  })
+})
+
 describe("NeedsYourCallPanel", () => {
   it("renders a labelled, focusable landmark with one lower-third per item", () => {
     render(<NeedsYourCallPanel items={items(2)} total={2} hiddenContracts={0} onAct={vi.fn()} />)

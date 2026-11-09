@@ -332,7 +332,7 @@
   },
   "exitConfirm": {
     "title": "Voltar ao Menu Principal?",
-    "message": "Seu jogo será salvo automaticamente antes de retornar ao menu principal.",
+    "message": "Salvar e Sair mantém seu progresso. Sair sem salvar descarta tudo desde o último salvamento.",
     "cancel": "Cancelar",
     "saveExit": "Salvar e Sair",
     "exitNoSave": "Sair sem salvar",
@@ -3860,6 +3860,7 @@
       "startingFive": "Cinco titulares",
       "notSet": "Não definido",
       "needsTitle": "Precisa da sua decisão",
+      "noticesTitle": "Vale a pena conferir",
       "needsEmpty": "Nada precisa da sua decisão",
       "seeAll": "Ver os {{count}}",
       "showLess": "Ver menos",

@@ -362,7 +362,7 @@
   },
   "exitConfirm": {
     "title": "¿Salir al Menú Principal?",
-    "message": "Tu partida se guardará automáticamente antes de volver al menú principal.",
+    "message": "Guardar y Salir conserva tu progreso. Salir sin guardar descarta todo lo hecho desde el último guardado.",
     "cancel": "Cancelar",
     "saveExit": "Guardar y Salir",
     "exitNoSave": "Salir sin guardar",
@@ -3866,6 +3866,7 @@
       "startingFive": "Quinteto titular",
       "notSet": "Sin definir",
       "needsTitle": "Necesita tu decisión",
+      "noticesTitle": "Conviene echarle un vistazo",
       "needsEmpty": "Nada requiere tu decisión",
       "seeAll": "Ver los {{count}}",
       "showLess": "Ver menos",

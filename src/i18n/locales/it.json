@@ -146,7 +146,7 @@
   },
   "exitConfirm": {
     "title": "Uscire al menu principale?",
-    "message": "La tua partita verrà salvata automaticamente prima di tornare al menu principale.",
+    "message": "Salva ed esci conserva i tuoi progressi. Esci senza salvare scarta tutto ciò che è successo dall'ultimo salvataggio.",
     "cancel": "Annulla",
     "saveExit": "Salva ed esci",
     "exitNoSave": "Esci senza salvare",
@@ -3859,6 +3859,7 @@
       "startingFive": "Cinque titolari",
       "notSet": "Non impostato",
       "needsTitle": "Serve la tua decisione",
+      "noticesTitle": "Da controllare",
       "needsEmpty": "Nulla richiede la tua decisione",
       "seeAll": "Vedi tutti ({{count}})",
       "showLess": "Mostra meno",

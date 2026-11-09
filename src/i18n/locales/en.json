@@ -356,7 +356,7 @@
   },
   "exitConfirm": {
     "title": "Exit to Main Menu?",
-    "message": "Your game will be saved automatically before returning to the main menu.",
+    "message": "Save & Exit keeps your progress. Exit without saving discards everything since your last save.",
     "cancel": "Cancel",
     "saveExit": "Save & Exit",
     "exitNoSave": "Exit without saving",
@@ -3901,6 +3901,7 @@
       "startingFive": "Starting five",
       "notSet": "Not set",
       "needsTitle": "Needs your call",
+      "noticesTitle": "Worth a look",
       "needsEmpty": "Nothing needs your call",
       "seeAll": "See all {{count}}",
       "showLess": "Show less",

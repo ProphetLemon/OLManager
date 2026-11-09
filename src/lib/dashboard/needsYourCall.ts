@@ -45,6 +45,12 @@ export interface BuildCallItemsResult {
   /** Everything that needs a call, including contract rows hidden by the cap. */
   total: number;
   hiddenContracts: number;
+  /**
+   * Items that need a decision or block advancing (hard or soft), hidden
+   * contract renewals included. Notices (info) never count: the header chip and
+   * the "resolve before continuing" copy follow this, not `total`.
+   */
+  decisions: number;
 }
 
 const TAG_KEYS: Record<CallKind, string> = {
@@ -264,6 +270,9 @@ export function buildCallItems(input: BuildCallItemsInput): BuildCallItemsResult
   const rows = contractRows(startingFive, currentDate, t);
   rows.slice(0, maxContracts).forEach((row) => push(row.item));
   const hiddenContracts = Math.max(0, rows.length - maxContracts);
+  const hiddenDecisions = rows
+    .slice(maxContracts)
+    .filter((row) => row.item.severity !== "info").length;
 
   // Array.prototype.sort is stable, so insertion order breaks severity ties.
   const sorted = items
@@ -275,5 +284,6 @@ export function buildCallItems(input: BuildCallItemsInput): BuildCallItemsResult
     )
     .map(({ item }) => item);
 
-  return { items: sorted, total: sorted.length + hiddenContracts, hiddenContracts };
+  const decisions = sorted.filter((item) => item.severity !== "info").length + hiddenDecisions;
+  return { items: sorted, total: sorted.length + hiddenContracts, hiddenContracts, decisions };
 }

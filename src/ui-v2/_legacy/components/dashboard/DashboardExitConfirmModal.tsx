@@ -40,7 +40,10 @@ export default function DashboardExitConfirmModal({
           </button>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          {t("exitConfirm.message")}
+          {t("exitConfirm.message", {
+            defaultValue:
+              "Save & Exit keeps your progress. Exit without saving discards everything since your last save.",
+          })}
         </p>
         <div className="mt-6 flex flex-col gap-2">
           <Button type="button" variant="club" size="touch" onClick={onConfirm} className="w-full font-heading font-bold uppercase tracking-wider">

@@ -570,7 +570,7 @@ export default function DashboardV2() {
         t,
       })
     : null;
-  const callCount = callResult?.total ?? 0;
+  const callCount = callResult?.decisions ?? 0;
 
   const shellBadges: ShellBadges = {
     unread: unreadMessagesCount,

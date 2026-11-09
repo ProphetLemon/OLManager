@@ -332,7 +332,7 @@
   },
   "exitConfirm": {
     "title": "Quitter vers le Menu Principal ?",
-    "message": "Votre partie sera sauvegardée automatiquement avant de revenir au menu principal.",
+    "message": "Sauvegarder et Quitter conserve votre progression. Quitter sans enregistrer abandonne tout ce qui a été fait depuis votre dernière sauvegarde.",
     "cancel": "Annuler",
     "saveExit": "Sauvegarder et Quitter",
     "exitNoSave": "Quitter sans enregistrer",
@@ -3860,6 +3860,7 @@
       "startingFive": "Cinq de départ",
       "notSet": "Non défini",
       "needsTitle": "Besoin de votre avis",
+      "noticesTitle": "À consulter",
       "needsEmpty": "Rien ne demande votre avis",
       "seeAll": "Voir les {{count}}",
       "showLess": "Voir moins",

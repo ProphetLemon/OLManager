@@ -9,6 +9,8 @@ import { cn } from "@/ui-v2/lib/utils"
 export interface NeedsYourCallPanelProps {
   items: CallItem[]
   total: number
+  /** Items that need a decision; defaults to `total` for callers that do not split notices. */
+  decisions?: number
   hiddenContracts: number
   onAct: (item: CallItem) => void
 }
@@ -57,7 +59,7 @@ function actionDefault(key: string): string {
 }
 
 /** Home panel listing everything that needs a decision before the game can move on. */
-export function NeedsYourCallPanel({ items, total, hiddenContracts, onAct }: NeedsYourCallPanelProps) {
+export function NeedsYourCallPanel({ items, total, decisions = total, hiddenContracts, onAct }: NeedsYourCallPanelProps) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const uid = useId()
@@ -66,12 +68,18 @@ export function NeedsYourCallPanel({ items, total, hiddenContracts, onAct }: Nee
 
   const canExpand = items.length > VISIBLE_LIMIT
   const visible = expanded || !canExpand ? items : items.slice(0, VISIBLE_LIMIT)
-  const title = t("onAir.home.needsTitle", { defaultValue: "Needs your call" })
+  // Notices alone are not a decision: neutral heading, no count, no "resolve" copy.
+  const noticesOnly = decisions === 0 && items.length > 0
+  const title = noticesOnly
+    ? t("onAir.home.noticesTitle", { defaultValue: "Worth a look" })
+    : t("onAir.home.needsTitle", { defaultValue: "Needs your call" })
 
   const liveText =
-    total > 0
-      ? `${title}: ${t("onAir.bar.toResolve", { count: total, defaultValue: "{{count}} to resolve" })}`
-      : t("onAir.home.needsEmpty", { defaultValue: "Nothing needs your call" })
+    decisions > 0
+      ? `${title}: ${t("onAir.bar.toResolve", { count: decisions, defaultValue: "{{count}} to resolve" })}`
+      : noticesOnly
+        ? title
+        : t("onAir.home.needsEmpty", { defaultValue: "Nothing needs your call" })
 
   return (
     <section
@@ -86,17 +94,17 @@ export function NeedsYourCallPanel({ items, total, hiddenContracts, onAct }: Nee
           {title}
         </h2>
         <p className="min-w-0 flex-1 text-sm text-muted-foreground">
-          {total > 0
+          {decisions > 0
             ? t("onAir.home.needsSubtitle", { defaultValue: "Resolve these before you continue." })
             : null}
         </p>
-        {total > 0 ? (
+        {decisions > 0 ? (
           <span
             aria-hidden="true"
             data-slot="needs-your-call-count"
             className="inline-flex min-h-6 min-w-6 items-center justify-center rounded-full bg-secondary px-2 font-heading text-sm font-bold tabular-nums text-foreground"
           >
-            {total}
+            {decisions}
           </span>
         ) : null}
       </header>

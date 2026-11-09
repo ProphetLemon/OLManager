@@ -326,7 +326,7 @@
   },
   "exitConfirm": {
     "title": "Zum Hauptmenü?",
-    "message": "Dein Spiel wird automatisch gespeichert, bevor du zum Hauptmenü zurückkehrst.",
+    "message": "Speichern & Beenden behält deinen Fortschritt. Ohne Speichern beenden verwirft alles seit deinem letzten Speicherstand.",
     "cancel": "Abbrechen",
     "saveExit": "Speichern & Beenden",
     "exitNoSave": "Ohne Speichern beenden",
@@ -3860,6 +3860,7 @@
       "startingFive": "Startfünf",
       "notSet": "Nicht gesetzt",
       "needsTitle": "Braucht deine Entscheidung",
+      "noticesTitle": "Einen Blick wert",
       "needsEmpty": "Nichts braucht deine Entscheidung",
       "seeAll": "Alle {{count}} anzeigen",
       "showLess": "Weniger anzeigen",

@@ -325,7 +325,7 @@
   },
   "exitConfirm": {
     "title": "Sair para o Menu Principal?",
-    "message": "O teu jogo será guardado automaticamente antes de voltar ao menu principal.",
+    "message": "Guardar e Sair mantém o teu progresso. Sair sem guardar descarta tudo desde o último guardado.",
     "cancel": "Cancelar",
     "saveExit": "Guardar e Sair",
     "exitNoSave": "Sair sem guardar",
@@ -3859,6 +3859,7 @@
       "startingFive": "Cinco titulares",
       "notSet": "Por definir",
       "needsTitle": "Precisa da tua decisão",
+      "noticesTitle": "Vale a pena ver",
       "needsEmpty": "Nada precisa da tua decisão",
       "seeAll": "Ver os {{count}}",
       "showLess": "Ver menos",

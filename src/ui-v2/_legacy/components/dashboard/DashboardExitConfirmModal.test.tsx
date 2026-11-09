@@ -11,6 +11,22 @@ vi.mock("react-i18next", () => ({
 }));
 
 describe("DashboardExitConfirmModal", () => {
+  it("does not claim the game is saved automatically while offering Exit without saving", async () => {
+    render(<DashboardExitConfirmModal onCancel={vi.fn()} onConfirm={vi.fn()} onExitWithoutSave={vi.fn()} />);
+    const message = await screen.findByText(/Exit without saving discards everything since your last save/);
+    expect(message.textContent).not.toMatch(/automatically/i);
+  });
+
+  it.each(["de", "en", "es", "fr", "it", "pt", "pt-BR", "tr"])(
+    "no longer promises an automatic save in the %s locale",
+    async (locale) => {
+      const messages = (await import(`@/i18n/locales/${locale}.json`)).default as {
+        exitConfirm: { message: string };
+      };
+      expect(messages.exitConfirm.message).not.toMatch(/automat|otomatik/i);
+    },
+  );
+
   it("paints Exit without saving with the shared destructive Button variant", async () => {
     render(<DashboardExitConfirmModal onCancel={vi.fn()} onConfirm={vi.fn()} onExitWithoutSave={vi.fn()} />);
     const exit = await screen.findByRole("button", { name: "Exit without saving" });

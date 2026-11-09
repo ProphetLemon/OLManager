@@ -326,7 +326,7 @@
   },
   "exitConfirm": {
     "title": "Ana Menüye Çıkılsın mı?",
-    "message": "Ana menüye dönmeden önce oyununuz otomatik olarak kaydedilecektir.",
+    "message": "Kaydet ve Çık ilerlemenizi korur. Kaydetmeden çık, son kayıttan bu yana yaptığınız her şeyi siler.",
     "cancel": "İptal",
     "saveExit": "Kaydet ve Çık",
     "exitNoSave": "Kaydetmeden çık",
@@ -3860,6 +3860,7 @@
       "startingFive": "İlk beşli",
       "notSet": "Ayarlanmadı",
       "needsTitle": "Kararın gerekiyor",
+      "noticesTitle": "Göz atmaya değer",
       "needsEmpty": "Karar bekleyen bir şey yok",
       "seeAll": "{{count}} öğenin tümünü gör",
       "showLess": "Daha az göster",
