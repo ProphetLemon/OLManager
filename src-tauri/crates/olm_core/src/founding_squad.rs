@@ -163,6 +163,9 @@ pub struct FoundingSquadPlan {
     pub percentiles_from_peers: bool,
     /// Game date the squad was made for (ages, contracts).
     pub today: NaiveDate,
+    /// ISO-2 codes an edit may use as nationality: the single source the
+    /// validator checks against.
+    pub allowed_nationalities: Vec<String>,
 }
 
 impl FoundingSquadPlan {
@@ -182,6 +185,7 @@ impl FoundingSquadPlan {
                 .collect(),
             wage_budget: self.wage_budget,
             bill: self.bill(),
+            allowed_nationalities: self.allowed_nationalities.clone(),
         }
     }
 }
@@ -258,6 +262,8 @@ pub struct FoundingSquadSummary {
     pub wage_budget: i64,
     /// Yearly wage bill of the five.
     pub bill: i64,
+    /// ISO-2 nationality codes the wizard may offer when editing a founder.
+    pub allowed_nationalities: Vec<String>,
 }
 
 /// Generates and edits the founding squad for `custom_team_id` without touching
@@ -328,9 +334,9 @@ pub fn plan_founding_squad(
         player.team_id = Some(custom_team_id.to_string());
     }
 
+    // Edits may only use residents of the region: never an import.
+    let region_codes = founding_region_codes(competition_id, home_country)?;
     if !overrides.is_empty() {
-        // Edits may only use residents of the region: never an import.
-        let region_codes = founding_region_codes(competition_id, home_country)?;
         let world = NameIndex::from_players(&game.players);
         let context = EditContext {
             today,
@@ -347,6 +353,7 @@ pub fn plan_founding_squad(
         peer_count,
         percentiles_from_peers: percentiles.from_peers,
         today,
+        allowed_nationalities: region_codes,
     })
 }
 

@@ -4,8 +4,9 @@ use olm_core::custom_team::{CustomTeamSpec, replace_team_with_custom};
 use olm_core::domain::manager::Manager;
 use olm_core::domain::player::{LolRole, Player, PlayerAttributes};
 use olm_core::domain::team::Team;
+use olm_core::founder_identity::FounderOverrides;
 use olm_core::founding_squad::{
-    FoundingSquadError, founding_nationalities, install_founding_squad,
+    FoundingSquadError, founding_nationalities, install_founding_squad, plan_founding_squad,
 };
 use olm_core::game::Game;
 use olm_core::residency::{self, Region};
@@ -327,4 +328,35 @@ fn a_spec_without_the_seed_field_still_parses() {
     let seeded = json.replace("\"ES\"}", "\"ES\",\"founding_seed\":42}");
     let parsed: CustomTeamSpec = serde_json::from_str(&seeded).expect("seeded payload");
     assert_eq!(parsed.founding_seed, Some(42));
+}
+
+#[test]
+fn the_summary_exposes_the_region_codes_the_validator_accepts() {
+    let game = with_custom_club("les", 70);
+    let regional = residency::region_nationality_codes(Region::Emea);
+
+    let plain = plan_founding_squad(
+        &game,
+        "les",
+        CUSTOM,
+        Some("ES"),
+        5,
+        &FounderOverrides::default(),
+    )
+    .expect("plan");
+    let summary = plain.summary();
+
+    assert_eq!(summary.allowed_nationalities, regional);
+    assert!(
+        summary
+            .allowed_nationalities
+            .iter()
+            .any(|code| code == "ES")
+    );
+    assert!(
+        summary
+            .players
+            .iter()
+            .all(|player| summary.allowed_nationalities.contains(&player.nationality))
+    );
 }
