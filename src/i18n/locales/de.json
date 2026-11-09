@@ -2511,6 +2511,20 @@
         "subject": "Saison {{season}} — Preisgeld ausgezahlt",
         "body": "Der Vorstand hat eine Preisgeldzahlung in Höhe von €{{amount}} für deinen {{position}}. Tabellenplatz bestätigt. Der Betrag wurde dem Vereinskonto gutgeschrieben."
       },
+      "ladder": {
+        "promoted": {
+          "subject": "{{team}} steigt in die {{to}} auf",
+          "body": "{{team}} ist nach der Saison {{season}} von der {{from}} in die {{to}} aufgestiegen.\n\nDer Vorstand erwartet eine starke erste Saison in der höheren Liga."
+        },
+        "relegated": {
+          "subject": "{{team}} steigt in die {{to}} ab",
+          "body": "{{team}} ist nach der Saison {{season}} von der {{from}} in die {{to}} abgestiegen.\n\nDer Vorstand verlangt die sofortige Rückkehr."
+        },
+        "leagueSwap": {
+          "subject": "Auf- und Abstieg: {{lower}} und {{upper}}",
+          "body": "Nach der Saison {{season}} steigen {{promoted}} in die {{upper}} auf, während {{relegated}} in die {{lower}} absteigen."
+        }
+      },
       "seasonReview": {
         "subject": "Saisonrückblick {{season}}",
         "body": {
@@ -3286,6 +3300,10 @@
       }
     },
     "news": {
+      "ladder": {
+        "headline": "{{promoted}} steigt in die {{upper}} auf, {{relegated}} steigt ab",
+        "body": "{{promoted}} rückt von der {{lower}} in die {{upper}} auf, während {{relegated}} nach der Saison {{season}} absteigt."
+      },
       "matchReport": {
         "headline": {
           "homeWin": {

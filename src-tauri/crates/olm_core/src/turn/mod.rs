@@ -810,6 +810,9 @@ fn process_background_leagues(game: &mut Game, today: &str) {
     }
 
     roll_finished_background_leagues(game);
+    // A background roll can complete a ladder movement while the user's season is
+    // still running; announce it once, the season rollover skips what is announced.
+    crate::ladder_report::announce_ladder_movements(game);
 }
 
 /// True when the league at `index` belongs to a competition whose manifest is loaded.

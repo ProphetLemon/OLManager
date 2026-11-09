@@ -2510,6 +2510,20 @@
         "subject": "Época {{season}} — Prémio atribuído",
         "body": "A direção confirmou um prémio de €{{amount}} pelo teu {{position}}.º lugar na liga. O valor foi adicionado ao saldo do clube."
       },
+      "ladder": {
+        "promoted": {
+          "subject": "{{team}} sobe à {{to}}",
+          "body": "{{team}} conquistou a promoção da {{from}} para a {{to}} após a época {{season}}.\n\nA direção espera uma primeira época sólida no escalão superior."
+        },
+        "relegated": {
+          "subject": "{{team}} desce à {{to}}",
+          "body": "{{team}} desceu da {{from}} para a {{to}} após a época {{season}}.\n\nA direção exige um regresso imediato."
+        },
+        "leagueSwap": {
+          "subject": "Subidas e descidas: {{lower}} e {{upper}}",
+          "body": "Após a época {{season}}, {{promoted}} sobem à {{upper}} e {{relegated}} descem à {{lower}}."
+        }
+      },
       "seasonReview": {
         "subject": "Balanço da Época {{season}}",
         "body": {
@@ -3285,6 +3299,10 @@
       }
     },
     "news": {
+      "ladder": {
+        "headline": "{{promoted}} sobe à {{upper}}, {{relegated}} desce",
+        "body": "{{promoted}} sobe da {{lower}} para a {{upper}}, enquanto {{relegated}} desce após a época {{season}}."
+      },
       "matchReport": {
         "headline": {
           "homeWin": {

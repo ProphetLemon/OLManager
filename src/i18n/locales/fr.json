@@ -2511,6 +2511,20 @@
         "subject": "Saison {{season}} — Prime attribuée",
         "body": "Le conseil a confirmé une prime de €{{amount}} pour votre {{position}}e place en championnat. Le montant a été ajouté au solde du club."
       },
+      "ladder": {
+        "promoted": {
+          "subject": "{{team}} est promu en {{to}}",
+          "body": "{{team}} a obtenu la promotion de la {{from}} vers la {{to}} après la saison {{season}}.\n\nLe conseil d'administration attend une première saison solide à l'étage supérieur."
+        },
+        "relegated": {
+          "subject": "{{team}} est relégué en {{to}}",
+          "body": "{{team}} a été relégué de la {{from}} vers la {{to}} après la saison {{season}}.\n\nLe conseil d'administration exige un retour immédiat."
+        },
+        "leagueSwap": {
+          "subject": "Promotion et relégation : {{lower}} et {{upper}}",
+          "body": "Après la saison {{season}}, {{promoted}} montent en {{upper}} et {{relegated}} descendent en {{lower}}."
+        }
+      },
       "seasonReview": {
         "subject": "Bilan de la Saison {{season}}",
         "body": {
@@ -3286,6 +3300,10 @@
       }
     },
     "news": {
+      "ladder": {
+        "headline": "{{promoted}} promu en {{upper}}, {{relegated}} relégué",
+        "body": "{{promoted}} passe de la {{lower}} à la {{upper}}, tandis que {{relegated}} descend après la saison {{season}}."
+      },
       "matchReport": {
         "headline": {
           "homeWin": {

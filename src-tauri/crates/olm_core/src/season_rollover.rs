@@ -85,7 +85,7 @@ fn split_summary(game: &Game) -> EndOfSeasonSummary {
 pub fn advance_season(game: &mut Game) -> AdvanceOutcome {
     let manifest = resolve_user_manifest(game);
 
-    let (summary, was_season_end) = match manifest {
+    let (mut summary, was_season_end) = match manifest {
         Some(manifest) => {
             let is_wrapping = game
                 .active_league()
@@ -116,6 +116,12 @@ pub fn advance_season(game: &mut Game) -> AdvanceOutcome {
 
     let manifests = game.competition_configs.clone();
     process_background_seasons(game, &manifests);
+
+    // Report after both rollovers: the season-end news clear has run and every league's
+    // movement for the finished season is in the ledger.
+    crate::ladder_report::announce_ladder_movements(game);
+    summary.ladder_movements = crate::ladder_report::movements_for_season(game, summary.season);
+    summary.user_ladder = crate::ladder_report::user_ladder_for_season(game, summary.season);
 
     AdvanceOutcome {
         summary,

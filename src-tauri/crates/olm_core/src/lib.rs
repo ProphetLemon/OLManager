@@ -26,6 +26,7 @@ pub mod game;
 pub mod ladder;
 pub mod ladder_apply;
 pub mod ladder_reprice;
+pub mod ladder_report;
 pub mod game_setup;
 pub mod generator;
 pub mod identity_upgrade;

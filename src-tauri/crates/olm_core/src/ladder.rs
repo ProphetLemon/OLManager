@@ -102,6 +102,8 @@ pub struct LadderState {
     pub outcomes: Vec<SeasonOutcome>,
     /// Decisions taken between linked leagues, oldest first.
     pub movements: Vec<LadderMovement>,
+    /// Keys of the movements already announced in the inbox and news, oldest first.
+    pub announced: Vec<String>,
 }
 
 impl LadderState {

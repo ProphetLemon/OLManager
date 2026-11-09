@@ -987,4 +987,57 @@ export interface LadderStateData {
   tallies: Record<string, SeasonTallyData>;
   outcomes: SeasonOutcomeData[];
   movements: LadderMovementData[];
+  /** Keys of the movements already announced in the inbox and news. */
+  announced?: string[];
+}
+
+/** A team named in a ladder movement, with its display name. */
+export interface LadderTeamRefData {
+  id: string;
+  name: string;
+}
+
+/** One promotion and relegation decision with display names resolved. */
+export interface LadderMovementReportData {
+  lower_competition_id: string;
+  lower_competition_name: string;
+  upper_competition_id: string;
+  upper_competition_name: string;
+  /** Season that finished and produced the movement. */
+  season: number;
+  status: LadderMovementStatus;
+  promoted: LadderTeamRefData[];
+  relegated: LadderTeamRefData[];
+}
+
+export type UserLadderResult = "Promoted" | "Relegated" | "Stayed";
+
+/** What a finished season meant for the user's club. */
+export interface UserLadderData {
+  result: UserLadderResult;
+  from_competition_id: string;
+  to_competition_id: string;
+}
+
+/** The end-of-season summary returned by `advance_to_next_season`. */
+export interface EndOfSeasonSummaryData {
+  season: number;
+  league_name: string;
+  champion_id: string;
+  champion_name: string;
+  user_position: number;
+  user_points: number;
+  user_won: number;
+  user_lost: number;
+  user_maps_won: number;
+  user_maps_lost: number;
+  golden_boot_player: string;
+  golden_boot_goals: number;
+  poty_player: string;
+  poty_rating: number;
+  total_teams: number;
+  /** Promotion and relegation decisions recorded for the finished season. */
+  ladder_movements: LadderMovementReportData[];
+  /** Set only when a swap touched the user's club or league. */
+  user_ladder: UserLadderData | null;
 }

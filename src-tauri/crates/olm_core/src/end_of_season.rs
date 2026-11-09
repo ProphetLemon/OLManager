@@ -548,6 +548,7 @@ fn process_end_of_season_inner(
             .map(|e| e.value)
             .unwrap_or(0.0),
         total_teams: final_standings.len() as u32,
+        ..Default::default()
     };
 
     // 4. Record team season history
@@ -943,6 +944,12 @@ pub struct EndOfSeasonSummary {
     pub poty_player: String,
     pub poty_rating: f64,
     pub total_teams: u32,
+    /// Promotion and relegation decisions recorded for the finished season.
+    #[serde(default)]
+    pub ladder_movements: Vec<crate::ladder_report::LadderMovementReport>,
+    /// What the season meant for the user's club, when a swap touched it.
+    #[serde(default)]
+    pub user_ladder: Option<crate::ladder_report::UserLadder>,
 }
 
 #[cfg(test)]
@@ -963,11 +970,13 @@ mod summary_contract_tests {
                 "champion_name",
                 "golden_boot_goals",
                 "golden_boot_player",
+                "ladder_movements",
                 "league_name",
                 "poty_player",
                 "poty_rating",
                 "season",
                 "total_teams",
+                "user_ladder",
                 "user_lost",
                 "user_maps_lost",
                 "user_maps_won",

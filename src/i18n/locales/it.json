@@ -2284,6 +2284,20 @@
         "subject": "Stagione {{season}} — Revisione degli obiettivi della dirigenza",
         "body": "La dirigenza ha completato la revisione degli obiettivi di fine split. Hai raggiunto {{metCount}}/{{total}} obiettivi.\n\nImpatto sulla soddisfazione del manager: {{satisfactionDelta}}.\n\nQuesta revisione riflette il rendimento competitivo durante lo split: piazzamento finale, vittorie nelle serie, mappe vinte, preparazione del draft ed esecuzione del roster."
       },
+      "ladder": {
+        "promoted": {
+          "subject": "{{team}} promosso in {{to}}",
+          "body": "{{team}} ha ottenuto la promozione da {{from}} a {{to}} dopo la stagione {{season}}.\n\nIl consiglio si aspetta una prima stagione solida nella categoria superiore."
+        },
+        "relegated": {
+          "subject": "{{team}} retrocesso in {{to}}",
+          "body": "{{team}} è retrocesso da {{from}} a {{to}} dopo la stagione {{season}}.\n\nIl consiglio chiede un ritorno immediato."
+        },
+        "leagueSwap": {
+          "subject": "Promozioni e retrocessioni: {{lower}} e {{upper}}",
+          "body": "Dopo la stagione {{season}}, {{promoted}} salgono in {{upper}} e {{relegated}} scendono in {{lower}}."
+        }
+      },
       "seasonReview": {
         "subject": "Bilancio della Stagione {{season}}",
         "body": {
@@ -3116,6 +3130,10 @@
       }
     },
     "news": {
+      "ladder": {
+        "headline": "{{promoted}} promosso in {{upper}}, {{relegated}} retrocesso",
+        "body": "{{promoted}} sale da {{lower}} a {{upper}}, mentre {{relegated}} scende dopo la stagione {{season}}."
+      },
       "matchReport": {
         "headline": {
           "homeWin": {

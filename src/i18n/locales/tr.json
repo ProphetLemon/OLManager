@@ -2511,6 +2511,20 @@
         "subject": "Sezon {{season}} Ödül Parası Yatırıldı",
         "body": "Yönetim, {{position}}. sıradaki lig bitirişiniz için €{{amount}} tutarında bir ödül ödemesi onayladı. Tutar kulüp bakiyesine eklendi."
       },
+      "ladder": {
+        "promoted": {
+          "subject": "{{team}} {{to}} ligine yükseldi",
+          "body": "{{team}}, {{season}} sezonunun ardından {{from}} liginden {{to}} ligine yükselmeyi başardı.\n\nYönetim kurulu üst ligde güçlü bir ilk sezon bekliyor."
+        },
+        "relegated": {
+          "subject": "{{team}} {{to}} ligine düştü",
+          "body": "{{team}}, {{season}} sezonunun ardından {{from}} liginden {{to}} ligine düştü.\n\nYönetim kurulu hemen geri dönülmesini istiyor."
+        },
+        "leagueSwap": {
+          "subject": "Yükselme ve düşme: {{lower}} ve {{upper}}",
+          "body": "{{season}} sezonunun ardından {{promoted}} {{upper}} ligine yükseliyor, {{relegated}} ise {{lower}} ligine düşüyor."
+        }
+      },
       "seasonReview": {
         "subject": "Sezon {{season}} Değerlendirmesi",
         "body": {
@@ -3286,6 +3300,10 @@
       }
     },
     "news": {
+      "ladder": {
+        "headline": "{{promoted}} {{upper}} ligine yükseldi, {{relegated}} düştü",
+        "body": "{{promoted}}, {{lower}} liginden {{upper}} ligine çıkarken {{relegated}} {{season}} sezonunun ardından düştü."
+      },
       "matchReport": {
         "headline": {
           "homeWin": {

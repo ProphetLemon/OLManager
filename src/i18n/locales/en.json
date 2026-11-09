@@ -2691,6 +2691,20 @@
         "subject": "Season {{season}} Prize Money Awarded",
         "body": "The board has confirmed a prize payout of €{{amount}} for your {{position}}-place league finish. The amount has been added to the club balance."
       },
+      "ladder": {
+        "promoted": {
+          "subject": "{{team}} promoted to {{to}}",
+          "body": "{{team}} have earned promotion from {{from}} to {{to}} after season {{season}}.\n\nThe board expects a strong first season at the higher level."
+        },
+        "relegated": {
+          "subject": "{{team}} relegated to {{to}}",
+          "body": "{{team}} have been relegated from {{from}} to {{to}} after season {{season}}.\n\nThe board wants an immediate return."
+        },
+        "leagueSwap": {
+          "subject": "Promotion and relegation: {{lower}} and {{upper}}",
+          "body": "After season {{season}}, {{promoted}} go up to {{upper}} and {{relegated}} drop down to {{lower}}."
+        }
+      },
       "seasonReview": {
         "subject": "Season {{season}} Review",
         "body": {
@@ -3466,6 +3480,10 @@
       }
     },
     "news": {
+      "ladder": {
+        "headline": "{{promoted}} promoted to {{upper}}, {{relegated}} relegated",
+        "body": "{{promoted}} move up from {{lower}} to {{upper}}, while {{relegated}} drop down after season {{season}}."
+      },
       "matchReport": {
         "headline": {
           "homeWin": {
