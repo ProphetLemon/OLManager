@@ -56,6 +56,7 @@ pub mod social;
 pub mod social_data;
 pub mod social_registry;
 mod social_templates;
+pub mod squad_generator;
 pub mod staff_effects;
 pub mod state;
 pub mod team_talk;
