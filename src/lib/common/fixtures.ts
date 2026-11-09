@@ -40,8 +40,9 @@ export function findNextFixture(
 }
 
 export function expectedFixtureCount(teamCount: number): number | null {
-  if (teamCount >= 2 && teamCount % 2 === 0) {
-        // Supports both single and double round-robin.
+  if (teamCount >= 2) {
+        // Supports both single and double round-robin. Odd sizes add a bye
+        // slot, so every pair still meets once per leg.
         return (teamCount * (teamCount - 1)) / 2;
   }
 
