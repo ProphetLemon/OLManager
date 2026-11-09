@@ -124,11 +124,10 @@ fn templates_pack() -> &'static MatchTemplatePack {
 }
 
 fn condition_matches(template: &MatchTextTemplate, context: &MatchTemplateContext<'_>) -> bool {
-    if let Some(required_stomp) = template.conditions.requires_stomp {
-        if context.stomp != required_stomp {
+    if let Some(required_stomp) = template.conditions.requires_stomp
+        && context.stomp != required_stomp {
             return false;
         }
-    }
 
     if let Some(required_slug) = template.conditions.winner_team_slug.as_ref() {
         let winner_slug = normalized_slug(&context.winner.name);
@@ -143,11 +142,10 @@ fn condition_matches(template: &MatchTextTemplate, context: &MatchTemplateContex
         return false;
     }
 
-    if let Some(requires_player_name) = template.conditions.requires_player_name {
-        if requires_player_name && context.player_name.is_none() {
+    if let Some(requires_player_name) = template.conditions.requires_player_name
+        && requires_player_name && context.player_name.is_none() {
             return false;
         }
-    }
 
     !template.variants.is_empty()
 }
@@ -156,11 +154,10 @@ fn runtime_condition_matches(
     template: &RuntimeTemplate,
     context: &MatchTemplateContext<'_>,
 ) -> bool {
-    if let Some(required_stomp) = template.conditions.requires_stomp {
-        if context.stomp != required_stomp {
+    if let Some(required_stomp) = template.conditions.requires_stomp
+        && context.stomp != required_stomp {
             return false;
         }
-    }
 
     if let Some(required_slug) = template.conditions.winner_team_slug.as_ref() {
         let winner_slug = normalized_slug(&context.winner.name);
@@ -175,11 +172,10 @@ fn runtime_condition_matches(
         return false;
     }
 
-    if let Some(requires_player_name) = template.conditions.requires_player_name {
-        if requires_player_name && context.player_name.is_none() {
+    if let Some(requires_player_name) = template.conditions.requires_player_name
+        && requires_player_name && context.player_name.is_none() {
             return false;
         }
-    }
 
     template.active && !template.variants.is_empty()
 }
@@ -216,23 +212,20 @@ fn shared_condition_matches(
         }
     }
 
-    if let Some(required_team_id) = conditions.winner_team_id.as_deref() {
-        if context.winner.id != required_team_id {
+    if let Some(required_team_id) = conditions.winner_team_id.as_deref()
+        && context.winner.id != required_team_id {
             return false;
         }
-    }
 
-    if let Some(required_team_id) = conditions.loser_team_id.as_deref() {
-        if context.loser.id != required_team_id {
+    if let Some(required_team_id) = conditions.loser_team_id.as_deref()
+        && context.loser.id != required_team_id {
             return false;
         }
-    }
 
-    if let Some(required_player_id) = conditions.featured_player_id.as_deref() {
-        if context.featured_player_id != Some(required_player_id) {
+    if let Some(required_player_id) = conditions.featured_player_id.as_deref()
+        && context.featured_player_id != Some(required_player_id) {
             return false;
         }
-    }
 
     if let Some(matchup_ids) = conditions.matchup_team_ids.as_ref() {
         let teams = [context.winner.id.as_str(), context.loser.id.as_str()];
@@ -529,11 +522,10 @@ pub fn select_match_template_for_language(
 }
 
 pub fn default_social_templates(data_base: Option<&Path>) -> Vec<SocialTemplate> {
-    if let Some(base) = data_base {
-        if let Some(templates) = crate::social_data::load_social_templates(base) {
+    if let Some(base) = data_base
+        && let Some(templates) = crate::social_data::load_social_templates(base) {
             return templates;
         }
-    }
     templates_pack()
         .templates
         .iter()

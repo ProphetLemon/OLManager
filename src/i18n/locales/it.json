@@ -69,6 +69,8 @@
   "dashboard": {
     "home": "Casa",
     "inbox": "Posta",
+    "matchPlayedByStaff": "Il tuo staff ha giocato la partita contro {{opponent}}: {{score}}. Apri il calendario per vedere il risultato.",
+    "matchPlayedByStaffNoScore": "Il tuo staff ha giocato la partita. Apri il calendario per vedere il risultato.",
     "manager": "Head Coach",
     "squad": "Rosa",
     "tactics": "Tattiche",
@@ -136,7 +138,7 @@
     "delegateAssistant": "Delega all'assistente",
     "delegateAssistantDesc": "L'IA gestisce tutto istantaneamente",
     "skipToMatchDay": "Salta al giorno partita",
-    "skipToMatchDayDesc": "Avanza rapidamente fino alla prossima gara",
+    "skipToMatchDayDesc": "Avanza fino alla prossima gara e giocala in automatico",
     "matchDayTitle": "Giorno partita",
     "delegateWarning": "Il tuo assistente gestirà la partita. Non potrai intervenire.",
     "skipToNextDay": "Skip to Next Day"
@@ -397,6 +399,8 @@
     }
   },
   "teamSelect": {
+    "searchLeague": "Cerca campionati...",
+    "regionalLeagues": "Leghe regionali",
     "title": "Scegli il tuo club",
     "subtitle": "Seleziona la squadra che vuoi allenare",
     "confirming": "Conferma in corso...",
@@ -412,10 +416,73 @@
     "repDeveloping": "In crescita",
     "confirm": "Confirm",
     "noLeaguesDesc": "No leagues found for this region",
-    "selectLeague": "Select League",
-    "selectLeagueSubtitle": "Choose the league you want to manage",
-    "selectTeam": "Select Team",
-    "teams": "Teams"
+    "selectLeague": "Seleziona la lega",
+    "selectLeagueSubtitle": "Scegli la lega che vuoi gestire",
+    "selectTeam": "Seleziona la squadra",
+    "teamCount_one": "1 squadra",
+    "teamCount_other": "{{count}} squadre",
+    "teams": "Squadre",
+    "custom": {
+      "create": "Crea la tua squadra",
+      "createHint": "Sostituisci un club di questa lega con il tuo.",
+      "title": "Crea la tua squadra",
+      "subtitle": "Sostituisci un club di questa lega con il tuo",
+      "stepOf": "Passo {{current}} di {{total}}",
+      "stepsLabel": "Avanzamento",
+      "steps": {
+        "identity": "Identità",
+        "badge": "Stemma",
+        "replace": "Sostituisci e rivedi"
+      },
+      "fields": {
+        "name": "Nome del club",
+        "shortName": "Nome breve",
+        "country": "Paese",
+        "primaryColor": "Colore principale",
+        "secondaryColor": "Colore secondario",
+        "pickPrimary": "Scegli il colore principale",
+        "pickSecondary": "Scegli il colore secondario"
+      },
+      "hints": {
+        "name": "Da {{min}} a {{max}} caratteri.",
+        "shortName": "3 o 4 lettere o cifre. Mostrato nel tabellone."
+      },
+      "countryPlaceholder": "Scegli un paese",
+      "presets": "Combinazioni di colori",
+      "preset": "Colori {{primary}} e {{secondary}}",
+      "previewAlt": "Anteprima dello stemma per {{tag}}",
+      "previewHint": "Così appare lo stemma negli elenchi. Lo stemma grande è mostrato sopra.",
+      "replace": {
+        "heading": "Club da sostituire",
+        "notice": "I suoi giocatori e il suo staff diventano svincolati. Il tuo club parte con il budget e la reputazione medi della lega e con una rosa completata con svincolati.",
+        "lowestReputation": "Reputazione più bassa",
+        "reputation": "Reputazione {{value}}"
+      },
+      "summary": {
+        "heading": "Riepilogo",
+        "text": "{{name}} ({{tag}}), {{country}}, sostituirà {{replaced}}."
+      },
+      "actions": {
+        "next": "Avanti",
+        "back": "Indietro",
+        "confirm": "Crea club",
+        "cancel": "Annulla"
+      },
+      "errors": {
+        "required": "Questo campo è obbligatorio.",
+        "tooShort": "Usa almeno {{min}} caratteri.",
+        "tooLong": "Usa al massimo {{max}} caratteri.",
+        "nameFormat": "Usa da {{min}} a {{max}} caratteri.",
+        "shortNameFormat": "Solo lettere e cifre, senza spazi.",
+        "colorFormat": "Usa un colore nel formato #RRGGBB.",
+        "duplicateName": "Un altro club usa già questo nome.",
+        "duplicateShortName": "Un altro club usa già questo nome breve.",
+        "replaceInvalid": "Scegli un club di questa lega da sostituire.",
+        "replaceRequired": "Scegli il club che vuoi sostituire.",
+        "lowContrast": "Questi colori sono vicini e la sigla potrebbe essere difficile da leggere. Puoi continuare comunque.",
+        "title": "Impossibile creare il club"
+      }
+    }
   },
   "youthAcademy": {
     "title": "Settore giovanile",
@@ -600,7 +667,7 @@
       "low": "Bassa"
     },
     "year": "Year",
-    "per_year_with_slash": "/year",
+    "per_year_with_slash": "/anno",
     "potential": "Potential",
     "fitness": "Fitness",
     "action": "Action",
@@ -652,6 +719,10 @@
     "playStyleImpactTitle": "Cosa cambia",
     "detailsTitle": "Squad Details",
     "activeLineup": "Active Lineup",
+    "importBadge": "Import",
+    "importTooltip": "Import: non residente nella regione di questa lega. Un quintetto titolare ammette al massimo {{max}} import.",
+    "tooManyImports": "Un quintetto titolare ammette al massimo {{max}} import. Questo ne avrebbe {{count}}.",
+    "importsInLineup": "Import nel quintetto titolare: {{count}} / {{max}}",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
     "noRoleAvailable": "No player available"
@@ -1307,8 +1378,8 @@
     "transferFee": "Indennità: {{fee}}",
     "wageFeedbackAcceptedHeadline": "Il giocatore è soddisfatto della tua offerta.",
     "wageFeedbackAcceptedDetail": "Salario e durata del contratto soddisfano le sue aspettative, è pronto a firmare.",
-    "wageFeedbackAcceptedOverBudgetHeadline": "Il giocatore accetta, ma allunga il tuo budget salariale.",
-    "wageFeedbackAcceptedOverBudgetDetail": "È pronto a firmare, anche se questi termini porteranno il club oltre il suo tetto salariale.",
+    "wageFeedbackOverBudgetHeadline": "Il club non può inserire questo stipendio nel proprio budget salariale.",
+    "wageFeedbackOverBudgetDetail": "Nel budget salariale restano solo {{wage}} di margine. Offri meno o libera prima dello spazio.",
     "wageFeedbackCounterHeadline": "Vogliono aggiustare i numeri.",
     "wageFeedbackCounterDetail": "Il giocatore è interessato ma segnala che {{wage}} per {{years}} anni sarebbe più giusto.",
     "wageFeedbackLowHeadline": "L'offerta è ben al di sotto delle sue aspettative.",
@@ -1423,6 +1494,9 @@
     "playoffBracketTitle": "Playoff bracket",
     "upperBracket": "Upper Bracket",
     "lowerBracket": "Lower Bracket",
+    "singleEliminationBracket": "Eliminazione diretta",
+    "playoffSemifinals": "Semifinali",
+    "playoffFinal": "Finale",
     "scheduled": "Scheduled"
   },
   "news": {
@@ -1627,7 +1701,8 @@
     "updateAvailable": "Aggiornamento Disponibile",
     "checkNow": "Controlla Ora",
     "updateAvailableDetail": "La versione {{version}} è disponibile",
-    "upToDate": "Hai l'ultima versione"
+    "upToDate": "Hai l'ultima versione",
+    "noPlatformBuild": "Esiste una versione, ma non ha ancora una build per il tuo sistema"
   },
   "preMatch": {
     "autoSelect": "Seleziona automaticamente il miglior cinque",
@@ -1855,12 +1930,20 @@
       "redPicks": "Red picks",
       "startMatch": "Start match",
       "finalizeDraft": "Finalize draft",
+      "skipDraft": "Salta il draft",
       "loadingChampions": "Loading champions...",
       "loadError": "Error loading champions",
       "noChampionsForFilters": "No champions available with the current filters.",
       "searchPlaceholder": "Search...",
       "selected": "Selected",
       "selectThenConfirm": "Select a champion and confirm",
+      "rivalMasteryBandTooltip": "Estimated level. Scout this player to see the exact mastery.",
+      "rivalMasteryLegend": "Rival mastery is shown as High / Medium / Low until you scout the player.",
+      "rivalMasteryBand": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
       "enemyComfortUnknown": "No rival mastery discovered",
       "masterySourceSignature": "Signature",
       "masterySourceScouting": "Scouting",
@@ -2050,6 +2133,12 @@
   },
   "be": {
     "sender": {
+      "assistantCoach": "Vice allenatore",
+      "fitnessCoach": "Preparatore atletico",
+      "playerLiaison": "Referente dei giocatori",
+      "press": "Esportmaníacos",
+      "yuste": "el_yuste",
+      "alLio": "Al Lío Podcast",
       "boardOfDirectors": "Consiglio di amministrazione",
       "leagueOffice": "Ufficio della lega",
       "assistantManager": "Vice allenatore",
@@ -2072,6 +2161,12 @@
       "academyCoordinator": "Academy Coordinator"
     },
     "role": {
+      "podcast": "Podcast",
+      "assistantCoach": "Allenatore",
+      "fitnessCoach": "Allenatore",
+      "officer": "Responsabile",
+      "press": "Stampa",
+      "streamer": "Streamer",
       "chairman": "Presidente",
       "competitionSecretary": "Segretario della competizione",
       "assistantManager": "Vice allenatore",
@@ -2108,7 +2203,17 @@
       "leaguePulse": "League Pulse"
     },
     "msg": {
+      "academyOverview": {
+        "subject": "Academy attiva: {{academy}}",
+        "body": "Il tuo club ora ha un'academy collegata. {{academy}} ha {{count}} prospetti pronti per essere osservati e promossi."
+      },
       "welcome": {
+        "templates": {
+          "welcome": {
+            "subject": "Benvenuto al {{team}}!",
+            "body": "Il consiglio di amministrazione ti dà il benvenuto come nuovo allenatore del {{team}}.\n\nHai tutta la nostra fiducia nella tua capacità di guidare questa squadra verso il successo.\n\nEsamina la tua rosa, stabilisci le tue priorità e preparati alle sfide che ci attendono.\n\nIn bocca al lupo, allenatore!"
+          }
+        },
         "subject0": "Benvenuto al {{team}}",
         "subject1": "Nuova era al {{team}}",
         "subject2": "{{team}} attende la tua leadership",
@@ -2119,12 +2224,33 @@
         "actionThank": "Ringrazia la dirigenza"
       },
       "schedule": {
+        "templates": {
+          "season_schedule": {
+            "subject": "Calendario della stagione {{league}} pubblicato",
+            "body": "Il calendario della prossima stagione di {{league}} è stato pubblicato.\n\nLa stagione inizia il {{start}}. Assicurati che la tua rosa sia pronta.\n\nQuest'anno affronteremo una concorrenza dura: preparati di conseguenza."
+          },
+          "schedule_2": {
+            "subject": "Stagione {{league}} confermata",
+            "body": "Il calendario della prossima stagione di {{league}} è stato confermato. L'azione inizia il {{start}}.\n\nStudia con attenzione le prime partite: un buon inizio può dare il tono a tutta la stagione. Assicurati che i tuoi giocatori chiave siano in forma e pronti.\n\nBuona fortuna per questa stagione!"
+          }
+        },
         "subject": "Calendario stagionale pubblicato",
         "body0": "Il calendario della {{league}} è stato pubblicato. La stagione inizierà il {{start}}.\n\nControlla l'elenco delle partite e assicurati che la tua rosa sia pronta per le sfide che ti aspettano. La preparazione precampionato sarà cruciale.",
         "body1": "Calendario confermato! La stagione della {{league}} inizia il {{start}}.\n\nStudia attentamente le prime partite: un buon avvio può dare il tono all'intera annata. Assicurati che i tuoi giocatori chiave siano in condizione.",
         "actionView": "Vedi calendario"
       },
       "preMatch": {
+        "venue": { "home": "in casa", "away": "in trasferta" },
+        "templates": {
+          "preview_1": {
+            "subject": "Prossima partita: contro {{opponent}}",
+            "body": "Coach, la nostra prossima partita è contro {{opponent}} ({{venue}}) il {{date}}.\n\nHo rivisto le loro ultime partite e penso che abbiamo buone possibilità se seguiamo il nostro piano di gioco. Concentriamoci sui nostri punti di forza e sfruttiamo le loro debolezze.\n\nAssicuriamoci che la squadra sia pronta."
+          },
+          "preview_2": {
+            "subject": "La partita si avvicina: {{opponent}}",
+            "body": "Attenzione coach — affrontiamo {{opponent}} ({{venue}}) il {{date}}.\n\nSarà una partita dura. {{opponent}} ha alcuni giocatori forti di cui dobbiamo tenere conto. Ho preparato un rapporto di scouting sulle loro minacce principali.\n\nRivediamo il piano di gioco prima del giorno della partita."
+          }
+        },
         "subject": "Prossima: vs {{opponent}} ({{venue}})",
         "body0": "La tua partita {{venue}} contro {{opponent}} si giocherà il {{matchDate}}.\n\nGiornata {{matchday}} della Premier Division. Assicurati che il tuo Cinque titolare sia in buone condizioni e che le tattiche siano pronte.\n\nSfrutta al massimo il fattore {{venue}}.",
         "body1": "Promemoria: affronterai {{opponent}} {{venue}} il {{matchDate}}.\n\nÈ la giornata {{matchday}} — controlla la condizione della rosa e valuta eventuali aggiustamenti tattici.",
@@ -2160,6 +2286,20 @@
       "boardObjectiveReview": {
         "subject": "Stagione {{season}} — Revisione degli obiettivi della dirigenza",
         "body": "La dirigenza ha completato la revisione degli obiettivi di fine split. Hai raggiunto {{metCount}}/{{total}} obiettivi.\n\nImpatto sulla soddisfazione del manager: {{satisfactionDelta}}.\n\nQuesta revisione riflette il rendimento competitivo durante lo split: piazzamento finale, vittorie nelle serie, mappe vinte, preparazione del draft ed esecuzione del roster."
+      },
+      "ladder": {
+        "promoted": {
+          "subject": "{{team}} promosso in {{to}}",
+          "body": "{{team}} ha ottenuto la promozione da {{from}} a {{to}} dopo la stagione {{season}}.\n\nIl consiglio si aspetta una prima stagione solida nella categoria superiore."
+        },
+        "relegated": {
+          "subject": "{{team}} retrocesso in {{to}}",
+          "body": "{{team}} è retrocesso da {{from}} a {{to}} dopo la stagione {{season}}.\n\nIl consiglio chiede un ritorno immediato."
+        },
+        "leagueSwap": {
+          "subject": "Promozioni e retrocessioni: {{lower}} e {{upper}}",
+          "body": "Dopo la stagione {{season}}, {{promoted}} salgono in {{upper}} e {{relegated}} scendono in {{lower}}."
+        }
       },
       "seasonReview": {
         "subject": "Bilancio della Stagione {{season}}",
@@ -2198,6 +2338,40 @@
         "respond": "Rispondi"
       },
       "playerEvent": {
+        "templates": {
+          "low_morale_1": {
+            "subject": "Preoccupazione per il morale: {{player}}",
+            "body": "Coach, abbiamo notato che il morale di {{player}} è calato in modo significativo. Attualmente al {{morale}}%.\n\nPotrebbe influire sul suo rendimento in partita e negli allenamenti. Forse vale la pena parlargli per capire cosa sta succedendo."
+          },
+          "low_morale_2": {
+            "subject": "{{player}} sembra scontento",
+            "body": "Volevo farvelo notare — {{player}} sembra scontento (morale: {{morale}}%).\n\nSe non viene affrontata, la situazione potrebbe creare tensione nella squadra. Una conversazione o un po' di tempo libero potrebbero risollevargli il morale."
+          },
+          "bench_complaint_1": {
+            "subject": "{{player}} vuole più minuti",
+            "body": "Coach, {{player}} ha espresso frustrazione per lo scarso minutaggio di recente.\n\nSi sente meritevole di un posto nella formazione titolare. Potrebbe diventare un problema più grande se non gestito con attenzione.\n\nCome vuole affrontare la questione?"
+          },
+          "bench_complaint_2": {
+            "subject": "{{player}} insoddisfatto del suo ruolo",
+            "body": "{{player}} è venuto da me oggi — è insoddisfatto del suo ruolo attuale nella squadra e vuole più opportunità sulla Landa.\n\nSe non riusciamo a offrirgli presto più minuti, potrebbe cercare un trasferimento nella prossima finestra.\n\nLa decisione spetta a lei, coach."
+          },
+          "happy_player_1": {
+            "subject": "{{player}} si sente alla grande!",
+            "body": "Buone notizie, coach — {{player}} è di ottimo umore ultimamente (morale: {{morale}}%).\n\nI giocatori felici rendono meglio, quindi continui così. Un'atmosfera positiva nella squadra fa davvero la differenza."
+          },
+          "happy_player_2": {
+            "subject": "Buone vibrazioni da {{player}}",
+            "body": "Volevo solo dirle che {{player}} si sta godendo davvero il periodo al club (morale: {{morale}}%).\n\nSi sta allenando duramente e sostiene i compagni. È bello vedere un atteggiamento così positivo nella squadra.\n\nContinui a coltivare questo ambiente!"
+          },
+          "contract_concern_1": {
+            "subject": "Contratto in scadenza: {{player}}",
+            "body": "Volevo ricordarle che il contratto di {{player}} scade presto (restano {{days}} giorni).\n\nSe non agiamo presto, rischiamo di perderlo a parametro zero. Dovremmo valutare di aprire trattative di rinnovo o di metterlo sul mercato.\n\nQual è il suo piano per {{player}}?"
+          },
+          "contract_concern_2": {
+            "subject": "Il contratto di {{player}} scade tra {{days}} giorni",
+            "body": "Un promemoria sulla situazione contrattuale di {{player}}. Con soli {{days}} giorni rimasti sull'accordo attuale, dobbiamo prendere una decisione.\n\nOpzioni:\n• Aprire trattative di rinnovo\n• Metterlo sul mercato finché ha valore\n• Lasciare scadere il contratto\n\nMi faccia sapere come desidera procedere."
+          }
+        },
         "respond": "Rispondi",
         "options": {
           "moraleCrisis": {
@@ -2367,6 +2541,48 @@
         }
       },
       "rivalInterest": {
+        "templates": {
+          "rival_1": {
+            "subject": "{{rival}} ha messo gli occhi su {{player}}",
+            "body": "Girano voci che {{rival}} sia interessato a {{player}}. Hanno fatto domande e potrebbero preparare un'offerta.\n\nDobbiamo preoccuparci, o {{player}} non è in vendita?"
+          },
+          "rival_2": {
+            "subject": "{{rival}} chiede informazioni su {{player}}",
+            "body": "{{rival}} ha chiesto informalmente della disponibilità di {{player}}. Sembrano intenzionati a rinforzare la rosa e vedono {{player}} come un obiettivo.\n\nNessuna offerta ufficiale per ora, ma volevo tenerla aggiornata."
+          },
+          "rival_3": {
+            "subject": "{{rival}} sta osservando {{player}}",
+            "body": "Le nostre fonti riferiscono che {{rival}} ha osservato {{player}} nelle ultime partite. Di solito precede un approccio per il trasferimento.\n\nDovremmo decidere la nostra posizione prima che si muovano."
+          },
+          "rival_4": {
+            "subject": "{{rival}} vuole {{player}}",
+            "body": "In giro per il campionato si dice che {{rival}} voglia ingaggiare {{player}}. Il loro allenatore sembra un grande estimatore.\n\nPotrebbe essere una cosa seria — potremmo ricevere presto un'offerta ufficiale."
+          },
+          "rival_5": {
+            "subject": "{{rival}} monitora il contratto di {{player}}",
+            "body": "Ho saputo che {{rival}} sta seguendo da vicino la situazione contrattuale di {{player}}. Se non rinnoviamo presto, potrebbero approfittarne.\n\nQualcosa da considerare nella nostra pianificazione."
+          },
+          "rival_6": {
+            "subject": "{{rival}} valuta un'offerta per {{player}}",
+            "body": "Secondo indiscrezioni {{rival}} sta valutando un'offerta per {{player}}. Vedono {{player}} come un acquisto chiave per il prossimo split.\n\nLa terrò aggiornata se ci saranno novità."
+          },
+          "rival_7": {
+            "subject": "Voce: {{rival}} interessato a {{player}}",
+            "body": "Circolano voci di mercato secondo cui {{rival}} sarebbe interessato a ingaggiare {{player}}. Per ora è solo speculazione, ma queste voci spesso hanno un fondo di verità.\n\nHo pensato che dovesse saperlo."
+          },
+          "rival_8": {
+            "subject": "{{rival}} si fa avanti per {{player}}",
+            "body": "{{rival}} ha stabilito un primo contatto riguardo a {{player}}. Hanno chiesto informazioni sulla disponibilità del giocatore e sulle sue richieste salariali.\n\nLa cosa potrebbe evolvere in fretta. Come vuole gestirla?"
+          },
+          "rival_9": {
+            "subject": "{{player}} attira l'attenzione di {{rival}}",
+            "body": "Le prestazioni di {{player}} hanno attirato l'attenzione di {{rival}}. Hanno chiesto in giro del giocatore e sembrano davvero interessati.\n\nPotremmo dover presto decidere sul futuro di {{player}}."
+          },
+          "rival_10": {
+            "subject": "{{rival}} pronto a muoversi per {{player}}",
+            "body": "Fonti indicano che {{rival}} è pronto a muoversi concretamente per {{player}}. Un'offerta ufficiale potrebbe arrivare entro pochi giorni.\n\nDovremmo preparare la nostra risposta."
+          }
+        },
         "subject": "Voce di mercato — {{player}} nel mirino di {{rival}}",
         "body0": "Ci è stato riferito che {{rival}} ha fatto sondaggi per {{player}}.\n\nI loro osservatori sono stati avvistati alle nostre ultime partite e le nostre fonti suggeriscono che potrebbero arrivare presto con un'offerta formale.\n\nCome vuoi che rispondiamo se si fanno vivi?",
         "body1": "La stampa riporta che {{player}} è un obiettivo di {{rival}}.\n\nSecondo alcune fonti, il giocatore ha attirato attenzione dopo le recenti prestazioni. Nessuna offerta ufficiale per ora, ma potrebbe essere solo questione di tempo.\n\nQual è la tua posizione?",
@@ -2499,6 +2715,48 @@
         }
       },
       "allio": {
+        "templates": {
+          "podcast_1": {
+            "subject": "L'Al Lío Podcast parla di {{team}}",
+            "body": "L'Al Lío Podcast ha dedicato un segmento alla situazione attuale di {{team}}. Il panel aveva opinioni contrastanti sulle prospettive della squadra.\n\n\"{{team}} è un caso di studio interessante\", ha commentato uno dei conduttori.\n\nEssere citati su Al Lío significa essere sul radar."
+          },
+          "podcast_2": {
+            "subject": "Al Lío: \"{{team}} ha bisogno di un cambiamento\"",
+            "body": "Nell'ultimo Al Lío Podcast diversi ospiti hanno concordato che {{team}} ha bisogno di un cambiamento urgente.\n\n\"Non possono continuare così\", ha detto uno di loro. \"Qualcosa deve muoversi in quello spogliatoio.\"\n\nLa trasmissione ha avuto un pubblico notevole e l'argomento sta facendo discutere."
+          },
+          "podcast_3": {
+            "subject": "Al Lío: {{team}} protagonista del dibattito",
+            "body": "L'ultimo Al Lío Podcast ha avuto {{team}} come tema principale del dibattito. Gli ospiti hanno analizzato la situazione della squadra da ogni angolazione.\n\n\"È una squadra che genera molte opinioni\", hanno riassunto.\n\nIl dibattito è stato intenso e è durato quasi mezz'ora."
+          },
+          "podcast_4": {
+            "subject": "Al Lío mette in risalto {{player}} di {{team}}",
+            "body": "Nell'Al Lío Podcast hanno evidenziato la prestazione di {{player}}, giocatore di {{team}}, come una delle migliori della settimana.\n\n\"{{player}} è a un livello spettacolare\", hanno detto. \"{{player}} merita di essere nella conversazione per il miglior giocatore.\"\n\nÈ sempre un buon segno quando parlano bene dei tuoi giocatori."
+          },
+          "podcast_5": {
+            "subject": "Al Lío: \"{{team}} ha bisogno di pazienza\"",
+            "body": "Nell'Al Lío Podcast alcuni ospiti hanno sostenuto che {{team}} ha bisogno di tempo e pazienza perché il progetto funzioni.\n\n\"Non si costruisce una squadra vincente dall'oggi al domani\", hanno argomentato.\n\nAltri non erano d'accordo, dando vita a un vivace dibattito."
+          },
+          "podcast_6": {
+            "subject": "Al Lío critica la gestione di {{team}}",
+            "body": "L'Al Lío Podcast è stato critico verso la gestione sportiva di {{team}}, indicando errori nella pianificazione della rosa.\n\n\"Gli acquisti non hanno funzionato e lo stile di gioco non si vede\", hanno commentato.\n\nLe critiche nei programmi popolari possono penetrare nell'opinione pubblica."
+          },
+          "podcast_7": {
+            "subject": "Al Lío: \"Il progetto di {{team}} fa sognare\"",
+            "body": "L'Al Lío Podcast ha parlato con ottimismo del progetto di {{team}}. Diversi ospiti hanno concordato che la squadra è sulla strada giusta.\n\n\"Le cose si stanno facendo bene, anche se i risultati non arrivano\", hanno detto.\n\nEssere elogiati su Al Lío è una buona pubblicità per il club."
+          },
+          "podcast_8": {
+            "subject": "Al Lío dibatte sul futuro di {{player}}",
+            "body": "L'Al Lío Podcast ha dedicato un segmento al dibattito sul futuro di {{player}}, attualmente al {{team}}.\n\n\"{{player}} ha il livello per giocare in una squadra migliore\", hanno sostenuto alcuni.\n\nQueste voci possono influire sulla concentrazione del giocatore."
+          },
+          "podcast_9": {
+            "subject": "Al Lío: \"{{team}} mi preoccupa\"",
+            "body": "Uno degli ospiti dell'Al Lío Podcast ha espresso preoccupazione per la situazione di {{team}}.\n\n\"{{team}} mi preoccupa perché non vedo una reazione\", ha detto. \"Le squadre scarse reagiscono, ma {{team}} sembra bloccato.\"\n\nCommenti come questo possono generare ulteriore pressione."
+          },
+          "podcast_10": {
+            "subject": "Al Lío prevede un buon futuro per {{team}}",
+            "body": "Nell'Al Lío Podcast un noto analista ha previsto che {{team}} ha un futuro promettente se mantiene la rotta attuale.\n\n\"Vedo cose molto interessanti al {{team}}. Dategli tempo e faranno parlare di sé\", ha pronosticato.\n\nPrevisioni positive da parte di figure mediatiche possono sollevare il morale del club."
+          }
+        },
         "subject0": "Al Lío Podcast — Transfer rumour: {{player}} being tracked",
         "body0": "Eros dropped a transfer hint on today's Al Lío episode: \"I'm hearing things about {{player}}. Multiple teams have been asking questions. Nothing confirmed yet, but the mercato around {{team}} is heating up.\"\n\nKeep this in mind when planning your squad for next split.",
         "subject1": "Al Lío Podcast — Eros hints at incoming deal for {{team}}",
@@ -2534,6 +2792,88 @@
         }
       },
       "yuste": {
+        "templates": {
+          "stream_neg_1": {
+            "subject": "el_yuste: \"{{team}} non mi piace per niente\"",
+            "body": "el_yuste è stato critico con {{team}} nel suo ultimo live: \"{{team}} non mi piace per niente, non so cosa ci vedano.\"\n\n\"Giocano senza anima, senza idee. Hanno bisogno di un cambiamento subito\", ha aggiunto.\n\nLe critiche degli streamer popolari raggiungono molte persone."
+          },
+          "stream_neg_10": {
+            "subject": "el_yuste: \"{{team}} non va da nessuna parte\"",
+            "body": "Lo streamer ha sentenziato che {{team}} \"non va da nessuna parte\" con il progetto attuale.\n\n\"{{team}} non va da nessuna parte. Non vedo progressi, non vedo idee, non vedo futuro\", ha argomentato.\n\nCommenti così netti possono influire sul morale dei tifosi."
+          },
+          "stream_neg_2": {
+            "subject": "el_yuste prende in giro {{team}}",
+            "body": "Lo streamer el_yuste ha preso in giro l'ultima partita di {{team}} sul suo canale.\n\n\"{{team}} è impossibile, li vedo sempre peggio. C'è da piangere\", ha detto ridendo.\n\nLe prese in giro negli stream virali possono danneggiare l'immagine del club."
+          },
+          "stream_neg_3": {
+            "subject": "el_yuste: \"{{team}} è un disastro\"",
+            "body": "el_yuste ha definito {{team}} un \"disastro\" nel suo ultimo stream.\n\n\"Non c'è niente da salvare. {{team}} è un disastro dall'inizio alla fine\", ha sentenziato.\n\nCommenti di questo tipo possono penetrare nell'opinione pubblica."
+          },
+          "stream_neg_4": {
+            "subject": "el_yuste: \"{{team}} non migliora mai\"",
+            "body": "Lo streamer ha criticato la mancanza di progressi di {{team}}: \"{{team}} non migliora mai, sempre gli stessi errori.\"\n\n\"Non imparano, non cambiano, non evolvono. È frustrante vederli\", ha concluso.\n\nLe critiche ripetute possono influire sul morale della squadra."
+          },
+          "stream_neg_5": {
+            "subject": "el_yuste: \"{{player}} dovrebbe lasciare {{team}}\"",
+            "body": "el_yuste ha detto in diretta che {{player}} dovrebbe cercare di lasciare {{team}} per continuare a crescere.\n\n\"{{player}} ha talento ma al {{team}} non esploderà mai. Ha bisogno di cambiare aria\", ha detto.\n\nQuesti commenti possono creare inquietudine nel giocatore."
+          },
+          "stream_neg_6": {
+            "subject": "el_yuste: \"Che peccato per {{team}}\"",
+            "body": "Lo streamer ha espresso la sua delusione per {{team}}: \"Che peccato per {{team}}, con quello che promettevano.\"\n\n\"Pensavo che quest'anno avrebbero fatto il salto, ma sono peggio che mai\", si è lamentato.\n\nLa delusione dei follower può contagiare lo spogliatoio."
+          },
+          "stream_neg_7": {
+            "subject": "el_yuste: \"{{team}} ha bisogno di un reset\"",
+            "body": "el_yuste ha consigliato sul suo canale che {{team}} ha bisogno di un reset completo.\n\n\"{{team}} deve resettare, cambiare l'intero progetto. Così non funziona\", ha affermato.\n\nGli appelli a un cambiamento radicale possono mettere pressione alla dirigenza."
+          },
+          "stream_neg_8": {
+            "subject": "el_yuste si annoia guardando {{team}}",
+            "body": "Lo streamer ha detto in diretta che si annoia a guardare giocare {{team}}.\n\n\"{{team}} è una noia mortale, non creano niente, non rischiano, è orribile da vedere\", si è lamentato.\n\nLe critiche allo stile di gioco possono influire sulla percezione della squadra."
+          },
+          "stream_neg_9": {
+            "subject": "el_yuste: \"{{team}} è una vergogna\"",
+            "body": "el_yuste è stato molto duro con {{team}}, definendoli una \"vergogna\" nel suo ultimo stream.\n\n\"Una squadra con quella rosa non può giocare così. È una vergogna\", ha detto visibilmente arrabbiato.\n\nLe critiche forti possono intensificarsi e arrivare ai media tradizionali."
+          },
+          "stream_pos_1": {
+            "subject": "el_yuste: \"{{team}} è in serie positiva!\"",
+            "body": "Lo streamer el_yuste ha detto nel suo ultimo stream che {{team}} sta vivendo una serie impressionante.\n\n\"{{team}} sta giocando davvero bene, eh. Attenzione a loro, daranno battaglia\", ha detto ridendo.\n\nÈ sempre un buon segno quando el_yuste parla bene della tua squadra."
+          },
+          "stream_pos_10": {
+            "subject": "el_yuste: \"{{team}} si è guadagnato il mio rispetto\"",
+            "body": "el_yuste ha dichiarato nel suo ultimo stream che {{team}} si è guadagnato il suo rispetto in questa stagione.\n\n\"All'inizio non credevo in {{team}}, ma mi hanno zittito. Stanno facendo benissimo\", ha ammesso.\n\nConquistare i critici è già una vittoria."
+          },
+          "stream_pos_2": {
+            "subject": "el_yuste si diverte guardando {{team}}",
+            "body": "el_yuste ha detto in stream che si sta divertendo molto a guardare giocare {{team}} ultimamente.\n\n\"{{team}} mi sta dando molte soddisfazioni in questa stagione. Stanno facendo le cose bene\", ha commentato.\n\nChe uno streamer così popolare lo dica è una buona pubblicità."
+          },
+          "stream_pos_3": {
+            "subject": "el_yuste è sbalordito da {{player}} di {{team}}",
+            "body": "Nel suo ultimo stream, el_yuste è rimasto a bocca aperta per un'azione di {{player}} di {{team}}.\n\n\"{{player}} è semplicemente incredibile, amico. Come gioca questo ragazzo\", ha esclamato.\n\nLa clip è diventata virale sui social del club."
+          },
+          "stream_pos_4": {
+            "subject": "el_yuste: \"{{team}} è la mia squadra rivelazione\"",
+            "body": "el_yuste ha confessato in stream che {{team}} è la sua squadra rivelazione della stagione.\n\n\"Non mi aspettavo per niente questo da {{team}}. Stanno facendo la sorpresa\", ha detto.\n\nQuando uno streamer con un pubblico così ampio lo dice, la gente se ne accorge."
+          },
+          "stream_pos_5": {
+            "subject": "el_yuste è contento per {{team}}",
+            "body": "Lo streamer el_yuste ha mostrato la sua gioia per gli ultimi risultati di {{team}}.\n\n\"Sono davvero contento per {{team}}, sul serio. C'è un bel clima in quella squadra\", ha commentato in diretta.\n\nIl sostegno di personaggi pubblici fa bene al morale."
+          },
+          "stream_pos_6": {
+            "subject": "el_yuste: \"{{team}} è forte\"",
+            "body": "el_yuste ha commentato sul suo canale che {{team}} è \"forte, fortissimo\" in questa stagione.\n\n\"Non so cosa abbiano cambiato al {{team}} ma funziona. Continuate così\", ha detto.\n\nI commenti positivi sugli stream importanti raggiungono molte persone."
+          },
+          "stream_pos_7": {
+            "subject": "el_yuste: \"Attenzione a {{team}}\"",
+            "body": "Lo streamer ha lanciato un avvertimento: \"Attenzione a {{team}}, stanno arrivando forte.\"\n\n\"{{team}} sta facendo le cose bene e nessuno ne parla\", ha aggiunto.\n\nSe lo dice el_yuste, più persone notano la squadra."
+          },
+          "stream_pos_8": {
+            "subject": "el_yuste: \"{{team}} mi sta convincendo\"",
+            "body": "el_yuste ha ammesso in diretta che {{team}} lo sta convincendo in questa stagione.\n\n\"Non è facile che mi piaccia una squadra, ma {{team}} mi sta piacendo\", ha confessato.\n\nQuando un critico così assiduo parla bene, è segno che qualcosa si sta facendo bene."
+          },
+          "stream_pos_9": {
+            "subject": "el_yuste: \"Che partitone di {{team}}\"",
+            "body": "Lo streamer si è emozionato guardando l'ultima partita di {{team}} e l'ha commentata in diretta.\n\n\"Che partitone di {{team}}, dai. È così che la lega è un piacere da guardare\", ha detto emozionato.\n\nLa clip del momento è stata condivisa centinaia di volte."
+          }
+        },
         "up": {
           "subject0": "el_yuste — even Yuste admits: viewership is up this week",
           "body0": "Yuste surprised his stream with a rare positive take: \"I'll be honest — the numbers are up this week and I'm not going to pretend otherwise. When the matches are good, the audience comes. Simple.\"\n\nA positive moment for the whole scene.",
@@ -2580,6 +2920,28 @@
         }
       },
       "matchResult": {
+        "templates": {
+          "defeat_1": {
+            "subject": "Sconfitta: {{home}} {{score}} {{away}}",
+            "body": "Dura sconfitta oggi, coach. Abbiamo perso contro {{opponent}} {{score}}.\n\nCi sono cose da imparare da questa partita. Rivediamo dove abbiamo sbagliato e torniamo più forti.\n\nLa stagione è lunga — ci riprenderemo."
+          },
+          "defeat_2": {
+            "subject": "Sconfitta: {{opponent}} ci batte {{score}}",
+            "body": "Non è stato il nostro giorno, coach. {{opponent}} ci ha battuti {{score}}.\n\nDobbiamo analizzare cosa è andato storto e risolvere i problemi prima della prossima partita. Preparerò un'analisi dettagliata dei momenti chiave.\n\nRestiamo concentrati — c'è ancora molto in palio."
+          },
+          "draw_1": {
+            "subject": "Pareggio: {{home}} {{score}} {{away}}",
+            "body": "Un pareggio combattuto oggi, coach. {{home}} {{score}} {{away}} contro {{opponent}}.\n\nNon è il risultato che volevamo, ma abbiamo mostrato carattere. Prendiamo il positivo e lavoriamo sulle debolezze.\n\nLa prossima partita è un'occasione per tornare a vincere."
+          },
+          "victory_1": {
+            "subject": "Vittoria! {{score}} contro {{opponent}}",
+            "body": "Ottimo risultato oggi, coach! Abbiamo battuto {{opponent}} {{score}}.\n\nLa squadra ha eseguito bene il piano di gioco. Costruiamo su questo slancio per la prossima partita.\n\nBravi a tutti i coinvolti."
+          },
+          "victory_2": {
+            "subject": "Abbiamo vinto! {{home}} {{score}} {{away}}",
+            "body": "Ce l'abbiamo fatta, coach! Una solida vittoria {{score}} contro {{opponent}}.\n\nI giocatori hanno risposto quando contava di più. Manteniamo questo livello di rendimento.\n\nRivedi le immagini della partita e individua aree di miglioramento per la prossima volta."
+          }
+        },
         "subject": {
           "victory": "Vittoria: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",
           "defeat": "Sconfitta: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",
@@ -2595,6 +2957,12 @@
         "actionStandings": "View Standings"
       },
       "staffAdvice": {
+        "templates": {
+          "staff_advice": {
+            "subject": "Posti vacanti nello staff del {{team}}",
+            "body": "Mister, ho esaminato la situazione dello staff del {{team}} e volevo segnalarti alcune cose:\n\n• Un buon allenatore migliorerà sensibilmente l'efficacia degli allenamenti: i tuoi giocatori cresceranno più in fretta.\n• Un fisioterapista qualificato aiuta a mantenere i giocatori in salute e accelera il recupero tra una partita e l'altra.\n• I nostri osservatori possono aiutare a individuare obiettivi di mercato e a studiare gli avversari.\n\nTi consiglio vivamente di coprire questi posti prima dell'inizio della stagione. Puoi trovare il personale disponibile nella sezione Staff.\n\nDacci un'occhiata appena puoi."
+          }
+        },
         "subject": "Rapporto sullo staff — Posti da allenatore vacanti",
         "body": "Mister, ho dato un'occhiata alla situazione dello staff del {{team}} e volevo segnalare alcune cose:\n\n• Un buon Allenatore migliorerà sensibilmente l'efficacia degli allenamenti — i tuoi giocatori cresceranno più in fretta.\n• Un Fisioterapista qualificato mantiene i giocatori in forma e accelera il recupero tra una partita e l'altra.\n• I nostri Osservatori possono aiutare a individuare obiettivi di mercato e analizzare gli avversari.\n\nTi consiglio vivamente di coprire i posti vacanti prima dell'inizio della stagione. Puoi trovare lo staff disponibile nella sezione Staff.\n\nDacci un'occhiata appena puoi.",
         "actionView": "Vedi staff"
@@ -2607,6 +2975,90 @@
       "boardObjectives": {
         "subject": "Season {{season}} — Board Objectives",
         "body": "The board has set the following objectives for this split:\n\n1. Finish in the top {{expectedPos}}\n2. Win at least {{winTarget}} series\n3. Win at least {{goalsTarget}} maps\n\nMeeting these targets will improve the board's confidence in your roster management, draft preparation, and stage performance. Failure to meet expectations may result in reduced budgets or further consequences."
+      },
+      "mediaStory": {
+        "templates": {
+          "media_neg_1": {
+            "subject": "I media mettono in dubbio la direzione di {{team}}",
+            "body": "Un articolo recente mette in discussione la direzione che {{team}} sta prendendo sotto lo staff attuale. Il pezzo cita risultati altalenanti e mancanza di un'identità chiara.\n\n\"{{team}} sembra andare all'indietro\", ha dichiarato l'analista.\n\nLa pressione sta aumentando."
+          },
+          "media_neg_10": {
+            "subject": "Aumenta la pressione sulla dirigenza di {{team}}",
+            "body": "La pressione mediatica sulla dirigenza di {{team}} cresce dopo una serie di risultati deludenti. Diverse testate chiedono cambiamenti nello staff tecnico.\n\n\"Per quanto ancora il consiglio tollererà tutto questo?\", chiede un articolo.\n\nLa temperatura sale sulla sedia che scotta."
+          },
+          "media_neg_2": {
+            "subject": "Crescono le critiche sulle prestazioni di {{team}}",
+            "body": "Crescono sui media le critiche alle recenti prestazioni di {{team}}. Diversi commentatori hanno messo in dubbio la preparazione e l'approccio tattico della squadra.\n\n\"Non ci sono scuse per questo livello di prestazioni\", ha detto un opinionista.\n\nI tifosi iniziano a esprimere le loro preoccupazioni sui social."
+          },
+          "media_neg_3": {
+            "subject": "\"{{team}} è in crisi?\", si chiede un sito sportivo",
+            "body": "Un popolare sito sportivo ha pubblicato un articolo che si chiede se {{team}} sia in crisi. Il pezzo sottolinea la discesa della squadra in classifica.\n\n\"Qualcosa deve cambiare, e in fretta\", conclude l'articolo.\n\nI riflettori sono puntati sullo staff tecnico."
+          },
+          "media_neg_4": {
+            "subject": "Un analista demolisce la forma recente di {{team}}",
+            "body": "Un noto analista ha criticato la forma recente di {{team}}, definendola \"inaccettabile per una squadra con questa rosa\".\n\nLa critica arriva in un momento difficile, con la squadra che fatica a trovare continuità.\n\nL'attenzione dei media si intensifica a ogni risultato negativo."
+          },
+          "media_neg_5": {
+            "subject": "\"{{team}} sotto le aspettative\", dice il resoconto della lega",
+            "body": "Il resoconto settimanale della lega ha definito {{team}} la squadra che ha reso meno delle attese nello split.\n\n\"Con le risorse a disposizione, {{team}} dovrebbe rendere molto meglio\", afferma il resoconto.\n\nIl clima attorno al club diventa sempre più negativo."
+          },
+          "media_neg_6": {
+            "subject": "I social criticano l'allenatore di {{team}}",
+            "body": "I social sono in fermento con critiche rivolte allo staff tecnico di {{team}} dopo una serie di risultati deludenti.\n\nI tifosi chiedono cambiamenti e mettono in discussione le scelte tattiche.\n\nLa pressione online può a volte influire sullo spogliatoio."
+          },
+          "media_neg_7": {
+            "subject": "\"Cosa non va in {{team}}?\" — editoriale",
+            "body": "È stato pubblicato un editoriale intitolato \"Cosa non va in {{team}}?\" che analizza nel dettaglio le difficoltà della squadra.\n\nL'autore suggerisce che i problemi vadano oltre la tattica, indicando possibili problemi di morale.\n\nEditoriali come questo possono influenzare la percezione pubblica."
+          },
+          "media_neg_8": {
+            "subject": "{{player}} sotto tono, secondo un servizio dei media",
+            "body": "Un servizio dei media ha evidenziato il recente calo di forma di {{player}}, chiedendosi se il potenziale del giocatore venga sfruttato al massimo sotto lo staff attuale.\n\n\"{{player}} è un giocatore di talento che sembra regredire\", afferma il servizio.\n\nLa forma del singolo giocatore viene spesso attribuita alla qualità dell'allenamento."
+          },
+          "media_neg_9": {
+            "subject": "\"{{team}} ha bisogno di una ricostruzione\", sostiene un articolo",
+            "body": "Un articolo provocatorio sostiene che {{team}} abbia bisogno di una ricostruzione totale, a partire dallo staff tecnico.\n\nIl pezzo sostiene che il progetto attuale abbia fatto il suo corso e che serva una nuova guida.\n\nArticoli come questo possono creare inquietudine se prendono piede."
+          },
+          "media_pos_1": {
+            "subject": "I media sportivi elogiano la rinascita di {{team}}",
+            "body": "I media sportivi locali hanno messo in evidenza la straordinaria rinascita di {{team}} in questa stagione. L'articolo elogia la disciplina tattica e lo spirito combattivo della squadra.\n\n\"{{team}} sembra una squadra completamente diversa con questo staff\", afferma il servizio.\n\nContinui così, coach — i media se ne stanno accorgendo."
+          },
+          "media_pos_10": {
+            "subject": "L'allenatore di {{team}} nominato allenatore della settimana",
+            "body": "È stato nominato allenatore della settimana da una rivista esport di primo piano dopo i recenti risultati di {{team}}.\n\nIl premio riconosce le sue scelte tattiche e il miglior coordinamento della squadra sulla Landa.\n\nUn riconoscimento ben meritato per tutto il duro lavoro."
+          },
+          "media_pos_2": {
+            "subject": "Esportmaniacos: \"{{team}} è un serio contendente\"",
+            "body": "Il programma Esportmaniacos ha indicato {{team}} come una delle squadre più migliorate del campionato.\n\n\"Hanno trovato un'identità e la stanno mantenendo\", ha commentato l'analista durante la trasmissione.\n\nIl suo lavoro viene notato a livello nazionale."
+          },
+          "media_pos_3": {
+            "subject": "Intervista: l'allenatore di {{team}} in ascesa",
+            "body": "In una recente intervista, l'allenatore di {{team}} ha parlato della filosofia della squadra e della visione a lungo termine.\n\nL'intervista sottolinea l'ambiente positivo che ha costruito e la fiducia dei giocatori nei suoi metodi.\n\nI tifosi stanno rispondendo bene alla nuova direzione."
+          },
+          "media_pos_4": {
+            "subject": "Analista: {{team}} supera le aspettative",
+            "body": "Un noto analista del campionato ha pubblicato una recensione entusiasta delle prestazioni di {{team}}, affermando che la squadra sta superando tutte le aspettative di inizio stagione.\n\nL'analisi attribuisce allo staff il merito di aver creato un gruppo compatto che rende oltre le proprie possibilità.\n\nUn grande elogio da una delle voci più rispettate della scena."
+          },
+          "media_pos_5": {
+            "subject": "La fiducia dei tifosi in {{team}} ai massimi storici",
+            "body": "Un recente sondaggio tra i tifosi mostra che la fiducia in {{team}} ha raggiunto il massimo storico. I sostenitori sono ottimisti sulla direzione del club.\n\nLe vendite degli abbonamenti sono aumentate e il coinvolgimento sui social è cresciuto sensibilmente.\n\nI tifosi credono in ciò che sta costruendo."
+          },
+          "media_pos_6": {
+            "subject": "\"{{team}} è la mina vagante dello split\"",
+            "body": "Diversi analisti definiscono {{team}} la mina vagante dello split. Le recenti prestazioni della squadra hanno attirato l'attenzione di tutto il campionato.\n\nL'articolo indica la sua flessibilità tattica e la profondità della rosa come fattori chiave.\n\nIl rispetto si guadagna, e lei se lo sta guadagnando."
+          },
+          "media_pos_7": {
+            "subject": "{{team}} protagonista di un documentario positivo",
+            "body": "Una serie documentaria sportiva ha dedicato a {{team}} un segmento sulle ricostruzioni riuscite. Il servizio intervista giocatori e staff sulla trasformazione.\n\nIl documentario sottolinea il cambiamento di cultura che ha introdotto da quando ha preso il comando.\n\nOttima pubblicità per il club."
+          },
+          "media_pos_8": {
+            "subject": "{{player}} elogiato dai media per la forma recente",
+            "body": "{{player}} ha ricevuto elogi speciali dai media per le eccellenti prestazioni recenti con {{team}}.\n\nLa copertura menziona che il suo lavoro è stato fondamentale per sbloccare il potenziale di {{player}}.\n\nLo sviluppo dei giocatori è uno dei criteri chiave di un allenatore di successo."
+          },
+          "media_pos_9": {
+            "subject": "\"I tifosi di {{team}} hanno motivo di essere entusiasti\"",
+            "body": "Un popolare sito di notizie esport ha pubblicato un articolo intitolato \"Perché i tifosi di {{team}} hanno motivo di essere entusiasti\".\n\nL'articolo analizza il miglioramento delle statistiche della squadra e la traiettoria positiva sotto la sua guida.\n\nLa comunità più ampia inizia a riconoscere i progressi."
+          }
+        }
       },
       "mediaPositive": {
         "subject": "Positive Press — {{player}}",
@@ -2627,7 +3079,8 @@
       "transferOffer": {
         "subject": "Incoming Offer for {{player}}",
         "body": "{{club}} have submitted an offer of {{fee}} for {{player}}. Review the bid in the Transfers tab to accept or reject it.",
-        "actionReview": "Review Offer"
+        "actionReview": "Review Offer",
+        "actionView": "Vedi offerta"
       },
       "potentialReport": {
         "subject": "Potential report completed",
@@ -2680,6 +3133,10 @@
       }
     },
     "news": {
+      "ladder": {
+        "headline": "{{promoted}} promosso in {{upper}}, {{relegated}} retrocesso",
+        "body": "{{promoted}} sale da {{lower}} a {{upper}}, mentre {{relegated}} scende dopo la stagione {{season}}."
+      },
       "matchReport": {
         "headline": {
           "homeWin": {
@@ -3139,7 +3596,21 @@
     "nGoals": "{{count}} kills",
     "playerOfYear": "Player of the Year",
     "avgRating": "Avg rating: {{rating}}",
-    "continueDashboard": "Continue to Dashboard"
+    "continueDashboard": "Continue to Dashboard",
+    "ladder": {
+      "title": "Promozioni e retrocessioni",
+      "promotedTitle": "Promosso",
+      "promotedBody": "{{team}} sale in {{league}} per la prossima stagione.",
+      "relegatedTitle": "Retrocesso",
+      "relegatedBody": "{{team}} scende in {{league}} per la prossima stagione.",
+      "stayedBody": "{{team}} resta in {{league}}. Altre squadre hanno cambiato lega.",
+      "movementsTitle": "Movimenti tra le leghe",
+      "between": "{{upper}} e {{lower}}",
+      "promotedTo": "Promossi in {{league}}",
+      "relegatedTo": "Retrocessi in {{league}}",
+      "skippedLate": "Il calendario della stagione successiva era già in corso, quindi promozione e retrocessione non sono state applicate quest'anno.",
+      "noEligible": "Nessuna squadra idonea: nessun cambiamento in questa stagione."
+    }
   },
   "market": {
     "title": "Mercato Trasferimenti",

@@ -35,6 +35,7 @@ interface Props {
   activeTab: string;
   onNavClick: (tab: string) => void;
   unreadMessagesCount: number;
+  pendingOffersCount?: number;
   managerName: string | null;
   managerFullName?: string | null;
   managerAvatar?: string | null;
@@ -52,6 +53,7 @@ export function DashboardSidebarV2({
   activeTab,
   onNavClick,
   unreadMessagesCount,
+  pendingOffersCount = 0,
   managerName,
   managerFullName,
   managerAvatar,
@@ -97,8 +99,8 @@ export function DashboardSidebarV2({
 
   const market: Item[] = useMemo(() => [
     { tab: "Market", label: t("dashboard.market"), icon: Store },
-    { tab: "Transfers", label: t("dashboard.transfers"), icon: TrendingUp },
-  ], [t]);
+    { tab: "Transfers", label: t("dashboard.transfers"), icon: TrendingUp, badge: pendingOffersCount },
+  ], [t, pendingOffersCount]);
 
   const allNavItems = useMemo(() => {
     const items = [...top];

@@ -37,7 +37,79 @@ fn option(
     }
 }
 
-pub(crate) fn low_morale_message(
+/// Locale prefix of the player-event template copy; the template id completes the key.
+const TEMPLATE_KEY_PREFIX: &str = "be.msg.playerEvent.templates";
+
+/// Low-morale message from the data templates, with render-time i18n keys and params.
+pub fn low_morale_from_template(
+    msg_id: &str,
+    player_name: &str,
+    morale: u8,
+    date: &str,
+) -> Option<InboxMessage> {
+    crate::messages::template_store::template_store().build_message_keyed(
+        "low_morale",
+        msg_id,
+        date,
+        "en",
+        vec![("player", player_name), ("morale", &morale.to_string())],
+        TEMPLATE_KEY_PREFIX,
+    )
+}
+
+/// Bench-complaint message from the data templates, with render-time i18n keys and params.
+pub fn bench_complaint_from_template(
+    msg_id: &str,
+    player_name: &str,
+    date: &str,
+) -> Option<InboxMessage> {
+    crate::messages::template_store::template_store().build_message_keyed(
+        "bench_complaint",
+        msg_id,
+        date,
+        "en",
+        vec![("player", player_name)],
+        TEMPLATE_KEY_PREFIX,
+    )
+}
+
+/// Happy-player message from the data templates, with render-time i18n keys and params.
+pub fn happy_player_from_template(
+    msg_id: &str,
+    player_name: &str,
+    date: &str,
+) -> Option<InboxMessage> {
+    crate::messages::template_store::template_store().build_message_keyed(
+        "happy_player",
+        msg_id,
+        date,
+        "en",
+        vec![("player", player_name), ("morale", "100")],
+        TEMPLATE_KEY_PREFIX,
+    )
+}
+
+/// Contract-concern message from the data templates, with render-time i18n keys and params.
+pub fn contract_concern_from_template(
+    msg_id: &str,
+    player_name: &str,
+    days_remaining: i64,
+    date: &str,
+) -> Option<InboxMessage> {
+    crate::messages::template_store::template_store().build_message_keyed(
+        "contract_concern",
+        msg_id,
+        date,
+        "en",
+        vec![
+            ("player", player_name),
+            ("days", &days_remaining.to_string()),
+        ],
+        TEMPLATE_KEY_PREFIX,
+    )
+}
+
+pub fn low_morale_message(
     msg_id: &str,
     player_id: &str,
     player_name: &str,
@@ -55,13 +127,7 @@ pub(crate) fn low_morale_message(
         return message;
     }
 
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
-        "low_morale",
-        msg_id,
-        date,
-        "en",
-        vec![("player", player_name), ("morale", &morale.to_string())],
-    ) {
+    if let Some(msg) = low_morale_from_template(msg_id, player_name, morale, date) {
         return msg;
     }
 
@@ -132,7 +198,7 @@ pub(crate) fn low_morale_message(
     .with_sender_i18n("be.sender.player", "be.role.player")
 }
 
-pub(crate) fn bench_complaint_message(
+pub fn bench_complaint_message(
     msg_id: &str,
     player_id: &str,
     player_name: &str,
@@ -149,13 +215,7 @@ pub(crate) fn bench_complaint_message(
         return message;
     }
 
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
-        "bench_complaint",
-        msg_id,
-        date,
-        "en",
-        vec![("player", player_name)],
-    ) {
+    if let Some(msg) = bench_complaint_from_template(msg_id, player_name, date) {
         return msg;
     }
 
@@ -226,7 +286,7 @@ pub(crate) fn bench_complaint_message(
     .with_sender_i18n("be.sender.player", "be.role.player")
 }
 
-pub(crate) fn happy_player_message(
+pub fn happy_player_message(
     msg_id: &str,
     player_id: &str,
     player_name: &str,
@@ -243,13 +303,7 @@ pub(crate) fn happy_player_message(
         return message;
     }
 
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
-        "happy_player",
-        msg_id,
-        date,
-        "en",
-        vec![("player", player_name), ("morale", "100")],
-    ) {
+    if let Some(msg) = happy_player_from_template(msg_id, player_name, date) {
         return msg;
     }
 
@@ -320,7 +374,7 @@ pub(crate) fn happy_player_message(
     .with_sender_i18n("be.sender.player", "be.role.player")
 }
 
-pub(crate) fn contract_concern_message(
+pub fn contract_concern_message(
     msg_id: &str,
     player_id: &str,
     player_name: &str,
@@ -339,16 +393,7 @@ pub(crate) fn contract_concern_message(
         return message;
     }
 
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
-        "contract_concern",
-        msg_id,
-        date,
-        "en",
-        vec![
-            ("player", player_name),
-            ("days", &days_remaining.to_string()),
-        ],
-    ) {
+    if let Some(msg) = contract_concern_from_template(msg_id, player_name, days_remaining, date) {
         return msg;
     }
 

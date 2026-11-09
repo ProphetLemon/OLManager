@@ -126,7 +126,7 @@ fn season_digest_and_storylines_use_lol_social_media_copy() {
         digest.i18n_params.get("topPerformer"),
         Some(&"Kai".to_string())
     );
-    assert!(digest.i18n_params.get("topScorer").is_none());
+    assert!(!digest.i18n_params.contains_key("topScorer"));
     assert_lol_news_copy(&digest.headline);
     assert_lol_news_copy(&digest.body);
 

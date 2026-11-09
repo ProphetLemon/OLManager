@@ -321,6 +321,23 @@ fn esportmaniacos_story_copy(
     (subject, body, subject_key.to_string(), body_key, priority)
 }
 
+/// Media story from the data templates, with render-time i18n keys and params.
+pub fn media_story_from_template(
+    msg_id: &str,
+    team_name: &str,
+    player_name: &str,
+    date: &str,
+) -> Option<InboxMessage> {
+    crate::messages::template_store::template_store().build_message_keyed(
+        "media_story",
+        msg_id,
+        date,
+        "en",
+        vec![("team", team_name), ("player", player_name)],
+        "be.msg.mediaStory.templates",
+    )
+}
+
 pub(super) fn media_story_message(
     msg_id: &str,
     team_name: &str,
@@ -340,13 +357,7 @@ pub(super) fn media_story_message(
         return message;
     }
 
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
-        "media_story",
-        msg_id,
-        date,
-        "en",
-        vec![("team", team_name), ("player", player_name)],
-    ) {
+    if let Some(msg) = media_story_from_template(msg_id, team_name, player_name, date) {
         return msg;
     }
 
@@ -500,7 +511,7 @@ pub fn build_media_story_from_narrative(
             ..Default::default()
         })
         .with_i18n(
-            &subject_key,
+            subject_key,
             &body_key,
             params(&[
                 ("player", player_name),
@@ -512,6 +523,23 @@ pub fn build_media_story_from_narrative(
     )
 }
 
+/// Al Lío podcast message from the data templates, with render-time i18n keys and params.
+pub fn allio_podcast_from_template(
+    msg_id: &str,
+    team_name: &str,
+    player_name: &str,
+    date: &str,
+) -> Option<InboxMessage> {
+    crate::messages::template_store::template_store().build_message_keyed(
+        "podcast",
+        msg_id,
+        date,
+        "en",
+        vec![("team", team_name), ("player", player_name)],
+        "be.msg.allio.templates",
+    )
+}
+
 pub(super) fn allio_podcast_message(
     msg_id: &str,
     team_name: &str,
@@ -520,13 +548,7 @@ pub(super) fn allio_podcast_message(
     date: &str,
 ) -> InboxMessage {
     let pname = player_name.unwrap_or("one of your players");
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
-        "podcast",
-        msg_id,
-        date,
-        "en",
-        vec![("team", team_name), ("player", pname)],
-    ) {
+    if let Some(msg) = allio_podcast_from_template(msg_id, team_name, pname, date) {
         return msg;
     }
 
@@ -673,26 +695,44 @@ pub(super) fn allio_podcast_message(
     )
     .with_sender_i18n("be.sender.allioPodcast", "be.role.allioPodcast");
 
-    if variant < 2 {
-        if let Some(pid) = player_id {
+    if variant < 2
+        && let Some(pid) = player_id {
             msg = msg.with_context(MessageContext {
                 player_id: Some(pid.to_string()),
                 ..Default::default()
             });
         }
-    }
 
     msg
 }
 
-pub(super) fn yuste_stream_message(msg_id: &str, is_positive: bool, date: &str) -> InboxMessage {
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
+/// el_yuste stream message from the data templates, with render-time i18n keys and params.
+///
+/// The templates name the user's team and one of its players, so both must travel as params.
+pub fn yuste_stream_from_template(
+    msg_id: &str,
+    team_name: &str,
+    player_name: &str,
+    date: &str,
+) -> Option<InboxMessage> {
+    crate::messages::template_store::template_store().build_message_keyed(
         "stream",
         msg_id,
         date,
         "en",
-        vec![],
-    ) {
+        vec![("team", team_name), ("player", player_name)],
+        "be.msg.yuste.templates",
+    )
+}
+
+pub(super) fn yuste_stream_message(
+    msg_id: &str,
+    is_positive: bool,
+    team_name: &str,
+    player_name: &str,
+    date: &str,
+) -> InboxMessage {
+    if let Some(msg) = yuste_stream_from_template(msg_id, team_name, player_name, date) {
         return msg;
     }
     let mut rng = rand::rng();

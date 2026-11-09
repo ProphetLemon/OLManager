@@ -511,8 +511,29 @@ pub fn process_contract_expiries(game: &mut Game) {
     }
 }
 
-pub(crate) fn expected_wage(player: &Player, team: &Team, current_date: NaiveDate) -> u32 {
-    let apply_minimum_floor = should_apply_minimum_expected_wage_floor(player, current_date);
+pub fn expected_wage(player: &Player, team: &Team, current_date: NaiveDate) -> u32 {
+    expected_wage_with_floor(
+        player,
+        team,
+        current_date,
+        should_apply_minimum_expected_wage_floor(player, current_date),
+    )
+}
+
+/// What a player demands from a club that wants to sign him: [`expected_wage`] with the
+/// wage-scale floor always applied. Many non-LEC players ship a machine-derived wage of
+/// about 7% of market value; a new club must not be able to buy them at that price.
+/// Renewals keep using [`expected_wage`], so re-signing a squad stays affordable.
+pub fn expected_signing_wage(player: &Player, team: &Team, current_date: NaiveDate) -> u32 {
+    expected_wage_with_floor(player, team, current_date, true)
+}
+
+fn expected_wage_with_floor(
+    player: &Player,
+    team: &Team,
+    current_date: NaiveDate,
+    apply_minimum_floor: bool,
+) -> u32 {
     let starting_wage = if apply_minimum_floor {
         player.wage.max(minimum_expected_wage_floor(player))
     } else {
@@ -559,9 +580,10 @@ fn should_apply_minimum_expected_wage_floor(player: &Player, current_date: Naive
         || remaining_contract_days(player, current_date) == 0
 }
 
+/// Wage floor of a player without a binding contract: the shared LEC wage scale
+/// (see `wage_scale`), which keeps the 25k minimum for the lowest tiers.
 fn minimum_expected_wage_floor(player: &Player) -> u32 {
-    let market_value_floor = (player.market_value / 20).min(u64::from(u32::MAX)) as u32;
-    round_up_to_nearest_thousand(market_value_floor.max(25_000))
+    crate::wage_scale::scale_wage_for_market_value(player.market_value)
 }
 
 fn importance_wage_multiplier(player: &Player) -> f32 {
@@ -603,11 +625,10 @@ fn next_renewal_round(player: &Player, today: Option<&str>) -> u8 {
         return 1;
     };
 
-    if let Some(today) = today {
-        if state.last_attempt_date.as_deref() != Some(today) {
+    if let Some(today) = today
+        && state.last_attempt_date.as_deref() != Some(today) {
             return 1;
         }
-    }
 
     state.conversation_round.saturating_add(1).max(1)
 }
@@ -795,7 +816,7 @@ pub(crate) fn round_up_to_nearest_thousand(value: u32) -> u32 {
         return 0;
     }
 
-    ((value + 999) / 1000) * 1000
+    value.div_ceil(1000) * 1000
 }
 
 fn contract_days_remaining(contract_end: Option<&str>, current_date: NaiveDate) -> Option<i64> {

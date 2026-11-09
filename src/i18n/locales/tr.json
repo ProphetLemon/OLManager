@@ -217,6 +217,8 @@
   "dashboard": {
     "home": "Ana Sayfa",
     "inbox": "Gelen Kutusu",
+    "matchPlayedByStaff": "Teknik ekibin {{opponent}} karşısındaki maçı oynadı: {{score}}. Sonuç için takvimi aç.",
+    "matchPlayedByStaffNoScore": "Teknik ekibin maçı oynadı. Sonuç için takvimi aç.",
     "manager": "Baş koç",
     "squad": "Kadro",
     "tactics": "Taktikler",
@@ -285,7 +287,7 @@
     "delegateAssistant": "Asistan Koça Devret",
     "delegateAssistantDesc": "Yapay zeka her şeyi anında halleder",
     "skipToMatchDay": "Maç Gününe Atla",
-    "skipToMatchDayDesc": "Bir sonraki maça atla",
+    "skipToMatchDayDesc": "Bir sonraki maça atla ve otomatik oyna",
     "matchDayTitle": "Maç Günü",
     "delegateWarning": "Maçı asistanınız yönetecek. Maça müdahale edemeyeceksiniz.",
     "skipToNextDay": "Skip to Next Day"
@@ -546,6 +548,8 @@
     }
   },
   "teamSelect": {
+    "searchLeague": "Lig ara...",
+    "regionalLeagues": "Bölgesel ligler",
     "title": "Kulübünüzü Seçin",
     "subtitle": "Yönetmek istediğiniz takımı seçin",
     "confirming": "Onaylanıyor...",
@@ -561,10 +565,73 @@
     "repDeveloping": "Gelişecek",
     "confirm": "Confirm",
     "noLeaguesDesc": "No leagues found for this region",
-    "selectLeague": "Select League",
-    "selectLeagueSubtitle": "Choose the league you want to manage",
-    "selectTeam": "Select Team",
-    "teams": "Teams"
+    "selectLeague": "Lig seç",
+    "selectLeagueSubtitle": "Yönetmek istediğin ligi seç",
+    "selectTeam": "Takım seç",
+    "teamCount_one": "1 takım",
+    "teamCount_other": "{{count}} takım",
+    "teams": "Takımlar",
+    "custom": {
+      "create": "Kendi takımını kur",
+      "createHint": "Bu ligdeki bir kulübün yerine kendi kulübünü koy.",
+      "title": "Kendi takımını kur",
+      "subtitle": "Bu ligdeki bir kulübün yerine kendi kulübünü koy",
+      "stepOf": "Adım {{current}} / {{total}}",
+      "stepsLabel": "İlerleme",
+      "steps": {
+        "identity": "Kimlik",
+        "badge": "Arma",
+        "replace": "Değiştir ve gözden geçir"
+      },
+      "fields": {
+        "name": "Kulüp adı",
+        "shortName": "Kısa ad",
+        "country": "Ülke",
+        "primaryColor": "Ana renk",
+        "secondaryColor": "İkinci renk",
+        "pickPrimary": "Ana rengi seç",
+        "pickSecondary": "İkinci rengi seç"
+      },
+      "hints": {
+        "name": "{{min}} ile {{max}} karakter arasında.",
+        "shortName": "3 veya 4 harf ya da rakam. Skor tabelasında görünür."
+      },
+      "countryPlaceholder": "Bir ülke seç",
+      "presets": "Renk önerileri",
+      "preset": "{{primary}} ve {{secondary}} renkleri",
+      "previewAlt": "{{tag}} için arma önizlemesi",
+      "previewHint": "Arma listelerde böyle görünür. Büyük arma yukarıda gösterilir.",
+      "replace": {
+        "heading": "Yerine geçilecek kulüp",
+        "notice": "Oyuncuları ve personeli serbest oyuncu olur. Kulübün, ligin ortanca bütçesi ve itibarıyla ve serbest oyunculardan tamamlanan bir kadroyla başlar.",
+        "lowestReputation": "En düşük itibar",
+        "reputation": "İtibar {{value}}"
+      },
+      "summary": {
+        "heading": "Özet",
+        "text": "{{country}} ülkesinden {{name}} ({{tag}}), {{replaced}} kulübünün yerini alacak."
+      },
+      "actions": {
+        "next": "İleri",
+        "back": "Geri",
+        "confirm": "Kulübü kur",
+        "cancel": "İptal"
+      },
+      "errors": {
+        "required": "Bu alan zorunludur.",
+        "tooShort": "En az {{min}} karakter kullan.",
+        "tooLong": "En fazla {{max}} karakter kullan.",
+        "nameFormat": "{{min}} ile {{max}} karakter arasında kullan.",
+        "shortNameFormat": "Yalnızca harf ve rakam kullan, boşluk olmasın.",
+        "colorFormat": "#RRGGBB biçiminde bir renk kullan.",
+        "duplicateName": "Başka bir kulüp bu adı zaten kullanıyor.",
+        "duplicateShortName": "Başka bir kulüp bu kısa adı zaten kullanıyor.",
+        "replaceInvalid": "Yerine geçmek için bu ligden bir kulüp seç.",
+        "replaceRequired": "Yerine geçmek istediğin kulübü seç.",
+        "lowContrast": "Bu renkler birbirine yakın, kısaltma zor okunabilir. Yine de devam edebilirsin.",
+        "title": "Kulüp oluşturulamadı"
+      }
+    }
   },
   "youthAcademy": {
     "title": "Akademi",
@@ -801,6 +868,10 @@
     "noLineupMatches": "Mevcut filtrelerle eşleşen ilk 5 oyuncusu yok.",
     "playStyleImpactTitle": "Bu neyi değiştirir?",
     "activeLineup": "Active Lineup",
+    "importBadge": "Yabancı",
+    "importTooltip": "Yabancı: bu ligin bölgesinde ikamet etmiyor. Bir ilk beşte en fazla {{max}} yabancı oyuncu olabilir.",
+    "tooManyImports": "Bir ilk beşte en fazla {{max}} yabancı oyuncu olabilir. Bu beşte {{count}} olurdu.",
+    "importsInLineup": "İlk beşteki yabancılar: {{count}} / {{max}}",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
     "noRoleAvailable": "No player available"
@@ -1458,8 +1529,8 @@
     "transferFee": "Ücret: {{fee}}",
     "wageFeedbackAcceptedHeadline": "Oyuncu teklifinizden memnun.",
     "wageFeedbackAcceptedDetail": "Maaş ve sözleşme süresi beklentilerini karşılıyor, imzalamaya hazır.",
-    "wageFeedbackAcceptedOverBudgetHeadline": "Oyuncu kabul ediyor ancak bu maaş bütçenizi zorlayacak.",
-    "wageFeedbackAcceptedOverBudgetDetail": "İmzalamaya hazır, fakat bu şartlar kulübü maaş tavanının üzerine taşıyacak.",
+    "wageFeedbackOverBudgetHeadline": "Kulüp bu maaşı maaş bütçesine sığdıramıyor.",
+    "wageFeedbackOverBudgetDetail": "Maaş bütçesinde yalnızca {{wage}} boşluk kaldı. Daha az teklif edin veya önce yer açın.",
     "wageFeedbackCounterHeadline": "Rakamları ayarlamak istiyorlar.",
     "wageFeedbackCounterDetail": "Oyuncu ilgili ama {{wage}} ile {{years}} yılın daha adil olacağını belirtiyor.",
     "wageFeedbackLowHeadline": "Teklif beklentilerinin oldukça altında.",
@@ -1570,6 +1641,9 @@
     "playoffBracketTitle": "Playoff ağacı",
     "upperBracket": "Üst Grup (Upper Bracket)",
     "lowerBracket": "Alt Grup (Lower Bracket)",
+    "singleEliminationBracket": "Tek eleme",
+    "playoffSemifinals": "Yarı final",
+    "playoffFinal": "Final",
     "scheduled": "Planlandı",
     "overview": "Genel Bakış",
     "leagueTable": "Lig Tablosu"
@@ -1776,7 +1850,8 @@
     "updateAvailable": "Güncelleme Mevcut",
     "checkNow": "Şimdi Kontrol Et",
     "updateAvailableDetail": "Sürüm {{version}} mevcut",
-    "upToDate": "Güncel versiyonu kullanıyorsunuz"
+    "upToDate": "Güncel versiyonu kullanıyorsunuz",
+    "noPlatformBuild": "Bir sürüm var, ancak sisteminiz için henüz bir yapı yok"
   },
   "preMatch": {
     "autoSelect": "En İyi 5'liyi Otomatik Seç",
@@ -1886,12 +1961,20 @@
       "redPicks": "Kırmızı takım seçimleri",
       "startMatch": "Maça başla",
       "finalizeDraft": "Draftı onayla",
+      "skipDraft": "Draftı atla",
       "loadingChampions": "Şampiyonlar yükleniyor...",
       "loadError": "Şampiyonlar yüklenirken hata oluştu",
       "noChampionsForFilters": "Mevcut filtrelerle uygun şampiyon bulunmuyor.",
       "searchPlaceholder": "Ara...",
       "selected": "Seçili",
       "selectThenConfirm": "Bir şampiyon seçin ve onaylayın",
+      "rivalMasteryBandTooltip": "Estimated level. Scout this player to see the exact mastery.",
+      "rivalMasteryLegend": "Rival mastery is shown as High / Medium / Low until you scout the player.",
+      "rivalMasteryBand": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
       "enemyComfortUnknown": "Rakip ustalığı henüz keşfedilmedi",
       "masterySourceSignature": "İmza Şampiyon",
       "masterySourceScouting": "Gözlem",
@@ -2206,7 +2289,21 @@
     "nGoals": "{{count}} skor",
     "playerOfYear": "Yılın Oyuncusu",
     "avgRating": "OVR. reyting: {{rating}}",
-    "continueDashboard": "Ana Ekrana Devam Et"
+    "continueDashboard": "Ana Ekrana Devam Et",
+    "ladder": {
+      "title": "Yükselme ve düşme",
+      "promotedTitle": "Yükseldi",
+      "promotedBody": "{{team}} gelecek sezon {{league}} ligine yükseliyor.",
+      "relegatedTitle": "Düştü",
+      "relegatedBody": "{{team}} gelecek sezon {{league}} ligine düşüyor.",
+      "stayedBody": "{{team}} {{league}} ligindeki yerini koruyor. Diğer takımlar lig değiştirdi.",
+      "movementsTitle": "Lig geçişleri",
+      "between": "{{upper}} ve {{lower}}",
+      "promotedTo": "{{league}} ligine yükselenler",
+      "relegatedTo": "{{league}} ligine düşenler",
+      "skippedLate": "Bir sonraki sezonun takvimi zaten başlamıştı, bu yüzden bu yıl yükselme ve küme düşme uygulanmadı.",
+      "noEligible": "Uygun takım yok: bu sezon değişiklik olmadı."
+    }
   },
   "notifications": {
     "attentionRequired": "Dikkat Gerekiyor",
@@ -2220,6 +2317,12 @@
   },
   "be": {
     "sender": {
+      "assistantCoach": "Yardımcı Antrenör",
+      "fitnessCoach": "Fitness Antrenörü",
+      "playerLiaison": "Oyuncu Sorumlusu",
+      "press": "Esportmaníacos",
+      "yuste": "el_yuste",
+      "alLio": "Al Lío Podcast",
       "boardOfDirectors": "Yönetim Kurulu",
       "leagueOffice": "Lig Yönetimi",
       "assistantManager": "Asistan Koç",
@@ -2242,6 +2345,12 @@
       "elYuste": "el_yuste"
     },
     "role": {
+      "podcast": "Podcast",
+      "assistantCoach": "Antrenör",
+      "fitnessCoach": "Antrenör",
+      "officer": "Yetkili",
+      "press": "Basın",
+      "streamer": "Yayıncı",
       "chairman": "Başkan",
       "competitionSecretary": "Turnuva Sekreteri",
       "assistantManager": "Asistan Koç",
@@ -2278,7 +2387,17 @@
       "leaguePulse": "The Shotcaller"
     },
     "msg": {
+      "academyOverview": {
+        "subject": "Akademi aktif: {{academy}}",
+        "body": "Kulübünüzün artık bağlı bir akademisi var. {{academy}} akademisinde takip ve terfi için hazır {{count}} yetenek bulunuyor."
+      },
       "welcome": {
+        "templates": {
+          "welcome": {
+            "subject": "{{team}} takımına hoş geldiniz!",
+            "body": "Yönetim kurulu sizi {{team}} takımının yeni başantrenörü olarak memnuniyetle karşılıyor.\n\nBu takımı başarıya taşıma yeteneğinize tam güvenimiz var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve önümüzdeki zorluklara hazırlanın.\n\nBol şans, hocam!"
+          }
+        },
         "subject0": "{{team}} Takımına Hoş Geldiniz",
         "subject1": "{{team}}'de Yeni Bir Dönem",
         "subject2": "{{team}} Liderliğinizi Bekliyor",
@@ -2289,12 +2408,33 @@
         "actionThank": "Yönetime Teşekkür Et"
       },
       "schedule": {
+        "templates": {
+          "season_schedule": {
+            "subject": "{{league}} sezon fikstürü yayınlandı",
+            "body": "{{league}} liginin gelecek sezon fikstürü yayınlandı.\n\nSezon {{start}} tarihinde başlıyor. Kadronuzun hazır olduğundan emin olun.\n\nBu yıl zorlu bir rekabetle karşılaşacağız — buna göre hazırlanın."
+          },
+          "schedule_2": {
+            "subject": "{{league}} sezonu onaylandı",
+            "body": "{{league}} liginin gelecek sezon fikstürü onaylandı. Mücadele {{start}} tarihinde başlıyor.\n\nİlk maçları dikkatle inceleyin — güçlü bir başlangıç tüm sezonun temposunu belirleyebilir. Kilit oyuncularınızın maça hazır ve formda olduğundan emin olun.\n\nBu sezon bol şans!"
+          }
+        },
         "subject": "Sezon Fikstürü Açıklandı",
         "body0": "{{league}} fikstürü açıklandı. Sezon {{start}} tarihinde başlıyor.\n\nFikstürü inceleyin ve kadronuzun önündeki zorluklara hazır olduğundan emin olun. Sezon öncesi hazırlık çok önemli olacak.",
         "body1": "Fikstür onaylandı! {{league}} sezonu {{start}} tarihinde başlıyor.\n\nAçılış maçlarını dikkatlice inceleyin — güçlü bir başlangıç tüm mevsimin gidişatını belirleyebilir. Kilit oyuncularınızın maça hazır olduğundan emin olun.",
         "actionView": "Fikstürü Gör"
       },
       "preMatch": {
+        "venue": { "home": "ev sahibi", "away": "deplasman" },
+        "templates": {
+          "preview_1": {
+            "subject": "Sıradaki maç: {{opponent}} karşısında",
+            "body": "Koç, bir sonraki maçımız {{date}} tarihinde {{opponent}} ile ({{venue}}).\n\nSon maçlarını inceledim ve oyun planımıza sadık kalırsak sağlam bir şansımız olduğunu düşünüyorum. Güçlü yanlarımıza odaklanıp zayıflıklarını değerlendirelim.\n\nKadronun hazır olduğundan emin olalım."
+          },
+          "preview_2": {
+            "subject": "Maç günü yaklaşıyor: {{opponent}}",
+            "body": "Dikkat koç — {{date}} tarihinde {{opponent}} ile ({{venue}}) karşılaşıyoruz.\n\nZor bir maç olacak. {{opponent}} takımında hesaba katmamız gereken güçlü oyuncular var. Başlıca tehditleri hakkında bir scout raporu hazırladım.\n\nMaç gününden önce oyun planını gözden geçirelim."
+          }
+        },
         "subject": "Yaklaşan Maç: vs {{opponent}} ({{venue}})",
         "body0": "{{matchDate}} tarihinde {{opponent}} ile {{venue}} maçınız yaklaşıyor.\n\n1. Lig'de {{matchday}}. Maç Günü. İlk 5'inizin iyi durumda olduğundan ve taktiklerinizin ayarlandığından emin olun.\n\n{{venue}} avantajınızı en iyi şekilde kullanın.",
         "body1": "Hatırlatma: {{matchDate}} tarihinde {{opponent}} ile karşılaşıyorsunuz ({{venue}}).\n\nBu {{matchday}}. Maç Günü — kadro kondisyonunuzu gözden geçirin ve olası taktiksel değişiklikleri değerlendirin.",
@@ -2302,6 +2442,28 @@
         "actionScout": "Rakibi Gözlemle"
       },
       "matchResult": {
+        "templates": {
+          "defeat_1": {
+            "subject": "Mağlubiyet: {{home}} {{score}} {{away}}",
+            "body": "Bugün zor bir yenilgi, koç. {{opponent}} karşısında {{score}} kaybettik.\n\nBu maçtan çıkarılacak dersler var. Nerede hata yaptığımızı inceleyip daha güçlü dönelim.\n\nSezon uzun — toparlanacağız."
+          },
+          "defeat_2": {
+            "subject": "Mağlubiyet: {{opponent}} bizi {{score}} yendi",
+            "body": "Bizim günümüz değildi, koç. {{opponent}} bizi {{score}} yendi.\n\nNelerin ters gittiğini analiz edip bir sonraki maçtan önce sorunları gidermeliyiz. Kilit anların ayrıntılı bir dökümünü hazırlayacağım.\n\nOdağımızı koruyalım — hâlâ oynanacak çok şey var."
+          },
+          "draw_1": {
+            "subject": "Beraberlik: {{home}} {{score}} {{away}}",
+            "body": "Bugün çekişmeli bir beraberlik, koç. {{home}} {{score}} {{away}}, rakip {{opponent}}.\n\nİstediğimiz sonuç değildi ama karakter gösterdik. Olumlu yanları alıp zayıflıklar üzerinde çalışalım.\n\nSıradaki maç yeniden kazanmaya dönmek için bir fırsat."
+          },
+          "victory_1": {
+            "subject": "Galibiyet! {{opponent}} karşısında {{score}}",
+            "body": "Bugün harika bir sonuç, koç! {{opponent}} takımını {{score}} yendik.\n\nTakım oyun planını iyi uyguladı. Bu ivmeyi bir sonraki maça taşıyalım.\n\nEmeği geçen herkese teşekkürler."
+          },
+          "victory_2": {
+            "subject": "Kazandık! {{home}} {{score}} {{away}}",
+            "body": "Başardık, koç! {{opponent}} karşısında sağlam bir {{score}} galibiyet.\n\nOyuncular en önemli anda üzerine düştü. Bu performans seviyesini sürdürelim.\n\nMaç görüntülerini inceleyip bir dahaki sefere geliştirilecek alanları belirleyin."
+          }
+        },
         "subject": {
           "victory": "Galibiyet: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",
           "defeat": "Mağlubiyet: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}",
@@ -2317,6 +2479,12 @@
         "actionStandings": "Puan Durumuna Bak"
       },
       "staffAdvice": {
+        "templates": {
+          "staff_advice": {
+            "subject": "{{team}} takımında kadro boşlukları",
+            "body": "Hocam, {{team}} takımındaki ekip durumunu inceledim ve birkaç noktaya dikkat çekmek istedim:\n\n• İyi bir Antrenör antrenman verimliliğini belirgin şekilde artırır — oyuncularınız daha hızlı gelişir.\n• Nitelikli bir Fizyoterapist oyuncuları sağlıklı tutmaya yardımcı olur ve maçlar arası toparlanmayı hızlandırır.\n• Gözlemcilerimiz transfer hedeflerini belirlemeye ve rakipleri değerlendirmeye yardımcı olabilir.\n\nSezon başlamadan önce bu boşlukların doldurulmasını şiddetle tavsiye ederim. Müsait personeli Personel bölümünde bulabilirsiniz.\n\nMüsait olduğunuzda bir göz atın."
+          }
+        },
         "subject": "Personel Raporu — Koçluk Boşlukları",
         "body": "Koç, {{team}}'deki personel durumuna bir göz attım ve birkaç şeyi belirtmek istedim:\n\n• İyi bir Koç antrenman verimliliğini önemli ölçüde artırır — oyuncularınız daha hızlı gelişir.\n• Uzman bir Fizyoterapist oyuncuları dinç tutar ve maçlar arası toparlanmayı hızlandırır.\n• Gözlemcilerimiz transfer hedeflerini belirlemeye ve rakipleri analiz etmeye yardımcı olabilir.\n\nSezon başlamadan önce boşlukları doldurmanızı şiddetle tavsiye ederim. Uygun personeli Personel bölümünde bulabilirsiniz.\n\nFırsatınız olduğunda bir kontrol edin.",
         "actionView": "Personeli Gör"
@@ -2360,6 +2528,20 @@
         "subject": "Sezon {{season}} Ödül Parası Yatırıldı",
         "body": "Yönetim, {{position}}. sıradaki lig bitirişiniz için €{{amount}} tutarında bir ödül ödemesi onayladı. Tutar kulüp bakiyesine eklendi."
       },
+      "ladder": {
+        "promoted": {
+          "subject": "{{team}} {{to}} ligine yükseldi",
+          "body": "{{team}}, {{season}} sezonunun ardından {{from}} liginden {{to}} ligine yükselmeyi başardı.\n\nYönetim kurulu üst ligde güçlü bir ilk sezon bekliyor."
+        },
+        "relegated": {
+          "subject": "{{team}} {{to}} ligine düştü",
+          "body": "{{team}}, {{season}} sezonunun ardından {{from}} liginden {{to}} ligine düştü.\n\nYönetim kurulu hemen geri dönülmesini istiyor."
+        },
+        "leagueSwap": {
+          "subject": "Yükselme ve düşme: {{lower}} ve {{upper}}",
+          "body": "{{season}} sezonunun ardından {{promoted}} {{upper}} ligine yükseliyor, {{relegated}} ise {{lower}} ligine düşüyor."
+        }
+      },
       "seasonReview": {
         "subject": "Sezon {{season}} Değerlendirmesi",
         "body": {
@@ -2397,6 +2579,40 @@
         "respond": "Yanıtla"
       },
       "playerEvent": {
+        "templates": {
+          "low_morale_1": {
+            "subject": "Moral endişesi: {{player}}",
+            "body": "Koç, {{player}} oyuncusunun morali belirgin şekilde düştü. Şu an %{{morale}}.\n\nBu, maçlardaki ve antrenmanlardaki performansını etkileyebilir. Neler olduğunu anlamak için onunla konuşmak faydalı olabilir."
+          },
+          "low_morale_2": {
+            "subject": "{{player}} mutsuz görünüyor",
+            "body": "Dikkatinizi çekmek istedim — {{player}} mutsuz görünüyor (moral: %{{morale}}).\n\nGöz ardı edilirse kadroda gerginlik yaratabilir. Bir sohbet ya da biraz izin morali yükseltebilir."
+          },
+          "bench_complaint_1": {
+            "subject": "{{player}} daha fazla süre istiyor",
+            "body": "Koç, {{player}} son zamanlarda az süre almasından duyduğu hayal kırıklığını dile getirdi.\n\nİlk beşte yer almayı hak ettiğini düşünüyor. Dikkatli yönetilmezse bu daha büyük bir soruna dönüşebilir.\n\nBunu nasıl ele almak istersiniz?"
+          },
+          "bench_complaint_2": {
+            "subject": "{{player}} kadrodaki rolünden memnun değil",
+            "body": "{{player}} bugün bana geldi — kadrodaki mevcut rolünden memnun değil ve Rift'te daha fazla fırsat istiyor.\n\nYakında ona daha fazla süre veremezsek bir sonraki dönemde transfer arayabilir.\n\nKarar sizin, koç."
+          },
+          "happy_player_1": {
+            "subject": "{{player}} harika hissediyor!",
+            "body": "İyi haber, koç — {{player}} son zamanlarda çok iyi bir ruh halinde (moral: %{{morale}}).\n\nMutlu oyuncular daha iyi performans gösterir, o yüzden onunla yaptığınız şeye devam edin. Kadrodaki olumlu atmosfer gerçekten fark yaratır."
+          },
+          "happy_player_2": {
+            "subject": "{{player}} cephesinden olumlu havalar",
+            "body": "Sadece {{player}} oyuncusunun şu sıralar kulüpteki zamanından gerçekten keyif aldığını paylaşmak istedim (moral: %{{morale}}).\n\nSıkı antrenman yapıyor ve takım arkadaşlarını destekliyor. Kadroda böyle olumlu bir tavır görmek harika.\n\nBu ortamı beslemeye devam edin!"
+          },
+          "contract_concern_1": {
+            "subject": "Sözleşme bitiyor: {{player}}",
+            "body": "{{player}} oyuncusunun sözleşmesinin yakında sona ereceğini hatırlatmak istedim ({{days}} gün kaldı).\n\nYakında harekete geçmezsek onu bedelsiz kaybetme riskimiz var. Yenileme görüşmeleri başlatmayı ya da onu transfer listesine koymayı düşünmeliyiz.\n\n{{player}} için planınız nedir?"
+          },
+          "contract_concern_2": {
+            "subject": "{{player}} sözleşmesi {{days}} gün içinde bitiyor",
+            "body": "{{player}} oyuncusunun sözleşme durumuyla ilgili bir hatırlatma. Mevcut anlaşmasında yalnızca {{days}} gün kaldığı için bir karar vermemiz gerekiyor.\n\nSeçenekler:\n• Yenileme görüşmeleri başlatmak\n• Değeri varken transfer listesine koymak\n• Sözleşmenin bitmesine izin vermek\n\nNasıl ilerlemek istediğinizi lütfen bildirin."
+          }
+        },
         "respond": "Yanıtla",
         "options": {
           "moraleCrisis": {
@@ -2515,6 +2731,90 @@
           }
         }
       },
+      "mediaStory": {
+        "templates": {
+          "media_neg_1": {
+            "subject": "Medya {{team}} takımının yönünü sorguluyor",
+            "body": "Yakın tarihli bir makale, {{team}} takımının mevcut teknik ekip altında gittiği yönü sorguluyor. Yazı, tutarsız sonuçlara ve net bir kimlik eksikliğine dikkat çekiyor.\n\n\"{{team}} geriye gidiyor gibi görünüyor\", dedi analist.\n\nBaskı artıyor."
+          },
+          "media_neg_10": {
+            "subject": "{{team}} yönetimi üzerindeki baskı artıyor",
+            "body": "Kötü bir sonuç serisinin ardından {{team}} yönetimi üzerindeki medya baskısı artıyor. Birçok yayın organı teknik ekipte değişiklik çağrısı yapıyor.\n\n\"Yönetim kurulu bunu daha ne kadar tolere edecek?\", diye soruyor bir makale.\n\nSıcak koltukta sıcaklık yükseliyor."
+          },
+          "media_neg_2": {
+            "subject": "{{team}} performansına yönelik eleştiriler büyüyor",
+            "body": "Medyada {{team}} takımının son performansına yönelik eleştiriler artıyor. Birçok yorumcu takımın hazırlığını ve taktik yaklaşımını sorguladı.\n\n\"Bu performans seviyesinin mazereti yok\", dedi bir yorumcu.\n\nTaraftarlar endişelerini sosyal medyada dile getirmeye başladı."
+          },
+          "media_neg_3": {
+            "subject": "Spor sitesi soruyor: \"{{team}} krizde mi?\"",
+            "body": "Popüler bir spor sitesi, {{team}} takımının kriz modunda olup olmadığını sorgulayan bir makale yayımladı. Yazı, takımın puan tablosunda düşüşüne dikkat çekiyor.\n\n\"Bir şeylerin değişmesi lazım, hem de hızlı\", diyor makale.\n\nSpot ışıkları tamamen teknik ekibin üzerinde."
+          },
+          "media_neg_4": {
+            "subject": "Analist {{team}} takımının son formunu topa tuttu",
+            "body": "Tanınmış bir analist, {{team}} takımının son formunu eleştirerek \"bu kadroya sahip bir takım için kabul edilemez\" olarak niteledi.\n\nEleştiri, takımın istikrar bulmakta zorlandığı zor bir dönemde geliyor.\n\nHer kötü sonuçla birlikte medyanın mercek altına alması yoğunlaşıyor."
+          },
+          "media_neg_5": {
+            "subject": "Lig özeti: \"{{team}} beklentilerin altında\"",
+            "body": "Haftalık lig özeti, {{team}} takımını split'in en çok hayal kırıklığı yaratan takımı olarak nitelendirdi.\n\n\"Elindeki kaynaklarla {{team}} çok daha iyi performans göstermeli\", diyor özet.\n\nKulübün etrafındaki anlatı giderek daha olumsuz hale geliyor."
+          },
+          "media_neg_6": {
+            "subject": "Sosyal medya {{team}} teknik direktörünü eleştiriyor",
+            "body": "Bir dizi hayal kırıklığı yaratan sonucun ardından sosyal medya, {{team}} teknik ekibine yönelik eleştirilerle çalkalanıyor.\n\nTaraftarlar değişiklik talep ediyor ve alınan taktik kararları sorguluyor.\n\nÇevrimiçi baskı zaman zaman soyunma odasını etkileyebilir."
+          },
+          "media_neg_7": {
+            "subject": "\"{{team}} takımında sorun ne?\" — köşe yazısı",
+            "body": "\"{{team}} takımında sorun ne?\" başlıklı bir köşe yazısı yayımlandı ve takımın zorluklarını ayrıntılı biçimde analiz ediyor.\n\nYazar, takımın sorunlarının taktikten daha derin olduğunu belirtiyor ve olası moral sorunlarına işaret ediyor.\n\nBu tür yazılar kamuoyunun algısını etkileyebilir."
+          },
+          "media_neg_8": {
+            "subject": "Medya raporu: {{player}} beklentilerin altında",
+            "body": "Bir medya raporu, {{player}} oyuncusunun son dönemdeki form düşüşüne dikkat çekerek oyuncunun potansiyelinin mevcut teknik ekip altında en üst düzeyde kullanılıp kullanılmadığını sorguladı.\n\n\"{{player}} yetenekli bir oyuncu ama geriliyor gibi görünüyor\", diyor rapor.\n\nBireysel oyuncu formu çoğu zaman antrenör kalitesine bağlanır."
+          },
+          "media_neg_9": {
+            "subject": "Makale iddia ediyor: \"{{team}} yeniden yapılanmalı\"",
+            "body": "Kışkırtıcı bir makale, {{team}} takımının teknik ekipten başlayarak tamamen yeniden yapılanması gerektiğini iddia ediyor.\n\nYazı, mevcut projenin ömrünü tamamladığını ve yeni bir liderliğe ihtiyaç olduğunu savunuyor.\n\nBu tür makaleler ilgi görürse huzursuzluk yaratabilir."
+          },
+          "media_pos_1": {
+            "subject": "Spor medyası {{team}} takımının toparlanmasını övüyor",
+            "body": "Yerel spor medyası, {{team}} takımının bu sezonki etkileyici toparlanmasını öne çıkardı. Makale, takımın taktik disiplinini ve mücadele ruhunu övüyor.\n\n\"{{team}}, bu teknik ekiple tamamen farklı bir takım gibi görünüyor\", diyor rapor.\n\nBöyle devam edin koç — medya fark ediyor."
+          },
+          "media_pos_10": {
+            "subject": "{{team}} teknik direktörü haftanın koçu seçildi",
+            "body": "{{team}} takımının son sonuçlarının ardından önde gelen bir espor yayını tarafından haftanın koçu seçildiniz.\n\nÖdül, taktik kararlarınızı ve takımın Rift'teki gelişen koordinasyonunu takdir ediyor.\n\nTüm emeğin karşılığı olan hak edilmiş bir takdir."
+          },
+          "media_pos_2": {
+            "subject": "Esportmaniacos: \"{{team}} ciddi bir aday\"",
+            "body": "Esportmaniacos programı, {{team}} takımını ligin en çok gelişen takımlarından biri olarak gösterdi.\n\n\"Bir kimlik buldular ve ona sadık kalıyorlar\", diye yorumladı analist programda.\n\nÇalışmanız ulusal düzeyde fark ediliyor."
+          },
+          "media_pos_3": {
+            "subject": "Röportaj: {{team}} koçu yükselişte",
+            "body": "Yakın tarihli bir röportajda {{team}} başantrenörü, takımın felsefesini ve uzun vadeli vizyonunu anlattı.\n\nRöportaj, kurduğunuz olumlu ortamı ve oyuncuların yöntemlerinize duyduğu güveni öne çıkarıyor.\n\nTaraftarlar yeni yöne olumlu tepki veriyor."
+          },
+          "media_pos_4": {
+            "subject": "Analist: {{team}} beklentileri aşıyor",
+            "body": "Tanınmış bir lig analisti, {{team}} takımının performansı hakkında parlak bir değerlendirme yayımladı ve takımın sezon öncesi tüm beklentileri aştığını belirtti.\n\nAnaliz, teknik ekibi sınıfının üzerinde oynayan kenetlenmiş bir grup yarattığı için övüyor.\n\nSahnenin en saygın seslerinden birinden büyük bir övgü."
+          },
+          "media_pos_5": {
+            "subject": "{{team}} taraftar güveni tüm zamanların zirvesinde",
+            "body": "Yakın tarihli bir taraftar anketi, {{team}} takımına duyulan güvenin tüm zamanların en yüksek seviyesine ulaştığını gösteriyor. Taraftarlar kulübün yönü konusunda iyimser.\n\nSezonluk bilet satışları arttı ve sosyal medya etkileşimi belirgin biçimde yükseldi.\n\nTaraftarlar kurduğunuz şeye inanıyor."
+          },
+          "media_pos_6": {
+            "subject": "\"{{team}} split'in sürpriz takımı\"",
+            "body": "Birçok analist {{team}} takımını split'in sürpriz takımı olarak nitelendiriyor. Takımın son performansları tüm ligin dikkatini çekti.\n\nMakale, taktik esnekliğinizi ve kadro derinliğini kilit faktörler olarak vurguluyor.\n\nSaygı kazanılır ve siz onu kazanıyorsunuz."
+          },
+          "media_pos_7": {
+            "subject": "{{team}} olumlu bir belgesel bölümünde yer aldı",
+            "body": "Bir spor belgesel dizisi, başarılı yeniden yapılanmalar üzerine bir bölümde {{team}} takımına yer verdi. Yapım, dönüşüm hakkında oyuncularla ve personelle röportaj yapıyor.\n\nBelgesel, göreve geldiğinizden beri uyguladığınız kültür değişimini öne çıkarıyor.\n\nKulüp için harika bir tanıtım."
+          },
+          "media_pos_8": {
+            "subject": "{{player}}, son formuyla medyadan övgü aldı",
+            "body": "{{player}}, {{team}} formasıyla sergilediği olağanüstü son performansları nedeniyle medyadan özel övgü aldı.\n\nHaber, çalışmanızın {{player}} oyuncusunun potansiyelini ortaya çıkarmada belirleyici olduğunu belirtiyor.\n\nOyuncu gelişimi, başarılı bir koçun temel ölçütlerinden biridir."
+          },
+          "media_pos_9": {
+            "subject": "\"{{team}} taraftarlarının heyecanlanmak için nedeni var\"",
+            "body": "Popüler bir espor haber sitesi, \"{{team}} taraftarlarının heyecanlanmak için nedeni var\" başlıklı bir makale yayımladı.\n\nMakale, takımın gelişen istatistiklerini ve sizin liderliğinizde izlenen olumlu gidişatı ayrıntılandırıyor.\n\nGenel topluluk ilerlemeyi fark etmeye başlıyor."
+          }
+        }
+      },
       "mediaPositive": {
         "subject": "Olumlu Medya — {{player}}",
         "body": "Yerel basın bugün {{player}} hakkında çok olumlu bir yazı yayınlıyor.\n\nOyuncunun son dönemdeki mükemmel formunu ve {{team}} takımına olan bağlılığını vurguluyorlar. Bu tür bir haber oyuncunun özgüveni ve kulübün imajı için harikadır."
@@ -2578,6 +2878,48 @@
         }
       },
       "rivalInterest": {
+        "templates": {
+          "rival_1": {
+            "subject": "{{rival}}, {{player}} oyuncusuna göz dikti",
+            "body": "Duyduğuma göre {{rival}}, {{player}} ile ilgileniyor. Soru soruyorlar ve bir teklif hazırlıyor olabilirler.\n\nEndişelenmeli miyiz, yoksa {{player}} satılık değil mi?"
+          },
+          "rival_2": {
+            "subject": "{{rival}}, {{player}} hakkında bilgi alıyor",
+            "body": "{{rival}}, {{player}} oyuncusunun durumu hakkında gayriresmî olarak bilgi aldı. Kadrolarını güçlendirmek istiyorlar ve {{player}} oyuncusunu hedef olarak görüyorlar.\n\nHenüz resmî bir teklif yok ama sizi bilgilendirmek istedim."
+          },
+          "rival_3": {
+            "subject": "{{rival}}, {{player}} oyuncusunu izliyor",
+            "body": "Kaynaklarımız {{rival}} takımının son maçlarda {{player}} oyuncusunu izlediğini bildiriyor. Bu genellikle bir transfer girişiminden önce gelir.\n\nOnlar harekete geçmeden önce tavrımıza karar vermeliyiz."
+          },
+          "rival_4": {
+            "subject": "{{rival}}, {{player}} oyuncusunu istiyor",
+            "body": "Ligde {{rival}} takımının {{player}} oyuncusunu transfer etmek istediği konuşuluyor. Menajerleri onun büyük bir hayranı gibi görünüyor.\n\nBu ciddi olabilir — yakında resmî bir teklif alabiliriz."
+          },
+          "rival_5": {
+            "subject": "{{rival}}, {{player}} oyuncusunun sözleşmesini takip ediyor",
+            "body": "{{rival}} takımının {{player}} oyuncusunun sözleşme durumunu yakından izlediğini öğrendim. Yakında uzatmazsak bundan faydalanmaya çalışabilirler.\n\nPlanlamamızda göz önünde bulundurmamız gereken bir şey."
+          },
+          "rival_6": {
+            "subject": "{{rival}}, {{player}} için teklif düşünüyor",
+            "body": "Söylentilere göre {{rival}}, {{player}} için bir teklif düşünüyor. {{player}} oyuncusunu önümüzdeki split için kilit bir takviye olarak görüyorlar.\n\nBir gelişme olursa sizi bilgilendireceğim."
+          },
+          "rival_7": {
+            "subject": "Söylenti: {{rival}}, {{player}} ile ilgileniyor",
+            "body": "{{rival}} takımının {{player}} oyuncusunu transfer etmekle ilgilendiğine dair transfer söylentileri dolaşıyor. Şimdilik sadece spekülasyon ama bu tür söylentilerde çoğu zaman bir doğruluk payı olur.\n\nBilmeniz gerektiğini düşündüm."
+          },
+          "rival_8": {
+            "subject": "{{rival}}, {{player}} için iletişime geçti",
+            "body": "{{rival}}, {{player}} hakkında ilk teması kurdu. Oyuncunun durumu ve maaş beklentisi hakkında bilgi istediler.\n\nBu hızla ilerleyebilir. Nasıl ele almak istersiniz?"
+          },
+          "rival_9": {
+            "subject": "{{player}}, {{rival}} takımının dikkatini çekiyor",
+            "body": "{{player}} oyuncusunun performansı {{rival}} takımının dikkatini çekti. Oyuncu hakkında etrafta soru soruyorlar ve gerçekten ilgilenir görünüyorlar.\n\n{{player}} oyuncusunun geleceği hakkında yakında bir karar vermemiz gerekebilir."
+          },
+          "rival_10": {
+            "subject": "{{rival}}, {{player}} için harekete geçmeye hazır",
+            "body": "Kaynaklar {{rival}} takımının {{player}} için somut bir adım atmaya hazır olduğunu belirtiyor. Resmî bir teklif birkaç gün içinde gelebilir.\n\nCevabımızı hazırlamalıyız."
+          }
+        },
         "subject": "Transfer Dedikodusu — {{player}}, {{rival}} ile anılıyor",
         "body0": "{{rival}} ekibinin {{player}} için hamle yapmaya başladığına dair haberler aldık.\n\nPersonelleri oyuncunun son maçlarını ve dereceli maç verilerini incelerken görüldü, kaynaklar yakında resmi bir teklif gelebileceğini söylüyor.\n\nİletişime geçerlerse nasıl yanıt verelim?",
         "body1": "Espor medyası {{player}}'ın artık {{rival}} için somut bir hedef olduğunu bildiriyor.\n\nOyuncu son maç performanslarının ardından dikkat çekti. Henüz resmi bir teklif yok ama baskı hızla artıyor.\n\nTavrınız nedir?",
@@ -2670,7 +3012,8 @@
       "transferOffer": {
         "subject": "{{player}} İçin Gelen Teklif",
         "body": "{{club}}, {{player}} için {{fee}} değerinde bir teklif sundu. Teklifi kabul etmek veya reddetmek için Transferler sekmesinden teklifi inceleyin.",
-        "actionReview": "Teklifi İncele"
+        "actionReview": "Teklifi İncele",
+        "actionView": "Teklifi görüntüle"
       },
       "potentialReport": {
         "subject": "Potansiyel raporu tamamlandı",
@@ -2768,6 +3111,48 @@
         }
       },
       "allio": {
+        "templates": {
+          "podcast_1": {
+            "subject": "Al Lío Podcast {{team}} hakkında konuşuyor",
+            "body": "Al Lío Podcast, {{team}} takımının mevcut durumuna bir bölüm ayırdı. Panel, takımın geleceği konusunda karışık görüşlere sahipti.\n\n\"{{team}} ilginç bir vaka çalışması\", dedi sunuculardan biri.\n\nAl Lío'da konuşulmak, radarda olduğunuz anlamına gelir."
+          },
+          "podcast_2": {
+            "subject": "Al Lío: \"{{team}} bir değişikliğe ihtiyaç duyuyor\"",
+            "body": "Son Al Lío Podcast'inde birkaç panelist, {{team}} takımının acil bir değişikliğe ihtiyacı olduğu konusunda hemfikirdi.\n\n\"Böyle devam edemezler\", dedi içlerinden biri. \"O soyunma odasında bir şeylerin kıpırdaması lazım.\"\n\nProgramın izleyici sayısı yüksekti ve konu gündem oluyor."
+          },
+          "podcast_3": {
+            "subject": "Al Lío: {{team}} tartışmanın merkezinde",
+            "body": "Son Al Lío Podcast'inde tartışmanın ana konusu {{team}} oldu. Konuklar takımın durumunu her açıdan analiz etti.\n\n\"Çok fikir doğuran bir takım\", diye özetlediler.\n\nTartışma yoğundu ve neredeyse yarım saat sürdü."
+          },
+          "podcast_4": {
+            "subject": "Al Lío, {{team}} oyuncusu {{player}} oyuncusunu öne çıkarıyor",
+            "body": "Al Lío Podcast'inde {{team}} oyuncusu {{player}} oyuncusunun performansı haftanın en iyilerinden biri olarak vurgulandı.\n\n\"{{player}} muhteşem bir seviyede\", dediler. \"{{player}}, en iyi oyuncu tartışmasında yer almayı hak ediyor.\"\n\nOyuncularınız hakkında iyi konuşulması her zaman iyi bir işarettir."
+          },
+          "podcast_5": {
+            "subject": "Al Lío: \"{{team}} sabra ihtiyaç duyuyor\"",
+            "body": "Al Lío Podcast'inde bazı panelistler, projenin işe yaraması için {{team}} takımının zamana ve sabra ihtiyacı olduğunu savundu.\n\n\"Kazanan bir takım bir gecede kurulmaz\", diye tartıştılar.\n\nDiğerleri aynı fikirde değildi ve hareketli bir tartışma çıktı."
+          },
+          "podcast_6": {
+            "subject": "Al Lío, {{team}} yönetimini eleştiriyor",
+            "body": "Al Lío Podcast, {{team}} takımının sportif yönetimini eleştirdi ve kadro planlamasındaki hatalara dikkat çekti.\n\n\"Transferler işe yaramadı ve oyun tarzı görünmüyor\", dediler.\n\nPopüler programlardaki eleştiriler kamuoyunda karşılık bulabilir."
+          },
+          "podcast_7": {
+            "subject": "Al Lío: \"{{team}} projesi heyecan veriyor\"",
+            "body": "Al Lío Podcast'inde {{team}} projesinden iyimser bir dille söz edildi. Birkaç panelist takımın doğru yolda olduğu konusunda hemfikirdi.\n\n\"Sonuçlar gelmese de işler doğru yapılıyor\", dediler.\n\nAl Lío'da övülmek kulüp için iyi bir reklamdır."
+          },
+          "podcast_8": {
+            "subject": "Al Lío, {{player}} oyuncusunun geleceğini tartışıyor",
+            "body": "Al Lío Podcast, şu anda {{team}} takımında olan {{player}} oyuncusunun geleceğini tartışmaya bir bölüm ayırdı.\n\n\"{{player}}, daha iyi bir takımda oynayacak seviyede\", diyenler oldu.\n\nBu tür söylentiler oyuncunun konsantrasyonunu etkileyebilir."
+          },
+          "podcast_9": {
+            "subject": "Al Lío: \"{{team}} beni endişelendiriyor\"",
+            "body": "Al Lío Podcast panelistlerinden biri {{team}} takımının durumuyla ilgili endişesini dile getirdi.\n\n\"{{team}} beni endişelendiriyor çünkü bir tepki görmüyorum\", dedi. \"Kötü takımlar tepki verir ama {{team}} yerinde sayıyor gibi.\"\n\nBu tür yorumlar ek baskı yaratabilir."
+          },
+          "podcast_10": {
+            "subject": "Al Lío, {{team}} için parlak bir gelecek öngörüyor",
+            "body": "Al Lío Podcast'inde tanınmış bir analist, {{team}} takımının mevcut rotasını korursa gelecek vaat eden bir geleceği olduğunu öngördü.\n\n\"{{team}} takımında çok ilginç şeyler görüyorum. Zaman verin, adlarından söz ettirecekler\", diye tahmin etti.\n\nMedya figürlerinin olumlu öngörüleri kulübün morelini yükseltebilir."
+          }
+        },
         "subject0": "Al Lío Podcast — Transfer dedikodusu: {{player}} takip ediliyor",
         "body0": "Eros bugünkü Al Lío bölümünde transfer iması yaptı: \"{{player}} hakkında bazı şeyler duyuyorum. Birden fazla takım soru sordu. Henüz doğrulanmış bir şey yok ama {{team}} etrafındaki market ısınıyor.\"\n\nGelecek mevsim kadronuzu planlarken bunu aklınızda bulundurun.",
         "subject1": "Al Lío Podcast — Eros, {{team}} için yaklaşan bir hamleye işaret ediyor",
@@ -2803,6 +3188,88 @@
         "body9": "Eros closed Al Lío with a broader mercato warning: \"Some teams think they will have a quiet offseason and then the first call arrives. With {{team}}, I would prepare for movement, even if the official line is calm.\"\n\nThe smart play is to know your priorities early."
       },
       "yuste": {
+        "templates": {
+          "stream_neg_1": {
+            "subject": "el_yuste: \"{{team}} hiç hoşuma gitmiyor\"",
+            "body": "el_yuste son yayınında {{team}} takımını eleştirdi: \"{{team}} hiç hoşuma gitmiyor, insanlar onlarda ne görüyor bilmiyorum.\"\n\n\"Ruhsuz, fikirsiz oynuyorlar. Hemen bir değişikliğe ihtiyaçları var\", diye ekledi.\n\nPopüler yayıncıların eleştirileri çok kişiye ulaşır."
+          },
+          "stream_neg_10": {
+            "subject": "el_yuste: \"{{team}} hiçbir yere gitmiyor\"",
+            "body": "Yayıncı, {{team}} takımının mevcut projeyle \"hiçbir yere gitmediğini\" ilan etti.\n\n\"{{team}} hiçbir yere gitmiyor. İlerleme görmüyorum, fikir görmüyorum, gelecek görmüyorum\", diye savundu.\n\nBu kadar sert yorumlar taraftarların moralini etkileyebilir."
+          },
+          "stream_neg_2": {
+            "subject": "el_yuste {{team}} ile dalga geçiyor",
+            "body": "Yayıncı el_yuste, kanalında {{team}} takımının son maçıyla dalga geçti.\n\n\"{{team}} olmuyor ya, her seferinde daha kötü görüyorum. Ağlanacak hal\", dedi gülerek.\n\nViral yayınlardaki alaylar kulübün imajına zarar verebilir."
+          },
+          "stream_neg_3": {
+            "subject": "el_yuste: \"{{team}} tam bir felaket\"",
+            "body": "el_yuste son yayınında {{team}} takımına \"felaket\" dedi.\n\n\"Tutunacak bir şey yok. {{team}} baştan sona felaket\", diye hükmetti.\n\nBu tür yorumlar kamuoyunda karşılık bulabilir."
+          },
+          "stream_neg_4": {
+            "subject": "el_yuste: \"{{team}} asla gelişmiyor\"",
+            "body": "Yayıncı {{team}} takımının ilerleme eksikliğini eleştirdi: \"{{team}} asla gelişmiyor, hep aynı hatalar.\"\n\n\"Öğrenmiyorlar, değişmiyorlar, evrilmiyorlar. İzlemek sinir bozucu\", diyerek bitirdi.\n\nTekrarlanan eleştiriler takımın morelini etkileyebilir."
+          },
+          "stream_neg_5": {
+            "subject": "el_yuste: \"{{player}}, {{team}} takımından ayrılmalı\"",
+            "body": "el_yuste canlı yayında {{player}} oyuncusunun gelişmeye devam etmek için {{team}} takımından ayrılmayı düşünmesi gerektiğini söyledi.\n\n\"{{player}} yetenekli ama {{team}} takımında asla patlama yapamaz. Ortam değişikliğine ihtiyacı var\", dedi.\n\nBu yorumlar oyuncuyu huzursuz edebilir."
+          },
+          "stream_neg_6": {
+            "subject": "el_yuste: \"{{team}} için ne yazık\"",
+            "body": "Yayıncı {{team}} takımına duyduğu hayal kırıklığını dile getirdi: \"{{team}} için ne yazık, vaat ettikleri onca şeye rağmen.\"\n\n\"Bu yıl atılım yapacaklarını sanıyordum ama her zamankinden daha kötüler\", diye yakındı.\n\nTakipçilerin hayal kırıklığı soyunma odasına bulaşabilir."
+          },
+          "stream_neg_7": {
+            "subject": "el_yuste: \"{{team}} sıfırlanmalı\"",
+            "body": "el_yuste kanalında {{team}} takımının tamamen sıfırlanması gerektiğini önerdi.\n\n\"{{team}} sıfırlanmalı, tüm projeyi değiştirmeli. Bu işe yaramıyor\", dedi.\n\nKöklü değişim çağrıları yönetim üzerinde baskı yaratabilir."
+          },
+          "stream_neg_8": {
+            "subject": "el_yuste {{team}} izlerken sıkılıyor",
+            "body": "Yayıncı canlı yayında {{team}} takımını izlerken sıkıldığını söyledi.\n\n\"{{team}} tam bir uyku ilacı, hiçbir şey üretmiyorlar, risk almıyorlar, izlemesi korkunç\", diye şikâyet etti.\n\nOyun tarzına yönelik eleştiriler takımın algılanışını etkileyebilir."
+          },
+          "stream_neg_9": {
+            "subject": "el_yuste: \"{{team}} bir rezalet\"",
+            "body": "el_yuste son yayınında {{team}} takımına çok sert çıkıp onlara \"rezalet\" dedi.\n\n\"Bu kadroya sahip bir takım böyle oynayamaz. Rezalet\", dedi gözle görülür biçimde öfkeli.\n\nSert eleştiriler tırmanıp geleneksel medyaya ulaşabilir."
+          },
+          "stream_pos_1": {
+            "subject": "el_yuste: \"{{team}} formda!\"",
+            "body": "Yayıncı el_yuste son yayınında {{team}} takımının etkileyici bir seride olduğunu söyledi.\n\n\"{{team}} gerçekten çok iyi oynuyor ha. Dikkat edin onlara, başınızı ağrıtacaklar\", dedi gülerek.\n\nel_yuste takımınız hakkında iyi konuştuğunda bu her zaman iyi bir işarettir."
+          },
+          "stream_pos_10": {
+            "subject": "el_yuste: \"{{team}} saygımı kazandı\"",
+            "body": "el_yuste son yayınında {{team}} takımının bu sezon saygısını kazandığını açıkladı.\n\n\"Başta {{team}} takımına inanmıyordum ama beni susturdular. Harika iş çıkarıyorlar\", diye itiraf etti.\n\nEleştirmenleri kazanmak başlı başına bir zaferdir."
+          },
+          "stream_pos_2": {
+            "subject": "el_yuste {{team}} izlemekten keyif alıyor",
+            "body": "el_yuste yayında son zamanlarda {{team}} takımını izlemekten çok keyif aldığını söyledi.\n\n\"{{team}} bu sezon bana çok sevinç veriyor. İşleri doğru yapıyorlar\", diye yorumladı.\n\nBöylesine popüler bir yayıncının bunu söylemesi iyi bir reklam."
+          },
+          "stream_pos_3": {
+            "subject": "el_yuste, {{team}} oyuncusu {{player}} karşısında hayran kaldı",
+            "body": "Son yayınında el_yuste, {{team}} oyuncusu {{player}} oyuncusunun bir hamlesi karşısında hayran kaldı.\n\n\"{{player}} inanılmaz be adamım. Bu çocuk nasıl oynuyor\", diye haykırdı.\n\nKlip kulübün sosyal medyasında viral oldu."
+          },
+          "stream_pos_4": {
+            "subject": "el_yuste: \"{{team}} benim sürpriz takımım\"",
+            "body": "el_yuste yayında {{team}} takımının sezonun sürpriz takımı olduğunu itiraf etti.\n\n\"{{team}} takımından bunu hiç beklemiyordum. Sürpriz yapıyorlar\", dedi.\n\nBu kadar geniş kitleli bir yayıncı söylediğinde insanlar dikkat eder."
+          },
+          "stream_pos_5": {
+            "subject": "el_yuste {{team}} adına sevindi",
+            "body": "Yayıncı el_yuste, {{team}} takımının son sonuçlarına duyduğu sevinci gösterdi.\n\n\"{{team}} adına gerçekten çok mutluyum. O takımda iyi bir atmosfer var\", diye yorumladı canlı yayında.\n\nKamuya mal olmuş kişilerin desteği morali yükseltir."
+          },
+          "stream_pos_6": {
+            "subject": "el_yuste: \"{{team}} güçlü\"",
+            "body": "el_yuste kanalında {{team}} takımının bu sezon \"güçlü, çok güçlü\" olduğunu söyledi.\n\n\"{{team}} takımında ne değiştirdiler bilmiyorum ama işe yarıyor. Böyle devam edin\", dedi.\n\nBüyük yayınlardaki olumlu yorumlar çok kişiye ulaşır."
+          },
+          "stream_pos_7": {
+            "subject": "el_yuste: \"{{team}} takımına dikkat\"",
+            "body": "Yayıncı bir uyarıda bulundu: \"{{team}} takımına dikkat, güçlü geliyorlar.\"\n\n\"{{team}} işleri doğru yapıyor ve kimse bundan bahsetmiyor\", diye ekledi.\n\nel_yuste söylediğinde daha fazla insan takımı fark ediyor."
+          },
+          "stream_pos_8": {
+            "subject": "el_yuste: \"{{team}} beni ikna ediyor\"",
+            "body": "el_yuste canlı yayında {{team}} takımının bu sezon kendisini ikna ettiğini itiraf etti.\n\n\"Bir takımdan hoşlanmam kolay değil ama {{team}} hoşuma gidiyor\", diye itiraf etti.\n\nBu kadar sık eleştiren biri iyi konuşuyorsa, bir şeylerin doğru yapıldığının işaretidir."
+          },
+          "stream_pos_9": {
+            "subject": "el_yuste: \"{{team}} ne maç çıkardı\"",
+            "body": "Yayıncı {{team}} takımının son maçını izlerken duygulandı ve canlı yayında yorumladı.\n\n\"{{team}} ne maç çıkardı ama, yapma ya. Lig böyle izlemesi keyifli oluyor\", dedi heyecanla.\n\nO anın klibi yüzlerce kez paylaşıldı."
+          }
+        },
         "up": {
           "subject0": "el_yuste — Yuste bile kabul ediyor: bu hafta izlenme arttı",
           "body0": "Yuste yayınında nadir görülen olumlu bir yorumla herkesi şaşırttı: \"Dürüst olayım — rakamlar bu hafta yükseldi ve bunun aksini iddia etmeyeceğim. Maçlar iyi olduğunda izleyici geliyor. Bu kadar basit.\"\n\nTüm sahne için olumlu bir an.",
@@ -2850,6 +3317,10 @@
       }
     },
     "news": {
+      "ladder": {
+        "headline": "{{promoted}} {{upper}} ligine yükseldi, {{relegated}} düştü",
+        "body": "{{promoted}}, {{lower}} liginden {{upper}} ligine çıkarken {{relegated}} {{season}} sezonunun ardından düştü."
+      },
       "matchReport": {
         "headline": {
           "homeWin": {

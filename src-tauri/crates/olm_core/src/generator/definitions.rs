@@ -53,6 +53,43 @@ pub struct CompetitionManifest {
     /// True for competitions that should appear in the league selection and in-game tabs.
     #[serde(default)]
     pub active: bool,
+    /// Ladder link to the league above this one, declared in the main-repo
+    /// competition overrides. `None` means no promotion path.
+    #[serde(default)]
+    pub promotion: Option<PromotionLink>,
+}
+
+/// A promotion path from the league that carries it (the lower league) up to
+/// the league `to`.
+///
+/// Contract for the units that consume it:
+/// - Custom (user-created) teams get fresh ids and are never feeders.
+/// - A feeder whose `team` no longer exists in `game.teams` is ignored.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PromotionLink {
+    /// Id of the higher league the winner of the lower league moves up to.
+    pub to: String,
+    /// How many teams move up each season.
+    #[serde(default = "default_promotion_slots")]
+    pub slots: u8,
+    /// Which lower-league club is the affiliate of which upper-league club.
+    #[serde(default)]
+    pub feeders: Vec<FeederLink>,
+}
+
+/// One affiliate relationship inside a [`PromotionLink`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FeederLink {
+    /// Final id of the lower-league team (for example `les-team-854f6893`).
+    pub team: String,
+    /// Final id of the upper-league parent club (for example `lec-giantx-lec`).
+    pub parent: String,
+}
+
+fn default_promotion_slots() -> u8 {
+    1
 }
 
 fn default_teams_file() -> String {
@@ -102,6 +139,9 @@ pub struct SeasonStart {
 pub struct PlayoffConfig {
     pub format: String,
     pub teams: u32,
+    /// Series length of the four-team bracket; absent means best of five.
+    #[serde(default)]
+    pub best_of: Option<u8>,
 }
 
 // ---------------------------------------------------------------------------
@@ -166,6 +206,9 @@ pub struct CompetitionSummary {
     #[serde(default)]
     pub active: bool,
     pub team_count: u32,
+    /// Whether the player may replace one of this league's clubs with their own
+    /// (see `custom_team::custom_team_allowed`).
+    pub custom_team_allowed: bool,
     pub teams: Vec<TeamSummary>,
 }
 

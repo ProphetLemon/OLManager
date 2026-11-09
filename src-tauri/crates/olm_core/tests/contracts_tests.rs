@@ -462,7 +462,9 @@ fn expired_contract_preserves_non_zero_wage() {
 #[test]
 fn expired_contract_wage_reflects_expected_wage_multipliers() {
     let mut game = make_game();
-    game.players[0].wage = 100_000;
+    // The wage sits above the LEC-scale floor of a 2M player (about 2.4M), so only the
+    // multipliers move it.
+    game.players[0].wage = 2_500_000;
     game.players[0].market_value = 2_000_000;
     game.players[0].morale = 40;
     game.players[0].date_of_birth = "2002-01-01".to_string();
@@ -476,9 +478,9 @@ fn expired_contract_wage_reflects_expected_wage_multipliers() {
         .iter()
         .find(|player| player.id == "player-1")
         .unwrap();
-    // 100_000 * 1.05 (age <= 27) * 1.10 (morale <= 50) * 1.18 (market_value >= 2M)
-    // * 1.05 (reputation < 40) * 1.10 (remaining_days <= 180) = 158_000 after rounding.
-    assert_eq!(player.wage, 158_000);
+    // 2_500_000 * 1.05 (age <= 27) * 1.10 (morale <= 50) * 1.18 (market_value >= 2M)
+    // * 1.05 (reputation < 40) * 1.10 (remaining_days <= 180) = 3_936_000 after rounding.
+    assert_eq!(player.wage, 3_936_000);
 }
 
 #[test]
@@ -522,4 +524,31 @@ fn renewal_blocks_large_worsening_for_legacy_over_budget_saves() {
     .expect_err("large worsening should still be blocked");
 
     assert!(err.contains("board wage policy"));
+}
+
+#[test]
+fn expected_wage_of_a_star_without_a_wage_follows_the_lec_scale() {
+    // Gumayusi-like: OVR 91, 370k market value, wage 0, mid-contract at a rich club.
+    let mut star = make_player_with("star", 0, "2027-11-30");
+    star.market_value = 370_000;
+    let team = make_team();
+    let today = chrono::NaiveDate::from_ymd_opt(2026, 11, 7).unwrap();
+
+    let wage = olm_core::contracts::expected_wage(&star, &team, today);
+
+    assert!(
+        (450_000..=550_000).contains(&wage),
+        "expected wage {wage} is outside 450k-550k"
+    );
+}
+
+#[test]
+fn expected_wage_keeps_the_minimum_for_a_worthless_player() {
+    let mut rookie = make_player_with("rookie", 0, "2027-11-30");
+    rookie.market_value = 0;
+    let today = chrono::NaiveDate::from_ymd_opt(2026, 11, 7).unwrap();
+
+    let wage = olm_core::contracts::expected_wage(&rookie, &make_team(), today);
+
+    assert!((25_000..=30_000).contains(&wage), "got {wage}");
 }

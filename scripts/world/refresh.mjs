@@ -5,8 +5,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { DEFAULT_MAX_CACHE_AGE_DAYS, DEFAULT_THROTTLE_MS, MediaWikiClient } from "./lib/mediawiki-client.mjs";
+import { loginFromFile } from "./lib/bot-credentials.mjs";
 import { loadGateExceptions } from "./lib/gates.mjs";
 import { serializeOverlay } from "./lib/overlay.mjs";
+import { resolveKeyPath, signOverlayFile } from "./lib/signing.mjs";
 import { runRefresh } from "./lib/pipeline.mjs";
 import { buildTeamMap, loadTeamMap, summarizeTeamMap } from "./lib/team-map.mjs";
 import { coveredCompetitionIds, loadWorld } from "./lib/world.mjs";
@@ -16,6 +18,8 @@ const HELP = `Usage: node scripts/world/refresh.mjs [flags]
 
   --competitions a,b      competition ids (default: every covered competition)
   --offline               read the cache only; fail on a miss
+  --login                 log in with a Leaguepedia bot password from ~/.config/olmanager/leaguepedia-bot.env (opt-in;
+                          see scripts/champions/README.md, "Logging in"); ignored with --offline
   --cache-dir <dir>       HTTP cache (default scripts/world/.cache)
   --throttle-ms <n>       minimum delay between live requests (default ${DEFAULT_THROTTLE_MS})
   --max-requests <n>      cap on live requests (default 3000)
@@ -34,6 +38,7 @@ const { values } = parseArgs({
   options: {
     competitions: { type: "string" },
     offline: { type: "boolean", default: false },
+    login: { type: "boolean", default: false },
     "cache-dir": { type: "string", default: path.join(ROOT, "scripts/world/.cache") },
     "throttle-ms": { type: "string", default: String(DEFAULT_THROTTLE_MS) },
     "max-requests": { type: "string", default: "3000" },
@@ -110,9 +115,17 @@ async function refresh() {
   const out = values.out ?? path.join(ROOT, "assets/world/roster-overlay.json");
   writeFile(out, serializeOverlay(result.overlay));
   console.log(`overlay written: ${out}`);
+  const keyPath = resolveKeyPath();
+  if (fs.existsSync(keyPath)) {
+    signOverlayFile(out, fs.readFileSync(keyPath, "utf8"));
+    console.log(`overlay signed: ${out}.sig`);
+  } else {
+    console.error(`[world] WARNING: no signing key at ${keyPath}; ${out}.sig was NOT updated and the app will reject this overlay. Run "npm run world:keygen" or set OLM_OVERLAY_SIGNING_KEY, then "npm run world:sign".`);
+  }
 }
 
 try {
+  if (values.login) await loginFromFile(client, { log });
   if (values["build-team-map"]) await buildMap();
   else await refresh();
 } catch (error) {

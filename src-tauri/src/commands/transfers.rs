@@ -409,6 +409,10 @@ mod tests {
         );
         team.finance = 6_000_000;
         team.transfer_budget = 3_000_000;
+        team.wage_budget = 5_000_000;
+        // A club without a lineup ranks its players by OVR; this one lists somebody else
+        // so its bid target stays a fringe player.
+        team.active_lineup_ids = vec!["lineup-placeholder".to_string()];
         team
     }
 
@@ -587,7 +591,7 @@ mod tests {
 
         counter_offer_internal(&state, "player-1", "offer-1", 1_050_000, &[])
             .expect("accepted club offer");
-        let response = negotiate_player_wage_internal(&state, "player-1", "offer-1", 1_000_000, 3)
+        let response = negotiate_player_wage_internal(&state, "player-1", "offer-1", 2_000_000, 3)
             .expect("accepted wage offer");
 
         assert_eq!(response.decision, TransferNegotiationDecision::Accepted);

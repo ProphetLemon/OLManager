@@ -1,7 +1,8 @@
 use crate::contract_wage_policy::{
     AiTransferKind, SigningIntent, ai_signing_policy, ai_transfer_cap_try_consume,
+    annual_team_wage_bill, wage_policy_allows_for_bill, wage_policy_room_for_new_signing,
 };
-use crate::contracts::{expected_contract_years, expected_wage};
+use crate::contracts::{expected_contract_years, expected_signing_wage, expected_wage};
 use crate::domain::negotiation::{NegotiationFeedback, NegotiationMood};
 use crate::domain::player::{PlayerOfferItem, TransferOfferStatus, WageNegotiationStatus};
 use crate::domain::season::TransferWindowStatus;
@@ -29,15 +30,14 @@ fn ai_random_contract_years() -> u8 {
 fn next_split_end_date(game: &Game) -> String {
     let current_date = game.clock.current_date.date_naive();
     let league_name = game
-        .leagues
-        .first()
-        .and_then(|l| {
+        .active_league()
+        .map(|l| {
             if l.name.contains("Winter") {
-                Some("Winter")
+                "Winter"
             } else if l.name.contains("Spring") {
-                Some("Spring")
+                "Spring"
             } else {
-                Some("Summer")
+                "Summer"
             }
         })
         .unwrap_or("Winter");
@@ -111,14 +111,20 @@ fn contract_days_remaining(current_date: NaiveDate, contract_end: Option<&str>) 
     Some((contract_end_date - current_date).num_days())
 }
 
+/// Number of players an AI team without a lineup treats as its key players.
+const KEY_PLAYERS_WITHOUT_LINEUP: usize = 5;
+
 fn infer_player_importance(
     player: &crate::domain::player::Player,
     owner_team: &crate::domain::team::Team,
+    players: &[crate::domain::player::Player],
 ) -> PlayerImportance {
     if owner_team
         .active_lineup_ids
         .iter()
         .any(|id| id == &player.id)
+        || (owner_team.active_lineup_ids.is_empty()
+            && is_top_ovr_of_roster(player, &owner_team.id, players))
     {
         return PlayerImportance::Key;
     }
@@ -130,11 +136,33 @@ fn infer_player_importance(
     PlayerImportance::Fringe
 }
 
+/// True when `player` is among the best `KEY_PLAYERS_WITHOUT_LINEUP` of the
+/// team's roster by OVR (ties broken by id so the answer is stable).
+fn is_top_ovr_of_roster(
+    player: &crate::domain::player::Player,
+    team_id: &str,
+    players: &[crate::domain::player::Player],
+) -> bool {
+    let rank_key = |p: &crate::domain::player::Player| {
+        (
+            std::cmp::Reverse(crate::potential::calculate_lol_ovr(p)),
+            p.id.clone(),
+        )
+    };
+    let own = rank_key(player);
+    let better = players
+        .iter()
+        .filter(|p| p.team_id.as_deref() == Some(team_id) && rank_key(p) < own)
+        .count();
+    better < KEY_PLAYERS_WITHOUT_LINEUP
+}
+
 fn minimum_acceptable_fee(
     current_date: NaiveDate,
     player: &crate::domain::player::Player,
     owner_team: &crate::domain::team::Team,
     buyer_team: &crate::domain::team::Team,
+    players: &[crate::domain::player::Player],
 ) -> u64 {
     let mut multiplier: f64 = if player.transfer_listed { 0.8 } else { 1.2 };
 
@@ -150,7 +178,7 @@ fn minimum_acceptable_fee(
         }
     }
 
-    match infer_player_importance(player, owner_team) {
+    match infer_player_importance(player, owner_team, players) {
         PlayerImportance::Key => multiplier += 0.2,
         PlayerImportance::Regular => multiplier += 0.1,
         PlayerImportance::Fringe => {}
@@ -471,6 +499,47 @@ fn find_open_offer_from_club<'a>(
         .find(|offer| offer.from_team_id == club_id && offer.status == TransferOfferStatus::Pending)
 }
 
+/// How long a turned-down bid stays on record. Two weeks is two league match weeks:
+/// long enough that re-sending the same figure over a few clicks or a couple of
+/// in-game days cannot wear a club down, short enough that a genuinely changed
+/// situation (a new window, a different season) gets a fresh hearing.
+const REJECTED_BID_COOL_OFF_DAYS: i64 = 14;
+/// After a counter, a new bid has to close at least this share of the distance between
+/// the previous bid and the counter before the club treats it as a serious step.
+const COUNTER_GAP_CLOSED_PCT: u64 = 50;
+
+/// The latest bid from `club_id` that was turned down within the cool-off.
+fn find_recent_rejected_bid<'a>(
+    current_date: NaiveDate,
+    player: &'a crate::domain::player::Player,
+    club_id: &str,
+) -> Option<&'a crate::domain::player::TransferOffer> {
+    player
+        .transfer_offers
+        .iter()
+        .filter(|offer| {
+            offer.from_team_id == club_id && offer.status == TransferOfferStatus::Rejected
+        })
+        .filter(|offer| {
+            NaiveDate::parse_from_str(&offer.date, "%Y-%m-%d")
+                .map(|date| {
+                    let age = (current_date - date).num_days();
+                    (0..REJECTED_BID_COOL_OFF_DAYS).contains(&age)
+                })
+                .unwrap_or(false)
+        })
+        .max_by_key(|offer| (offer.date.clone(), offer.negotiation_round))
+}
+
+/// Whether `fee` moves from `previous_fee` towards `counter_fee` far enough.
+fn closes_enough_of_gap(previous_fee: Option<u64>, counter_fee: u64, fee: u64) -> bool {
+    let Some(previous_fee) = previous_fee.filter(|previous| *previous < counter_fee) else {
+        return true;
+    };
+    fee.saturating_sub(previous_fee).saturating_mul(100)
+        >= (counter_fee - previous_fee).saturating_mul(COUNTER_GAP_CLOSED_PCT)
+}
+
 fn negotiation_round_from_offer(offer: Option<&crate::domain::player::TransferOffer>) -> u8 {
     offer
         .map(|offer| offer.negotiation_round.max(1).saturating_add(1))
@@ -494,6 +563,7 @@ fn transfer_negotiation_metrics(round: u8, stalled: bool, respected_signal: bool
     (tension.clamp(20, 90) as u8, patience.clamp(18, 86) as u8)
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn upsert_transfer_offer(
     player: &mut crate::domain::player::Player,
     from_team_id: &str,
@@ -743,15 +813,13 @@ pub fn generate_incoming_transfer_offers(game: &mut Game) {
             }
         }
 
-        if academy_offer_window_open && !academy_offer_created_today {
-            if let Some(academy_id) = academy_player_id {
-                if !chosen_is_academy {
+        if academy_offer_window_open && !academy_offer_created_today
+            && let Some(academy_id) = academy_player_id
+                && !chosen_is_academy {
                     chosen_player_id = Some(academy_id);
                     chosen_fee = academy_fee;
                     chosen_is_academy = true;
                 }
-            }
-        }
 
         let Some(player_id) = chosen_player_id else {
             continue;
@@ -869,6 +937,7 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
             .players
             .iter()
             .filter(|player| player.team_id.is_none())
+            .filter(|player| crate::residency::has_import_slot_for(game, team, player))
             .filter(|player| lol_role_to_string(&player.natural_position) == preferred_role)
             .filter_map(|player| {
                 let asking_price = (player.market_value as i64).max(25_000) / 5;
@@ -884,6 +953,7 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
             .players
             .iter()
             .filter(|player| player.team_id.is_none())
+            .filter(|player| crate::residency::has_import_slot_for(game, team, player))
             .filter_map(|player| {
                 let asking_price = (player.market_value as i64).max(25_000) / 5;
                 (asking_price > 0 && asking_price <= budget_cap).then_some((
@@ -904,7 +974,7 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
         let Some(team) = game.teams.iter().find(|t| t.id == team_id) else {
             continue;
         };
-        let decision = ai_signing_policy(game, &team, player, SigningIntent::Strategic);
+        let decision = ai_signing_policy(game, team, player, SigningIntent::Strategic);
         if !decision.accepted {
             continue;
         }
@@ -934,6 +1004,7 @@ pub fn ai_agent_purchase(game: &mut Game, team_id: &str, role: &str) -> bool {
         .players
         .iter()
         .filter(|player| player.team_id.is_none())
+        .filter(|player| crate::residency::has_import_slot_for(game, &team, player))
         .filter(|player| lol_role_to_string(&player.natural_position) == role)
         .filter_map(|player| {
             let asking_price = (player.market_value as i64).max(25_000) / 5;
@@ -999,13 +1070,11 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
                     return None;
                 }
 
-                if let Some(date_str) = &player.can_be_transferred_until {
-                    if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                        if date >= current_date {
+                if let Some(date_str) = &player.can_be_transferred_until
+                    && let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+                        && date >= current_date {
                             return None;
                         }
-                    }
-                }
 
                 let seller_id = player.team_id.as_deref()?;
                 if seller_id == user_team_id || seller_id == buyer_id {
@@ -1014,6 +1083,9 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
 
                 let seller_team = game.teams.iter().find(|team| team.id == seller_id)?;
                 if seller_team.team_kind != TeamKind::Main {
+                    return None;
+                }
+                if !crate::residency::has_import_slot_for(game, &buyer_team, player) {
                     return None;
                 }
 
@@ -1043,13 +1115,11 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
             .players
             .iter()
             .filter_map(|player| {
-                if let Some(date_str) = &player.can_be_transferred_until {
-                    if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                        if date >= current_date {
+                if let Some(date_str) = &player.can_be_transferred_until
+                    && let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+                        && date >= current_date {
                             return None;
                         }
-                    }
-                }
 
                 let seller_id = player.team_id.as_deref()?;
                 if seller_id == user_team_id || seller_id == buyer_id {
@@ -1058,6 +1128,9 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
 
                 let seller_team = game.teams.iter().find(|team| team.id == seller_id)?;
                 if seller_team.team_kind != TeamKind::Main {
+                    return None;
+                }
+                if !crate::residency::has_import_slot_for(game, &buyer_team, player) {
                     return None;
                 }
 
@@ -1372,17 +1445,63 @@ pub fn make_transfer_bid(
 
     let buyer_team = my_team;
 
-    let threshold = minimum_acceptable_fee(current_date, player, owner_team, buyer_team);
+    let threshold = minimum_acceptable_fee(current_date, player, owner_team, buyer_team, &game.players);
     let existing_offer = find_open_offer_from_club(player, &user_team_id);
     let previous_fee = existing_offer.map(|offer| offer.fee);
     let previous_counter_fee = existing_offer.and_then(|offer| offer.suggested_counter_fee);
-    let round = negotiation_round_from_offer(existing_offer);
+    let recent_rejection = if existing_offer.is_none() {
+        find_recent_rejected_bid(current_date, player, &user_team_id)
+    } else {
+        None
+    };
+    let round = match (existing_offer, recent_rejection) {
+        (None, Some(rejected)) => rejected.negotiation_round.max(1).saturating_add(1),
+        _ => negotiation_round_from_offer(existing_offer),
+    };
     let respected_signal = previous_counter_fee
-        .map(|counter| fee >= counter.saturating_mul(95) / 100)
+        .map(|counter| {
+            fee >= counter.saturating_mul(95) / 100
+                && closes_enough_of_gap(previous_fee, counter, fee)
+        })
         .unwrap_or(false);
     let stalled = previous_fee
         .map(|previous| fee <= previous.saturating_add(50_000))
         .unwrap_or(false);
+
+    // A club that already said no does not change its mind because the same figure,
+    // or a lower one, is sent again: it only gets less patient.
+    if let Some(rejected) = recent_rejection
+        && included_items.is_empty()
+        && fee <= rejected.fee
+    {
+        let rejected_offer_id = rejected.id.clone();
+        if let Some(p) = game.players.iter_mut().find(|p| p.id == player_id)
+            && let Some(o) = p
+                .transfer_offers
+                .iter_mut()
+                .find(|o| o.id == rejected_offer_id)
+        {
+            o.negotiation_round = round;
+        }
+        let (tension, patience) = transfer_negotiation_metrics(round, true, false);
+        return Ok(transfer_outcome(
+            TransferNegotiationDecision::Rejected,
+            None,
+            true,
+            build_transfer_feedback(
+                "transfers.transferFeedbackRejectedHeadline",
+                "transfers.transferFeedbackRejectedDetail",
+                NegotiationMood::Guarded,
+                tension.saturating_add(10).min(92),
+                patience.saturating_sub(14),
+                round,
+                &[(
+                    "fee",
+                    round_transfer_fee(threshold.saturating_sub(total_included_value)).to_string(),
+                )],
+            ),
+        ));
+    }
     let concession = if respected_signal {
         ((threshold as f64) * 0.04).round() as u64
     } else if round >= 3 && !stalled {
@@ -1612,6 +1731,7 @@ fn execute_free_agent_signing_with_payer(
         clear_player_from_active_lineup(team, player_id);
         reconcile_lol_active_lineup(team, &players_snapshot);
     }
+    crate::residency::refresh_import_flags(game);
 
     let user_team_id = game.manager.team_id.clone().unwrap_or_default();
     let is_user_involved = to_team_id == user_team_id;
@@ -1907,20 +2027,32 @@ pub struct WageNegotiationOutcome {
     pub feedback: NegotiationFeedback,
 }
 
+/// Share of the expected wage below which a player refuses to talk numbers at all.
+const WAGE_FLOOR_PCT_OF_EXPECTED: u64 = 85;
+/// A manager offer this close under the player's own counter closes the deal. The
+/// slack is proportional because a flat 5,000 was 10% of a 50k wage but 1% of a 500k one.
+const WAGE_COUNTER_TOLERANCE_PCT: u64 = 2;
+/// From this reply on, a player whose terms are still unmet walks away for good.
+const WAGE_FINAL_ROUND: u8 = 4;
+
+/// Lowest wage the player will consider for `reference_wage`.
+fn wage_floor(reference_wage: u32) -> u32 {
+    (u64::from(reference_wage) * WAGE_FLOOR_PCT_OF_EXPECTED).div_ceil(100) as u32
+}
+
 fn calculate_wage_acceptance_score(
     current_date: NaiveDate,
     player: &crate::domain::player::Player,
     offered_wage: u32,
+    reference_wage: u32,
     contract_years: u8,
     game: &Game,
 ) -> i32 {
-    let current_wage = player.wage;
-    let wage_diff = offered_wage as i64 - current_wage as i64;
-    let wage_increase_pct = if current_wage > 0 {
-        ((offered_wage as f64 / current_wage as f64) - 1.0) * 100.0
-    } else {
-        100.0
-    };
+    // The offer is measured against what the player expects to earn, never against a
+    // current wage of 0, so an unpaid-looking star cannot be bought with any figure.
+    let baseline_wage = reference_wage.max(player.wage).max(1);
+    let wage_diff = offered_wage as i64 - baseline_wage as i64;
+    let wage_increase_pct = ((offered_wage as f64 / baseline_wage as f64) - 1.0) * 100.0;
 
     let mut score = 0_i32;
 
@@ -1949,8 +2081,8 @@ fn calculate_wage_acceptance_score(
     if player.team_id.is_none() {
         // Free agent: eager to find a new club
         score += 25;
-    } else if let Some(team_id) = &player.team_id {
-        if game.teams.iter().any(|t| t.id.as_str() == team_id.as_str()) {
+    } else if let Some(team_id) = &player.team_id
+        && game.teams.iter().any(|t| t.id.as_str() == team_id.as_str()) {
             let player_team = game
                 .teams
                 .iter()
@@ -1981,7 +2113,6 @@ fn calculate_wage_acceptance_score(
                 }
             }
         }
-    }
 
     if player.transfer_listed {
         // Player actively wants to leave
@@ -1989,8 +2120,8 @@ fn calculate_wage_acceptance_score(
     }
 
     // Contract situation: players near end of contract are more open to moves
-    if let Some(contract_end) = &player.contract_end {
-        if let Ok(end_date) = NaiveDate::parse_from_str(contract_end, "%Y-%m-%d") {
+    if let Some(contract_end) = &player.contract_end
+        && let Ok(end_date) = NaiveDate::parse_from_str(contract_end, "%Y-%m-%d") {
             let days_left = (end_date - current_date).num_days();
             if days_left <= 30 {
                 score += 18; // Contract almost expired
@@ -2000,7 +2131,6 @@ fn calculate_wage_acceptance_score(
                 score += 5; // One year or less remaining
             }
         }
-    }
 
     // Contract duration: longer commitments demand higher wages
     if contract_years == 1 {
@@ -2126,12 +2256,35 @@ pub fn negotiate_player_wage(
     let current_date = game.clock.current_date.date_naive();
     let date = game.clock.current_date.format("%Y-%m-%d").to_string();
     // wage_negotiation_round starts at 1 for a fresh offer; don't double-increment
-    let round = offer.wage_negotiation_round;
+    let round = offer.wage_negotiation_round.max(1);
+    // Every reply that is not an acceptance moves the talks one round on.
+    let next_round = round.saturating_add(1);
 
-    // Accept immediately if offer matches a previous counter-offer within tolerance
-    if let Some(counter_annual) = offer.suggested_counter_wage
-        && annual_wage >= counter_annual.saturating_sub(5_000)
-        && annual_wage <= counter_annual.saturating_add(5_000)
+    let destination_team = game
+        .teams
+        .iter()
+        .find(|t| t.id.as_str() == destination_team_id.as_str())
+        .ok_or("Destination team not found")?;
+    let reference_wage = expected_signing_wage(player, destination_team, current_date);
+    let below_floor = annual_wage < wage_floor(reference_wage);
+    let payer_team = game
+        .teams
+        .iter()
+        .find(|t| t.id.as_str() == payer_team_id.as_str())
+        .ok_or("Paying team not found")?;
+    // The same board policy renewals and AI signings answer to: a wage is fine while the
+    // projected bill stays under the soft cap of the total wage budget, and a club already
+    // over budget only gets the small legacy grace.
+    let payer_bill = annual_team_wage_bill(game, &payer_team_id);
+    let affordable_wage = wage_policy_room_for_new_signing(payer_team, payer_bill);
+    let over_budget = !wage_policy_allows_for_bill(payer_team, payer_bill, 0, annual_wage);
+    let blocked = below_floor || over_budget;
+
+    // Accept immediately if the offer matches a previous counter-offer within tolerance
+    if !blocked
+        && let Some(counter_annual) = offer.suggested_counter_wage
+        && u64::from(annual_wage)
+            >= u64::from(counter_annual) * (100 - WAGE_COUNTER_TOLERANCE_PCT) / 100
     {
         if let Some(p) = game.players.iter_mut().find(|p| p.id == player_id)
             && let Some(o) = p.transfer_offers.iter_mut().find(|o| o.id == offer_id)
@@ -2171,8 +2324,14 @@ pub fn negotiate_player_wage(
         });
     }
 
-    let score =
-        calculate_wage_acceptance_score(current_date, player, annual_wage, contract_years, game);
+    let score = calculate_wage_acceptance_score(
+        current_date,
+        player,
+        annual_wage,
+        reference_wage,
+        contract_years,
+        game,
+    );
 
     let previous_wage = if annual_wage > player.wage {
         Some(player.wage)
@@ -2191,17 +2350,7 @@ pub fn negotiate_player_wage(
 
     let (tension, patience) = wage_negotiation_metrics(round, stalled, respected_signal);
 
-    let destination_team = game
-        .teams
-        .iter()
-        .find(|t| t.id.as_str() == destination_team_id.as_str())
-        .ok_or("Destination team not found")?;
-
-    if score >= 50 {
-        let current_annual_wage_bill = calc_annual_wages(game, &destination_team_id);
-        let projected_annual_wage_bill = current_annual_wage_bill + annual_wage as i64;
-        let can_afford = projected_annual_wage_bill <= destination_team.wage_budget;
-
+    if score >= 50 && !blocked {
         if let Some(p) = game.players.iter_mut().find(|p| p.id == player_id)
             && let Some(o) = p.transfer_offers.iter_mut().find(|o| o.id == offer_id)
         {
@@ -2223,26 +2372,14 @@ pub fn negotiate_player_wage(
             &date,
         )?;
 
-        let (headline, detail) = if can_afford {
-            (
-                "transfers.wageFeedbackAcceptedHeadline",
-                "transfers.wageFeedbackAcceptedDetail",
-            )
-        } else {
-            (
-                "transfers.wageFeedbackAcceptedOverBudgetHeadline",
-                "transfers.wageFeedbackAcceptedOverBudgetDetail",
-            )
-        };
-
         return Ok(WageNegotiationOutcome {
             decision: TransferNegotiationDecision::Accepted,
             suggested_wage: None,
             suggested_years: None,
             is_terminal: true,
             feedback: build_wage_feedback(
-                headline,
-                detail,
+                "transfers.wageFeedbackAcceptedHeadline",
+                "transfers.wageFeedbackAcceptedDetail",
                 NegotiationMood::Positive,
                 tension.saturating_sub(10),
                 patience.saturating_add(10).min(92),
@@ -2252,11 +2389,12 @@ pub fn negotiate_player_wage(
         });
     }
 
-    if round >= 4 && score < 40 {
+    if round >= WAGE_FINAL_ROUND && (blocked || score < 40) {
         if let Some(p) = game.players.iter_mut().find(|p| p.id == player_id)
             && let Some(o) = p.transfer_offers.iter_mut().find(|o| o.id == offer_id)
         {
             o.wage_negotiation_status = WageNegotiationStatus::Rejected;
+            o.wage_negotiation_round = next_round;
             o.date = date;
         }
 
@@ -2273,6 +2411,38 @@ pub fn negotiate_player_wage(
                 patience.saturating_sub(16),
                 round,
                 &[],
+            ),
+        });
+    }
+
+    if over_budget {
+        // The club cannot fit this wage. Name what it can still pay when that is a
+        // wage the player would consider, otherwise there is nothing to counter with.
+        let suggested_wage = u32::try_from(affordable_wage)
+            .ok()
+            .filter(|affordable| *affordable >= wage_floor(reference_wage));
+        if let Some(p) = game.players.iter_mut().find(|p| p.id == player_id)
+            && let Some(o) = p.transfer_offers.iter_mut().find(|o| o.id == offer_id)
+        {
+            o.suggested_counter_wage = suggested_wage;
+            o.suggested_counter_years = suggested_wage.map(|_| contract_years);
+            o.date = date.clone();
+            o.wage_negotiation_round = next_round;
+        }
+
+        return Ok(WageNegotiationOutcome {
+            decision: TransferNegotiationDecision::Rejected,
+            suggested_wage,
+            suggested_years: suggested_wage.map(|_| contract_years),
+            is_terminal: false,
+            feedback: build_wage_feedback(
+                "transfers.wageFeedbackOverBudgetHeadline",
+                "transfers.wageFeedbackOverBudgetDetail",
+                NegotiationMood::Guarded,
+                tension.saturating_add(8).min(92),
+                patience.saturating_sub(8),
+                round,
+                &[("wage", affordable_wage.to_string())],
             ),
         });
     }
@@ -2302,6 +2472,9 @@ pub fn negotiate_player_wage(
         let min_acceptable = (player.wage as f64 * 1.1).round() as u32;
         suggested_wage = suggested_wage.max(min_acceptable);
 
+        // A counter is never below what the player expects to earn.
+        suggested_wage = suggested_wage.max(reference_wage);
+
         let suggested_years = if contract_years < 3 {
             (contract_years + 1).min(5)
         } else {
@@ -2314,7 +2487,7 @@ pub fn negotiate_player_wage(
             o.suggested_counter_wage = Some(suggested_wage);
             o.suggested_counter_years = Some(suggested_years);
             o.date = date.clone();
-            o.wage_negotiation_round = round;
+            o.wage_negotiation_round = next_round;
         }
 
         return Ok(WageNegotiationOutcome {
@@ -2356,7 +2529,9 @@ pub fn negotiate_player_wage(
         let base = ((annual_wage as f64) * years_premium).round() as u32;
         let min_over_offer = (annual_wage as f64 * 1.05).round() as u32;
         let min_acceptable = (player.wage as f64 * 1.1).round() as u32;
-        base.max(min_over_offer).max(min_acceptable)
+        base.max(min_over_offer)
+            .max(min_acceptable)
+            .max(reference_wage)
     };
     if let Some(p) = game.players.iter_mut().find(|p| p.id == player_id)
         && let Some(o) = p.transfer_offers.iter_mut().find(|o| o.id == offer_id)
@@ -2364,7 +2539,7 @@ pub fn negotiate_player_wage(
         o.suggested_counter_wage = Some(suggested_wage);
         o.suggested_counter_years = Some(contract_years);
         o.date = date.clone();
-        o.wage_negotiation_round = round;
+        o.wage_negotiation_round = next_round;
     }
 
     Ok(WageNegotiationOutcome {
@@ -2384,6 +2559,7 @@ pub fn negotiate_player_wage(
     })
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn complete_transfer_with_wage(
     game: &mut Game,
     player_id: &str,
@@ -2461,11 +2637,10 @@ fn complete_transfer_with_wage(
     }
 
     if !from_id.is_empty() {
-        if let Some(t) = game.teams.iter_mut().find(|t| t.id == from_id) {
-            if let Some(pos) = t.active_lineup_ids.iter().position(|id| id == player_id) {
+        if let Some(t) = game.teams.iter_mut().find(|t| t.id == from_id)
+            && let Some(pos) = t.active_lineup_ids.iter().position(|id| id == player_id) {
                 t.active_lineup_ids.remove(pos);
             }
-        }
 
         let credit_target_id = academy_owner_id.as_deref().unwrap_or(from_id);
         if let Some(t) = game.teams.iter_mut().find(|t| t.id == credit_target_id) {
@@ -2495,11 +2670,12 @@ fn complete_transfer_with_wage(
         ensure_academy_roster_continuity(game, from_id, &player_snapshot);
     }
 
-    if let Some(t) = game.teams.iter_mut().find(|t| t.id == to_team_id) {
-        if let Some(pos) = t.active_lineup_ids.iter().position(|id| id == player_id) {
+    if let Some(t) = game.teams.iter_mut().find(|t| t.id == to_team_id)
+        && let Some(pos) = t.active_lineup_ids.iter().position(|id| id == player_id) {
             t.active_lineup_ids.remove(pos);
         }
-    }
+
+    crate::residency::refresh_import_flags(game);
 
     let offer = player_snapshot
         .transfer_offers
@@ -2582,6 +2758,7 @@ pub fn get_transfer_history(game: &Game) -> Vec<TransferHistoryEntry> {
     game.transfer_history.entries.clone()
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub fn record_transfer(
     game: &mut Game,
     player_id: &str,
@@ -2678,7 +2855,7 @@ fn round_transfer_fee(value: u64) -> u64 {
         return 0;
     }
 
-    ((value + 49_999) / 50_000) * 50_000
+    value.div_ceil(50_000) * 50_000
 }
 
 fn remove_player_from_team_references(team: &mut crate::domain::team::Team, player_id: &str) {
@@ -2752,7 +2929,14 @@ fn reconcile_lol_active_lineup(
         }
     }
 
-    team.active_lineup_ids = next_ids.into_iter().filter(|id| !id.is_empty()).collect();
+    let next_ids: Vec<String> = next_ids.into_iter().filter(|id| !id.is_empty()).collect();
+    // A signing must never leave the starting five over the import limit.
+    team.active_lineup_ids = crate::residency::limit_lineup_ids_for(
+        crate::residency::team_region(team),
+        players,
+        &team.id,
+        next_ids,
+    );
 }
 
 fn current_team_player_by_id<'a>(
@@ -3109,6 +3293,7 @@ pub(crate) fn execute_transfer(
     )
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn execute_transfer_with_payer(
     game: &mut Game,
     player_id: &str,
@@ -3317,4 +3502,129 @@ fn contract_end_for_years(current_date: NaiveDate, contract_years: u8) -> String
         "{}-11-30",
         current_date.year() + i32::from(contract_years.max(1))
     )
+}
+
+#[cfg(test)]
+mod importance_tests {
+    use super::*;
+    use crate::domain::player::{Player, PlayerAttributes};
+    use crate::domain::stats::LolRole;
+    use crate::domain::team::Team;
+
+    fn roster_player(id: &str, skill: u8) -> Player {
+        let mut player = Player::new(
+            id.to_string(),
+            id.to_string(),
+            id.to_string(),
+            "2000-01-01".to_string(),
+            "KR".to_string(),
+            LolRole::Mid,
+            PlayerAttributes {
+                mechanics: skill,
+                laning: skill,
+                teamfighting: skill,
+                macro_play: skill,
+                consistency: skill,
+                shotcalling: skill,
+                champion_pool: skill,
+                discipline: skill,
+                mental_resilience: skill,
+            },
+        );
+        player.team_id = Some("ai".to_string());
+        player.market_value = 300_000;
+        player
+    }
+
+    fn team(id: &str) -> Team {
+        Team::new(
+            id.to_string(),
+            id.to_string(),
+            "TST".to_string(),
+            "KR".to_string(),
+            "Seoul".to_string(),
+            "Arena".to_string(),
+            10_000,
+        )
+    }
+
+    fn asking_fee(player: &Player, owner: &Team, players: &[Player]) -> u64 {
+        let date = NaiveDate::from_ymd_opt(2026, 11, 7).unwrap();
+        minimum_acceptable_fee(date, player, owner, &team("buyer"), players)
+    }
+
+    #[test]
+    fn team_without_lineup_asks_more_for_a_top_five_ovr_player() {
+        let owner = team("ai");
+        let players: Vec<Player> = (0..7)
+            .map(|index| roster_player(&format!("p{index}"), 90 - index as u8 * 5))
+            .collect();
+
+        let star = asking_fee(&players[0], &owner, &players);
+        let bench = asking_fee(&players[6], &owner, &players);
+
+        assert!(star > bench, "star {star} should ask more than bench {bench}");
+    }
+
+    #[test]
+    fn team_without_lineup_treats_the_sixth_best_player_as_fringe() {
+        let owner = team("ai");
+        let players: Vec<Player> = (0..7)
+            .map(|index| roster_player(&format!("p{index}"), 90 - index as u8 * 5))
+            .collect();
+
+        assert_eq!(
+            asking_fee(&players[5], &owner, &players),
+            asking_fee(&players[6], &owner, &players)
+        );
+    }
+}
+
+#[cfg(test)]
+mod split_date_tests {
+    use super::*;
+    use crate::clock::GameClock;
+    use crate::domain::league::League;
+    use crate::domain::manager::Manager;
+    use chrono::{TimeZone, Utc};
+
+    fn game_with_leagues(user_competition_id: &str) -> Game {
+        let manager = Manager::new(
+            "mgr".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "ES".to_string(),
+        );
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 6, 15, 12, 0, 0).unwrap());
+        let mut game = Game::new(clock, manager, vec![], vec![], vec![], vec![]);
+        game.leagues = vec![
+            League::new(
+                "lec".to_string(),
+                "LEC Winter".to_string(),
+                2026,
+                &[],
+                Some("lec".to_string()),
+            ),
+            League::new(
+                "les".to_string(),
+                "LES Spring".to_string(),
+                2026,
+                &[],
+                Some("les".to_string()),
+            ),
+        ];
+        game.user_competition_id = Some(user_competition_id.to_string());
+        game
+    }
+
+    #[test]
+    fn split_end_follows_the_users_league_when_it_is_not_first() {
+        assert_eq!(next_split_end_date(&game_with_leagues("les")), "2026-08-01");
+    }
+
+    #[test]
+    fn split_end_follows_the_first_league_when_the_user_plays_in_it() {
+        assert_eq!(next_split_end_date(&game_with_leagues("lec")), "2026-03-28");
+    }
 }

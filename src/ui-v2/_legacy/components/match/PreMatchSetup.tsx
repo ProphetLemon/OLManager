@@ -11,6 +11,13 @@ import MatchScreenLayout from "@/ui-v2/_legacy/components/match/MatchScreenLayou
 import { ChevronRight } from "lucide-react";
 import OpponentIntelCard from "@/ui-v2/_legacy/components/match/OpponentIntelCard";
 import { buildOpponentIntel } from "@/ui-v2/_legacy/components/match/opponentIntelService";
+import {
+  MAX_IMPORTS_IN_STARTING_FIVE,
+  orderSwapsImportsFirst,
+  parseImportLimitError,
+  pickBestFive,
+  wouldExceedImportLimit,
+} from "@/lib/squad/imports";
 import championsSeed from "../../../../../assets/simulation/champions.json";
 
 interface PreMatchSetupProps {
@@ -97,8 +104,20 @@ export default function PreMatchSetup({
     userTeam: userTeam.name,
   });
 
+  const [importNotice, setImportNotice] = useState<string | null>(null);
+
+  const importRefusal = (count: number) =>
+    t("squad.tooManyImports", { count, max: MAX_IMPORTS_IN_STARTING_FIVE });
+
   const handleSwap = async (benchPlayerId: string) => {
     if (!selectedStarterId) return;
+    const incoming = userBench.find((p) => p.id === benchPlayerId);
+    if (incoming && wouldExceedImportLimit(userTeam.players, selectedStarterId, incoming)) {
+      setImportNotice(importRefusal(MAX_IMPORTS_IN_STARTING_FIVE + 1));
+      setSelectedStarterId(null);
+      return;
+    }
+    setImportNotice(null);
     try {
       const snap = await invoke<MatchSnapshot>("apply_match_command", {
         command: {
@@ -111,6 +130,8 @@ export default function PreMatchSetup({
       });
       onUpdateSnapshot(snap);
     } catch (err) {
+      const refusal = parseImportLimitError(err);
+      if (refusal) setImportNotice(importRefusal(refusal.count));
       console.error("Pre-match swap failed:", err);
     }
     setSelectedStarterId(null);
@@ -120,25 +141,23 @@ export default function PreMatchSetup({
     setIsAutoSelecting(true);
     try {
       const pool = [...userTeam.players, ...userBench];
-      const ranked = [...pool].sort(
-        (a, b) =>
-          getPositionOvr(b) * (b.condition / 100) -
-          getPositionOvr(a) * (a.condition / 100),
+      // Best five by rating and condition that holds at most two imports.
+      const ideal = pickBestFive(
+        pool,
+        (p) => getPositionOvr(p) * (p.condition / 100),
       );
-      const idealIds = new Set(ranked.slice(0, 5).map((p) => p.id));
+      // Swaps that remove imports run first so no step goes over the limit.
+      const swaps = orderSwapsImportsFirst(userTeam.players, ideal);
 
-      const currentIds = new Set(userTeam.players.map((p) => p.id));
-      const toAdd = [...idealIds].filter((id) => !currentIds.has(id));
-      const toRemove = [...currentIds].filter((id) => !idealIds.has(id));
-
+      setImportNotice(null);
       let snap: MatchSnapshot | null = null;
-      for (let i = 0; i < Math.min(toAdd.length, toRemove.length); i++) {
+      for (const swap of swaps) {
         snap = await invoke<MatchSnapshot>("apply_match_command", {
           command: {
             PreMatchSwap: {
               side: userSide,
-              player_off_id: toRemove[i],
-              player_on_id: toAdd[i],
+              player_off_id: swap.off,
+              player_on_id: swap.on.id,
             },
           },
         });
@@ -262,6 +281,7 @@ export default function PreMatchSetup({
           onSelectStarter={setSelectedStarterId}
           onSwap={handleSwap}
           onAutoSelect={handleAutoSelect}
+          importNotice={importNotice}
         />
         <OpponentIntelCard intel={opponentIntel} />
       </div>

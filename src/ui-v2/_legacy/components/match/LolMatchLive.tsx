@@ -375,8 +375,11 @@ function sideFromActorLabel(
   return match.team === "red" ? "red" : "blue";
 }
 
-export default function LolMatchLive({ gameState, snapshot, blueTeamId, championSelections, onSnapshotUpdate, onImportantEvent, onFullTime }: Props) {
+export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blueTeamId, championSelections, onSnapshotUpdate, onImportantEvent, onFullTime }: Props) {
   const { t } = useTranslation();
+  // The finished snapshot is fed back through onSnapshotUpdate; keeping the first one
+  // stops that echo from re-creating the simulation and replaying the match.
+  const [snapshot] = useState(initialSnapshot);
   const walls = useMemo(() => getWalls(), []);
   const nav = useMemo(() => new NavGrid(walls), [walls]);
   const [seed] = useState(randomSeed10Digits);
@@ -403,6 +406,9 @@ export default function LolMatchLive({ gameState, snapshot, blueTeamId, champion
   }, [championSelections]);
   const [championProfilesById, setChampionProfilesById] = useState<Record<string, ChampionCombatProfile>>({});
   const [championUltimatesById, setChampionUltimatesById] = useState<Record<string, LolChampionUltimateProfile>>({});
+  // The simulation is built once, after the champion profile load settles (success or failure),
+  // so a late load never rebuilds it mid-game.
+  const [profilesReady, setProfilesReady] = useState(false);
 
   useEffect(() => {
     const updateMobileLayout = () => {
@@ -503,8 +509,11 @@ export default function LolMatchLive({ gameState, snapshot, blueTeamId, champion
     const loadChampionProfiles = async () => {
       const pickedChampionIds = Array.from(new Set(Object.values(championByPlayerId).filter(Boolean)));
       if (pickedChampionIds.length === 0) {
-        if (!cancelled) setChampionProfilesById({});
-        if (!cancelled) setChampionUltimatesById({});
+        if (!cancelled) {
+          setChampionProfilesById({});
+          setChampionUltimatesById({});
+          setProfilesReady(true);
+        }
         return;
       }
 
@@ -531,8 +540,6 @@ export default function LolMatchLive({ gameState, snapshot, blueTeamId, champion
             attackRange: rangeWithMod,
           };
         });
-
-        if (!cancelled) setChampionProfilesById(nextProfiles);
 
         const uniqueChampionIds = Array.from(new Set(Object.values(championByPlayerId).filter(Boolean)));
         const ultimateEntries = await Promise.all(uniqueChampionIds.map(async (championId) => {
@@ -565,12 +572,15 @@ export default function LolMatchLive({ gameState, snapshot, blueTeamId, champion
             if (value) acc[championId] = value;
             return acc;
           }, {});
+          setChampionProfilesById(nextProfiles);
           setChampionUltimatesById(mapped);
+          setProfilesReady(true);
         }
       } catch {
         if (!cancelled) {
           setChampionProfilesById({});
           setChampionUltimatesById({});
+          setProfilesReady(true);
         }
       }
     };
@@ -603,6 +613,7 @@ export default function LolMatchLive({ gameState, snapshot, blueTeamId, champion
   };
 
   useEffect(() => {
+    if (!profilesReady) return;
     const tsSim = new PrototypeSimulation(nav, snapshot, seed, championByPlayerId, championProfilesById);
     simRef.current = tsSim;
     backendClientRef.current = null;
@@ -650,7 +661,7 @@ export default function LolMatchLive({ gameState, snapshot, blueTeamId, champion
       }
       void client.dispose().catch(() => undefined);
     };
-  }, [aiMode, nav, seed, simPolicy, snapshot, championByPlayerId, championProfilesById, championUltimatesById]);
+  }, [aiMode, nav, seed, simPolicy, snapshot, championByPlayerId, championProfilesById, championUltimatesById, profilesReady]);
 
   useEffect(() => {
     const loop = (ts: number) => {
@@ -760,7 +771,7 @@ export default function LolMatchLive({ gameState, snapshot, blueTeamId, champion
       rafRef.current = null;
       lastRef.current = 0;
     };
-  }, [championByPlayerId, isSkipping, onFullTime, onImportantEvent, onSnapshotUpdate, running, snapshot, speed, walls]);
+  }, [championByPlayerId, isSkipping, onFullTime, onImportantEvent, onSnapshotUpdate, profilesReady, running, snapshot, speed, walls]);
 
   useEffect(() => {
     return () => {

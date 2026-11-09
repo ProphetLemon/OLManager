@@ -61,6 +61,7 @@ export interface TeamSeasonRecord {
   kills_for: number;
   kills_against: number;
   points?: number;
+  competition_id?: string | null;
 }
 
 export interface TeamRolesData {
@@ -373,6 +374,10 @@ export interface PlayerData {
   champion_training_target?: string | null;
   champion_training_targets?: string[];
   lol_ovr?: number;
+  /** Region the player is resident of (grandfathered at game start); null when unset. */
+  resident_region?: string | null;
+  /** Import for the team he is on: at most two imports may start. */
+  is_import?: boolean;
   soloq_lp?: number;
 }
 
@@ -720,7 +725,18 @@ export interface CompetitionSummary {
   legacy: boolean;
   active: boolean;
   team_count: number;
+  /** True when the player may replace one of this league's clubs with their own. */
+  custom_team_allowed?: boolean;
   teams: TeamSummary[];
+}
+
+/** User-defined club sent to `select_team`; mirrors the Rust `CustomTeamSpec`. */
+export interface CustomTeamSpec {
+  name: string;
+  short_name: string;
+  primary_color: string;
+  secondary_color: string;
+  country: string;
 }
 
 export interface TeamSummary {
@@ -932,4 +948,96 @@ export interface GameStateData {
   champion_masteries?: ChampionMasteryEntryData[];
   champion_patch?: ChampionPatchStateData;
   champions?: ChampionData[];
+  /** Promotion/relegation ledger. Absent in saves from before the ledger. */
+  ladder?: LadderStateData;
+}
+
+/** Running totals of one competition's regular-season records for the season in progress. */
+export interface SeasonTallyData {
+  season: number;
+  splits: number;
+  last_split?: number | null;
+  rows: Record<string, StandingData>;
+}
+
+/** How a finished season ended for one competition. */
+export interface SeasonOutcomeData {
+  competition_id: string;
+  season: number;
+  champion_id?: string | null;
+  /** Team ids from first to last. */
+  final_order: string[];
+  /** Season-long regular-season table (every split summed), best first. */
+  season_table: StandingData[];
+}
+
+export type LadderMovementStatus = "Applied" | "SkippedLate" | "NoEligible";
+
+/** A promotion and relegation decision between two linked leagues. */
+export interface LadderMovementData {
+  link_lower: string;
+  link_upper: string;
+  season: number;
+  promoted: string[];
+  relegated: string[];
+  status: LadderMovementStatus;
+}
+
+export interface LadderStateData {
+  tallies: Record<string, SeasonTallyData>;
+  outcomes: SeasonOutcomeData[];
+  movements: LadderMovementData[];
+  /** Keys of the movements already announced in the inbox and news. */
+  announced?: string[];
+}
+
+/** A team named in a ladder movement, with its display name. */
+export interface LadderTeamRefData {
+  id: string;
+  name: string;
+}
+
+/** One promotion and relegation decision with display names resolved. */
+export interface LadderMovementReportData {
+  lower_competition_id: string;
+  lower_competition_name: string;
+  upper_competition_id: string;
+  upper_competition_name: string;
+  /** Season that finished and produced the movement. */
+  season: number;
+  status: LadderMovementStatus;
+  promoted: LadderTeamRefData[];
+  relegated: LadderTeamRefData[];
+}
+
+export type UserLadderResult = "Promoted" | "Relegated" | "Stayed";
+
+/** What a finished season meant for the user's club. */
+export interface UserLadderData {
+  result: UserLadderResult;
+  from_competition_id: string;
+  to_competition_id: string;
+}
+
+/** The end-of-season summary returned by `advance_to_next_season`. */
+export interface EndOfSeasonSummaryData {
+  season: number;
+  league_name: string;
+  champion_id: string;
+  champion_name: string;
+  user_position: number;
+  user_points: number;
+  user_won: number;
+  user_lost: number;
+  user_maps_won: number;
+  user_maps_lost: number;
+  golden_boot_player: string;
+  golden_boot_goals: number;
+  poty_player: string;
+  poty_rating: number;
+  total_teams: number;
+  /** Promotion and relegation decisions recorded for the finished season. */
+  ladder_movements: LadderMovementReportData[];
+  /** Set only when a swap touched the user's club or league. */
+  user_ladder: UserLadderData | null;
 }

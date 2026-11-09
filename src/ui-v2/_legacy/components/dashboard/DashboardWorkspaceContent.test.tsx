@@ -4,28 +4,17 @@ import type { GameStateData } from "@/store/gameStore";
 import {
   createDashboardProfileNavigationState,
   selectDashboardPlayer,
-  selectDashboardTeam,
 } from "@/ui-v2/_legacy/components/dashboard/dashboardProfileNavigation";
 import { createDashboardTabContentModel } from "@/ui-v2/_legacy/components/dashboard/dashboardTabContentModel";
 import DashboardWorkspaceContent from "@/ui-v2/_legacy/components/dashboard/DashboardWorkspaceContent";
 
-vi.mock("../playerProfile/PlayerProfile", () => ({
+vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({
   default: ({ onClose, onSelectTeam, startWithRenewalModal }: any) => (
     <div>
       <span>Player Profile Mock</span>
       <span>{startWithRenewalModal ? "renewal-open" : "renewal-closed"}</span>
       <button onClick={onClose}>close-player</button>
       <button onClick={() => onSelectTeam("team-2")}>select-team</button>
-    </div>
-  ),
-}));
-
-vi.mock("../teamProfile", () => ({
-  default: ({ onClose, onSelectPlayer }: any) => (
-    <div>
-      <span>Team Profile Mock</span>
-      <button onClick={onClose}>close-team</button>
-      <button onClick={() => onSelectPlayer("player-2")}>select-player</button>
     </div>
   ),
 }));
@@ -208,7 +197,6 @@ describe("DashboardWorkspaceContent", () => {
         })}
         onBack={vi.fn()}
         onNavigate={onNavigate}
-        onSelectPlayer={vi.fn()}
         onSelectTeam={vi.fn()}
         onGameUpdate={vi.fn()}
         isUnemployed={false}
@@ -250,7 +238,6 @@ describe("DashboardWorkspaceContent", () => {
         })}
         onBack={vi.fn()}
         onNavigate={vi.fn()}
-        onSelectPlayer={vi.fn()}
         onSelectTeam={vi.fn()}
         onGameUpdate={vi.fn()}
         isUnemployed={false}
@@ -260,43 +247,5 @@ describe("DashboardWorkspaceContent", () => {
     expect(screen.getByText("Player Profile Mock")).toBeInTheDocument();
     expect(screen.getByText("renewal-open")).toBeInTheDocument();
     expect(screen.queryByText("Tab Content Squad")).not.toBeInTheDocument();
-  });
-
-  it("renders the team profile branch when a team is selected", () => {
-    const gameState = createGameState();
-    const profileNavigation = selectDashboardTeam(
-      createDashboardProfileNavigationState("Teams"),
-      "team-2",
-    );
-
-    render(
-      <DashboardWorkspaceContent
-        dashboardAlerts={[]}
-        gameState={gameState}
-        profileNavigation={profileNavigation}
-        dashboardTabContentModel={createDashboardTabContentModel({
-          activeTab: "Teams",
-          gameState,
-          seasonComplete: false,
-          visitedOnboardingTabs: new Set<string>(),
-          initialMessageId: null,
-          handlers: {
-            onSelectPlayer: vi.fn(),
-            onSelectTeam: vi.fn(),
-            onGameUpdate: vi.fn(),
-            onNavigate: vi.fn(),
-          },
-        })}
-        onBack={vi.fn()}
-        onNavigate={vi.fn()}
-        onSelectPlayer={vi.fn()}
-        onSelectTeam={vi.fn()}
-        onGameUpdate={vi.fn()}
-        isUnemployed={false}
-      />,
-    );
-
-    expect(screen.getByText("Team Profile Mock")).toBeInTheDocument();
-    expect(screen.queryByText("Tab Content Teams")).not.toBeInTheDocument();
   });
 });

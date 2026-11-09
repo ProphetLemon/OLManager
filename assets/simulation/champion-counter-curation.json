@@ -330,6 +330,14 @@
       "value": 2,
       "confidence": "high",
       "reason": "Caitlyn out-ranges Ezreal (650 vs 550 range, traps) and is widely seen as winning the lane."
+    },
+    {
+      "op": "add",
+      "source": "quinn",
+      "target": "darius",
+      "value": 3,
+      "confidence": "high",
+      "reason": "General knowledge, added with the Quinn catalog entry: Quinn out-ranges Darius, blinds his auto attacks and kites him, a widely known top lane counter."
     }
   ]
 }

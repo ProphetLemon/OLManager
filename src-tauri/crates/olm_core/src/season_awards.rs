@@ -95,7 +95,7 @@ where
 {
     let mut awards: Vec<_> = contexts
         .iter()
-        .filter_map(|context| include(context).then(|| award_entry(context, value(context))))
+        .filter(|&context| include(context)).map(|context| award_entry(context, value(context)))
         .collect();
 
     awards.sort_by(|a, b| {

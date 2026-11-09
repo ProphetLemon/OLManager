@@ -58,11 +58,10 @@ fn pick_player_of_match(
         if let Some((name, _)) = home_scorers.first() {
             return name.clone();
         }
-    } else if away_goals > home_goals {
-        if let Some((name, _)) = away_scorers.first() {
+    } else if away_goals > home_goals
+        && let Some((name, _)) = away_scorers.first() {
             return name.clone();
         }
-    }
 
     if let Some((name, _)) = home_scorers.first() {
         return name.clone();
@@ -86,6 +85,7 @@ fn outcome_key(home_goals: u8, away_goals: u8) -> &'static str {
 }
 
 /// Generate a match report news article for a completed fixture.
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub fn match_report_article(
     fixture_id: &str,
     home_name: &str,

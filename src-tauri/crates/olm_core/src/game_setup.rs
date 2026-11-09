@@ -3,7 +3,7 @@ use crate::domain::player::{Player, PlayerAttributes};
 use crate::domain::team::{
     AcademyLifecycle, AcademyMetadata, ErlAssignment, ErlAssignmentRule, Team, TeamKind,
 };
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, NaiveDate, TimeZone};
 use log::{info, warn};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -379,6 +379,18 @@ pub fn load_external_more_fa_seed() -> Option<DraftSeedRoot> {
     None
 }
 
+/// Parse `free_agents.json`. Like the competition loader, a player without a
+/// `natural_position` takes it from `position`, so champion masteries seed for them.
+fn parse_free_agent_players(content: &str) -> Option<Vec<Player>> {
+    let mut data = serde_json::from_str::<PlayerDataFile>(content).ok()?;
+    for player in &mut data.players {
+        if player.natural_position == crate::domain::stats::LolRole::Unknown {
+            player.natural_position = player.position;
+        }
+    }
+    Some(data.players)
+}
+
 /// Load and cache free agent players from `data/players/free_agents.json`.
 /// Uses OnceLock for lazy init — file is read once per process lifetime.
 pub fn load_free_agent_players() -> &'static Vec<Player> {
@@ -407,16 +419,15 @@ pub fn load_free_agent_players() -> &'static Vec<Player> {
         ];
 
         for path in candidates.iter().flatten() {
-            if let Ok(content) = std::fs::read_to_string(path) {
-                if let Ok(data) = serde_json::from_str::<PlayerDataFile>(&content) {
+            if let Ok(content) = std::fs::read_to_string(path)
+                && let Some(players) = parse_free_agent_players(&content) {
                     info!(
                         "[game] loaded {} free agent players from {:?}",
-                        data.players.len(),
+                        players.len(),
                         path
                     );
-                    return data.players;
+                    return players;
                 }
-            }
         }
 
         warn!("[game] data/players/free_agents.json not found — using empty pool");
@@ -494,27 +505,121 @@ pub fn apply_seed_potential_defaults(players: &mut [Player]) {
 // ---------------------------------------------------------------------------
 
 pub fn default_initial_contract_end_for_start_year(start_year: i32) -> String {
-    format!("{}-11-30", start_year + 1)
+    format!("{}-{}", start_year + 1, SEASON_END_MONTH_DAY)
 }
 
-pub fn apply_default_initial_contract_end(players: &mut [Player]) {
-    let default_initial_contract_end = default_initial_contract_end_for_start_year(2026);
-    let min_start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+/// Contract-end changes made by [`apply_default_initial_contract_end`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ContractDefaultsReport {
+    /// Players with no readable contract end that were given the default one.
+    pub filled: usize,
+    /// Players whose contract would already be over on the start date and now
+    /// run to the end of the start season.
+    pub extended: usize,
+}
+
+/// Month and day a season's contracts end on (the renewal convention).
+const SEASON_END_MONTH_DAY: &str = "11-30";
+
+/// First day of a new game when no roster snapshot can be read.
+pub fn legacy_new_game_start_date() -> chrono::DateTime<chrono::Utc> {
+    chrono::Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap()
+}
+
+/// Day a new game starts for a roster snapshot dated `as_of` (`YYYY-MM-DD`):
+/// January 1 of the following year, or of the same year when the snapshot falls
+/// before July 1 (the season is still ahead). An unreadable date keeps the
+/// legacy 2026-01-01 start.
+pub fn new_game_start_date(as_of: Option<&str>) -> chrono::DateTime<chrono::Utc> {
+    let Some(as_of) = as_of.and_then(|raw| NaiveDate::parse_from_str(raw.trim(), "%Y-%m-%d").ok())
+    else {
+        return legacy_new_game_start_date();
+    };
+    let year = if as_of.month() < 7 {
+        as_of.year()
+    } else {
+        as_of.year() + 1
+    };
+    chrono::Utc
+        .with_ymd_and_hms(year, 1, 1, 0, 0, 0)
+        .single()
+        .unwrap_or_else(legacy_new_game_start_date)
+}
+
+/// Give every player a usable contract on `start_date`: a missing or unreadable
+/// end becomes the default for that start year, and one that is over by the start
+/// date (`contract_end <= start_date`, the same test the daily expiry uses) is
+/// extended to the end of the start season so the snapshot's rosters do not
+/// turn into free agents on day one.
+pub fn apply_default_initial_contract_end(
+    players: &mut [Player],
+    start_date: NaiveDate,
+) -> ContractDefaultsReport {
+    let default_initial_contract_end = default_initial_contract_end_for_start_year(start_date.year());
+    let start_season_end = format!("{}-{}", start_date.year(), SEASON_END_MONTH_DAY);
+    let mut report = ContractDefaultsReport::default();
 
     for player in players.iter_mut() {
+        // Free agents have no contract to default; the signing sets one.
+        if player.team_id.is_none() {
+            continue;
+        }
         let current = player
             .contract_end
             .as_deref()
             .and_then(|s| NaiveDate::parse_from_str(s.trim(), "%Y-%m-%d").ok());
-        if current.is_none() || current.is_some_and(|d| d < min_start) {
-            player.contract_end = Some(default_initial_contract_end.clone());
+        match current {
+            None => {
+                player.contract_end = Some(default_initial_contract_end.clone());
+                report.filled += 1;
+            }
+            Some(end) if end <= start_date => {
+                player.contract_end = Some(start_season_end.clone());
+                report.extended += 1;
+            }
+            Some(_) => {}
         }
     }
+    report
 }
 
+/// Authored placeholder ladder: some data files carry `market_value == 15 * wage`
+/// (uncorrelated with OVR) instead of a real valuation.
+const PLACEHOLDER_MARKET_VALUE_WAGE_MULTIPLE: u64 = 15;
+
+fn has_placeholder_market_value(player: &Player) -> bool {
+    player.wage > 0
+        && player.market_value
+            == PLACEHOLDER_MARKET_VALUE_WAGE_MULTIPLE * u64::from(player.wage)
+}
+
+/// Leaves every player without a team contract-free, as a manual release does:
+/// no `contract_end` and a wage of 0, so the signing ask comes from
+/// `expected_signing_wage` (which floors a free agent at the LEC wage scale) instead
+/// of a stale seed wage. Returns how many free agents were changed.
+///
+/// Run it once the world is assembled (after the market-value pass, which needs the
+/// authored wage, and after roster fills, which pick free agents by their pool state).
+pub fn clear_free_agent_contracts(players: &mut [Player]) -> usize {
+    let mut changed = 0;
+    for player in players.iter_mut().filter(|p| p.team_id.is_none()) {
+        if player.contract_end.is_some() || player.wage != 0 {
+            player.contract_end = None;
+            player.wage = 0;
+            changed += 1;
+        }
+    }
+    changed
+}
+
+/// Fills missing market values with the seed formula. Authored placeholder values
+/// (see [`has_placeholder_market_value`]) are recomputed the same way; any other
+/// authored value is kept. Idempotent: the formula output depends only on OVR and
+/// potential. Run it before free-agent wages are cleared, since the placeholder
+/// signature needs the authored wage.
 pub fn apply_default_market_values(players: &mut [Player]) {
     for player in players.iter_mut() {
-        if player.market_value > 0 {
+        if player.market_value > 0 && !has_placeholder_market_value(player) {
             continue;
         }
         let ovr = potential::calculate_lol_ovr(player);
@@ -660,23 +765,35 @@ pub fn academy_overview_message(
     academy_players: usize,
     date: &str,
 ) -> InboxMessage {
+    // The stored text is English; the UI translates it from the keys and params.
+    let count = academy_players.to_string();
+    let params = HashMap::from([
+        ("academy".to_string(), academy_team.name.clone()),
+        ("count".to_string(), count.clone()),
+    ]);
     InboxMessage::new(
         format!("academy-overview-{}", parent_team.id),
-        format!("Academia activa: {}", academy_team.name),
+        format!("Academy active: {}", academy_team.name),
         format!(
-            "Tu club ya cuenta con academia vinculada. {} tiene {} prospectos cargados y listos para seguimiento/promocion.",
-            academy_team.name, academy_players
+            "Your club now has a linked academy. {} has {} prospects loaded and ready for scouting and promotion.",
+            academy_team.name, count
         ),
-        "Director Deportivo".to_string(),
+        "Sporting Director".to_string(),
         date.to_string(),
     )
     .with_category(MessageCategory::Welcome)
     .with_priority(MessagePriority::Normal)
-    .with_sender_role("Director Deportivo")
+    .with_sender_role("Sporting Director")
     .with_context(MessageContext {
         team_id: Some(parent_team.id.clone()),
         ..Default::default()
     })
+    .with_i18n(
+        "be.msg.academyOverview.subject",
+        "be.msg.academyOverview.body",
+        params,
+    )
+    .with_sender_i18n("be.sender.sportingDirector", "be.role.sportingDirector")
 }
 
 // ---------------------------------------------------------------------------
@@ -889,9 +1006,11 @@ pub fn ensure_example_academy_pool(game: &mut Game) {
 #[cfg(test)]
 mod tests {
     use super::{
-        apply_default_initial_contract_end, calculate_age_on_date,
-        default_initial_contract_end_for_start_year,
+        apply_default_initial_contract_end, apply_default_market_values, calculate_age_on_date,
+        default_initial_contract_end_for_start_year, legacy_new_game_start_date,
+        new_game_start_date,
     };
+    use chrono::{Datelike, NaiveDate};
     use crate::domain::player::{Player, PlayerAttributes};
     use crate::domain::stats::LolRole;
 
@@ -920,7 +1039,125 @@ mod tests {
             default_attrs(),
         );
         player.contract_end = contract_end.map(str::to_string);
+        player.team_id = Some("team-1".to_string());
         player
+    }
+
+    fn team(id: &str, name: &str) -> crate::domain::team::Team {
+        crate::domain::team::Team::new(
+            id.to_string(),
+            name.to_string(),
+            "TST".to_string(),
+            "ES".to_string(),
+            "Madrid".to_string(),
+            "Arena".to_string(),
+            1_000,
+        )
+    }
+
+    fn player_with_value(id: &str, market_value: u64, wage: u32) -> Player {
+        let mut player = player_with_contract(id, None);
+        player.market_value = market_value;
+        player.wage = wage;
+        player
+    }
+
+    #[test]
+    fn placeholder_market_values_are_recomputed_and_real_ones_kept() {
+        let mut players = vec![
+            player_with_value("placeholder", 630_000, 42_000),
+            player_with_value("authored", 230_000, 356_000),
+            player_with_value("zero", 0, 40_000),
+        ];
+
+        apply_default_market_values(&mut players);
+
+        let formula = super::suggested_seed_market_value(
+            crate::potential::calculate_lol_ovr(&players[0]),
+            players[0].potential_base.max(crate::potential::calculate_lol_ovr(&players[0])),
+            false,
+        );
+        assert_eq!(players[0].market_value, formula);
+        assert_ne!(players[0].market_value, 630_000);
+        assert_eq!(players[1].market_value, 230_000);
+        assert_eq!(players[2].market_value, formula);
+        assert_eq!(players[0].wage, 42_000, "wages are never touched");
+
+        let after_first: Vec<u64> = players.iter().map(|p| p.market_value).collect();
+        apply_default_market_values(&mut players);
+        let after_second: Vec<u64> = players.iter().map(|p| p.market_value).collect();
+        assert_eq!(after_first, after_second, "the pass is idempotent");
+    }
+
+    #[test]
+    fn free_agent_without_natural_position_takes_it_from_position() {
+        let mut template = serde_json::to_value(player_with_contract("fa-1", None)).unwrap();
+        template["position"] = serde_json::json!("Mid");
+        template.as_object_mut().unwrap().remove("natural_position");
+        let json = serde_json::json!({ "players": [template] }).to_string();
+
+        let players = super::parse_free_agent_players(&json).expect("valid file");
+
+        assert_eq!(players[0].position, LolRole::Mid);
+        assert_eq!(players[0].natural_position, LolRole::Mid);
+    }
+
+    #[test]
+    fn free_agents_get_no_default_contract_but_rostered_players_do() {
+        let mut free_agent = player_with_contract("fa", None);
+        free_agent.team_id = None;
+        let mut rostered = player_with_contract("rostered", None);
+        rostered.team_id = Some("team-1".to_string());
+        let mut players = vec![free_agent, rostered];
+
+        let start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let report = apply_default_initial_contract_end(&mut players, start);
+
+        assert_eq!(players[0].contract_end, None);
+        assert_eq!(players[1].contract_end.as_deref(), Some("2027-11-30"));
+        assert_eq!((report.filled, report.extended), (1, 0));
+    }
+
+    #[test]
+    fn clearing_free_agent_contracts_zeroes_wage_and_end_only_for_free_agents() {
+        let mut free_agent = player_with_value("fa", 300_000, 42_000);
+        free_agent.team_id = None;
+        free_agent.contract_end = Some("2027-11-30".to_string());
+        let mut rostered = player_with_value("rostered", 300_000, 42_000);
+        rostered.team_id = Some("team-1".to_string());
+        rostered.contract_end = Some("2027-11-30".to_string());
+        let mut players = vec![free_agent, rostered];
+
+        let changed = super::clear_free_agent_contracts(&mut players);
+
+        assert_eq!(changed, 1);
+        assert_eq!((players[0].wage, players[0].contract_end.clone()), (0, None));
+        assert_eq!(players[0].market_value, 300_000);
+        assert_eq!(players[1].wage, 42_000);
+        assert_eq!(players[1].contract_end.as_deref(), Some("2027-11-30"));
+        assert_eq!(super::clear_free_agent_contracts(&mut players), 0, "idempotent");
+    }
+
+    #[test]
+    fn academy_overview_is_english_with_keys_instead_of_hardcoded_spanish() {
+        let msg = super::academy_overview_message(
+            &team("parent", "Parent"),
+            &team("acad", "Parent Academy"),
+            7,
+            "2025-06-01",
+        );
+        assert!(msg.subject.contains("Academy"), "{}", msg.subject);
+        assert!(!msg.body.contains("Tu club"), "{}", msg.body);
+        assert_eq!(msg.sender_role, "Sporting Director");
+        assert!(msg.subject_key.is_some());
+        assert!(msg.body_key.is_some());
+        assert_eq!(
+            msg.i18n_params.get("academy").map(String::as_str),
+            Some("Parent Academy")
+        );
+        assert_eq!(msg.i18n_params.get("count").map(String::as_str), Some("7"));
+        assert!(msg.sender_key.is_some());
+        assert!(msg.sender_role_key.is_some());
     }
 
     #[test]
@@ -942,10 +1179,61 @@ mod tests {
             player_with_contract("existing", Some("2028-11-30")),
         ];
 
-        apply_default_initial_contract_end(&mut players);
+        let start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let report = apply_default_initial_contract_end(&mut players, start);
 
         assert_eq!(players[0].contract_end.as_deref(), Some("2027-11-30"));
         assert_eq!(players[1].contract_end.as_deref(), Some("2028-11-30"));
+        assert_eq!((report.filled, report.extended), (1, 0));
+    }
+
+    #[test]
+    fn contracts_over_by_the_start_date_run_to_the_end_of_the_start_season() {
+        let start = NaiveDate::from_ymd_opt(2027, 1, 1).unwrap();
+        let mut players = vec![
+            player_with_contract("lapsed", Some("2026-11-16")),
+            player_with_contract("ends-on-day-one", Some("2027-01-01")),
+            player_with_contract("still-running", Some("2027-11-16")),
+            player_with_contract("blank", Some("")),
+            player_with_contract("missing", None),
+        ];
+
+        let report = apply_default_initial_contract_end(&mut players, start);
+
+        let ends: Vec<_> = players.iter().map(|p| p.contract_end.as_deref()).collect();
+        assert_eq!(
+            ends,
+            vec![
+                Some("2027-11-30"),
+                Some("2027-11-30"),
+                Some("2027-11-16"),
+                Some("2028-11-30"),
+                Some("2028-11-30"),
+            ]
+        );
+        assert_eq!((report.filled, report.extended), (2, 2));
+    }
+
+    #[test]
+    fn new_game_starts_on_january_first_of_the_season_after_the_snapshot() {
+        let start = |as_of| new_game_start_date(Some(as_of)).date_naive();
+        let jan1 = |year| NaiveDate::from_ymd_opt(year, 1, 1).unwrap();
+
+        assert_eq!(start("2026-11-07"), jan1(2027));
+        assert_eq!(start("2026-07-01"), jan1(2027));
+        assert_eq!(start("2026-06-30"), jan1(2026));
+        assert_eq!(start("2027-03-10"), jan1(2027));
+        assert_eq!(start(" 2025-12-31 "), jan1(2026));
+    }
+
+    #[test]
+    fn new_game_start_falls_back_to_the_legacy_date_without_a_readable_snapshot() {
+        let legacy = legacy_new_game_start_date();
+        assert_eq!(legacy.date_naive(), NaiveDate::from_ymd_opt(2026, 1, 1).unwrap());
+        assert_eq!(new_game_start_date(None), legacy);
+        assert_eq!(new_game_start_date(Some("soon")), legacy);
+        assert_eq!(new_game_start_date(Some("")), legacy);
+        assert_eq!(new_game_start_date(Some("2026-11-07")).year(), 2027);
     }
 
     #[test]

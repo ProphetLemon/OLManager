@@ -13,6 +13,7 @@ use crate::domain::team::{Team, TeamKind, TeamSeasonRecord};
 use crate::end_of_season;
 use crate::engine::LolRole as EngineLolRole;
 use crate::game::Game;
+use crate::generator::definitions::SplitConfig;
 use crate::player_events;
 use crate::potential;
 use crate::random_events;
@@ -88,6 +89,8 @@ where
         info!("[turn] process_day {}: matchday", today);
         simulate_matchday_with_capture(game, &today, on_capture);
         maybe_schedule_playoffs(game);
+        // A matchday still gives part of a rest day's recovery.
+        training::process_matchday_recovery(game);
     } else {
         let weekday_num = game.clock.current_date.weekday().num_days_from_monday();
         training::process_training(game, weekday_num);
@@ -127,9 +130,12 @@ where
     champions::process_daily_champion_system(game);
 
     debug!("[turn] process_day {}: complete, advancing clock", today);
+    // After recovery and roster moves, so the next match sees the rested lineup.
+    crate::ai_rotation::rotate_ai_lineups(game);
     game.clock.advance_days(1);
     game.day_phase = crate::game::DayPhase::Morning;
     crate::season_context::refresh_game_context(game);
+    crate::residency::refresh_import_flags(game);
 }
 
 /// Called after a live match finishes to complete the day:
@@ -140,6 +146,8 @@ pub fn finish_live_match_day(game: &mut Game) {
     info!("[turn] finish_live_match_day: {}", today);
     generate_matchday_news(game, &today);
     maybe_schedule_playoffs(game);
+    // The live-match day recovers like any other matchday.
+    training::process_matchday_recovery(game);
 
     crate::contracts::process_contract_expiries(game);
 
@@ -171,9 +179,11 @@ pub fn finish_live_match_day(game: &mut Game) {
     potential::process_potential_research(game);
     champions::process_daily_champion_system(game);
 
+    crate::ai_rotation::rotate_ai_lineups(game);
     game.clock.advance_days(1);
     game.day_phase = crate::game::DayPhase::Morning;
     crate::season_context::refresh_game_context(game);
+    crate::residency::refresh_import_flags(game);
 }
 
 // ---------------------------------------------------------------------------
@@ -236,6 +246,13 @@ fn build_engine_team_from(
             }
         }
     }
+    let lineup_ids = crate::residency::limit_lineup_ids_in(
+        teams,
+        players,
+        team_id,
+        lineup_ids.into_iter().take(5).collect(),
+    );
+    let region = team.and_then(crate::residency::team_region);
     let engine_players: Vec<crate::engine::PlayerData> = lineup_ids
         .into_iter()
         .take(5)
@@ -245,6 +262,7 @@ fn build_engine_team_from(
             name: p.match_name.clone(),
             profile_image_url: p.profile_image_url.clone(),
             role: to_engine_role(p.natural_position),
+            is_import: crate::residency::is_import(p, region),
             condition: p.condition,
             fitness: p.fitness,
             // Map OLD domain fields to NEW LoL-native engine structure
@@ -359,6 +377,7 @@ fn maybe_push_weekly_academy_report(game: &mut Game, today: &str) {
                     lost: 0,
                     kills_for: 0,
                     kills_against: 0,
+                    competition_id: None,
                 });
             let points = record.won.saturating_mul(3);
             let goal_diff = record.kills_for as i32 - record.kills_against as i32;
@@ -585,6 +604,7 @@ fn ensure_team_season_record(team: &mut Team, season: u32) -> &mut TeamSeasonRec
         lost: 0,
         kills_for: 0,
         kills_against: 0,
+        competition_id: team.competition_id.clone(),
     });
     let last_index = team.history.len().saturating_sub(1);
     &mut team.history[last_index]
@@ -616,8 +636,13 @@ fn register_parallel_result(
 }
 
 /// Simulate due fixtures for a background league (academy or competition league[1..]).
-/// Updates fixture results, standings, and team form. Does NOT generate playoff fixtures,
-/// player stats, messages, or news.
+/// Updates fixture results, regular-season standings, and team form. Does NOT generate
+/// playoff fixtures (see [`schedule_playoffs_for`]), player stats, messages, or news.
+///
+/// Playoff fixtures that are due are played and stored so the bracket pairing functions
+/// can read their winners, but they never touch the regular-season standings. Every series
+/// is simulated as a single map whatever its `best_of`: background leagues trade the
+/// series length for speed, as their regular-season fixtures already do.
 /// Takes separate slices for teams, players, and league (disjoint Game fields) so
 /// the borrow checker permits simultaneous mutable access.
 fn simulate_background_league(
@@ -627,7 +652,8 @@ fn simulate_background_league(
     today: &str,
     season: u32,
 ) {
-    let mut completed_fixtures: Vec<(String, String, u8, u8)> = Vec::new();
+    // (home, away, home wins, away wins, counts for the regular-season standings)
+    let mut completed_fixtures: Vec<(String, String, u8, u8, bool)> = Vec::new();
 
     // Find due fixtures
     let fixtures_to_play: Vec<(usize, String, String)> = league
@@ -675,6 +701,7 @@ fn simulate_background_league(
     for ((fixture_index, home_team_id, away_team_id, home_wins, away_wins), _report) in
         simulated_results.iter().zip(match_reports.iter())
     {
+        let mut counts_for_standings = true;
         if let Some(fixture) = league.fixtures.get_mut(*fixture_index) {
             fixture.result = Some(MatchResult {
                 home_wins: *home_wins,
@@ -682,16 +709,23 @@ fn simulate_background_league(
                 ..MatchResult::default()
             });
             fixture.status = FixtureStatus::Completed;
+            counts_for_standings = fixture.counts_for_league_standings();
         }
         completed_fixtures.push((
             home_team_id.clone(),
             away_team_id.clone(),
             *home_wins,
             *away_wins,
+            counts_for_standings,
         ));
     }
 
-    for (home_team_id, away_team_id, home_wins, away_wins) in &completed_fixtures {
+    for (home_team_id, away_team_id, home_wins, away_wins, counts_for_standings) in
+        &completed_fixtures
+    {
+        if !counts_for_standings {
+            continue;
+        }
         if let Some(home) = league
             .standings
             .iter_mut()
@@ -709,7 +743,7 @@ fn simulate_background_league(
     }
 
     // Update team form (no player stats, messages, news)
-    for (home_team_id, away_team_id, home_wins, away_wins) in &completed_fixtures {
+    for (home_team_id, away_team_id, home_wins, away_wins, _) in &completed_fixtures {
         let home_won = if home_wins == away_wins {
             home_team_id <= away_team_id
         } else {
@@ -726,8 +760,12 @@ fn simulate_background_league(
     }
 }
 
-/// Simulate all background leagues (game.leagues[1..]) for today.
+/// Simulate all background leagues (every league except the user's active
+/// league, wherever it sits in `game.leagues`) for today.
 /// This is a no-op when there is only the active league.
+/// After simulating the day, every background league with a competition manifest gets
+/// its next playoff round scheduled, and any league that is now complete is rolled
+/// forward the same day instead of waiting for the user's next season advance.
 /// Before simulation, runs repair_league to ensure all AI teams are match eligible.
 fn process_background_leagues(game: &mut Game, today: &str) {
     // Before background simulation, ensure all AI teams are match eligible.
@@ -755,10 +793,53 @@ fn process_background_leagues(game: &mut Game, today: &str) {
     }
 
     let season = game.clock.current_date.year() as u32;
-    for i in 1..game.leagues.len() {
-        let league = &mut game.leagues[i];
+    let active_index = game.active_league_index();
+    for (i, league) in game.leagues.iter_mut().enumerate() {
+        if i == active_index {
+            continue;
+        }
         simulate_background_league(&mut game.teams, &game.players, league, today, season);
     }
+
+    // Playoffs need the manifest's bracket; leagues without one (academy leagues,
+    // removed competitions) finish with their regular season as they always did.
+    for index in 0..game.leagues.len() {
+        if index != active_index && background_league_has_manifest(game, index) {
+            schedule_playoffs_for(game, index);
+        }
+    }
+
+    roll_finished_background_leagues(game);
+    // A background roll can complete a ladder movement while the user's season is
+    // still running; announce it once, the season rollover skips what is announced.
+    crate::ladder_report::announce_ladder_movements(game);
+}
+
+/// True when the league at `index` belongs to a competition whose manifest is loaded.
+fn background_league_has_manifest(game: &Game, index: usize) -> bool {
+    game.leagues
+        .get(index)
+        .and_then(|league| league.competition_id.as_ref())
+        .is_some_and(|cid| game.competition_configs.contains_key(cid))
+}
+
+/// Rolls every complete background league that has a manifest to its next split or
+/// season. Leagues without a manifest keep their finished schedule here, since rolling
+/// them would not regenerate fixtures and the same league would be "rolled" every day;
+/// the user's season advance still closes those. Rolling is idempotent: a rolled league
+/// has no completed fixtures and is no longer complete.
+fn roll_finished_background_leagues(game: &mut Game) {
+    let active_index = game.active_league_index();
+    let complete_indices: Vec<usize> = (0..game.leagues.len())
+        .filter(|&index| index != active_index)
+        .filter(|&index| background_league_has_manifest(game, index))
+        .filter(|&index| end_of_season::is_league_complete(&game.leagues[index]))
+        .collect();
+    if complete_indices.is_empty() {
+        return;
+    }
+    let manifests = game.competition_configs.clone();
+    end_of_season::roll_completed_background_leagues(game, &manifests, &complete_indices);
 }
 
 fn maybe_simulate_parallel_academy_leagues(game: &mut Game) {
@@ -877,7 +958,7 @@ fn maybe_simulate_parallel_academy_leagues(game: &mut Game) {
 
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
     let league = &mut game.leagues[league_idx];
-    simulate_background_league(&mut game.teams, &mut game.players, league, &today, season);
+    simulate_background_league(&mut game.teams, &game.players, league, &today, season);
 
     // Academy-specific: generate playoffs when regular season completes
     let regular_fixtures_total = league
@@ -951,20 +1032,102 @@ fn maybe_simulate_parallel_academy_leagues(game: &mut Game) {
     }
 }
 
+/// Playoff bracket a split plays after its regular season.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PlayoffBracket {
+    /// Eight-seed double elimination (LEC winter).
+    Winter,
+    /// Six-seed double elimination (LEC spring and summer).
+    SpringSummer,
+    /// Four-seed single elimination: semifinals 1v4 and 2v3, then the final.
+    FourTeam,
+}
+
+impl PlayoffBracket {
+    fn seeds(self) -> usize {
+        match self {
+            Self::Winter => 8,
+            Self::SpringSummer => 6,
+            Self::FourTeam => 4,
+        }
+    }
+
+    /// Split whose best-of rules the double-elimination brackets borrow.
+    fn lec_split(self) -> schedule::LecSplit {
+        match self {
+            Self::Winter => schedule::LecSplit::Winter,
+            Self::SpringSummer | Self::FourTeam => schedule::LecSplit::Summer,
+        }
+    }
+}
+
+/// Best-of used by every series of the four-team bracket when the split does
+/// not configure one.
+const DEFAULT_FOUR_TEAM_BEST_OF: u8 = 5;
+
+/// Bracket and configured series length for a split. A split that declares
+/// `playoffs.teams` of 8, 6 or 4 selects that bracket; anything else falls
+/// back to the LEC defaults derived from the split name.
+fn playoff_shape(split: Option<&SplitConfig>) -> (PlayoffBracket, Option<u8>) {
+    let playoffs = split.and_then(|s| s.playoffs.as_ref());
+    let configured = playoffs.and_then(|p| match p.teams {
+        8 => Some(PlayoffBracket::Winter),
+        6 => Some(PlayoffBracket::SpringSummer),
+        4 => Some(PlayoffBracket::FourTeam),
+        _ => None,
+    });
+    let bracket = configured
+        .or_else(|| {
+            split
+                .map(|s| s.name.as_str())
+                .and_then(schedule::parse_lec_split)
+                .map(|lec| match lec {
+                    schedule::LecSplit::Winter => PlayoffBracket::Winter,
+                    schedule::LecSplit::Spring | schedule::LecSplit::Summer => {
+                        PlayoffBracket::SpringSummer
+                    }
+                })
+        })
+        .unwrap_or(PlayoffBracket::SpringSummer);
+    (bracket, playoffs.and_then(|p| p.best_of))
+}
+
+/// Series length of a playoff round.
+fn playoff_series_length(
+    bracket: PlayoffBracket,
+    configured: Option<u8>,
+    is_grand_final: bool,
+) -> u8 {
+    match bracket {
+        PlayoffBracket::FourTeam => configured.unwrap_or(DEFAULT_FOUR_TEAM_BEST_OF),
+        _ => schedule::playoff_best_of(bracket.lec_split(), is_grand_final),
+    }
+}
+
+/// Schedules the next playoff round for the user's active league.
 fn maybe_schedule_playoffs(game: &mut Game) {
-    let Some(league) = game.leagues.first_mut() else {
+    let index = game.active_league_index();
+    schedule_playoffs_for(game, index);
+}
+
+/// Schedules the next playoff round for the league at `league_index`, using the bracket
+/// its current split declares (8, 6 or 4 seeds) or the LEC split-name fallback.
+fn schedule_playoffs_for(game: &mut Game, league_index: usize) {
+    let Some(league) = game.leagues.get_mut(league_index) else {
         return;
     };
 
-    let split_name = league
+    let split_config = league
         .competition_id
         .as_ref()
         .and_then(|cid| game.competition_configs.get(cid))
-        .and_then(|manifest| manifest.schedule.splits.get(league.split_index))
-        .map(|s| s.name.as_str());
-    let split = split_name
-        .and_then(schedule::parse_lec_split)
-        .unwrap_or(schedule::LecSplit::Summer);
+        .and_then(|manifest| manifest.schedule.splits.get(league.split_index));
+    let (bracket, configured_best_of) = playoff_shape(split_config);
+    let id_prefix = if bracket == PlayoffBracket::FourTeam {
+        schedule::FOUR_TEAM_PLAYOFF_ID_PREFIX
+    } else {
+        ""
+    };
 
     let playoff_fixtures_exist = league
         .fixtures
@@ -977,10 +1140,7 @@ fn maybe_schedule_playoffs(game: &mut Game) {
         }
 
         let sorted = league.sorted_standings();
-        let required_seeds = match split {
-            schedule::LecSplit::Winter => 8,
-            schedule::LecSplit::Spring | schedule::LecSplit::Summer => 6,
-        };
+        let required_seeds = bracket.seeds();
         if sorted.len() < required_seeds {
             return;
         }
@@ -1000,25 +1160,26 @@ fn maybe_schedule_playoffs(game: &mut Game) {
             .unwrap_or(0)
             + 1;
 
-        let opening_pairings = match split {
-            schedule::LecSplit::Winter => vec![
+        let opening_pairings = match bracket {
+            PlayoffBracket::Winter => vec![
                 (seeded_team_ids[0].clone(), seeded_team_ids[7].clone()),
                 (seeded_team_ids[3].clone(), seeded_team_ids[4].clone()),
                 (seeded_team_ids[1].clone(), seeded_team_ids[6].clone()),
                 (seeded_team_ids[2].clone(), seeded_team_ids[5].clone()),
             ],
-            schedule::LecSplit::Spring | schedule::LecSplit::Summer => vec![
+            PlayoffBracket::SpringSummer | PlayoffBracket::FourTeam => vec![
                 (seeded_team_ids[0].clone(), seeded_team_ids[3].clone()),
                 (seeded_team_ids[1].clone(), seeded_team_ids[2].clone()),
             ],
         };
 
-        let best_of = schedule::playoff_best_of(split, false);
+        let best_of = playoff_series_length(bracket, configured_best_of, false);
         let opening_round = build_playoff_round_fixtures(
             start_matchday,
             start_date.format("%Y-%m-%d").to_string(),
             opening_pairings,
             best_of,
+            id_prefix,
         );
         schedule::append_fixtures(league, opening_round);
         return;
@@ -1031,10 +1192,7 @@ fn maybe_schedule_playoffs(game: &mut Game) {
         return;
     }
 
-    let required_seeds = match split {
-        schedule::LecSplit::Winter => 8,
-        schedule::LecSplit::Spring | schedule::LecSplit::Summer => 6,
-    };
+    let required_seeds = bracket.seeds();
     let seeded_team_ids: Vec<String> = league
         .sorted_standings()
         .iter()
@@ -1057,19 +1215,21 @@ fn maybe_schedule_playoffs(game: &mut Game) {
         .format("%Y-%m-%d")
         .to_string();
 
-    let next_pairings = match split {
-        schedule::LecSplit::Winter => next_winter_playoff_pairings(league, &seeded_team_ids),
-        schedule::LecSplit::Spring | schedule::LecSplit::Summer => {
+    let next_pairings = match bracket {
+        PlayoffBracket::Winter => next_winter_playoff_pairings(league, &seeded_team_ids),
+        PlayoffBracket::SpringSummer => {
             next_spring_summer_playoff_pairings(league, &seeded_team_ids)
         }
+        PlayoffBracket::FourTeam => next_four_team_playoff_pairings(league, &seeded_team_ids),
     };
 
     let Some((pairings, is_grand_final)) = next_pairings else {
         return;
     };
 
-    let best_of = schedule::playoff_best_of(split, is_grand_final);
-    let fixtures = build_playoff_round_fixtures(next_matchday, next_date, pairings, best_of);
+    let best_of = playoff_series_length(bracket, configured_best_of, is_grand_final);
+    let fixtures =
+        build_playoff_round_fixtures(next_matchday, next_date, pairings, best_of, id_prefix);
     if fixtures.is_empty() {
         return;
     }
@@ -1092,11 +1252,12 @@ fn build_playoff_round_fixtures(
     date: String,
     pairings: Vec<(String, String)>,
     best_of: u8,
+    id_prefix: &str,
 ) -> Vec<Fixture> {
     pairings
         .into_iter()
         .map(|(home_team_id, away_team_id)| Fixture {
-            id: Uuid::new_v4().to_string(),
+            id: format!("{id_prefix}{}", Uuid::new_v4()),
             matchday,
             date: date.clone(),
             home_team_id,
@@ -1198,6 +1359,26 @@ fn next_spring_summer_playoff_pairings(
     }
 
     None
+}
+
+/// Next round of the four-team single-elimination bracket: the final once both
+/// semifinals are decided, nothing once the final is scheduled.
+fn next_four_team_playoff_pairings(
+    league: &League,
+    seeds: &[String],
+) -> Option<(Vec<(String, String)>, bool)> {
+    if seeds.len() < 4 {
+        return None;
+    }
+
+    let semifinals = playoff_round_fixtures(league, 1);
+    if semifinals.is_empty() || !playoff_round_fixtures(league, 2).is_empty() {
+        return None;
+    }
+
+    let (w1, _l1) = outcome_for_pair(&semifinals, &seeds[0], &seeds[3])?;
+    let (w2, _l2) = outcome_for_pair(&semifinals, &seeds[1], &seeds[2])?;
+    Some((vec![(w1, w2)], true))
 }
 
 fn next_winter_playoff_pairings(
@@ -1519,7 +1700,12 @@ fn resolve_auto_draft(game: &Game, home_team_id: &str, away_team_id: &str) -> Au
                 }
             }
         }
-        for player_id in ids.into_iter().take(5) {
+        let ids = crate::residency::limit_lineup_ids(
+            game,
+            team_id,
+            ids.into_iter().take(5).collect(),
+        );
+        for player_id in ids {
             let Some(player) = game.players.iter().find(|player| player.id == player_id) else {
                 continue;
             };
@@ -1747,7 +1933,8 @@ mod tests {
     }
 
     fn make_team(id: &str) -> Team {
-        let team = Team::new(
+        
+        Team::new(
             id.to_string(),
             format!("Team {id}"),
             id.to_string(),
@@ -1755,8 +1942,7 @@ mod tests {
             "Test League".to_string(),
             "Test Arena".to_string(),
             1000,
-        );
-        team
+        )
     }
 
     /// Create a minimal Game with 2 teams (5 players each) and a league with 1 fixture.
@@ -1805,6 +1991,42 @@ mod tests {
         }
 
         (game, today.to_string())
+    }
+
+    #[test]
+    fn background_ai_lineup_never_starts_three_imports() {
+        let (mut game, _) = bg_test_game("2025-06-15");
+        let roles = [
+            LolRole::Top,
+            LolRole::Jungle,
+            LolRole::Mid,
+            LolRole::Adc,
+            LolRole::Support,
+            LolRole::Top,
+        ];
+        // team1: five starters, three of them imports, plus a resident backup top.
+        game.players.retain(|p| p.team_id.as_deref() != Some("team1"));
+        for (i, role) in roles.iter().enumerate() {
+            let mut p = make_player(&format!("team1-p{i}"), "team1", 70);
+            p.natural_position = *role;
+            p.position = *role;
+            p.nationality = if i < 3 { "KR" } else { "ES" }.to_string();
+            game.players.push(p);
+        }
+        game.players
+            .iter_mut()
+            .find(|p| p.id == "team1-p5")
+            .unwrap()
+            .attributes
+            .mechanics = 40;
+        game.teams[0].competition_id = Some("lec".to_string());
+        game.teams[0].active_lineup_ids = (0..5).map(|i| format!("team1-p{i}")).collect();
+
+        let team = build_engine_team(&game, "team1");
+
+        assert_eq!(team.players.len(), 5);
+        assert!(team.players.iter().filter(|p| p.is_import).count() <= 2);
+        assert!(team.players.iter().any(|p| p.id == "team1-p5"));
     }
 
     #[test]
@@ -1990,7 +2212,7 @@ mod tests {
         let league = game.leagues.first_mut().unwrap();
         simulate_background_league(
             &mut game.teams,
-            &mut game.players,
+            &game.players,
             league,
             &today_str,
             season,
@@ -2014,7 +2236,7 @@ mod tests {
         let league = game.leagues.first_mut().unwrap();
         simulate_background_league(
             &mut game.teams,
-            &mut game.players,
+            &game.players,
             league,
             &today_str,
             season,

@@ -6,15 +6,23 @@ use crate::domain::message::*;
 use rand::RngExt;
 use std::collections::HashMap;
 
-/// Helper to format fee values for display.
-fn format_fee(fee: u64) -> String {
+/// Format a fee without a currency symbol, e.g. `172K`.
+///
+/// Data templates write the symbol themselves (`€{fee}`), so they must receive
+/// the bare amount or the symbol would show twice.
+fn format_fee_amount(fee: u64) -> String {
     if fee >= 1_000_000 {
-        format!("€{:.1}M", fee as f64 / 1_000_000.0)
+        format!("{:.1}M", fee as f64 / 1_000_000.0)
     } else if fee >= 1_000 {
-        format!("€{}K", fee / 1_000)
+        format!("{}K", fee / 1_000)
     } else {
-        format!("€{}", fee)
+        fee.to_string()
     }
+}
+
+/// Format a fee with its currency symbol for texts that do not add one, e.g. `€172K`.
+fn format_fee(fee: u64) -> String {
+    format!("€{}", format_fee_amount(fee))
 }
 
 /// Apply sender info (name, role, icon) from the senders store to a message.
@@ -71,16 +79,28 @@ fn action(id: &str, label: &str, label_key: &str, action_type: ActionType) -> Me
     }
 }
 
-/// Message template system — generates rich messages with variations.
+/// Action that opens the Transfers tab on its incoming "offers" view.
+fn view_offer_action() -> MessageAction {
+    action(
+        "view_offer",
+        "View offer",
+        "be.msg.transferOffer.actionView",
+        ActionType::NavigateTo {
+            route: "/dashboard?tab=Transfers&view=offers".to_string(),
+        },
+    )
+}
 
+/// Message template system — generates rich messages with variations.
 pub fn welcome_message(team_name: &str, team_id: &str, date: &str, lang: &str) -> InboxMessage {
     // Use template store (with inline translations) if available
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
+    if let Some(msg) = crate::messages::template_store::template_store().build_message_keyed(
         "select_team",
         &format!("welcome_{}", team_id),
         date,
         lang,
         vec![("team", team_name), ("days", "0")],
+        "be.msg.welcome.templates",
     ) {
         return msg;
     }
@@ -159,14 +179,34 @@ pub fn welcome_message(team_name: &str, team_id: &str, date: &str, lang: &str) -
     .with_sender_i18n("be.sender.boardOfDirectors", "be.role.chairman")
 }
 
-pub fn season_schedule_message(league_name: &str, season_start: &str, date: &str) -> InboxMessage {
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
+/// Format an ISO date (`YYYY-MM-DD`) as the English text stored with a message,
+/// e.g. `August 10, 2025`. The UI re-formats the ISO `start` param for the
+/// active language, so this text is only the fallback. Unparseable input is
+/// returned unchanged.
+fn english_date(iso: &str) -> String {
+    chrono::NaiveDate::parse_from_str(iso, "%Y-%m-%d")
+        .map(|d| d.format("%B %-d, %Y").to_string())
+        .unwrap_or_else(|_| iso.to_string())
+}
+
+/// `season_start_iso` is an ISO date (`YYYY-MM-DD`); it travels in `i18n_params`
+/// as ISO so the UI can format it for the active language.
+pub fn season_schedule_message(
+    league_name: &str,
+    season_start_iso: &str,
+    date: &str,
+) -> InboxMessage {
+    let season_start = english_date(season_start_iso);
+    if let Some(mut msg) = crate::messages::template_store::template_store().build_message_keyed(
         "season_schedule",
         "season_schedule",
         date,
         "en",
-        vec![("league", league_name), ("start", season_start)],
+        vec![("league", league_name), ("start", &season_start)],
+        "be.msg.schedule.templates",
     ) {
+        msg.i18n_params
+            .insert("start".to_string(), season_start_iso.to_string());
         return msg;
     }
     let mut rng = rand::rng();
@@ -208,18 +248,19 @@ pub fn season_schedule_message(league_name: &str, season_start: &str, date: &str
     .with_i18n(
         "be.msg.schedule.subject",
         &format!("be.msg.schedule.body{}", idx),
-        params(&[("league", league_name), ("start", season_start)]),
+        params(&[("league", league_name), ("start", season_start_iso)]),
     )
     .with_sender_i18n("be.sender.leagueOffice", "be.role.competitionSecretary")
 }
 
 pub fn staff_advice_message(team_name: &str, team_id: &str, date: &str) -> InboxMessage {
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
+    if let Some(msg) = crate::messages::template_store::template_store().build_message_keyed(
         "staff_advice",
         &format!("staff_{team_id}"),
         date,
         "en",
         vec![("team", team_name)],
+        "be.msg.staffAdvice.templates",
     ) {
         return msg;
     }
@@ -255,61 +296,23 @@ pub fn staff_advice_message(team_name: &str, team_id: &str, date: &str) -> Inbox
     .with_sender_i18n("be.sender.assistantManager", "be.role.assistantManager")
 }
 
-pub fn board_expectations_message(team_name: &str, team_id: &str, date: &str) -> InboxMessage {
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
-        "board_expectations",
-        &format!("expectations_{team_id}"),
-        date,
-        "en",
-        vec![("team", team_name)],
-    ) {
-        return msg;
-    }
-    InboxMessage::new(
-        "board_expect_1".to_string(),
-        format!("{} — Season Objectives", team_name),
-        "The board has set the following expectations for this season:\n\n\
-            • Reach the top half of the LEC table\n\
-            • Maintain financial stability\n\
-            • Develop academy talent for the roster pipeline\n\n\
-            Meeting these objectives will strengthen your position. Failure to meet minimum \
-            expectations may result in a review of your tenure.\n\n\
-            We trust in your abilities."
-            .to_string(),
-        "Board of Directors".to_string(),
-        date.to_string(),
-    )
-    .with_category(MessageCategory::BoardDirective)
-    .with_priority(MessagePriority::High)
-    .with_sender_role("Chairman")
-    .with_action(action(
-        "ack_objectives",
-        "Accept Objectives",
-        "be.msg.boardExpect.actionAccept",
-        ActionType::Acknowledge,
-    ))
-    .with_context(MessageContext {
-        team_id: Some(team_id.to_string()),
-        ..Default::default()
-    })
-    .with_i18n(
-        "be.msg.boardExpect.subject",
-        "be.msg.boardExpect.body",
-        params(&[("team", team_name)]),
-    )
-    .with_sender_i18n("be.sender.boardOfDirectors", "be.role.chairman")
-}
-
 pub fn transfer_complete_message(player_name: &str, fee: u64, date: &str) -> InboxMessage {
     let fee_display = format_fee(fee);
+    let fee_amount = format_fee_amount(fee);
     if let Some(msg) = crate::messages::template_store::template_store().build_message(
         "transfer_complete",
         &format!("transfer_{player_name}"),
         date,
         "en",
-        vec![("player", player_name), ("fee", &fee_display)],
+        vec![("player", player_name), ("fee", &fee_amount)],
     ) {
-        return msg;
+        // The backend does not know the UI language, so the stored template text is
+        // English. Keys let the UI render the message in the active language.
+        return msg.with_i18n(
+            "be.msg.transferComplete.subject",
+            "be.msg.transferComplete.body",
+            params(&[("player", player_name), ("fee", &fee_display)]),
+        );
     }
     let id = format!("transfer_{}", uuid::Uuid::new_v4());
     InboxMessage::new(
@@ -343,6 +346,7 @@ pub fn incoming_transfer_offer_message(
     date: &str,
 ) -> InboxMessage {
     let fee_display = format_fee(fee);
+    let fee_amount = format_fee_amount(fee);
     if let Some(msg) = crate::messages::template_store::template_store().build_message(
         "transfer_offer",
         &format!("offer_{offer_id}"),
@@ -351,9 +355,23 @@ pub fn incoming_transfer_offer_message(
         vec![
             ("player", player_name),
             ("buyer", buying_team_name),
-            ("fee", &fee_display),
+            ("fee", &fee_amount),
         ],
     ) {
+        // The data template only acknowledges the offer; add the link to the
+        // offers view here because `data/` is a read-only submodule. Keys let the UI
+        // render the message in the active language (see `transfer_complete_message`).
+        let mut msg = msg.with_i18n(
+            "be.msg.transferOffer.subject",
+            "be.msg.transferOffer.body",
+            params(&[
+                ("club", buying_team_name),
+                ("buyer", buying_team_name),
+                ("fee", &fee_display),
+                ("player", player_name),
+            ]),
+        );
+        msg.actions.insert(0, view_offer_action());
         return msg;
     }
     InboxMessage::new(
@@ -369,14 +387,7 @@ pub fn incoming_transfer_offer_message(
     .with_category(MessageCategory::Transfer)
     .with_priority(MessagePriority::High)
     .with_sender_role("Director of Football")
-    .with_action(action(
-        "view_transfers",
-        "Review Offer",
-        "be.msg.transferOffer.actionReview",
-        ActionType::NavigateTo {
-            route: "/dashboard?tab=Transfers".to_string(),
-        },
-    ))
+    .with_action(view_offer_action())
     .with_context(MessageContext {
         player_id: Some(player_id.to_string()),
         ..Default::default()

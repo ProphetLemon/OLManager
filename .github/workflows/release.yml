@@ -198,6 +198,7 @@ jobs:
           platform = "${{ env.PLATFORM }}"
           tauri_target = "${{ env.TAURI_TARGET }}"
           tag_name = "${{ env.TAG_NAME }}"
+          repository = "${{ github.repository }}"
           bundle_dir = pathlib.Path("src-tauri/target/release/bundle")
           out_dir = pathlib.Path("dist-bundle")
           out_dir.mkdir(exist_ok=True)
@@ -281,7 +282,7 @@ jobs:
           platform_info = {
               "platform": tauri_target,
               "signature": sig_file.read_text().strip(),
-              "url": f"https://github.com/OpenLeagueManager/OLManager/releases/download/{tag_name}/{asset_name}",
+              "url": f"https://github.com/{repository}/releases/download/{tag_name}/{asset_name}",
           }
           (out_dir / "platform-info.json").write_text(json.dumps(platform_info, indent=2))
 

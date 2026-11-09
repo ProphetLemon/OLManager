@@ -270,8 +270,8 @@ impl SaveManager {
             if league.competition_id.is_some() {
                 continue;
             }
-            if let Some(tid) = league.standings.first().map(|s| s.team_id.as_str()) {
-                if let Some(cid) = game
+            if let Some(tid) = league.standings.first().map(|s| s.team_id.as_str())
+                && let Some(cid) = game
                     .teams
                     .iter()
                     .find(|t| t.id == tid)
@@ -283,7 +283,17 @@ impl SaveManager {
                         league.competition_id, league.name
                     );
                 }
-            }
+        }
+
+        // Migration: saves from before the import rule treat everyone on a team
+        // as a resident of that team's league region (runs once per game).
+        let grandfathered = crate::residency::grandfather_rostered_players(&mut game);
+        crate::residency::refresh_import_flags(&mut game);
+        if grandfathered > 0 {
+            info!(
+                "[save_manager] grandfathered residency for {} rostered players",
+                grandfathered
+            );
         }
 
         info!(
@@ -371,9 +381,6 @@ impl SaveManager {
 mod tests {
     use super::*;
     use crate::clock::GameClock;
-    use crate::domain::league::{
-        Fixture, FixtureStatus, League, LeagueKind, MatchType, StandingEntry,
-    };
     use crate::domain::manager::Manager;
     use crate::domain::player::{Player, PlayerAttributes};
     use crate::domain::staff::{Staff, StaffAttributes, StaffRole};
@@ -468,77 +475,10 @@ mod tests {
             moved_player_ids: Default::default(),
             retired_player_ids: Default::default(),
             world_overlay_as_of: None,
+            residency_initialized: false,
+            removed_team_ids: Default::default(),
+            ladder: Default::default(),
         }
-    }
-
-    fn sample_game_with_league() -> Game {
-        let start = Utc.with_ymd_and_hms(2026, 7, 1, 0, 0, 0).unwrap();
-        let clock = GameClock::new(start);
-        let mut manager = Manager::new(
-            "mgr-user".to_string(),
-            "John".to_string(),
-            "Smith".to_string(),
-            "1990-01-15".to_string(),
-            "British".to_string(),
-        );
-        manager.hire("team-001".to_string());
-
-        let team_one = Team::new(
-            "team-001".to_string(),
-            "London FC".to_string(),
-            "LFC".to_string(),
-            "GB".to_string(),
-            "London".to_string(),
-            "London Stadium".to_string(),
-            50000,
-        );
-        let team_two = Team::new(
-            "team-002".to_string(),
-            "Rivals FC".to_string(),
-            "RFC".to_string(),
-            "GB".to_string(),
-            "Manchester".to_string(),
-            "Rivals Stadium".to_string(),
-            42000,
-        );
-
-        let league = League {
-            id: "league-current".to_string(),
-            name: "Premier Division".to_string(),
-            season: 2027,
-            fixtures: vec![Fixture {
-                id: "fix-current".to_string(),
-                matchday: 1,
-                date: "2027-08-15".to_string(),
-                home_team_id: "team-001".to_string(),
-                away_team_id: "team-002".to_string(),
-                match_type: MatchType::League,
-                best_of: 1,
-                status: FixtureStatus::Scheduled,
-                result: None,
-            }],
-            standings: vec![
-                StandingEntry::new("team-001".to_string()),
-                StandingEntry::new("team-002".to_string()),
-            ],
-            competition_id: None,
-            league_kind: LeagueKind::Main,
-            logo: None,
-            split_index: 0,
-            tier: 0,
-            active: false,
-        };
-
-        let mut game = Game::new(
-            clock,
-            manager,
-            vec![team_one, team_two],
-            vec![],
-            vec![],
-            vec![],
-        );
-        game.leagues = vec![league];
-        game
     }
 
     #[test]
@@ -758,6 +698,63 @@ mod tests {
 
         assert!(loaded.retired_player_ids.is_empty());
         assert_eq!(loaded.world_overlay_as_of, None);
+    }
+
+    #[test]
+    fn test_game_roundtrip_preserves_removed_team_ids() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut sm = SaveManager::init(&dir.path().join("saves")).unwrap();
+        let mut game = sample_game();
+        game.removed_team_ids = vec!["les-old".to_string(), "les-older".to_string()];
+
+        let save_id = sm.create_save(&game, "Removed").unwrap();
+        let loaded = sm.load_game(&save_id).unwrap();
+
+        assert_eq!(
+            loaded.removed_team_ids,
+            vec!["les-old".to_string(), "les-older".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_game_saved_before_custom_team_still_loads() {
+        let mut value = serde_json::to_value(sample_game()).unwrap();
+        value.as_object_mut().unwrap().remove("removed_team_ids");
+
+        let loaded: Game = serde_json::from_value(value).unwrap();
+
+        assert!(loaded.removed_team_ids.is_empty());
+    }
+
+    #[test]
+    fn old_save_without_ladder_field_deserializes() {
+        let mut value = serde_json::to_value(sample_game()).unwrap();
+        value.as_object_mut().unwrap().remove("ladder");
+
+        let loaded: Game = serde_json::from_value(value).unwrap();
+
+        assert!(loaded.ladder.tallies.is_empty() && loaded.ladder.outcomes.is_empty());
+    }
+
+    #[test]
+    fn test_game_roundtrip_preserves_ladder() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut sm = SaveManager::init(&dir.path().join("saves")).unwrap();
+        let mut game = sample_game();
+        game.ladder.outcomes.push(crate::ladder::SeasonOutcome {
+            competition_id: "les".to_string(),
+            season: 2026,
+            champion_id: Some("les-a".to_string()),
+            ..Default::default()
+        });
+
+        let save_id = sm.create_save(&game, "Ladder").unwrap();
+        let loaded = sm.load_game(&save_id).unwrap();
+
+        assert_eq!(
+            loaded.ladder.outcome("les", 2026).and_then(|o| o.champion_id.as_deref()),
+            Some("les-a")
+        );
     }
 
     #[test]

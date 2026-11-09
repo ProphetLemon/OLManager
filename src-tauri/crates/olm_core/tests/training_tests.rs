@@ -1152,3 +1152,137 @@ fn rival_auto_targets_prioritize_meta_tier_over_raw_mastery() {
 
     assert_eq!(targets.first().map(String::as_str), Some("MetaLow"));
 }
+
+// ---------------------------------------------------------------------------
+// process_matchday_recovery (upstream OLManager PR #325)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn matchday_recovery_gives_back_part_of_a_rest_day() {
+    let mut matchday = make_game();
+    let mut rest_day = make_game();
+    for game in [&mut matchday, &mut rest_day] {
+        for p in game.players.iter_mut() {
+            p.condition = 40;
+        }
+    }
+
+    training::process_matchday_recovery(&mut matchday);
+    // Wednesday (2) is a rest day for the Balanced schedule.
+    training::process_training(&mut rest_day, 2);
+
+    for (on_matchday, on_rest_day) in matchday.players.iter().zip(&rest_day.players) {
+        assert!(
+            on_matchday.condition > 40,
+            "{} should recover on a matchday, got {}",
+            on_matchday.id,
+            on_matchday.condition
+        );
+        assert!(
+            on_matchday.condition < on_rest_day.condition,
+            "{} recovers less on a matchday ({}) than on a rest day ({})",
+            on_matchday.id,
+            on_matchday.condition,
+            on_rest_day.condition
+        );
+    }
+}
+
+#[test]
+fn matchday_recovery_never_trains_or_exceeds_full_condition() {
+    let mut game = make_game();
+    let attributes_before: Vec<String> = game
+        .players
+        .iter()
+        .map(|p| format!("{:?}", p.attributes))
+        .collect();
+    for p in game.players.iter_mut() {
+        p.condition = 99;
+    }
+
+    training::process_matchday_recovery(&mut game);
+
+    for (p, before) in game.players.iter().zip(&attributes_before) {
+        assert_eq!(p.condition, 100);
+        assert_eq!(
+            &format!("{:?}", p.attributes),
+            before,
+            "a matchday must not train {}",
+            p.id
+        );
+    }
+}
+
+#[test]
+fn matchday_recovery_skips_players_without_a_team() {
+    let mut game = make_game();
+    game.players[0].team_id = None;
+    game.players[0].condition = 30;
+
+    training::process_matchday_recovery(&mut game);
+
+    assert_eq!(game.players[0].condition, 30);
+}
+
+// ---------------------------------------------------------------------------
+// AI teams rest fatigued players instead of training them
+// ---------------------------------------------------------------------------
+
+fn game_with_user_and_rival_players(condition: u8) -> Game {
+    let mut game = make_game();
+    let mut rival_team = make_team("team2", "Rival FC");
+    rival_team.training_focus = TrainingFocus::Scrims;
+    rival_team.training_intensity = TrainingIntensity::Medium;
+    rival_team.training_schedule = TrainingSchedule::Balanced;
+    game.teams.push(rival_team);
+    game.players
+        .push(make_player("rival", "Rival", "team2", "1998-06-10"));
+    game.staff
+        .push(make_staff("physio2", "team2", StaffRole::Physio, 30, 80));
+    for p in game.players.iter_mut() {
+        p.condition = condition;
+    }
+    // Same age, morale and fitness for a fair comparison.
+    let prime = game.players.iter().find(|p| p.id == "p2").unwrap().clone();
+    let rival = game.players.iter_mut().find(|p| p.id == "rival").unwrap();
+    rival.date_of_birth = prime.date_of_birth;
+    rival.fitness = prime.fitness;
+    rival.morale = prime.morale;
+    game
+}
+
+#[test]
+fn ai_team_rests_a_fatigued_player_on_a_training_day() {
+    let mut game = game_with_user_and_rival_players(30);
+
+    // Monday (0) is a training day for the Balanced schedule.
+    training::process_training(&mut game, 0);
+
+    let user = game.players.iter().find(|p| p.id == "p2").unwrap();
+    let rival = game.players.iter().find(|p| p.id == "rival").unwrap();
+    assert!(
+        rival.condition > 30,
+        "a fatigued AI player rests and recovers, got {}",
+        rival.condition
+    );
+    assert!(
+        rival.condition > user.condition,
+        "the user's team keeps training at the chosen plan ({} vs {})",
+        rival.condition,
+        user.condition
+    );
+}
+
+#[test]
+fn ai_team_still_trains_a_rested_player() {
+    let mut game = game_with_user_and_rival_players(90);
+
+    training::process_training(&mut game, 0);
+
+    let user = game.players.iter().find(|p| p.id == "p2").unwrap();
+    let rival = game.players.iter().find(|p| p.id == "rival").unwrap();
+    assert_eq!(
+        rival.condition, user.condition,
+        "a healthy AI player trains exactly like the user's"
+    );
+}

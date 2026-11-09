@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -6,6 +6,7 @@ import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
 import type { GameStateData } from "@/store/gameStore";
+import type { EndOfSeasonSummaryData } from "@/store/types";
 
 // ─── Mocks ───────────────────────────────────────────────────────────────
 
@@ -21,9 +22,10 @@ vi.mock("@tauri-apps/api/core", () => ({
   }),
 }));
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
+vi.mock("react-i18next", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-i18next")>();
+  return { ...actual, useTranslation: () => ({ t: (key: string) => key }) };
+});
 
 vi.mock("@/hooks/useAdvanceTime", () => ({
   useAdvanceTime: () => ({
@@ -45,6 +47,7 @@ vi.mock("@/hooks/useAdvanceTime", () => ({
 
 vi.mock("@/lib/teams/teamLogos", () => ({
   resolveTeamLogo: () => null,
+  resolveTeamLogoById: () => null,
 }));
 
 vi.mock("@/store/academySelectors", () => ({
@@ -69,11 +72,19 @@ vi.mock("@/lib/dashboard/helpers", () => ({
   getManagerTeamName: () => "Test Team",
   getTodayMatchFixture: () => null,
   getUnreadMessagesCount: () => 0,
+  getPendingIncomingOffersCount: () => 0,
 }));
 
-vi.mock("@/ui-v2/_legacy/components/dashboard/DashboardWorkspaceContent", () => ({
-  default: () => null,
-}));
+vi.mock("@/ui-v2/_legacy/components/dashboard/DashboardWorkspaceContent", async () => {
+  const { default: DashboardTabContent } = await import(
+    "@/ui-v2/_legacy/components/dashboard/DashboardTabContent"
+  );
+  return {
+    default: ({ dashboardTabContentModel }: { dashboardTabContentModel: never }) => (
+      <DashboardTabContent viewModel={dashboardTabContentModel} />
+    ),
+  };
+});
 
 vi.mock("@/ui-v2/_legacy/components/dashboard/DashboardOverlays", () => ({
   default: () => null,
@@ -93,7 +104,9 @@ vi.mock("@/ui-v2/dashboard/DashboardSidebarV2", () => ({
   ),
 }));
 
-vi.mock("@/ui-v2/dashboard/tabs/HomeTabV2", () => ({ HomeTabV2: () => null }));
+vi.mock("@/ui-v2/dashboard/tabs/HomeTabV2", () => ({
+  HomeTabV2: () => <div data-testid="home-tab-v2" />,
+}));
 vi.mock("@/ui-v2/dashboard/tabs/InboxTabV2", () => ({ InboxTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/ScheduleTabV2", () => ({ ScheduleTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/SquadTabV2", () => ({ SquadTabV2: () => null }));
@@ -102,7 +115,17 @@ vi.mock("@/ui-v2/dashboard/tabs/TrainingTabV2", () => ({ TrainingTabV2: () => nu
 vi.mock("@/ui-v2/dashboard/tabs/PlayersTabV2", () => ({ PlayersTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/TeamsTabV2", () => ({ TeamsTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/StaffTabV2", () => ({ StaffTabV2: () => null }));
-vi.mock("@/ui-v2/dashboard/tabs/FinancesTabV2", () => ({ FinancesTabV2: () => null }));
+vi.mock("@/ui-v2/dashboard/tabs/FinancesTabV2", () => ({
+  FinancesTabV2: ({
+    onSelectPlayer,
+  }: {
+    onSelectPlayer?: (id: string, options?: { openRenewal?: boolean }) => void;
+  }) => (
+    <button onClick={() => onSelectPlayer?.("player-1", { openRenewal: true })}>
+      renew-player-1
+    </button>
+  ),
+}));
 vi.mock("@/ui-v2/dashboard/tabs/ScrimsTabV2", () => ({ ScrimsTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/SoloqTabV2", () => ({ SoloqTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/ScoutingTabV2", () => ({ ScoutingTabV2: () => null }));
@@ -118,7 +141,11 @@ vi.mock("@/ui-v2/dashboard/tabs/MetaTabV2", () => ({ MetaTabV2: () => null }));
 
 vi.mock("@/ui-v2/pages/TeamProfileV2", () => ({ default: () => null }));
 vi.mock("@/ui-v2/pages/ChampionPageV2", () => ({ default: () => null }));
-vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({ default: () => null }));
+vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({
+  default: ({ startWithRenewalModal }: { startWithRenewalModal?: boolean }) => (
+    <div data-testid="player-profile" data-renewal={String(startWithRenewalModal)} />
+  ),
+}));
 vi.mock("@/ui-v2/pages/StaffProfileV2", () => ({ default: () => null }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -200,5 +227,100 @@ describe("DashboardV2 tab sync", () => {
     await waitFor(() =>
       expect(useBugReportStore.getState().currentDashboardTab).toBe("Finances"),
     );
+  });
+
+  it("opens the player profile with the renewal intent from finances", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+
+    render(
+      <MemoryRouter initialEntries={["/finanzas"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "renew-player-1" }));
+
+    const profile = await screen.findByTestId("player-profile");
+    expect(profile.getAttribute("data-renewal")).toBe("true");
+  });
+});
+
+describe("DashboardV2 pending season summary", () => {
+  function freshSeasonState(): GameStateData {
+    return {
+      ...minimalGameState(),
+      user_competition_id: "les",
+      leagues: [
+        {
+          id: "l1",
+          competition_id: "les",
+          name: "LES",
+          season: 2,
+          fixtures: [],
+          standings: [{ team_id: "team-1", won: 0, lost: 0, points: 0 }],
+        },
+      ],
+    } as unknown as GameStateData;
+  }
+
+  const summary = {
+    season: 1,
+    league_name: "LES",
+    champion_id: "team-1",
+    champion_name: "Test Team",
+    user_position: 1,
+    user_points: 30,
+    user_won: 10,
+    user_lost: 2,
+    user_maps_won: 20,
+    user_maps_lost: 5,
+    golden_boot_player: "",
+    golden_boot_goals: 0,
+    poty_player: "",
+    poty_rating: 0,
+    total_teams: 2,
+    ladder_movements: [
+      {
+        lower_competition_id: "les",
+        lower_competition_name: "LES",
+        upper_competition_id: "lec",
+        upper_competition_name: "LEC",
+        season: 1,
+        status: "Applied",
+        promoted: [{ id: "team-1", name: "Test Team" }],
+        relegated: [],
+      },
+    ],
+    user_ladder: { result: "Promoted", from_competition_id: "les", to_competition_id: "lec" },
+  } as unknown as EndOfSeasonSummaryData;
+
+  beforeEach(() => {
+    useGameStore.setState({
+      hasActiveGame: true,
+      managerName: "Coach",
+      gameState: freshSeasonState(),
+      pendingSeasonSummary: summary,
+      isDirty: false,
+      showFiredModal: false,
+    });
+    useSettingsStore.setState({ loaded: true });
+  });
+
+  it("keeps the wrap summary on Home until it is dismissed", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByTestId("ladder-user-result", {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.queryByTestId("home-tab-v2")).toBeNull();
+
+    act(() => useGameStore.getState().setPendingSeasonSummary(null));
+
+    expect(await screen.findByTestId("home-tab-v2", {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.queryByTestId("ladder-user-result")).toBeNull();
   });
 });

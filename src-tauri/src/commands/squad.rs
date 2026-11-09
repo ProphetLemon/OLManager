@@ -241,7 +241,7 @@ fn estimate_team_lol_ovr(game: &Game, team_id: &str) -> u8 {
         .players
         .iter()
         .filter(|player| player.team_id.as_deref() == Some(team_id))
-        .map(|player| olm_core::potential::calculate_lol_ovr(player))
+        .map(olm_core::potential::calculate_lol_ovr)
         .collect();
     if ovrs.is_empty() {
         return 74;
@@ -511,16 +511,18 @@ fn set_active_lineup_internal(
         .clone()
         .ok_or("No team assigned".to_string())?;
 
-    apply_active_lineup(&mut game, &team_id, player_ids);
+    apply_active_lineup(&mut game, &team_id, player_ids)?;
 
     state.set_game(game.clone());
     Ok(crate::client_game::game_for_client(&game))
 }
 
-fn apply_active_lineup(game: &mut Game, team_id: &str, player_ids: Vec<String>) {
-    if let Some(team) = game.teams.iter_mut().find(|t| t.id == team_id) {
-        team.active_lineup_ids = player_ids;
-    }
+fn apply_active_lineup(
+    game: &mut Game,
+    team_id: &str,
+    player_ids: Vec<String>,
+) -> Result<(), String> {
+    olm_core::commands::set_active_lineup(game, team_id, player_ids)
 }
 
 #[tauri::command]
@@ -993,7 +995,7 @@ pub fn auto_configure_weekly_scrim_setup(state: State<'_, StateManager>) -> Resu
         .map(|team| (team.id.clone(), estimate_team_lol_ovr(&game, &team.id)))
         .filter(|(id, _)| known_team_ids.contains(id))
         .collect();
-    rivals_by_strength.sort_by(|a, b| b.1.cmp(&a.1));
+    rivals_by_strength.sort_by_key(|rival| std::cmp::Reverse(rival.1));
 
     if let Some(team) = game.teams.iter_mut().find(|t| t.id == manager_team_id) {
         let (setup_locked, _) =
@@ -1166,6 +1168,25 @@ pub fn choose_post_scrim_decision(
     slot_index: u8,
     decision: String,
 ) -> Result<Game, String> {
+    choose_post_scrim_decision_internal(&state, slot_index, decision)
+}
+
+pub(crate) fn choose_post_scrim_decision_internal(
+    state: &StateManager,
+    slot_index: u8,
+    decision: String,
+) -> Result<Game, String> {
+    apply_manager_post_scrim_decision(state, slot_index, decision, true)
+}
+
+/// `enforce_day_off_position` is false only for the "offer rest" action, which rests the
+/// squad after the first block and is the one legitimate early `DayOff`.
+fn apply_manager_post_scrim_decision(
+    state: &StateManager,
+    slot_index: u8,
+    decision: String,
+    enforce_day_off_position: bool,
+) -> Result<Game, String> {
     info!(
         "[cmd] choose_post_scrim_decision: slot={}, decision={}",
         slot_index, decision
@@ -1187,7 +1208,7 @@ pub fn choose_post_scrim_decision(
         .clone()
         .ok_or("No team assigned".to_string())?;
 
-    if decision == olm_core::domain::team::PostScrimDecision::DayOff {
+    if enforce_day_off_position && decision == olm_core::domain::team::PostScrimDecision::DayOff {
         let current_weekday = game.clock.current_date.weekday().num_days_from_monday() as u8;
         let team = game
             .teams
@@ -1209,6 +1230,14 @@ pub fn choose_post_scrim_decision(
 #[tauri::command]
 pub fn choose_daily_scrim_action(
     state: State<'_, StateManager>,
+    slot_index: u8,
+    action: String,
+) -> Result<Game, String> {
+    choose_daily_scrim_action_internal(&state, slot_index, action)
+}
+
+pub(crate) fn choose_daily_scrim_action_internal(
+    state: &StateManager,
     slot_index: u8,
     action: String,
 ) -> Result<Game, String> {
@@ -1282,12 +1311,23 @@ pub fn choose_daily_scrim_action(
         _ => return Err(format!("Unknown daily scrim action: {action}")),
     };
 
-    let mut updated = choose_post_scrim_decision(state.clone(), slot_index, decision.to_string())?;
+    let mut updated = apply_manager_post_scrim_decision(
+        state,
+        slot_index,
+        decision.to_string(),
+        action != "OfferRest",
+    )?;
 
     if action == "ContinueToBlock2" || action == "PushThrough" {
-        let weekday_num = updated.clock.current_date.weekday().num_days_from_monday();
-        olm_core::training::process_scrim_block(&mut updated, weekday_num);
-        state.set_game(updated.clone());
+        // Resolve block B on the stored game: the value returned above is the client
+        // projection, and saving it back would drop the hidden meta.
+        let mut stored = state
+            .get_game(|g| g.clone())
+            .ok_or("No active game session".to_string())?;
+        let weekday_num = stored.clock.current_date.weekday().num_days_from_monday();
+        olm_core::training::process_scrim_block(&mut stored, weekday_num);
+        state.set_game(stored.clone());
+        updated = crate::client_game::game_for_client(&stored);
     }
 
     Ok(updated)
@@ -1372,6 +1412,12 @@ pub fn delegate_scrim_decision(state: State<'_, StateManager>) -> Result<Game, S
 
 #[tauri::command]
 pub fn get_scrim_context(state: State<'_, StateManager>) -> Result<ScrimContextResponse, String> {
+    get_scrim_context_internal(&state)
+}
+
+pub(crate) fn get_scrim_context_internal(
+    state: &StateManager,
+) -> Result<ScrimContextResponse, String> {
     info!("[cmd] get_scrim_context");
     let game = state
         .get_game(|g| g.clone())
@@ -1404,8 +1450,7 @@ pub fn get_scrim_context(state: State<'_, StateManager>) -> Result<ScrimContextR
     );
 
     let has_official_match = game
-        .leagues
-        .first()
+        .active_league()
         .map(|league| {
             league.fixtures.iter().any(|fixture| {
                 fixture.status == olm_core::domain::league::FixtureStatus::Scheduled
@@ -1421,7 +1466,7 @@ pub fn get_scrim_context(state: State<'_, StateManager>) -> Result<ScrimContextR
         .filter(|report| report.date == today)
         .cloned()
         .collect();
-    today_reports.sort_by(|left, right| left.slot_index.cmp(&right.slot_index));
+    today_reports.sort_by_key(|left| left.slot_index);
     let unresolved_report = today_reports
         .iter()
         .find(|report| report.post_decision.is_none())
@@ -1432,7 +1477,11 @@ pub fn get_scrim_context(state: State<'_, StateManager>) -> Result<ScrimContextR
         .cloned();
 
     let today_context = if let Some(report) = unresolved_report.clone() {
-        let decision_phase_active = day_phase == "ScrimBlock";
+        // The backend blocks advancing in ScrimBlock while a report is unresolved, so the
+        // decision must be offered in ScrimBlock as well as ReviewBlock.
+        // The backend blocks advancing in ScrimBlock while a report is unresolved, so the
+        // decision must be offered in ScrimBlock as well as ReviewBlock.
+        let decision_phase_active = matches!(day_phase, "ScrimBlock" | "ReviewBlock");
         let report_opponent_team_id = report.opponent_team_id.clone();
         TodayScrimContextResponse {
             state: "PlayedNeedsReview".to_string(),
@@ -2046,12 +2095,34 @@ mod tests {
             &mut game,
             "team-1",
             vec!["p2".to_string(), "p1".to_string()],
-        );
+        )
+        .unwrap();
 
         assert_eq!(
             game.teams[0].active_lineup_ids,
             vec!["p2".to_string(), "p1".to_string()]
         );
+    }
+
+    #[test]
+    fn apply_active_lineup_refuses_a_lineup_with_three_imports() {
+        let mut game = make_game();
+        game.teams[0].competition_id = Some("lec".to_string());
+        let mut ids = Vec::new();
+        for (i, nationality) in ["KR", "CN", "TW", "ES", "FR"].iter().enumerate() {
+            let mut p = game.players[0].clone();
+            p.id = format!("imp{i}");
+            p.team_id = Some("team-1".to_string());
+            p.nationality = nationality.to_string();
+            p.resident_region = None;
+            ids.push(p.id.clone());
+            game.players.push(p);
+        }
+
+        let err = super::apply_active_lineup(&mut game, "team-1", ids).unwrap_err();
+
+        assert_eq!(err, "LINEUP_TOO_MANY_IMPORTS:3:2");
+        assert!(game.teams[0].active_lineup_ids.is_empty());
     }
 
     #[test]

@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# The overlay is signed over its exact bytes: never normalise line endings.
+assets/world/roster-overlay.json -text
+assets/world/roster-overlay.json.sig -text
+assets/world/overlay-signing-key.pub -text

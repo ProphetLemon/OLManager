@@ -109,6 +109,17 @@ pub struct Player {
     /// Computed by olm_core::potential::calculate_lol_ovr and serialized to frontend.
     #[serde(default)]
     pub lol_ovr: u8,
+    /// Competitive region (`residency::Region::code`) the player is resident of.
+    /// Set for players on a team when a game starts (or an older save loads) so
+    /// they never count as imports on that team's league. `None` falls back to
+    /// the nationality's region.
+    #[serde(default)]
+    pub resident_region: Option<String>,
+    /// Whether the player is an import for the team he is on. Derived by
+    /// `residency::refresh_import_flags`, never authoritative: the rule always
+    /// recomputes from nationality, `resident_region` and the team's league.
+    #[serde(default)]
+    pub is_import: bool,
     /// Cached SoloQ LP — populated daily by process_daily_champion_system.
     /// The frontend reads this field directly from gameState.players
     /// instead of issuing a separate IPC invoke for the global ranking.
@@ -187,6 +198,50 @@ impl PlayerAttributes {
             + u32::from(self.discipline)
             + u32::from(self.mental_resilience))
             / 9) as u8
+    }
+
+    /// The nine attributes as an array, in field declaration order: mechanics, laning,
+    /// teamfighting, macro_play, consistency, shotcalling, champion_pool, discipline,
+    /// mental_resilience. Inverse of [`PlayerAttributes::from_array`].
+    pub fn as_array(&self) -> [u8; 9] {
+        [
+            self.mechanics,
+            self.laning,
+            self.teamfighting,
+            self.macro_play,
+            self.consistency,
+            self.shotcalling,
+            self.champion_pool,
+            self.discipline,
+            self.mental_resilience,
+        ]
+    }
+
+    /// Builds attributes from an array in the order documented on
+    /// [`PlayerAttributes::as_array`].
+    pub fn from_array(values: [u8; 9]) -> Self {
+        let [
+            mechanics,
+            laning,
+            teamfighting,
+            macro_play,
+            consistency,
+            shotcalling,
+            champion_pool,
+            discipline,
+            mental_resilience,
+        ] = values;
+        Self {
+            mechanics,
+            laning,
+            teamfighting,
+            macro_play,
+            consistency,
+            shotcalling,
+            champion_pool,
+            discipline,
+            mental_resilience,
+        }
     }
 }
 
@@ -642,6 +697,8 @@ impl Player {
             can_be_transferred_until: None,
             was_released: false,
             lol_ovr: 0,
+            resident_region: None,
+            is_import: false,
             soloq_lp: 0.0,
         }
     }
@@ -741,7 +798,7 @@ mod tests {
     #[test]
     fn was_released_flag_serde_roundtrip() {
         // Serialize a player with was_released=true, deserialize, verify it survives
-        let mut player: Player = serde_json::from_value(serde_json::json!({
+        let player: Player = serde_json::from_value(serde_json::json!({
             "id": "p-wr",
             "match_name": "W. Released",
             "full_name": "Will Released",

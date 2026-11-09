@@ -304,7 +304,7 @@ pub fn skip_to_end(
             break;
         }
 
-        let fast_skip_macro_tick = ticks % 3 == 0;
+        let fast_skip_macro_tick = ticks.is_multiple_of(3);
 
         runtime.speed = request.speed.max(0.0);
         runtime.running = true;

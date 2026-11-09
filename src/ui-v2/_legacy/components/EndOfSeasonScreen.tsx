@@ -3,32 +3,16 @@ import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { compareStandingsByLolScore, GameStateData } from "@/store/gameStore";
 import { useGameStore } from "@/store/gameStore";
+import type { EndOfSeasonSummaryData } from "@/store/types";
+import { PromotionRelegationCard } from "@/ui-v2/components/season/PromotionRelegationCard";
 import { Card, CardBody } from "@/ui-v2/_legacy/components/ui";
 import PlayoffBracketBoard from "@/ui-v2/_legacy/components/playoffs/PlayoffBracketBoard";
 import { Trophy, Award, Star, ArrowRight, Crown } from "lucide-react";
 
-interface EndOfSeasonSummary {
-  season: number;
-  league_name: string;
-  champion_id: string;
-  champion_name: string;
-  user_position: number;
-  user_points: number;
-  user_won: number;
-  user_lost: number;
-  user_maps_won: number;
-  user_maps_lost: number;
-  golden_boot_player: string;
-  golden_boot_goals: number;
-  poty_player: string;
-  poty_rating: number;
-  total_teams: number;
-}
-
 type AdvanceToNextSeasonResult = {
   action?: "fired";
   game: GameStateData;
-  summary: EndOfSeasonSummary;
+  summary: EndOfSeasonSummaryData;
 };
 
 interface EndOfSeasonScreenProps {
@@ -56,8 +40,11 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
   const { t } = useTranslation();
   const setShowFiredModal = useGameStore((s) => s.setShowFiredModal);
   const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState<EndOfSeasonSummary | null>(null);
-  const [step, setStep] = useState<"review" | "done">("review");
+  // The summary lives in the store so it survives the game update (which makes the
+  // season look incomplete and would otherwise unmount this screen) and tab switches.
+  const summary = useGameStore((s) => s.pendingSeasonSummary);
+  const setPendingSeasonSummary = useGameStore((s) => s.setPendingSeasonSummary);
+  const step: "review" | "done" = summary ? "done" : "review";
 
   const league = gameState?.user_competition_id
     ? gameState.leagues.find(l => l.competition_id === gameState.user_competition_id)
@@ -91,9 +78,8 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
         setShowFiredModal(true);
         return;
       }
-      setSummary(result.summary);
+      setPendingSeasonSummary(result.summary);
       onGameUpdate(result.game);
-      setStep("done");
     } catch (err) {
       console.error("Failed to advance season:", err);
     } finally {
@@ -239,6 +225,13 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
             {t('endOfSeason.newScheduleReleased')}
           </p>
 
+          <PromotionRelegationCard
+            summary={summary}
+            teams={gameState.teams}
+            leagues={gameState.leagues}
+            userTeamId={userTeamId}
+          />
+
           {/* Season summary awards */}
           {(summary.golden_boot_player || summary.poty_player) && (
             <div className="flex gap-4 justify-center mb-8 flex-wrap">
@@ -270,11 +263,7 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
           )}
 
           <button
-            onClick={() => {
-              // Game state is already updated via onGameUpdate, just force re-render
-              // by calling onGameUpdate again with the current state
-              if (gameState) onGameUpdate(gameState);
-            }}
+            onClick={() => setPendingSeasonSummary(null)}
             className="px-8 py-3 bg-primary-500 text-white rounded-xl font-heading font-bold uppercase tracking-wider hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20"
           >
             {t('endOfSeason.continueDashboard')}

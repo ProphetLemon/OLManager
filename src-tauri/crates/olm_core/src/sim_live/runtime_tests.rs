@@ -243,7 +243,7 @@ fn support_roam_after_minute_ten_rotates_not_same_lane_forever() {
     let mut runtime = test_runtime(vec![sup.clone(), top, mid, adc], vec![], vec![], neutral);
     runtime.time_sec = SUPPORT_OPEN_ROAM_AT_SEC + 20.0;
     let timers = decode_neutral_timers_state(&runtime.neutral_timers)
-        .unwrap_or_else(|| neutral_timers_default_runtime_state());
+        .unwrap_or_else(neutral_timers_default_runtime_state);
 
     let champions_snapshot = runtime.champions.clone();
     decide_champion_state(

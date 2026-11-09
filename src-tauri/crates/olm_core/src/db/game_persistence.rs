@@ -174,6 +174,7 @@ impl GamePersistenceReader {
                             erls: Vec::new(),
                             reputation: None,
                             nearby_country_codes: Vec::new(),
+                            promotion: None,
                             legacy: false,
                         }
                     } else {

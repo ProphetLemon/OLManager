@@ -258,7 +258,7 @@ fn step_many_returns_requested_count() {
         live_match_manager::create_live_match(&game, 0, MatchMode::Spectator, false).unwrap();
 
     let results = session.step_many(10);
-    assert!(results.len() >= 1 && results.len() <= 10);
+    assert!(!results.is_empty() && results.len() <= 10);
 }
 
 #[test]
@@ -367,9 +367,13 @@ fn instant_mode_completes() {
         live_match_manager::create_live_match(&game, 0, MatchMode::Instant, false).unwrap();
     let results = session.run_to_completion();
     assert!(session.is_finished());
+    // The engine used to run every match into the 60 minute limit. Matches now
+    // end when a nexus falls: allow stomps (well under 25 minutes) up to the
+    // limit, but not an instant finish. [PLACEHOLDER]
     assert!(
-        results.len() >= 55,
-        "Match should reach time limit (~60 min)"
+        (12..=62).contains(&results.len()),
+        "Match should last between 12 and 62 minute ticks, got {}",
+        results.len()
     );
 }
 
@@ -383,4 +387,94 @@ fn extra_time_flag_passed_through() {
     // Just verify it doesn't crash with extra_time=true
     let session = live_match_manager::create_live_match(&game, 0, MatchMode::Instant, true);
     assert!(session.is_ok());
+}
+
+// ---------------------------------------------------------------------------
+// Import rule (at most 2 imports in the starting five)
+// ---------------------------------------------------------------------------
+
+fn make_import(game: &mut Game, player_id: &str) {
+    game.players
+        .iter_mut()
+        .find(|p| p.id == player_id)
+        .unwrap()
+        .nationality = "KR".to_string();
+}
+
+fn set_lineup(game: &mut Game, team_id: &str, ids: &[&str]) {
+    game.teams
+        .iter_mut()
+        .find(|t| t.id == team_id)
+        .unwrap()
+        .active_lineup_ids = ids.iter().map(|id| id.to_string()).collect();
+}
+
+#[test]
+fn live_match_never_starts_three_imports() {
+    let mut game = make_game_with_fixture();
+    for id in ["team1_top0", "team1_jng0", "team1_mid0"] {
+        make_import(&mut game, id);
+    }
+    set_lineup(
+        &mut game,
+        "team1",
+        &[
+            "team1_top0",
+            "team1_jng0",
+            "team1_mid0",
+            "team1_adc0",
+            "team1_sup0",
+        ],
+    );
+
+    let session = live_match_manager::create_live_match(&game, 0, MatchMode::Live, false).unwrap();
+    let snapshot = session.snapshot();
+    let starters = &snapshot.home_team.players;
+
+    assert_eq!(starters.len(), 5);
+    assert!(starters.iter().filter(|p| p.is_import).count() <= 2);
+    // The swap costs the least rating, keeps every role covered.
+    let mut roles: Vec<String> = starters.iter().map(|p| format!("{:?}", p.role)).collect();
+    roles.sort();
+    roles.dedup();
+    assert_eq!(roles.len(), 5);
+}
+
+#[test]
+fn pre_match_swap_refuses_a_third_import() {
+    let mut game = make_game_with_fixture();
+    for id in ["team1_top0", "team1_jng0", "team1_mid1"] {
+        make_import(&mut game, id);
+    }
+    set_lineup(
+        &mut game,
+        "team1",
+        &[
+            "team1_top0",
+            "team1_jng0",
+            "team1_mid0",
+            "team1_adc0",
+            "team1_sup0",
+        ],
+    );
+    let mut session =
+        live_match_manager::create_live_match(&game, 0, MatchMode::Live, false).unwrap();
+
+    let err = session
+        .apply_command(olm_core::engine::MatchCommand::PreMatchSwap {
+            side: olm_core::engine::Side::Home,
+            player_off_id: "team1_mid0".to_string(),
+            player_on_id: "team1_mid1".to_string(),
+        })
+        .unwrap_err();
+    assert_eq!(err, "LINEUP_TOO_MANY_IMPORTS:3:2");
+
+    // Swapping an import for a resident is still fine.
+    session
+        .apply_command(olm_core::engine::MatchCommand::PreMatchSwap {
+            side: olm_core::engine::Side::Home,
+            player_off_id: "team1_top0".to_string(),
+            player_on_id: "team1_top1".to_string(),
+        })
+        .unwrap();
 }

@@ -320,8 +320,8 @@ pub(super) fn generate_match_news(
 
 /// After all matches in a matchday are simulated, generate roundup + standings news.
 pub fn generate_matchday_news(game: &mut Game, today: &str) {
-    // Use leagues.first() directly for borrow checker compatibility
-    let league = match game.leagues.first() {
+    // Index into game.leagues directly for borrow checker compatibility
+    let league = match game.leagues.get(game.active_league_index()) {
         Some(l) => l,
         None => return,
     };
@@ -363,7 +363,7 @@ pub(super) fn generate_pre_match_messages(game: &mut Game, today: &str) {
         None => return,
     };
 
-    if let Some(league) = game.leagues.first() {
+    if let Some(league) = game.leagues.get(game.active_league_index()) {
         let upcoming = scheduled_user_fixtures_for_date(league, &user_team_id, &target_str);
 
         for fixture in upcoming {
@@ -844,7 +844,7 @@ mod tests {
         assert!(message.subject.contains("(H)"));
         assert_eq!(message.context.fixture_id.as_deref(), Some("fx1"));
         assert_eq!(message.context.team_id.as_deref(), Some("team2"));
-        assert_eq!(message.i18n_params.get("venue"), Some(&"home".to_string()));
+        assert_eq!(message.i18n_params.get("venue"), Some(&"be.msg.preMatch.venue.home".to_string()));
         assert_eq!(
             message.i18n_params.get("opponent"),
             Some(&"Beta FC".to_string())
@@ -854,6 +854,38 @@ mod tests {
             Some(&"2025-08-15".to_string())
         );
         assert_eq!(message.i18n_params.get("matchday"), Some(&"4".to_string()));
+    }
+
+    /// Makes the user's league the second one, behind an unrelated empty league.
+    fn make_game_with_user_league_second(today: &str, status: FixtureStatus) -> Game {
+        let mut game = make_game(today, status);
+        let mut other = game.leagues[0].clone();
+        other.id = "other".to_string();
+        other.competition_id = Some("other".to_string());
+        other.fixtures.clear();
+        other.standings.clear();
+        game.leagues[0].competition_id = Some("user".to_string());
+        game.leagues.insert(0, other);
+        game.user_competition_id = Some("user".to_string());
+        game
+    }
+
+    #[test]
+    fn generate_matchday_news_covers_the_users_league_when_it_is_not_first() {
+        let mut game = make_game_with_user_league_second("2025-08-12", FixtureStatus::Completed);
+
+        generate_matchday_news(&mut game, "2025-08-12");
+
+        assert_eq!(game.news.len(), 2);
+    }
+
+    #[test]
+    fn generate_pre_match_messages_covers_the_users_league_when_it_is_not_first() {
+        let mut game = make_game_with_user_league_second("2025-08-15", FixtureStatus::Scheduled);
+
+        generate_pre_match_messages(&mut game, "2025-08-12");
+
+        assert_eq!(game.messages.len(), 1);
     }
 
     #[test]
@@ -974,7 +1006,7 @@ mod tests {
             weekly_digest.i18n_params.get("weekStart"),
             Some(&"2025-08-11".to_string())
         );
-        assert!(weekly_digest.i18n_params.get("weekLabel").is_none());
+        assert!(!weekly_digest.i18n_params.contains_key("weekLabel"));
 
         let title_race = game
             .news

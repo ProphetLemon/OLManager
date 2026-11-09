@@ -32,6 +32,8 @@ export interface ChooseOptionActionType {
 export interface NavigationTarget {
   tab: string;
   context?: { messageId?: string };
+  /** Sub-view to preselect inside the target tab (e.g. Transfers "offers"). */
+  view?: string;
   shouldResolveAction: boolean;
 }
 
@@ -305,8 +307,10 @@ export function getNavigationTarget(route: string): NavigationTarget {
   const tabMatch = route.match(/[?&]tab=([^&]+)/i);
 
   if (tabMatch) {
+    const viewMatch = route.match(/[?&]view=([^&]+)/i);
     return {
       tab: tabMatch[1],
+      ...(viewMatch ? { view: viewMatch[1] } : {}),
       shouldResolveAction: true,
     };
   }

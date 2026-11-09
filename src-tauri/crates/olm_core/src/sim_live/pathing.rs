@@ -43,7 +43,7 @@ pub(super) fn is_first_wave_contest_active(champion: &ChampionRuntime, now: f64)
     if champion.role == "JGL" {
         return false;
     }
-    now >= MINION_FIRST_WAVE_AT && now <= FIRST_WAVE_CONTEST_UNTIL
+    (MINION_FIRST_WAVE_AT..=FIRST_WAVE_CONTEST_UNTIL).contains(&now)
 }
 
 pub(super) fn choose_lane_anchor_index(
@@ -75,8 +75,8 @@ pub(super) fn choose_lane_anchor_index(
 
         // MID can get pinned too far back when allied-front sampling catches trailing minions.
         // Bias anchor forward with enemy minion context when available.
-        if champion.role == "MID" {
-            if let Some(enemy_unit) = minions
+        if champion.role == "MID"
+            && let Some(enemy_unit) = minions
                 .iter()
                 .filter(|m| {
                     m.alive
@@ -93,7 +93,6 @@ pub(super) fn choose_lane_anchor_index(
                 let enemy_bias = enemy_idx.saturating_sub(1).clamp(1, lane_last_idx);
                 idx = idx.max(enemy_bias);
             }
-        }
 
         return idx;
     }

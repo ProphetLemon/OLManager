@@ -278,6 +278,7 @@ fn preview_contenders<'a>(team_names: &'a [String], rng: &mut impl Rng) -> (&'a 
     (favourite.as_str(), dark_horse.as_str())
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub fn major_transfer_article(
     id: &str,
     player_id: &str,

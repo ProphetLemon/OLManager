@@ -203,13 +203,10 @@ fn compile_template(raw: RawNewsTemplate) -> NewsTemplate {
                         text: h.text,
                     })
                     .collect(),
-                body_default: match t.body {
-                    Some(text) => Some(BodyVariant {
+                body_default: t.body.map(|text| BodyVariant {
                         body_key: String::new(),
                         text,
                     }),
-                    None => None,
-                },
                 body_variants: t
                     .body_variants
                     .into_iter()

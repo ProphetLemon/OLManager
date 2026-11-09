@@ -51,6 +51,11 @@ pub struct PlayerData {
     pub discipline: u8,
     pub mental_resilience: u8,
 
+    /// Import for the team he plays for (see `crate::residency`). Lets the
+    /// match layer enforce the starting-five import limit without the game.
+    #[serde(default)]
+    pub is_import: bool,
+
     // Traits (string names matching crate::domain::player::PlayerTrait variants)
     #[serde(default)]
     pub traits: Vec<String>,

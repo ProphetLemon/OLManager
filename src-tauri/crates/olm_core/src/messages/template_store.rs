@@ -228,6 +228,35 @@ impl TemplateStore {
         lang: &str,
         params: Vec<(&str, &str)>,
     ) -> Option<InboxMessage> {
+        self.build_message_inner(trigger, id, date, lang, params, None)
+    }
+
+    /// Like [`Self::build_message`], but also attaches render-time i18n keys.
+    ///
+    /// The keys are `{key_prefix}.{template id}.subject` and `.body`, so the
+    /// stored fallback text and the key always describe the same template
+    /// variant. The UI translates them with the message's `i18n_params`.
+    pub fn build_message_keyed(
+        &self,
+        trigger: &str,
+        id: &str,
+        date: &str,
+        lang: &str,
+        params: Vec<(&str, &str)>,
+        key_prefix: &str,
+    ) -> Option<InboxMessage> {
+        self.build_message_inner(trigger, id, date, lang, params, Some(key_prefix))
+    }
+
+    fn build_message_inner(
+        &self,
+        trigger: &str,
+        id: &str,
+        date: &str,
+        lang: &str,
+        params: Vec<(&str, &str)>,
+        key_prefix: Option<&str>,
+    ) -> Option<InboxMessage> {
         let tpl = self.pick_random(trigger)?;
 
         let i18n_params: HashMap<String, String> = params
@@ -287,6 +316,10 @@ impl TemplateStore {
         }
         if !i18n_params.is_empty() {
             msg.i18n_params = i18n_params;
+        }
+        if let Some(prefix) = key_prefix {
+            msg.subject_key = Some(format!("{prefix}.{}.subject", tpl.id));
+            msg.body_key = Some(format!("{prefix}.{}.body", tpl.id));
         }
 
         for (i, a) in tpl.actions.iter().enumerate() {

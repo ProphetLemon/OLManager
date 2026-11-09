@@ -15,8 +15,8 @@ describe("champion relationships", () => {
       provenance: { status: "legacy_baseline" },
       migration: { legacy_counts: { counters: 2464 } },
     });
-    expect(championRelationships.roles).toHaveLength(170);
-    expect(championRelationships.counters).toHaveLength(2467);
+    expect(championRelationships.roles).toHaveLength(172);
+    expect(championRelationships.counters).toHaveLength(2468);
     expect(championRelationships.synergies).toHaveLength(670);
   });
 
@@ -34,6 +34,27 @@ describe("champion relationships", () => {
       duplicate_entries_removed: 22,
     });
     expect(championRelationships.migration.synergy_duplicate_reduction.audit).toHaveLength(22);
+  });
+});
+
+describe("Heimerdinger and Quinn catalog entries", () => {
+  const roleRow = (id: string) => championRelationships.roles.find((row) => row.champion_id === id);
+
+  it("carry exactly the timings roles", () => {
+    expect(roleRow("heimerdinger")?.roles).toEqual(["Mid", "Support"]);
+    expect(roleRow("quinn")?.roles).toEqual(["Top"]);
+  });
+
+  it("fit their own lanes and no other", () => {
+    expect(championFitsLane(roleRow("heimerdinger")!.roles, "Mid")).toBe(true);
+    expect(championFitsLane(roleRow("heimerdinger")!.roles, "Top")).toBe(false);
+    expect(championFitsLane(roleRow("quinn")!.roles, "Top")).toBe(true);
+    expect(championFitsLane(roleRow("quinn")!.roles, "Mid")).toBe(false);
+  });
+
+  it("add Quinn over Darius as a one-way curated counter", () => {
+    expect(getChampionCounterValue("Quinn", "Darius")).toBe(3);
+    expect(getChampionCounterValue("Darius", "Quinn")).toBe(0);
   });
 });
 
@@ -109,6 +130,7 @@ describe("curated counter corrections", () => {
       "morgana->blitzcrank",
       "morgana->pyke",
       "naafiri->aurelionsol",
+      "quinn->darius",
       "rammus->masteryi",
       "sylas->shyvana",
       "yasuo->naafiri",

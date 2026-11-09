@@ -46,12 +46,26 @@ export interface World {
   teams: Map<string, WorldTeam>;
   players: WorldPlayer[];
   staff: WorldStaff[];
+  corrections: { applied: number; skipped: string[] };
   duplicates: { players: Array<{ id: string; shards: string[] }>; staff: Array<{ id: string; shards: string[] }> };
 }
 export const STALE_DUPLICATE_COMPETITIONS: Readonly<Record<string, string>>;
 export function readShard(file: string, key: string): unknown[] | null;
 export function effectiveTeamId(rawId: string | null | undefined, competitionId: string): string | null;
-export function loadWorld(dataDir: string): World;
+export interface CatalogCorrection {
+  id: string;
+  field: "full_name" | "match_name" | "nationality";
+  from: string;
+  to: string;
+  evidence: string;
+}
+export const CATALOG_CORRECTIONS_FILE: string;
+export function readCatalogCorrections(file?: string): CatalogCorrection[];
+export function applyCatalogCorrections(
+  players: WorldPlayer[],
+  corrections: CatalogCorrection[],
+): { applied: number; skipped: string[] };
+export function loadWorld(dataDir: string, options?: { corrections?: CatalogCorrection[] }): World;
 export function coveredCompetitionIds(world: World): string[];
 export function toOverlayWorld(world: World): {
   playerIds: Set<string>;

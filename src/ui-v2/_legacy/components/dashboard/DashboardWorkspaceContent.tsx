@@ -1,7 +1,5 @@
 import type { GameStateData } from "@/store/gameStore";
-import PlayerProfile from "@/ui-v2/_legacy/components/playerProfile/PlayerProfile";
-import TeamProfile from "@/ui-v2/_legacy/components/teamProfile";
-import ChampionPage from "@/ui-v2/_legacy/pages/ChampionPage";
+import PlayerProfileV2 from "@/ui-v2/pages/PlayerProfileV2";
 import DashboardAlerts from "@/ui-v2/_legacy/components/dashboard/DashboardAlerts";
 import type { DashboardAlert } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 import type { DashboardProfileNavigationState } from "@/ui-v2/_legacy/components/dashboard/dashboardProfileNavigation";
@@ -17,12 +15,9 @@ interface DashboardWorkspaceContentProps {
   dashboardTabContentModel: DashboardTabContentModel;
   onBack: () => void;
   onNavigate: (tab: string) => void;
-  onSelectPlayer: (id: string) => void;
   onSelectTeam: (id: string) => void;
   onGameUpdate: (state: GameStateData) => void;
   isUnemployed: boolean;
-  viewingChampionKey?: string | null;
-  onCloseChampion?: () => void;
   onViewChampion?: (championKey: string) => void;
 }
 
@@ -33,12 +28,9 @@ export default function DashboardWorkspaceContent({
   dashboardTabContentModel,
   onBack,
   onNavigate,
-  onSelectPlayer,
   onSelectTeam,
   onGameUpdate,
   isUnemployed,
-  viewingChampionKey,
-  onCloseChampion = () => undefined,
   onViewChampion = () => undefined,
 }: DashboardWorkspaceContentProps) {
   const { t } = useTranslation();
@@ -70,17 +62,10 @@ export default function DashboardWorkspaceContent({
         </div>
       )}
 
-      {/* Champion page - only show when no player/team is selected */}
-      {viewingChampionKey && !selectedPlayer && !selectedTeam ? (
-        <ChampionPage
-          championKey={viewingChampionKey}
-          onClose={onCloseChampion}
-        />
-      ) : selectedPlayer && !selectedTeam ? (
-        <PlayerProfile
-          player={selectedPlayer}
+      {selectedPlayer && !selectedTeam ? (
+        <PlayerProfileV2
+          playerId={selectedPlayer.id}
           gameState={gameState}
-          isOwnClub={selectedPlayer.team_id === gameState.manager.team_id}
           startWithRenewalModal={
             profileNavigation.selectedPlayerOptions?.openRenewal === true
           }
@@ -88,14 +73,6 @@ export default function DashboardWorkspaceContent({
           onSelectTeam={onSelectTeam}
           onGameUpdate={onGameUpdate}
           onViewChampion={handleViewChampion}
-        />
-      ) : selectedTeam ? (
-        <TeamProfile
-          team={selectedTeam}
-          gameState={gameState}
-          isOwnTeam={selectedTeam.id === gameState.manager.team_id}
-          onClose={onBack}
-          onSelectPlayer={onSelectPlayer}
         />
       ) : (
         <>

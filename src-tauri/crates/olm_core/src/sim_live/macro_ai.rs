@@ -313,9 +313,7 @@ pub(super) fn pick_allied_lane_fallback_tower(
             .copied();
     }
 
-    let Some(selected_entry) = selected else {
-        return None;
-    };
+    let selected_entry = selected?;
     if allow_emergency_retreat || towers.len() < 2 {
         return Some(selected_entry.0);
     }
@@ -382,7 +380,7 @@ pub(super) fn should_allow_emergency_retreat(
         >= pressure.ally_score
             + profile.outnumber_tolerance
             + LANE_STRONG_UNFAVORABLE_PRESSURE_DELTA
-        || pressure.enemy_champions >= pressure.ally_champions + 1;
+        || pressure.enemy_champions > pressure.ally_champions;
     if !strongly_unfavorable {
         return false;
     }
@@ -441,6 +439,7 @@ pub(super) fn lane_retreat_anchor_pos(
     farm_anchor
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub(super) fn decide_champion_state(
     champion: &mut ChampionRuntime,
     now: f64,
@@ -476,8 +475,8 @@ pub(super) fn decide_champion_state(
         return;
     }
 
-    if champion.role == "JGL" {
-        if let Some(timers) = neutral_timers {
+    if champion.role == "JGL"
+        && let Some(timers) = neutral_timers {
             if let Some(objective_pos) = pick_live_neutral_objective_pos(champion, timers) {
                 champion.state = "objective".to_string();
                 set_champion_direct_path_hysteresis(
@@ -503,7 +502,6 @@ pub(super) fn decide_champion_state(
                 return;
             }
         }
-    }
 
     // Hard anti-stuck rule:
     // if a laner drifts behind their own lane tower after opening phase,
@@ -535,9 +533,9 @@ pub(super) fn decide_champion_state(
         return;
     }
 
-    if team_buffs.baron_until > now {
-        if let Some(lane) = weakest_enemy_lane_for_team(structures, &champion.team) {
-            if let Some(push_target) = baron_push_rally_target(
+    if team_buffs.baron_until > now
+        && let Some(lane) = weakest_enemy_lane_for_team(structures, &champion.team)
+            && let Some(push_target) = baron_push_rally_target(
                 champion,
                 minions,
                 structures,
@@ -553,8 +551,6 @@ pub(super) fn decide_champion_state(
                 );
                 return;
             }
-        }
-    }
 
     if let Some(timers) = neutral_timers {
         if champion.state == "objective" {
@@ -574,8 +570,8 @@ pub(super) fn decide_champion_state(
                         && dist(enemy.pos, champion.pos) <= OBJECTIVE_ASSIST_RADIUS
                 })
                 .count();
-            if allied_nearby >= 2 && enemy_nearby >= 1 {
-                if let Some(enemy) = champions
+            if allied_nearby >= 2 && enemy_nearby >= 1
+                && let Some(enemy) = champions
                     .iter()
                     .filter(|enemy| {
                         enemy.alive
@@ -592,12 +588,11 @@ pub(super) fn decide_champion_state(
                     );
                     return;
                 }
-            }
         }
 
         let contested_dragon = contested_dragon_attempt_for_team(&champion.team, champions, timers);
-        if should_hard_assist_contested_dragon(champion, contested_dragon) {
-            if let Some(dragon) = contested_dragon {
+        if should_hard_assist_contested_dragon(champion, contested_dragon)
+            && let Some(dragon) = contested_dragon {
                 champion.state = "objective".to_string();
                 set_champion_direct_path_hysteresis(
                     champion,
@@ -606,10 +601,9 @@ pub(super) fn decide_champion_state(
                 );
                 return;
             }
-        }
 
-        if should_assist_objective_attempt(champion, champions, timers) {
-            if let Some(attempt) =
+        if should_assist_objective_attempt(champion, champions, timers)
+            && let Some(attempt) =
                 active_objective_attempt_for_team(&champion.team, champions, timers)
             {
                 champion.state = "objective".to_string();
@@ -620,10 +614,9 @@ pub(super) fn decide_champion_state(
                 );
                 return;
             }
-        }
 
-        if champion.role == "JGL" {
-            if let Some(objective_pos) =
+        if champion.role == "JGL"
+            && let Some(objective_pos) =
                 pick_macro_objective_pos(champion, champions, timers, now, team_tactics)
             {
                 champion.state = "objective".to_string();
@@ -634,7 +627,6 @@ pub(super) fn decide_champion_state(
                 );
                 return;
             }
-        }
 
         if champion.role == "SUP" && now >= SUPPORT_ROAM_UNLOCK_AT_SEC {
             if now < SUPPORT_OPEN_ROAM_AT_SEC {
@@ -643,8 +635,8 @@ pub(super) fn decide_champion_state(
                     "RoamTop" => Some("TOP"),
                     _ => None,
                 };
-                if let Some(target_role) = roam_target_role {
-                    if champion.support_roam_uses < 2 && now >= champion.support_roam_cd_until {
+                if let Some(target_role) = roam_target_role
+                    && champion.support_roam_uses < 2 && now >= champion.support_roam_cd_until {
                         let ally_target = champions.iter().find(|ally| {
                             ally.alive
                                 && ally.id != champion.id
@@ -664,7 +656,6 @@ pub(super) fn decide_champion_state(
                             return;
                         }
                     }
-                }
             } else if now >= champion.support_roam_cd_until {
                 let ally_target = champions
                     .iter()
@@ -1257,9 +1248,7 @@ pub(super) fn should_assist_objective_attempt(
     {
         return true;
     }
-    if !objective_adjacent_lanes(&attempt.key)
-        .iter()
-        .any(|adj| *adj == lane)
+    if !objective_adjacent_lanes(&attempt.key).contains(&lane)
     {
         return false;
     }
@@ -1428,11 +1417,10 @@ pub(super) fn pick_macro_objective_pos(
             }
             return Some(timer.pos);
         }
-        if let Some(next_spawn_at) = timer.next_spawn_at {
-            if next_spawn_at >= now && next_spawn_at - now <= objective_lead_time {
+        if let Some(next_spawn_at) = timer.next_spawn_at
+            && next_spawn_at >= now && next_spawn_at - now <= objective_lead_time {
                 return Some(timer.pos);
             }
-        }
     }
     let side_objective_order: [&str; 5] = match team_tactics.strong_side.as_str() {
         "Top" => [
@@ -1475,11 +1463,10 @@ pub(super) fn pick_macro_objective_pos(
             if timer.alive {
                 return Some(timer.pos);
             }
-            if let Some(next_spawn_at) = timer.next_spawn_at {
-                if next_spawn_at >= now && next_spawn_at - now <= objective_lead_time {
+            if let Some(next_spawn_at) = timer.next_spawn_at
+                && next_spawn_at >= now && next_spawn_at - now <= objective_lead_time {
                     return Some(timer.pos);
                 }
-            }
         }
     }
     for key in side_objective_order {
@@ -1492,11 +1479,10 @@ pub(super) fn pick_macro_objective_pos(
         if timer.alive {
             return Some(timer.pos);
         }
-        if let Some(next_spawn_at) = timer.next_spawn_at {
-            if next_spawn_at >= now && next_spawn_at - now <= objective_lead_time {
+        if let Some(next_spawn_at) = timer.next_spawn_at
+            && next_spawn_at >= now && next_spawn_at - now <= objective_lead_time {
                 return Some(timer.pos);
             }
-        }
     }
     for key in jungler_macro_jungle_priority_for_team(&champion.team, &team_tactics.jungle_pathing)
     {
@@ -1512,11 +1498,10 @@ pub(super) fn pick_macro_objective_pos(
         if timer.alive {
             return Some(timer.pos);
         }
-        if let Some(next_spawn_at) = timer.next_spawn_at {
-            if next_spawn_at >= now && next_spawn_at - now <= objective_lead_time {
+        if let Some(next_spawn_at) = timer.next_spawn_at
+            && next_spawn_at >= now && next_spawn_at - now <= objective_lead_time {
                 return Some(timer.pos);
             }
-        }
     }
     None
 }

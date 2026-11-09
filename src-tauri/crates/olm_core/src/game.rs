@@ -161,6 +161,20 @@ pub struct Game {
     /// if any. Shown to the player as "Rosters as of <date>".
     #[serde(default)]
     pub world_overlay_as_of: Option<String>,
+    /// Whether `residency::grandfather_rostered_players` already ran for this
+    /// game. Saves from before the import rule load as `false`, so players on a
+    /// team at that moment become residents of the team's league region.
+    #[serde(default)]
+    pub residency_initialized: bool,
+    /// Team ids deliberately deleted from the world (for example a club replaced
+    /// by a custom team). Catalog rehydration must never bring them back or
+    /// point players at them. A `Vec` keeps serialization deterministic.
+    #[serde(default)]
+    pub removed_team_ids: Vec<String>,
+    /// Promotion/relegation ledger: season tallies, closed-season outcomes and
+    /// applied movements. Saves from before the ledger load with it empty.
+    #[serde(default)]
+    pub ladder: crate::ladder::LadderState,
 }
 
 /// Lenient deserializer for `competition_configs`.
@@ -224,6 +238,9 @@ impl Game {
             moved_player_ids: HashSet::new(),
             retired_player_ids: vec![],
             world_overlay_as_of: None,
+            residency_initialized: false,
+            removed_team_ids: vec![],
+            ladder: crate::ladder::LadderState::default(),
         };
         crate::identity_upgrade::upgrade_game_football_identities(&mut game);
         crate::season_context::refresh_game_context(&mut game);
@@ -247,15 +264,14 @@ impl Game {
     /// Returns a mutable reference to the player's active league.
     pub fn active_league_mut(&mut self) -> Option<&mut League> {
         let cid = self.user_competition_id.clone();
-        if let Some(ref cid) = cid {
-            if let Some(pos) = self
+        if let Some(ref cid) = cid
+            && let Some(pos) = self
                 .leagues
                 .iter()
                 .position(|l| l.competition_id.as_deref() == Some(cid))
             {
                 return self.leagues.get_mut(pos);
             }
-        }
         self.leagues.first_mut()
     }
 

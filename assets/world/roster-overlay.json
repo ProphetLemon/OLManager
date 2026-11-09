@@ -419,6 +419,42 @@
       "evidence": "https://lol.fandom.com/wiki/Anubis_Gaming"
     },
     {
+      "op": "move",
+      "id": "player-1a58b09e",
+      "team_id": "al-team-c648abc2",
+      "evidence": "https://lol.fandom.com/wiki/Baam_Esports"
+    },
+    {
+      "op": "move",
+      "id": "player-1ba5dc01",
+      "team_id": "al-team-c648abc2",
+      "evidence": "https://lol.fandom.com/wiki/Baam_Esports"
+    },
+    {
+      "op": "move",
+      "id": "player-54f0bc07",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Sas"
+    },
+    {
+      "op": "move",
+      "id": "player-6e83d03e",
+      "team_id": "al-team-c648abc2",
+      "evidence": "https://lol.fandom.com/wiki/Baam_Esports"
+    },
+    {
+      "op": "move",
+      "id": "player-b7050a20",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Improver"
+    },
+    {
+      "op": "move",
+      "id": "player-c92c9815",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Shibi"
+    },
+    {
       "op": "add",
       "player": {
         "id": "player-387bbf0b",
@@ -598,12 +634,6 @@
       "evidence": "https://lol.fandom.com/wiki/Jalleba"
     },
     {
-      "op": "move",
-      "id": "player-6e83d03e",
-      "team_id": null,
-      "evidence": "https://lol.fandom.com/wiki/ShizuOo"
-    },
-    {
       "op": "add",
       "player": {
         "id": "player-a721e2fa",
@@ -649,6 +679,26 @@
       "id": "player-c94c8003",
       "team_id": "al-team-e175ded9",
       "evidence": "https://lol.fandom.com/wiki/3BL_Esports"
+    },
+    {
+      "op": "move",
+      "id": "player-37cecd91",
+      "team_id": "cblol-team-0c8be917",
+      "evidence": "https://lol.fandom.com/wiki/Leviatan",
+      "contract_end": "2026-11-16"
+    },
+    {
+      "op": "move",
+      "id": "player-e0dce4c2",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/TopLop"
+    },
+    {
+      "op": "move",
+      "id": "player-ea7a190e",
+      "team_id": "cblol-team-0c8be917",
+      "evidence": "https://lol.fandom.com/wiki/Leviatan",
+      "contract_end": "2026-11-16"
     },
     {
       "op": "move",
@@ -1134,6 +1184,65 @@
         "profile_image_url": null
       },
       "evidence": "https://lol.fandom.com/wiki/7REX"
+    },
+    {
+      "op": "move",
+      "id": "player-28adff2c",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Bipi"
+    },
+    {
+      "op": "move",
+      "id": "player-56a0b4cf",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Forlin"
+    },
+    {
+      "op": "move",
+      "id": "player-9f7081b4",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Cavalo"
+    },
+    {
+      "op": "add",
+      "player": {
+        "id": "player-d1112562",
+        "wage": 0,
+        "career": [],
+        "injury": null,
+        "morale": 100,
+        "fitness": 100,
+        "team_id": "cd-team-a49fd9c6",
+        "condition": 100,
+        "full_name": "William Portugal",
+        "attributes": {
+          "mechanics": 71,
+          "laning": 73,
+          "teamfighting": 73,
+          "macro_play": 66,
+          "consistency": 71,
+          "shotcalling": 74,
+          "champion_pool": 71,
+          "discipline": 66,
+          "mental_resilience": 73
+        },
+        "match_name": "Tyrin",
+        "loan_listed": false,
+        "morale_core": {},
+        "contract_end": "",
+        "market_value": 0,
+        "potential_base": 77,
+        "transfer_listed": false,
+        "transfer_offers": [],
+        "champion_mastery": [],
+        "alternate_positions": [],
+        "position": "Top",
+        "nationality": "BR",
+        "date_of_birth": "2001-12-11",
+        "stats": {},
+        "profile_image_url": null
+      },
+      "evidence": "https://lol.fandom.com/wiki/Team_Solid_(Brazilian_Team)"
     },
     {
       "op": "add",
@@ -4460,6 +4569,47 @@
     {
       "op": "add",
       "player": {
+        "id": "player-c80ec872",
+        "wage": 0,
+        "career": [],
+        "injury": null,
+        "morale": 100,
+        "fitness": 100,
+        "team_id": "lckcl-lck-cl-dn-soopers-challengers",
+        "condition": 100,
+        "full_name": "Yoon Jeong-bin",
+        "attributes": {
+          "mechanics": 71,
+          "laning": 69,
+          "teamfighting": 70,
+          "macro_play": 71,
+          "consistency": 72,
+          "shotcalling": 76,
+          "champion_pool": 70,
+          "discipline": 75,
+          "mental_resilience": 75
+        },
+        "match_name": "Revenge",
+        "loan_listed": false,
+        "morale_core": {},
+        "contract_end": "",
+        "market_value": 0,
+        "potential_base": 81,
+        "transfer_listed": false,
+        "transfer_offers": [],
+        "champion_mastery": [],
+        "alternate_positions": [],
+        "position": "ADC",
+        "nationality": "KR",
+        "date_of_birth": "2007-06-16",
+        "stats": {},
+        "profile_image_url": null
+      },
+      "evidence": "https://lol.fandom.com/wiki/DN_SOOPers_Challengers"
+    },
+    {
+      "op": "add",
+      "player": {
         "id": "player-9445c800",
         "wage": 0,
         "career": [],
@@ -4538,6 +4688,80 @@
         "profile_image_url": null
       },
       "evidence": "https://lol.fandom.com/wiki/Dplus_Kia_Challengers"
+    },
+    {
+      "op": "add",
+      "player": {
+        "id": "player-29f316a5",
+        "wage": 0,
+        "career": [],
+        "injury": null,
+        "morale": 100,
+        "fitness": 100,
+        "team_id": "lckcl-lck-cl-hle-challengers",
+        "condition": 100,
+        "full_name": "Han Kang-hyun",
+        "attributes": {
+          "mechanics": 73,
+          "laning": 78,
+          "teamfighting": 78,
+          "macro_play": 75,
+          "consistency": 77,
+          "shotcalling": 74,
+          "champion_pool": 68,
+          "discipline": 73,
+          "mental_resilience": 75
+        },
+        "match_name": "Valiant",
+        "loan_listed": false,
+        "morale_core": {},
+        "contract_end": "",
+        "market_value": 0,
+        "potential_base": 84,
+        "transfer_listed": false,
+        "transfer_offers": [],
+        "champion_mastery": [],
+        "alternate_positions": [],
+        "position": "Mid",
+        "nationality": "KR",
+        "date_of_birth": "2009-05-01",
+        "stats": {},
+        "profile_image_url": null
+      },
+      "evidence": "https://lol.fandom.com/wiki/Hanwha_Life_Esports_Challengers"
+    },
+    {
+      "op": "move",
+      "id": "player-4bd4cc7f",
+      "team_id": "lckcl-lck-cl-hle-challengers",
+      "evidence": "https://lol.fandom.com/wiki/Hanwha_Life_Esports_Challengers",
+      "contract_end": "2026-11-16"
+    },
+    {
+      "op": "move",
+      "id": "player-96361156",
+      "team_id": "lckcl-lck-cl-hle-challengers",
+      "evidence": "https://lol.fandom.com/wiki/Hanwha_Life_Esports_Challengers",
+      "contract_end": "2026-11-16"
+    },
+    {
+      "op": "move",
+      "id": "player-5f2ecb60",
+      "team_id": "lckcl-lck-cl-kiwoon-drx-challengers",
+      "evidence": "https://lol.fandom.com/wiki/Kiwoom_DRX_Challengers",
+      "contract_end": "2028-11-18"
+    },
+    {
+      "op": "retire",
+      "id": "player-c46f4677",
+      "evidence": "https://lol.fandom.com/wiki/Winner_(Kang_Hyeon-wook)"
+    },
+    {
+      "op": "move",
+      "id": "player-cd76f830",
+      "team_id": "lckcl-lck-cl-kiwoon-drx-challengers",
+      "evidence": "https://lol.fandom.com/wiki/Kiwoom_DRX_Challengers",
+      "contract_end": "2026-11-16"
     },
     {
       "op": "add",
@@ -4759,6 +4983,11 @@
       "evidence": "https://lol.fandom.com/wiki/Deep_Cross_Gaming"
     },
     {
+      "op": "retire",
+      "id": "player-89fb8cd6",
+      "evidence": "https://lol.fandom.com/wiki/Evi"
+    },
+    {
       "op": "move",
       "id": "player-401019e2",
       "team_id": "lcp-team-gzg2025",
@@ -4862,6 +5091,13 @@
       "id": "player-d689cc78",
       "team_id": null,
       "evidence": "https://lol.fandom.com/wiki/Zven"
+    },
+    {
+      "op": "move",
+      "id": "player-434e3142",
+      "team_id": "lcs-team-cb9503c1",
+      "evidence": "https://lol.fandom.com/wiki/LYON_(2024_American_Team)",
+      "contract_end": "2027-11-16"
     },
     {
       "op": "add",
@@ -5657,6 +5893,16 @@
       "team_id": "lec-team-vitality",
       "evidence": "https://lol.fandom.com/wiki/Team_Vitality",
       "contract_end": "2026-11-16"
+    },
+    {
+      "op": "retire",
+      "id": "player-d421b0b0",
+      "evidence": "https://lol.fandom.com/wiki/ManoloGap"
+    },
+    {
+      "op": "retire",
+      "id": "player-dfd47326",
+      "evidence": "https://lol.fandom.com/wiki/Miniduke"
     },
     {
       "op": "move",
@@ -10813,11 +11059,111 @@
       "dob_approx": true
     },
     {
+      "op": "add",
+      "player": {
+        "id": "player-6498e762",
+        "wage": 0,
+        "career": [],
+        "injury": null,
+        "morale": 100,
+        "fitness": 100,
+        "team_id": "pcs-team-94671303",
+        "condition": 100,
+        "full_name": "Chang Tsu-Chia",
+        "attributes": {
+          "mechanics": 68,
+          "laning": 70,
+          "teamfighting": 71,
+          "macro_play": 73,
+          "consistency": 73,
+          "shotcalling": 74,
+          "champion_pool": 68,
+          "discipline": 69,
+          "mental_resilience": 74
+        },
+        "match_name": "Leaky",
+        "loan_listed": false,
+        "morale_core": {},
+        "contract_end": "",
+        "market_value": 0,
+        "potential_base": 79,
+        "transfer_listed": false,
+        "transfer_offers": [],
+        "champion_mastery": [],
+        "alternate_positions": [],
+        "position": "Jungle",
+        "nationality": "TW",
+        "date_of_birth": "2000-12-02",
+        "stats": {},
+        "profile_image_url": null
+      },
+      "evidence": "https://lol.fandom.com/wiki/CTBC_Flying_Oyster_Academy"
+    },
+    {
+      "op": "move",
+      "id": "player-b636d52a",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Leowei"
+    },
+    {
+      "op": "move",
+      "id": "player-f6d6df03",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Xin_(Ye_Shang-Hsin)"
+    },
+    {
       "op": "move",
       "id": "player-f419fc4a",
       "team_id": "prm-team-0be37b7e",
       "evidence": "https://lol.fandom.com/wiki/Berlin_International_Gaming",
       "contract_end": "2026-11-16"
+    },
+    {
+      "op": "add",
+      "player": {
+        "id": "player-1dff32de",
+        "wage": 0,
+        "career": [],
+        "injury": null,
+        "morale": 100,
+        "fitness": 100,
+        "team_id": "prm-team-1347e217",
+        "condition": 100,
+        "full_name": "Matti&nbsp;Antero Sormunen",
+        "attributes": {
+          "mechanics": 77,
+          "laning": 71,
+          "teamfighting": 76,
+          "macro_play": 70,
+          "consistency": 75,
+          "shotcalling": 67,
+          "champion_pool": 66,
+          "discipline": 73,
+          "mental_resilience": 75
+        },
+        "match_name": "WhiteKnight",
+        "loan_listed": false,
+        "morale_core": {},
+        "contract_end": "",
+        "market_value": 0,
+        "potential_base": 82,
+        "transfer_listed": false,
+        "transfer_offers": [],
+        "champion_mastery": [],
+        "alternate_positions": [],
+        "position": "Top",
+        "nationality": "FI",
+        "date_of_birth": "1996-02-16",
+        "stats": {},
+        "profile_image_url": null
+      },
+      "evidence": "https://lol.fandom.com/wiki/TeamOrangeGaming"
+    },
+    {
+      "op": "move",
+      "id": "player-d8771aee",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Zorenous"
     },
     {
       "op": "move",
@@ -10879,6 +11225,53 @@
       "team_id": "prm-team-5dc37618",
       "evidence": "https://lol.fandom.com/wiki/Eintracht_Frankfurt",
       "contract_end": "2026-11-16"
+    },
+    {
+      "op": "move",
+      "id": "player-9fb2dfc7",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Tazaku"
+    },
+    {
+      "op": "add",
+      "player": {
+        "id": "player-c8a9db98",
+        "wage": 0,
+        "career": [],
+        "injury": null,
+        "morale": 100,
+        "fitness": 100,
+        "team_id": "prm-team-8c9a2d4b",
+        "condition": 100,
+        "full_name": "Timothy Warscher",
+        "attributes": {
+          "mechanics": 77,
+          "laning": 75,
+          "teamfighting": 70,
+          "macro_play": 70,
+          "consistency": 69,
+          "shotcalling": 72,
+          "champion_pool": 71,
+          "discipline": 73,
+          "mental_resilience": 74
+        },
+        "match_name": "DizL",
+        "loan_listed": false,
+        "morale_core": {},
+        "contract_end": "",
+        "market_value": 0,
+        "potential_base": 78,
+        "transfer_listed": false,
+        "transfer_offers": [],
+        "champion_mastery": [],
+        "alternate_positions": [],
+        "position": "ADC",
+        "nationality": "AT",
+        "date_of_birth": "2001-10-20",
+        "stats": {},
+        "profile_image_url": null
+      },
+      "evidence": "https://lol.fandom.com/wiki/VfB_eSports"
     },
     {
       "op": "add",
@@ -12370,6 +12763,161 @@
     },
     {
       "op": "move",
+      "id": "player-1a2ec39e",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Bmoooo"
+    },
+    {
+      "op": "add",
+      "player": {
+        "id": "player-1c5f4300",
+        "wage": 0,
+        "career": [],
+        "injury": null,
+        "morale": 100,
+        "fitness": 100,
+        "team_id": "tcl-team-phoenix",
+        "condition": 100,
+        "full_name": "Mert Efe Altun",
+        "attributes": {
+          "mechanics": 62,
+          "laning": 61,
+          "teamfighting": 59,
+          "macro_play": 61,
+          "consistency": 67,
+          "shotcalling": 62,
+          "champion_pool": 60,
+          "discipline": 62,
+          "mental_resilience": 65
+        },
+        "match_name": "ruinez",
+        "loan_listed": false,
+        "morale_core": {},
+        "contract_end": "",
+        "market_value": 0,
+        "potential_base": 74,
+        "transfer_listed": false,
+        "transfer_offers": [],
+        "champion_mastery": [],
+        "alternate_positions": [],
+        "position": "Jungle",
+        "nationality": "TR",
+        "date_of_birth": "2003-01-01",
+        "stats": {},
+        "profile_image_url": null
+      },
+      "evidence": "https://lol.fandom.com/wiki/Team_Phoenix_(Turkish_Team)",
+      "dob_approx": true
+    },
+    {
+      "op": "move",
+      "id": "player-3f634687",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Podex"
+    },
+    {
+      "op": "move",
+      "id": "player-5f7e7ef8",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/SmallBugi"
+    },
+    {
+      "op": "add",
+      "player": {
+        "id": "player-800f3854",
+        "wage": 0,
+        "career": [],
+        "injury": null,
+        "morale": 100,
+        "fitness": 100,
+        "team_id": "tcl-team-phoenix",
+        "condition": 100,
+        "full_name": "Serkan Yıkılmaz",
+        "attributes": {
+          "mechanics": 63,
+          "laning": 63,
+          "teamfighting": 61,
+          "macro_play": 66,
+          "consistency": 63,
+          "shotcalling": 61,
+          "champion_pool": 64,
+          "discipline": 66,
+          "mental_resilience": 66
+        },
+        "match_name": "Forzent",
+        "loan_listed": false,
+        "morale_core": {},
+        "contract_end": "",
+        "market_value": 0,
+        "potential_base": 69,
+        "transfer_listed": false,
+        "transfer_offers": [],
+        "champion_mastery": [],
+        "alternate_positions": [],
+        "position": "Jungle",
+        "nationality": "TR",
+        "date_of_birth": "2000-12-14",
+        "stats": {},
+        "profile_image_url": null
+      },
+      "evidence": "https://lol.fandom.com/wiki/Team_Phoenix_(Turkish_Team)"
+    },
+    {
+      "op": "move",
+      "id": "player-843e5af4",
+      "team_id": null,
+      "evidence": "https://lol.fandom.com/wiki/Meto"
+    },
+    {
+      "op": "add",
+      "player": {
+        "id": "player-93ad6c2a",
+        "wage": 0,
+        "career": [],
+        "injury": null,
+        "morale": 100,
+        "fitness": 100,
+        "team_id": "tcl-team-phoenix",
+        "condition": 100,
+        "full_name": "Özgür Umut Kars",
+        "attributes": {
+          "mechanics": 67,
+          "laning": 69,
+          "teamfighting": 63,
+          "macro_play": 61,
+          "consistency": 64,
+          "shotcalling": 65,
+          "champion_pool": 59,
+          "discipline": 64,
+          "mental_resilience": 69
+        },
+        "match_name": "Ozgur",
+        "loan_listed": false,
+        "morale_core": {},
+        "contract_end": "",
+        "market_value": 0,
+        "potential_base": 74,
+        "transfer_listed": false,
+        "transfer_offers": [],
+        "champion_mastery": [],
+        "alternate_positions": [],
+        "position": "ADC",
+        "nationality": "TR",
+        "date_of_birth": "2001-10-30",
+        "stats": {},
+        "profile_image_url": null
+      },
+      "evidence": "https://lol.fandom.com/wiki/Team_Phoenix_(Turkish_Team)"
+    },
+    {
+      "op": "move",
+      "id": "player-b85eaf08",
+      "team_id": "tcl-team-phoenix",
+      "evidence": "https://lol.fandom.com/wiki/Team_Phoenix_(Turkish_Team)",
+      "contract_end": "2026-11-16"
+    },
+    {
+      "op": "move",
       "id": "player-3a004205",
       "team_id": null,
       "evidence": "https://lol.fandom.com/wiki/Easylove"
@@ -13018,6 +13566,32 @@
       "dob_approx": true
     },
     {
+      "op": "add",
+      "staff": {
+        "id": "staff-e4cf5213",
+        "role": "HeadCoach",
+        "wage": null,
+        "team_id": "al-team-c648abc2",
+        "last_name": "El-Guindy",
+        "attributes": {
+          "coaching": 83,
+          "physiotherapy": 75,
+          "judging_ability": 75,
+          "judging_potential": 78
+        },
+        "first_name": "Sherif El-Guindy",
+        "nationality": "Egypt",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "Presence"
+      },
+      "evidence": "https://lol.fandom.com/wiki/Baam_Esports",
+      "dob_approx": true
+    },
+    {
       "op": "move",
       "id": "ef15e336-eb54-4e8b-9f36-491f22d6b884",
       "team_id": "cblol-team-0e114265",
@@ -13497,6 +14071,32 @@
         "nickname": "Alocs"
       },
       "evidence": "https://lol.fandom.com/wiki/KaBuM!_Ilha_das_Lendas",
+      "dob_approx": true
+    },
+    {
+      "op": "add",
+      "staff": {
+        "id": "staff-0d54a4a8",
+        "role": "Performance Coach",
+        "wage": null,
+        "team_id": "cd-team-a49fd9c6",
+        "last_name": "Oliveira",
+        "attributes": {
+          "coaching": 75,
+          "physiotherapy": 77,
+          "judging_ability": 74,
+          "judging_potential": 78
+        },
+        "first_name": "Carlos Oliveira",
+        "nationality": "Brazil",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "Reversed"
+      },
+      "evidence": "https://lol.fandom.com/wiki/Team_Solid_(Brazilian_Team)",
       "dob_approx": true
     },
     {
@@ -14036,32 +14636,6 @@
     {
       "op": "add",
       "staff": {
-        "id": "staff-7e145a72",
-        "role": "Performance Coach",
-        "wage": null,
-        "team_id": "hm-team-193151e6",
-        "last_name": "Bielik",
-        "attributes": {
-          "coaching": 75,
-          "physiotherapy": 72,
-          "judging_ability": 78,
-          "judging_potential": 75
-        },
-        "first_name": "Tomáš Bielik",
-        "nationality": "Czech Republic",
-        "contract_end": null,
-        "birth_country": null,
-        "date_of_birth": "1990-01-01",
-        "specialization": null,
-        "profile_image_url": null,
-        "nickname": "Elmo"
-      },
-      "evidence": "https://lol.fandom.com/wiki/Nightbirds",
-      "dob_approx": true
-    },
-    {
-      "op": "add",
-      "staff": {
         "id": "staff-90a720c0",
         "role": "HeadCoach",
         "wage": null,
@@ -14380,9 +14954,48 @@
     },
     {
       "op": "move",
+      "id": "e7f4658f-b2ea-4861-8708-7cb62f72da65",
+      "team_id": "lckcl-lck-cl-dn-soopers-challengers",
+      "evidence": "https://lol.fandom.com/wiki/DN_SOOPers_Challengers"
+    },
+    {
+      "op": "move",
       "id": "104c7cf2-0b69-47d2-87c7-6b469a871ee5",
       "team_id": "lckcl-lck-cl-gen-g-global-academy",
       "evidence": "https://lol.fandom.com/wiki/Gen.G_Global_Academy",
+      "role": "Performance Coach"
+    },
+    {
+      "op": "add",
+      "staff": {
+        "id": "staff-3bba511a",
+        "role": "Performance Coach",
+        "wage": null,
+        "team_id": "lckcl-lck-cl-hanjin-brion-challengers",
+        "last_name": "Chan-ho",
+        "attributes": {
+          "coaching": 77,
+          "physiotherapy": 69,
+          "judging_ability": 73,
+          "judging_potential": 76
+        },
+        "first_name": "Kim Chan-ho",
+        "nationality": "South Korea",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "Ssumday"
+      },
+      "evidence": "https://lol.fandom.com/wiki/HANJIN_BRION_Challengers",
+      "dob_approx": true
+    },
+    {
+      "op": "move",
+      "id": "staff-b5db00ba",
+      "team_id": "lckcl-lck-cl-ns-esports-academy",
+      "evidence": "https://lol.fandom.com/wiki/Nongshim_Esports_Academy",
       "role": "Performance Coach"
     },
     {
@@ -14631,6 +15244,32 @@
       "id": "staff-13e6c700",
       "team_id": "lcp-team-d13da18a",
       "evidence": "https://lol.fandom.com/wiki/Team_Secret_Whales"
+    },
+    {
+      "op": "add",
+      "staff": {
+        "id": "staff-31b34ca6",
+        "role": "Performance Coach",
+        "wage": null,
+        "team_id": "lcp-team-f4306bce",
+        "last_name": "Sang-hun",
+        "attributes": {
+          "coaching": 75,
+          "physiotherapy": 69,
+          "judging_ability": 74,
+          "judging_potential": 74
+        },
+        "first_name": "Lee Sang-hun",
+        "nationality": "South Korea",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "Maru"
+      },
+      "evidence": "https://lol.fandom.com/wiki/Fukuoka_SoftBank_HAWKS_gaming",
+      "dob_approx": true
     },
     {
       "op": "add",
@@ -17826,6 +18465,32 @@
     {
       "op": "add",
       "staff": {
+        "id": "staff-6498e762",
+        "role": "HeadCoach",
+        "wage": null,
+        "team_id": "pcs-team-94671303",
+        "last_name": "Tsu-Chia",
+        "attributes": {
+          "coaching": 80,
+          "physiotherapy": 73,
+          "judging_ability": 80,
+          "judging_potential": 75
+        },
+        "first_name": "Chang Tsu-Chia",
+        "nationality": "Taiwan",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "Leaky"
+      },
+      "evidence": "https://lol.fandom.com/wiki/CTBC_Flying_Oyster_Academy",
+      "dob_approx": true
+    },
+    {
+      "op": "add",
+      "staff": {
         "id": "staff-3188362a",
         "role": "HeadCoach",
         "wage": null,
@@ -17878,6 +18543,84 @@
     {
       "op": "add",
       "staff": {
+        "id": "staff-4c0b2d4e",
+        "role": "Performance Coach",
+        "wage": null,
+        "team_id": "prm-team-069c707b",
+        "last_name": "Dvoryanov",
+        "attributes": {
+          "coaching": 79,
+          "physiotherapy": 77,
+          "judging_ability": 73,
+          "judging_potential": 80
+        },
+        "first_name": "Sergei Dvoryanov",
+        "nationality": "Russia",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "Seryy"
+      },
+      "evidence": "https://lol.fandom.com/wiki/G2_NORD",
+      "dob_approx": true
+    },
+    {
+      "op": "add",
+      "staff": {
+        "id": "staff-617fd885",
+        "role": "Performance Coach",
+        "wage": null,
+        "team_id": "prm-team-069c707b",
+        "last_name": "huhlio",
+        "attributes": {
+          "coaching": 77,
+          "physiotherapy": 73,
+          "judging_ability": 71,
+          "judging_potential": 75
+        },
+        "first_name": "huhlio",
+        "nationality": "France",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "huhlio"
+      },
+      "evidence": "https://lol.fandom.com/wiki/G2_NORD",
+      "dob_approx": true
+    },
+    {
+      "op": "add",
+      "staff": {
+        "id": "staff-8fc7cfdf",
+        "role": "HeadCoach",
+        "wage": null,
+        "team_id": "prm-team-069c707b",
+        "last_name": "Perez",
+        "attributes": {
+          "coaching": 79,
+          "physiotherapy": 79,
+          "judging_ability": 74,
+          "judging_potential": 77
+        },
+        "first_name": "Nicolas Perez",
+        "nationality": "France",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "Nicolas Perez"
+      },
+      "evidence": "https://lol.fandom.com/wiki/G2_NORD",
+      "dob_approx": true
+    },
+    {
+      "op": "add",
+      "staff": {
         "id": "staff-99d1f126",
         "role": "Performance Coach",
         "wage": null,
@@ -17911,6 +18654,32 @@
     {
       "op": "add",
       "staff": {
+        "id": "staff-16ac6969",
+        "role": "HeadCoach",
+        "wage": null,
+        "team_id": "prm-team-1347e217",
+        "last_name": "Fernandes",
+        "attributes": {
+          "coaching": 81,
+          "physiotherapy": 77,
+          "judging_ability": 74,
+          "judging_potential": 74
+        },
+        "first_name": "João Fernandes",
+        "nationality": "Portugal",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "DeadShadow"
+      },
+      "evidence": "https://lol.fandom.com/wiki/TeamOrangeGaming",
+      "dob_approx": true
+    },
+    {
+      "op": "add",
+      "staff": {
         "id": "staff-88dbb2ae",
         "role": "Analyst",
         "wage": null,
@@ -17932,6 +18701,32 @@
         "nickname": "Bleim"
       },
       "evidence": "https://lol.fandom.com/wiki/Eintracht_Frankfurt",
+      "dob_approx": true
+    },
+    {
+      "op": "add",
+      "staff": {
+        "id": "staff-17b49c6c",
+        "role": "HeadCoach",
+        "wage": null,
+        "team_id": "prm-team-8c9a2d4b",
+        "last_name": "Schaller",
+        "attributes": {
+          "coaching": 82,
+          "physiotherapy": 73,
+          "judging_ability": 80,
+          "judging_potential": 79
+        },
+        "first_name": "Max Schaller",
+        "nationality": "Germany",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "MaxSchallah"
+      },
+      "evidence": "https://lol.fandom.com/wiki/VfB_eSports",
       "dob_approx": true
     },
     {
@@ -18517,6 +19312,58 @@
         "nickname": "Basei"
       },
       "evidence": "https://lol.fandom.com/wiki/SU_Esports",
+      "dob_approx": true
+    },
+    {
+      "op": "add",
+      "staff": {
+        "id": "staff-5efa7636",
+        "role": "HeadCoach",
+        "wage": null,
+        "team_id": "tcl-team-phoenix",
+        "last_name": "Yürük",
+        "attributes": {
+          "coaching": 80,
+          "physiotherapy": 74,
+          "judging_ability": 75,
+          "judging_potential": 74
+        },
+        "first_name": "Furkan Yürük",
+        "nationality": "Turkey",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "Shiguro"
+      },
+      "evidence": "https://lol.fandom.com/wiki/Team_Phoenix_(Turkish_Team)",
+      "dob_approx": true
+    },
+    {
+      "op": "add",
+      "staff": {
+        "id": "staff-ea0b528e",
+        "role": "Analyst",
+        "wage": null,
+        "team_id": "tcl-team-phoenix",
+        "last_name": "Çayır",
+        "attributes": {
+          "coaching": 71,
+          "physiotherapy": 61,
+          "judging_ability": 66,
+          "judging_potential": 69
+        },
+        "first_name": "Batuhan Çayır",
+        "nationality": "Turkey",
+        "contract_end": null,
+        "birth_country": null,
+        "date_of_birth": "1990-01-01",
+        "specialization": null,
+        "profile_image_url": null,
+        "nickname": "Çayır"
+      },
+      "evidence": "https://lol.fandom.com/wiki/Team_Phoenix_(Turkish_Team)",
       "dob_approx": true
     },
     {

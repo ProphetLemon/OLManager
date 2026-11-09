@@ -16,7 +16,7 @@ const MAX_AI_EMERGENCY_TRANSFERS_PER_DAY: u8 = 1;
 const HIGH_REPUTATION_THRESHOLD: u32 = 1_100;
 const MIN_STRATEGIC_ATTRACTIVENESS: i32 = 35;
 
-fn annual_team_wage_bill(game: &Game, team_id: &str) -> i64 {
+pub fn annual_team_wage_bill(game: &Game, team_id: &str) -> i64 {
     let player_wages: i64 = game
         .players
         .iter()
@@ -50,8 +50,33 @@ pub fn renewal_wage_policy_allows(
     offered_wage: u32,
 ) -> bool {
     let current_bill = annual_team_wage_bill(game, &team.id);
-    let projected_bill =
-        projected_annual_wage_bill(game, &team.id, current_player_wage, offered_wage);
+    wage_policy_allows_for_bill(team, current_bill, current_player_wage, offered_wage)
+}
+
+/// Most yearly wage the board lets `team` add for a player who is not on its bill
+/// yet, given its `current_bill`. Always agrees with [`wage_policy_allows_for_bill`]
+/// for a new signing: a wage is allowed exactly when it is at most this room.
+pub fn wage_policy_room_for_new_signing(team: &Team, current_bill: i64) -> i64 {
+    if current_bill <= team.wage_budget {
+        let soft_cap = (team.wage_budget * WAGE_SOFT_CAP_PCT) / 100;
+        return (soft_cap - current_bill).max(0);
+    }
+
+    std::cmp::max(
+        (team.wage_budget * LEGACY_OVER_BUDGET_GRACE_PCT) / 100,
+        LEGACY_OVER_BUDGET_GRACE_MIN,
+    )
+}
+
+/// [`renewal_wage_policy_allows`] against an explicit `current_bill` instead of
+/// the bill computed from the game's players and staff.
+pub(crate) fn wage_policy_allows_for_bill(
+    team: &Team,
+    current_bill: i64,
+    current_player_wage: u32,
+    offered_wage: u32,
+) -> bool {
+    let projected_bill = current_bill - current_player_wage as i64 + offered_wage as i64;
     let soft_cap = (team.wage_budget * WAGE_SOFT_CAP_PCT) / 100;
 
     if current_bill <= team.wage_budget {
@@ -138,6 +163,9 @@ pub enum SigningRejectionReason {
     WageBudgetExceeded,
     ReputationMismatch,
     DailyCapReached,
+    /// An import the club could not start: its starting five already holds the
+    /// allowed imports and he would not replace one of them.
+    ImportSlotsFull,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -196,13 +224,11 @@ fn tier_from_competition_id(team: &Team, leagues: &[League]) -> Option<u8> {
     leagues
         .iter()
         .find(|league| league.competition_id.as_deref() == Some(competition_id))
-        .map(|league| league.tier.max(1).min(3))
+        .map(|league| league.tier.clamp(1, 3))
 }
 
 fn tier_from_reputation(reputation: u32) -> u8 {
-    if reputation >= 1_300 {
-        1
-    } else if reputation >= 1_100 {
+    if reputation >= 1_100 {
         1
     } else if reputation >= 800 {
         2
@@ -256,6 +282,20 @@ pub fn ai_signing_policy(
     player: &Player,
     intent: SigningIntent,
 ) -> SigningDecision {
+    let current_bill = annual_team_wage_bill(game, &team.id);
+    ai_signing_policy_for_bill(game, team, player, intent, current_bill)
+}
+
+/// [`ai_signing_policy`] judging the wage budget against `current_bill`, for
+/// callers that track commitments the players' stored wages do not show yet
+/// (see `fill_new_game_rosters`).
+pub fn ai_signing_policy_for_bill(
+    game: &Game,
+    team: &Team,
+    player: &Player,
+    intent: SigningIntent,
+    current_bill: i64,
+) -> SigningDecision {
     let current_date = game.clock.current_date.date_naive();
     let annual_wage = expected_wage(player, team, current_date);
     let contract_years = expected_contract_years(player, current_date) as u8;
@@ -268,7 +308,18 @@ pub fn ai_signing_policy(
         );
     }
 
-    if !renewal_wage_policy_allows(game, team, 0, annual_wage) {
+    // Emergency signings fill a hole in the roster and may need an import;
+    // every other signing must be someone the club could actually start.
+    if intent != SigningIntent::Emergency && !crate::residency::has_import_slot_for(game, team, player)
+    {
+        return SigningDecision::rejected(
+            SigningRejectionReason::ImportSlotsFull,
+            annual_wage,
+            contract_years,
+        );
+    }
+
+    if !wage_policy_allows_for_bill(team, current_bill, 0, annual_wage) {
         return SigningDecision::rejected(
             SigningRejectionReason::WageBudgetExceeded,
             annual_wage,
@@ -312,4 +363,40 @@ pub fn ai_transfer_cap_reset_if_new_day(game: &mut Game) {
     }
     game.ai_transfer_cap_counts.clear();
     game.ai_transfer_cap_last_reset_date = Some(current_date);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn club(wage_budget: i64) -> Team {
+        let mut team = Team::new(
+            "club".to_string(),
+            "Club".to_string(),
+            "CLB".to_string(),
+            "KR".to_string(),
+            "Seoul".to_string(),
+            "Arena".to_string(),
+            10_000,
+        );
+        team.wage_budget = wage_budget;
+        team
+    }
+
+    #[test]
+    fn room_for_a_new_signing_is_exactly_what_the_policy_allows() {
+        let cases = [
+            (2_000_000, 1_500_000),
+            (2_000_000, 2_000_000),
+            (1_000_000, 2_000_000),
+            (0, 0),
+        ];
+        for (budget, bill) in cases {
+            let team = club(budget);
+            let room = wage_policy_room_for_new_signing(&team, bill);
+            assert!(room >= 0);
+            assert!(wage_policy_allows_for_bill(&team, bill, 0, room as u32));
+            assert!(!wage_policy_allows_for_bill(&team, bill, 0, room as u32 + 1));
+        }
+    }
 }

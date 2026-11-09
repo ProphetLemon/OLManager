@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import type { GameStateData, ScrimReportData } from "@/store/gameStore";
-import { useSettingsStore } from "@/store/settingsStore";
 import { getChampionTiming } from "@/lib/champions/championTiming";
 import { championFitsLane, getChampionCounterValue, laneCounterValue } from "@/lib/champions/championRelationships";
 import { getLolStaffEffectsForTeam } from "@/lib/teams/lolStaffEffects";
@@ -18,9 +17,13 @@ import {
   enemyCountersLastOwnPick,
   freeRolesForSelections,
   rankBanCandidates,
+  gateMasteryReading,
+  gatedMasterySortValue,
   resolveMasterySampleSide,
+  type GatedMastery,
   type BanRecommendationContext,
 } from "@/ui-v2/_legacy/components/match/draftIntelHelpers";
+import GatedMasteryReadout from "@/ui-v2/_legacy/components/match/GatedMasteryReadout";
 import type { DraftStateEvaluation } from "@/ui-v2/_legacy/components/match/draftResultSimulator";
 
 type Side = "blue" | "red";
@@ -246,6 +249,10 @@ interface ChampionDraftProps {
   onComplete: (result: ChampionDraftResultPayload) => void;
   controlledSide?: Side;
   allAi?: boolean;
+  /** Resolves every remaining step at once with the AI logic, with no per-step delay. */
+  instant?: boolean;
+  /** Reports the finished draft as soon as the role order is ready, without the finalize click. */
+  autoFinalize?: boolean;
   seriesLength?: 1 | 3 | 5;
   blueSeriesWins?: number;
   redSeriesWins?: number;
@@ -698,6 +705,8 @@ export default function ChampionDraft({
   onComplete,
   controlledSide = "blue",
   allAi = false,
+  instant = false,
+  autoFinalize = false,
   seriesLength = 1,
   blueSeriesWins = 0,
   redSeriesWins = 0,
@@ -711,9 +720,6 @@ export default function ChampionDraft({
       ?? `/competitions-icons/${gameState.user_competition_id}.webp`
     : "/competitions-icons/lec.webp";
 
-  const debugToolsEnabled = useSettingsStore(
-    (state) => state.settings.debug_tools_enabled,
-  );
   const [champions, setChampions] = useState<ChampionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1236,6 +1242,42 @@ export default function ChampionDraft({
     redPlayers,
   ]);
 
+  const scoutedPlayerKeys = useMemo(() => {
+    const keys = new Set<string>();
+    (gameState?.messages ?? []).forEach((message) => {
+      const report = message.context?.scout_report;
+      if (!report) return;
+      keys.add(report.player_id);
+      const matchedGamePlayer = gameState?.players.find((player) => player.id === report.player_id);
+      if (matchedGamePlayer) keys.add(normalizeKey(matchedGamePlayer.match_name));
+      if (report.player_name) keys.add(normalizeKey(report.player_name));
+    });
+    return keys;
+  }, [gameState?.messages, gameState?.players]);
+
+  const gatedMasteryForChampion = (champion: ChampionData): GatedMastery => {
+    const raw = displayMasteryForChampion(champion);
+    const sampleSide = resolveMasterySampleSide(currentStep, controlledSide);
+    if (sampleSide === controlledSide) return { kind: "exact", value: raw };
+    const index =
+      roleFilter !== "ALL"
+        ? ROLE_ORDER.indexOf(roleFilter)
+        : sampleSide === "blue"
+          ? bluePicks.length
+          : redPicks.length;
+    const playerId = (sampleSide === "blue" ? bluePlayerIds : redPlayerIds)[index];
+    const playerName = (sampleSide === "blue" ? bluePlayers : redPlayers)[index]?.name;
+    const isScouted =
+      (playerId !== undefined && scoutedPlayerKeys.has(playerId)) ||
+      (playerName !== undefined && scoutedPlayerKeys.has(normalizeKey(playerName)));
+    return gateMasteryReading(raw, { isRivalSample: true, isScouted });
+  };
+
+  const showRivalMasteryLegend =
+    !finished &&
+    resolveMasterySampleSide(currentStep, controlledSide) !== controlledSide &&
+    (roleFilter !== "ALL" || sortMode === "mastery");
+
   const visibleChampions = useMemo(() => {
     const filtered = champions.filter((champion) => {
       if (roleFilter !== "ALL" && !champion.roleHints.includes(roleFilter)) return false;
@@ -1273,7 +1315,9 @@ export default function ChampionDraft({
 
     if (sortMode === "mastery") {
       return filtered.sort((left, right) => {
-        const masteryDelta = displayMasteryForChampion(right) - displayMasteryForChampion(left);
+        const masteryDelta =
+          gatedMasterySortValue(gatedMasteryForChampion(right)) -
+          gatedMasterySortValue(gatedMasteryForChampion(left));
         if (masteryDelta !== 0) return masteryDelta;
         return left.name.localeCompare(right.name);
       });
@@ -1293,7 +1337,7 @@ export default function ChampionDraft({
     metaScoreForChampion,
     discoveredMetaChampionIds,
     runtimeMetaScoreByChampion,
-    displayMasteryForChampion,
+    gatedMasteryForChampion,
     resolvePlayerMastery,
     searchTerm,
   ]);
@@ -1422,7 +1466,7 @@ export default function ChampionDraft({
     return pool[randomIndex] ?? null;
   };
 
-  const handleSkipDraftDebug = (): void => {
+  const handleSkipDraft = (): void => {
     if (finished || loading || champions.length === 0) return;
 
     let nextBlueBans = [...blueBans];
@@ -1515,7 +1559,7 @@ export default function ChampionDraft({
               && candidate.roleHints.every((role) => enemyCoveredRoles.has(role as Role)),
             enemyJungleLocked: enemyCoveredRoles.has("JUNGLE"),
             isFlexThreat: candidate.roleHints.length >= 2,
-            draftHashSeed: `${stepIndex}:${targetSide}:${candidate.championId}:debug`,
+            draftHashSeed: `${stepIndex}:${targetSide}:${candidate.championId}:skip`,
           };
         },
       });
@@ -1586,6 +1630,7 @@ export default function ChampionDraft({
 
   useEffect(() => {
     if (!currentStep || finished || loading || champions.length === 0) return;
+    if (instant) return;
     if (!allAi && currentStep.side === controlledSide) return;
 
     const minMs = Math.min(AI_TIMING.aiMinMs, AI_TIMING.aiMaxMs);
@@ -1610,9 +1655,18 @@ export default function ChampionDraft({
     currentStepKey,
     currentPickEvaluationContext,
     finished,
+    instant,
     loading,
     usedChampionIds,
   ]);
+
+  const instantResolvedRef = useRef(false);
+  useEffect(() => {
+    if (!instant || instantResolvedRef.current) return;
+    if (finished || loading || champions.length === 0) return;
+    instantResolvedRef.current = true;
+    handleSkipDraft();
+  });
 
   useEffect(() => {
     if (!currentStep || finished || loading || champions.length === 0) return;
@@ -1769,6 +1823,29 @@ export default function ChampionDraft({
     return () => clearTimeout(timeoutId);
   }, [bluePicks.length, blueRoleOrder, finished, redPicks.length, redRoleOrder]);
 
+  const buildResultPayload = (): ChampionDraftResultPayload => ({
+    blue: {
+      picks: blueOrderedPicks.filter((pick): pick is DraftPick => pick !== null),
+      bans: blueBans,
+      score: blueScore,
+    },
+    red: {
+      picks: redOrderedPicks.filter((pick): pick is DraftPick => pick !== null),
+      bans: redBans,
+      score: redScore,
+    },
+    history: draftHistory,
+  });
+
+  const autoFinalizedRef = useRef(false);
+  useEffect(() => {
+    if (!autoFinalize || autoFinalizedRef.current || !finished) return;
+    if (bluePicks.length > 0 && !blueRoleOrder) return;
+    if (redPicks.length > 0 && !redRoleOrder) return;
+    autoFinalizedRef.current = true;
+    onComplete(buildResultPayload());
+  });
+
   const armSwapFromRole = (side: Side, roleIdx: number): void => {
     if (!finished) return;
     setSwapSource((prev) => {
@@ -1809,20 +1886,6 @@ export default function ChampionDraft({
     const userTeamId = controlledSide === "blue" ? snapshot.home_team.id : snapshot.away_team.id;
     const staffEffects = getLolStaffEffectsForTeam(gameState, userTeamId);
     const staffRevealBudget = calculateStaffRevealBudget(staffEffects.metaDiscovery);
-
-    const scoutedPlayerKeys = new Set<string>();
-    (gameState?.messages ?? []).forEach((message) => {
-      const report = message.context?.scout_report;
-      if (!report) return;
-      const reportPlayerId = report.player_id;
-      const matchedGamePlayer = gameState?.players.find((player) => player.id === reportPlayerId);
-      if (matchedGamePlayer) {
-        scoutedPlayerKeys.add(normalizeKey(matchedGamePlayer.match_name));
-      }
-      if (report.player_name) {
-        scoutedPlayerKeys.add(normalizeKey(report.player_name));
-      }
-    });
 
     const rivalSeedPlayers = PLAYER_SEEDS.filter((player) => player.teamId === rivalTeamSeed.id);
     const byIgn = new Map<string, PlayerSeed>();
@@ -1916,6 +1979,7 @@ export default function ChampionDraft({
     redPlayers,
     redPlayerIds,
     rivalTeamSeed,
+    scoutedPlayerKeys,
     snapshot.away_team.id,
     snapshot.home_team.id,
     usedChampionIds,
@@ -2957,6 +3021,20 @@ export default function ChampionDraft({
 
               </div>
 
+              {showRivalMasteryLegend ? (
+                <p
+                  className="relative text-center text-2xs text-gray-400"
+                  title={t("match.draft.rivalMasteryBandTooltip", {
+                    defaultValue: "Estimated level. Scout this player to see the exact mastery.",
+                  })}
+                >
+                  {t("match.draft.rivalMasteryLegend", {
+                    defaultValue:
+                      "Rival mastery is shown as High / Medium / Low until you scout the player.",
+                  })}
+                </p>
+              ) : null}
+
               <div className="relative text-center text-gray-200 text-xs">
                 {finished
                   ? t("match.draft.completed")
@@ -2974,14 +3052,14 @@ export default function ChampionDraft({
                 ) : null}
               </div>
 
-              {!finished && debugToolsEnabled ? (
+              {!finished ? (
                 <div className="relative flex justify-end">
                   <button
                     type="button"
-                    onClick={handleSkipDraftDebug}
-                    className="rounded-md border border-fuchsia-300/60 bg-fuchsia-500/15 hover:bg-fuchsia-500/25 text-fuchsia-100 px-2 py-1 text-2xs font-heading font-bold uppercase tracking-wide"
+                    onClick={handleSkipDraft}
+                    className="rounded-md border border-white/20 bg-white/5 hover:bg-white/10 text-gray-100 px-2 py-1 text-2xs font-heading font-bold uppercase tracking-wide"
                   >
-                    Skip draft (debug)
+                    {t("match.draft.skipDraft")}
                   </button>
                 </div>
               ) : null}
@@ -3027,7 +3105,10 @@ export default function ChampionDraft({
                     {visibleChampions.map((champion) => {
                       const isUsed = usedChampionIds.has(champion.id);
                       const showMastery = roleFilter !== "ALL";
-                      const mastery = showMastery ? displayMasteryForChampion(champion) : 0;
+                      const masteryReading: GatedMastery = showMastery
+                        ? gatedMasteryForChampion(champion)
+                        : { kind: "exact", value: 0 };
+                      const mastery = masteryReading.kind === "exact" ? masteryReading.value : 0;
                       const masteryTone = masteryBarTone(mastery);
                       const metaTier = knownMetaTierForChampion(
                         champion,
@@ -3055,9 +3136,9 @@ export default function ChampionDraft({
                           <div className="px-2 pb-1.5">
                             <div className="flex items-center justify-between text-xs font-bold">
                               <span className={metaTier === "?" ? "text-gray-500" : metaTier === "S" ? "text-red-400" : metaTier === "A" ? "text-orange-300" : "text-slate-300"}>{metaTier}</span>
-                              {showMastery ? <span className="text-gray-400">{mastery}</span> : null}
+                              {showMastery ? <GatedMasteryReadout reading={masteryReading} /> : null}
                             </div>
-                            {showMastery ? (
+                            {showMastery && masteryReading.kind === "exact" ? (
                               <div className="mt-0.5 h-1 rounded bg-background/40 overflow-hidden">
                                 <div
                                   className={`h-full ${masteryTone === "gold" ? "bg-amber-400" : masteryTone === "green" ? "bg-emerald-400" : "bg-rose-400"}`}
@@ -3215,21 +3296,7 @@ export default function ChampionDraft({
         {finished ? (
           <button
             className="w-full md:w-80 self-center rounded-md bg-orange-500 hover:bg-orange-400 text-navy-900 py-2 font-heading font-bold uppercase tracking-wide"
-            onClick={() =>
-              onComplete({
-                blue: {
-                  picks: blueOrderedPicks.filter((pick): pick is DraftPick => pick !== null),
-                  bans: blueBans,
-                  score: blueScore,
-                },
-                red: {
-                  picks: redOrderedPicks.filter((pick): pick is DraftPick => pick !== null),
-                  bans: redBans,
-                  score: redScore,
-                },
-                history: draftHistory,
-              })
-            }
+            onClick={() => onComplete(buildResultPayload())}
           >
             {t("match.draft.finalizeDraft")}
           </button>

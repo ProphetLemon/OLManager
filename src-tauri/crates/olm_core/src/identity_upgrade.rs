@@ -10,29 +10,26 @@ pub fn upgrade_game_football_identities(game: &mut Game) -> bool {
     let mut changed = false;
 
     // Also upgrade manager birth_country
-    if let Some(bc) = normalize_birth_country(Some(game.manager.nationality.clone())) {
-        if game.manager.birth_country != Some(bc.clone()) {
+    if let Some(bc) = normalize_birth_country(Some(game.manager.nationality.clone()))
+        && game.manager.birth_country != Some(bc.clone()) {
             game.manager.birth_country = Some(bc);
             changed = true;
         }
-    }
 
     for player in game.players.iter_mut() {
-        if let Some(bc) = normalize_birth_country(Some(player.nationality.clone())) {
-            if player.birth_country != Some(bc.clone()) {
+        if let Some(bc) = normalize_birth_country(Some(player.nationality.clone()))
+            && player.birth_country != Some(bc.clone()) {
                 player.birth_country = Some(bc);
                 changed = true;
             }
-        }
     }
 
     for staff in game.staff.iter_mut() {
-        if let Some(bc) = normalize_birth_country(Some(staff.nationality.clone())) {
-            if staff.birth_country != Some(bc.clone()) {
+        if let Some(bc) = normalize_birth_country(Some(staff.nationality.clone()))
+            && staff.birth_country != Some(bc.clone()) {
                 staff.birth_country = Some(bc);
                 changed = true;
             }
-        }
     }
 
     changed
@@ -47,21 +44,19 @@ pub fn upgrade_world_football_identities(
     let mut changed = false;
 
     for player in players.iter_mut() {
-        if let Some(bc) = normalize_birth_country(Some(player.nationality.clone())) {
-            if player.birth_country != Some(bc.clone()) {
+        if let Some(bc) = normalize_birth_country(Some(player.nationality.clone()))
+            && player.birth_country != Some(bc.clone()) {
                 player.birth_country = Some(bc);
                 changed = true;
             }
-        }
     }
 
     for staff_member in staff.iter_mut() {
-        if let Some(bc) = normalize_birth_country(Some(staff_member.nationality.clone())) {
-            if staff_member.birth_country != Some(bc.clone()) {
+        if let Some(bc) = normalize_birth_country(Some(staff_member.nationality.clone()))
+            && staff_member.birth_country != Some(bc.clone()) {
                 staff_member.birth_country = Some(bc);
                 changed = true;
             }
-        }
     }
 
     changed

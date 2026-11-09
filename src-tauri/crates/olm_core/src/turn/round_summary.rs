@@ -396,7 +396,7 @@ fn team_strength(game: &Game, team_id: &str) -> f64 {
                     let slot = slots
                         .get(index)
                         .cloned()
-                        .unwrap_or_else(|| player.natural_position.clone());
+                        .unwrap_or(player.natural_position);
                     Some(effective_rating_for_assignment(player, &slot))
                 })
                 .collect();

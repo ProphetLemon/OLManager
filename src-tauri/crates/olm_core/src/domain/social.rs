@@ -93,6 +93,7 @@ pub struct SocialPost {
 }
 
 impl SocialPost {
+    #[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
     pub fn new(
         id: String,
         date: String,

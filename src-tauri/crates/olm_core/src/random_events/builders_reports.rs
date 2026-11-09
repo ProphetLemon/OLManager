@@ -279,6 +279,23 @@ pub fn build_fan_petition_from_narrative(
     )
 }
 
+/// Rival-interest message from the data templates, with render-time i18n keys and params.
+pub fn rival_interest_from_template(
+    msg_id: &str,
+    player_name: &str,
+    rival_name: &str,
+    date: &str,
+) -> Option<InboxMessage> {
+    crate::messages::template_store::template_store().build_message_keyed(
+        "rival_interest",
+        msg_id,
+        date,
+        "en",
+        vec![("player", player_name), ("rival", rival_name)],
+        "be.msg.rivalInterest.templates",
+    )
+}
+
 pub(super) fn rival_interest_message(
     msg_id: &str,
     player_id: &str,
@@ -286,13 +303,7 @@ pub(super) fn rival_interest_message(
     rival_name: &str,
     date: &str,
 ) -> InboxMessage {
-    if let Some(msg) = crate::messages::template_store::template_store().build_message(
-        "rival_interest",
-        msg_id,
-        date,
-        "en",
-        vec![("player", player_name), ("rival", rival_name)],
-    ) {
+    if let Some(msg) = rival_interest_from_template(msg_id, player_name, rival_name, date) {
         return msg;
     }
     let mut rng = rand::rng();

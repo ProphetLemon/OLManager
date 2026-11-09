@@ -125,6 +125,8 @@ export interface EnginePlayerData {
   discipline: number;
   mental_resilience: number;
   traits: string[];
+  /** Import for the team he plays for; at most two may start. */
+  is_import?: boolean;
   /** @deprecated Legacy attributes retained for fixture compatibility. */
   pace?: number;
   stamina?: number;

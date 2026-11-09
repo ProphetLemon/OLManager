@@ -133,7 +133,7 @@ fn derive_team_ambition_from_players(team: &Team, players: &[Player]) -> TeamAmb
     let mut player_ovrs: Vec<f64> = players
         .iter()
         .filter(|p| p.team_id.as_deref() == Some(&team.id))
-        .map(|p| crate::player_rating::natural_ovr(p))
+        .map(crate::player_rating::natural_ovr)
         .collect();
 
     if player_ovrs.is_empty() {
@@ -438,6 +438,7 @@ mod tests {
         }
     }
 
+    #[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
     fn make_player(
         id: &str,
         name: &str,

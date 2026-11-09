@@ -1,6 +1,7 @@
 import type { PlayerData } from "../../store/gameStore";
 import { calculateLolOvr } from "../../lib/players/lolPlayerStats";
 import { resolvePlayerLolRole } from "../../lib/players/lolIdentity";
+import { MAX_IMPORTS_IN_STARTING_FIVE, countImports, isImportPlayer } from "./imports";
 
 export type SquadSection = "xi" | "bench";
 export type DragState = {
@@ -194,7 +195,43 @@ export function buildActiveLineupIds(
     }
   });
 
-  return activeIds;
+  return limitLineupImports(activeIds, available);
+}
+
+/**
+ * Swaps excess imports for the same-role resident that costs the least rating,
+ * so the built five respects the import limit. A role with no resident keeps
+ * its import (the backend refuses the save and the UI says why).
+ */
+function limitLineupImports(activeIds: string[], available: PlayerData[]): string[] {
+  const byId = new Map(available.map((player) => [player.id, player]));
+  const ids = [...activeIds];
+  const starters = () => ids.map((id) => byId.get(id)).filter((p): p is PlayerData => p !== undefined);
+
+  while (countImports(starters()) > MAX_IMPORTS_IN_STARTING_FIVE) {
+    const used = new Set(ids);
+    let best: { slot: number; replacement: PlayerData; loss: number } | null = null;
+    ids.forEach((id, slot) => {
+      const starter = byId.get(id);
+      if (!starter || !isImportPlayer(starter)) return;
+      const role = getLolRoleForPlayer(starter);
+      available
+        .filter(
+          (candidate) =>
+            !used.has(candidate.id) &&
+            !isImportPlayer(candidate) &&
+            getLolRoleForPlayer(candidate) === role,
+        )
+        .forEach((candidate) => {
+          const loss = calculateLolOvr(starter) - calculateLolOvr(candidate);
+          if (!best || loss < best.loss) best = { slot, replacement: candidate, loss };
+        });
+    });
+    if (!best) break;
+    const { slot, replacement } = best as { slot: number; replacement: PlayerData };
+    ids[slot] = replacement.id;
+  }
+  return ids;
 }
 
 export function buildActiveLineupSlots(

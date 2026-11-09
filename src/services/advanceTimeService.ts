@@ -22,6 +22,8 @@ export interface SkipToMatchDayResponse {
   game?: GameStateData;
   blockers?: BlockerData[];
   days_skipped?: number;
+  /** True when arriving also played the user's match with the staff auto-draft. */
+  match_simulated?: boolean;
 }
 
 export async function advanceTimeWithMode(

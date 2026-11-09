@@ -2,7 +2,8 @@
 #![allow(
     clippy::new_without_default,
     clippy::collapsible_if,
-    clippy::useless_conversion
+    clippy::useless_conversion,
+    clippy::module_inception
 )]
 
 pub mod ai;

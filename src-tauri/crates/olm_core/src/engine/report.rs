@@ -216,7 +216,7 @@ impl MatchReport {
                 stats.role = Some(unit.role);
                 stats.kills = unit.kills as u16;
                 stats.deaths = unit.deaths as u16;
-                stats.gold_earned = unit.gold.round().max(0.0) as u32;
+                stats.gold_earned = (unit.gold + unit.gold_spent).round().max(0.0) as u32;
                 stats.damage_dealt = unit.damage_dealt.round().max(0.0) as u32;
 
                 match unit.side {
@@ -332,20 +332,17 @@ fn populate_duration_seconds(
         .collect();
 
     for event in events {
-        match &event.event_type {
-            EventType::Substitution => {
-                if let Some(player_off_id) = event.secondary_player_id.as_ref() {
-                    minutes_by_player
-                        .insert(player_off_id.clone(), event.minute.min(total_minutes));
-                }
-                if let Some(player_on_id) = event.player_id.as_ref() {
-                    minutes_by_player.insert(
-                        player_on_id.clone(),
-                        total_minutes.saturating_sub(event.minute),
-                    );
-                }
+        if event.event_type == EventType::Substitution {
+            if let Some(player_off_id) = event.secondary_player_id.as_ref() {
+                minutes_by_player
+                    .insert(player_off_id.clone(), event.minute.min(total_minutes));
             }
-            _ => {}
+            if let Some(player_on_id) = event.player_id.as_ref() {
+                minutes_by_player.insert(
+                    player_on_id.clone(),
+                    total_minutes.saturating_sub(event.minute),
+                );
+            }
         }
     }
 

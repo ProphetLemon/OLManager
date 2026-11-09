@@ -103,8 +103,9 @@ const timingIds = Object.keys(dataset.data).sort();
 const missingFromDataset = visualIds.filter((id) => !timingIds.includes(id));
 const extrasOverVisual = timingIds.filter((id) => !visualIds.includes(id));
 if (missingFromDataset.length > 0) fail(`missing visual catalog IDs: ${missingFromDataset.join(", ")}`);
-if (extrasOverVisual.join(",") !== "Heimerdinger,Quinn") {
-  fail(`expected only DDragon additions Heimerdinger and Quinn; found: ${extrasOverVisual.join(", ") || "none"}`);
+// Heimerdinger and Quinn now live in the visual catalog, so the timings dataset must not carry anything it lacks.
+if (extrasOverVisual.length > 0) {
+  fail(`timings entries missing from the visual catalog: ${extrasOverVisual.join(", ")}`);
 }
 
 console.log(`[champion-timings] validated ${timingIds.length} entries; visual=${visualIds.length}; missing=${missingFromDataset.length}; extra=${extrasOverVisual.join(",")}`);

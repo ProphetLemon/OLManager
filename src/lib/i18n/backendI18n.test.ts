@@ -486,3 +486,87 @@ describe("resolveBackendText", () => {
   });
 });
 
+
+describe("transfer offer message locale", () => {
+  const offer = {
+    id: "offer_o1",
+    subject: "Transfer offer received for ToniOP",
+    body: "English template text",
+    sender: "Director of Football",
+    sender_role: "Director",
+    date: "2027-01-10",
+    read: false,
+    category: "Transfer",
+    priority: "High",
+    actions: [],
+    context: { team_id: null, player_id: null },
+    subject_key: "be.msg.transferOffer.subject",
+    body_key: "be.msg.transferOffer.body",
+    i18n_params: { player: "ToniOP", club: "Fnatic", buyer: "Fnatic", fee: "\u20ac172K" },
+  } as unknown as MessageData;
+
+  it("renders the stored message in the active language with a single currency symbol", async () => {
+    await i18n.changeLanguage("es");
+    const resolved = resolveMessage(offer);
+    await i18n.changeLanguage("en");
+    expect(resolved.subject).toBe("Oferta recibida por ToniOP");
+    expect(resolved.body).toContain("Fnatic");
+    expect(resolved.body).toContain("\u20ac172K");
+    expect(resolved.body).not.toContain("\u20ac\u20ac");
+  });
+});
+
+describe("first-week message locale", () => {
+  const schedule = {
+    id: "season_1",
+    subject: "LEC Winter season confirmed",
+    body: "The fixture list for the upcoming LEC Winter season has been confirmed. The action begins on January 18, 2026.",
+    sender: "Board of Directors",
+    sender_role: "Chairman",
+    date: "2026-01-01",
+    read: false,
+    category: "LeagueInfo",
+    priority: "Normal",
+    actions: [],
+    context: { team_id: null, player_id: null },
+    subject_key: "be.msg.schedule.templates.schedule_2.subject",
+    body_key: "be.msg.schedule.templates.schedule_2.body",
+    i18n_params: { league: "LEC Winter", start: "2026-01-18" },
+  } as unknown as MessageData;
+
+  it("renders a stored-English season schedule in Spanish with the ISO date formatted for es", async () => {
+    await i18n.changeLanguage("es");
+    const resolved = resolveMessage(schedule);
+    await i18n.changeLanguage("en");
+    expect(resolved.subject).toBe("Temporada de LEC Winter confirmada");
+    expect(resolved.body).toContain("18 de enero de 2026");
+    expect(resolved.body).not.toContain("2026-01-18");
+  });
+
+  it("formats the same ISO date for English", () => {
+    const resolved = resolveMessage(schedule);
+    expect(resolved.body).toContain("January 18, 2026");
+  });
+
+  it("translates the staff advice and academy overview from keys", async () => {
+    const staff = makeMessage({
+      subject: "Staff vacancies at Movistar KOI",
+      subject_key: "be.msg.staffAdvice.templates.staff_advice.subject",
+      body_key: "be.msg.staffAdvice.templates.staff_advice.body",
+      i18n_params: { team: "Movistar KOI" },
+    });
+    const academy = makeMessage({
+      subject: "Academy active: KOI Academy",
+      subject_key: "be.msg.academyOverview.subject",
+      body_key: "be.msg.academyOverview.body",
+      i18n_params: { academy: "KOI Academy", count: "7" },
+    });
+    await i18n.changeLanguage("es");
+    const staffEs = resolveMessage(staff);
+    const academyEs = resolveMessage(academy);
+    await i18n.changeLanguage("en");
+    expect(staffEs.subject).toBe("Vacantes de personal en Movistar KOI");
+    expect(academyEs.subject).toBe("Academia activa: KOI Academy");
+    expect(academyEs.body).toContain("7 prospectos");
+  });
+});

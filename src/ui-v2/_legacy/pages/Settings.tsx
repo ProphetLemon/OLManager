@@ -57,6 +57,7 @@ export default function Settings() {
     updateAvailable,
     updateInfo,
     checking: checkingUpdate,
+    noPlatformBuild,
     check: checkUpdate,
   } = useUpdater(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState("display");
@@ -106,13 +107,13 @@ export default function Settings() {
 
   // Show "up to date" feedback when a manual check completes with no update
   useEffect(() => {
-    if (prevChecking.current && !checkingUpdate && !updateAvailable) {
+    if (prevChecking.current && !checkingUpdate && !updateAvailable && !noPlatformBuild) {
       setShowUpToDate(true);
       const timer = setTimeout(() => setShowUpToDate(false), 3000);
       return () => clearTimeout(timer);
     }
     prevChecking.current = checkingUpdate;
-  }, [checkingUpdate, updateAvailable]);
+  }, [checkingUpdate, updateAvailable, noPlatformBuild]);
 
   const handleUpdate = (partial: Partial<AppSettings>) => {
     updateSettings(partial);
@@ -465,6 +466,14 @@ export default function Settings() {
                   {t("settings.updateAvailableDetail", {
                     version: updateInfo.version,
                   })}
+                </p>
+              </div>
+            )}
+
+            {noPlatformBuild && !checkingUpdate && (
+              <div className="rounded-lg bg-accent-400/10 border border-accent-400/30 p-3">
+                <p className="text-xs text-accent-400 font-medium">
+                  {t("settings.noPlatformBuild")}
                 </p>
               </div>
             )}

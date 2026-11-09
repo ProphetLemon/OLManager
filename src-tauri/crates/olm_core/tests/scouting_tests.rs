@@ -516,17 +516,15 @@ fn low_ability_scout_attrs_have_more_noise() {
         .unwrap();
 
     // Just verify values are in valid range (1-99)
-    for val in [
+    for v in [
         report.pace,
         report.laning,
         report.passing,
         report.mechanics,
         report.defending,
         report.physical,
-    ] {
-        if let Some(v) = val {
-            assert!(v >= 1 && v <= 99, "Fuzzed value {} should be in [1, 99]", v);
-        }
+    ].into_iter().flatten() {
+        assert!((1..=99).contains(&v), "Fuzzed value {} should be in [1, 99]", v);
     }
 }
 

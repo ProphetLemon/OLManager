@@ -27,6 +27,7 @@ import {
   type MessageSortOrder,
 } from "@/lib/inbox/helpers";
 import { formatDateShort } from "@/lib/common/helpers";
+import { useTabUiStore } from "@/store/tabUiStore";
 
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
@@ -141,6 +142,10 @@ export function InboxTabV2({
     const action = msg?.actions.find((a) => a.id === actionId);
     if (action && isNavigateAction(action.action_type)) {
       const target = getNavigationTarget(action.action_type.NavigateTo.route);
+      if (target.tab === "Transfers" && target.view) {
+        // The Transfers view is persisted in the tab UI store; preselect it before navigating.
+        useTabUiStore.getState().setTabField("transfers", "view", target.view);
+      }
       onNavigate?.(target.tab, target.context);
       if (!target.shouldResolveAction) return;
     }

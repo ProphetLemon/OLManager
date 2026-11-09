@@ -34,11 +34,11 @@ fn make_player(id: &str, team_id: &str, natural_position: LolRole) -> Player {
         id.to_string(),
         "2000-01-01".to_string(),
         "England".to_string(),
-        natural_position.clone(),
+        natural_position,
         default_attrs(),
     );
     player.team_id = Some(team_id.to_string());
-    player.natural_position = natural_position.into();
+    player.natural_position = natural_position;
     player
 }
 
@@ -84,6 +84,7 @@ fn make_game(players: Vec<Player>) -> Game {
     )
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn player_record(
     fixture_id: &str,
     player_id: &str,

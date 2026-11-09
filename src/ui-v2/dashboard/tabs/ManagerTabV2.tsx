@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useGameStore, compareStandingsByLolScore, type GameStateData } from "@/store/gameStore";
 import { formatDate, getTeamName } from "@/lib/common/helpers";
 import { countryName, allNationalities } from "@/lib/common/countries";
-import { CountryFlag } from "@/ui-v2/_legacy/components/ui/CountryFlag";
+import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import { assetUrl } from "@/lib/assetUrl";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";

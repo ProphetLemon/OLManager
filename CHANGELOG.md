@@ -4,6 +4,17 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1108.1] - 2026-11-08
+
+### Added
+
+- One-click self-update from the fork's GitHub releases (download, install, relaunch), verified with a fork-owned signing key.
+- Local fork release script (`npm run release:fork`) and `docs/RELEASING-FORK.md`.
+
+### Fixed
+
+- The update download progress counted percent as bytes.
+
 ## [0.3.1] - 2026-06-26
 
 ### Added

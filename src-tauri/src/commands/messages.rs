@@ -351,7 +351,7 @@ mod tests {
         );
 
         let stored_game = state.get_game(|game| game.clone()).expect("stored game");
-        assert_eq!(stored_game.messages[0].actions[0].resolved, true);
+        assert!(stored_game.messages[0].actions[0].resolved);
     }
 
     #[test]

@@ -222,3 +222,38 @@ export function enemyCountersLastOwnPick(
 ): boolean {
   return counterValue(enemyPick, lastOwnPick) >= COUNTER_LAST_PICK_WARN_THRESHOLD;
 }
+
+export type MasteryBand = "high" | "medium" | "low";
+
+export type GatedMastery =
+  | { kind: "exact"; value: number }
+  | { kind: "band"; band: MasteryBand; sortValue: number };
+
+/** [PLACEHOLDER] band cut-offs and representative sort values; tune after playtests. */
+const MASTERY_BAND_HIGH_MIN = 75;
+const MASTERY_BAND_MEDIUM_MIN = 50;
+const BAND_SORT_VALUE: Record<MasteryBand, number> = { high: 85, medium: 62, low: 30 };
+
+export function masteryBand(mastery: number): MasteryBand {
+  if (mastery >= MASTERY_BAND_HIGH_MIN) return "high";
+  if (mastery >= MASTERY_BAND_MEDIUM_MIN) return "medium";
+  return "low";
+}
+
+/**
+ * Scouting gate for champion mastery shown to the user. The user's own players
+ * and rival players covered by a scout report keep the exact value; any other
+ * rival player only reveals a coarse band. AI draft logic never goes through here.
+ */
+export function gateMasteryReading(
+  mastery: number,
+  options: { isRivalSample: boolean; isScouted: boolean },
+): GatedMastery {
+  if (!options.isRivalSample || options.isScouted) return { kind: "exact", value: mastery };
+  const band = masteryBand(mastery);
+  return { kind: "band", band, sortValue: BAND_SORT_VALUE[band] };
+}
+
+export function gatedMasterySortValue(reading: GatedMastery): number {
+  return reading.kind === "exact" ? reading.value : reading.sortValue;
+}

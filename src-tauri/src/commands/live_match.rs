@@ -191,8 +191,7 @@ pub fn record_fixture_champion_picks(
         .ok_or("No active game session".to_string())?;
 
     let league = game
-        .leagues
-        .first_mut()
+        .active_league_mut()
         .ok_or("No active league in game state".to_string())?;
     let fixture = league
         .fixtures
@@ -282,6 +281,7 @@ pub fn apply_team_talk(
 /// Process press conference answers: generate news article, affect squad morale.
 /// answers: array of { question_id, response_id, response_tone, response_text, question_text }
 #[tauri::command]
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub fn submit_press_conference(
     state: State<'_, StateManager>,
     answers: Vec<serde_json::Value>,
@@ -494,7 +494,7 @@ mod tests {
             name.to_string(),
             "1995-01-01".to_string(),
             "England".to_string(),
-            position.clone(),
+            position,
             default_attrs(position),
         );
         player.team_id = Some(team_id.to_string());

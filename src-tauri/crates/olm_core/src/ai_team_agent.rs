@@ -327,11 +327,10 @@ pub fn evaluate_renewals(
                     status: RenewalSessionStatus::Open,
                     ..ContractRenewalState::default()
                 });
-            } else if let Some(ref mut state) = player.morale_core.renewal_state {
-                if state.status == RenewalSessionStatus::Idle {
+            } else if let Some(ref mut state) = player.morale_core.renewal_state
+                && state.status == RenewalSessionStatus::Idle {
                     state.status = RenewalSessionStatus::Open;
                 }
-            }
         }
     }
 }
@@ -407,13 +406,11 @@ pub fn evaluate_sales(team: &Team, players: &mut [Player], today: NaiveDate) {
         }
 
         // Edge case: new signing (protected from immediate sale)
-        if let Some(ref date_str) = player.can_be_transferred_until {
-            if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                if date > today {
+        if let Some(ref date_str) = player.can_be_transferred_until
+            && let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+                && date > today {
                     continue;
                 }
-            }
-        }
 
         // Edge case: injured / out of form (condition < 40)
         if player.condition < 40 {
@@ -650,13 +647,11 @@ pub fn ai_strategic_recruitment(game: &mut Game, team_id: &str) {
                 {
                     return None;
                 }
-                if let Some(date_str) = &player.can_be_transferred_until {
-                    if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                        if date >= current_date {
+                if let Some(date_str) = &player.can_be_transferred_until
+                    && let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+                        && date >= current_date {
                             return None;
                         }
-                    }
-                }
                 let fee =
                     crate::transfers::suggested_incoming_fee(current_date, player, &team, team_id);
                 if fee == 0 || (fee as i64) > budget_cap {
@@ -857,6 +852,7 @@ mod tests {
         }
     }
 
+    #[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
     fn make_player(
         id: &str,
         name: &str,
@@ -957,7 +953,7 @@ mod tests {
     #[test]
     fn test_wage_value_ratio_overpaid() {
         let r = wage_value_ratio(100_000, 50_000);
-        assert!(r < 1.0 && r >= 0.3);
+        assert!((0.3..1.0).contains(&r));
     }
 
     #[test]
@@ -1500,21 +1496,6 @@ mod tests {
     // -----------------------------------------------------------------------
     // Phase 2 — Sell decisions
     // -----------------------------------------------------------------------
-
-    /// Helper: compute top-25% wage threshold for a team's players.
-    fn top_25_wage_threshold(team_id: &str, players: &[Player]) -> u32 {
-        let mut wages: Vec<u32> = players
-            .iter()
-            .filter(|p| p.team_id.as_deref() == Some(team_id))
-            .map(|p| p.wage)
-            .collect();
-        wages.sort_unstable_by(|a, b| b.cmp(a));
-        if wages.is_empty() {
-            return 0;
-        }
-        let idx = ((wages.len().saturating_sub(1)) as f64 * TOP_WAGE_QUARTILE) as usize;
-        wages[idx]
-    }
 
     #[test]
     fn test_evaluate_sales_transfer_list_expendable_veteran() {
@@ -2291,7 +2272,7 @@ mod tests {
                     &format!("Player {tid} {pi}"),
                     &tid,
                     role,
-                    (70 + (pi as u8 * 3) % 25),       // varied OVR 70-92
+                    70 + (pi as u8 * 3) % 25,       // varied OVR 70-92
                     6.5 + (pi as f32 * 0.3).min(2.5), // varied rating 6.5-8.5
                     40_000 + (pi as u32 * 10_000),    // varied wage
                     Some("2028-06-15"),               // standard 2-year contract
@@ -2560,8 +2541,8 @@ mod tests {
 
         // Spec 2.4/OR-06: Identical game state produces identical decisions
         // Build game manually for precise control
-        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 6, 15, 12, 0, 0).unwrap());
-        let manager = Manager::new(
+        let _clock = GameClock::new(Utc.with_ymd_and_hms(2026, 6, 15, 12, 0, 0).unwrap());
+        let _manager = Manager::new(
             "mgr1".to_string(),
             "Test".to_string(),
             "Manager".to_string(),
@@ -2668,7 +2649,7 @@ mod tests {
         game1.players[4].lol_ovr = 75;
 
         // Snapshot player state
-        let snapshot1: Vec<(String, bool, Option<String>)> = game1
+        let _snapshot1: Vec<(String, bool, Option<String>)> = game1
             .players
             .iter()
             .map(|p| {

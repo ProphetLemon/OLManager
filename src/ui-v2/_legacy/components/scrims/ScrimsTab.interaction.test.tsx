@@ -202,8 +202,14 @@ describe("ScrimsTab interactions", () => {
     });
   });
 
-  it("hides review decision buttons outside ReviewBlock", () => {
+  it("shows review decision buttons in ScrimBlock, where the backend blocks on the pending review", () => {
     render(<ScrimsTab gameState={gameState()} onGameUpdate={vi.fn()} />);
+
+    expect(screen.getByText("VOD Review")).toBeInTheDocument();
+  });
+
+  it("hides review decision buttons outside the scrim and review blocks", () => {
+    render(<ScrimsTab gameState={gameStateWithPhase("TrainingBlock")} onGameUpdate={vi.fn()} />);
 
     expect(screen.queryByText("VOD Review")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Delegar al Assistant Coach" })).not.toBeInTheDocument();

@@ -412,7 +412,7 @@ fn write_import_cache_to(path: PathBuf, bytes: &[u8]) -> Result<(), String> {
     let cache_dir = path
         .parent()
         .ok_or_else(|| format!("cache path has no parent: {path:?}"))?;
-    std::fs::create_dir_all(&cache_dir).map_err(|e| format!("mkdir {cache_dir:?}: {e}"))?;
+    std::fs::create_dir_all(cache_dir).map_err(|e| format!("mkdir {cache_dir:?}: {e}"))?;
     let file_name = path
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
@@ -1015,7 +1015,9 @@ fn collect_runtime_teams(app_handle: &tauri::AppHandle) -> Vec<Team> {
 /// never mutated, so transfers and in-save edits are preserved — only genuinely
 /// missing players (e.g. roster slots added to the source data after the save
 /// was generated) are backfilled. Players the roster overlay retired
-/// (`Game::retired_player_ids`) are never re-added.
+/// (`Game::retired_player_ids`) are never re-added. A catalog player whose team
+/// was removed from the world (`Game::removed_team_ids`) joins as a free agent
+/// instead of pointing at a team that no longer exists.
 pub(crate) fn merge_missing_players(game: &mut Game, imported_players: Vec<Player>) -> usize {
     let mut existing_ids: HashSet<String> = game
         .players
@@ -1023,10 +1025,21 @@ pub(crate) fn merge_missing_players(game: &mut Game, imported_players: Vec<Playe
         .map(|player| player.id.clone())
         .collect();
     let retired: HashSet<&str> = game.retired_player_ids.iter().map(String::as_str).collect();
+    let removed: HashSet<&str> = game.removed_team_ids.iter().map(String::as_str).collect();
     let before = game.players.len();
     let missing: Vec<Player> = imported_players
         .into_iter()
         .filter(|player| !retired.contains(player.id.as_str()))
+        .map(|mut player| {
+            if player
+                .team_id
+                .as_deref()
+                .is_some_and(|team_id| removed.contains(team_id))
+            {
+                player.team_id = None;
+            }
+            player
+        })
         .collect();
     for player in missing {
         if existing_ids.insert(player.id.clone()) {
@@ -1055,15 +1068,18 @@ fn transfer_protected_player_ids(game: &Game) -> HashSet<String> {
 /// them to the catalog team — UNLESS they have an in-save transfer record, in
 /// which case the in-game move (user or simulated) wins. Matched by id; only
 /// reassigned when the catalog provides a concrete team_id (never released to
-/// free agency on a catalog gap).
+/// free agency on a catalog gap). A catalog team listed in
+/// `Game::removed_team_ids` is never a reassignment target.
 pub(crate) fn reassign_stale_player_teams(game: &mut Game, imported_players: &[Player]) -> usize {
     let protected = transfer_protected_player_ids(game);
+    let removed: HashSet<&str> = game.removed_team_ids.iter().map(String::as_str).collect();
     let catalog_team: std::collections::HashMap<&str, &str> = imported_players
         .iter()
         .filter_map(|player| {
             player
                 .team_id
                 .as_deref()
+                .filter(|team_id| !removed.contains(team_id))
                 .map(|team_id| (player.id.as_str(), team_id))
         })
         .collect();
@@ -1086,8 +1102,10 @@ pub(crate) fn reassign_stale_player_teams(game: &mut Game, imported_players: &[P
 
 /// Append catalog teams whose id is absent from the save. Existing teams are
 /// never mutated — only teams missing entirely from the save are backfilled.
+/// Teams in `Game::removed_team_ids` stay removed.
 fn merge_missing_teams(game: &mut Game, imported_teams: Vec<Team>) -> usize {
     let mut existing_ids: HashSet<String> = game.teams.iter().map(|team| team.id.clone()).collect();
+    existing_ids.extend(game.removed_team_ids.iter().cloned());
     let before = game.teams.len();
     for team in imported_teams {
         if existing_ids.insert(team.id.clone()) {
@@ -1115,9 +1133,18 @@ fn merge_missing_staff(game: &mut Game, imported_staff: Vec<Staff>) -> usize {
 
     let mut existing_ids: HashSet<String> =
         game.staff.iter().map(|member| member.id.clone()).collect();
+    let removed: HashSet<&str> = game.removed_team_ids.iter().map(String::as_str).collect();
     let before = game.staff.len();
-    for member in imported_staff {
+    for mut member in imported_staff {
         if existing_ids.insert(member.id.clone()) {
+            // Staff of a removed team join as free agents.
+            if member
+                .team_id
+                .as_deref()
+                .is_some_and(|team_id| removed.contains(team_id))
+            {
+                member.team_id = None;
+            }
             game.staff.push(member);
         }
     }
@@ -1151,22 +1178,42 @@ pub fn rehydrate_game_from_catalog(
     app_handle: &tauri::AppHandle,
     game: &mut Game,
 ) -> RehydrateCounts {
-    let teams = merge_missing_teams(game, collect_runtime_teams(app_handle));
+    apply_catalog_to_game(
+        game,
+        collect_runtime_teams(app_handle),
+        collect_runtime_players(app_handle),
+        collect_runtime_staff(app_handle),
+    )
+}
 
-    let catalog_players = collect_runtime_players(app_handle);
+pub(crate) fn apply_catalog_to_game(
+    game: &mut Game,
+    catalog_teams: Vec<Team>,
+    catalog_players: Vec<Player>,
+    catalog_staff: Vec<Staff>,
+) -> RehydrateCounts {
+    let teams = merge_missing_teams(game, catalog_teams);
+
     let players_reassigned = reassign_stale_player_teams(game, &catalog_players);
     let players = merge_missing_players(game, catalog_players);
 
     game_setup::apply_default_market_values(&mut game.players);
 
-    let staff = merge_missing_staff(game, collect_runtime_staff(app_handle));
+    let staff = merge_missing_staff(game, catalog_staff);
 
-    RehydrateCounts {
+    let counts = RehydrateCounts {
         teams,
         players,
         players_reassigned,
         staff,
+    };
+    if counts.total() > 0 {
+        // Rehydrated players arrive without a residency; the save was already
+        // grandfathered on load, so mark only the ones still missing a region.
+        olm_core::residency::grandfather_unmarked_rostered_players(game);
+        olm_core::residency::refresh_import_flags(game);
     }
+    counts
 }
 
 fn rehydrate_active_game(
@@ -1708,6 +1755,21 @@ mod tests {
     }
 
     #[test]
+    fn rehydration_grandfathers_players_it_adds_to_an_initialized_game() {
+        let mut game = rehydrate_test_game(vec![]);
+        game.residency_initialized = true;
+        let mut newcomer = rehydrate_test_player("newcomer", Some("team-1"));
+        newcomer.nationality = "Korea".to_string();
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![newcomer], vec![]);
+
+        assert_eq!(counts.players, 1);
+        let added = &game.players[0];
+        assert!(added.resident_region.is_some());
+        assert!(!added.is_import);
+    }
+
+    #[test]
     fn rehydrate_keeps_transferred_player_after_history_cap_and_releases() {
         let mut game = rehydrate_test_game(vec![
             rehydrate_test_player("moved", Some("team-2")),
@@ -1794,5 +1856,138 @@ mod tests {
         );
         assert_eq!(team_of("brand-new"), Some(Some("team-1".to_string())));
         assert_eq!(added, 1);
+    }
+
+    fn rehydrate_test_staff(id: &str, team_id: Option<&str>) -> olm_core::domain::staff::Staff {
+        use olm_core::domain::staff::{Staff, StaffAttributes, StaffRole};
+
+        let mut staff = Staff::new(
+            id.to_string(),
+            id.to_string(),
+            id.to_string(),
+            "1980-01-01".to_string(),
+            StaffRole::Coach,
+            StaffAttributes {
+                coaching: 60,
+                judging_ability: 60,
+                judging_potential: 60,
+                physiotherapy: 60,
+            },
+        );
+        staff.team_id = team_id.map(str::to_string);
+        staff
+    }
+
+    fn game_with_removed_team() -> Game {
+        let mut game = rehydrate_test_game(vec![
+            rehydrate_test_player("released", None),
+            rehydrate_test_player("stays", Some("team-1")),
+        ]);
+        game.teams.retain(|team| team.id != "team-2");
+        game.removed_team_ids.push("team-2".to_string());
+        game.moved_player_ids.insert("released".to_string());
+        game
+    }
+
+    #[test]
+    fn rehydration_does_not_resurrect_a_removed_team() {
+        let mut game = game_with_removed_team();
+        let teams_before = game.teams.len();
+        let catalog_teams = game_with_catalog_teams();
+
+        let counts = apply_catalog_to_game(
+            &mut game,
+            catalog_teams,
+            vec![
+                rehydrate_test_player("released", Some("team-2")),
+                rehydrate_test_player("stays", Some("team-1")),
+            ],
+            vec![],
+        );
+
+        assert_eq!(counts.teams, 0);
+        assert_eq!(game.teams.len(), teams_before);
+        assert!(game.teams.iter().all(|team| team.id != "team-2"));
+    }
+
+    #[test]
+    fn rehydration_keeps_released_players_as_free_agents() {
+        let mut game = game_with_removed_team();
+
+        let counts = apply_catalog_to_game(
+            &mut game,
+            vec![],
+            vec![rehydrate_test_player("released", Some("team-2"))],
+            vec![],
+        );
+
+        assert_eq!(counts.players_reassigned, 0);
+        let released = game.players.iter().find(|p| p.id == "released").unwrap();
+        assert_eq!(released.team_id, None);
+    }
+
+    #[test]
+    fn reassign_skips_players_whose_catalog_team_was_removed() {
+        let mut game = game_with_removed_team();
+        // Not in moved_player_ids: only the removed-team guard protects it.
+        game.moved_player_ids.clear();
+
+        let reassigned = reassign_stale_player_teams(
+            &mut game,
+            &[rehydrate_test_player("released", Some("team-2"))],
+        );
+
+        assert_eq!(reassigned, 0);
+        assert_eq!(game.players[0].team_id, None);
+    }
+
+    #[test]
+    fn merge_missing_players_frees_players_of_removed_teams() {
+        let mut game = game_with_removed_team();
+
+        let added = merge_missing_players(
+            &mut game,
+            vec![rehydrate_test_player("late-signing", Some("team-2"))],
+        );
+
+        assert_eq!(added, 1);
+        let late = game
+            .players
+            .iter()
+            .find(|p| p.id == "late-signing")
+            .unwrap();
+        assert_eq!(late.team_id, None);
+    }
+
+    #[test]
+    fn rehydration_frees_catalog_staff_of_removed_teams() {
+        let mut game = game_with_removed_team();
+
+        let counts = apply_catalog_to_game(
+            &mut game,
+            vec![],
+            vec![],
+            vec![rehydrate_test_staff("coach-1", Some("team-2"))],
+        );
+
+        assert_eq!(counts.staff, 1);
+        assert_eq!(game.staff[0].team_id, None);
+    }
+
+    fn game_with_catalog_teams() -> Vec<Team> {
+        ["team-1", "team-2"]
+            .iter()
+            .map(|id| {
+                Team::new(
+                    id.to_string(),
+                    id.to_string(),
+                    "TST".to_string(),
+                    "England".to_string(),
+                    "London".to_string(),
+                    "Ground".to_string(),
+                    1_000,
+                )
+            })
+            .collect()
     }
 }

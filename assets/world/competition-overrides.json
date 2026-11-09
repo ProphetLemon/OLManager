@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "competitions": {
+    "les": {
+      "promotion": {
+        "to": "lec",
+        "slots": 1,
+        "feeders": [
+          { "team": "les-team-8baee3fd", "parent": "lec-movistar-koi" },
+          { "team": "les-team-f10b156f", "parent": "lec-team-heretics-lec" },
+          { "team": "les-team-854f6893", "parent": "lec-giantx-lec" }
+        ]
+      },
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    }
+  }
+}

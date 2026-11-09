@@ -1,4 +1,5 @@
 import i18n from '../../i18n';
+import { formatDate } from '../formatting/dateFormatting';
 import type {
   MessageActionOption,
   MessageData,
@@ -48,15 +49,22 @@ function boardObjectiveFallback(objective: BoardObjective): string {
   }
 }
 
+const ISO_DATE_PARAM = /^\d{4}-\d{2}-\d{2}$/;
+
 /**
- * Pre-resolve any param values that are themselves i18n keys (e.g. "common.moods.excellent").
- * A value is treated as a key if it contains a dot and i18next resolves it to something different.
+ * Pre-resolve param values before interpolation:
+ * - an ISO date (YYYY-MM-DD) is formatted for the active language, so the backend
+ *   never has to format a date for a locale;
+ * - a value that is itself an i18n key (e.g. "common.moods.excellent") is translated.
+ *   A value is treated as a key if it contains a dot and i18next resolves it to something different.
  */
 function resolveParamValues(params?: Record<string, string>): Record<string, string> | undefined {
   if (!params) return params;
   const resolved = { ...params };
   for (const [key, value] of Object.entries(resolved)) {
-    if (value.includes('.')) {
+    if (ISO_DATE_PARAM.test(value)) {
+      resolved[key] = formatDate(value, i18n.language);
+    } else if (value.includes('.')) {
       const attempted = i18n.t(value);
       if (attempted !== value) {
         resolved[key] = attempted;

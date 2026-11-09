@@ -16,6 +16,7 @@ import ChampionDraft, {
   authorizedRelationshipChampionIdsForViewer,
 } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import type { ChampionDraftResultPayload } from "@/ui-v2/_legacy/components/match/ChampionDraft";
+import { finalizeLiveMatch, type FinishLiveMatchResponse } from "@/ui-v2/_legacy/pages/MatchSimulation.finalize";
 import LolMatchLive from "@/ui-v2/_legacy/components/match/LolMatchLive";
 import type { ChampionSelectionByPlayer } from "@/ui-v2/_legacy/components/match/LolMatchLive";
 import MatchTacticsStage from "@/ui-v2/_legacy/components/match/MatchTacticsStage";
@@ -52,11 +53,6 @@ interface MatchRouteState {
   fixtureIndex?: number;
   mode?: string;
   snapshot?: MatchSnapshot;
-}
-
-interface FinishLiveMatchResponse {
-  game: GameStateData;
-  round_summary?: unknown;
 }
 
 interface StoredFixtureDraftResult {
@@ -1376,40 +1372,38 @@ export default function MatchSimulation() {
       return true;
     }
 
-    try {
-      console.info("[MatchSimulation] finalizeMatch:start");
-      const response =
-        await invoke<FinishLiveMatchResponse>("finish_live_match", { lolReport });
-      console.info("[MatchSimulation] finalizeMatch:success", {
-        hasRoundSummary: !!response.round_summary,
-        hasUpdatedGame: !!response.game,
-      });
-      setGameState(response.game);
-      const fixtureId = currentFixture?.id;
-      const draft = normalizeDraftPayload(draftPayload, championSelections, renderSnapshotWithTactics ?? snapshot ?? null);
-      const draftSnapshot = renderSnapshotWithTactics ?? snapshot;
-      if (fixtureId && draft && draftSnapshot && lolReport?.winner) {
-        const winnerTeamId = lolReport.winner === "blue"
-          ? draftSnapshot.home_team.id
-          : draftSnapshot.away_team.id;
-        const picks = [
-          ...draftPicksByPlayerRole(draftSnapshot.home_team.players, draft.blue.picks),
-          ...draftPicksByPlayerRole(draftSnapshot.away_team.players, draft.red.picks),
-        ];
-        const updated = await invoke<GameStateData>("record_fixture_champion_picks", {
-          fixtureId,
-          winnerTeamId,
-          picks,
-          bans: [...draft.blue.bans, ...draft.red.bans],
-        });
-        setGameState(updated);
-      }
+    console.info("[MatchSimulation] finalizeMatch:start");
+    const fixtureId = currentFixture?.id;
+    const draft = normalizeDraftPayload(draftPayload, championSelections, renderSnapshotWithTactics ?? snapshot ?? null);
+    const draftSnapshot = renderSnapshotWithTactics ?? snapshot;
+    const winner = lolReport?.winner;
+    const canRecordPicks = !!(fixtureId && draft && draftSnapshot && winner);
+    const finalized = await finalizeLiveMatch({
+      finish: () => invoke<FinishLiveMatchResponse>("finish_live_match", { lolReport }),
+      recordPicks: canRecordPicks
+        ? () => {
+            const winnerTeamId = winner === "blue"
+              ? draftSnapshot.home_team.id
+              : draftSnapshot.away_team.id;
+            const picks = [
+              ...draftPicksByPlayerRole(draftSnapshot.home_team.players, draft.blue.picks),
+              ...draftPicksByPlayerRole(draftSnapshot.away_team.players, draft.red.picks),
+            ];
+            return invoke<GameStateData>("record_fixture_champion_picks", {
+              fixtureId,
+              winnerTeamId,
+              picks,
+              bans: [...draft.blue.bans, ...draft.red.bans],
+            });
+          }
+        : null,
+      refetchGame: () => invoke<GameStateData>("get_active_game"),
+      onGame: setGameState,
+    });
+    if (finalized) {
       setHasFinalizedMatch(true);
-      return true;
-    } catch (err) {
-      console.error("Failed to finish match:", err);
-      return false;
     }
+    return finalized;
   }, [championSelections, currentFixture?.id, draftPayload, hasFinalizedMatch, renderSnapshotWithTactics, setGameState, snapshot]);
 
   const handleFullTime = useCallback((finalRuntimeState: LolSimV1RuntimeState, meta?: { source: "live" | "skip"; precomputedResult?: DraftMatchResult }) => {
@@ -1941,6 +1935,8 @@ export default function MatchSimulation() {
           onComplete={handleDraftComplete}
           controlledSide={userSelectedSide}
           allAi={effectiveMatchMode === "spectator"}
+          instant={effectiveMatchMode === "spectator"}
+          autoFinalize={matchMode === "delegate"}
           seriesLength={seriesLength}
           blueSeriesWins={blueSeriesWins}
           redSeriesWins={redSeriesWins}

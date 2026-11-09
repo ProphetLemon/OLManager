@@ -63,6 +63,11 @@ competition's players moved or retired unless it has a reviewed exception.
 
 - Coverage is every competition the game loads players for (`legacy` is false, players shard exists), minus the stale
   duplicates `lck-cl` and `prime_league` (copies of `lckcl`/`prm` with other team ids).
+- The loaded world matches what the game assembles: duplicate player ids keep the live competition's record, players on
+  teams that do not exist are free agents, and the reviewed field fixes in `assets/world/catalog-corrections.json`
+  (`{"corrections": [{id, field, from, to, evidence}]}`, fields `full_name`/`match_name`/`nationality`) are applied. An entry
+  with an unknown id or a `from` that no longer matches is skipped, never an error. The game applies the same file in
+  `olm_core::world_catalog`; add an entry only with evidence (e.g. a Leaguepedia page in the offline cache).
 - Team ids are the in-game ids (`<competition>-<shard id>`, as `assemble_world_from_modular_data` builds them).
 - Only roles `Top Laner ... Support` and `Sub/*` count as the roster. `Trn/*` (trainee) and `IA/*` (inactive) entries only
   mark a person as seen. A person absent from every roster is looked up: retired (page says so) -> `retire`; "previously" or a
@@ -89,8 +94,41 @@ Keep that attribution wherever the overlay data is surfaced.
 - Do not run it in CI or on a schedule without agreeing that with the wiki operators first.
 - `--max-requests` is a hard cap on live requests; a run stops with an error when it is exhausted.
 
+## Logging in (optional)
+
+`--login` logs in with a Leaguepedia bot password before the first query. Setup steps are in
+`scripts/champions/README.md` under "Logging in". It is unverified whether a logged-in account avoids rate limits.
+
 ## Tests
 
 `npx vitest run src/lib/world` uses recorded responses in `scripts/world/fixtures/cache` (keys are
 `sha1` of the sorted request parameters, same as the original Python spike) and a small LCK/LEC world in
 `scripts/world/fixtures/data`. Tests never touch the network.
+
+## Signing the overlay (Ed25519)
+
+The app only accepts a downloaded overlay whose detached Ed25519 signature verifies against the public key compiled into the
+app. A tampered, unsigned or wrongly signed overlay is rejected and the app keeps what it had (the bundled overlay at worst).
+
+- **Format.** `assets/world/roster-overlay.json.sig` holds the base64 (standard alphabet, padded, one line) of the 64-byte
+  Ed25519 signature over the exact bytes of `roster-overlay.json`. Any edit to the overlay, even whitespace, needs a re-sign.
+- **Public key.** `assets/world/overlay-signing-key.pub`: base64 of the raw 32-byte key, committed and embedded in the app.
+- **Private key.** PKCS#8 PEM, mode 0600, outside the repo: `$OLM_OVERLAY_SIGNING_KEY` or
+  `~/.config/olmanager/overlay-signing-key.pem`. **Back it up** (password manager or offline media). Losing it means shipping
+  a new app build with a new public key before any overlay can be downloaded again. Never print, paste or commit it.
+- **Create (once).** `npm run world:keygen` creates the key only if none exists, never overwrites, and prints only the public key
+  and its SHA-256 fingerprint. Commit the printed public key as `overlay-signing-key.pub` and ship an app build that embeds it.
+- **Re-sign.** `npm run world:refresh` signs automatically after writing the overlay when the key is available and prints a
+  warning when it is not. To sign by hand (for example after editing the overlay): `npm run world:sign [-- path/to/overlay.json]`.
+- **Check.** `npm run verify:world-overlay` also verifies the signature against the committed public key.
+- **Publishing.** The app downloads `<source>` and `<source>.sig` from the fork's `develop` branch. Downloads only succeed once
+  the signed overlay and its `.sig` are both on `develop`; until then the app keeps the bundled overlay. Commit the overlay and
+  its `.sig` together.
+
+App side: `src-tauri/src/commands/world_overlay.rs` downloads `<source>.sig` with the same https-only, size-capped, timeout rules,
+verifies it (`olm_core::world_overlay_signature`) before parsing or caching, stores the signature next to the cache and verifies
+the cached pair again on every read. A missing or invalid signature rejects the download, keeps the current cache and never
+blocks a new game; a cache without a valid signature is ignored in favour of the bundled overlay. `OLM_WORLD_OVERLAY_SOURCE`
+(URL or local path) goes through the same verification against the embedded key, so a local override needs a `.sig` too.
+The crypto is `ed25519-dalek` 2.x (BSD-3-Clause, RustCrypto/dalek-cryptography, the de-facto Rust Ed25519 crate; verification
+uses `verify_strict`, default features off).

@@ -5,12 +5,13 @@ import { useBugReportStore } from "@/store/bugReportStore";
 import { useUpdater } from "@/hooks/useUpdater";
 import { invoke } from "@tauri-apps/api/core";
 import UpdateModal from "@/ui-v2/_legacy/components/updater/UpdateModal";
-import DashboardV2 from "./dashboard/DashboardV2";
+import { LazyFallback } from "./components/LazyFallback";
 import { TitleBarV2 } from "./components/TitleBarV2";
 import ErrorBoundary from "./components/ErrorBoundary";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import i18n from "@/i18n";
 
+const DashboardV2 = lazy(() => import("./dashboard/DashboardV2"));
 const MainMenu = lazy(() => import("@/ui-v2/_legacy/pages/MainMenu"));
 const TeamSelectionV2 = lazy(() => import("@/ui-v2/pages/TeamSelectionV2"));
 const MatchSimulation = lazy(() => import("@/ui-v2/_legacy/pages/MatchSimulation"));
@@ -46,14 +47,6 @@ const DASHBOARD_TAB_ROUTES = [
   "/competiciones",
   "/competitions",
 ];
-
-function LazyFallback() {
-  return (
-    <div className="flex min-h-0 flex-1 items-center justify-center bg-background">
-      <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-    </div>
-  );
-}
 
 const DASHBOARD_ROUTES = ["/dashboard", ...DASHBOARD_TAB_ROUTES];
 

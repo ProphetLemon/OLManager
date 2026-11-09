@@ -27,6 +27,15 @@ const CHAMPION_KILL_GOLD = 300;
 const CHAMPION_ASSIST_GOLD_TOTAL = 150;
 const CHAMPION_KILL_XP = 220;
 const ASSIST_RADIUS = 0.11;
+// Team-wide objective gold, mirroring the authoritative Rust simulator
+// (olm_core sim_live::economy). Baron paid 80 gold to one champion and towers
+// paid nothing before. [PLACEHOLDER] pending playtest.
+export const BARON_TEAM_GOLD = 300;
+export function towerTeamGold(structureId: string) {
+  if (structureId.endsWith("-outer")) return 125;
+  if (structureId.endsWith("-inner")) return 100;
+  return 90;
+}
 const MINION_GOLD = { melee: 22, ranged: 16, summon: 0 } as const;
 const MINION_XP = { melee: 58, ranged: 32, summon: 0 } as const;
 const MINION_PROFILE = {
@@ -529,6 +538,12 @@ export class PrototypeSimulation {
     if (amount <= 0) return;
     ch.gold += amount;
     this.state.stats[ch.team].gold += amount;
+  }
+
+  private addTeamGold(team: TeamId, amount: number, aliveOnly: boolean) {
+    this.state.champions
+      .filter((c) => c.team === team && (c.alive || !aliveOnly))
+      .forEach((c) => this.addGold(c, amount));
   }
 
   private addXp(ch: ChampionState, amount: number) {
@@ -1995,7 +2010,7 @@ export class PrototypeSimulation {
     if (killer && key === "baron") {
       this.state.stats[killer.team].barons += 1;
       this.grantBaronBuff(killer.team);
-      this.addGold(killer, 80);
+      this.addTeamGold(killer.team, BARON_TEAM_GOLD, true);
       this.addXp(killer, 140);
       this.log(`${killer.team.toUpperCase()} secured baron`, "baron");
       return;
@@ -2466,7 +2481,10 @@ export class PrototypeSimulation {
       ch.attackCdUntil = now + 0.9;
       if (target.target.hp <= 0 && target.target.alive) {
         target.target.alive = false;
-        if (target.target.kind === "tower") this.state.stats[ch.team].towers += 1;
+        if (target.target.kind === "tower") {
+          this.state.stats[ch.team].towers += 1;
+          this.addTeamGold(ch.team, towerTeamGold(target.target.id), false);
+        }
         this.log(`${ch.name} destroyed ${target.target.id}`, target.target.kind === "nexus" ? "nexus" : "tower");
         if (target.target.kind === "nexus") {
           this.state.winner = ch.team;
@@ -2609,7 +2627,10 @@ export class PrototypeSimulation {
           m.attackCdUntil = now + MINION_PROFILE[m.kind].attackCadence;
           if (targetStruct.hp <= 0 && targetStruct.alive) {
             targetStruct.alive = false;
-            if (targetStruct.kind === "tower") this.state.stats[m.team].towers += 1;
+            if (targetStruct.kind === "tower") {
+              this.state.stats[m.team].towers += 1;
+              this.addTeamGold(m.team, towerTeamGold(targetStruct.id), false);
+            }
             this.log(`${m.team.toUpperCase()} destroyed ${targetStruct.id}`, targetStruct.kind === "nexus" ? "nexus" : "tower");
             if (targetStruct.kind === "nexus") {
               this.state.winner = m.team;

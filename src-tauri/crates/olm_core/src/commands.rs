@@ -62,10 +62,19 @@ pub fn set_draft_strategy(game: &mut Game, team_id: &str, value: &str) {
 
 // ── Lineup ───────────────────────────────────────────────────
 
-pub fn set_active_lineup(game: &mut Game, team_id: &str, player_ids: Vec<String>) {
+/// Set the team's active lineup. Refuses a lineup with more imports than the
+/// residency rule allows (`LINEUP_TOO_MANY_IMPORTS:<count>:<max>`).
+pub fn set_active_lineup(
+    game: &mut Game,
+    team_id: &str,
+    player_ids: Vec<String>,
+) -> Result<(), String> {
+    crate::residency::validate_lineup_imports(game, team_id, &player_ids)
+        .map_err(|err| err.to_string())?;
     if let Some(team) = game.teams.iter_mut().find(|t| t.id == team_id) {
         team.active_lineup_ids = player_ids;
     }
+    Ok(())
 }
 
 // ── Tactics ──────────────────────────────────────────────────
@@ -271,4 +280,96 @@ pub fn delegate_champion_training(game: &mut Game) {
 
 pub fn create_social_post(_game: &mut Game, _text: &str) {
     // Placeholder - creates a social post
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::clock::GameClock;
+    use crate::domain::manager::Manager;
+    use crate::domain::player::{LolRole, Player, PlayerAttributes};
+    use crate::domain::team::Team;
+    use chrono::{TimeZone, Utc};
+
+    fn roster(nationalities: [&str; 5]) -> Game {
+        let attrs = PlayerAttributes {
+            mechanics: 60,
+            laning: 60,
+            teamfighting: 60,
+            macro_play: 60,
+            consistency: 60,
+            shotcalling: 60,
+            champion_pool: 60,
+            discipline: 60,
+            mental_resilience: 60,
+        };
+        let roles = [
+            LolRole::Top,
+            LolRole::Jungle,
+            LolRole::Mid,
+            LolRole::Adc,
+            LolRole::Support,
+        ];
+        let players = roles
+            .iter()
+            .zip(nationalities)
+            .enumerate()
+            .map(|(i, (role, nationality))| {
+                let mut p = Player::new(
+                    format!("p{i}"),
+                    format!("p{i}"),
+                    format!("Player {i}"),
+                    "2000-01-01".to_string(),
+                    nationality.to_string(),
+                    *role,
+                    attrs.clone(),
+                );
+                p.team_id = Some("lec-a".to_string());
+                p
+            })
+            .collect();
+        let mut team = Team::new(
+            "lec-a".to_string(),
+            "A".to_string(),
+            "A".to_string(),
+            "Spain".to_string(),
+            "Madrid".to_string(),
+            "Arena".to_string(),
+            1_000,
+        );
+        team.competition_id = Some("lec".to_string());
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap());
+        let manager = Manager::new(
+            "m".to_string(),
+            "A".to_string(),
+            "B".to_string(),
+            "1980-01-01".to_string(),
+            "Spain".to_string(),
+        );
+        Game::new(clock, manager, vec![team], players, vec![], vec![])
+    }
+
+    fn ids() -> Vec<String> {
+        (0..5).map(|i| format!("p{i}")).collect()
+    }
+
+    #[test]
+    fn set_active_lineup_refuses_three_imports_and_keeps_the_old_lineup() {
+        let mut game = roster(["KR", "KR", "CN", "DE", "ES"]);
+        game.teams[0].active_lineup_ids = vec!["old".to_string()];
+
+        let err = set_active_lineup(&mut game, "lec-a", ids()).unwrap_err();
+
+        assert_eq!(err, "LINEUP_TOO_MANY_IMPORTS:3:2");
+        assert_eq!(game.teams[0].active_lineup_ids, vec!["old".to_string()]);
+    }
+
+    #[test]
+    fn set_active_lineup_accepts_two_imports() {
+        let mut game = roster(["KR", "KR", "FR", "DE", "ES"]);
+
+        set_active_lineup(&mut game, "lec-a", ids()).unwrap();
+
+        assert_eq!(game.teams[0].active_lineup_ids, ids());
+    }
 }

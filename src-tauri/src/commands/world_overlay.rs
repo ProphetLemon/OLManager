@@ -5,6 +5,10 @@
 //! overlay JSON produced by the maintainer tooling, validates it with the same
 //! rules as the bundled one and keeps it in `app_data_dir/world/`. At new-game
 //! time the overlay with the newest `as_of` wins (the bundled one on ties).
+//!
+//! Every downloaded overlay needs a detached Ed25519 signature (`<source>.sig`) that verifies against
+//! the public key embedded in the app. The signature is checked before the overlay is parsed or
+//! cached, and again whenever the cache is read; anything unsigned or badly signed is ignored.
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -12,6 +16,9 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use log::{info, warn};
 use olm_core::world_overlay::{bundled_world_overlay, OverlayError, OverlaySource, WorldOverlay};
+use olm_core::world_overlay_signature::{
+    verify_overlay_signature, OverlayPublicKey, SignatureError,
+};
 use serde::Serialize;
 use tauri::Manager as TauriManager;
 
@@ -30,6 +37,9 @@ const AUTOMATIC_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_REDIRECTS: usize = 5;
 const CACHE_DIR: &str = "world";
 const CACHE_FILE: &str = "roster-overlay.json";
+const SIGNATURE_SUFFIX: &str = ".sig";
+/// A base64 Ed25519 signature is 88 bytes; the cap only bounds a hostile response.
+const MAX_SIGNATURE_BYTES: usize = 1024;
 
 #[derive(Debug, thiserror::Error)]
 pub enum WorldOverlayError {
@@ -43,6 +53,10 @@ pub enum WorldOverlayError {
     TooLarge { limit: usize },
     #[error("downloaded roster overlay is not valid: {0}")]
     Invalid(#[source] OverlayError),
+    #[error("roster overlay has no signature")]
+    MissingSignature,
+    #[error("roster overlay signature rejected: {0}")]
+    BadSignature(#[source] SignatureError),
     #[error("bundled roster overlay is not valid: {0}")]
     BundledInvalid(#[source] OverlayError),
     #[error("roster overlay storage error: {0}")]
@@ -124,7 +138,7 @@ pub fn select_overlay(bundled: WorldOverlay, cached: Option<WorldOverlay>) -> Re
 
 /// Read the cached overlay. A missing file is normal; an unreadable or invalid
 /// one is logged and ignored so it can never block a new game.
-pub fn read_cached_overlay(path: &Path) -> Option<WorldOverlay> {
+pub fn read_cached_overlay(path: &Path, key: &OverlayPublicKey) -> Option<WorldOverlay> {
     let bytes = match read_local_capped(path, MAX_OVERLAY_BYTES) {
         Ok(bytes) => bytes,
         Err(WorldOverlayError::Io(err)) if err.kind() == std::io::ErrorKind::NotFound => {
@@ -135,6 +149,17 @@ pub fn read_cached_overlay(path: &Path) -> Option<WorldOverlay> {
             return None;
         }
     };
+    let signature = match read_local_capped(&signature_path(path), MAX_SIGNATURE_BYTES) {
+        Ok(signature) => signature,
+        Err(err) => {
+            warn!("[world_overlay] ignoring cache {path:?}: no readable signature: {err}");
+            return None;
+        }
+    };
+    if let Err(err) = verify_overlay_signature(&bytes, &signature, key) {
+        warn!("[world_overlay] ignoring cache {path:?}: {err}");
+        return None;
+    }
     let Ok(raw) = String::from_utf8(bytes) else {
         warn!("[world_overlay] ignoring cache {path:?}: not valid UTF-8");
         return None;
@@ -148,9 +173,24 @@ pub fn read_cached_overlay(path: &Path) -> Option<WorldOverlay> {
     }
 }
 
-fn resolve_from(cache_path: Option<&Path>) -> Result<ResolvedOverlay, WorldOverlayError> {
+/// Cache signature file: next to the cache file, `<name>.sig`.
+fn signature_path(path: &Path) -> PathBuf {
+    let mut name = path.as_os_str().to_owned();
+    name.push(SIGNATURE_SUFFIX);
+    PathBuf::from(name)
+}
+
+/// The key the shipped app trusts. Only the tests use another one, by passing it explicitly.
+fn trusted_key() -> Result<OverlayPublicKey, WorldOverlayError> {
+    OverlayPublicKey::embedded().map_err(WorldOverlayError::BadSignature)
+}
+
+fn resolve_from(
+    cache_path: Option<&Path>,
+    key: &OverlayPublicKey,
+) -> Result<ResolvedOverlay, WorldOverlayError> {
     let bundled = bundled_world_overlay().map_err(WorldOverlayError::BundledInvalid)?;
-    let cached = cache_path.and_then(read_cached_overlay);
+    let cached = cache_path.and_then(|path| read_cached_overlay(path, key));
     Ok(select_overlay(bundled, cached))
 }
 
@@ -172,7 +212,7 @@ pub fn resolve_overlay_for_new_game(app_handle: &tauri::AppHandle) -> Option<Wor
             None
         }
     };
-    match resolve_from(path.as_deref()) {
+    match trusted_key().and_then(|key| resolve_from(path.as_deref(), &key)) {
         Ok(resolved) => Some(resolved.overlay),
         Err(err) => {
             warn!("[world_overlay] ignoring roster overlay: {err}");
@@ -289,6 +329,42 @@ async fn fetch_overlay_bytes(
     }
 }
 
+/// Where the detached signature of the overlay at `source` lives.
+///
+/// For a URL the suffix goes into the path, before any query or fragment; a
+/// local path is taken verbatim (`?` and `#` are ordinary file-name characters).
+fn signature_source(source: &str) -> String {
+    if !is_remote(source) {
+        return format!("{source}{SIGNATURE_SUFFIX}");
+    }
+    let (base, tail) = source.split_at(source.find(['?', '#']).unwrap_or(source.len()));
+    let after_scheme = base.split_once("://").map_or(base, |(_, rest)| rest);
+    let separator = if after_scheme.contains('/') { "" } else { "/" };
+    format!("{base}{separator}{SIGNATURE_SUFFIX}{tail}")
+}
+
+/// Fetch the signature of `source`; a missing one is [`WorldOverlayError::MissingSignature`].
+async fn fetch_signature_bytes(
+    source: &str,
+    user_agent: &str,
+    timeout: Duration,
+) -> Result<Vec<u8>, WorldOverlayError> {
+    match fetch_overlay_bytes(
+        &signature_source(source),
+        user_agent,
+        MAX_SIGNATURE_BYTES,
+        timeout,
+    )
+    .await
+    {
+        Err(WorldOverlayError::HttpStatus(404 | 410)) => Err(WorldOverlayError::MissingSignature),
+        Err(WorldOverlayError::Io(err)) if err.kind() == std::io::ErrorKind::NotFound => {
+            Err(WorldOverlayError::MissingSignature)
+        }
+        other => other,
+    }
+}
+
 /// Write `bytes` to `path` so readers see either the old file or the new one:
 /// temp file in the same directory, fsync, then rename. A failure removes the
 /// temp file and leaves any existing cache untouched.
@@ -321,6 +397,52 @@ pub fn write_atomically(path: &Path, bytes: &[u8]) -> Result<(), WorldOverlayErr
     Ok(())
 }
 
+/// Fetch the overlay and then its signature under ONE total deadline: each fetch
+/// gets only the time the previous one left, so the pair never takes longer than
+/// `timeout` (an automatic check must not hold the new-game screen for twice that).
+async fn fetch_pair_with<A, B>(
+    timeout: Duration,
+    fetch_overlay: impl FnOnce(Duration) -> A,
+    fetch_signature: impl FnOnce(Duration) -> B,
+) -> Result<(Vec<u8>, Vec<u8>), WorldOverlayError>
+where
+    A: std::future::Future<Output = Result<Vec<u8>, WorldOverlayError>>,
+    B: std::future::Future<Output = Result<Vec<u8>, WorldOverlayError>>,
+{
+    let deadline = tokio::time::Instant::now() + timeout;
+    let bytes = within_deadline(deadline, fetch_overlay).await?;
+    let signature = within_deadline(deadline, fetch_signature).await?;
+    Ok((bytes, signature))
+}
+
+async fn within_deadline<F, Fut>(
+    deadline: tokio::time::Instant,
+    fetch: F,
+) -> Result<Vec<u8>, WorldOverlayError>
+where
+    F: FnOnce(Duration) -> Fut,
+    Fut: std::future::Future<Output = Result<Vec<u8>, WorldOverlayError>>,
+{
+    let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+    tokio::time::timeout_at(deadline, fetch(remaining))
+        .await
+        .unwrap_or_else(|_| Err(WorldOverlayError::Network("request timed out".to_string())))
+}
+
+/// Store the downloaded pair: the overlay first, the signature last. A crash in
+/// between leaves a new overlay next to the old signature, which read-time
+/// verification rejects, so the pair is ignored; a new signature never sits next
+/// to an old overlay.
+fn store_pair_with(
+    cache_path: &Path,
+    overlay: &[u8],
+    signature: &[u8],
+    mut write: impl FnMut(&Path, &[u8]) -> Result<(), WorldOverlayError>,
+) -> Result<(), WorldOverlayError> {
+    write(cache_path, overlay)?;
+    write(&signature_path(cache_path), signature)
+}
+
 /// Download from `source`, validate and store into `cache_path` when it is not
 /// older than what is cached. Returns the overlay a new game would now use.
 async fn refresh_cache(
@@ -329,12 +451,19 @@ async fn refresh_cache(
     user_agent: &str,
     limit: usize,
     timeout: Duration,
+    key: &OverlayPublicKey,
 ) -> Result<WorldOverlayInfo, WorldOverlayError> {
     let bundled = bundled_world_overlay().map_err(WorldOverlayError::BundledInvalid)?;
-    let cached = read_cached_overlay(cache_path);
+    let cached = read_cached_overlay(cache_path, key);
     let before = select_overlay(bundled.clone(), cached.clone());
 
-    let bytes = fetch_overlay_bytes(source, user_agent, limit, timeout).await?;
+    let (bytes, signature) = fetch_pair_with(
+        timeout,
+        |remaining| fetch_overlay_bytes(source, user_agent, limit, remaining),
+        |remaining| fetch_signature_bytes(source, user_agent, remaining),
+    )
+    .await?;
+    verify_overlay_signature(&bytes, &signature, key).map_err(WorldOverlayError::BadSignature)?;
     let text = std::str::from_utf8(&bytes).map_err(|_| {
         WorldOverlayError::Invalid(OverlayError::InvalidField {
             field: "document".to_string(),
@@ -350,14 +479,14 @@ async fn refresh_cache(
         None => downloaded.as_of >= bundled.as_of,
     };
     if acceptable {
-        write_atomically(cache_path, &bytes)?;
+        store_pair_with(cache_path, &bytes, &signature, write_atomically)?;
     } else {
         info!(
             "[world_overlay] downloaded overlay {} is older than the one in use, keeping it",
             downloaded.as_of
         );
     }
-    let after = resolve_from(Some(cache_path))?;
+    let after = resolve_from(Some(cache_path), key)?;
     let updated = after.overlay.as_of > before.overlay.as_of;
     Ok(after.info(updated))
 }
@@ -394,19 +523,28 @@ pub async fn update_world_overlay(
         describe_source(&source),
         timeout.as_secs()
     );
-    refresh_cache(&path, &source, &user_agent, MAX_OVERLAY_BYTES, timeout)
-        .await
-        .map_err(|err| {
-            warn!("[cmd] update_world_overlay failed: {err}");
-            err.to_string()
-        })
+    let key = trusted_key().map_err(|err| err.to_string())?;
+    refresh_cache(
+        &path,
+        &source,
+        &user_agent,
+        MAX_OVERLAY_BYTES,
+        timeout,
+        &key,
+    )
+    .await
+    .map_err(|err| {
+        warn!("[cmd] update_world_overlay failed: {err}");
+        err.to_string()
+    })
 }
 
 /// Describe the overlay a new game would use right now.
 #[tauri::command]
 pub fn get_world_overlay_info(app_handle: tauri::AppHandle) -> Result<WorldOverlayInfo, String> {
     let path = cache_path(&app_handle).ok();
-    resolve_from(path.as_deref())
+    trusted_key()
+        .and_then(|key| resolve_from(path.as_deref(), &key))
         .map(|resolved| resolved.info(false))
         .map_err(|err| err.to_string())
 }
@@ -414,6 +552,9 @@ pub fn get_world_overlay_info(app_handle: tauri::AppHandle) -> Result<WorldOverl
 #[cfg(test)]
 mod tests {
     use super::*;
+    use base64::engine::general_purpose::STANDARD;
+    use base64::Engine as _;
+    use ed25519_dalek::{Signer, SigningKey};
 
     #[test]
     fn automatic_check_uses_the_short_timeout_and_manual_keeps_the_long_one() {
@@ -458,10 +599,152 @@ mod tests {
         tauri::async_runtime::block_on(future)
     }
 
-    fn write_source(dir: &Path, name: &str, content: &str) -> String {
+    fn signing_key(seed: u8) -> SigningKey {
+        SigningKey::from_bytes(&[seed; 32])
+    }
+
+    fn key_of(signing: &SigningKey) -> OverlayPublicKey {
+        OverlayPublicKey::from_base64(&STANDARD.encode(signing.verifying_key().to_bytes()))
+            .expect("test public key")
+    }
+
+    /// The key the tests trust, standing in for the embedded production key.
+    fn test_key() -> OverlayPublicKey {
+        key_of(&signing_key(9))
+    }
+
+    fn signature_for(signing: &SigningKey, content: &[u8]) -> String {
+        format!("{}\n", STANDARD.encode(signing.sign(content).to_bytes()))
+    }
+
+    /// Writes `content` and, unless told otherwise, its signature under the test key.
+    fn write_signed_source(dir: &Path, name: &str, content: &str) -> String {
         let path = dir.join(name);
         std::fs::write(&path, content).expect("write source fixture");
+        std::fs::write(
+            signature_path(&path),
+            signature_for(&signing_key(9), content.as_bytes()),
+        )
+        .expect("write signature fixture");
         path.to_string_lossy().into_owned()
+    }
+
+    /// Writes a cache file together with a valid signature under the test key.
+    fn write_signed_cache(path: &Path, content: &str) {
+        std::fs::write(path, content).expect("write cache");
+        std::fs::write(
+            signature_path(path),
+            signature_for(&signing_key(9), content.as_bytes()),
+        )
+        .expect("write cache signature");
+    }
+
+    #[test]
+    fn signature_source_inserts_the_suffix_into_the_url_path() {
+        assert_eq!(
+            signature_source("https://example.test/a/overlay.json"),
+            "https://example.test/a/overlay.json.sig"
+        );
+        assert_eq!(
+            signature_source("https://example.test/a/overlay.json?token=1&v=2#frag"),
+            "https://example.test/a/overlay.json.sig?token=1&v=2#frag"
+        );
+        assert_eq!(
+            signature_source("https://example.test/a/overlay.json#frag"),
+            "https://example.test/a/overlay.json.sig#frag"
+        );
+        assert_eq!(
+            signature_source("https://example.test?x=1"),
+            "https://example.test/.sig?x=1"
+        );
+    }
+
+    #[test]
+    fn signature_source_keeps_local_paths_verbatim() {
+        assert_eq!(
+            signature_source("/tmp/over lay.json"),
+            "/tmp/over lay.json.sig"
+        );
+        // `?` and `#` are ordinary characters in a file name.
+        assert_eq!(signature_source("/tmp/a#b?c.json"), "/tmp/a#b?c.json.sig");
+    }
+
+    #[test]
+    fn the_overlay_and_signature_fetches_share_one_deadline() {
+        let timeout = Duration::from_millis(300);
+        let slow = |remaining: Duration| async move {
+            // Each fetch would finish inside the full timeout on its own.
+            let _ = remaining;
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            Ok::<_, WorldOverlayError>(vec![1u8])
+        };
+        let started = std::time::Instant::now();
+        let result = run(fetch_pair_with(timeout, slow, slow));
+        assert!(
+            matches!(result, Err(WorldOverlayError::Network(_))),
+            "{result:?}"
+        );
+        assert!(
+            started.elapsed() < Duration::from_millis(380),
+            "took {:?}",
+            started.elapsed()
+        );
+    }
+
+    #[test]
+    fn the_second_fetch_only_gets_the_time_the_first_left() {
+        let timeout = Duration::from_millis(500);
+        let seen = std::cell::Cell::new(Duration::ZERO);
+        let result = run(fetch_pair_with(
+            timeout,
+            |_| async {
+                tokio::time::sleep(Duration::from_millis(150)).await;
+                Ok(vec![1u8])
+            },
+            |remaining| {
+                seen.set(remaining);
+                async { Ok(vec![2u8]) }
+            },
+        ))
+        .expect("pair");
+        assert_eq!(result, (vec![1u8], vec![2u8]));
+        assert!(seen.get() <= Duration::from_millis(360), "{:?}", seen.get());
+    }
+
+    #[test]
+    fn the_cache_pair_is_written_overlay_first_and_signature_last() {
+        let cache = Path::new("/cache/world.json");
+        let mut order = Vec::new();
+        store_pair_with(cache, b"overlay", b"sig", |path, _| {
+            order.push(path.to_path_buf());
+            Ok(())
+        })
+        .expect("store");
+        assert_eq!(order, vec![cache.to_path_buf(), signature_path(cache)]);
+    }
+
+    #[test]
+    fn a_crash_between_the_two_writes_leaves_a_pair_that_is_ignored() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, _) = seeded_cache(dir.path());
+        let old_sig = std::fs::read(signature_path(&cache)).expect("old sig");
+        let new_doc = overlay_json(&offset_date(2), 2);
+        let new_sig = signature_for(&signing_key(9), new_doc.as_bytes());
+
+        let mut writes = 0;
+        let result = store_pair_with(&cache, new_doc.as_bytes(), new_sig.as_bytes(), |p, b| {
+            writes += 1;
+            if writes == 1 {
+                write_atomically(p, b)
+            } else {
+                Err(WorldOverlayError::Io(std::io::Error::other("crash")))
+            }
+        });
+        assert!(result.is_err());
+        // New overlay, old signature: never a new signature over the old overlay.
+        assert_eq!(std::fs::read(signature_path(&cache)).expect("sig"), old_sig);
+        assert_eq!(std::fs::read(&cache).expect("overlay"), new_doc.as_bytes());
+        assert!(read_cached_overlay(&cache, &test_key()).is_none());
     }
 
     #[test]
@@ -494,8 +777,8 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         let cache = dir.path().join(CACHE_FILE);
         std::fs::write(&cache, "{ this is not json").expect("write");
-        assert!(read_cached_overlay(&cache).is_none());
-        let resolved = resolve_from(Some(&cache)).expect("resolve");
+        assert!(read_cached_overlay(&cache, &test_key()).is_none());
+        let resolved = resolve_from(Some(&cache), &test_key()).expect("resolve");
         assert_eq!(resolved.origin, OverlayOrigin::Bundled);
     }
 
@@ -508,13 +791,14 @@ mod tests {
             overlay_json("2099-01-01", 0).replace("\"schemaVersion\":1", "\"schemaVersion\":9"),
         )
         .expect("write");
-        assert!(read_cached_overlay(&cache).is_none());
+        assert!(read_cached_overlay(&cache, &test_key()).is_none());
     }
 
     #[test]
     fn missing_cache_resolves_to_bundled() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let resolved = resolve_from(Some(&dir.path().join(CACHE_FILE))).expect("resolve");
+        let resolved =
+            resolve_from(Some(&dir.path().join(CACHE_FILE)), &test_key()).expect("resolve");
         assert_eq!(resolved.origin, OverlayOrigin::Bundled);
     }
 
@@ -522,7 +806,7 @@ mod tests {
     fn refresh_stores_newer_overlay_and_reports_update() {
         let dir = tempfile::tempdir().expect("tempdir");
         let newer = offset_date(2);
-        let source = write_source(dir.path(), "src.json", &overlay_json(&newer, 2));
+        let source = write_signed_source(dir.path(), "src.json", &overlay_json(&newer, 2));
         let cache = dir.path().join("world").join(CACHE_FILE);
 
         let info = run(refresh_cache(
@@ -531,6 +815,7 @@ mod tests {
             UA,
             MAX_OVERLAY_BYTES,
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect("refresh");
 
@@ -539,14 +824,174 @@ mod tests {
         assert_eq!(info.as_of, newer);
         assert_eq!(info.player_ops, 2);
         assert_eq!(info.source.license, "CC BY-SA 3.0");
-        assert_eq!(read_cached_overlay(&cache).expect("cached").as_of, newer);
+        assert_eq!(
+            read_cached_overlay(&cache, &test_key())
+                .expect("cached")
+                .as_of,
+            newer
+        );
+    }
+
+    /// Seeds a valid signed cache and returns its bytes, to compare after a rejected refresh.
+    fn seeded_cache(dir: &Path) -> (PathBuf, Vec<u8>) {
+        let cache = dir.join(CACHE_FILE);
+        write_signed_cache(&cache, &overlay_json(&offset_date(1), 1));
+        let bytes = std::fs::read(&cache).expect("read cache");
+        (cache, bytes)
+    }
+
+    fn refresh_with(
+        cache: &Path,
+        source: &str,
+        key: &OverlayPublicKey,
+    ) -> Result<WorldOverlayInfo, WorldOverlayError> {
+        run(refresh_cache(
+            cache,
+            source,
+            UA,
+            MAX_OVERLAY_BYTES,
+            REQUEST_TIMEOUT,
+            key,
+        ))
+    }
+
+    #[test]
+    fn refresh_stores_the_signature_next_to_the_cache() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let doc = overlay_json(&offset_date(2), 1);
+        let source = write_signed_source(dir.path(), "src.json", &doc);
+        let cache = dir.path().join("world").join(CACHE_FILE);
+
+        refresh_with(&cache, &source, &test_key()).expect("refresh");
+
+        assert_eq!(
+            std::fs::read_to_string(signature_path(&cache)).expect("cached signature"),
+            signature_for(&signing_key(9), doc.as_bytes())
+        );
+    }
+
+    #[test]
+    fn refresh_rejects_an_overlay_without_a_signature_and_keeps_the_cache() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, before) = seeded_cache(dir.path());
+        let source = dir.path().join("unsigned.json");
+        std::fs::write(&source, overlay_json(&offset_date(2), 2)).expect("write");
+
+        let err =
+            refresh_with(&cache, &source.to_string_lossy(), &test_key()).expect_err("unsigned");
+
+        assert!(
+            matches!(err, WorldOverlayError::MissingSignature),
+            "got {err:?}"
+        );
+        assert_eq!(std::fs::read(&cache).expect("read cache"), before);
+    }
+
+    #[test]
+    fn refresh_rejects_a_tampered_overlay_and_keeps_the_cache() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, before) = seeded_cache(dir.path());
+        let source = write_signed_source(dir.path(), "src.json", &overlay_json(&offset_date(2), 2));
+        // One byte changes after signing.
+        let mut bytes = std::fs::read(&source).expect("read");
+        bytes.push(b' ');
+        std::fs::write(&source, bytes).expect("tamper");
+
+        let err = refresh_with(&cache, &source, &test_key()).expect_err("tampered");
+
+        assert!(
+            matches!(
+                err,
+                WorldOverlayError::BadSignature(SignatureError::Invalid)
+            ),
+            "got {err:?}"
+        );
+        assert_eq!(std::fs::read(&cache).expect("read cache"), before);
+    }
+
+    #[test]
+    fn refresh_rejects_a_signature_from_another_key_and_creates_no_cache() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let doc = overlay_json(&offset_date(2), 1);
+        let source = write_signed_source(dir.path(), "src.json", &doc);
+        let cache = dir.path().join(CACHE_FILE);
+
+        let err = refresh_with(&cache, &source, &key_of(&signing_key(3))).expect_err("wrong key");
+
+        assert!(
+            matches!(
+                err,
+                WorldOverlayError::BadSignature(SignatureError::Invalid)
+            ),
+            "got {err:?}"
+        );
+        assert!(!cache.exists());
+        assert!(!signature_path(&cache).exists());
+    }
+
+    #[test]
+    fn refresh_rejects_a_malformed_signature() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let source = write_signed_source(dir.path(), "src.json", &overlay_json(&offset_date(2), 1));
+        std::fs::write(signature_path(Path::new(&source)), "not a signature").expect("write");
+
+        let err = refresh_with(&dir.path().join(CACHE_FILE), &source, &test_key())
+            .expect_err("malformed");
+
+        assert!(
+            matches!(
+                err,
+                WorldOverlayError::BadSignature(SignatureError::Malformed)
+            ),
+            "got {err:?}"
+        );
+    }
+
+    #[test]
+    fn the_production_key_refuses_test_signed_sources() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let source = write_signed_source(dir.path(), "src.json", &overlay_json(&offset_date(2), 1));
+        let production = trusted_key().expect("embedded key");
+
+        let err = refresh_with(&dir.path().join(CACHE_FILE), &source, &production)
+            .expect_err("test signature is not the production one");
+
+        assert!(
+            matches!(err, WorldOverlayError::BadSignature(_)),
+            "got {err:?}"
+        );
+    }
+
+    #[test]
+    fn cache_without_a_signature_is_ignored_and_bundled_is_used() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join(CACHE_FILE);
+        std::fs::write(&cache, overlay_json("2099-01-01", 1)).expect("write");
+
+        assert!(read_cached_overlay(&cache, &test_key()).is_none());
+        let resolved = resolve_from(Some(&cache), &test_key()).expect("resolve");
+        assert_eq!(resolved.origin, OverlayOrigin::Bundled);
+    }
+
+    #[test]
+    fn cache_with_a_tampered_or_foreign_signature_is_ignored() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join(CACHE_FILE);
+        write_signed_cache(&cache, &overlay_json("2026-09-01", 1));
+        assert!(read_cached_overlay(&cache, &test_key()).is_some());
+
+        // Wrong key.
+        assert!(read_cached_overlay(&cache, &key_of(&signing_key(3))).is_none());
+        // Overlay edited after signing.
+        std::fs::write(&cache, overlay_json("2026-09-01", 2)).expect("tamper");
+        assert!(read_cached_overlay(&cache, &test_key()).is_none());
     }
 
     #[test]
     fn refresh_with_same_overlay_is_not_reported_as_update() {
         let dir = tempfile::tempdir().expect("tempdir");
         let newer = offset_date(2);
-        let source = write_source(dir.path(), "src.json", &overlay_json(&newer, 1));
+        let source = write_signed_source(dir.path(), "src.json", &overlay_json(&newer, 1));
         let cache = dir.path().join(CACHE_FILE);
 
         run(refresh_cache(
@@ -555,6 +1000,7 @@ mod tests {
             UA,
             MAX_OVERLAY_BYTES,
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect("first");
         let info = run(refresh_cache(
@@ -563,6 +1009,7 @@ mod tests {
             UA,
             MAX_OVERLAY_BYTES,
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect("second");
 
@@ -575,24 +1022,27 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         let cache = dir.path().join(CACHE_FILE);
         let newer = offset_date(2);
-        let newer_src = write_source(dir.path(), "new.json", &overlay_json(&newer, 3));
+        let newer_src = write_signed_source(dir.path(), "new.json", &overlay_json(&newer, 3));
         run(refresh_cache(
             &cache,
             &newer_src,
             UA,
             MAX_OVERLAY_BYTES,
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect("seed cache");
         let before = std::fs::read(&cache).expect("read cache");
 
-        let older_src = write_source(dir.path(), "old.json", &overlay_json(&offset_date(1), 1));
+        let older_src =
+            write_signed_source(dir.path(), "old.json", &overlay_json(&offset_date(1), 1));
         let info = run(refresh_cache(
             &cache,
             &older_src,
             UA,
             MAX_OVERLAY_BYTES,
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect("refresh");
 
@@ -605,7 +1055,8 @@ mod tests {
     fn refresh_does_not_cache_overlay_older_than_bundled() {
         let dir = tempfile::tempdir().expect("tempdir");
         let cache = dir.path().join(CACHE_FILE);
-        let source = write_source(dir.path(), "old.json", &overlay_json(&offset_date(-30), 1));
+        let source =
+            write_signed_source(dir.path(), "old.json", &overlay_json(&offset_date(-30), 1));
 
         let info = run(refresh_cache(
             &cache,
@@ -613,6 +1064,7 @@ mod tests {
             UA,
             MAX_OVERLAY_BYTES,
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect("refresh");
 
@@ -625,18 +1077,19 @@ mod tests {
     fn refresh_rejects_invalid_overlay_and_keeps_cache() {
         let dir = tempfile::tempdir().expect("tempdir");
         let cache = dir.path().join(CACHE_FILE);
-        let good = write_source(dir.path(), "good.json", &overlay_json(&offset_date(2), 1));
+        let good = write_signed_source(dir.path(), "good.json", &overlay_json(&offset_date(2), 1));
         run(refresh_cache(
             &cache,
             &good,
             UA,
             MAX_OVERLAY_BYTES,
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect("seed cache");
         let before = std::fs::read(&cache).expect("read cache");
 
-        let bad = write_source(
+        let bad = write_signed_source(
             dir.path(),
             "bad.json",
             &overlay_json(&offset_date(2), 0).replace("\"as_of\"", "\"as_of_x\""),
@@ -647,6 +1100,7 @@ mod tests {
             UA,
             MAX_OVERLAY_BYTES,
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect_err("invalid");
 
@@ -659,7 +1113,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         let cache = dir.path().join(CACHE_FILE);
         let doc = overlay_json(&offset_date(1), 1).replace("\"id\":\"p0\"", "\"id\":\"\"");
-        let source = write_source(dir.path(), "empty-id.json", &doc);
+        let source = write_signed_source(dir.path(), "empty-id.json", &doc);
 
         let err = run(refresh_cache(
             &cache,
@@ -667,6 +1121,7 @@ mod tests {
             UA,
             MAX_OVERLAY_BYTES,
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect_err("invalid");
 
@@ -679,6 +1134,11 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         let path = dir.path().join("binary.json");
         std::fs::write(&path, [0xff, 0xfe, 0x00]).expect("write");
+        std::fs::write(
+            signature_path(&path),
+            signature_for(&signing_key(9), &[0xff, 0xfe, 0x00]),
+        )
+        .expect("write signature");
 
         let err = run(refresh_cache(
             &dir.path().join(CACHE_FILE),
@@ -686,6 +1146,7 @@ mod tests {
             UA,
             MAX_OVERLAY_BYTES,
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect_err("non utf8");
 
@@ -696,7 +1157,7 @@ mod tests {
     fn oversized_source_is_rejected_by_the_size_cap() {
         let dir = tempfile::tempdir().expect("tempdir");
         let doc = overlay_json(&offset_date(2), 50);
-        let source = write_source(dir.path(), "big.json", &doc);
+        let source = write_signed_source(dir.path(), "big.json", &doc);
         let cache = dir.path().join(CACHE_FILE);
 
         let err = run(refresh_cache(
@@ -705,6 +1166,7 @@ mod tests {
             UA,
             doc.len() - 1,
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect_err("too large");
 
@@ -719,7 +1181,7 @@ mod tests {
     fn source_exactly_at_the_cap_is_accepted() {
         let dir = tempfile::tempdir().expect("tempdir");
         let doc = overlay_json(&offset_date(2), 5);
-        let source = write_source(dir.path(), "exact.json", &doc);
+        let source = write_signed_source(dir.path(), "exact.json", &doc);
 
         let info = run(refresh_cache(
             &dir.path().join(CACHE_FILE),
@@ -727,6 +1189,7 @@ mod tests {
             UA,
             doc.len(),
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect("at the cap");
 
@@ -785,15 +1248,15 @@ mod tests {
         let padding = " ".repeat(MAX_OVERLAY_BYTES);
         std::fs::write(&path, format!("{}{padding}", overlay_json("2026-09-01", 0)))
             .expect("write");
-        assert!(read_cached_overlay(&path).is_none());
+        assert!(read_cached_overlay(&path, &test_key()).is_none());
     }
 
     #[test]
     fn cache_file_within_the_cap_is_read() {
         let dir = tempfile::tempdir().expect("tempdir");
         let path = dir.path().join(CACHE_FILE);
-        std::fs::write(&path, overlay_json("2026-09-01", 0)).expect("write");
-        assert!(read_cached_overlay(&path).is_some());
+        write_signed_cache(&path, &overlay_json("2026-09-01", 0));
+        assert!(read_cached_overlay(&path, &test_key()).is_some());
     }
 
     #[test]
@@ -805,6 +1268,7 @@ mod tests {
             UA,
             MAX_OVERLAY_BYTES,
             REQUEST_TIMEOUT,
+            &test_key(),
         ))
         .expect_err("missing source");
         assert!(matches!(err, WorldOverlayError::Io(_)), "got {err:?}");

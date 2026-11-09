@@ -224,6 +224,7 @@ fn make_test_manifest() -> CompetitionManifest {
         erls: vec![],
         reputation: None,
         nearby_country_codes: vec![],
+        promotion: None,
         legacy: false,
         active: true,
     }
@@ -763,7 +764,7 @@ fn champion_receives_prize_money_and_ledger_entry() {
     assert_eq!(team1.season_income, 800_000);
     assert_eq!(
         team1.wage_budget,
-        ((team1.finance as f64) * 0.06).round() as i64
+        ((team1.finance as f64) * 0.5).round() as i64
     );
     assert_eq!(
         team1.transfer_budget,
@@ -866,6 +867,25 @@ fn prize_money_message_sent_once_per_season() {
         .count();
 
     assert_eq!(payout_messages, 1);
+}
+
+#[test]
+fn settlement_keeps_the_wage_budget_a_total_bill_budget_of_the_initial_order() {
+    // The data starts a club with a wage budget of half its cash (KOI: 2.25M of 4.5M). A
+    // refresh that shrank it to 6% of cash left the club unable to sign anybody in season 2.
+    let mut game = make_completed_season_game();
+    for team in game.teams.iter_mut() {
+        team.finance = 4_500_000;
+        team.wage_budget = 2_250_000;
+    }
+    let initial_budget = game.teams[1].wage_budget;
+
+    process_end_of_season(&mut game);
+
+    // team2 finished last: it earns the smallest prize, so its cash is nearly unchanged.
+    let team2 = game.teams.iter().find(|team| team.id == "team2").unwrap();
+    assert!(team2.wage_budget >= initial_budget * 9 / 10, "{}", team2.wage_budget);
+    assert!(team2.wage_budget <= initial_budget * 12 / 10, "{}", team2.wage_budget);
 }
 
 #[test]

@@ -34,9 +34,9 @@ pub(super) fn champion_kill_rewards(
     victim: &ChampionRuntime,
 ) -> (i64, i64) {
     let level_gap = victim.level - killer.level;
-    let victim_streak = (victim.kills as i64 - victim.deaths as i64).max(0);
-    let killer_ahead = (killer.kills as i64 - killer.deaths as i64).max(0);
-    let killer_kills = killer.kills.max(0) as i64;
+    let victim_streak = (victim.kills - victim.deaths).max(0);
+    let killer_ahead = (killer.kills - killer.deaths).max(0);
+    let killer_kills = killer.kills.max(0);
 
     let mut gold = CHAMPION_KILL_GOLD + level_gap * 14 + victim_streak * 25;
     if killer_ahead >= 2 {
@@ -58,4 +58,56 @@ pub(super) fn champion_kill_rewards(
         gold.clamp(CHAMPION_KILL_GOLD_MIN, CHAMPION_KILL_GOLD_MAX),
         xp.clamp(CHAMPION_KILL_XP_MIN, CHAMPION_KILL_XP_MAX),
     )
+}
+
+/// Gold every living member of the team that kills Baron Nashor receives.
+///
+/// General game knowledge: the real game pays about 300 gold to each living
+/// teammate. The previous model paid 60 gold to the single last hitter (ECON-002).
+/// [PLACEHOLDER] pending playtest.
+pub(super) const BARON_TEAM_GOLD: i64 = 300;
+
+/// Gold every member of the team that destroys a turret receives, by tier.
+///
+/// The previous model paid nothing for towers (ECON-002). The real game splits
+/// turret gold between a local share and a global team share; this model keeps
+/// only the shared part so that pushing is rewarded evenly.
+/// [PLACEHOLDER] pending playtest.
+pub(super) fn tower_team_gold(structure_id: &str) -> i64 {
+    if structure_id.ends_with("-outer") {
+        125
+    } else if structure_id.ends_with("-inner") {
+        100
+    } else {
+        // Inhibitor towers and the two nexus towers.
+        90
+    }
+}
+
+/// Relative weight of a role's farm, kill and assist income (ECON-003).
+///
+/// The positional model lets the lane carries out-farm everyone else; these
+/// weights pull the share of total team gold each role earns toward the usual
+/// pro-play ranges (general knowledge, approximate): Top 20-23%, Jungle
+/// 17-20%, Mid 21-24%, Bot 23-27%, Support 10-14%. Objective gold shared by the
+/// whole team (Baron, towers) is not weighted. The weights are scaled so the
+/// team total matches the unweighted economy: the raw per-role income shares
+/// (about Top 26%, Jungle 15%, Mid 32%, Bot 17%, Support 9%) make the
+/// income-weighted mean about 1.03, so the unscaled weights were divided by
+/// that. A plain mean of 1.0 would cut team gold by about 14%.
+/// [PLACEHOLDER] pending playtest.
+pub(super) fn role_income_weight(role: &str) -> f64 {
+    match role {
+        "TOP" => 0.772,
+        "JGL" => 1.291,
+        "MID" => 0.641,
+        "ADC" => 1.388,
+        "SUP" => 1.709,
+        _ => 1.0,
+    }
+}
+
+/// `gold` scaled by the role's income weight and rounded to whole gold.
+pub(super) fn role_adjusted_income(role: &str, gold: i64) -> i64 {
+    ((gold as f64) * role_income_weight(role)).round() as i64
 }

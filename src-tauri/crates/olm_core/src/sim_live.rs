@@ -24,7 +24,10 @@ mod vision;
 mod waves;
 
 pub use api::*;
-use economy::{champion_kill_rewards, jungle_camp_cs_reward, jungle_camp_reward};
+use economy::{
+    BARON_TEAM_GOLD, champion_kill_rewards, jungle_camp_cs_reward, jungle_camp_reward,
+    role_adjusted_income, tower_team_gold,
+};
 use events::{log_event, push_event};
 use layout::{
     BASE_POSITION_BLUE, BASE_POSITION_RED, LANE_PATH_BOT_BLUE, LANE_PATH_MID_BLUE,
@@ -166,6 +169,10 @@ struct ChampionRuntime {
     iq_score: f64,
     #[serde(default = "default_visible_stat")]
     competitive_score: f64,
+    /// Role-impact edge (clamped to +-4, Jungle scaled) the match setup sent
+    /// for this player. Old saves have no such field and load with 0.0.
+    #[serde(default)]
+    role_edge: f64,
     #[serde(default = "default_staff_execution")]
     staff_execution: f64,
     #[serde(default)]
@@ -579,7 +586,6 @@ const HERALD_SOFT_CLOSE_AT: f64 = 19.0 * 60.0 + 45.0;
 const HERALD_HARD_CLOSE_AT: f64 = 19.0 * 60.0 + 55.0;
 const DRAGON_SECURE_GOLD: i64 = 40;
 const DRAGON_SECURE_XP: i64 = 90;
-const BARON_SECURE_GOLD: i64 = 60;
 const BARON_SECURE_XP: i64 = 120;
 const OBJECTIVE_SECURE_GOLD: i64 = 45;
 const OBJECTIVE_SECURE_XP: i64 = 90;
@@ -1207,6 +1213,7 @@ fn create_champions(
     champions
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn seed_team(
     champions: &mut Vec<Value>,
     players: &[SnapshotPlayer],
@@ -1304,36 +1311,23 @@ fn seed_team(
         let iq_score = (macro_stat + consistency + shotcalling) / 3.0;
         let competitive_score = (champion_pool + discipline + mental_resilience) / 3.0;
 
-        let gameplay_delta = stat_delta(gameplay_score);
-        let iq_delta = stat_delta(iq_score);
-        let competitive_delta = stat_delta(competitive_score);
-        let mechanics_delta = stat_delta(mechanics);
-        let laning_delta = stat_delta(laning);
-        let teamfighting_delta = stat_delta(teamfighting);
         let consistency_delta = stat_delta(consistency);
         let discipline_delta = stat_delta(discipline);
         let champion_pool_delta = stat_delta(champion_pool);
 
-        let max_hp = (max_hp
-            * (1.0
-                + tuned_role_modifier * 0.012
-                + competitive_delta * 0.04
-                + teamfighting_delta * 0.02
-                + scrim_mental_bonus))
-            .clamp(120.0, 340.0);
+        // Visible stats and the role edge no longer scale the starting values:
+        // level-ups add HP and damage additively, so a one-off multiplier on
+        // the level-1 numbers vanished by level 3. They act through
+        // `champion_strength_damage_multiplier` for the whole match instead.
+        // Only the staff and scrim preparation terms stay here.
+        let max_hp = (max_hp * (1.0 + scrim_mental_bonus)).clamp(120.0, 340.0);
         let attack_damage = (14.0 + rng.next_f64() * 5.0)
             * (1.0
-                + tuned_role_modifier * 0.016
-                + gameplay_delta * 0.06
-                + mechanics_delta * 0.03
                 + staff_tactics_modifier * 0.015
                 + scrim_execution_bonus
                 + scrim_gameplay_bonus);
         let move_speed = (0.043
             + rng.next_f64() * 0.008
-            + (tuned_role_modifier * 0.00035)
-            + iq_delta * 0.001
-            + laning_delta * 0.0006
             + staff_tactics_modifier * 0.0004
             + scrim_iq_bonus * 0.0007)
             .clamp(0.036, 0.062);
@@ -1462,6 +1456,7 @@ fn seed_team(
             "competitiveScore".to_string(),
             Value::from(competitive_score),
         );
+        champion_obj.insert("roleEdge".to_string(), Value::from(tuned_role_modifier));
         champion_obj.insert("staffExecution".to_string(), Value::from(staff_execution));
         champion_obj.insert("summonerSpells".to_string(), Value::Array(summoner_spells));
         champion_obj.insert("igniteDotUntil".to_string(), Value::from(0.0));
@@ -1926,14 +1921,40 @@ fn stat_delta(score: f64) -> f64 {
     ((score - 70.0) / 30.0).clamp(-1.0, 1.0)
 }
 
-fn champion_micro_damage_multiplier(champion: &ChampionRuntime) -> f64 {
-    let gameplay = stat_delta(champion.gameplay_score);
-    (1.0 + gameplay * 0.07).clamp(0.84, 1.10)
+/// Exponent per point of power difference in `champion_strength_damage_multiplier`.
+/// [PLACEHOLDER] 0.45: at 95 vs 40 visible stats the stronger side deals about
+/// 2.3x the damage it takes and wins about 95% of matches; at 80 vs 60 about
+/// 1.35x and 60%+. Tune with the ignored sweep in `strength_tests`.
+const STRENGTH_DAMAGE_EXPONENT: f64 = 0.45;
+
+/// Weight of the role edge (+-4) in a champion's power, in stat-delta units.
+/// [PLACEHOLDER] 0.28: +4 against -4 is a damage ratio of about 1.25.
+const ROLE_EDGE_POWER_WEIGHT: f64 = 0.28;
+
+/// A champion's persistent strength in stat-delta units (each part -1..1):
+/// gameplay counts half, game knowledge and competitive mindset a quarter each.
+fn champion_power(champion: &ChampionRuntime) -> f64 {
+    0.5 * stat_delta(champion.gameplay_score)
+        + 0.25 * stat_delta(champion.iq_score)
+        + 0.25 * stat_delta(champion.competitive_score)
+        + ROLE_EDGE_POWER_WEIGHT * (champion.role_edge.clamp(-4.0, 4.0) / 4.0)
 }
 
+/// Champion-vs-champion damage factor `exp(K * (power(attacker) - power(defender)))`.
+/// Symmetric in the pair (a hit one way is the inverse of the hit back), so it
+/// scales both the damage a champion deals and the damage it absorbs, and an
+/// even pair gets exactly 1.0. Monotonic in the gap, so a bigger stat gap never
+/// helps the weaker side.
+fn champion_strength_damage_multiplier(attacker: &ChampionRuntime, defender: &ChampionRuntime) -> f64 {
+    (STRENGTH_DAMAGE_EXPONENT * (champion_power(attacker) - champion_power(defender))).exp()
+}
+
+/// Wave-clear factor, kept almost flat: a wide range let the high-stat team
+/// clear waves and overextend, which cost it towers and gold and made the
+/// stronger team lose at extreme gaps. [PLACEHOLDER] 1 +- 0.03.
 fn champion_lane_damage_multiplier(champion: &ChampionRuntime) -> f64 {
     let gameplay = stat_delta(champion.gameplay_score);
-    (1.0 + gameplay * 0.11).clamp(0.86, 1.18)
+    (1.0 + gameplay * 0.03).clamp(0.97, 1.03)
 }
 
 fn champion_structure_focus_multiplier(champion: &ChampionRuntime) -> f64 {
@@ -2272,13 +2293,12 @@ impl NavGrid {
             let e2 = 2 * err;
 
             // Strictly check adjacent cells for diagonal movement to prevent corner-cutting through walls
-            if e2 > -dy && e2 < dx {
-                if self.is_blocked_cell((x0 + sx) as usize, y0 as usize)
-                    || self.is_blocked_cell(x0 as usize, (y0 + sy) as usize)
+            if e2 > -dy && e2 < dx
+                && (self.is_blocked_cell((x0 + sx) as usize, y0 as usize)
+                    || self.is_blocked_cell(x0 as usize, (y0 + sy) as usize))
                 {
                     return false;
                 }
-            }
 
             if e2 > -dy {
                 err -= dy;
@@ -2485,11 +2505,10 @@ fn point_in_polygon(point: Vec2, polygon: &[Vec2]) -> bool {
 }
 
 fn set_champion_direct_path(champion: &mut ChampionRuntime, target: Vec2) {
-    if let Some(current_target) = current_champion_path_target(champion) {
-        if dist(current_target, target) <= CHAMPION_REPATH_MIN_TARGET_DELTA {
+    if let Some(current_target) = current_champion_path_target(champion)
+        && dist(current_target, target) <= CHAMPION_REPATH_MIN_TARGET_DELTA {
             return;
         }
-    }
 
     let grid = nav_grid();
     if grid.has_line_of_sight(champion.pos, target) {
@@ -2533,11 +2552,10 @@ fn set_champion_direct_path_hysteresis(
     target: Vec2,
     min_target_delta: f64,
 ) {
-    if let Some(current_target) = current_champion_path_target(champion) {
-        if dist(current_target, target) <= min_target_delta {
+    if let Some(current_target) = current_champion_path_target(champion)
+        && dist(current_target, target) <= min_target_delta {
             return;
         }
-    }
     set_champion_direct_path(champion, target);
 }
 
@@ -2598,11 +2616,10 @@ fn pick_jungle_farm_fallback_pos(
             first_alive_fallback = Some(timer.pos);
         }
 
-        if let Some(threat) = threat_pos {
-            if dist(timer.pos, threat) <= JUNGLE_DISENGAGE_THREAT_AVOID_RADIUS {
+        if let Some(threat) = threat_pos
+            && dist(timer.pos, threat) <= JUNGLE_DISENGAGE_THREAT_AVOID_RADIUS {
                 continue;
             }
-        }
 
         return Some(timer.pos);
     }
@@ -2616,7 +2633,7 @@ fn jgl_disengage_fallback_pos(
     threat_pos: Vec2,
 ) -> Vec2 {
     let neutral_timers = decode_neutral_timers_state(&runtime.neutral_timers)
-        .unwrap_or_else(|| neutral_timers_default_runtime_state());
+        .unwrap_or_else(neutral_timers_default_runtime_state);
     let team_tactics = team_tactics_for_runtime(runtime.extra.get("teamTactics"), &champion.team);
     if let Some(camp_pos) = pick_jungle_farm_fallback_pos(
         champion,
@@ -2814,7 +2831,7 @@ fn should_force_laner_disengage(
         profile.outnumber_tolerance
     };
     if pressure.enemy_score > pressure.ally_score + pressure_margin
-        && pressure.enemy_champions >= pressure.ally_champions + 1
+        && pressure.enemy_champions > pressure.ally_champions
     {
         return true;
     }
@@ -2962,6 +2979,7 @@ fn should_commit_all_in_trade(
     trading::should_commit_all_in_trade(champion, enemy, champions, minions)
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn evaluate_open_trade_window(
     champion: &ChampionRuntime,
     enemy: &ChampionRuntime,
@@ -2986,6 +3004,7 @@ fn evaluate_open_trade_window(
     )
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn can_open_trade_window(
     champion: &ChampionRuntime,
     enemy: &ChampionRuntime,
@@ -3011,6 +3030,7 @@ fn can_open_trade_window(
     .decision
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn evaluate_disengage_champion_trade(
     champion: &ChampionRuntime,
     enemy: &ChampionRuntime,
@@ -3026,6 +3046,7 @@ fn evaluate_disengage_champion_trade(
     )
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn should_disengage_champion_trade(
     champion: &ChampionRuntime,
     enemy: &ChampionRuntime,
@@ -3138,8 +3159,8 @@ fn lane_farm_anchor_pos_v2(
         .map(|tower| dist(wave_front, tower.pos) <= 0.11)
         .unwrap_or(false);
 
-    if wave_at_own_tower && champion.role != "SUP" {
-        if let Some(tower) = allied_lane_tower {
+    if wave_at_own_tower && champion.role != "SUP"
+        && let Some(tower) = allied_lane_tower {
             let to_wave_from_tower = normalize(Vec2 {
                 x: wave_front.x - tower.pos.x,
                 y: wave_front.y - tower.pos.y,
@@ -3158,7 +3179,6 @@ fn lane_farm_anchor_pos_v2(
                 ),
             };
         }
-    }
 
     let emergency_farm_boost = if wave_at_own_tower { 1.55 } else { 1.0 };
     let advance = f64::min(
@@ -3468,6 +3488,7 @@ fn tick_recall(
     true
 }
 
+#[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 fn decide_champion_state(
     champion: &mut ChampionRuntime,
     now: f64,
@@ -4100,15 +4121,14 @@ fn try_cast_ultimate(runtime: &mut RuntimeState, champion_idx: usize, now: f64) 
     }
 
     if let Some(casted_special) = try_cast_special_ultimate(runtime, champion_idx, now) {
-        if casted_special {
-            if set_ultimate_cd(
+        if casted_special
+            && set_ultimate_cd(
                 &mut runtime.champions[champion_idx],
                 now,
                 ULTIMATE_BASE_CD_SEC,
             ) {
                 return true;
             }
-        }
         return false;
     }
 
@@ -4234,13 +4254,12 @@ fn tick_ignite_dot_effects(runtime: &mut RuntimeState, now: f64) {
         runtime.champions[idx].ignite_dot_until = 0.0;
         runtime.champions[idx].ignite_source_id = None;
 
-        if let Some(killer_id) = killer_id {
-            if let Some(killer_idx) = runtime
+        if let Some(killer_id) = killer_id
+            && let Some(killer_idx) = runtime
                 .champions
                 .iter()
                 .position(|champion| champion.id == killer_id)
-            {
-                if runtime.champions[killer_idx].alive {
+                && runtime.champions[killer_idx].alive {
                     runtime.champions[killer_idx].kills += 1;
                     let killer_team = runtime.champions[killer_idx].team.clone();
                     team_stats_mut(&mut runtime.stats, &killer_team).kills += 1;
@@ -4260,8 +4279,6 @@ fn tick_ignite_dot_effects(runtime: &mut RuntimeState, now: f64) {
                     );
                     continue;
                 }
-            }
-        }
     }
 }
 
@@ -4829,7 +4846,8 @@ fn mark_neutral_taken(
             }
             NeutralCaptureKind::Baron => {
                 team_stats_mut(&mut runtime.stats, &killer_team).barons += 1;
-                add_gold_xp_to_champion(runtime, &killer_id, BARON_SECURE_GOLD, BARON_SECURE_XP);
+                add_gold_xp_to_champion(runtime, &killer_id, 0, BARON_SECURE_XP);
+                award_team_gold(runtime, &killer_team, BARON_TEAM_GOLD, true);
                 let mut buffs = runtime_buffs_from_extra(runtime.extra.get("teamBuffs"));
                 team_buffs_mut(&mut buffs, &killer_team).baron_until =
                     runtime.time_sec + BARON_BUFF_DURATION_SEC;
@@ -5151,7 +5169,7 @@ fn should_engage_enemy_champion(
 
     if target_under_defending_tower && fight_plan != "Dive" {
         let secure_under_tower = enemy_hp_ratio <= 0.25
-            || (ally_nearby >= enemy_nearby + 1 && hp_ratio >= enemy_hp_ratio + 0.15);
+            || (ally_nearby > enemy_nearby && hp_ratio >= enemy_hp_ratio + 0.15);
         if !secure_under_tower {
             return false;
         }
@@ -5331,7 +5349,8 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
     mark_tower_aggro_on_champion_attack(runtime, &attacker_snapshot, &target_snapshot, now);
 
     let attacker_has_elder = team_has_active_elder_buff(runtime, &attacker_snapshot.team);
-    let attacker_micro_mult = champion_micro_damage_multiplier(&attacker_snapshot);
+    let strength_mult =
+        champion_strength_damage_multiplier(&attacker_snapshot, &target_snapshot);
     let defender_hp_ratio = if target_snapshot.max_hp <= 0.0 {
         1.0
     } else {
@@ -5356,7 +5375,7 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
         let outgoing = attacker.attack_damage
             * CHAMPION_DAMAGE_TO_CHAMPION_MULTIPLIER
             * attack_damage_multiplier
-            * attacker_micro_mult;
+            * strength_mult;
         defender.hp -= outgoing;
         defender.last_damaged_by_champion_id = Some(attacker.id.clone());
         defender.last_damaged_by_champion_at = now;
@@ -5393,7 +5412,7 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
         let outgoing = attacker.attack_damage
             * CHAMPION_DAMAGE_TO_CHAMPION_MULTIPLIER
             * attack_damage_multiplier
-            * attacker_micro_mult;
+            * strength_mult;
         defender.hp -= outgoing;
         defender.last_damaged_by_champion_id = Some(attacker.id.clone());
         defender.last_damaged_by_champion_at = now;
@@ -5632,12 +5651,29 @@ fn add_gold_xp_to_champion(runtime: &mut RuntimeState, champion_id: &str, gold: 
         .iter_mut()
         .find(|champion| champion.id == champion_id)
     {
+        let gold = role_adjusted_income(&champion.role, gold);
         champion.gold += gold;
         champion.xp += xp;
         apply_level_scaling(champion);
         let team_stats = team_stats_mut(&mut runtime.stats, &champion.team);
         team_stats.gold += gold;
     }
+}
+
+/// Pays `gold` to each member of `team` (only the living ones when `alive_only`).
+fn award_team_gold(runtime: &mut RuntimeState, team: &str, gold: i64, alive_only: bool) {
+    let team = normalized_team(team);
+    let mut paid = 0;
+    for champion in runtime
+        .champions
+        .iter_mut()
+        .filter(|champion| normalized_team(&champion.team) == team)
+        .filter(|champion| champion.alive || !alive_only)
+    {
+        champion.gold += gold;
+        paid += gold;
+    }
+    team_stats_mut(&mut runtime.stats, team).gold += paid;
 }
 
 fn add_cs_to_champion(runtime: &mut RuntimeState, champion_id: &str, cs: i64) {
@@ -5715,6 +5751,7 @@ fn register_minion_death(runtime: &mut RuntimeState, minion_idx: usize) {
                 && (now - champion.last_support_cs_at) < SUPPORT_CS_MIN_INTERVAL_SEC;
 
             if !support_cs_blocked {
+                let gold = role_adjusted_income(&champion.role, gold);
                 champion.gold += gold;
                 champion.cs += 1;
                 if champion.role == "SUP" {
@@ -5742,6 +5779,8 @@ fn destroy_structure(runtime: &mut RuntimeState, structure_idx: usize, attacker_
     if runtime.structures[structure_idx].kind == "tower" {
         let team_stats = team_stats_mut(&mut runtime.stats, attacker_team);
         team_stats.towers += 1;
+        let reward = tower_team_gold(&runtime.structures[structure_idx].id);
+        award_team_gold(runtime, attacker_team, reward, false);
     }
 
     let event_type = if runtime.structures[structure_idx].kind == "nexus" {
@@ -6372,3 +6411,9 @@ mod macro_ai_tests;
 
 #[cfg(test)]
 mod runtime_tests;
+
+#[cfg(test)]
+mod economy_tests;
+
+#[cfg(test)]
+mod strength_tests;

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import {
+  NoPlatformBuildError,
   checkForUpdate,
   downloadAndInstallUpdate,
   UpdateInfo,
@@ -13,6 +14,8 @@ interface UpdaterState {
   downloading: boolean;
   progress: { percent: number; contentLength?: number } | null;
   error: string | null;
+  /** The latest release has no build for this platform. */
+  noPlatformBuild: boolean;
   dismissed: boolean;
 }
 
@@ -24,11 +27,12 @@ export function useUpdater(checkOnMount = true) {
     downloading: false,
     progress: null,
     error: null,
+    noPlatformBuild: false,
     dismissed: false,
   });
 
   const check = useCallback(async () => {
-    setState((prev) => ({ ...prev, checking: true, error: null }));
+    setState((prev) => ({ ...prev, checking: true, error: null, noPlatformBuild: false }));
     try {
       const info = await checkForUpdate();
       if (info) {
@@ -47,6 +51,10 @@ export function useUpdater(checkOnMount = true) {
         }));
       }
     } catch (err) {
+      if (err instanceof NoPlatformBuildError) {
+        setState((prev) => ({ ...prev, checking: false, noPlatformBuild: true }));
+        return;
+      }
       setState((prev) => ({
         ...prev,
         checking: false,
@@ -63,6 +71,7 @@ export function useUpdater(checkOnMount = true) {
     setState((prev) => ({ ...prev, downloading: true, error: null, progress: null }));
     try {
       let totalBytes = 0;
+      let downloadedBytes = 0;
       await downloadAndInstallUpdate((event: DownloadEvent) => {
         switch (event.event) {
           case "Started":
@@ -72,20 +81,18 @@ export function useUpdater(checkOnMount = true) {
               progress: { percent: 0, contentLength: totalBytes },
             }));
             break;
-          case "Progress":
-            setState((prev) => {
-              const current =
-                prev.progress && prev.progress.percent !== undefined
-                  ? prev.progress.percent + event.data.chunkLength
-                  : event.data.chunkLength;
-              const percent =
-                totalBytes > 0 ? Math.min(100, Math.round((current / totalBytes) * 100)) : 0;
-              return {
-                ...prev,
-                progress: { percent, contentLength: totalBytes },
-              };
-            });
+          case "Progress": {
+            downloadedBytes += event.data.chunkLength;
+            const percent =
+              totalBytes > 0
+                ? Math.min(100, Math.round((downloadedBytes / totalBytes) * 100))
+                : 0;
+            setState((prev) => ({
+              ...prev,
+              progress: { percent, contentLength: totalBytes },
+            }));
             break;
+          }
           case "Finished":
             setState((prev) => ({
               ...prev,

@@ -38,7 +38,13 @@ pub fn hire_manager(game: &mut Game, team_id: &str, date: &str) -> Result<String
         .find(|t| t.id == team_id)
         .ok_or_else(|| format!("Team {} not found", team_id))?;
     let team_name = team.name.clone();
+    let team_competition_id = team.competition_id.clone();
     let manager_id = game.manager.id.clone();
+
+    // Follow the new team's competition so active_league() resolves its league
+    if team_competition_id.is_some() {
+        game.user_competition_id = team_competition_id;
+    }
 
     // Assign manager to team
     game.manager.hire(team_id.to_string());
@@ -298,7 +304,7 @@ pub fn get_available_jobs(game: &Game) -> Vec<JobOpportunity> {
             .collect();
     }
 
-    jobs.sort_by(|a, b| b.reputation.cmp(&a.reputation));
+    jobs.sort_by_key(|job| std::cmp::Reverse(job.reputation));
     jobs.truncate(4);
     jobs
 }
@@ -524,6 +530,47 @@ mod tests {
                 .manager_id,
             Some("mgr1".to_string())
         );
+    }
+
+    fn game_with_two_leagues() -> Game {
+        let mut game = make_game(10, true);
+        game.teams[0].competition_id = Some("lec".to_string());
+        game.teams[1].competition_id = Some("lck".to_string());
+        game.teams[2].competition_id = Some("lec".to_string());
+        game.leagues = vec![
+            crate::domain::league::League::new(
+                "l1".to_string(),
+                "LEC".to_string(),
+                1,
+                &[],
+                Some("lec".to_string()),
+            ),
+            crate::domain::league::League::new(
+                "l2".to_string(),
+                "LCK".to_string(),
+                1,
+                &[],
+                Some("lck".to_string()),
+            ),
+        ];
+        game.user_competition_id = Some("lec".to_string());
+        game
+    }
+
+    #[test]
+    fn hire_manager_switches_active_league_to_new_team_competition() {
+        let mut game = game_with_two_leagues();
+        hire_manager(&mut game, "team2", "2026-11-01").unwrap();
+        assert_eq!(game.user_competition_id.as_deref(), Some("lck"));
+        assert_eq!(game.active_league().unwrap().id, "l2");
+    }
+
+    #[test]
+    fn hire_manager_keeps_active_league_within_same_competition() {
+        let mut game = game_with_two_leagues();
+        hire_manager(&mut game, "team3", "2026-11-01").unwrap();
+        assert_eq!(game.user_competition_id.as_deref(), Some("lec"));
+        assert_eq!(game.active_league().unwrap().id, "l1");
     }
 
     #[test]

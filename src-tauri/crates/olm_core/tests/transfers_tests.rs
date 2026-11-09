@@ -10,6 +10,8 @@ use olm_core::domain::player::{
 use olm_core::domain::season::TransferWindowStatus;
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::{FinancialTransactionKind, Team, TeamKind};
+use olm_core::contract_wage_policy::{annual_team_wage_bill, wage_policy_room_for_new_signing};
+use olm_core::contracts::expected_wage;
 use olm_core::game::Game;
 use olm_core::transfers::{
     TransferDestination, TransferNegotiationDecision, ai_agent_purchase, counter_offer,
@@ -124,7 +126,13 @@ fn make_seller_team(starting_xi_ids: Vec<String>) -> Team {
         "Seller Ground".to_string(),
         28_000,
     );
-    team.active_lineup_ids = starting_xi_ids;
+    // A club with no lineup at all ranks its players by OVR, so a "not in the lineup"
+    // seller gets a lineup that lists somebody else.
+    team.active_lineup_ids = if starting_xi_ids.is_empty() {
+        vec!["seller-lineup-placeholder".to_string()]
+    } else {
+        starting_xi_ids
+    };
     team
 }
 
@@ -174,7 +182,29 @@ fn complete_accepted_transfer(game: &mut Game, player_id: &str) {
         })
         .expect("accepted offer should exist");
 
-    negotiate_player_wage(game, player_id, &offer_id, 200_000, 3)
+    // Twice the going rate always convinces the player; the buyer's wage budget is
+    // widened so these tests stay about the transfer, not about wage limits.
+    let destination_id = game
+        .players
+        .iter()
+        .find(|player| player.id == player_id)
+        .and_then(|player| {
+            player
+                .transfer_offers
+                .iter()
+                .find(|offer| offer.id == offer_id)
+                .and_then(|offer| offer.destination_team_id.clone())
+        })
+        .expect("accepted offer should name a destination");
+    let wage = {
+        let player = game.players.iter().find(|p| p.id == player_id).unwrap();
+        let team = game.teams.iter().find(|t| t.id == destination_id).unwrap();
+        expected_wage(player, team, game.clock.current_date.date_naive()) * 2
+    };
+    for team in &mut game.teams {
+        team.wage_budget = 50_000_000;
+    }
+    negotiate_player_wage(game, player_id, &offer_id, wage, 3)
         .expect("accepted transfer should complete after wage agreement");
 }
 
@@ -1317,6 +1347,8 @@ fn ai_free_agent_signing_prioritizes_missing_role() {
     ai_team.team_kind = TeamKind::Main;
     ai_team.finance = 5_000_000;
     ai_team.transfer_budget = 3_000_000;
+    // Room for the 1.05M adc (asks about 1.27M on the LEC wage scale) but not for the 1.6M mid.
+    ai_team.wage_budget = 2_000_000;
 
     let players = vec![
         make_player_with_position("ai-top", LolRole::Top, Some("team-2"), 900_000),
@@ -1390,6 +1422,8 @@ fn ai_club_transfer_prioritizes_missing_role() {
     ai_buyer.team_kind = TeamKind::Main;
     ai_buyer.finance = 6_000_000;
     ai_buyer.transfer_budget = 3_500_000;
+    // The 0.95M adc asks about 1.16M a year on the LEC wage scale; the 1.5M mid would not fit.
+    ai_buyer.wage_budget = 2_000_000;
 
     let mut seller_team = Team::new(
         "team-3".to_string(),
@@ -1403,6 +1437,8 @@ fn ai_club_transfer_prioritizes_missing_role() {
     seller_team.team_kind = TeamKind::Main;
     seller_team.finance = 4_000_000;
     seller_team.transfer_budget = 2_000_000;
+    // A lineup that lists nobody on the market, so neither seller counts as a key player.
+    seller_team.active_lineup_ids = vec!["seller-lineup-placeholder".to_string()];
 
     let mut seller_mid = make_player_with_position(
         "seller-mid-premium",
@@ -1694,7 +1730,8 @@ fn make_game_with_free_agents(free_agents: Vec<Player>) -> Game {
     manager.hire("team-user".to_string());
 
     let mut team = make_ai_team("team-ai");
-    team.wage_budget = 1_000_000;
+    // On the LEC wage scale a 1M free agent asks about 1.2M a year.
+    team.wage_budget = 5_000_000;
 
     let mut game = Game::new(clock, manager, vec![team], free_agents, vec![], vec![]);
     game.season_context.transfer_window.status = TransferWindowStatus::Open;
@@ -1755,6 +1792,61 @@ fn free_agent_bid_is_accepted_even_with_low_budget() {
     );
     assert_eq!(game.teams[0].finance, 500_000);
     assert_eq!(game.teams[0].transfer_budget, 100_000);
+}
+
+fn no_wage_free_agent_with_accepted_offer() -> (Game, String) {
+    let mut free_agent = make_free_agent("fa-no-wage", LolRole::Adc);
+    free_agent.market_value = 300_000;
+    free_agent.wage = 0;
+    let mut game = make_user_game_with_free_agent(free_agent);
+    game.teams[0].wage_budget = 3_000_000;
+    game.teams[0].finance = 5_000_000;
+    make_transfer_bid(&mut game, "fa-no-wage", 0, TransferDestination::Main, &[])
+        .expect("free agent bid");
+    let offer_id = game.players[0]
+        .transfer_offers
+        .iter()
+        .find(|o| o.status == TransferOfferStatus::Accepted)
+        .map(|o| o.id.clone())
+        .expect("accepted free-agent offer");
+    (game, offer_id)
+}
+
+#[test]
+fn free_agent_with_no_wage_asks_the_wage_scale_not_zero() {
+    let (game, _) = no_wage_free_agent_with_accepted_offer();
+    let today = game.clock.current_date.date_naive();
+
+    let ask = olm_core::contracts::expected_signing_wage(&game.players[0], &game.teams[0], today);
+
+    assert!(ask >= 300_000, "ask {ask} should follow the wage scale of a 300K player");
+}
+
+#[test]
+fn free_agent_with_no_wage_cannot_be_signed_for_a_trivial_wage() {
+    let (mut game, offer_id) = no_wage_free_agent_with_accepted_offer();
+
+    let outcome = negotiate_player_wage(&mut game, "fa-no-wage", &offer_id, 30_000, 3)
+        .expect("cheap wage reply");
+
+    assert_ne!(outcome.decision, TransferNegotiationDecision::Accepted);
+    assert!(game.players[0].team_id.is_none(), "not signed for 30K");
+}
+
+#[test]
+fn free_agent_with_no_wage_counters_above_the_ask_and_signs_at_the_counter() {
+    let (mut game, offer_id) = no_wage_free_agent_with_accepted_offer();
+    let today = game.clock.current_date.date_naive();
+    let ask = olm_core::contracts::expected_signing_wage(&game.players[0], &game.teams[0], today);
+
+    let first = negotiate_player_wage(&mut game, "fa-no-wage", &offer_id, ask, 3)
+        .expect("fair wage reply");
+    let counter = first.suggested_wage.expect("the player names a counter wage");
+    assert!(counter >= ask, "counter {counter} should not undercut the ask {ask}");
+
+    let second = negotiate_player_wage(&mut game, "fa-no-wage", &offer_id, counter, 3)
+        .expect("counter reply");
+    assert_eq!(second.decision, TransferNegotiationDecision::Accepted);
 }
 
 #[test]
@@ -2021,4 +2113,324 @@ fn ai_free_agent_signing_respects_reputation_gate_for_tier_one() {
         Some("team-ai"),
         "tier-1 high-reputation team should reject low-impact free agent"
     );
+}
+
+// --- Transfer and wage exploits (a star with wage 0 bought for any figure) ---
+
+/// A Gumayusi-like star at another club: wage 0, market value 370k, contract to 2027-11-30.
+fn make_star_game() -> Game {
+    make_star_game_with_value(370_000)
+}
+
+fn make_star_game_with_value(market_value: u64) -> Game {
+    let mut star = make_player("star");
+    star.market_value = market_value;
+    star.wage = 0;
+    star.contract_end = Some("2027-11-30".to_string());
+    // Listed in the seller's lineup, so the seller treats him as a key player.
+    let mut game = make_game_with_player(star, vec!["star".to_string()], 5_000_000, 2_000_000);
+    game.teams[0].wage_budget = 3_000_000;
+    game
+}
+
+fn star_offer_id(game: &Game) -> String {
+    game.players[0]
+        .transfer_offers
+        .iter()
+        .find(|offer| offer.status == TransferOfferStatus::Accepted)
+        .map(|offer| offer.id.clone())
+        .expect("the club should have accepted the fee")
+}
+
+/// Gets the seller to accept the fee so only the wage is left to negotiate.
+fn star_with_accepted_fee() -> (Game, String) {
+    let mut game = make_star_game();
+    let outcome = make_transfer_bid(&mut game, "star", 900_000, TransferDestination::Main, &[])
+        .expect("bid should be processed");
+    assert_eq!(outcome.decision, TransferNegotiationDecision::Accepted);
+    // Wanting out is one of the things that used to push a hopeless wage over the line.
+    game.players[0].transfer_listed = true;
+    let offer_id = star_offer_id(&game);
+    (game, offer_id)
+}
+
+#[test]
+fn star_bid_of_400k_is_not_accepted_and_resending_it_builds_on_the_refusal() {
+    let mut game = make_star_game();
+
+    let first = make_transfer_bid(&mut game, "star", 400_000, TransferDestination::Main, &[])
+        .expect("first bid");
+    let second = make_transfer_bid(&mut game, "star", 400_000, TransferDestination::Main, &[])
+        .expect("second bid");
+
+    assert_eq!(first.decision, TransferNegotiationDecision::Rejected);
+    assert_eq!(second.decision, TransferNegotiationDecision::Rejected);
+    assert!(
+        second.feedback.round > first.feedback.round,
+        "the club remembers the earlier refusal (round {} then {})",
+        first.feedback.round,
+        second.feedback.round
+    );
+}
+
+#[test]
+fn lower_bid_after_a_rejection_is_rejected_with_a_later_round() {
+    let mut game = make_star_game();
+    let first = make_transfer_bid(&mut game, "star", 400_000, TransferDestination::Main, &[])
+        .expect("first bid");
+
+    let lower = make_transfer_bid(&mut game, "star", 380_000, TransferDestination::Main, &[])
+        .expect("lower bid");
+
+    assert_eq!(lower.decision, TransferNegotiationDecision::Rejected);
+    assert!(lower.feedback.round > first.feedback.round);
+}
+
+#[test]
+fn rejected_bid_is_forgotten_after_the_cool_off() {
+    let mut game = make_star_game();
+    make_transfer_bid(&mut game, "star", 400_000, TransferDestination::Main, &[])
+        .expect("first bid");
+    game.clock.advance_days(15);
+
+    let later = make_transfer_bid(&mut game, "star", 400_000, TransferDestination::Main, &[])
+        .expect("later bid");
+
+    assert_eq!(later.feedback.round, 1, "a fresh hearing after two weeks");
+}
+
+/// Lowest first bid the seller accepts outright, found by bisection (counters are
+/// rounded, so they are not the threshold itself).
+fn star_fee_threshold(market_value: u64) -> u64 {
+    let (mut low, mut high) = (300_000_u64, 900_000_u64);
+    while high - low > 1 {
+        let mid = (low + high) / 2;
+        let mut game = make_star_game_with_value(market_value);
+        let outcome = make_transfer_bid(&mut game, "star", mid, TransferDestination::Main, &[])
+            .expect("probe bid");
+        if outcome.decision == TransferNegotiationDecision::Accepted {
+            high = mid;
+        } else {
+            low = mid;
+        }
+    }
+    high
+}
+
+#[test]
+fn small_step_towards_a_counter_does_not_earn_the_concession() {
+    // 392k puts the threshold (548.8k) just under the 550k the club rounds its counter up
+    // to, which is where the "respected counter" concession used to bite.
+    let market_value = 392_000;
+    let threshold = star_fee_threshold(market_value);
+    let mut game = make_star_game_with_value(market_value);
+    let first_bid = threshold * 94 / 100;
+    let first = make_transfer_bid(&mut game, "star", first_bid, TransferDestination::Main, &[])
+        .expect("first bid");
+    assert_eq!(first.decision, TransferNegotiationDecision::CounterOffer);
+
+    // 3.9% under the threshold closes only 35% of the gap from the first bid. Before,
+    // that was enough to earn the 4% concession and be accepted.
+    let second_bid = threshold * 961 / 1000;
+    let second = make_transfer_bid(&mut game, "star", second_bid, TransferDestination::Main, &[])
+        .expect("second bid");
+
+    assert_ne!(second.decision, TransferNegotiationDecision::Accepted);
+}
+
+#[test]
+fn star_with_no_wage_does_not_accept_50k() {
+    let (mut game, offer_id) = star_with_accepted_fee();
+
+    let outcome = negotiate_player_wage(&mut game, "star", &offer_id, 50_000, 3).expect("wage");
+
+    assert_ne!(outcome.decision, TransferNegotiationDecision::Accepted);
+    assert_eq!(game.players[0].team_id.as_deref(), Some("team-2"));
+}
+
+#[test]
+fn retrying_the_same_low_wage_never_gets_it_accepted_and_ends_in_a_rejection() {
+    let (mut game, offer_id) = star_with_accepted_fee();
+
+    let mut decisions = Vec::new();
+    for _ in 0..4 {
+        let outcome =
+            negotiate_player_wage(&mut game, "star", &offer_id, 50_000, 3).expect("wage");
+        decisions.push((outcome.decision, outcome.is_terminal));
+    }
+
+    assert!(
+        decisions
+            .iter()
+            .all(|(decision, _)| *decision != TransferNegotiationDecision::Accepted)
+    );
+    assert_eq!(
+        decisions.last(),
+        Some(&(TransferNegotiationDecision::Rejected, true)),
+        "the fourth refusal is final: {decisions:?}"
+    );
+    assert_eq!(
+        game.players[0].transfer_offers[0].wage_negotiation_status,
+        WageNegotiationStatus::Rejected
+    );
+}
+
+#[test]
+fn wage_round_advances_on_every_reply_that_is_not_an_acceptance() {
+    let (mut game, offer_id) = star_with_accepted_fee();
+
+    negotiate_player_wage(&mut game, "star", &offer_id, 50_000, 3).expect("first");
+    let after_first = game.players[0].transfer_offers[0].wage_negotiation_round;
+    negotiate_player_wage(&mut game, "star", &offer_id, 50_000, 3).expect("second");
+    let after_second = game.players[0].transfer_offers[0].wage_negotiation_round;
+
+    assert!(after_second > after_first);
+}
+
+#[test]
+fn counter_is_never_below_the_expected_wage() {
+    let (mut game, offer_id) = star_with_accepted_fee();
+    let expected = expected_wage(
+        &game.players[0],
+        &game.teams[0],
+        game.clock.current_date.date_naive(),
+    );
+
+    let outcome = negotiate_player_wage(&mut game, "star", &offer_id, 50_000, 3).expect("wage");
+
+    assert!(outcome.suggested_wage.expect("a counter") >= expected);
+}
+
+#[test]
+fn wage_at_the_expected_scale_is_accepted_when_it_fits_the_budget() {
+    let (mut game, offer_id) = star_with_accepted_fee();
+    let expected = expected_wage(
+        &game.players[0],
+        &game.teams[0],
+        game.clock.current_date.date_naive(),
+    );
+
+    let outcome =
+        negotiate_player_wage(&mut game, "star", &offer_id, expected * 2, 3).expect("wage");
+
+    assert_eq!(outcome.decision, TransferNegotiationDecision::Accepted);
+    assert_eq!(game.players[0].team_id.as_deref(), Some("team-1"));
+}
+
+#[test]
+fn wage_the_club_cannot_fit_in_its_budget_is_refused() {
+    let (mut game, offer_id) = star_with_accepted_fee();
+    game.teams[0].wage_budget = 100_000;
+    let expected = expected_wage(
+        &game.players[0],
+        &game.teams[0],
+        game.clock.current_date.date_naive(),
+    );
+
+    let outcome =
+        negotiate_player_wage(&mut game, "star", &offer_id, expected * 2, 3).expect("wage");
+
+    assert_eq!(outcome.decision, TransferNegotiationDecision::Rejected);
+    assert!(!outcome.is_terminal);
+    assert_eq!(game.players[0].team_id.as_deref(), Some("team-2"));
+}
+
+/// Puts `bill` of yearly wages on the user club, split over five filler players.
+fn load_user_wage_bill(game: &mut Game, bill: u32) {
+    for index in 0..5 {
+        let mut filler = make_user_player(&format!("filler-{index}"));
+        filler.wage = bill / 5;
+        game.players.push(filler);
+    }
+}
+
+#[test]
+fn star_on_a_machine_derived_seven_percent_wage_does_not_accept_50k() {
+    // Non-LEC leagues ship wages of about 7% of market value (an LPL star: 370k value, 26k
+    // wage). Measured against that, 50k looked like a 90% raise.
+    let mut game = make_star_game();
+    game.players[0].wage = 26_000;
+    let outcome = make_transfer_bid(&mut game, "star", 900_000, TransferDestination::Main, &[])
+        .expect("bid should be processed");
+    assert_eq!(outcome.decision, TransferNegotiationDecision::Accepted);
+    game.players[0].transfer_listed = true;
+    let offer_id = star_offer_id(&game);
+
+    let outcome = negotiate_player_wage(&mut game, "star", &offer_id, 50_000, 3).expect("wage");
+
+    assert_ne!(outcome.decision, TransferNegotiationDecision::Accepted);
+    assert_eq!(game.players[0].team_id.as_deref(), Some("team-2"));
+    let counter = outcome.suggested_wage.expect("a counter");
+    assert!(counter >= olm_core::wage_scale::scale_wage_for_market_value(370_000));
+}
+
+#[test]
+fn healthy_club_can_sign_a_scale_wage_that_fits_the_board_policy() {
+    // Season 2: the club already pays 2M a year, which is below its total wage budget, and
+    // the wage fits the 110% soft cap although it exceeds budget minus bill.
+    let (mut game, offer_id) = star_with_accepted_fee();
+    load_user_wage_bill(&mut game, 2_000_000);
+    let date = game.clock.current_date.date_naive();
+    let wage = expected_wage(&game.players[0], &game.teams[0], date) * 3 / 2;
+    let bill = annual_team_wage_bill(&game, "team-1");
+    game.teams[0].wage_budget = (bill + i64::from(wage)) * 100 / 105;
+    assert!(game.teams[0].wage_budget > bill);
+    assert!(game.teams[0].wage_budget - bill < i64::from(wage));
+
+    let outcome = negotiate_player_wage(&mut game, "star", &offer_id, wage, 3).expect("wage");
+
+    assert_eq!(outcome.decision, TransferNegotiationDecision::Accepted);
+    assert_eq!(game.players[0].team_id.as_deref(), Some("team-1"));
+}
+
+#[test]
+fn club_past_its_wage_policy_is_refused_and_told_what_it_can_still_pay() {
+    let (mut game, offer_id) = star_with_accepted_fee();
+    load_user_wage_bill(&mut game, 2_000_000);
+    let date = game.clock.current_date.date_naive();
+    let expected = expected_wage(&game.players[0], &game.teams[0], date);
+    let bill = annual_team_wage_bill(&game, "team-1");
+    // The soft cap leaves room for 1.2x the expected wage and not a euro more.
+    game.teams[0].wage_budget = (bill + i64::from(expected) * 6 / 5) * 100 / 110;
+    let room = wage_policy_room_for_new_signing(&game.teams[0], bill);
+    assert!(room >= i64::from(expected));
+
+    let outcome =
+        negotiate_player_wage(&mut game, "star", &offer_id, expected * 3, 3).expect("wage");
+
+    assert_eq!(outcome.decision, TransferNegotiationDecision::Rejected);
+    assert!(!outcome.is_terminal);
+    assert_eq!(outcome.suggested_wage, Some(room as u32));
+    assert_eq!(game.players[0].team_id.as_deref(), Some("team-2"));
+}
+
+#[test]
+fn club_already_over_its_budget_only_gets_the_policy_grace() {
+    let (mut game, offer_id) = star_with_accepted_fee();
+    load_user_wage_bill(&mut game, 2_000_000);
+    game.teams[0].wage_budget = 1_000_000;
+    let date = game.clock.current_date.date_naive();
+    let expected = expected_wage(&game.players[0], &game.teams[0], date);
+
+    let outcome =
+        negotiate_player_wage(&mut game, "star", &offer_id, expected * 2, 3).expect("wage");
+
+    assert_eq!(outcome.decision, TransferNegotiationDecision::Rejected);
+    assert_eq!(outcome.suggested_wage, None, "the grace is far below the floor");
+    assert_eq!(game.players[0].team_id.as_deref(), Some("team-2"));
+}
+
+#[test]
+fn offer_just_under_the_counter_closes_the_deal_in_proportion() {
+    let (mut game, offer_id) = star_with_accepted_fee();
+    let countered =
+        negotiate_player_wage(&mut game, "star", &offer_id, 50_000, 3).expect("first offer");
+    let counter = countered.suggested_wage.expect("a counter");
+
+    // 1% under the counter is more than the old flat 5,000 for a counter this size.
+    let almost = counter - counter / 100;
+    let outcome =
+        negotiate_player_wage(&mut game, "star", &offer_id, almost, 3).expect("second offer");
+
+    assert_eq!(outcome.decision, TransferNegotiationDecision::Accepted);
 }
