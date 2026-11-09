@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, useNavigate } from "react-router-dom";
 
+import i18n from "@/i18n";
 import { useBugReportStore } from "@/store/bugReportStore";
 import { useGameStore } from "@/store/gameStore";
 import type { GameStateData } from "@/store/types";
@@ -174,6 +175,28 @@ describe("AppV2 high contrast", () => {
     await waitFor(() =>
       expect(document.documentElement.dataset.contrast).toBeUndefined(),
     );
+  });
+});
+
+describe("AppV2 document language", () => {
+  it("mirrors the active i18n language on <html lang> on load and on every change", async () => {
+    document.documentElement.lang = "xx";
+    useSettingsStore.setState({
+      loaded: true,
+      settings: { ...useSettingsStore.getState().settings, language: i18n.language },
+    });
+    render(<AppV2 />);
+    await waitFor(() => expect(document.documentElement.lang).toBe(i18n.language));
+
+    await act(async () => {
+      await i18n.changeLanguage("es");
+    });
+    expect(document.documentElement.lang).toBe("es");
+
+    await act(async () => {
+      await i18n.changeLanguage("fr");
+    });
+    expect(document.documentElement.lang).toBe("fr");
   });
 });
 

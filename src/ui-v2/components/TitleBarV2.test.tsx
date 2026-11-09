@@ -7,7 +7,8 @@ vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
   useTranslation: () => ({
     i18n: { language: "es" },
-    t: (key: string) => (key === "titleBar.appName" ? "OL Manager" : key),
+    t: (key: string, opts?: { defaultValue?: string }) =>
+      key === "titleBar.appName" ? "OL Manager" : (opts?.defaultValue ?? key),
   }),
 }));
 
@@ -38,5 +39,15 @@ describe("TitleBarV2", () => {
     for (const button of screen.getAllByRole("button")) {
       expect(button.className).not.toContain("zinc");
     }
+  });
+
+  it("labels the window controls through t() with readable fallbacks", async () => {
+    const { TitleBarV2 } = await import("./TitleBarV2");
+    render(<TitleBarV2 />);
+
+    expect(screen.getByRole("button", { name: "Minimize" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Maximize" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /titleBar\./ })).toBeNull();
   });
 });

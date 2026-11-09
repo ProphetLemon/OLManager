@@ -150,6 +150,18 @@ export default function AppV2() {
   }, [ready, settings.language]);
 
   useEffect(() => {
+    const syncLang = (lng?: string) => {
+      const lang = lng || i18n.language;
+      if (lang) document.documentElement.lang = lang;
+    };
+    syncLang();
+    i18n.on("languageChanged", syncLang);
+    return () => {
+      i18n.off("languageChanged", syncLang);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!ready) return;
     const isAndroid = /Android/i.test(window.navigator.userAgent);
     if (!isAndroid) return;

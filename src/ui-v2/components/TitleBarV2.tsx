@@ -76,7 +76,7 @@ export function TitleBarV2() {
           type="button"
           onClick={handleMinimize}
           className="flex h-9 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-          aria-label={t("titleBar.minimize")}
+          aria-label={t("titleBar.minimize", { defaultValue: "Minimize" })}
         >
           <Minus className="size-3.5" />
         </button>
@@ -84,7 +84,9 @@ export function TitleBarV2() {
           type="button"
           onClick={handleMaximize}
           className="flex h-9 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-          aria-label={t(maximized ? "titleBar.restore" : "titleBar.maximize")}
+          aria-label={maximized
+            ? t("titleBar.restore", { defaultValue: "Restore" })
+            : t("titleBar.maximize", { defaultValue: "Maximize" })}
         >
           {maximized ? <MinimizeIcon className="size-3.5" /> : <Square className="size-3" />}
         </button>
@@ -92,7 +94,7 @@ export function TitleBarV2() {
           type="button"
           onClick={handleClose}
           className="flex h-9 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-negative hover:text-negative-foreground"
-          aria-label={t("titleBar.close")}
+          aria-label={t("titleBar.close", { defaultValue: "Close" })}
         >
           <X className="size-3.5" />
         </button>
