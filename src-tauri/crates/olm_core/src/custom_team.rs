@@ -14,6 +14,7 @@ use ts_rs::TS;
 
 use crate::academy;
 use crate::competitions::is_selectable_competition;
+use crate::custom_logo::{self, LogoError};
 use crate::domain::player::Player;
 use crate::domain::team::{AcademyLifecycle, Facilities, Team, TeamColors, TeamKind};
 use crate::founder_identity::FounderOverrides;
@@ -47,6 +48,12 @@ pub struct CustomTeamSpec {
     pub secondary_color: String,
     /// Country code or name; must not be empty.
     pub country: String,
+    /// Optional uploaded badge as a `data:image/png;base64,...` URI. Validated
+    /// and re-encoded by [`custom_logo::normalize_logo`]; when absent the club
+    /// gets the generated SVG badge. Optional so older payloads still parse.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(optional))]
+    pub logo_data_uri: Option<String>,
     /// Seed of the generated founding squad. Optional so payloads and saves
     /// written before the squad existed still parse; when absent the caller
     /// picks one. The generated players are stored in the game, so the seed is
@@ -82,6 +89,8 @@ pub enum CustomTeamError {
     ReplacedTeamNotInCompetition,
     /// Only main clubs can be replaced, never academies.
     NotCustomizableTeamKind,
+    /// The uploaded badge was rejected; the reason is the machine code.
+    InvalidLogo(LogoError),
 }
 
 impl fmt::Display for CustomTeamError {
@@ -100,6 +109,7 @@ impl fmt::Display for CustomTeamError {
                 write!(f, "The replaced team is not in this competition")
             }
             Self::NotCustomizableTeamKind => write!(f, "Only main clubs can be replaced"),
+            Self::InvalidLogo(reason) => write!(f, "Invalid club logo: {}", reason.reason()),
         }
     }
 }
@@ -176,6 +186,13 @@ pub fn validate_spec(
         return Err(CustomTeamError::MissingCountry);
     }
 
+    let logo_data_uri = spec
+        .logo_data_uri
+        .as_deref()
+        .map(custom_logo::normalize_logo)
+        .transpose()
+        .map_err(CustomTeamError::InvalidLogo)?;
+
     let lowered_name = name.to_lowercase();
     let lowered_short = short_name.to_lowercase();
     let mut real_others = others
@@ -197,6 +214,7 @@ pub fn validate_spec(
         primary_color,
         secondary_color,
         country: country.to_string(),
+        logo_data_uri,
         founding_seed: spec.founding_seed,
         founder_overrides: spec.founder_overrides.clone(),
     })
@@ -533,11 +551,9 @@ pub fn replace_team_with_custom(
     team.transfer_budget = profile.transfer_budget;
     team.reputation = profile.reputation;
     team.competition_id = Some(competition_id.to_string());
-    team.logo_url = Some(badge_data_uri(
-        &spec.short_name,
-        &spec.primary_color,
-        &spec.secondary_color,
-    ));
+    team.logo_url = Some(spec.logo_data_uri.clone().unwrap_or_else(|| {
+        badge_data_uri(&spec.short_name, &spec.primary_color, &spec.secondary_color)
+    }));
     team.colors = TeamColors {
         primary: spec.primary_color.clone(),
         secondary: spec.secondary_color.clone(),

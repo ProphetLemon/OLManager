@@ -23,6 +23,7 @@ fn spec() -> CustomTeamSpec {
         primary_color: "#112233".to_string(),
         secondary_color: "#FFFFFF".to_string(),
         country: "ES".to_string(),
+        logo_data_uri: None,
         founding_seed: None,
         founder_overrides: None,
     }
@@ -672,4 +673,99 @@ fn fallback_window_is_ordered_and_inside_60_to_78() {
     assert!(f.p10 == 60 && f.p90 == 78);
     assert!(f.p10 <= f.p25 && f.p25 <= f.p50 && f.p50 <= f.p75 && f.p75 <= f.p90);
     assert!(!f.from_peers);
+}
+
+fn logo_uri(width: u32, height: u32) -> String {
+    use base64::Engine as _;
+    let mut out = Vec::new();
+    let mut encoder = png::Encoder::new(&mut out, width, height);
+    encoder.set_color(png::ColorType::Rgba);
+    encoder.set_depth(png::BitDepth::Eight);
+    let mut writer = encoder.write_header().unwrap();
+    let data: Vec<u8> = (0..width * height).flat_map(|_| [200, 30, 30, 255]).collect();
+    writer.write_image_data(&data).unwrap();
+    writer.finish().unwrap();
+    format!(
+        "data:image/png;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(out)
+    )
+}
+
+#[test]
+fn a_spec_payload_without_a_logo_still_parses() {
+    let json = r##"{"name":"Ray Esports","short_name":"RAY","primary_color":"#112233","secondary_color":"#ffffff","country":"ES"}"##;
+
+    let parsed: CustomTeamSpec = serde_json::from_str(json).unwrap();
+
+    assert_eq!(parsed.logo_data_uri, None);
+}
+
+#[test]
+fn a_spec_payload_carries_the_logo_field() {
+    let json = r##"{"name":"Ray Esports","short_name":"RAY","primary_color":"#112233","secondary_color":"#ffffff","country":"ES","logo_data_uri":"data:image/png;base64,AA=="}"##;
+
+    let parsed: CustomTeamSpec = serde_json::from_str(json).unwrap();
+
+    assert_eq!(parsed.logo_data_uri.as_deref(), Some("data:image/png;base64,AA=="));
+}
+
+#[test]
+fn replace_team_stores_the_uploaded_logo_instead_of_the_generated_badge() {
+    let mut game = world();
+    let mut s = spec();
+    s.logo_data_uri = Some(logo_uri(512, 512));
+
+    replace_team_with_custom(&mut game, "les", "les-b", &s).unwrap();
+
+    let custom = game.teams.iter().find(|t| t.id == "les-custom-ray").unwrap();
+    let logo = custom.logo_url.as_deref().unwrap();
+    assert!(logo.starts_with("data:image/png;base64,"));
+    assert_eq!(logo, olm_core::custom_logo::normalize_logo(&logo_uri(512, 512)).unwrap());
+}
+
+#[test]
+fn replace_team_keeps_the_generated_badge_without_an_uploaded_logo() {
+    let mut game = world();
+
+    replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+
+    let custom = game.teams.iter().find(|t| t.id == "les-custom-ray").unwrap();
+    assert!(custom.logo_url.as_deref().unwrap().starts_with("data:image/svg+xml"));
+}
+
+#[test]
+fn replace_team_rejects_an_invalid_logo_before_changing_anything() {
+    let mut game = world();
+    let mut s = spec();
+    s.logo_data_uri = Some("data:image/svg+xml;base64,PHN2Zy8+".to_string());
+
+    let error = replace_team_with_custom(&mut game, "les", "les-b", &s).unwrap_err();
+
+    assert_eq!(
+        error,
+        CustomTeamError::InvalidLogo(olm_core::custom_logo::LogoError::NotPng)
+    );
+    assert!(game.teams.iter().any(|t| t.id == "les-b"));
+    assert!(!game.teams.iter().any(|t| t.id == "les-custom-ray"));
+    assert!(game.moved_player_ids.is_empty());
+}
+
+#[test]
+fn validate_spec_returns_the_normalized_logo() {
+    let mut s = spec();
+    s.logo_data_uri = Some(logo_uri(1024, 512));
+
+    let validated = validate_spec(&s, &[]).unwrap();
+
+    assert_eq!(
+        validated.logo_data_uri,
+        Some(olm_core::custom_logo::normalize_logo(&logo_uri(1024, 512)).unwrap())
+    );
+}
+
+#[test]
+fn the_invalid_logo_error_names_its_reason() {
+    let error = CustomTeamError::InvalidLogo(olm_core::custom_logo::LogoError::TooBigDimensions);
+
+    assert_eq!(error.to_string(), "Invalid club logo: too_big_dimensions");
 }

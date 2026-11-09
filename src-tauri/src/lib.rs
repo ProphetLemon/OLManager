@@ -219,6 +219,7 @@ pub fn run() {
             start_new_game_lightweight,
             select_team,
             preview_founding_squad,
+            prepare_custom_logo,
             get_saves,
             load_game,
             get_active_game,
