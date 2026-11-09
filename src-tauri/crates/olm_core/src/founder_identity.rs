@@ -318,14 +318,14 @@ fn check_length(text: &str, bounds: &RangeInclusive<usize>) -> Result<(), Founde
 }
 
 /// Normalizes and validates a nick: trimmed, NFC, 2-16 letters, digits or
-/// `_ . -`. Uniqueness is the caller's check.
+/// `_ . -`, with at least one letter. Uniqueness is the caller's check.
 pub fn normalize_nick(raw: &str) -> Result<String, FounderEditReason> {
     let text = compose(raw).trim().to_string();
     if text.is_empty() {
         return Err(FounderEditReason::Empty);
     }
     let allowed = |c: char| c.is_alphabetic() || c.is_ascii_digit() || matches!(c, '_' | '.' | '-');
-    if !text.chars().all(allowed) {
+    if !text.chars().all(allowed) || !text.chars().any(char::is_alphabetic) {
         return Err(FounderEditReason::InvalidCharacter);
     }
     check_length(&text, &NICK_LEN)?;
@@ -333,14 +333,14 @@ pub fn normalize_nick(raw: &str) -> Result<String, FounderEditReason> {
 }
 
 /// Normalizes and validates a full name: trimmed, NFC, runs of spaces
-/// collapsed, 2-40 letters, spaces, `'` or `-`. Uniqueness is the caller's check.
+/// collapsed, 2-40 letters, spaces, `'` or `-`, with at least one letter. Uniqueness is the caller's check.
 pub fn normalize_full_name(raw: &str) -> Result<String, FounderEditReason> {
     let text = compose(raw).trim().to_string();
     if text.is_empty() {
         return Err(FounderEditReason::Empty);
     }
     let allowed = |c: char| c.is_alphabetic() || matches!(c, ' ' | '\'' | '-');
-    if !text.chars().all(allowed) {
+    if !text.chars().all(allowed) || !text.chars().any(char::is_alphabetic) {
         return Err(FounderEditReason::InvalidCharacter);
     }
     let collapsed = text

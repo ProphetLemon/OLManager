@@ -575,11 +575,18 @@ fn wage_for(player: &Player, today: NaiveDate) -> u32 {
 /// date, with the functions the generator prices with, so an edited birth date
 /// can never leave the wage below the wage floor. Does nothing when the birth
 /// date cannot be read.
+///
+/// The wage is priced from a blank starting point, exactly as the generator
+/// does: [`expected_signing_wage`] starts from the wage the player already
+/// has and never returns less, so repricing from the old wage would compound
+/// its age and importance factors. That makes the result idempotent and equal
+/// to what the generator would have produced for a player of that age.
 pub fn reprice_player(player: &mut Player, today: NaiveDate) {
     let Some(age) = age_on(today, &player.date_of_birth) else {
         return;
     };
     player.market_value = market_value_for(player.lol_ovr, player.potential_base, age);
+    player.wage = 0;
     player.wage = wage_for(player, today);
 }
 
@@ -1162,6 +1169,41 @@ mod tests {
             .iter()
             .map(|p| i32::from(calculate_lol_ovr(p)))
             .collect()
+    }
+
+    #[test]
+    fn repricing_an_unedited_player_reproduces_the_generated_pricing() {
+        for seed in 0..20u64 {
+            for original in squad_for(les(), &["ES"], seed) {
+                let mut repriced = original.clone();
+                reprice_player(&mut repriced, date());
+                assert_eq!(repriced.wage, original.wage, "seed {seed} {}", original.id);
+                assert_eq!(repriced.market_value, original.market_value);
+            }
+        }
+    }
+
+    #[test]
+    fn repricing_twice_equals_repricing_once() {
+        for original in squad_for(les(), &["ES"], 7) {
+            let mut once = original.clone();
+            once.date_of_birth = "2005-03-01".to_string();
+            reprice_player(&mut once, date());
+            let mut twice = once.clone();
+            reprice_player(&mut twice, date());
+            assert_eq!(once.wage, twice.wage);
+            assert_eq!(once.market_value, twice.market_value);
+        }
+    }
+
+    #[test]
+    fn repricing_to_an_older_birth_date_never_raises_the_wage() {
+        for original in squad_for(les(), &["ES"], 6) {
+            let mut older = original.clone();
+            older.date_of_birth = "1999-01-01".to_string();
+            reprice_player(&mut older, date());
+            assert!(older.wage <= original.wage, "{}", original.id);
+        }
     }
 
     #[test]

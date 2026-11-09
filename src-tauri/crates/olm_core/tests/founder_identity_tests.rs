@@ -1071,3 +1071,109 @@ fn the_summary_hides_potential_and_reports_the_bill() {
     );
     assert!(summary.players.iter().all(|p| (19..=27).contains(&p.age)));
 }
+
+// ---------------------------------------------------------------------------
+// Repricing neutrality and letter requirement
+// ---------------------------------------------------------------------------
+
+#[test]
+fn a_nick_without_a_letter_is_rejected() {
+    for nick in ["..", "--", "12", "_1"] {
+        assert_eq!(
+            normalize_nick(nick),
+            Err(Reason::InvalidCharacter),
+            "{nick}"
+        );
+    }
+}
+
+#[test]
+fn a_full_name_without_a_letter_is_rejected() {
+    for name in ["--", "'-'", "- -"] {
+        assert_eq!(
+            normalize_full_name(name),
+            Err(Reason::InvalidCharacter),
+            "{name}"
+        );
+    }
+}
+
+#[test]
+fn a_no_op_nationality_edit_leaves_wage_and_value_unchanged() {
+    let mut plain = with_custom_club();
+    install_founding_squad_with(
+        &mut plain,
+        "les",
+        CUSTOM,
+        Some("ES"),
+        7,
+        &FounderOverrides::default(),
+    )
+    .expect("plain");
+    let edits = FounderOverrides {
+        top: Some(same_nationality(&plain, LolRole::Top)),
+        mid: Some(same_nationality(&plain, LolRole::Mid)),
+        support: Some(same_nationality(&plain, LolRole::Support)),
+        ..FounderOverrides::default()
+    };
+    let mut edited = with_custom_club();
+    install_founding_squad_with(&mut edited, "les", CUSTOM, Some("ES"), 7, &edits).expect("edited");
+    let key = |g: &Game| {
+        founders(g)
+            .into_iter()
+            .map(|p| (p.wage, p.market_value))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(key(&plain), key(&edited));
+}
+
+#[test]
+fn an_older_birth_date_does_not_raise_the_wage() {
+    let mut plain = with_custom_club();
+    install_founding_squad_with(
+        &mut plain,
+        "les",
+        CUSTOM,
+        Some("ES"),
+        6,
+        &FounderOverrides::default(),
+    )
+    .expect("plain");
+    let edit = FounderIdentityOverride {
+        birth_date: Some("1999-01-01".to_string()),
+        ..FounderIdentityOverride::default()
+    };
+    let mut edited = with_custom_club();
+    install_founding_squad_with(&mut edited, "les", CUSTOM, Some("ES"), 6, &only(edit))
+        .expect("edited");
+    let wage_of = |g: &Game| {
+        founders(g)
+            .into_iter()
+            .find(|p| p.natural_position == LolRole::Top)
+            .map(|p| p.wage)
+            .expect("top")
+    };
+    let youngest = {
+        let mut game = with_custom_club();
+        let edit = FounderIdentityOverride {
+            birth_date: Some("2007-08-01".to_string()),
+            ..FounderIdentityOverride::default()
+        };
+        install_founding_squad_with(&mut game, "les", CUSTOM, Some("ES"), 6, &only(edit))
+            .expect("young");
+        wage_of(&game)
+    };
+    assert!(wage_of(&edited) <= youngest);
+}
+
+fn same_nationality(game: &Game, role: LolRole) -> FounderIdentityOverride {
+    let nationality = founders(game)
+        .into_iter()
+        .find(|p| p.natural_position == role)
+        .map(|p| p.nationality.clone())
+        .expect("founder");
+    FounderIdentityOverride {
+        nationality: Some(nationality),
+        ..FounderIdentityOverride::default()
+    }
+}
