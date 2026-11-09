@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "method": "stat-blend-v1",
+  "source": "Leaguepedia ScoreboardPlayers and ScoreboardGames (lol.fandom.com), CC BY-SA 3.0",
+  "window": {
+    "since": "2025-01-01",
+    "until": "2025-01-01"
+  },
+  "league_levels": {},
+  "entries": []
+}

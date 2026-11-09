@@ -587,7 +587,7 @@ pub fn apply_default_initial_contract_end(
 /// (uncorrelated with OVR) instead of a real valuation.
 const PLACEHOLDER_MARKET_VALUE_WAGE_MULTIPLE: u64 = 15;
 
-fn has_placeholder_market_value(player: &Player) -> bool {
+pub(crate) fn has_placeholder_market_value(player: &Player) -> bool {
     player.wage > 0
         && player.market_value
             == PLACEHOLDER_MARKET_VALUE_WAGE_MULTIPLE * u64::from(player.wage)
