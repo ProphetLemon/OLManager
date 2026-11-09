@@ -9,6 +9,8 @@ export const METHOD: string;
 export const SOURCE: string;
 export const THRESHOLDS: readonly number[];
 export const SPOTLIGHT: readonly string[];
+/** Largest OVR change the stats may make to a non-suspect authored row. */
+export const MAX_DELTA: number;
 
 export interface OverrideEntry {
   id: string;
@@ -41,6 +43,8 @@ export interface BuildReport {
   unmatched: MatchResult["unmatched"];
   pinIssues: string[];
   mismatches: Array<Record<string, any>>;
+  movers: Array<Record<string, any>>;
+  capped: Array<Record<string, any>>;
   spotlight: Array<{ query: string; found: boolean; players: Array<Record<string, any>> }>;
   world?: unknown;
 }

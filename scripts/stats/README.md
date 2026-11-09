@@ -93,12 +93,19 @@ user's explicit authorization (destination, operation and credential). Tests use
    (`{ "<Link>": "<player id>" | null }`, committed empty) forces a match or, with `null`, forbids one; a pin that
    points nowhere is reported and its link stays out.
 4. **Estimate**: `estimateSkill` over all rows. Fallback cohorts pool the competitions whose level falls in the same
-   5-point bucket. A matched player takes the cohort with the most effective games, which only gives his z. The target
-   level (`blendRating`) is the fixed level of the competition of his current game team, so stats place him inside
-   his league; the stat competition's level is only the fallback when he has no current competition or it has no
-   level. The suspect rule uses the median of his current competition. Players whose stat competition differs from
-   their game competition are flagged and listed in the report with both levels and the one used.
+   5-point bucket. A matched player takes the cohort with the most effective games, which only gives his z. Stats
+   place him inside his league, so the target level (`blendRating`) is the fixed level of the competition of his
+   current game team; the stat competition's level is only the fallback when he has no current competition or it has
+   no level. The suspect rule uses the median of his current competition.
    `build-overrides` refuses a rows file whose `since` or `until` is not a YYYY-MM-DD string.
+   - **League movers** (stat competition differs from the current game competition, both with a level): no anchor is
+     reliable. The game anchor sends Sharvel 74 -> 90 in the LCK; the stat anchor sends re0 86 -> 69 because the LDL
+     level rests on 16 real rows. So a non-suspect mover gets no entry (status `kept_league_mover`) and the report's
+     movers table shows both hypothetical targets. A suspect mover (`isSuspect`) gets the mean of the stat-anchor and
+     game-anchor targets (each `level + clamp(sd) * zShrunk`).
+   - **Delta cap**: for non-suspect rows `|finalOvr - authoredOvr| <= MAX_DELTA` (6, exported). The cap is applied to
+     `finalOvr` before the attribute builder, so the exact-OVR property still holds. Suspect rows are not capped.
+     The report counts capped players and lists them with their uncapped OVR.
 5. **Attributes** (`lib/attributes.mjs`): mechanics, laning and teamfighting take the full OVR delta; macro_play,
    consistency and champion_pool do too from 25 raw games on. The others follow with `skill_carry` 0.75 x delta. A
    rounding correction (measured attributes first) makes `round(mean of 9)` equal `round(finalOvr)` exactly.

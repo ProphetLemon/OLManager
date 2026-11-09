@@ -9,8 +9,9 @@
 //
 // Pipeline: league ladder (fixed, from authored OVR) -> identity match -> estimateSkill over all rows (fallback cohort
 // pools by 5-point level buckets) -> per matched player the cohort with the most effective games decides the stat
-// competition -> blendRating on that competition's level -> deriveAttributes. Only matched players with an estimate
-// get an entry, and only when the attributes actually change.
+// competition -> blendRating on the level of the league he plays in now (a non-suspect league mover stays authored, a
+// suspect one uses the mean of both anchors) -> |delta| cap for non-suspect rows -> deriveAttributes. Only matched
+// players with an estimate get an entry, and only when the attributes actually change.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,6 +31,11 @@ export const METHOD = "stat-blend-v1";
 export const SOURCE = "Leaguepedia ScoreboardPlayers and ScoreboardGames (lol.fandom.com), CC BY-SA 3.0";
 export const THRESHOLDS = Object.freeze([65, 70, 80]);
 export const SPOTLIGHT = Object.freeze(["Boal", "Minous", "Winner"]);
+/**
+ * Largest OVR change the stats may make to a non-suspect authored row. Suspect rows (placeholders and rows far below
+ * their league median) are exempt: their authored value carries no information to protect.
+ */
+export const MAX_DELTA = 6;
 
 const compare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const round = (v, digits) => Math.round(v * 10 ** digits) / 10 ** digits;
@@ -84,22 +90,61 @@ export function buildOverrides({ rows, window, index, players, teamMap, pins = {
       records.push({ ...base, reason: "placeholder_skipped", statCompetition: best.competition });
       continue;
     }
-    // Stats only place a player inside his league: the target level is the league he plays in now, the stat
-    // competition's level is only the fallback when he has no current competition or it has no level.
     const statLevel = levels[best.competition];
     const gameLevel = player.competition ? levels[player.competition] : undefined;
-    const level = gameLevel ?? statLevel;
-    const levelUsed = gameLevel ? "game" : "stat";
+    const mover = Boolean(gameLevel) && best.competition !== player.competition;
     // A placeholder has no rating data of its own: its baseline is the median of its league, and it is always suspect.
-    const baseline = placeholder ? (own?.median ?? level.median) : player.authoredOvr;
+    const baseline = placeholder ? (own?.median ?? (gameLevel ?? statLevel).median) : player.authoredOvr;
     const suspect = placeholder || isSuspect({ attributes: player.attributes, authoredOvr: player.authoredOvr, leagueMedian: own?.median });
-    const blend = blendRating({ authoredOvr: baseline, leagueMedian: level.median, leagueSd: level.sd, z: best.z, rho: best.rho, suspect });
+    const blendAt = (level) => blendRating({ authoredOvr: baseline, leagueMedian: level.median, leagueSd: level.sd, z: best.z, rho: best.rho, suspect });
+    let blend;
+    let levelUsed;
+    if (mover) {
+      // Which league anchors a mover is ambiguous (game anchor: Sharvel 74 -> 90 in the LCK; stat anchor: re0 86 -> 69
+      // on a thin LDL level), so a non-suspect mover keeps his rating and only the report shows both targets.
+      const viaStat = blendAt(statLevel);
+      const viaGame = blendAt(gameLevel);
+      if (!viaStat || !viaGame) {
+        noEstimate.not_blendable = (noEstimate.not_blendable ?? 0) + 1;
+        records.push({ ...base, reason: "not_blendable" });
+        continue;
+      }
+      if (!suspect) {
+        noEstimate.kept_league_mover = (noEstimate.kept_league_mover ?? 0) + 1;
+        records.push({
+          ...base,
+          reason: "kept_league_mover",
+          role: best.role,
+          statCompetition: best.competition,
+          gameCompetition: player.competition,
+          statLevel: statLevel.median,
+          gameLevel: gameLevel.median,
+          games: best.games,
+          statTarget: round(viaStat.target, 2),
+          gameTarget: round(viaGame.target, 2),
+          statNewOvr: Math.round(viaStat.finalOvr),
+          gameNewOvr: Math.round(viaGame.finalOvr),
+        });
+        continue;
+      }
+      // A suspect mover is lifted toward the mean of both anchors; z, rho and the weight are the same for both.
+      const target = (viaStat.target + viaGame.target) / 2;
+      blend = { ...viaStat, target, finalOvr: (1 - viaStat.w) * baseline + viaStat.w * target };
+      levelUsed = "both";
+    } else {
+      // Stats place a player inside his league: with no current competition (or no level) the stat level is the fallback.
+      blend = blendAt(gameLevel ?? statLevel);
+      levelUsed = gameLevel ? "game" : "stat";
+    }
     if (!blend) {
       noEstimate.not_blendable = (noEstimate.not_blendable ?? 0) + 1;
       records.push({ ...base, reason: "not_blendable" });
       continue;
     }
-    const derived = deriveAttributes({ attributes: player.attributes, authoredOvr: baseline, finalOvr: blend.finalOvr, games: best.games, potentialBase: player.potential_base });
+    const uncappedOvr = blend.finalOvr;
+    const finalOvr = suspect ? uncappedOvr : Math.min(player.authoredOvr + MAX_DELTA, Math.max(player.authoredOvr - MAX_DELTA, uncappedOvr));
+    const capped = finalOvr !== uncappedOvr;
+    const derived = deriveAttributes({ attributes: player.attributes, authoredOvr: baseline, finalOvr, games: best.games, potentialBase: player.potential_base });
     const record = {
       ...base,
       reason: null,
@@ -110,6 +155,8 @@ export function buildOverrides({ rows, window, index, players, teamMap, pins = {
       statLevel: statLevel.median,
       gameLevel: gameLevel?.median ?? null,
       levelUsed,
+      statTarget: mover ? round(blendAt(statLevel).target, 2) : null,
+      gameTarget: mover ? round(blendAt(gameLevel).target, 2) : null,
       games: best.games,
       effectiveGames: round(best.effectiveGames, 2),
       cohort: best.cohort,
@@ -118,7 +165,9 @@ export function buildOverrides({ rows, window, index, players, teamMap, pins = {
       target: round(blend.target, 2),
       confidence: round(blend.w, 4),
       suspect,
-      finalOvr: round(blend.finalOvr, 2),
+      finalOvr: round(finalOvr, 2),
+      capped,
+      uncappedOvr: Math.round(uncappedOvr),
       newOvr: derived.newOvr,
       delta: derived.newOvr - player.authoredOvr,
       measured: derived.measured,
@@ -165,6 +214,8 @@ function buildReport({ levels, counts, players, identity, records, entries, noEs
     up: estimated.filter((r) => r.authoredOvr < ovr && r.newOvr >= ovr).length,
     down: estimated.filter((r) => r.authoredOvr >= ovr && r.newOvr < ovr).length,
   }));
+  const kept = records.filter((r) => r.reason === "kept_league_mover");
+  const cappedRecords = estimated.filter((r) => r.capped);
   const slim = (r) => ({ id: r.id, matchName: r.matchName, link: r.link, competition: r.competition, statCompetition: r.statCompetition, role: r.role, games: r.games, authoredOvr: r.authoredOvr, newOvr: r.newOvr, delta: r.delta, confidence: r.confidence, suspect: r.suspect });
   const byDelta = [...estimated].sort((a, b) => b.delta - a.delta || compare(a.id, b.id));
   const suspects = players
@@ -197,6 +248,8 @@ function buildReport({ levels, counts, players, identity, records, entries, noEs
       estimated: estimated.length,
       entries: entries.length,
       competitionMismatch: estimated.filter((r) => r.competitionMismatch).length,
+      keptMovers: kept.length,
+      capped: cappedRecords.length,
       review: identity.review.length,
       unmatchedLinks: identity.unmatched.length,
       noEstimate,
@@ -212,7 +265,11 @@ function buildReport({ levels, counts, players, identity, records, entries, noEs
     review: identity.review,
     unmatched: identity.unmatched.slice(0, 50),
     pinIssues: identity.pinIssues,
-    mismatches: estimated.filter((r) => r.competitionMismatch).map((r) => ({ ...slim(r), gameCompetition: r.gameCompetition, statLevel: r.statLevel, gameLevel: r.gameLevel, levelUsed: r.levelUsed, target: r.target })),
+    mismatches: estimated.filter((r) => r.competitionMismatch).map((r) => ({ ...slim(r), gameCompetition: r.gameCompetition, statLevel: r.statLevel, gameLevel: r.gameLevel, levelUsed: r.levelUsed, target: r.target, statTarget: r.statTarget, gameTarget: r.gameTarget })),
+    movers: kept
+      .map((r) => ({ id: r.id, matchName: r.matchName, link: r.link, gameCompetition: r.gameCompetition, statCompetition: r.statCompetition, role: r.role, games: r.games, authoredOvr: r.authoredOvr, gameLevel: r.gameLevel, statLevel: r.statLevel, gameTarget: r.gameTarget, statTarget: r.statTarget, gameNewOvr: r.gameNewOvr, statNewOvr: r.statNewOvr }))
+      .sort((a, b) => compare(a.id, b.id)),
+    capped: [...cappedRecords].sort((a, b) => Math.abs(b.uncappedOvr - b.authoredOvr) - Math.abs(a.uncappedOvr - a.authoredOvr) || compare(a.id, b.id)).map((r) => ({ ...slim(r), uncappedOvr: r.uncappedOvr })),
     spotlight,
   };
 }
@@ -234,7 +291,8 @@ export function renderReport(report) {
     "## Totals",
     "",
     `- Game players ${t.gamePlayers} (${t.rostered} rostered); matched ${t.matched} (team ${t.matchedBy.team}, role+competition ${t.matchedBy["role-competition"]}, pins ${t.matchedBy.pin}); estimated ${t.estimated}; asset entries ${t.entries}.`,
-    `- Stat competition differs from the game competition: ${t.competitionMismatch}. Review list: ${t.review}. Unmatched Leaguepedia links: ${t.unmatchedLinks}.`,
+    `- League movers: ${t.keptMovers} kept authored, ${t.competitionMismatch} suspect movers estimated. Changes capped at +-${MAX_DELTA}: ${t.capped}.`,
+    `- Stat competition differs from the game competition (estimated): ${t.competitionMismatch}. Review list: ${t.review}. Unmatched Leaguepedia links: ${t.unmatchedLinks}.`,
     `- Matched without an estimate: ${Object.entries(t.noEstimate).map(([k, v]) => `${k} ${v}`).join(", ") || "none"}.`,
     "",
     "## League levels (fixed ladder)",
@@ -280,12 +338,23 @@ export function renderReport(report) {
     table(["link", "games", "latest team", "competition"], report.unmatched.map((u) => [u.link, u.games, u.team ?? "-", u.competition ?? "-"])),
     "",
     ...(report.pinIssues.length ? ["## Pin issues", "", ...report.pinIssues.map((i) => `- ${i}`), ""] : []),
-    "## Stat competition differs from game competition",
+    "## Suspect league movers (target = mean of the stat anchor and the game anchor)",
     "",
     table(
-      ["player", "game competition", "stat competition", "game level", "stat level", "level used", "target", "before", "after", "delta"],
-      report.mismatches.map((m) => [m.matchName, m.gameCompetition ?? "-", m.statCompetition, m.gameLevel ?? "-", m.statLevel, m.levelUsed, m.target, m.authoredOvr, m.newOvr, m.delta > 0 ? `+${m.delta}` : m.delta]),
+      ["player", "game competition", "stat competition", "game level", "stat level", "stat target", "game target", "target", "before", "after", "delta"],
+      report.mismatches.map((m) => [m.matchName, m.gameCompetition ?? "-", m.statCompetition, m.gameLevel ?? "-", m.statLevel, m.statTarget ?? "-", m.gameTarget ?? "-", m.target, m.authoredOvr, m.newOvr, m.delta > 0 ? `+${m.delta}` : m.delta]),
     ),
+    "",
+    `## League movers kept authored (${report.movers.length})`,
+    "",
+    table(
+      ["player", "game competition", "stat competition", "games", "game level", "stat level", "before", "game anchor target", "game anchor ovr", "stat anchor target", "stat anchor ovr"],
+      report.movers.map((m) => [m.matchName, m.gameCompetition, m.statCompetition, m.games, m.gameLevel, m.statLevel, m.authoredOvr, m.gameTarget, m.gameNewOvr, m.statTarget, m.statNewOvr]),
+    ),
+    "",
+    `## Changes capped at +-${MAX_DELTA} (${report.capped.length})`,
+    "",
+    table(["player", "competition", "games", "before", "after (capped)", "uncapped"], report.capped.map((c) => [c.matchName, c.competition ?? "-", c.games, c.authoredOvr, c.newOvr, c.uncappedOvr])),
     "",
   ];
   return lines.join("\n");

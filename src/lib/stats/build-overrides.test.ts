@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { buildOverrides, parseArgs, renderReport, runBuild } from "../../../scripts/stats/build-overrides.mjs";
+import { MAX_DELTA, buildOverrides, parseArgs, renderReport, runBuild } from "../../../scripts/stats/build-overrides.mjs";
 import { ATTRIBUTE_NAMES, calculateLolOvr } from "../../../scripts/stats/lib/game-world.mjs";
 
 const ATTRS = ["mechanics", "laning", "teamfighting", "macro_play", "consistency", "shotcalling", "champion_pool", "discipline", "mental_resilience"];
@@ -183,7 +183,10 @@ describe("league movers", () => {
   });
   const entry = (team: string, competition: string) => ({ names: [], teams: [{ team, competition, games: GAMES, lastDate: "2026-06-14" }], roles: { Top: GAMES }, games: GAMES, firstDate: "2026-06-01", lastDate: "2026-06-14" });
 
-  it("targets the level of the league the player plays in now, not the league his stats come from", () => {
+  const TEAM_MAP = { schemaVersion: 1, teams: { "lec-team": { title: "Lec Team", name: "Lec Team", competition: "lec" }, "lck-team": { title: "Lck Team", name: "Lck Team", competition: "lck" } } };
+  const WINDOW = { since: "2025-01-01", until: "2026-11-10" };
+  /** A lec and an lck league plus one player whose games were played in lec while the game puts him in lck. */
+  function moverWorld(moverOvr: number, quality: number) {
     const players = [] as ReturnType<typeof gp>[];
     const links: Record<string, unknown> = {};
     const rows: unknown[] = [];
@@ -193,20 +196,66 @@ describe("league movers", () => {
       links[`lec${i}`] = { ...entry("Lec Team", "lec"), names: [`lec${i}`] };
       rows.push(...playerRows(`lec${i}`, i / 20, GAMES, "lec"));
     }
-    players.push(gp("mover", "lck", "lck-team", 72));
+    players.push(gp("mover", "lck", "lck-team", moverOvr));
     links.mover = { ...entry("Lck Team", "lck"), names: ["mover"] };
-    rows.push(...playerRows("mover", 1.1, GAMES, "lec"));
-    const teamMap = { schemaVersion: 1, teams: { "lec-team": { title: "Lec Team", name: "Lec Team", competition: "lec" }, "lck-team": { title: "Lck Team", name: "Lck Team", competition: "lck" } } };
-    const { report } = buildOverrides({ rows: rows as never, window: { since: "2025-01-01", until: "2026-11-10" }, index: links as never, players: players as never, teamMap, pins: {} });
+    rows.push(...playerRows("mover", quality, GAMES, "lec"));
+    return buildOverrides({ rows: rows as never, window: WINDOW, index: links as never, players: players as never, teamMap: TEAM_MAP, pins: {} });
+  }
+
+  it("keeps a non-suspect league mover authored and lists both hypothetical targets", () => {
+    const { asset, report } = moverWorld(88, 0.1);
+    expect(asset.entries.some((e) => e.id === "mover")).toBe(false);
+    expect(report.totals.keptMovers).toBe(1);
+    expect(report.totals.competitionMismatch).toBe(0);
+    expect(report.totals.noEstimate.kept_league_mover).toBe(1);
+    const m = report.movers.find((x) => x.id === "mover");
+    expect(m).toMatchObject({ statCompetition: "lec", gameCompetition: "lck", authoredOvr: 88, gameLevel: report.levels.lck.median, statLevel: report.levels.lec.median });
+    expect(m!.gameTarget).toBeGreaterThan(m!.statTarget);
+  });
+
+  it("targets a suspect league mover at the mean of the stat-anchor and game-anchor targets", () => {
+    const { report } = moverWorld(72, 1.1);
     const m = report.mismatches.find((x) => x.id === "mover");
     expect(m).toBeDefined();
-    expect(m).toMatchObject({ statCompetition: "lec", gameCompetition: "lck", levelUsed: "game" });
-    expect(m!.gameLevel).toBe(report.levels.lck.median);
-    expect(m!.statLevel).toBe(report.levels.lec.median);
+    expect(m).toMatchObject({ statCompetition: "lec", gameCompetition: "lck", levelUsed: "both", suspect: true });
     expect(m!.gameLevel).toBeGreaterThan(m!.statLevel + 10);
-    // target = gameMedian + clamp(sd) * rho * z, with a positive z: above the game median, well above the stat level
-    expect(m!.target).toBeGreaterThan(m!.gameLevel);
-    expect(m!.target - m!.gameLevel).toBeLessThan(15);
+    const hyp = report.movers.find((x) => x.id === "mover");
+    expect(hyp).toBeUndefined();
+    expect(m!.target).toBeCloseTo((m!.statTarget + m!.gameTarget) / 2, 1);
+    expect(m!.target).toBeGreaterThan(m!.statTarget);
+    expect(m!.target).toBeLessThan(m!.gameTarget);
+  });
+
+  it("caps a non-suspect change at MAX_DELTA, keeps the exact OVR and lists the uncapped value", () => {
+    const players = [] as ReturnType<typeof gp>[];
+    const links: Record<string, unknown> = {};
+    const rows: unknown[] = [];
+    for (let i = 1; i <= 20; i += 1) {
+      players.push(gp(`lec${i}`, "lec", "lec-team", 60 + (i % 5) * 5));
+      links[`lec${i}`] = { ...entry("Lec Team", "lec"), names: [`lec${i}`] };
+      rows.push(...playerRows(`lec${i}`, i / 20, GAMES, "lec"));
+    }
+    players.push(gp("star", "lec", "lec-team", 60));
+    links.star = { ...entry("Lec Team", "lec"), names: ["star"] };
+    rows.push(...playerRows("star", 3, GAMES, "lec"));
+    const { asset, report } = buildOverrides({ rows: rows as never, window: WINDOW, index: links as never, players: players as never, teamMap: TEAM_MAP, pins: {} });
+    expect(MAX_DELTA).toBe(6);
+    for (const r of [...report.risers, ...report.fallers]) if (!r.suspect) expect(Math.abs(r.delta)).toBeLessThanOrEqual(MAX_DELTA);
+    const star = report.capped.find((x) => x.id === "star");
+    expect(star).toBeDefined();
+    expect(star!.newOvr).toBe(66);
+    expect(star!.uncappedOvr).toBeGreaterThan(66);
+    expect(report.totals.capped).toBe(report.capped.length);
+    const entryOf = asset.entries.find((e) => e.id === "star")!;
+    expect(calculateLolOvr(entryOf.attributes)).toBe(66);
+  });
+
+  it("does not cap a suspect row", () => {
+    const { report } = moverWorld(60, 2);
+    const m = report.mismatches.find((x) => x.id === "mover");
+    expect(m!.suspect).toBe(true);
+    expect(m!.delta).toBeGreaterThan(MAX_DELTA);
+    expect(report.capped.some((x) => x.id === "mover")).toBe(false);
   });
 
   it("still estimates a player without a current competition, and keeps the asset levels to median and sd", () => {
