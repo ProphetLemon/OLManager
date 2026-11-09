@@ -1,13 +1,33 @@
 import { invoke } from "@tauri-apps/api/core";
 import { describe, expect, it, vi } from "vitest";
 
-import { loadLeagueSelectionData, selectTeam } from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
+import en from "@/i18n/locales/en.json";
+import es from "@/i18n/locales/es.json";
+import { getReputationLabel, loadLeagueSelectionData, selectTeam } from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
 }));
 
 const mockedInvoke = vi.mocked(invoke);
+
+describe("getReputationLabel", () => {
+  const cases: [number, string, string, string][] = [
+    [800, "World Class", "Clase Mundial", "secondary"],
+    [650, "Strong", "Fuerte", "default"],
+    [450, "Average", "Medio", "secondary"],
+    [100, "Developing", "En Desarrollo", "destructive"],
+  ];
+
+  it.each(cases)("maps reputation %i to a translatable tier key", (rep, enLabel, esLabel, variant) => {
+    const tier = getReputationLabel(rep);
+    const lookup = (dict: unknown) =>
+      tier.labelKey.split(".").reduce<unknown>((node, part) => (node as Record<string, unknown>)[part], dict);
+    expect(lookup(en)).toBe(enLabel);
+    expect(lookup(es)).toBe(esLabel);
+    expect(tier.variant).toBe(variant);
+  });
+});
 
 describe("teamSelection.helpers", () => {
   it("returns league selection data", async () => {

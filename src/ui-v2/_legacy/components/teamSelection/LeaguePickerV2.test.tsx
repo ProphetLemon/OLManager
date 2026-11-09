@@ -4,13 +4,26 @@ import { describe, expect, it, vi } from "vitest";
 import type { CompetitionSummary } from "@/store/gameStore";
 import { LeaguePickerV2 } from "@/ui-v2/_legacy/components/teamSelection/LeaguePickerV2";
 
-vi.mock("react-i18next", () => ({
-  initReactI18next: { type: "3rdParty", init: vi.fn() },
-  useTranslation: () => ({
-    i18n: { language: "en" },
-    t: (_key: string, fallback?: string) => fallback ?? _key,
-  }),
-}));
+let activeLocale: "en" | "es" = "en";
+
+vi.mock("react-i18next", async () => {
+  const { createInstance } = await import("i18next");
+  const en = (await import("@/i18n/locales/en.json")).default;
+  const es = (await import("@/i18n/locales/es.json")).default;
+  const i18n = createInstance();
+  await i18n.init({
+    lng: "en",
+    resources: { en: { translation: en }, es: { translation: es } },
+    interpolation: { escapeValue: false },
+  });
+  return {
+    initReactI18next: { type: "3rdParty", init: vi.fn() },
+    useTranslation: () => {
+      void i18n.changeLanguage(activeLocale);
+      return { i18n, t: i18n.getFixedT(activeLocale) };
+    },
+  };
+});
 
 const competition = (id: string, tier: number): CompetitionSummary => ({
   id,
@@ -40,5 +53,21 @@ describe("LeaguePickerV2", () => {
     render(<LeaguePickerV2 competitions={[competition("lec", 1)]} onSelect={vi.fn()} />);
 
     expect(screen.queryByRole("heading", { name: "Regional leagues" })).toBeNull();
+  });
+
+  it("renders the team count with locale plurals", () => {
+    const one = { ...competition("lec", 1), team_count: 1 };
+    const many = { ...competition("lck", 1), team_count: 8 };
+    activeLocale = "en";
+    const { unmount } = render(<LeaguePickerV2 competitions={[one, many]} onSelect={vi.fn()} />);
+    expect(screen.getByText("1 team")).toBeInTheDocument();
+    expect(screen.getByText("8 teams")).toBeInTheDocument();
+    unmount();
+
+    activeLocale = "es";
+    render(<LeaguePickerV2 competitions={[one, many]} onSelect={vi.fn()} />);
+    expect(screen.getByText("1 equipo")).toBeInTheDocument();
+    expect(screen.getByText("8 equipos")).toBeInTheDocument();
+    expect(screen.queryByText(/Teams/)).toBeNull();
   });
 });

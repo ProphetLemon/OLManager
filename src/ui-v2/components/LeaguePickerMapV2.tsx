@@ -296,7 +296,7 @@ export default function LeaguePickerMapV2() {
                 </div>
                 <div>
                   <h2 className="font-heading text-xl font-bold uppercase tracking-wide text-foreground">{selectedComp.name}</h2>
-                  <p className="text-sm text-muted-foreground">{selectedComp.region} · {selectedComp.team_count} {t("teamSelect.teams", "equipos")}</p>
+                  <p className="text-sm text-muted-foreground">{selectedComp.region} · {t("teamSelect.teamCount", { count: selectedComp.team_count })}</p>
                 </div>
               </div>
 

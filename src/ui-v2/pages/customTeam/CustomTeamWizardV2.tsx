@@ -570,7 +570,7 @@ export default function CustomTeamWizardV2({
                                   value: team.reputation,
                                 })}
                             {" · "}
-                            {getReputationLabel(team.reputation ?? 0).label}
+                            {t(getReputationLabel(team.reputation ?? 0).labelKey)}
                           </span>
                         </span>
                         {team.id === defaultReplacementId(teams) && (

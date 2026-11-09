@@ -695,6 +695,8 @@
     "selectLeague": "Select League",
     "selectLeagueSubtitle": "Choose the league you want to manage",
     "selectTeam": "Select Team",
+    "teamCount_one": "1 team",
+    "teamCount_other": "{{count}} teams",
     "teams": "Teams",
     "custom": {
       "create": "Create your team",

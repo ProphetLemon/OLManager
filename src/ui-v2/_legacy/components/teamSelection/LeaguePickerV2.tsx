@@ -88,7 +88,7 @@ export function LeaguePickerV2({ competitions, onSelect }: LeaguePickerV2Props) 
             <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground/60">
               <span className="flex items-center gap-1.5">
                 <Users className="size-3.5" />
-                {comp.team_count} {t("teamSelect.teams", "teams")}
+                {t("teamSelect.teamCount", { count: comp.team_count })}
               </span>
               <ChevronRight className="size-3.5 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
             </div>

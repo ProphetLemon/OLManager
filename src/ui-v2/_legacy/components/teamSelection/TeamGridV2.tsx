@@ -140,7 +140,7 @@ export function TeamGridV2({
 
                   <div className="mt-4 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <Badge variant={rep.variant} className="text-[10px]">{rep.label}</Badge>
+                      <Badge variant={rep.variant} className="text-[10px]">{t(rep.labelKey)}</Badge>
                       <span className="text-[10px] text-muted-foreground/60">Rep: {team.reputation}</span>
                     </div>
                     {team.colors?.primary && team.colors.primary !== "#000000" && (

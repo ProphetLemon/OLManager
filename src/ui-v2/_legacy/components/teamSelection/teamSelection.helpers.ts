@@ -9,11 +9,11 @@ export function formatFinance(val: number): string {
   return `${activeCurrencySymbol()}${val}`;
 }
 
-export function getReputationLabel(rep: number): { label: string; variant: "default" | "secondary" | "destructive" } {
-  if (rep >= 750) return { label: "Élite", variant: "secondary" };
-  if (rep >= 600) return { label: "Fuerte", variant: "default" };
-  if (rep >= 400) return { label: "Media", variant: "secondary" };
-  return { label: "En desarrollo", variant: "destructive" };
+export function getReputationLabel(rep: number): { labelKey: string; variant: "default" | "secondary" | "destructive" } {
+  if (rep >= 750) return { labelKey: "teamSelect.repWorldClass", variant: "secondary" };
+  if (rep >= 600) return { labelKey: "teamSelect.repStrong", variant: "default" };
+  if (rep >= 400) return { labelKey: "teamSelect.repAverage", variant: "secondary" };
+  return { labelKey: "teamSelect.repDeveloping", variant: "destructive" };
 }
 
 export function getTeamLogoPath(teamId: string, logoUrl?: string | null): string {

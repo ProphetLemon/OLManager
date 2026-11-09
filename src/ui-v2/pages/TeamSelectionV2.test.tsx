@@ -52,7 +52,7 @@ vi.mock("@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers", () => 
   loadLeagueSelectionData: mocks.loadLeagueSelectionData,
   selectTeam: mocks.selectTeam,
   getTeamLogoPath: () => "",
-  getReputationLabel: () => ({ label: "Media", variant: "secondary" }),
+  getReputationLabel: () => ({ labelKey: "teamSelect.repAverage", variant: "secondary" }),
   formatFinance: (value: number) => `€${value}`,
 }));
 

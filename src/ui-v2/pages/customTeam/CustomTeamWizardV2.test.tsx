@@ -195,6 +195,13 @@ describe("CustomTeamWizardV2 replace and review step", () => {
     expect(screen.getByText(/become free agents/)).toBeInTheDocument();
   });
 
+  it("shows the reputation tier in English, with no Spanish tier text", () => {
+    setup();
+    toReviewStep();
+    expect(screen.getByRole("radio", { name: /Other Club/ }).closest("label")).toHaveTextContent("Developing");
+    expect(document.body.textContent).not.toMatch(/En desarrollo|Media|Fuerte|Élite/);
+  });
+
   it("confirms with the trimmed spec and the chosen replacement", () => {
     const { onConfirm } = setup();
     fillIdentity("  Ray Esports  ");
