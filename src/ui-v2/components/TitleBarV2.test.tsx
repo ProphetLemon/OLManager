@@ -26,4 +26,17 @@ describe("TitleBarV2", () => {
     expect(screen.getByText("OL Manager")).toBeInTheDocument();
     expect(screen.getByText(APP_EDITION)).toBeInTheDocument();
   });
+
+  it("sits on the rail surface token without wide tracking on the app name", async () => {
+    const { TitleBarV2 } = await import("./TitleBarV2");
+    const { container } = render(<TitleBarV2 />);
+
+    const bar = container.firstElementChild as HTMLElement;
+    expect(bar.className).toContain("bg-rail");
+    expect(bar.className).not.toContain("zinc");
+    expect(screen.getByText("OL Manager").className).not.toContain("tracking-widest");
+    for (const button of screen.getAllByRole("button")) {
+      expect(button.className).not.toContain("zinc");
+    }
+  });
 });

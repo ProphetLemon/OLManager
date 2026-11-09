@@ -37,7 +37,7 @@ vi.mock("@/ui-v2/dashboard/DashboardV2", () => ({
 }));
 
 vi.mock("@/ui-v2/_legacy/components/dashboard/FloatingBugButton", () => ({
-  default: () => null,
+  default: () => <div data-testid="floating-bug-button" />,
 }));
 
 vi.mock("@/ui-v2/_legacy/pages/MainMenu", () => ({
@@ -57,6 +57,31 @@ vi.mock("@/ui-v2/pages/SettingsV2", () => ({
 }));
 
 // ─── Tests ───────────────────────────────────────────────────────────────
+
+describe("AppContent floating bug button", () => {
+  it.each(["/match", "/select-team"])("renders on %s", (route) => {
+    render(
+      <MemoryRouter initialEntries={[route]}>
+        <AppContent />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId("floating-bug-button")).toBeInTheDocument();
+  });
+
+  it.each(["/dashboard", "/finanzas", "/competitions", "/settings", "/"])(
+    "is left to the rail on %s",
+    (route) => {
+      render(
+        <MemoryRouter initialEntries={[route]}>
+          <AppContent />
+        </MemoryRouter>,
+      );
+
+      expect(screen.queryByTestId("floating-bug-button")).toBeNull();
+    },
+  );
+});
 
 describe("AppContent route/tab sync", () => {
   beforeEach(() => {
