@@ -41,16 +41,37 @@ pub const CONTRACT_YEARS: i32 = 2;
 /// Youngest and oldest founding player.
 pub const AGE_RANGE: std::ops::RangeInclusive<i32> = 19..=27;
 
-/// Lowest OVR offset below the league median for a regular starter.
-const MAX_OFFSET_BELOW_MEDIAN: i32 = 5;
+/// Lowest OVR offset below the league median for any starter.
+///
+/// Was 5 when the squad mean sat about 3 below the median. With the mean about
+/// 1.5 below, a starter 5 below would make the squad uneven and drag it back
+/// to last place, so the band is one point tighter.
+const MAX_OFFSET_BELOW_MEDIAN: i32 = 4;
 /// The weakest starter may never sit further below the median than this.
-const WEAKEST_OFFSET_BELOW_MEDIAN: i32 = 7;
-/// Accepted squad mean, as offsets below the median (inclusive, about 3).
-const MEAN_OFFSET_WINDOW: std::ops::RangeInclusive<i32> = 2..=4;
+///
+/// Was 7. It stays a guard one point looser than the band, so a future band
+/// change cannot silently produce a starter far under the peers.
+const WEAKEST_OFFSET_BELOW_MEDIAN: i32 = 5;
+/// Accepted squad mean, as offsets below the median (inclusive, about 1.5).
+///
+/// Was 2..=4 (about 3), which left the squad last of 8 in every real LES world
+/// (mean 68.0 against a peer median of 71.4, weakest peers at 69.5-69.8).
+/// 1..=2 puts it in the bottom pack with a real chance of not finishing last,
+/// and still below mid-table.
+const MEAN_OFFSET_WINDOW: std::ops::RangeInclusive<i32> = 1..=2;
+/// Offsets of the late bloomer, below the median. The bloomer stays under the
+/// median (a growth story, not a present-day strength) but closer to it than
+/// the old 3..=5, which would pull the mean back down.
+const BLOOMER_OFFSET_RANGE: std::ops::RangeInclusive<i32> = 2..=3;
 /// Chance, in 1 out of N, that one starter sits one point above the median.
 const ABOVE_MEDIAN_ONE_IN: u32 = 5;
-/// Weights of an OVR offset of 0..=5 points below the median (mean offset 3).
-const OFFSET_WEIGHTS: [u32; 6] = [1, 2, 3, 4, 4, 3];
+/// Weights of an OVR offset of 0..=4 points below the median for a regular
+/// starter (mean offset about 1.3).
+///
+/// Was `[1, 2, 3, 4, 4, 3]` over 0..=5 (mean 3). With the bloomer at offset
+/// 2..=3 and the occasional starter above the median, a regular mean of about
+/// 1.3 puts the squad mean near 1.5 below the median.
+const OFFSET_WEIGHTS: [u32; 5] = [5, 5, 3, 2, 1];
 /// Weights of ages 19..=27, concentrated on 21-24.
 const AGE_WEIGHTS: [u32; 9] = [1, 2, 4, 4, 4, 4, 2, 1, 1];
 /// Hidden potential of a regular founding player before the level floor applies.
@@ -214,7 +235,7 @@ pub fn generate_founding_squad(spec: &SquadSpec<'_>, seed: u64) -> Result<Vec<Pl
 /// Rules a squad breaks, empty when it fits the league window.
 ///
 /// Checks the OVR band (`median-5..=median`, one starter may reach
-/// `min(median+1, p75)`, none above p75), the mean (about `median-3`), the
+/// `min(median+1, p75)`, none above p75), the mean (about `median-1.5`), the
 /// weakest starter, ages, the single late bloomer and the 2-year contracts.
 pub fn validate_squad(
     squad: &[Player],
@@ -393,8 +414,8 @@ fn plan_squad(rng: &mut StdRng, percentiles: &OvrPercentiles) -> Vec<Plan> {
         .enumerate()
         .map(|(slot, role)| {
             let offset = if slot == bloomer_slot {
-                // The bloomer sits near the bottom of the window.
-                rng.random_range(3..=MAX_OFFSET_BELOW_MEDIAN)
+                // The bloomer sits under the median, a little below the squad mean.
+                rng.random_range(BLOOMER_OFFSET_RANGE)
             } else {
                 weighted_index(rng, &OFFSET_WEIGHTS) as i32
             };
@@ -1163,7 +1184,7 @@ mod tests {
             let squad = squad_for(percentiles, nationalities, seed);
             let values = ovrs(&squad);
             assert!(
-                values.iter().all(|v| *v >= median - 5),
+                values.iter().all(|v| *v >= median - 4),
                 "seed {seed}: {values:?}"
             );
             assert!(
@@ -1176,7 +1197,7 @@ mod tests {
             );
             let mean = f64::from(values.iter().sum::<i32>()) / 5.0;
             assert!(
-                (f64::from(median) - 4.0..=f64::from(median) - 2.0).contains(&mean),
+                (f64::from(median) - 2.0..=f64::from(median) - 1.0).contains(&mean),
                 "seed {seed}: {mean}"
             );
             assert!(
@@ -1230,7 +1251,7 @@ mod tests {
     }
 
     #[test]
-    fn exactly_one_late_bloomer_near_the_bottom_of_the_window() {
+    fn exactly_one_late_bloomer_under_the_median() {
         for seed in 0..300u64 {
             let squad = squad_for(les(), &["ES"], seed);
             let bloomers: Vec<&Player> = squad.iter().filter(|p| p.potential_base >= 84).collect();
@@ -1238,7 +1259,7 @@ mod tests {
             let bloomer = bloomers[0];
             assert!((84..=88).contains(&bloomer.potential_base));
             assert!(
-                (66..=68).contains(&bloomer.lol_ovr),
+                (68..=69).contains(&bloomer.lol_ovr),
                 "seed {seed}: {}",
                 bloomer.lol_ovr
             );

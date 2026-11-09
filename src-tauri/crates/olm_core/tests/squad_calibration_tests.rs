@@ -434,12 +434,12 @@ fn render_league(
         .collect();
     let _ = writeln!(
         md,
-        "\nSquad mean OVR: min {:.1} / mean {:.2} / max {:.1} (median {}, target about median-3 = {}).\nSquads with a starter above the median: {} of {n} ({:.1}%).\n",
+        "\nSquad mean OVR: min {:.1} / mean {:.2} / max {:.1} (median {}, target about median-1.5 = {:.1}).\nSquads with a starter above the median: {} of {n} ({:.1}%).\n",
         squad_means.iter().copied().fold(f64::MAX, f64::min),
         mean(&squad_means),
         squad_means.iter().copied().fold(f64::MIN, f64::max),
         percentiles.p50,
-        i32::from(percentiles.p50) - 3,
+        f64::from(percentiles.p50) - 1.5,
         stats.above_median,
         stats.above_median as f64 * 100.0 / n.max(1) as f64,
     );
@@ -730,7 +730,7 @@ fn render_recommendations(
     let low = *BILL_WINDOW_PCT.start() as f64;
     let _ = writeln!(
         md,
-        "\n1. **OVR window**: keep median-5..median per starter, squad mean about median-3, at most one starter at median+1 (never above p75), weakest >= median-7. The observed squads match (see the OVR tables).\n2. **What is blocked**: no OVR >= 84 free agent (so no OVR >= {SUPERSTAR_OVR} star) is signable on day 1 in either league. Under the interim window the LEC still lets some squads sign an OVR-80 free agent (the LEC median; see the tier lists above); the derived budget blocks OVR >= 80 in both leagues. The guarantee is 'not without moving a starter': releasing the top earner frees enough room for some stars (see 'After releasing').\n3. **Preferred policy (slice 2)**: keep floor-priced wages and give the custom club `wage_budget = founding_wage_budget(squad)` (bill / 0.{DERIVED_BUDGET_BILL_PCT}, rounded up to 10k). Wages stay realistic and the room under the soft cap is about 16% of the bill, independent of the percentage window. Its cost: the club budget is {:.0}-{:.0} per league (see the derived sections), below some peers, so playtest LEC.\n4. **Interim policy**: `BILL_WINDOW_PCT` = {}-{}% of the league-median budget with wages scaled up at most {}x. The worst blocking threshold is {worst_block:.1}% of the median budget, so the window start leaves a margin of {:.1} points. The wages then sit above the wage scale (bill p50 {} of budget vs {:.0}-{:.0}% for real peers), which makes year-2 renewals, staff hires and sales harder.\n5. **Feature-doc bill target**: the old 75-85% target does NOT block the stars (baseline above). Restate it as: the room under the soft cap must stay below the 85% floor of the cheapest OVR >= {SUPERSTAR_OVR} free agent.",
+        "\n1. **OVR window**: keep median-4..median per starter, squad mean about median-1.5 (window median-2..median-1), at most one starter at median+1 (never above p75), weakest >= median-5. The observed squads match (see the OVR tables).\n2. **What is blocked**: no OVR >= 84 free agent (so no OVR >= {SUPERSTAR_OVR} star) is signable on day 1 in either league. Under the interim window the LEC still lets some squads sign an OVR-80 free agent (the LEC median; see the tier lists above); the derived budget blocks OVR >= 80 in both leagues. The guarantee is 'not without moving a starter': releasing the top earner frees enough room for some stars (see 'After releasing').\n3. **Preferred policy (slice 2)**: keep floor-priced wages and give the custom club `wage_budget = founding_wage_budget(squad)` (bill / 0.{DERIVED_BUDGET_BILL_PCT}, rounded up to 10k). Wages stay realistic and the room under the soft cap is about 16% of the bill, independent of the percentage window. Its cost: the club budget is {:.0}-{:.0} per league (see the derived sections), below some peers, so playtest LEC.\n4. **Interim policy**: `BILL_WINDOW_PCT` = {}-{}% of the league-median budget with wages scaled up at most {}x. The worst blocking threshold is {worst_block:.1}% of the median budget, so the window start leaves a margin of {:.1} points. The wages then sit above the wage scale (bill p50 {} of budget vs {:.0}-{:.0}% for real peers), which makes year-2 renewals, staff hires and sales harder.\n5. **Feature-doc bill target**: the old 75-85% target does NOT block the stars (baseline above). Restate it as: the room under the soft cap must stay below the 85% floor of the cheapest OVR >= {SUPERSTAR_OVR} free agent.",
         derived
             .iter()
             .map(|r| r.budget_p50)
