@@ -27,7 +27,10 @@ use olm_core::game_setup::{
     apply_default_market_values, clear_free_agent_contracts, new_game_start_date,
 };
 use olm_core::player_rating::natural_ovr;
-use olm_core::squad_generator::{BILL_WINDOW_PCT, SQUAD_ROLES, SquadSpec, generate_founding_squad};
+use olm_core::squad_generator::{
+    BILL_WINDOW_PCT, DERIVED_BUDGET_BILL_PCT, SQUAD_ROLES, SquadSpec, founding_wage_budget,
+    generate_founding_squad,
+};
 use olm_core::team_overrides;
 use serde::Deserialize;
 
@@ -40,6 +43,27 @@ const SUPERSTAR_OVR: u8 = 85;
 const NEGOTIATION_FLOOR_PCT: u64 = 85;
 /// Day-1 bill, as a share of the wage budget, the feature doc targeted.
 const DOC_BILL_TARGET_PCT: (f64, f64) = (75.0, 85.0);
+/// Yearly wage of one typical staff hire (upper end seen in the LES staff data).
+const STAFF_HIRE_WAGE: i64 = 30_000;
+/// Staff hires counted in the "bill with staff" line.
+const STAFF_HIRES: i64 = 3;
+/// Year-2 renewals start at the current wage plus this many percent (`expected_wage`, age <= 27).
+const RENEWAL_RAISE_PCT: i64 = 105;
+/// Share of the remaining contract salary a release costs (`transfers::CONTRACT_RELEASE_PENALTY_PCT`).
+const RELEASE_PENALTY_PCT: i64 = 40;
+/// Tiers of the "can sign an OVR >= N free agent" summary.
+const OVR_TIERS: [u8; 4] = [80, 82, 84, 85];
+
+/// How the founding squad is priced against the club's wage budget.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum WageMode {
+    /// Wages at the wage floor, league-median budget (no scaling).
+    Floor,
+    /// Wages scaled up into `BILL_WINDOW_PCT` of the league-median budget (interim).
+    Window,
+    /// Wages at the floor, budget derived from the bill with `founding_wage_budget`.
+    Derived,
+}
 
 #[derive(Deserialize)]
 struct PlayersFile {
@@ -167,6 +191,18 @@ struct SquadStats {
     stars_signable: Vec<usize>,
     superstars_signable: Vec<usize>,
     room_pct: Vec<f64>,
+    /// Per squad: highest OVR among the free agents signable at the 85% floor (0 = none).
+    max_signable_ovr: Vec<u8>,
+    /// Per squad: superstars signable after releasing the most expensive founding player.
+    superstars_after_release: Vec<usize>,
+    /// Per squad: players plus three staff hires, as % of the effective budget.
+    staff_bill_pct: Vec<f64>,
+    /// Per squad: year-2 renewal bill (current wage + 5%), as % of the effective budget.
+    renewal_bill_pct: Vec<f64>,
+    /// Per squad: release penalty of the most expensive player (40% of two years).
+    release_penalty: Vec<i64>,
+    /// Per squad: the wage budget the squad is measured against.
+    effective_budget: Vec<i64>,
     failures: Vec<String>,
     taken_clashes: usize,
 }
@@ -179,7 +215,7 @@ fn run_league(
     taken: &HashSet<String>,
     stars: &[Star],
     today: NaiveDate,
-    scale_to_window: bool,
+    mode: WageMode,
 ) -> SquadStats {
     let budget = budget_team.wage_budget.max(1);
     let empty = HashSet::new();
@@ -193,6 +229,12 @@ fn run_league(
         stars_signable: Vec::new(),
         superstars_signable: Vec::new(),
         room_pct: Vec::new(),
+        max_signable_ovr: Vec::new(),
+        superstars_after_release: Vec::new(),
+        staff_bill_pct: Vec::new(),
+        renewal_bill_pct: Vec::new(),
+        release_penalty: Vec::new(),
+        effective_budget: Vec::new(),
         failures: Vec::new(),
         taken_clashes: 0,
     };
@@ -204,7 +246,7 @@ fn run_league(
             today,
             taken_match_names: &empty,
             serial: 1,
-            wage_budget: scale_to_window.then_some(budget),
+            wage_budget: (mode == WageMode::Window).then_some(budget),
         };
         if let Ok(raw) = generate_founding_squad(&raw_spec, seed) {
             stats.raw_nick_clashes += raw
@@ -238,11 +280,36 @@ fn run_league(
         stats.ovrs.push(ovrs);
 
         let bill: i64 = squad.iter().map(|p| i64::from(p.wage)).sum();
-        stats.bill_pct.push(bill as f64 * 100.0 / budget as f64);
-        let room = wage_policy_room_for_new_signing(budget_team, bill);
-        stats.room_pct.push(room as f64 * 100.0 / budget as f64);
+        let (effective, team) = if mode == WageMode::Derived {
+            let mut team = budget_team.clone();
+            team.wage_budget = founding_wage_budget(&squad);
+            (team.wage_budget.max(1), team)
+        } else {
+            (budget, budget_team.clone())
+        };
+        stats.effective_budget.push(effective);
+        stats.bill_pct.push(bill as f64 * 100.0 / effective as f64);
+        let room = wage_policy_room_for_new_signing(&team, bill);
+        stats.room_pct.push(room as f64 * 100.0 / effective as f64);
+        stats
+            .staff_bill_pct
+            .push((bill + STAFF_HIRES * STAFF_HIRE_WAGE) as f64 * 100.0 / effective as f64);
+        let renewal: i64 = squad
+            .iter()
+            .map(|p| i64::from(p.wage) * RENEWAL_RAISE_PCT / 100)
+            .sum();
+        stats
+            .renewal_bill_pct
+            .push(renewal as f64 * 100.0 / effective as f64);
+        let top_wage = squad.iter().map(|p| i64::from(p.wage)).max().unwrap_or(0);
+        stats.release_penalty.push(
+            top_wage * i64::from(olm_core::squad_generator::CONTRACT_YEARS) * RELEASE_PENALTY_PCT
+                / 100,
+        );
+        let room_after_release = wage_policy_room_for_new_signing(&team, bill - top_wage);
 
-        let (mut signable, mut superstars) = (0, 0);
+        let (mut signable, mut superstars, mut after_release) = (0, 0, 0);
+        let mut best_ovr = 0u8;
         for (index, star) in stars.iter().enumerate() {
             if i64::from(star.price) <= room {
                 stats.star_affordable_full[index] += 1;
@@ -250,13 +317,19 @@ fn run_league(
             if i64::from(star.floor_price) <= room {
                 stats.star_affordable_floor[index] += 1;
                 signable += 1;
+                best_ovr = best_ovr.max(star.ovr);
                 if star.ovr >= SUPERSTAR_OVR {
                     superstars += 1;
                 }
             }
+            if star.ovr >= SUPERSTAR_OVR && i64::from(star.floor_price) <= room_after_release {
+                after_release += 1;
+            }
         }
         stats.stars_signable.push(signable);
         stats.superstars_signable.push(superstars);
+        stats.max_signable_ovr.push(best_ovr);
+        stats.superstars_after_release.push(after_release);
     }
     stats
 }
@@ -281,6 +354,15 @@ struct LeagueReport {
     markdown: String,
     /// `(label, bill p50 %, room p50 %, superstar-signable share %)`.
     summary: (String, f64, f64, f64),
+    /// Share of squads (%) that can sign a free agent of at least each [`OVR_TIERS`] OVR.
+    tier_shares: Vec<(u8, f64)>,
+    /// Share of squads (%) that can sign an OVR >= 85 free agent after releasing the top earner.
+    after_release_share: f64,
+    /// Median year-2 renewal bill and bill with staff, as % of the effective budget.
+    renewal_p50: f64,
+    staff_p50: f64,
+    /// Median wage budget the squads were measured against.
+    budget_p50: f64,
     /// Smallest day-1 bill, as % of budget, that keeps every superstar out of reach
     /// at the 85% negotiation floor (the soft cap leaves `110% - bill`).
     block_bill_pct: Option<f64>,
@@ -289,6 +371,7 @@ struct LeagueReport {
 #[allow(clippy::too_many_arguments)]
 fn render_league(
     heading: &str,
+    mode: WageMode,
     show_header: bool,
     window: (f64, f64),
     league: &League,
@@ -361,13 +444,31 @@ fn render_league(
 
     let _ = writeln!(
         md,
-        "### Day-1 wage bill vs median wage budget (players only, no staff)\n\n| metric | min | p10 | p50 | mean | p90 | max |\n|---|---|---|---|---|---|---|"
+        "### Day-1 wage bill vs wage budget\n\n| metric | min | p10 | p50 | mean | p90 | max |\n|---|---|---|---|---|---|---|"
     );
     md.push_str(&distribution_row("bill % of budget", &stats.bill_pct, "%"));
     md.push_str(&distribution_row(
         "room to soft cap % of budget",
         &stats.room_pct,
         "%",
+    ));
+    md.push_str(&distribution_row(
+        "bill + 3 staff hires % of budget",
+        &stats.staff_bill_pct,
+        "%",
+    ));
+    md.push_str(&distribution_row(
+        "year-2 renewal bill (+5%) % of budget",
+        &stats.renewal_bill_pct,
+        "%",
+    ));
+    let budgets: Vec<f64> = stats.effective_budget.iter().map(|b| *b as f64).collect();
+    md.push_str(&distribution_row("wage budget", &budgets, ""));
+    let penalties: Vec<f64> = stats.release_penalty.iter().map(|b| *b as f64).collect();
+    md.push_str(&distribution_row(
+        "release penalty of the top earner (40% of 2 years)",
+        &penalties,
+        "",
     ));
     let in_doc_window = stats
         .bill_pct
@@ -422,16 +523,47 @@ fn render_league(
         .filter(|s| s.ovr >= SUPERSTAR_OVR)
         .map(|s| s.floor_price)
         .min();
-    let block_bill_pct = cheapest_superstar_floor.map(|floor| {
-        // Room < floor  <=>  1.10 * budget - bill < floor.
-        (budget as f64 * 1.10 - f64::from(floor) + 1.0) * 100.0 / budget as f64
-    });
+    let block_bill_pct = cheapest_superstar_floor
+        .filter(|_| mode != WageMode::Derived)
+        .map(|floor| {
+            // Room < floor  <=>  1.10 * budget - bill < floor.
+            (budget as f64 * 1.10 - f64::from(floor) + 1.0) * 100.0 / budget as f64
+        });
     if let (Some(floor), Some(pct)) = (cheapest_superstar_floor, block_bill_pct) {
         let _ = writeln!(
             md,
             "Cheapest OVR >= {SUPERSTAR_OVR} free agent at the 85% floor: {floor}. To keep every such player out of reach the day-1 bill must exceed {pct:.1}% of the median wage budget (the soft cap leaves 110% minus the bill).\n"
         );
     }
+
+    let tier_shares: Vec<(u8, f64)> = OVR_TIERS
+        .iter()
+        .map(|tier| {
+            let count = stats
+                .max_signable_ovr
+                .iter()
+                .filter(|ovr| **ovr >= *tier)
+                .count();
+            (*tier, count as f64 * 100.0 / n.max(1) as f64)
+        })
+        .collect();
+    let _ = writeln!(
+        md,
+        "Squads that can sign at least one free agent of OVR >= N at the 85% floor:\n"
+    );
+    for (tier, share) in &tier_shares {
+        let _ = writeln!(md, "- OVR >= {tier}: {share:.1}%");
+    }
+    let after_release = stats
+        .superstars_after_release
+        .iter()
+        .filter(|c| **c > 0)
+        .count();
+    let after_release_share = after_release as f64 * 100.0 / n.max(1) as f64;
+    let _ = writeln!(
+        md,
+        "\nAfter releasing the top earner (one-off penalty above), {after_release} of {n} squads ({after_release_share:.1}%) could sign an OVR >= {SUPERSTAR_OVR} free agent. The block is 'not without moving a starter', not absolute.\n"
+    );
 
     let _ = writeln!(
         md,
@@ -461,6 +593,14 @@ fn render_league(
             quantile(&sorted(stats.bill_pct.clone()), 0.5),
             quantile(&sorted(stats.room_pct.clone()), 0.5),
             superstar_share,
+        ),
+        tier_shares,
+        after_release_share,
+        renewal_p50: quantile(&sorted(stats.renewal_bill_pct.clone()), 0.5),
+        staff_p50: quantile(&sorted(stats.staff_bill_pct.clone()), 0.5),
+        budget_p50: quantile(
+            &sorted(stats.effective_budget.iter().map(|b| *b as f64).collect()),
+            0.5,
         ),
         block_bill_pct,
     }
@@ -538,38 +678,71 @@ fn render_peer_reference(
     (md, authored_p50, scale_p50)
 }
 
+/// Tier shares as `OVR >= 80: 49.9%, ...` for one report.
+fn tier_summary(report: &LeagueReport) -> String {
+    report
+        .tier_shares
+        .iter()
+        .map(|(tier, share)| format!("OVR >= {tier}: {share:.1}%"))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
 fn render_recommendations(
-    reports: &[LeagueReport],
+    window: &[LeagueReport],
     baselines: &[BaselineRow],
+    derived: &[LeagueReport],
     peer_refs: &[(f64, f64)],
 ) -> String {
     let mut md = String::from("## Recommended constants\n\n");
     let mut worst_block = 0.0f64;
-    for (index, report) in reports.iter().enumerate() {
-        let (label, bill_p50, room_p50, superstar_share) = &report.summary;
+    for (index, report) in window.iter().enumerate() {
+        let (label, bill_p50, room_p50, _) = &report.summary;
         let ((_, base_bill, base_room, base_share), block) = &baselines[index];
         let (peer_authored, peer_scale) = peer_refs[index];
+        let derived_report = &derived[index];
         let _ = writeln!(
             md,
-            "- {label}: baseline (wages at the wage floor) bill p50 {base_bill:.1}% of budget, room to the soft cap {base_room:.1}%, {base_share:.1}% of squads can sign an OVR >= {SUPERSTAR_OVR} free agent on day 1. With the window: bill p50 {bill_p50:.1}%, room {room_p50:.1}%, {superstar_share:.1}% can. Real peers spend {peer_authored:.1}% (authored wages) / {peer_scale:.1}% (wage-scale price) of their budget."
+            "- {label}: baseline (floor wages, median budget) bill p50 {base_bill:.1}% of budget, room {base_room:.1}%, {base_share:.1}% of squads can sign an OVR >= {SUPERSTAR_OVR} free agent on day 1. Real peers spend {peer_authored:.1}% (authored wages) / {peer_scale:.1}% (wage-scale price) of their budget.\n  - Interim window ({}-{}% of the median budget): bill p50 {bill_p50:.1}%, room {room_p50:.1}%; free agents signable at the 85% floor: {}; {:.1}% could sign an OVR >= {SUPERSTAR_OVR} free agent after releasing the top earner; with 3 staff hires the bill is {:.1}% (p50), a year-2 renewal round {:.1}%.\n  - Derived budget (floor wages, budget = bill / 0.{DERIVED_BUDGET_BILL_PCT}, p50 {:.0}): room {:.1}% of that budget; free agents signable at the 85% floor: {}; {:.1}% could sign an OVR >= {SUPERSTAR_OVR} free agent after releasing the top earner; 3 staff hires {:.1}%, year-2 renewals {:.1}%.",
+            BILL_WINDOW_PCT.start(),
+            BILL_WINDOW_PCT.end(),
+            tier_summary(report),
+            report.after_release_share,
+            report.staff_p50,
+            report.renewal_p50,
+            derived_report.budget_p50,
+            derived_report.summary.2,
+            tier_summary(derived_report),
+            derived_report.after_release_share,
+            derived_report.staff_p50,
+            derived_report.renewal_p50,
         );
         if let Some(pct) = block {
             worst_block = worst_block.max(*pct);
             let _ = writeln!(
                 md,
-                "  - Blocking every OVR >= {SUPERSTAR_OVR} free agent at the 85% negotiation floor needs a bill above {pct:.1}% of budget."
+                "  - Blocking every OVR >= {SUPERSTAR_OVR} free agent at the 85% negotiation floor needs a bill above {pct:.1}% of the median budget."
             );
         }
     }
     let low = *BILL_WINDOW_PCT.start() as f64;
     let _ = writeln!(
         md,
-        "\n1. **OVR window**: keep median-5..median per starter, squad mean about median-3, at most one starter at median+1 (never above p75), weakest >= median-7. The observed squads match (see the OVR tables).\n2. **Bill target**: {}-{}% of the league-median wage budget (`BILL_WINDOW_PCT`). The worst blocking threshold across both leagues is {worst_block:.1}% of budget, so the window start leaves a margin of {:.1} points; wages never go below the wage-scale floor. The feature-doc target of 75-85% does NOT block the stars (baseline above).\n3. **Margin**: the window leaves {:.0}-{:.0}% of the budget as room under the soft cap, less than the cheapest OVR >= {SUPERSTAR_OVR} free agent asks even at the 85% floor, so a 85-88 free agent is not affordable on day 1 in either league (see the window sections).\n4. **Cost of the margin**: the bill sits well above what real peers spend ({:.0}-{:.0}% of budget). The custom club has no staff yet, so the budget is otherwise idle, but any later signing must fit the same room. Alternative for slice 2: keep the floor-priced bill and give the club a wage budget of `bill / 0.95`, below the league median, instead of scaling wages; the room arithmetic is identical.",
+        "\n1. **OVR window**: keep median-5..median per starter, squad mean about median-3, at most one starter at median+1 (never above p75), weakest >= median-7. The observed squads match (see the OVR tables).\n2. **What is blocked**: no OVR >= 84 free agent (so no OVR >= {SUPERSTAR_OVR} star) is signable on day 1 in either league. Under the interim window the LEC still lets some squads sign an OVR-80 free agent (the LEC median; see the tier lists above); the derived budget blocks OVR >= 80 in both leagues. The guarantee is 'not without moving a starter': releasing the top earner frees enough room for some stars (see 'After releasing').\n3. **Preferred policy (slice 2)**: keep floor-priced wages and give the custom club `wage_budget = founding_wage_budget(squad)` (bill / 0.{DERIVED_BUDGET_BILL_PCT}, rounded up to 10k). Wages stay realistic and the room under the soft cap is about 16% of the bill, independent of the percentage window. Its cost: the club budget is {:.0}-{:.0} per league (see the derived sections), below some peers, so playtest LEC.\n4. **Interim policy**: `BILL_WINDOW_PCT` = {}-{}% of the league-median budget with wages scaled up at most {}x. The worst blocking threshold is {worst_block:.1}% of the median budget, so the window start leaves a margin of {:.1} points. The wages then sit above the wage scale (bill p50 {} of budget vs {:.0}-{:.0}% for real peers), which makes year-2 renewals, staff hires and sales harder.\n5. **Feature-doc bill target**: the old 75-85% target does NOT block the stars (baseline above). Restate it as: the room under the soft cap must stay below the 85% floor of the cheapest OVR >= {SUPERSTAR_OVR} free agent.",
+        derived
+            .iter()
+            .map(|r| r.budget_p50)
+            .fold(f64::MAX, f64::min),
+        derived.iter().map(|r| r.budget_p50).fold(0.0, f64::max),
         BILL_WINDOW_PCT.start(),
         BILL_WINDOW_PCT.end(),
+        olm_core::squad_generator::MAX_WAGE_SCALE_PCT / 100,
         low - worst_block,
-        110.0 - *BILL_WINDOW_PCT.end() as f64,
-        110.0 - low,
+        window
+            .iter()
+            .map(|r| format!("{:.1}%", r.summary.1))
+            .collect::<Vec<_>>()
+            .join(" / "),
         peer_refs
             .iter()
             .flat_map(|p| [p.0, p.1])
@@ -627,6 +800,7 @@ fn calibrate_founding_squads() {
         today.year()
     );
     let mut league_reports = Vec::new();
+    let mut derived_reports = Vec::new();
     let mut baselines: Vec<BaselineRow> = Vec::new();
     let mut peer_refs: Vec<(f64, f64)> = Vec::new();
     let mut worlds = Vec::new();
@@ -668,9 +842,9 @@ fn calibrate_founding_squads() {
         let (peer_md, peer_authored_p50, peer_scale_p50) =
             render_peer_reference(league, &peers, &world.players, &budget_team);
         report.push_str(&peer_md);
-        for (scaled, heading, window) in [
+        for (mode, heading, window) in [
             (
-                false,
+                WageMode::Floor,
                 format!(
                     "## {} baseline: wages at the wage floor, no bill scaling",
                     league.label
@@ -678,7 +852,7 @@ fn calibrate_founding_squads() {
                 DOC_BILL_TARGET_PCT,
             ),
             (
-                true,
+                WageMode::Window,
                 format!(
                     "## {} with the bill window ({}-{}% of the median wage budget)",
                     league.label,
@@ -690,6 +864,17 @@ fn calibrate_founding_squads() {
                     *BILL_WINDOW_PCT.end() as f64,
                 ),
             ),
+            (
+                WageMode::Derived,
+                format!(
+                    "## {} with a derived wage budget (floor wages, budget = bill / 0.{DERIVED_BUDGET_BILL_PCT})",
+                    league.label
+                ),
+                (
+                    DERIVED_BUDGET_BILL_PCT as f64 - 1.0,
+                    DERIVED_BUDGET_BILL_PCT as f64,
+                ),
+            ),
         ] {
             let stats = run_league(
                 league,
@@ -698,7 +883,7 @@ fn calibrate_founding_squads() {
                 &taken,
                 &stars,
                 today,
-                scaled,
+                mode,
             );
             let elapsed = league_started.elapsed().as_millis();
             assert!(
@@ -709,6 +894,7 @@ fn calibrate_founding_squads() {
             );
             let rendered = render_league(
                 &heading,
+                mode,
                 false,
                 window,
                 league,
@@ -721,18 +907,23 @@ fn calibrate_founding_squads() {
                 elapsed,
             );
             report.push_str(&rendered.markdown);
-            if scaled {
-                assert!(
-                    stats.superstars_signable.iter().all(|count| *count == 0),
-                    "{}: the bill window must keep OVR >= {SUPERSTAR_OVR} free agents out of reach on day 1",
-                    league.label
-                );
-                league_reports.push(rendered);
-            } else {
-                baselines.push((rendered.summary.clone(), rendered.block_bill_pct));
-            }
-            if scaled {
-                peer_refs.push((peer_authored_p50, peer_scale_p50));
+            match mode {
+                WageMode::Floor => {
+                    baselines.push((rendered.summary.clone(), rendered.block_bill_pct));
+                }
+                WageMode::Window | WageMode::Derived => {
+                    assert!(
+                        stats.superstars_signable.iter().all(|count| *count == 0),
+                        "{}: the bill must keep OVR >= {SUPERSTAR_OVR} free agents out of reach on day 1",
+                        league.label
+                    );
+                    if mode == WageMode::Window {
+                        league_reports.push(rendered);
+                        peer_refs.push((peer_authored_p50, peer_scale_p50));
+                    } else {
+                        derived_reports.push(rendered);
+                    }
+                }
             }
         }
     }
@@ -740,6 +931,7 @@ fn calibrate_founding_squads() {
     report.push_str(&render_recommendations(
         &league_reports,
         &baselines,
+        &derived_reports,
         &peer_refs,
     ));
     let _ = writeln!(
