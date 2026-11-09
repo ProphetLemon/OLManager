@@ -1396,6 +1396,12 @@ mod tests {
         /// A new game built by the same `build_new_game_world` that `select_team` runs,
         /// returning the pre-overlay catalog the way `load_game` assembles it.
         fn new_game() -> (Game, Vec<Player>, WorldOverlay, String) {
+            new_game_as("Kiwoom DRX", None)
+        }
+
+        /// [`new_game`] with the manager taking over the catalog team called `team_name`; pass
+        /// `team_id` when the name is shared by teams of several leagues.
+        fn new_game_as(team_name: &str, team_id: Option<&str>) -> (Game, Vec<Player>, WorldOverlay, String) {
             let data = data_base();
             let manifests = olm_core::competitions::scan_competitions(&data.join("competitions"));
             let known_ids: Vec<String> = manifests
@@ -1413,8 +1419,10 @@ mod tests {
                 )
                 .expect("catalog");
             let user_team = {
-                let found: Vec<_> = catalog_teams.iter().filter(|t| t.name == "Kiwoom DRX").collect();
-                assert_eq!(found.len(), 1, "expected exactly one team named Kiwoom DRX");
+                let found: Vec<_> = catalog_teams
+                    .iter()
+                    .filter(|t| t.name == team_name && team_id.is_none_or(|id| t.id == id)).collect();
+                assert_eq!(found.len(), 1, "expected exactly one team named {team_name}");
                 found[0].id.clone()
             };
             let competition_id = competition_id_from_team_id_known(&user_team, &known_ids)
@@ -1958,6 +1966,122 @@ mod tests {
                 let p = loaded.players.iter().find(|p| p.id == id).unwrap();
                 assert_eq!(p.team_id, team, "moved or filled player {id} reverted");
             }
+        }
+
+        /// Plays days with the same `process_day` the app calls until the user's league
+        /// is complete (regular season and playoffs), and returns the days it took.
+        fn play_until_split_complete(game: &mut Game, max_days: u32) -> u32 {
+            let mut days = 0;
+            while !olm_core::end_of_season::is_season_complete(game) {
+                assert!(days < max_days, "split not complete after {max_days} days");
+                olm_core::turn::process_day(game);
+                days += 1;
+            }
+            days
+        }
+
+        fn les_league(game: &Game) -> &olm_core::domain::league::League {
+            game.leagues
+                .iter()
+                .find(|l| l.competition_id.as_deref() == Some("les"))
+                .expect("the LES has a league")
+        }
+
+        fn assert_les_players_are_paid_or_free(game: &Game) {
+            let les_clubs: HashSet<&str> = game
+                .teams
+                .iter()
+                .filter(|t| t.competition_id.as_deref() == Some("les"))
+                .map(|t| t.id.as_str())
+                .collect();
+            for player in &game.players {
+                if player.team_id.as_deref().is_some_and(|t| les_clubs.contains(t)) {
+                    assert!(player.wage > 0, "{} is on an LES roster with wage 0", player.match_name);
+                }
+            }
+        }
+
+        /// An LES career from the real catalog: Winter (28 matches, semis, final, a
+        /// champion), then Spring, Summer and the season rollover into the next year.
+        #[test]
+        #[ignore = "plays three full splits of every league in a debug build (about 7 minutes); run with --ignored"]
+        fn an_les_career_plays_a_full_season_from_real_data() {
+            use olm_core::domain::league::{FixtureStatus, MatchType};
+
+            let (mut game, _catalog, _overlay, user_team) = new_game_as("Barcelona Esports", Some("les-team-06974122"));
+            let (manifests, known) = known_ids_and_manifests();
+            let season = prepare_new_game_season(&mut game, &manifests, &known, &user_team)
+                .expect("season setup");
+            let year = season.season_year;
+            assert_eq!(season.user_competition_id.as_deref(), Some("les"));
+            assert_eq!(game.user_competition_id.as_deref(), Some("les"));
+
+            let les = les_league(&game);
+            assert_eq!(les.split_index, 0);
+            assert_eq!(les.fixtures.iter().filter(|f| f.counts_for_league_standings()).count(), 28);
+            assert_les_players_are_paid_or_free(&game);
+
+            // Winter.
+            play_until_split_complete(&mut game, 120);
+            let les = les_league(&game);
+            let regular: Vec<_> = les.fixtures.iter().filter(|f| f.counts_for_league_standings()).collect();
+            assert_eq!(regular.len(), 28);
+            assert!(regular.iter().all(|f| f.status == FixtureStatus::Completed));
+            let playoffs: Vec<_> = les.fixtures.iter().filter(|f| f.match_type == MatchType::Playoffs).collect();
+            assert_eq!(playoffs.len(), 3, "two semifinals and a final");
+            assert!(playoffs.iter().all(|f| f.id.starts_with("po4-") && f.best_of == 5));
+            assert!(playoffs.iter().all(|f| f.status == FixtureStatus::Completed));
+            assert!(
+                olm_core::end_of_season::playoff_champion_id(les).is_some(),
+                "Winter has a champion"
+            );
+
+            // Winter rolls into Spring; Spring and Summer follow, then the season rolls over.
+            for expected_split in 1..3 {
+                let outcome = olm_core::season_rollover::advance_season(&mut game);
+                assert!(!outcome.was_season_end);
+                assert_eq!(les_league(&game).split_index, expected_split);
+                assert_eq!(les_league(&game).season as i32, year);
+                play_until_split_complete(&mut game, 150);
+                assert!(olm_core::end_of_season::playoff_champion_id(les_league(&game)).is_some());
+            }
+            let outcome = olm_core::season_rollover::advance_season(&mut game);
+            assert!(outcome.was_season_end);
+
+            // Next season: still an LES career, in the second tier.
+            assert_eq!(game.user_competition_id.as_deref(), Some("les"));
+            let les = les_league(&game);
+            assert_eq!(les.season as i32, year + 1);
+            assert_eq!(les.split_index, 0);
+            assert_eq!(les.tier, 2);
+            assert_eq!(les.standings.len(), 8);
+            let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+            let first = les.fixtures.iter().map(|f| f.date.as_str()).min().expect("fixtures");
+            assert!(first > today.as_str(), "Winter fixtures {first} are not after {today}");
+            assert!(game.manager.team_id.is_some(), "the manager kept the job");
+
+            for id in ["les-team-854f6893", "les-team-ac846213"] {
+                let club = game.teams.iter().find(|t| t.id == id).expect("LES club");
+                assert_ne!(club.finance, 0, "{} has finances", club.name);
+            }
+            assert_les_players_are_paid_or_free(&game);
+
+            // The LEC finished at least its first split in the background. It does not yet
+            // follow the LES through every split: a background league only rolls inside the
+            // user's `advance_season`, so its Spring fixtures are generated already in the
+            // past and never played (see task C3, which makes background leagues roll daily).
+            // Tighten this to `season == year + 1` once C3 lands.
+            let lec = game
+                .leagues
+                .iter()
+                .find(|l| l.competition_id.as_deref() == Some("lec"))
+                .expect("the LEC has a league");
+            assert!(
+                lec.season as i32 > year || lec.split_index >= 1,
+                "the LEC never finished a split in the background (season {}, split {})",
+                lec.season,
+                lec.split_index
+            );
         }
     }
 }
