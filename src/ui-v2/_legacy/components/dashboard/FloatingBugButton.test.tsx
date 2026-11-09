@@ -86,7 +86,7 @@ describe("FloatingBugButton", () => {
     fireEvent.click(button);
 
     expect(screen.getByTitle("Reportar Bug")).toBeInTheDocument();
-    expect(screen.getByText("bugReport.title")).toBeInTheDocument();
+    expect(screen.getByText("Report bug / suggest improvement")).toBeInTheDocument();
   });
 
   it("shows the current route and active dashboard tab in the context preview", () => {
@@ -116,10 +116,10 @@ describe("FloatingBugButton", () => {
     render(<FloatingBugButton />);
     fireEvent.click(screen.getByTitle("Reportar Bug"));
 
-    const textarea = screen.getByPlaceholderText("bugReport.placeholder");
+    const textarea = screen.getByPlaceholderText("Describe what happened, what you expected, and how to reproduce it...");
     fireEvent.change(textarea, { target: { value: "Something went wrong" } });
 
-    fireEvent.click(screen.getByText("bugReport.generate"));
+    fireEvent.click(screen.getByText("Generate report"));
 
     await waitFor(() => expect(exportBugReport).toHaveBeenCalled());
 
@@ -140,7 +140,7 @@ describe("FloatingBugButton", () => {
     expect(button.className).not.toContain("fixed");
 
     fireEvent.click(button);
-    expect(screen.getByText("bugReport.title")).toBeInTheDocument();
+    expect(screen.getByText("Report bug / suggest improvement")).toBeInTheDocument();
   });
 
   it("keeps the floating placement fixed by default", () => {

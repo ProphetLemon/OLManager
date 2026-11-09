@@ -42,7 +42,7 @@ describe("ReportBugModal dialog semantics", () => {
     fireEvent.click(screen.getByRole("button", { name: "Opener" }));
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(dialog).toHaveAccessibleName("Reportar Bug / Sugerir Mejora");
+    expect(dialog).toHaveAccessibleName("Report bug / suggest improvement");
     expect(screen.getByRole("navigation", { hidden: true }).contains(dialog)).toBe(false);
   });
 
