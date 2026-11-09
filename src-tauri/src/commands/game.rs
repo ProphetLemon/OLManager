@@ -2433,7 +2433,7 @@ mod tests {
                 primary_color: "#f97316".to_string(),
                 secondary_color: "#111111".to_string(),
                 country: "ES".to_string(),
-                founding_seed: None,
+                founding_seed: None,                founder_overrides: None,
             }
         }
 
@@ -2697,7 +2697,7 @@ mod tests {
 
         fn seeded_rayo(seed: u32) -> CustomTeamSpec {
             CustomTeamSpec {
-                founding_seed: Some(seed),
+                founding_seed: Some(seed),                founder_overrides: None,
                 ..rayo()
             }
         }

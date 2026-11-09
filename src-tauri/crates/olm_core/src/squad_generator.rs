@@ -36,6 +36,8 @@ pub const SQUAD_ROLES: [LolRole; 5] = [
 
 /// Times the generator re-seeds before giving up on a squad that breaks the window.
 pub const MAX_ATTEMPTS: u8 = 8;
+/// Prefix of every founding player's id (`gen-<club slug>-<role>-<n>`).
+pub const FOUNDER_ID_PREFIX: &str = "gen-";
 /// Contract length of every founding player, in years.
 pub const CONTRACT_YEARS: i32 = 2;
 /// Youngest and oldest founding player.
@@ -367,11 +369,17 @@ pub fn bill_violation(squad: &[Player], budget: i64) -> Option<String> {
 /// way the contract code does (year difference, minus one before the birthday).
 fn age_on(today: NaiveDate, date_of_birth: &str) -> Option<i32> {
     let dob = NaiveDate::parse_from_str(date_of_birth, "%Y-%m-%d").ok()?;
+    Some(full_years_between(today, dob))
+}
+
+/// Full years between `dob` and `today`, counted the way the contract code does
+/// (year difference, minus one before the birthday). Negative for a future date.
+pub fn full_years_between(today: NaiveDate, dob: NaiveDate) -> i32 {
     let mut age = today.year() - dob.year();
     if today.ordinal() < dob.ordinal() {
         age -= 1;
     }
-    Some(age)
+    age
 }
 
 fn sanitize_slug(raw: &str) -> String {
@@ -563,6 +571,18 @@ fn wage_for(player: &Player, today: NaiveDate) -> u32 {
     expected_signing_wage(player, &reference, today).max(floor)
 }
 
+/// Recomputes the market value and the wage of `player` from his current birth
+/// date, with the functions the generator prices with, so an edited birth date
+/// can never leave the wage below the wage floor. Does nothing when the birth
+/// date cannot be read.
+pub fn reprice_player(player: &mut Player, today: NaiveDate) {
+    let Some(age) = age_on(today, &player.date_of_birth) else {
+        return;
+    };
+    player.market_value = market_value_for(player.lol_ovr, player.potential_base, age);
+    player.wage = wage_for(player, today);
+}
+
 fn build_squad(
     spec: &SquadSpec<'_>,
     slug: &str,
@@ -589,7 +609,11 @@ fn build_squad(
             .unwrap_or_default();
 
         let attributes = shaped_attributes(rng, plan.role, plan.ovr);
-        let id = format!("gen-{slug}-{}-{}", role_slug(plan.role), spec.serial);
+        let id = format!(
+            "{FOUNDER_ID_PREFIX}{slug}-{}-{}",
+            role_slug(plan.role),
+            spec.serial
+        );
         let mut player = Player::new(
             id,
             match_name,

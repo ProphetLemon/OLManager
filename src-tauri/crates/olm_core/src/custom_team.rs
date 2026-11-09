@@ -16,6 +16,7 @@ use crate::academy;
 use crate::competitions::is_selectable_competition;
 use crate::domain::player::Player;
 use crate::domain::team::{AcademyLifecycle, Facilities, Team, TeamColors, TeamKind};
+use crate::founder_identity::FounderOverrides;
 use crate::game::Game;
 use crate::game_setup;
 use crate::generator::definitions::CompetitionManifest;
@@ -53,6 +54,11 @@ pub struct CustomTeamSpec {
     #[serde(default)]
     #[cfg_attr(feature = "typescript", ts(optional))]
     pub founding_seed: Option<u32>,
+    /// Identity edits for the generated founders, per role. Optional so older
+    /// payloads still parse; see [`crate::founder_identity`] for the rules.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(optional))]
+    pub founder_overrides: Option<FounderOverrides>,
 }
 
 /// Why a custom club could not be created.
@@ -192,6 +198,7 @@ pub fn validate_spec(
         secondary_color,
         country: country.to_string(),
         founding_seed: spec.founding_seed,
+        founder_overrides: spec.founder_overrides.clone(),
     })
 }
 

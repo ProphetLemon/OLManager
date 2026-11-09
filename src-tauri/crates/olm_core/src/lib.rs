@@ -22,6 +22,7 @@ pub mod end_of_season;
 pub mod engine;
 pub mod finances;
 pub mod firing;
+pub mod founder_identity;
 pub mod founding_squad;
 pub mod game;
 pub mod ladder;

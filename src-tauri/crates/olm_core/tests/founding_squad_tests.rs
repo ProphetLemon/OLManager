@@ -23,6 +23,7 @@ fn spec(seed: Option<u32>) -> CustomTeamSpec {
         secondary_color: "#ffffff".to_string(),
         country: "ES".to_string(),
         founding_seed: seed,
+        founder_overrides: None,
     }
 }
 

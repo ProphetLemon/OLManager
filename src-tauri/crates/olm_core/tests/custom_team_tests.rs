@@ -24,6 +24,7 @@ fn spec() -> CustomTeamSpec {
         secondary_color: "#FFFFFF".to_string(),
         country: "ES".to_string(),
         founding_seed: None,
+        founder_overrides: None,
     }
 }
 
