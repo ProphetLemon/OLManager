@@ -39,17 +39,15 @@ export function SplitButton({
   className,
 }: SplitButtonProps) {
   const [open, setOpen] = useState(false)
-  // "club" resolves to the primary token, which is bound to --club.
-  const buttonVariant = variant === "outline" ? "outline" : "default"
-  const sizeClass = size === "touch" ? "h-[var(--hit)] min-w-[var(--hit)] px-4 text-sm" : ""
-  const chevronSize = size === "touch" ? "h-[var(--hit)] w-[var(--hit)]" : "h-8 w-8"
+  const chevronSize = size === "touch" ? "icon-touch" : "icon"
 
   return (
     <div data-slot="split-button" className={cn("inline-flex items-stretch", className)}>
       <Button
         type="button"
-        variant={buttonVariant}
-        className={cn("gap-2 rounded-e-none", sizeClass)}
+        variant={variant}
+        size={size}
+        className="gap-2 rounded-e-none"
         disabled={disabled || loading}
         aria-busy={loading || undefined}
         onClick={onClick}
@@ -63,9 +61,8 @@ export function SplitButton({
           aria-expanded={open}
           disabled={disabled || loading}
           className={cn(
-            buttonVariants({ variant: buttonVariant }),
+            buttonVariants({ variant, size: chevronSize }),
             "rounded-s-none border-s border-s-background/40 px-0",
-            chevronSize,
           )}
         >
           <ChevronDown aria-hidden="true" />

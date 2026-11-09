@@ -45,4 +45,20 @@ describe("LowerThird", () => {
     fireEvent.click(screen.getByRole("button", { name: "Hide" }))
     expect(onDismiss).toHaveBeenCalledTimes(1)
   })
+
+  it("renders the tag through the shared TagBlock with the contrast-safe negative tone", () => {
+    render(<LowerThird tagLabel="Blocker" tagTone="negative" headline="h" />)
+    const tag = screen.getByText("Blocker")
+    expect(tag).toHaveAttribute("data-slot", "tag-block")
+    expect(tag).toHaveAttribute("data-tone", "negative")
+    expect(tag.className).toContain("text-negative-foreground")
+    expect(tag.className).not.toContain("text-foreground")
+  })
+
+  it("uses the club button variant and touch size for the primary action", () => {
+    render(<LowerThird tagLabel="t" headline="h" action={{ label: "Go", onClick: vi.fn() }} />)
+    const button = screen.getByRole("button", { name: "Go" })
+    expect(button.className).toContain("bg-club")
+    expect(button.className).toContain("h-[var(--hit)]")
+  })
 })

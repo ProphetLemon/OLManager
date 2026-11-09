@@ -2,18 +2,10 @@ import type { ReactNode } from "react"
 import { X } from "lucide-react"
 
 import { Button } from "@/ui-v2/components/ui/button"
+import { TagBlock, type TagTone } from "@/ui-v2/components/ui/tag-block"
 import { cn } from "@/ui-v2/lib/utils"
 
-// Mirrors the TagTone contract owned by tag-block.tsx (W1-PRIM-A). Swap the
-// local type and TagChip for the shared TagBlock once both branches integrate.
-export type LowerThirdTagTone =
-  | "club"
-  | "secondary"
-  | "neutral"
-  | "warning"
-  | "positive"
-  | "negative"
-  | "info"
+export type LowerThirdTagTone = TagTone
 
 export interface LowerThirdAction {
   label: string
@@ -35,37 +27,11 @@ export interface LowerThirdProps {
   className?: string
 }
 
-const TONE_CLASS: Record<LowerThirdTagTone, string> = {
-  club: "bg-club text-club-foreground",
-  secondary: "bg-secondary text-secondary-foreground",
-  neutral: "bg-muted text-foreground",
-  warning: "bg-warning text-background",
-  positive: "bg-positive text-background",
-  negative: "bg-destructive text-foreground",
-  info: "bg-info text-background",
-}
-
 // Non-colour severity marker: bar style differs (solid / dashed / dotted).
 const SEVERITY_CLASS: Record<NonNullable<LowerThirdProps["severity"]>, string> = {
   hard: "border-s-[0.1875rem] border-s-foreground [border-inline-start-style:solid]",
   soft: "border-s-[0.1875rem] border-s-foreground [border-inline-start-style:dashed]",
   info: "border-s-2 border-s-muted-foreground [border-inline-start-style:dotted]",
-}
-
-function TagChip({ tone, children }: { tone: LowerThirdTagTone; children: ReactNode }) {
-  return (
-    <span
-      data-slot="tag-block"
-      data-tone={tone}
-      className={cn(
-        "inline-flex w-fit items-center rounded-sm px-2 py-0.5 font-heading text-xs font-bold",
-        "shadow-[inset_0_0_0_var(--tag-outline-width)_var(--tag-outline-color)]",
-        TONE_CLASS[tone],
-      )}
-    >
-      {children}
-    </span>
-  )
 }
 
 export function LowerThird({
@@ -92,7 +58,9 @@ export function LowerThird({
       )}
     >
       <div className="flex min-w-0 flex-1 basis-60 flex-col gap-1">
-        <TagChip tone={tagTone}>{tagLabel}</TagChip>
+        <TagBlock tone={tagTone} size="sm">
+          {tagLabel}
+        </TagBlock>
         <div data-slot="lower-third-headline" className="font-heading text-section font-semibold">
           {headline}
         </div>
@@ -108,7 +76,7 @@ export function LowerThird({
             <Button
               type="button"
               variant="outline"
-              className="h-[var(--hit)] min-w-[var(--hit)] px-4 text-sm"
+              size="touch"
               disabled={secondaryAction.disabled}
               onClick={secondaryAction.onClick}
             >
@@ -118,7 +86,8 @@ export function LowerThird({
           {action ? (
             <Button
               type="button"
-              className="h-[var(--hit)] min-w-[var(--hit)] px-4 text-sm"
+              variant="club"
+              size="touch"
               disabled={action.disabled}
               onClick={action.onClick}
             >
@@ -129,7 +98,7 @@ export function LowerThird({
             <Button
               type="button"
               variant="ghost"
-              className="size-[var(--hit)]"
+              size="icon-touch"
               aria-label={dismissLabel ?? "Dismiss"}
               onClick={onDismiss}
             >

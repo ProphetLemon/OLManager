@@ -59,4 +59,13 @@ describe("SplitButton", () => {
     expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled()
     expect(chevron).toBeDisabled()
   })
+
+  it("renders the club variant at touch size on both halves by default", () => {
+    const { chevron } = setup()
+    const main = screen.getByRole("button", { name: "Continue" })
+    expect(main.className).toContain("bg-club")
+    expect(main.className).toContain("h-[var(--hit)]")
+    expect(chevron.className).toContain("bg-club")
+    expect(chevron.className).toContain("size-[var(--hit)]")
+  })
 })
