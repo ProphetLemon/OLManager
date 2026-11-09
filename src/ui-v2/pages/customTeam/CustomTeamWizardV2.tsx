@@ -682,52 +682,52 @@ export default function CustomTeamWizardV2({
                           className={cn(
                             "flex cursor-pointer items-center gap-3 rounded-lg border-2 p-3 transition-colors focus-within:ring-2 focus-within:ring-primary",
                             checked ? "border-primary bg-primary/10" : "border-border hover:border-primary/40",
-                        )}
-                      >
-                        <input
-                          type="radio"
-                          name="custom-team-replace"
-                          value={team.id}
-                          checked={checked}
-                          onChange={() => {
-                            setReplacesId(team.id);
-                            touch("replaces");
-                            if (backend?.field === "replaces") ackBackend();
-                          }}
-                          className="size-4 accent-primary"
-                        />
-                        {logo && <img src={logo} alt="" className="size-8 shrink-0 object-contain" />}
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate font-heading text-sm font-bold uppercase tracking-wide">
-                            {team.name}
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            name="custom-team-replace"
+                            value={team.id}
+                            checked={checked}
+                            onChange={() => {
+                              setReplacesId(team.id);
+                              touch("replaces");
+                              if (backend?.field === "replaces") ackBackend();
+                            }}
+                            className="size-4 accent-primary"
+                          />
+                          {logo && <img src={logo} alt="" className="size-8 shrink-0 object-contain" />}
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-heading text-sm font-bold uppercase tracking-wide">
+                              {team.name}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              {team.short_name}
+                              {" · "}
+                              {team.reputation == null
+                                ? "—"
+                                : t("teamSelect.custom.replace.reputation", {
+                                    value: team.reputation,
+                                  })}
+                              {" · "}
+                              {t(getReputationLabel(team.reputation ?? 0).labelKey)}
+                            </span>
                           </span>
-                          <span className="block text-xs text-muted-foreground">
-                            {team.short_name}
-                            {" · "}
-                            {team.reputation == null
-                              ? "—"
-                              : t("teamSelect.custom.replace.reputation", {
-                                  value: team.reputation,
-                                })}
-                            {" · "}
-                            {t(getReputationLabel(team.reputation ?? 0).labelKey)}
-                          </span>
-                        </span>
-                        {team.id === defaultReplacementId(teams) && (
-                          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-muted-foreground">
-                            {t("teamSelect.custom.replace.lowestReputation")}
-                          </span>
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
-                {errorFor("replaces") && (
-                  <p id="custom-team-replaces-error" role="alert" className="mt-2 text-xs font-medium text-destructive">
-                    {errorFor("replaces")}
-                  </p>
-                )}
-              </fieldset>
+                          {team.id === defaultReplacementId(teams) && (
+                            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-muted-foreground">
+                              {t("teamSelect.custom.replace.lowestReputation")}
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {errorFor("replaces") && (
+                    <p id="custom-team-replaces-error" role="alert" className="mt-2 text-xs font-medium text-destructive">
+                      {errorFor("replaces")}
+                    </p>
+                  )}
+                </fieldset>
               )}
 
               <section
