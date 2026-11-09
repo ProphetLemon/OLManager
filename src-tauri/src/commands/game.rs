@@ -57,8 +57,12 @@ pub(crate) struct NewGameWorldInputs<'a> {
     pub team_id: &'a str,
     /// Roster overlay to bring the bundled snapshot up to date, if any.
     pub overlay: Option<&'a WorldOverlay>,
-    /// A club the manager created. When set, `team_id` is the slot it replaces.
+    /// A club the manager created. When set, `team_id` is the slot it replaces,
+    /// unless `joins_league` is set.
     pub custom_team: Option<&'a CustomTeamSpec>,
+    /// The custom club joins `competition_id` as an extra club and replaces
+    /// nobody; `team_id` is unused (pass an empty string). Needs `custom_team`.
+    pub joins_league: bool,
 }
 
 /// Day a new game starts: the season after the roster snapshot in use (the
@@ -108,6 +112,9 @@ pub(crate) fn build_new_game_world_with_rating_overrides(
             install_generated_squad(game, inputs, spec, &team_id)
                 .map_err(|error| error.to_wire())?;
             team_id
+        }
+        None if inputs.joins_league => {
+            return Err("Joining a league needs a custom club".to_string());
         }
         None => inputs.team_id.to_string(),
     };
@@ -189,7 +196,9 @@ fn assemble_base_world(
     Ok(())
 }
 
-/// Replace `inputs.team_id` with the custom club and return the new club's id.
+/// Install the custom club and return the new club's id: it replaces
+/// `inputs.team_id`, or joins `inputs.competition_id` as an extra club when
+/// `inputs.joins_league` is set.
 ///
 /// The backend is the authority on eligibility: the target competition's merged
 /// manifest must allow custom clubs, whatever the UI offered.
@@ -208,6 +217,14 @@ fn install_custom_club(
             "Competition '{}' does not accept custom clubs",
             inputs.competition_id
         ));
+    }
+    if inputs.joins_league {
+        let outcome = custom_team::join_team_with_custom(game, inputs.competition_id, spec)?;
+        info!(
+            "[game] custom club {} joins {} as an extra club",
+            outcome.team_id, inputs.competition_id
+        );
+        return Ok(outcome.team_id);
     }
     let outcome = custom_team::replace_team_with_custom(
         game,
@@ -368,17 +385,20 @@ pub(crate) fn preview_founding_squad_world(
 ///
 /// `founder_overrides` are validated like the install's; a broken one is an `Err`
 /// holding the JSON of a [`FounderError`] (see `olm_core::founder_identity`).
+///
+/// With `replaced_team_id` the club replaces that team; without it (omitted or
+/// null) the club joins `competition_id` as an extra club.
 #[tauri::command]
 pub async fn preview_founding_squad(
     app_handle: tauri::AppHandle,
     competition_id: String,
-    replaced_team_id: String,
+    replaced_team_id: Option<String>,
     short_name: String,
     seed: u32,
     founder_overrides: Option<FounderOverrides>,
 ) -> Result<FoundingSquadSummary, String> {
     info!(
-        "[cmd] preview_founding_squad: competition={}, replaces={}, short_name={}, seed={}",
+        "[cmd] preview_founding_squad: competition={}, replaces={:?}, short_name={}, seed={}",
         competition_id, replaced_team_id, short_name, seed
     );
     let manifests = crate::commands::competitions::scan_competitions(&app_handle);
@@ -399,9 +419,10 @@ pub async fn preview_founding_squad(
             data_dir: &data_dir,
             manifests: &manifests,
             competition_id: &competition_id,
-            team_id: &replaced_team_id,
+            team_id: replaced_team_id.as_deref().unwrap_or_default(),
             overlay: overlay.as_ref(),
             custom_team: Some(&spec),
+            joins_league: replaced_team_id.is_none(),
         })
     })
     .await
@@ -440,6 +461,36 @@ fn reject_custom_team_on_built_world(
         return Err("A custom club can only be created for a new career".to_string());
     }
     Ok(())
+}
+
+/// What the player picked in the team-selection step.
+#[derive(Debug, PartialEq, Eq)]
+enum TeamPick {
+    /// An existing team (or, with a custom club, the slot it replaces).
+    Existing(String),
+    /// A custom club that joins this competition as an extra club.
+    JoinLeague(String),
+}
+
+/// Reads `select_team`'s arguments: a team id (existing team, or the slot a
+/// custom club replaces) or, to join a league, a competition id with a custom
+/// club and no team id. Anything ambiguous is rejected.
+fn resolve_team_pick(
+    team_id: Option<String>,
+    joins_competition_id: Option<String>,
+    custom_team: Option<&CustomTeamSpec>,
+) -> Result<TeamPick, String> {
+    match (team_id, joins_competition_id) {
+        (Some(team_id), None) => Ok(TeamPick::Existing(team_id)),
+        (None, Some(competition_id)) if custom_team.is_some() => {
+            Ok(TeamPick::JoinLeague(competition_id))
+        }
+        (None, Some(_)) => Err("Joining a league needs a custom club".to_string()),
+        (Some(_), Some(_)) => {
+            Err("Pick either a team to replace or a league to join, not both".to_string())
+        }
+        (None, None) => Err("No team was picked".to_string()),
+    }
 }
 
 /// Seed the wage of every rostered wage-0 player and log how many budgeted teams
@@ -1098,12 +1149,21 @@ pub async fn select_team(
     state: State<'_, StateManager>,
     sm_state: State<'_, SaveManagerState>,
     app_handle: tauri::AppHandle,
-    team_id: String,
+    team_id: Option<String>,
     lang: Option<String>,
     custom_team: Option<CustomTeamSpec>,
+    joins_competition_id: Option<String>,
 ) -> Result<Game, String> {
     let lang = lang.unwrap_or_else(|| "en".to_string());
-    info!("[cmd] select_team: team_id={}, lang={}", team_id, lang);
+    info!(
+        "[cmd] select_team: team_id={:?}, joins={:?}, lang={}",
+        team_id, joins_competition_id, lang
+    );
+    let pick = resolve_team_pick(
+        team_id,
+        joins_competition_id,
+        custom_team.as_ref(),
+    )?;
     // Work on a clone: the session only changes through `set_game` at the very end, so
     // any `Err` below leaves the empty world in place and the pick can be retried.
     let mut game = state
@@ -1121,19 +1181,35 @@ pub async fn select_team(
     let all_manifests = crate::commands::competitions::scan_competitions(&app_handle);
     let known_competition_ids = known_competition_ids(&all_manifests)?;
 
-    // With a custom club, `team_id` named the slot it replaces; from here on it is the
-    // user's actual team.
+    // With a custom club, `team_id` named the slot it replaces (or nothing, when it
+    // joins a league); from here on it is the user's actual team.
     let team_id = if game.teams.is_empty() {
         info!("[cmd] select_team: empty game state — assembling from modular data");
 
-        // Extract competition ID from team ID (e.g. "lec-g2" → "lec")
-        let competition_id = competition_id_from_team_id_known(&team_id, &known_competition_ids)
-            .ok_or_else(|| {
-                format!(
-                    "Invalid team ID format '{}': missing competition prefix",
-                    team_id
-                )
-            })?;
+        let (competition_id, slot_team_id, joins_league) = match &pick {
+            // Extract competition ID from team ID (e.g. "lec-g2" → "lec")
+            TeamPick::Existing(team_id) => (
+                competition_id_from_team_id_known(team_id, &known_competition_ids).ok_or_else(
+                    || {
+                        format!(
+                            "Invalid team ID format '{}': missing competition prefix",
+                            team_id
+                        )
+                    },
+                )?,
+                team_id.as_str(),
+                false,
+            ),
+            TeamPick::JoinLeague(competition_id) => (
+                known_competition_ids
+                    .iter()
+                    .find(|known| *known == competition_id)
+                    .map(String::as_str)
+                    .ok_or_else(|| format!("Unknown competition '{competition_id}'"))?,
+                "",
+                true,
+            ),
+        };
 
         // Use the same multi-tier resolution as the rest of the data layer so the
         // Tauri `_up_/data` install layout is handled correctly.
@@ -1150,13 +1226,19 @@ pub async fn select_team(
                 data_dir: &data_dir,
                 manifests: &all_manifests,
                 competition_id,
-                team_id: &team_id,
+                team_id: slot_team_id,
                 overlay: overlay.as_ref(),
                 custom_team: custom_team.as_ref(),
+                joins_league,
             },
         )?
     } else {
-        team_id
+        match pick {
+            TeamPick::Existing(team_id) => team_id,
+            TeamPick::JoinLeague(_) => {
+                return Err("A custom club can only be created for a new career".to_string());
+            }
+        }
     };
 
     let NewGameSeason {
@@ -1650,6 +1732,59 @@ mod tests {
     use super::*;
     use olm_core::domain::player::PlayerAttributes;
 
+    fn any_spec() -> CustomTeamSpec {
+        CustomTeamSpec {
+            name: "Rayo Esports".to_string(),
+            short_name: "RAY".to_string(),
+            primary_color: "#f97316".to_string(),
+            secondary_color: "#111111".to_string(),
+            country: "ES".to_string(),
+            logo_data_uri: None,
+            founding_seed: None,
+            founder_overrides: None,
+        }
+    }
+
+    #[test]
+    fn an_old_pick_with_only_a_team_id_still_resolves() {
+        let spec = any_spec();
+
+        assert_eq!(
+            resolve_team_pick(Some("lec-g2".to_string()), None, None),
+            Ok(TeamPick::Existing("lec-g2".to_string()))
+        );
+        assert_eq!(
+            resolve_team_pick(Some("les-team-1".to_string()), None, Some(&spec)),
+            Ok(TeamPick::Existing("les-team-1".to_string()))
+        );
+    }
+
+    #[test]
+    fn a_join_pick_names_a_competition_and_needs_a_custom_club() {
+        let spec = any_spec();
+
+        assert_eq!(
+            resolve_team_pick(None, Some("les".to_string()), Some(&spec)),
+            Ok(TeamPick::JoinLeague("les".to_string()))
+        );
+        assert!(resolve_team_pick(None, Some("les".to_string()), None).is_err());
+    }
+
+    #[test]
+    fn an_ambiguous_or_empty_pick_is_rejected() {
+        let spec = any_spec();
+
+        assert!(
+            resolve_team_pick(
+                Some("les-team-1".to_string()),
+                Some("les".to_string()),
+                Some(&spec)
+            )
+            .is_err()
+        );
+        assert!(resolve_team_pick(None, None, Some(&spec)).is_err());
+    }
+
     fn test_game() -> Game {
         let teams = ["t-a", "t-b"]
             .iter()
@@ -1888,6 +2023,7 @@ mod tests {
                     team_id: slot_id,
                     overlay: Some(overlay),
                     custom_team: custom,
+                    joins_league: false,
                 },
             )
         }
@@ -2048,6 +2184,7 @@ mod tests {
                     team_id: slot_id,
                     overlay: Some(overlay),
                     custom_team: None,
+                    joins_league: false,
                 },
                 overrides,
             )
@@ -3261,6 +3398,7 @@ mod tests {
                 team_id: LES_SLOT,
                 overlay: Some(&overlay),
                 custom_team: Some(&spec),
+                joins_league: false,
             };
             let id = install_custom_club(&mut game, &inputs, &spec).expect("install");
 
@@ -3394,6 +3532,226 @@ mod tests {
             assert_ne!(squad_fingerprint(&a, &id_a), squad_fingerprint(&c, &id_c));
         }
 
+        // -- Custom club joining a league (join mode) ---------------------------------
+
+        /// What `select_team` does for a join pick, minus the Tauri handle.
+        fn try_build_join_world(
+            competition_id: &str,
+            custom: &CustomTeamSpec,
+        ) -> Result<(Game, String), String> {
+            let mut game = empty_session();
+            let overlay = olm_core::world_overlay::bundled_world_overlay().expect("bundled overlay");
+            let data = data_base();
+            let (manifests, _known) = known_ids_and_manifests();
+            let id = build_new_game_world(
+                &mut game,
+                &NewGameWorldInputs {
+                    data_dir: &data,
+                    manifests: &manifests,
+                    competition_id,
+                    team_id: "",
+                    overlay: Some(&overlay),
+                    custom_team: Some(custom),
+                    joins_league: true,
+                },
+            )?;
+            Ok((game, id))
+        }
+
+        fn les_main_ids(game: &Game) -> HashSet<String> {
+            game.teams
+                .iter()
+                .filter(|t| {
+                    t.competition_id.as_deref() == Some("les") && t.team_kind == TeamKind::Main
+                })
+                .map(|t| t.id.clone())
+                .collect()
+        }
+
+        /// Distinct dates of the league fixtures, in order.
+        fn league_dates(league: &olm_core::domain::league::League) -> Vec<String> {
+            let mut dates: Vec<String> = league
+                .fixtures
+                .iter()
+                .filter(|f| f.counts_for_league_standings())
+                .map(|f| f.date.clone())
+                .collect();
+            dates.dedup();
+            dates
+        }
+
+        /// An 8-club LES keeps its 28 fixtures on 7 weekly dates (pin of today's behaviour,
+        /// on real data, for a plain career and for replace mode).
+        #[test]
+        fn the_eight_club_les_calendar_is_unchanged_in_plain_and_replace_mode() {
+            let (manifests, known) = known_ids_and_manifests();
+            let (mut plain, _overlay, plain_id) = try_build_world(LES_SLOT, None).expect("plain");
+            prepare_new_game_season(&mut plain, &manifests, &known, &plain_id).expect("season");
+            let (mut replaced, id) = custom_game();
+            prepare_new_game_season(&mut replaced, &manifests, &known, &id).expect("season");
+
+            for game in [&plain, &replaced] {
+                let les = les_league(game);
+                assert_eq!(les.standings.len(), 8);
+                assert_eq!(les.fixtures.len(), 28);
+                let dates = league_dates(les);
+                assert_eq!(dates.len(), 7);
+                assert!(dates.windows(2).all(|pair| {
+                    let day = |d: &str| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap();
+                    (day(&pair[1]) - day(&pair[0])).num_days() == 7
+                }));
+                assert!(dates[0].ends_with("-01-17"), "Winter starts Jan 17: {}", dates[0]);
+            }
+        }
+
+        #[test]
+        fn a_joined_club_makes_a_nine_club_les_and_replaces_nobody() {
+            let (plain, _overlay, _) = try_build_world(LES_SLOT, None).expect("plain world");
+            let plain_les = les_main_ids(&plain);
+            assert_eq!(plain_les.len(), 8);
+
+            let (mut game, id) = try_build_join_world("les", &seeded_rayo(7)).expect("join world");
+
+            assert_eq!(id, "les-custom-ray");
+            let joined_les = les_main_ids(&game);
+            assert_eq!(joined_les.len(), 9);
+            assert!(plain_les.is_subset(&joined_les), "every original club stays");
+            assert!(game.removed_team_ids.is_empty());
+            let club = game.teams.iter().find(|t| t.id == id).expect("custom club");
+            assert_eq!(club.competition_id.as_deref(), Some("les"));
+            assert_eq!(club.academy_team_id, None);
+            assert!(!game.teams.iter().any(|t| t.parent_team_id.as_deref() == Some(id.as_str())));
+
+            // Nobody was released: every player of an LES club in the plain world is
+            // still there (the club picks no one else's players).
+            for player in plain.players.iter().filter(|p| {
+                p.team_id.as_deref().is_some_and(|t| plain_les.contains(t))
+            }) {
+                let joined = game.players.iter().find(|p| p.id == player.id).expect("player kept");
+                assert_eq!(joined.team_id, player.team_id, "{} moved", player.id);
+            }
+
+            // Founders, lineup and roster, exactly like a replacing club.
+            let squad = founders(&game, &id);
+            assert_eq!(squad.len(), 5);
+            assert!(squad.iter().all(|p| p.id.starts_with("gen-ray-")));
+            assert_eq!(club.active_lineup_ids.len(), 5);
+            assert!(olm_core::residency::validate_lineup_imports(&game, &id, &club.active_lineup_ids).is_ok());
+            ensure_custom_club_roster(&game, &id).expect("full roster");
+            assert!(duplicate_player_ids(&game.players).is_empty());
+
+            // Median of ALL the LES clubs, the founders' bill as wage budget.
+            let peers = les_peers(&game, &id);
+            assert_eq!(peers.len(), 8);
+            assert_eq!(club.finance, median(peers.iter().map(|t| t.finance).collect()));
+            let owned: Vec<Player> = squad.iter().map(|p| (*p).clone()).collect();
+            assert_eq!(club.wage_budget, olm_core::squad_generator::founding_wage_budget(&owned));
+
+            // The season: nine clubs, nine weekly matchdays, a bye each, the club included.
+            let (manifests, known) = known_ids_and_manifests();
+            let season = prepare_new_game_season(&mut game, &manifests, &known, &id).expect("season");
+            assert_eq!(season.user_competition_id.as_deref(), Some("les"));
+            assert_eq!(game.manager.team_id.as_deref(), Some(id.as_str()));
+            let les = les_league(&game);
+            assert_eq!(les.standings.len(), 9);
+            assert_eq!(les.fixtures.len(), 36);
+            assert_eq!(league_dates(les).len(), 9);
+            let own: Vec<_> = les
+                .fixtures
+                .iter()
+                .filter(|f| f.home_team_id == id || f.away_team_id == id)
+                .collect();
+            assert_eq!(own.len(), 8, "eight matches and one bye");
+            let own_dates: HashSet<&str> = own.iter().map(|f| f.date.as_str()).collect();
+            assert_eq!(own_dates.len(), 8, "never twice on a day");
+        }
+
+        #[test]
+        fn joining_a_top_tier_league_is_rejected_by_the_backend() {
+            let error = try_build_join_world("lec", &rayo()).expect_err("LEC is tier 1");
+
+            assert!(error.contains("does not accept custom clubs"), "{error}");
+        }
+
+        #[test]
+        fn joining_an_unknown_competition_is_rejected() {
+            let error = try_build_join_world("nowhere", &rayo()).expect_err("unknown competition");
+
+            assert!(error.contains("does not accept custom clubs"), "{error}");
+        }
+
+        /// Join mode keeps every club, so the name of an LES club stays taken even
+        /// though replace mode would free it.
+        #[test]
+        fn joining_cannot_reuse_the_name_of_a_league_club() {
+            let (plain, _overlay, _) = try_build_world(LES_SLOT, None).expect("plain world");
+            let slot_name = plain
+                .teams
+                .iter()
+                .find(|t| t.id == LES_SLOT)
+                .expect("slot")
+                .name
+                .clone();
+            let mut spec = rayo();
+            spec.name = slot_name;
+
+            assert!(try_build_world(LES_SLOT, Some(&spec)).is_ok(), "replace frees the name");
+            let error = try_build_join_world("les", &spec).expect_err("the name is taken");
+            assert_eq!(error, "Another team already uses this name");
+        }
+
+        /// The preview in join mode runs the join install, so it shows the real squad.
+        #[test]
+        fn the_preview_equals_the_installed_squad_in_join_mode() {
+            let data = data_base();
+            let (manifests, _known) = known_ids_and_manifests();
+            let overlay = olm_core::world_overlay::bundled_world_overlay().expect("bundled overlay");
+            for seed in [7_u32, 1_234] {
+                let preview_spec = CustomTeamSpec {
+                    name: PREVIEW_CLUB_NAME.to_string(),
+                    primary_color: "#000000".to_string(),
+                    secondary_color: "#ffffff".to_string(),
+                    ..install_spec("RAY", seed, None)
+                };
+                let summary = preview_founding_squad_world(&NewGameWorldInputs {
+                    data_dir: &data,
+                    manifests: &manifests,
+                    competition_id: "les",
+                    team_id: "",
+                    overlay: Some(&overlay),
+                    custom_team: Some(&preview_spec),
+                    joins_league: true,
+                })
+                .expect("join preview");
+
+                let (game, id) =
+                    try_build_join_world("les", &install_spec("RAY", seed, None)).expect("join world");
+                assert_preview_matches_install(&summary, &game, &id);
+            }
+        }
+
+        #[test]
+        fn a_join_without_a_custom_club_is_refused() {
+            let mut game = empty_session();
+            let overlay = olm_core::world_overlay::bundled_world_overlay().expect("bundled overlay");
+            let (manifests, _known) = known_ids_and_manifests();
+            let error = build_new_game_world(
+                &mut game,
+                &NewGameWorldInputs {
+                    data_dir: &data_base(),
+                    manifests: &manifests,
+                    competition_id: "les",
+                    team_id: "",
+                    overlay: Some(&overlay),
+                    custom_team: None,
+                    joins_league: true,
+                },
+            )
+            .expect_err("nothing to join with");
+
+            assert_eq!(error, "Joining a league needs a custom club");
+        }
+
         /// The wizard's preview for `slot`, built the way the `preview_founding_squad`
         /// command does it, with a spec that differs from the real one in everything
         /// the squad does not depend on.
@@ -3423,6 +3781,7 @@ mod tests {
                 team_id: slot,
                 overlay: Some(&overlay),
                 custom_team: Some(&spec),
+                joins_league: false,
             })
         }
 
@@ -3746,6 +4105,7 @@ mod tests {
                 team_id: LES_SLOT,
                 overlay: Some(&overlay),
                 custom_team: Some(&spec),
+                joins_league: false,
             };
             let id = install_custom_club(&mut game, &inputs, &spec).expect("install");
             for player in game.players.iter_mut().filter(|p| {
