@@ -55,7 +55,7 @@ export function RailItem({
       data-active={active ? "true" : undefined}
       data-rail-stop={rest["data-rail-stop"]}
       className={cn(
-        "relative flex min-h-[var(--hit)] w-full flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-center transition-colors",
+        "relative mx-1.5 flex min-h-[var(--hit)] w-[calc(100%-0.75rem)] scroll-my-8 flex-col rounded-[0.625rem] items-center justify-center gap-0.5 px-1 py-1.5 text-center transition-colors",
         "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring",
         tone === "danger"
           ? "text-negative hover:bg-negative/10"
@@ -68,7 +68,7 @@ export function RailItem({
         <span
           aria-hidden="true"
           data-slot="rail-item-bar"
-          className="absolute inset-y-0 start-0 my-auto h-12 max-h-full w-1 rounded-e-sm bg-club-text"
+          className="absolute inset-y-0 -start-1.5 my-auto h-8 max-h-full w-1 rounded-e-sm bg-club-text"
         />
       )}
       <span className="relative inline-flex">

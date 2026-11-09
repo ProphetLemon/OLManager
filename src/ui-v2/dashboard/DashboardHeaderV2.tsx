@@ -173,7 +173,7 @@ export function DashboardHeaderV2({
           ]}
         />
       </div>
-      <div aria-hidden="true" data-slot="bar-rule" className="h-0.5 bg-club" />
+      <div aria-hidden="true" data-slot="bar-rule" className="h-0.5 bg-club bg-[linear-gradient(90deg,var(--club)_0,var(--club)_60%,var(--club-secondary,var(--club))_60%,var(--club-secondary,var(--club))_100%)]" />
 
       {showStrip && group && groupDef && (
         <SectionStripV2

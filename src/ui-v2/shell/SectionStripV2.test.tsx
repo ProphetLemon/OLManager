@@ -52,6 +52,20 @@ describe("SectionStripV2", () => {
     expect(screen.getByRole("button", { name: /Market/ }).className).not.toContain("border-club");
   });
 
+  it("draws a solid outline (not just a width) on the active tab in high contrast", () => {
+    setup("Transfers");
+    const active = screen.getByRole("button", { name: /Transfers/ });
+    expect(active.className).toContain("[[data-contrast=high]_&]:outline-solid");
+    expect(active.className).toContain("[[data-contrast=high]_&]:outline-2");
+    expect(screen.getByRole("button", { name: /Market/ }).className).not.toContain("outline-solid");
+  });
+
+  it("shows the group label at full strength in high contrast", () => {
+    setup("Transfers");
+    const group = document.querySelector('[data-slot="section-strip-group"]');
+    expect(group?.className).toContain("[[data-contrast=high]_&]:text-foreground");
+  });
+
   it("marks only the active tab with aria-current", () => {
     setup("Transfers");
     expect(screen.getByRole("button", { name: /Transfers/ })).toHaveAttribute("aria-current", "page");

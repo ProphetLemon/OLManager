@@ -53,7 +53,7 @@ export function SectionStripV2({ group, activeTab, onNavClick, badges, label }: 
         <span
           aria-hidden="true"
           data-slot="section-strip-group"
-          className="mr-2.5 flex shrink-0 select-none items-center text-[0.8125rem] font-semibold text-dim"
+          className="mr-2.5 flex shrink-0 select-none items-center text-[0.8125rem] font-semibold text-dim [[data-contrast=high]_&]:text-foreground"
         >
           {label}
         </span>
@@ -75,7 +75,7 @@ export function SectionStripV2({ group, activeTab, onNavClick, badges, label }: 
                 "flex shrink-0 items-center gap-2 border-b-[3px] px-3.5 text-[0.9375rem] transition-colors",
                 "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                 active
-                  ? "border-club font-bold text-foreground [[data-contrast=high]_&]:outline-2 [[data-contrast=high]_&]:-outline-offset-2 [[data-contrast=high]_&]:outline-foreground"
+                  ? "border-club font-bold text-foreground [[data-contrast=high]_&]:outline-solid [[data-contrast=high]_&]:outline-2 [[data-contrast=high]_&]:-outline-offset-2 [[data-contrast=high]_&]:outline-foreground"
                   : "border-transparent font-medium text-muted-foreground hover:text-foreground",
               )}
             >

@@ -53,6 +53,21 @@ describe("RailItem", () => {
     expect(cls).toContain("[[data-contrast=high]_&]:data-[active=true]:outline-solid");
   });
 
+  it("keeps a focused stop clear of the 1.5rem fade mask with a scroll margin", () => {
+    render(<RailItem icon={Mail} label="Inbox" onClick={vi.fn()} />);
+    // scroll-my-8 is 2rem, larger than the 1.5rem faded band of the stops area.
+    expect(screen.getByRole("button", { name: "Inbox" }).className).toContain("scroll-my-8");
+  });
+
+  it("renders the active stop as an inset rounded tile that keeps its pip", () => {
+    render(<RailItem icon={Mail} label="Inbox" active onClick={vi.fn()} />);
+    const button = screen.getByRole("button", { name: "Inbox" });
+    expect(button.className).toContain("rounded-[0.625rem]");
+    expect(button.className).toContain("mx-1.5");
+    expect(button.querySelector('[data-slot="rail-item-bar"]')).not.toBeNull();
+    expect(button).toHaveAttribute("aria-current", "page");
+  });
+
   it("keeps labels at 0.75rem or larger", () => {
     render(<RailItem icon={Mail} label="Inbox" onClick={vi.fn()} />);
     expect(screen.getByText("Inbox").className).toContain("text-[0.75rem]");

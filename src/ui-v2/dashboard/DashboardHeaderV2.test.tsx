@@ -146,8 +146,24 @@ describe("DashboardHeaderV2", () => {
     const rule = document.querySelector('[data-slot="bar-rule"]');
     expect(rule?.className).toContain("h-0.5");
     expect(rule?.className).toContain("bg-club");
+    // Two-colour rule: --club, a hard stop at 60%, then --club-secondary (single colour when unset).
+    expect(rule?.className).toContain("var(--club)_60%");
+    expect(rule?.className).toContain("var(--club-secondary,var(--club))_60%");
     const chip = screen.getByRole("button", { name: "2 to resolve" });
     expect(chip.className).toContain("rounded-full");
     expect(chip.querySelector("span[aria-hidden='true']")).not.toBeNull();
+  });
+
+  it("calls onContinue with no arguments from the primary button and the menu item", async () => {
+    const { onContinue } = setup();
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(onContinue).toHaveBeenCalledTimes(1);
+    expect(onContinue.mock.calls[0]).toEqual([]);
+
+    fireEvent.click(screen.getByRole("button", { name: "More ways to advance" }));
+    const items = await screen.findAllByRole("menuitem");
+    fireEvent.click(items[items.length - 1]);
+    await waitFor(() => expect(onContinue).toHaveBeenCalledTimes(2));
+    expect(onContinue.mock.calls[1]).toEqual([]);
   });
 });
