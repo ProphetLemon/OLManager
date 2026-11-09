@@ -371,7 +371,11 @@ export default function CustomTeamWizardV2({
             </div>
             <img
               src={badgeSrc}
-              alt={t("teamSelect.custom.previewAlt", { tag: badgeTag })}
+              alt={
+                logoDataUri
+                  ? t("teamSelect.customLogo.previewAlt")
+                  : t("teamSelect.custom.previewAlt", { tag: badgeTag })
+              }
               width={96}
               height={96}
               className="size-24 shrink-0 object-contain"

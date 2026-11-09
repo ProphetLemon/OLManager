@@ -132,6 +132,8 @@ describe("CustomTeamWizardV2 badge upload", () => {
       expect(image).toHaveAttribute("src", LOGO);
       expect(image.className).toContain("object-contain");
     }
+    // The large preview no longer describes the generated shield once an image is shown.
+    expect(screen.getByTestId("badge-preview-large")).toHaveAttribute("alt", "Your uploaded badge");
   });
 
   it("keeps the chosen colours when an image is uploaded", async () => {
