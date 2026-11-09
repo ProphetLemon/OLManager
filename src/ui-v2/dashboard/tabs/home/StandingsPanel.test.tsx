@@ -98,4 +98,11 @@ describe("StandingsPanel", () => {
     fireEvent.click(button)
     expect(onOpenTeams).toHaveBeenCalledTimes(1)
   })
+
+  it("sets the user row name in foreground text on the club wash", () => {
+    render(<StandingsPanel data={data({ rows: [row(1), row(2, { isMe: true })] })} onOpenTeams={vi.fn()} />)
+    const meRow = document.querySelector('tr[data-me="true"]') as HTMLElement
+    expect(meRow.className).toContain("bg-club-wash")
+    expect(meRow.innerHTML).not.toContain("text-muted-foreground")
+  })
 })

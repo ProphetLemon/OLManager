@@ -84,7 +84,7 @@ export function StandingsPanel({ data, onOpenTeams }: StandingsPanelProps) {
                   >
                     <ClubShield name={row.name} logoUrl={row.logoUrl} size="sm" />
                     <span className="shrink-0 font-heading text-base font-semibold">{row.shortName}</span>
-                    <span className="min-w-0 truncate text-xs font-normal text-muted-foreground">
+                    <span className="min-w-0 truncate text-xs font-normal text-foreground">
                       {row.name}
                     </span>
                     {row.isMe ? (

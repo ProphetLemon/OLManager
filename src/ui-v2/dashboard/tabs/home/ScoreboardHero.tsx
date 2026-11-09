@@ -61,7 +61,7 @@ function SidePlates({ side, mirrored, label }: { side: SideData; mirrored: boole
             <TagBlock size="sm">{t(`onAir.roles.${plate.role}`, { defaultValue: plate.role })}</TagBlock>
             {empty ? (
               <>
-                <span aria-hidden="true" className="min-w-0 flex-1 font-heading text-xl font-semibold text-muted-foreground">
+                <span aria-hidden="true" className="min-w-0 flex-1 font-heading text-xl font-semibold text-foreground">
                   {"—"}
                 </span>
                 <span className="sr-only">{t("onAir.home.notSet", { defaultValue: "Not set" })}</span>
@@ -72,7 +72,7 @@ function SidePlates({ side, mirrored, label }: { side: SideData; mirrored: boole
                   {plate.name}
                 </span>
                 {plate.ovr !== null ? (
-                  <span className="shrink-0 font-heading text-base font-bold tabular-nums text-muted-foreground">
+                  <span className="shrink-0 font-heading text-base font-bold tabular-nums text-foreground">
                     {plate.ovr}
                   </span>
                 ) : null}
@@ -106,7 +106,7 @@ function SideHeader({ side, mirrored, caption }: { side: SideData; mirrored: boo
         <span title={side.name} className="block max-w-full overflow-hidden">
           <ScoreNumeral value={side.shortName} size="scoreboard" className={shortNameSizeClass(side.shortName)} />
         </span>
-        <p title={side.name} className="truncate text-sm text-muted-foreground">
+        <p title={side.name} className="truncate text-sm text-foreground">
           {side.name}
           {caption ? `, ${caption}` : ""}
         </p>
@@ -119,7 +119,7 @@ function OpponentForm({ opponent }: { opponent: SideData }) {
   const { t } = useTranslation();
   if (opponent.form.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-foreground">
         {t("onAir.home.formAfterFirst", {
           team: opponent.name,
           defaultValue: "{{team}}'s form appears after their first match",
@@ -156,7 +156,7 @@ export function ScoreboardHero({ data, onOpenSchedule, onOpenSquad }: Scoreboard
     return (
       <Card data-slot="scoreboard-hero" data-empty="true" className="h-full">
         <CardContent className="flex h-full items-center justify-center py-10">
-          <p className="text-base text-muted-foreground">
+          <p className="text-base text-foreground">
             {t("home.nextMatchCard.none", { defaultValue: "No fixtures scheduled" })}
           </p>
         </CardContent>
@@ -229,7 +229,7 @@ export function ScoreboardHero({ data, onOpenSchedule, onOpenSquad }: Scoreboard
           <TagBlock size="sm" tone="info">
             {`${vsAtWord} ${opponent.shortName}`}
           </TagBlock>
-          <time dateTime={data.date.slice(0, 10)} className="ms-auto text-sm text-muted-foreground">
+          <time dateTime={data.date.slice(0, 10)} className="ms-auto text-sm text-foreground">
             {formatMatchDate(data.date, i18n.language)}
           </time>
         </header>
@@ -246,7 +246,7 @@ export function ScoreboardHero({ data, onOpenSchedule, onOpenSquad }: Scoreboard
                 <span className="sr-only">{daysLabel}</span>
                 <span aria-hidden="true" className="flex flex-col items-center">
                   <ScoreNumeral value={daysToGo} size="ovr" />
-                  <span className="text-sm text-muted-foreground">{captionWithoutCount(daysLabel, daysToGo)}</span>
+                  <span className="text-sm text-foreground">{captionWithoutCount(daysLabel, daysToGo)}</span>
                 </span>
               </>
             )}

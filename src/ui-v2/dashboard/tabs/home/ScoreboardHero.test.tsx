@@ -185,6 +185,12 @@ describe("ScoreboardHero", () => {
     expect(handlers.onOpenSquad).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps muted text off the club and opponent wash", () => {
+    // Muted grey on a bright accent wash measured about 2.8:1; foreground text clears 4.5:1.
+    const { container } = renderHero(makeData());
+    expect(container.innerHTML).not.toContain("text-muted-foreground");
+  });
+
   it("shows an empty state without data", () => {
     renderHero(null);
     expect(screen.getByText("No fixtures scheduled")).toBeInTheDocument();
