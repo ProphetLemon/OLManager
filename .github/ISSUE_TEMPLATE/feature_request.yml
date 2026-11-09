@@ -61,7 +61,7 @@ body:
           required: true
         - label: I understand maintainers must add `status:approved` before implementation starts.
           required: true
-        - label: I will branch from `development` using `type/lowercase-slug` if this is approved.
+        - label: I will branch from `develop` using `type/lowercase-slug` if this is approved.
           required: true
         - label: I identified whether this changes docs, release behavior, licensing, or data provenance.
           required: true

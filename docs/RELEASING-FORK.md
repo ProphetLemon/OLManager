@@ -4,6 +4,22 @@ The game checks `https://github.com/ProphetLemon/OLManager/releases/latest/downl
 on startup (release builds only) and offers a one-click update: download, install, relaunch.
 Updates are accepted only when signed with our own key.
 
+## Branches
+
+The fork follows gitflow. A release is built on its own branch and lands on `main` as one tagged commit.
+
+| Branch | Holds | Starts from | Merges into |
+|---|---|---|---|
+| `main` | Released builds only, each one tagged `v<version>` | — | — |
+| `develop` | The next release | — | — |
+| `<type>/<topic>` | One feature or fix. `<type>` is the Conventional Commit type: `feat`, `fix`, `refactor`, `chore`, `docs`, `ci` | `develop` | `develop` |
+| `release/<version>` | The version bump and last fixes of one release | `develop` | `main`, then `develop` |
+| `hotfix/<version>` | An urgent fix to the released build | `main` | `main`, then `develop` |
+
+- Merge with `--no-ff` and the message `chore(merge): merge <branch> into <target>`.
+- Push with an explicit remote: `git push origin <branch>`. `origin` is this fork; nothing is pushed or proposed to
+  `upstream`, the original project. The local `develop` may track `upstream/develop`, so a bare `git push` is not safe.
+
 ## Signing key
 
 - Private key: `~/.config/olmanager/tauri-updater.key` (mode 0600, empty password). It never goes in the repo.
@@ -66,6 +82,10 @@ Run scons without `-j`: a parallel install races on two bitmap files. The data p
 `$P` afterwards. Then release with it first on PATH:
 `PATH=~/.cache/olmanager/nsis-3.13-x86/bin:$PATH npm run release:fork`.
 
+Run these steps on a release branch, never on `develop` or a work branch:
+`git switch -c release/<version> develop`, or `git switch -c hotfix/<version> main` for a hotfix. Commit the version
+bump there.
+
 1. Set the version in `package.json`, `package-lock.json`, `src-tauri/Cargo.toml` (then let any cargo command
    refresh `Cargo.lock`), `src-tauri/tauri.conf.json` (also the window title, which keeps the "Limón Edition 🍋" name), `src/lib/common/appInfo.ts` and
    the `CHANGELOG.md` heading. `src/lib/release/releaseConfig.test.ts` checks that they match and follow the scheme.
@@ -80,14 +100,24 @@ real assets.
 
 ## Publish
 
-The script only prints these commands; run them yourself once you are happy:
+The script only prints the tag and release commands; run them yourself once you are happy. The tag goes on the
+merge commit on `main`, so merge the release branch first. For a hotfix, replace `release/` with `hotfix/`:
 
 ```
+git switch main
+git merge --no-ff release/<version> -m "chore(merge): merge release/<version> into main"
 git tag v<version>
-git push origin v<version>
+git push origin main v<version>
 gh release create v<version> --repo ProphetLemon/OLManager --title "Open League Manager <version>" \
   --notes-file <dir>/RELEASE_NOTES.md <dir>/<installer> <dir>/<appimage> <dir>/latest.json
+git switch develop
+git merge --no-ff release/<version> -m "chore(merge): merge release/<version> into develop"
+git push origin develop
+git branch -d release/<version>
 ```
+
+The merge into `main` changes no file the build saw: `main` only receives release and hotfix merges, and every such
+branch already contains `main`. So the tagged commit holds exactly what was built.
 
 Once the release is the latest one, every installed build from 2026.1108.1 on offers it at the next start (or from
 Settings, "Check for updates"). Saves are kept. Before the first release exists, the check just finds nothing
