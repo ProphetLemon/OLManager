@@ -874,3 +874,16 @@ fn join_team_refuses_a_competition_without_clubs() {
     );
     assert_eq!(game.teams.len(), 10);
 }
+
+#[test]
+fn join_team_reports_an_unknown_competition_before_a_duplicate_name() {
+    let mut game = world();
+    let mut clash = spec();
+    clash.name = "bravo club".to_string();
+
+    assert_eq!(
+        join_team_with_custom(&mut game, "nowhere", &clash).unwrap_err(),
+        CustomTeamError::UnknownCompetition("nowhere".to_string())
+    );
+    assert_eq!(game.teams.len(), 10);
+}
