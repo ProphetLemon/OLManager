@@ -67,7 +67,8 @@ export function squadFor(seed: number, overrides: FounderOverrides = {}): Foundi
 
 export interface PreviewCall {
   competitionId: string;
-  replacedTeamId: string;
+  /** Absent when the club joins the league. */
+  replacedTeamId?: string;
   shortName: string;
   seed: number;
   founderOverrides: FounderOverrides | null;

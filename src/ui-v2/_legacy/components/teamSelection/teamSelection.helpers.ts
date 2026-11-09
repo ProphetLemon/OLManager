@@ -44,3 +44,19 @@ export async function selectTeam(
     ...(customTeam ? { customTeam } : {}),
   });
 }
+
+/**
+ * Confirm a custom club that joins the league as an extra club and replaces
+ * nobody: no `teamId`, the competition travels as `joinsCompetitionId`.
+ */
+export async function joinLeagueWithCustomTeam(
+  competitionId: string,
+  lang: string | undefined,
+  customTeam: CustomTeamSpec,
+): Promise<GameStateData> {
+  return invoke<GameStateData>("select_team", {
+    lang: lang ?? "en",
+    joinsCompetitionId: competitionId,
+    customTeam,
+  });
+}

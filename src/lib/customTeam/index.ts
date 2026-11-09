@@ -9,6 +9,7 @@ export {
   contrastRatio,
   defaultReplacementId,
   mapBackendCustomTeamError,
+  mapBackendJoinError,
   normalizeColor,
   normalizeShortName,
   validateCustomTeam,
@@ -16,6 +17,8 @@ export {
 export type {
   CustomTeamDraft,
   CustomTeamField,
+  CustomTeamMode,
   CustomTeamValidation,
+  JoinErrorCode,
   ValidationCode,
 } from "./validation";

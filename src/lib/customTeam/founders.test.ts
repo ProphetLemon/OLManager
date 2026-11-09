@@ -136,6 +136,17 @@ describe("adapters", () => {
     expect(invoke.mock.calls[1][1]).toMatchObject({ founderOverrides: { mid: { nick: "Ray" } } });
   });
 
+  it("leaves replacedTeamId out when the club joins the league", async () => {
+    invoke.mockResolvedValue({ players: [], wage_budget: 1, bill: 1, allowed_nationalities: [] });
+    await previewFoundingSquad({ competitionId: "les", shortName: "RAY", seed: 7 });
+    await previewFoundingSquad({ competitionId: "les", replacedTeamId: null, shortName: "RAY", seed: 7 });
+
+    for (const call of invoke.mock.calls) {
+      expect(call[1]).toEqual({ competitionId: "les", shortName: "RAY", seed: 7, founderOverrides: null });
+      expect(Object.keys(call[1] as object)).not.toContain("replacedTeamId");
+    }
+  });
+
   it("sends only the changed rename fields", async () => {
     invoke.mockResolvedValue({ ok: true });
     await renamePlayer("gen-ray-mid-1", { nick: "Ray" });
