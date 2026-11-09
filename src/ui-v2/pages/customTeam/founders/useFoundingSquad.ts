@@ -20,7 +20,10 @@ export interface UseFoundingSquadInput {
   /** The squad is only fetched while the squad step is on screen. */
   enabled: boolean;
   competitionId: string;
+  /** The club the new one replaces; ignored when `joinsLeague`. */
   replacedTeamId: string | null;
+  /** The club joins the league as an extra club and replaces nobody. */
+  joinsLeague?: boolean;
   /** Normalized short name, exactly as the create spec will send it. */
   shortName: string;
 }
@@ -52,11 +55,12 @@ export interface FoundingSquadState {
 
 const inputsKey = (
   competitionId: string,
+  joinsLeague: boolean,
   replacedTeamId: string | null,
   shortName: string,
   seed: number,
   overrides: FounderOverrides,
-) => JSON.stringify([competitionId, replacedTeamId, shortName, seed, overrides]);
+) => JSON.stringify([competitionId, joinsLeague, joinsLeague ? null : replacedTeamId, shortName, seed, overrides]);
 
 /**
  * State of the wizard's founding squad: the seed, the rerolls left, the identity
@@ -68,6 +72,7 @@ export function useFoundingSquad({
   enabled,
   competitionId,
   replacedTeamId,
+  joinsLeague = false,
   shortName,
 }: UseFoundingSquadInput): FoundingSquadState {
   const [seed, setSeed] = useState(() => newFoundingSeed());
@@ -82,15 +87,19 @@ export function useFoundingSquad({
   const [retryTick, setRetryTick] = useState(0);
   const requestId = useRef(0);
 
-  const currentKey = inputsKey(competitionId, replacedTeamId, shortName, seed, overrides);
+  // A joining club previews without a replaced club; the mode is part of the key so switching it
+  // fetches again and keeps Create club closed until the new preview lands.
+  const replaced = joinsLeague ? null : replacedTeamId;
+  const known = joinsLeague || !!replacedTeamId;
+  const currentKey = inputsKey(competitionId, joinsLeague, replaced, shortName, seed, overrides);
 
   // Fetch whenever the inputs change while the step is on screen. The id guards
   // against a slow response overwriting a newer one.
   useEffect(() => {
-    if (!enabled || !replacedTeamId) return;
+    if (!enabled || !known) return;
     if (previewKey === currentKey && status === "ready") return;
     const id = ++requestId.current;
-    const base = { competitionId, replacedTeamId, shortName, seed };
+    const base = { competitionId, replacedTeamId: replaced, shortName, seed };
     setStatus("loading");
     setError(null);
     void (async () => {
@@ -116,7 +125,7 @@ export function useFoundingSquad({
         }
         setGenerated(plain);
         setSquad(shown);
-        setPreviewKey(inputsKey(competitionId, replacedTeamId, shortName, seed, kept));
+        setPreviewKey(inputsKey(competitionId, joinsLeague, replaced, shortName, seed, kept));
         setStatus("ready");
       } catch (caught) {
         if (id !== requestId.current) return;
@@ -141,12 +150,12 @@ export function useFoundingSquad({
 
   const applyOverrides = useCallback(
     async (next: FounderOverrides): Promise<FounderError | typeof SUPERSEDED | null> => {
-      if (!replacedTeamId) return null;
+      if (!known) return null;
       const id = ++requestId.current;
       try {
         const result = await previewFoundingSquad({
           competitionId,
-          replacedTeamId,
+          replacedTeamId: replaced,
           shortName,
           seed,
           founderOverrides: next,
@@ -154,7 +163,7 @@ export function useFoundingSquad({
         if (id !== requestId.current) return SUPERSEDED;
         setSquad(result);
         setOverrides(next);
-        setPreviewKey(inputsKey(competitionId, replacedTeamId, shortName, seed, next));
+        setPreviewKey(inputsKey(competitionId, joinsLeague, replaced, shortName, seed, next));
         setStatus("ready");
         setError(null);
         setEditsDropped(false);
@@ -166,7 +175,7 @@ export function useFoundingSquad({
         throw caught;
       }
     },
-    [competitionId, replacedTeamId, shortName, seed],
+    [competitionId, joinsLeague, replaced, known, shortName, seed],
   );
 
   return {

@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import en from "@/i18n/locales/en.json";
 import es from "@/i18n/locales/es.json";
-import { getReputationLabel, loadLeagueSelectionData, selectTeam } from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
+import {
+  getReputationLabel,
+  joinLeagueWithCustomTeam,
+  loadLeagueSelectionData,
+  selectTeam,
+} from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
@@ -86,5 +91,27 @@ describe("teamSelection.helpers", () => {
       lang: "es",
       customTeam: spec,
     });
+  });
+
+  it("joinLeagueWithCustomTeam sends the competition and the spec, with no teamId", async () => {
+    mockedInvoke.mockReset();
+    mockedInvoke.mockResolvedValue({});
+    const spec = {
+      name: "Rayo Esports",
+      short_name: "RAY",
+      primary_color: "#f97316",
+      secondary_color: "#111111",
+      country: "ES",
+      founding_seed: 7,
+    };
+    await joinLeagueWithCustomTeam("les", "en", spec);
+    expect(mockedInvoke).toHaveBeenCalledWith("select_team", {
+      lang: "en",
+      joinsCompetitionId: "les",
+      customTeam: spec,
+    });
+    expect(Object.keys(mockedInvoke.mock.calls[0][1] as object)).not.toContain("teamId");
+    await joinLeagueWithCustomTeam("les", undefined, spec);
+    expect(mockedInvoke).toHaveBeenLastCalledWith("select_team", expect.objectContaining({ lang: "en" }));
   });
 });

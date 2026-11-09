@@ -5,6 +5,9 @@ export type ValidationCode = "required" | "tooShort" | "tooLong" | "format" | "d
 
 export type CustomTeamField = "name" | "shortName" | "primary" | "secondary" | "country" | "replaces" | "logo";
 
+/** How the club enters the league: as an extra club, or in the place of an existing one. */
+export type CustomTeamMode = "join" | "replace";
+
 export interface CustomTeamDraft {
   name: string;
   shortName: string;
@@ -12,6 +15,8 @@ export interface CustomTeamDraft {
   secondary: string;
   country: string;
   replacesTeamId: string | null;
+  /** Absent means `replace`, the only mode that existed before joining a league. */
+  mode?: CustomTeamMode;
 }
 
 export interface CustomTeamValidation {
@@ -49,15 +54,17 @@ export function normalizeShortName(value: string): string {
 
 /**
  * Mirrors the Rust `validate_spec` rules. `leagueTeams` is the selected
- * league's roster; the replaced team is excluded so its own name stays usable.
- * The backend still checks uniqueness world-wide.
+ * league's roster; in replace mode the replaced team is excluded so its own
+ * name stays usable, while a joining club leaves every league club in place and
+ * so collides with all of them. The backend still checks uniqueness world-wide.
  */
 export function validateCustomTeam(
   draft: CustomTeamDraft,
   leagueTeams: readonly Pick<TeamSummary, "id" | "name" | "short_name">[],
 ): CustomTeamValidation {
   const errors: CustomTeamValidation["errors"] = {};
-  const others = leagueTeams.filter((team) => team.id !== draft.replacesTeamId);
+  const joins = draft.mode === "join";
+  const others = joins ? leagueTeams : leagueTeams.filter((team) => team.id !== draft.replacesTeamId);
 
   const name = draft.name.trim();
   if (!name) errors.name = "required";
@@ -80,7 +87,7 @@ export function validateCustomTeam(
 
   if (!draft.country.trim()) errors.country = "required";
 
-  if (!draft.replacesTeamId) errors.replaces = "required";
+  if (!joins && !draft.replacesTeamId) errors.replaces = "required";
 
   return { ok: Object.keys(errors).length === 0, errors };
 }
@@ -163,4 +170,22 @@ export function mapBackendCustomTeamError(
   const lowered = message.toLowerCase();
   const hit = BACKEND_ERROR_TABLE.find((row) => row.pattern.test(lowered));
   return hit ? { field: hit.field, code: hit.code } : null;
+}
+
+/** Backend refusals that concern how the club enters the league rather than one field. */
+export type JoinErrorCode = "notAccepted" | "noClubs" | "badRequest";
+
+const JOIN_ERROR_TABLE: ReadonlyArray<{ pattern: RegExp; code: JoinErrorCode }> = [
+  { pattern: /does not accept custom clubs/, code: "notAccepted" },
+  { pattern: /has no clubs to join/, code: "noClubs" },
+  {
+    pattern: /joining a league needs a custom club|pick either a team to replace or a league to join|no team was picked/,
+    code: "badRequest",
+  },
+];
+
+/** Map a `select_team` refusal about the join request itself, or `null` when it is something else. */
+export function mapBackendJoinError(message: string): JoinErrorCode | null {
+  const lowered = message.toLowerCase();
+  return JOIN_ERROR_TABLE.find((row) => row.pattern.test(lowered))?.code ?? null;
 }

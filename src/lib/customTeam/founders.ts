@@ -91,7 +91,8 @@ export function newFoundingSeed(): number {
 
 export interface PreviewFoundingSquadArgs {
   competitionId: string;
-  replacedTeamId: string;
+  /** The club the new one replaces; leave it out to preview a club that joins the league. */
+  replacedTeamId?: string | null;
   shortName: string;
   seed: number;
   founderOverrides?: FounderOverrides;
@@ -100,7 +101,8 @@ export interface PreviewFoundingSquadArgs {
 export function previewFoundingSquad(args: PreviewFoundingSquadArgs): Promise<FoundingSquadSummary> {
   return invoke<FoundingSquadSummary>("preview_founding_squad", {
     competitionId: args.competitionId,
-    replacedTeamId: args.replacedTeamId,
+    // The key is left out when joining, which is how the backend tells the two modes apart.
+    ...(args.replacedTeamId ? { replacedTeamId: args.replacedTeamId } : {}),
     shortName: args.shortName,
     seed: args.seed,
     founderOverrides: isEmptyOverrides(args.founderOverrides) ? null : args.founderOverrides,

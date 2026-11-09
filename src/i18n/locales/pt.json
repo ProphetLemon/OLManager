@@ -592,15 +592,15 @@
     },
     "custom": {
       "create": "Cria a tua equipa",
-      "createHint": "Substitui um clube desta liga pelo teu.",
+      "createHint": "Junta o teu clube a esta liga ou substitui um.",
       "title": "Cria a tua equipa",
-      "subtitle": "Substitui um clube desta liga pelo teu",
+      "subtitle": "Junta o teu clube a esta liga ou substitui um dos seus clubes",
       "stepOf": "Passo {{current}} de {{total}}",
       "stepsLabel": "Progresso",
       "steps": {
         "identity": "Identidade",
         "badge": "Emblema",
-        "replace": "Substituir e rever"
+        "replace": "Entrar ou substituir"
       },
       "fields": {
         "name": "Nome do clube",
@@ -649,6 +649,24 @@
         "replaceRequired": "Escolhe o clube que queres substituir.",
         "lowContrast": "Estas cores são muito próximas e a sigla pode ser difícil de ler. Podes continuar na mesma.",
         "title": "Não foi possível criar o clube"
+      }
+    },
+    "joinMode": {
+      "groupLabel": "Como o teu clube entra na liga",
+      "join": {
+        "label": "Entrar na liga",
+        "description": "Ninguém é substituído. A liga passará a ter {{total}} clubes.",
+        "descriptionOdd": "Ninguém é substituído. A liga passará a ter {{total}} clubes, por isso um clube descansa em cada jornada e o split tem mais jornadas."
+      },
+      "replace": {
+        "label": "Substituir um clube",
+        "description": "O clube que escolheres sai da liga e os seus jogadores e equipa técnica passam a agentes livres."
+      },
+      "summary": "{{name}} ({{tag}}), de {{country}}, entra em {{league}} como clube número {{position}}.",
+      "errors": {
+        "notAccepted": "Esta liga não aceita novos clubes. Volta atrás e escolhe outra liga ou uma equipa existente.",
+        "noClubs": "Esta liga não tem clubes a que se juntar. Volta atrás e escolhe outra liga.",
+        "badRequest": "O pedido para entrar na liga não era válido. Volta um passo atrás e tenta de novo."
       }
     },
     "founders": {
