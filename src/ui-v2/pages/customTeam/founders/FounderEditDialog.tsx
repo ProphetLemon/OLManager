@@ -59,9 +59,14 @@ export default function FounderEditDialog({
       ? iso
       : new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeZone: "UTC" }).format(date);
   };
-  const nationalityOptions = Array.from(
-    new Set([...allowedNationalities, founder.nationality]),
-  ).map((code) => ({ code, name: countryName(code, i18n.language) || code }));
+  // Two codes can share one country (GB and UK): list the country once, keeping the founder's
+  // own code if it is one of them, else the first in code order (GB), so the sort stays stable.
+  const optionByName = new Map<string, string>();
+  for (const code of Array.from(new Set([...allowedNationalities, founder.nationality])).sort()) {
+    const name = countryName(code, i18n.language) || code;
+    if (!optionByName.has(name) || code === founder.nationality) optionByName.set(name, code);
+  }
+  const nationalityOptions = Array.from(optionByName, ([name, code]) => ({ code, name }));
   nationalityOptions.sort((a, b) => a.name.localeCompare(b.name, i18n.language));
 
   const set = (field: FounderField, value: string) => {

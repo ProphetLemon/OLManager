@@ -31,6 +31,32 @@ function setup(onApply = vi.fn().mockResolvedValue(null)) {
 }
 
 describe("FounderEditDialog", () => {
+  it("lists a country once when two codes share it, keeping the founder's own code", () => {
+    const render2 = (nationality: string) => {
+      const { unmount } = render(
+        <FounderEditDialog
+          founder={{ ...founder, nationality }}
+          generated={founder}
+          overrides={{}}
+          allowedNationalities={["ES", "GB", "UK"]}
+          onApply={vi.fn()}
+          onClose={vi.fn()}
+        />,
+      );
+      const select = screen.getByLabelText("Nationality") as HTMLSelectElement;
+      const names = Array.from(select.options).map((o) => o.textContent);
+      const result = { names, value: select.value };
+      unmount();
+      return result;
+    };
+
+    const fromEs = render2("ES");
+    expect(fromEs.names.filter((n) => n === "United Kingdom")).toHaveLength(1);
+    const fromUk = render2("UK");
+    expect(fromUk.names.filter((n) => n === "United Kingdom")).toHaveLength(1);
+    expect(fromUk.value).toBe("UK");
+  });
+
   it("states the nick, full name and birth date constraints before any submit", () => {
     const { dialog } = setup();
 
