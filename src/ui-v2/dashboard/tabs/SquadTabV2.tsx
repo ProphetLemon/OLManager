@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import { AlertTriangle, ArrowDown, ArrowUp } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, Search } from "lucide-react";
 
 import type { GameStateData, PlayerData, PlayerSelectionOptions } from "@/store/gameStore";
 import {
@@ -436,8 +436,11 @@ export function SquadTabV2({
       {hasRoster ? (
         <section aria-labelledby="squad-bench-title" className="flex min-h-0 flex-col gap-4">
           <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-            <h2 id="squad-bench-title" className="font-heading text-section font-semibold">
-              {t("squad.benchSubstitutes", { defaultValue: "Bench / Substitutes" })}
+            <h2
+              id="squad-bench-title"
+              className="font-heading text-section font-semibold uppercase"
+            >
+              {t("onAir.squad.substitutes", { defaultValue: "Substitutes" })}
             </h2>
             <p className="text-sm text-muted-foreground tabular-nums">
               {t("onAir.squad.benchCount", {
@@ -448,66 +451,81 @@ export function SquadTabV2({
             </p>
           </header>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("common.search", { defaultValue: "Search" })}
-              aria-label={t("squad.filterPlayers", {
-                defaultValue: "Filter by player name or position",
-              })}
-              className="min-h-[var(--hit)] w-56 max-w-full rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            />
-            <SegmentedControl
-              size="sm"
-              ariaLabel={t("onAir.squad.roleFilter", { defaultValue: "Filter bench by role" })}
-              value={roleFilter}
-              onValueChange={(value) => setRoleFilter(value as RoleFilter)}
-              options={roleOptions}
-              className="max-w-full flex-wrap"
-            />
-          </div>
-          <div
-            role="group"
-            aria-label={t("onAir.squad.sortBy", { defaultValue: "Sort bench by" })}
-            className="flex flex-wrap items-center gap-2"
-          >
-            {sortOptions.map(([key, label]) => {
-              const active = sortKey === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => toggleSort(key)}
-                  className={cn(
-                    "inline-flex min-h-[var(--hit)] items-center gap-1 rounded-md border px-3 text-sm transition-colors",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                    active
-                      ? "border-club-text bg-muted font-bold text-foreground"
-                      : "border-border text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {label}
-                  {active ? (
-                    <>
-                      {sortDir === "asc" ? (
-                        <ArrowUp aria-hidden="true" className="size-3.5" />
-                      ) : (
-                        <ArrowDown aria-hidden="true" className="size-3.5" />
+          {benchPlayers.length > 0 ? (
+            <div
+              data-slot="bench-toolbar"
+              className="flex flex-wrap items-center gap-x-3 gap-y-2"
+            >
+              <label className="relative block w-60 max-w-full">
+                <span className="sr-only">
+                  {t("squad.filterPlayers", {
+                    defaultValue: "Filter by player name or position",
+                  })}
+                </span>
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t("onAir.squad.searchSubstitutes", {
+                    defaultValue: "Search substitutes",
+                  })}
+                  className="min-h-[var(--hit)] w-full rounded-lg border border-border bg-background ps-9 pe-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                />
+              </label>
+              <div
+                role="group"
+                aria-label={t("onAir.squad.sortBy", { defaultValue: "Sort bench by" })}
+                className="inline-flex flex-wrap overflow-hidden rounded-lg border border-border"
+              >
+                {sortOptions.map(([key, label]) => {
+                  const active = sortKey === key
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => toggleSort(key)}
+                      className={cn(
+                        "inline-flex min-h-[var(--hit)] items-center gap-1 border-s border-border px-3 text-sm transition-colors first:border-s-0",
+                        "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                        active
+                          ? "bg-club font-bold text-club-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
                       )}
-                      <span className="sr-only">
-                        {sortDir === "asc"
-                          ? t("onAir.squad.sortAscending", { defaultValue: "ascending" })
-                          : t("onAir.squad.sortDescending", { defaultValue: "descending" })}
-                      </span>
-                    </>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
+                    >
+                      {label}
+                      {active ? (
+                        <>
+                          {sortDir === "asc" ? (
+                            <ArrowUp aria-hidden="true" className="size-3.5" />
+                          ) : (
+                            <ArrowDown aria-hidden="true" className="size-3.5" />
+                          )}
+                          <span className="sr-only">
+                            {sortDir === "asc"
+                              ? t("onAir.squad.sortAscending", { defaultValue: "ascending" })
+                              : t("onAir.squad.sortDescending", { defaultValue: "descending" })}
+                          </span>
+                        </>
+                      ) : null}
+                    </button>
+                  )
+                })}
+              </div>
+              <SegmentedControl
+                size="sm"
+                ariaLabel={t("onAir.squad.roleFilter", { defaultValue: "Filter bench by role" })}
+                value={roleFilter}
+                onValueChange={(value) => setRoleFilter(value as RoleFilter)}
+                options={roleOptions}
+                className="max-w-full flex-wrap"
+              />
+            </div>
+          ) : null}
 
           {benchVisible.length === 0 ? (
             <BenchEmptyState

@@ -2,13 +2,13 @@ import { Repeat, ShoppingCart } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 import { shortRoleKey, type PlayerCardModel } from "@/lib/squad/cards"
-import { PlayerAvatar } from "@/ui-v2/_legacy/components/ui/PlayerAvatar"
 import { Button } from "@/ui-v2/components/ui/button"
 import { Meter } from "@/ui-v2/components/ui/meter"
 import { ScoreNumeral } from "@/ui-v2/components/ui/score-numeral"
 import { TagBlock } from "@/ui-v2/components/ui/tag-block"
 
 import { ROLE_DEFAULT } from "./PlayerCardV2"
+import { PlayerPortrait } from "./PlayerPortrait"
 
 interface BenchRowProps {
   model: PlayerCardModel
@@ -27,12 +27,10 @@ interface BenchRowProps {
 export function BenchRow({ model, loanListed, onOpen, onToggleTransfer, onToggleLoan }: BenchRowProps) {
   const { t } = useTranslation()
   const roleLabel = t(shortRoleKey(model.role), { defaultValue: ROLE_DEFAULT[model.role] })
-  const transferLabel = model.transferListed
-    ? t("squad.removeFromTransferList", { defaultValue: "Remove from transfer list" })
-    : t("squad.addToTransferList", { defaultValue: "Add to transfer list" })
-  const loanLabel = loanListed
-    ? t("squad.removeFromLoanList", { defaultValue: "Remove from loan list" })
-    : t("squad.addToLoanList", { defaultValue: "Add to loan list" })
+  // The label stays constant and aria-pressed carries the state; flipping both
+  // would announce the opposite of what the toggle now does.
+  const transferLabel = t("onAir.squad.transferListToggle", { defaultValue: "Transfer list" })
+  const loanLabel = t("onAir.squad.loanListToggle", { defaultValue: "Loan list" })
 
   return (
     <li
@@ -47,7 +45,7 @@ export function BenchRow({ model, loanListed, onOpen, onToggleTransfer, onToggle
         <TagBlock tone="secondary" size="sm" className="shrink-0">
           {roleLabel}
         </TagBlock>
-        <PlayerAvatar src={model.photo} alt="" className="size-10 shrink-0" />
+        <PlayerPortrait src={model.photo} className="size-10" />
         <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
           <span className="truncate font-heading text-lg font-bold" title={model.name}>
             {model.name}

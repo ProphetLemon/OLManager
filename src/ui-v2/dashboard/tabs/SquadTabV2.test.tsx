@@ -302,10 +302,51 @@ describe("SquadTabV2", () => {
     const row = screen.getAllByRole("listitem")[0];
     fireEvent.click(within(row).getAllByRole("button")[0]);
     expect(onSelectPlayer).toHaveBeenCalledWith("b_jng_high");
-    fireEvent.click(within(row).getByRole("button", { name: /Add to loan list/ }));
+    const loanToggle = within(row).getByRole("button", { name: /Loan list: b_jng_high/ });
+    expect(loanToggle).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(loanToggle);
     await waitFor(() =>
       expect(invokeMock).toHaveBeenCalledWith("toggle_loan_list", { playerId: "b_jng_high" }),
     );
+  });
+
+  it("keeps the bench toggle labels constant and carries state in aria-pressed", () => {
+    const players = [
+      ...baseStarters(),
+      makePlayer("b_listed", "TOP", 60, { transfer_listed: true, loan_listed: true }),
+    ];
+    setup(makeState(players));
+    const row = screen.getAllByRole("listitem")[0];
+    const transfer = within(row).getByRole("button", { name: "Transfer list: b_listed" });
+    const loan = within(row).getByRole("button", { name: "Loan list: b_listed" });
+    expect(transfer).toHaveAttribute("aria-pressed", "true");
+    expect(loan).toHaveAttribute("aria-pressed", "true");
+    expect(within(row).queryByRole("button", { name: /Remove from/ })).toBeNull();
+  });
+
+  it("titles the bench Substitutes and keeps the toolbar to search plus sort", () => {
+    setup(makeState([...baseStarters(), ...BENCH]));
+    expect(screen.getByRole("heading", { name: "Substitutes" })).toBeInTheDocument();
+    expect(screen.queryByText("Bench / Substitutes")).toBeNull();
+    const toolbar = document.querySelector("[data-slot='bench-toolbar']") as HTMLElement;
+    expect(within(toolbar).getByRole("searchbox")).toBeInTheDocument();
+    expect(within(toolbar).getByRole("group", { name: "Sort bench by" })).toBeInTheDocument();
+  });
+
+  it("hides the toolbar and role filter when the bench is empty", () => {
+    setup(makeState(baseStarters()));
+    expect(document.querySelector("[data-slot='bench-toolbar']")).toBeNull();
+    expect(screen.queryByRole("searchbox")).toBeNull();
+    expect(screen.queryByRole("radiogroup", { name: "Filter bench by role" })).toBeNull();
+    expect(screen.getByText("0 of 0")).toBeInTheDocument();
+  });
+
+  it("disables Swap with a reason on an empty bench instead of opening nothing", () => {
+    setup(makeState(baseStarters()));
+    const swap = screen.getByRole("button", { name: "Swap Mid" });
+    expect(swap).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(swap);
+    expect(screen.queryByRole("menu")).toBeNull();
   });
 
   it("saves the computed lineup once on mount when the stored one is stale", () => {
