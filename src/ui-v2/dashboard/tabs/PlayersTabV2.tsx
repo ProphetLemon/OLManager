@@ -334,7 +334,7 @@ export function PlayersTabV2({
                 placeholder={t("players.searchPlaceholder")}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full rounded-lg border border-border bg-muted/30 py-1.5 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                className="w-full rounded-lg border border-border bg-muted/30 py-1.5 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/50"
               />
             </div>
 
@@ -350,7 +350,7 @@ export function PlayersTabV2({
                     className={cn(
                       "flex items-center gap-1 rounded-md border px-2 py-1 font-heading text-xs font-bold uppercase tracking-wide transition-colors",
                       active
-                        ? "border-primary bg-primary/10 text-primary"
+                        ? "border-primary bg-primary/10 text-club-text"
                         : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground",
                     )}
                     title={role}
@@ -382,7 +382,7 @@ export function PlayersTabV2({
                   className={cn(
                     "rounded-md border px-2.5 py-1 font-heading text-xs font-bold uppercase tracking-wide transition-colors",
                     statusFilter === value && value === "all"
-                      ? "border-primary bg-primary/10 text-primary"
+                      ? "border-primary bg-primary/10 text-club-text"
                       : statusFilter === value && value === "transfer"
                         ? "border-orange-500/50 bg-orange-500/10 text-orange-400"
                         : statusFilter === value && value === "loan"
@@ -401,7 +401,7 @@ export function PlayersTabV2({
               onChange={(e) => setCompetitionFilter(e.target.value || null)}
               className={cn(
                 "min-w-32 rounded-md border border-border bg-card px-2.5 py-1 font-heading text-xs font-bold uppercase tracking-wide text-foreground transition-colors",
-                "focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30",
+                "focus:border-primary/50",
               )}
             >
               <option value="">{t("players.allCompetitions")}</option>
@@ -418,7 +418,7 @@ export function PlayersTabV2({
               onChange={(e) => setTeamFilter(e.target.value || null)}
               className={cn(
                 "min-32 rounded-md border border-border bg-card px-2.5 py-1 font-heading text-xs font-bold uppercase tracking-wide text-foreground transition-colors",
-                "focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30",
+                "focus:border-primary/50",
               )}
             >
               <option value="">{t("players.allTeams")}</option>
@@ -443,7 +443,7 @@ export function PlayersTabV2({
               <button
                 type="button"
                 onClick={clearFilters}
-                className="rounded-md border border-border px-3 py-1.5 font-heading text-xs font-bold uppercase tracking-wide text-primary transition-colors hover:bg-primary/10"
+                className="rounded-md border border-border px-3 py-1.5 font-heading text-xs font-bold uppercase tracking-wide text-club-text transition-colors hover:bg-primary/10"
               >
                 {t("players.clearFilters")}
               </button>
@@ -594,7 +594,7 @@ export function PlayersTabV2({
                                 e.stopPropagation();
                                 onSelectTeam(player.team_id!);
                               }}
-                              className="flex items-center gap-1.5 text-left font-medium text-foreground transition-colors hover:text-primary"
+                              className="flex items-center gap-1.5 text-left font-medium text-foreground transition-colors hover:text-club-text"
                             >
                               {teamLogo && (
                                 <img
@@ -623,9 +623,9 @@ export function PlayersTabV2({
                             className={cn(
                               "font-heading text-base font-bold tabular-nums",
                               ovr >= 75
-                                ? "text-primary"
+                                ? "text-club-text"
                                 : ovr >= 55
-                                  ? "text-amber-400"
+                                  ? "text-warning"
                                   : "text-muted-foreground",
                             )}
                           >
@@ -737,12 +737,12 @@ function SortHead({
       onClick={() => onSort(sortKey)}
       className={cn(
         "cursor-pointer select-none font-heading text-xs uppercase tracking-widest transition-colors hover:text-foreground",
-        active ? "text-primary" : "text-muted-foreground",
+        active ? "text-club-text" : "text-muted-foreground",
       )}
     >
       <span className="inline-flex items-center gap-1">
         {label}
-        <span className={cn("text-xs", active ? "text-primary" : "text-muted-foreground/40")}>
+        <span className={cn("text-xs", active ? "text-club-text" : "text-muted-foreground/40")}>
           {active ? (dir === "asc" ? "↑" : "↓") : "↕"}
         </span>
       </span>

@@ -34,9 +34,9 @@ interface PlayerProfileTransferOfferModalV2Props {
 }
 
 const DECISION_TONE: Record<TransferOfferFeedbackState["decision"], string> = {
-  accepted: "text-emerald-500",
+  accepted: "text-positive",
   rejected: "text-destructive",
-  counter_offer: "text-amber-500",
+  counter_offer: "text-warning",
 };
 
 export default function PlayerProfileTransferOfferModalV2({
@@ -107,7 +107,7 @@ export default function PlayerProfileTransferOfferModalV2({
             </div>
             {projectionFee !== null && projection ? (
               <div className="space-y-2 rounded-lg border border-border bg-card/60 p-3">
-                <p className="font-heading text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <p className="font-heading text-caption font-bold uppercase tracking-wider text-muted-foreground">
                   {t("transfers.bidImpactTitle", { defaultValue: "Projected impact" })}
                 </p>
                 <p className="text-xs tabular-nums text-foreground/70">

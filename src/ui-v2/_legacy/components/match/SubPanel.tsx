@@ -240,7 +240,7 @@ export function SubPanel({
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="text-[10px] font-heading uppercase tracking-widest text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-navy-700">
+                      <tr className="text-2xs font-heading uppercase tracking-widest text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-navy-700">
                         <th className="py-2 pr-2">{t("match.player")}</th>
                         <th className="py-2 w-12 text-center">
                           {t("common.position")}
@@ -289,7 +289,7 @@ export function SubPanel({
                                     <UserMinus className="w-3.5 h-3.5 text-red-400 shrink-0" />
                                   )}
                                   {isSubOn && (
-                                    <span className="text-green-400 text-[10px]">
+                                    <span className="text-green-400 text-2xs">
                                       ▲
                                     </span>
                                   )}
@@ -434,7 +434,7 @@ export function SubPanel({
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead>
-                         <tr className="text-[10px] font-heading uppercase tracking-widest text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-navy-700">
+                         <tr className="text-2xs font-heading uppercase tracking-widest text-gray-600 dark:text-gray-500 border-b border-gray-200 dark:border-navy-700">
                           <th className="py-2 pr-2">{t("match.player")}</th>
                           <th className="py-2 w-12 text-center">
                             {t("common.position")}

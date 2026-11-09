@@ -51,12 +51,12 @@ interface StaffProfileV2Props {
 
 function AttrBar({ label, value }: { label: string; value: number }) {
   const pct = Math.max(0, Math.min(100, value));
-  const color = value >= 70 ? "bg-emerald-400" : value >= 50 ? "bg-amber-400" : "bg-muted-foreground/40";
+  const color = value >= 70 ? "bg-positive" : value >= 50 ? "bg-warning" : "bg-muted-foreground/40";
   return (
     <div>
       <div className="mb-0.5 flex justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
-        <span className={`font-heading font-bold tabular-nums ${value >= 70 ? "text-emerald-400" : value >= 50 ? "text-amber-400" : "text-muted-foreground"}`}>
+        <span className={`font-heading font-bold tabular-nums ${value >= 70 ? "text-positive" : value >= 50 ? "text-warning" : "text-muted-foreground"}`}>
           {value}
         </span>
       </div>
@@ -170,7 +170,7 @@ export default function StaffProfileV2({
                   <button
                     type="button"
                     onClick={() => onSelectTeam?.(staff.team_id as string)}
-                    className="text-muted-foreground/80 underline-offset-2 hover:text-primary hover:underline"
+                    className="text-muted-foreground/80 underline-offset-2 hover:text-club-text hover:underline"
                   >
                     {getTeamName(gameState.teams, staff.team_id)}
                   </button>
@@ -180,17 +180,17 @@ export default function StaffProfileV2({
 
             <div className="mt-2 flex flex-wrap gap-1.5">
               {staff.specialization && (
-                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-caption uppercase tracking-wider text-muted-foreground">
                   <Star className="size-3" /> {t(`staff.specializations.${staff.specialization}`)}
                 </span>
               )}
               {staff.wage > 0 && (
-                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-caption uppercase tracking-wider text-muted-foreground">
                   {activeCurrencySymbol()}{staff.wage.toLocaleString()}/año
                 </span>
               )}
               {staff.contract_end && (
-                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-caption uppercase tracking-wider text-muted-foreground">
                   {t("staff.contractUntil", { defaultValue: "Contrato" })}: {staff.contract_end}
                 </span>
               )}
@@ -205,7 +205,7 @@ export default function StaffProfileV2({
                   type="button"
                   disabled={actionLoading}
                   onClick={() => runAction(releaseStaff)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-4 py-2 font-heading text-sm font-bold uppercase tracking-wider text-red-500 transition-colors hover:bg-red-500/20 disabled:pointer-events-none disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg bg-negative/10 px-4 py-2 font-heading text-sm font-bold uppercase tracking-wider text-negative transition-colors hover:bg-negative/20 disabled:pointer-events-none disabled:opacity-50"
                 >
                   {actionLoading ? <Loader2 className="size-4 animate-spin" /> : <UserMinus className="size-4" />}
                   {t("staff.releaseStaff")}
@@ -215,13 +215,13 @@ export default function StaffProfileV2({
                   type="button"
                   disabled={actionLoading}
                   onClick={() => runAction(hireStaff)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 font-heading text-sm font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 font-heading text-sm font-bold uppercase tracking-wider text-club-text transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
                 >
                   {actionLoading ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
                   {t("staff.hireStaff")}
                 </button>
               )}
-              {error && <p className="max-w-[220px] text-right text-xs text-red-500">{error}</p>}
+              {error && <p className="max-w-[220px] text-right text-xs text-negative">{error}</p>}
             </div>
           )}
         </CardContent>
@@ -262,7 +262,7 @@ export default function StaffProfileV2({
                   className="inline-flex items-center gap-1.5 rounded bg-primary/5 px-2.5 py-1 font-heading text-xs uppercase tracking-wider text-muted-foreground"
                 >
                   <span>{t(row.labelKey)}</span>
-                  <span className="font-bold text-primary tabular-nums">
+                  <span className="font-bold text-club-text tabular-nums">
                     {formatStaffEffectPercent(row.value)}
                   </span>
                 </span>

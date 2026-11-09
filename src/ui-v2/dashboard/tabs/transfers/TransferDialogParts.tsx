@@ -8,9 +8,9 @@ import { roleLabel } from "./TransferPlayerPicker";
 export type DecisionTone = "accepted" | "rejected" | "other";
 
 const DECISION_CLASS: Record<DecisionTone, string> = {
-  accepted: "text-emerald-500",
+  accepted: "text-positive",
   rejected: "text-destructive",
-  other: "text-amber-500",
+  other: "text-warning",
 };
 
 export function decisionTone(decision: string): DecisionTone {

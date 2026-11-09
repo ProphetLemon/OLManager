@@ -179,13 +179,13 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                               "group flex items-center gap-2 px-5 py-3 transition-all duration-200 md:gap-3",
                               isUserMatch && "bg-primary/5",
                             )}>
-                            <Badge variant="outline" className="hidden w-10 shrink-0 text-center text-[10px] md:block">
+                            <Badge variant="outline" className="hidden w-10 shrink-0 text-center text-2xs md:block">
                               BO{inferBestOf(f, bestOfContext)}
                             </Badge>
                             <button onClick={() => onSelectTeam(f.home_team_id)}
                               className={cn(
                                 "flex min-w-0 flex-1 items-center justify-end gap-1.5 text-sm font-semibold transition-colors hover:underline md:gap-2",
-                                f.home_team_id === userTeamId ? "text-primary" : "text-foreground",
+                                f.home_team_id === userTeamId ? "text-club-text" : "text-foreground",
                               )}>
                               {homeLogo && <img src={homeLogo} alt="" className="size-5 shrink-0 object-contain" />}
                               <span className="truncate">{homeName}</span>
@@ -193,13 +193,13 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                             <div className="flex w-16 shrink-0 items-center justify-center md:w-20">
                               <div className="flex flex-col items-center">
                                 <span className="font-heading text-xs font-bold uppercase tracking-widest text-muted-foreground/30">VS</span>
-                                <span className="text-[9px] text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date)}</span>
+                                <span className="text-2xs text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date)}</span>
                               </div>
                             </div>
                             <button onClick={() => onSelectTeam(f.away_team_id)}
                               className={cn(
                                 "flex min-w-0 flex-1 items-center gap-1.5 text-sm font-semibold transition-colors hover:underline md:gap-2",
-                                f.away_team_id === userTeamId ? "text-primary" : "text-foreground",
+                                f.away_team_id === userTeamId ? "text-club-text" : "text-foreground",
                               )}>
                               <span className="truncate">{awayName}</span>
                               {awayLogo && <img src={awayLogo} alt="" className="size-5 shrink-0 object-contain" />}
@@ -256,13 +256,13 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                     <div key={f.id}
                       className={cn(
                         "group flex items-center gap-2 px-5 py-3 transition-all duration-200 md:gap-3",
-                        userWon === true && "bg-emerald-500/5",
-                        userWon === false && "bg-red-500/5",
+                        userWon === true && "bg-positive/5",
+                        userWon === false && "bg-negative/5",
                         userWon === null && isUserMatch && "bg-primary/5",
                         !isUserMatch && "hover:bg-muted/20",
                       )}>
                       {/* BO badge */}
-                      <Badge variant="outline" className="hidden w-10 shrink-0 text-center text-[10px] md:block">
+                      <Badge variant="outline" className="hidden w-10 shrink-0 text-center text-2xs md:block">
                         BO{bo}
                       </Badge>
 
@@ -270,7 +270,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                       <button onClick={() => onSelectTeam(f.home_team_id)}
                         className={cn(
                           "flex min-w-0 flex-1 items-center justify-end gap-1.5 text-sm font-semibold transition-colors hover:underline md:gap-2",
-                          f.home_team_id === userTeamId ? "text-primary" : "text-foreground",
+                          f.home_team_id === userTeamId ? "text-club-text" : "text-foreground",
                         )}>
                         {homeLogo && <img src={homeLogo} alt="" className="size-5 shrink-0 object-contain" />}
                         <span className="truncate">{getTeamName(gameState.teams, f.home_team_id)}</span>
@@ -281,14 +281,14 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                         {score ? (
                           <span className={cn(
                             "font-heading text-xl font-black tabular-nums md:text-2xl",
-                            userWon === true ? "text-emerald-400" : userWon === false ? "text-red-400" : "text-foreground",
+                            userWon === true ? "text-positive" : userWon === false ? "text-negative" : "text-foreground",
                           )}>
                             {score.home} - {score.away}
                           </span>
                         ) : (
                           <div className="flex flex-col items-center">
                             <span className="font-heading text-xs font-bold uppercase tracking-widest text-muted-foreground/30">VS</span>
-                            <span className="text-[9px] text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date)}</span>
+                            <span className="text-2xs text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date)}</span>
                           </div>
                         )}
                       </div>
@@ -297,7 +297,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                       <button onClick={() => onSelectTeam(f.away_team_id)}
                         className={cn(
                           "flex min-w-0 flex-1 items-center gap-1.5 text-sm font-semibold transition-colors hover:underline md:gap-2",
-                          f.away_team_id === userTeamId ? "text-primary" : "text-foreground",
+                          f.away_team_id === userTeamId ? "text-club-text" : "text-foreground",
                         )}>
                         <span className="truncate">{getTeamName(gameState.teams, f.away_team_id)}</span>
                         {awayLogo && <img src={awayLogo} alt="" className="size-5 shrink-0 object-contain" />}
@@ -308,7 +308,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                         {completed && (
                           <button type="button" onClick={() => { const s = readStoredFixtureDraftResult(f.id); if (s) setFixtureResultView(s); }}
                             disabled={!hasStoredResult}
-                            className="flex size-7 items-center justify-center rounded-md text-muted-foreground/30 transition-all hover:text-primary group-hover:translate-x-0.5 disabled:pointer-events-none disabled:opacity-20">
+                            className="flex size-7 items-center justify-center rounded-md text-muted-foreground/30 transition-all hover:text-club-text group-hover:translate-x-0.5 disabled:pointer-events-none disabled:opacity-20">
                             <ChevronRight className="size-4" />
                           </button>
                         )}
@@ -424,13 +424,13 @@ function WeekScheduleCard({
                         : "border-border bg-card/60",
                 )}
               >
-                <div className="font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <div className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                   {d.label}
                 </div>
                 <div
                   className={cn(
                     "mt-1 font-heading text-base font-bold tabular-nums",
-                    d.isToday && "text-primary",
+                    d.isToday && "text-club-text",
                   )}
                 >
                   {d.date.getDate()}
@@ -440,12 +440,12 @@ function WeekScheduleCard({
                     oppLogo ? (
                       <img src={oppLogo} alt="" className="size-7 object-contain" />
                     ) : (
-                      <span className="font-heading text-[10px] font-bold text-primary">
+                      <span className="font-heading text-2xs font-bold text-club-text">
                         {t("schedule.match")}
                       </span>
                     )
                   ) : (
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
+                    <span className="text-2xs uppercase tracking-wider text-muted-foreground/60">
                       ·
                     </span>
                   )}

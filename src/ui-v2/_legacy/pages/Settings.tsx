@@ -247,7 +247,7 @@ export default function Settings() {
               label={t("settings.highContrast", "High Contrast")}
               description={t(
                 "settings.highContrastDesc",
-                "Boost text contrast in dark mode for improved readability",
+                "Strengthen text, borders and the focus outline for improved readability",
               )}
             >
               <GameToggle
@@ -880,7 +880,7 @@ function ImportDataSection() {
             type="button"
             disabled={busy}
             onClick={handleAutoImport}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-sm font-heading font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-club-text hover:bg-primary/20 text-sm font-heading font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
           >
             {busy ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -901,7 +901,7 @@ function ImportDataSection() {
               ? "border-red-500/30 bg-red-500/10 text-red-500"
               : isSuccess
                 ? "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
-                : "border-primary/20 bg-primary/5 text-primary"
+                : "border-primary/20 bg-primary/5 text-club-text"
           }`}
         >
           {busy && (

@@ -19,7 +19,7 @@ export function SocialComposer({ text, posting, error, onChange, onPublish }: So
         maxLength={280}
         onChange={(event) => onChange(event.target.value)}
         placeholder={t("social.composerPlaceholder", { defaultValue: "¿Qué está pensando el míster hoy?" })}
-        className="min-h-[84px] w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        className="min-h-[84px] w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground"
       />
       <div className="mt-2 flex items-center justify-between">
         <span className="text-xs tabular-nums text-muted-foreground">{text.length}/280</span>

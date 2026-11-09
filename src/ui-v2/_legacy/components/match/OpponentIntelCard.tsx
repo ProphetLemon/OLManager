@@ -13,7 +13,7 @@ export default function OpponentIntelCard({ intel }: { intel: OpponentIntelSnaps
         </div>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">{t("match.opponentIntel.confidence", "Intel confidence")}</p>
-          <p className="font-heading font-bold text-sm text-primary">
+          <p className="font-heading font-bold text-sm text-club-text">
             {intel.confidence.qualityLabel.toUpperCase()} · {intel.confidence.poolCoveragePct}%
           </p>
         </div>
@@ -66,7 +66,7 @@ export default function OpponentIntelCard({ intel }: { intel: OpponentIntelSnaps
           <h4 className="text-xs uppercase tracking-wider font-heading text-muted-foreground">{t("match.opponentIntel.masteryHighlights", "Mastery highlights")}</h4>
           <div className="rounded-xl border border-border p-3 flex flex-wrap gap-2">
             {intel.masteryHighlights.map((champion) => (
-              <span key={`mastery-${champion.championId}`} className="text-xs px-2 py-1 rounded-lg bg-primary/10 text-primary">
+              <span key={`mastery-${champion.championId}`} className="text-xs px-2 py-1 rounded-lg bg-primary/10 text-club-text">
                 {champion.championName} · {Math.round(champion.mastery)}%
               </span>
             ))}

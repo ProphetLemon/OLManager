@@ -138,7 +138,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
             </button>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
-                <span className="font-heading text-3xl font-bold tabular-nums text-primary">{mgr.reputation}</span>
+                <span className="font-heading text-3xl font-bold tabular-nums text-club-text">{mgr.reputation}</span>
               </div>
               <div className="relative mx-auto mt-1 h-1.5 w-20 overflow-hidden rounded-full">
                   <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(to right, #14b8a6, #2dd4bf 25%, #5eead4 50%)' }} />
@@ -147,12 +147,12 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                     style={{ width: `${100 - Math.min(100, (mgr.reputation / 1000) * 100)}%` }}
                   />
                 </div>
-              <p className="mt-0.5 font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("manager.reputation")}</p>
+              <p className="mt-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.reputation")}</p>
             </div>
             <button
               type="button"
               onClick={handleOpenSettings}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-[10px] font-heading font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted"
             >
               <Settings className="size-3" />
               {t("manager.editProfile")}
@@ -175,7 +175,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
               </span>
               <span>{t("manager.born")} {formatDate(mgr.date_of_birth, i18n.language)}</span>
               {myTeam && (
-                <span className="font-medium text-primary">{t("manager.managerOf", { team: myTeam.name })}</span>
+                <span className="font-medium text-club-text">{t("manager.managerOf", { team: myTeam.name })}</span>
               )}
             </div>
           </div>
@@ -192,7 +192,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
             ].map((s) => (
               <div key={s.label} className="rounded-lg border border-border bg-muted/20 px-2 py-2 text-center">
                 <p className="font-heading text-lg font-bold tabular-nums text-foreground">{s.value}</p>
-                <p className="font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{s.label}</p>
+                <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{s.label}</p>
               </div>
             ))}
           </div>
@@ -224,10 +224,10 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                 <Badge
                   className={cn(
                     "mt-1.5",
-                    mgr.satisfaction >= 80 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" :
-                    mgr.satisfaction >= 50 ? "border-primary/30 bg-primary/10 text-primary" :
-                    mgr.satisfaction >= 30 ? "border-amber-500/30 bg-amber-500/10 text-amber-400" :
-                    "border-red-500/30 bg-red-500/10 text-red-400",
+                    mgr.satisfaction >= 80 ? "border-positive/30 bg-positive/10 text-positive" :
+                    mgr.satisfaction >= 50 ? "border-primary/30 bg-primary/10 text-club-text" :
+                    mgr.satisfaction >= 30 ? "border-warning/30 bg-warning/10 text-warning" :
+                    "border-negative/30 bg-negative/10 text-negative",
                   )}
                 >
                   {mgr.satisfaction >= 80 ? t("manager.boardVeryPleased") :
@@ -251,10 +251,10 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                   <Badge
                   className={cn(
                     "mt-1.5",
-                    (mgr.fan_approval ?? 50) >= 80 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" :
-                    (mgr.fan_approval ?? 50) >= 60 ? "border-primary/30 bg-primary/10 text-primary" :
-                    (mgr.fan_approval ?? 50) >= 40 ? "border-amber-500/30 bg-amber-500/10 text-amber-400" :
-                    "border-red-500/30 bg-red-500/10 text-red-400",
+                    (mgr.fan_approval ?? 50) >= 80 ? "border-positive/30 bg-positive/10 text-positive" :
+                    (mgr.fan_approval ?? 50) >= 60 ? "border-primary/30 bg-primary/10 text-club-text" :
+                    (mgr.fan_approval ?? 50) >= 40 ? "border-warning/30 bg-warning/10 text-warning" :
+                    "border-negative/30 bg-negative/10 text-negative",
                   )}
                 >
                   {(mgr.fan_approval ?? 50) >= 80 ? t("manager.fanAdore") :
@@ -279,7 +279,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
             {mgr.career_history.length > 0 ? (
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-border text-[10px] uppercase tracking-widest text-muted-foreground">
+                  <tr className="border-b border-border text-2xs uppercase tracking-widest text-muted-foreground">
                     <th className="px-4 py-3 font-heading font-bold">{t("manager.club")}</th>
                     <th className="px-4 py-3 font-heading font-bold">{t("manager.period")}</th>
                     <th className="px-3 py-3 text-center font-heading font-bold">{t("common.played")}</th>
@@ -295,8 +295,8 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                         {entry.start_date.substring(0, 4)}–{entry.end_date?.substring(0, 4) || t("common.present")}
                       </td>
                       <td className="px-3 py-3 text-center text-xs tabular-nums text-muted-foreground">{entry.matches}</td>
-                      <td className="px-3 py-3 text-center text-xs tabular-nums text-emerald-400">{entry.wins}</td>
-                      <td className="px-3 py-3 text-center text-xs tabular-nums text-red-400">{entry.losses}</td>
+                      <td className="px-3 py-3 text-center text-xs tabular-nums text-positive">{entry.wins}</td>
+                      <td className="px-3 py-3 text-center text-xs tabular-nums text-negative">{entry.losses}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -332,7 +332,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                     <p className="font-heading text-base font-bold uppercase tracking-wide text-foreground">{myTeam.name}</p>
                     {teamPosition && (
                       <p className="text-xs text-muted-foreground">
-                        {t("manager.leaguePosition", "Posición")}: <span className="font-semibold text-primary">#{teamPosition}</span>
+                        {t("manager.leaguePosition", "Posición")}: <span className="font-semibold text-club-text">#{teamPosition}</span>
                         {league?.standings && <span> · {league.standings.length} {t("manager.teams", "equipos")}</span>}
                       </p>
                     )}
@@ -340,26 +340,26 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
-                    <Users className="mx-auto mb-1 size-4 text-primary" />
+                    <Users className="mx-auto mb-1 size-4 text-club-text" />
                     <p className="font-heading text-lg font-bold tabular-nums text-foreground">{teamPlayers.length}</p>
-                    <p className="font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{t("manager.players", "Jugadores")}</p>
+                    <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.players", "Jugadores")}</p>
                   </div>
                   <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
                     <Building2 className="mx-auto mb-1 size-4 text-amber-400" />
                     <p className="font-heading text-lg font-bold tabular-nums text-foreground">{teamStaff.length}</p>
-                    <p className="font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{t("manager.staff", "Staff")}</p>
+                    <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.staff", "Staff")}</p>
                   </div>
                   <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
                     <Trophy className="mx-auto mb-1 size-4 text-emerald-400" />
                     <p className="font-heading text-lg font-bold tabular-nums text-foreground">{avgOvr}</p>
-                    <p className="font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{t("common.ovr")}</p>
+                    <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("common.ovr")}</p>
                   </div>
                 </div>
 
                 {/* Recent results */}
                 {recentResults.length > 0 && (
                   <div>
-                    <p className="mb-2 font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <p className="mb-2 font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                       {t("manager.recentResults", "Últimos resultados")}
                     </p>
                     <div className="flex gap-1.5">
@@ -373,7 +373,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                             key={f.id}
                             className={cn(
                               "flex size-8 items-center justify-center rounded-md text-xs font-heading font-bold tabular-nums",
-                              won ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400",
+                              won ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative",
                             )}
                             title={`${getTeamName(gameState.teams, f.home_team_id)} ${f.result?.home_wins ?? 0}-${f.result?.away_wins ?? 0} ${getTeamName(gameState.teams, f.away_team_id)}`}
                           >
@@ -404,31 +404,31 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
                   <p className="font-heading text-lg font-bold tabular-nums text-foreground">{totalSeasons}</p>
-                  <p className="font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{t("manager.seasons", "Temp.")}</p>
+                  <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.seasons", "Temp.")}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
                   <p className="font-heading text-lg font-bold tabular-nums text-foreground">{stats.trophies}</p>
-                  <p className="font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{t("manager.trophies")}</p>
+                  <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.trophies")}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
                   <p className="font-heading text-lg font-bold tabular-nums text-foreground">
                     {stats.best_finish != null ? `#${stats.best_finish}` : "—"}
                   </p>
-                  <p className="font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{t("manager.bestFinish", "Mejor puesto")}</p>
+                  <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.bestFinish", "Mejor puesto")}</p>
                 </div>
               </div>
 
               {/* W/L ratio bar */}
               {stats.matches_managed > 0 && (
                 <div>
-                  <p className="mb-1.5 font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-1.5 font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                     {t("manager.winRate", "Efectividad")}
                   </p>
                   <div className="flex h-3 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full bg-emerald-400 transition-all" style={{ width: `${(stats.wins / stats.matches_managed) * 100}%` }} />
-                    <div className="h-full bg-red-400 transition-all" style={{ width: `${(stats.losses / stats.matches_managed) * 100}%` }} />
+                    <div className="h-full bg-positive transition-all" style={{ width: `${(stats.wins / stats.matches_managed) * 100}%` }} />
+                    <div className="h-full bg-negative transition-all" style={{ width: `${(stats.losses / stats.matches_managed) * 100}%` }} />
                   </div>
-                  <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+                  <div className="mt-1 flex justify-between text-2xs text-muted-foreground">
                     <span>{Math.round((stats.wins / stats.matches_managed) * 100)}% {t("manager.wins")}</span>
                     <span>{Math.round((stats.losses / stats.matches_managed) * 100)}% {t("manager.losses")}</span>
                   </div>
@@ -438,7 +438,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
               {/* Season records from career history */}
               {mgr.career_history.length > 0 && (
                 <div>
-                  <p className="mb-1.5 font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-1.5 font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                     {t("manager.bestSeason", "Mejor temporada")}
                   </p>
                   {(() => {
@@ -446,7 +446,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                     return (
                       <div className="rounded-lg border border-border bg-muted/20 p-2.5">
                         <p className="text-xs font-medium text-foreground">{best.team_name}</p>
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        <p className="mt-0.5 text-2xs text-muted-foreground">
                           {best.wins}W/{best.losses}L · {Math.round((best.wins / Math.max(1, best.matches)) * 100)}% WR
                           {best.best_league_position != null && ` · #${best.best_league_position}`}
                         </p>
@@ -505,32 +505,32 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.nickname")}</label>
+                <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.nickname")}</label>
                 <input maxLength={20} value={formData.nickname} onChange={(e) => setFormData((p) => ({ ...p, nickname: e.target.value }))}
-                  className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50" />
+                  className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:border-primary/50" />
               </div>
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label className="mb-1 block font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.firstName")}</label>
+                  <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.firstName")}</label>
                   <input maxLength={30} value={formData.firstName} onChange={(e) => setFormData((p) => ({ ...p, firstName: e.target.value }))}
-                    className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50" />
+                    className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:border-primary/50" />
                 </div>
                 <div className="flex-1">
-                  <label className="mb-1 block font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.lastName")}</label>
+                  <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.lastName")}</label>
                   <input maxLength={30} value={formData.lastName} onChange={(e) => setFormData((p) => ({ ...p, lastName: e.target.value }))}
-                    className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50" />
+                    className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:border-primary/50" />
                 </div>
               </div>
               <div>
-                <label className="mb-1 block font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.dob")}</label>
+                <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.dob")}</label>
                 <input type="date" value={formData.dob} onChange={(e) => setFormData((p) => ({ ...p, dob: e.target.value }))}
-                  className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50" />
+                  className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:border-primary/50" />
               </div>
               <div ref={nationalityRef}>
-                <label className="mb-1 block font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.countryOfOrigin")}</label>
+                <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.countryOfOrigin")}</label>
                 <div className="relative">
                   <button type="button" onClick={() => setNationalityOpen(!nationalityOpen)}
-                    className="flex w-full items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-left text-foreground outline-none transition-colors hover:border-primary/50">
+                    className="flex w-full items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-left text-foreground transition-colors hover:border-primary/50">
                     <span className="flex items-center gap-2">
                       {formData.nationality ? (
                         <><CountryFlag code={formData.nationality} locale={i18n.language} className="text-lg leading-none" /><span>{countryName(formData.nationality, i18n.language) || formData.nationality}</span></>
@@ -545,14 +545,14 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                       <div className="border-b border-border p-2">
                         <input type="text" autoFocus placeholder={t("createManager.searchNationalities")} value={nationalitySearch}
                           onChange={(e) => setNationalitySearch(e.target.value)}
-                          className="w-full rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-foreground outline-none" />
+                          className="w-full rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-foreground" />
                       </div>
                       {filteredNationalities.map((nat) => (
                         <button key={nat.code} type="button" onMouseDown={(e) => { e.preventDefault(); setFormData((p) => ({ ...p, nationality: nat.code })); setNationalityOpen(false); setNationalitySearch(""); }}
                           className={cn("flex w-full items-center justify-between px-3 py-2 text-left text-xs transition-colors",
-                            formData.nationality === nat.code ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted")}>
+                            formData.nationality === nat.code ? "bg-primary/10 text-club-text" : "text-muted-foreground hover:bg-muted")}>
                           <span className="flex items-center gap-2"><CountryFlag code={nat.code} locale={i18n.language} className="text-base leading-none" /><span>{nat.name}</span></span>
-                          {formData.nationality === nat.code && <Check className="size-3.5 text-primary" />}
+                          {formData.nationality === nat.code && <Check className="size-3.5 text-club-text" />}
                         </button>
                       ))}
                     </div>

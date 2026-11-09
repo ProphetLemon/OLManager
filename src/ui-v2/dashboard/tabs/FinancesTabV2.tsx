@@ -310,23 +310,23 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
         <CardContent>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
             <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.clubBalance")}</p>
-              <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", teamBalance >= 0 ? "text-emerald-400" : "text-red-400")}>{formatVal(teamBalance)}</p>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.clubBalance")}</p>
+              <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", teamBalance >= 0 ? "text-positive" : "text-negative")}>{formatVal(teamBalance)}</p>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.annualWageBudget", "Annual wage budget")}</p>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.annualWageBudget", "Annual wage budget")}</p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">{formatVal(annualWageBudget)}</p>
-              <p className="mt-1 text-[10px] text-muted-foreground">
+              <p className="mt-1 text-2xs text-muted-foreground">
                 {t("finances.monthlyCommitment", "Monthly commitment")}: {activeCurrencySymbol()}{financeSnapshot.monthlyWageBudget.toLocaleString()}{monthlySuffix}
               </p>
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
-                <div className={cn("h-full rounded-full transition-all", wageBudgetUsagePercent > 100 ? "bg-red-400" : "bg-primary")} style={{ width: `${Math.min(100, wageBudgetUsagePercent)}%` }} />
+                <div className={cn("h-full rounded-full transition-all", wageBudgetUsagePercent > 100 ? "bg-negative" : "bg-primary")} style={{ width: `${Math.min(100, wageBudgetUsagePercent)}%` }} />
               </div>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.transferBudgetRemaining", "Transfer budget remaining")}</p>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.transferBudgetRemaining", "Transfer budget remaining")}</p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">{formatVal(teamTransferBudget)}</p>
-              <p className="mt-1 text-[10px] text-muted-foreground">
+              <p className="mt-1 text-2xs text-muted-foreground">
                 {t("finances.transferSpendThisSeason", "Transfer spend this season")}: {formatVal(transferBudgetSummary.spend)} spent
               </p>
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
@@ -334,17 +334,17 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
               </div>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.seasonIncome")}</p>
-              <p className="mt-1 font-heading text-lg font-bold tabular-nums text-emerald-400">{formatVal(seasonNetSummary.income)}</p>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.seasonIncome")}</p>
+              <p className="mt-1 font-heading text-lg font-bold tabular-nums text-positive">{formatVal(seasonNetSummary.income)}</p>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.seasonExpenses")}</p>
-              <p className="mt-1 font-heading text-lg font-bold tabular-nums text-red-400">{formatVal(seasonNetSummary.expenses)}</p>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.seasonExpenses")}</p>
+              <p className="mt-1 font-heading text-lg font-bold tabular-nums text-negative">{formatVal(seasonNetSummary.expenses)}</p>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.seasonNet", "Season net")}</p>
-              <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", seasonNetSummary.net >= 0 ? "text-emerald-400" : "text-red-400")}>{formatVal(seasonNetSummary.net)}</p>
-              <p className="mt-1 text-[10px] text-muted-foreground">{t("finances.squadValue")}: {formatVal(totalValue)}</p>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.seasonNet", "Season net")}</p>
+              <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", seasonNetSummary.net >= 0 ? "text-positive" : "text-negative")}>{formatVal(seasonNetSummary.net)}</p>
+              <p className="mt-1 text-2xs text-muted-foreground">{t("finances.squadValue")}: {formatVal(totalValue)}</p>
             </div>
           </div>
         </CardContent>
@@ -366,16 +366,16 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("finances.budget")}: {activeCurrencySymbol()}{annualWageBudget.toLocaleString()}{annualSuffix}
                 {totalWages <= annualWageBudget ? (
-                  <span className="ml-1 text-emerald-400">— {t("finances.underBudget")}</span>
+                  <span className="ml-1 text-positive">— {t("finances.underBudget")}</span>
                 ) : (
-                  <span className="ml-1 inline-flex items-center gap-1 text-red-400">
+                  <span className="ml-1 inline-flex items-center gap-1 text-negative">
                     <AlertTriangle className="size-3" /> {t("finances.overBudget")}
                   </span>
                 )}
               </p>
               <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
-                  className={cn("h-full rounded-full transition-all", totalWages <= annualWageBudget ? "bg-emerald-400" : "bg-red-400")}
+                  className={cn("h-full rounded-full transition-all", totalWages <= annualWageBudget ? "bg-positive" : "bg-negative")}
                   style={{ width: `${Math.min(100, Math.round((totalWages / Math.max(1, annualWageBudget)) * 100))}%` }}
                 />
               </div>
@@ -395,7 +395,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                 <span className="tabular-nums text-foreground">{activeCurrencySymbol()}{staffWages.toLocaleString()}{annualSuffix}</span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${Math.min(100, (staffWages / Math.max(1, totalWages)) * 100)}%` }} />
+                <div className="h-full rounded-full bg-warning transition-all" style={{ width: `${Math.min(100, (staffWages / Math.max(1, totalWages)) * 100)}%` }} />
               </div>
             </div>
           </CardContent>
@@ -410,24 +410,24 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.annualWageSpend")}</p>
-                <p className="mt-1 font-heading text-lg font-bold text-red-400 tabular-nums">{activeCurrencySymbol()}{totalWages.toLocaleString()}{annualSuffix}</p>
+                <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.annualWageSpend")}</p>
+                <p className="mt-1 font-heading text-lg font-bold text-negative tabular-nums">{activeCurrencySymbol()}{totalWages.toLocaleString()}{annualSuffix}</p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.annualSponsorIncome")}</p>
-                <p className="mt-1 font-heading text-lg font-bold text-emerald-400 tabular-nums">{activeCurrencySymbol()}{annualSponsorIncome.toLocaleString()}{annualSuffix}</p>
+                <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.annualSponsorIncome")}</p>
+                <p className="mt-1 font-heading text-lg font-bold text-positive tabular-nums">{activeCurrencySymbol()}{annualSponsorIncome.toLocaleString()}{annualSuffix}</p>
               </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.projectedAnnualNet")}</p>
-                <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", projectedAnnualNet >= 0 ? "text-emerald-400" : "text-red-400")}>
+                <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.projectedAnnualNet")}</p>
+                <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", projectedAnnualNet >= 0 ? "text-positive" : "text-negative")}>
                   {activeCurrencySymbol()}{projectedAnnualNet.toLocaleString()}{annualSuffix}
                 </p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{t("finances.cashRunway")}</p>
-                <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", cashRunwayMonths !== null && cashRunwayMonths < 12 ? "text-red-400" : cashRunwayMonths !== null && cashRunwayMonths < 52 ? "text-amber-400" : "text-foreground")}>
+                <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.cashRunway")}</p>
+                <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", cashRunwayMonths !== null && cashRunwayMonths < 12 ? "text-negative" : cashRunwayMonths !== null && cashRunwayMonths < 52 ? "text-warning" : "text-foreground")}>
                   {cashRunwayMonths === null ? t("finances.runwayStable") : t("finances.runwayMonths", { count: cashRunwayMonths })}
                 </p>
               </div>
@@ -436,13 +436,13 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
               <div className="mt-3">
                 <div className="mb-1 flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">{t("finances.cashRunway")}</span>
-                  <span className={cn("tabular-nums font-medium", cashRunwayMonths < 12 ? "text-red-400" : cashRunwayMonths < 52 ? "text-amber-400" : "text-emerald-400")}>
+                  <span className={cn("tabular-nums font-medium", cashRunwayMonths < 12 ? "text-negative" : cashRunwayMonths < 52 ? "text-warning" : "text-positive")}>
                     {cashRunwayMonths}m
                   </span>
                 </div>
                 <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
                   <div
-                    className={cn("h-full rounded-full transition-all", cashRunwayMonths < 12 ? "bg-red-400" : cashRunwayMonths < 52 ? "bg-amber-400" : "bg-emerald-400")}
+                    className={cn("h-full rounded-full transition-all", cashRunwayMonths < 12 ? "bg-negative" : cashRunwayMonths < 52 ? "bg-warning" : "bg-positive")}
                     style={{ width: `${Math.min(100, (cashRunwayMonths / 60) * 100)}%` }}
                   />
                 </div>
@@ -468,14 +468,14 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                   value={ledgerSearch}
                   onChange={(event) => setLedgerSearch(event.target.value)}
                   placeholder={t("finances.ledgerSearchPlaceholder")}
-                  className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+                  className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus:border-primary"
                 />
                 <label className="sr-only" htmlFor="ledger-kind-filter">{t("finances.ledgerKindFilter")}</label>
                 <select
                   id="ledger-kind-filter"
                   value={ledgerKindFilter}
                   onChange={(event) => setLedgerKindFilter(event.target.value as FinancialTransactionKind | "all")}
-                  className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground focus:border-primary"
                 >
                   <option value="all">{t("finances.ledgerAllKinds")}</option>
                   {(Object.keys(LEDGER_KIND_LABELS) as FinancialTransactionKind[]).map((kind) => (
@@ -487,7 +487,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                   id="ledger-source-filter"
                   value={ledgerSourceFilter}
                   onChange={(event) => setLedgerSourceFilter(event.target.value)}
-                  className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground focus:border-primary"
                 >
                   <option value="all">{t("finances.ledgerAllSources")}</option>
                   {ledgerSources.map((source) => (
@@ -497,14 +497,14 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
               </div>
               {ledgerGroups.length > 0 ? ledgerGroups.map((group) => (
                 <section key={group.date} className="space-y-2">
-                  <h4 className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground tabular-nums">{group.date}</h4>
+                  <h4 className="font-heading text-2xs uppercase tracking-wider text-muted-foreground tabular-nums">{group.date}</h4>
                   {group.entries.map((entry, index) => {
                     const balanceAfter = getLedgerEntryBalanceAfter(entry);
                     return (
                       <div key={`${entry.id ?? entry.date}-${entry.kind}-${index}`} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg bg-muted/40 px-3 py-2 text-sm md:grid-cols-[1fr_8rem_auto]">
                         <div className="min-w-0">
                           <span className="block truncate text-foreground">{entry.description || (LEDGER_KIND_LABELS[entry.kind] ?? entry.kind)}</span>
-                          <span className="mt-0.5 inline-flex gap-2 text-[11px] text-muted-foreground">
+                          <span className="mt-0.5 inline-flex gap-2 text-caption text-muted-foreground">
                             <span>{LEDGER_KIND_LABELS[entry.kind] ?? entry.kind}</span>
                             <span>·</span>
                             <span>{t(getLedgerEntrySourceLabelKey(entry), getLedgerEntrySource(entry))}</span>
@@ -513,7 +513,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                         <span className="hidden text-xs tabular-nums text-muted-foreground md:inline">
                           {balanceAfter === null ? "—" : `${t("finances.ledgerRunningBalance")}: ${formatVal(balanceAfter)}`}
                         </span>
-                        <span className={cn("font-heading font-bold tabular-nums", entry.amount < 0 ? "text-red-400" : "text-emerald-400")}>
+                        <span className={cn("font-heading font-bold tabular-nums", entry.amount < 0 ? "text-negative" : "text-positive")}>
                           {formatLedgerAmount(entry.amount)}
                         </span>
                       </div>
@@ -551,7 +551,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                     <h3 className="truncate font-heading text-base font-bold uppercase tracking-wide text-foreground">
                       {activeSponsorship.sponsorName}
                     </h3>
-                    <Badge variant={activeSponsorship.theme === "esports" ? "default" : "secondary"} className="text-[10px]">
+                    <Badge variant={activeSponsorship.theme === "esports" ? "default" : "secondary"} className="text-2xs">
                       {activeSponsorship.theme === "esports" ? t("finances.esportsSponsor") : t("finances.standardSponsor")}
                     </Badge>
                   </div>
@@ -582,7 +582,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                   <button
                     type="button"
                     onClick={handleToggleAllRiskPlayers}
-                    className="rounded-md border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted"
+                    className="rounded-md border border-border px-2 py-1 text-2xs font-medium text-muted-foreground transition-colors hover:bg-muted"
                   >
                     {t("finances.selectAllAtRisk")}
                   </button>
@@ -590,7 +590,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                     type="button"
                     disabled={actionLoading === "delegate-renewals" || selectedRiskPlayers.length === 0}
                     onClick={handleDelegateRenewals}
-                    className="rounded-md border border-primary bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
+                    className="rounded-md border border-primary bg-primary/10 px-2 py-1 text-2xs font-medium text-club-text transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
                   >
                     {actionLoading === "delegate-renewals" ? (
                       <RefreshCw className="mr-1 inline size-3 animate-spin" />
@@ -603,7 +603,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
           </CardHeader>
           <CardContent>
             {delegatedRenewalsSummary && (
-              <p className="mb-3 text-xs text-emerald-400">{delegatedRenewalsSummary}</p>
+              <p className="mb-3 text-xs text-positive">{delegatedRenewalsSummary}</p>
             )}
             {contractRiskPlayers.length > 0 ? (
               <div className="space-y-2">
@@ -614,7 +614,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                       key={player.id}
                       className={cn(
                         "flex items-center gap-3 rounded-lg border p-3 transition-colors",
-                        riskLevel === "critical" ? "border-red-500/20 bg-red-500/5" : "border-amber-500/20 bg-amber-500/5",
+                        riskLevel === "critical" ? "border-negative/20 bg-negative/5" : "border-warning/20 bg-warning/5",
                       )}
                     >
                       <input
@@ -628,14 +628,14 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                         <div className="mt-1 flex items-center gap-2">
                           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                             <div
-                              className={cn("h-full rounded-full transition-all", riskLevel === "critical" ? "bg-red-400" : "bg-amber-400")}
+                              className={cn("h-full rounded-full transition-all", riskLevel === "critical" ? "bg-negative" : "bg-warning")}
                               style={{ width: `${Math.min(100, (yearsRemaining / 5) * 100)}%` }}
                             />
                           </div>
-                          <span className="font-heading text-[10px] tabular-nums text-muted-foreground">{yearsRemaining.toFixed(1)}y</span>
+                          <span className="font-heading text-2xs tabular-nums text-muted-foreground">{yearsRemaining.toFixed(1)}y</span>
                         </div>
                       </div>
-                      <Badge variant={riskLevel === "critical" ? "destructive" : "secondary"} className="text-[10px]">
+                      <Badge variant={riskLevel === "critical" ? "destructive" : "secondary"} className="text-2xs">
                         {riskLevel === "critical" ? t("finances.contractRiskCritical") : t("finances.contractRiskWarning")}
                       </Badge>
                       <p className="font-heading text-xs font-bold tabular-nums text-foreground">
@@ -645,7 +645,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                         <button
                           type="button"
                           onClick={() => onSelectPlayer(player.id, { openRenewal: true })}
-                          className="rounded-md border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted"
+                          className="rounded-md border border-border px-2 py-1 text-2xs font-medium text-muted-foreground transition-colors hover:bg-muted"
                         >
                           {t("common.renewContract")}
                         </button>
@@ -715,7 +715,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                         <span className="text-sm font-medium text-foreground">{p.match_name}</span>
                       </TableCell>
                       <TableCell className={cn(i % 2 === 1 && "bg-muted/20")}>
-                        <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-heading text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                           {role}
                         </span>
                       </TableCell>
@@ -766,7 +766,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                 type="button"
                 disabled={!canExpandMainHub || actionLoading === "expand-main-hub"}
                 onClick={handleExpandMainHub}
-                className="shrink-0 rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
+                className="shrink-0 rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-club-text transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
               >
                 {actionLoading === "expand-main-hub" ? (
                   <RefreshCw className="mr-1 inline size-3 animate-spin" />
@@ -794,7 +794,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                         <h3 className="font-heading text-sm font-bold uppercase tracking-wide text-foreground">
                           {t(facility.labelKey, facility.label)}
                         </h3>
-                        <span className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 font-heading text-[10px] tabular-nums text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 font-heading text-2xs tabular-nums text-muted-foreground">
                           Lv.{level}
                         </span>
                       </div>
@@ -807,25 +807,25 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                     </div>
                   </div>
                   <div className="mt-auto space-y-1">
-                    <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                       {t("finances.nextUpgradeCost", { amount: nextCost.toLocaleString() })}
                     </p>
                     <button
                       type="button"
                       disabled={!canUpgrade || isLoading}
                       onClick={() => facility.upgradeFacility && handleUpgradeFacility(facility.upgradeFacility)}
-                      className="rounded-md border border-primary bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
+                      className="rounded-md border border-primary bg-primary/10 px-3 py-1 text-xs font-medium text-club-text transition-colors hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-50"
                     >
                       {isLoading ? <RefreshCw className="mr-1 inline size-3 animate-spin" /> : null}
                       {t("finances.upgradeFacility")}
                     </button>
                     {(!facility.upgradeFacility || !unlocksNextLevel) && (
-                      <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <p className="flex items-center gap-1 text-2xs text-muted-foreground">
                         <Lock className="size-3" /> {t("finances.hubExpansionRequired")}
                       </p>
                     )}
                     {canUpgrade === false && facility.upgradeFacility && unlocksNextLevel && (
-                      <p className="text-[10px] text-red-400">{t("finances.insufficientFunds")}</p>
+                      <p className="text-2xs text-negative">{t("finances.insufficientFunds")}</p>
                     )}
                   </div>
                 </div>

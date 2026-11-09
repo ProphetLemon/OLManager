@@ -42,7 +42,7 @@ function MobileStat({ label, value, accent }: { label: string; value: string; ac
       <p
         className={cn(
           "mt-0.5 font-heading text-lg font-bold tabular-nums",
-          accent ? "text-primary" : "text-foreground/90",
+          accent ? "text-club-text" : "text-foreground/90",
         )}
       >
         {value}
@@ -135,7 +135,7 @@ export default function TeamProfileHeroCardV2({ team, viewModel }: TeamProfileHe
 
           <div className="hidden grid-cols-2 gap-3 md:grid">
             <HeroStat label={t("teams.avgOvr")} value={avgOvr} />
-            <HeroStat label={t("manager.reputation")} value={reputation} valueClassName="text-primary" />
+            <HeroStat label={t("manager.reputation")} value={reputation} valueClassName="text-club-text" />
             <HeroStat label={t("teamProfile.leaguePos")} value={leaguePos} />
             <HeroStat label={t("teams.squad")} value={squadSize} />
           </div>

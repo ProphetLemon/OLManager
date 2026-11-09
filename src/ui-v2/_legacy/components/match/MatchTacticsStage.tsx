@@ -26,10 +26,10 @@ export default function MatchTacticsStage({
       <div className="max-w-7xl mx-auto">
         <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-heading uppercase tracking-widest text-primary">
+            <p className="text-xs font-heading uppercase tracking-widest text-club-text">
               {t("match.tactics")}
             </p>
-            <p className="text-sm text-primary/80">
+            <p className="text-sm text-club-text/80">
               {t("match.tacticsBeforeLive")}
             </p>
           </div>
@@ -54,7 +54,7 @@ export default function MatchTacticsStage({
         </div>
 
         {simulationFeedback ? (
-          <p className="mb-4 text-xs text-primary">
+          <p className="mb-4 text-xs text-club-text">
             {simulationFeedback}
           </p>
         ) : null}

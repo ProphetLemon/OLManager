@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useGameStore } from "@/store/gameStore";
@@ -21,7 +21,9 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/dashboardHelpers", () => ({
 }));
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? key,
+  }),
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -54,7 +56,23 @@ describe("FloatingBugButton", () => {
     });
   });
 
-  it("hides the floating button after opening the report modal", () => {
+  it("keeps the floating button mounted and returns focus to it when the modal closes", async () => {
+    render(<FloatingBugButton />);
+
+    const button = screen.getByRole("button", { name: "Reportar Bug" });
+    act(() => button.focus());
+    fireEvent.click(button);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(screen.getByTitle("Reportar Bug")).toBeInTheDocument();
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(button).toHaveFocus());
+  });
+
+  it("keeps the floating button mounted after opening the report modal", () => {
     useBugReportStore.setState({
       currentRoute: "/match",
       currentDashboardTab: "",
@@ -67,8 +85,8 @@ describe("FloatingBugButton", () => {
 
     fireEvent.click(button);
 
-    expect(screen.queryByTitle("Reportar Bug")).not.toBeInTheDocument();
-    expect(screen.getByText("bugReport.title")).toBeInTheDocument();
+    expect(screen.getByTitle("Reportar Bug")).toBeInTheDocument();
+    expect(screen.getByText("Report bug / suggest improvement")).toBeInTheDocument();
   });
 
   it("shows the current route and active dashboard tab in the context preview", () => {
@@ -98,10 +116,10 @@ describe("FloatingBugButton", () => {
     render(<FloatingBugButton />);
     fireEvent.click(screen.getByTitle("Reportar Bug"));
 
-    const textarea = screen.getByPlaceholderText("bugReport.placeholder");
+    const textarea = screen.getByPlaceholderText("Describe what happened, what you expected, and how to reproduce it...");
     fireEvent.change(textarea, { target: { value: "Something went wrong" } });
 
-    fireEvent.click(screen.getByText("bugReport.generate"));
+    fireEvent.click(screen.getByText("Generate report"));
 
     await waitFor(() => expect(exportBugReport).toHaveBeenCalled());
 
@@ -111,5 +129,22 @@ describe("FloatingBugButton", () => {
     expect(exportedContext.route).toBe("/match");
     expect(exportedContext.activeTab).toBe("");
     expect(exportedContext.activeTab).not.toBe("Finances");
+  });
+
+  it("renders a 44px accessible icon button in the rail placement", () => {
+    render(<FloatingBugButton placement="rail" />);
+
+    const button = screen.getByRole("button", { name: "Reportar Bug" });
+    expect(button).toHaveAttribute("title", "Reportar Bug");
+    expect(button.className).toContain("size-[var(--hit)]");
+    expect(button.className).not.toContain("fixed");
+
+    fireEvent.click(button);
+    expect(screen.getByText("Report bug / suggest improvement")).toBeInTheDocument();
+  });
+
+  it("keeps the floating placement fixed by default", () => {
+    render(<FloatingBugButton />);
+    expect(screen.getByTitle("Reportar Bug").className).toContain("fixed");
   });
 });

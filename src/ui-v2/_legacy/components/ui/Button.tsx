@@ -19,17 +19,17 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    "inline-flex items-center justify-center gap-2 font-heading font-bold uppercase tracking-wider rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center gap-2 font-heading font-bold uppercase tracking-wider rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variants = {
     primary:
-      "bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white shadow-md hover:shadow-lg focus:ring-primary-500 dark:focus:ring-offset-navy-800",
+      "bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white shadow-md hover:shadow-lg",
     accent:
-      "bg-accent-400 hover:bg-accent-500 active:bg-accent-600 text-navy-900 shadow-md hover:shadow-lg focus:ring-accent-400 dark:focus:ring-offset-navy-800",
+      "bg-accent-400 hover:bg-accent-500 active:bg-accent-600 text-navy-900 shadow-md hover:shadow-lg",
     ghost:
-      "bg-transparent hover:bg-gray-100 dark:hover:bg-navy-600 text-gray-700 dark:text-gray-300 focus:ring-gray-300 dark:focus:ring-offset-navy-800",
+      "bg-transparent hover:bg-gray-100 dark:hover:bg-navy-600 text-gray-700 dark:text-gray-300",
     outline:
-      "bg-transparent border-2 border-gray-300 dark:border-navy-600 hover:border-primary-500 dark:hover:border-primary-400 text-gray-700 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400 focus:ring-primary-500 dark:focus:ring-offset-navy-800",
+      "bg-transparent border-2 border-gray-300 dark:border-navy-600 hover:border-primary-500 dark:hover:border-primary-400 text-gray-700 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400",
   };
 
   const sizes = {

@@ -210,7 +210,7 @@ export default function PreMatchSetup({
             </div>
 
             <div className="text-center">
-              <p className="text-xs font-heading uppercase tracking-widest text-primary mb-1">
+              <p className="text-xs font-heading uppercase tracking-widest text-club-text mb-1">
                 {fixtureLabel}
               </p>
               <p className="text-3xl font-heading font-bold text-muted-foreground">

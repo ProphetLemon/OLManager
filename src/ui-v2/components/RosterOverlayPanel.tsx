@@ -52,7 +52,7 @@ export function RosterOverlayPanel({ info, status, error, onUpdate }: RosterOver
         <p className="font-heading text-xs font-bold uppercase tracking-wider text-foreground">
           {t("rosterOverlay.asOf", "Rosters as of {{date}}", { date: asOf })}
         </p>
-        <p className="mt-0.5 text-[11px] text-muted-foreground/80">
+        <p className="mt-0.5 text-caption text-muted-foreground/80">
           {t("rosterOverlay.attribution", "Roster data: {{name}} contributors,", {
             name: source.name,
           })}{" "}
@@ -89,7 +89,7 @@ export function RosterOverlayPanel({ info, status, error, onUpdate }: RosterOver
           </span>
         )}
         {status === "updated" && (
-          <span className="text-primary">
+          <span className="text-club-text">
             {t("rosterOverlay.updated", "Rosters updated to {{date}}", { date: asOf })}
           </span>
         )}
@@ -105,7 +105,7 @@ export function RosterOverlayPanel({ info, status, error, onUpdate }: RosterOver
       </div>
 
       {status === "error" && error && (
-        <p role="alert" className="basis-full text-[11px] text-destructive">
+        <p role="alert" className="basis-full text-caption text-destructive">
           {t(
             "rosterOverlay.error",
             "Could not update rosters: {{message}}. You can still start with the current rosters.",

@@ -1,47 +1,41 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  AlertTriangle,
-  ChevronRight,
-  Repeat,
-  ShoppingCart,
-  User,
-  Loader2,
-} from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, Search } from "lucide-react";
 
-import type { GameStateData, PlayerSelectionOptions } from "@/store/gameStore";
+import type { GameStateData, PlayerData, PlayerSelectionOptions } from "@/store/gameStore";
 import {
   buildActiveLineupIds,
   buildActiveLineupSlots,
   isPlayerOutOfPosition,
   LOL_ACTIVE_ROLES,
-  LOL_ROLE_LABELS,
 } from "@/lib/squad/helpers";
 import {
   MAX_IMPORTS_IN_STARTING_FIVE,
   countImports,
-  isImportPlayer,
   parseImportLimitError,
   wouldExceedImportLimit,
 } from "@/lib/squad/imports";
-import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
-import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
-import { resolvePlayerLolRole, type LolRoleTag } from "@/lib/players/lolIdentity";
-import ContextMenu from "@/ui-v2/_legacy/components/ContextMenu";
-import { calcAge, formatVal } from "@/lib/common/helpers";
-import { PlayerAvatar } from "@/ui-v2/_legacy/components/ui/PlayerAvatar";
+import { getPlayerCardModel, shortRoleKey, type PlayerCardModel } from "@/lib/squad/cards";
+import type { LolRole } from "@/lib/home/scoreboard";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
-
+import { Card, CardContent } from "@/ui-v2/components/ui/card";
+import { SegmentedControl } from "@/ui-v2/components/ui/segmented-control";
 import { cn } from "@/ui-v2/lib/utils";
-import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
+
+import { BenchEmptyState } from "./squad/BenchEmptyState";
+import { BenchRow } from "./squad/BenchRow";
+import { EmptySlotCard } from "./squad/EmptySlotCard";
+import { PlayerCardV2, ROLE_DEFAULT, type SwapCandidate } from "./squad/PlayerCardV2";
+import { SelectedPlayerBar } from "./squad/SelectedPlayerBar";
+import { StartingFiveGrid } from "./squad/StartingFiveGrid";
 
 // ─── Types ──────────────────────────────────────────────────────
 
 type SortKey = "pos" | "ovr" | "condition" | "fitness" | "morale" | "age";
+type RoleFilter = "all" | LolRole;
 
-const LOL_ROLE_ORDER: Record<LolRoleTag, number> = {
+const LOL_ROLE_ORDER: Record<LolRole, number> = {
   TOP: 1,
   JUNGLE: 2,
   MID: 3,
@@ -49,17 +43,7 @@ const LOL_ROLE_ORDER: Record<LolRoleTag, number> = {
   SUPPORT: 5,
 };
 
-const ROLE_ICON_URLS: Record<string, string> = {
-  TOP: ROLE_ICON_PATHS.TOP,
-  JUNGLE: ROLE_ICON_PATHS.JUNGLE,
-  MID: ROLE_ICON_PATHS.MID,
-  ADC: ROLE_ICON_PATHS.ADC,
-  SUPPORT: ROLE_ICON_PATHS.SUPPORT,
-};
-
-function clampBar(value: number): number {
-  return Math.max(0, Math.min(100, value));
-}
+const EMPTY_IDS: string[] = [];
 
 // ─── Props ──────────────────────────────────────────────────────
 
@@ -67,6 +51,8 @@ interface SquadTabV2Props {
   gameState: GameStateData;
   onGameUpdate: (g: GameStateData) => void;
   onSelectPlayer: (id: string, options?: PlayerSelectionOptions) => void;
+  /** Used by the empty-bench actions (market, academy). They do nothing when omitted. */
+  onNavigate?: (tab: string) => void;
 }
 
 // ─── Component ──────────────────────────────────────────────────
@@ -75,54 +61,34 @@ export function SquadTabV2({
   gameState,
   onGameUpdate,
   onSelectPlayer,
+  onNavigate,
 }: SquadTabV2Props) {
-  const { t } = useTranslation();
-  const [visible, setVisible] = useState(false);
-  useEffect(() => { setVisible(true); }, []);
-  const myTeam = gameState.teams.find((tm) => tm.id === gameState.manager.team_id);
+  const { t, i18n } = useTranslation();
   const [sortKey, setSortKey] = useState<SortKey>("pos");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
   const [lineupNotice, setLineupNotice] = useState<string | null>(null);
+  const autoSaveChecked = useRef(false);
 
-  const handleToggleTransfer = useCallback(async (playerId: string) => {
-    try {
-      const updated = await invoke<GameStateData>("toggle_transfer_list", { playerId });
-      onGameUpdate(updated);
-    } catch { /* silent */ }
-  }, [onGameUpdate]);
-
-  const handleToggleLoan = useCallback(async (playerId: string) => {
-    try {
-      const updated = await invoke<GameStateData>("toggle_loan_list", { playerId });
-      onGameUpdate(updated);
-    } catch { /* silent */ }
-  }, [onGameUpdate]);
-
-  // ─── Derived data ────────────────────────────────────────────────
-  if (!myTeam) {
-    return (
-      <div className="flex flex-1 items-center justify-center p-6">
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
-              {t("common.unemployed", { defaultValue: "Sin equipo" })}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const roster = gameState.players.filter(
-    (player) => player.team_id === myTeam.id,
+  // Every hook lives above the unemployed early return, so the hook order is
+  // identical whether or not the manager has a team.
+  const myTeam = useMemo(
+    () => gameState.teams.find((tm) => tm.id === gameState.manager.team_id),
+    [gameState.teams, gameState.manager.team_id],
   );
-  const activeLineupIds = buildActiveLineupIds(
-    roster,
-    myTeam.active_lineup_ids ?? myTeam.starting_xi_ids ?? [],
+  const roster = useMemo(
+    () => (myTeam ? gameState.players.filter((player) => player.team_id === myTeam.id) : []),
+    [gameState.players, myTeam],
   );
-  const activeIds = new Set(activeLineupIds);
+  const storedIds = myTeam?.active_lineup_ids ?? myTeam?.starting_xi_ids ?? EMPTY_IDS;
+  const activeLineupIds = useMemo(
+    () => buildActiveLineupIds(roster, storedIds),
+    [roster, storedIds],
+  );
+  const activeIds = useMemo(() => new Set(activeLineupIds), [activeLineupIds]);
   const playersById = useMemo(
     () => new Map(roster.map((player) => [player.id, player])),
     [roster],
@@ -131,46 +97,132 @@ export function SquadTabV2({
     () => buildActiveLineupSlots(LOL_ACTIVE_ROLES, activeLineupIds, playersById),
     [activeLineupIds, playersById],
   );
+  const models = useMemo(
+    () =>
+      new Map<string, PlayerCardModel>(
+        roster.map((player) => [
+          player.id,
+          getPlayerCardModel(player, {
+            currentDate: gameState.clock.current_date,
+            locale: i18n.language,
+          }),
+        ]),
+      ),
+    [roster, gameState.clock.current_date, i18n.language],
+  );
 
-  // Auto-save lineup if computed differs from stored and all slots filled
+  // Persist the computed five once, when it differs from what the save holds
+  // and every slot is filled.
   useEffect(() => {
-    const storedIds = myTeam.active_lineup_ids ?? myTeam.starting_xi_ids ?? [];
-    const storedStr = JSON.stringify(storedIds);
-    const computedStr = JSON.stringify(activeLineupIds);
-    if (activeLineupIds.every(Boolean) && storedStr !== computedStr) {
+    if (autoSaveChecked.current || !myTeam) return;
+    autoSaveChecked.current = true;
+    if (
+      activeLineupIds.every(Boolean) &&
+      JSON.stringify(storedIds) !== JSON.stringify(activeLineupIds)
+    ) {
       invoke("set_active_lineup", { playerIds: activeLineupIds }).catch((e) =>
         console.warn("[SquadTab] auto-save lineup failed:", e),
       );
     }
-  }, []); // only on mount
+  }, [myTeam, activeLineupIds, storedIds]);
 
   const sortedRoster = useMemo(() => {
+    // Sort a copy: sorting `roster` in place would reorder the memoised lineup input.
     const sorted = [...roster].sort((a, b) => {
+      const ma = models.get(a.id);
+      const mb = models.get(b.id);
+      if (!ma || !mb) return 0;
       switch (sortKey) {
         case "pos":
-          return (
-            LOL_ROLE_ORDER[resolvePlayerLolRole(a)] - LOL_ROLE_ORDER[resolvePlayerLolRole(b)] ||
-            calculateLolOvr(b) - calculateLolOvr(a)
-          );
+          return LOL_ROLE_ORDER[ma.role] - LOL_ROLE_ORDER[mb.role] || mb.ovr - ma.ovr;
         case "ovr":
-          return calculateLolOvr(a) - calculateLolOvr(b);
+          return ma.ovr - mb.ovr;
         case "condition":
-          return a.condition - b.condition;
+          return ma.energy - mb.energy;
         case "fitness":
-          return (a.fitness ?? 75) - (b.fitness ?? 75);
+          return (ma.fitness ?? -1) - (mb.fitness ?? -1);
         case "morale":
-          return a.morale - b.morale;
+          return ma.morale - mb.morale;
         case "age":
-          return (
-            calcAge(a.date_of_birth, gameState.clock.current_date) -
-            calcAge(b.date_of_birth, gameState.clock.current_date)
-          );
+          return (ma.age ?? 0) - (mb.age ?? 0);
         default:
           return 0;
       }
     });
     return sortDir === "desc" ? sorted.reverse() : sorted;
-  }, [gameState.clock.current_date, roster, sortDir, sortKey]);
+  }, [roster, models, sortDir, sortKey]);
+
+  const benchPlayers = useMemo(
+    () => sortedRoster.filter((player) => !activeIds.has(player.id)),
+    [sortedRoster, activeIds],
+  );
+  const benchRoleCounts = useMemo(() => {
+    const counts: Record<LolRole, number> = { TOP: 0, JUNGLE: 0, MID: 0, ADC: 0, SUPPORT: 0 };
+    benchPlayers.forEach((player) => {
+      const model = models.get(player.id);
+      if (model) counts[model.role] += 1;
+    });
+    return counts;
+  }, [benchPlayers, models]);
+  const benchVisible = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return benchPlayers.filter((player) => {
+      const model = models.get(player.id);
+      if (!model) return false;
+      if (roleFilter !== "all" && model.role !== roleFilter) return false;
+      return query === "" || model.name.toLowerCase().includes(query);
+    });
+  }, [benchPlayers, models, roleFilter, search]);
+
+  const starters = useMemo(
+    () =>
+      activeLineupIds
+        .map((id) => playersById.get(id))
+        .filter((player): player is PlayerData => player !== undefined),
+    [activeLineupIds, playersById],
+  );
+  const lineupImports = countImports(starters);
+  const filledSlots = activeLineupSlots.filter((slot) => slot.player).length;
+
+  const lowestEnergyPlayer = useMemo(
+    () =>
+      roster.reduce<PlayerData | null>(
+        (lowest, player) => (lowest === null || player.condition < lowest.condition ? player : lowest),
+        null,
+      ),
+    [roster],
+  );
+
+  // Per-slot swap candidates: bench players, same-role first, then by rating.
+  // An import that would break the two-import limit is listed but disabled.
+  const candidatesBySlot = useMemo(() => {
+    const importLimitReason = t("onAir.squad.importLimit", { defaultValue: "Import limit reached" });
+    return activeLineupSlots.map((slot) => {
+      const outgoingId = activeLineupIds[slot.index] || null;
+      return [...benchPlayers]
+        .sort((a, b) => {
+          const ma = models.get(a.id);
+          const mb = models.get(b.id);
+          if (!ma || !mb) return 0;
+          const aMatch = ma.role === slot.role ? 0 : 1;
+          const bMatch = mb.role === slot.role ? 0 : 1;
+          return aMatch - bMatch || mb.ovr - ma.ovr;
+        })
+        .map<SwapCandidate>((player) => {
+          const model = models.get(player.id);
+          const roleLabel = t(shortRoleKey(model?.role ?? slot.role), {
+            defaultValue: ROLE_DEFAULT[model?.role ?? slot.role],
+          });
+          const blocked = wouldExceedImportLimit(starters, outgoingId, player);
+          return {
+            id: player.id,
+            label: `${model?.name ?? player.match_name} - ${roleLabel} (${model?.ovr ?? 0})`,
+            disabled: blocked,
+            reason: blocked ? importLimitReason : undefined,
+          };
+        });
+    });
+  }, [activeLineupSlots, activeLineupIds, benchPlayers, models, starters, t]);
 
   const toggleSort = (nextKey: SortKey): void => {
     if (sortKey === nextKey) {
@@ -181,657 +233,330 @@ export function SquadTabV2({
     setSortDir(nextKey === "ovr" ? "desc" : "asc");
   };
 
-  const benchPlayers = sortedRoster.filter((p) => !activeIds.has(p.id));
-  const benchFiltered = search.trim()
-    ? benchPlayers.filter((p) =>
-        p.match_name.toLowerCase().includes(search.toLowerCase()),
-      )
-    : benchPlayers;
-  const hasRoster = roster.length > 0;
-
-  const roleCounts = useMemo(() => {
-    const counts: Record<string, number> = { TOP: 0, JUNGLE: 0, MID: 0, ADC: 0, SUPPORT: 0 };
-    roster.forEach((p) => { const r = resolvePlayerLolRole(p); if (counts[r] !== undefined) counts[r]++; });
-    return counts;
-  }, [roster]);
-  const lowestCondition = roster.length > 0 ? Math.min(...roster.map((p) => p.condition)) : 0;
-  const lowestConditionPlayer = roster.find((p) => p.condition === lowestCondition);
-
-  const lineupImports = countImports(
-    activeLineupSlots.flatMap((slot) => (slot.player ? [slot.player] : [])),
+  const handleToggleList = useCallback(
+    async (command: "toggle_transfer_list" | "toggle_loan_list", playerId: string) => {
+      try {
+        const updated = await invoke<GameStateData>(command, { playerId });
+        onGameUpdate(updated);
+      } catch {
+        /* silent */
+      }
+    },
+    [onGameUpdate],
   );
 
-  const handleSlotChange = useCallback(async (slotIndex: number, playerId: string) => {
-    const incoming = roster.find((p) => p.id === playerId);
-    const outgoingId = activeLineupIds[slotIndex] ?? null;
-    const starters = activeLineupIds
-      .map((id) => roster.find((p) => p.id === id))
-      .filter((p): p is (typeof roster)[number] => p !== undefined);
-    if (incoming && wouldExceedImportLimit(starters, outgoingId, incoming)) {
-      setLineupNotice(
-        t("squad.tooManyImports", { count: MAX_IMPORTS_IN_STARTING_FIVE + 1, max: MAX_IMPORTS_IN_STARTING_FIVE }),
-      );
-      return;
-    }
-    setLineupNotice(null);
-    const newIds = [...activeLineupIds];
-    newIds[slotIndex] = playerId;
-    for (let i = 0; i < newIds.length; i++) {
-      if (i !== slotIndex && newIds[i] === playerId) {
-        newIds[i] = "";
+  const handleSlotChange = useCallback(
+    async (slotIndex: number, playerId: string) => {
+      const incoming = playersById.get(playerId);
+      const outgoingId = activeLineupIds[slotIndex] || null;
+      if (incoming && wouldExceedImportLimit(starters, outgoingId, incoming)) {
+        setLineupNotice(
+          t("squad.tooManyImports", {
+            count: MAX_IMPORTS_IN_STARTING_FIVE + 1,
+            max: MAX_IMPORTS_IN_STARTING_FIVE,
+          }),
+        );
+        return;
       }
-    }
-    console.debug("[SquadTab] handleSlotChange", { slotIndex, playerId, newIds, oldIds: activeLineupIds });
-    setSavingSlot(String(slotIndex));
-    try {
-      const updated = await invoke<GameStateData>("set_active_lineup", { playerIds: newIds });
-      console.debug("[SquadTab] set_active_lineup response", updated);
-      onGameUpdate(updated);
-    } catch (err) {
-      const refusal = parseImportLimitError(err);
-      if (refusal) {
-        setLineupNotice(t("squad.tooManyImports", { count: refusal.count, max: refusal.max }));
+      setLineupNotice(null);
+      const newIds = [...activeLineupIds];
+      newIds[slotIndex] = playerId;
+      for (let i = 0; i < newIds.length; i++) {
+        if (i !== slotIndex && newIds[i] === playerId) {
+          newIds[i] = "";
+        }
       }
-      console.error("[SquadTab] Failed to set active lineup:", err);
-    } finally {
-      setSavingSlot(null);
-    }
-  }, [activeLineupIds, onGameUpdate, roster, t]);
+      setSavingSlot(String(slotIndex));
+      try {
+        const updated = await invoke<GameStateData>("set_active_lineup", { playerIds: newIds });
+        onGameUpdate(updated);
+      } catch (err) {
+        const refusal = parseImportLimitError(err);
+        if (refusal) {
+          setLineupNotice(t("squad.tooManyImports", { count: refusal.count, max: refusal.max }));
+        }
+        console.error("[SquadTab] Failed to set active lineup:", err);
+      } finally {
+        setSavingSlot(null);
+      }
+    },
+    [activeLineupIds, onGameUpdate, playersById, starters, t],
+  );
 
-  // ─── Render ──────────────────────────────────────────────────────
-  return (
-    <div className={cn("flex h-full flex-col gap-4 overflow-y-auto p-6 scrollbar-v2", visible && "animate-fade-in-up")}>
-      {hasRoster && (
-        <>
-          {/* ── Role distribution + alerts ── */}
-          <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: "25ms", animationFillMode: "forwards" }}>
-            <div className="flex flex-wrap items-center gap-3">
-              {(Object.entries(LOL_ROLE_ORDER) as Array<[LolRoleTag, number]>).map(([role]) => (
-                <div key={role} className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-1.5">
-                  <img src={ROLE_ICON_URLS[role]} alt={role} className="size-4 object-contain" />
-                  <span className="font-heading text-xs font-bold tabular-nums text-foreground">{roleCounts[role]}</span>
-                  <span className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">{role}</span>
-                </div>
-              ))}
-              {lowestCondition < 50 && lowestConditionPlayer && (
-                <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5">
-                  <AlertTriangle className="size-4 text-amber-400" />
-                  <span className="font-heading text-[10px] uppercase tracking-wider text-amber-400">
-                    {lowestConditionPlayer.match_name}: {lowestCondition}% energía
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ── Active Lineup ───────────────────────────────────────── */}
-      <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: "0ms", animationFillMode: "forwards" }}>
-      <Card>
-        <CardHeader className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
-              {t("squad.activeLineup", { defaultValue: "Alineación titular" })}
-            </CardTitle>
-            {hasRoster && (
-              <div className="flex items-center gap-3">
-                <span
-                  data-testid="lineup-import-count"
-                  className={cn(
-                    "text-xs tabular-nums",
-                    lineupImports >= MAX_IMPORTS_IN_STARTING_FIVE ? "text-amber-400" : "text-muted-foreground/70",
-                  )}
-                >
-                  {t("squad.importsInLineup", { count: lineupImports, max: MAX_IMPORTS_IN_STARTING_FIVE })}
-                </span>
-                <span className="text-xs tabular-nums text-muted-foreground/70">
-                  {activeLineupSlots.filter((s) => s.player).length} / {LOL_ACTIVE_ROLES.length}
-                </span>
-              </div>
-            )}
-          </div>
-          {lineupNotice && (
-            <p
-              role="alert"
-              data-testid="lineup-import-notice"
-              className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-400"
-            >
-              {lineupNotice}
+  // ─── Unemployed ──────────────────────────────────────────────────
+  if (!myTeam) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-6">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="font-heading text-lg font-semibold text-muted-foreground">
+              {t("common.unemployed", { defaultValue: "You are currently unemployed." })}
             </p>
-          )}
-        </CardHeader>
-        <CardContent className="p-0">
-          {!hasRoster ? (
-            <div className="py-8 text-center font-heading text-sm uppercase tracking-wider text-muted-foreground">
-              {t("squad.noPlayers", { defaultValue: "Sin jugadores" })}
-            </div>
-          ) : (
-            <div className="divide-y divide-border/40" data-testid="active-lineup">
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const hasRoster = roster.length > 0;
+  const selectedModel =
+    selectedId && activeIds.has(selectedId) ? (models.get(selectedId) ?? null) : null;
+  const importsAtLimit = lineupImports >= MAX_IMPORTS_IN_STARTING_FIVE;
+
+  const sortOptions: Array<[SortKey, string]> = [
+    ["pos", t("squad.pos", { defaultValue: "Pos" })],
+    ["ovr", t("common.ovr", { defaultValue: "OVR" })],
+    ["condition", t("common.condition", { defaultValue: "Condition" })],
+    ["fitness", t("common.fitness", { defaultValue: "Fitness" })],
+    ["morale", t("common.morale", { defaultValue: "Morale" })],
+    ["age", t("common.age", { defaultValue: "Age" })],
+  ];
+  const roleOptions = [
+    {
+      value: "all",
+      label: t("onAir.squad.filterAllRoles", { defaultValue: "All roles" }),
+      count: benchPlayers.length,
+    },
+    ...LOL_ACTIVE_ROLES.map((role) => ({
+      value: role,
+      label: t(shortRoleKey(role), { defaultValue: ROLE_DEFAULT[role] }),
+      count: benchRoleCounts[role],
+    })),
+  ];
+
+  return (
+    <div className="flex h-full flex-col gap-8 overflow-y-auto p-6 scrollbar-v2">
+      {/* ── Starting five ─────────────────────────────────────── */}
+      <section aria-labelledby="squad-lineup-title" className="flex flex-col gap-4">
+        <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+          <div className="flex flex-col gap-1">
+            <h2 id="squad-lineup-title" className="font-heading text-section font-semibold uppercase">
+              {t("onAir.squad.startingFive", { defaultValue: "Starting five" })}
+            </h2>
+            {hasRoster ? (
+              <p className="text-sm text-muted-foreground tabular-nums">
+                {t("onAir.squad.slotsFilled", {
+                  count: filledSlots,
+                  defaultValue: `${filledSlots} of 5 slots filled`,
+                })}
+              </p>
+            ) : null}
+          </div>
+          {hasRoster ? (
+            <p
+              data-testid="lineup-import-count"
+              className={cn(
+                "flex items-center gap-1.5 text-sm tabular-nums",
+                importsAtLimit ? "font-semibold text-warning" : "text-muted-foreground",
+              )}
+            >
+              {importsAtLimit ? <AlertTriangle aria-hidden="true" className="size-4" /> : null}
+              {t("squad.importsInLineup", {
+                count: lineupImports,
+                max: MAX_IMPORTS_IN_STARTING_FIVE,
+              })}
+            </p>
+          ) : null}
+        </header>
+
+        {lineupNotice ? (
+          <p
+            role="alert"
+            data-testid="lineup-import-notice"
+            className="rounded-md border border-warning bg-warning/10 px-3 py-2 text-sm text-warning"
+          >
+            {lineupNotice}
+          </p>
+        ) : null}
+
+        {hasRoster && lowestEnergyPlayer && lowestEnergyPlayer.condition < 50 ? (
+          <p className="flex items-center gap-2 text-sm text-warning">
+            <AlertTriangle aria-hidden="true" className="size-4 shrink-0" />
+            {t("onAir.squad.lowEnergy", {
+              names: lowestEnergyPlayer.match_name,
+              pct: lowestEnergyPlayer.condition,
+              defaultValue: `${lowestEnergyPlayer.match_name}: energy ${lowestEnergyPlayer.condition}%`,
+            })}
+          </p>
+        ) : null}
+
+        {!hasRoster ? (
+          <p className="rounded-xl border border-dashed border-line p-6 text-center text-muted-foreground">
+            {t("squad.noPlayers", { defaultValue: "No players found in your squad." })}
+          </p>
+        ) : (
+          <div data-testid="active-lineup">
+            <StartingFiveGrid>
               {activeLineupSlots.map((slot) => {
                 const player = slot.player;
-                const roleLabel = LOL_ROLE_LABELS[slot.role];
-                const ovr = player ? calculateLolOvr(player) : null;
-                const photo = player
-                  ? resolvePlayerPhoto(player.id, player.match_name, player.profile_image_url)
-                  : null;
-                const outOfPosition = player ? isPlayerOutOfPosition(player, slot.role) : false;
-
-                if (!player) {
+                const model = player ? models.get(player.id) : undefined;
+                const candidates = candidatesBySlot[slot.index] ?? [];
+                const saving = savingSlot === String(slot.index);
+                if (!player || !model) {
                   return (
-                    <div key={slot.role} className="flex items-center gap-3 px-4 py-3 opacity-60">
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-dashed border-muted-foreground/30 bg-muted/20">
-                        <img src={ROLE_ICON_URLS[slot.role]} alt={roleLabel} className="size-4 object-contain opacity-40" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-heading text-sm font-bold text-muted-foreground/50">{roleLabel}</p>
-                        <select
-                          value=""
-                          onChange={(e) => handleSlotChange(slot.index, e.target.value)}
-                          className="mt-1 w-full max-w-[200px] rounded-md border border-border bg-muted pl-2 pr-8 py-1 text-xs text-foreground"
-                        >
-                          <option value="">{t("squad.noRoleAvailable", { defaultValue: "Sin jugador" })}</option>
-                          {roster
-                            .filter((p) => !activeLineupIds.includes(p.id) || p.id === "")
-                            .sort((a, b) => {
-                              const aMatch = resolvePlayerLolRole(a) === slot.role ? 0 : 1;
-                              const bMatch = resolvePlayerLolRole(b) === slot.role ? 0 : 1;
-                              return aMatch - bMatch || calculateLolOvr(b) - calculateLolOvr(a);
-                            })
-                            .map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.match_name} — {resolvePlayerLolRole(p)} ({calculateLolOvr(p)}){isImportPlayer(p) ? ` · ${t("squad.importBadge")}` : ""}
-                              </option>
-                            ))}
-                        </select>
-                      </div>
-                      {savingSlot === String(slot.index) && <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />}
-                    </div>
+                    <EmptySlotCard
+                      key={slot.role}
+                      slotRole={slot.role}
+                      candidates={candidates}
+                      saving={saving}
+                      onFill={(id) => void handleSlotChange(slot.index, id)}
+                    />
                   );
                 }
-
-                const age = calcAge(player.date_of_birth, gameState.clock.current_date);
-                const condition = player.condition;
-                const fitness = player.fitness ?? 75;
-                const morale = player.morale;
-                const annualWage = player.wage;
-
                 return (
-                  <div key={slot.role} onClick={(e) => { if (!(e.target as HTMLElement).closest("select,button")) onSelectPlayer(player.id); }} className="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50">
-                      <img src={ROLE_ICON_URLS[slot.role]} alt={roleLabel} className="size-4 object-contain opacity-80" />
-                    </div>
-                    <button type="button" onClick={() => onSelectPlayer(player.id)} className="shrink-0">
-                      <PlayerAvatar src={photo} alt={player.match_name} className="size-10 cursor-pointer" />
-                    </button>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <button type="button" onClick={() => onSelectPlayer(player.id)} className="truncate text-left">
-                          <p className="truncate font-heading text-base font-bold text-foreground hover:text-primary transition-colors">{player.match_name}</p>
-                        </button>
-                        {isImportPlayer(player) && (
-                          <span
-                            data-testid="import-badge"
-                            title={t("squad.importTooltip", { max: MAX_IMPORTS_IN_STARTING_FIVE })}
-                            className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px font-heading text-[9px] font-bold uppercase tracking-wider text-amber-400"
-                          >
-                            {t("squad.importBadge")}
-                          </span>
-                        )}
-                        {outOfPosition && (
-                          <span className="shrink-0 text-amber-400" title={t("squad.outOfPositionTooltip", { defaultValue: "Fuera de rol" })}>
-                            <AlertTriangle className="size-4" />
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={player.id}
-                          onChange={(e) => handleSlotChange(slot.index, e.target.value)}
-                          disabled={savingSlot === String(slot.index)}
-                          className="max-w-[180px] rounded-md border border-border bg-muted pl-2 pr-8 py-0.5 text-xs text-foreground"
-                        >
-                          {roster
-                            .sort((a, b) => {
-                              const aMatch = resolvePlayerLolRole(a) === slot.role ? 0 : 1;
-                              const bMatch = resolvePlayerLolRole(b) === slot.role ? 0 : 1;
-                              return aMatch - bMatch || calculateLolOvr(b) - calculateLolOvr(a);
-                            })
-                            .map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.match_name} — {resolvePlayerLolRole(p)} ({calculateLolOvr(p)} OVR){isImportPlayer(p) ? ` · ${t("squad.importBadge")}` : ""}
-                              </option>
-                            ))}
-                        </select>
-                        {savingSlot === String(slot.index) && <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />}
-                      </div>
-                    </div>
-                    <div className="hidden w-12 shrink-0 text-center md:block">
-                      <p className="font-heading text-xl font-black text-primary tabular-nums">{ovr}</p>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">OVR</p>
-                    </div>
-                    <div className="hidden w-14 shrink-0 text-center md:block">
-                      <span className="font-heading text-sm font-bold text-muted-foreground">{slot.role}</span>
-                    </div>
-                    <div className="hidden w-28 shrink-0 lg:block">
-                      <div className="mb-0.5 flex items-center justify-between">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Energía</span>
-                        <span className="font-heading text-[11px] font-bold text-amber-400 tabular-nums">{condition}</span>
-                      </div>
-                      <div className="relative h-1.5 w-full overflow-hidden rounded-full">
-                        <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(to right, #f59e0b, #22c55e)' }} />
-                        <div
-                          className="absolute inset-y-0 right-0 bg-muted transition-all duration-500"
-                          style={{ width: `${100 - clampBar(condition)}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="hidden w-28 shrink-0 lg:block">
-                      <div className="mb-0.5 flex items-center justify-between">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Moral</span>
-                        <span className="font-heading text-[11px] font-bold text-emerald-400 tabular-nums">{morale}</span>
-                      </div>
-                      <div className="relative h-1.5 w-full overflow-hidden rounded-full">
-                        <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(to right, #3b82f6, #38bdf8)' }} />
-                        <div
-                          className="absolute inset-y-0 right-0 bg-muted transition-all duration-500"
-                          style={{ width: `${100 - clampBar(morale)}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="hidden w-28 shrink-0 lg:block">
-                      <div className="mb-0.5 flex items-center justify-between">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Fitness</span>
-                        <span className="font-heading text-[11px] font-bold text-green-400 tabular-nums">{fitness}</span>
-                      </div>
-                      <div className="relative h-1.5 w-full overflow-hidden rounded-full">
-                        <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(to right, #14b8a6, #2dd4bf 25%, #5eead4 50%)' }} />
-                        <div
-                          className="absolute inset-y-0 right-0 bg-muted transition-all duration-500"
-                          style={{ width: `${100 - clampBar(fitness)}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="hidden w-12 shrink-0 text-center lg:block">
-                      <p className="font-heading text-sm font-bold text-foreground tabular-nums">{age}</p>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Edad</p>
-                    </div>
-                    <div className="hidden w-20 shrink-0 text-right lg:block">
-                      <p className="font-heading text-sm font-bold text-foreground tabular-nums">{formatVal(annualWage)}</p>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">/año</p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button type="button" onClick={(e) => { e.stopPropagation(); handleToggleTransfer(player.id); }}
-                        title={player.transfer_listed ? t("squad.removeFromTransferList", { defaultValue: "Remove from transfers list" }) : t("squad.addToTransferList", { defaultValue: "Add to transfers list" })}
-                        className={cn("flex size-7 items-center justify-center rounded-md border transition-colors",
-                          player.transfer_listed ? "border-red-500/30 bg-red-500/10 text-red-400" : "border-border text-muted-foreground/50 hover:border-red-500/30 hover:text-red-400"
-                        )}>
-                        <ShoppingCart className="size-3.5" />
-                      </button>
-                      <button type="button" onClick={(e) => { e.stopPropagation(); handleToggleLoan(player.id); }}
-                        title={player.loan_listed ? t("squad.removeFromLoanList", { defaultValue: "Remove from loans list" }) : t("squad.addToLoanList", { defaultValue: "Add to loans list" })}
-                        className={cn("flex size-7 items-center justify-center rounded-md border transition-colors",
-                          player.loan_listed ? "border-blue-500/30 bg-blue-500/10 text-blue-400" : "border-border text-muted-foreground/50 hover:border-blue-500/30 hover:text-blue-400"
-                        )}>
-                        <Repeat className="size-3.5" />
-                      </button>
-                      <button type="button" onClick={() => onSelectPlayer(player.id)} className="shrink-0 text-muted-foreground/50 hover:text-primary">
-                        <ChevronRight className="size-4" />
-                      </button>
-                    </div>
-                  </div>
+                  <PlayerCardV2
+                    key={slot.role}
+                    model={model}
+                    slotRole={slot.role}
+                    selected={selectedId === player.id}
+                    onSelect={(id) => setSelectedId((current) => (current === id ? null : id))}
+                    candidates={candidates}
+                    onSwap={(id) => void handleSlotChange(slot.index, id)}
+                    saving={saving}
+                    outOfPosition={isPlayerOutOfPosition(player, slot.role)}
+                  />
                 );
               })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      </div>
-
-      {/* ── Bench / Substitutes ─────────────────────────────────── */}
-      <div className="flex-1 min-h-0 opacity-0 animate-fade-in-up" style={{ animationDelay: "50ms", animationFillMode: "forwards" }}>
-      <Card className="flex h-full flex-col">
-        <CardHeader className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
-              {t("squad.benchSubstitutes", {
-                defaultValue: "Suplentes / Banca",
-              })}
-            </CardTitle>
-            {hasRoster && (
-              <span className="text-xs tabular-nums text-muted-foreground/70">
-                {benchPlayers.length} / {roster.length}
-              </span>
-            )}
+            </StartingFiveGrid>
           </div>
-          {/* Search + Sort */}
-          {hasRoster && (
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="text"
-                placeholder={t("common.search", { defaultValue: "Buscar jugador..." })}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-8 flex-1 min-w-[140px] max-w-[200px] rounded-md border border-border bg-muted/30 px-2.5 text-xs text-foreground outline-none placeholder:text-muted-foreground/40"
-              />
-              {(
-                [
-                  ["pos", t("squad.pos", { defaultValue: "Posición" })],
-                  ["ovr", t("common.ovr", { defaultValue: "OVR" })],
-                  [
-                    "condition",
-                    t("common.condition", { defaultValue: "Energía" }),
-                  ],
-                  [
-                    "fitness",
-                    t("common.fitness", { defaultValue: "Fitness" }),
-                  ],
-                  ["morale", t("common.morale", { defaultValue: "Moral" })],
-                  ["age", t("common.age", { defaultValue: "Edad" })],
-                ] as Array<[SortKey, string]>
-              ).map(([key, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => toggleSort(key)}
-                  className={cn(
-                    "rounded-md border px-2.5 py-1 font-heading text-xs font-bold uppercase tracking-wide transition-colors",
-                    sortKey === key
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground",
-                  )}
-                >
-                  {label}
-                  {sortKey === key && (
-                    <span className="ml-1">{sortDir === "asc" ? "↑" : "↓"}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto p-0">
-          {benchFiltered.length === 0 && hasRoster ? (
-            <div className="p-8 text-center font-heading text-sm uppercase tracking-wider text-muted-foreground">
-              {t("squad.allStarting", {
-                defaultValue: "Todos los jugadores en la alineación titular",
+        )}
+
+        {selectedModel ? (
+          <SelectedPlayerBar
+            model={selectedModel}
+            onOpenProfile={(id) => onSelectPlayer(id)}
+            onRenew={(id) => onSelectPlayer(id, { openRenewal: true })}
+            onToggleTransferList={(id) => void handleToggleList("toggle_transfer_list", id)}
+            onClose={() => setSelectedId(null)}
+          />
+        ) : null}
+      </section>
+
+      {/* ── Bench ─────────────────────────────────────────────── */}
+      {hasRoster ? (
+        <section aria-labelledby="squad-bench-title" className="flex min-h-0 flex-col gap-4">
+          <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+            <h2
+              id="squad-bench-title"
+              className="font-heading text-section font-semibold uppercase"
+            >
+              {t("onAir.squad.substitutes", { defaultValue: "Substitutes" })}
+            </h2>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {t("onAir.squad.benchCount", {
+                shown: benchVisible.length,
+                total: benchPlayers.length,
+                defaultValue: `${benchVisible.length} of ${benchPlayers.length}`,
               })}
-            </div>
-          ) : !hasRoster ? (
-            <div className="p-8 text-center font-heading text-sm uppercase tracking-wider text-muted-foreground">
-              {t("squad.noPlayers", { defaultValue: "Sin jugadores" })}
-            </div>
-          ) : (
-            <div className="divide-y divide-border/40">
-              {benchFiltered.map((player) => {
-                const role = resolvePlayerLolRole(player);
-                const ovr = calculateLolOvr(player);
-                const photo = resolvePlayerPhoto(
-                  player.id,
-                  player.match_name,
-                  player.profile_image_url,
-                );
-                const age = calcAge(
-                  player.date_of_birth,
-                  gameState.clock.current_date,
-                );
-                const annualWage = player.wage;
-                const condition = player.condition;
-                const fitness = player.fitness ?? 75;
-                const morale = player.morale;
+            </p>
+          </header>
 
-                const contextItems = [
-                  {
-                    label: t("squad.viewProfile", {
-                      defaultValue: "Ver perfil",
-                    }),
-                    icon: <User className="size-4" />,
-                    onClick: () => onSelectPlayer(player.id),
-                  },
-                  {
-                    label: "",
-                    icon: undefined,
-                    onClick: () => {},
-                    divider: true,
-                  },
-                  {
-                    label: player.transfer_listed
-                      ? t("squad.removeFromTransferList", {
-                          defaultValue: "Quitar de transferibles",
-                        })
-                      : t("squad.addToTransferList", {
-                          defaultValue: "Añadir a transferibles",
-                        }),
-                    icon: <ShoppingCart className="size-4" />,
-                    onClick: async () => {
-                      try {
-                        const updated = await invoke<GameStateData>(
-                          "toggle_transfer_list",
-                          { playerId: player.id },
-                        );
-                        onGameUpdate(updated);
-                      } catch {
-                        /* silent */
-                      }
-                    },
-                  },
-                  {
-                    label: player.loan_listed
-                      ? t("squad.removeFromLoanList", {
-                          defaultValue: "Quitar de cesión",
-                        })
-                      : t("squad.addToLoanList", {
-                          defaultValue: "Añadir a cesión",
-                        }),
-                    icon: <Repeat className="size-4" />,
-                    onClick: async () => {
-                      try {
-                        const updated = await invoke<GameStateData>(
-                          "toggle_loan_list",
-                          { playerId: player.id },
-                        );
-                        onGameUpdate(updated);
-                      } catch {
-                        /* silent */
-                      }
-                    },
-                  },
-                ];
-
-                return (
-                  <ContextMenu items={contextItems} key={player.id}>
+          {benchPlayers.length > 0 ? (
+            <div
+              data-slot="bench-toolbar"
+              className="flex flex-wrap items-center gap-x-3 gap-y-2"
+            >
+              <label className="relative block w-60 max-w-full">
+                <span className="sr-only">
+                  {t("squad.filterPlayers", {
+                    defaultValue: "Filter by player name or position",
+                  })}
+                </span>
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t("onAir.squad.searchSubstitutes", {
+                    defaultValue: "Search substitutes",
+                  })}
+                  className="min-h-[var(--hit)] w-full rounded-lg border border-border bg-background ps-9 pe-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                />
+              </label>
+              <div
+                role="group"
+                aria-label={t("onAir.squad.sortBy", { defaultValue: "Sort bench by" })}
+                className="inline-flex flex-wrap overflow-hidden rounded-lg border border-border"
+              >
+                {sortOptions.map(([key, label]) => {
+                  const active = sortKey === key
+                  return (
                     <button
+                      key={key}
                       type="button"
-                      onClick={() => onSelectPlayer(player.id)}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/30"
+                      aria-pressed={active}
+                      onClick={() => toggleSort(key)}
+                      className={cn(
+                        "inline-flex min-h-[var(--hit)] items-center gap-1 border-s border-border px-3 text-sm transition-colors first:border-s-0",
+                        "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                        active
+                          ? "bg-club font-bold text-club-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
                     >
-                      {/* Role icon */}
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50">
-                        <img
-                          src={ROLE_ICON_URLS[role]}
-                          alt={role}
-                          className="size-4 object-contain opacity-80"
-                        />
-                      </div>
-
-                      {/* Photo */}
-                      <PlayerAvatar
-                        src={photo}
-                        alt={player.match_name}
-                        className="size-10"
-                      />
-
-                      {/* Name + full_name */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <p className="truncate font-heading text-base font-bold text-foreground">
-                            {player.match_name}
-                          </p>
-                          {isImportPlayer(player) && (
-                            <span
-                              data-testid="import-badge"
-                              title={t("squad.importTooltip", { max: MAX_IMPORTS_IN_STARTING_FIVE })}
-                              className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-px font-heading text-[9px] font-bold uppercase tracking-wider text-amber-400"
-                            >
-                              {t("squad.importBadge")}
-                            </span>
+                      {label}
+                      {active ? (
+                        <>
+                          {sortDir === "asc" ? (
+                            <ArrowUp aria-hidden="true" className="size-3.5" />
+                          ) : (
+                            <ArrowDown aria-hidden="true" className="size-3.5" />
                           )}
-                          {player.transfer_listed && (
-                            <span className="shrink-0 rounded bg-red-500/10 px-1 py-0.5 text-[9px] font-heading font-bold uppercase tracking-wider text-red-400">
-                              {t("common.transferListed", { defaultValue: "TR" })}
-                            </span>
-                          )}
-                          {player.loan_listed && (
-                            <span className="shrink-0 rounded bg-blue-500/10 px-1 py-0.5 text-[9px] font-heading font-bold uppercase tracking-wider text-blue-400">
-                              {t("common.loanListed", { defaultValue: "CD" })}
-                            </span>
-                          )}
-                        </div>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {player.full_name}
-                        </p>
-                      </div>
-
-                      {/* OVR — visible md+ */}
-                      <div className="hidden w-12 shrink-0 text-center md:block">
-                        <p className="font-heading text-xl font-black text-primary tabular-nums">
-                          {ovr}
-                        </p>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          OVR
-                        </p>
-                      </div>
-
-                      {/* Role badge — visible md+ */}
-                      <div className="hidden w-14 shrink-0 text-center md:block">
-                        <span className="font-heading text-sm font-bold text-muted-foreground">
-                          {role}
-                        </span>
-                      </div>
-
-                      {/* Condition bar — visible lg+ */}
-                      <div className="hidden w-28 shrink-0 lg:block">
-                        <div className="mb-0.5 flex items-center justify-between">
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {t("common.condition", { defaultValue: "Energía" })}
+                          <span className="sr-only">
+                            {sortDir === "asc"
+                              ? t("onAir.squad.sortAscending", { defaultValue: "ascending" })
+                              : t("onAir.squad.sortDescending", { defaultValue: "descending" })}
                           </span>
-                          <span className="font-heading text-[11px] font-bold text-amber-400 tabular-nums">
-                            {condition}
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all",
-                              condition <= 0
-                                ? "bg-amber-400/30"
-                                : "bg-amber-400",
-                            )}
-                            style={{
-                              width: `${clampBar(condition)}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Morale bar — visible lg+ */}
-                      <div className="hidden w-28 shrink-0 lg:block">
-                        <div className="mb-0.5 flex items-center justify-between">
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {t("common.morale", { defaultValue: "Moral" })}
-                          </span>
-                          <span className="font-heading text-[11px] font-bold text-emerald-400 tabular-nums">
-                            {morale}
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all",
-                              morale <= 0
-                                ? "bg-emerald-400/30"
-                                : "bg-emerald-400",
-                            )}
-                            style={{
-                              width: `${clampBar(morale)}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Fitness bar — visible lg+ */}
-                      <div className="hidden w-28 shrink-0 lg:block">
-                        <div className="mb-0.5 flex items-center justify-between">
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {t("common.fitness", { defaultValue: "Fitness" })}
-                          </span>
-                          <span className="font-heading text-[11px] font-bold text-green-400 tabular-nums">
-                            {fitness}
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all",
-                              fitness <= 0
-                                ? "bg-green-400/30"
-                                : "bg-green-400",
-                            )}
-                            style={{
-                              width: `${clampBar(fitness)}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Age — visible lg+ */}
-                      <div className="hidden w-12 shrink-0 text-center lg:block">
-                        <p className="font-heading text-sm font-bold text-foreground tabular-nums">
-                          {age}
-                        </p>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          {t("common.age", { defaultValue: "Edad" })}
-                        </p>
-                      </div>
-
-                      {/* Wage — visible lg+ */}
-                      <div className="hidden w-20 shrink-0 text-right lg:block">
-                        <p className="font-heading text-sm font-bold text-foreground tabular-nums">
-                          {formatVal(annualWage)}
-                        </p>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          {t("common.per_year_with_slash", {
-                            defaultValue: "/año",
-                          })}
-                        </p>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button type="button" onClick={(e) => { e.stopPropagation(); handleToggleTransfer(player.id); }}
-                          title={player.transfer_listed ? t("squad.removeFromTransferList", { defaultValue: "Remove from transfers list" }) : t("squad.addToTransferList", { defaultValue: "Add to transfers list" })}
-                          className={cn("flex size-7 items-center justify-center rounded-md border transition-colors",
-                            player.transfer_listed ? "border-red-500/30 bg-red-500/10 text-red-400" : "border-border text-muted-foreground/50 hover:border-red-500/30 hover:text-red-400"
-                          )}>
-                          <ShoppingCart className="size-3.5" />
-                        </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); handleToggleLoan(player.id); }}
-                          title={player.loan_listed ? t("squad.removeFromLoanList", { defaultValue: "Remove from loans list" }) : t("squad.addToLoanList", { defaultValue: "Add to loans list" })}
-                          className={cn("flex size-7 items-center justify-center rounded-md border transition-colors",
-                            player.loan_listed ? "border-blue-500/30 bg-blue-500/10 text-blue-400" : "border-border text-muted-foreground/50 hover:border-blue-500/30 hover:text-blue-400"
-                          )}>
-                          <Repeat className="size-3.5" />
-                        </button>
-                        <ChevronRight className="size-4 text-muted-foreground/50" />
-                      </div>
+                        </>
+                      ) : null}
                     </button>
-                  </ContextMenu>
+                  )
+                })}
+              </div>
+              <SegmentedControl
+                size="sm"
+                ariaLabel={t("onAir.squad.roleFilter", { defaultValue: "Filter bench by role" })}
+                value={roleFilter}
+                onValueChange={(value) => setRoleFilter(value as RoleFilter)}
+                options={roleOptions}
+                className="max-w-full flex-wrap"
+              />
+            </div>
+          ) : null}
+
+          {benchVisible.length === 0 ? (
+            <BenchEmptyState
+              filtered={benchPlayers.length > 0}
+              onBrowseMarket={() => onNavigate?.("Transfers")}
+              onOpenAcademy={() => onNavigate?.("Youth")}
+              onClearFilter={() => {
+                setRoleFilter("all");
+                setSearch("");
+              }}
+            />
+          ) : (
+            <ul className="@container overflow-hidden rounded-xl border border-line bg-card">
+              {benchVisible.map((player) => {
+                const model = models.get(player.id);
+                if (!model) return null;
+                return (
+                  <BenchRow
+                    key={player.id}
+                    model={model}
+                    loanListed={player.loan_listed === true}
+                    onOpen={(id) => onSelectPlayer(id)}
+                    onToggleTransfer={(id) => void handleToggleList("toggle_transfer_list", id)}
+                    onToggleLoan={(id) => void handleToggleList("toggle_loan_list", id)}
+                  />
                 );
               })}
-            </div>
+            </ul>
           )}
-        </CardContent>
-      </Card>
-      </div>
+        </section>
+      ) : null}
     </div>
   );
 }
