@@ -734,6 +734,8 @@ export interface CompetitionSummary {
 /** User-defined club sent to `select_team`; mirrors the Rust `CustomTeamSpec`. */
 export interface CustomTeamSpec {
   name: string;
+  /** Normalized `data:image/png;base64,...` badge from `prepare_custom_logo`; omitted for the generated one. */
+  logo_data_uri?: string;
   short_name: string;
   primary_color: string;
   secondary_color: string;

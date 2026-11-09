@@ -130,6 +130,8 @@ describe("mapBackendCustomTeamError", () => {
     ["Team 'les-team-1' was not found", "replaces", "format"],
     ["The replaced team is not in this competition", "replaces", "format"],
     ["Only main clubs can be replaced", "replaces", "format"],
+    ["Invalid club logo: not_png", "logo", "format"],
+    ["Invalid club logo: too_big_dimensions", "logo", "format"],
   ] as const)("maps the Rust message %j", (message, field, code) => {
     expect(mapBackendCustomTeamError(message)).toEqual({ field, code });
   });
@@ -141,7 +143,7 @@ describe("mapBackendCustomTeamError", () => {
   });
 
   it("covers every row of the table with a Rust message above", () => {
-    expect(BACKEND_ERROR_TABLE).toHaveLength(9);
+    expect(BACKEND_ERROR_TABLE).toHaveLength(10);
   });
 
   it("returns null for unrelated errors", () => {

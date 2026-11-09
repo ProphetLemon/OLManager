@@ -573,6 +573,24 @@
     "teamCount_one": "1 Team",
     "teamCount_other": "{{count}} Teams",
     "teams": "Teams",
+    "customLogo": {
+        "heading": "Dein eigenes Wappen",
+        "upload": "Wappen hochladen",
+        "replace": "Bild ändern",
+        "remove": "Bild entfernen",
+        "hint": "PNG, JPEG oder WebP, bis zu 2 MB. Das Bild wird auf höchstens 256 mal 256 Pixel verkleinert. Ohne Bild wird das erzeugte Wappen verwendet.",
+        "processing": "Dein Wappen wird vorbereitet...",
+        "inUse": "Dein Bild ersetzt das erzeugte Wappen. Entferne es, um zurückzukehren.",
+        "previewAlt": "Dein hochgeladenes Wappen",
+        "errors": {
+            "unsupportedType": "Verwende ein PNG-, JPEG- oder WebP-Bild. SVG und andere Formate werden nicht akzeptiert.",
+            "fileTooLarge": "Die Datei ist größer als 2 MB. Wähle ein kleineres Bild.",
+            "unreadable": "Das Bild konnte nicht gelesen werden. Versuche eine andere Datei.",
+            "invalid": "Das Bild kann nicht als Wappen verwendet werden. Versuche eine andere Datei.",
+            "tooBig": "Das Bild ist zu groß. Versuche ein kleineres.",
+            "failed": "Das Wappen konnte nicht vorbereitet werden. Versuche es erneut."
+        }
+    },
     "custom": {
       "create": "Eigenes Team gründen",
       "createHint": "Ersetze einen Verein dieser Liga durch deinen eigenen.",

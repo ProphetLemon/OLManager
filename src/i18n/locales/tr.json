@@ -573,6 +573,24 @@
     "teamCount_one": "1 takım",
     "teamCount_other": "{{count}} takım",
     "teams": "Takımlar",
+    "customLogo": {
+        "heading": "Kendi armanız",
+        "upload": "Armanızı yükleyin",
+        "replace": "Görseli değiştir",
+        "remove": "Görseli kaldır",
+        "hint": "PNG, JPEG veya WebP, en fazla 2 MB. Görsel 256 x 256 piksele sığacak şekilde küçültülür. Görsel yoksa oluşturulan arma kullanılır.",
+        "processing": "Armanız hazırlanıyor...",
+        "inUse": "Görseliniz oluşturulan armanın yerine geçer. Geri dönmek için kaldırın.",
+        "previewAlt": "Yüklediğiniz arma",
+        "errors": {
+            "unsupportedType": "PNG, JPEG veya WebP görseli kullanın. SVG ve diğer biçimler kabul edilmez.",
+            "fileTooLarge": "Bu dosya 2 MB'tan büyük. Daha küçük bir görsel seçin.",
+            "unreadable": "Bu görsel okunamadı. Başka bir dosya deneyin.",
+            "invalid": "Bu görsel arma olarak kullanılamaz. Başka bir dosya deneyin.",
+            "tooBig": "Bu görsel çok büyük. Daha küçük bir tane deneyin.",
+            "failed": "Arma hazırlanamadı. Tekrar deneyin."
+        }
+    },
     "custom": {
       "create": "Kendi takımını kur",
       "createHint": "Bu ligdeki bir kulübün yerine kendi kulübünü koy.",

@@ -573,6 +573,24 @@
     "teamCount_one": "1 équipe",
     "teamCount_other": "{{count}} équipes",
     "teams": "Équipes",
+    "customLogo": {
+        "heading": "Votre propre écusson",
+        "upload": "Importer votre écusson",
+        "replace": "Changer l'image",
+        "remove": "Retirer l'image",
+        "hint": "PNG, JPEG ou WebP, jusqu'à 2 Mo. L'image est réduite pour tenir dans 256 par 256 pixels. Sans image, l'écusson généré est utilisé.",
+        "processing": "Préparation de votre écusson...",
+        "inUse": "Votre image remplace l'écusson généré. Retirez-la pour y revenir.",
+        "previewAlt": "Votre écusson importé",
+        "errors": {
+            "unsupportedType": "Utilisez une image PNG, JPEG ou WebP. Les SVG et les autres formats sont refusés.",
+            "fileTooLarge": "Ce fichier dépasse 2 Mo. Choisissez une image plus petite.",
+            "unreadable": "Cette image n'a pas pu être lue. Essayez un autre fichier.",
+            "invalid": "Cette image ne peut pas servir d'écusson. Essayez un autre fichier.",
+            "tooBig": "Cette image est trop grande. Essayez-en une plus petite.",
+            "failed": "L'écusson n'a pas pu être préparé. Réessayez."
+        }
+    },
     "custom": {
       "create": "Créer votre équipe",
       "createHint": "Remplacez un club de cette ligue par le vôtre.",

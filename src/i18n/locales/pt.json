@@ -572,6 +572,24 @@
     "teamCount_one": "1 equipa",
     "teamCount_other": "{{count}} equipas",
     "teams": "Equipas",
+    "customLogo": {
+        "heading": "O teu próprio emblema",
+        "upload": "Carregar o teu emblema",
+        "replace": "Alterar imagem",
+        "remove": "Remover imagem",
+        "hint": "PNG, JPEG ou WebP, até 2 MB. A imagem é reduzida para caber em 256 por 256 píxeis. Sem imagem, é usado o emblema gerado.",
+        "processing": "A preparar o teu emblema...",
+        "inUse": "A tua imagem substitui o emblema gerado. Remove-a para voltar a ele.",
+        "previewAlt": "O teu emblema carregado",
+        "errors": {
+            "unsupportedType": "Usa uma imagem PNG, JPEG ou WebP. SVG e outros formatos não são aceites.",
+            "fileTooLarge": "Esse ficheiro tem mais de 2 MB. Escolhe uma imagem mais pequena.",
+            "unreadable": "Não foi possível ler essa imagem. Tenta outro ficheiro.",
+            "invalid": "Essa imagem não pode ser usada como emblema. Tenta outro ficheiro.",
+            "tooBig": "Essa imagem é demasiado grande. Tenta uma mais pequena.",
+            "failed": "Não foi possível preparar o emblema. Tenta novamente."
+        }
+    },
     "custom": {
       "create": "Cria a tua equipa",
       "createHint": "Substitui um clube desta liga pelo teu.",

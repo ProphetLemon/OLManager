@@ -573,6 +573,24 @@
     "teamCount_one": "1 time",
     "teamCount_other": "{{count}} times",
     "teams": "Times",
+    "customLogo": {
+        "heading": "Seu próprio escudo",
+        "upload": "Enviar seu escudo",
+        "replace": "Trocar imagem",
+        "remove": "Remover imagem",
+        "hint": "PNG, JPEG ou WebP, de até 2 MB. A imagem é reduzida para caber em 256 por 256 pixels. Sem imagem, o escudo gerado é usado.",
+        "processing": "Preparando seu escudo...",
+        "inUse": "Sua imagem substitui o escudo gerado. Remova-a para voltar a ele.",
+        "previewAlt": "Seu escudo enviado",
+        "errors": {
+            "unsupportedType": "Use uma imagem PNG, JPEG ou WebP. SVG e outros formatos não são aceitos.",
+            "fileTooLarge": "Esse arquivo tem mais de 2 MB. Escolha uma imagem menor.",
+            "unreadable": "Não foi possível ler essa imagem. Tente outro arquivo.",
+            "invalid": "Essa imagem não pode ser usada como escudo. Tente outro arquivo.",
+            "tooBig": "Essa imagem é grande demais. Tente uma menor.",
+            "failed": "Não foi possível preparar o escudo. Tente novamente."
+        }
+    },
     "custom": {
       "create": "Crie seu time",
       "createHint": "Substitua um clube desta liga pelo seu.",
