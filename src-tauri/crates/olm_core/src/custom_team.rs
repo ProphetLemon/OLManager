@@ -667,8 +667,8 @@ pub fn join_team_with_custom(
         .iter()
         .filter(|team| team.team_kind != TeamKind::Academy)
         .collect();
-    let spec = validate_spec(spec, &others)?;
-
+    // The competition is checked first so an unknown one is reported as such,
+    // not as whatever is wrong with the spec.
     let peers: Vec<&Team> = others
         .iter()
         .copied()
@@ -679,6 +679,7 @@ pub fn join_team_with_custom(
             competition_id.to_string(),
         ));
     }
+    let spec = validate_spec(spec, &others)?;
     let team_id = custom_team_id(competition_id, &spec.short_name);
     let team = build_custom_team(
         &team_id,
