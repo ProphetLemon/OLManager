@@ -2,6 +2,7 @@ import { CheckCheck, Trash2 } from "lucide-react";
 import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 
+import { resolveInboxCategoryLabel } from "@/lib/inbox/categoryLabel";
 import { Badge, Button, Select } from "@/ui-v2/_legacy/components/ui";
 import {
   getCategoryIcon,
@@ -78,7 +79,7 @@ export default function InboxToolbar({
               "flex items-center gap-1.5",
             )}
           >
-            {categoryIcon} {t(`inbox.categories.${category}`)} ({count})
+            {categoryIcon} {resolveInboxCategoryLabel(t, category)} ({count})
           </button>
         );
       })}

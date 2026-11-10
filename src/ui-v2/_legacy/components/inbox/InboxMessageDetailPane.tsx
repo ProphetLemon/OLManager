@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 
 import { formatDateFull, getTeamName } from "@/lib/common/helpers";
+import { resolveInboxCategoryLabel } from "@/lib/inbox/categoryLabel";
 import type { GameStateData } from "@/store/gameStore";
 import ScoutPlayerCard from "@/ui-v2/_legacy/components/ScoutPlayerCard";
 import { Badge, Button } from "@/ui-v2/_legacy/components/ui";
@@ -85,7 +86,7 @@ export default function InboxMessageDetailPane({
               </div>
               <div className="flex items-center gap-2 mt-1.5">
                 <Badge variant="neutral" size="sm">
-                  {t(`inbox.categories.${selectedMessage.category}`)}
+                  {resolveInboxCategoryLabel(t, selectedMessage.category)}
                 </Badge>
                 {selectedMessage.priority === "Urgent" ? (
                   <Badge variant="danger" size="sm">
