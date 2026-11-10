@@ -3968,7 +3968,7 @@
       "needsSubtitle": "Resolva isso antes de continuar.",
       "needsEmptyTag": "Tudo certo",
       "seasonChip": "T{{season}}",
-      "formLabel": "Forma",
+      "formLabel": "Forma de {{team}}",
       "openSchedule": "Abrir calendário",
       "daysToMatch_one": "dia para o jogo",
       "daysToMatch_other": "dias para o jogo",

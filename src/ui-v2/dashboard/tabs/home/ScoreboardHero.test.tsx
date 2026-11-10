@@ -233,11 +233,20 @@ describe("ScoreboardHero", () => {
     }
   });
 
+  it("names the club the form strip belongs to, never a bare 'Form' next to the user's side", () => {
+    const { container } = renderHero(
+      makeData({ opponent: side({ prefix: "Navi", name: "Natus Vincere", shortName: "NAVI", form: ["L", "W", "W", "W", "W"] }) }),
+    );
+    const slot = container.querySelector('[data-slot="opponent-form"]') as HTMLElement;
+    expect(within(slot).getByText("NAVI form")).toBeInTheDocument();
+    expect(within(slot).queryByText("Form")).toBeNull();
+  });
+
   it("labels the form line, or shows the honest empty message in the same slot", () => {
     const { container, unmount } = renderHero(
       makeData({ opponent: side({ prefix: "Navi", name: "Natus Vincere", shortName: "NAVI", form: ["W"] }) }),
     );
-    expect(within(container.querySelector('[data-slot="opponent-form"]') as HTMLElement).getByText("Form")).toBeInTheDocument();
+    expect(within(container.querySelector('[data-slot="opponent-form"]') as HTMLElement).getByText("NAVI form")).toBeInTheDocument();
     unmount();
     const empty = renderHero(makeData());
     const slot = empty.container.querySelector('[data-slot="opponent-form"]') as HTMLElement;

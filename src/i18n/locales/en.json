@@ -4009,7 +4009,7 @@
       "needsSubtitle": "Resolve these before you continue.",
       "needsEmptyTag": "All clear",
       "seasonChip": "S{{season}}",
-      "formLabel": "Form",
+      "formLabel": "{{team}} form",
       "openSchedule": "Open schedule",
       "daysToMatch_one": "day to the match",
       "daysToMatch_other": "days to the match",

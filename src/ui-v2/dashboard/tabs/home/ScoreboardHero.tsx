@@ -152,7 +152,7 @@ function OpponentForm({ opponent }: { opponent: SideData }) {
   return (
     <div data-slot="opponent-form" className="flex min-w-0 items-center gap-2">
       <span aria-hidden="true" className="text-sm font-semibold text-foreground">
-        {t("onAir.home.formLabel", { defaultValue: "Form" })}
+        {t("onAir.home.formLabel", { team: opponent.shortName, defaultValue: "{{team}} form" })}
       </span>
       <ul aria-label={label} className="flex items-center gap-1.5">
         {opponent.form.map((result, index) => {

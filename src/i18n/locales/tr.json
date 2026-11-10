@@ -3968,7 +3968,7 @@
       "needsSubtitle": "Devam etmeden önce bunları çöz.",
       "needsEmptyTag": "Hepsi tamam",
       "seasonChip": "S{{season}}",
-      "formLabel": "Form",
+      "formLabel": "{{team}} formu",
       "openSchedule": "Takvimi aç",
       "daysToMatch_one": "maça kalan gün",
       "daysToMatch_other": "maça kalan gün",
