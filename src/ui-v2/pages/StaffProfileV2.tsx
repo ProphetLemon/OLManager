@@ -26,7 +26,8 @@ import {
   ovrRating,
   type StaffAttrKey,
 } from "@/lib/staff/staffStats";
-import { calcAge, getTeamName } from "@/lib/common/helpers";
+import { getTeamName } from "@/lib/common/helpers";
+import { staffAge } from "@/lib/staff/staffAge";
 import { countryName } from "@/lib/common/countries";
 import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
@@ -84,7 +85,7 @@ export default function StaffProfileV2({
   const ovr = ovrRating(staff);
   const best = bestAttr(staff);
   const impactRows = getStaffImpactRows(staff);
-  const age = calcAge(staff.date_of_birth, gameState.clock.current_date);
+  const age = staffAge(staff, gameState.clock.current_date);
   const attrLabel = (key: StaffAttrKey) => t(ATTR_LABEL_KEYS[key]);
   const photo = resolveStaffPhoto(staff.profile_image_url);
   const roleIcon = ROLE_ICONS[staff.role] ?? <UserPlus className="size-5" />;
@@ -153,8 +154,12 @@ export default function StaffProfileV2({
                 {roleIcon}
                 {t(`staff.roles.${staff.role}`, { defaultValue: staff.role })}
               </span>
-              <span className="text-border">·</span>
-              <span>{t("common.age")} {age}</span>
+              {age != null && (
+                <>
+                  <span className="text-border">·</span>
+                  <span>{t("common.age")} {age}</span>
+                </>
+              )}
               {staff.nationality && (
                 <>
                   <span className="text-border">·</span>

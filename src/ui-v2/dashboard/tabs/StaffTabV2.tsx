@@ -25,8 +25,9 @@ import {
 } from "@/lib/teams/lolStaffEffects";
 import { resolveStaffPhoto } from "@/lib/players/playerPhotos";
 import { staffDisplayName } from "@/lib/staff/staffName";
+import { staffAge } from "@/lib/staff/staffAge";
 import { ATTR_LABEL_KEYS, bestAttr, ovrRating, getStaffImpactRows } from "@/lib/staff/staffStats";
-import { calcAge, getTeamName } from "@/lib/common/helpers";
+import { getTeamName } from "@/lib/common/helpers";
 import { countryName } from "@/lib/common/countries";
 import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
@@ -293,7 +294,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
         <div className="grid min-h-0 grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2 xl:grid-cols-3">
           {pageData.map((staff) => {
             const roleIcon = ROLE_ICONS[staff.role] || <GraduationCap className="size-4" />;
-            const age = calcAge(staff.date_of_birth, gameState.clock.current_date);
+            const age = staffAge(staff, gameState.clock.current_date);
             const ovr = ovrRating(staff);
             const best = bestAttr(staff);
             const impactRows = getStaffImpactRows(staff);
@@ -338,8 +339,12 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                     {/* Role + Age + Nationality + Team */}
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
                       <span>{t(`staff.roles.${staff.role}`, { defaultValue: staff.role })}</span>
-                      <span className="text-border">·</span>
-                      <span>{t("common.age")} {age}</span>
+                      {age != null && (
+                        <>
+                          <span className="text-border">·</span>
+                          <span>{t("common.age")} {age}</span>
+                        </>
+                      )}
                       {staff.nationality && (
                         <>
                           <span className="text-border">·</span>
