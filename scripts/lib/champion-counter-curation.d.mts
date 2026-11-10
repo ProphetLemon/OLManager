@@ -5,7 +5,9 @@ export interface CounterCurationChange {
   value?: number;
   confidence: string;
   reason: string;
+  basis?: CurationBasis;
 }
+export type CurationBasis = "general_knowledge" | "pro_play_stats";
 export interface CounterCuration {
   metadata: { schemaVersion: 1; basis: string; reviewed_at: string; method: string };
   changes: CounterCurationChange[];
@@ -14,7 +16,7 @@ export interface CuratedCounter {
   source: string;
   target: string;
   value: number;
-  curated: { op: "add" | "set"; confidence: string; reason: string } | null;
+  curated: { op: "add" | "set"; confidence: string; reason: string; basis: CurationBasis } | null;
 }
 export const CURATION_SOURCE: string;
 export function validateCuration(curation: CounterCuration): CounterCuration;

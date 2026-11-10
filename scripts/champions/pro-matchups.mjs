@@ -22,6 +22,16 @@ import {
   roleDistribution,
 } from "./lib/lane-matchups.mjs";
 
+/** Leaguepedia Cargo returns at most 500 rows per query, whatever limit is requested. */
+export const MAX_PAGE_SIZE = 500;
+
+/** Integer page size in 1..MAX_PAGE_SIZE. A larger request would make a full page look short and end paging early. */
+export function clampPageSize(value) {
+  const size = Math.floor(Number(value));
+  if (!Number.isFinite(size) || size < 1) throw new Error(`invalid page size ${value}`);
+  return Math.min(size, MAX_PAGE_SIZE);
+}
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const scratch = path.join(root, "src-tauri/target/olm-scratch");
 
@@ -37,11 +47,11 @@ const HELP = `Usage: node scripts/champions/pro-matchups.mjs [flags]
   --min-games <n>         minimum games per matchup
   --min-lower-bound <x>   minimum Wilson lower bound
   --max-requests <n>      cap on live requests (default 800)
-  --page-size <n>         Cargo page size (default 500)
+  --page-size <n>         Cargo page size (default and maximum 500)
   -h, --help              show this help
 `;
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const args = {
     since: "2025-01-01",
     until: "2027-01-01",
@@ -49,7 +59,7 @@ function parseArgs(argv) {
     cacheDir: path.join(scratch, "lp-cargo-cache"),
     out: path.join(scratch, "pro-matchups-report.json"),
     minGames: DEFAULT_MIN_GAMES,
-    minWinRate: DEFAULT_MIN_LOWER_BOUND,
+    minLowerBound: DEFAULT_MIN_LOWER_BOUND,
     maxRequests: 800,
     pageSize: 500,
     login: false,
@@ -67,13 +77,19 @@ function parseArgs(argv) {
     else if (flag === "--min-games") args.minGames = Number(argv[++i]);
     else if (flag === "--min-lower-bound") args.minLowerBound = Number(argv[++i]);
     else if (flag === "--max-requests") args.maxRequests = Number(argv[++i]);
-    else if (flag === "--page-size") args.pageSize = Number(argv[++i]);
+    else if (flag === "--page-size") args.pageSize = clampPageSize(argv[++i]);
     else throw new Error(`unknown flag ${flag}`);
   }
   return args;
 }
 
-/** Cargo query for one page. Ordered by a unique key so offset pagination is stable. */
+/**
+ * Cargo query for one page. Offset pagination needs a total order.
+ * (GameId, Role, PlayerWin) is unique per row: a game has one winner and one loser per role.
+ * Checked on the 2025-01-01..2027-01-01 pass (528 full pages plus one of 390 rows, 264,390 rows): no repeated key,
+ * so no tiebreaker column is needed. It is a data property, not a schema guarantee; if a pass ever
+ * reports duplicate keys, append a per-player column such as Link to order_by.
+ */
 export function scoreboardParams({ since, until, offset, pageSize }) {
   return {
     action: "cargoquery",
@@ -95,13 +111,14 @@ export function rowsFromCargo(data) {
   }));
 }
 
-async function fetchAllRows(client, args) {
+export async function fetchAllRows(client, args) {
+  const pageSize = clampPageSize(args.pageSize);
   const rows = [];
-  for (let offset = 0; ; offset += args.pageSize) {
-    const data = await client.get(scoreboardParams({ ...args, offset }));
+  for (let offset = 0; ; offset += pageSize) {
+    const data = await client.get(scoreboardParams({ ...args, pageSize, offset }));
     const page = rowsFromCargo(data);
     rows.push(...page);
-    if (page.length < args.pageSize) break;
+    if (page.length < pageSize) break;
   }
   return rows;
 }
