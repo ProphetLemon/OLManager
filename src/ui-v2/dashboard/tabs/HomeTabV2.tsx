@@ -8,7 +8,7 @@ import type { BlockerData } from "@/services/advanceTimeService";
 import type { DashboardAlert } from "@/lib/dashboard/helpers";
 import type { DashboardNavigateContext } from "@/lib/dashboard/profileNavigation";
 import { buildCallItems, type CallItem } from "@/lib/dashboard/needsYourCall";
-import { getScoreboardData } from "@/lib/home/scoreboard";
+import { getRestNotice, getScoreboardData } from "@/lib/home/scoreboard";
 import { getStandingsPanelData } from "@/lib/home/standings";
 import { buildActiveLineupIds } from "@/lib/squad/helpers";
 import { resolveMessage } from "@/lib/i18n/backendI18n";
@@ -57,6 +57,10 @@ export function HomeTabV2({
   const scoreboard = useMemo(
     () => getScoreboardData(gameState, { highContrast: Boolean(highContrast) }),
     [gameState, highContrast],
+  );
+  const restNotice = useMemo(
+    () => (scoreboard ? null : getRestNotice(gameState)),
+    [scoreboard, gameState],
   );
   const standings = useMemo(() => getStandingsPanelData(gameState), [gameState]);
 
@@ -126,6 +130,7 @@ export function HomeTabV2({
         <div className={standings ? "min-h-0 min-w-0" : "min-h-0 min-w-0 @5xl:col-span-2"}>
           <ScoreboardHero
             data={scoreboard}
+            rest={restNotice}
             onOpenSchedule={() => onNavigate?.("Schedule")}
             onOpenSquad={() => onNavigate?.("Squad")}
           />

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FixtureData, GameStateData, PlayerData, TeamData } from "@/store/types";
-import { getScoreboardData, separateOpponentPalette } from "./scoreboard";
+import { getRestNotice, getScoreboardData, separateOpponentPalette } from "./scoreboard";
 
 const ROLES = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"] as const;
 
@@ -139,6 +139,35 @@ describe("getScoreboardData", () => {
       expect(getScoreboardData(state({ fixtures: friendlyElsewhere }), HC)?.restsOnMatchday).toBeNull();
       const playoffNext = [rounds[0], { ...rounds[1], match_type: "Playoffs" as const }];
       expect(getScoreboardData(state({ fixtures: playoffNext }), HC)?.restsOnMatchday).toBeNull();
+    });
+  });
+
+  describe("rest notice (no fixture left for the club)", () => {
+    const other = (id: string, matchday: number, date: string, extra: Partial<FixtureData> = {}) =>
+      fixture({ id, matchday, date, home_team_id: "x", away_team_id: "y", ...extra });
+    const mine = (id: string, matchday: number, extra: Partial<FixtureData> = {}) =>
+      fixture({ id, matchday, date: "2026-03-01", ...extra });
+
+    it("tags the rest on the last matchday, with the round's date", () => {
+      const fixtures = [mine("m8", 8, { status: "Completed" }), other("o9", 9, "2026-03-14")];
+      expect(getScoreboardData(state({ fixtures }), HC)).toBeNull();
+      expect(getRestNotice(state({ fixtures }))).toMatchObject({ matchday: 9, date: "2026-03-14", competitionName: "LEC" });
+    });
+
+    it("stays out of the way while the club still has a fixture (rest in the middle, first matchday)", () => {
+      const middle = [other("o6", 6, "2026-03-10"), mine("m7", 7, { date: "2026-03-17" })];
+      expect(getRestNotice(state({ fixtures: middle }))).toBeNull();
+      expect(getScoreboardData(state({ fixtures: middle }), HC)?.restsOnMatchday).toBe(6);
+      const first = [other("o1", 1, "2026-01-07"), mine("m2", 2, { date: "2026-01-14" })];
+      expect(getRestNotice(state({ fixtures: first }))).toBeNull();
+      expect(getScoreboardData(state({ fixtures: first }), HC)?.restsOnMatchday).toBe(1);
+    });
+
+    it("is null when the regular season is over, an even league is done, or only playoffs it is not in remain", () => {
+      expect(getRestNotice(state({ fixtures: [mine("m8", 8, { status: "Completed" }), other("o8", 8, "2026-03-07", { status: "Completed" })] }))).toBeNull();
+      expect(getRestNotice(state({ fixtures: [] }))).toBeNull();
+      const playoffsElsewhere = [mine("m8", 8, { status: "Completed" }), other("po", 1, "2026-03-21", { match_type: "Playoffs" })];
+      expect(getRestNotice(state({ fixtures: playoffsElsewhere }))).toBeNull();
     });
   });
 
