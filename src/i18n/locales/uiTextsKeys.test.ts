@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import de from "./de.json";
@@ -110,5 +112,96 @@ describe("advance blocker keys", () => {
         "academyMissingRoles",
       ].map((key) => `advance.blockers.${key}`),
     );
+  });
+});
+
+/** Keys a Scrims tab component asks for with a literal `t("...")` call. */
+function literalKeys(file: string): string[] {
+  const source = readFileSync(resolve(__dirname, "../../ui-v2/dashboard/tabs", file), "utf-8");
+  return [...source.matchAll(/\bt\(\s*["`]([A-Za-z0-9_.]+)["`]/g)].map((match) => match[1]);
+}
+
+describe("Scrims tab keys", () => {
+  // Words that are the same in these languages (cognates and loanwords), not a missed translation.
+  const sameAsEnglishOk: Record<string, readonly string[]> = {
+    "scrims.delegation": ["de"],
+    "scrims.manualControl": ["es", "pt", "pt-BR"],
+    "scrims.manualLabel": ["es", "pt", "pt-BR"],
+    "scrims.tags.fatigueMinus": ["fr"],
+    "scrims.tags.fatiguePlus": ["fr"],
+    "scrims.tags.mentalMinus": ["de", "es", "fr", "pt", "pt-BR"],
+    "scrims.tags.mentalPlus": ["de", "es", "fr", "pt", "pt-BR"],
+    "scrims.tags.momentumPlus": ["de"],
+    "scrims.tags.riskMinus": ["tr"],
+    "scrims.tags.techniqueMinus": ["fr"],
+    "scrims.tags.volumeMinus": ["fr", "it", "pt", "pt-BR"],
+    "scrims.tags.volumePlus": ["fr", "it", "pt", "pt-BR"],
+    "training.scrims.planA": ["de", "es", "fr", "tr"],
+    "training.scrims.planB": ["de", "es", "fr", "tr"],
+    "training.scrims.planC": ["de", "es", "fr", "tr"],
+    "training.scrims.slot": ["de", "it", "tr"],
+  };
+
+  it("translates every text the Scrims tab and its planning card show, in every locale", () => {
+    const keys = [
+      ...new Set([...literalKeys("ScrimsTabV2.tsx"), ...literalKeys("ScrimPlanningCardV2.tsx")]),
+    ].filter((key) => lookup(LOCALES.en, key) !== undefined);
+    expect(keys.length).toBeGreaterThan(60);
+    expectTranslated(keys, sameAsEnglishOk);
+  });
+
+  it("translates the risk levels, the focus impact texts and the other keys the tab builds or added", () => {
+    expectTranslated(
+      [
+        "scrims.risk.high",
+        "scrims.risk.medium",
+        "scrims.risk.low",
+        "scrims.cancelFollowupPrompt",
+        "scrims.lossStreak",
+        "training.scrims.autofill",
+        ...["DraftPrep", "ChampionPool", "EarlyGame", "Teamfighting", "Macro", "Mental"].map(
+          (focus) => `scrims.impact.${focus}`,
+        ),
+      ],
+    );
+  });
+
+  it("keeps the sign of every impact tag, which the tab uses to color it", () => {
+    for (const [lang, tree] of Object.entries(LOCALES)) {
+      const tags = (tree.scrims as Tree).tags as Record<string, string>;
+      for (const [name, text] of Object.entries(tags)) {
+        const sign = name.endsWith("Plus") ? "+" : "-";
+        expect(text.startsWith(sign), `scrims.tags.${name} in ${lang}`).toBe(true);
+        expect(text.includes(sign === "+" ? "-" : "+"), `scrims.tags.${name} in ${lang} has both signs`).toBe(false);
+      }
+    }
+  });
+});
+
+describe("locale text integrity", () => {
+  it("has no letter replaced by a question mark inside a word", () => {
+    const broken: string[] = [];
+    const walk = (node: string | Tree, path: string, lang: string) => {
+      if (typeof node === "string") {
+        if (/\p{L}\?\p{L}/u.test(node) && !/https?:|\?[\w]+=/.test(node)) broken.push(`${lang}:${path}`);
+        return;
+      }
+      for (const [key, child] of Object.entries(node)) walk(child, `${path}.${key}`, lang);
+    };
+    for (const [lang, tree] of Object.entries(LOCALES)) walk(tree, "", lang);
+    expect(broken).toEqual([]);
+  });
+
+  it("has no Spanish question mark without its opening mark", () => {
+    const broken: string[] = [];
+    const walk = (node: string | Tree, path: string) => {
+      if (typeof node === "string") {
+        if (node.includes("?") && !node.includes("¿") && !/https?:/.test(node)) broken.push(path);
+        return;
+      }
+      for (const [key, child] of Object.entries(node)) walk(child, `${path}.${key}`);
+    };
+    walk(LOCALES.es, "es");
+    expect(broken).toEqual([]);
   });
 });

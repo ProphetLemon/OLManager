@@ -647,7 +647,22 @@
     "weekRecord": "Week Record",
     "weeklyObjective": "Weekly Objective",
     "weeklyReportInline": "Weekly Report",
-    "weeklyVolume": "Weekly Volume"
+    "weeklyVolume": "Weekly Volume",
+    "cancelFollowupPrompt": "Scrims cancelled. Pick a follow-up.",
+    "lossStreak": "{{count}}L streak",
+    "risk": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "impact": {
+      "DraftPrep": "Improves draft prep, ban reads, and composition plans.",
+      "ChampionPool": "Expands viable picks and reduces comfort-pick dependency.",
+      "EarlyGame": "Improves lane control, early tempo, and first rotations.",
+      "Teamfighting": "Improves teamfight execution, objective focus, and 5v5 coordination.",
+      "Macro": "Improves objective setup, map control, and mid/late decisions.",
+      "Mental": "Improves mental stability, recovery, and consistency under pressure."
+    }
   },
   "season": {
     "preseasonStatus": "Preseason Status",
@@ -1427,7 +1442,8 @@
         "narrowFocus": "Average quality is low; keep the volume, but narrow the focus before adding more rivals.",
         "keepPlan": "The current plan is healthy: keep the objective, choose demanding rivals, and review the first report before increasing volume."
       },
-      "selectOpponent": "Select Opponent"
+      "selectOpponent": "Select Opponent",
+      "autofill": "Autofill"
     },
     "daysPerWeek": "days/week",
     "emptyRoster": "Empty roster"

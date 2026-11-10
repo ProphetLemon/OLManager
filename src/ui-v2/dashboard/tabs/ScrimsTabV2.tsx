@@ -28,6 +28,7 @@ import {
   setWeeklyScrimSlots,
   type DailyScrimAction,
 } from "@/services/trainingService";
+import { SCRIM_FOCUS_IMPACT_KEYS, SCRIM_FOCUS_OBJECTIVE_KEYS } from "@/lib/scrims/scrimFocusKeys";
 import { useScrimContextWithFallback } from "@/hooks/useScrimContextWithFallback";
 import { useSettingsStore } from "@/store/settingsStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
@@ -45,21 +46,12 @@ const ALLOW_SCRIM_CONTEXT_FALLBACK = true;
 const SCRIM_OBJECTIVES: ScrimFocus[] = ["DraftPrep", "ChampionPool", "EarlyGame", "Teamfighting", "Macro", "Mental"];
 
 function scrimFocusLabel(t: ReturnType<typeof useTranslation>["t"], focus: ScrimFocus): string {
-  const labels: Record<ScrimFocus, string> = {
-    DraftPrep: t("training.scrims.objectives.draftPrep"),
-    ChampionPool: t("training.scrims.objectives.championPool"),
-    EarlyGame: t("training.scrims.objectives.earlyGame"),
-    Teamfighting: t("training.scrims.objectives.teamfighting"),
-    Macro: t("training.scrims.objectives.macro"),
-    Mental: t("training.scrims.objectives.mental"),
-  };
-  return labels[focus];
+  return t(SCRIM_FOCUS_OBJECTIVE_KEYS[focus]);
 }
 
 function scrimFocusImpactText(t: ReturnType<typeof useTranslation>["t"], focus: ScrimFocus | null): string {
   if (!focus) return t("scrims.noFocusImpactText");
-  const key = `scrims.impact.${focus}` as const;
-  return t(key);
+  return t(SCRIM_FOCUS_IMPACT_KEYS[focus]);
 }
 
 type RiskLevel = "high" | "medium" | "low";
@@ -230,7 +222,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
 
   const handleReviewDecision = async (decision: DailyScrimAction) => {
     if (!todayContext.report) return;
-    if (decision === "CancelScrims") { setShowCancelFollowups(true); setDecisionFeedback("Scrims cancelled. Pick follow-up."); return; }
+    if (decision === "CancelScrims") { setShowCancelFollowups(true); setDecisionFeedback(t("scrims.cancelFollowupPrompt")); return; }
     setDecisionSaving(decision);
     setDecisionFeedback(null);
     try {
@@ -568,7 +560,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                               {r.won ? "W" : "L"}
                             </span>
                           </div>
-                          <p className="mt-0.5 text-2xs text-muted-foreground">{r.focus} · Q{r.quality}</p>
+                          <p className="mt-0.5 text-2xs text-muted-foreground">{scrimFocusLabel(t, r.focus)} · Q{r.quality}</p>
                         </div>
                       ))}
                     </div>
@@ -590,7 +582,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                       </div>
                       {weeklyContext.lossStreak > 1 && (
                         <Badge className="border-negative/30 bg-negative/10 text-2xs text-negative">
-                          {weeklyContext.lossStreak}L streak
+                          {t("scrims.lossStreak", { count: weeklyContext.lossStreak })}
                         </Badge>
                       )}
                     </div>
