@@ -3047,24 +3047,24 @@
       "matchResult": {
         "templates": {
           "defeat_1": {
-            "subject": "Sconfitta: {{home}} {{score}} {{away}}",
-            "body": "Dura sconfitta oggi, coach. Abbiamo perso contro {{opponent}} {{score}}.\n\nCi sono cose da imparare da questa partita. Rivediamo dove abbiamo sbagliato e torniamo più forti.\n\nLa stagione è lunga — ci riprenderemo."
+            "subject": "Sconfitta: {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "Dura sconfitta oggi, coach. Abbiamo perso contro {{opponent}} {{userScore}}.\n\nCi sono cose da imparare da questa partita. Rivediamo dove abbiamo sbagliato e torniamo più forti.\n\nLa stagione è lunga — ci riprenderemo."
           },
           "defeat_2": {
-            "subject": "Sconfitta: {{opponent}} ci batte {{score}}",
-            "body": "Non è stato il nostro giorno, coach. {{opponent}} ci ha battuti {{score}}.\n\nDobbiamo analizzare cosa è andato storto e risolvere i problemi prima della prossima partita. Preparerò un'analisi dettagliata dei momenti chiave.\n\nRestiamo concentrati — c'è ancora molto in palio."
+            "subject": "Sconfitta: {{opponent}} ci batte {{userScore}}",
+            "body": "Non è stato il nostro giorno, coach. {{opponent}} ci ha battuti {{userScore}}.\n\nDobbiamo analizzare cosa è andato storto e risolvere i problemi prima della prossima partita. Preparerò un'analisi dettagliata dei momenti chiave.\n\nRestiamo concentrati — c'è ancora molto in palio."
           },
           "draw_1": {
-            "subject": "Pareggio: {{home}} {{score}} {{away}}",
-            "body": "Un pareggio combattuto oggi, coach. {{home}} {{score}} {{away}} contro {{opponent}}.\n\nNon è il risultato che volevamo, ma abbiamo mostrato carattere. Prendiamo il positivo e lavoriamo sulle debolezze.\n\nLa prossima partita è un'occasione per tornare a vincere."
+            "subject": "Pareggio: {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "Un pareggio combattuto oggi, coach. {{home}} {{homeWins}}-{{awayWins}} {{away}} contro {{opponent}}.\n\nNon è il risultato che volevamo, ma abbiamo mostrato carattere. Prendiamo il positivo e lavoriamo sulle debolezze.\n\nLa prossima partita è un'occasione per tornare a vincere."
           },
           "victory_1": {
             "subject": "Vittoria! {{score}} contro {{opponent}}",
-            "body": "Ottimo risultato oggi, coach! Abbiamo battuto {{opponent}} {{score}}.\n\nLa squadra ha eseguito bene il piano di gioco. Costruiamo su questo slancio per la prossima partita.\n\nBravi a tutti i coinvolti."
+            "body": "Ottimo risultato oggi, coach! Abbiamo battuto {{opponent}} {{userScore}}.\n\nLa squadra ha eseguito bene il piano di gioco. Costruiamo su questo slancio per la prossima partita.\n\nBravi a tutti i coinvolti."
           },
           "victory_2": {
-            "subject": "Abbiamo vinto! {{home}} {{score}} {{away}}",
-            "body": "Ce l'abbiamo fatta, coach! Una solida vittoria {{score}} contro {{opponent}}.\n\nI giocatori hanno risposto quando contava di più. Manteniamo questo livello di rendimento.\n\nRivedi le immagini della partita e individua aree di miglioramento per la prossima volta."
+            "subject": "Abbiamo vinto! {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "Ce l'abbiamo fatta, coach! Una solida vittoria {{userScore}} contro {{opponent}}.\n\nI giocatori hanno risposto quando contava di più. Manteniamo questo livello di rendimento.\n\nRivedi le immagini della partita e individua aree di miglioramento per la prossima volta."
           }
         },
         "subject": {
@@ -3985,7 +3985,7 @@
       "needsSubtitle": "Risolvi questi punti prima di continuare.",
       "needsEmptyTag": "Tutto a posto",
       "seasonChip": "S{{season}}",
-      "formLabel": "Forma",
+      "formLabel": "Forma di {{team}}",
       "openSchedule": "Apri il calendario",
       "daysToMatch_one": "giorno alla partita",
       "daysToMatch_other": "giorni alla partita",

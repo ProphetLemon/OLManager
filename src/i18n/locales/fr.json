@@ -2571,24 +2571,24 @@
       "matchResult": {
         "templates": {
           "defeat_1": {
-            "subject": "Défaite : {{home}} {{score}} {{away}}",
-            "body": "Dure défaite aujourd'hui, coach. Nous avons perdu contre {{opponent}} {{score}}.\n\nIl y a des enseignements à tirer de ce match. Analysons nos erreurs et revenons plus forts.\n\nLa saison est longue — nous nous relèverons."
+            "subject": "Défaite : {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "Dure défaite aujourd'hui, coach. Nous avons perdu contre {{opponent}} {{userScore}}.\n\nIl y a des enseignements à tirer de ce match. Analysons nos erreurs et revenons plus forts.\n\nLa saison est longue — nous nous relèverons."
           },
           "defeat_2": {
-            "subject": "Défaite : {{opponent}} nous bat {{score}}",
-            "body": "Pas notre jour, coach. {{opponent}} nous a battus {{score}}.\n\nNous devons analyser ce qui n'a pas fonctionné et régler les problèmes avant le prochain match. Je vais préparer un bilan détaillé des moments clés.\n\nRestez concentré — il y a encore beaucoup à jouer."
+            "subject": "Défaite : {{opponent}} nous bat {{userScore}}",
+            "body": "Pas notre jour, coach. {{opponent}} nous a battus {{userScore}}.\n\nNous devons analyser ce qui n'a pas fonctionné et régler les problèmes avant le prochain match. Je vais préparer un bilan détaillé des moments clés.\n\nRestez concentré — il y a encore beaucoup à jouer."
           },
           "draw_1": {
-            "subject": "Match nul : {{home}} {{score}} {{away}}",
-            "body": "Un match nul très disputé aujourd'hui, coach. {{home}} {{score}} {{away}} contre {{opponent}}.\n\nCe n'est pas le résultat espéré, mais nous avons montré du caractère. Gardons le positif et travaillons sur nos faiblesses.\n\nLe prochain match est l'occasion de renouer avec la victoire."
+            "subject": "Match nul : {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "Un match nul très disputé aujourd'hui, coach. {{home}} {{homeWins}}-{{awayWins}} {{away}} contre {{opponent}}.\n\nCe n'est pas le résultat espéré, mais nous avons montré du caractère. Gardons le positif et travaillons sur nos faiblesses.\n\nLe prochain match est l'occasion de renouer avec la victoire."
           },
           "victory_1": {
             "subject": "Victoire ! {{score}} contre {{opponent}}",
-            "body": "Superbe résultat aujourd'hui, coach ! Nous avons battu {{opponent}} {{score}}.\n\nL'équipe a bien appliqué le plan de jeu. Capitalisons sur cet élan pour le prochain match.\n\nBravo à tous ceux qui y ont contribué."
+            "body": "Superbe résultat aujourd'hui, coach ! Nous avons battu {{opponent}} {{userScore}}.\n\nL'équipe a bien appliqué le plan de jeu. Capitalisons sur cet élan pour le prochain match.\n\nBravo à tous ceux qui y ont contribué."
           },
           "victory_2": {
-            "subject": "On a gagné ! {{home}} {{score}} {{away}}",
-            "body": "On l'a fait, coach ! Une solide victoire {{score}} contre {{opponent}}.\n\nLes joueurs ont répondu présent quand c'était le plus important. Gardons ce niveau de performance.\n\nRevoyez les images du match et identifiez des axes d'amélioration pour la prochaine fois."
+            "subject": "On a gagné ! {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "On l'a fait, coach ! Une solide victoire {{userScore}} contre {{opponent}}.\n\nLes joueurs ont répondu présent quand c'était le plus important. Gardons ce niveau de performance.\n\nRevoyez les images du match et identifiez des axes d'amélioration pour la prochaine fois."
           }
         },
         "subject": {
@@ -3986,7 +3986,7 @@
       "needsSubtitle": "Réglez ces points avant de continuer.",
       "needsEmptyTag": "Tout est clair",
       "seasonChip": "S{{season}}",
-      "formLabel": "Forme",
+      "formLabel": "Forme de {{team}}",
       "openSchedule": "Ouvrir le calendrier",
       "daysToMatch_one": "jour avant le match",
       "daysToMatch_other": "jours avant le match",

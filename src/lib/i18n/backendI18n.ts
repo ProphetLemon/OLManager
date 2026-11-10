@@ -74,11 +74,35 @@ function resolveParamValues(params?: Record<string, string>): Record<string, str
   return resolved;
 }
 
+const MATCH_RESULT_TEMPLATE_KEY = 'be.msg.matchResult.templates.';
+
+/**
+ * Messages stored before the result templates used plain scores only carry
+ * `score` ("<user team>:<own wins>-<opponent wins>"). Derive userScore, homeWins and
+ * awayWins from it so those messages still render in the locale text.
+ */
+function inferMatchResultScoreParams(msg: MessageData, params?: Record<string, string>) {
+  if (!params || !msg.subject_key?.startsWith(MATCH_RESULT_TEMPLATE_KEY) || params.userScore) return params;
+  const separator = params.score?.lastIndexOf(':') ?? -1;
+  const wins = params.score?.slice(separator + 1).split('-');
+  if (separator < 0 || wins?.length !== 2) return params;
+  const userIsHome = params.score.slice(0, separator) === params.home;
+  return {
+    ...params,
+    userScore: `${wins[0]}-${wins[1]}`,
+    homeWins: userIsHome ? wins[0] : wins[1],
+    awayWins: userIsHome ? wins[1] : wins[0],
+  };
+}
+
 /**
  * Resolve all translatable fields on a message, returning a copy with resolved strings.
  */
 export function resolveMessage(msg: MessageData): MessageData {
-  const inferredParams = msg.i18n_params ?? inferLegacyDelegatedRenewalsParams(msg);
+  const inferredParams = inferMatchResultScoreParams(
+    msg,
+    msg.i18n_params ?? inferLegacyDelegatedRenewalsParams(msg),
+  );
   const p = resolveParamValues(inferredParams);
   const resolved = {
     ...msg,
