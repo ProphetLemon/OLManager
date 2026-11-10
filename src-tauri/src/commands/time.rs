@@ -111,6 +111,9 @@ pub fn skip_to_match_day(state: State<'_, StateManager>) -> Result<serde_json::V
     skip_to_match_day_internal(&state)
 }
 
+/// Advances day by day until one of these happens: the user's club has a match today (it is
+/// played, then the skip stops), a blocker appears, the manager is fired, the active league is
+/// complete (so the end-of-split screen can take over), or 60 days have passed.
 fn skip_to_match_day_internal(state: &StateManager) -> Result<serde_json::Value, String> {
     info!("[cmd] skip_to_match_day");
     let mut game = state
@@ -130,6 +133,18 @@ fn skip_to_match_day_internal(state: &StateManager) -> Result<serde_json::Value,
     let mut match_simulated = false;
     loop {
         if days_skipped >= 60 {
+            break;
+        }
+
+        if game
+            .active_league()
+            .is_some_and(olm_core::end_of_season::is_league_complete)
+        {
+            info!(
+                "[cmd] skip_to_match_day: split finished, date={}, days_skipped={}",
+                game.clock.current_date.format("%Y-%m-%d"),
+                days_skipped
+            );
             break;
         }
 
@@ -533,6 +548,82 @@ mod tests {
         assert_eq!(response["action"], "blocked");
         let game = state.get_game(|g| g.clone()).unwrap();
         assert_eq!(game.leagues[0].fixtures[0].status, FixtureStatus::Scheduled);
+    }
+
+    #[test]
+    fn skip_to_match_day_does_not_advance_a_finished_split() {
+        let state = StateManager::new();
+        let mut game = make_game_with_matchday();
+        game.leagues[0].fixtures[0].status = FixtureStatus::Completed;
+        assert!(olm_core::end_of_season::is_league_complete(&game.leagues[0]));
+        let start = game.clock.current_date;
+        state.set_game(game);
+
+        let response = skip_to_match_day_internal(&state).expect("skip response");
+
+        assert_eq!(response["action"], "arrived");
+        assert_eq!(response["days_skipped"], 0);
+        assert_eq!(response["match_simulated"], false);
+        let game = state.get_game(|g| g.clone()).unwrap();
+        assert_eq!(game.clock.current_date, start);
+    }
+
+    #[test]
+    fn skip_to_match_day_stops_on_the_day_the_split_finishes() {
+        let state = StateManager::new();
+        let mut game = make_game_with_matchday();
+        let mut third_team = Team::new(
+            "team3".to_string(),
+            "Third FC".to_string(),
+            "THI".to_string(),
+            "England".to_string(),
+            "Thirdtown".to_string(),
+            "Third Ground".to_string(),
+            21_000,
+        );
+        let third_players: Vec<Player> = (1..=11)
+            .map(|idx| {
+                let position = match idx {
+                    1 => LolRole::Support,
+                    2..=5 => LolRole::Top,
+                    6 => LolRole::Mid,
+                    7..=9 => LolRole::Jungle,
+                    _ => LolRole::Adc,
+                };
+                make_player(&format!("t{idx}"), &format!("Third {idx}"), "team3", position)
+            })
+            .collect();
+        third_team.active_lineup_ids = third_players.iter().map(|p| p.id.clone()).collect();
+        game.teams.push(third_team);
+        game.players.extend(third_players);
+        // The club has played both of its matches; only team2 v team3 is left, three days ahead.
+        let league = &mut game.leagues[0];
+        league
+            .standings
+            .push(olm_core::domain::league::StandingEntry::new("team3".to_string()));
+        league.fixtures[0].status = FixtureStatus::Completed;
+        let mut club_vs_third = scrim_week_fixture("fixture-2", "2025-06-12", "team1", "team3");
+        club_vs_third.status = FixtureStatus::Completed;
+        league.fixtures.push(club_vs_third);
+        league
+            .fixtures
+            .push(scrim_week_fixture("fixture-3", "2025-06-18", "team2", "team3"));
+        assert!(!olm_core::end_of_season::is_league_complete(&game.leagues[0]));
+        state.set_game(game);
+        state.set_stats_state(StatsState::default());
+
+        let response = skip_to_match_day_internal(&state).expect("skip response");
+
+        assert_eq!(response["action"], "arrived");
+        assert_eq!(response["days_skipped"], 4);
+        assert_eq!(response["match_simulated"], false);
+        let game = state.get_game(|g| g.clone()).unwrap();
+        assert_eq!(game.leagues[0].fixtures[2].status, FixtureStatus::Completed);
+        assert!(olm_core::end_of_season::is_league_complete(&game.leagues[0]));
+        assert_eq!(
+            game.clock.current_date.date_naive(),
+            Utc.with_ymd_and_hms(2025, 6, 19, 12, 0, 0).unwrap().date_naive()
+        );
     }
 
     #[test]
