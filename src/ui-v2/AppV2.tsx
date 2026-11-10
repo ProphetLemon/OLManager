@@ -11,20 +11,13 @@ import { TitleBarV2 } from "./components/TitleBarV2";
 import ErrorBoundary from "./components/ErrorBoundary";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import i18n from "@/i18n";
+import { SCALE_MAP } from "@/ui-v2/uiScale";
 
 const DashboardV2 = lazy(() => import("./dashboard/DashboardV2"));
 const MainMenu = lazy(() => import("@/ui-v2/_legacy/pages/MainMenu"));
 const TeamSelectionV2 = lazy(() => import("@/ui-v2/pages/TeamSelectionV2"));
 const MatchSimulation = lazy(() => import("@/ui-v2/_legacy/pages/MatchSimulation"));
 const SettingsV2 = lazy(() => import("@/ui-v2/pages/SettingsV2"));
-
-const SCALE_MAP: Record<string, string> = {
-  xsmall: "9px",
-  small: "14px",
-  normal: "16px",
-  large: "18px",
-  xlarge: "20px",
-};
 
 const AUTO_CHECK_UPDATES = import.meta.env.PROD;
 
