@@ -3185,16 +3185,16 @@
         }
       },
       "mediaPositive": {
-        "subject": "Positive Press — {{player}}",
-        "body": "The local papers are running a very positive piece on {{player}} today.\n\nThey are highlighting their excellent recent form and commitment to {{team}}. This kind of coverage is great for the player's confidence and the club's image."
+        "subject": "Stampa positiva — {{player}}",
+        "body": "I giornali locali pubblicano oggi un articolo molto positivo su {{player}}.\n\nSottolineano la sua ottima forma recente e il suo impegno per {{team}}. Questo tipo di copertura è ottimo per la fiducia del giocatore e per l'immagine del club."
       },
       "mediaNegative": {
-        "subject": "Negative Press — {{player}}",
-        "body": "Some unflattering coverage of {{player}} appeared in the tabloids today.\n\nJournalists are questioning their form and commitment to {{team}}. This could affect the player's morale — you might want to have a word."
+        "subject": "Stampa negativa — {{player}}",
+        "body": "Oggi sui tabloid sono apparsi alcuni articoli poco lusinghieri su {{player}}.\n\nI giornalisti mettono in dubbio la sua forma e il suo impegno per {{team}}. Potrebbe influire sul morale del giocatore: forse conviene parlargli."
       },
       "intlCallup": {
-        "subject": "International Call-Up — {{player}}",
-        "body": "{{player}} has been called up to the {{nationality}} national team for an upcoming international window.\n\nThis is a great honor for the player and reflects well on the club. They'll be in good spirits when they return, though keep an eye on their fatigue levels."
+        "subject": "Convocazione in nazionale — {{player}}",
+        "body": "{{player}} è stato convocato dalla nazionale {{nationality}} per la prossima finestra internazionale.\n\nÈ un grande onore per il giocatore e fa bella figura al club. Tornerà di buon umore, ma tieni d'occhio i suoi livelli di fatica."
       },
       "transferComplete": {
         "subject": "Transfer Complete: {{player}}",

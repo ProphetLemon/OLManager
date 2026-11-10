@@ -69,3 +69,26 @@ describe("end-of-season summary keys", () => {
     );
   });
 });
+
+describe("inbox message keys", () => {
+  it("translates the board, community, call-up, press and sponsor messages in every locale", () => {
+    expectTranslated(
+      [
+        "boardConfidence.subject",
+        "boardConfidence.body0",
+        "boardConfidence.body1",
+        "community.subject0",
+        "community.subject1",
+        "community.body0",
+        "community.body1",
+        "intlCallup.subject",
+        "intlCallup.body",
+        "mediaNegative.subject",
+        "mediaNegative.body",
+        "mediaPositive.subject",
+        "mediaPositive.body",
+        "sponsor.subject",
+      ].map((key) => `be.msg.${key}`),
+    );
+  });
+});

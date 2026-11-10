@@ -2989,7 +2989,7 @@
         }
       },
       "sponsor": {
-        "subject": "Sponsorship Offer — {{sponsor}}",
+        "subject": "Oferta de patrocinio — {{sponsor}}",
         "body": "Buenas noticias, míster: {{sponsor}} ha mostrado interés en convertirse en patrocinador de {{team}}.\n\nOfrecen un pago único de €{{amount}} por el próximo split a cambio de espacio publicitario en los carteles del club.\n\nParece un acuerdo razonable, pero la decisión es tuya.",
         "options": {
           "accept": {
@@ -3087,31 +3087,31 @@
         }
       },
       "mediaPositive": {
-        "subject": "Positive Press — {{player}}",
-        "body": "The local papers are running a very positive piece on {{player}} today.\n\nThey are highlighting their excellent recent form and commitment to {{team}}. This kind of coverage is great for the player's confidence and the club's image."
+        "subject": "Prensa positiva — {{player}}",
+        "body": "Los periódicos locales publican hoy un artículo muy positivo sobre {{player}}.\n\nDestacan su excelente forma reciente y su compromiso con {{team}}. Este tipo de cobertura es estupenda para la confianza del jugador y la imagen del club."
       },
       "mediaNegative": {
-        "subject": "Negative Press — {{player}}",
-        "body": "Some unflattering coverage of {{player}} appeared in the tabloids today.\n\nJournalists are questioning their form and commitment to {{team}}. This could affect the player's morale — you might want to have a word."
+        "subject": "Prensa negativa — {{player}}",
+        "body": "Hoy han aparecido en los tabloides algunas noticias poco favorables sobre {{player}}.\n\nLos periodistas cuestionan su forma y su compromiso con {{team}}. Esto podría afectar a la moral del jugador; quizá convenga hablar con él."
       },
       "intlCallup": {
-        "subject": "International Call-Up — {{player}}",
-        "body": "{{player}} has been called up to the {{nationality}} national team for an upcoming international window.\n\nThis is a great honor for the player and reflects well on the club. They'll be in good spirits when they return, though keep an eye on their fatigue levels."
+        "subject": "Convocatoria internacional — {{player}}",
+        "body": "{{player}} ha sido convocado con la selección de {{nationality}} para la próxima ventana internacional.\n\nEs un gran honor para el jugador y deja en buen lugar al club. Volverá de buen ánimo, aunque conviene vigilar sus niveles de fatiga."
       },
       "community": {
-        "subject0": "Community Open Day",
-        "subject1": "Youth Coaching Session",
-        "body0": "{{team}} hosted a community open day at the training ground today.\n\nFans got to meet the players and watch a training session. The atmosphere was fantastic and it's done wonders for team spirit.",
-        "body1": "Several first-team players from {{team}} volunteered for a youth coaching session at a local school.\n\nGreat PR for the club, and the players seem energized by the experience."
+        "subject0": "Jornada de puertas abiertas",
+        "subject1": "Sesión de entrenamiento con jóvenes",
+        "body0": "{{team}} organizó hoy una jornada de puertas abiertas en el centro de entrenamiento.\n\nLos aficionados pudieron conocer a los jugadores y ver una sesión de entrenamiento. El ambiente fue fantástico y ha hecho maravillas por el espíritu del equipo.",
+        "body1": "Varios jugadores del primer equipo de {{team}} se ofrecieron como voluntarios para una sesión de entrenamiento con jóvenes en una escuela local.\n\nExcelente imagen para el club, y los jugadores parecen entusiasmados con la experiencia."
       },
       "moodReport": {
         "subject": "Informe de Vestuario — Ánimo: {{mood}}",
         "body": "Este es tu informe semanal del vestuario:\n\n• Ánimo general: {{mood}} (moral media: {{avgMorale}})\n• Jugadores con alto ánimo (80+): {{highCount}}\n• Jugadores con baja moral (<40): {{lowCount}}\n• Total del plantel: {{total}}"
       },
       "boardConfidence": {
-        "subject": "Board Meeting — Results Under Scrutiny",
-        "body0": "The board has called an urgent meeting. Three consecutive defeats have raised serious concerns about the team's direction.\n\n\"We need to see improvement quickly. The fans are restless and results must change.\"\n\nHow do you respond?",
-        "body1": "After a string of poor results, the chairman has summoned you for a difficult conversation.\n\n\"We backed you with resources and time. The results simply aren't good enough. What's your plan?\"\n\nChoose your response carefully.",
+        "subject": "Reunión de la directiva — Resultados bajo la lupa",
+        "body0": "La directiva ha convocado una reunión urgente. Tres derrotas consecutivas han generado serias dudas sobre el rumbo del equipo.\n\n\"Necesitamos ver una mejora pronto. La afición está inquieta y los resultados tienen que cambiar.\"\n\n¿Cómo respondes?",
+        "body1": "Tras una racha de malos resultados, el presidente te ha citado para una conversación difícil.\n\n\"Te hemos respaldado con recursos y tiempo. Los resultados simplemente no son suficientes. ¿Cuál es tu plan?\"\n\nElige tu respuesta con cuidado.",
         "options": {
           "reassureBoard": {
             "label": "Tranquilizarlos con un plan",
