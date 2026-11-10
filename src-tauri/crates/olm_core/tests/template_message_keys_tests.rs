@@ -75,6 +75,47 @@ fn match_result_template_message_carries_the_placeholder_params() {
     assert_eq!(param(&msg, "score"), Some("KOI:2-1"));
 }
 
+/// Template id behind a message's subject key, e.g. `victory_2`.
+fn result_variant(msg: &InboxMessage) -> String {
+    msg.subject_key
+        .as_deref()
+        .and_then(|key| key.strip_prefix("be.msg.matchResult.templates."))
+        .and_then(|key| key.strip_suffix(".subject"))
+        .unwrap_or_else(|| panic!("unexpected subject_key {:?}", msg.subject_key))
+        .to_string()
+}
+
+/// Every series score the engine stores in `MatchResult` (`home_wins`, `away_wins`) for
+/// best of one and best of three, with the user's club on either side. The headline
+/// template must name the outcome from the user's club side and never be a draw.
+#[test]
+fn match_result_headline_names_the_outcome_for_the_user_club() {
+    load_templates();
+    let series: [(u8, u8); 6] = [(1, 0), (0, 1), (2, 0), (2, 1), (1, 2), (0, 2)];
+    for (home_wins, away_wins) in series {
+        for user_is_home in [true, false] {
+            let user_team = if user_is_home { "t1" } else { "t2" };
+            let user_won = if user_is_home {
+                home_wins > away_wins
+            } else {
+                away_wins > home_wins
+            };
+            let expected = if user_won { "victory_" } else { "defeat_" };
+            for _ in 0..60 {
+                let msg = messages::match_result_message(
+                    "f1", "KOI", "G2", home_wins, away_wins, "t1", "t2", user_team, 3, "d",
+                );
+                let variant = result_variant(&msg);
+                assert!(
+                    variant.starts_with(expected),
+                    "{home_wins}-{away_wins} with the user {}: got {variant}, wanted {expected}*",
+                    if user_is_home { "at home" } else { "away" },
+                );
+            }
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // player events
 // ---------------------------------------------------------------------------

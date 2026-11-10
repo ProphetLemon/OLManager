@@ -140,23 +140,6 @@ pub fn match_result_message(
     );
     let opponent = if is_home { away_name } else { home_name };
 
-    if let Some(msg) = crate::messages::template_store::template_store().build_message_keyed(
-        "match_result",
-        &format!("result_{fixture_id}"),
-        date,
-        "en",
-        vec![
-            ("home", home_name),
-            ("away", away_name),
-            ("score", &score),
-            ("opponent", opponent),
-            ("matchday", &matchday.to_string()),
-        ],
-        "be.msg.matchResult.templates",
-    ) {
-        return msg;
-    }
-
     let outcome = if user_goals > opp_goals {
         "Victory"
     } else if user_goals < opp_goals {
@@ -164,6 +147,27 @@ pub fn match_result_message(
     } else {
         "Draw"
     };
+
+    if let Some(msg) = crate::messages::template_store::template_store()
+        .build_message_keyed_with_id_prefix(
+            "match_result",
+            &format!("result_{fixture_id}"),
+            date,
+            "en",
+            vec![
+                ("home", home_name),
+                ("away", away_name),
+                ("score", &score),
+                ("opponent", opponent),
+                ("matchday", &matchday.to_string()),
+            ],
+            "be.msg.matchResult.templates",
+            // Template ids start with their outcome: victory_*, defeat_*, draw_*.
+            &outcome.to_lowercase(),
+        )
+    {
+        return msg;
+    }
 
     let mut rng = rand::rng();
     let body = match outcome {
