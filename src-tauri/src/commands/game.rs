@@ -4858,6 +4858,31 @@ mod tests {
                 assert_round_robin(&game, "lec", 10, true);
             }
 
+            /// A user in the LEC: Winter's playoffs end on May 4 (the day the season run
+            /// closed it), five weeks after Spring is due to start (Mar 29). The next split
+            /// must still be playable: no match dated on or before the clock.
+            #[test]
+            fn a_lec_split_that_ends_after_the_next_one_starts_gets_a_playable_calendar() {
+                let (mut game, _catalog, _overlay, id) = new_game_as("Movistar KOI", Some(LEC_SLOT));
+                let (manifests, known) = known_ids_and_manifests();
+                prepare_new_game_season(&mut game, &manifests, &known, &id).expect("season");
+                assert_eq!(game.user_competition_id.as_deref(), Some("lec"));
+                let order = table_ids(&game, "lec");
+                play_out_split(&mut game, "lec", 0, &order, Some(50));
+                let today = game.clock.current_date.date_naive();
+                let spring = &game.competition_configs["lec"].schedule.splits[1].season_start;
+                assert!(today > NaiveDate::from_ymd_opt(today.year(), spring.month, spring.day).unwrap(), "setup: Spring is already due on {today}");
+
+                let outcome = olm_core::season_rollover::advance_season(&mut game);
+
+                assert!(!outcome.was_season_end);
+                let lec = league_of(&game, "lec");
+                assert_eq!(lec.split_index, 1);
+                for fixture in lec.fixtures.iter().filter(|f| f.status == FixtureStatus::Scheduled) {
+                    assert!(day(&fixture.date) > today, "{} is dated {} but the clock is {today}", fixture.id, fixture.date);
+                }
+            }
+
             /// Q4: the season after the promotion. The custom club plays in the LEC, the LES
             /// (nine clubs again) runs in the background, and both leagues play every split
             /// and playoff day by day until the next rollover has swapped a club again.

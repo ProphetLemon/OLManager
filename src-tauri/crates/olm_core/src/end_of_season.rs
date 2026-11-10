@@ -258,13 +258,17 @@ pub fn process_end_of_split(game: &mut Game, manifest: &CompetitionManifest) {
         return;
     };
     let user_team_id = game.manager.team_id.as_deref().filter(|id| !id.is_empty());
-    let new_league = build_split_league(
+    let mut new_league = build_split_league(
         league,
         manifest,
         league.season,
         league.split_index,
         user_team_id,
     );
+    // A split whose playoffs ran past the next split's start date (the LEC's Winter does)
+    // would leave the new calendar in the past, where no daily simulation plays it. Same
+    // rule as the background leagues: shift the whole calendar past the clock.
+    shift_fixtures_after(&mut new_league, game.clock.current_date.date_naive());
 
     if let Some(active) = game.active_league_mut() {
         *active = new_league;
