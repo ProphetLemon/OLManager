@@ -2374,7 +2374,7 @@
     "preMatchPrep": "Préparation d'Avant-Match",
     "selecting": "Sélection...",
     "autoSelectXI": "Auto-Sélectionner le Meilleur Cinq",
-    "formationFit": "Adéquation de la formation",
+    "formationFit": "Couverture des rôles",
     "startingXI": "Cinq de Départ",
     "cancel": "Annuler",
     "nPlayers": "{{count}} joueurs",
@@ -3099,7 +3099,7 @@
         "subject": "Rapport de l'adjoint — Renouvellements",
         "body": "Coach, j'ai passé en revue notre liste de renouvellements à {{team}}. {{successes}} conclus, {{stalled}} encore en attente, {{failures}} échoués.",
         "case": {
-          "successful": "Conclu : {{player}} a accepté {{years}} an(s) à €{{wage}}/an.",
+          "successful": "Conclu : {{player}} a accepté {{years}} an(s) à {{wage}}/an.",
           "stalled": "Toujours compliqué : {{player}} — {{detail}}",
           "failed": "Échec : {{player}} — {{detail}}"
         },

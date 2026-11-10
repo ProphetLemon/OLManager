@@ -7,6 +7,8 @@ import { compareStandingsByLolScore, getStandingKillDiff } from "@/store/gameSto
 import { getTeamLogoPath } from "@/lib/schedule/helpers";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
+import { shortRoleKey } from "@/lib/squad/cards";
+import { getLolRoleForPlayer } from "@/lib/squad/helpers";
 import { listCompetitionLeagues } from "@/lib/world/leagueGroups";
 import { cn } from "@/ui-v2/lib/utils";
 import ScheduleCalendarView from "@/ui-v2/_legacy/components/schedule/ScheduleCalendarView";
@@ -310,10 +312,10 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                             </td>
                             <td className="px-4 py-2.5">
                               <span className="inline-flex items-center rounded-md border border-border bg-card px-1.5 py-0.5 font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
-                                {player.position}
+                                {t(shortRoleKey(getLolRoleForPlayer(player)), { defaultValue: player.position })}
                               </span>
                             </td>
-                            <td className="px-4 py-2.5 text-sm text-muted-foreground">{team?.name ?? "FA"}</td>
+                            <td className="px-4 py-2.5 text-sm text-muted-foreground">{team?.name ?? t("common.freeAgent")}</td>
                             <td className="px-4 py-2.5 text-center font-heading text-sm font-bold tabular-nums"
                               style={{ color: ovr >= 75 ? "#fb923c" : ovr >= 60 ? "#fbbf24" : "#94a3b8" }}>{ovr}</td>
                           </tr>

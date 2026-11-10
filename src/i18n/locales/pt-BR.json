@@ -2321,7 +2321,7 @@
     "preMatchPrep": "Preparação Pré-Jogo",
     "selecting": "Selecionando...",
     "autoSelectXI": "Selecionar Melhores Titulares",
-    "formationFit": "Adequação da formação",
+    "formationFit": "Cobertura de funções",
     "startingXI": "Titulares",
     "cancel": "Cancelar",
     "nPlayers": "{{count}} jogadores",
@@ -3099,7 +3099,7 @@
         "subject": "Relatório do assistente — Renovações contratuais",
         "body": "Chefe, revisei nossa lista de renovações no {{team}}. {{successes}} concluídas, {{stalled}} ainda pendentes e {{failures}} falhas.",
         "case": {
-          "successful": "Concluída: {{player}} aceitou {{years}} ano(s) por €{{wage}}/ano.",
+          "successful": "Concluída: {{player}} aceitou {{years}} ano(s) por {{wage}}/ano.",
           "stalled": "Continua difícil: {{player}} — {{detail}}",
           "failed": "Falhou: {{player}} — {{detail}}"
         },

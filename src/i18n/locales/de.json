@@ -2374,7 +2374,7 @@
     "preMatchPrep": "Vorbereitung vor dem Spiel",
     "selecting": "Auswahl...",
     "autoSelectXI": "Beste Fünf auswählen",
-    "formationFit": "Formationspassung",
+    "formationFit": "Rollenabdeckung",
     "startingXI": "Starter Five",
     "cancel": "Abbrechen",
     "nPlayers": "{{count}} Spieler",
@@ -3099,7 +3099,7 @@
         "subject": "Assistentenbericht — Vertragsverlängerungen",
         "body": "Boss, ich habe unsere Verlängerungsliste bei {{team}} durchgearbeitet. {{successes}} abgeschlossen, {{stalled}} noch offen, {{failures}} gescheitert.",
         "case": {
-          "successful": "Abgeschlossen: {{player}} hat {{years}} Jahr(e) zu €{{wage}}/Jahr akzeptiert.",
+          "successful": "Abgeschlossen: {{player}} hat {{years}} Jahr(e) zu {{wage}}/Jahr akzeptiert.",
           "stalled": "Weiter schwierig: {{player}} — {{detail}}",
           "failed": "Gescheitert: {{player}} — {{detail}}"
         },

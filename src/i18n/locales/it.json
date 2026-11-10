@@ -2012,7 +2012,7 @@
     "preMatchPrep": "Preparazione pre-partita",
     "selecting": "Selezione in corso...",
     "autoSelectXI": "Seleziona automaticamente il miglior cinque",
-    "formationFit": "Adeguatezza della formazione",
+    "formationFit": "Copertura dei ruoli",
     "startingXI": "Cinque titolare",
     "cancel": "Annulla",
     "nPlayers": "{{count}} giocatori",
@@ -2760,7 +2760,7 @@
         "subject": "Rapporto dell'assistente — Rinnovi contrattuali",
         "body": "Mister, ho esaminato la nostra lista rinnovi a {{team}}. {{successes}} conclusi, {{stalled}} ancora in sospeso, {{failures}} falliti.",
         "case": {
-          "successful": "Concluso: {{player}} ha accettato {{years}} anno/i a €{{wage}}/anno.",
+          "successful": "Concluso: {{player}} ha accettato {{years}} anno/i a {{wage}}/anno.",
           "stalled": "Ancora complicato: {{player}} — {{detail}}",
           "failed": "Fallito: {{player}} — {{detail}}"
         },
