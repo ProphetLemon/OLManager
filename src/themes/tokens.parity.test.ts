@@ -13,7 +13,7 @@ function block(selector: string): string {
 
 describe("On Air design tokens", () => {
   it("declares the structural tokens", () => {
-    for (const name of ["--club-wash", "--hit", "--surface-clamp", "--tag-skew", "--tag-outline-width", "--tag-outline-color"]) {
+    for (const name of ["--club-wash", "--hit", "--target-min", "--surface-clamp", "--tag-skew", "--tag-outline-width", "--tag-outline-color"]) {
       expect(css).toContain(`${name}:`);
     }
   });
