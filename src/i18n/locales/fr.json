@@ -2522,7 +2522,9 @@
         "templates": {
           "welcome": {
             "subject": "Bienvenue à {{team}} !",
-            "body": "Le conseil d'administration vous souhaite la bienvenue en tant que nouvel entraîneur principal de {{team}}.\n\nNous avons pleinement confiance en votre capacité à mener cette équipe vers le succès.\n\nPassez en revue votre effectif, fixez vos priorités et préparez-vous aux défis à venir.\n\nBonne chance, coach !"
+            "body": "Le conseil d'administration vous souhaite la bienvenue en tant que nouvel entraîneur principal de {{team}}.\n\nNous avons pleinement confiance en votre capacité à mener cette équipe vers le succès.\n\nPassez en revue votre effectif, fixez vos priorités et préparez-vous aux défis à venir.\n\nBonne chance, coach !",
+            "body_one": "Le conseil d'administration vous souhaite la bienvenue en tant que nouvel entraîneur principal de {{team}}.\n\nNous avons pleinement confiance en votre capacité à mener cette équipe vers le succès. Le premier match de championnat a lieu dans {{days}} jour.\n\nPassez en revue votre effectif, fixez vos priorités et préparez-vous aux défis à venir.\n\nBonne chance, coach !",
+            "body_other": "Le conseil d'administration vous souhaite la bienvenue en tant que nouvel entraîneur principal de {{team}}.\n\nNous avons pleinement confiance en votre capacité à mener cette équipe vers le succès. Le premier match de championnat a lieu dans {{days}} jours.\n\nPassez en revue votre effectif, fixez vos priorités et préparez-vous aux défis à venir.\n\nBonne chance, coach !"
           }
         },
         "subject0": "Bienvenue à {{team}}",
@@ -2533,6 +2535,18 @@
         "body2": "Bienvenue à {{team}} ! Les supporters et le staff sont enthousiastes pour l'avenir sous votre direction.\n\nNous vous recommandons de commencer par évaluer les forces et faiblesses de votre effectif, puis de configurer votre plan de jeu et régime d'entraînement préférés.\n\nLa saison à venir sera un véritable test — rendez-nous fiers.",
         "actionReview": "Examiner l'Effectif",
         "actionThank": "Remercier le Conseil"
+      },
+      "foundingWelcome": {
+        "replace": {
+          "subject": "Bienvenue à {{team}} : le premier jour d'un nouveau club",
+          "body_one": "Le conseil d'administration vous souhaite la bienvenue en tant que premier entraîneur principal de l'histoire de {{team}}. Le club vient d'être fondé et prend la place de {{replaced}} dans la ligue.\n\nTout part de zéro : l'effectif, les résultats et le nom dont les supporters se souviendront. Le premier match de championnat a lieu dans {{days}} jour.\n\nPassez en revue votre effectif, fixez vos priorités et faites compter le club dès le premier jour.\n\nBonne chance, coach !",
+          "body_other": "Le conseil d'administration vous souhaite la bienvenue en tant que premier entraîneur principal de l'histoire de {{team}}. Le club vient d'être fondé et prend la place de {{replaced}} dans la ligue.\n\nTout part de zéro : l'effectif, les résultats et le nom dont les supporters se souviendront. Le premier match de championnat a lieu dans {{days}} jours.\n\nPassez en revue votre effectif, fixez vos priorités et faites compter le club dès le premier jour.\n\nBonne chance, coach !"
+        },
+        "join": {
+          "subject": "Bienvenue à {{team}} : le premier jour d'un nouveau club",
+          "body_one": "Le conseil d'administration vous souhaite la bienvenue en tant que premier entraîneur principal de l'histoire de {{team}}. Le club vient d'être fondé et rejoint la ligue en tant que club supplémentaire : la ligue compte donc une équipe de plus cette saison. Il démarre sans académie.\n\nTout part de zéro : l'effectif, les résultats et le nom dont les supporters se souviendront. Le premier match de championnat a lieu dans {{days}} jour.\n\nPassez en revue votre effectif, fixez vos priorités et faites compter le club dès le premier jour.\n\nBonne chance, coach !",
+          "body_other": "Le conseil d'administration vous souhaite la bienvenue en tant que premier entraîneur principal de l'histoire de {{team}}. Le club vient d'être fondé et rejoint la ligue en tant que club supplémentaire : la ligue compte donc une équipe de plus cette saison. Il démarre sans académie.\n\nTout part de zéro : l'effectif, les résultats et le nom dont les supporters se souviendront. Le premier match de championnat a lieu dans {{days}} jours.\n\nPassez en revue votre effectif, fixez vos priorités et faites compter le club dès le premier jour.\n\nBonne chance, coach !"
+        }
       },
       "schedule": {
         "templates": {
@@ -3487,6 +3501,16 @@
         "headline1": "Le nouveau split de ligue va commencer",
         "headline2": "{{favourite}} peut-il contrôler la méta ?",
         "body": "La ligue s'apprête à démarrer avec {{teamCount}} équipes dans le split.\n\nLes analystes placent {{favourite}} comme favori du départ, mais {{darkHorse}} peut être la surprise de la campagne.\n\nAvec des staffs qui affinent la préparation de draft, ce split s'annonce comme l'un des plus compétitifs de ces dernières années. Chaque map comptera dans la course aux playoffs.\n\nÉquipes : {{teamList}}"
+      },
+      "newClub": {
+        "replace": {
+          "headline": "{{team}} prend la place de {{replaced}} en {{league}}",
+          "body": "{{team}} ({{origin}}), une équipe fondée cette année, prend la place de {{replaced}} en {{league}}.\n\nUn effectif tout neuf et un entraîneur principal débutant partent de zéro, et le reste de la ligue observera la vitesse à laquelle les nouveaux venus trouvent leurs marques."
+        },
+        "join": {
+          "headline": "{{team}} rejoint {{league}} en tant que plus récente équipe",
+          "body": "{{team}} ({{origin}}), une équipe fondée cette année, rejoint {{league}} en tant qu'équipe supplémentaire : la ligue compte donc une équipe de plus cette saison. Les nouveaux venus démarrent sans académie.\n\nUn effectif tout neuf et un entraîneur principal débutant partent de zéro, et le reste de la ligue observera la vitesse à laquelle les nouveaux venus trouvent leurs marques."
+        }
       },
       "weeklyDigest": {
         "headline": "Power rankings hebdomadaire — semaine du {{weekStart}}",

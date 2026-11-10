@@ -1,4 +1,4 @@
-use olm_core::messages;
+use olm_core::messages::{self, FoundingMode};
 
 // ---------------------------------------------------------------------------
 // welcome_message
@@ -6,7 +6,7 @@ use olm_core::messages;
 
 #[test]
 fn welcome_message_has_correct_fields() {
-    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "en");
+    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "en", 0);
     assert_eq!(msg.id, "welcome_team1");
     assert!(
         msg.subject.contains("Test FC"),
@@ -23,7 +23,7 @@ fn welcome_message_has_correct_fields() {
 
 #[test]
 fn welcome_message_has_i18n_keys() {
-    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "en");
+    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "en", 0);
     assert!(msg.subject_key.is_some(), "Should have subject i18n key");
     assert!(msg.body_key.is_some(), "Should have body i18n key");
     assert!(msg.sender_key.is_some(), "Should have sender i18n key");
@@ -31,8 +31,71 @@ fn welcome_message_has_i18n_keys() {
 
 #[test]
 fn welcome_message_has_context() {
-    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "en");
+    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "en", 0);
     assert_eq!(msg.context.team_id.as_deref(), Some("team1"));
+}
+
+// ---------------------------------------------------------------------------
+// founding_welcome_message
+// ---------------------------------------------------------------------------
+
+#[test]
+fn founding_welcome_for_a_replaced_club_names_it() {
+    let msg = messages::founding_welcome_message(
+        "Rayo Esports",
+        "les-custom-ray",
+        FoundingMode::Replace {
+            replaced_team_name: "UB Alma Mater",
+        },
+        16,
+        "2026-01-01",
+    );
+    assert_eq!(msg.id, "welcome_les-custom-ray");
+    assert_eq!(
+        msg.subject_key.as_deref(),
+        Some("be.msg.foundingWelcome.replace.subject")
+    );
+    assert_eq!(
+        msg.body_key.as_deref(),
+        Some("be.msg.foundingWelcome.replace.body")
+    );
+    assert_eq!(
+        msg.i18n_params.get("replaced").map(String::as_str),
+        Some("UB Alma Mater")
+    );
+    assert!(msg.body.contains("takes the place of UB Alma Mater"));
+    assert!(msg.body.contains("first head coach"));
+    assert_eq!(msg.context.team_id.as_deref(), Some("les-custom-ray"));
+}
+
+#[test]
+fn founding_welcome_for_a_joining_club_says_extra_club_without_academy() {
+    let msg = messages::founding_welcome_message(
+        "Rayo Esports",
+        "les-custom-ray",
+        FoundingMode::Join,
+        16,
+        "2026-01-01",
+    );
+    assert_eq!(
+        msg.body_key.as_deref(),
+        Some("be.msg.foundingWelcome.join.body")
+    );
+    assert!(!msg.i18n_params.contains_key("replaced"));
+    assert!(msg.body.contains("extra club"));
+    assert!(msg.body.contains("without an academy"));
+}
+
+#[test]
+fn founding_welcome_carries_the_countdown_and_reads_one_day_in_the_singular() {
+    let many = messages::founding_welcome_message("Rayo", "t", FoundingMode::Join, 16, "2026-01-01");
+    let one = messages::founding_welcome_message("Rayo", "t", FoundingMode::Join, 1, "2026-01-01");
+
+    assert_eq!(many.i18n_params.get("days").map(String::as_str), Some("16"));
+    assert_eq!(many.i18n_params.get("count").map(String::as_str), Some("16"));
+    assert!(many.body.contains("16 days away"));
+    assert_eq!(one.i18n_params.get("days").map(String::as_str), Some("1"));
+    assert!(one.body.contains("1 day away"));
 }
 
 // ---------------------------------------------------------------------------
@@ -349,7 +412,7 @@ fn staff_advice_message_attaches_keys_and_team_param() {
 
 #[test]
 fn welcome_message_attaches_team_param() {
-    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "es");
+    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "es", 0);
     assert_eq!(
         msg.i18n_params.get("team").map(String::as_str),
         Some("Test FC")

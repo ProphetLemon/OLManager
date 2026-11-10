@@ -2521,7 +2521,9 @@
         "templates": {
           "welcome": {
             "subject": "Bem-vindo ao {{team}}!",
-            "body": "A direção dá-lhe as boas-vindas como novo treinador principal do {{team}}.\n\nTemos total confiança na sua capacidade de levar esta equipa ao sucesso.\n\nAnalise o seu plantel, defina as suas prioridades e prepare-se para os desafios que aí vêm.\n\nBoa sorte, treinador!"
+            "body": "A direção dá-lhe as boas-vindas como novo treinador principal do {{team}}.\n\nTemos total confiança na sua capacidade de levar esta equipa ao sucesso.\n\nAnalise o seu plantel, defina as suas prioridades e prepare-se para os desafios que aí vêm.\n\nBoa sorte, treinador!",
+            "body_one": "A direção dá-lhe as boas-vindas como novo treinador principal do {{team}}.\n\nTemos total confiança na sua capacidade de levar esta equipa ao sucesso. O primeiro jogo da liga é daqui a {{days}} dia.\n\nAnalise o seu plantel, defina as suas prioridades e prepare-se para os desafios que aí vêm.\n\nBoa sorte, treinador!",
+            "body_other": "A direção dá-lhe as boas-vindas como novo treinador principal do {{team}}.\n\nTemos total confiança na sua capacidade de levar esta equipa ao sucesso. O primeiro jogo da liga é daqui a {{days}} dias.\n\nAnalise o seu plantel, defina as suas prioridades e prepare-se para os desafios que aí vêm.\n\nBoa sorte, treinador!"
           }
         },
         "subject0": "Bem-vindo ao {{team}}",
@@ -2532,6 +2534,18 @@
         "body2": "Bem-vindo ao {{team}}! Os adeptos e o staff estão entusiasmados com o futuro sob a sua orientação.\n\nRecomendamos que comece por rever os pontos fortes e fracos do seu plantel, e depois configure o seu plano de jogo e regime de treino preferidos.\n\nA próxima época será um verdadeiro teste — dê-nos orgulho.",
         "actionReview": "Rever Plantel",
         "actionThank": "Agradecer ao Conselho"
+      },
+      "foundingWelcome": {
+        "replace": {
+          "subject": "Bem-vindo ao {{team}}: o primeiro dia de um clube novo",
+          "body_one": "A direção dá-lhe as boas-vindas como primeiro treinador principal da história do {{team}}. O clube acabou de ser fundado e ocupa o lugar de {{replaced}} na liga.\n\nTudo começa do zero: o plantel, os resultados e o nome de que os adeptos se vão lembrar. O primeiro jogo da liga é daqui a {{days}} dia.\n\nAnalise o seu plantel, defina as suas prioridades e faça o clube contar desde o primeiro dia.\n\nBoa sorte, treinador!",
+          "body_other": "A direção dá-lhe as boas-vindas como primeiro treinador principal da história do {{team}}. O clube acabou de ser fundado e ocupa o lugar de {{replaced}} na liga.\n\nTudo começa do zero: o plantel, os resultados e o nome de que os adeptos se vão lembrar. O primeiro jogo da liga é daqui a {{days}} dias.\n\nAnalise o seu plantel, defina as suas prioridades e faça o clube contar desde o primeiro dia.\n\nBoa sorte, treinador!"
+        },
+        "join": {
+          "subject": "Bem-vindo ao {{team}}: o primeiro dia de um clube novo",
+          "body_one": "A direção dá-lhe as boas-vindas como primeiro treinador principal da história do {{team}}. O clube acabou de ser fundado e entra na liga como clube adicional, pelo que a liga passa a ter mais uma equipa esta época. Começa sem academia.\n\nTudo começa do zero: o plantel, os resultados e o nome de que os adeptos se vão lembrar. O primeiro jogo da liga é daqui a {{days}} dia.\n\nAnalise o seu plantel, defina as suas prioridades e faça o clube contar desde o primeiro dia.\n\nBoa sorte, treinador!",
+          "body_other": "A direção dá-lhe as boas-vindas como primeiro treinador principal da história do {{team}}. O clube acabou de ser fundado e entra na liga como clube adicional, pelo que a liga passa a ter mais uma equipa esta época. Começa sem academia.\n\nTudo começa do zero: o plantel, os resultados e o nome de que os adeptos se vão lembrar. O primeiro jogo da liga é daqui a {{days}} dias.\n\nAnalise o seu plantel, defina as suas prioridades e faça o clube contar desde o primeiro dia.\n\nBoa sorte, treinador!"
+        }
       },
       "schedule": {
         "templates": {
@@ -3486,6 +3500,16 @@
         "headline1": "League Split Set to Begin",
         "headline2": "Can {{favourite}} Control the Meta? Split Preview",
         "body": "The league is set to kick off with {{teamCount}} teams entering the split.\n\nAnalyst predictions have {{favourite}} as the early favourites, but {{darkHorse}} could be the dark horse to watch this campaign.\n\nWith coaching staffs refining draft prep, this split promises to be one of the most competitive in recent memory. Every map will matter as the playoff race heats up.\n\nTeams: {{teamList}}"
+      },
+      "newClub": {
+        "replace": {
+          "headline": "{{team}} ocupa o lugar de {{replaced}} em {{league}}",
+          "body": "{{team}} ({{origin}}), uma equipa fundada este ano, ocupa o lugar de {{replaced}} em {{league}}.\n\nUm plantel totalmente novo e um treinador estreante começam do zero, e o resto da liga vai acompanhar a rapidez com que os recém-chegados encontram o seu ritmo."
+        },
+        "join": {
+          "headline": "{{team}} junta-se a {{league}} como a equipa mais recente",
+          "body": "{{team}} ({{origin}}), uma equipa fundada este ano, junta-se a {{league}} como equipa adicional, pelo que a liga passa a ter mais uma equipa esta época. Os recém-chegados começam sem academia.\n\nUm plantel totalmente novo e um treinador estreante começam do zero, e o resto da liga vai acompanhar a rapidez com que os recém-chegados encontram o seu ritmo."
+        }
       },
       "weeklyDigest": {
         "headline": "Weekly Power Rankings — Week of {{weekStart}}",
