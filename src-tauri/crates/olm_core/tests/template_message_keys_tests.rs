@@ -200,6 +200,46 @@ fn match_result_locale_text_names_each_team_once_with_the_right_score() {
     }
 }
 
+/// A message built from the real templates keeps what the hard-coded one carries: the
+/// fixture id, the score context the inbox detail pane reads, the "View standings" action
+/// and a High priority for a defeat.
+#[test]
+fn match_result_template_message_carries_context_action_and_priority() {
+    use olm_core::domain::message::{ActionType, MessagePriority};
+    load_templates();
+    for (home_wins, away_wins, priority) in [
+        (2, 1, MessagePriority::Normal),
+        (1, 2, MessagePriority::High),
+    ] {
+        for _ in 0..40 {
+            let msg = messages::match_result_message(
+                "f1", "KOI", "G2", home_wins, away_wins, "t1", "t2", "t1", 3, "d",
+            );
+            assert!(msg.subject_key.is_some(), "must be the template path");
+            assert_eq!(msg.priority, priority);
+            assert_eq!(msg.context.fixture_id.as_deref(), Some("f1"));
+            let result = msg
+                .context
+                .match_result
+                .as_ref()
+                .expect("match_result context");
+            assert_eq!(
+                (result.home_team_id.as_str(), result.away_team_id.as_str()),
+                ("t1", "t2")
+            );
+            assert_eq!(
+                (result.home_goals, result.away_goals),
+                (home_wins, away_wins)
+            );
+            let standings = msg.actions.iter().find(|a| a.id == "view_standings");
+            let standings = standings.expect("view_standings action");
+            assert!(
+                matches!(&standings.action_type, ActionType::NavigateTo { route } if route == "/dashboard?tab=Schedule")
+            );
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // player events
 // ---------------------------------------------------------------------------

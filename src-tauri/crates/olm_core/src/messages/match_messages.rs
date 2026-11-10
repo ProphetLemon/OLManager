@@ -118,6 +118,42 @@ pub fn pre_match_message(
     .with_sender_i18n("be.sender.assistantManager", "be.role.assistantManager")
 }
 
+/// Priority, "View standings" action and match context shared by the template-built
+/// and the hard-coded result message.
+fn with_result_extras(
+    msg: InboxMessage,
+    is_victory: bool,
+    fixture_id: &str,
+    home_team_id: &str,
+    away_team_id: &str,
+    home_goals: u8,
+    away_goals: u8,
+) -> InboxMessage {
+    msg.with_priority(if is_victory {
+        MessagePriority::Normal
+    } else {
+        MessagePriority::High
+    })
+    .with_action(action(
+        "view_standings",
+        "View Standings",
+        "be.msg.matchResult.actionStandings",
+        ActionType::NavigateTo {
+            route: "/dashboard?tab=Schedule".to_string(),
+        },
+    ))
+    .with_context(MessageContext {
+        fixture_id: Some(fixture_id.to_string()),
+        match_result: Some(ContextMatchResult {
+            home_team_id: home_team_id.to_string(),
+            away_team_id: away_team_id.to_string(),
+            home_goals,
+            away_goals,
+        }),
+        ..Default::default()
+    })
+}
+
 #[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub fn match_result_message(
     fixture_id: &str,
@@ -170,7 +206,15 @@ pub fn match_result_message(
             &outcome.to_lowercase(),
         )
     {
-        return msg;
+        return with_result_extras(
+            msg,
+            outcome == "Victory",
+            fixture_id,
+            home_team_id,
+            away_team_id,
+            home_goals,
+            away_goals,
+        );
     }
 
     let mut rng = rand::rng();
@@ -219,7 +263,7 @@ pub fn match_result_message(
         }
     };
 
-    InboxMessage::new(
+    let msg = InboxMessage::new(
         format!("result_{}", fixture_id),
         format!(
             "{}: {} {} - {} {}",
@@ -230,30 +274,16 @@ pub fn match_result_message(
         date.to_string(),
     )
     .with_category(MessageCategory::MatchResult)
-    .with_priority(if outcome == "Victory" {
-        MessagePriority::Normal
-    } else {
-        MessagePriority::High
-    })
-    .with_sender_role("Press Officer")
-    .with_action(action(
-        "view_standings",
-        "View Standings",
-        "be.msg.matchResult.actionStandings",
-        ActionType::NavigateTo {
-            route: "/dashboard?tab=Schedule".to_string(),
-        },
-    ))
-    .with_context(MessageContext {
-        fixture_id: Some(fixture_id.to_string()),
-        match_result: Some(ContextMatchResult {
-            home_team_id: home_team_id.to_string(),
-            away_team_id: away_team_id.to_string(),
-            home_goals,
-            away_goals,
-        }),
-        ..Default::default()
-    })
+    .with_sender_role("Press Officer");
+    with_result_extras(
+        msg,
+        outcome == "Victory",
+        fixture_id,
+        home_team_id,
+        away_team_id,
+        home_goals,
+        away_goals,
+    )
     .with_i18n(
         &format!("be.msg.matchResult.subject.{}", outcome.to_lowercase()),
         &format!(
