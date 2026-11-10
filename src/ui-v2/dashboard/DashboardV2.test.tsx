@@ -19,6 +19,8 @@ const shell = vi.hoisted(() => ({
   header: null as Record<string, unknown> | null,
   sidebar: null as Record<string, unknown> | null,
   blockerModal: null as BlockerModalMock | null,
+  scrimResultNotice: null as string[] | null,
+  dismissScrimResultNotice: vi.fn(),
   checkBlockingActions: vi.fn(),
 }));
 
@@ -54,6 +56,8 @@ vi.mock("@/hooks/useAdvanceTime", () => ({
     blockerModal: shell.blockerModal,
     setBlockerModal: vi.fn(),
     autoDelegationNotice: null,
+    scrimResultNotice: shell.scrimResultNotice,
+    dismissScrimResultNotice: shell.dismissScrimResultNotice,
     handleContinue: vi.fn(),
     handleConfirmMatch: vi.fn(),
     handleSkipToMatchDay: vi.fn(),
@@ -355,6 +359,8 @@ describe("DashboardV2 shell wiring", () => {
     shell.header = null;
     shell.sidebar = null;
     shell.blockerModal = null;
+    shell.scrimResultNotice = null;
+    shell.dismissScrimResultNotice.mockReset();
     shell.checkBlockingActions.mockReset();
     shell.checkBlockingActions.mockResolvedValue([]);
     useGameStore.setState({
@@ -413,6 +419,19 @@ describe("DashboardV2 shell wiring", () => {
     expect(typeof shell.header?.onNavClick).toBe("function");
     expect(typeof shell.header?.onShowCalls).toBe("function");
     expect(shell.sidebar).toMatchObject({ compact: false, activeTab: "Home" });
+  });
+
+  it("shows the scrim result notice on any tab and opens the Scrims tab from it", async () => {
+    shell.scrimResultNotice = ["Won against Rivals"];
+    await renderDashboard();
+    fireEvent.click(await screen.findByRole("button", { name: "Training" }));
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Training"));
+
+    expect(screen.getByRole("region", { name: "dashboard.scrimResultTitle" })).toHaveTextContent("Won against Rivals");
+    fireEvent.click(screen.getByRole("button", { name: "dashboard.scrimResultOpen" }));
+
+    expect(shell.dismissScrimResultNotice).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Scrims"));
   });
 
   it("keeps the header and rail active tab in sync with navigation", async () => {
