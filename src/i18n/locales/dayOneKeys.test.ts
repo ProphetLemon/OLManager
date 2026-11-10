@@ -82,3 +82,58 @@ describe("generic welcome countdown", () => {
     expect(t(`${prefix}.body`, { team: "Rayo", days: "16", count: 16 })).toContain("16 days away");
   });
 });
+
+describe("founding welcome and new-club article", () => {
+  const FOUNDING = {
+    replace: ["count", "days", "replaced", "team"],
+    join: ["count", "days", "team"],
+  };
+  const NEWS = {
+    replace: ["league", "origin", "replaced", "team"],
+    join: ["league", "origin", "team"],
+  };
+  const variants = ["replace", "join"] as const;
+
+  const cases = Object.keys(LOCALES).flatMap((locale) => variants.map((variant) => [locale, variant] as const));
+
+  it.each(cases)("%s %s founding welcome has both plural forms and only backend params", (locale, variant) => {
+    const prefix = `be.msg.foundingWelcome.${variant}`;
+    expect(lookup(LOCALES[locale], `${prefix}.subject`), "subject").toBeTypeOf("string");
+    for (const form of ["body_one", "body_other"]) {
+      const text = lookup(LOCALES[locale], `${prefix}.${form}`);
+      expect(text, form).toBeTypeOf("string");
+      const used = placeholders(text ?? "");
+      expect(used.filter((name) => !FOUNDING[variant].includes(name)), form).toEqual([]);
+      expect(used, form).toContain("days");
+      expect(used.includes("replaced"), form).toBe(variant === "replace");
+    }
+  });
+
+  it.each(cases)("%s %s new-club article uses only backend params", (locale, variant) => {
+    const prefix = `be.news.newClub.${variant}`;
+    for (const field of ["headline", "body"]) {
+      const text = lookup(LOCALES[locale], `${prefix}.${field}`);
+      expect(text, field).toBeTypeOf("string");
+      const used = placeholders(text ?? "");
+      expect(used.filter((name) => !NEWS[variant].includes(name)), field).toEqual([]);
+      expect(used, field).toContain("team");
+      expect(used.includes("replaced"), field).toBe(variant === "replace");
+    }
+  });
+
+  it.each(cases)("%s %s founding welcome shows the number of days", async (locale, variant) => {
+    const t = (await translator(locale)).t;
+    const params = { team: "Rayo", replaced: "Alma", days: "16", count: 16 };
+    const body = t(`be.msg.foundingWelcome.${variant}.body`, params);
+    expect(body).toContain("16");
+    expect(body).toContain("Rayo");
+    expect(body.includes("Alma")).toBe(variant === "replace");
+    expect(body).not.toContain("{{");
+  });
+
+  it("reads one day in the singular in English", async () => {
+    const t = (await translator("en")).t;
+    const body = t("be.msg.foundingWelcome.join.body", { team: "Rayo", days: "1", count: 1 });
+    expect(body).toContain("The first league match is 1 day away.");
+  });
+});

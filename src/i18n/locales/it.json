@@ -2348,6 +2348,18 @@
         "actionReview": "Rivedi rosa",
         "actionThank": "Ringrazia la dirigenza"
       },
+      "foundingWelcome": {
+        "replace": {
+          "subject": "Benvenuto al {{team}}: il primo giorno di un nuovo club",
+          "body_one": "Il consiglio di amministrazione ti dà il benvenuto come primo allenatore nella storia del {{team}}. Il club è appena stato fondato e prende il posto di {{replaced}} nel campionato.\n\nTutto parte da zero: la rosa, i risultati e il nome che i tifosi ricorderanno. La prima partita di campionato è tra {{days}} giorno.\n\nEsamina la tua rosa, stabilisci le tue priorità e fai contare il club fin dal primo giorno.\n\nIn bocca al lupo, allenatore!",
+          "body_other": "Il consiglio di amministrazione ti dà il benvenuto come primo allenatore nella storia del {{team}}. Il club è appena stato fondato e prende il posto di {{replaced}} nel campionato.\n\nTutto parte da zero: la rosa, i risultati e il nome che i tifosi ricorderanno. La prima partita di campionato è tra {{days}} giorni.\n\nEsamina la tua rosa, stabilisci le tue priorità e fai contare il club fin dal primo giorno.\n\nIn bocca al lupo, allenatore!"
+        },
+        "join": {
+          "subject": "Benvenuto al {{team}}: il primo giorno di un nuovo club",
+          "body_one": "Il consiglio di amministrazione ti dà il benvenuto come primo allenatore nella storia del {{team}}. Il club è appena stato fondato ed entra nel campionato come club aggiuntivo, quindi quest'anno il campionato ha una squadra in più. Parte senza accademia.\n\nTutto parte da zero: la rosa, i risultati e il nome che i tifosi ricorderanno. La prima partita di campionato è tra {{days}} giorno.\n\nEsamina la tua rosa, stabilisci le tue priorità e fai contare il club fin dal primo giorno.\n\nIn bocca al lupo, allenatore!",
+          "body_other": "Il consiglio di amministrazione ti dà il benvenuto come primo allenatore nella storia del {{team}}. Il club è appena stato fondato ed entra nel campionato come club aggiuntivo, quindi quest'anno il campionato ha una squadra in più. Parte senza accademia.\n\nTutto parte da zero: la rosa, i risultati e il nome che i tifosi ricorderanno. La prima partita di campionato è tra {{days}} giorni.\n\nEsamina la tua rosa, stabilisci le tue priorità e fai contare il club fin dal primo giorno.\n\nIn bocca al lupo, allenatore!"
+        }
+      },
       "schedule": {
         "templates": {
           "season_schedule": {
@@ -3301,6 +3313,16 @@
         "headline1": "League Split Set to Begin",
         "headline2": "Can {{favourite}} Control the Meta? Split Preview",
         "body": "The league is set to kick off with {{teamCount}} teams entering the split.\n\nAnalyst predictions have {{favourite}} as the early favourites, but {{darkHorse}} could be the dark horse to watch this campaign.\n\nWith coaching staffs refining draft prep, this split promises to be one of the most competitive in recent memory. Every map will matter as the playoff race heats up.\n\nTeams: {{teamList}}"
+      },
+      "newClub": {
+        "replace": {
+          "headline": "{{team}} prende il posto di {{replaced}} in {{league}}",
+          "body": "{{team}} ({{origin}}), una squadra fondata quest'anno, prende il posto di {{replaced}} in {{league}}.\n\nUna rosa completamente nuova e un allenatore al debutto partono da zero, e il resto del campionato osserverà quanto in fretta i nuovi arrivati troveranno il proprio ritmo."
+        },
+        "join": {
+          "headline": "{{team}} entra in {{league}} come ultimo arrivato",
+          "body": "{{team}} ({{origin}}), una squadra fondata quest'anno, entra in {{league}} come squadra aggiuntiva, quindi il campionato ha una squadra in più questa stagione. I nuovi arrivati partono senza accademia.\n\nUna rosa completamente nuova e un allenatore al debutto partono da zero, e il resto del campionato osserverà quanto in fretta i nuovi arrivati troveranno il proprio ritmo."
+        }
       },
       "weeklyDigest": {
         "headline": "Weekly Power Rankings — Week of {{weekStart}}",

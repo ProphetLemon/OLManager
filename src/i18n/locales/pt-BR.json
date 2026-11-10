@@ -2532,6 +2532,18 @@
         "actionReview": "Revisar Elenco",
         "actionThank": "Agradecer à Diretoria"
       },
+      "foundingWelcome": {
+        "replace": {
+          "subject": "Bem-vindo ao {{team}}: o primeiro dia de um clube novo",
+          "body_one": "A diretoria dá as boas-vindas a você como primeiro treinador principal da história do {{team}}. O clube acabou de ser fundado e ocupa o lugar de {{replaced}} na liga.\n\nTudo começa do zero: o elenco, os resultados e o nome de que os torcedores vão se lembrar. O primeiro jogo da liga é daqui a {{days}} dia.\n\nAnalise o seu elenco, defina as suas prioridades e faça o clube contar desde o primeiro dia.\n\nBoa sorte, treinador!",
+          "body_other": "A diretoria dá as boas-vindas a você como primeiro treinador principal da história do {{team}}. O clube acabou de ser fundado e ocupa o lugar de {{replaced}} na liga.\n\nTudo começa do zero: o elenco, os resultados e o nome de que os torcedores vão se lembrar. O primeiro jogo da liga é daqui a {{days}} dias.\n\nAnalise o seu elenco, defina as suas prioridades e faça o clube contar desde o primeiro dia.\n\nBoa sorte, treinador!"
+        },
+        "join": {
+          "subject": "Bem-vindo ao {{team}}: o primeiro dia de um clube novo",
+          "body_one": "A diretoria dá as boas-vindas a você como primeiro treinador principal da história do {{team}}. O clube acabou de ser fundado e entra na liga como clube extra, então a liga passa a ter um time a mais nesta temporada. Começa sem academia.\n\nTudo começa do zero: o elenco, os resultados e o nome de que os torcedores vão se lembrar. O primeiro jogo da liga é daqui a {{days}} dia.\n\nAnalise o seu elenco, defina as suas prioridades e faça o clube contar desde o primeiro dia.\n\nBoa sorte, treinador!",
+          "body_other": "A diretoria dá as boas-vindas a você como primeiro treinador principal da história do {{team}}. O clube acabou de ser fundado e entra na liga como clube extra, então a liga passa a ter um time a mais nesta temporada. Começa sem academia.\n\nTudo começa do zero: o elenco, os resultados e o nome de que os torcedores vão se lembrar. O primeiro jogo da liga é daqui a {{days}} dias.\n\nAnalise o seu elenco, defina as suas prioridades e faça o clube contar desde o primeiro dia.\n\nBoa sorte, treinador!"
+        }
+      },
       "schedule": {
         "templates": {
           "season_schedule": {
@@ -3485,6 +3497,16 @@
         "headline1": "O novo split da liga vai começar",
         "headline2": "{{favourite}} vai dominar o meta?",
         "body": "A liga está pronta para começar com {{teamCount}} times no split.\n\nAs previsões colocam {{favourite}} como favorito inicial, mas {{darkHorse}} pode ser a surpresa da campanha.\n\nCom as comissões refinando preparação de draft, este split promete ser um dos mais competitivos dos últimos tempos. Cada mapa vai pesar na corrida pelos playoffs.\n\nTimes: {{teamList}}"
+      },
+      "newClub": {
+        "replace": {
+          "headline": "{{team}} assume o lugar de {{replaced}} em {{league}}",
+          "body": "{{team}} ({{origin}}), um time fundado este ano, assume o lugar de {{replaced}} em {{league}}.\n\nUm elenco totalmente novo e um treinador estreante começam do zero, e o resto da liga vai observar a rapidez com que os recém-chegados encontram o seu ritmo."
+        },
+        "join": {
+          "headline": "{{team}} entra em {{league}} como o time mais novo",
+          "body": "{{team}} ({{origin}}), um time fundado este ano, entra em {{league}} como time extra, então a liga passa a ter um time a mais nesta temporada. Os recém-chegados começam sem academia.\n\nUm elenco totalmente novo e um treinador estreante começam do zero, e o resto da liga vai observar a rapidez com que os recém-chegados encontram o seu ritmo."
+        }
       },
       "weeklyDigest": {
         "headline": "Power rankings semanal — semana de {{weekStart}}",

@@ -15,6 +15,7 @@ use olm_core::domain::manager::Manager;
 use olm_core::domain::stats::StatsState;
 use olm_core::game::Game;
 use olm_core::game_setup;
+use olm_core::messages::FoundingMode;
 use olm_core::player_rating_overrides::{ApplyReport, PlayerRatingOverrides, apply_player_rating_overrides};
 use olm_core::wage_scale;
 use olm_core::generator::definitions::CompetitionManifest;
@@ -82,6 +83,7 @@ pub(crate) fn new_game_start_for(overlay: Option<&WorldOverlay>) -> chrono::Date
 /// from the modular data, apply the roster overlay, make every Main team
 /// playable and auto-fill the user team's lineup. Returns the id of the user's
 /// team: `team_id`, or the id of the custom club that replaced it.
+#[cfg(test)]
 pub(crate) fn build_new_game_world(
     game: &mut Game,
     inputs: &NewGameWorldInputs<'_>,
@@ -95,19 +97,38 @@ pub(crate) fn build_new_game_world(
 
 /// [`build_new_game_world`] with an explicit stat-derived rating overrides
 /// document instead of the bundled one, so tests can inject a fixture.
+#[cfg(test)]
 pub(crate) fn build_new_game_world_with_rating_overrides(
     game: &mut Game,
     inputs: &NewGameWorldInputs<'_>,
     rating_overrides: &PlayerRatingOverrides,
 ) -> Result<String, String> {
+    build_world_naming_replaced_club(game, inputs, rating_overrides).map(|(team_id, _)| team_id)
+}
+
+/// [`build_new_game_world_with_rating_overrides`] that also returns the name of the
+/// club a custom club replaced, which the world no longer holds once it is built.
+pub(crate) fn build_world_naming_replaced_club(
+    game: &mut Game,
+    inputs: &NewGameWorldInputs<'_>,
+    rating_overrides: &PlayerRatingOverrides,
+) -> Result<(String, Option<String>), String> {
     assemble_base_world(game, inputs, rating_overrides)?;
 
     // The custom club takes its slot after the overlay (so roster moves into the
     // replaced club are released with the rest) and before the fill. Its founding
     // squad is generated right away, so the fill finds all five roles covered; if
     // the generator fails, the fill signs free agents like it does for any club.
+    let mut replaced_team_name = None;
     let user_team_id = match inputs.custom_team {
         Some(spec) => {
+            if !inputs.joins_league {
+                replaced_team_name = game
+                    .teams
+                    .iter()
+                    .find(|team| team.id == inputs.team_id)
+                    .map(|team| team.name.clone());
+            }
             let team_id = install_custom_club(game, inputs, spec)?;
             install_generated_squad(game, inputs, spec, &team_id)
                 .map_err(|error| error.to_wire())?;
@@ -144,7 +165,7 @@ pub(crate) fn build_new_game_world_with_rating_overrides(
         "[select_team] AFTER assembly: staff.len={}",
         game.staff.len()
     );
-    Ok(user_team_id)
+    Ok((user_team_id, replaced_team_name))
 }
 
 /// The part of the world build the founding squad depends on, shared by
@@ -1142,6 +1163,53 @@ pub async fn start_new_game_lightweight(
     Ok("ok".to_string())
 }
 
+/// Day-one welcome and, for a club the player created, the league news that
+/// announces it. A career with an existing club gets the generic welcome and no
+/// article; a custom club gets the founding welcome for its mode.
+fn push_welcome_and_founding_news(
+    game: &mut Game,
+    team_id: &str,
+    team_name: &str,
+    founding: Option<FoundingMode<'_>>,
+    league_name: &str,
+    date: &str,
+    lang: &str,
+) {
+    let days_to_start = game_setup::days_until_first_league_fixture(game);
+    let Some(mode) = founding else {
+        game.messages.push(olm_core::messages::welcome_message(
+            team_name,
+            team_id,
+            date,
+            lang,
+            days_to_start,
+        ));
+        return;
+    };
+    game.messages.push(olm_core::messages::founding_welcome_message(
+        team_name,
+        team_id,
+        mode,
+        days_to_start,
+        date,
+    ));
+    // A custom club has no city, only the country it was created in.
+    let origin = game
+        .teams
+        .iter()
+        .find(|team| team.id == team_id)
+        .map(|team| if team.city.is_empty() { team.country.clone() } else { team.city.clone() })
+        .unwrap_or_default();
+    game.news.push(olm_core::news::new_club_article(
+        team_id,
+        team_name,
+        &origin,
+        league_name,
+        mode,
+        date,
+    ));
+}
+
 /// Step 2: User picks a team. Assigns manager, generates welcome message, saves to DB.
 /// Supports both Flow A (world pre-loaded) and Flow C (modular assembly).
 #[tauri::command]
@@ -1183,7 +1251,7 @@ pub async fn select_team(
 
     // With a custom club, `team_id` named the slot it replaces (or nothing, when it
     // joins a league); from here on it is the user's actual team.
-    let team_id = if game.teams.is_empty() {
+    let (team_id, replaced_team_name) = if game.teams.is_empty() {
         info!("[cmd] select_team: empty game state — assembling from modular data");
 
         let (competition_id, slot_team_id, joins_league) = match &pick {
@@ -1220,7 +1288,7 @@ pub async fn select_team(
         let data_dir = crate::commands::competitions::require_data_base(&app_handle)?;
         let overlay = resolve_world_overlay(&app_handle);
 
-        build_new_game_world(
+        build_world_naming_replaced_club(
             &mut game,
             &NewGameWorldInputs {
                 data_dir: &data_dir,
@@ -1231,10 +1299,11 @@ pub async fn select_team(
                 custom_team: custom_team.as_ref(),
                 joins_league,
             },
+            olm_core::player_rating_overrides::bundled(),
         )?
     } else {
         match pick {
-            TeamPick::Existing(team_id) => team_id,
+            TeamPick::Existing(team_id) => (team_id, None),
             TeamPick::JoinLeague(_) => {
                 return Err("A custom club can only be created for a new career".to_string());
             }
@@ -1309,15 +1378,19 @@ pub async fn select_team(
         }
     }
 
-    let days_to_start = game_setup::days_until_first_league_fixture(&game);
-    let welcome_msg = olm_core::messages::welcome_message(
-        &team_name,
+    let founding = custom_team.as_ref().map(|_| match replaced_team_name.as_deref() {
+        Some(replaced_team_name) => FoundingMode::Replace { replaced_team_name },
+        None => FoundingMode::Join,
+    });
+    push_welcome_and_founding_news(
+        &mut game,
         &team_id,
+        &team_name,
+        founding,
+        &league_display_name,
         &date_str,
         &lang,
-        days_to_start,
     );
-    game.messages.push(welcome_msg);
 
     if let Some(parent_team) = game.teams.iter().find(|team| team.id == team_id) {
         if let Some(academy_team_id) = parent_team.academy_team_id.as_deref() {
@@ -3541,6 +3614,142 @@ mod tests {
         }
 
         // -- Custom club joining a league (join mode) ---------------------------------
+
+        /// What `select_team` does up to the day-one welcome, minus the Tauri handle: build
+        /// the world (a custom club replaces `slot_id`, or joins the LES when `joins`), set
+        /// the season up and push the welcome and, for a custom club, the news article.
+        fn day_one_game(slot_id: &str, custom: Option<&CustomTeamSpec>, joins: bool) -> Game {
+            let mut game = empty_session();
+            let overlay = olm_core::world_overlay::bundled_world_overlay().expect("bundled overlay");
+            let data = data_base();
+            let (manifests, known) = known_ids_and_manifests();
+            let competition_id = if joins {
+                "les"
+            } else {
+                competition_id_from_team_id_known(slot_id, &known).expect("competition prefix")
+            };
+            let (team_id, replaced_team_name) = build_world_naming_replaced_club(
+                &mut game,
+                &NewGameWorldInputs {
+                    data_dir: &data,
+                    manifests: &manifests,
+                    competition_id,
+                    team_id: if joins { "" } else { slot_id },
+                    overlay: Some(&overlay),
+                    custom_team: custom,
+                    joins_league: joins,
+                },
+                olm_core::player_rating_overrides::bundled(),
+            )
+            .expect("world");
+            let season = prepare_new_game_season(&mut game, &manifests, &known, &team_id)
+                .expect("season");
+            let founding = custom.map(|_| match replaced_team_name.as_deref() {
+                Some(replaced_team_name) => FoundingMode::Replace { replaced_team_name },
+                None => FoundingMode::Join,
+            });
+            let date = game.clock.current_date.to_rfc3339();
+            push_welcome_and_founding_news(
+                &mut game,
+                &team_id,
+                &season.team_name,
+                founding,
+                "LES Winter",
+                &date,
+                "en",
+            );
+            game
+        }
+
+        fn welcomes(game: &Game) -> Vec<&olm_core::domain::message::InboxMessage> {
+            game.messages
+                .iter()
+                .filter(|message| message.id.starts_with("welcome_"))
+                .collect()
+        }
+
+        fn new_club_articles(game: &Game) -> Vec<&olm_core::domain::news::NewsArticle> {
+            game.news
+                .iter()
+                .filter(|article| article.id.starts_with("new_club_"))
+                .collect()
+        }
+
+        /// Days from the game clock to the first LES league fixture, read from the calendar.
+        fn days_to_first_les_fixture(game: &Game) -> String {
+            let first = league_dates(les_league(game)).remove(0);
+            let first = chrono::NaiveDate::parse_from_str(&first, "%Y-%m-%d").unwrap();
+            (first - game.clock.current_date.date_naive()).num_days().to_string()
+        }
+
+        #[test]
+        fn a_replace_career_gets_the_founding_welcome_and_the_new_club_article() {
+            let (plain, _overlay, _) = try_build_world(LES_SLOT, None).expect("plain world");
+            let replaced = plain.teams.iter().find(|t| t.id == LES_SLOT).unwrap().name.clone();
+
+            let game = day_one_game(LES_SLOT, Some(&rayo()), false);
+
+            let welcomes = welcomes(&game);
+            assert_eq!(welcomes.len(), 1, "exactly one welcome");
+            assert_eq!(welcomes[0].id, "welcome_les-custom-ray");
+            assert_eq!(
+                welcomes[0].body_key.as_deref(),
+                Some("be.msg.foundingWelcome.replace.body")
+            );
+            assert_eq!(welcomes[0].i18n_params.get("replaced"), Some(&replaced));
+            assert_eq!(welcomes[0].i18n_params.get("team").map(String::as_str), Some("Rayo Esports"));
+            assert_eq!(
+                welcomes[0].i18n_params.get("days"),
+                Some(&days_to_first_les_fixture(&game))
+            );
+            let articles = new_club_articles(&game);
+            assert_eq!(articles.len(), 1, "exactly one new-club article");
+            assert_eq!(
+                articles[0].headline_key.as_deref(),
+                Some("be.news.newClub.replace.headline")
+            );
+            assert_eq!(articles[0].i18n_params.get("replaced"), Some(&replaced));
+            assert_eq!(articles[0].i18n_params.get("origin").map(String::as_str), Some("ES"));
+            assert_eq!(articles[0].i18n_params.get("league").map(String::as_str), Some("LES Winter"));
+        }
+
+        #[test]
+        fn a_join_career_gets_the_founding_welcome_and_the_new_club_article() {
+            let game = day_one_game("", Some(&rayo()), true);
+
+            let welcomes = welcomes(&game);
+            assert_eq!(welcomes.len(), 1, "exactly one welcome");
+            assert_eq!(
+                welcomes[0].body_key.as_deref(),
+                Some("be.msg.foundingWelcome.join.body")
+            );
+            assert!(!welcomes[0].i18n_params.contains_key("replaced"));
+            assert_eq!(
+                welcomes[0].i18n_params.get("days"),
+                Some(&days_to_first_les_fixture(&game))
+            );
+            let articles = new_club_articles(&game);
+            assert_eq!(articles.len(), 1, "exactly one new-club article");
+            assert_eq!(
+                articles[0].headline_key.as_deref(),
+                Some("be.news.newClub.join.headline")
+            );
+            assert!(!articles[0].i18n_params.contains_key("replaced"));
+        }
+
+        #[test]
+        fn a_career_with_an_existing_club_gets_the_generic_welcome_and_no_new_club_article() {
+            let game = day_one_game(LES_SLOT, None, false);
+
+            let welcomes = welcomes(&game);
+            assert_eq!(welcomes.len(), 1, "exactly one welcome");
+            assert!(
+                !welcomes[0].body_key.as_deref().unwrap_or_default().contains("foundingWelcome"),
+                "generic welcome expected: {:?}",
+                welcomes[0].body_key
+            );
+            assert!(new_club_articles(&game).is_empty());
+        }
 
         /// What `select_team` does for a join pick, minus the Tauri handle.
         fn try_build_join_world(

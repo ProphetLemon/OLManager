@@ -3,6 +3,7 @@ pub mod template_store;
 pub use match_report::match_report_article;
 
 use crate::domain::news::*;
+use crate::messages::FoundingMode;
 use rand::RngExt;
 use std::collections::HashMap;
 
@@ -264,6 +265,63 @@ pub fn season_preview_article(team_names: &[String], date: &str) -> NewsArticle 
     )
 }
 
+/// Day-one article announcing a club the player created. `origin` is the club's
+/// city, or its country when it has no city.
+pub fn new_club_article(
+    team_id: &str,
+    team_name: &str,
+    origin: &str,
+    league_name: &str,
+    mode: FoundingMode<'_>,
+    date: &str,
+) -> NewsArticle {
+    let mut article_params = params(&[
+        ("team", team_name),
+        ("origin", origin),
+        ("league", league_name),
+    ]);
+    let (variant, headline, entry) = match mode {
+        FoundingMode::Replace { replaced_team_name } => {
+            article_params.insert("replaced".to_string(), replaced_team_name.to_string());
+            (
+                "replace",
+                format!("{team_name} take over {replaced_team_name}'s place in the {league_name}"),
+                format!("take over the place of {replaced_team_name} in the {league_name}"),
+            )
+        }
+        FoundingMode::Join => (
+            "join",
+            format!("{team_name} join the {league_name} as its newest team"),
+            format!(
+                "join the {league_name} as an extra team, so the league grows by one team this \
+                season. The newcomers start without an academy"
+            ),
+        ),
+    };
+    // The stored text is English; the UI translates it from the keys and params.
+    let body = format!(
+        "{team_name} ({origin}), a team founded this year, {entry}.\n\n\
+        A brand-new squad and a first-time head coach start from zero, and the rest of the \
+        league will be watching how quickly the newcomers find their footing."
+    );
+
+    NewsArticle::new(
+        format!("new_club_{team_id}"),
+        headline,
+        body,
+        "League Chronicle".to_string(),
+        date.to_string(),
+        NewsCategory::Editorial,
+    )
+    .with_teams(vec![team_id.to_string()])
+    .with_i18n(
+        &format!("be.news.newClub.{variant}.headline"),
+        &format!("be.news.newClub.{variant}.body"),
+        "be.source.leagueChronicle",
+        article_params,
+    )
+}
+
 /// Favourite and dark horse of the preview: the strongest club and a mid-table
 /// one. `team_names` is ordered strongest first.
 fn preview_contenders(team_names: &[String]) -> (&str, &str) {
@@ -434,7 +492,10 @@ pub fn unbeaten_streak_storyline_article(
 
 #[cfg(test)]
 mod tests {
-    use super::{league_roundup_article, season_preview_article, standings_update_article};
+    use super::{
+        league_roundup_article, new_club_article, season_preview_article, standings_update_article,
+    };
+    use crate::messages::FoundingMode;
     use crate::domain::news::NewsCategory;
 
     fn assert_valid_roundup_source_pair(source: &str, source_key: &str) {
@@ -665,6 +726,51 @@ mod tests {
             article.i18n_params.get("darkHorse"),
             Some(&"Weak".to_string())
         );
+    }
+
+    #[test]
+    fn new_club_article_for_a_replaced_club_names_it_and_the_league() {
+        let article = new_club_article(
+            "les-custom-ray",
+            "Rayo Esports",
+            "ES",
+            "LES Winter",
+            FoundingMode::Replace {
+                replaced_team_name: "UB Alma Mater",
+            },
+            "2026-01-01",
+        );
+
+        assert_eq!(article.id, "new_club_les-custom-ray");
+        assert_eq!(article.category, NewsCategory::Editorial);
+        assert_eq!(article.team_ids, vec!["les-custom-ray".to_string()]);
+        assert_eq!(
+            article.headline_key.as_deref(),
+            Some("be.news.newClub.replace.headline")
+        );
+        assert_eq!(article.i18n_params.get("replaced").map(String::as_str), Some("UB Alma Mater"));
+        assert_eq!(article.i18n_params.get("origin").map(String::as_str), Some("ES"));
+        assert_eq!(article.i18n_params.get("league").map(String::as_str), Some("LES Winter"));
+        assert!(article.body.contains("take over the place of UB Alma Mater in the LES Winter"));
+    }
+
+    #[test]
+    fn new_club_article_for_a_joining_club_says_the_league_grows() {
+        let article = new_club_article(
+            "les-custom-ray",
+            "Rayo Esports",
+            "ES",
+            "LES Winter",
+            FoundingMode::Join,
+            "2026-01-01",
+        );
+
+        assert_eq!(
+            article.body_key.as_deref(),
+            Some("be.news.newClub.join.body")
+        );
+        assert!(!article.i18n_params.contains_key("replaced"));
+        assert!(article.body.contains("the league grows by one team"));
     }
 
     #[test]
