@@ -6417,3 +6417,6 @@ mod economy_tests;
 
 #[cfg(test)]
 mod strength_tests;
+
+#[cfg(test)]
+mod objectives_detector_tests;

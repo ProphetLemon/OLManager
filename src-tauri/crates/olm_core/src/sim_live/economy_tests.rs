@@ -53,7 +53,7 @@ impl Side {
     }
 }
 
-fn snapshot_with(home: Side, away: Side) -> Value {
+pub(super) fn snapshot_with(home: Side, away: Side) -> Value {
     let team = |prefix: &str, stat: f64| {
         let players: Vec<Value> = ROLES
             .iter()
