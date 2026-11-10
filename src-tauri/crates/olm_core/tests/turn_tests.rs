@@ -590,6 +590,62 @@ fn apply_match_report_updates_fixture_status() {
     assert_eq!(persisted_report.away_stats.possession_pct, 50);
 }
 
+/// The form letters and the user's result headline must agree with the standings for every
+/// series the engine stores (best of one and best of three), on either side of the fixture.
+#[test]
+fn apply_match_report_form_and_headline_follow_the_series_result() {
+    for (best_of, home_wins, away_wins) in [
+        (1, 1, 0),
+        (1, 0, 1),
+        (3, 2, 0),
+        (3, 2, 1),
+        (3, 1, 2),
+        (3, 0, 2),
+    ] {
+        for user_is_home in [true, false] {
+            let mut game = make_game_with_match();
+            game.leagues[0].fixtures[0].best_of = best_of;
+            game.manager.team_id = Some(if user_is_home { "team1" } else { "team2" }.to_string());
+            turn::apply_match_report(
+                &mut game,
+                0,
+                "team1",
+                "team2",
+                &empty_report(home_wins, away_wins),
+            );
+
+            let league = &game.leagues[0];
+            for team_id in ["team1", "team2"] {
+                let entry = league
+                    .standings
+                    .iter()
+                    .find(|s| s.team_id == team_id)
+                    .unwrap();
+                let team = game.teams.iter().find(|t| t.id == team_id).unwrap();
+                let expected = if entry.won == 1 { "W" } else { "L" };
+                assert_eq!(
+                    team.form,
+                    vec![expected.to_string()],
+                    "bo{best_of} {home_wins}-{away_wins}, {team_id} form"
+                );
+            }
+
+            let user_won = (home_wins > away_wins) == user_is_home;
+            let subject = &game
+                .messages
+                .iter()
+                .find(|m| m.id == "result_fix1")
+                .unwrap()
+                .subject;
+            let expected = if user_won { "Victory" } else { "Defeat" };
+            assert!(
+                subject.starts_with(expected),
+                "bo{best_of} {home_wins}-{away_wins}, user home={user_is_home}: {subject}"
+            );
+        }
+    }
+}
+
 #[test]
 fn apply_match_report_updates_standings() {
     let mut game = make_game_with_match();
