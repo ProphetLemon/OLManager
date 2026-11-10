@@ -17,6 +17,14 @@ fn advance_time_internal(state: &StateManager) -> Result<Game, String> {
         current_game.clock.current_date.format("%Y-%m-%d")
     );
 
+    if current_game
+        .active_league()
+        .is_some_and(olm_core::end_of_season::is_league_complete)
+    {
+        info!("[cmd] advance_time: split finished, nothing advanced");
+        return Ok(crate::client_game::game_for_client(&current_game));
+    }
+
     let mut captures = Vec::new();
     olm_core::turn::process_day_with_capture(&mut current_game, &mut |capture| {
         captures.push(capture);
@@ -566,6 +574,60 @@ mod tests {
         assert_eq!(response["match_simulated"], false);
         let game = state.get_game(|g| g.clone()).unwrap();
         assert_eq!(game.clock.current_date, start);
+    }
+
+    fn make_finished_split_game() -> Game {
+        let mut game = make_game_with_matchday();
+        game.leagues[0].fixtures[0].status = FixtureStatus::Completed;
+        assert!(olm_core::end_of_season::is_league_complete(&game.leagues[0]));
+        game
+    }
+
+    #[test]
+    fn advance_time_with_mode_refuses_while_the_split_is_over() {
+        for mode in ["delegate", "live", "spectator", "instant"] {
+            for phase in [DayPhase::Morning, DayPhase::Evening] {
+                let state = StateManager::new();
+                let mut game = make_finished_split_game();
+                game.day_phase = phase.clone();
+                let start = game.clock.current_date;
+                let messages = game.messages.len();
+                state.set_game(game);
+                state.set_stats_state(StatsState::default());
+
+                let response = advance_time_with_mode_internal(&state, mode).expect("response");
+
+                assert_eq!(response.action, "season_complete", "mode {mode}, phase {phase:?}");
+                assert!(response.snapshot.is_none());
+                let returned = response.game.expect("current game");
+                assert_eq!(returned.clock.current_date, start);
+                let game = state.get_game(|g| g.clone()).unwrap();
+                assert_eq!(game.clock.current_date, start);
+                assert_eq!(game.day_phase, phase);
+                assert_eq!(game.messages.len(), messages);
+                assert_eq!(game.leagues[0].fixtures[0].status, FixtureStatus::Completed);
+                assert!(state.take_live_match().is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn advance_time_refuses_while_the_split_is_over() {
+        let state = StateManager::new();
+        let game = make_finished_split_game();
+        let start = game.clock.current_date;
+        let messages = game.messages.len();
+        state.set_game(game);
+        state.set_stats_state(StatsState::default());
+
+        let returned = super::advance_time_internal(&state).expect("current game");
+
+        assert_eq!(returned.clock.current_date, start);
+        let game = state.get_game(|g| g.clone()).unwrap();
+        assert_eq!(game.clock.current_date, start);
+        assert_eq!(game.messages.len(), messages);
+        let stats = state.get_stats_state(|current| current.clone()).unwrap();
+        assert!(stats.team_matches.is_empty());
     }
 
     #[test]

@@ -60,6 +60,7 @@ export function useAdvanceTime(
   scrimReviewMode: "manual" | "assistant",
   settingsLoaded: boolean,
   isUnemployed: boolean,
+  seasonOver = false,
 ) {
   const navigate = useNavigate();
   const setShowFiredModal = useGameStore((s) => s.setShowFiredModal);
@@ -213,6 +214,7 @@ export function useAdvanceTime(
             continue;
           }
 
+          if (result.action === "season_complete") return;
           if (result.game) setGameState(result.game as GameStateData);
           if (result.action.startsWith("blocked_")) {
             setBlockerModal({
@@ -338,6 +340,7 @@ export function useAdvanceTime(
   };
 
   const handleContinue = async (mode?: string) => {
+    if (seasonOver) return;
     const effectiveMode = mode || matchMode;
     const resolvedMode = resolveAdvanceMode(isUnemployed, effectiveMode);
     console.info("[useAdvanceTime] handleContinue", {
@@ -366,12 +369,13 @@ export function useAdvanceTime(
   };
 
   const handleConfirmMatch = () => {
+    if (seasonOver) return;
     console.info("[useAdvanceTime] handleConfirmMatch", { matchMode });
     doAdvance(matchMode);
   };
 
   const handleSkipToMatchDay = async () => {
-    if (isAdvancing) return;
+    if (seasonOver || isAdvancing) return;
     console.info("[useAdvanceTime] handleSkipToMatchDay:start");
     // skip_to_match_day never raises the scrim stops, so its pre-check leaves them out.
     const blockers = await collectBlockers(
@@ -387,7 +391,7 @@ export function useAdvanceTime(
   };
 
   const handleSkipToNextDay = async () => {
-    if (isAdvancing) return;
+    if (seasonOver || isAdvancing) return;
     console.info("[useAdvanceTime] handleSkipToNextDay:start");
     const blockers = await collectBlockers(
       "handleSkipToNextDay",
@@ -481,6 +485,7 @@ export function useAdvanceTime(
           return;
         }
 
+        if (result.action === "season_complete") return;
         if (result.game) setGameState(result.game as GameStateData);
         if (result.action.startsWith("blocked_")) {
           setBlockerModal({

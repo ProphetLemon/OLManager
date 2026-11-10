@@ -319,6 +319,7 @@ export default function DashboardV2() {
     settings.scrim_review_mode,
     settingsLoaded,
     isUnemployed ?? false,
+    showSeasonSummary,
   );
 
   const currentIsoDate = gameState?.clock.current_date ?? null;
@@ -672,6 +673,7 @@ export default function DashboardV2() {
           currentDate={currentDate}
           hasProfileHistory={hasProfileHistory}
           isAdvancing={isAdvancing}
+          seasonComplete={showSeasonSummary}
           isSaving={isSaving}
           saveFlash={saveFlash}
           hasMatchToday={hasMatchToday}

@@ -620,3 +620,123 @@ fn rotating_the_odd_league_schedule_keeps_the_standings_order() {
     let expected: Vec<&str> = ids.iter().map(String::as_str).collect();
     assert_eq!(standings, expected);
 }
+
+// A league must never read as complete while a playoff round is still due: the
+// advance guard refuses to move the clock once it does.
+
+fn finished_series_report(home_wins: u8, away_wins: u8) -> olm_core::engine::report::MatchReport {
+    olm_core::engine::report::MatchReport {
+        home_wins,
+        away_wins,
+        home_stats: Default::default(),
+        away_stats: Default::default(),
+        events: vec![],
+        kill_feed: vec![],
+        player_stats: Default::default(),
+        home_possession: 50.0,
+        total_minutes: 90,
+        game_duration_seconds: 90 * 60,
+        ended_by: olm_core::engine::report::MatchReportEndReason::TimeLimit,
+    }
+}
+
+/// Plays every fixture scheduled today the way a live match does: each report is
+/// applied on its own and `finish_live_match_day` closes the day.
+fn play_today_as_live_matches(game: &mut Game) {
+    let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+    let due: Vec<(usize, String, String)> = game.leagues[0]
+        .fixtures
+        .iter()
+        .enumerate()
+        .filter(|(_, f)| f.date == today && f.status == FixtureStatus::Scheduled)
+        .map(|(i, f)| (i, f.home_team_id.clone(), f.away_team_id.clone()))
+        .collect();
+    assert!(!due.is_empty(), "a fixture is due today");
+    for (index, home, away) in due {
+        turn::apply_match_report(game, index, &home, &away, &finished_series_report(3, 0));
+    }
+    turn::finish_live_match_day(game);
+}
+
+fn pending_playoff_count(league: &League) -> usize {
+    playoff_fixtures(league)
+        .iter()
+        .filter(|f| f.status != FixtureStatus::Completed)
+        .count()
+}
+
+#[test]
+fn day_loop_does_not_report_complete_after_the_last_regular_fixture() {
+    let mut game = four_team_game("Spring", FOUR_TEAM);
+    play_days(&mut game, 1);
+    let league = &game.leagues[0];
+    assert_eq!(pending_playoff_count(league), 2, "semifinals are scheduled");
+    assert!(!is_league_complete(league));
+}
+
+#[test]
+fn day_loop_does_not_report_complete_after_the_last_semifinal() {
+    let mut game = four_team_game("Spring", FOUR_TEAM);
+    play_days(&mut game, 1);
+    for _ in 0..30 {
+        let semis_done = playoff_fixtures(&game.leagues[0])
+            .iter()
+            .filter(|f| f.status == FixtureStatus::Completed)
+            .count()
+            >= 2;
+        if semis_done {
+            break;
+        }
+        play_days(&mut game, 1);
+    }
+    let league = &game.leagues[0];
+    assert_eq!(playoff_fixtures(league).len(), 3, "the final is scheduled");
+    assert_eq!(pending_playoff_count(league), 1);
+    assert!(!is_league_complete(league));
+}
+
+#[test]
+fn day_loop_reports_complete_only_once_the_final_is_played() {
+    let mut game = four_team_game("Spring", FOUR_TEAM);
+    for _ in 0..30 {
+        play_days(&mut game, 1);
+        let league = &game.leagues[0];
+        if is_league_complete(league) {
+            assert_eq!(playoff_fixtures(league).len(), 3);
+            assert_eq!(pending_playoff_count(league), 0);
+            return;
+        }
+    }
+    panic!("the split never finished");
+}
+
+#[test]
+fn live_path_does_not_report_complete_after_the_last_regular_fixture() {
+    let mut game = four_team_game("Spring", FOUR_TEAM);
+    play_today_as_live_matches(&mut game);
+    let league = &game.leagues[0];
+    assert_eq!(pending_playoff_count(league), 2, "semifinals are scheduled");
+    assert!(!is_league_complete(league));
+}
+
+#[test]
+fn live_path_does_not_report_complete_after_the_last_semifinal() {
+    let mut game = four_team_game("Spring", FOUR_TEAM);
+    play_today_as_live_matches(&mut game);
+    while pending_playoff_count(&game.leagues[0]) == 2 {
+        let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+        let semis_today = game.leagues[0]
+            .fixtures
+            .iter()
+            .any(|f| f.date == today && f.status == FixtureStatus::Scheduled);
+        if semis_today {
+            play_today_as_live_matches(&mut game);
+        } else {
+            play_days(&mut game, 1);
+        }
+    }
+    let league = &game.leagues[0];
+    assert_eq!(playoff_fixtures(league).len(), 3, "the final is scheduled");
+    assert_eq!(pending_playoff_count(league), 1);
+    assert!(!is_league_complete(league));
+}

@@ -75,6 +75,27 @@ describe("DashboardHeaderV2", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Saved");
   });
 
+  it("disables the advance controls and says why while the split is over", () => {
+    const { onContinue, onSkipToMatchDay, onSkipToNextDay } = setup({ seasonComplete: true });
+    const main = screen.getByRole("button", { name: "Season Complete" });
+    expect(main).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Continue" })).toBeNull();
+    const menu = screen.getByRole("button", { name: "More ways to advance" });
+    expect(menu).toBeDisabled();
+    fireEvent.click(main);
+    fireEvent.click(menu);
+    expect(screen.queryByRole("menuitem")).toBeNull();
+    expect(onContinue).not.toHaveBeenCalled();
+    expect(onSkipToMatchDay).not.toHaveBeenCalled();
+    expect(onSkipToNextDay).not.toHaveBeenCalled();
+  });
+
+  it("keeps the advance controls enabled while the split is running", () => {
+    setup();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "More ways to advance" })).toBeEnabled();
+  });
+
   it("keeps the status region empty when not saved", () => {
     setup();
     expect(screen.getByRole("status")).toHaveTextContent("");

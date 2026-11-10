@@ -29,6 +29,8 @@ function HookHarness(props: {
   scrimReviewMode?: "manual" | "assistant";
   hasMatchToday: boolean;
   isUnemployed?: boolean;
+  seasonOver?: boolean;
+  onGameState?: (state: GameStateData) => void;
 }): JSX.Element {
   const [, setGameState] = useState<GameStateData | null>(null);
   const {
@@ -42,12 +44,16 @@ function HookHarness(props: {
     showMatchConfirm,
   } =
     useAdvanceTime(
-      (state) => setGameState(state),
+      (state) => {
+        setGameState(state);
+        props.onGameState?.(state);
+      },
       props.hasMatchToday,
       props.defaultMatchMode,
       props.scrimReviewMode ?? "manual",
       true,
       props.isUnemployed ?? false,
+      props.seasonOver ?? false,
     );
 
   return (
@@ -182,6 +188,65 @@ describe("useAdvanceTime", function (): void {
     });
 
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it("calls no advance command from any entry point while the split is over", async function (): Promise<void> {
+    render(<HookHarness hasMatchToday defaultMatchMode="live" seasonOver />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    fireEvent.click(screen.getByRole("button", { name: "Skip day" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm Match" }));
+
+    await waitFor(function (): void {
+      expect(screen.getByTestId("show-match-confirm")).toHaveTextContent("false");
+    });
+    expect(mockedInvoke).not.toHaveBeenCalled();
+    expect(screen.getByTestId("blocker-count")).toHaveTextContent("0");
+  });
+
+  it("treats the backend season_complete answer as a no-op when skipping a day", async function (): Promise<void> {
+    const onGameState = vi.fn();
+    mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({
+      action: "season_complete",
+      game: { clock: { current_date: "2026-07-02", start_date: "2026-07-01" } },
+    });
+
+    render(<HookHarness hasMatchToday={false} defaultMatchMode="live" onGameState={onGameState} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Skip day" }));
+
+    await waitFor(function (): void {
+      expect(mockedInvoke).toHaveBeenCalledTimes(2);
+    });
+    expect(mockedInvoke).toHaveBeenNthCalledWith(2, "advance_time_with_mode", { mode: "live" });
+    expect(onGameState).not.toHaveBeenCalled();
+    expect(screen.getByTestId("blocker-count")).toHaveTextContent("0");
+  });
+
+  it("treats the backend season_complete answer as a no-op in the assistant continue loop", async function (): Promise<void> {
+    const onGameState = vi.fn();
+    mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({
+      action: "season_complete",
+      game: { clock: { current_date: "2026-07-02", start_date: "2026-07-01" } },
+    });
+
+    render(
+      <HookHarness
+        hasMatchToday={false}
+        defaultMatchMode="live"
+        scrimReviewMode="assistant"
+        onGameState={onGameState}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(function (): void {
+      expect(mockedInvoke).toHaveBeenCalledTimes(2);
+    });
+    expect(onGameState).not.toHaveBeenCalled();
+    expect(screen.getByTestId("blocker-count")).toHaveTextContent("0");
   });
 
   it("checks blocking actions before skipping to match day and stops when blockers exist", async function (): Promise<void> {
