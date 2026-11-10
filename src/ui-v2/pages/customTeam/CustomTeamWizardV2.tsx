@@ -738,7 +738,7 @@ export default function CustomTeamWizardV2({
                               touch("replaces");
                               if (backend?.field === "replaces") ackBackend();
                             }}
-                            className="size-4 accent-primary"
+                            className="size-4 shrink-0 appearance-none rounded-full border-2 border-line bg-transparent checked:border-primary checked:bg-primary checked:shadow-[inset_0_0_0_0.1875rem_var(--card)]"
                           />
                           {logo && <img src={logo} alt="" className="size-8 shrink-0 object-contain" />}
                           <span className="min-w-0 flex-1">
