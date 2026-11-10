@@ -2541,6 +2541,7 @@
   },
   "endOfSeason": {
     "seasonComplete": "Temporada Completa",
+    "leagueSeason": "{{league}} — Temporada {{n}}",
     "champions": "¡Campeones!",
     "position": "Posición",
     "finalPosition": "Posición final",
@@ -2553,7 +2554,8 @@
     "processing": "Procesando...",
     "statsArchived": "Las estadísticas de jugadores serán archivadas. Se generará un nuevo calendario.",
     "newSeason": "Temporada {{n}}",
-    "newScheduleReleased": "¡El nuevo calendario ha sido publicado. ¡Buena suerte!",
+    "newSplit": "Siguiente split",
+    "newScheduleReleased": "El nuevo calendario ha sido publicado. ¡Buena suerte!",
     "goldenBoot": "Líder de Bajas",
     "nGoals": "{{count}} bajas",
     "playerOfYear": "Jugador del Año",

@@ -109,8 +109,8 @@ describe("end-of-season summary survives the season wrap", () => {
     useGameStore.getState().setGameState(game(1));
   });
 
-  function advance(withLadder: boolean) {
-    invokeMock.mockResolvedValue({ game: game(2), summary: summary(withLadder) });
+  function advance(withLadder: boolean, nextSeason = 2) {
+    invokeMock.mockResolvedValue({ game: game(nextSeason), summary: summary(withLadder) });
     const view = render(<Harness tab="Home" />);
     fireEvent.click(screen.getByRole("button", { name: /start next season/i }));
     return view;
@@ -121,6 +121,18 @@ describe("end-of-season summary survives the season wrap", () => {
     expect(await screen.findByTestId("ladder-user-result")).toBeInTheDocument();
     expect(screen.getByText("Promoted")).toBeInTheDocument();
     expect(useGameStore.getState().gameState?.leagues[0].season).toBe(2);
+  });
+
+  it("announces the new season when the rollover wraps the season", async () => {
+    advance(false, 2);
+    expect(await screen.findByRole("heading", { name: "Season 2" })).toBeInTheDocument();
+  });
+
+  it("does not announce a year when only a split changed inside the season", async () => {
+    advance(false, 1);
+    expect(await screen.findByRole("heading", { name: "Next split" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Season 2" })).toBeNull();
+    expect(screen.getByText(/new schedule has been released/i)).toBeInTheDocument();
   });
 
   it("returns to the normal Home once dismissed", async () => {

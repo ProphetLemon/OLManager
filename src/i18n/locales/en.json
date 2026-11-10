@@ -2552,6 +2552,7 @@
   },
   "endOfSeason": {
     "seasonComplete": "Season Complete",
+    "leagueSeason": "{{league}} — Season {{n}}",
     "champions": "Champions!",
     "position": "Position",
     "finalPosition": "Final position",
@@ -2564,6 +2565,7 @@
     "processing": "Processing...",
     "statsArchived": "Player stats will be archived. A new schedule will be generated.",
     "newSeason": "Season {{n}}",
+    "newSplit": "Next split",
     "newScheduleReleased": "The new schedule has been released. Good luck!",
     "goldenBoot": "Kill Leader",
     "nGoals": "{{count}} kills",

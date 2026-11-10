@@ -2396,6 +2396,7 @@
   },
   "endOfSeason": {
     "seasonComplete": "Sezon Tamamlandı",
+    "leagueSeason": "{{league}} — Sezon {{n}}",
     "champions": "Şampiyonlar!",
     "position": "Sıra",
     "finalPosition": "Final sıralaması",
@@ -2408,6 +2409,7 @@
     "processing": "İşleniyor...",
     "statsArchived": "Oyuncu istatistikleri arşivlendi. Yeni bir fikstür oluşturulacak.",
     "newSeason": "Sezon {{n}}",
+    "newSplit": "Sonraki split",
     "newScheduleReleased": "Yeni sezon fikstürü açıklandı. İyi şanslar!",
     "goldenBoot": "Skor Lideri",
     "nGoals": "{{count}} skor",
