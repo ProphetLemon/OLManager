@@ -4044,6 +4044,7 @@
         "openFinances": "Apri le finanze",
         "openContracts": "Apri i contratti",
         "openInbox": "Apri la posta",
+        "openAcademy": "Apri il settore giovanile",
         "renew": "Rinnova",
         "review": "Controlla"
       },
@@ -4057,6 +4058,8 @@
         "scrim_setup_required": "Lo scrim va preparato prima della prossima partita.",
         "scrim_decision_required": "Una decisione sullo scrim ti aspetta.",
         "urgent_messages": "Messaggi urgenti ti aspettano nella posta.",
+        "advance_blocked": "Impossibile avanzare automaticamente. Controlla i blocchi in sospeso.",
+        "assistant_advance_limit": "L'assistente ha raggiunto il limite di avanzamenti automatici. Controlla tu la situazione.",
         "contract_one": "Scade tra {{count}} giorno",
         "contract_other": "Scade tra {{count}} giorni",
         "generic": "Controlla prima di continuare."

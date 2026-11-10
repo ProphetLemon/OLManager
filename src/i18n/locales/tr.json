@@ -4045,6 +4045,7 @@
         "openFinances": "Finansı aç",
         "openContracts": "Sözleşmeleri aç",
         "openInbox": "Gelen kutusunu aç",
+        "openAcademy": "Akademiyi aç",
         "renew": "Yenile",
         "review": "İncele"
       },
@@ -4058,6 +4059,8 @@
         "scrim_setup_required": "Sonraki maçtan önce scrim hazırlanmalı.",
         "scrim_decision_required": "Bekleyen bir scrim kararın var.",
         "urgent_messages": "Gelen kutunda acil mesajlar var.",
+        "advance_blocked": "Otomatik ilerlenemedi. Bekleyen engelleri gözden geçir.",
+        "assistant_advance_limit": "Yardımcı Antrenör otomatik ilerleme sınırına ulaştı. Durumu kendin kontrol et.",
         "contract_one": "{{count}} gün sonra bitiyor",
         "contract_other": "{{count}} gün sonra bitiyor",
         "generic": "Devam etmeden önce bunu incele."
