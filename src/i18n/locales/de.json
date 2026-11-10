@@ -4100,7 +4100,18 @@
       "scrimDecision": "Triff eine Scrim-Entscheidung, bevor du fortfährst.",
       "scrimAutoFailed": "Die automatische Delegation konnte die Scrim-Entscheidung nicht lösen. Prüfe sie manuell.",
       "advanceBlocked": "Automatisches Weiterschalten war nicht möglich. Prüfe die offenen Blockaden.",
-      "assistantLimit": "Der Co-Trainer hat das Limit für automatische Weiterschalt-Versuche erreicht. Prüfe den Zustand manuell."
+      "assistantLimit": "Der Co-Trainer hat das Limit für automatische Weiterschalt-Versuche erreicht. Prüfe den Zustand manuell.",
+      "urgentMessages_one": "{{count}} dringende ungelesene Nachricht",
+      "urgentMessages_other": "{{count}} dringende ungelesene Nachrichten",
+      "incompleteLineupTooFew": "Deine Aufstellung hat nur {{selected}} von {{required}} nötigen Spielern — lege deine Aufstellung fest",
+      "incompleteLineupRoles_one": "In deiner Aufstellung fehlt die Rolle {{roles}}. Stelle sicher, dass du TOP, JUNGLE, MID, ADC und SUPPORT hast.",
+      "incompleteLineupRoles_other": "In deiner Aufstellung fehlen die Rollen {{roles}}. Stelle sicher, dass du TOP, JUNGLE, MID, ADC und SUPPORT hast.",
+      "keyContractRisk": "Vertragsrisiko bei Schlüsselspielern in der Kaderplanung: {{players}}",
+      "contractWageRisk": "{{amount}} der Gehälter hängen an gefährdeten Verträgen — überprüfe dein Gehaltsbudget",
+      "mainRosterMinimum_one": "Hauptkader unvollständig: Du hast {{count}} Spieler. Du brauchst mindestens 5, um fortzufahren.",
+      "mainRosterMinimum_other": "Hauptkader unvollständig: Du hast {{count}} Spieler. Du brauchst mindestens 5, um fortzufahren.",
+      "mainMissingRoles": "Hauptkader nach Rollen unvollständig: Mindestens ein Spieler fehlt auf {{roles}}. Du kannst erst fortfahren, wenn TOP, JUNGLE, MID, ADC und SUPPORT besetzt sind.",
+      "academyMissingRoles": "Akademie unvollständig: Mindestens ein Spieler fehlt auf {{roles}}. Du kannst erst fortfahren, wenn alle Rollen besetzt sind."
     },
     "notices": {
       "assistantResolvedDecision": "Der Co-Trainer hat die Entscheidung nach dem Scrim automatisch getroffen, um das Weiterschalten freizugeben.",

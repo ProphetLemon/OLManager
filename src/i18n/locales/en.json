@@ -4141,7 +4141,18 @@
       "scrimDecision": "Make a scrim decision before continuing.",
       "scrimAutoFailed": "Automatic delegation could not resolve the scrim decision. Review it manually.",
       "advanceBlocked": "Could not advance automatically. Review the pending blockers.",
-      "assistantLimit": "Assistant Coach reached the automatic advance attempt limit. Review the state manually."
+      "assistantLimit": "Assistant Coach reached the automatic advance attempt limit. Review the state manually.",
+      "urgentMessages_one": "{{count}} urgent unread message",
+      "urgentMessages_other": "{{count}} urgent unread messages",
+      "incompleteLineupTooFew": "Your lineup has only {{selected}} of the {{required}} players it needs — set your lineup",
+      "incompleteLineupRoles_one": "Your lineup is missing the role {{roles}}. Make sure you have TOP, JUNGLE, MID, ADC and SUPPORT.",
+      "incompleteLineupRoles_other": "Your lineup is missing the roles {{roles}}. Make sure you have TOP, JUNGLE, MID, ADC and SUPPORT.",
+      "keyContractRisk": "Key player contract risk in squad planning: {{players}}",
+      "contractWageRisk": "{{amount}} of wages are tied to at-risk contracts — review your wage budget",
+      "mainRosterMinimum_one": "Main roster incomplete: you have {{count}} player. You need at least 5 to advance.",
+      "mainRosterMinimum_other": "Main roster incomplete: you have {{count}} players. You need at least 5 to advance.",
+      "mainMissingRoles": "Main roster incomplete by role: at least one player is missing in {{roles}}. You cannot advance until TOP, JUNGLE, MID, ADC and SUPPORT are covered.",
+      "academyMissingRoles": "Academy incomplete: at least one player is missing in {{roles}}. You cannot advance until every role is covered."
     },
     "notices": {
       "assistantResolvedDecision": "Assistant Coach resolved the post-scrim decision automatically to unblock the advance.",

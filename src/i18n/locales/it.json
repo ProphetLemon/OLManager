@@ -4099,7 +4099,18 @@
       "scrimDecision": "Prendi una decisione sullo scrim prima di continuare.",
       "scrimAutoFailed": "La delega automatica non ha potuto risolvere la decisione sullo scrim. Controllala manualmente.",
       "advanceBlocked": "Impossibile avanzare automaticamente. Controlla i blocchi in sospeso.",
-      "assistantLimit": "Il vice allenatore ha raggiunto il limite di tentativi di avanzamento automatico. Controlla lo stato manualmente."
+      "assistantLimit": "Il vice allenatore ha raggiunto il limite di tentativi di avanzamento automatico. Controlla lo stato manualmente.",
+      "urgentMessages_one": "{{count}} messaggio urgente non letto",
+      "urgentMessages_other": "{{count}} messaggi urgenti non letti",
+      "incompleteLineupTooFew": "La tua formazione ha solo {{selected}} dei {{required}} giocatori necessari — imposta la formazione",
+      "incompleteLineupRoles_one": "Nella tua formazione manca il ruolo {{roles}}. Assicurati di avere TOP, JUNGLE, MID, ADC e SUPPORT.",
+      "incompleteLineupRoles_other": "Nella tua formazione mancano i ruoli {{roles}}. Assicurati di avere TOP, JUNGLE, MID, ADC e SUPPORT.",
+      "keyContractRisk": "Rischio contrattuale per i giocatori chiave nella pianificazione della rosa: {{players}}",
+      "contractWageRisk": "{{amount}} di stipendi sono legati a contratti a rischio — rivedi il budget stipendi",
+      "mainRosterMinimum_one": "Rosa principale incompleta: hai {{count}} giocatore. Te ne servono almeno 5 per avanzare.",
+      "mainRosterMinimum_other": "Rosa principale incompleta: hai {{count}} giocatori. Te ne servono almeno 5 per avanzare.",
+      "mainMissingRoles": "Rosa principale incompleta per ruoli: manca almeno un giocatore in {{roles}}. Non puoi avanzare finché TOP, JUNGLE, MID, ADC e SUPPORT non sono coperti.",
+      "academyMissingRoles": "Academy incompleta: manca almeno un giocatore in {{roles}}. Non puoi avanzare finché tutti i ruoli non sono coperti."
     },
     "notices": {
       "assistantResolvedDecision": "Il vice allenatore ha risolto automaticamente la decisione post-scrim per sbloccare l'avanzamento.",

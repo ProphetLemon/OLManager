@@ -4100,7 +4100,18 @@
       "scrimDecision": "Prenez une décision sur le scrim avant de continuer.",
       "scrimAutoFailed": "La délégation automatique n'a pas pu résoudre la décision du scrim. Vérifiez-la manuellement.",
       "advanceBlocked": "Impossible d'avancer automatiquement. Vérifiez les blocages en attente.",
-      "assistantLimit": "L'entraîneur adjoint a atteint la limite de tentatives d'avancement automatique. Vérifiez l'état manuellement."
+      "assistantLimit": "L'entraîneur adjoint a atteint la limite de tentatives d'avancement automatique. Vérifiez l'état manuellement.",
+      "urgentMessages_one": "{{count}} message urgent non lu",
+      "urgentMessages_other": "{{count}} messages urgents non lus",
+      "incompleteLineupTooFew": "Ta composition ne compte que {{selected}} des {{required}} joueurs nécessaires — définis ta composition",
+      "incompleteLineupRoles_one": "Il manque le rôle {{roles}} dans ta composition. Assure-toi d'avoir TOP, JUNGLE, MID, ADC et SUPPORT.",
+      "incompleteLineupRoles_other": "Il manque les rôles {{roles}} dans ta composition. Assure-toi d'avoir TOP, JUNGLE, MID, ADC et SUPPORT.",
+      "keyContractRisk": "Risque de contrat pour les joueurs clés dans la planification de l'effectif : {{players}}",
+      "contractWageRisk": "{{amount}} de salaires sont liés à des contrats à risque — revois ton budget salarial",
+      "mainRosterMinimum_one": "Effectif principal incomplet : tu as {{count}} joueur. Il t'en faut au moins 5 pour avancer.",
+      "mainRosterMinimum_other": "Effectif principal incomplet : tu as {{count}} joueurs. Il t'en faut au moins 5 pour avancer.",
+      "mainMissingRoles": "Effectif principal incomplet par rôle : il manque au moins un joueur en {{roles}}. Tu ne peux pas avancer tant que TOP, JUNGLE, MID, ADC et SUPPORT ne sont pas couverts.",
+      "academyMissingRoles": "Académie incomplète : il manque au moins un joueur en {{roles}}. Tu ne peux pas avancer tant que tous les rôles ne sont pas couverts."
     },
     "notices": {
       "assistantResolvedDecision": "L'entraîneur adjoint a résolu automatiquement la décision d'après-scrim pour débloquer l'avancement.",

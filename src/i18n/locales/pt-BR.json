@@ -4100,7 +4100,18 @@
       "scrimDecision": "Tome uma decisão sobre o scrim antes de continuar.",
       "scrimAutoFailed": "A delegação automática não conseguiu resolver a decisão do scrim. Revise-a manualmente.",
       "advanceBlocked": "Não foi possível avançar automaticamente. Revise os bloqueios pendentes.",
-      "assistantLimit": "O Técnico Assistente atingiu o limite de tentativas de avanço automático. Revise o estado manualmente."
+      "assistantLimit": "O Técnico Assistente atingiu o limite de tentativas de avanço automático. Revise o estado manualmente.",
+      "urgentMessages_one": "{{count}} mensagem urgente não lida",
+      "urgentMessages_other": "{{count}} mensagens urgentes não lidas",
+      "incompleteLineupTooFew": "Sua escalação tem apenas {{selected}} dos {{required}} jogadores necessários — defina sua escalação",
+      "incompleteLineupRoles_one": "Falta a função {{roles}} na sua escalação. Garanta que você tenha TOP, JUNGLE, MID, ADC e SUPPORT.",
+      "incompleteLineupRoles_other": "Faltam as funções {{roles}} na sua escalação. Garanta que você tenha TOP, JUNGLE, MID, ADC e SUPPORT.",
+      "keyContractRisk": "Risco de contrato de jogadores-chave no planejamento do elenco: {{players}}",
+      "contractWageRisk": "{{amount}} em salários estão ligados a contratos em risco — revise seu orçamento salarial",
+      "mainRosterMinimum_one": "Elenco principal incompleto: você tem {{count}} jogador. Você precisa de pelo menos 5 para avançar.",
+      "mainRosterMinimum_other": "Elenco principal incompleto: você tem {{count}} jogadores. Você precisa de pelo menos 5 para avançar.",
+      "mainMissingRoles": "Elenco principal incompleto por funções: falta pelo menos um jogador em {{roles}}. Você não pode avançar até cobrir TOP, JUNGLE, MID, ADC e SUPPORT.",
+      "academyMissingRoles": "Academia incompleta: falta pelo menos um jogador em {{roles}}. Você não pode avançar até cobrir todas as funções."
     },
     "notices": {
       "assistantResolvedDecision": "O Técnico Assistente resolveu automaticamente a decisão pós-scrim para desbloquear o avanço.",

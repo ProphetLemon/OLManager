@@ -1,6 +1,7 @@
 import { getApiClientSync } from "../api/client";
 import { SCRIM_BLOCKER_IDS } from "@/lib/home/blockerRules";
 import { scrimBlockerText } from "@/lib/home/scrimBlockerText";
+import { backendBlockerText } from "@/lib/home/advanceBlockerText";
 import type { GameStateData } from "../store/gameStore";
 
 export interface BlockerData {
@@ -8,6 +9,8 @@ export interface BlockerData {
   severity: string;
   text: string;
   tab: string;
+  /** Values behind `text`; the interface words the blocker from them. */
+  params?: Record<string, string | number>;
 }
 
 export interface AdvanceTimeWithModeResponse {
@@ -35,13 +38,16 @@ export async function advanceTimeWithMode(
 }
 
 /**
- * The backend words its scrim blockers in English; show them through i18n.
- * Every other blocker keeps the text the backend sent.
+ * The backend words its blockers in English (or, for some roster ones, in Spanish);
+ * show them through i18n. A blocker with no wording of its own keeps the text the
+ * backend sent.
  */
 export function localizeAdvanceBlocker(blocker: BlockerData): BlockerData {
-  return SCRIM_BLOCKER_IDS.has(blocker.id)
-    ? { ...blocker, text: scrimBlockerText(blocker.id) }
-    : blocker;
+  if (SCRIM_BLOCKER_IDS.has(blocker.id)) {
+    return { ...blocker, text: scrimBlockerText(blocker.id) };
+  }
+  const text = backendBlockerText(blocker);
+  return text === null ? blocker : { ...blocker, text };
 }
 
 export interface CheckBlockingOptions {
@@ -81,5 +87,8 @@ export async function checkBlockingActions(
 }
 
 export async function skipToMatchDay(): Promise<SkipToMatchDayResponse> {
-  return getApiClientSync().time.skipToMatchDay();
+  const response = await getApiClientSync().time.skipToMatchDay();
+  return response.blockers
+    ? { ...response, blockers: response.blockers.map(localizeAdvanceBlocker) }
+    : response;
 }

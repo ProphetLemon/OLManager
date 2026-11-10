@@ -92,3 +92,23 @@ describe("inbox message keys", () => {
     );
   });
 });
+
+describe("advance blocker keys", () => {
+  it("words the roster, contract and inbox blockers in every locale", () => {
+    expectTranslated(
+      [
+        "urgentMessages_one",
+        "urgentMessages_other",
+        "incompleteLineupTooFew",
+        "incompleteLineupRoles_one",
+        "incompleteLineupRoles_other",
+        "keyContractRisk",
+        "contractWageRisk",
+        "mainRosterMinimum_one",
+        "mainRosterMinimum_other",
+        "mainMissingRoles",
+        "academyMissingRoles",
+      ].map((key) => `advance.blockers.${key}`),
+    );
+  });
+});

@@ -72,6 +72,31 @@ describe("advanceTimeService", () => {
     expect(blockers[2].text).toBe("Make a scrim decision before continuing.");
   });
 
+  it("words a blocker that carries params through i18n", async () => {
+    mockedInvoke.mockResolvedValueOnce([
+      { id: "urgent_messages", severity: "info", text: "1 urgent unread message(s)", tab: "Inbox", params: { count: 1 } },
+    ]);
+
+    const [blocker] = await checkBlockingActions("test");
+
+    expect(blocker.text).toBe("1 urgent unread message");
+  });
+
+  it("words the blockers a skip to match day answers with", async () => {
+    mockedInvoke.mockResolvedValueOnce({
+      action: "blocked",
+      blockers: [
+        { id: "urgent_messages", severity: "info", text: "2 urgent unread message(s)", tab: "Inbox", params: { count: 2 } },
+        { id: "main_roster_minimum", severity: "warn", text: "Backend text", tab: "Squad" },
+      ],
+    });
+
+    const response = await skipToMatchDay();
+
+    expect(response.blockers?.[0].text).toBe("2 urgent unread messages");
+    expect(response.blockers?.[1].text).toBe("Backend text");
+  });
+
   it("falls back to an empty blocker list when the blocker command fails", async () => {
     mockedInvoke.mockRejectedValueOnce(new Error("boom"));
 

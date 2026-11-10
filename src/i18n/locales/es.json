@@ -4106,7 +4106,18 @@
       "scrimDecision": "Toma una decisión sobre el scrim antes de continuar.",
       "scrimAutoFailed": "La delegación automática no pudo resolver la decisión del scrim. Revísala manualmente.",
       "advanceBlocked": "No se pudo avanzar automáticamente. Revisa los bloqueos pendientes.",
-      "assistantLimit": "El Entrenador Asistente alcanzó el límite de intentos de avance automático. Revisa el estado manualmente."
+      "assistantLimit": "El Entrenador Asistente alcanzó el límite de intentos de avance automático. Revisa el estado manualmente.",
+      "urgentMessages_one": "{{count}} mensaje urgente sin leer",
+      "urgentMessages_other": "{{count}} mensajes urgentes sin leer",
+      "incompleteLineupTooFew": "Tu alineación tiene solo {{selected}} de los {{required}} jugadores que necesita — define tu alineación",
+      "incompleteLineupRoles_one": "A tu alineación le falta el rol {{roles}}. Asegúrate de tener TOP, JUNGLE, MID, ADC y SUPPORT.",
+      "incompleteLineupRoles_other": "A tu alineación le faltan los roles {{roles}}. Asegúrate de tener TOP, JUNGLE, MID, ADC y SUPPORT.",
+      "keyContractRisk": "Riesgo de contrato de jugadores clave en la planificación de la plantilla: {{players}}",
+      "contractWageRisk": "{{amount}} de salarios están ligados a contratos en riesgo — revisa tu presupuesto salarial",
+      "mainRosterMinimum_one": "Plantilla principal incompleta: tienes {{count}} jugador. Necesitas al menos 5 para avanzar.",
+      "mainRosterMinimum_other": "Plantilla principal incompleta: tienes {{count}} jugadores. Necesitas al menos 5 para avanzar.",
+      "mainMissingRoles": "Plantilla principal incompleta por roles: falta al menos un jugador en {{roles}}. No puedes avanzar hasta cubrir TOP, JUNGLE, MID, ADC y SUPPORT.",
+      "academyMissingRoles": "Academia incompleta: falta al menos un jugador en {{roles}}. No puedes avanzar hasta cubrir todos los roles."
     },
     "notices": {
       "assistantResolvedDecision": "El Entrenador Asistente resolvió automáticamente la decisión posterior al scrim para desbloquear el avance.",

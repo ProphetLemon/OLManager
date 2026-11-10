@@ -4100,7 +4100,18 @@
       "scrimDecision": "Devam etmeden önce bir scrim kararı ver.",
       "scrimAutoFailed": "Otomatik devir scrim kararını çözemedi. Kararı elle incele.",
       "advanceBlocked": "Otomatik olarak ilerlenemedi. Bekleyen engelleri incele.",
-      "assistantLimit": "Yardımcı Antrenör otomatik ilerleme deneme sınırına ulaştı. Durumu elle incele."
+      "assistantLimit": "Yardımcı Antrenör otomatik ilerleme deneme sınırına ulaştı. Durumu elle incele.",
+      "urgentMessages_one": "{{count}} okunmamış acil mesaj",
+      "urgentMessages_other": "{{count}} okunmamış acil mesaj",
+      "incompleteLineupTooFew": "Kadronda ihtiyaç duyulan {{required}} oyuncudan yalnızca {{selected}} tanesi var — kadronu belirle",
+      "incompleteLineupRoles_one": "Kadronda {{roles}} rolü eksik. TOP, JUNGLE, MID, ADC ve SUPPORT rollerinin hepsinin dolu olduğundan emin ol.",
+      "incompleteLineupRoles_other": "Kadronda {{roles}} rolleri eksik. TOP, JUNGLE, MID, ADC ve SUPPORT rollerinin hepsinin dolu olduğundan emin ol.",
+      "keyContractRisk": "Kadro planlamasında kilit oyuncu sözleşme riski: {{players}}",
+      "contractWageRisk": "Maaşların {{amount}} tutarı riskli sözleşmelere bağlı — maaş bütçeni gözden geçir",
+      "mainRosterMinimum_one": "Ana kadro eksik: {{count}} oyuncun var. İlerlemek için en az 5 oyuncu gerekir.",
+      "mainRosterMinimum_other": "Ana kadro eksik: {{count}} oyuncun var. İlerlemek için en az 5 oyuncu gerekir.",
+      "mainMissingRoles": "Ana kadro rollere göre eksik: {{roles}} rolünde en az bir oyuncu eksik. TOP, JUNGLE, MID, ADC ve SUPPORT dolana kadar ilerleyemezsin.",
+      "academyMissingRoles": "Akademi eksik: {{roles}} rolünde en az bir oyuncu eksik. Tüm roller dolana kadar ilerleyemezsin."
     },
     "notices": {
       "assistantResolvedDecision": "Yardımcı Antrenör ilerlemenin önünü açmak için scrim sonrası kararı otomatik olarak çözdü.",
