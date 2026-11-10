@@ -647,7 +647,22 @@
     "weekRecord": "Week Record",
     "weeklyObjective": "Weekly Objective",
     "weeklyReportInline": "Weekly Report",
-    "weeklyVolume": "Weekly Volume"
+    "weeklyVolume": "Weekly Volume",
+    "cancelFollowupPrompt": "Scrims cancelled. Pick a follow-up.",
+    "lossStreak": "{{count}}L streak",
+    "risk": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "impact": {
+      "DraftPrep": "Improves draft prep, ban reads, and composition plans.",
+      "ChampionPool": "Expands viable picks and reduces comfort-pick dependency.",
+      "EarlyGame": "Improves lane control, early tempo, and first rotations.",
+      "Teamfighting": "Improves teamfight execution, objective focus, and 5v5 coordination.",
+      "Macro": "Improves objective setup, map control, and mid/late decisions.",
+      "Mental": "Improves mental stability, recovery, and consistency under pressure."
+    }
   },
   "season": {
     "preseasonStatus": "Preseason Status",
@@ -1427,7 +1442,8 @@
         "narrowFocus": "Average quality is low; keep the volume, but narrow the focus before adding more rivals.",
         "keepPlan": "The current plan is healthy: keep the objective, choose demanding rivals, and review the first report before increasing volume."
       },
-      "selectOpponent": "Select Opponent"
+      "selectOpponent": "Select Opponent",
+      "autofill": "Autofill"
     },
     "daysPerWeek": "days/week",
     "emptyRoster": "Empty roster"
@@ -2552,6 +2568,7 @@
   },
   "endOfSeason": {
     "seasonComplete": "Season Complete",
+    "leagueSeason": "{{league}} — Season {{n}}",
     "champions": "Champions!",
     "position": "Position",
     "finalPosition": "Final position",
@@ -2564,6 +2581,7 @@
     "processing": "Processing...",
     "statsArchived": "Player stats will be archived. A new schedule will be generated.",
     "newSeason": "Season {{n}}",
+    "newSplit": "Next split",
     "newScheduleReleased": "The new schedule has been released. Good luck!",
     "goldenBoot": "Kill Leader",
     "nGoals": "{{count}} kills",
@@ -4139,7 +4157,18 @@
       "scrimDecision": "Make a scrim decision before continuing.",
       "scrimAutoFailed": "Automatic delegation could not resolve the scrim decision. Review it manually.",
       "advanceBlocked": "Could not advance automatically. Review the pending blockers.",
-      "assistantLimit": "Assistant Coach reached the automatic advance attempt limit. Review the state manually."
+      "assistantLimit": "Assistant Coach reached the automatic advance attempt limit. Review the state manually.",
+      "urgentMessages_one": "{{count}} urgent unread message",
+      "urgentMessages_other": "{{count}} urgent unread messages",
+      "incompleteLineupTooFew": "Your lineup has only {{selected}} of the {{required}} players it needs — set your lineup",
+      "incompleteLineupRoles_one": "Your lineup is missing the role {{roles}}. Make sure you have TOP, JUNGLE, MID, ADC and SUPPORT.",
+      "incompleteLineupRoles_other": "Your lineup is missing the roles {{roles}}. Make sure you have TOP, JUNGLE, MID, ADC and SUPPORT.",
+      "keyContractRisk": "Key player contract risk in squad planning: {{players}}",
+      "contractWageRisk": "{{amount}} of wages are tied to at-risk contracts — review your wage budget",
+      "mainRosterMinimum_one": "Main roster incomplete: you have {{count}} player. You need at least 5 to advance.",
+      "mainRosterMinimum_other": "Main roster incomplete: you have {{count}} players. You need at least 5 to advance.",
+      "mainMissingRoles": "Main roster incomplete by role: at least one player is missing in {{roles}}. You cannot advance until TOP, JUNGLE, MID, ADC and SUPPORT are covered.",
+      "academyMissingRoles": "Academy incomplete: at least one player is missing in {{roles}}. You cannot advance until every role is covered."
     },
     "notices": {
       "assistantResolvedDecision": "Assistant Coach resolved the post-scrim decision automatically to unblock the advance.",

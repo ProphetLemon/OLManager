@@ -723,6 +723,22 @@ mod tests {
         assert!(text.contains("JUNGLE"));
         assert!(text.contains("MID"));
         assert!(text.contains("ADC"));
+        let roles = role_blocker
+            .pointer("/params/roles")
+            .and_then(Value::as_str)
+            .expect("the blocker carries the missing roles for the interface");
+        assert!(roles.contains("JUNGLE") && roles.contains("MID") && roles.contains("ADC"));
+    }
+
+    #[test]
+    fn a_roster_under_five_players_reports_its_size_for_the_interface() {
+        let mut game = make_game(5);
+        game.players.truncate(4);
+
+        let blockers = compute_blocking_actions(&game);
+
+        let blocker = blocker_by_id(&blockers, "main_roster_minimum").expect("roster blocker");
+        assert_eq!(blocker.pointer("/params/count").and_then(Value::as_u64), Some(4));
     }
 
     #[test]
@@ -764,6 +780,11 @@ mod tests {
         assert_eq!(
             urgent.get("text").and_then(Value::as_str),
             Some("2 urgent unread message(s)")
+        );
+        assert_eq!(
+            urgent.pointer("/params/count").and_then(Value::as_u64),
+            Some(2),
+            "the interface words the blocker from the count, not from the English text"
         );
     }
 
@@ -809,6 +830,11 @@ mod tests {
             .unwrap();
         assert!(text.contains("Player 10"));
         assert!(text.contains("Player 11"));
+        let players = contract_blocker
+            .pointer("/params/players")
+            .and_then(Value::as_str)
+            .unwrap();
+        assert!(players.contains("Player 10") && players.contains("Player 11"));
     }
 
     #[test]
@@ -847,6 +873,10 @@ mod tests {
         let text = finance_blocker.get("text").and_then(Value::as_str).unwrap();
         assert!(text.contains("60000"));
         assert!(text.contains("wage budget"));
+        assert_eq!(
+            finance_blocker.pointer("/params/amount").and_then(Value::as_u64),
+            Some(60_000)
+        );
     }
 
     fn make_round_summary_game() -> Game {

@@ -129,7 +129,7 @@ export default function ScrimPlanningCardV2({
             className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 font-heading text-2xs text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
           >
             <WandSparkles className="size-3" />
-            Rellenar
+            {t("training.scrims.autofill")}
           </button>
         </div>
       </CardHeader>
@@ -164,7 +164,7 @@ export default function ScrimPlanningCardV2({
                     </div>
                     <div>
                       <p className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
-                        {t("training.scrims.slot", "Slot")} {index + 1}
+                        {t("training.scrims.slot")} {index + 1}
                       </p>
                       <p className="font-heading text-sm font-bold uppercase tracking-wide text-foreground">
                         {slotLabel}
@@ -181,7 +181,7 @@ export default function ScrimPlanningCardV2({
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-muted-foreground">
-                        {t("training.scrims.pending", "Pendiente")}
+                        {t("training.scrims.pending")}
                       </Badge>
                     )}
                   </div>
@@ -190,10 +190,10 @@ export default function ScrimPlanningCardV2({
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   {Array.from({ length: 3 }).map((_, priorityIndex) => {
                     const label = priorityIndex === 0
-                      ? t("training.scrims.planA", "Plan A")
+                      ? t("training.scrims.planA")
                       : priorityIndex === 1
-                        ? t("training.scrims.planB", "Plan B")
-                        : t("training.scrims.planC", "Plan C");
+                        ? t("training.scrims.planB")
+                        : t("training.scrims.planC");
                     const Icon: LucideIcon = priorityIndex === 0 ? Swords : ChevronRight;
 
                     return (
@@ -216,8 +216,8 @@ export default function ScrimPlanningCardV2({
                         >
                           <option value="">
                             {priorityIndex === 0
-                              ? t("training.scrims.selectOpponent", "Select rival")
-                              : t("training.scrims.noFallback", "Sin alternativa")}
+                              ? t("training.scrims.selectOpponent")
+                              : t("training.scrims.noFallback")}
                           </option>
                           {options.map((team) => (
                             <option key={team.id} value={team.id}>

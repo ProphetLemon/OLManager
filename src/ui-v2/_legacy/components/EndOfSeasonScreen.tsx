@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { compareStandingsByLolScore, GameStateData } from "@/store/gameStore";
 import { useGameStore } from "@/store/gameStore";
 import type { EndOfSeasonSummaryData } from "@/store/types";
+import { resolveSummaryPeriod } from "@/lib/season/summaryPeriod";
 import { PromotionRelegationCard } from "@/ui-v2/components/season/PromotionRelegationCard";
 import { Card, CardBody } from "@/ui-v2/_legacy/components/ui";
 import PlayoffBracketBoard from "@/ui-v2/_legacy/components/playoffs/PlayoffBracketBoard";
@@ -68,6 +69,9 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
   const championName = gameState.teams.find(t => t.id === championTeamId)?.name || "";
   const isChampion = championTeamId === userTeamId;
 
+  // After the rollover `league` is the new one: a split change keeps the closed season.
+  const summaryPeriod = summary ? resolveSummaryPeriod(summary.season, league?.season) : null;
+
   const handleAdvance = async () => {
     if (loading) return;
     setLoading(true);
@@ -110,7 +114,7 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
               {t('endOfSeason.seasonComplete')}
             </h1>
             <p className="text-lg text-gray-500 dark:text-gray-400 mt-1">
-              {league?.name} — Season {league?.season}
+              {t('endOfSeason.leagueSeason', { league: league?.name, n: league?.season })}
             </p>
             {isChampion && (
               <p className="text-xl font-heading font-bold text-accent-500 mt-2 uppercase tracking-wider animate-pulse">
@@ -154,7 +158,7 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
               <PlayoffBracketBoard
                 league={league!}
                 teams={gameState.teams}
-                title={`${t("schedule.playoffs")} · Bracket`}
+                title={t("tournaments.playoffBracketTitle")}
               />
             </div>
           ) : (
@@ -213,13 +217,15 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
         </>
       )}
 
-      {step === "done" && summary && (
+      {step === "done" && summary && summaryPeriod && (
         <div className="text-center">
           <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center mb-4 shadow-lg shadow-primary-500/30">
             <Star className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-heading font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide mb-2">
-            {t('endOfSeason.newSeason', { n: summary.season + 1 })}
+            {summaryPeriod.kind === "season"
+              ? t('endOfSeason.newSeason', { n: summaryPeriod.season })
+              : t('endOfSeason.newSplit')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mb-8">
             {t('endOfSeason.newScheduleReleased')}
