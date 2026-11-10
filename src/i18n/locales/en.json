@@ -2724,24 +2724,24 @@
       "matchResult": {
         "templates": {
           "defeat_1": {
-            "subject": "Defeat: {{home}} {{score}} {{away}}",
-            "body": "Tough loss today, coach. We lost to {{opponent}} {{score}}.\n\nThere are things to learn from this match. Let's review where we went wrong and come back stronger.\n\nThe season is long — we'll bounce back."
+            "subject": "Defeat: {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "Tough loss today, coach. We lost to {{opponent}} {{userScore}}.\n\nThere are things to learn from this match. Let's review where we went wrong and come back stronger.\n\nThe season is long — we'll bounce back."
           },
           "defeat_2": {
-            "subject": "Loss: {{opponent}} defeats us {{score}}",
-            "body": "Not our day, coach. {{opponent}} beat us {{score}}.\n\nWe need to analyze what went wrong and address the issues before the next match. I'll prepare a detailed breakdown of the key moments.\n\nStay focused — there's still plenty to play for."
+            "subject": "Loss: {{opponent}} defeats us {{userScore}}",
+            "body": "Not our day, coach. {{opponent}} beat us {{userScore}}.\n\nWe need to analyze what went wrong and address the issues before the next match. I'll prepare a detailed breakdown of the key moments.\n\nStay focused — there's still plenty to play for."
           },
           "draw_1": {
-            "subject": "Draw: {{home}} {{score}} {{away}}",
-            "body": "A hard-fought draw today, coach. {{home}} {{score}} {{away}} against {{opponent}}.\n\nNot the result we wanted, but we showed character. Let's take the positives and work on the weaknesses.\n\nNext match is an opportunity to get back to winning ways."
+            "subject": "Draw: {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "A hard-fought draw today, coach. {{home}} {{homeWins}}-{{awayWins}} {{away}} against {{opponent}}.\n\nNot the result we wanted, but we showed character. Let's take the positives and work on the weaknesses.\n\nNext match is an opportunity to get back to winning ways."
           },
           "victory_1": {
             "subject": "Victory! {{score}} against {{opponent}}",
-            "body": "Great result today, coach! We beat {{opponent}} {{score}}.\n\nThe team executed the game plan well. Let's build on this momentum for the next match.\n\nWell done to everyone involved."
+            "body": "Great result today, coach! We beat {{opponent}} {{userScore}}.\n\nThe team executed the game plan well. Let's build on this momentum for the next match.\n\nWell done to everyone involved."
           },
           "victory_2": {
-            "subject": "Win! {{home}} {{score}} {{away}}",
-            "body": "We did it, coach! A solid {{score}} victory against {{opponent}}.\n\nThe players stepped up when it mattered most. Let's keep this level of performance going.\n\nReview the match footage and identify areas to improve for next time."
+            "subject": "Win! {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "We did it, coach! A solid {{userScore}} victory against {{opponent}}.\n\nThe players stepped up when it mattered most. Let's keep this level of performance going.\n\nReview the match footage and identify areas to improve for next time."
           }
         },
         "subject": {

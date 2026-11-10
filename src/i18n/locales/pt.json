@@ -2567,24 +2567,24 @@
       "matchResult": {
         "templates": {
           "defeat_1": {
-            "subject": "Derrota: {{home}} {{score}} {{away}}",
-            "body": "Derrota dura hoje, treinador. Perdemos com {{opponent}} {{score}}.\n\nHá coisas a aprender com este jogo. Vamos rever onde falhámos e voltar mais fortes.\n\nA época é longa — vamos recuperar."
+            "subject": "Derrota: {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "Derrota dura hoje, treinador. Perdemos com {{opponent}} {{userScore}}.\n\nHá coisas a aprender com este jogo. Vamos rever onde falhámos e voltar mais fortes.\n\nA época é longa — vamos recuperar."
           },
           "defeat_2": {
-            "subject": "Derrota: {{opponent}} vence-nos {{score}}",
-            "body": "Não foi o nosso dia, treinador. {{opponent}} venceu-nos {{score}}.\n\nPrecisamos de analisar o que correu mal e resolver os problemas antes do próximo jogo. Vou preparar uma análise detalhada dos momentos-chave.\n\nMantenha o foco — ainda há muito em jogo."
+            "subject": "Derrota: {{opponent}} vence-nos {{userScore}}",
+            "body": "Não foi o nosso dia, treinador. {{opponent}} venceu-nos {{userScore}}.\n\nPrecisamos de analisar o que correu mal e resolver os problemas antes do próximo jogo. Vou preparar uma análise detalhada dos momentos-chave.\n\nMantenha o foco — ainda há muito em jogo."
           },
           "draw_1": {
-            "subject": "Empate: {{home}} {{score}} {{away}}",
-            "body": "Um empate muito disputado hoje, treinador. {{home}} {{score}} {{away}} contra {{opponent}}.\n\nNão foi o resultado que queríamos, mas mostrámos caráter. Vamos aproveitar o lado positivo e trabalhar as fraquezas.\n\nO próximo jogo é uma oportunidade para voltar às vitórias."
+            "subject": "Empate: {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "Um empate muito disputado hoje, treinador. {{home}} {{homeWins}}-{{awayWins}} {{away}} contra {{opponent}}.\n\nNão foi o resultado que queríamos, mas mostrámos caráter. Vamos aproveitar o lado positivo e trabalhar as fraquezas.\n\nO próximo jogo é uma oportunidade para voltar às vitórias."
           },
           "victory_1": {
             "subject": "Vitória! {{score}} contra {{opponent}}",
-            "body": "Grande resultado hoje, treinador! Vencemos o {{opponent}} {{score}}.\n\nA equipa executou bem o plano de jogo. Vamos aproveitar este embalo para o próximo jogo.\n\nParabéns a todos os envolvidos."
+            "body": "Grande resultado hoje, treinador! Vencemos o {{opponent}} {{userScore}}.\n\nA equipa executou bem o plano de jogo. Vamos aproveitar este embalo para o próximo jogo.\n\nParabéns a todos os envolvidos."
           },
           "victory_2": {
-            "subject": "Vencemos! {{home}} {{score}} {{away}}",
-            "body": "Conseguimos, treinador! Uma vitória sólida por {{score}} contra o {{opponent}}.\n\nOs jogadores estiveram à altura quando mais importava. Vamos manter este nível de desempenho.\n\nReveja as imagens do jogo e identifique pontos a melhorar para a próxima."
+            "subject": "Vencemos! {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "Conseguimos, treinador! Uma vitória sólida por {{userScore}} contra o {{opponent}}.\n\nOs jogadores estiveram à altura quando mais importava. Vamos manter este nível de desempenho.\n\nReveja as imagens do jogo e identifique pontos a melhorar para a próxima."
           }
         },
         "subject": {

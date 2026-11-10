@@ -116,6 +116,90 @@ fn match_result_headline_names_the_outcome_for_the_user_club() {
     }
 }
 
+/// Render a stored `be.msg.*` key from a locale file the way i18next does for plain
+/// `{{name}}` placeholders.
+fn render_locale_key(lang: &str, key: &str, msg: &InboxMessage) -> String {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join(format!("../../../src/i18n/locales/{lang}.json"));
+    let locale: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(path).expect("read locale")).unwrap();
+    let mut node = &locale;
+    for part in key.split('.') {
+        node = &node[part];
+    }
+    let mut text = node
+        .as_str()
+        .unwrap_or_else(|| panic!("{lang}: no key {key}"))
+        .to_string();
+    for (name, value) in &msg.i18n_params {
+        text = text.replace(&format!("{{{{{name}}}}}"), value);
+    }
+    text
+}
+
+/// The player sees the locale text, not the stored English fallback. For every series the
+/// engine stores, with the user's club on either side, the rendered Spanish and English
+/// headline and body name each team at most once and show the score from the side the
+/// sentence states: fixture order for "<home> h-a <away>", the user's own wins first otherwise.
+#[test]
+fn match_result_locale_text_names_each_team_once_with_the_right_score() {
+    load_templates();
+    let series: [(u8, u8); 6] = [(1, 0), (0, 1), (2, 0), (2, 1), (1, 2), (0, 2)];
+    for (home_wins, away_wins) in series {
+        for user_is_home in [true, false] {
+            let user_team = if user_is_home { "t1" } else { "t2" };
+            let (user_wins, opp_wins) = if user_is_home {
+                (home_wins, away_wins)
+            } else {
+                (away_wins, home_wins)
+            };
+            for _ in 0..40 {
+                let msg = messages::match_result_message(
+                    "f1",
+                    "Alpha Squad",
+                    "Beta Club",
+                    home_wins,
+                    away_wins,
+                    "t1",
+                    "t2",
+                    user_team,
+                    3,
+                    "d",
+                );
+                for lang in ["en", "es"] {
+                    for (field, key) in [
+                        ("subject", msg.subject_key.clone().unwrap()),
+                        ("body", msg.body_key.clone().unwrap()),
+                    ] {
+                        let text = render_locale_key(lang, &key, &msg);
+                        let ctx = format!(
+                            "{lang} {field} {key} {home_wins}-{away_wins} home={user_is_home}: {text}"
+                        );
+                        assert!(!text.contains("{{"), "unresolved placeholder, {ctx}");
+                        for team in ["Alpha Squad", "Beta Club"] {
+                            assert!(text.matches(team).count() <= 1, "{team} named twice, {ctx}");
+                        }
+                        let fixture_order =
+                            format!("Alpha Squad {home_wins}-{away_wins} Beta Club");
+                        let reversed = format!("Alpha Squad {away_wins}-{home_wins} Beta Club");
+                        if home_wins != away_wins {
+                            assert!(
+                                !text.contains(&reversed),
+                                "score from the wrong side, {ctx}"
+                            );
+                        }
+                        let user_form = format!("{user_wins}-{opp_wins}");
+                        assert!(
+                            text.contains(&fixture_order) || text.contains(&user_form),
+                            "no score from the stated side, {ctx}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // player events
 // ---------------------------------------------------------------------------

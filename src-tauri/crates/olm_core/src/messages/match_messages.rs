@@ -158,6 +158,10 @@ pub fn match_result_message(
                 ("home", home_name),
                 ("away", away_name),
                 ("score", &score),
+                // Plain series wins for the templates that name both teams themselves.
+                ("homeWins", &home_goals.to_string()),
+                ("awayWins", &away_goals.to_string()),
+                ("userScore", &format!("{user_goals}-{opp_goals}")),
                 ("opponent", opponent),
                 ("matchday", &matchday.to_string()),
             ],
