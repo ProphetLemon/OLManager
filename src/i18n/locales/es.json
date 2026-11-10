@@ -1558,6 +1558,8 @@
     "projectedAnnualNet": "Neto anual proyectado",
     "cashRunway": "Margen de caja",
     "runwayMonths": "{{count}} meses al ritmo actual",
+    "runwayWeeks_one": "{{count}} semana al ritmo actual",
+    "runwayWeeks_other": "{{count}} semanas al ritmo actual",
     "runwayStable": "Estable al ritmo actual",
     "wagePressure": "Presión salarial",
     "wageBudgetUsed": "{{percent}}% del presupuesto salarial usado",
@@ -2526,6 +2528,7 @@
     "preMatchPrep": "Preparación Pre-Partido",
     "selecting": "Seleccionando...",
     "autoSelectXI": "Auto-seleccionar mejor quinteto",
+    "formationFit": "Cobertura de roles",
     "startingXI": "Quinteto",
     "cancel": "Cancelar",
     "nPlayers": "{{count}} jugadores",
@@ -3263,7 +3266,7 @@
         "subject": "Informe del asistente — Renovaciones",
         "body": "Míster, revisé nuestra lista de renovaciones en {{team}}. {{successes}} cerradas, {{stalled}} aún pendientes y {{failures}} fallidas.",
         "case": {
-          "successful": "Cerrada: {{player}} aceptó {{years}} año(s) por €{{wage}}/año.",
+          "successful": "Cerrada: {{player}} aceptó {{years}} año(s) por {{wage}}/año.",
           "stalled": "Sigue complicado: {{player}} — {{detail}}",
           "failed": "Fallida: {{player}} — {{detail}}"
         },

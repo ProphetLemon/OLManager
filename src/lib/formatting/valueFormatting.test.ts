@@ -42,3 +42,40 @@ describe("formatVal with the selected currency setting", () => {
     expect(formatCurrencyAmount(12_345)).toBe("$" + (12_345).toLocaleString());
   });
 });
+
+describe("negative, zero and positive amounts", () => {
+  afterEach(() => {
+    useSettingsStore.setState({ settings: { ...useSettingsStore.getState().settings, currency: "EUR" } });
+  });
+
+  it.each([
+    [-51_250, "-€51K"],
+    [-2_500_000, "-€2.5M"],
+    [-500, "-€500"],
+    [0, "€0"],
+    [500, "€500"],
+    [51_250, "€51K"],
+    [2_500_000, "€2.5M"],
+  ])("abbreviates %i as %s with the sign first", (value, expected) => {
+    expect(formatVal(value)).toBe(expected);
+  });
+
+  it("puts the sign before the symbol for every supported currency", () => {
+    expect(formatVal(-51_250, "USD")).toBe("-$51K");
+    expect(formatVal(-51_250, "GBP")).toBe("-£51K");
+  });
+
+  it.each([
+    [-51_250, "-€" + (51_250).toLocaleString()],
+    [0, "€0"],
+    [51_250, "€" + (51_250).toLocaleString()],
+  ])("formats the exact amount %i as %s", (value, expected) => {
+    expect(formatCurrencyAmount(value)).toBe(expected);
+  });
+
+  it("uses the selected currency for negative exact amounts", () => {
+    useSettingsStore.setState({ settings: { ...useSettingsStore.getState().settings, currency: "USD" } });
+
+    expect(formatCurrencyAmount(-51_250)).toBe("-$" + (51_250).toLocaleString());
+  });
+});

@@ -35,18 +35,22 @@ export function activeCurrencySymbol(): string {
 
 /** Exact (non-compact) amount, e.g. "$12,345", using the selected currency. */
 export function formatCurrencyAmount(value: number): string {
-    return `${activeCurrencySymbol()}${value.toLocaleString()}`;
+    const sign = value < 0 ? "-" : "";
+    return `${sign}${activeCurrencySymbol()}${Math.abs(value).toLocaleString()}`;
 }
 
 export function formatVal(value: number, currency: string = activeCurrency): string {
     const symbol = currencySymbol(currency);
-    if (value >= 1_000_000) {
-        return `${symbol}${(value / 1_000_000).toFixed(1)}M`;
+    // The sign goes before the symbol ("-€51K"), never between symbol and number.
+    const sign = value < 0 ? "-" : "";
+    const magnitude = Math.abs(value);
+    if (magnitude >= 1_000_000) {
+        return `${sign}${symbol}${(magnitude / 1_000_000).toFixed(1)}M`;
     }
-    if (value >= 1_000) {
-        return `${symbol}${(value / 1_000).toFixed(0)}K`;
+    if (magnitude >= 1_000) {
+        return `${sign}${symbol}${(magnitude / 1_000).toFixed(0)}K`;
     }
-    return `${symbol}${value}`;
+    return `${sign}${symbol}${magnitude}`;
 }
 
 export function currencySymbol(currency: string): string {

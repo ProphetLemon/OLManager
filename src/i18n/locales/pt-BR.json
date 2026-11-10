@@ -176,6 +176,7 @@
     "lastName": "Sobrenome",
     "dob": "Data de Nascimento",
     "nationality": "Nacionalidade",
+    "soloq": "SoloQ",
     "countryOfOrigin": "País/Região de Origem",
     "selectNationality": "Selecionar nacionalidade...",
     "selectCountry": "Selecionar País/Região...",
@@ -1415,6 +1416,8 @@
     "projectedAnnualNet": "Líquido anual projetado",
     "cashRunway": "Autonomia financeira",
     "runwayMonths": "{{count}} meses no ritmo atual",
+    "runwayWeeks_one": "{{count}} semana no ritmo atual",
+    "runwayWeeks_other": "{{count}} semanas no ritmo atual",
     "runwayStable": "Estável no ritmo atual",
     "wagePressure": "Pressão salarial",
     "wageBudgetUsed": "{{percent}}% do orçamento salarial usado",
@@ -2230,6 +2233,12 @@
         "general": "preparação geral"
       }
     },
+    "statKills": "Abates",
+    "statGold": "Ouro",
+    "statTowers": "Torres",
+    "statDragons": "Dragões",
+    "statBarons": "Barões",
+    "neutralObjectives": "Objetivos neutros",
     "draftResult": {
       "mvp": "MVP",
       "series": "Série",
@@ -2312,6 +2321,7 @@
     "preMatchPrep": "Preparação Pré-Jogo",
     "selecting": "Selecionando...",
     "autoSelectXI": "Selecionar Melhores Titulares",
+    "formationFit": "Cobertura de funções",
     "startingXI": "Titulares",
     "cancel": "Cancelar",
     "nPlayers": "{{count}} jogadores",
@@ -3103,7 +3113,7 @@
         "subject": "Relatório do assistente — Renovações contratuais",
         "body": "Chefe, revisei nossa lista de renovações no {{team}}. {{successes}} concluídas, {{stalled}} ainda pendentes e {{failures}} falhas.",
         "case": {
-          "successful": "Concluída: {{player}} aceitou {{years}} ano(s) por €{{wage}}/ano.",
+          "successful": "Concluída: {{player}} aceitou {{years}} ano(s) por {{wage}}/ano.",
           "stalled": "Continua difícil: {{player}} — {{detail}}",
           "failed": "Falhou: {{player}} — {{detail}}"
         },

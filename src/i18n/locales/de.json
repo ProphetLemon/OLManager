@@ -176,6 +176,7 @@
     "lastName": "Nachname",
     "dob": "Geburtsdatum",
     "nationality": "Nationalität",
+    "soloq": "SoloQ",
     "countryOfOrigin": "Herkunftsland/-region",
     "selectNationality": "Nationalität wählen...",
     "selectCountry": "Land/Region wählen...",
@@ -1415,6 +1416,8 @@
     "projectedAnnualNet": "Prognose pro Jahr",
     "cashRunway": "Finanzielle Reichweite",
     "runwayMonths": "{{count}} Monate bei aktuellem Verlauf",
+    "runwayWeeks_one": "{{count}} Woche bei aktuellem Verlauf",
+    "runwayWeeks_other": "{{count}} Wochen bei aktuellem Verlauf",
     "runwayStable": "Bei aktuellem Verlauf stabil",
     "wagePressure": "Gehaltsdruck",
     "wageBudgetUsed": "{{percent}}% des Gehaltsbudgets genutzt",
@@ -2283,6 +2286,12 @@
         "general": "general prep"
       }
     },
+    "statKills": "Kills",
+    "statGold": "Gold",
+    "statTowers": "Türme",
+    "statDragons": "Drachen",
+    "statBarons": "Barone",
+    "neutralObjectives": "Neutrale Ziele",
     "draftResult": {
       "mvp": "MVP",
       "series": "Series",
@@ -2365,6 +2374,7 @@
     "preMatchPrep": "Vorbereitung vor dem Spiel",
     "selecting": "Auswahl...",
     "autoSelectXI": "Beste Fünf auswählen",
+    "formationFit": "Rollenabdeckung",
     "startingXI": "Starter Five",
     "cancel": "Abbrechen",
     "nPlayers": "{{count}} Spieler",
@@ -3103,7 +3113,7 @@
         "subject": "Assistentenbericht — Vertragsverlängerungen",
         "body": "Boss, ich habe unsere Verlängerungsliste bei {{team}} durchgearbeitet. {{successes}} abgeschlossen, {{stalled}} noch offen, {{failures}} gescheitert.",
         "case": {
-          "successful": "Abgeschlossen: {{player}} hat {{years}} Jahr(e) zu €{{wage}}/Jahr akzeptiert.",
+          "successful": "Abgeschlossen: {{player}} hat {{years}} Jahr(e) zu {{wage}}/Jahr akzeptiert.",
           "stalled": "Weiter schwierig: {{player}} — {{detail}}",
           "failed": "Gescheitert: {{player}} — {{detail}}"
         },

@@ -176,6 +176,7 @@
     "lastName": "Sobrenome",
     "dob": "Data de Nascimento",
     "nationality": "Nacionalidade",
+    "soloq": "SoloQ",
     "countryOfOrigin": "País/Região de Origem",
     "selectNationality": "Selecionar nacionalidade...",
     "selectCountry": "Selecionar País/Região...",
@@ -1414,6 +1415,8 @@
     "projectedAnnualNet": "Líquido anual projetado",
     "cashRunway": "Autonomia financeira",
     "runwayMonths": "{{count}} meses ao ritmo atual",
+    "runwayWeeks_one": "{{count}} semana ao ritmo atual",
+    "runwayWeeks_other": "{{count}} semanas ao ritmo atual",
     "runwayStable": "Estável ao ritmo atual",
     "wagePressure": "Pressão salarial",
     "wageBudgetUsed": "{{percent}}% do orçamento salarial utilizado",
@@ -2282,6 +2285,12 @@
         "general": "preparação geral"
       }
     },
+    "statKills": "Abates",
+    "statGold": "Ouro",
+    "statTowers": "Torres",
+    "statDragons": "Dragões",
+    "statBarons": "Barões",
+    "neutralObjectives": "Objetivos neutros",
     "draftResult": {
       "mvp": "MVP",
       "series": "Série",
@@ -2364,6 +2373,7 @@
     "preMatchPrep": "Preparação Pré-Jogo",
     "selecting": "A selecionar...",
     "autoSelectXI": "Auto-Selecionar Melhor Cinco",
+    "formationFit": "Cobertura de funções",
     "startingXI": "Cinco Titular",
     "cancel": "Cancelar",
     "nPlayers": "{{count}} jogadores",
@@ -3102,7 +3112,7 @@
         "subject": "Relatório do adjunto — Renovações contratuais",
         "body": "Mister, passei pela nossa lista de renovações no {{team}}. {{successes}} concluídas, {{stalled}} ainda pendentes e {{failures}} falhadas.",
         "case": {
-          "successful": "Concluída: {{player}} aceitou {{years}} ano(s) a €{{wage}}/ano.",
+          "successful": "Concluída: {{player}} aceitou {{years}} ano(s) a {{wage}}/ano.",
           "stalled": "Continua complicado: {{player}} — {{detail}}",
           "failed": "Falhada: {{player}} — {{detail}}"
         },

@@ -1558,6 +1558,8 @@
     "projectedAnnualNet": "Projected Annual Net",
     "cashRunway": "Cash Runway",
     "runwayMonths": "{{count}} months at current pace",
+    "runwayWeeks_one": "{{count}} week at current pace",
+    "runwayWeeks_other": "{{count}} weeks at current pace",
     "runwayStable": "Stable at current pace",
     "wagePressure": "Wage Pressure",
     "wageBudgetUsed": "{{percent}}% of wage budget used",
@@ -2538,6 +2540,7 @@
     "preMatchPrep": "Pre-Match Preparation",
     "selecting": "Selecting...",
     "autoSelectXI": "Auto-Select Best Five",
+    "formationFit": "Role coverage",
     "startingXI": "Starting Five",
     "cancel": "Cancel",
     "nPlayers": "{{count}} players",
@@ -3298,7 +3301,7 @@
         "subject": "Assistant Report — Contract Renewals",
         "body": "Boss, I went through our renewal list at {{team}}. {{successes}} completed, {{stalled}} still pending, {{failures}} failed.",
         "case": {
-          "successful": "Completed: {{player}} agreed to {{years}} year(s) on €{{wage}}/yr.",
+          "successful": "Completed: {{player}} agreed to {{years}} year(s) on {{wage}}/yr.",
           "stalled": "Still difficult: {{player}} — {{detail}}",
           "failed": "Failed: {{player}} — {{detail}}"
         },

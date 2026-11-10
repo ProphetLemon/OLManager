@@ -110,7 +110,8 @@ function resolveLegacyDelegatedRenewalsBody(
                 return resolve("be.msg.delegatedRenewals.case.successful", trimmed, {
                     player: success.groups.player,
                     years: success.groups.years,
-                    wage: success.groups.wage,
+                    // The locale text no longer carries the symbol; the persisted line did.
+                    wage: `€${success.groups.wage}`,
                 });
             }
 
