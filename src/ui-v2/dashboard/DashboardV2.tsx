@@ -53,6 +53,7 @@ import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboar
 
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
+import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
 
 
 import { LazyFallback } from "@/ui-v2/components/LazyFallback";
@@ -308,6 +309,8 @@ export default function DashboardV2() {
     setBlockerModal,
     autoDelegationNotice,
     matchPlayedNotice,
+    scrimResultNotice,
+    dismissScrimResultNotice,
     handleContinue,
     handleConfirmMatch,
     handleSkipToMatchDay,
@@ -533,7 +536,8 @@ export default function DashboardV2() {
   const dashboardAlerts = gameState
     ? getDashboardAlerts(gameState, hasMatchToday, t)
     : [];
-  if (autoDelegationNotice) {
+  // The scrim result notice carries the Assistant Coach note itself.
+  if (autoDelegationNotice && !scrimResultNotice) {
     dashboardAlerts.unshift({
       id: "scrim_auto_delegate_notice",
       text: autoDelegationNotice,
@@ -694,6 +698,16 @@ export default function DashboardV2() {
           callCount={callCount}
           onShowCalls={handleShowCalls}
           compact={showSeasonSummary}
+        />
+
+        <ScrimResultNoticeV2
+          lines={scrimResultNotice}
+          assistantNote={autoDelegationNotice}
+          onOpenScrims={() => {
+            dismissScrimResultNotice();
+            handleNavigate("Scrims");
+          }}
+          onDismiss={dismissScrimResultNotice}
         />
 
         <main
