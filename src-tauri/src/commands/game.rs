@@ -830,6 +830,14 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
         }
     }
 
+    // Staff shipped with only a name and a role get attributes and a wage from their
+    // league's rated staff, so none enters the game rated 0.
+    let completed = olm_core::staff_completion::complete_missing_staff(&mut staff, &all_teams, true);
+    info!(
+        "[game] completed {} staff without data ({} wages)",
+        completed.attributes, completed.wages
+    );
+
     info!(
         "[game] assemble_world_from_modular_data: {} teams, {} players, {} staff",
         all_teams.len(),
@@ -3909,6 +3917,125 @@ mod tests {
             assert!(lec.standings.iter().any(|s| s.team_id == id));
             let club = game.teams.iter().find(|t| t.id == id).expect("the custom club survives");
             assert_eq!(club.active_lineup_ids.len(), 5);
+        }
+
+        // -- Staff integrity -------------------------------------------------------------
+
+        /// Ids of the staff the data ships with only a name and a role.
+        fn raw_staff_without_data() -> HashSet<String> {
+            let data = data_base();
+            let (manifests, _) = known_ids_and_manifests();
+            let mut raw = olm_core::competitions::load_staff_free_agents(&data).expect("free agents");
+            for manifest in manifests.iter().filter(|m| !m.legacy) {
+                raw.extend(olm_core::competitions::load_staff(&data, manifest).unwrap_or_default());
+            }
+            raw.into_iter()
+                .filter(|member| !member.has_attribute_data())
+                .map(|member| member.id)
+                .collect()
+        }
+
+        #[test]
+        fn new_world_staff_without_data_get_attributes_and_no_staff_rates_zero() {
+            let (game, _catalog, _overlay, _user_team) = new_game();
+            let without_data = raw_staff_without_data();
+
+            assert!(without_data.len() > 100, "the data should still ship staff without data");
+            let unrated: Vec<&str> = game
+                .staff
+                .iter()
+                .filter(|member| !member.has_attribute_data())
+                .map(|member| member.id.as_str())
+                .collect();
+            assert!(unrated.is_empty(), "staff still rated 0: {unrated:?}");
+        }
+
+        #[test]
+        fn completed_staff_stay_inside_the_range_of_the_rated_staff() {
+            let (game, _catalog, _overlay, _user_team) = new_game();
+            let without_data = raw_staff_without_data();
+            let rated: Vec<[u8; 4]> = game
+                .staff
+                .iter()
+                .filter(|member| !without_data.contains(&member.id))
+                .map(|member| {
+                    let a = &member.attributes;
+                    [a.coaching, a.judging_ability, a.judging_potential, a.physiotherapy]
+                })
+                .collect();
+
+            for member in game.staff.iter().filter(|member| without_data.contains(&member.id)) {
+                let a = &member.attributes;
+                for (index, value) in [a.coaching, a.judging_ability, a.judging_potential, a.physiotherapy]
+                    .into_iter()
+                    .enumerate()
+                {
+                    let min = rated.iter().map(|row| row[index]).min().unwrap();
+                    let max = rated.iter().map(|row| row[index]).max().unwrap();
+                    assert!(
+                        (min..=max).contains(&value),
+                        "{} attribute {index} = {value} is outside the rated {min}..={max}",
+                        member.id
+                    );
+                }
+            }
+        }
+
+        #[test]
+        fn completed_staff_wages_follow_the_data_and_owners_stay_unpaid() {
+            let (game, _catalog, _overlay, _user_team) = new_game();
+            let without_data = raw_staff_without_data();
+
+            for member in game.staff.iter().filter(|member| without_data.contains(&member.id)) {
+                let expected = if member.is_owner() {
+                    0
+                } else {
+                    olm_core::staff_completion::DEFAULT_STAFF_WAGE
+                };
+                assert_eq!(member.wage, expected, "{} ({:?})", member.id, member.role);
+            }
+        }
+
+        #[test]
+        fn clubs_with_completed_staff_get_effects_inside_the_range_of_clubs_with_rated_staff() {
+            use olm_core::staff_effects::LolStaffEffects;
+
+            let (game, _catalog, _overlay, _user_team) = new_game();
+            let without_data = raw_staff_without_data();
+            let coaching_staff = |team_id: &str| -> Vec<&Staff> {
+                game.staff
+                    .iter()
+                    .filter(|member| member.team_id.as_deref() == Some(team_id) && !member.is_owner())
+                    .collect()
+            };
+            let fields = |e: LolStaffEffects| [e.coaching, e.development, e.tactics, e.analysis, e.recovery, e.morale];
+
+            let mut rated_clubs = Vec::new();
+            let mut completed_clubs = Vec::new();
+            for team in game.teams.iter().filter(|t| t.team_kind == TeamKind::Main) {
+                let staff = coaching_staff(&team.id);
+                if staff.is_empty() {
+                    continue;
+                }
+                let effects = fields(LolStaffEffects::for_team(&game.staff, &team.id));
+                if staff.iter().any(|member| without_data.contains(&member.id)) {
+                    completed_clubs.push((team.id.clone(), effects));
+                } else {
+                    rated_clubs.push(effects);
+                }
+            }
+            assert!(rated_clubs.len() > 10 && completed_clubs.len() > 10);
+
+            for (club, effects) in &completed_clubs {
+                for (index, value) in effects.iter().enumerate() {
+                    let min = rated_clubs.iter().map(|row| row[index]).fold(f64::MAX, f64::min);
+                    let max = rated_clubs.iter().map(|row| row[index]).fold(f64::MIN, f64::max);
+                    assert!(
+                        *value >= min - 1e-9 && *value <= max + 1e-9,
+                        "{club} effect {index} = {value} is outside the rated clubs' {min}..={max}"
+                    );
+                }
+            }
         }
 
         // -- Whole LES seasons (J3) ----------------------------------------------------

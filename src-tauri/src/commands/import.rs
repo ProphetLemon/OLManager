@@ -25,6 +25,7 @@ use olm_core::domain::team::Team;
 use olm_core::game::Game;
 use olm_core::game_setup;
 use olm_core::generator::definitions::StaffDataFile;
+use olm_core::staff_completion::complete_missing_staff;
 use olm_core::state::StateManager;
 use serde_json::Value;
 use tauri::Emitter;
@@ -1159,11 +1160,13 @@ pub struct RehydrateCounts {
     /// Existing players whose stale team assignment was corrected to the catalog.
     pub players_reassigned: usize,
     pub staff: usize,
+    /// Existing staff the save stored without attributes, now completed.
+    pub staff_completed: usize,
 }
 
 impl RehydrateCounts {
     pub fn total(&self) -> usize {
-        self.teams + self.players + self.players_reassigned + self.staff
+        self.teams + self.players + self.players_reassigned + self.staff + self.staff_completed
     }
 }
 
@@ -1190,7 +1193,7 @@ pub(crate) fn apply_catalog_to_game(
     game: &mut Game,
     catalog_teams: Vec<Team>,
     catalog_players: Vec<Player>,
-    catalog_staff: Vec<Staff>,
+    mut catalog_staff: Vec<Staff>,
 ) -> RehydrateCounts {
     let teams = merge_missing_teams(game, catalog_teams);
 
@@ -1199,13 +1202,19 @@ pub(crate) fn apply_catalog_to_game(
 
     game_setup::apply_default_market_values(&mut game.players);
 
+    // Members new to the save are completed like a new world's, wages included.
+    complete_missing_staff(&mut catalog_staff, &game.teams, true);
     let staff = merge_missing_staff(game, catalog_staff);
+    // Members the save already stored without data get attributes only: their
+    // finances ran with the wage they had.
+    let staff_completed = complete_missing_staff(&mut game.staff, &game.teams, false).attributes;
 
     let counts = RehydrateCounts {
         teams,
         players,
         players_reassigned,
         staff,
+        staff_completed,
     };
     if counts.total() > 0 {
         // Rehydrated players arrive without a residency; the save was already
@@ -1972,6 +1981,50 @@ mod tests {
 
         assert_eq!(counts.staff, 1);
         assert_eq!(game.staff[0].team_id, None);
+    }
+
+    fn rehydrate_test_staff_without_data(
+        id: &str,
+        team_id: Option<&str>,
+    ) -> olm_core::domain::staff::Staff {
+        let mut staff = rehydrate_test_staff(id, team_id);
+        staff.attributes = Default::default();
+        staff
+    }
+
+    #[test]
+    fn rehydration_completes_a_stored_staff_member_without_data_but_keeps_the_wage() {
+        let mut game = game_with_removed_team();
+        game.staff.push(rehydrate_test_staff("rated", Some("team-1")));
+        game.staff.push(rehydrate_test_staff_without_data("gap", Some("team-1")));
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.staff_completed, 1);
+        assert_eq!(counts.total(), 1, "a completed member makes the save persist");
+        let gap = game.staff.iter().find(|m| m.id == "gap").unwrap();
+        assert!(gap.has_attribute_data());
+        assert_eq!(gap.wage, 0, "a stored member keeps the wage its finances ran with");
+    }
+
+    #[test]
+    fn rehydration_adds_a_catalog_staff_member_without_data_completed_with_a_wage() {
+        let mut game = game_with_removed_team();
+
+        let counts = apply_catalog_to_game(
+            &mut game,
+            vec![],
+            vec![],
+            vec![
+                rehydrate_test_staff("rated", Some("team-1")),
+                rehydrate_test_staff_without_data("gap", Some("team-1")),
+            ],
+        );
+
+        assert_eq!(counts.staff, 2);
+        let gap = game.staff.iter().find(|m| m.id == "gap").unwrap();
+        assert!(gap.has_attribute_data());
+        assert_eq!(gap.wage, olm_core::staff_completion::DEFAULT_STAFF_WAGE);
     }
 
     fn game_with_catalog_teams() -> Vec<Team> {
