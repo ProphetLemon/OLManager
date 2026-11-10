@@ -1309,7 +1309,14 @@ pub async fn select_team(
         }
     }
 
-    let welcome_msg = olm_core::messages::welcome_message(&team_name, &team_id, &date_str, &lang);
+    let days_to_start = game_setup::days_until_first_league_fixture(&game);
+    let welcome_msg = olm_core::messages::welcome_message(
+        &team_name,
+        &team_id,
+        &date_str,
+        &lang,
+        days_to_start,
+    );
     game.messages.push(welcome_msg);
 
     if let Some(parent_team) = game.teams.iter().find(|team| team.id == team_id) {

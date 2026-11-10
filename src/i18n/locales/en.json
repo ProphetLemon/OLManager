@@ -2675,7 +2675,8 @@
         "templates": {
           "welcome": {
             "subject": "Welcome to {{team}}!",
-            "body": "The board of directors welcomes you as the new head coach of {{team}}.\n\nWe have full confidence in your ability to lead this team to success.\n\nReview your squad, set your priorities, and prepare for the challenges ahead.\n\nGood luck, coach!"
+            "body_one": "The board of directors welcomes you as the new head coach of {{team}}.\n\nWe have full confidence in your ability to lead this team to success. The first league match is {{days}} day away.\n\nReview your squad, set your priorities, and prepare for the challenges ahead.\n\nGood luck, coach!",
+            "body_other": "The board of directors welcomes you as the new head coach of {{team}}.\n\nWe have full confidence in your ability to lead this team to success. The first league match is {{days}} days away.\n\nReview your squad, set your priorities, and prepare for the challenges ahead.\n\nGood luck, coach!"
           }
         },
         "subject0": "Welcome to {{team}}",

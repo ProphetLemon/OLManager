@@ -6,7 +6,7 @@ use olm_core::messages;
 
 #[test]
 fn welcome_message_has_correct_fields() {
-    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "en");
+    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "en", 0);
     assert_eq!(msg.id, "welcome_team1");
     assert!(
         msg.subject.contains("Test FC"),
@@ -23,7 +23,7 @@ fn welcome_message_has_correct_fields() {
 
 #[test]
 fn welcome_message_has_i18n_keys() {
-    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "en");
+    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "en", 0);
     assert!(msg.subject_key.is_some(), "Should have subject i18n key");
     assert!(msg.body_key.is_some(), "Should have body i18n key");
     assert!(msg.sender_key.is_some(), "Should have sender i18n key");
@@ -31,7 +31,7 @@ fn welcome_message_has_i18n_keys() {
 
 #[test]
 fn welcome_message_has_context() {
-    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "en");
+    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "en", 0);
     assert_eq!(msg.context.team_id.as_deref(), Some("team1"));
 }
 
@@ -349,7 +349,7 @@ fn staff_advice_message_attaches_keys_and_team_param() {
 
 #[test]
 fn welcome_message_attaches_team_param() {
-    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "es");
+    let msg = messages::welcome_message("Test FC", "team1", "2025-06-01", "es", 0);
     assert_eq!(
         msg.i18n_params.get("team").map(String::as_str),
         Some("Test FC")

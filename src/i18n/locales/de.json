@@ -2519,7 +2519,8 @@
         "templates": {
           "welcome": {
             "subject": "Willkommen bei {{team}}!",
-            "body": "Der Vorstand heißt Sie als neuen Cheftrainer von {{team}} willkommen.\n\nWir vertrauen auf Ihre Fähigkeit, dieses Team zum Erfolg zu führen.\n\nPrüfen Sie Ihren Kader, setzen Sie Ihre Prioritäten und bereiten Sie sich auf die kommenden Herausforderungen vor.\n\nViel Erfolg, Trainer!"
+            "body_one": "Der Vorstand heißt Sie als neuen Cheftrainer von {{team}} willkommen.\n\nWir vertrauen auf Ihre Fähigkeit, dieses Team zum Erfolg zu führen. Das erste Ligaspiel findet in {{days}} Tag statt.\n\nPrüfen Sie Ihren Kader, setzen Sie Ihre Prioritäten und bereiten Sie sich auf die kommenden Herausforderungen vor.\n\nViel Erfolg, Trainer!",
+            "body_other": "Der Vorstand heißt Sie als neuen Cheftrainer von {{team}} willkommen.\n\nWir vertrauen auf Ihre Fähigkeit, dieses Team zum Erfolg zu führen. Das erste Ligaspiel findet in {{days}} Tagen statt.\n\nPrüfen Sie Ihren Kader, setzen Sie Ihre Prioritäten und bereiten Sie sich auf die kommenden Herausforderungen vor.\n\nViel Erfolg, Trainer!"
           }
         },
         "subject0": "Willkommen bei {{team}}",

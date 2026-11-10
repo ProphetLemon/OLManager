@@ -2519,7 +2519,8 @@
         "templates": {
           "welcome": {
             "subject": "{{team}} takımına hoş geldiniz!",
-            "body": "Yönetim kurulu sizi {{team}} takımının yeni başantrenörü olarak memnuniyetle karşılıyor.\n\nBu takımı başarıya taşıma yeteneğinize tam güvenimiz var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve önümüzdeki zorluklara hazırlanın.\n\nBol şans, hocam!"
+            "body_one": "Yönetim kurulu sizi {{team}} takımının yeni başantrenörü olarak memnuniyetle karşılıyor.\n\nBu takımı başarıya taşıma yeteneğinize tam güvenimiz var. İlk lig maçına {{days}} gün var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve önümüzdeki zorluklara hazırlanın.\n\nBol şans, hocam!",
+            "body_other": "Yönetim kurulu sizi {{team}} takımının yeni başantrenörü olarak memnuniyetle karşılıyor.\n\nBu takımı başarıya taşıma yeteneğinize tam güvenimiz var. İlk lig maçına {{days}} gün var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve önümüzdeki zorluklara hazırlanın.\n\nBol şans, hocam!"
           }
         },
         "subject0": "{{team}} Takımına Hoş Geldiniz",

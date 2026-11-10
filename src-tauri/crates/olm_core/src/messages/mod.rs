@@ -92,14 +92,24 @@ fn view_offer_action() -> MessageAction {
 }
 
 /// Message template system — generates rich messages with variations.
-pub fn welcome_message(team_name: &str, team_id: &str, date: &str, lang: &str) -> InboxMessage {
+///
+/// `days_to_start` is the number of days to the first league fixture. It travels
+/// as `days` (the text) and `count` (the singular/plural form the UI picks).
+pub fn welcome_message(
+    team_name: &str,
+    team_id: &str,
+    date: &str,
+    lang: &str,
+    days_to_start: u32,
+) -> InboxMessage {
+    let days = days_to_start.to_string();
     // Use template store (with inline translations) if available
     if let Some(msg) = crate::messages::template_store::template_store().build_message_keyed(
         "select_team",
         &format!("welcome_{}", team_id),
         date,
         lang,
-        vec![("team", team_name), ("days", "0")],
+        vec![("team", team_name), ("days", &days), ("count", &days)],
         "be.msg.welcome.templates",
     ) {
         return msg;

@@ -22,7 +22,10 @@ import {
  */
 function resolve(key: string | undefined, fallback: string, params?: Record<string, string>): string {
   if (!key) return fallback;
-  const resolved = i18n.t(key, params ?? {});
+  // i18next picks a singular/plural form only for a numeric `count`; backend params are strings.
+  const options: Record<string, string | number> = { ...params };
+  if (/^\d+$/.test(params?.count ?? '')) options.count = Number(params?.count);
+  const resolved = i18n.t(key, options);
   // i18next returns the key itself if not found — fall back to raw string
   if (resolved === key) return fallback;
   return resolved;

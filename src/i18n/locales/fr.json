@@ -2519,7 +2519,8 @@
         "templates": {
           "welcome": {
             "subject": "Bienvenue à {{team}} !",
-            "body": "Le conseil d'administration vous souhaite la bienvenue en tant que nouvel entraîneur principal de {{team}}.\n\nNous avons pleinement confiance en votre capacité à mener cette équipe vers le succès.\n\nPassez en revue votre effectif, fixez vos priorités et préparez-vous aux défis à venir.\n\nBonne chance, coach !"
+            "body_one": "Le conseil d'administration vous souhaite la bienvenue en tant que nouvel entraîneur principal de {{team}}.\n\nNous avons pleinement confiance en votre capacité à mener cette équipe vers le succès. Le premier match de championnat a lieu dans {{days}} jour.\n\nPassez en revue votre effectif, fixez vos priorités et préparez-vous aux défis à venir.\n\nBonne chance, coach !",
+            "body_other": "Le conseil d'administration vous souhaite la bienvenue en tant que nouvel entraîneur principal de {{team}}.\n\nNous avons pleinement confiance en votre capacité à mener cette équipe vers le succès. Le premier match de championnat a lieu dans {{days}} jours.\n\nPassez en revue votre effectif, fixez vos priorités et préparez-vous aux défis à venir.\n\nBonne chance, coach !"
           }
         },
         "subject0": "Bienvenue à {{team}}",

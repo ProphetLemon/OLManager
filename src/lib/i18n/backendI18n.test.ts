@@ -548,6 +548,30 @@ describe("first-week message locale", () => {
     expect(resolved.body).toContain("January 18, 2026");
   });
 
+  describe("generic welcome countdown", () => {
+    const welcome = (days: string) =>
+      makeMessage({
+        subject_key: "be.msg.welcome.templates.welcome.subject",
+        body_key: "be.msg.welcome.templates.welcome.body",
+        // What the backend sends: every value is a string.
+        i18n_params: { team: "Rayo Esports", days, count: days },
+      });
+
+    it("reads one day in the singular and many days in the plural", () => {
+      expect(resolveMessage(welcome("1")).body).toContain("The first league match is 1 day away.");
+      expect(resolveMessage(welcome("16")).body).toContain("The first league match is 16 days away.");
+    });
+
+    it("keeps the real number in Spanish", async () => {
+      await i18n.changeLanguage("es");
+      const one = resolveMessage(welcome("1")).body;
+      const many = resolveMessage(welcome("16")).body;
+      await i18n.changeLanguage("en");
+      expect(one).toContain("dentro de 1 día.");
+      expect(many).toContain("dentro de 16 días.");
+    });
+  });
+
   it("translates the staff advice and academy overview from keys", async () => {
     const staff = makeMessage({
       subject: "Staff vacancies at Movistar KOI",
