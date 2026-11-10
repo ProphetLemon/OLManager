@@ -2057,6 +2057,8 @@
       "assistantCoach": "Assistente técnico",
       "playerLabel": "Jogador",
       "swapTargetTitle": "Escolher campeão para trocar",
+      "offRoleWarning": "{{champion}} não é um campeão de {{role}}. Vai render pior na partida.",
+      "offRolePickWarning": "{{champion}} não tem uma função livre no seu time: alguém vai jogar fora da função e render pior na partida.",
       "warnCounterLastPick": "Cuidado com {{champion}}: está counterando sua última escolha.",
       "warnTimingIdentity": "Falta uma identidade clara de timing. Busque um pick de Early ou Late para fechar melhor.",
       "warnRoleCoverage": "Ainda temos lacunas de função. Adicione um pick mais flexível.",

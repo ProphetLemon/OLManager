@@ -704,7 +704,7 @@ export function resolveDraftTipPlayerImage(
  * A champion is off its role when it has known roles and none of them is `role`.
  * A champion with no role data fits anywhere.
  */
-function isOffRole(hints: ReadonlyArray<string>, role: Role): boolean {
+export function isOffRole(hints: ReadonlyArray<string>, role: string): boolean {
   return hints.length > 0 && !hints.includes(role);
 }
 
@@ -3106,6 +3106,23 @@ export default function ChampionDraft({
                 </div>
               ) : null}
 
+              {!finished && isUserTurn && currentStep?.type === "pick" ? (
+                <OffRoleNotice
+                  message={
+                    pendingChampionId &&
+                    !canAssignUniqueRoles([
+                      ...(controlledSide === "blue" ? bluePicks : redPicks),
+                      { championId: pendingChampionId },
+                    ])
+                      ? t("match.draft.offRolePickWarning", {
+                          champion: championById.get(pendingChampionId)?.name ?? pendingChampionId,
+                        })
+                      : null
+                  }
+                  className="rounded-md bg-orange-500 px-2 py-1 text-xs font-bold text-navy-900"
+                />
+              ) : null}
+
                 <div className="relative min-h-0 flex-1 overflow-y-auto scrollbar-draft pr-1">
                 {loading ? (
                   <p className="relative text-sm text-muted-foreground/50">{t("match.draft.loadingChampions")}</p>
@@ -3321,7 +3338,17 @@ export default function ChampionDraft({
   );
 }
 
-function DraftSlot({
+/** Live region for the off-role warning. It stays mounted so a screen reader announces the text when it appears. */
+export function OffRoleNotice({ message, className = "" }: { message: string | null; className?: string }) {
+  return (
+    <p role="status" aria-live="polite" className={message ? className : "sr-only"}>
+      {message ? <span aria-hidden="true">⚠ </span> : null}
+      {message}
+    </p>
+  );
+}
+
+export function DraftSlot({
   side,
   playerName,
   role,
@@ -3379,6 +3406,15 @@ function DraftSlot({
           {playerName}
         </span>
       </div>
+
+      <OffRoleNotice
+        message={
+          showSwapControls && champion && isOffRole(champion.roleHints, role)
+            ? t("match.draft.offRoleWarning", { champion: champion.name, role })
+            : null
+        }
+        className="absolute inset-x-0 top-0 z-30 bg-orange-500 px-1 py-0.5 text-2xs font-bold leading-tight text-navy-900"
+      />
 
       <img
         src={ROLE_ICON_URLS[role]}

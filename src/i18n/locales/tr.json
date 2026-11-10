@@ -2110,6 +2110,8 @@
       "assistantCoach": "Asistan koç",
       "playerLabel": "Oyuncu",
       "swapTargetTitle": "Değiştirilecek şampiyonu seçin",
+      "offRoleWarning": "{{champion}} bir {{role}} şampiyonu değil. Maçta daha kötü performans gösterecek.",
+      "offRolePickWarning": "{{champion}} için takımında boş rol yok: biri kendi rolü dışında oynayacak ve maçta daha kötü performans gösterecek.",
       "warnCounterLastPick": "Dikkatli olun: {{champion}} son seçiminizi (last pick) counterlıyor.",
       "warnTimingIdentity": "Net bir zamanlama kimliğimiz eksik. Oyunu daha iyi kapatmak için Erken veya Geç oyuna yönelik bir seçim düşünün.",
       "warnRoleCoverage": "Hala rol boşluklarımız var. Daha esnek bir seçim ekleyin.",
