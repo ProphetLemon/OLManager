@@ -1355,14 +1355,15 @@ pub async fn select_team(
     );
     game.messages.push(season_msg);
 
-    let team_names: Vec<String> = game
+    let league_teams: Vec<&Team> = game
         .teams
         .iter()
         .filter(|team| {
             team.team_kind != TeamKind::Academy && team.competition_id.as_deref() == user_cid
         })
-        .map(|team| team.name.clone())
         .collect();
+    let team_names =
+        olm_core::board_objectives::team_names_by_strength(&league_teams, &game.players);
     game.news.push(olm_core::news::season_preview_article(
         &team_names,
         &date_str,

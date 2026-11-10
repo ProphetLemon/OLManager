@@ -3,7 +3,7 @@ pub mod template_store;
 pub use match_report::match_report_article;
 
 use crate::domain::news::*;
-use rand::{Rng, RngExt};
+use rand::RngExt;
 use std::collections::HashMap;
 
 /// Helper to build a HashMap<String, String> from key-value pairs.
@@ -190,6 +190,9 @@ pub fn standings_update_article(
 
 /// Generate a season preview article at the start of the season.
 ///
+/// `team_names` is ordered strongest first: the favourite is the first club and the
+/// dark horse the one in the middle of the table.
+///
 /// Uses the template-based news system (see `data/news/season_preview/template.json`).
 /// Falls back to the legacy inline generation if no template is registered.
 pub fn season_preview_article(team_names: &[String], date: &str) -> NewsArticle {
@@ -197,7 +200,7 @@ pub fn season_preview_article(team_names: &[String], date: &str) -> NewsArticle 
 
     if let Some(tpl) = template_store::NewsTemplateStore::global().get(&NewsCategory::SeasonPreview)
     {
-        let (favourite, dark_horse) = preview_contenders(team_names, &mut rng);
+        let (favourite, dark_horse) = preview_contenders(team_names);
         return tpl.build_article(
             "season_preview".to_string(),
             date.to_string(),
@@ -213,7 +216,7 @@ pub fn season_preview_article(team_names: &[String], date: &str) -> NewsArticle 
     }
 
     // ── Legacy fallback ────────────────────────────────────────
-    let (favourite, dark_horse) = preview_contenders(team_names, &mut rng);
+    let (favourite, dark_horse) = preview_contenders(team_names);
 
     let body = format!(
         "The league is set to kick off with {} teams entering the split.\n\n\
@@ -261,21 +264,10 @@ pub fn season_preview_article(team_names: &[String], date: &str) -> NewsArticle 
     )
 }
 
-fn preview_contenders<'a>(team_names: &'a [String], rng: &mut impl Rng) -> (&'a str, &'a str) {
-    let favourite = &team_names[rng.random_range(0..team_names.len())];
-
-    if team_names.len() == 1 {
-        return (favourite.as_str(), favourite.as_str());
-    }
-
-    let dark_horse = loop {
-        let pick = &team_names[rng.random_range(0..team_names.len())];
-        if pick != favourite {
-            break pick;
-        }
-    };
-
-    (favourite.as_str(), dark_horse.as_str())
+/// Favourite and dark horse of the preview: the strongest club and a mid-table
+/// one. `team_names` is ordered strongest first.
+fn preview_contenders(team_names: &[String]) -> (&str, &str) {
+    (&team_names[0], &team_names[team_names.len() / 2])
 }
 
 #[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
@@ -635,6 +627,44 @@ mod tests {
         assert!(teams.contains(favourite));
         assert!(teams.contains(dark_horse));
         assert_ne!(favourite, dark_horse);
+    }
+
+    #[test]
+    fn season_preview_article_names_the_strongest_club_favourite_and_a_mid_table_dark_horse() {
+        let teams: Vec<String> = ["Strong", "Second", "Mid", "Fourth", "Weak"]
+            .iter()
+            .map(|name| name.to_string())
+            .collect();
+
+        // The contenders used to be drawn at random; repeat to catch any draw.
+        for _ in 0..50 {
+            let article = season_preview_article(&teams, "2025-08-01");
+
+            assert_eq!(
+                article.i18n_params.get("favourite"),
+                Some(&"Strong".to_string())
+            );
+            assert_eq!(
+                article.i18n_params.get("darkHorse"),
+                Some(&"Mid".to_string())
+            );
+        }
+    }
+
+    #[test]
+    fn season_preview_article_dark_horse_differs_from_favourite_with_two_clubs() {
+        let teams = vec!["Strong".to_string(), "Weak".to_string()];
+
+        let article = season_preview_article(&teams, "2025-08-01");
+
+        assert_eq!(
+            article.i18n_params.get("favourite"),
+            Some(&"Strong".to_string())
+        );
+        assert_eq!(
+            article.i18n_params.get("darkHorse"),
+            Some(&"Weak".to_string())
+        );
     }
 
     #[test]

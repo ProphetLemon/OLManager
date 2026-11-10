@@ -37,6 +37,17 @@ fn team_strength_score(team: &Team, players: &[Player]) -> f64 {
     roster_scores.iter().take(starter_count).sum::<f64>() / starter_count as f64
 }
 
+/// Names of `teams`, strongest first by [`team_strength_score`]. Equal scores keep
+/// their input order, so a given world always ranks the same way.
+pub fn team_names_by_strength(teams: &[&Team], players: &[Player]) -> Vec<String> {
+    let mut scored: Vec<(f64, &str)> = teams
+        .iter()
+        .map(|team| (team_strength_score(team, players), team.name.as_str()))
+        .collect();
+    scored.sort_by(|a, b| b.0.total_cmp(&a.0));
+    scored.into_iter().map(|(_, name)| name.to_string()).collect()
+}
+
 fn expected_league_rank(user_team_id: &str, teams: &[Team], players: &[Player]) -> u32 {
     let Some(user_team) = teams.iter().find(|team| team.id == user_team_id) else {
         return teams.len().max(1) as u32;
@@ -370,7 +381,8 @@ pub fn evaluate_objective_result(game: &Game) -> ObjectiveEvaluation {
 mod tests {
     use super::{
         ObjectiveProfile, evaluate_objectives, expected_league_rank, generate_objectives,
-        objective_profile_for_rank, objective_targets, playoff_places, update_objective_progress,
+        objective_profile_for_rank, objective_targets, playoff_places, team_names_by_strength,
+        update_objective_progress,
     };
     use crate::clock::GameClock;
     use crate::domain::league::{
@@ -729,6 +741,23 @@ mod tests {
         assert_eq!(
             objective_profile_for_rank(10, 10),
             ObjectiveProfile::Survival
+        );
+    }
+
+    #[test]
+    fn team_names_by_strength_orders_by_roster_strength_and_keeps_ties_in_input_order() {
+        let game = make_ranked_strength_game("team10", 95);
+        let teams: Vec<&Team> = game.teams.iter().collect();
+
+        let names = team_names_by_strength(&teams, &game.players);
+
+        // Team 1 and Team 2 share a roster strength: input order decides.
+        assert_eq!(
+            names,
+            [
+                "Team 10", "Team 1", "Team 2", "Team 3", "Team 4", "Team 5", "Team 6", "Team 7",
+                "Team 8", "Team 9"
+            ]
         );
     }
 

@@ -714,16 +714,12 @@ fn process_end_of_season_inner(
         active.split_index = 0;
     }
 
-    let team_names: Vec<String> = final_standings
+    let standing_teams: Vec<&crate::domain::team::Team> = final_standings
         .iter()
-        .map(|s| {
-            game.teams
-                .iter()
-                .find(|t| t.id == s.team_id)
-                .map(|t| t.name.clone())
-                .unwrap_or_default()
-        })
+        .filter_map(|s| game.teams.iter().find(|t| t.id == s.team_id))
         .collect();
+    let team_names =
+        crate::board_objectives::team_names_by_strength(&standing_teams, &game.players);
     game.news.push(crate::news::season_preview_article(
         &team_names,
         &game.clock.current_date.to_rfc3339(),
