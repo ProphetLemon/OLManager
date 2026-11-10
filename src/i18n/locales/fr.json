@@ -176,6 +176,7 @@
     "lastName": "Nom",
     "dob": "Date de Naissance",
     "nationality": "Nationalité",
+    "soloq": "SoloQ",
     "countryOfOrigin": "Pays/Région d'Origine",
     "selectNationality": "Sélectionner la nationalité...",
     "selectCountry": "Sélectionner le Pays/Région...",
@@ -1415,6 +1416,8 @@
     "projectedAnnualNet": "Net annuel projeté",
     "cashRunway": "Autonomie de trésorerie",
     "runwayMonths": "{{count}} mois au rythme actuel",
+    "runwayWeeks_one": "{{count}} semaine au rythme actuel",
+    "runwayWeeks_other": "{{count}} semaines au rythme actuel",
     "runwayStable": "Stable au rythme actuel",
     "wagePressure": "Pression salariale",
     "wageBudgetUsed": "{{percent}}% du budget salarial utilisé",
@@ -2283,6 +2286,12 @@
         "general": "préparation générale"
       }
     },
+    "statKills": "Éliminations",
+    "statGold": "Or",
+    "statTowers": "Tours",
+    "statDragons": "Dragons",
+    "statBarons": "Barons",
+    "neutralObjectives": "Objectifs neutres",
     "draftResult": {
       "mvp": "MVP",
       "series": "Série",
@@ -2365,6 +2374,7 @@
     "preMatchPrep": "Préparation d'Avant-Match",
     "selecting": "Sélection...",
     "autoSelectXI": "Auto-Sélectionner le Meilleur Cinq",
+    "formationFit": "Adéquation de la formation",
     "startingXI": "Cinq de Départ",
     "cancel": "Annuler",
     "nPlayers": "{{count}} joueurs",
