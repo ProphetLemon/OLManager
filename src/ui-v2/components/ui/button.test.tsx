@@ -21,6 +21,16 @@ describe("Button variants and sizes", () => {
     expect(screen.getByRole("button", { name: "Save" })).toHaveClass("size-[var(--hit)]");
   });
 
+  it.each(["default", "xs", "sm", "lg", "icon", "icon-xs", "icon-sm", "icon-lg"] as const)(
+    "%s size keeps the 24px target floor at any root font size",
+    (size) => {
+      render(<Button size={size} aria-label="Act" />);
+      const btn = screen.getByRole("button", { name: "Act" });
+      expect(btn).toHaveClass("min-h-[var(--target-min)]");
+      if (size.startsWith("icon")) expect(btn).toHaveClass("min-w-[var(--target-min)]");
+    }
+  );
+
   it("link variant is tinted with the club text colour", () => {
     render(<Button variant="link">More</Button>);
     expect(screen.getByRole("button")).toHaveClass("text-club-text");

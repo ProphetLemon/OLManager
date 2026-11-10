@@ -175,6 +175,8 @@
   --surface-clamp: #2a3347;
   --club-wash: color-mix(in srgb, var(--club) 36%, transparent);
   --hit: max(2.75rem, 24px);
+  /* WCAG 2.2 target size minimum (2.5.8): floor for every control, at any root font size */
+  --target-min: 24px;
   --tag-outline-width: 0px;
   --tag-outline-color: var(--foreground);
   --tag-skew: -14deg;
