@@ -28,6 +28,7 @@ import {
 } from "@/lib/staff/staffStats";
 import { getTeamName } from "@/lib/common/helpers";
 import { staffAge } from "@/lib/staff/staffAge";
+import { staffErrorKey } from "@/lib/staff/staffErrors";
 import { countryName } from "@/lib/common/countries";
 import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
@@ -106,7 +107,7 @@ export default function StaffProfileV2({
       const updated = await fn(staffId);
       onGameUpdate?.(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(t(staffErrorKey(err)));
     } finally {
       setActionLoading(false);
     }

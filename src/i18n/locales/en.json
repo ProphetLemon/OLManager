@@ -1457,6 +1457,19 @@
     "releaseStaff": "Release staff member",
     "hireStaff": "Hire staff member",
     "clubOwner": "Club owner",
+    "errors": {
+      "generic": "The staff change could not be completed. Try again.",
+      "no_game": "There is no active game.",
+      "no_team": "You are not managing a club.",
+      "hiring_locked": "Staff hiring is closed during the season. Normal hires open in the offseason.",
+      "not_found": "That staff member no longer exists.",
+      "already_employed": "That staff member already works for a club.",
+      "insufficient_funds": "The club does not have enough funds to hire this staff member.",
+      "owner_not_hireable": "Club owners cannot be hired.",
+      "owner_not_fireable": "The club owner cannot be dismissed.",
+      "not_your_team": "That staff member does not work for your club.",
+      "transaction_failed": "The hiring cost could not be recorded. Nothing was changed."
+    },
     "best": "Best",
     "roles": {
       "AssistantManager": "Assistant Manager",

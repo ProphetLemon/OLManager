@@ -1314,6 +1314,19 @@
     "releaseStaff": "Dispensar membro da comissão",
     "hireStaff": "Contratar membro da comissão",
     "clubOwner": "Proprietário do clube",
+    "errors": {
+      "generic": "Não foi possível concluir a alteração do staff. Tente novamente.",
+      "no_game": "Não há nenhum jogo ativo.",
+      "no_team": "Você não comanda nenhum clube.",
+      "hiring_locked": "As contratações de staff ficam fechadas durante a temporada. As contratações normais abrem na entressafra.",
+      "not_found": "Este membro da comissão não existe mais.",
+      "already_employed": "Este membro da comissão já trabalha para um clube.",
+      "insufficient_funds": "O clube não tem fundos suficientes para contratar este membro da comissão.",
+      "owner_not_hireable": "Proprietários de clubes não podem ser contratados.",
+      "owner_not_fireable": "O proprietário do clube não pode ser demitido.",
+      "not_your_team": "Este membro da comissão não trabalha para o seu clube.",
+      "transaction_failed": "Não foi possível registrar o custo da contratação. Nada foi alterado."
+    },
     "best": "Melhor",
     "roles": {
       "AssistantManager": "Assistente Técnico",

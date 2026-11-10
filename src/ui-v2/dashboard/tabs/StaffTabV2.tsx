@@ -26,6 +26,7 @@ import {
 import { resolveStaffPhoto } from "@/lib/players/playerPhotos";
 import { staffDisplayName } from "@/lib/staff/staffName";
 import { staffAge } from "@/lib/staff/staffAge";
+import { staffErrorKey } from "@/lib/staff/staffErrors";
 import { ATTR_LABEL_KEYS, bestAttr, ovrRating, getStaffImpactRows } from "@/lib/staff/staffStats";
 import { getTeamName } from "@/lib/common/helpers";
 import { countryName } from "@/lib/common/countries";
@@ -60,6 +61,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [competitionFilter, setCompetitionFilter] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 12;
 
@@ -110,11 +112,13 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
   const handleHire = async (staffId: string) => {
     setActionLoading(staffId);
+    setActionError(null);
     try {
       const updated = await hireStaff(staffId);
       onGameUpdate(updated);
     } catch (err) {
       console.error("Failed to hire staff:", err);
+      setActionError(t(staffErrorKey(err)));
     } finally {
       setActionLoading(null);
     }
@@ -122,11 +126,13 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
   const handleRelease = async (staffId: string) => {
     setActionLoading(staffId);
+    setActionError(null);
     try {
       const updated = await releaseStaff(staffId);
       onGameUpdate(updated);
     } catch (err) {
       console.error("Failed to release staff:", err);
+      setActionError(t(staffErrorKey(err)));
     } finally {
       setActionLoading(null);
     }
@@ -223,6 +229,12 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
           ))}
         </div>
       </div>
+
+      {actionError && (
+        <div role="alert" className="rounded-lg border border-negative/40 bg-negative/10 px-4 py-2 text-sm text-negative">
+          {actionError}
+        </div>
+      )}
 
       {/* Team impact banner */}
       {view === "mystaff" && myStaff.some((s) => s.role !== "Owner") && (

@@ -1165,6 +1165,19 @@
     "releaseStaff": "Licenzia membro dello staff",
     "hireStaff": "Assumi membro dello staff",
     "clubOwner": "Proprietario del club",
+    "errors": {
+      "generic": "Non è stato possibile completare la modifica dello staff. Riprova.",
+      "no_game": "Non c'è nessuna partita attiva.",
+      "no_team": "Non stai guidando nessun club.",
+      "hiring_locked": "Gli ingaggi dello staff sono chiusi durante la stagione. Gli ingaggi normali aprono in bassa stagione.",
+      "not_found": "Questo membro dello staff non esiste più.",
+      "already_employed": "Questo membro dello staff lavora già per un club.",
+      "insufficient_funds": "Il club non ha fondi sufficienti per ingaggiare questo membro dello staff.",
+      "owner_not_hireable": "I proprietari dei club non possono essere ingaggiati.",
+      "owner_not_fireable": "Il proprietario del club non può essere licenziato.",
+      "not_your_team": "Questo membro dello staff non lavora per il tuo club.",
+      "transaction_failed": "Non è stato possibile registrare il costo dell'ingaggio. Non è cambiato nulla."
+    },
     "best": "Migliore",
     "roles": {
       "AssistantManager": "Vice allenatore",

@@ -1313,6 +1313,19 @@
     "releaseStaff": "Dispensar membro do staff",
     "hireStaff": "Contratar membro do staff",
     "clubOwner": "Proprietário do clube",
+    "errors": {
+      "generic": "Não foi possível concluir a alteração do staff. Tenta novamente.",
+      "no_game": "Não há nenhum jogo ativo.",
+      "no_team": "Não diriges nenhum clube.",
+      "hiring_locked": "As contratações de staff estão fechadas durante a época. As contratações normais abrem na pré-época.",
+      "not_found": "Este membro do staff já não existe.",
+      "already_employed": "Este membro do staff já trabalha para um clube.",
+      "insufficient_funds": "O clube não tem fundos suficientes para contratar este membro do staff.",
+      "owner_not_hireable": "Os proprietários de clubes não podem ser contratados.",
+      "owner_not_fireable": "O proprietário do clube não pode ser despedido.",
+      "not_your_team": "Este membro do staff não trabalha para o teu clube.",
+      "transaction_failed": "Não foi possível registar o custo da contratação. Nada foi alterado."
+    },
     "best": "Melhor",
     "roles": {
       "AssistantManager": "Treinador Adjunto",

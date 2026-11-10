@@ -1314,6 +1314,19 @@
     "releaseStaff": "Staffmitglied entlassen",
     "hireStaff": "Staffmitglied einstellen",
     "clubOwner": "Vereinsbesitzer",
+    "errors": {
+      "generic": "Die Staff-Änderung konnte nicht abgeschlossen werden. Versuche es erneut.",
+      "no_game": "Es gibt kein aktives Spiel.",
+      "no_team": "Du leitest keinen Verein.",
+      "hiring_locked": "Staff-Verpflichtungen sind während der Saison gesperrt. Normale Verpflichtungen sind in der Offseason möglich.",
+      "not_found": "Dieses Staffmitglied existiert nicht mehr.",
+      "already_employed": "Dieses Staffmitglied arbeitet bereits für einen Verein.",
+      "insufficient_funds": "Der Verein hat nicht genug Geld, um dieses Staffmitglied zu verpflichten.",
+      "owner_not_hireable": "Vereinsbesitzer können nicht verpflichtet werden.",
+      "owner_not_fireable": "Der Vereinsbesitzer kann nicht entlassen werden.",
+      "not_your_team": "Dieses Staffmitglied arbeitet nicht für deinen Verein.",
+      "transaction_failed": "Die Verpflichtungskosten konnten nicht gebucht werden. Es wurde nichts geändert."
+    },
     "best": "Bester",
     "roles": {
       "AssistantManager": "Co-Trainer",
