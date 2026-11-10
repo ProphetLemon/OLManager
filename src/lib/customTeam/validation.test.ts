@@ -5,6 +5,7 @@ import {
   contrastRatio,
   defaultReplacementId,
   mapBackendCustomTeamError,
+  mapBackendJoinError,
   normalizeColor,
   normalizeShortName,
   validateCustomTeam,
@@ -148,5 +149,48 @@ describe("mapBackendCustomTeamError", () => {
 
   it("returns null for unrelated errors", () => {
     expect(mapBackendCustomTeamError("No active competition manifests available")).toBeNull();
+  });
+});
+
+describe("validateCustomTeam in join mode", () => {
+  it("needs no replaced team", () => {
+    const joined = validateCustomTeam(draft({ mode: "join", replacesTeamId: null }), teams);
+    expect(joined).toEqual({ ok: true, errors: {} });
+  });
+
+  it("still requires a replaced team when the mode is replace or absent", () => {
+    expect(validateCustomTeam(draft({ mode: "replace", replacesTeamId: null }), teams).errors.replaces).toBe("required");
+    expect(validateCustomTeam(draft({ replacesTeamId: null }), teams).errors.replaces).toBe("required");
+  });
+
+  it("collides with every club of the league, since none leaves", () => {
+    const sameName = draft({ mode: "join", replacesTeamId: null, name: "falke esports", shortName: "FAL" });
+    expect(validateCustomTeam(sameName, teams).errors).toEqual({ name: "duplicate", shortName: "duplicate" });
+    // The same name is free when that club is the one being replaced.
+    const replacing = draft({ mode: "replace", replacesTeamId: "les-a", name: "falke esports", shortName: "FAL" });
+    expect(validateCustomTeam(replacing, teams).ok).toBe(true);
+  });
+
+  it("ignores a leftover replaced team while joining", () => {
+    const joined = validateCustomTeam(draft({ mode: "join", replacesTeamId: "les-a", name: "Falké Esports" }), teams);
+    expect(joined.errors.name).toBe("duplicate");
+  });
+});
+
+describe("mapBackendJoinError", () => {
+  it.each([
+    ["Competition 'lec' does not accept custom clubs", "notAccepted"],
+    ["Competition 'les' has no clubs to join", "noClubs"],
+    ["Joining a league needs a custom club", "badRequest"],
+    ["Pick either a team to replace or a league to join, not both", "badRequest"],
+    ["No team was picked", "badRequest"],
+  ])("maps %j to %s", (message, code) => {
+    expect(mapBackendJoinError(message)).toBe(code);
+  });
+
+  it("keeps matching inside a stack trace and ignores unrelated errors", () => {
+    expect(mapBackendJoinError("Error: Competition 'x' does not accept custom clubs\n    at invoke")).toBe("notAccepted");
+    expect(mapBackendJoinError("Another team already uses this name")).toBeNull();
+    expect(mapBackendJoinError("disk exploded")).toBeNull();
   });
 });

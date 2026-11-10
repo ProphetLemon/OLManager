@@ -9,7 +9,7 @@ use olm_core::domain::player::{Player, PlayerAttributes, PlayerSeasonStats};
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::{FinancialTransactionKind, Team, TeamKind};
 use olm_core::end_of_season::{
-    is_season_complete, process_background_seasons, process_end_of_season, process_end_of_split,
+    expected_fixture_count, is_league_complete, is_season_complete, process_background_seasons, process_end_of_season, process_end_of_split,
 };
 use olm_core::game::{BoardObjective, Game, ObjectiveType};
 use olm_core::generator::definitions::{
@@ -1576,4 +1576,65 @@ fn replenish_depleted_rosters_excludes_was_released_players() {
         fa_avail_2.team_id.is_some(),
         "was_released=false free agent 2 SHOULD be assigned"
     );
+}
+
+// ---------------------------------------------------------------------------
+// Odd-size leagues (a bye every round)
+// ---------------------------------------------------------------------------
+
+fn round_robin_league(club_count: usize, completed: usize) -> League {
+    let team_ids: Vec<String> = (0..club_count).map(|i| format!("club-{i}")).collect();
+    let start = Utc.with_ymd_and_hms(2026, 1, 17, 0, 0, 0).unwrap();
+    let mut league = olm_core::schedule::generate_single_round_league(
+        "Odd League",
+        2026,
+        &team_ids,
+        start,
+    );
+    for fixture in league.fixtures.iter_mut().take(completed) {
+        fixture.status = FixtureStatus::Completed;
+        fixture.result = Some(MatchResult {
+            home_wins: 1,
+            away_wins: 0,
+            ended_by: Default::default(),
+            game_duration_seconds: 30 * 60,
+            report: None,
+        });
+    }
+    league
+}
+
+#[test]
+fn expected_fixture_count_covers_odd_and_even_clubs() {
+    assert_eq!(expected_fixture_count(1), None);
+    assert_eq!(expected_fixture_count(5), Some(10));
+    assert_eq!(expected_fixture_count(8), Some(28));
+    assert_eq!(expected_fixture_count(9), Some(36));
+}
+
+#[test]
+fn odd_leagues_complete_once_every_pair_has_met() {
+    for club_count in [5, 9] {
+        let total = expected_fixture_count(club_count).unwrap();
+        let league = round_robin_league(club_count, total);
+        assert_eq!(league.fixtures.len(), total);
+        assert!(
+            is_league_complete(&league),
+            "{club_count}-club league should be complete"
+        );
+    }
+}
+
+#[test]
+fn odd_league_with_a_pending_fixture_is_not_complete() {
+    let total = expected_fixture_count(9).unwrap();
+    let league = round_robin_league(9, total - 1);
+    assert!(!is_league_complete(&league));
+}
+
+#[test]
+fn even_league_completion_is_unchanged() {
+    let total = expected_fixture_count(8).unwrap();
+    assert!(is_league_complete(&round_robin_league(8, total)));
+    assert!(!is_league_complete(&round_robin_league(8, total - 1)));
 }

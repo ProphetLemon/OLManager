@@ -82,6 +82,7 @@ function toBadgeStep() {
 /** From the badge step to the squad step, with the replace choice made. */
 async function toSquadStep() {
   fireEvent.click(next());
+  fireEvent.click(screen.getByRole("radio", { name: "Replace a club" }));
   fireEvent.click(screen.getByRole("radio", { name: /Falke Esports/ }));
   fireEvent.click(next());
   await screen.findByTestId("founder-mid");

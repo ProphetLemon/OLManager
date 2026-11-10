@@ -18,8 +18,10 @@ use crate::season_awards::compute_season_awards;
 use chrono::{Datelike, TimeZone, Utc};
 use std::collections::HashMap;
 
+/// Fixtures in one single round robin. Valid for odd club counts too: with a
+/// bye each round, every pair still meets exactly once.
 pub fn expected_fixture_count(team_count: usize) -> Option<usize> {
-    if team_count >= 2 && team_count.is_multiple_of(2) {
+    if team_count >= 2 {
         Some((team_count * (team_count - 1)) / 2)
     } else {
         None

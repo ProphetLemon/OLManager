@@ -2,7 +2,7 @@ import { useId, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { CalendarDays, Users } from "lucide-react";
 
-import type { ScoreboardData, SideData } from "@/lib/home/scoreboard";
+import type { RestNoticeData, ScoreboardData, SideData } from "@/lib/home/scoreboard";
 import { formatMatchDate } from "@/lib/formatting/dateFormatting";
 import { Button } from "@/ui-v2/components/ui/button";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
@@ -14,6 +14,8 @@ import { cn } from "@/ui-v2/lib/utils";
 interface ScoreboardHeroProps {
   /** `null` when the club has no fixture left to play. */
   data: ScoreboardData | null;
+  /** Set when `data` is null because the club sits out the league's last pending round. */
+  rest?: RestNoticeData | null;
   onOpenSchedule: () => void;
   onOpenSquad: () => void;
 }
@@ -170,9 +172,36 @@ function OpponentForm({ opponent }: { opponent: SideData }) {
 }
 
 /** Next-match scoreboard graphic: both sides, countdown, five role plates each. */
-export function ScoreboardHero({ data, onOpenSchedule, onOpenSquad }: ScoreboardHeroProps) {
+export function ScoreboardHero({ data, rest = null, onOpenSchedule, onOpenSquad }: ScoreboardHeroProps) {
   const { t, i18n } = useTranslation();
   const headingId = useId();
+
+  if (!data && rest) {
+    return (
+      <section
+        aria-labelledby={headingId}
+        data-slot="scoreboard-hero"
+        data-rest="true"
+        className="@container rounded-xl border border-border bg-card"
+      >
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 p-4">
+          <h2 id={headingId} className="font-heading text-section font-bold">
+            {t("onAir.home.restWeek", { defaultValue: "Rest week" })}
+          </h2>
+          <TagBlock size="sm">{rest.competitionName}</TagBlock>
+          <TagBlock size="sm" tone="warning">
+            {t("onAir.home.restsOn", {
+              n: rest.matchday,
+              defaultValue: `Your club rests on matchday ${rest.matchday}`,
+            })}
+          </TagBlock>
+          <time dateTime={rest.date.slice(0, 10)} className="ms-auto text-sm font-semibold text-foreground">
+            {formatMatchDate(rest.date, i18n.language)}
+          </time>
+        </div>
+      </section>
+    );
+  }
 
   if (!data) {
     return (
@@ -251,6 +280,14 @@ export function ScoreboardHero({ data, onOpenSchedule, onOpenSquad }: Scoreboard
           <TagBlock size="sm" tone="info">
             {`${vsAtWord} ${opponent.shortName}`}
           </TagBlock>
+          {data.restsOnMatchday != null ? (
+            <TagBlock size="sm" tone="warning">
+              {t("onAir.home.restsOn", {
+                n: data.restsOnMatchday,
+                defaultValue: `Your club rests on matchday ${data.restsOnMatchday}`,
+              })}
+            </TagBlock>
+          ) : null}
           <time dateTime={data.date.slice(0, 10)} className="ms-auto text-sm font-semibold text-foreground">
             {formatMatchDate(data.date, i18n.language)}
           </time>

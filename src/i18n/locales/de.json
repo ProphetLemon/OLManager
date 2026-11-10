@@ -593,15 +593,15 @@
     },
     "custom": {
       "create": "Eigenes Team gründen",
-      "createHint": "Ersetze einen Verein dieser Liga durch deinen eigenen.",
+      "createHint": "Füge deinen eigenen Verein zu dieser Liga hinzu oder ersetze einen.",
       "title": "Eigenes Team gründen",
-      "subtitle": "Ersetze einen Verein dieser Liga durch deinen eigenen",
+      "subtitle": "Füge deinen eigenen Verein zu dieser Liga hinzu oder ersetze einen ihrer Vereine",
       "stepOf": "Schritt {{current}} von {{total}}",
       "stepsLabel": "Fortschritt",
       "steps": {
         "identity": "Identität",
         "badge": "Wappen",
-        "replace": "Ersetzen und prüfen"
+        "replace": "Beitreten oder ersetzen"
       },
       "fields": {
         "name": "Vereinsname",
@@ -650,6 +650,26 @@
         "replaceRequired": "Wähle den Verein, den du ersetzen möchtest.",
         "lowContrast": "Diese Farben liegen nah beieinander, das Kürzel ist eventuell schwer lesbar. Du kannst trotzdem fortfahren.",
         "title": "Verein konnte nicht erstellt werden"
+      }
+    },
+    "joinMode": {
+      "groupLabel": "Wie dein Verein in die Liga kommt",
+      "join": {
+        "label": "Der Liga beitreten",
+        "description": "Niemand wird ersetzt. Die Liga hat dann {{total}} Vereine. Dein Verein startet mit dem mittleren Budget und Ansehen der Liga, einem generierten Gründungskader und ohne Jugendakademie.",
+        "descriptionOdd": "Niemand wird ersetzt. Die Liga hat dann {{total}} Vereine und an jedem Spieltag setzt einer aus: deiner einmal pro Split, und zwischen den Splits bleiben weniger Tage für Verpflichtungen. Dein Verein startet mit dem mittleren Budget und Ansehen der Liga, einem generierten Gründungskader und ohne Jugendakademie."
+      },
+      "replace": {
+        "label": "Einen Verein ersetzen",
+        "description": "Der gewählte Verein verlässt die Liga; seine Spieler und sein Personal werden vertragslos."
+      },
+      "summary": "{{name}} ({{tag}}) aus {{country}} tritt {{league}} als Verein Nummer {{position}} bei.",
+      "errors": {
+        "notAccepted": "Diese Liga nimmt keine neuen Vereine auf. Gehe zurück und wähle eine andere Liga oder ein bestehendes Team.",
+        "noClubs": "Diese Liga hat keine Vereine, denen du beitreten könntest. Gehe zurück und wähle eine andere Liga.",
+        "badRequest": "Die Anfrage zum Beitritt zur Liga war ungültig. Gehe einen Schritt zurück und versuche es erneut.",
+        "clash": "Eine Angabe aus einem früheren Schritt stimmt jetzt mit einem Verein überein, der in der Liga bleibt.",
+        "fixClash": "Zurück und ändern"
       }
     },
     "founders": {
@@ -3955,6 +3975,8 @@
       "daysToGo_one": "Noch {{count}} Tag",
       "daysToGo_other": "Noch {{count}} Tage",
       "matchDay": "Spieltag",
+      "restsOn": "Dein Verein setzt am Spieltag {{n}} aus",
+      "restWeek": "Spielfreie Woche",
       "formAfterFirst": "Die Form von {{team}} erscheint nach dem ersten Spiel",
       "yourClub": "Dein Verein",
       "startingFive": "Startfünf",

@@ -53,6 +53,7 @@ function makeData(overrides: Partial<ScoreboardData> = {}): ScoreboardData {
     competitionName: "LEC",
     season: 2028,
     daysToGo: 84,
+    restsOnMatchday: null,
     you: side({ prefix: "Bar", name: "Barcelona Esports", shortName: "BAR" }),
     opponent: side({ prefix: "Navi", name: "Natus Vincere", shortName: "NAVI" }),
     ...overrides,
@@ -86,6 +87,28 @@ describe("ScoreboardHero", () => {
     unmount();
     renderHero(makeData({ kind: "League", bestOf: 3 }));
     expect(screen.queryByText("Best of 3")).toBeNull();
+  });
+
+  it("says the club rests when the league plays a round without it", () => {
+    const { unmount } = renderHero(makeData({ restsOnMatchday: 6 }));
+    expect(screen.getByText("Your club rests on matchday 6")).toBeInTheDocument();
+    unmount();
+    renderHero(makeData({ restsOnMatchday: null }));
+    expect(screen.queryByText(/rests on matchday/)).toBeNull();
+  });
+
+  it("shows a compact rest-week card instead of the empty state when the club sits out the last round", () => {
+    render(
+      <ScoreboardHero
+        data={null}
+        rest={{ matchday: 9, date: "2026-03-14", competitionName: "LES", season: 2 }}
+        onOpenSchedule={vi.fn()}
+        onOpenSquad={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("region", { name: "Rest week" })).toHaveAttribute("data-rest", "true");
+    expect(screen.getByText("Your club rests on matchday 9")).toBeInTheDocument();
+    expect(screen.queryByText("No fixtures scheduled")).toBeNull();
   });
 
   it("uses the vs word at home and the at word away", () => {

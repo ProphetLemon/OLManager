@@ -444,15 +444,15 @@
     },
     "custom": {
       "create": "Crea la tua squadra",
-      "createHint": "Sostituisci un club di questa lega con il tuo.",
+      "createHint": "Aggiungi il tuo club a questa lega o sostituiscine uno.",
       "title": "Crea la tua squadra",
-      "subtitle": "Sostituisci un club di questa lega con il tuo",
+      "subtitle": "Aggiungi il tuo club a questa lega o sostituisci uno dei suoi club",
       "stepOf": "Passo {{current}} di {{total}}",
       "stepsLabel": "Avanzamento",
       "steps": {
         "identity": "Identità",
         "badge": "Stemma",
-        "replace": "Sostituisci e rivedi"
+        "replace": "Unisciti o sostituisci"
       },
       "fields": {
         "name": "Nome del club",
@@ -501,6 +501,26 @@
         "replaceRequired": "Scegli il club che vuoi sostituire.",
         "lowContrast": "Questi colori sono vicini e la sigla potrebbe essere difficile da leggere. Puoi continuare comunque.",
         "title": "Impossibile creare il club"
+      }
+    },
+    "joinMode": {
+      "groupLabel": "Come il tuo club entra nella lega",
+      "join": {
+        "label": "Unisciti alla lega",
+        "description": "Nessun club viene sostituito. La lega avrà {{total}} club. Il tuo club parte con il budget e la reputazione medi della lega, una rosa fondatrice generata e senza Academy.",
+        "descriptionOdd": "Nessun club viene sostituito. La lega avrà {{total}} club e a ogni giornata uno riposa: il tuo lo farà una volta per split, e tra uno split e l'altro ci saranno meno giorni per ingaggiare giocatori. Il tuo club parte con il budget e la reputazione medi della lega, una rosa fondatrice generata e senza Academy."
+      },
+      "replace": {
+        "label": "Sostituisci un club",
+        "description": "Il club scelto lascia la lega; i suoi giocatori e il suo staff diventano svincolati."
+      },
+      "summary": "{{name}} ({{tag}}), da {{country}}, entra in {{league}} come club numero {{position}}.",
+      "errors": {
+        "notAccepted": "Questa lega non accetta nuovi club. Torna indietro e scegli un'altra lega o una squadra esistente.",
+        "noClubs": "Questa lega non ha club a cui unirsi. Torna indietro e scegli un'altra lega.",
+        "badRequest": "La richiesta di unirsi alla lega non era valida. Torna indietro di un passo e riprova.",
+        "clash": "Un dato di un passaggio precedente coincide ora con un club che resta nella lega.",
+        "fixClash": "Torna indietro e modificalo"
       }
     },
     "founders": {
@@ -3954,6 +3974,8 @@
       "daysToGo_one": "Manca {{count}} giorno",
       "daysToGo_other": "Mancano {{count}} giorni",
       "matchDay": "Giorno di gara",
+      "restsOn": "Il tuo club riposa alla giornata {{n}}",
+      "restWeek": "Settimana di riposo",
       "formAfterFirst": "La forma di {{team}} appare dopo la prima partita",
       "yourClub": "Il tuo club",
       "startingFive": "Cinque titolari",

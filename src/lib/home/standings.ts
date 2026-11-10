@@ -29,6 +29,8 @@ export interface StandingsPanelData {
 }
 
 const DEFAULT_LIMIT = 8;
+/** Leagues up to this size list every club instead of cutting at the limit. */
+const FULL_TABLE_MAX = 9;
 const SHORT_NAME_MAX = 4;
 
 /** Names that already fit are kept; longer ones collapse to their initials (or a prefix for one word). */
@@ -74,12 +76,12 @@ export function getStandingsPanelData(
   const league = activeLeague(gameState);
   if (!league) return null;
 
-  const limit = Math.max(1, opts.limit ?? DEFAULT_LIMIT);
   const myTeamId = gameState.manager?.team_id ?? null;
   const teams = new Map((gameState.teams ?? []).map((team) => [team.id, team]));
   const promotedIds = latestPromotedIds(gameState, league);
 
   const sorted = [...(league.standings ?? [])].sort(compareStandingsByLolScore);
+  const limit = Math.max(1, opts.limit ?? (sorted.length <= FULL_TABLE_MAX ? sorted.length : DEFAULT_LIMIT));
   const all: StandingRow[] = sorted.map((entry, index) => {
     const team = teams.get(entry.team_id);
     const name = team?.name ?? entry.team_id;

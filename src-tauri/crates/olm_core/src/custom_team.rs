@@ -89,6 +89,8 @@ pub enum CustomTeamError {
     ReplacedTeamNotInCompetition,
     /// Only main clubs can be replaced, never academies.
     NotCustomizableTeamKind,
+    /// No main club belongs to the competition a custom club should join.
+    UnknownCompetition(String),
     /// The uploaded badge was rejected; the reason is the machine code.
     InvalidLogo(LogoError),
 }
@@ -109,6 +111,7 @@ impl fmt::Display for CustomTeamError {
                 write!(f, "The replaced team is not in this competition")
             }
             Self::NotCustomizableTeamKind => write!(f, "Only main clubs can be replaced"),
+            Self::UnknownCompetition(id) => write!(f, "Competition '{id}' has no clubs to join"),
             Self::InvalidLogo(reason) => write!(f, "Invalid club logo: {}", reason.reason()),
         }
     }
@@ -475,6 +478,49 @@ fn adopt_academy(academy: &mut Team, custom_id: &str, spec: &CustomTeamSpec, tod
     }
 }
 
+/// Builds the new club: league-median economy of `peers`, a generated badge
+/// (or the validated upload), no sponsorship and entry-level facilities,
+/// matching its peers. Shared by the replace and join installs.
+fn build_custom_team(
+    team_id: &str,
+    competition_id: &str,
+    spec: &CustomTeamSpec,
+    peers: &[&Team],
+    founded_year: i32,
+) -> Team {
+    let profile = league_median_profile(peers);
+    let scrim_reputation = median_non_zero(peers.iter().map(|t| i64::from(t.scrim_reputation)))
+        .and_then(|value| u8::try_from(value).ok())
+        .unwrap_or(FALLBACK_SCRIM_REPUTATION);
+
+    let mut team = Team::new(
+        team_id.to_string(),
+        spec.name.clone(),
+        spec.short_name.clone(),
+        spec.country.clone(),
+        String::new(),
+        format!("{} Arena", spec.short_name),
+        profile.stadium_capacity,
+    );
+    team.finance = profile.finance;
+    team.wage_budget = profile.wage_budget;
+    team.transfer_budget = profile.transfer_budget;
+    team.reputation = profile.reputation;
+    team.competition_id = Some(competition_id.to_string());
+    team.logo_url = Some(spec.logo_data_uri.clone().unwrap_or_else(|| {
+        badge_data_uri(&spec.short_name, &spec.primary_color, &spec.secondary_color)
+    }));
+    team.colors = TeamColors {
+        primary: spec.primary_color.clone(),
+        secondary: spec.secondary_color.clone(),
+    };
+    team.founded_year = u32::try_from(founded_year).unwrap_or(team.founded_year);
+    team.sponsorship = None;
+    team.facilities = Facilities::default();
+    team.scrim_reputation = scrim_reputation;
+    team
+}
+
 /// What [`replace_team_with_custom`] changed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CustomTeamOutcome {
@@ -529,40 +575,16 @@ pub fn replace_team_with_custom(
         .copied()
         .filter(|team| team.competition_id.as_deref() == Some(competition_id))
         .collect();
-    let profile = league_median_profile(&peers);
-    let scrim_reputation = median_non_zero(peers.iter().map(|t| i64::from(t.scrim_reputation)))
-        .and_then(|value| u8::try_from(value).ok())
-        .unwrap_or(FALLBACK_SCRIM_REPUTATION);
-
     let team_id = custom_team_id(competition_id, &spec.short_name);
     let (inherited_academy_id, dissolved_academy_ids) =
         split_replaced_academies(game, replaced, &team_id);
-    let mut team = Team::new(
-        team_id.clone(),
-        spec.name.clone(),
-        spec.short_name.clone(),
-        spec.country.clone(),
-        String::new(),
-        format!("{} Arena", spec.short_name),
-        profile.stadium_capacity,
+    let mut team = build_custom_team(
+        &team_id,
+        competition_id,
+        &spec,
+        &peers,
+        game.clock.current_date.year(),
     );
-    team.finance = profile.finance;
-    team.wage_budget = profile.wage_budget;
-    team.transfer_budget = profile.transfer_budget;
-    team.reputation = profile.reputation;
-    team.competition_id = Some(competition_id.to_string());
-    team.logo_url = Some(spec.logo_data_uri.clone().unwrap_or_else(|| {
-        badge_data_uri(&spec.short_name, &spec.primary_color, &spec.secondary_color)
-    }));
-    team.colors = TeamColors {
-        primary: spec.primary_color.clone(),
-        secondary: spec.secondary_color.clone(),
-    };
-    team.founded_year = u32::try_from(game.clock.current_date.year()).unwrap_or(team.founded_year);
-    // Peers ship without sponsorship and with entry-level facilities.
-    team.sponsorship = None;
-    team.facilities = Facilities::default();
-    team.scrim_reputation = scrim_reputation;
 
     let released_from = |team_id: Option<&str>| {
         team_id.is_some_and(|id| {
@@ -624,5 +646,53 @@ pub fn replace_team_with_custom(
         team_id,
         released_player_ids,
         released_staff_ids,
+    })
+}
+
+/// Adds a new club built from `spec` to `competition_id` without removing
+/// anyone: the league grows by one club.
+///
+/// Meant for world build time, before rosters are filled. The economy is the
+/// median of every current Main club of the competition. The club starts
+/// without an academy, nobody is released and `removed_team_ids` is untouched,
+/// so the outcome lists no released people. Eligibility of the competition
+/// (`custom_team_allowed`) is the caller's check, as for the replace install.
+pub fn join_team_with_custom(
+    game: &mut Game,
+    competition_id: &str,
+    spec: &CustomTeamSpec,
+) -> Result<CustomTeamOutcome, CustomTeamError> {
+    let others: Vec<&Team> = game
+        .teams
+        .iter()
+        .filter(|team| team.team_kind != TeamKind::Academy)
+        .collect();
+    // The competition is checked first so an unknown one is reported as such,
+    // not as whatever is wrong with the spec.
+    let peers: Vec<&Team> = others
+        .iter()
+        .copied()
+        .filter(|team| team.competition_id.as_deref() == Some(competition_id))
+        .collect();
+    if peers.is_empty() {
+        return Err(CustomTeamError::UnknownCompetition(
+            competition_id.to_string(),
+        ));
+    }
+    let spec = validate_spec(spec, &others)?;
+    let team_id = custom_team_id(competition_id, &spec.short_name);
+    let team = build_custom_team(
+        &team_id,
+        competition_id,
+        &spec,
+        &peers,
+        game.clock.current_date.year(),
+    );
+    game.teams.push(team);
+
+    Ok(CustomTeamOutcome {
+        team_id,
+        released_player_ids: Vec::new(),
+        released_staff_ids: Vec::new(),
     })
 }

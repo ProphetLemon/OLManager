@@ -8,7 +8,11 @@ import type { GameStateData, LeagueSelectionData } from "@/store/gameStore";
 import { useGameStore } from "@/store/gameStore";
 import { LeaguePickerV2 } from "@/ui-v2/_legacy/components/teamSelection/LeaguePickerV2";
 import { TeamGridV2 } from "@/ui-v2/_legacy/components/teamSelection/TeamGridV2";
-import { loadLeagueSelectionData, selectTeam } from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
+import {
+  joinLeagueWithCustomTeam,
+  loadLeagueSelectionData,
+  selectTeam,
+} from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { useRosterOverlay } from "@/hooks/useRosterOverlay";
@@ -99,15 +103,23 @@ export default function TeamSelectionV2() {
 
   /**
    * Finish the new-game flow. With `customTeam`, `teamId` is the league slot
-   * the new club replaces; the backend generates the club's real id, so the
-   * managed team is resolved from `manager.team_id`, never from `teamId`.
+   * the new club replaces, or null when it joins `competitionId` as an extra
+   * club; the backend generates the club's real id, so the managed team is
+   * resolved from `manager.team_id`, never from `teamId`.
    */
-  const confirmSelection = async (teamId: string, customTeam?: CustomTeamSpec) => {
+  const confirmSelection = async (
+    teamId: string | null,
+    customTeam?: CustomTeamSpec,
+    competitionId?: string,
+  ) => {
     if (isConfirming) return;
     setIsConfirming(true);
     setConfirmError(null);
     try {
-      let updatedGame = await selectTeam(teamId, i18n.language, customTeam);
+      let updatedGame =
+        teamId === null && customTeam && competitionId
+          ? await joinLeagueWithCustomTeam(competitionId, i18n.language, customTeam)
+          : await selectTeam(teamId as string, i18n.language, customTeam);
       const managedTeamId = updatedGame.manager?.team_id ?? teamId;
       const myTeam = updatedGame.teams.find((t: any) => t.id === managedTeamId);
       if (myTeam) {
@@ -228,7 +240,9 @@ export default function TeamSelectionV2() {
           <CustomTeamWizardV2
             competition={selectedCompetition}
             onCancel={handleBackToTeams}
-            onConfirm={(spec, replacesTeamId) => void confirmSelection(replacesTeamId, spec)}
+            onConfirm={(spec, replacesTeamId) =>
+              void confirmSelection(replacesTeamId, spec, selectedCompetition.id)
+            }
             isSubmitting={isConfirming || overlayBusy}
             error={confirmError}
           />

@@ -8,6 +8,7 @@ import type { PreviewCall } from "@/ui-v2/pages/customTeam/founders/foundersTest
 const mocks = vi.hoisted(() => ({
   loadLeagueSelectionData: vi.fn(),
   selectTeam: vi.fn(),
+  joinLeague: vi.fn(),
   navigate: vi.fn(),
   setGameState: vi.fn(),
   setGameActive: vi.fn(),
@@ -54,6 +55,7 @@ vi.mock("@/store/gameStore", () => ({
 vi.mock("@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers", () => ({
   loadLeagueSelectionData: mocks.loadLeagueSelectionData,
   selectTeam: mocks.selectTeam,
+  joinLeagueWithCustomTeam: mocks.joinLeague,
   getTeamLogoPath: () => "",
   getReputationLabel: () => ({ labelKey: "teamSelect.repAverage", variant: "secondary" }),
   formatFinance: (value: number) => `€${value}`,
@@ -111,12 +113,13 @@ async function openWizard() {
   fireEvent.click(await screen.findByRole("button", { name: /Create your team/i }));
 }
 
-/** Identity, badge and replace steps, then the founding squad step once its preview is in. */
-async function walkWizard() {
+/** Identity, badge and mode steps, then the founding squad step once its preview is in. */
+async function walkWizard(mode: "join" | "replace" = "replace") {
   fireEvent.change(screen.getByLabelText("Club name"), { target: { value: "Ray Esports" } });
   fireEvent.change(screen.getByLabelText("Country"), { target: { value: "ES" } });
   fireEvent.click(screen.getByRole("button", { name: "Next" }));
   fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  if (mode === "replace") fireEvent.click(screen.getByRole("radio", { name: "Replace a club" }));
   fireEvent.click(screen.getByRole("button", { name: "Next" }));
   await screen.findByTestId("founder-mid");
 }
@@ -316,6 +319,55 @@ describe("TeamSelectionV2", () => {
       expect(mocks.invoke).toHaveBeenCalledWith("set_active_lineup", {
         playerIds: ["ray-0", "ray-1", "ray-2", "ray-3", "ray-4"],
       });
+    });
+
+    it("joins the league without a teamId and builds the lineup from manager.team_id", async () => {
+      mocks.joinLeague.mockResolvedValue(customGame());
+      await openWizard();
+      await walkWizard("join");
+      fireEvent.click(screen.getByRole("button", { name: "Create club" }));
+
+      await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith("/dashboard"));
+      expect(mocks.joinLeague).toHaveBeenCalledTimes(1);
+      expect(mocks.joinLeague).toHaveBeenCalledWith("les", "en", {
+        name: "Ray Esports",
+        short_name: "RAY",
+        primary_color: "#f97316",
+        secondary_color: "#18181b",
+        country: "ES",
+        founding_seed: previewCalls[previewCalls.length - 1].seed,
+      });
+      expect(mocks.selectTeam).not.toHaveBeenCalled();
+      expect(Object.keys(previewCalls[previewCalls.length - 1])).not.toContain("replacedTeamId");
+      expect(mocks.invoke).toHaveBeenCalledWith("set_active_lineup", {
+        playerIds: ["ray-0", "ray-1", "ray-2", "ray-3", "ray-4"],
+      });
+    });
+
+    it("localizes a backend refusal of the join on the mode step", async () => {
+      mocks.joinLeague.mockRejectedValue("Competition 'les' does not accept custom clubs");
+      await openWizard();
+      await walkWizard("join");
+      fireEvent.click(screen.getByRole("button", { name: "Create club" }));
+
+      expect(
+        await screen.findByText(
+          "This league does not accept new clubs. Go back and choose another league or an existing team.",
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Join or replace" })).toBeInTheDocument();
+      expect(screen.queryByText(/does not accept custom clubs/)).not.toBeInTheDocument();
+      expect(mocks.navigate).not.toHaveBeenCalledWith("/dashboard");
+    });
+
+    it("never calls the join command for a replaced slot", async () => {
+      mocks.selectTeam.mockResolvedValue(customGame());
+      await openWizard();
+      await walkWizard("replace");
+      fireEvent.click(screen.getByRole("button", { name: "Create club" }));
+
+      await waitFor(() => expect(mocks.selectTeam).toHaveBeenCalled());
+      expect(mocks.joinLeague).not.toHaveBeenCalled();
     });
 
     it("keeps the wizard open and localizes a backend rejection", async () => {

@@ -158,9 +158,60 @@ describe("season helpers", () => {
     expect(expectedFixtureCount(4)).toBe(6);
   });
 
-  it("treats odd-sized or undersized leagues as incomplete schedules", () => {
+  it("computes the expected fixture count for odd-sized leagues (one club rests each matchday)", () => {
+    expect(expectedFixtureCount(3)).toBe(3);
+    expect(expectedFixtureCount(9)).toBe(36);
+  });
+
+  it("treats undersized leagues as incomplete schedules", () => {
+    expect(expectedFixtureCount(0)).toBeNull();
     expect(expectedFixtureCount(1)).toBeNull();
-    expect(expectedFixtureCount(3)).toBeNull();
+  });
+
+  describe("9-club league", () => {
+    const ids = Array.from({ length: 9 }, (_, i) => `team_${i + 1}`);
+    const standings = ids.map((team_id) => ({
+      team_id, played: 8, won: 4, lost: 4, maps_won: 8, maps_lost: 8, points: 12,
+    }));
+    const roundRobin = (legs: 1 | 2, status: FixtureData["status"]): FixtureData[] => {
+      const out: FixtureData[] = [];
+      let n = 1;
+      for (let i = 0; i < ids.length; i += 1) {
+        for (let j = i + 1; j < ids.length; j += 1) {
+          out.push(makeFixture({ id: `f${n}`, home_team_id: ids[i], away_team_id: ids[j], status }));
+          n += 1;
+          if (legs === 2) {
+            out.push(makeFixture({ id: `f${n}`, home_team_id: ids[j], away_team_id: ids[i], status }));
+            n += 1;
+          }
+        }
+      }
+      return out;
+    };
+    const league = (fixtures: FixtureData[]) => ({
+      id: "league-9", name: "League", season: 1, fixtures, standings,
+    });
+
+    it("recognises a full single round robin (36 fixtures) and marks it complete", () => {
+      const l = league(roundRobin(1, "Completed"));
+      expect(l.fixtures).toHaveLength(36);
+      expect(hasFullLeagueSchedule(l)).toBe(true);
+      expect(isSeasonComplete(l)).toBe(true);
+    });
+
+    it("recognises a full double round robin (72 fixtures) and marks it complete", () => {
+      const l = league(roundRobin(2, "Completed"));
+      expect(l.fixtures).toHaveLength(72);
+      expect(hasFullLeagueSchedule(l)).toBe(true);
+      expect(isSeasonComplete(l)).toBe(true);
+    });
+
+    it("stays incomplete while a fixture is pending or the schedule is truncated", () => {
+      const pending = roundRobin(1, "Completed");
+      pending[pending.length - 1] = { ...pending[pending.length - 1], status: "Scheduled" };
+      expect(isSeasonComplete(league(pending))).toBe(false);
+      expect(hasFullLeagueSchedule(league(roundRobin(1, "Completed").slice(0, 30)))).toBe(false);
+    });
   });
 
   it("requires a full plausible schedule before marking the season complete", () => {

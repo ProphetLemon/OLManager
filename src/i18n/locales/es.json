@@ -721,15 +721,15 @@
     },
     "custom": {
       "create": "Crea tu equipo",
-      "createHint": "Sustituye a un club de esta liga por el tuyo.",
+      "createHint": "Añade tu propio club a esta liga o sustituye a uno.",
       "title": "Crea tu equipo",
-      "subtitle": "Sustituye a un club de esta liga por el tuyo",
+      "subtitle": "Añade tu propio club a esta liga o sustituye a uno de sus clubes",
       "stepOf": "Paso {{current}} de {{total}}",
       "stepsLabel": "Progreso",
       "steps": {
         "identity": "Identidad",
         "badge": "Escudo",
-        "replace": "Sustituir y revisar"
+        "replace": "Unirse o sustituir"
       },
       "fields": {
         "name": "Nombre del club",
@@ -778,6 +778,26 @@
         "replaceRequired": "Elige el club que quieres sustituir.",
         "lowContrast": "Estos colores son muy parecidos y la sigla puede leerse con dificultad. Puedes continuar igualmente.",
         "title": "No se pudo crear el club"
+      }
+    },
+    "joinMode": {
+      "groupLabel": "Cómo entra tu club en la liga",
+      "join": {
+        "label": "Unirse a la liga",
+        "description": "No se sustituye a nadie. La liga tendrá {{total}} clubes. Tu club empieza con el presupuesto y la reputación medios de la liga, una plantilla fundadora generada y sin academia.",
+        "descriptionOdd": "No se sustituye a nadie. La liga tendrá {{total}} clubes y en cada jornada descansa uno: el tuyo lo hará una vez por split, y habrá menos días entre splits para fichar. Tu club empieza con el presupuesto y la reputación medios de la liga, una plantilla fundadora generada y sin academia."
+      },
+      "replace": {
+        "label": "Sustituir a un club",
+        "description": "El club que elijas sale de la liga y sus jugadores y su personal pasan a ser agentes libres."
+      },
+      "summary": "{{name}} ({{tag}}), de {{country}}, entra en {{league}} como el club número {{position}}.",
+      "errors": {
+        "notAccepted": "Esta liga no admite clubes nuevos. Vuelve atrás y elige otra liga o un equipo existente.",
+        "noClubs": "Esta liga no tiene clubes a los que unirse. Vuelve atrás y elige otra liga.",
+        "badRequest": "La solicitud para unirse a la liga no es válida. Vuelve un paso atrás e inténtalo de nuevo.",
+        "clash": "Algún dato de un paso anterior coincide ahora con un club que se queda en la liga.",
+        "fixClash": "Volver y cambiarlo"
       }
     },
     "founders": {
@@ -3961,6 +3981,8 @@
       "daysToGo_one": "Falta {{count}} día",
       "daysToGo_other": "Faltan {{count}} días",
       "matchDay": "Día de partida",
+      "restsOn": "Tu club descansa en la jornada {{n}}",
+      "restWeek": "Semana de descanso",
       "formAfterFirst": "La forma de {{team}} aparece tras su primera partida",
       "yourClub": "Tu club",
       "startingFive": "Quinteto titular",
