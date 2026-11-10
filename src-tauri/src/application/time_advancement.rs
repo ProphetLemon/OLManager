@@ -53,6 +53,22 @@ pub fn advance_time_with_mode(
         .get_game(|current_game| current_game.clone())
         .ok_or("No active game session")?;
 
+    // The end-of-split screen owns the next step; the clock stays where it is.
+    if game
+        .active_league()
+        .is_some_and(olm_core::end_of_season::is_league_complete)
+    {
+        info!("[cmd] advance_time_with_mode: split finished, nothing advanced");
+        return Ok(AdvanceTimeWithModeResponse {
+            action: "season_complete".to_string(),
+            game: Some(crate::client_game::game_for_client(&game)),
+            snapshot: None,
+            fixture_index: None,
+            mode: None,
+            round_summary: None,
+        });
+    }
+
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
     let round_context = round_context_for_today(&game, &today);
     let user_fixture_idx = scheduled_user_fixture_index(&game, &today);
