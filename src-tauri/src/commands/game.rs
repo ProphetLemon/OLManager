@@ -4038,6 +4038,46 @@ mod tests {
             }
         }
 
+        #[test]
+        fn in_a_real_world_no_owner_is_hireable_and_the_koi_owner_cannot_be_fired() {
+            use crate::commands::staff::{hire_staff_internal, release_staff_internal, StaffError};
+
+            const KOI: &str = "lec-movistar-koi";
+            let (mut game, _catalog, _overlay, user_team) = new_game_as("Movistar KOI", Some(KOI));
+            assert_eq!(user_team, KOI);
+            game.manager.hire(KOI.to_string());
+            // The market is open in the offseason.
+            game.season_context.season_start = None;
+            game.clock = GameClock::new(chrono::Utc.with_ymd_and_hms(2026, 3, 1, 12, 0, 0).unwrap());
+            let koi_owner = game
+                .staff
+                .iter()
+                .find(|member| member.is_owner() && member.team_id.as_deref() == Some(KOI))
+                .map(|member| member.id.clone())
+                .expect("KOI has its owner");
+            let free_owners: Vec<String> = game
+                .staff
+                .iter()
+                .filter(|member| member.is_owner() && member.team_id.is_none())
+                .map(|member| member.id.clone())
+                .collect();
+            assert!(!free_owners.is_empty(), "the data ships an unattached owner");
+            let state = StateManager::new();
+            state.set_game(game);
+
+            assert_eq!(
+                release_staff_internal(&state, &koi_owner).expect_err("the owner stays"),
+                StaffError::OwnerNotFireable
+            );
+            for id in &free_owners {
+                assert_eq!(
+                    hire_staff_internal(&state, id).expect_err("owners are not for hire"),
+                    StaffError::OwnerNotHireable,
+                    "{id}"
+                );
+            }
+        }
+
         // -- Whole LES seasons (J3) ----------------------------------------------------
 
         /// Plays whole LES seasons day by day through the app's own entry points

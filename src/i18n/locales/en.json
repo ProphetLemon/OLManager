@@ -1456,6 +1456,7 @@
     "noAvailableStaff": "No available staff found.",
     "releaseStaff": "Release staff member",
     "hireStaff": "Hire staff member",
+    "clubOwner": "Club owner",
     "best": "Best",
     "roles": {
       "AssistantManager": "Assistant Manager",

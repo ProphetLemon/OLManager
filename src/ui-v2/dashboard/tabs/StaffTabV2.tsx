@@ -64,7 +64,8 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
   const PAGE_SIZE = 12;
 
   const myStaff = gameState.staff.filter((s) => s.team_id === userTeamId);
-  const availableStaff = gameState.staff.filter((s) => !s.team_id);
+  // Club owners belong to their club and are never offered in the market.
+  const availableStaff = gameState.staff.filter((s) => !s.team_id && s.role !== "Owner");
   const displayStaff = isWorldMode
     ? gameState.staff
     : view === "mystaff"
@@ -224,7 +225,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
       </div>
 
       {/* Team impact banner */}
-      {view === "mystaff" && myStaff.length > 0 && (
+      {view === "mystaff" && myStaff.some((s) => s.role !== "Owner") && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
           <span className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
             {t("staff.lolImpactTeamTitle")}
@@ -295,6 +296,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
           {pageData.map((staff) => {
             const roleIcon = ROLE_ICONS[staff.role] || <GraduationCap className="size-4" />;
             const age = staffAge(staff, gameState.clock.current_date);
+            const isOwner = staff.role === "Owner";
             const ovr = ovrRating(staff);
             const best = bestAttr(staff);
             const impactRows = getStaffImpactRows(staff);
@@ -366,6 +368,11 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
                     {/* Specialization + Wage */}
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {isOwner && (
+                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-foreground">
+                          <Star className="size-3" /> {t("staff.clubOwner")}
+                        </span>
+                      )}
                       {staff.specialization && (
                         <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                           <Star className="size-3" /> {t(`staff.specializations.${staff.specialization}`)}
@@ -413,7 +420,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
                   {/* Action */}
                   <div className="flex shrink-0 flex-col items-center justify-start gap-2">
-                    {!isWorldMode && view === "mystaff" && (
+                    {!isWorldMode && view === "mystaff" && !isOwner && (
                       <button
                         type="button"
                         disabled={actionLoading === staff.id}

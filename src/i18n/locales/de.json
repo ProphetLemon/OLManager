@@ -1313,6 +1313,7 @@
     "noAvailableStaff": "Kein Staff verfügbar.",
     "releaseStaff": "Staffmitglied entlassen",
     "hireStaff": "Staffmitglied einstellen",
+    "clubOwner": "Vereinsbesitzer",
     "best": "Bester",
     "roles": {
       "AssistantManager": "Co-Trainer",

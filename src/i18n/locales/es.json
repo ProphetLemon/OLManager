@@ -1456,6 +1456,7 @@
     "noAvailableStaff": "No hay staff disponible.",
     "releaseStaff": "Despedir miembro del staff",
     "hireStaff": "Contratar miembro del staff",
+    "clubOwner": "Propietario del club",
     "best": "Mejor",
     "roles": {
       "AssistantManager": "Segundo Entrenador",

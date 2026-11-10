@@ -1164,6 +1164,7 @@
     "noAvailableStaff": "Nessun membro dello staff disponibile.",
     "releaseStaff": "Licenzia membro dello staff",
     "hireStaff": "Assumi membro dello staff",
+    "clubOwner": "Proprietario del club",
     "best": "Migliore",
     "roles": {
       "AssistantManager": "Vice allenatore",

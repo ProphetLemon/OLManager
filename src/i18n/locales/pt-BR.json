@@ -1313,6 +1313,7 @@
     "noAvailableStaff": "Nenhuma comissão técnica disponível.",
     "releaseStaff": "Dispensar membro da comissão",
     "hireStaff": "Contratar membro da comissão",
+    "clubOwner": "Proprietário do clube",
     "best": "Melhor",
     "roles": {
       "AssistantManager": "Assistente Técnico",

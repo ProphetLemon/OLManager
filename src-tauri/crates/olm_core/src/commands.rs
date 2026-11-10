@@ -148,7 +148,11 @@ pub fn clear_old_messages(game: &mut Game) {
 // ── Staff ────────────────────────────────────────────────────
 
 pub fn hire_staff(game: &mut Game, staff_id: &str, team_id: &str) {
-    if let Some(s) = game.staff.iter_mut().find(|s| s.id == staff_id) {
+    if let Some(s) = game
+        .staff
+        .iter_mut()
+        .find(|s| s.id == staff_id && !s.is_owner())
+    {
         s.team_id = Some(team_id.to_string());
     }
 }
@@ -157,7 +161,7 @@ pub fn release_staff(game: &mut Game, staff_id: &str, team_id: &str) {
     if let Some(s) = game
         .staff
         .iter_mut()
-        .find(|s| s.id == staff_id && s.team_id.as_deref() == Some(team_id))
+        .find(|s| s.id == staff_id && s.team_id.as_deref() == Some(team_id) && !s.is_owner())
     {
         s.team_id = Some("fa".to_string());
     }
@@ -371,5 +375,40 @@ mod tests {
         set_active_lineup(&mut game, "lec-a", ids()).unwrap();
 
         assert_eq!(game.teams[0].active_lineup_ids, ids());
+    }
+
+    fn owner_game(team_id: Option<&str>) -> Game {
+        use crate::domain::staff::{Staff, StaffAttributes, StaffRole};
+
+        let mut game = roster(["KR"; 5]);
+        let mut owner = Staff::new(
+            "owner".to_string(),
+            "Club".to_string(),
+            "Owner".to_string(),
+            String::new(),
+            StaffRole::Owner,
+            StaffAttributes::default(),
+        );
+        owner.team_id = team_id.map(str::to_string);
+        game.staff.push(owner);
+        game
+    }
+
+    #[test]
+    fn the_dispatch_hire_never_signs_an_owner() {
+        let mut game = owner_game(None);
+
+        hire_staff(&mut game, "owner", "lec-a");
+
+        assert_eq!(game.staff[0].team_id, None);
+    }
+
+    #[test]
+    fn the_dispatch_release_never_frees_an_owner() {
+        let mut game = owner_game(Some("lec-a"));
+
+        release_staff(&mut game, "owner", "lec-a");
+
+        assert_eq!(game.staff[0].team_id.as_deref(), Some("lec-a"));
     }
 }

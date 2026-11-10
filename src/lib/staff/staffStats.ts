@@ -44,6 +44,8 @@ export function ovrRating(s: StaffData): number {
 
 /** Role-specific gameplay impact multipliers for display. */
 export function getStaffImpactRows(s: StaffData): Array<{ labelKey: string; value: number }> {
+  // A club owner is not on the coaching staff, so it has no gameplay impact.
+  if (s.role === "Owner") return [];
   const coaching = qualityMult(s.attributes.coaching, 0.88, 1.22);
   const development = qualityMult(s.attributes.coaching, 0.92, 1.18);
   const tactics = qualityMult(s.attributes.coaching, 0.94, 1.14);
