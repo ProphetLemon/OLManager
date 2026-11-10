@@ -92,14 +92,24 @@ fn view_offer_action() -> MessageAction {
 }
 
 /// Message template system — generates rich messages with variations.
-pub fn welcome_message(team_name: &str, team_id: &str, date: &str, lang: &str) -> InboxMessage {
+///
+/// `days_to_start` is the number of days to the first league fixture. It travels
+/// as `days` (the text) and `count` (the singular/plural form the UI picks).
+pub fn welcome_message(
+    team_name: &str,
+    team_id: &str,
+    date: &str,
+    lang: &str,
+    days_to_start: u32,
+) -> InboxMessage {
+    let days = days_to_start.to_string();
     // Use template store (with inline translations) if available
     if let Some(msg) = crate::messages::template_store::template_store().build_message_keyed(
         "select_team",
         &format!("welcome_{}", team_id),
         date,
         lang,
-        vec![("team", team_name), ("days", "0")],
+        vec![("team", team_name), ("days", &days), ("count", &days)],
         "be.msg.welcome.templates",
     ) {
         return msg;
@@ -175,6 +185,89 @@ pub fn welcome_message(team_name: &str, team_id: &str, date: &str, lang: &str) -
         &format!("be.msg.welcome.subject{}", idx),
         &format!("be.msg.welcome.body{}", idx),
         params(&[("team", team_name)]),
+    )
+    .with_sender_i18n("be.sender.boardOfDirectors", "be.role.chairman")
+}
+
+/// How a club the player created came into the league.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FoundingMode<'a> {
+    /// The club takes the place of an existing club.
+    Replace { replaced_team_name: &'a str },
+    /// The club enters as an extra club and starts without an academy.
+    Join,
+}
+
+/// Welcome for a career that starts with a club the player created: the club has
+/// just been founded and the player is its first head coach. `days_to_start` is
+/// the days to the first league fixture (see [`welcome_message`]).
+pub fn founding_welcome_message(
+    team_name: &str,
+    team_id: &str,
+    mode: FoundingMode<'_>,
+    days_to_start: u32,
+    date: &str,
+) -> InboxMessage {
+    let days = days_to_start.to_string();
+    let day_word = if days_to_start == 1 { "day" } else { "days" };
+    let mut i18n_params = params(&[("team", team_name), ("days", &days), ("count", &days)]);
+    let (variant, entry) = match mode {
+        FoundingMode::Replace { replaced_team_name } => {
+            i18n_params.insert("replaced".to_string(), replaced_team_name.to_string());
+            (
+                "replace",
+                format!("takes the place of {replaced_team_name} in the league"),
+            )
+        }
+        FoundingMode::Join => (
+            "join",
+            "enters the league as an extra club, so the league grows by one team this season. \
+            It starts without an academy"
+                .to_string(),
+        ),
+    };
+    // The stored text is English; the UI translates it from the keys and params.
+    let body = format!(
+        "The board of directors welcomes you as the first head coach in the history of {team_name}. \
+        The club has just been founded and {entry}.\n\n\
+        Everything starts from zero: the squad, the results and the name the fans will remember. \
+        The first league match is {days} {day_word} away.\n\n\
+        Review your squad, set your priorities and make the club count from day one.\n\n\
+        Good luck, coach!"
+    );
+
+    InboxMessage::new(
+        format!("welcome_{}", team_id),
+        format!("Welcome to {team_name}: day one of a new club"),
+        body,
+        "Board of Directors".to_string(),
+        date.to_string(),
+    )
+    .with_category(MessageCategory::Welcome)
+    .with_priority(MessagePriority::High)
+    .with_sender_role("Chairman")
+    .with_action(action(
+        "review_squad",
+        "Review Squad",
+        "be.msg.welcome.actionReview",
+        ActionType::NavigateTo {
+            route: "/dashboard?tab=Squad".to_string(),
+        },
+    ))
+    .with_action(action(
+        "ack_welcome",
+        "Thank the Board",
+        "be.msg.welcome.actionThank",
+        ActionType::Acknowledge,
+    ))
+    .with_context(MessageContext {
+        team_id: Some(team_id.to_string()),
+        ..Default::default()
+    })
+    .with_i18n(
+        &format!("be.msg.foundingWelcome.{variant}.subject"),
+        &format!("be.msg.foundingWelcome.{variant}.body"),
+        i18n_params,
     )
     .with_sender_i18n("be.sender.boardOfDirectors", "be.role.chairman")
 }

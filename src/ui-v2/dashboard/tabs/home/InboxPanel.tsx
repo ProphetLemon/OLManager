@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
 
+import { resolveInboxCategoryLabel } from "@/lib/inbox/categoryLabel"
 import { Button } from "@/ui-v2/components/ui/button"
 import { TagBlock } from "@/ui-v2/components/ui/tag-block"
 import { cn } from "@/ui-v2/lib/utils"
@@ -30,22 +31,15 @@ const VISIBLE_ROWS = 5
 const MAX_ROWS = 8
 /** Fallback row height in px, matching the `h-9` row class. */
 const ROW_HEIGHT_PX = 36
-const MISSING = "\u0000"
 
 /**
- * Category labels live under inbox.categories.*, and the training key is registered
- * in lowercase while the backend sends "Training". Resolve the label tolerantly and
- * fall back to the raw category so a chip is never empty.
+ * Prefer the label the caller already resolved; otherwise resolve it from the category
+ * (see resolveInboxCategoryLabel for the lowercase `training` key quirk).
  */
 function resolveCategoryLabel(t: TFunction, message: InboxPanelMessage): string {
   const { category, categoryLabel } = message
   if (categoryLabel && categoryLabel !== `inbox.categories.${category}`) return categoryLabel
-  const lowerFirst = category.charAt(0).toLowerCase() + category.slice(1)
-  for (const candidate of new Set([category, lowerFirst, category.toLowerCase()])) {
-    const label = t(`inbox.categories.${candidate}`, { defaultValue: MISSING }) as string
-    if (label && label !== MISSING && label !== `inbox.categories.${candidate}`) return label
-  }
-  return category
+  return resolveInboxCategoryLabel(t, category)
 }
 
 /**

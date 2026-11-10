@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState, type JSX } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
 
-import type { GameStateData } from "../store/gameStore";
+import { useGameStore, type GameStateData } from "../store/gameStore";
 import { useAdvanceTime } from "./useAdvanceTime";
 import { delegateScrimDecision } from "../services/trainingService";
 
@@ -37,6 +37,7 @@ function HookHarness(props: {
     blockerModal,
     autoDelegationNotice,
     matchPlayedNotice,
+    scrimResultNotice,
     handleConfirmMatch,
     handleContinue,
     handleSkipToMatchDay,
@@ -74,6 +75,7 @@ function HookHarness(props: {
       </div>
       <div data-testid="match-played-notice">{matchPlayedNotice ?? ""}</div>
       <div data-testid="auto-delegation-notice">{autoDelegationNotice ?? ""}</div>
+      <div data-testid="scrim-result-notice">{scrimResultNotice?.join(" | ") ?? ""}</div>
     </div>
   );
 }
@@ -629,5 +631,93 @@ describe("useAdvanceTime", function (): void {
       expect(screen.getByTestId("blocker-count")).toHaveTextContent("1");
     });
     expect(screen.getByTestId("can-continue-anyway")).toHaveTextContent("true");
+  });
+
+  describe("scrim result notice", function (): void {
+    type Report = { week_key: string; slot_index: number; opponent_team_id: string; won: boolean | null };
+
+    function gameWithReports(reports: Report[]): GameStateData {
+      return {
+        clock: { current_date: "2026-07-01", start_date: "2026-07-01" },
+        manager: { team_id: "t1" },
+        teams: [
+          { id: "t1", name: "Mine", scrim_weekly_slots: 2, scrim_reports: reports },
+          { id: "t2", name: "Rivals" },
+          { id: "t3", name: "Others" },
+        ],
+      } as unknown as GameStateData;
+    }
+
+    const wonAgainstT2: Report = { week_key: "2026-W27", slot_index: 0, opponent_team_id: "t2", won: true };
+    const lostAgainstT3: Report = { week_key: "2026-W27", slot_index: 1, opponent_team_id: "t3", won: false };
+
+    function advanceInto(game: GameStateData, scrimReviewMode: "manual" | "assistant" = "manual"): void {
+      useGameStore.setState({ gameState: gameWithReports([]) });
+      mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({ action: "advanced", game });
+      render(
+        <HookHarness
+          hasMatchToday={false}
+          defaultMatchMode="live"
+          scrimReviewMode={scrimReviewMode}
+          onGameState={(state) => useGameStore.getState().setGameState(state)}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    }
+
+    afterEach(function (): void {
+      useGameStore.setState({ gameState: null });
+    });
+
+    it("names the rival and the win when an advance resolves a won scrim", async function (): Promise<void> {
+      advanceInto(gameWithReports([wonAgainstT2]));
+
+      await waitFor(function (): void {
+        expect(screen.getByTestId("scrim-result-notice")).toHaveTextContent("Won against Rivals");
+      });
+    });
+
+    it("names the rival and the loss when an advance resolves a lost scrim", async function (): Promise<void> {
+      advanceInto(gameWithReports([lostAgainstT3]));
+
+      await waitFor(function (): void {
+        expect(screen.getByTestId("scrim-result-notice")).toHaveTextContent("Lost against Others");
+      });
+    });
+
+    it("lists both scrims in one notice when two resolve in one advance", async function (): Promise<void> {
+      advanceInto(gameWithReports([wonAgainstT2, lostAgainstT3]));
+
+      await waitFor(function (): void {
+        expect(screen.getByTestId("scrim-result-notice")).toHaveTextContent(
+          "Won against Rivals | Lost against Others",
+        );
+      });
+    });
+
+    it("sets no notice when the advance brings no new scrim report", async function (): Promise<void> {
+      useGameStore.setState({ gameState: gameWithReports([wonAgainstT2]) });
+      mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({
+        action: "advanced",
+        game: gameWithReports([wonAgainstT2]),
+      });
+      const onGameState = vi.fn((state: GameStateData) => useGameStore.getState().setGameState(state));
+      render(<HookHarness hasMatchToday={false} defaultMatchMode="live" onGameState={onGameState} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+      await waitFor(function (): void {
+        expect(onGameState).toHaveBeenCalled();
+      });
+      expect(screen.getByTestId("scrim-result-notice")).toHaveTextContent("");
+    });
+
+    it("also announces the result when the Assistant Coach is handling the scrims", async function (): Promise<void> {
+      advanceInto(gameWithReports([wonAgainstT2]), "assistant");
+
+      await waitFor(function (): void {
+        expect(screen.getByTestId("scrim-result-notice")).toHaveTextContent("Won against Rivals");
+      });
+    });
   });
 });

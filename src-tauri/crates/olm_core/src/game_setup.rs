@@ -759,6 +759,22 @@ pub fn suggested_seed_market_value(ovr: u8, potential: u8, is_academy: bool) -> 
     round_seed_market_value(adjusted_value)
 }
 
+/// Whole days from the game clock's date to the first league fixture of the
+/// active league. Friendlies and playoffs do not count; 0 when no league fixture
+/// is scheduled.
+pub fn days_until_first_league_fixture(game: &Game) -> u32 {
+    let today = game.clock.current_date.date_naive();
+    game.active_league()
+        .into_iter()
+        .flat_map(|league| &league.fixtures)
+        .filter(|fixture| fixture.counts_for_league_standings())
+        .filter_map(|fixture| NaiveDate::parse_from_str(&fixture.date, "%Y-%m-%d").ok())
+        .min()
+        .map_or(0, |first| {
+            u32::try_from((first - today).num_days()).unwrap_or(0)
+        })
+}
+
 pub fn academy_overview_message(
     parent_team: &Team,
     academy_team: &Team,
@@ -1007,10 +1023,14 @@ pub fn ensure_example_academy_pool(game: &mut Game) {
 mod tests {
     use super::{
         apply_default_initial_contract_end, apply_default_market_values, calculate_age_on_date,
-        default_initial_contract_end_for_start_year, legacy_new_game_start_date,
-        new_game_start_date,
+        days_until_first_league_fixture, default_initial_contract_end_for_start_year,
+        legacy_new_game_start_date, new_game_start_date,
     };
     use chrono::{Datelike, NaiveDate};
+    use crate::clock::GameClock;
+    use crate::domain::league::{Fixture, FixtureStatus, League, MatchType};
+    use crate::domain::manager::Manager;
+    use crate::game::Game;
     use crate::domain::player::{Player, PlayerAttributes};
     use crate::domain::stats::LolRole;
 
@@ -1234,6 +1254,84 @@ mod tests {
         assert_eq!(new_game_start_date(Some("soon")), legacy);
         assert_eq!(new_game_start_date(Some("")), legacy);
         assert_eq!(new_game_start_date(Some("2026-11-07")).year(), 2027);
+    }
+
+    fn fixture(date: &str, match_type: MatchType) -> Fixture {
+        Fixture {
+            id: format!("f-{date}"),
+            matchday: 1,
+            date: date.to_string(),
+            home_team_id: "a".to_string(),
+            away_team_id: "b".to_string(),
+            match_type,
+            best_of: 1,
+            status: FixtureStatus::Scheduled,
+            result: None,
+        }
+    }
+
+    /// A game on 2026-01-01 whose active league ("active") holds `active_dates`
+    /// and whose other league holds a league fixture on 2026-01-03.
+    fn game_with_fixtures(active_dates: &[(&str, MatchType)]) -> Game {
+        use chrono::TimeZone;
+        let clock = GameClock::new(chrono::Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap());
+        let manager = Manager::new(
+            "mgr".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1990-01-01".to_string(),
+            "ES".to_string(),
+        );
+        let mut game = Game::new(clock, manager, vec![], vec![], vec![], vec![]);
+        let ids = ["a".to_string(), "b".to_string()];
+        let mut active = League::new(
+            "l1".to_string(),
+            "Active".to_string(),
+            1,
+            &ids,
+            Some("active".to_string()),
+        );
+        active.fixtures = active_dates
+            .iter()
+            .map(|(date, kind)| fixture(date, kind.clone()))
+            .collect();
+        let mut other = League::new(
+            "l2".to_string(),
+            "Other".to_string(),
+            1,
+            &ids,
+            Some("other".to_string()),
+        );
+        other.fixtures = vec![fixture("2026-01-03", MatchType::League)];
+        game.leagues = vec![other, active];
+        game.user_competition_id = Some("active".to_string());
+        game
+    }
+
+    #[test]
+    fn countdown_counts_days_to_the_first_league_fixture_of_the_active_league() {
+        let game = game_with_fixtures(&[
+            ("2026-01-24", MatchType::League),
+            ("2026-01-17", MatchType::League),
+            ("2026-01-05", MatchType::Friendly),
+        ]);
+
+        // Not the friendly (Jan 5), not the other league (Jan 3).
+        assert_eq!(days_until_first_league_fixture(&game), 16);
+    }
+
+    #[test]
+    fn countdown_is_one_the_day_before_the_first_league_fixture() {
+        let game = game_with_fixtures(&[("2026-01-02", MatchType::League)]);
+
+        assert_eq!(days_until_first_league_fixture(&game), 1);
+    }
+
+    #[test]
+    fn countdown_is_zero_without_a_league_fixture() {
+        let game = game_with_fixtures(&[("2026-01-05", MatchType::Friendly)]);
+
+        assert_eq!(days_until_first_league_fixture(&game), 0);
     }
 
     #[test]

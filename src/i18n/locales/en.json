@@ -250,6 +250,12 @@
     "inbox": "Inbox",
     "matchPlayedByStaff": "Your staff played the match against {{opponent}}: {{score}}. Open the schedule for the result.",
     "matchPlayedByStaffNoScore": "Your staff played the match. Open the schedule for the result.",
+    "scrimResultTitle_one": "Scrim result",
+    "scrimResultTitle_other": "Scrim results",
+    "scrimResultWon": "Won against {{rival}}",
+    "scrimResultLost": "Lost against {{rival}}",
+    "scrimResultOpen": "Open Scrims",
+    "scrimResultDismiss": "Dismiss",
     "manager": "Head Coach",
     "squad": "Squad",
     "tactics": "Tactics",
@@ -1572,6 +1578,8 @@
     "projectedAnnualNet": "Projected Annual Net",
     "cashRunway": "Cash Runway",
     "runwayMonths": "{{count}} months at current pace",
+    "runwayWeeks_one": "{{count}} week at current pace",
+    "runwayWeeks_other": "{{count}} weeks at current pace",
     "runwayStable": "Stable at current pace",
     "wagePressure": "Wage Pressure",
     "wageBudgetUsed": "{{percent}}% of wage budget used",
@@ -2552,6 +2560,7 @@
     "preMatchPrep": "Pre-Match Preparation",
     "selecting": "Selecting...",
     "autoSelectXI": "Auto-Select Best Five",
+    "formationFit": "Role coverage",
     "startingXI": "Starting Five",
     "cancel": "Cancel",
     "nPlayers": "{{count}} players",
@@ -2707,7 +2716,9 @@
         "templates": {
           "welcome": {
             "subject": "Welcome to {{team}}!",
-            "body": "The board of directors welcomes you as the new head coach of {{team}}.\n\nWe have full confidence in your ability to lead this team to success.\n\nReview your squad, set your priorities, and prepare for the challenges ahead.\n\nGood luck, coach!"
+            "body": "The board of directors welcomes you as the new head coach of {{team}}.\n\nWe have full confidence in your ability to lead this team to success.\n\nReview your squad, set your priorities, and prepare for the challenges ahead.\n\nGood luck, coach!",
+            "body_one": "The board of directors welcomes you as the new head coach of {{team}}.\n\nWe have full confidence in your ability to lead this team to success. The first league match is {{days}} day away.\n\nReview your squad, set your priorities, and prepare for the challenges ahead.\n\nGood luck, coach!",
+            "body_other": "The board of directors welcomes you as the new head coach of {{team}}.\n\nWe have full confidence in your ability to lead this team to success. The first league match is {{days}} days away.\n\nReview your squad, set your priorities, and prepare for the challenges ahead.\n\nGood luck, coach!"
           }
         },
         "subject0": "Welcome to {{team}}",
@@ -2718,6 +2729,18 @@
         "body2": "Welcome to {{team}}! The supporters and staff are excited about the future under your guidance.\n\nWe recommend you start by reviewing your squad's strengths and weaknesses, then set up your preferred game plan and training regime.\n\nThe upcoming season will be a true test — make us proud.",
         "actionReview": "Review Squad",
         "actionThank": "Thank the Board"
+      },
+      "foundingWelcome": {
+        "replace": {
+          "subject": "Welcome to {{team}}: day one of a new club",
+          "body_one": "The board of directors welcomes you as the first head coach in the history of {{team}}. The club has just been founded and takes the place of {{replaced}} in the league.\n\nEverything starts from zero: the squad, the results and the name the fans will remember. The first league match is {{days}} day away.\n\nReview your squad, set your priorities and make the club count from day one.\n\nGood luck, coach!",
+          "body_other": "The board of directors welcomes you as the first head coach in the history of {{team}}. The club has just been founded and takes the place of {{replaced}} in the league.\n\nEverything starts from zero: the squad, the results and the name the fans will remember. The first league match is {{days}} days away.\n\nReview your squad, set your priorities and make the club count from day one.\n\nGood luck, coach!"
+        },
+        "join": {
+          "subject": "Welcome to {{team}}: day one of a new club",
+          "body_one": "The board of directors welcomes you as the first head coach in the history of {{team}}. The club has just been founded and enters the league as an extra club, so the league grows by one team this season. It starts without an academy.\n\nEverything starts from zero: the squad, the results and the name the fans will remember. The first league match is {{days}} day away.\n\nReview your squad, set your priorities and make the club count from day one.\n\nGood luck, coach!",
+          "body_other": "The board of directors welcomes you as the first head coach in the history of {{team}}. The club has just been founded and enters the league as an extra club, so the league grows by one team this season. It starts without an academy.\n\nEverything starts from zero: the squad, the results and the name the fans will remember. The first league match is {{days}} days away.\n\nReview your squad, set your priorities and make the club count from day one.\n\nGood luck, coach!"
+        }
       },
       "schedule": {
         "templates": {
@@ -3298,7 +3321,7 @@
         "subject": "Assistant Report — Contract Renewals",
         "body": "Boss, I went through our renewal list at {{team}}. {{successes}} completed, {{stalled}} still pending, {{failures}} failed.",
         "case": {
-          "successful": "Completed: {{player}} agreed to {{years}} year(s) on €{{wage}}/yr.",
+          "successful": "Completed: {{player}} agreed to {{years}} year(s) on {{wage}}/yr.",
           "stalled": "Still difficult: {{player}} — {{detail}}",
           "failed": "Failed: {{player}} — {{detail}}"
         },
@@ -3696,6 +3719,16 @@
         "headline1": "League Split Set to Begin",
         "headline2": "Can {{favourite}} Control the Meta? Split Preview",
         "body": "The league is set to kick off with {{teamCount}} teams entering the split.\n\nAnalyst predictions have {{favourite}} as the early favourites, but {{darkHorse}} could be the dark horse to watch this campaign.\n\nWith coaching staffs refining draft prep, this split promises to be one of the most competitive in recent memory. Every map will matter as the playoff race heats up.\n\nTeams: {{teamList}}"
+      },
+      "newClub": {
+        "replace": {
+          "headline": "{{team}} take over {{replaced}}'s place in the {{league}}",
+          "body": "{{team}} ({{origin}}), a team founded this year, take over the place of {{replaced}} in the {{league}}.\n\nA brand-new squad and a first-time head coach start from zero, and the rest of the league will be watching how quickly the newcomers find their footing."
+        },
+        "join": {
+          "headline": "{{team}} join the {{league}} as its newest team",
+          "body": "{{team}} ({{origin}}), a team founded this year, join the {{league}} as an extra team, so the league grows by one team this season. The newcomers start without an academy.\n\nA brand-new squad and a first-time head coach start from zero, and the rest of the league will be watching how quickly the newcomers find their footing."
+        }
       },
       "weeklyDigest": {
         "headline": "Weekly Power Rankings — Week of {{weekStart}}",
@@ -4100,6 +4133,7 @@
         "openFinances": "Open finances",
         "openContracts": "Open contracts",
         "openInbox": "Open inbox",
+        "openAcademy": "Open academy",
         "renew": "Renew",
         "review": "Review"
       },
@@ -4113,6 +4147,8 @@
         "scrim_setup_required": "Scrim setup is required before the next match.",
         "scrim_decision_required": "A scrim decision is waiting for you.",
         "urgent_messages": "Urgent messages are waiting in your inbox.",
+        "advance_blocked": "Could not advance automatically. Review the pending blockers.",
+        "assistant_advance_limit": "The Assistant Coach hit its automatic advance limit. Review the state yourself.",
         "contract_one": "Expires in {{count}} day",
         "contract_other": "Expires in {{count}} days",
         "generic": "Review this before you continue."

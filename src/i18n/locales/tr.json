@@ -176,6 +176,7 @@
     "lastName": "Soyad",
     "dob": "Doğum Tarihi",
     "nationality": "Uyruk",
+    "soloq": "SoloQ",
     "countryOfOrigin": "Doğduğu Ülke/Bölge",
     "selectNationality": "Uyruk seçin...",
     "selectCountry": "Ülke/Bölge seçin...",
@@ -219,6 +220,12 @@
     "inbox": "Gelen Kutusu",
     "matchPlayedByStaff": "Teknik ekibin {{opponent}} karşısındaki maçı oynadı: {{score}}. Sonuç için takvimi aç.",
     "matchPlayedByStaffNoScore": "Teknik ekibin maçı oynadı. Sonuç için takvimi aç.",
+    "scrimResultTitle_one": "Scrim sonucu",
+    "scrimResultTitle_other": "Scrim sonuçları",
+    "scrimResultWon": "{{rival}} karşısında galibiyet",
+    "scrimResultLost": "{{rival}} karşısında yenilgi",
+    "scrimResultOpen": "Scrimleri aç",
+    "scrimResultDismiss": "Kapat",
     "manager": "Baş koç",
     "squad": "Kadro",
     "tactics": "Taktikler",
@@ -1429,6 +1436,8 @@
     "projectedAnnualNet": "Öngörülen Yıllık Net",
     "cashRunway": "Nakit Gidişatı",
     "runwayMonths": "Mevcut hızda {{count}} ay",
+    "runwayWeeks_one": "Mevcut hızda {{count}} hafta",
+    "runwayWeeks_other": "Mevcut hızda {{count}} hafta",
     "runwayStable": "Mevcut hızda stabil",
     "wagePressure": "Maaş Baskısı",
     "wageBudgetUsed": "Maaş bütçesinin %{{percent}} kadarı kullanıldı",
@@ -2279,6 +2288,12 @@
     "simulatingFromTactics": "Maç simüle ediliyor...",
     "simulateFailed": "Maç simüle edilemedi. Lütfen tekrar deneyin.",
     "startLive": "Canlıya Geç",
+    "statKills": "Öldürmeler",
+    "statGold": "Altın",
+    "statTowers": "Kuleler",
+    "statDragons": "Ejderhalar",
+    "statBarons": "Baronlar",
+    "neutralObjectives": "Nötr hedefler",
     "draftResult": {
       "mvp": "Maçın Adamı (MVP)",
       "series": "Seri",
@@ -2361,6 +2376,7 @@
     "preMatchPrep": "Maç Öncesi Hazırlık",
     "selecting": "Seçiliyor...",
     "autoSelectXI": "En İyi 5'liyi Otomatik Seç",
+    "formationFit": "Rol kapsamı",
     "startingXI": "İlk 5",
     "cancel": "İptal",
     "nPlayers": "{{count}} oyuncu",
@@ -2536,7 +2552,9 @@
         "templates": {
           "welcome": {
             "subject": "{{team}} takımına hoş geldiniz!",
-            "body": "Yönetim kurulu sizi {{team}} takımının yeni başantrenörü olarak memnuniyetle karşılıyor.\n\nBu takımı başarıya taşıma yeteneğinize tam güvenimiz var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve önümüzdeki zorluklara hazırlanın.\n\nBol şans, hocam!"
+            "body": "Yönetim kurulu sizi {{team}} takımının yeni başantrenörü olarak memnuniyetle karşılıyor.\n\nBu takımı başarıya taşıma yeteneğinize tam güvenimiz var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve önümüzdeki zorluklara hazırlanın.\n\nBol şans, hocam!",
+            "body_one": "Yönetim kurulu sizi {{team}} takımının yeni başantrenörü olarak memnuniyetle karşılıyor.\n\nBu takımı başarıya taşıma yeteneğinize tam güvenimiz var. İlk lig maçına {{days}} gün var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve önümüzdeki zorluklara hazırlanın.\n\nBol şans, hocam!",
+            "body_other": "Yönetim kurulu sizi {{team}} takımının yeni başantrenörü olarak memnuniyetle karşılıyor.\n\nBu takımı başarıya taşıma yeteneğinize tam güvenimiz var. İlk lig maçına {{days}} gün var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve önümüzdeki zorluklara hazırlanın.\n\nBol şans, hocam!"
           }
         },
         "subject0": "{{team}} Takımına Hoş Geldiniz",
@@ -2547,6 +2565,18 @@
         "body2": "{{team}} takımına hoş geldiniz! Taraftarlar ve personel, rehberliğinizdeki gelecek için heyecanlı.\n\nKadronuzun güçlü ve zayıf yönlerini inceleyerek başlamanızı, ardından tercih ettiğiniz oyun planını ve antrenman rejimini kurmanızı öneririz.\n\nYaklaşan sezon gerçek bir sınav olacak — bizi gurulandırın.",
         "actionReview": "Kadroyu İncele",
         "actionThank": "Yönetime Teşekkür Et"
+      },
+      "foundingWelcome": {
+        "replace": {
+          "subject": "{{team}} takımına hoş geldiniz: yeni bir kulübün ilk günü",
+          "body_one": "Yönetim kurulu sizi {{team}} tarihinin ilk başantrenörü olarak memnuniyetle karşılıyor. Kulüp daha yeni kuruldu ve ligde {{replaced}} takımının yerini alıyor.\n\nHer şey sıfırdan başlıyor: kadro, sonuçlar ve taraftarların hatırlayacağı isim. İlk lig maçına {{days}} gün var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve kulübü ilk günden itibaren önemli kılın.\n\nBol şans, hocam!",
+          "body_other": "Yönetim kurulu sizi {{team}} tarihinin ilk başantrenörü olarak memnuniyetle karşılıyor. Kulüp daha yeni kuruldu ve ligde {{replaced}} takımının yerini alıyor.\n\nHer şey sıfırdan başlıyor: kadro, sonuçlar ve taraftarların hatırlayacağı isim. İlk lig maçına {{days}} gün var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve kulübü ilk günden itibaren önemli kılın.\n\nBol şans, hocam!"
+        },
+        "join": {
+          "subject": "{{team}} takımına hoş geldiniz: yeni bir kulübün ilk günü",
+          "body_one": "Yönetim kurulu sizi {{team}} tarihinin ilk başantrenörü olarak memnuniyetle karşılıyor. Kulüp daha yeni kuruldu ve ekstra bir kulüp olarak lige katılıyor; böylece lig bu sezon bir takım büyüyor. Akademisiz başlıyor.\n\nHer şey sıfırdan başlıyor: kadro, sonuçlar ve taraftarların hatırlayacağı isim. İlk lig maçına {{days}} gün var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve kulübü ilk günden itibaren önemli kılın.\n\nBol şans, hocam!",
+          "body_other": "Yönetim kurulu sizi {{team}} tarihinin ilk başantrenörü olarak memnuniyetle karşılıyor. Kulüp daha yeni kuruldu ve ekstra bir kulüp olarak lige katılıyor; böylece lig bu sezon bir takım büyüyor. Akademisiz başlıyor.\n\nHer şey sıfırdan başlıyor: kadro, sonuçlar ve taraftarların hatırlayacağı isim. İlk lig maçına {{days}} gün var.\n\nKadronuzu gözden geçirin, önceliklerinizi belirleyin ve kulübü ilk günden itibaren önemli kılın.\n\nBol şans, hocam!"
+        }
       },
       "schedule": {
         "templates": {
@@ -3103,7 +3133,7 @@
         "subject": "Asistan Raporu — Sözleşme Yenilemeleri",
         "body": "Koç, {{team}}'deki yenileme listemizin üzerinden geçtim. {{successes}} tamamlandı, {{stalled}} beklemede, {{failures}} başarısız.",
         "case": {
-          "successful": "Tamamlandı: {{player}} €{{wage}}/yl maaşla {{years}} yıla anlaştı.",
+          "successful": "Tamamlandı: {{player}} {{wage}}/yl maaşla {{years}} yıla anlaştı.",
           "stalled": "Hala zor: {{player}} — {{detail}}",
           "failed": "Başarısız: {{player}} — {{detail}}"
         },
@@ -3501,6 +3531,16 @@
         "headline1": "Lig Mevsimi Başlamak Üzere",
         "headline2": "{{favourite}} Metayı Kontrol Edebilecek mi? Mevsim Ön İncelemesi",
         "body": "Lig, mevsimin başlangıcında {{teamCount}} takımın giriş yapmasıyla başlamak üzere.\n\nAnalist tahminleri {{favourite}} takımını erken favori olarak gösteriyor, ancak {{darkHorse}} bu kampanyada izlenmesi gereken kapalı kutu olabilir.\n\nTeknik ekiplerin draft hazırlıklarını iyileştirmesiyle, bu mevsimin son dönemlerin en rekabetçi sezonlarından biri olması bekleniyor. Playoff yarışı kızıştıkça her harita önemli olacak.\n\nTakımlar: {{teamList}}"
+      },
+      "newClub": {
+        "replace": {
+          "headline": "{{team}}, {{league}} içinde {{replaced}} takımının yerini alıyor",
+          "body": "{{team}} ({{origin}}), bu yıl kurulan bir takım olarak {{league}} içinde {{replaced}} takımının yerini alıyor.\n\nBambaşka bir kadro ve ilk kez görev yapacak bir başantrenör sıfırdan başlıyor; ligin geri kalanı yeni gelenlerin ne kadar çabuk yerlerini bulacağını izleyecek."
+        },
+        "join": {
+          "headline": "{{team}}, {{league}} ligine en yeni takım olarak katılıyor",
+          "body": "{{team}} ({{origin}}), bu yıl kurulan bir takım olarak {{league}} ligine ekstra bir takım olarak katılıyor; böylece lig bu sezon bir takım büyüyor. Yeni gelenler akademisiz başlıyor.\n\nBambaşka bir kadro ve ilk kez görev yapacak bir başantrenör sıfırdan başlıyor; ligin geri kalanı yeni gelenlerin ne kadar çabuk yerlerini bulacağını izleyecek."
+        }
       },
       "weeklyDigest": {
         "headline": "Haftalık Güç Sıralaması — {{weekStart}} Haftası",
@@ -4059,6 +4099,7 @@
         "openFinances": "Finansı aç",
         "openContracts": "Sözleşmeleri aç",
         "openInbox": "Gelen kutusunu aç",
+        "openAcademy": "Akademiyi aç",
         "renew": "Yenile",
         "review": "İncele"
       },
@@ -4072,6 +4113,8 @@
         "scrim_setup_required": "Sonraki maçtan önce scrim hazırlanmalı.",
         "scrim_decision_required": "Bekleyen bir scrim kararın var.",
         "urgent_messages": "Gelen kutunda acil mesajlar var.",
+        "advance_blocked": "Otomatik ilerlenemedi. Bekleyen engelleri gözden geçir.",
+        "assistant_advance_limit": "Yardımcı Antrenör otomatik ilerleme sınırına ulaştı. Durumu kendin kontrol et.",
         "contract_one": "{{count}} gün sonra bitiyor",
         "contract_other": "{{count}} gün sonra bitiyor",
         "generic": "Devam etmeden önce bunu incele."

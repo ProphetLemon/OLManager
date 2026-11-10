@@ -66,6 +66,7 @@ const ACTIONS = {
   openFinances: "onAir.calls.actions.openFinances",
   openContracts: "onAir.calls.actions.openContracts",
   openInbox: "onAir.calls.actions.openInbox",
+  openAcademy: "onAir.calls.actions.openAcademy",
   renew: "onAir.calls.actions.renew",
   review: "onAir.calls.actions.review",
 } as const;
@@ -94,7 +95,8 @@ const BLOCKER_RULES: Record<string, BlockerRule> = {
     consequenceDefault: "The main roster is missing a role.",
   },
   academy_missing_roles: {
-    action: ACTIONS.fixLineup,
+    action: ACTIONS.openAcademy,
+    tab: "Youth",
     consequenceDefault: "The academy roster is missing a role.",
   },
   key_contract_risk: {
@@ -188,7 +190,7 @@ function blockerItem(
     headline: blocker.text,
     consequence: rule
       ? consequenceFor(t, blocker.id, rule.consequenceDefault)
-      : consequenceFor(t, "generic", GENERIC_CONSEQUENCE),
+      : consequenceFor(t, blocker.id, consequenceFor(t, "generic", GENERIC_CONSEQUENCE)),
     actionLabelKey: rule?.action ?? ACTIONS.review,
     target: { tab: rule?.tab ?? blocker.tab },
   };

@@ -258,13 +258,17 @@ pub fn process_end_of_split(game: &mut Game, manifest: &CompetitionManifest) {
         return;
     };
     let user_team_id = game.manager.team_id.as_deref().filter(|id| !id.is_empty());
-    let new_league = build_split_league(
+    let mut new_league = build_split_league(
         league,
         manifest,
         league.season,
         league.split_index,
         user_team_id,
     );
+    // A split whose playoffs ran past the next split's start date (the LEC's Winter does)
+    // would leave the new calendar in the past, where no daily simulation plays it. Same
+    // rule as the background leagues: shift the whole calendar past the clock.
+    shift_fixtures_after(&mut new_league, game.clock.current_date.date_naive());
 
     if let Some(active) = game.active_league_mut() {
         *active = new_league;
@@ -714,16 +718,12 @@ fn process_end_of_season_inner(
         active.split_index = 0;
     }
 
-    let team_names: Vec<String> = final_standings
+    let standing_teams: Vec<&crate::domain::team::Team> = final_standings
         .iter()
-        .map(|s| {
-            game.teams
-                .iter()
-                .find(|t| t.id == s.team_id)
-                .map(|t| t.name.clone())
-                .unwrap_or_default()
-        })
+        .filter_map(|s| game.teams.iter().find(|t| t.id == s.team_id))
         .collect();
+    let team_names =
+        crate::board_objectives::team_names_by_strength(&standing_teams, &game.players);
     game.news.push(crate::news::season_preview_article(
         &team_names,
         &game.clock.current_date.to_rfc3339(),

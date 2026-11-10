@@ -176,6 +176,7 @@
     "lastName": "Nachname",
     "dob": "Geburtsdatum",
     "nationality": "Nationalität",
+    "soloq": "SoloQ",
     "countryOfOrigin": "Herkunftsland/-region",
     "selectNationality": "Nationalität wählen...",
     "selectCountry": "Land/Region wählen...",
@@ -219,6 +220,12 @@
     "inbox": "Posteingang",
     "matchPlayedByStaff": "Dein Staff hat das Spiel gegen {{opponent}} gespielt: {{score}}. Öffne den Spielplan für das Ergebnis.",
     "matchPlayedByStaffNoScore": "Dein Staff hat das Spiel gespielt. Öffne den Spielplan für das Ergebnis.",
+    "scrimResultTitle_one": "Scrim-Ergebnis",
+    "scrimResultTitle_other": "Scrim-Ergebnisse",
+    "scrimResultWon": "Sieg gegen {{rival}}",
+    "scrimResultLost": "Niederlage gegen {{rival}}",
+    "scrimResultOpen": "Scrims öffnen",
+    "scrimResultDismiss": "Schließen",
     "manager": "Head Coach",
     "squad": "Kader",
     "tactics": "Taktik",
@@ -1429,6 +1436,8 @@
     "projectedAnnualNet": "Prognose pro Jahr",
     "cashRunway": "Finanzielle Reichweite",
     "runwayMonths": "{{count}} Monate bei aktuellem Verlauf",
+    "runwayWeeks_one": "{{count}} Woche bei aktuellem Verlauf",
+    "runwayWeeks_other": "{{count}} Wochen bei aktuellem Verlauf",
     "runwayStable": "Bei aktuellem Verlauf stabil",
     "wagePressure": "Gehaltsdruck",
     "wageBudgetUsed": "{{percent}}% des Gehaltsbudgets genutzt",
@@ -2297,6 +2306,12 @@
         "general": "general prep"
       }
     },
+    "statKills": "Kills",
+    "statGold": "Gold",
+    "statTowers": "Türme",
+    "statDragons": "Drachen",
+    "statBarons": "Barone",
+    "neutralObjectives": "Neutrale Ziele",
     "draftResult": {
       "mvp": "MVP",
       "series": "Series",
@@ -2379,6 +2394,7 @@
     "preMatchPrep": "Vorbereitung vor dem Spiel",
     "selecting": "Auswahl...",
     "autoSelectXI": "Beste Fünf auswählen",
+    "formationFit": "Rollenabdeckung",
     "startingXI": "Starter Five",
     "cancel": "Abbrechen",
     "nPlayers": "{{count}} Spieler",
@@ -2536,7 +2552,9 @@
         "templates": {
           "welcome": {
             "subject": "Willkommen bei {{team}}!",
-            "body": "Der Vorstand heißt Sie als neuen Cheftrainer von {{team}} willkommen.\n\nWir vertrauen auf Ihre Fähigkeit, dieses Team zum Erfolg zu führen.\n\nPrüfen Sie Ihren Kader, setzen Sie Ihre Prioritäten und bereiten Sie sich auf die kommenden Herausforderungen vor.\n\nViel Erfolg, Trainer!"
+            "body": "Der Vorstand heißt Sie als neuen Cheftrainer von {{team}} willkommen.\n\nWir vertrauen auf Ihre Fähigkeit, dieses Team zum Erfolg zu führen.\n\nPrüfen Sie Ihren Kader, setzen Sie Ihre Prioritäten und bereiten Sie sich auf die kommenden Herausforderungen vor.\n\nViel Erfolg, Trainer!",
+            "body_one": "Der Vorstand heißt Sie als neuen Cheftrainer von {{team}} willkommen.\n\nWir vertrauen auf Ihre Fähigkeit, dieses Team zum Erfolg zu führen. Das erste Ligaspiel findet in {{days}} Tag statt.\n\nPrüfen Sie Ihren Kader, setzen Sie Ihre Prioritäten und bereiten Sie sich auf die kommenden Herausforderungen vor.\n\nViel Erfolg, Trainer!",
+            "body_other": "Der Vorstand heißt Sie als neuen Cheftrainer von {{team}} willkommen.\n\nWir vertrauen auf Ihre Fähigkeit, dieses Team zum Erfolg zu führen. Das erste Ligaspiel findet in {{days}} Tagen statt.\n\nPrüfen Sie Ihren Kader, setzen Sie Ihre Prioritäten und bereiten Sie sich auf die kommenden Herausforderungen vor.\n\nViel Erfolg, Trainer!"
           }
         },
         "subject0": "Willkommen bei {{team}}",
@@ -2547,6 +2565,18 @@
         "body2": "Willkommen bei {{team}}! Die Fans und das Personal freuen sich auf die Zukunft unter Ihrer Führung.\n\nWir empfehlen Ihnen, zunächst die Stärken und Schwächen Ihres Kaders zu überprüfen und dann Ihren bevorzugten Matchplan und Ihre Trainingsplanung einzurichten.\n\nDie kommende Saison wird ein echter Test — machen Sie uns stolz.",
         "actionReview": "Kader überprüfen",
         "actionThank": "Dem Vorstand danken"
+      },
+      "foundingWelcome": {
+        "replace": {
+          "subject": "Willkommen bei {{team}}: der erste Tag eines neuen Clubs",
+          "body_one": "Der Vorstand heißt Sie als ersten Cheftrainer in der Geschichte von {{team}} willkommen. Der Club wurde gerade gegründet und übernimmt in der Liga den Platz von {{replaced}}.\n\nAlles beginnt bei null: der Kader, die Ergebnisse und der Name, an den sich die Fans erinnern werden. Das erste Ligaspiel findet in {{days}} Tag statt.\n\nPrüfen Sie Ihren Kader, setzen Sie Ihre Prioritäten und lassen Sie den Club vom ersten Tag an zählen.\n\nViel Erfolg, Trainer!",
+          "body_other": "Der Vorstand heißt Sie als ersten Cheftrainer in der Geschichte von {{team}} willkommen. Der Club wurde gerade gegründet und übernimmt in der Liga den Platz von {{replaced}}.\n\nAlles beginnt bei null: der Kader, die Ergebnisse und der Name, an den sich die Fans erinnern werden. Das erste Ligaspiel findet in {{days}} Tagen statt.\n\nPrüfen Sie Ihren Kader, setzen Sie Ihre Prioritäten und lassen Sie den Club vom ersten Tag an zählen.\n\nViel Erfolg, Trainer!"
+        },
+        "join": {
+          "subject": "Willkommen bei {{team}}: der erste Tag eines neuen Clubs",
+          "body_one": "Der Vorstand heißt Sie als ersten Cheftrainer in der Geschichte von {{team}} willkommen. Der Club wurde gerade gegründet und tritt der Liga als zusätzlicher Club bei, sodass die Liga in dieser Saison ein Team mehr hat. Er startet ohne Akademie.\n\nAlles beginnt bei null: der Kader, die Ergebnisse und der Name, an den sich die Fans erinnern werden. Das erste Ligaspiel findet in {{days}} Tag statt.\n\nPrüfen Sie Ihren Kader, setzen Sie Ihre Prioritäten und lassen Sie den Club vom ersten Tag an zählen.\n\nViel Erfolg, Trainer!",
+          "body_other": "Der Vorstand heißt Sie als ersten Cheftrainer in der Geschichte von {{team}} willkommen. Der Club wurde gerade gegründet und tritt der Liga als zusätzlicher Club bei, sodass die Liga in dieser Saison ein Team mehr hat. Er startet ohne Akademie.\n\nAlles beginnt bei null: der Kader, die Ergebnisse und der Name, an den sich die Fans erinnern werden. Das erste Ligaspiel findet in {{days}} Tagen statt.\n\nPrüfen Sie Ihren Kader, setzen Sie Ihre Prioritäten und lassen Sie den Club vom ersten Tag an zählen.\n\nViel Erfolg, Trainer!"
+        }
       },
       "schedule": {
         "templates": {
@@ -3103,7 +3133,7 @@
         "subject": "Assistentenbericht — Vertragsverlängerungen",
         "body": "Boss, ich habe unsere Verlängerungsliste bei {{team}} durchgearbeitet. {{successes}} abgeschlossen, {{stalled}} noch offen, {{failures}} gescheitert.",
         "case": {
-          "successful": "Abgeschlossen: {{player}} hat {{years}} Jahr(e) zu €{{wage}}/Jahr akzeptiert.",
+          "successful": "Abgeschlossen: {{player}} hat {{years}} Jahr(e) zu {{wage}}/Jahr akzeptiert.",
           "stalled": "Weiter schwierig: {{player}} — {{detail}}",
           "failed": "Gescheitert: {{player}} — {{detail}}"
         },
@@ -3501,6 +3531,16 @@
         "headline1": "League Split Set to Begin",
         "headline2": "Can {{favourite}} Control the Meta? Split Preview",
         "body": "The league is set to kick off with {{teamCount}} teams entering the split.\n\nAnalyst predictions have {{favourite}} as the early favourites, but {{darkHorse}} could be the dark horse to watch this campaign.\n\nWith coaching staffs refining draft prep, this split promises to be one of the most competitive in recent memory. Every map will matter as the playoff race heats up.\n\nTeams: {{teamList}}"
+      },
+      "newClub": {
+        "replace": {
+          "headline": "{{team}} übernimmt den Platz von {{replaced}} in {{league}}",
+          "body": "{{team}} ({{origin}}), ein in diesem Jahr gegründetes Team, übernimmt in {{league}} den Platz von {{replaced}}.\n\nEin komplett neuer Kader und ein Cheftrainer ohne Erfahrung im Amt starten bei null, und die übrige Liga wird beobachten, wie schnell die Neuen ihren Platz finden."
+        },
+        "join": {
+          "headline": "{{team}} tritt {{league}} als neuestes Team bei",
+          "body": "{{team}} ({{origin}}), ein in diesem Jahr gegründetes Team, tritt {{league}} als zusätzliches Team bei, sodass die Liga in dieser Saison ein Team mehr hat. Die Neuen starten ohne Akademie.\n\nEin komplett neuer Kader und ein Cheftrainer ohne Erfahrung im Amt starten bei null, und die übrige Liga wird beobachten, wie schnell die Neuen ihren Platz finden."
+        }
       },
       "weeklyDigest": {
         "headline": "Weekly Power Rankings — Week of {{weekStart}}",
@@ -4059,6 +4099,7 @@
         "openFinances": "Finanzen öffnen",
         "openContracts": "Verträge öffnen",
         "openInbox": "Posteingang öffnen",
+        "openAcademy": "Akademie öffnen",
         "renew": "Verlängern",
         "review": "Prüfen"
       },
@@ -4072,6 +4113,8 @@
         "scrim_setup_required": "Das Scrim muss vor dem nächsten Spiel eingerichtet werden.",
         "scrim_decision_required": "Eine Scrim-Entscheidung wartet auf dich.",
         "urgent_messages": "Dringende Nachrichten warten in deinem Posteingang.",
+        "advance_blocked": "Automatisches Weiterschalten war nicht möglich. Prüfe die offenen Hindernisse.",
+        "assistant_advance_limit": "Der Assistenztrainer hat sein Limit für automatisches Weiterschalten erreicht. Prüfe den Stand selbst.",
         "contract_one": "Läuft in {{count}} Tag aus",
         "contract_other": "Läuft in {{count}} Tagen aus",
         "generic": "Prüfe das, bevor du fortfährst."

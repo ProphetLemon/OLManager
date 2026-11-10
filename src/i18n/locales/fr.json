@@ -176,6 +176,7 @@
     "lastName": "Nom",
     "dob": "Date de Naissance",
     "nationality": "Nationalité",
+    "soloq": "SoloQ",
     "countryOfOrigin": "Pays/Région d'Origine",
     "selectNationality": "Sélectionner la nationalité...",
     "selectCountry": "Sélectionner le Pays/Région...",
@@ -219,6 +220,12 @@
     "inbox": "Boîte de Réception",
     "matchPlayedByStaff": "Votre staff a joué le match contre {{opponent}} : {{score}}. Ouvrez le calendrier pour voir le résultat.",
     "matchPlayedByStaffNoScore": "Votre staff a joué le match. Ouvrez le calendrier pour voir le résultat.",
+    "scrimResultTitle_one": "Résultat du scrim",
+    "scrimResultTitle_other": "Résultats des scrims",
+    "scrimResultWon": "Victoire contre {{rival}}",
+    "scrimResultLost": "Défaite contre {{rival}}",
+    "scrimResultOpen": "Ouvrir les scrims",
+    "scrimResultDismiss": "Fermer",
     "manager": "Head Coach",
     "squad": "Effectif",
     "tactics": "Tactique",
@@ -1429,6 +1436,8 @@
     "projectedAnnualNet": "Net annuel projeté",
     "cashRunway": "Autonomie de trésorerie",
     "runwayMonths": "{{count}} mois au rythme actuel",
+    "runwayWeeks_one": "{{count}} semaine au rythme actuel",
+    "runwayWeeks_other": "{{count}} semaines au rythme actuel",
     "runwayStable": "Stable au rythme actuel",
     "wagePressure": "Pression salariale",
     "wageBudgetUsed": "{{percent}}% du budget salarial utilisé",
@@ -2297,6 +2306,12 @@
         "general": "préparation générale"
       }
     },
+    "statKills": "Éliminations",
+    "statGold": "Or",
+    "statTowers": "Tours",
+    "statDragons": "Dragons",
+    "statBarons": "Barons",
+    "neutralObjectives": "Objectifs neutres",
     "draftResult": {
       "mvp": "MVP",
       "series": "Série",
@@ -2379,6 +2394,7 @@
     "preMatchPrep": "Préparation d'Avant-Match",
     "selecting": "Sélection...",
     "autoSelectXI": "Auto-Sélectionner le Meilleur Cinq",
+    "formationFit": "Couverture des rôles",
     "startingXI": "Cinq de Départ",
     "cancel": "Annuler",
     "nPlayers": "{{count}} joueurs",
@@ -2536,7 +2552,9 @@
         "templates": {
           "welcome": {
             "subject": "Bienvenue à {{team}} !",
-            "body": "Le conseil d'administration vous souhaite la bienvenue en tant que nouvel entraîneur principal de {{team}}.\n\nNous avons pleinement confiance en votre capacité à mener cette équipe vers le succès.\n\nPassez en revue votre effectif, fixez vos priorités et préparez-vous aux défis à venir.\n\nBonne chance, coach !"
+            "body": "Le conseil d'administration vous souhaite la bienvenue en tant que nouvel entraîneur principal de {{team}}.\n\nNous avons pleinement confiance en votre capacité à mener cette équipe vers le succès.\n\nPassez en revue votre effectif, fixez vos priorités et préparez-vous aux défis à venir.\n\nBonne chance, coach !",
+            "body_one": "Le conseil d'administration vous souhaite la bienvenue en tant que nouvel entraîneur principal de {{team}}.\n\nNous avons pleinement confiance en votre capacité à mener cette équipe vers le succès. Le premier match de championnat a lieu dans {{days}} jour.\n\nPassez en revue votre effectif, fixez vos priorités et préparez-vous aux défis à venir.\n\nBonne chance, coach !",
+            "body_other": "Le conseil d'administration vous souhaite la bienvenue en tant que nouvel entraîneur principal de {{team}}.\n\nNous avons pleinement confiance en votre capacité à mener cette équipe vers le succès. Le premier match de championnat a lieu dans {{days}} jours.\n\nPassez en revue votre effectif, fixez vos priorités et préparez-vous aux défis à venir.\n\nBonne chance, coach !"
           }
         },
         "subject0": "Bienvenue à {{team}}",
@@ -2547,6 +2565,18 @@
         "body2": "Bienvenue à {{team}} ! Les supporters et le staff sont enthousiastes pour l'avenir sous votre direction.\n\nNous vous recommandons de commencer par évaluer les forces et faiblesses de votre effectif, puis de configurer votre plan de jeu et régime d'entraînement préférés.\n\nLa saison à venir sera un véritable test — rendez-nous fiers.",
         "actionReview": "Examiner l'Effectif",
         "actionThank": "Remercier le Conseil"
+      },
+      "foundingWelcome": {
+        "replace": {
+          "subject": "Bienvenue à {{team}} : le premier jour d'un nouveau club",
+          "body_one": "Le conseil d'administration vous souhaite la bienvenue en tant que premier entraîneur principal de l'histoire de {{team}}. Le club vient d'être fondé et prend la place de {{replaced}} dans la ligue.\n\nTout part de zéro : l'effectif, les résultats et le nom dont les supporters se souviendront. Le premier match de championnat a lieu dans {{days}} jour.\n\nPassez en revue votre effectif, fixez vos priorités et faites compter le club dès le premier jour.\n\nBonne chance, coach !",
+          "body_other": "Le conseil d'administration vous souhaite la bienvenue en tant que premier entraîneur principal de l'histoire de {{team}}. Le club vient d'être fondé et prend la place de {{replaced}} dans la ligue.\n\nTout part de zéro : l'effectif, les résultats et le nom dont les supporters se souviendront. Le premier match de championnat a lieu dans {{days}} jours.\n\nPassez en revue votre effectif, fixez vos priorités et faites compter le club dès le premier jour.\n\nBonne chance, coach !"
+        },
+        "join": {
+          "subject": "Bienvenue à {{team}} : le premier jour d'un nouveau club",
+          "body_one": "Le conseil d'administration vous souhaite la bienvenue en tant que premier entraîneur principal de l'histoire de {{team}}. Le club vient d'être fondé et rejoint la ligue en tant que club supplémentaire : la ligue compte donc une équipe de plus cette saison. Il démarre sans académie.\n\nTout part de zéro : l'effectif, les résultats et le nom dont les supporters se souviendront. Le premier match de championnat a lieu dans {{days}} jour.\n\nPassez en revue votre effectif, fixez vos priorités et faites compter le club dès le premier jour.\n\nBonne chance, coach !",
+          "body_other": "Le conseil d'administration vous souhaite la bienvenue en tant que premier entraîneur principal de l'histoire de {{team}}. Le club vient d'être fondé et rejoint la ligue en tant que club supplémentaire : la ligue compte donc une équipe de plus cette saison. Il démarre sans académie.\n\nTout part de zéro : l'effectif, les résultats et le nom dont les supporters se souviendront. Le premier match de championnat a lieu dans {{days}} jours.\n\nPassez en revue votre effectif, fixez vos priorités et faites compter le club dès le premier jour.\n\nBonne chance, coach !"
+        }
       },
       "schedule": {
         "templates": {
@@ -3103,7 +3133,7 @@
         "subject": "Rapport de l'adjoint — Renouvellements",
         "body": "Coach, j'ai passé en revue notre liste de renouvellements à {{team}}. {{successes}} conclus, {{stalled}} encore en attente, {{failures}} échoués.",
         "case": {
-          "successful": "Conclu : {{player}} a accepté {{years}} an(s) à €{{wage}}/an.",
+          "successful": "Conclu : {{player}} a accepté {{years}} an(s) à {{wage}}/an.",
           "stalled": "Toujours compliqué : {{player}} — {{detail}}",
           "failed": "Échec : {{player}} — {{detail}}"
         },
@@ -3501,6 +3531,16 @@
         "headline1": "Le nouveau split de ligue va commencer",
         "headline2": "{{favourite}} peut-il contrôler la méta ?",
         "body": "La ligue s'apprête à démarrer avec {{teamCount}} équipes dans le split.\n\nLes analystes placent {{favourite}} comme favori du départ, mais {{darkHorse}} peut être la surprise de la campagne.\n\nAvec des staffs qui affinent la préparation de draft, ce split s'annonce comme l'un des plus compétitifs de ces dernières années. Chaque map comptera dans la course aux playoffs.\n\nÉquipes : {{teamList}}"
+      },
+      "newClub": {
+        "replace": {
+          "headline": "{{team}} prend la place de {{replaced}} en {{league}}",
+          "body": "{{team}} ({{origin}}), une équipe fondée cette année, prend la place de {{replaced}} en {{league}}.\n\nUn effectif tout neuf et un entraîneur principal débutant partent de zéro, et le reste de la ligue observera la vitesse à laquelle les nouveaux venus trouvent leurs marques."
+        },
+        "join": {
+          "headline": "{{team}} rejoint {{league}} en tant que plus récente équipe",
+          "body": "{{team}} ({{origin}}), une équipe fondée cette année, rejoint {{league}} en tant qu'équipe supplémentaire : la ligue compte donc une équipe de plus cette saison. Les nouveaux venus démarrent sans académie.\n\nUn effectif tout neuf et un entraîneur principal débutant partent de zéro, et le reste de la ligue observera la vitesse à laquelle les nouveaux venus trouvent leurs marques."
+        }
       },
       "weeklyDigest": {
         "headline": "Power rankings hebdomadaire — semaine du {{weekStart}}",
@@ -4059,6 +4099,7 @@
         "openFinances": "Ouvrir les finances",
         "openContracts": "Ouvrir les contrats",
         "openInbox": "Ouvrir la boîte",
+        "openAcademy": "Ouvrir l'académie",
         "renew": "Prolonger",
         "review": "Examiner"
       },
@@ -4072,6 +4113,8 @@
         "scrim_setup_required": "Le scrim doit être préparé avant le prochain match.",
         "scrim_decision_required": "Une décision de scrim vous attend.",
         "urgent_messages": "Des messages urgents vous attendent.",
+        "advance_blocked": "Impossible d'avancer automatiquement. Examinez les blocages en attente.",
+        "assistant_advance_limit": "L'entraîneur adjoint a atteint sa limite d'avancées automatiques. Vérifiez la situation vous-même.",
         "contract_one": "Expire dans {{count}} jour",
         "contract_other": "Expire dans {{count}} jours",
         "generic": "À examiner avant de continuer."

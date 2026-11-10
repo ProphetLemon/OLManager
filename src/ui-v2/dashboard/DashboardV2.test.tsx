@@ -19,6 +19,8 @@ const shell = vi.hoisted(() => ({
   header: null as Record<string, unknown> | null,
   sidebar: null as Record<string, unknown> | null,
   blockerModal: null as BlockerModalMock | null,
+  scrimResultNotice: null as string[] | null,
+  dismissScrimResultNotice: vi.fn(),
   checkBlockingActions: vi.fn(),
 }));
 
@@ -54,6 +56,8 @@ vi.mock("@/hooks/useAdvanceTime", () => ({
     blockerModal: shell.blockerModal,
     setBlockerModal: vi.fn(),
     autoDelegationNotice: null,
+    scrimResultNotice: shell.scrimResultNotice,
+    dismissScrimResultNotice: shell.dismissScrimResultNotice,
     handleContinue: vi.fn(),
     handleConfirmMatch: vi.fn(),
     handleSkipToMatchDay: vi.fn(),
@@ -355,6 +359,8 @@ describe("DashboardV2 shell wiring", () => {
     shell.header = null;
     shell.sidebar = null;
     shell.blockerModal = null;
+    shell.scrimResultNotice = null;
+    shell.dismissScrimResultNotice.mockReset();
     shell.checkBlockingActions.mockReset();
     shell.checkBlockingActions.mockResolvedValue([]);
     useGameStore.setState({
@@ -413,6 +419,19 @@ describe("DashboardV2 shell wiring", () => {
     expect(typeof shell.header?.onNavClick).toBe("function");
     expect(typeof shell.header?.onShowCalls).toBe("function");
     expect(shell.sidebar).toMatchObject({ compact: false, activeTab: "Home" });
+  });
+
+  it("shows the scrim result notice on any tab and opens the Scrims tab from it", async () => {
+    shell.scrimResultNotice = ["Won against Rivals"];
+    await renderDashboard();
+    fireEvent.click(await screen.findByRole("button", { name: "Training" }));
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Training"));
+
+    expect(screen.getByRole("region", { name: "dashboard.scrimResultTitle" })).toHaveTextContent("Won against Rivals");
+    fireEvent.click(screen.getByRole("button", { name: "dashboard.scrimResultOpen" }));
+
+    expect(shell.dismissScrimResultNotice).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Scrims"));
   });
 
   it("keeps the header and rail active tab in sync with navigation", async () => {
@@ -606,12 +625,71 @@ describe("DashboardV2 shell wiring", () => {
     expect(shell.header?.callCount).toBe(1);
   });
 
-  it("does not re-check blockers while none are retained or the modal is open", async () => {
+  const academyBlocker = {
+    id: "academy_missing_roles",
+    severity: "warn",
+    text: "Academy incomplete",
+    tab: "YouthAcademy",
+  };
+
+  const nextDay = () => {
+    const state = minimalGameState();
+    useGameStore.setState({
+      gameState: { ...state, clock: { ...state.clock, current_date: "2025-06-20" } },
+    });
+  };
+
+  it("lists the blockers the pre-check reports on Home without a Continue press", async () => {
+    shell.checkBlockingActions.mockResolvedValue([academyBlocker]);
     await renderDashboard();
     await screen.findByTestId("home-tab-v2");
-    act(() => {
-      useGameStore.setState({ gameState: { ...minimalGameState() } });
+
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+    expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", {
+      rethrow: true,
+      mode: "live",
     });
+  });
+
+  it("shows the blocker that applies to the new day after the date changes", async () => {
+    await renderDashboard();
+    await screen.findByTestId("home-tab-v2");
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalled());
+    expect(shell.header?.callCount).toBe(0);
+
+    shell.checkBlockingActions.mockResolvedValue([academyBlocker]);
+    act(nextDay);
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    // Another day, nothing blocks any more: the panel goes back to empty.
+    shell.checkBlockingActions.mockResolvedValue([]);
+    act(() => {
+      const state = minimalGameState();
+      useGameStore.setState({
+        gameState: { ...state, clock: { ...state.clock, current_date: "2025-06-21" } },
+      });
+    });
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("keeps the previous list until the new day check answers, then drops it if the check fails", async () => {
+    shell.checkBlockingActions.mockResolvedValue([academyBlocker]);
+    await renderDashboard();
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    shell.checkBlockingActions.mockRejectedValue(new Error("backend down"));
+    act(nextDay);
+    // Never "all in order" while the answer is pending...
+    expect(shell.header?.callCount).toBe(1);
+    // ...and a stale list from another day is not kept once the check fails.
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("does not check blockers while the blocker modal is open", async () => {
+    shell.blockerModal = { blockers: [lineupBlocker] };
+    await renderDashboard();
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
     await new Promise((resolve) => setTimeout(resolve, 600));
     expect(shell.checkBlockingActions).not.toHaveBeenCalled();
   });

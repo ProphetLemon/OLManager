@@ -14,6 +14,7 @@ import { scrimBlockerText } from "../lib/home/scrimBlockerText";
 import { advanceTimeWithMode, skipToMatchDay } from "../services/advanceTimeService";
 import { collectAdvanceBlockers } from "../lib/home/advanceBlockers";
 import { autoConfigureWeeklyScrimSetup, delegateScrimDecision } from "../services/trainingService";
+import { newScrimResultLines, scrimReportKeys } from "./scrimResultNotice";
 import { effectiveWeeklyScrimSlots, scrimSlotWeekdays, weekdayMondayBased } from "../lib/scrims/scrimContext";
 
 export type MatchModeType = "live" | "spectator" | "delegate";
@@ -71,6 +72,13 @@ export function useAdvanceTime(
   const [blockerModal, setBlockerModal] = useState<BlockerModal | null>(null);
   const [autoDelegationNotice, setAutoDelegationNotice] = useState<string | null>(null);
   const [matchPlayedNotice, setMatchPlayedNotice] = useState<string | null>(null);
+  const [scrimResultNotice, setScrimResultNotice] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (!scrimResultNotice) return;
+    const timer = window.setTimeout(() => setScrimResultNotice(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [scrimResultNotice]);
 
   useEffect(() => {
     if (!matchPlayedNotice) return;
@@ -129,12 +137,19 @@ export function useAdvanceTime(
     setBlockerModal(options?.blockerModal ?? null);
   }
 
+  /** Announce the scrims the user's club played since `before` was taken. */
+  function noticeNewScrimResults(before: Set<string> | null): void {
+    const lines = before ? newScrimResultLines(before, useGameStore.getState().gameState) : [];
+    if (lines.length > 0) setScrimResultNotice(lines);
+  }
+
   const doAdvance = async (effectiveMode: string) => {
     console.info("[useAdvanceTime] doAdvance:start", {
       effectiveMode,
       hasMatchToday,
       matchMode,
     });
+    const scrimBaseline = scrimReportKeys(useGameStore.getState().gameState);
     setIsAdvancing(true);
     resetTransientUi();
     try {
@@ -335,6 +350,7 @@ export function useAdvanceTime(
       console.error("Failed to advance time:", err);
     } finally {
       console.info("[useAdvanceTime] doAdvance:complete", { effectiveMode });
+      noticeNewScrimResults(scrimBaseline);
       setIsAdvancing(false);
     }
   };
@@ -406,6 +422,7 @@ export function useAdvanceTime(
 
   const doSkipToNextDay = async () => {
     console.info("[useAdvanceTime] doSkipToNextDay:start");
+    const scrimBaseline = scrimReportKeys(useGameStore.getState().gameState);
     setIsAdvancing(true);
     resetTransientUi();
     try {
@@ -503,12 +520,14 @@ export function useAdvanceTime(
       console.error("Failed to skip to next day:", err);
     } finally {
       console.info("[useAdvanceTime] doSkipToNextDay:complete");
+      noticeNewScrimResults(scrimBaseline);
       setIsAdvancing(false);
     }
   };
 
   const doSkipToMatchDay = async () => {
     console.info("[useAdvanceTime] doSkipToMatchDay:start");
+    const scrimBaseline = scrimReportKeys(useGameStore.getState().gameState);
     setIsAdvancing(true);
     resetTransientUi();
     try {
@@ -561,6 +580,7 @@ export function useAdvanceTime(
       console.error("Failed to skip to match day:", err);
     } finally {
       console.info("[useAdvanceTime] doSkipToMatchDay:complete");
+      noticeNewScrimResults(scrimBaseline);
       setIsAdvancing(false);
     }
   };
@@ -573,6 +593,8 @@ export function useAdvanceTime(
     blockerModal, setBlockerModal,
     autoDelegationNotice,
     matchPlayedNotice,
+    scrimResultNotice,
+    dismissScrimResultNotice: () => setScrimResultNotice(null),
     handleContinue,
     handleConfirmMatch,
     handleSkipToMatchDay,
