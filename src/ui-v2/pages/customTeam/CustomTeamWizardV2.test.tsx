@@ -217,6 +217,14 @@ describe("CustomTeamWizardV2 badge step", () => {
 });
 
 describe("CustomTeamWizardV2 replace and review step", () => {
+  it("draws the mode radios without the native fill, so an unselected one looks empty", () => {
+    setup();
+    toModeStep();
+    for (const name of ["Replace a club", /Join the league/]) {
+      expect(screen.getByRole("radio", { name })).toHaveClass("appearance-none", "bg-transparent");
+    }
+  });
+
   it("preselects the lowest-reputation club and never a club without reputation", () => {
     setup();
     toReviewStep();
