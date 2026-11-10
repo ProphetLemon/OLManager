@@ -469,6 +469,57 @@ mod tests {
     }
 
     #[test]
+    fn skip_to_match_day_passes_the_clubs_bye_and_plays_its_next_match() {
+        let state = StateManager::new();
+        let mut game = make_game_with_matchday();
+        let bye_day = game.clock.current_date.format("%Y-%m-%d").to_string();
+        let club_day = "2025-06-18".to_string();
+        let mut third_team = Team::new(
+            "team3".to_string(),
+            "Third FC".to_string(),
+            "THI".to_string(),
+            "England".to_string(),
+            "Thirdtown".to_string(),
+            "Third Ground".to_string(),
+            21_000,
+        );
+        let third_players: Vec<Player> = (1..=11)
+            .map(|idx| {
+                let position = match idx {
+                    1 => LolRole::Support,
+                    2..=5 => LolRole::Top,
+                    6 => LolRole::Mid,
+                    7..=9 => LolRole::Jungle,
+                    _ => LolRole::Adc,
+                };
+                make_player(&format!("t{idx}"), &format!("Third {idx}"), "team3", position)
+            })
+            .collect();
+        third_team.active_lineup_ids = third_players.iter().map(|p| p.id.clone()).collect();
+        game.teams.push(third_team);
+        game.players.extend(third_players);
+        // The league plays today without the club (its bye); the club plays on the 18th.
+        let fixtures = &mut game.leagues[0].fixtures;
+        fixtures[0].date = club_day;
+        fixtures.push(scrim_week_fixture("bye-day", &bye_day, "team2", "team3"));
+        state.set_game(game);
+        state.set_stats_state(StatsState::default());
+
+        let response = skip_to_match_day_internal(&state).expect("skip response");
+
+        assert_eq!(response["action"], "arrived");
+        assert_eq!(response["match_simulated"], true);
+        let game = state.get_game(|g| g.clone()).unwrap();
+        let fixtures = &game.leagues[0].fixtures;
+        assert_eq!(fixtures[1].status, FixtureStatus::Completed);
+        assert_eq!(fixtures[0].status, FixtureStatus::Completed);
+        assert_eq!(
+            game.clock.current_date.date_naive(),
+            Utc.with_ymd_and_hms(2025, 6, 19, 12, 0, 0).unwrap().date_naive()
+        );
+    }
+
+    #[test]
     fn skip_to_match_day_does_not_play_the_match_while_blockers_remain() {
         let state = StateManager::new();
         let mut game = make_game_with_matchday();
