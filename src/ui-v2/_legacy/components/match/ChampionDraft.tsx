@@ -700,6 +700,53 @@ export function resolveDraftTipPlayerImage(
   );
 }
 
+/**
+ * A champion is off its role when it has known roles and none of them is `role`.
+ * A champion with no role data fits anywhere.
+ */
+function isOffRole(hints: ReadonlyArray<string>, role: Role): boolean {
+  return hints.length > 0 && !hints.includes(role);
+}
+
+/**
+ * Chooses which champion plays which role once a side has finished picking.
+ * `order[roleIdx]` is the index of the selection that takes `ROLE_ORDER[roleIdx]`.
+ * Role fit is a hard constraint: the assignment with the fewest off-role champions wins
+ * and mastery only breaks ties between assignments with the same count.
+ */
+export function chooseRoleOrder(
+  roleHints: ReadonlyArray<ReadonlyArray<string>>,
+  masteryAt: (roleIdx: number, selectionIdx: number) => number,
+): number[] {
+  const indices = roleHints.map((_, idx) => idx);
+  if (indices.length <= 1) return indices;
+
+  let bestOrder = [...indices];
+  let bestOffRole = Number.POSITIVE_INFINITY;
+  let bestMastery = Number.NEGATIVE_INFINITY;
+
+  const permute = (arr: number[], l: number): void => {
+    if (l === arr.length) {
+      const offRole = arr.filter((idx, roleIdx) => isOffRole(roleHints[idx], ROLE_ORDER[roleIdx])).length;
+      const mastery = arr.reduce((sum, idx, roleIdx) => sum + masteryAt(roleIdx, idx), 0);
+      if (offRole < bestOffRole || (offRole === bestOffRole && mastery > bestMastery)) {
+        bestOffRole = offRole;
+        bestMastery = mastery;
+        bestOrder = [...arr];
+      }
+      return;
+    }
+    for (let i = l; i < arr.length; i += 1) {
+      [arr[l], arr[i]] = [arr[i], arr[l]];
+      permute(arr, l + 1);
+      [arr[l], arr[i]] = [arr[i], arr[l]];
+    }
+  };
+
+  permute([...indices], 0);
+  return bestOrder;
+}
+
 export default function ChampionDraft({
   snapshot,
   onComplete,
@@ -956,44 +1003,12 @@ export default function ChampionDraft({
     return resolvePlayerMastery(sampleSide, samplePickIndex, champion.id);
   };
 
-  const roleAssignmentScore = (side: Side, role: Role, championId: string): number => {
-    const champion = championById.get(championId);
-    const roleBonus = champion?.roleHints.includes(role) ? 20 : 0;
-    return roleMasteryForChampion(side, role, championId) + roleBonus;
-  };
-
-  const buildBestRoleOrder = (side: Side, selections: DraftSelection[]): number[] => {
-    const availableIndices = selections.map((_, idx) => idx);
-    if (availableIndices.length <= 1) return availableIndices;
-
-    const roleSubset = ROLE_ORDER.slice(0, availableIndices.length);
-    let bestOrder = [...availableIndices];
-    let bestScore = Number.NEGATIVE_INFINITY;
-
-    const permute = (arr: number[], l: number): void => {
-      if (l === arr.length) {
-        const score = arr.reduce((sum, idx, roleIdx) => {
-          const role = roleSubset[roleIdx];
-          if (!role) return sum;
-          return sum + roleAssignmentScore(side, role, selections[idx].championId);
-        }, 0);
-        if (score > bestScore) {
-          bestScore = score;
-          bestOrder = [...arr];
-        }
-        return;
-      }
-
-      for (let i = l; i < arr.length; i += 1) {
-        [arr[l], arr[i]] = [arr[i], arr[l]];
-        permute(arr, l + 1);
-        [arr[l], arr[i]] = [arr[i], arr[l]];
-      }
-    };
-
-    permute([...availableIndices], 0);
-    return bestOrder;
-  };
+  const buildBestRoleOrder = (side: Side, selections: DraftSelection[]): number[] =>
+    chooseRoleOrder(
+      selections.map((selection) => championById.get(selection.championId)?.roleHints ?? []),
+      (roleIdx, selectionIdx) =>
+        roleMasteryForChampion(side, ROLE_ORDER[roleIdx], selections[selectionIdx].championId),
+    );
 
   const championAssignableRoles = (championId: string): Role[] => {
     const hints = championById.get(championId)?.roleHints ?? [];
