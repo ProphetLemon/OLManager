@@ -65,7 +65,7 @@ describe("buildCallItems", () => {
     ["incomplete_lineup", "fixLineup"],
     ["main_roster_minimum", "fixLineup"],
     ["main_missing_roles", "fixLineup"],
-    ["academy_missing_roles", "fixLineup"],
+    ["academy_missing_roles", "openAcademy"],
     ["key_contract_risk", "openContracts"],
     ["contract_wage_risk", "openContracts"],
     ["scrim_setup_required", "openScrims"],
@@ -80,6 +80,22 @@ describe("buildCallItems", () => {
     expect(item.actionLabelKey).toBe(`onAir.calls.actions.${action}`);
     expect(item.headline).toBe(`text ${id}`);
     expect(item.consequence).toBeTruthy();
+  });
+
+  it("sends the academy blocker to the academy tab with an academy action, not the first team's", () => {
+    const [item] = build({ blockers: [blocker("academy_missing_roles", { tab: "YouthAcademy" })] }).items;
+    expect(item.actionLabelKey).toBe("onAir.calls.actions.openAcademy");
+    expect(item.actionLabelKey).not.toBe("onAir.calls.actions.fixLineup");
+    expect(item.target.tab).toBe("Youth");
+  });
+
+  it("words a blocker without a rule from its own consequence key before the generic one", () => {
+    const keyed = ((key: string, opts?: { defaultValue?: string }) =>
+      key === "onAir.calls.consequence.advance_blocked" ? "own text" : (opts?.defaultValue ?? key)) as unknown as TFunction;
+    const [own] = build({ blockers: [blocker("advance_blocked")], t: keyed }).items;
+    expect(own.consequence).toBe("own text");
+    const [other] = build({ blockers: [blocker("zzz", { severity: "info" })], t: keyed }).items;
+    expect(other.consequence).toBe("Review this before moving on.");
   });
 
   it("derives hard vs soft from canContinueAnyway", () => {

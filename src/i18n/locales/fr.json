@@ -4069,6 +4069,7 @@
         "openFinances": "Ouvrir les finances",
         "openContracts": "Ouvrir les contrats",
         "openInbox": "Ouvrir la boîte",
+        "openAcademy": "Ouvrir l'académie",
         "renew": "Prolonger",
         "review": "Examiner"
       },
@@ -4082,6 +4083,8 @@
         "scrim_setup_required": "Le scrim doit être préparé avant le prochain match.",
         "scrim_decision_required": "Une décision de scrim vous attend.",
         "urgent_messages": "Des messages urgents vous attendent.",
+        "advance_blocked": "Impossible d'avancer automatiquement. Examinez les blocages en attente.",
+        "assistant_advance_limit": "L'entraîneur adjoint a atteint sa limite d'avancées automatiques. Vérifiez la situation vous-même.",
         "contract_one": "Expire dans {{count}} jour",
         "contract_other": "Expire dans {{count}} jours",
         "generic": "À examiner avant de continuer."

@@ -4068,6 +4068,7 @@
         "openFinances": "Abrir finanças",
         "openContracts": "Abrir contratos",
         "openInbox": "Abrir caixa de entrada",
+        "openAcademy": "Abrir academia",
         "renew": "Renovar",
         "review": "Rever"
       },
@@ -4081,6 +4082,8 @@
         "scrim_setup_required": "É preciso preparar o scrim antes do próximo jogo.",
         "scrim_decision_required": "Tens uma decisão de scrim pendente.",
         "urgent_messages": "Há mensagens urgentes na tua caixa de entrada.",
+        "advance_blocked": "Não foi possível avançar automaticamente. Revê os bloqueios pendentes.",
+        "assistant_advance_limit": "O Treinador Adjunto atingiu o limite de avanços automáticos. Revê o estado manualmente.",
         "contract_one": "Termina em {{count}} dia",
         "contract_other": "Termina em {{count}} dias",
         "generic": "Revê isto antes de continuares."

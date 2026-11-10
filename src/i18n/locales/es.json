@@ -4075,6 +4075,7 @@
         "openFinances": "Abrir finanzas",
         "openContracts": "Abrir contratos",
         "openInbox": "Abrir bandeja",
+        "openAcademy": "Abrir academia",
         "renew": "Renovar",
         "review": "Revisar"
       },
@@ -4088,6 +4089,8 @@
         "scrim_setup_required": "Hay que preparar el scrim antes de la próxima partida.",
         "scrim_decision_required": "Tienes una decisión de scrim pendiente.",
         "urgent_messages": "Hay mensajes urgentes en tu bandeja.",
+        "advance_blocked": "No se pudo avanzar automáticamente. Revisa los bloqueos pendientes.",
+        "assistant_advance_limit": "El Asistente alcanzó su límite de avances automáticos. Revisa el estado tú mismo.",
         "contract_one": "Vence en {{count}} día",
         "contract_other": "Vence en {{count}} días",
         "generic": "Revisa esto antes de continuar."

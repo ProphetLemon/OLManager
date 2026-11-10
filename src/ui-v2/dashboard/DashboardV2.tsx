@@ -160,6 +160,8 @@ const FOCUS_CALLS_INTERVAL_MS = 50;
 interface RetainedBlockers {
   blockers: BlockerData[];
   canContinueAnyway: boolean;
+  /** Game date the list was last confirmed for. */
+  date: string | null;
 }
 
 export default function DashboardV2() {
@@ -187,8 +189,8 @@ export default function DashboardV2() {
   const [isExitingToMenu, setIsExitingToMenu] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [viewingChampionKey, setViewingChampionKey] = useState<string | null>(null);
-  // Blockers outlive the blocker modal so "Needs your call" keeps listing them
-  // after the modal is dismissed. Cleared when the day changes or the list empties.
+  // What blocks the advance, for "Needs your call". Fed by the Continue modal and
+  // by the backend pre-check, which re-runs after every game state update.
   const [lastBlockers, setLastBlockers] = useState<RetainedBlockers | null>(null);
   const focusCallsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -323,9 +325,6 @@ export default function DashboardV2() {
   );
 
   const currentIsoDate = gameState?.clock.current_date ?? null;
-  useEffect(() => {
-    setLastBlockers(null);
-  }, [currentIsoDate]);
 
   useEffect(() => {
     if (!blockerModal) return;
@@ -336,26 +335,27 @@ export default function DashboardV2() {
             canContinueAnyway:
               blockerModal.pendingAction !== undefined &&
               canOfferContinueAnyway(blockerModal.blockers),
+            date: currentIsoDate,
           }
         : null,
     );
-  }, [blockerModal]);
+  }, [blockerModal, currentIsoDate]);
 
-  // Retained blockers go stale once the user fixes the problem (for example a
-  // lineup completed in Squad) without the day changing. While any are retained
-  // and the modal is closed, re-run the backend check shortly after each game
-  // state update and keep only what is still blocking.
-  const hasRetainedBlockers = lastBlockers !== null;
+  // Ask the backend what blocks the advance shortly after each game state update
+  // (a new day, a phase change, a lineup fixed in Squad) while the modal is
+  // closed, so Home never says "all in order" while a blocker exists. The list
+  // from the previous day stays until the new answer arrives.
   const blockerModalOpen = blockerModal !== null && blockerModal !== undefined;
+  const hasGame = gameState !== null && gameState !== undefined;
   // Same effective mode Continue resolves, so the refresh asks the backend the
   // question the advance command will answer.
   const refreshMode = resolveAdvanceMode(isUnemployed ?? false, matchMode);
   const assistantResolvesScrims = settings.scrim_review_mode === "assistant";
   useEffect(() => {
-    if (!hasRetainedBlockers || blockerModalOpen) return;
+    if (!hasGame || blockerModalOpen || showSeasonSummary) return;
     let cancelled = false;
     const timer = setTimeout(() => {
-      // A failed check is not "everything resolved": rethrow and keep the retained list.
+      // A failed check is not "everything resolved": rethrow and keep the list of this day.
       collectAdvanceBlockers("dashboard-refresh", {
         rethrow: true,
         mode: refreshMode,
@@ -364,18 +364,32 @@ export default function DashboardV2() {
         (fresh) => {
           if (cancelled) return;
           setLastBlockers((prev) => {
-            if (!prev) return prev;
             if (fresh.length === 0) return null;
             const same =
+              prev !== null &&
+              prev.date === currentIsoDate &&
               fresh.length === prev.blockers.length &&
-              fresh.every((b, i) => b.id === prev.blockers[i].id && b.text === prev.blockers[i].text);
-            // Keep the retained entry (and its copy) for ids that still block.
-            const kept = fresh.map((b) => prev.blockers.find((p) => p.id === b.id) ?? b);
-            return same ? prev : { ...prev, blockers: kept };
+              fresh.every(
+                (b, i) =>
+                  b.id === prev.blockers[i].id &&
+                  b.text === prev.blockers[i].text &&
+                  b.tab === prev.blockers[i].tab,
+              );
+            if (same) return prev;
+            return {
+              blockers: fresh,
+              canContinueAnyway:
+                prev && prev.date === currentIsoDate
+                  ? prev.canContinueAnyway
+                  : canOfferContinueAnyway(fresh),
+              date: currentIsoDate,
+            };
           });
         },
         () => {
-          // Keep the previous blockers; the next game state update retries.
+          // Keep this day's list; a list from another day is no longer trustworthy.
+          if (cancelled) return;
+          setLastBlockers((prev) => (prev && prev.date !== currentIsoDate ? null : prev));
         },
       );
     }, BLOCKER_REFRESH_DEBOUNCE_MS);
@@ -385,7 +399,15 @@ export default function DashboardV2() {
     };
     // gameState changes when the scrim setup is saved; the delegation toggle
     // changes the settings store instead, so it is a dependency of its own.
-  }, [gameState, hasRetainedBlockers, blockerModalOpen, refreshMode, assistantResolvesScrims]);
+  }, [
+    gameState,
+    hasGame,
+    blockerModalOpen,
+    showSeasonSummary,
+    refreshMode,
+    assistantResolvesScrims,
+    currentIsoDate,
+  ]);
 
   useEffect(
     () => () => {

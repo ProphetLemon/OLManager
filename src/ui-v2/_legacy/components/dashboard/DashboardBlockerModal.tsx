@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { BlockerModal } from "@/hooks/useAdvanceTime.helpers";
 import { canContinueAnyway } from "@/lib/home/blockerRules";
 import { Dialog, DialogContent, DialogTitle } from "@/ui-v2/components/ui/dialog";
+import { navLabelFor, resolveNavTab } from "@/ui-v2/shell/navModel";
 import { cn } from "@/ui-v2/lib/utils";
 
 interface DashboardBlockerModalProps {
@@ -31,6 +32,10 @@ export default function DashboardBlockerModal({
   onNavigate,
 }: DashboardBlockerModalProps): JSX.Element {
   const { t } = useTranslation();
+  const destinationName = (tab: string): string => {
+    const label = navLabelFor(tab);
+    return label ? t(label.labelKey, { defaultValue: label.defaultLabel }) : tab;
+  };
 
   return (
     <Dialog
@@ -69,14 +74,14 @@ export default function DashboardBlockerModal({
             <button
               key={blocker.id}
               type="button"
-              onClick={() => onNavigate(blocker.tab)}
+              onClick={() => onNavigate(resolveNavTab(blocker.tab))}
               className={cn("w-full rounded-xl border p-3 text-left transition-all hover:shadow-sm", blockerBorder(blocker.severity))}
             >
               <p className={cn("text-sm font-medium", blockerTextColor(blocker.severity))}>
                 {blocker.text}
               </p>
               <p className="mt-1 font-heading text-2xs uppercase tracking-widest text-muted-foreground/60">
-                {t("notifications.goTo")} {blocker.tab} →
+                {t("notifications.goTo")} {destinationName(blocker.tab)} →
               </p>
             </button>
           ))}

@@ -4110,6 +4110,7 @@
         "openFinances": "Open finances",
         "openContracts": "Open contracts",
         "openInbox": "Open inbox",
+        "openAcademy": "Open academy",
         "renew": "Renew",
         "review": "Review"
       },
@@ -4123,6 +4124,8 @@
         "scrim_setup_required": "Scrim setup is required before the next match.",
         "scrim_decision_required": "A scrim decision is waiting for you.",
         "urgent_messages": "Urgent messages are waiting in your inbox.",
+        "advance_blocked": "Could not advance automatically. Review the pending blockers.",
+        "assistant_advance_limit": "The Assistant Coach hit its automatic advance limit. Review the state yourself.",
         "contract_one": "Expires in {{count}} day",
         "contract_other": "Expires in {{count}} days",
         "generic": "Review this before you continue."
