@@ -147,6 +147,11 @@ pub struct MetaRelationships {
     synergies: HashMap<(String, String), i8>,
 }
 
+/// Review flags a curated counter may carry, one per basis of the curation. They
+/// mirror the flags written by `scripts/generate-champion-relationships.mjs` and
+/// accepted by `scripts/verify-champion-relationships.mjs`.
+const CURATED_BASIS_FLAGS: [&str; 2] = ["curated_general_knowledge", "curated_pro_play_stats"];
+
 static CATALOG: OnceLock<MetaRelationships> = OnceLock::new();
 
 pub fn canonical_champion_id(value: &str) -> String {
@@ -327,7 +332,7 @@ fn parse_catalog(raw: &str) -> Result<MetaRelationships, String> {
                             && relationship
                                 .review_flags
                                 .iter()
-                                .any(|flag| flag == "curated_general_knowledge")
+                                .any(|flag| CURATED_BASIS_FLAGS.contains(&flag.as_str()))
                             && relationship
                                 .rationale
                                 .as_deref()
@@ -558,6 +563,15 @@ mod tests {
         assert_eq!(
             parse_catalog(&unflagged).unwrap_err(),
             "counter has invalid review metadata"
+        );
+
+        // A curated counter backed by pro-play statistics carries its own basis flag.
+        let stats_based =
+            with_summary(1).replace("curated_general_knowledge", "curated_pro_play_stats");
+        assert_eq!(
+            parse_catalog(&stats_based).unwrap().counters
+                [&("heimerdinger".to_string(), "quinn".to_string())],
+            3
         );
     }
 
