@@ -1178,21 +1178,76 @@ mod tests {
     }
 
     #[test]
-    fn advance_blockers_ignore_a_match_of_the_club_in_another_week() {
+    fn advance_blockers_skip_scrim_setup_in_the_bye_week_even_if_the_next_match_is_later() {
         let mut game = make_bye_week_scrim_window_game();
-        game.leagues[0]
-            .fixtures
-            .push(scrim_week_fixture("md-next", "2025-06-29", "team1", "team2"));
+        let mut next = scrim_week_fixture("md-next", "2025-06-29", "team1", "team2");
+        next.matchday = 2;
+        game.leagues[0].fixtures.push(next);
         assert!(scrim_blocker_ids(&game, "live").is_empty());
     }
 
     #[test]
-    fn advance_blockers_ignore_a_match_of_the_club_already_played_this_week() {
+    fn advance_blockers_report_scrim_setup_when_the_club_already_played_this_week() {
         let mut game = make_bye_week_scrim_window_game();
         let mut played = scrim_week_fixture("md-mon", "2025-06-16", "team1", "team2");
         played.status = FixtureStatus::Completed;
         game.leagues[0].fixtures.push(played);
-        assert!(scrim_blocker_ids(&game, "live").is_empty());
+        assert_eq!(
+            scrim_blocker_ids(&game, "live"),
+            vec!["scrim_setup_required"]
+        );
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_in_a_week_without_fixtures() {
+        let mut game = make_unplanned_scrim_window_game();
+        game.leagues[0].fixtures = vec![scrim_week_fixture(
+            "md-next",
+            "2025-06-29",
+            "team1",
+            "team2",
+        )];
+        assert_eq!(
+            scrim_blocker_ids(&game, "live"),
+            vec!["scrim_setup_required"]
+        );
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_when_only_others_play_playoffs() {
+        let mut game = make_unplanned_scrim_window_game();
+        let mut playoff = scrim_week_fixture("po-sat", "2025-06-21", "team2", "team3");
+        playoff.match_type = MatchType::Playoffs;
+        game.leagues[0].fixtures = vec![playoff];
+        assert_eq!(
+            scrim_blocker_ids(&game, "live"),
+            vec!["scrim_setup_required"]
+        );
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_when_the_club_plays_the_matchday_in_another_week() {
+        let mut game = make_bye_week_scrim_window_game();
+        game.leagues[0].fixtures.push(scrim_week_fixture(
+            "md-next",
+            "2025-06-29",
+            "team1",
+            "team2",
+        ));
+        assert_eq!(
+            scrim_blocker_ids(&game, "live"),
+            vec!["scrim_setup_required"]
+        );
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_when_the_game_has_no_league() {
+        let mut game = make_unplanned_scrim_window_game();
+        game.leagues.clear();
+        assert_eq!(
+            scrim_blocker_ids(&game, "live"),
+            vec!["scrim_setup_required"]
+        );
     }
 
     #[test]
