@@ -11,7 +11,7 @@ import { TitleBarV2 } from "./components/TitleBarV2";
 import ErrorBoundary from "./components/ErrorBoundary";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import i18n from "@/i18n";
-import { SCALE_MAP } from "@/ui-v2/uiScale";
+import { isAndroidUserAgent, rootFontSizeFor } from "@/ui-v2/uiScale";
 
 const DashboardV2 = lazy(() => import("./dashboard/DashboardV2"));
 const MainMenu = lazy(() => import("@/ui-v2/_legacy/pages/MainMenu"));
@@ -122,8 +122,7 @@ export default function AppV2() {
 
   useEffect(() => {
     if (!ready) return;
-    const size = SCALE_MAP[settings.ui_scale] || "16px";
-    document.documentElement.style.fontSize = size;
+    document.documentElement.style.fontSize = rootFontSizeFor(settings.ui_scale, window.navigator.userAgent);
   }, [settings.ui_scale, ready]);
 
   useEffect(() => {
@@ -156,7 +155,7 @@ export default function AppV2() {
 
   useEffect(() => {
     if (!ready) return;
-    const isAndroid = /Android/i.test(window.navigator.userAgent);
+    const isAndroid = isAndroidUserAgent(window.navigator.userAgent);
     if (!isAndroid) return;
 
     let cancelled = false;
