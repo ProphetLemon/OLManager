@@ -497,7 +497,7 @@ export interface StaffData {
   date_of_birth: string;
   nationality: string;
   profile_image_url?: string | null;
-  role: "AssistantManager" | "Coach" | "Scout" | "Physio";
+  role: "AssistantManager" | "Coach" | "Scout" | "Physio" | "Owner";
   attributes: {
     coaching: number;
     judging_ability: number;

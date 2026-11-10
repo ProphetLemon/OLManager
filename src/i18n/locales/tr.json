@@ -1320,6 +1320,20 @@
     "noAvailableStaff": "Uygun personel bulunamadı.",
     "releaseStaff": "Personeli serbest bırak",
     "hireStaff": "Personel işe al",
+    "clubOwner": "Kulüp sahibi",
+    "errors": {
+      "generic": "Personel değişikliği tamamlanamadı. Tekrar dene.",
+      "no_game": "Etkin bir oyun yok.",
+      "no_team": "Herhangi bir kulübü yönetmiyorsun.",
+      "hiring_locked": "Sezon boyunca personel transferi kapalıdır. Normal transferler sezon arasında açılır.",
+      "not_found": "Bu personel artık mevcut değil.",
+      "already_employed": "Bu personel zaten bir kulüpte çalışıyor.",
+      "insufficient_funds": "Kulübün bu personeli işe almaya yetecek parası yok.",
+      "owner_not_hireable": "Kulüp sahipleri işe alınamaz.",
+      "owner_not_fireable": "Kulüp sahibi görevden alınamaz.",
+      "not_your_team": "Bu personel senin kulübünde çalışmıyor.",
+      "transaction_failed": "İşe alım maliyeti kaydedilemedi. Hiçbir şey değişmedi."
+    },
     "best": "En İyi",
     "roles": {
       "AssistantManager": "Asistan Koç",

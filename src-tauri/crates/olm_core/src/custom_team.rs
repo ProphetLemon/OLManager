@@ -376,7 +376,7 @@ impl OvrPercentiles {
 
 /// Value at quantile `q` (0.0..=1.0) of an ascending, non-empty slice, linearly
 /// interpolated between the two nearest ranks and rounded to the nearest OVR.
-fn quantile(sorted: &[u8], q: f64) -> u8 {
+pub(crate) fn quantile(sorted: &[u8], q: f64) -> u8 {
     let last = sorted.len().saturating_sub(1);
     let position = q.clamp(0.0, 1.0) * last as f64;
     let lower = position.floor() as usize;

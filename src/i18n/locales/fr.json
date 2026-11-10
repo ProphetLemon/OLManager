@@ -1320,6 +1320,20 @@
     "noAvailableStaff": "Aucun staff disponible.",
     "releaseStaff": "Libérer un membre du staff",
     "hireStaff": "Engager un membre du staff",
+    "clubOwner": "Propriétaire du club",
+    "errors": {
+      "generic": "Le changement de staff n'a pas pu être effectué. Réessaie.",
+      "no_game": "Aucune partie n'est active.",
+      "no_team": "Tu ne diriges aucun club.",
+      "hiring_locked": "Le recrutement du staff est fermé pendant la saison. Les recrutements normaux ouvrent entre les saisons.",
+      "not_found": "Ce membre du staff n'existe plus.",
+      "already_employed": "Ce membre du staff travaille déjà pour un club.",
+      "insufficient_funds": "Le club n'a pas assez de fonds pour recruter ce membre du staff.",
+      "owner_not_hireable": "Les propriétaires de club ne peuvent pas être recrutés.",
+      "owner_not_fireable": "Le propriétaire du club ne peut pas être renvoyé.",
+      "not_your_team": "Ce membre du staff ne travaille pas pour ton club.",
+      "transaction_failed": "Le coût du recrutement n'a pas pu être enregistré. Rien n'a été modifié."
+    },
     "best": "Meilleur",
     "roles": {
       "AssistantManager": "Entraîneur Adjoint",

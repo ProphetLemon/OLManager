@@ -25,8 +25,10 @@ import {
 } from "@/lib/teams/lolStaffEffects";
 import { resolveStaffPhoto } from "@/lib/players/playerPhotos";
 import { staffDisplayName } from "@/lib/staff/staffName";
+import { staffAge } from "@/lib/staff/staffAge";
+import { staffErrorKey } from "@/lib/staff/staffErrors";
 import { ATTR_LABEL_KEYS, bestAttr, ovrRating, getStaffImpactRows } from "@/lib/staff/staffStats";
-import { calcAge, getTeamName } from "@/lib/common/helpers";
+import { getTeamName } from "@/lib/common/helpers";
 import { countryName } from "@/lib/common/countries";
 import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
@@ -59,11 +61,13 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [competitionFilter, setCompetitionFilter] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 12;
 
   const myStaff = gameState.staff.filter((s) => s.team_id === userTeamId);
-  const availableStaff = gameState.staff.filter((s) => !s.team_id);
+  // Club owners belong to their club and are never offered in the market.
+  const availableStaff = gameState.staff.filter((s) => !s.team_id && s.role !== "Owner");
   const displayStaff = isWorldMode
     ? gameState.staff
     : view === "mystaff"
@@ -108,11 +112,13 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
   const handleHire = async (staffId: string) => {
     setActionLoading(staffId);
+    setActionError(null);
     try {
       const updated = await hireStaff(staffId);
       onGameUpdate(updated);
     } catch (err) {
       console.error("Failed to hire staff:", err);
+      setActionError(t(staffErrorKey(err)));
     } finally {
       setActionLoading(null);
     }
@@ -120,11 +126,13 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
   const handleRelease = async (staffId: string) => {
     setActionLoading(staffId);
+    setActionError(null);
     try {
       const updated = await releaseStaff(staffId);
       onGameUpdate(updated);
     } catch (err) {
       console.error("Failed to release staff:", err);
+      setActionError(t(staffErrorKey(err)));
     } finally {
       setActionLoading(null);
     }
@@ -222,8 +230,14 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
         </div>
       </div>
 
+      {actionError && (
+        <div role="alert" className="rounded-lg border border-negative/40 bg-negative/10 px-4 py-2 text-sm text-negative">
+          {actionError}
+        </div>
+      )}
+
       {/* Team impact banner */}
-      {view === "mystaff" && myStaff.length > 0 && (
+      {view === "mystaff" && myStaff.some((s) => s.role !== "Owner") && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
           <span className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
             {t("staff.lolImpactTeamTitle")}
@@ -293,7 +307,8 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
         <div className="grid min-h-0 grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2 xl:grid-cols-3">
           {pageData.map((staff) => {
             const roleIcon = ROLE_ICONS[staff.role] || <GraduationCap className="size-4" />;
-            const age = calcAge(staff.date_of_birth, gameState.clock.current_date);
+            const age = staffAge(staff, gameState.clock.current_date);
+            const isOwner = staff.role === "Owner";
             const ovr = ovrRating(staff);
             const best = bestAttr(staff);
             const impactRows = getStaffImpactRows(staff);
@@ -338,8 +353,12 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                     {/* Role + Age + Nationality + Team */}
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
                       <span>{t(`staff.roles.${staff.role}`, { defaultValue: staff.role })}</span>
-                      <span className="text-border">·</span>
-                      <span>{t("common.age")} {age}</span>
+                      {age != null && (
+                        <>
+                          <span className="text-border">·</span>
+                          <span>{t("common.age")} {age}</span>
+                        </>
+                      )}
                       {staff.nationality && (
                         <>
                           <span className="text-border">·</span>
@@ -361,6 +380,11 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
                     {/* Specialization + Wage */}
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {isOwner && (
+                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-foreground">
+                          <Star className="size-3" /> {t("staff.clubOwner")}
+                        </span>
+                      )}
                       {staff.specialization && (
                         <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                           <Star className="size-3" /> {t(`staff.specializations.${staff.specialization}`)}
@@ -408,7 +432,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
                   {/* Action */}
                   <div className="flex shrink-0 flex-col items-center justify-start gap-2">
-                    {!isWorldMode && view === "mystaff" && (
+                    {!isWorldMode && view === "mystaff" && !isOwner && (
                       <button
                         type="button"
                         disabled={actionLoading === staff.id}

@@ -1462,6 +1462,20 @@
     "noAvailableStaff": "No hay staff disponible.",
     "releaseStaff": "Despedir miembro del staff",
     "hireStaff": "Contratar miembro del staff",
+    "clubOwner": "Propietario del club",
+    "errors": {
+      "generic": "No se pudo completar el cambio de staff. Inténtalo de nuevo.",
+      "no_game": "No hay ninguna partida activa.",
+      "no_team": "No diriges ningún club.",
+      "hiring_locked": "La contratación de staff está cerrada durante la temporada. Las contrataciones normales se abren en la pretemporada.",
+      "not_found": "Ese miembro del staff ya no existe.",
+      "already_employed": "Ese miembro del staff ya trabaja para un club.",
+      "insufficient_funds": "El club no tiene fondos suficientes para contratar a este miembro del staff.",
+      "owner_not_hireable": "Los propietarios de club no se pueden contratar.",
+      "owner_not_fireable": "El propietario del club no se puede despedir.",
+      "not_your_team": "Ese miembro del staff no trabaja para tu club.",
+      "transaction_failed": "No se pudo registrar el coste de la contratación. No se ha cambiado nada."
+    },
     "best": "Mejor",
     "roles": {
       "AssistantManager": "Segundo Entrenador",
