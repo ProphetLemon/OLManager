@@ -2335,6 +2335,7 @@
         "templates": {
           "welcome": {
             "subject": "Benvenuto al {{team}}!",
+            "body": "Il consiglio di amministrazione ti dà il benvenuto come nuovo allenatore del {{team}}.\n\nHai tutta la nostra fiducia nella tua capacità di guidare questa squadra verso il successo.\n\nEsamina la tua rosa, stabilisci le tue priorità e preparati alle sfide che ci attendono.\n\nIn bocca al lupo, allenatore!",
             "body_one": "Il consiglio di amministrazione ti dà il benvenuto come nuovo allenatore del {{team}}.\n\nHai tutta la nostra fiducia nella tua capacità di guidare questa squadra verso il successo. La prima partita di campionato è tra {{days}} giorno.\n\nEsamina la tua rosa, stabilisci le tue priorità e preparati alle sfide che ci attendono.\n\nIn bocca al lupo, allenatore!",
             "body_other": "Il consiglio di amministrazione ti dà il benvenuto come nuovo allenatore del {{team}}.\n\nHai tutta la nostra fiducia nella tua capacità di guidare questa squadra verso il successo. La prima partita di campionato è tra {{days}} giorni.\n\nEsamina la tua rosa, stabilisci le tue priorità e preparati alle sfide che ci attendono.\n\nIn bocca al lupo, allenatore!"
           }

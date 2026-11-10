@@ -53,6 +53,12 @@ async function translator(locale: string) {
 describe("generic welcome countdown", () => {
   const prefix = "be.msg.welcome.templates.welcome";
 
+  it.each(Object.keys(LOCALES))("%s keeps a plain body without the countdown for stored welcomes", (locale) => {
+    const plain = lookup(LOCALES[locale], `${prefix}.body`);
+    expect(plain, "body").toBeTypeOf("string");
+    expect(placeholders(plain ?? "")).toEqual(["team"]);
+  });
+
   it.each(Object.keys(LOCALES))("%s has a singular and a plural body", (locale) => {
     expect(lookup(LOCALES[locale], `${prefix}.body_one`), "body_one").toBeTypeOf("string");
     expect(lookup(LOCALES[locale], `${prefix}.body_other`), "body_other").toBeTypeOf("string");

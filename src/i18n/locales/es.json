@@ -2664,6 +2664,7 @@
         "templates": {
           "welcome": {
             "subject": "¡Bienvenido a {{team}}!",
+            "body": "El consejo directivo te da la bienvenida como nuevo entrenador de {{team}}.\n\nTenemos plena confianza en tu capacidad para llevar a este equipo al éxito.\n\nRevisa tu plantilla, establece tus prioridades y prepárate para los desafíos que vienen.\n\n¡Buena suerte, entrenador!",
             "body_one": "El consejo directivo te da la bienvenida como nuevo entrenador de {{team}}.\n\nTenemos plena confianza en tu capacidad para llevar a este equipo al éxito. El primer partido de liga es dentro de {{days}} día.\n\nRevisa tu plantilla, establece tus prioridades y prepárate para los desafíos que vienen.\n\n¡Buena suerte, entrenador!",
             "body_other": "El consejo directivo te da la bienvenida como nuevo entrenador de {{team}}.\n\nTenemos plena confianza en tu capacidad para llevar a este equipo al éxito. El primer partido de liga es dentro de {{days}} días.\n\nRevisa tu plantilla, establece tus prioridades y prepárate para los desafíos que vienen.\n\n¡Buena suerte, entrenador!"
           }

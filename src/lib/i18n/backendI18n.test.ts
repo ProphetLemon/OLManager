@@ -562,6 +562,20 @@ describe("first-week message locale", () => {
       expect(resolveMessage(welcome("16")).body).toContain("The first league match is 16 days away.");
     });
 
+    it("renders a welcome stored by an older save (days 0, no count) in the player's language", async () => {
+      const stored = makeMessage({
+        subject_key: "be.msg.welcome.templates.welcome.subject",
+        body_key: "be.msg.welcome.templates.welcome.body",
+        body: "English stored body",
+        i18n_params: { team: "Rayo Esports", days: "0" },
+      });
+      await i18n.changeLanguage("es");
+      const body = resolveMessage(stored).body;
+      await i18n.changeLanguage("en");
+      expect(body).toContain("El consejo directivo te da la bienvenida");
+      expect(body).not.toBe("English stored body");
+    });
+
     it("keeps the real number in Spanish", async () => {
       await i18n.changeLanguage("es");
       const one = resolveMessage(welcome("1")).body;

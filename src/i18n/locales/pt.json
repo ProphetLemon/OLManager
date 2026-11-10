@@ -2518,6 +2518,7 @@
         "templates": {
           "welcome": {
             "subject": "Bem-vindo ao {{team}}!",
+            "body": "A direção dá-lhe as boas-vindas como novo treinador principal do {{team}}.\n\nTemos total confiança na sua capacidade de levar esta equipa ao sucesso.\n\nAnalise o seu plantel, defina as suas prioridades e prepare-se para os desafios que aí vêm.\n\nBoa sorte, treinador!",
             "body_one": "A direção dá-lhe as boas-vindas como novo treinador principal do {{team}}.\n\nTemos total confiança na sua capacidade de levar esta equipa ao sucesso. O primeiro jogo da liga é daqui a {{days}} dia.\n\nAnalise o seu plantel, defina as suas prioridades e prepare-se para os desafios que aí vêm.\n\nBoa sorte, treinador!",
             "body_other": "A direção dá-lhe as boas-vindas como novo treinador principal do {{team}}.\n\nTemos total confiança na sua capacidade de levar esta equipa ao sucesso. O primeiro jogo da liga é daqui a {{days}} dias.\n\nAnalise o seu plantel, defina as suas prioridades e prepare-se para os desafios que aí vêm.\n\nBoa sorte, treinador!"
           }
