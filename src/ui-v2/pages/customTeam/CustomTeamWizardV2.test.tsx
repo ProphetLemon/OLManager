@@ -821,6 +821,30 @@ describe("CustomTeamWizardV2 join or replace choice", () => {
       expect(next()).toBeDisabled();
     });
 
+    it("puts the focus on the clashing name field after \"Go back and change it\"", () => {
+      setup();
+      toModeStepWithReplacedClubName();
+      fireEvent.click(joinRadio());
+
+      fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Go back and change it" }));
+      expect(screen.getByLabelText("Club name")).toHaveFocus();
+    });
+
+    it("puts the focus on the short name when only the short name clashes", () => {
+      setup();
+      toReviewStep();
+      fireEvent.click(screen.getByRole("button", { name: "Back" }));
+      fireEvent.click(screen.getByRole("button", { name: "Back" }));
+      fillIdentity("Otherwise Club");
+      fireEvent.change(screen.getByLabelText("Short name"), { target: { value: "OTH" } });
+      fireEvent.click(next());
+      fireEvent.click(next());
+      fireEvent.click(joinRadio());
+
+      fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Go back and change it" }));
+      expect(screen.getByLabelText("Short name")).toHaveFocus();
+    });
+
     it("sends Next on the mode step to the clashing field instead of the squad step", () => {
       setup();
       toModeStepWithReplacedClubName();
@@ -829,6 +853,7 @@ describe("CustomTeamWizardV2 join or replace choice", () => {
       fireEvent.click(next());
       expect(screen.getByRole("heading", { name: "Identity" })).toBeInTheDocument();
       expect(screen.getByLabelText("Club name")).toHaveAttribute("aria-invalid", "true");
+      expect(screen.getByLabelText("Club name")).toHaveFocus();
     });
 
     it("drops the message as soon as the player switches back", () => {

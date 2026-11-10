@@ -69,6 +69,15 @@ const FIELD_STEP: Record<CustomTeamField, Step> = {
   logo: 1,
 };
 
+/** Id of the input that holds each field, for the fields that have one. */
+const FIELD_INPUT_ID: Partial<Record<CustomTeamField, string>> = {
+  name: "custom-team-name",
+  shortName: "custom-team-short",
+  country: "custom-team-country",
+  primary: "custom-team-primary",
+  secondary: "custom-team-secondary",
+};
+
 const HEX = /^#[0-9a-f]{6}$/i;
 
 const inputClass =
@@ -186,9 +195,13 @@ export default function CustomTeamWizardV2({
   );
 
   // Move focus to the step heading whenever the step changes so keyboard and
-  // screen reader users land on the new content.
+  // screen reader users land on the new content. A step change that exists to
+  // fix a field asks for that field instead, so the error is what gets announced.
+  const focusFieldId = useRef<string | null>(null);
   useEffect(() => {
-    headingRef.current?.focus();
+    const target = focusFieldId.current ? document.getElementById(focusFieldId.current) : null;
+    focusFieldId.current = null;
+    (target ?? headingRef.current)?.focus();
   }, [step]);
 
   const backend = error && error !== ackedError ? mapBackendCustomTeamError(error) : null;
@@ -281,7 +294,9 @@ export default function CustomTeamWizardV2({
   /** Takes the player to the earliest step that holds a clashing field, with its error shown. */
   const fixModeClash = () => {
     modeClashes.forEach(touch);
-    setStep(Math.min(...modeClashes.map((field) => FIELD_STEP[field])) as Step);
+    const first = modeClashes.reduce((best, field) => (FIELD_STEP[field] < FIELD_STEP[best] ? field : best));
+    focusFieldId.current = FIELD_INPUT_ID[first] ?? null;
+    setStep(FIELD_STEP[first]);
   };
 
   const goNext = () => {
