@@ -606,12 +606,71 @@ describe("DashboardV2 shell wiring", () => {
     expect(shell.header?.callCount).toBe(1);
   });
 
-  it("does not re-check blockers while none are retained or the modal is open", async () => {
+  const academyBlocker = {
+    id: "academy_missing_roles",
+    severity: "warn",
+    text: "Academy incomplete",
+    tab: "YouthAcademy",
+  };
+
+  const nextDay = () => {
+    const state = minimalGameState();
+    useGameStore.setState({
+      gameState: { ...state, clock: { ...state.clock, current_date: "2025-06-20" } },
+    });
+  };
+
+  it("lists the blockers the pre-check reports on Home without a Continue press", async () => {
+    shell.checkBlockingActions.mockResolvedValue([academyBlocker]);
     await renderDashboard();
     await screen.findByTestId("home-tab-v2");
-    act(() => {
-      useGameStore.setState({ gameState: { ...minimalGameState() } });
+
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+    expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", {
+      rethrow: true,
+      mode: "live",
     });
+  });
+
+  it("shows the blocker that applies to the new day after the date changes", async () => {
+    await renderDashboard();
+    await screen.findByTestId("home-tab-v2");
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalled());
+    expect(shell.header?.callCount).toBe(0);
+
+    shell.checkBlockingActions.mockResolvedValue([academyBlocker]);
+    act(nextDay);
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    // Another day, nothing blocks any more: the panel goes back to empty.
+    shell.checkBlockingActions.mockResolvedValue([]);
+    act(() => {
+      const state = minimalGameState();
+      useGameStore.setState({
+        gameState: { ...state, clock: { ...state.clock, current_date: "2025-06-21" } },
+      });
+    });
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("keeps the previous list until the new day check answers, then drops it if the check fails", async () => {
+    shell.checkBlockingActions.mockResolvedValue([academyBlocker]);
+    await renderDashboard();
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    shell.checkBlockingActions.mockRejectedValue(new Error("backend down"));
+    act(nextDay);
+    // Never "all in order" while the answer is pending...
+    expect(shell.header?.callCount).toBe(1);
+    // ...and a stale list from another day is not kept once the check fails.
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("does not check blockers while the blocker modal is open", async () => {
+    shell.blockerModal = { blockers: [lineupBlocker] };
+    await renderDashboard();
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
     await new Promise((resolve) => setTimeout(resolve, 600));
     expect(shell.checkBlockingActions).not.toHaveBeenCalled();
   });
