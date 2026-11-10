@@ -56,7 +56,7 @@ import {
   TableRow,
 } from "@/ui-v2/components/ui/table";
 import { cn } from "@/ui-v2/lib/utils";
-import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
+import { activeCurrencySymbol, formatCurrencyAmount } from "@/lib/formatting/valueFormatting";
 
 interface FinancesTabV2Props {
   gameState: GameStateData;
@@ -99,7 +99,7 @@ function formatLedgerAmount(amount: number): string {
   const absoluteAmount = Math.abs(amount);
   const formattedAmount = absoluteAmount % 1_000 === 0
     ? formatVal(absoluteAmount)
-    : `${activeCurrencySymbol()}${absoluteAmount.toLocaleString()}`;
+    : formatCurrencyAmount(absoluteAmount);
   return `${sign}${formattedAmount}`;
 }
 
