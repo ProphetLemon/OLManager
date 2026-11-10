@@ -4,7 +4,9 @@ import {
   RAIL_GROUPS,
   defaultTabForGroup,
   groupForTab,
+  navLabelFor,
   railStopForTab,
+  resolveNavTab,
   resolveGroupLanding,
 } from "./navModel";
 
@@ -60,3 +62,19 @@ describe("navModel", () => {
     ]);
   });
 });
+
+describe("backend tab names", () => {
+  it("maps the academy tab the backend raises to the navigation's Youth tab", () => {
+    expect(resolveNavTab("YouthAcademy")).toBe("Youth");
+    expect(resolveNavTab("Squad")).toBe("Squad");
+  });
+
+  it("gives every tab a backend blocker can point to a navigation label", () => {
+    for (const tab of ["Squad", "Inbox", "Finances", "Scrims", "YouthAcademy"]) {
+      expect(navLabelFor(tab), tab).not.toBeNull();
+    }
+    expect(navLabelFor("YouthAcademy")).toMatchObject({ labelKey: "dashboard.youthAcademy" });
+    expect(navLabelFor("Nope")).toBeNull();
+  });
+});
+

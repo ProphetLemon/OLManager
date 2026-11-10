@@ -94,6 +94,23 @@ export const RAIL_GROUPS: RailGroup[] = [
   },
 ];
 
+/** Tab names the backend uses in a blocker that differ from the navigation ids. */
+const BACKEND_TAB_ALIASES: Record<string, string> = { YouthAcademy: "Youth" };
+
+/** The navigation tab a backend tab name (for example a blocker's `tab`) points to. */
+export function resolveNavTab(tab: string): string {
+  return BACKEND_TAB_ALIASES[tab] ?? tab;
+}
+
+/** The label the navigation shows for a tab, or null when the tab is not in the navigation. */
+export function navLabelFor(tab: string): Pick<NavItem, "labelKey" | "defaultLabel"> | null {
+  const resolved = resolveNavTab(tab);
+  const item =
+    RAIL_DIRECT.find((i) => i.tab === resolved) ??
+    RAIL_GROUPS.flatMap((g) => g.items).find((i) => i.tab === resolved);
+  return item ? { labelKey: item.labelKey, defaultLabel: item.defaultLabel } : null;
+}
+
 /** Group that owns a tab, or null for direct stops, Manager and Tournaments. */
 export function groupForTab(tab: string): RailGroupId | null {
   return RAIL_GROUPS.find((g) => g.items.some((i) => i.tab === tab))?.id ?? null;
