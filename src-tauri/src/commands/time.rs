@@ -1030,9 +1030,54 @@ mod tests {
     }
 
     /// A game on the Wednesday that opens the weekly scrim window, nothing planned.
+    fn scrim_week_fixture(id: &str, date: &str, home: &str, away: &str) -> Fixture {
+        Fixture {
+            id: id.to_string(),
+            matchday: 1,
+            date: date.to_string(),
+            home_team_id: home.to_string(),
+            away_team_id: away.to_string(),
+            match_type: MatchType::League,
+            best_of: 1,
+            status: FixtureStatus::Scheduled,
+            result: None,
+        }
+    }
+
+    fn game_with_league_fixtures(mut game: Game, fixtures: Vec<Fixture>) -> Game {
+        game.leagues = vec![olm_core::domain::league::League {
+            id: "league-1".to_string(),
+            name: "League".to_string(),
+            season: 2025,
+            competition_id: None,
+            logo: None,
+            league_kind: LeagueKind::Main,
+            split_index: 0,
+            tier: 0,
+            active: false,
+            fixtures,
+            standings: Vec::new(),
+        }];
+        game
+    }
+
+    /// Wednesday 2025-06-18, scrims unplanned, and the club plays on Sunday
+    /// 2025-06-22: an ordinary week with a match to prepare for.
     fn make_unplanned_scrim_window_game() -> Game {
         let mut game = make_game(11);
         game.clock.current_date = Utc.with_ymd_and_hms(2025, 6, 18, 12, 0, 0).unwrap();
+        game_with_league_fixtures(
+            game,
+            vec![scrim_week_fixture("md-sun", "2025-06-22", "team1", "team2")],
+        )
+    }
+
+    /// The same Wednesday, but the club rests: the league plays on Sunday
+    /// without it (a bye in an odd-sized league).
+    fn make_bye_week_scrim_window_game() -> Game {
+        let mut game = make_unplanned_scrim_window_game();
+        game.leagues[0].fixtures =
+            vec![scrim_week_fixture("md-sun", "2025-06-22", "team2", "team3")];
         game
     }
 
@@ -1047,6 +1092,56 @@ mod tests {
     fn advance_blockers_report_scrim_setup_in_the_normal_case() {
         let game = make_unplanned_scrim_window_game();
         assert_eq!(scrim_blocker_ids(&game, "live"), vec!["scrim_setup_required"]);
+    }
+
+    #[test]
+    fn advance_blockers_skip_scrim_setup_in_a_week_the_club_rests() {
+        let game = make_bye_week_scrim_window_game();
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_let_continue_through_a_week_the_club_rests() {
+        let state = StateManager::new();
+        state.set_game(make_bye_week_scrim_window_game());
+        let response = advance_time_with_mode_internal(&state, "live").expect("advance");
+        assert_eq!(response.action, "phase_advanced");
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_when_the_club_plays_later_in_the_week() {
+        let mut game = make_bye_week_scrim_window_game();
+        game.leagues[0]
+            .fixtures
+            .push(scrim_week_fixture("md-fri", "2025-06-20", "team1", "team2"));
+        assert_eq!(scrim_blocker_ids(&game, "live"), vec!["scrim_setup_required"]);
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_for_a_playoff_match_this_week() {
+        let mut game = make_bye_week_scrim_window_game();
+        let mut playoff = scrim_week_fixture("po-sat", "2025-06-21", "team1", "team3");
+        playoff.match_type = MatchType::Playoffs;
+        game.leagues[0].fixtures.push(playoff);
+        assert_eq!(scrim_blocker_ids(&game, "live"), vec!["scrim_setup_required"]);
+    }
+
+    #[test]
+    fn advance_blockers_ignore_a_match_of_the_club_in_another_week() {
+        let mut game = make_bye_week_scrim_window_game();
+        game.leagues[0]
+            .fixtures
+            .push(scrim_week_fixture("md-next", "2025-06-29", "team1", "team2"));
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_ignore_a_match_of_the_club_already_played_this_week() {
+        let mut game = make_bye_week_scrim_window_game();
+        let mut played = scrim_week_fixture("md-mon", "2025-06-16", "team1", "team2");
+        played.status = FixtureStatus::Completed;
+        game.leagues[0].fixtures.push(played);
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
     }
 
     #[test]
