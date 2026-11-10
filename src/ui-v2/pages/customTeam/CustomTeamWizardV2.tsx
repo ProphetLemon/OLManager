@@ -646,7 +646,7 @@ export default function CustomTeamWizardV2({
                             setMode(option.value);
                             if (joinErrorCode) ackBackend();
                           }}
-                          className="mt-0.5 size-4 shrink-0 accent-primary"
+                          className="mt-0.5 size-4 shrink-0 appearance-none rounded-full border-2 border-line bg-transparent checked:border-primary checked:bg-primary checked:shadow-[inset_0_0_0_0.1875rem_var(--card)]"
                         />
                         <span className="min-w-0 flex-1">
                           <span

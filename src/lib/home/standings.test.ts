@@ -51,6 +51,20 @@ describe("getStandingsPanelData", () => {
     expect(data.gapBefore).toBeNull();
   });
 
+  it("lists every club of a league with up to nine clubs, with no divider", () => {
+    for (const myRank of [1, 5, 9]) {
+      const data = getStandingsPanelData(build({ count: 9, myRank }))!;
+      expect(data.rows.map((r) => r.position)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      expect(data.rows.filter((r) => r.isMe)).toHaveLength(1);
+      expect(data.gapBefore).toBeNull();
+    }
+    expect(getStandingsPanelData(build({ count: 8, myRank: 3 }))!.rows).toHaveLength(8);
+  });
+
+  it("keeps the top-eight rule from ten clubs up", () => {
+    expect(getStandingsPanelData(build({ count: 10, myRank: 2 }))!.rows).toHaveLength(8);
+  });
+
   it("honours a custom limit", () => {
     expect(getStandingsPanelData(build({ myRank: 1 }), { limit: 3 })!.rows).toHaveLength(3);
   });

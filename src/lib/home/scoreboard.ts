@@ -204,6 +204,38 @@ function findRestRound(league: LeagueData, teamId: string, next: FixtureData): F
     .sort((left, right) => left.date.localeCompare(right.date))[0];
 }
 
+export interface RestNoticeData {
+  /** Matchday of the league round the club sits out. */
+  matchday: number;
+  date: string;
+  competitionName: string;
+  season: number | string | null;
+}
+
+/**
+ * The club has no fixture left but the league still has a regular-season round to
+ * play without it (an odd-sized league's bye on the last matchday). Null once the
+ * club has a fixture, or when no league round is pending (playoffs it is not in).
+ */
+export function getRestNotice(gameState: GameStateData): RestNoticeData | null {
+  const teamId = gameState.manager?.team_id;
+  const league = activeLeague(gameState);
+  if (!teamId || !league) return null;
+  const fixtures = league.fixtures ?? [];
+  if (findNextFixture(fixtures, teamId)) return null;
+
+  const pending = fixtures
+    .filter((fixture) => isCompetitiveFixture(fixture) && fixture.status !== "Completed")
+    .sort((left, right) => left.date.localeCompare(right.date))[0];
+  if (!pending) return null;
+  return {
+    matchday: pending.matchday,
+    date: pending.date,
+    competitionName: league.name,
+    season: league.season ?? null,
+  };
+}
+
 export function getScoreboardData(gameState: GameStateData, opts: { highContrast: boolean }): ScoreboardData | null {
   const teamId = gameState.manager?.team_id;
   const league = activeLeague(gameState);

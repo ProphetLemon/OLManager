@@ -4017,6 +4017,7 @@
       "daysToGo_other": "{{count}} days to go",
       "matchDay": "Match day",
       "restsOn": "Your club rests on matchday {{n}}",
+      "restWeek": "Rest week",
       "formAfterFirst": "{{team}}'s form appears after their first match",
       "yourClub": "Your club",
       "startingFive": "Starting five",

@@ -3976,6 +3976,7 @@
       "daysToGo_other": "Noch {{count}} Tage",
       "matchDay": "Spieltag",
       "restsOn": "Dein Verein setzt am Spieltag {{n}} aus",
+      "restWeek": "Spielfreie Woche",
       "formAfterFirst": "Die Form von {{team}} erscheint nach dem ersten Spiel",
       "yourClub": "Dein Verein",
       "startingFive": "Startfünf",

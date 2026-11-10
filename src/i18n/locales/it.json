@@ -3975,6 +3975,7 @@
       "daysToGo_other": "Mancano {{count}} giorni",
       "matchDay": "Giorno di gara",
       "restsOn": "Il tuo club riposa alla giornata {{n}}",
+      "restWeek": "Settimana di riposo",
       "formAfterFirst": "La forma di {{team}} appare dopo la prima partita",
       "yourClub": "Il tuo club",
       "startingFive": "Cinque titolari",

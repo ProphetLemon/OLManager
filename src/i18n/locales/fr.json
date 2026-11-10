@@ -3976,6 +3976,7 @@
       "daysToGo_other": "Encore {{count}} jours",
       "matchDay": "Jour de match",
       "restsOn": "Votre club se repose à la journée {{n}}",
+      "restWeek": "Semaine de repos",
       "formAfterFirst": "La forme de {{team}} apparaît après son premier match",
       "yourClub": "Votre club",
       "startingFive": "Cinq de départ",
