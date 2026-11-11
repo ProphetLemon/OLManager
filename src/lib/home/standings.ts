@@ -3,6 +3,7 @@ import type { GameStateData, LeagueData } from "@/store/types";
 import { compareStandingsByLolScore } from "@/store/types";
 import { hasCompetitiveStandings } from "@/lib/season/seasonContext";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
+import { resolveUserLeague } from "@/lib/userLeague";
 
 export interface StandingRow {
   position: number;
@@ -44,11 +45,7 @@ export function shortCompetitionName(name: string): string {
 }
 
 function activeLeague(gameState: GameStateData): LeagueData | null {
-  const leagues = gameState.leagues ?? [];
-  if (gameState.user_competition_id) {
-    return leagues.find((league) => league.competition_id === gameState.user_competition_id) ?? leagues[0] ?? null;
-  }
-  return leagues[0] ?? null;
+  return resolveUserLeague(gameState);
 }
 
 /**

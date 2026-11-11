@@ -22,6 +22,7 @@ import {
 } from "@/lib/teams/clubColors";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import { TEAM_LOGO_PALETTE } from "@/lib/teams/teamPalette.generated";
+import { resolveUserLeague } from "@/lib/userLeague";
 
 export type LolRole = "TOP" | "JUNGLE" | "MID" | "ADC" | "SUPPORT";
 
@@ -181,11 +182,7 @@ function buildSide(team: TeamData, players: readonly PlayerData[], palette: Side
 }
 
 function activeLeague(gameState: GameStateData): LeagueData | null {
-  const leagues = gameState.leagues ?? [];
-  if (gameState.user_competition_id) {
-    return leagues.find((league) => league.competition_id === gameState.user_competition_id) ?? leagues[0] ?? null;
-  }
-  return leagues[0] ?? null;
+  return resolveUserLeague(gameState);
 }
 
 /** First unplayed league fixture dated before `next` that the club does not play in. */

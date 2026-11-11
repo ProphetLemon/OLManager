@@ -1,6 +1,7 @@
 import React from "react";
 import { MatchEvent, MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import type { FixtureData, GameStateData } from "@/store/gameStore";
+import { resolveUserLeague } from "@/lib/userLeague";
 import {
   Circle,
   CircleOff,
@@ -249,10 +250,7 @@ export function calcOvr(attrs: Record<string, number>): number {
 
 /** Fixtures of the league the user plays in; the backend indexes fixtures in that same league. */
 export function userLeagueFixtures(gameState: GameStateData | null): FixtureData[] | undefined {
-  const userLeague = gameState?.user_competition_id
-    ? gameState.leagues?.find((league) => league.competition_id === gameState.user_competition_id)
-    : undefined;
-  return (userLeague ?? gameState?.leagues?.[0])?.fixtures;
+  return resolveUserLeague(gameState)?.fixtures;
 }
 
 export function resolveMatchFixture(
