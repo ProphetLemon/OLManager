@@ -572,8 +572,13 @@ fn trace_one_match() {
     let from = env_side("LEAD_TRACE_FROM", 0.0) * 60.0;
     let to = env_side("LEAD_TRACE_TO", 60.0) * 60.0;
     let step = env_side("LEAD_TRACE_STEP", 20.0);
+    // LEAD_TRACE_EVEN replays a match of the objective detector (even teams,
+    // its seed names) instead of a lead pairing.
+    let even = std::env::var("LEAD_TRACE_EVEN").is_ok();
     let strong_on_blue = seed < 2000;
-    let (home, away) = if strong_on_blue {
+    let (home, away) = if even {
+        (Side::EVEN, Side::EVEN)
+    } else if strong_on_blue {
         (Side::stat(95.0), Side::stat(40.0))
     } else {
         (Side::stat(40.0), Side::stat(95.0))
@@ -585,7 +590,11 @@ fn trace_one_match() {
         &store,
         SimLiveInitRequest {
             session_id: session_id.clone(),
-            seed: format!("economy-seed-{seed}"),
+            seed: if even {
+                format!("objectives-seed-{seed}")
+            } else {
+                format!("economy-seed-{seed}")
+            },
             snapshot: snapshot_with(home, away),
             champion_by_player_id: HashMap::new(),
             champion_profiles_by_id: HashMap::new(),
