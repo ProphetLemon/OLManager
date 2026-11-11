@@ -84,13 +84,14 @@ fn smite_executes_low_hp_dragon_for_jungler() {
 }
 
 #[test]
-fn jungle_micro_damage_no_longer_has_role_penalty() {
+fn jungle_strength_damage_no_longer_has_role_penalty() {
     let top = test_champion("top-blue", "blue", "TOP", "top", Vec2 { x: 0.40, y: 0.40 });
     let jgl = test_champion("jgl-blue", "blue", "JGL", "top", Vec2 { x: 0.42, y: 0.40 });
+    let enemy = test_champion("mid-red", "red", "MID", "mid", Vec2 { x: 0.50, y: 0.50 });
 
     assert_eq!(
-        champion_micro_damage_multiplier(&top),
-        champion_micro_damage_multiplier(&jgl)
+        champion_strength_damage_multiplier(&top, &enemy),
+        champion_strength_damage_multiplier(&jgl, &enemy)
     );
 }
 

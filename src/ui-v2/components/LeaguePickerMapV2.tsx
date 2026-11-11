@@ -254,7 +254,7 @@ export default function LeaguePickerMapV2() {
     return (
       <div className="flex h-full items-center justify-center bg-background">
         <div className="text-center">
-          <Loader2 className="mx-auto mb-3 size-8 animate-spin text-primary" />
+          <Loader2 className="mx-auto mb-3 size-8 animate-spin text-club-text" />
           <p className="text-sm text-muted-foreground">{t("worldSelect.creatingWorld")}</p>
         </div>
       </div>
@@ -278,7 +278,7 @@ export default function LeaguePickerMapV2() {
       <div className="relative flex-1 overflow-hidden">
         {!mapReady && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80">
-            <Loader2 className="size-8 animate-spin text-primary" />
+            <Loader2 className="size-8 animate-spin text-club-text" />
           </div>
         )}
         <div ref={containerRef} className="h-full min-h-[400px]" style={{ background: "radial-gradient(ellipse at 50% 55%,#0d1b2a,#070d16 70%,#020408)" }} />
@@ -296,7 +296,7 @@ export default function LeaguePickerMapV2() {
                 </div>
                 <div>
                   <h2 className="font-heading text-xl font-bold uppercase tracking-wide text-foreground">{selectedComp.name}</h2>
-                  <p className="text-sm text-muted-foreground">{selectedComp.region} · {selectedComp.team_count} {t("teamSelect.teams", "equipos")}</p>
+                  <p className="text-sm text-muted-foreground">{selectedComp.region} · {t("teamSelect.teamCount", { count: selectedComp.team_count })}</p>
                 </div>
               </div>
 
@@ -329,10 +329,10 @@ export default function LeaguePickerMapV2() {
                       </div>
                       <div className="min-w-0">
                         <p className="truncate font-heading text-sm font-bold text-foreground">{team.short_name || team.name}</p>
-                        <p className="text-[10px] text-muted-foreground/60">{team.country}</p>
+                        <p className="text-2xs text-muted-foreground/60">{team.country}</p>
                       </div>
                       {team.ovr && (
-                        <div className="rounded-md bg-primary/15 px-2 py-0.5 font-heading text-xs font-bold tabular-nums text-primary">{team.ovr} OVR</div>
+                        <div className="rounded-md bg-primary/15 px-2 py-0.5 font-heading text-xs font-bold tabular-nums text-club-text">{team.ovr} OVR</div>
                       )}
                     </button>
                   );

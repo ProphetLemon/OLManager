@@ -51,6 +51,15 @@ describe("updaterService", () => {
     await expect(checkForUpdate()).rejects.toMatchObject({ name: "NoPlatformBuildError" });
   });
 
+  it("recognises the fallback-platforms error of tauri-plugin-updater", async () => {
+    const message =
+      'None of the fallback platforms `["windows-x86_64-nsis", "windows-x86_64"]` were found in the response `platforms` object';
+    expect(isNoPlatformBuildError(new Error(message))).toBe(true);
+    expect(isNoReleaseError(new Error(message))).toBe(false);
+    mocks.check.mockRejectedValue(new Error(message));
+    await expect(checkForUpdate()).rejects.toMatchObject({ name: "NoPlatformBuildError" });
+  });
+
   it("recognises the no-release errors only", () => {
     expect(isNoReleaseError("Could not fetch a valid release JSON from the remote")).toBe(true);
     expect(isNoReleaseError(new Error("status code 404 Not Found"))).toBe(true);

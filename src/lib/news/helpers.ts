@@ -48,8 +48,8 @@ export function buildNewsView(
 }
 
 export const NEWS_CATEGORY_STYLE: Record<string, { color: string; bg: string }> = {
-  MatchReport: { color: "text-primary", bg: "bg-primary/10" },
-  LeagueRoundup: { color: "text-primary/80", bg: "bg-primary/10" },
+  MatchReport: { color: "text-club-text", bg: "bg-primary/10" },
+  LeagueRoundup: { color: "text-club-text/80", bg: "bg-primary/10" },
   StandingsUpdate: { color: "text-blue-500", bg: "bg-blue-500/10" },
   TransferRumour: { color: "text-purple-500", bg: "bg-purple-500/10" },
   InjuryNews: { color: "text-red-500", bg: "bg-red-500/10" },

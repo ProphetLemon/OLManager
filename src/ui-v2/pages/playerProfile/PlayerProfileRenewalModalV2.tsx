@@ -163,7 +163,7 @@ export default function PlayerProfileRenewalModalV2({
         ) : null}
 
         {renewalCooledOff ? (
-          <p className="text-sm text-amber-600 dark:text-amber-300">
+          <p className="text-sm text-warning">
             {t("playerProfile.renewalCooledOff")}
           </p>
         ) : null}

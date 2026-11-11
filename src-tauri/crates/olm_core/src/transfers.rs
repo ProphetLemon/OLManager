@@ -30,8 +30,7 @@ fn ai_random_contract_years() -> u8 {
 fn next_split_end_date(game: &Game) -> String {
     let current_date = game.clock.current_date.date_naive();
     let league_name = game
-        .leagues
-        .first()
+        .active_league()
         .map(|l| {
             if l.name.contains("Winter") {
                 "Winter"
@@ -3123,7 +3122,16 @@ pub fn release_player_contract(game: &mut Game, player_id: &str) -> Result<i64, 
             today,
         )
         .with_category(crate::domain::message::MessageCategory::Contract)
-        .with_priority(crate::domain::message::MessagePriority::High),
+        .with_priority(crate::domain::message::MessagePriority::High)
+        // The stored text is English; the keys let the UI render it in the active language.
+        .with_i18n(
+            "be.msg.contractTerminated.subject",
+            "be.msg.contractTerminated.body",
+            std::collections::HashMap::from([
+                ("player".to_string(), player_name.clone()),
+                ("cost".to_string(), penalty.to_string()),
+            ]),
+        ),
         "director_of_football",
         vec![("player", &player_name)],
     );
@@ -3578,5 +3586,54 @@ mod importance_tests {
             asking_fee(&players[5], &owner, &players),
             asking_fee(&players[6], &owner, &players)
         );
+    }
+}
+
+#[cfg(test)]
+mod split_date_tests {
+    use super::*;
+    use crate::clock::GameClock;
+    use crate::domain::league::League;
+    use crate::domain::manager::Manager;
+    use chrono::{TimeZone, Utc};
+
+    fn game_with_leagues(user_competition_id: &str) -> Game {
+        let manager = Manager::new(
+            "mgr".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "ES".to_string(),
+        );
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 6, 15, 12, 0, 0).unwrap());
+        let mut game = Game::new(clock, manager, vec![], vec![], vec![], vec![]);
+        game.leagues = vec![
+            League::new(
+                "lec".to_string(),
+                "LEC Winter".to_string(),
+                2026,
+                &[],
+                Some("lec".to_string()),
+            ),
+            League::new(
+                "les".to_string(),
+                "LES Spring".to_string(),
+                2026,
+                &[],
+                Some("les".to_string()),
+            ),
+        ];
+        game.user_competition_id = Some(user_competition_id.to_string());
+        game
+    }
+
+    #[test]
+    fn split_end_follows_the_users_league_when_it_is_not_first() {
+        assert_eq!(next_split_end_date(&game_with_leagues("les")), "2026-08-01");
+    }
+
+    #[test]
+    fn split_end_follows_the_first_league_when_the_user_plays_in_it() {
+        assert_eq!(next_split_end_date(&game_with_leagues("lec")), "2026-03-28");
     }
 }

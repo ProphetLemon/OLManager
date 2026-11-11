@@ -125,10 +125,10 @@ fn role_gold_shares_match_pro_averages() {
             max * 100.0
         );
     }
-    // Pacing guard: the rework must not stretch matches past the engine's
-    // 60 minute limit or make the economy explode.
+    // Pacing guard: even teams must finish in pro-play time, well inside the
+    // engine's 60 minute limit.
     assert!(
-        batch.minutes <= 61.0,
+        (25.0..=40.0).contains(&batch.minutes),
         "average length {:.1} min",
         batch.minutes
     );

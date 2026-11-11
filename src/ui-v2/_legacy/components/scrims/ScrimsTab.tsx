@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { scrimOpponentLogo } from "@/lib/scrims/opponentLogo";
 import { CalendarDays, Gauge, Lightbulb, SlidersHorizontal, Swords, Target } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -38,14 +39,6 @@ const SCRIM_OBJECTIVES: ScrimFocus[] = [
   "Macro",
   "Mental",
 ];
-
-function teamLogoPath(teamId: string): string {
-  const slug = teamId.replace(/^lec-/, "");
-  if (slug === "shifters") {
-    return "/teams-icons/shifters.webp";
-  }
-  return `/teams-icons/${slug}.webp`;
-}
 
 function scrimFocusLabel(t: ReturnType<typeof useTranslation>["t"], focus: ScrimFocus): string {
   const labels: Record<ScrimFocus, string> = {
@@ -549,7 +542,7 @@ export default function ScrimsTab({
               <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-transparent p-3 dark:border-navy-600">
                 {(todayContext.resolvedOpponentTeamId ?? todayContext.opponentTeamId) ? (
                   <img
-                    src={teamLogoPath((todayContext.resolvedOpponentTeamId ?? todayContext.opponentTeamId) as string)}
+                    src={scrimOpponentLogo(gameState.teams, (todayContext.resolvedOpponentTeamId ?? todayContext.opponentTeamId) as string)}
                     alt={`${todayOpponentName} logo`}
                     className="h-9 w-9 shrink-0 rounded-lg bg-black/20 object-contain p-1"
                     loading="lazy"
@@ -679,7 +672,7 @@ export default function ScrimsTab({
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-2">
                           <img
-                            src={teamLogoPath(report.opponent_team_id)}
+                            src={scrimOpponentLogo(gameState.teams, report.opponent_team_id)}
                             alt={`${teamNameById.get(report.opponent_team_id) ?? report.opponent_team_id} logo`}
                             className="h-7 w-7 shrink-0 rounded bg-black/20 object-contain p-1"
                             loading="lazy"

@@ -89,7 +89,7 @@ export const tauriAdapter: ApiClient = {
 
   time: {
     advance: (args) => invoke("advance_time_with_mode", args),
-    checkBlockers: () => invoke("check_blocking_actions"),
+    checkBlockers: (args) => invoke("check_blocking_actions", args ?? {}),
     skipToMatchDay: () => invoke("skip_to_match_day"),
   },
 

@@ -3,7 +3,7 @@
 Closes #<!-- approved issue number -->
 
 - [ ] The linked issue has `status:approved`.
-- [ ] This PR targets `development` unless it is a maintainer release/hotfix PR.
+- [ ] This PR targets `develop` unless it is a maintainer release/hotfix PR.
 - [ ] This PR has exactly one `type:*` label.
 
 ## Summary

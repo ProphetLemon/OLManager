@@ -29,6 +29,13 @@ fn build_blocker(id: &str, severity: &str, text: String, tab: &str) -> serde_jso
     })
 }
 
+/// Attaches the values behind a blocker's text. The text stays an English fallback;
+/// the interface words the blocker from its `id` and these `params`.
+fn with_params(mut blocker: serde_json::Value, params: serde_json::Value) -> serde_json::Value {
+    blocker["params"] = params;
+    blocker
+}
+
 fn contract_days_remaining(
     contract_end: Option<&str>,
     current_date: chrono::NaiveDate,
@@ -156,14 +163,21 @@ fn incomplete_lineup_blocker(
 
     // Check minimum quantity first
     if selected_count < required_count && roster.len() >= required_count {
-        return Some(build_blocker(
-            "incomplete_lineup",
-            "warn",
-            format!(
-                "{} has only {} players — set your lineup",
-                count_text, selected_count
+        return Some(with_params(
+            build_blocker(
+                "incomplete_lineup",
+                "warn",
+                format!(
+                    "{} has only {} players — set your lineup",
+                    count_text, selected_count
+                ),
+                "Squad",
             ),
-            "Squad",
+            serde_json::json!({
+                "reason": "too_few",
+                "selected": selected_count,
+                "required": required_count,
+            }),
         ));
     }
 
@@ -194,14 +208,21 @@ fn incomplete_lineup_blocker(
             } else {
                 "roles"
             };
-            return Some(build_blocker(
-                "incomplete_lineup",
-                "warn",
-                format!(
-                    "Lineup incompleto: falta el {} {} en tu lineup. Asegurate de tener TOP, JUNGLE, MID, ADC y SUPPORT.",
-                    role_article, role_list
+            return Some(with_params(
+                build_blocker(
+                    "incomplete_lineup",
+                    "warn",
+                    format!(
+                        "Lineup incompleto: falta el {} {} en tu lineup. Asegurate de tener TOP, JUNGLE, MID, ADC y SUPPORT.",
+                        role_article, role_list
+                    ),
+                    "Squad",
                 ),
-                "Squad",
+                serde_json::json!({
+                    "reason": "missing_roles",
+                    "roles": role_list,
+                    "count": missing_roles.len(),
+                }),
             ));
         }
     }
@@ -219,11 +240,14 @@ fn urgent_unread_messages_blocker(game: &Game) -> Option<serde_json::Value> {
         .count();
 
     (urgent_unread > 0).then(|| {
-        build_blocker(
-            "urgent_messages",
-            "info",
-            format!("{} urgent unread message(s)", urgent_unread),
-            "Inbox",
+        with_params(
+            build_blocker(
+                "urgent_messages",
+                "info",
+                format!("{} urgent unread message(s)", urgent_unread),
+                "Inbox",
+            ),
+            serde_json::json!({ "count": urgent_unread }),
         )
     })
 }
@@ -257,14 +281,17 @@ fn key_contract_risk_blocker(
         .collect();
 
     (!risky_key_players.is_empty()).then(|| {
-        build_blocker(
-            "key_contract_risk",
-            "warn",
-            format!(
-                "Key player contract risk in squad planning: {}",
-                risky_key_players.join(", ")
+        with_params(
+            build_blocker(
+                "key_contract_risk",
+                "warn",
+                format!(
+                    "Key player contract risk in squad planning: {}",
+                    risky_key_players.join(", ")
+                ),
+                "Squad",
             ),
-            "Squad",
+            serde_json::json!({ "players": risky_key_players.join(", ") }),
         )
     })
 }
@@ -285,14 +312,17 @@ fn contract_wage_risk_blocker(
 
     let wage_budget = team.wage_budget.max(0) as u32;
     (wage_budget > 0 && at_risk_wages > wage_budget).then(|| {
-        build_blocker(
-            "contract_wage_risk",
-            "warn",
-            format!(
-                "{} of wages are tied to at-risk contracts — review your wage budget",
-                at_risk_wages
+        with_params(
+            build_blocker(
+                "contract_wage_risk",
+                "warn",
+                format!(
+                    "{} of wages are tied to at-risk contracts — review your wage budget",
+                    at_risk_wages
+                ),
+                "Finances",
             ),
-            "Finances",
+            serde_json::json!({ "amount": at_risk_wages }),
         )
     })
 }
@@ -301,14 +331,17 @@ fn minimum_main_roster_blocker(
     roster: &[&crate::domain::player::Player],
 ) -> Option<serde_json::Value> {
     (roster.len() < 5).then(|| {
-        build_blocker(
-            "main_roster_minimum",
-            "warn",
-            format!(
-                "Plantel principal incompleto: tenes {} jugador(es). Necesitas al menos 5 para avanzar.",
-                roster.len()
+        with_params(
+            build_blocker(
+                "main_roster_minimum",
+                "warn",
+                format!(
+                    "Plantel principal incompleto: tenes {} jugador(es). Necesitas al menos 5 para avanzar.",
+                    roster.len()
+                ),
+                "Squad",
             ),
-            "Squad",
+            serde_json::json!({ "count": roster.len() }),
         )
     })
 }
@@ -328,14 +361,17 @@ fn main_role_coverage_blocker(
         .collect();
 
     (!missing_roles.is_empty()).then(|| {
-        build_blocker(
-            "main_missing_roles",
-            "warn",
-            format!(
-                "Plantel principal incompleto por roles: falta al menos un jugador en {}. No podes avanzar hasta cubrir TOP, JUNGLE, MID, ADC y SUPPORT.",
-                missing_roles.join(", ")
+        with_params(
+            build_blocker(
+                "main_missing_roles",
+                "warn",
+                format!(
+                    "Plantel principal incompleto por roles: falta al menos un jugador en {}. No podes avanzar hasta cubrir TOP, JUNGLE, MID, ADC y SUPPORT.",
+                    missing_roles.join(", ")
+                ),
+                "Squad",
             ),
-            "Squad",
+            serde_json::json!({ "roles": missing_roles.join(", ") }),
         )
     })
 }
@@ -388,14 +424,17 @@ fn academy_role_coverage_blocker(
         .collect();
 
     (!missing_roles.is_empty()).then(|| {
-        build_blocker(
-            "academy_missing_roles",
-            "warn",
-            format!(
-                "Academia incompleta: falta al menos un jugador en {}. No podes avanzar hasta cubrir todos los roles.",
-                missing_roles.join(", ")
+        with_params(
+            build_blocker(
+                "academy_missing_roles",
+                "warn",
+                format!(
+                    "Academia incompleta: falta al menos un jugador en {}. No podes avanzar hasta cubrir todos los roles.",
+                    missing_roles.join(", ")
+                ),
+                "YouthAcademy",
             ),
-            "YouthAcademy",
+            serde_json::json!({ "roles": missing_roles.join(", ") }),
         )
     })
 }

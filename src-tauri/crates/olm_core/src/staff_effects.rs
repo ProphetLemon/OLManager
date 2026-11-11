@@ -50,7 +50,7 @@ impl LolStaffEffects {
     pub fn for_team(staff: &[Staff], team_id: &str) -> Self {
         let team_staff: Vec<&Staff> = staff
             .iter()
-            .filter(|member| member.team_id.as_deref() == Some(team_id))
+            .filter(|member| member.team_id.as_deref() == Some(team_id) && !member.is_owner())
             .collect();
 
         if team_staff.is_empty() {
@@ -159,6 +159,19 @@ mod tests {
         assert_eq!(effects, LolStaffEffects::default());
         assert!(effects.coaching < 1.0);
         assert!(effects.execution < 1.0);
+    }
+
+    #[test]
+    fn a_club_owner_never_changes_the_staff_effects() {
+        let coach = staff("coach", StaffRole::Coach, 60, 30, 30, 20);
+        let owner = staff("owner", StaffRole::Owner, 99, 99, 99, 99);
+
+        let with_owner = LolStaffEffects::for_team(&[coach.clone(), owner.clone()], "team-1");
+        let without_owner = LolStaffEffects::for_team(&[coach], "team-1");
+        let only_owner = LolStaffEffects::for_team(&[owner], "team-1");
+
+        assert_eq!(with_owner, without_owner);
+        assert_eq!(only_owner, LolStaffEffects::default());
     }
 
     #[test]

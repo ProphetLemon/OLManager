@@ -8,13 +8,19 @@ import type { GameStateData, LeagueSelectionData } from "@/store/gameStore";
 import { useGameStore } from "@/store/gameStore";
 import { LeaguePickerV2 } from "@/ui-v2/_legacy/components/teamSelection/LeaguePickerV2";
 import { TeamGridV2 } from "@/ui-v2/_legacy/components/teamSelection/TeamGridV2";
-import { loadLeagueSelectionData, selectTeam } from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
+import {
+  joinLeagueWithCustomTeam,
+  loadLeagueSelectionData,
+  selectTeam,
+} from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { useRosterOverlay } from "@/hooks/useRosterOverlay";
 import { RosterOverlayPanel } from "@/ui-v2/components/RosterOverlayPanel";
+import CustomTeamWizardV2 from "@/ui-v2/pages/customTeam/CustomTeamWizardV2";
+import type { CustomTeamSpec } from "@/store/types";
 
-type Screen = "loading" | "error" | "league" | "teams";
+type Screen = "loading" | "error" | "league" | "teams" | "custom";
 
 function formatActionError(error: unknown): string {
   if (error instanceof Error) {
@@ -82,16 +88,40 @@ export default function TeamSelectionV2() {
 
   const handleBackToMenu = () => navigate("/");
 
-  const handleConfirm = async () => {
-    if (!selectedTeamId || isConfirming) {
-      if (!selectedTeamId) setConfirmError("Select a team before confirming.");
-      return;
+  const handleBackToTeams = () => {
+    setConfirmError(null);
+    setScreen("teams");
+  };
+
+  const handleConfirm = () => {
+    if (!selectedTeamId) {
+      setConfirmError("Select a team before confirming.");
+      return Promise.resolve();
     }
+    return confirmSelection(selectedTeamId);
+  };
+
+  /**
+   * Finish the new-game flow. With `customTeam`, `teamId` is the league slot
+   * the new club replaces, or null when it joins `competitionId` as an extra
+   * club; the backend generates the club's real id, so the managed team is
+   * resolved from `manager.team_id`, never from `teamId`.
+   */
+  const confirmSelection = async (
+    teamId: string | null,
+    customTeam?: CustomTeamSpec,
+    competitionId?: string,
+  ) => {
+    if (isConfirming) return;
     setIsConfirming(true);
     setConfirmError(null);
     try {
-      let updatedGame = await selectTeam(selectedTeamId, i18n.language);
-      const myTeam = updatedGame.teams.find((t: any) => t.id === selectedTeamId);
+      let updatedGame =
+        teamId === null && customTeam && competitionId
+          ? await joinLeagueWithCustomTeam(competitionId, i18n.language, customTeam)
+          : await selectTeam(teamId as string, i18n.language, customTeam);
+      const managedTeamId = updatedGame.manager?.team_id ?? teamId;
+      const myTeam = updatedGame.teams.find((t: any) => t.id === managedTeamId);
       if (myTeam) {
         const roster = updatedGame.players.filter((p: any) => p.team_id === myTeam.id);
         const roles = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"] as const;
@@ -129,7 +159,7 @@ export default function TeamSelectionV2() {
     return (
       <div className="flex h-full items-center justify-center bg-background">
         <div className="text-center">
-          <Loader2 className="mx-auto mb-3 size-8 animate-spin text-primary" />
+          <Loader2 className="mx-auto mb-3 size-8 animate-spin text-club-text" />
           <p className="text-sm text-muted-foreground">{t("worldSelect.creatingWorld")}</p>
         </div>
       </div>
@@ -140,7 +170,7 @@ export default function TeamSelectionV2() {
     return (
       <div className="flex h-full items-center justify-center bg-background">
         <div className="mx-auto max-w-md p-8 text-center">
-          <p className="mb-4 text-sm text-red-400">{error || t("teamSelect.noLeaguesDesc")}</p>
+          <p className="mb-4 text-sm text-negative">{error || t("teamSelect.noLeaguesDesc")}</p>
           <button type="button" onClick={handleBackToMenu}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
@@ -154,10 +184,14 @@ export default function TeamSelectionV2() {
   const selectedCompetition = activeCompetitions.find((c) => c.id === selectedCompetitionId);
   const isLeagueScreen = screen === "league" && leagueData;
 
+  const isCustomScreen = screen === "custom" && !!selectedCompetition;
+  const overlayBusy = rosterOverlay.status === "updating" || rosterOverlay.status === "checking";
+
   const handleRootKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       e.preventDefault();
       if (isLeagueScreen) handleBackToMenu();
+      else if (isCustomScreen) handleBackToTeams();
       else handleBackToLeagues();
     }
   };
@@ -165,7 +199,8 @@ export default function TeamSelectionV2() {
   return (
     <div className="flex h-full flex-col bg-background" onKeyDown={handleRootKeyDown} tabIndex={-1}>
       <header className="relative flex h-14 shrink-0 items-center border-b border-border bg-gradient-to-r from-primary/5 to-transparent px-6">
-        <button type="button" onClick={isLeagueScreen ? handleBackToMenu : handleBackToLeagues}
+        <button type="button" onClick={isLeagueScreen ? handleBackToMenu : isCustomScreen ? handleBackToTeams : handleBackToLeagues}
+          aria-label={t("common.back", "Back")}
           className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
@@ -173,14 +208,22 @@ export default function TeamSelectionV2() {
         <div className="ml-3 flex flex-1 items-center justify-between">
           <div>
             <h1 className="font-heading text-lg font-black uppercase tracking-widest text-foreground">
-              {isLeagueScreen ? t("teamSelect.selectLeague", "Select League") : selectedCompetition?.name ?? ""}
+              {isLeagueScreen
+                ? t("teamSelect.selectLeague", "Select League")
+                : isCustomScreen
+                  ? t("teamSelect.custom.title")
+                  : selectedCompetition?.name ?? ""}
             </h1>
             <p className="text-xs text-muted-foreground/70">
-              {isLeagueScreen ? t("teamSelect.selectLeagueSubtitle", "Choose a competition") : t("teamSelect.selectTeam", "Elige un equipo")}
+              {isLeagueScreen
+                ? t("teamSelect.selectLeagueSubtitle", "Choose a competition")
+                : isCustomScreen
+                  ? t("teamSelect.custom.subtitle")
+                  : t("teamSelect.selectTeam", "Elige un equipo")}
             </p>
           </div>
-          {!isLeagueScreen && selectedTeamId && (
-            <button type="button" disabled={isConfirming || rosterOverlay.status === "updating" || rosterOverlay.status === "checking"} onClick={handleConfirm}
+          {!isLeagueScreen && !isCustomScreen && selectedTeamId && (
+            <button type="button" disabled={isConfirming || overlayBusy} onClick={handleConfirm}
               className="flex h-8 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 disabled:pointer-events-none disabled:opacity-50"
             >
               {isConfirming && <Loader2 className="size-4 animate-spin" />}
@@ -192,6 +235,18 @@ export default function TeamSelectionV2() {
 
       {isLeagueScreen ? (
         <LeaguePickerV2 competitions={activeCompetitions} onSelect={handleLeagueSelect} />
+      ) : isCustomScreen && selectedCompetition ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <CustomTeamWizardV2
+            competition={selectedCompetition}
+            onCancel={handleBackToTeams}
+            onConfirm={(spec, replacesTeamId) =>
+              void confirmSelection(replacesTeamId, spec, selectedCompetition.id)
+            }
+            isSubmitting={isConfirming || overlayBusy}
+            error={confirmError}
+          />
+        </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col">
           {confirmError && (
@@ -207,7 +262,13 @@ export default function TeamSelectionV2() {
           <TeamGridV2 teams={selectedCompetition?.teams ?? []} onSelectTeam={(id) => {
             setSelectedTeamId(id);
             setConfirmError(null);
-          }} selectedTeamId={selectedTeamId} />
+          }} selectedTeamId={selectedTeamId}
+            onCreateTeam={selectedCompetition?.custom_team_allowed ? () => {
+              setSelectedTeamId(null);
+              setConfirmError(null);
+              setScreen("custom");
+            } : undefined}
+          />
         </div>
       )}
 

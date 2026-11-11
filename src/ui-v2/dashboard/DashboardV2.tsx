@@ -1,4 +1,5 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { resolveUserLeague } from "@/lib/userLeague";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
@@ -13,6 +14,17 @@ import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import { isAcademyTeam } from "@/store/academySelectors";
 import { assetUrl } from "@/lib/assetUrl";
 import { DEFAULT_MANAGER_ICON_PATH } from "@/lib/common/managerAvatars";
+import { buildCallItems } from "@/lib/dashboard/needsYourCall";
+import { buildActiveLineupIds } from "@/lib/squad/helpers";
+import type { BlockerData } from "@/services/advanceTimeService";
+import { collectAdvanceBlockers } from "@/lib/home/advanceBlockers";
+import {
+  canContinueAnyway as canOfferContinueAnyway,
+  resolveAdvanceMode,
+} from "@/lib/home/blockerRules";
+import type { PlayerData } from "@/store/gameStore";
+import { resolveActiveLineupIds } from "@/store/types";
+import type { ShellBadges } from "@/ui-v2/shell/shellTypes";
 
 import {
   formatDateFull,
@@ -42,6 +54,7 @@ import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboar
 
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
+import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
 
 
 import { LazyFallback } from "@/ui-v2/components/LazyFallback";
@@ -138,6 +151,21 @@ const TAB_TO_DISCORD_KEY: Record<string, string> = {
   ChampionsWorld: "dashboard",
 };
 
+/** DOM id of the Home "Needs your call" panel (owned by NeedsYourCallPanel). */
+const NEEDS_YOUR_CALL_ID = "needs-your-call";
+const BLOCKER_REFRESH_DEBOUNCE_MS = 400;
+const MAIN_CONTENT_ID = "main-content";
+/** The panel mounts after a lazy Home chunk resolves, so look for it for a short while. */
+const FOCUS_CALLS_ATTEMPTS = 40;
+const FOCUS_CALLS_INTERVAL_MS = 50;
+
+interface RetainedBlockers {
+  blockers: BlockerData[];
+  canContinueAnyway: boolean;
+  /** Game date the list was last confirmed for. */
+  date: string | null;
+}
+
 export default function DashboardV2() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -163,6 +191,10 @@ export default function DashboardV2() {
   const [isExitingToMenu, setIsExitingToMenu] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [viewingChampionKey, setViewingChampionKey] = useState<string | null>(null);
+  // What blocks the advance, for "Needs your call". Fed by the Continue modal and
+  // by the backend pre-check, which re-runs after every game state update.
+  const [lastBlockers, setLastBlockers] = useState<RetainedBlockers | null>(null);
+  const focusCallsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!settingsLoaded) loadSettings();
@@ -260,12 +292,12 @@ export default function DashboardV2() {
   }, [gameState]);
   const todayMatchFixture = gameState ? getTodayMatchFixture(gameState) : null;
   const hasMatchToday = todayMatchFixture !== null;
-  const activeLeague = gameState?.user_competition_id
-    ? gameState.leagues.find(
-        (league) => league.competition_id === gameState.user_competition_id,
-      ) ?? gameState.leagues[0]
-    : gameState?.leagues[0];
-  const seasonComplete = isLeagueSeasonComplete(activeLeague);
+  const activeLeague = resolveUserLeague(gameState);
+  const pendingSeasonSummary = useGameStore((s) => s.pendingSeasonSummary);
+  // After advance_to_next_season the new league is not complete, but the wrap
+  // summary must stay on Home until the user dismisses it.
+  const showSeasonSummary =
+    isLeagueSeasonComplete(activeLeague) || pendingSeasonSummary !== null;
 
   const {
     isAdvancing,
@@ -276,6 +308,8 @@ export default function DashboardV2() {
     setBlockerModal,
     autoDelegationNotice,
     matchPlayedNotice,
+    scrimResultNotice,
+    dismissScrimResultNotice,
     handleContinue,
     handleConfirmMatch,
     handleSkipToMatchDay,
@@ -287,6 +321,99 @@ export default function DashboardV2() {
     settings.scrim_review_mode,
     settingsLoaded,
     isUnemployed ?? false,
+    showSeasonSummary,
+  );
+
+  const currentIsoDate = gameState?.clock.current_date ?? null;
+
+  useEffect(() => {
+    if (!blockerModal) return;
+    setLastBlockers(
+      blockerModal.blockers.length > 0
+        ? {
+            blockers: blockerModal.blockers,
+            canContinueAnyway:
+              blockerModal.pendingAction !== undefined &&
+              canOfferContinueAnyway(blockerModal.blockers),
+            date: currentIsoDate,
+          }
+        : null,
+    );
+  }, [blockerModal, currentIsoDate]);
+
+  // Ask the backend what blocks the advance shortly after each game state update
+  // (a new day, a phase change, a lineup fixed in Squad) while the modal is
+  // closed, so Home never says "all in order" while a blocker exists. The list
+  // from the previous day stays until the new answer arrives.
+  const blockerModalOpen = blockerModal !== null && blockerModal !== undefined;
+  const hasGame = gameState !== null && gameState !== undefined;
+  // Same effective mode Continue resolves, so the refresh asks the backend the
+  // question the advance command will answer.
+  const refreshMode = resolveAdvanceMode(isUnemployed ?? false, matchMode);
+  const assistantResolvesScrims = settings.scrim_review_mode === "assistant";
+  useEffect(() => {
+    if (!hasGame || blockerModalOpen || showSeasonSummary) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      // A failed check is not "everything resolved": rethrow and keep the list of this day.
+      collectAdvanceBlockers("dashboard-refresh", {
+        rethrow: true,
+        mode: refreshMode,
+        assistantResolvesScrims,
+      }).then(
+        (fresh) => {
+          if (cancelled) return;
+          setLastBlockers((prev) => {
+            if (fresh.length === 0) return null;
+            const same =
+              prev !== null &&
+              prev.date === currentIsoDate &&
+              fresh.length === prev.blockers.length &&
+              fresh.every(
+                (b, i) =>
+                  b.id === prev.blockers[i].id &&
+                  b.text === prev.blockers[i].text &&
+                  b.tab === prev.blockers[i].tab,
+              );
+            if (same) return prev;
+            return {
+              blockers: fresh,
+              canContinueAnyway:
+                prev && prev.date === currentIsoDate
+                  ? prev.canContinueAnyway
+                  : canOfferContinueAnyway(fresh),
+              date: currentIsoDate,
+            };
+          });
+        },
+        () => {
+          // Keep this day's list; a list from another day is no longer trustworthy.
+          if (cancelled) return;
+          setLastBlockers((prev) => (prev && prev.date !== currentIsoDate ? null : prev));
+        },
+      );
+    }, BLOCKER_REFRESH_DEBOUNCE_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // gameState changes when the scrim setup is saved; the delegation toggle
+    // changes the settings store instead, so it is a dependency of its own.
+  }, [
+    gameState,
+    hasGame,
+    blockerModalOpen,
+    showSeasonSummary,
+    refreshMode,
+    assistantResolvesScrims,
+    currentIsoDate,
+  ]);
+
+  useEffect(
+    () => () => {
+      if (focusCallsTimer.current) clearTimeout(focusCallsTimer.current);
+    },
+    [],
   );
 
   const handleSave = useCallback(async () => {
@@ -336,6 +463,31 @@ export default function DashboardV2() {
   const handleNavClick = (tab: string) => {
     setViewingChampionKey(null);
     setProfileNavigation((s) => navigateDashboardProfiles(s, tab));
+  };
+
+  // Header chip: go Home and move focus to the "Needs your call" panel. Home
+  // is lazy, so poll briefly until the panel exists.
+  const handleShowCalls = () => {
+    handleNavClick("Home");
+    if (focusCallsTimer.current) clearTimeout(focusCallsTimer.current);
+    let attempts = FOCUS_CALLS_ATTEMPTS;
+    const tryFocus = () => {
+      const panel = document.getElementById(NEEDS_YOUR_CALL_ID);
+      if (panel) {
+        panel.focus();
+        panel.scrollIntoView?.({ block: "start" });
+        focusCallsTimer.current = null;
+        return;
+      }
+      attempts -= 1;
+      focusCallsTimer.current = attempts > 0 ? setTimeout(tryFocus, FOCUS_CALLS_INTERVAL_MS) : null;
+    };
+    focusCallsTimer.current = setTimeout(tryFocus, 0);
+  };
+
+  const handleSkipToMain = (event: { preventDefault: () => void }) => {
+    event.preventDefault();
+    document.getElementById(MAIN_CONTENT_ID)?.focus();
   };
 
   const handleNavigate = (tab: string, context?: DashboardNavigateContext) => {
@@ -403,7 +555,8 @@ export default function DashboardV2() {
   const dashboardAlerts = gameState
     ? getDashboardAlerts(gameState, hasMatchToday, t)
     : [];
-  if (autoDelegationNotice) {
+  // The scrim result notice carries the Assistant Coach note itself.
+  if (autoDelegationNotice && !scrimResultNotice) {
     dashboardAlerts.unshift({
       id: "scrim_auto_delegate_notice",
       text: autoDelegationNotice,
@@ -421,11 +574,41 @@ export default function DashboardV2() {
     });
   }
 
+  const startingFive = useMemo<PlayerData[]>(() => {
+    if (!gameState || !myTeam) return [];
+    const roster = gameState.players.filter((player) => player.team_id === myTeam.id);
+    const byId = new Map(roster.map((player) => [player.id, player]));
+    return buildActiveLineupIds(roster, resolveActiveLineupIds(myTeam)).flatMap((id) => {
+      const player = byId.get(id);
+      return player ? [player] : [];
+    });
+  }, [gameState, myTeam]);
+
+  const callResult = gameState
+    ? buildCallItems({
+        alerts: dashboardAlerts,
+        blockers: lastBlockers?.blockers ?? [],
+        canContinueAnyway: lastBlockers?.canContinueAnyway ?? false,
+        startingFive,
+        currentDate: gameState.clock.current_date,
+        t,
+      })
+    : null;
+  const callCount = callResult?.decisions ?? 0;
+
+  const shellBadges: ShellBadges = {
+    unread: unreadMessagesCount,
+    offers: pendingOffersCount,
+    players: worldCounts.players,
+    teams: worldCounts.teams,
+    staff: worldCounts.staff,
+  };
+
   const dashboardTabContentModel = gameState
     ? createDashboardTabContentModel({
         activeTab: profileNavigation.activeTab,
         gameState,
-        seasonComplete,
+        seasonComplete: showSeasonSummary,
         visitedOnboardingTabs: new Set<string>(),
         initialMessageId: profileNavigation.initialMessageId,
         handlers: {
@@ -459,6 +642,13 @@ export default function DashboardV2() {
 
   return (
     <div className="flex min-h-0 flex-1 overflow-hidden bg-background text-foreground">
+      <a
+        href={`#${MAIN_CONTENT_ID}`}
+        onClick={handleSkipToMain}
+        className="sr-only rounded-md bg-club px-4 py-2 font-heading text-sm font-bold text-club-foreground focus:not-sr-only focus:min-h-[var(--target-min)] focus:fixed focus:left-4 focus:top-4 focus:z-[100]"
+      >
+        {t("onAir.nav.skip", { defaultValue: "Skip to main content" })}
+      </a>
       <DashboardSidebarV2
         activeTab={profileNavigation.activeTab}
         onNavClick={handleNavClick}
@@ -475,6 +665,7 @@ export default function DashboardV2() {
         staffCount={worldCounts.staff}
         onNavigateSettings={() => navigate("/settings", { state: { from: "/dashboard" } })}
         onExitClick={() => !isExitingToMenu && setShowExitConfirm(true)}
+        compact={showSeasonSummary}
       />
 
       <DashboardOverlays
@@ -499,12 +690,13 @@ export default function DashboardV2() {
       />
       <FiredModal />
 
-      <main className="flex flex-1 flex-col overflow-hidden scrollbar-v2">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <DashboardHeaderV2
           activeTabLabel={activeTabLabel}
           currentDate={currentDate}
           hasProfileHistory={hasProfileHistory}
           isAdvancing={isAdvancing}
+          seasonComplete={showSeasonSummary}
           isSaving={isSaving}
           saveFlash={saveFlash}
           hasMatchToday={hasMatchToday}
@@ -516,16 +708,48 @@ export default function DashboardV2() {
           onSkipToMatchDay={handleSkipToMatchDay}
           onSkipToNextDay={handleSkipToNextDay}
           onNavigate={handleNavigate}
+          teamName={myTeamName ?? ""}
+          teamLogo={teamLogo}
+          activeTab={profileNavigation.activeTab}
+          onNavClick={handleNavClick}
+          badges={shellBadges}
+          isUnemployed={isUnemployed ?? false}
+          callCount={callCount}
+          onShowCalls={handleShowCalls}
+          compact={showSeasonSummary}
         />
 
+        <ScrimResultNoticeV2
+          lines={scrimResultNotice}
+          assistantNote={autoDelegationNotice}
+          onOpenScrims={() => {
+            dismissScrimResultNotice();
+            handleNavigate("Scrims");
+          }}
+          onDismiss={dismissScrimResultNotice}
+        />
+
+        <main
+          id={MAIN_CONTENT_ID}
+          tabIndex={-1}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden outline-none scrollbar-v2"
+        >
         <Suspense fallback={<LazyFallback />}>
         {profileNavigation.activeTab === "Home" &&
         !viewingChampionKey &&
         !profileNavigation.selectedPlayerId &&
         !profileNavigation.selectedTeamId &&
-        !seasonComplete ? (
-          <div className="flex-1 overflow-y-auto scrollbar-v2">
-            <HomeTabV2 gameState={gameState} onNavigate={handleNavigate} onSelectPlayer={selectPlayer} />
+        !showSeasonSummary ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-v2">
+            <HomeTabV2
+              gameState={gameState}
+              onNavigate={handleNavigate}
+              onSelectPlayer={selectPlayer}
+              alerts={dashboardAlerts}
+              blockers={lastBlockers?.blockers}
+              canContinueAnyway={Boolean(lastBlockers?.canContinueAnyway)}
+              unreadCount={unreadMessagesCount}
+            />
           </div>
         ) : profileNavigation.activeTab === "Inbox" &&
           !viewingChampionKey &&
@@ -555,6 +779,7 @@ export default function DashboardV2() {
               gameState={gameState}
               onGameUpdate={setGameState}
               onSelectPlayer={selectPlayer}
+              onNavigate={handleNavigate}
             />
           </div>
         ) : profileNavigation.activeTab === "Training" &&
@@ -810,7 +1035,8 @@ export default function DashboardV2() {
           />
         )}
         </Suspense>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

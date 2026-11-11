@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import type {
   FixtureData,
   GameStateData,
@@ -32,7 +33,7 @@ type DashboardAlertTranslator = (
 ) => string;
 
 export function getTodayMatchFixture(gameState: GameStateData): FixtureData | null {
-  const fixtures = gameState.leagues?.[0]?.fixtures;
+  const fixtures = resolveUserLeague(gameState)?.fixtures;
 
   if (!fixtures) {
     return null;

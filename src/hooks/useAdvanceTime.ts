@@ -5,14 +5,54 @@ import { useGameStore } from "../store/gameStore";
 import i18n from "@/i18n";
 import { latestUserMatchSummary, type BlockerModal } from "./useAdvanceTime.helpers";
 import {
-  advanceTimeWithMode,
-  checkBlockingActions,
-  skipToMatchDay,
-} from "../services/advanceTimeService";
+  SCRIM_DECISION_BLOCKER_ID,
+  SCRIM_SETUP_BLOCKER_ID,
+  buildBlockerModal,
+  resolveAdvanceMode,
+} from "../lib/home/blockerRules";
+import { scrimBlockerText } from "../lib/home/scrimBlockerText";
+import { advanceTimeWithMode, skipToMatchDay } from "../services/advanceTimeService";
+import { collectAdvanceBlockers } from "../lib/home/advanceBlockers";
 import { autoConfigureWeeklyScrimSetup, delegateScrimDecision } from "../services/trainingService";
+import { newScrimResultLines, scrimReportKeys } from "./scrimResultNotice";
 import { effectiveWeeklyScrimSlots, scrimSlotWeekdays, weekdayMondayBased } from "../lib/scrims/scrimContext";
 
 export type MatchModeType = "live" | "spectator" | "delegate";
+
+function textAdvanceBlocked(): string {
+  return i18n.t("advance.blockers.advanceBlocked", {
+    defaultValue: "Could not advance automatically. Review the pending blockers.",
+  });
+}
+
+function noticeAssistantResolvedDecision(): string {
+  return i18n.t("advance.notices.assistantResolvedDecision", {
+    defaultValue: "Assistant Coach resolved the post-scrim decision automatically to unblock the advance.",
+  });
+}
+
+function noticeAssistantConfiguredSetup(): string {
+  return i18n.t("advance.notices.assistantConfiguredSetup", {
+    defaultValue: "Assistant Coach configured the weekly scrim setup automatically.",
+  });
+}
+
+function noticeAssistantResolvedDay(didSetup: boolean, didDecision: boolean): string {
+  if (didSetup && didDecision) {
+    return i18n.t("advance.notices.assistantResolvedDayBoth", {
+      defaultValue:
+        "Assistant Coach resolved the weekly setup and the post-scrim decision automatically to advance the day.",
+    });
+  }
+  if (didSetup) {
+    return i18n.t("advance.notices.assistantResolvedDaySetup", {
+      defaultValue: "Assistant Coach resolved the weekly setup automatically to advance the day.",
+    });
+  }
+  return i18n.t("advance.notices.assistantResolvedDayDecision", {
+    defaultValue: "Assistant Coach resolved the post-scrim decision automatically to advance the day.",
+  });
+}
 
 export function useAdvanceTime(
   setGameState: (state: GameStateData) => void,
@@ -21,6 +61,7 @@ export function useAdvanceTime(
   scrimReviewMode: "manual" | "assistant",
   settingsLoaded: boolean,
   isUnemployed: boolean,
+  seasonOver = false,
 ) {
   const navigate = useNavigate();
   const setShowFiredModal = useGameStore((s) => s.setShowFiredModal);
@@ -31,6 +72,13 @@ export function useAdvanceTime(
   const [blockerModal, setBlockerModal] = useState<BlockerModal | null>(null);
   const [autoDelegationNotice, setAutoDelegationNotice] = useState<string | null>(null);
   const [matchPlayedNotice, setMatchPlayedNotice] = useState<string | null>(null);
+  const [scrimResultNotice, setScrimResultNotice] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (!scrimResultNotice) return;
+    const timer = window.setTimeout(() => setScrimResultNotice(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [scrimResultNotice]);
 
   useEffect(() => {
     if (!matchPlayedNotice) return;
@@ -70,12 +118,13 @@ export function useAdvanceTime(
     return scrimReviewMode === "assistant";
   }
 
-  function isAssistantScrimBlocker(id: string): boolean {
-    return id === "scrim_decision_required" || id === "scrim_setup_required";
-  }
-
-  function shouldBypassBlockersForAssistant(blockers: Array<{ id: string }>): boolean {
-    return scrimReviewMode === "assistant" && blockers.length > 0 && blockers.every((blocker) => isAssistantScrimBlocker(blocker.id));
+  /** The backend pre-check for `mode`; the Assistant Coach's own scrim stops are left out. */
+  function collectBlockers(logContext: string, mode: string, includeScrimStops?: boolean) {
+    return collectAdvanceBlockers(logContext, {
+      mode,
+      includeScrimStops,
+      assistantResolvesScrims: isAssistantReviewMode(),
+    });
   }
 
   function resetTransientUi(options?: {
@@ -88,12 +137,19 @@ export function useAdvanceTime(
     setBlockerModal(options?.blockerModal ?? null);
   }
 
+  /** Announce the scrims the user's club played since `before` was taken. */
+  function noticeNewScrimResults(before: Set<string> | null): void {
+    const lines = before ? newScrimResultLines(before, useGameStore.getState().gameState) : [];
+    if (lines.length > 0) setScrimResultNotice(lines);
+  }
+
   const doAdvance = async (effectiveMode: string) => {
     console.info("[useAdvanceTime] doAdvance:start", {
       effectiveMode,
       hasMatchToday,
       matchMode,
     });
+    const scrimBaseline = scrimReportKeys(useGameStore.getState().gameState);
     setIsAdvancing(true);
     resetTransientUi();
     try {
@@ -147,11 +203,8 @@ export function useAdvanceTime(
             }
             setGameState(game);
             if (String(game.clock.current_date) !== baselineDate) {
-              const notices: string[] = [];
-              if (didAutoScrimSetup) notices.push("setup semanal");
-              if (didAutoScrimDecision) notices.push("decisión post-scrim");
-              if (notices.length > 0) {
-                setAutoDelegationNotice(`Assistant Coach resolvió automáticamente ${notices.join(" y ")} para avanzar el día.`);
+              if (didAutoScrimSetup || didAutoScrimDecision) {
+                setAutoDelegationNotice(noticeAssistantResolvedDay(didAutoScrimSetup, didAutoScrimDecision));
               }
               return;
             }
@@ -176,14 +229,15 @@ export function useAdvanceTime(
             continue;
           }
 
+          if (result.action === "season_complete") return;
           if (result.game) setGameState(result.game as GameStateData);
           if (result.action.startsWith("blocked_")) {
             setBlockerModal({
               blockers: [{
                 id: "advance_blocked",
                 severity: "warn",
-                tab: "Inicio",
-                text: "No se pudo avanzar automáticamente. Revisa los bloqueos pendientes.",
+                tab: "Home",
+                text: textAdvanceBlocked(),
               }],
             });
           }
@@ -195,7 +249,9 @@ export function useAdvanceTime(
             id: "assistant_advance_limit",
             severity: "warn",
             tab: "Scrims",
-            text: "Assistant Coach alcanzó el límite de intentos de avance automático. Revisá el estado manualmente.",
+            text: i18n.t("advance.blockers.assistantLimit", {
+              defaultValue: "Assistant Coach reached the automatic advance attempt limit. Review the state manually.",
+            }),
           }],
         });
         return;
@@ -226,7 +282,7 @@ export function useAdvanceTime(
           try {
             const delegated = await delegateScrimDecision();
             setGameState(delegated);
-            setAutoDelegationNotice("Assistant Coach resolvió automáticamente la decisión post-scrim para destrabar el avance.");
+            setAutoDelegationNotice(noticeAssistantResolvedDecision());
             const retry = await advanceTimeWithMode(effectiveMode);
             if (retry.action === "live_match") {
               navigate("/match", {
@@ -241,10 +297,12 @@ export function useAdvanceTime(
             } else if (retry.action === "blocked_scrim_decision") {
               setBlockerModal({
                 blockers: [{
-                  id: "scrim_decision_required",
+                  id: SCRIM_DECISION_BLOCKER_ID,
                   severity: "warn",
                   tab: "Scrims",
-                  text: "Delegación automática no pudo destrabar la decisión de scrims. Revisalo manualmente.",
+                  text: i18n.t("advance.blockers.scrimAutoFailed", {
+                    defaultValue: "Automatic delegation could not resolve the scrim decision. Review it manually.",
+                  }),
                 }],
               });
             }
@@ -255,10 +313,10 @@ export function useAdvanceTime(
         }
         setBlockerModal({
           blockers: [{
-            id: "scrim_decision_required",
+            id: SCRIM_DECISION_BLOCKER_ID,
             severity: "warn",
             tab: "Scrims",
-            text: "Debes tomar una decision de scrims antes de continuar.",
+            text: scrimBlockerText(SCRIM_DECISION_BLOCKER_ID),
           }],
         });
       } else if (result.action === "blocked_scrim_setup" && result.game) {
@@ -267,7 +325,7 @@ export function useAdvanceTime(
           try {
             const configured = await autoConfigureWeeklyScrimSetup();
             setGameState(configured);
-            setAutoDelegationNotice("Assistant Coach configuró automáticamente el setup semanal de scrims.");
+            setAutoDelegationNotice(noticeAssistantConfiguredSetup());
             const retry = await advanceTimeWithMode(effectiveMode);
             if ((retry.action === "advanced" || retry.action === "phase_advanced") && retry.game) {
               await applyAdvancedResult(retry.game as GameStateData);
@@ -279,10 +337,10 @@ export function useAdvanceTime(
         }
         setBlockerModal({
           blockers: [{
-            id: "scrim_setup_required",
+            id: SCRIM_SETUP_BLOCKER_ID,
             severity: "warn",
             tab: "Scrims",
-            text: "Define el setup semanal de scrims (objetivo y rivales) o delega el avance para continuar.",
+            text: scrimBlockerText(SCRIM_SETUP_BLOCKER_ID),
           }],
         });
       } else if ((result.action === "advanced" || result.action === "phase_advanced") && result.game) {
@@ -292,13 +350,15 @@ export function useAdvanceTime(
       console.error("Failed to advance time:", err);
     } finally {
       console.info("[useAdvanceTime] doAdvance:complete", { effectiveMode });
+      noticeNewScrimResults(scrimBaseline);
       setIsAdvancing(false);
     }
   };
 
   const handleContinue = async (mode?: string) => {
+    if (seasonOver) return;
     const effectiveMode = mode || matchMode;
-    const resolvedMode = isUnemployed ? "delegate" : effectiveMode;
+    const resolvedMode = resolveAdvanceMode(isUnemployed, effectiveMode);
     console.info("[useAdvanceTime] handleContinue", {
       effectiveMode: resolvedMode,
       hasMatchToday,
@@ -316,48 +376,45 @@ export function useAdvanceTime(
       return;
     }
     if (isAdvancing) return;
-    const blockers = await checkBlockingActions("handleContinue");
+    const blockers = await collectBlockers("handleContinue", resolvedMode);
     if (blockers.length > 0) {
-      if (shouldBypassBlockersForAssistant(blockers)) {
-        doAdvance(resolvedMode);
-        return;
-      }
-      setBlockerModal({ blockers, pendingAction: () => doAdvance(resolvedMode) });
+      setBlockerModal(buildBlockerModal(blockers, "continue", () => doAdvance(resolvedMode)));
       return;
     }
     doAdvance(resolvedMode);
   };
 
   const handleConfirmMatch = () => {
+    if (seasonOver) return;
     console.info("[useAdvanceTime] handleConfirmMatch", { matchMode });
     doAdvance(matchMode);
   };
 
   const handleSkipToMatchDay = async () => {
-    if (isAdvancing) return;
+    if (seasonOver || isAdvancing) return;
     console.info("[useAdvanceTime] handleSkipToMatchDay:start");
-    const blockers = await checkBlockingActions("handleSkipToMatchDay");
+    // skip_to_match_day never raises the scrim stops, so its pre-check leaves them out.
+    const blockers = await collectBlockers(
+      "handleSkipToMatchDay",
+      resolveAdvanceMode(isUnemployed, matchMode),
+      false,
+    );
     if (blockers.length > 0) {
-      if (shouldBypassBlockersForAssistant(blockers)) {
-        doSkipToMatchDay();
-        return;
-      }
-      setBlockerModal({ blockers, pendingAction: doSkipToMatchDay });
+      setBlockerModal(buildBlockerModal(blockers, "skipToMatchDay"));
       return;
     }
     doSkipToMatchDay();
   };
 
   const handleSkipToNextDay = async () => {
-    if (isAdvancing) return;
+    if (seasonOver || isAdvancing) return;
     console.info("[useAdvanceTime] handleSkipToNextDay:start");
-    const blockers = await checkBlockingActions("handleSkipToNextDay");
+    const blockers = await collectBlockers(
+      "handleSkipToNextDay",
+      resolveAdvanceMode(isUnemployed, matchMode),
+    );
     if (blockers.length > 0) {
-      if (shouldBypassBlockersForAssistant(blockers)) {
-        doSkipToNextDay();
-        return;
-      }
-      setBlockerModal({ blockers, pendingAction: doSkipToNextDay });
+      setBlockerModal(buildBlockerModal(blockers, "skipToNextDay", doSkipToNextDay));
       return;
     }
     doSkipToNextDay();
@@ -365,12 +422,13 @@ export function useAdvanceTime(
 
   const doSkipToNextDay = async () => {
     console.info("[useAdvanceTime] doSkipToNextDay:start");
+    const scrimBaseline = scrimReportKeys(useGameStore.getState().gameState);
     setIsAdvancing(true);
     resetTransientUi();
     try {
       let baselineDate: string | null = null;
       for (let attempt = 0; attempt < 12; attempt += 1) {
-        const result = await advanceTimeWithMode(matchMode);
+        const result = await advanceTimeWithMode(resolveAdvanceMode(isUnemployed, matchMode));
         console.info("[useAdvanceTime] doSkipToNextDay:attempt", {
           attempt,
           action: result.action,
@@ -416,10 +474,10 @@ export function useAdvanceTime(
           }
           setBlockerModal({
             blockers: [{
-              id: "scrim_setup_required",
+              id: SCRIM_SETUP_BLOCKER_ID,
               severity: "warn",
               tab: "Scrims",
-              text: "Define el setup semanal de scrims o delega el avance para continuar.",
+              text: scrimBlockerText(SCRIM_SETUP_BLOCKER_ID),
             }],
           });
           return;
@@ -435,23 +493,24 @@ export function useAdvanceTime(
           }
           setBlockerModal({
             blockers: [{
-              id: "scrim_decision_required",
+              id: SCRIM_DECISION_BLOCKER_ID,
               severity: "warn",
               tab: "Scrims",
-              text: "Debes tomar una decisión de scrims antes de continuar.",
+              text: scrimBlockerText(SCRIM_DECISION_BLOCKER_ID),
             }],
           });
           return;
         }
 
+        if (result.action === "season_complete") return;
         if (result.game) setGameState(result.game as GameStateData);
         if (result.action.startsWith("blocked_")) {
           setBlockerModal({
             blockers: [{
               id: "advance_blocked",
               severity: "warn",
-              tab: "Inicio",
-              text: "No se pudo avanzar automáticamente. Revisá los bloqueos pendientes.",
+              tab: "Home",
+              text: textAdvanceBlocked(),
             }],
           });
         }
@@ -461,12 +520,14 @@ export function useAdvanceTime(
       console.error("Failed to skip to next day:", err);
     } finally {
       console.info("[useAdvanceTime] doSkipToNextDay:complete");
+      noticeNewScrimResults(scrimBaseline);
       setIsAdvancing(false);
     }
   };
 
   const doSkipToMatchDay = async () => {
     console.info("[useAdvanceTime] doSkipToMatchDay:start");
+    const scrimBaseline = scrimReportKeys(useGameStore.getState().gameState);
     setIsAdvancing(true);
     resetTransientUi();
     try {
@@ -491,12 +552,12 @@ export function useAdvanceTime(
             : i18n.t("dashboard.matchPlayedByStaffNoScore", { defaultValue: "Your staff played the match." }),
         );
       }
-      const hasScrimDecisionBlocker = (result.blockers ?? []).some((blocker) => blocker.id === "scrim_decision_required");
+      const hasScrimDecisionBlocker = (result.blockers ?? []).some((blocker) => blocker.id === SCRIM_DECISION_BLOCKER_ID);
       if (result.action === "blocked" && hasScrimDecisionBlocker && scrimReviewMode === "assistant") {
         try {
           const delegated = await delegateScrimDecision();
           setGameState(delegated);
-          setAutoDelegationNotice("Assistant Coach resolvió automáticamente la decisión post-scrim para destrabar el avance.");
+          setAutoDelegationNotice(noticeAssistantResolvedDecision());
           const retry = await skipToMatchDay();
           if (retry.action === "fired") {
             if (retry.game) setGameState(retry.game as GameStateData);
@@ -505,7 +566,7 @@ export function useAdvanceTime(
           }
           if (retry.game) setGameState(retry.game as GameStateData);
           if (retry.action === "blocked" && retry.blockers && retry.blockers.length > 0) {
-            setBlockerModal({ blockers: retry.blockers, pendingAction: doSkipToMatchDay });
+            setBlockerModal(buildBlockerModal(retry.blockers, "skipToMatchDay"));
           }
           return;
         } catch (error) {
@@ -513,12 +574,13 @@ export function useAdvanceTime(
         }
       }
       if (result.action === "blocked" && result.blockers && result.blockers.length > 0) {
-        setBlockerModal({ blockers: result.blockers, pendingAction: doSkipToMatchDay });
+        setBlockerModal(buildBlockerModal(result.blockers, "skipToMatchDay"));
       }
     } catch (err) {
       console.error("Failed to skip to match day:", err);
     } finally {
       console.info("[useAdvanceTime] doSkipToMatchDay:complete");
+      noticeNewScrimResults(scrimBaseline);
       setIsAdvancing(false);
     }
   };
@@ -531,6 +593,8 @@ export function useAdvanceTime(
     blockerModal, setBlockerModal,
     autoDelegationNotice,
     matchPlayedNotice,
+    scrimResultNotice,
+    dismissScrimResultNotice: () => setScrimResultNotice(null),
     handleContinue,
     handleConfirmMatch,
     handleSkipToMatchDay,

@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Minus, Square, X } from "lucide-react";
 
+import { APP_EDITION } from "@/lib/common/edition";
+
 export function TitleBarV2() {
   const { t } = useTranslation();
   const [maximized, setMaximized] = useState(false);
@@ -52,13 +54,19 @@ export function TitleBarV2() {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onDoubleClick={handleDoubleClick}
-      className="flex h-9 shrink-0 items-center justify-between bg-zinc-950 px-3 select-none"
+      className="flex h-9 shrink-0 items-center justify-between bg-rail px-3 select-none"
     >
       {/* App title */}
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <img src="/logo.webp" alt={t("titleBar.appLogoAlt")} className="size-5 object-contain" />
-        <span className="font-heading text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        <span className="font-heading text-xs font-bold uppercase text-muted-foreground">
           {t("titleBar.appName")}
+        </span>
+        <span aria-hidden="true" className="text-xs text-muted-foreground/60">
+          ·
+        </span>
+        <span className="truncate font-heading text-xs font-bold uppercase tracking-widest text-club-text">
+          {APP_EDITION}
         </span>
       </div>
 
@@ -67,24 +75,26 @@ export function TitleBarV2() {
         <button
           type="button"
           onClick={handleMinimize}
-          className="flex h-9 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-zinc-800 hover:text-foreground"
-          aria-label={t("titleBar.minimize")}
+          className="flex h-9 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          aria-label={t("titleBar.minimize", { defaultValue: "Minimize" })}
         >
           <Minus className="size-3.5" />
         </button>
         <button
           type="button"
           onClick={handleMaximize}
-          className="flex h-9 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-zinc-800 hover:text-foreground"
-          aria-label={t(maximized ? "titleBar.restore" : "titleBar.maximize")}
+          className="flex h-9 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          aria-label={maximized
+            ? t("titleBar.restore", { defaultValue: "Restore" })
+            : t("titleBar.maximize", { defaultValue: "Maximize" })}
         >
           {maximized ? <MinimizeIcon className="size-3.5" /> : <Square className="size-3" />}
         </button>
         <button
           type="button"
           onClick={handleClose}
-          className="flex h-9 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-red-500 hover:text-white"
-          aria-label={t("titleBar.close")}
+          className="flex h-9 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-negative hover:text-negative-foreground"
+          aria-label={t("titleBar.close", { defaultValue: "Close" })}
         >
           <X className="size-3.5" />
         </button>

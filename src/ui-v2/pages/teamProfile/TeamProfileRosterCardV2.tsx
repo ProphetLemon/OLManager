@@ -23,7 +23,7 @@ const HEAD = "px-5 font-heading text-xs font-bold uppercase tracking-wider text-
 
 function ConditionBar({ value }: { value: number }) {
   const clamped = Math.max(0, Math.min(100, value));
-  const color = clamped >= 70 ? "bg-emerald-400" : clamped >= 40 ? "bg-amber-400" : "bg-red-500";
+  const color = clamped >= 70 ? "bg-positive" : clamped >= 40 ? "bg-warning" : "bg-negative";
 
   return (
     <div className="flex max-w-[100px] items-center gap-2">
@@ -110,7 +110,7 @@ export default function TeamProfileRosterCardV2({
                     />
                   </TableCell>
                   <TableCell className="px-5">
-                    <span className="font-semibold text-foreground transition-colors group-hover:text-primary">
+                    <span className="font-semibold text-foreground transition-colors group-hover:text-club-text">
                       {player.match_name || player.full_name}
                     </span>
                   </TableCell>
@@ -133,7 +133,7 @@ export default function TeamProfileRosterCardV2({
                     <span
                       className={cn(
                         "font-heading text-lg font-bold tabular-nums",
-                        ovr >= 55 ? "text-primary" : "text-muted-foreground",
+                        ovr >= 55 ? "text-club-text" : "text-muted-foreground",
                       )}
                     >
                       {ovr}

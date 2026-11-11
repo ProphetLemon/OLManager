@@ -65,6 +65,8 @@ export default function WageNegotiationDialog({
   const isWageValid = Number.isFinite(wageValue) && wageValue > 0;
   const exceedsBudget = isWageValid && wageValue > annualWageBudget;
   const closeBlocked = loading || result === "accepted";
+  const isFreeAgent = target.fromTeamId === null;
+  const showCurrentWage = !isFreeAgent && target.player.wage > 0;
   const fromTeamName = target.fromTeamId ? getTeamName(teams, target.fromTeamId) : null;
 
   return (
@@ -102,22 +104,24 @@ export default function WageNegotiationDialog({
           />
         </div>
 
-        {isWageValid && target.player.wage > 0 ? (
+        {isWageValid ? (
           <div className="space-y-1 rounded-lg border border-border bg-card/60 p-3">
-            <p className="text-xs text-muted-foreground">
-              {t("transfers.currentAnnualWage", {
-                wage: formatVal(target.player.wage),
-                defaultValue: "Salario anual actual: {{wage}}",
-              })}
-            </p>
+            {showCurrentWage ? (
+              <p className="text-xs text-muted-foreground">
+                {t("transfers.currentAnnualWage", {
+                  wage: formatVal(target.player.wage),
+                  defaultValue: "Salario anual actual: {{wage}}",
+                })}
+              </p>
+            ) : null}
             <p className="text-xs text-muted-foreground">
               {t("transfers.proposedWeekly", {
                 weekly: formatVal(Math.round(wageValue / 52)),
                 defaultValue: "Equivalente semanal: {{weekly}}/sem",
               })}
             </p>
-            {wageValue > target.player.wage ? (
-              <p className="text-xs text-emerald-500">
+            {showCurrentWage && wageValue > target.player.wage ? (
+              <p className="text-xs text-positive">
                 {t("transfers.wageIncrease", {
                   pct: Math.round((wageValue / target.player.wage - 1) * 100),
                   defaultValue: "Aumento: +{{pct}}%",

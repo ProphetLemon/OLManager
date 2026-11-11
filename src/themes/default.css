@@ -8,8 +8,21 @@
 @theme {
   /* Typography */
   --font-sans: "Inter", "Avenir", "Helvetica", "Arial", sans-serif;
-  --font-heading: "Oswald", "Impact", "Arial Narrow", sans-serif;
-  --text-2xs: 0.625rem;
+  --font-heading: "Barlow Condensed", "Arial Narrow", sans-serif;
+  /* Minimum text size is 0.75rem, so every label follows the UI scale and
+     stays legible. The smaller names remain as hooks for later tuning. */
+  --text-2xs: 0.75rem;
+  --text-caption: 0.75rem;
+
+  /* P1 type scale (rem only) */
+  --text-section: 1.375rem;
+  --text-section--line-height: 1.2;
+  --text-title: 1.875rem;
+  --text-title--line-height: 1.1;
+  --text-ovr: 3.75rem;
+  --text-ovr--line-height: 1;
+  --text-scoreboard: 5.25rem;
+  --text-scoreboard--line-height: 0.95;
 
   /* Primary: Emerald Green (static — used by legacy/main menu) */
   --color-primary-50: #ecfdf5;
@@ -108,6 +121,22 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-positive-foreground: var(--positive-foreground);
+  --color-positive: var(--positive);
+  --color-negative-foreground: var(--negative-foreground);
+  --color-negative: var(--negative);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning: var(--warning);
+  --color-info-foreground: var(--info-foreground);
+  --color-info: var(--info);
+  --color-rail: var(--rail);
+  --color-dim: var(--dim);
+  --color-line: var(--line);
+  --color-club-wash: var(--club-wash);
+  --color-club-secondary: var(--club-secondary);
+  --color-club-text: var(--club-text);
+  --color-club-foreground: var(--club-foreground);
+  --color-club: var(--club);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -134,62 +163,137 @@
 /* ── Light mode ────────────────────────────────────────────── */
 
 :root {
+  /* Managed-club accent (resolveClubPalette fallback values). Declared ONLY
+     here: AppV2 sets the club values inline on <html>, and a declaration in
+     `.dark` (applied to an inner wrapper) would shadow them. */
+  --club: #f97316;
+  --club-foreground: #0a0a0a;
+  --club-text: #f97316;
+  --club-secondary: #a1a1aa;
+
+  /* P1 structural tokens (theme independent) */
+  --surface-clamp: #2a3347;
+  --club-wash: color-mix(in srgb, var(--club) 36%, transparent);
+  --hit: max(2.75rem, 24px);
+  /* WCAG 2.2 target size minimum (2.5.8): floor for every control, at any root font size */
+  --target-min: 24px;
+  --tag-outline-width: 0px;
+  --tag-outline-color: var(--foreground);
+  --tag-skew: -14deg;
+  --rail: oklch(0.97 0 0);
+  --dim: oklch(0.5 0 0);
+  --line: oklch(0.922 0 0);
+
   --background: oklch(0.985 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #F97316;
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: var(--club);
+  --primary-foreground: var(--club-foreground);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: #F97316;
-  --accent-foreground: oklch(0.985 0 0);
+  --accent-foreground: #0a0a0a;
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: #F97316;
+  --ring: var(--club-text);
+  --positive: #15803d;
+  --positive-foreground: #ffffff;
+  --negative: #b91c1c;
+  --negative-foreground: #ffffff;
+  --warning: #a16207;
+  --warning-foreground: #ffffff;
+  --info: #1d4ed8;
+  --info-foreground: #ffffff;
+  --focus-ring-width: 2px;
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #F97316;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: var(--club);
+  --sidebar-primary-foreground: var(--club-foreground);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: #F97316;
+  --sidebar-ring: var(--club-text);
 }
 
 /* ── Dark mode ─────────────────────────────────────────────── */
 
 .dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: #F97316;
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: #F97316;
-  --accent-foreground: oklch(0.985 0 0);
+  --background: #0a0d13;
+  --rail: #0f131b;
+  --foreground: #eef1f7;
+  --card: #141924;
+  --card-foreground: #eef1f7;
+  --popover: #141924;
+  --popover-foreground: #eef1f7;
+  --primary: var(--club);
+  --primary-foreground: var(--club-foreground);
+  --secondary: #1b2232;
+  --secondary-foreground: #eef1f7;
+  --muted: #1b2232;
+  --muted-foreground: #9aa5ba;
+  --dim: #7e899f;
+  --accent: #1b2232;
+  --accent-foreground: #eef1f7;
   --destructive: oklch(0.637 0.237 25.331);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: #F97316;
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: #F97316;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: #F97316;
+  --border: #2a3347;
+  --input: #2a3347;
+  --line: #2a3347;
+  --ring: var(--club-text);
+  --positive: #3ddc97;
+  --positive-foreground: #09090b;
+  --negative: #f87171;
+  --negative-foreground: #09090b;
+  --warning: #ffb224;
+  --warning-foreground: #09090b;
+  --info: #60a5fa;
+  --info-foreground: #09090b;
+  --sidebar: #0f131b;
+  --sidebar-foreground: #eef1f7;
+  --sidebar-primary: var(--club);
+  --sidebar-primary-foreground: var(--club-foreground);
+  --sidebar-accent: #1b2232;
+  --sidebar-accent-foreground: #eef1f7;
+  --sidebar-border: #2a3347;
+  --sidebar-ring: var(--club-text);
+}
+
+/* ── High contrast (data-contrast set on <html> by AppV2) ───────
+   AppV2 also puts `.dark` on its inner wrapper, which redeclares the dark
+   tokens, so the dark block targets `.dark` descendants as well. It has the
+   same specificity as `:root[...]` on <html>, so it must stay last. */
+
+:root[data-contrast="high"] {
+  --club-wash: transparent;
+  --tag-outline-width: 2px;
+  --foreground: oklch(0.1 0 0);
+  --card-foreground: oklch(0.1 0 0);
+  --popover-foreground: oklch(0.1 0 0);
+  --muted-foreground: oklch(0.4 0 0);
+  --border: oklch(0.45 0 0);
+  --input: oklch(0.45 0 0);
+  --line: oklch(0.45 0 0);
+  --sidebar-border: oklch(0.45 0 0);
+  --focus-ring-width: 3px;
+}
+
+.dark[data-contrast="high"],
+[data-contrast="high"] .dark {
+  --club-wash: transparent;
+  --tag-outline-width: 2px;
+  --foreground: #ffffff;
+  --card-foreground: #ffffff;
+  --popover-foreground: #ffffff;
+  --muted-foreground: #d3d9e6;
+  --border: color-mix(in srgb, white 60%, transparent);
+  --input: color-mix(in srgb, white 60%, transparent);
+  --line: color-mix(in srgb, white 60%, transparent);
+  --sidebar-border: color-mix(in srgb, white 60%, transparent);
+  --focus-ring-width: 3px;
 }

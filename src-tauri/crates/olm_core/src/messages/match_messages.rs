@@ -118,6 +118,42 @@ pub fn pre_match_message(
     .with_sender_i18n("be.sender.assistantManager", "be.role.assistantManager")
 }
 
+/// Priority, "View standings" action and match context shared by the template-built
+/// and the hard-coded result message.
+fn with_result_extras(
+    msg: InboxMessage,
+    is_victory: bool,
+    fixture_id: &str,
+    home_team_id: &str,
+    away_team_id: &str,
+    home_goals: u8,
+    away_goals: u8,
+) -> InboxMessage {
+    msg.with_priority(if is_victory {
+        MessagePriority::Normal
+    } else {
+        MessagePriority::High
+    })
+    .with_action(action(
+        "view_standings",
+        "View Standings",
+        "be.msg.matchResult.actionStandings",
+        ActionType::NavigateTo {
+            route: "/dashboard?tab=Competitions".to_string(),
+        },
+    ))
+    .with_context(MessageContext {
+        fixture_id: Some(fixture_id.to_string()),
+        match_result: Some(ContextMatchResult {
+            home_team_id: home_team_id.to_string(),
+            away_team_id: away_team_id.to_string(),
+            home_goals,
+            away_goals,
+        }),
+        ..Default::default()
+    })
+}
+
 #[allow(clippy::too_many_arguments)] // params struct would be an out-of-scope signature refactor
 pub fn match_result_message(
     fixture_id: &str,
@@ -140,23 +176,6 @@ pub fn match_result_message(
     );
     let opponent = if is_home { away_name } else { home_name };
 
-    if let Some(msg) = crate::messages::template_store::template_store().build_message_keyed(
-        "match_result",
-        &format!("result_{fixture_id}"),
-        date,
-        "en",
-        vec![
-            ("home", home_name),
-            ("away", away_name),
-            ("score", &score),
-            ("opponent", opponent),
-            ("matchday", &matchday.to_string()),
-        ],
-        "be.msg.matchResult.templates",
-    ) {
-        return msg;
-    }
-
     let outcome = if user_goals > opp_goals {
         "Victory"
     } else if user_goals < opp_goals {
@@ -164,6 +183,41 @@ pub fn match_result_message(
     } else {
         "Draw"
     };
+
+    if let Some(msg) = crate::messages::template_store::template_store()
+        .build_message_keyed_with_id_prefix(
+            "match_result",
+            &format!("result_{fixture_id}"),
+            date,
+            "en",
+            vec![
+                ("home", home_name),
+                ("away", away_name),
+                ("score", &score),
+                // Plain series wins for the templates that name both teams themselves.
+                ("homeWins", &home_goals.to_string()),
+                ("awayWins", &away_goals.to_string()),
+                ("userScore", &format!("{user_goals}-{opp_goals}")),
+                // Opponent's wins first, for sentences whose subject is the opponent.
+                ("opponentScore", &format!("{opp_goals}-{user_goals}")),
+                ("opponent", opponent),
+                ("matchday", &matchday.to_string()),
+            ],
+            "be.msg.matchResult.templates",
+            // Template ids start with their outcome: victory_*, defeat_*, draw_*.
+            &outcome.to_lowercase(),
+        )
+    {
+        return with_result_extras(
+            msg,
+            outcome == "Victory",
+            fixture_id,
+            home_team_id,
+            away_team_id,
+            home_goals,
+            away_goals,
+        );
+    }
 
     let mut rng = rand::rng();
     let body = match outcome {
@@ -211,7 +265,7 @@ pub fn match_result_message(
         }
     };
 
-    InboxMessage::new(
+    let msg = InboxMessage::new(
         format!("result_{}", fixture_id),
         format!(
             "{}: {} {} - {} {}",
@@ -222,30 +276,16 @@ pub fn match_result_message(
         date.to_string(),
     )
     .with_category(MessageCategory::MatchResult)
-    .with_priority(if outcome == "Victory" {
-        MessagePriority::Normal
-    } else {
-        MessagePriority::High
-    })
-    .with_sender_role("Press Officer")
-    .with_action(action(
-        "view_standings",
-        "View Standings",
-        "be.msg.matchResult.actionStandings",
-        ActionType::NavigateTo {
-            route: "/dashboard?tab=Schedule".to_string(),
-        },
-    ))
-    .with_context(MessageContext {
-        fixture_id: Some(fixture_id.to_string()),
-        match_result: Some(ContextMatchResult {
-            home_team_id: home_team_id.to_string(),
-            away_team_id: away_team_id.to_string(),
-            home_goals,
-            away_goals,
-        }),
-        ..Default::default()
-    })
+    .with_sender_role("Press Officer");
+    with_result_extras(
+        msg,
+        outcome == "Victory",
+        fixture_id,
+        home_team_id,
+        away_team_id,
+        home_goals,
+        away_goals,
+    )
     .with_i18n(
         &format!("be.msg.matchResult.subject.{}", outcome.to_lowercase()),
         &format!(

@@ -2,6 +2,7 @@ import { CheckCheck, Trash2 } from "lucide-react";
 import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 
+import { resolveInboxCategoryLabel } from "@/lib/inbox/categoryLabel";
 import { Badge, Button, Select } from "@/ui-v2/_legacy/components/ui";
 import {
   getCategoryIcon,
@@ -78,7 +79,7 @@ export default function InboxToolbar({
               "flex items-center gap-1.5",
             )}
           >
-            {categoryIcon} {t(`inbox.categories.${category}`)} ({count})
+            {categoryIcon} {resolveInboxCategoryLabel(t, category)} ({count})
           </button>
         );
       })}
@@ -87,7 +88,7 @@ export default function InboxToolbar({
         <div className="flex items-center gap-2">
           <label
             htmlFor="inbox-sort-order"
-            className="text-xs font-heading font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+            className="text-xs font-heading font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400"
           >
             {t("inbox.sortLabel")}
           </label>
@@ -139,7 +140,7 @@ export default function InboxToolbar({
         {unreadCount > 0 ? (
           <button
             onClick={onMarkAllRead}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-white dark:bg-navy-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-navy-600 hover:text-primary-500 hover:border-primary-300 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-bold uppercase tracking-wide bg-white dark:bg-navy-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-navy-600 hover:text-primary-500 hover:border-primary-300 transition-all"
           >
             <CheckCheck className="w-3.5 h-3.5" />
             {t("inbox.markAllRead")}
@@ -147,7 +148,7 @@ export default function InboxToolbar({
         ) : null}
         <button
           onClick={onClearOld}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-bold uppercase tracking-wider bg-white dark:bg-navy-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-navy-600 hover:text-red-500 hover:border-red-300 transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-bold uppercase tracking-wide bg-white dark:bg-navy-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-navy-600 hover:text-red-500 hover:border-red-300 transition-all"
         >
           <Trash2 className="w-3.5 h-3.5" />
           {t("inbox.clearOld")}

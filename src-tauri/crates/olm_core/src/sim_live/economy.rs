@@ -90,14 +90,19 @@ pub(super) fn tower_team_gold(structure_id: &str) -> i64 {
 /// weights pull the share of total team gold each role earns toward the usual
 /// pro-play ranges (general knowledge, approximate): Top 20-23%, Jungle
 /// 17-20%, Mid 21-24%, Bot 23-27%, Support 10-14%. Objective gold shared by the
-/// whole team (Baron, towers) is not weighted. [PLACEHOLDER] pending playtest.
+/// whole team (Baron, towers) is not weighted. The weights are scaled so the
+/// team total matches the unweighted economy: the raw per-role income shares
+/// (about Top 26%, Jungle 15%, Mid 32%, Bot 17%, Support 9%) make the
+/// income-weighted mean about 1.03, so the unscaled weights were divided by
+/// that. A plain mean of 1.0 would cut team gold by about 14%.
+/// [PLACEHOLDER] pending playtest.
 pub(super) fn role_income_weight(role: &str) -> f64 {
     match role {
-        "TOP" => 0.795,
-        "JGL" => 1.33,
-        "MID" => 0.66,
-        "ADC" => 1.43,
-        "SUP" => 1.76,
+        "TOP" => 0.772,
+        "JGL" => 1.291,
+        "MID" => 0.641,
+        "ADC" => 1.388,
+        "SUP" => 1.709,
         _ => 1.0,
     }
 }

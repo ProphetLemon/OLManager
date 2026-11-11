@@ -12,7 +12,17 @@ function normalizeKey(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function resolvePlayoffSplit(leagueName: string): "winter" | "spring" | "summer" | "unknown" {
+type PlayoffSplit = "winter" | "spring" | "summer" | "unknown" | "fourTeam";
+
+// Mirrors schedule::FOUR_TEAM_PLAYOFF_ID_PREFIX in olm_core: the backend marks
+// four-team single-elimination fixtures with this id prefix.
+const FOUR_TEAM_PLAYOFF_ID_PREFIX = "po4-";
+
+function isFourTeamBracket(playoffFixtures: FixtureData[]): boolean {
+  return playoffFixtures.every((fixture) => fixture.id.startsWith(FOUR_TEAM_PLAYOFF_ID_PREFIX));
+}
+
+function resolvePlayoffSplit(leagueName: string): Exclude<PlayoffSplit, "fourTeam"> {
   const key = normalizeKey(leagueName);
   if (key.includes("winter")) return "winter";
   if (key.includes("spring")) return "spring";
@@ -20,10 +30,7 @@ function resolvePlayoffSplit(leagueName: string): "winter" | "spring" | "summer"
   return "unknown";
 }
 
-function playoffRoundLabel(
-  split: "winter" | "spring" | "summer" | "unknown",
-  roundIndex: number,
-): string {
+function playoffRoundLabel(split: PlayoffSplit, roundIndex: number): string {
   if (split === "winter") {
     const labels = [
       "UPPER R1",
@@ -53,10 +60,7 @@ function playoffRoundLabel(
   return `ROUND ${roundIndex + 1}`;
 }
 
-function laneForRound(
-  split: "winter" | "spring" | "summer" | "unknown",
-  roundIndex: number,
-): "upper" | "lower" {
+function laneForRound(split: PlayoffSplit, roundIndex: number): "upper" | "lower" {
   if (split === "winter") {
     return [0, 2, 4, 7].includes(roundIndex) ? "upper" : "lower";
   }
@@ -100,7 +104,9 @@ export default function PlayoffBracketBoard({
     return null;
   }
 
-  const split = resolvePlayoffSplit(league.name);
+  const split: PlayoffSplit = isFourTeamBracket(playoffFixtures)
+    ? "fourTeam"
+    : resolvePlayoffSplit(league.name);
   const rounds = Array.from(
     playoffFixtures.reduce((map, fixture) => {
       const list = map.get(fixture.matchday) ?? [];
@@ -128,7 +134,11 @@ export default function PlayoffBracketBoard({
       ) : null}
       <div className="rounded-xl border border-cyan-300/20 bg-navy-900/60 p-3">
         <p className="text-xs font-heading font-bold uppercase tracking-[0.18em] text-cyan-200/90">
-          {playoffRoundLabel(split, roundIndex)}
+          {split === "fourTeam"
+            ? roundIndex === 0
+              ? t("tournaments.playoffSemifinals")
+              : t("tournaments.playoffFinal")
+            : playoffRoundLabel(split, roundIndex)}
         </p>
         <div className="mt-2 space-y-2">
           {fixtures.map((fixture) => {
@@ -176,7 +186,7 @@ export default function PlayoffBracketBoard({
 
       <div className="space-y-5">
         <div>
-          <p className="text-xs font-heading font-bold uppercase tracking-[0.2em] text-cyan-300/90 mb-2">{t("tournaments.upperBracket")}</p>
+          <p className="text-xs font-heading font-bold uppercase tracking-[0.2em] text-cyan-300/90 mb-2">{split === "fourTeam" ? t("tournaments.singleEliminationBracket") : t("tournaments.upperBracket")}</p>
           <div className="flex gap-3 overflow-x-auto pb-2">{upperRounds.map((round, i) => renderRound(round, i, rounds.indexOf(round)))}</div>
         </div>
 

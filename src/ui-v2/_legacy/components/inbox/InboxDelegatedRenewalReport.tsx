@@ -2,6 +2,8 @@ import type { JSX } from "react";
 
 import type { MessageData } from "@/store/gameStore";
 import { resolveBackendText } from "@/lib/i18n/backendI18n";
+import { formatCurrencyAmount } from "@/lib/formatting/valueFormatting";
+import { formatDelegatedNoteParams } from "@/lib/i18n/delegatedRenewalNotes";
 import { renderMessageBodyLine } from "@/ui-v2/_legacy/components/inbox/inboxHelpers";
 
 interface InboxDelegatedRenewalReportProps {
@@ -27,24 +29,24 @@ export default function InboxDelegatedRenewalReport({
           const detail = resolveBackendText(
             renewalCase.note_key,
             "",
-            renewalCase.note_params,
+            formatDelegatedNoteParams(renewalCase.note_params),
           );
 
           const line =
             renewalCase.status === "successful"
               ? resolveBackendText(
                   "be.msg.delegatedRenewals.case.successful",
-                  `Completed: ${renewalCase.player_name} agreed to ${String(renewalCase.agreed_years ?? 0)} year(s) on €${String(renewalCase.agreed_wage ?? 0)}/yr.`,
+                  renewalCase.player_name,
                   {
                     player: renewalCase.player_name,
                     years: String(renewalCase.agreed_years ?? 0),
-                    wage: String(renewalCase.agreed_wage ?? 0),
+                    wage: formatCurrencyAmount(renewalCase.agreed_wage ?? 0),
                   },
                 )
               : renewalCase.status === "stalled"
                 ? resolveBackendText(
                     "be.msg.delegatedRenewals.case.stalled",
-                    `Still difficult: ${renewalCase.player_name} — ${detail}`,
+                    `${renewalCase.player_name} — ${detail}`,
                     {
                       player: renewalCase.player_name,
                       detail,
@@ -52,7 +54,7 @@ export default function InboxDelegatedRenewalReport({
                   )
                 : resolveBackendText(
                     "be.msg.delegatedRenewals.case.failed",
-                    `Failed: ${renewalCase.player_name} — ${detail}`,
+                    `${renewalCase.player_name} — ${detail}`,
                     {
                       player: renewalCase.player_name,
                       detail,

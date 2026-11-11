@@ -202,21 +202,35 @@ impl TemplateStore {
 
     /// Get a weighted random template for a given trigger.
     pub fn pick_random(&self, trigger: &str) -> Option<&MessageTemplate> {
-        let templates = self.by_trigger.get(trigger)?;
+        self.pick_random_with_id_prefix(trigger, "")
+    }
+
+    /// Like [`Self::pick_random`], but only among templates whose id starts with `id_prefix`.
+    pub fn pick_random_with_id_prefix(
+        &self,
+        trigger: &str,
+        id_prefix: &str,
+    ) -> Option<&MessageTemplate> {
+        let templates: Vec<&MessageTemplate> = self
+            .by_trigger
+            .get(trigger)?
+            .iter()
+            .filter(|t| t.id.starts_with(id_prefix))
+            .collect();
         if templates.is_empty() {
             return None;
         }
         // Weighted random selection
         let total_weight: u32 = templates.iter().map(|t| t.weight.max(1)).sum();
         let mut roll = rand::random_range(1..=total_weight);
-        for t in templates {
+        for t in &templates {
             let w = t.weight.max(1);
             if roll <= w {
-                return Some(t);
+                return Some(*t);
             }
             roll -= w;
         }
-        Some(&templates[0])
+        Some(templates[0])
     }
 
     /// Build an InboxMessage from a template with given params and language.
@@ -228,7 +242,7 @@ impl TemplateStore {
         lang: &str,
         params: Vec<(&str, &str)>,
     ) -> Option<InboxMessage> {
-        self.build_message_inner(trigger, id, date, lang, params, None)
+        self.build_message_inner(trigger, id, date, lang, params, None, "")
     }
 
     /// Like [`Self::build_message`], but also attaches render-time i18n keys.
@@ -245,9 +259,26 @@ impl TemplateStore {
         params: Vec<(&str, &str)>,
         key_prefix: &str,
     ) -> Option<InboxMessage> {
-        self.build_message_inner(trigger, id, date, lang, params, Some(key_prefix))
+        self.build_message_inner(trigger, id, date, lang, params, Some(key_prefix), "")
     }
 
+    /// Like [`Self::build_message_keyed`], but only picks a template whose id starts with
+    /// `id_prefix` (for triggers whose variants describe different outcomes).
+    #[allow(clippy::too_many_arguments)] // mirrors build_message_keyed plus the id prefix
+    pub fn build_message_keyed_with_id_prefix(
+        &self,
+        trigger: &str,
+        id: &str,
+        date: &str,
+        lang: &str,
+        params: Vec<(&str, &str)>,
+        key_prefix: &str,
+        id_prefix: &str,
+    ) -> Option<InboxMessage> {
+        self.build_message_inner(trigger, id, date, lang, params, Some(key_prefix), id_prefix)
+    }
+
+    #[allow(clippy::too_many_arguments)] // shared body of the public builders
     fn build_message_inner(
         &self,
         trigger: &str,
@@ -256,8 +287,9 @@ impl TemplateStore {
         lang: &str,
         params: Vec<(&str, &str)>,
         key_prefix: Option<&str>,
+        id_prefix: &str,
     ) -> Option<InboxMessage> {
-        let tpl = self.pick_random(trigger)?;
+        let tpl = self.pick_random_with_id_prefix(trigger, id_prefix)?;
 
         let i18n_params: HashMap<String, String> = params
             .iter()

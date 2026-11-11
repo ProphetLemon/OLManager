@@ -250,6 +250,12 @@
     "inbox": "Inbox",
     "matchPlayedByStaff": "Your staff played the match against {{opponent}}: {{score}}. Open the schedule for the result.",
     "matchPlayedByStaffNoScore": "Your staff played the match. Open the schedule for the result.",
+    "scrimResultTitle_one": "Scrim result",
+    "scrimResultTitle_other": "Scrim results",
+    "scrimResultWon": "Won against {{rival}}",
+    "scrimResultLost": "Lost against {{rival}}",
+    "scrimResultOpen": "Open Scrims",
+    "scrimResultDismiss": "Dismiss",
     "manager": "Head Coach",
     "squad": "Squad",
     "tactics": "Tactics",
@@ -277,6 +283,7 @@
     "noResults": "No results found.",
     "searchPlaceholder": "Search players, teams...",
     "sectionClub": "Club",
+    "sectionMarket": "Market",
     "sectionWorld": "World",
     "searchTeams": "Teams",
     "searchPlayers": "Players",
@@ -355,9 +362,10 @@
   },
   "exitConfirm": {
     "title": "Exit to Main Menu?",
-    "message": "Your game will be saved automatically before returning to the main menu.",
+    "message": "Save & Exit keeps your progress. Exit without saving discards everything since your last save.",
     "cancel": "Cancel",
     "saveExit": "Save & Exit",
+    "exitNoSave": "Exit without saving",
     "savingTitle": "Saving your game...",
     "savingMessage": "Please wait while we save your progress and return to the main menu."
   },
@@ -645,7 +653,22 @@
     "weekRecord": "Week Record",
     "weeklyObjective": "Weekly Objective",
     "weeklyReportInline": "Weekly Report",
-    "weeklyVolume": "Weekly Volume"
+    "weeklyVolume": "Weekly Volume",
+    "cancelFollowupPrompt": "Scrims cancelled. Pick a follow-up.",
+    "lossStreak": "{{count}}L streak",
+    "risk": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "impact": {
+      "DraftPrep": "Improves draft prep, ban reads, and composition plans.",
+      "ChampionPool": "Expands viable picks and reduces comfort-pick dependency.",
+      "EarlyGame": "Improves lane control, early tempo, and first rotations.",
+      "Teamfighting": "Improves teamfight execution, objective focus, and 5v5 coordination.",
+      "Macro": "Improves objective setup, map control, and mid/late decisions.",
+      "Mental": "Improves mental stability, recovery, and consistency under pressure."
+    }
   },
   "season": {
     "preseasonStatus": "Preseason Status",
@@ -676,6 +699,8 @@
     }
   },
   "teamSelect": {
+    "searchLeague": "Search leagues...",
+    "regionalLeagues": "Regional leagues",
     "title": "Choose Your Club",
     "subtitle": "Select the team you want to manage",
     "confirming": "Confirming...",
@@ -694,7 +719,167 @@
     "selectLeague": "Select League",
     "selectLeagueSubtitle": "Choose the league you want to manage",
     "selectTeam": "Select Team",
-    "teams": "Teams"
+    "teamCount_one": "1 team",
+    "teamCount_other": "{{count}} teams",
+    "teams": "Teams",
+    "customLogo": {
+        "heading": "Your own badge",
+        "upload": "Upload your badge",
+        "replace": "Change image",
+        "remove": "Remove image",
+        "hint": "PNG, JPEG or WebP, up to 2 MB. It is resized to fit 256 by 256 pixels. Without an image, the generated shield is used.",
+        "processing": "Preparing your badge...",
+        "inUse": "Your image replaces the generated shield. Remove it to go back.",
+        "previewAlt": "Your uploaded badge",
+        "errors": {
+            "unsupportedType": "Use a PNG, JPEG or WebP image. SVG and other formats are not accepted.",
+            "fileTooLarge": "That file is larger than 2 MB. Pick a smaller image.",
+            "unreadable": "That image could not be read. Try another file.",
+            "invalid": "That image could not be used as a badge. Try another file.",
+            "tooBig": "That image is too large to use. Try a smaller one.",
+            "failed": "The badge could not be prepared. Try again."
+        }
+    },
+    "custom": {
+      "create": "Create your team",
+      "createHint": "Add your own club to this league, or replace one.",
+      "title": "Create your team",
+      "subtitle": "Add your own club to this league, or replace one of its clubs",
+      "stepOf": "Step {{current}} of {{total}}",
+      "stepsLabel": "Progress",
+      "steps": {
+        "identity": "Identity",
+        "badge": "Badge",
+        "replace": "Join or replace"
+      },
+      "fields": {
+        "name": "Club name",
+        "shortName": "Short name",
+        "country": "Country",
+        "primaryColor": "Primary colour",
+        "secondaryColor": "Secondary colour",
+        "pickPrimary": "Pick the primary colour",
+        "pickSecondary": "Pick the secondary colour"
+      },
+      "hints": {
+        "name": "{{min}} to {{max}} characters.",
+        "shortName": "3 or 4 letters or digits. Shown on the scoreboard."
+      },
+      "countryPlaceholder": "Choose a country",
+      "presets": "Colour presets",
+      "preset": "Colours {{primary}} and {{secondary}}",
+      "previewAlt": "Badge preview for {{tag}}",
+      "previewHint": "This is how the badge looks in lists. The large badge is shown above.",
+      "replace": {
+        "heading": "Club to replace",
+        "notice": "Its players and staff become free agents. Your club starts with the league's median budget and reputation, and a squad filled from the free agents.",
+        "lowestReputation": "Lowest reputation",
+        "reputation": "Reputation {{value}}"
+      },
+      "summary": {
+        "heading": "Summary",
+        "text": "{{name}} ({{tag}}) from {{country}} will replace {{replaced}}."
+      },
+      "actions": {
+        "next": "Next",
+        "back": "Back",
+        "confirm": "Create club",
+        "cancel": "Cancel"
+      },
+      "errors": {
+        "required": "This field is required.",
+        "tooShort": "Use at least {{min}} characters.",
+        "tooLong": "Use at most {{max}} characters.",
+        "nameFormat": "Use {{min}} to {{max}} characters.",
+        "shortNameFormat": "Use letters and digits only, no spaces.",
+        "colorFormat": "Use a colour in #RRGGBB format.",
+        "duplicateName": "Another club already uses this name.",
+        "duplicateShortName": "Another club already uses this short name.",
+        "replaceInvalid": "Choose a club from this league to replace.",
+        "replaceRequired": "Choose the club you want to replace.",
+        "lowContrast": "These colours are close together, so the tag may be hard to read. You can still continue.",
+        "title": "Could not create the club"
+      }
+    },
+    "joinMode": {
+      "groupLabel": "How your club enters the league",
+      "join": {
+        "label": "Join the league",
+        "description": "Nobody is replaced. The league will have {{total}} clubs. Your club starts with the league's median budget and reputation, a generated founding squad and no academy.",
+        "descriptionOdd": "Nobody is replaced. The league will have {{total}} clubs and one rests each matchday: yours rests once per split, and there are fewer days between splits to sign players. Your club starts with the league's median budget and reputation, a generated founding squad and no academy."
+      },
+      "replace": {
+        "label": "Replace a club",
+        "description": "The club you choose leaves the league, and its players and staff are released as free agents."
+      },
+      "summary": "{{name}} ({{tag}}) from {{country}} joins {{league}} as club number {{position}}.",
+      "errors": {
+        "notAccepted": "This league does not accept new clubs. Go back and choose another league or an existing team.",
+        "noClubs": "This league has no clubs to join. Go back and choose another league.",
+        "badRequest": "The request to join the league was not valid. Go back a step and try again.",
+        "clash": "A detail from an earlier step now matches a club that stays in the league.",
+        "fixClash": "Go back and change it"
+      }
+    },
+    "founders": {
+      "stepTitle": "Founding squad",
+      "intro": "These five players start with your club. Edit a player's name, nationality or birth date, or reroll to draw a different squad.",
+      "loading": "Generating your squad...",
+      "loadFailed": "The squad could not be generated.",
+      "retry": "Try again",
+      "listLabel": "Founding squad",
+      "edited": "Edited",
+      "age": "Age {{age}}",
+      "ovrLabel": "Overall",
+      "wage": "Wage {{value}}",
+      "edit": "Edit",
+      "editAria": "Edit {{nick}}, {{role}}",
+      "attributes": "Attributes",
+      "editsDropped": "Your edits no longer fit this club, so the generated squad was restored.",
+      "installFailed": "Squad rejected. {{role}}, {{field}}: {{reason}}",
+      "budget": {
+        "label": "Wage bill against budget",
+        "text": "{{bill}} of {{budget}}"
+      },
+      "reroll": {
+        "action_one": "Reroll squad ({{count}} left)",
+        "action_other": "Reroll squad ({{count}} left)",
+        "none": "No rerolls left",
+        "noneReason": "You have used all {{max}} rerolls for this club.",
+        "confirmLabel": "Confirm reroll",
+        "confirmText": "Rerolling draws a new squad and discards your edits.",
+        "confirm": "Reroll anyway",
+        "keep": "Keep this squad",
+        "ready_one": "New squad ready. {{count}} reroll left.",
+        "ready_other": "New squad ready. {{count}} rerolls left."
+      },
+      "dialog": {
+        "title": "Edit {{role}}",
+        "fields": {
+          "nick": "Nick",
+          "full_name": "Full name",
+          "nationality": "Nationality",
+          "birth_date": "Birth date"
+        },
+        "birthHint": "Born between {{min}} and {{max}} to stay {{age}} years old.",
+        "nickHint": "{{min}} to {{max}} characters: letters, digits, _ . and -",
+        "fullNameHint": "{{min}} to {{max}} characters: letters, spaces, apostrophes and hyphens",
+        "restore": "Restore generated",
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "errors": {
+        "empty": "This field cannot be empty.",
+        "tooShort": "Use at least {{min}} characters.",
+        "tooLong": "Use at most {{max}} characters.",
+        "invalidCharacter": "This text has a character that is not allowed.",
+        "taken": "Another player already uses this name.",
+        "notInRegion": "Choose a nationality from this league's region.",
+        "invalidDate": "Enter a valid birth date.",
+        "ageChanged": "The birth date must keep the player's age.",
+        "general": "Could not check this edit. Try again."
+      }
+    }
   },
   "youthAcademy": {
     "title": "Academy",
@@ -761,6 +946,8 @@
     "all": "All",
     "allPlayers": "All Players",
     "cancel": "Cancel",
+    "retry": "Retry",
+    "close": "Close",
     "done": "Done",
     "confirm": "Confirm",
     "save": "Save",
@@ -1261,7 +1448,8 @@
         "narrowFocus": "Average quality is low; keep the volume, but narrow the focus before adding more rivals.",
         "keepPlan": "The current plan is healthy: keep the objective, choose demanding rivals, and review the first report before increasing volume."
       },
-      "selectOpponent": "Select Opponent"
+      "selectOpponent": "Select Opponent",
+      "autofill": "Autofill"
     },
     "daysPerWeek": "days/week",
     "emptyRoster": "Empty roster"
@@ -1273,7 +1461,25 @@
     "noStaffMatch": "No staff members match your filters.",
     "noAvailableStaff": "No available staff found.",
     "releaseStaff": "Release staff member",
+    "releaseStaffNamed": "Release {{name}}",
+    "releaseConfirmTitle": "Release {{name}}?",
+    "releaseConfirmMessage": "{{name}} ({{role}}) will leave your staff and return to the market. This cannot be undone from here.",
+    "releaseConfirmAction": "Release",
     "hireStaff": "Hire staff member",
+    "clubOwner": "Club owner",
+    "errors": {
+      "generic": "The staff change could not be completed. Try again.",
+      "no_game": "There is no active game.",
+      "no_team": "You are not managing a club.",
+      "hiring_locked": "Staff hiring is closed during the season. Normal hires open in the offseason.",
+      "not_found": "That staff member no longer exists.",
+      "already_employed": "That staff member already works for a club.",
+      "insufficient_funds": "The club does not have enough funds to hire this staff member.",
+      "owner_not_hireable": "Club owners cannot be hired.",
+      "owner_not_fireable": "The club owner cannot be dismissed.",
+      "not_your_team": "That staff member does not work for your club.",
+      "transaction_failed": "The hiring cost could not be recorded. Nothing was changed."
+    },
     "best": "Best",
     "roles": {
       "AssistantManager": "Assistant Manager",
@@ -1313,7 +1519,10 @@
       "draftAnalysis": "Draft analysis",
       "futureMeta": "Future meta",
       "tiltControl": "Tilt control"
-    }
+    },
+    "adjustFiltersHint": "Try adjusting filters or search",
+    "hireFromAvailableHint": "Hire staff from the available tab",
+    "allStaffEmployedHint": "All staff are currently employed"
   },
   "finances": {
     "overview": "Financial Overview",
@@ -1339,6 +1548,7 @@
     "perMonthSuffix": "/mo",
     "perWeekSuffix": "/wk",
     "wagePerWeek": "Wage/wk",
+    "wagePerYear": "Wage/yr",
     "marketValue": "Market Value",
     "until": "Until {{year}}",
     "facilities": "Facility Hub",
@@ -1376,6 +1586,8 @@
     "projectedAnnualNet": "Projected Annual Net",
     "cashRunway": "Cash Runway",
     "runwayMonths": "{{count}} months at current pace",
+    "runwayWeeks_one": "{{count}} week at current pace",
+    "runwayWeeks_other": "{{count}} weeks at current pace",
     "runwayStable": "Stable at current pace",
     "wagePressure": "Wage Pressure",
     "wageBudgetUsed": "{{percent}}% of wage budget used",
@@ -1388,7 +1600,7 @@
     "contractRiskWarning": "Warning",
     "contractRiskStable": "Stable",
     "contractExpiresOn": "Expires {{date}}",
-    "atRiskWages": "€{{amount}}/yr at risk",
+    "atRiskWages": "{{amount}}/yr at risk",
     "noContractRisks": "No imminent contract risks",
     "esportsSponsor": "Esports Sponsor",
     "mainHub": "Main Hub",
@@ -1416,7 +1628,22 @@
       "board": "Board",
       "manual": "Manual"
     },
-    "ledgerEmpty": "No financial ledger entries yet."
+    "ledgerEmpty": "No financial ledger entries yet.",
+    "ledgerKinds": {
+      "Salary": "Salary",
+      "StaffWage": "Staff wage",
+      "FacilityUpkeep": "Facility upkeep",
+      "FacilityUpgrade": "Facility upgrade",
+      "TransferPurchase": "Transfer purchase",
+      "TransferSale": "Transfer sale",
+      "ReleasePenalty": "Release penalty",
+      "AcademyAcquisition": "Academy acquisition",
+      "Sponsorship": "Sponsorship",
+      "MatchdayRevenue": "Matchday revenue",
+      "PrizeMoney": "Prize money",
+      "BudgetRefresh": "Budget refresh",
+      "Other": "Other"
+    }
   },
   "inbox": {
     "title": "Inbox",
@@ -1466,7 +1693,7 @@
       "System": "System",
       "JobOffer": "Job Offers"
     },
-    "all": "All",
+    "all": "All ({{count}})",
     "close": "Close"
   },
   "manager": {
@@ -1614,7 +1841,16 @@
     "wageFeedbackRejectedHeadline": "Talks have broken down.",
     "wageFeedbackRejectedDetail": "After several rounds without common ground, both sides are walking away.",
     "transferFeedbackWageNegotiationDetail": "The club agreed to your fee. Now it is time to agree terms with the player.",
-    "browseMarket": "Browse Market"
+    "browseMarket": "Browse Market",
+    "destination": "Destination",
+    "mainTeamDestination": "Main team",
+    "freeAgentSigningHint": "This player is a free agent and can be signed without a transfer fee.",
+    "bidImpactTitle": "Projected impact",
+    "bidImpactTransferBudget": "Transfer budget {{before}} -> {{after}}",
+    "bidImpactBalance": "Club balance {{before}} -> {{after}}",
+    "bidImpactWagePressure": "Projected wage budget usage {{percent}}%",
+    "bidImpactOverTransferBudget": "This bid exceeds your transfer budget",
+    "bidImpactOverBalance": "This bid would push the club into debt"
   },
   "schedule": {
     "noSchedule": "No league schedule available.",
@@ -1715,6 +1951,9 @@
     "playoffBracketTitle": "Playoff bracket",
     "upperBracket": "Upper Bracket",
     "lowerBracket": "Lower Bracket",
+    "singleEliminationBracket": "Single elimination",
+    "playoffSemifinals": "Semifinals",
+    "playoffFinal": "Final",
     "scheduled": "Scheduled",
     "overview": "Overview",
     "leagueTable": "League Table"
@@ -1748,6 +1987,28 @@
     "currentlyPlaying": "Currently playing:"
   },
   "playerProfile": {
+    "rename": {
+      "action": "Rename",
+      "actionAria": "Rename {{nick}}",
+      "title": "Rename player",
+      "hint": "Only the name changes. Role, age and nationality stay as they are.",
+      "nickHint": "{{min}} to {{max}} characters: letters, digits, _ . and -",
+      "fullNameHint": "{{min}} to {{max}} characters: letters, spaces, apostrophes and hyphens",
+      "nick": "Nick",
+      "fullName": "Full name",
+      "save": "Save name",
+      "cancel": "Cancel",
+      "errors": {
+        "empty": "This field cannot be empty.",
+        "tooShort": "Use at least {{min}} characters.",
+        "tooLong": "Use at most {{max}} characters.",
+        "invalidCharacter": "This text has a character that is not allowed.",
+        "taken": "Another player already uses this name.",
+        "nothingToChange": "Change the nick or the full name first.",
+        "notAFounder": "Only the players your club started with can be renamed.",
+        "general": "Could not rename the player. Try again."
+      }
+    },
     "contractInfo": "Contract & Info",
     "dateOfBirth": "Date of Birth",
     "noContract": "No contract",
@@ -1846,7 +2107,9 @@
     "loanListed": "Loan Listed",
     "potentialResearchProgress": "Research progress ({{total}} stages)",
     "startPotentialResearch": "Start Potential Research",
-    "transferListed": "Transfer Listed"
+    "transferListed": "Transfer Listed",
+    "transferOfferDestination": "Destination",
+    "transferOfferMainTeam": "Main team"
   },
   "teamProfile": {
     "clubInfo": "Team Information",
@@ -1902,6 +2165,7 @@
     "clear": "Clear",
     "savesCleared": "Saves cleared!",
     "about": "About",
+    "statsCredit": "Player ratings in new games are derived from pro match statistics from Leaguepedia (lol.fandom.com), licensed under CC BY-SA 3.0.",
     "matchModes": {
       "live": "Go to the Rift",
       "liveDesc": "Full match control",
@@ -1918,7 +2182,7 @@
     "uiScale": "UI Scale",
     "uiScaleDesc": "Adjust font size and spacing for readability",
     "highContrast": "High Contrast",
-    "highContrastDesc": "Boost text contrast in dark mode for improved readability",
+    "highContrastDesc": "Strengthen text, borders and the focus outline for improved readability",
     "fullscreen": "Fullscreen",
     "fullscreenDesc": "Toggle fullscreen mode for an immersive experience",
     "enterFullscreen": "Enter",
@@ -2063,6 +2327,12 @@
       "masterySourceScouting": "Scouting",
       "masterySourceStaff": "Staff read",
       "assistantCoach": "Assistant coach",
+      "scrimSignalTitle": "Scrim prep",
+      "scrimSignalReasons": {
+        "recent champion reps": "recent champion reps",
+        "scrimmed core together": "scrimmed core together",
+        "recent prep vs this opponent": "recent prep vs this opponent"
+      },
       "playerLabel": "Player",
       "swapTargetTitle": "Choose champion to swap",
       "warnCounterLastPick": "Careful with {{champion}}: it is countering your last pick.",
@@ -2330,6 +2600,7 @@
     "preMatchPrep": "Pre-Match Preparation",
     "selecting": "Selecting...",
     "autoSelectXI": "Auto-Select Best Five",
+    "formationFit": "Role coverage",
     "startingXI": "Starting Five",
     "cancel": "Cancel",
     "nPlayers": "{{count}} players",
@@ -2353,13 +2624,20 @@
       "threat": "Threat",
       "metaThreats": "Meta threats",
       "meta": "Meta",
-      "masteryHighlights": "Mastery highlights"
+      "masteryHighlights": "Mastery highlights",
+      "quality": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "roleUnknown": "Unknown"
     },
     "continue": "Continue",
     "game": "Game"
   },
   "endOfSeason": {
     "seasonComplete": "Season Complete",
+    "leagueSeason": "{{league}} — Season {{n}}",
     "champions": "Champions!",
     "position": "Position",
     "finalPosition": "Final position",
@@ -2372,12 +2650,27 @@
     "processing": "Processing...",
     "statsArchived": "Player stats will be archived. A new schedule will be generated.",
     "newSeason": "Season {{n}}",
+    "newSplit": "Next split",
     "newScheduleReleased": "The new schedule has been released. Good luck!",
     "goldenBoot": "Kill Leader",
     "nGoals": "{{count}} kills",
     "playerOfYear": "Player of the Year",
     "avgRating": "Avg rating: {{rating}}",
-    "continueDashboard": "Continue to Dashboard"
+    "continueDashboard": "Continue to Dashboard",
+    "ladder": {
+      "title": "Promotion and relegation",
+      "promotedTitle": "Promoted",
+      "promotedBody": "{{team}} moves up to {{league}} for the next season.",
+      "relegatedTitle": "Relegated",
+      "relegatedBody": "{{team}} drops down to {{league}} for the next season.",
+      "stayedBody": "{{team}} stays in {{league}}. Other clubs changed league.",
+      "movementsTitle": "League movements",
+      "between": "{{upper}} and {{lower}}",
+      "promotedTo": "Promoted to {{league}}",
+      "relegatedTo": "Relegated to {{league}}",
+      "skippedLate": "The next season's calendar was already under way, so promotion and relegation were not applied this year.",
+      "noEligible": "No eligible club: no change this season."
+    }
   },
   "notifications": {
     "attentionRequired": "Attention Required",
@@ -2469,7 +2762,9 @@
         "templates": {
           "welcome": {
             "subject": "Welcome to {{team}}!",
-            "body": "The board of directors welcomes you as the new head coach of {{team}}.\n\nWe have full confidence in your ability to lead this team to success.\n\nReview your squad, set your priorities, and prepare for the challenges ahead.\n\nGood luck, coach!"
+            "body": "The board of directors welcomes you as the new head coach of {{team}}.\n\nWe have full confidence in your ability to lead this team to success.\n\nReview your squad, set your priorities, and prepare for the challenges ahead.\n\nGood luck, coach!",
+            "body_one": "The board of directors welcomes you as the new head coach of {{team}}.\n\nWe have full confidence in your ability to lead this team to success. The first league match is {{days}} day away.\n\nReview your squad, set your priorities, and prepare for the challenges ahead.\n\nGood luck, coach!",
+            "body_other": "The board of directors welcomes you as the new head coach of {{team}}.\n\nWe have full confidence in your ability to lead this team to success. The first league match is {{days}} days away.\n\nReview your squad, set your priorities, and prepare for the challenges ahead.\n\nGood luck, coach!"
           }
         },
         "subject0": "Welcome to {{team}}",
@@ -2480,6 +2775,18 @@
         "body2": "Welcome to {{team}}! The supporters and staff are excited about the future under your guidance.\n\nWe recommend you start by reviewing your squad's strengths and weaknesses, then set up your preferred game plan and training regime.\n\nThe upcoming season will be a true test — make us proud.",
         "actionReview": "Review Squad",
         "actionThank": "Thank the Board"
+      },
+      "foundingWelcome": {
+        "replace": {
+          "subject": "Welcome to {{team}}: day one of a new club",
+          "body_one": "The board of directors welcomes you as the first head coach in the history of {{team}}. The club has just been founded and takes the place of {{replaced}} in the league.\n\nEverything starts from zero: the squad, the results and the name the fans will remember. The first league match is {{days}} day away.\n\nReview your squad, set your priorities and make the club count from day one.\n\nGood luck, coach!",
+          "body_other": "The board of directors welcomes you as the first head coach in the history of {{team}}. The club has just been founded and takes the place of {{replaced}} in the league.\n\nEverything starts from zero: the squad, the results and the name the fans will remember. The first league match is {{days}} days away.\n\nReview your squad, set your priorities and make the club count from day one.\n\nGood luck, coach!"
+        },
+        "join": {
+          "subject": "Welcome to {{team}}: day one of a new club",
+          "body_one": "The board of directors welcomes you as the first head coach in the history of {{team}}. The club has just been founded and enters the league as an extra club, so the league grows by one team this season. It starts without an academy.\n\nEverything starts from zero: the squad, the results and the name the fans will remember. The first league match is {{days}} day away.\n\nReview your squad, set your priorities and make the club count from day one.\n\nGood luck, coach!",
+          "body_other": "The board of directors welcomes you as the first head coach in the history of {{team}}. The club has just been founded and enters the league as an extra club, so the league grows by one team this season. It starts without an academy.\n\nEverything starts from zero: the squad, the results and the name the fans will remember. The first league match is {{days}} days away.\n\nReview your squad, set your priorities and make the club count from day one.\n\nGood luck, coach!"
+        }
       },
       "schedule": {
         "templates": {
@@ -2518,24 +2825,24 @@
       "matchResult": {
         "templates": {
           "defeat_1": {
-            "subject": "Defeat: {{home}} {{score}} {{away}}",
-            "body": "Tough loss today, coach. We lost to {{opponent}} {{score}}.\n\nThere are things to learn from this match. Let's review where we went wrong and come back stronger.\n\nThe season is long — we'll bounce back."
+            "subject": "Defeat: {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "Tough loss today, coach. We lost to {{opponent}} {{userScore}}.\n\nThere are things to learn from this match. Let's review where we went wrong and come back stronger.\n\nThe season is long — we'll bounce back."
           },
           "defeat_2": {
-            "subject": "Loss: {{opponent}} defeats us {{score}}",
-            "body": "Not our day, coach. {{opponent}} beat us {{score}}.\n\nWe need to analyze what went wrong and address the issues before the next match. I'll prepare a detailed breakdown of the key moments.\n\nStay focused — there's still plenty to play for."
+            "subject": "Loss: {{opponent}} defeats us {{opponentScore}}",
+            "body": "Not our day, coach. {{opponent}} beat us {{opponentScore}}.\n\nWe need to analyze what went wrong and address the issues before the next match. I'll prepare a detailed breakdown of the key moments.\n\nStay focused — there's still plenty to play for."
           },
           "draw_1": {
-            "subject": "Draw: {{home}} {{score}} {{away}}",
-            "body": "A hard-fought draw today, coach. {{home}} {{score}} {{away}} against {{opponent}}.\n\nNot the result we wanted, but we showed character. Let's take the positives and work on the weaknesses.\n\nNext match is an opportunity to get back to winning ways."
+            "subject": "Draw: {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "A hard-fought draw today, coach. {{home}} {{homeWins}}-{{awayWins}} {{away}} against {{opponent}}.\n\nNot the result we wanted, but we showed character. Let's take the positives and work on the weaknesses.\n\nNext match is an opportunity to get back to winning ways."
           },
           "victory_1": {
             "subject": "Victory! {{score}} against {{opponent}}",
-            "body": "Great result today, coach! We beat {{opponent}} {{score}}.\n\nThe team executed the game plan well. Let's build on this momentum for the next match.\n\nWell done to everyone involved."
+            "body": "Great result today, coach! We beat {{opponent}} {{userScore}}.\n\nThe team executed the game plan well. Let's build on this momentum for the next match.\n\nWell done to everyone involved."
           },
           "victory_2": {
-            "subject": "Win! {{home}} {{score}} {{away}}",
-            "body": "We did it, coach! A solid {{score}} victory against {{opponent}}.\n\nThe players stepped up when it mattered most. Let's keep this level of performance going.\n\nReview the match footage and identify areas to improve for next time."
+            "subject": "Win! {{home}} {{homeWins}}-{{awayWins}} {{away}}",
+            "body": "We did it, coach! A solid {{userScore}} victory against {{opponent}}.\n\nThe players stepped up when it mattered most. Let's keep this level of performance going.\n\nReview the match footage and identify areas to improve for next time."
           }
         },
         "subject": {
@@ -2625,6 +2932,20 @@
       "seasonPayout": {
         "subject": "Season {{season}} Prize Money Awarded",
         "body": "The board has confirmed a prize payout of €{{amount}} for your {{position}}-place league finish. The amount has been added to the club balance."
+      },
+      "ladder": {
+        "promoted": {
+          "subject": "{{team}} promoted to {{to}}",
+          "body": "{{team}} have earned promotion from {{from}} to {{to}} after season {{season}}.\n\nThe board expects a strong first season at the higher level."
+        },
+        "relegated": {
+          "subject": "{{team}} relegated to {{to}}",
+          "body": "{{team}} have been relegated from {{from}} to {{to}} after season {{season}}.\n\nThe board wants an immediate return."
+        },
+        "leagueSwap": {
+          "subject": "Promotion and relegation: {{lower}} and {{upper}}",
+          "body": "After season {{season}}, {{promoted}} go up to {{upper}} and {{relegated}} drop down to {{lower}}."
+        }
       },
       "seasonReview": {
         "subject": "Season {{season}} Review",
@@ -3046,16 +3367,16 @@
         "subject": "Assistant Report — Contract Renewals",
         "body": "Boss, I went through our renewal list at {{team}}. {{successes}} completed, {{stalled}} still pending, {{failures}} failed.",
         "case": {
-          "successful": "Completed: {{player}} agreed to {{years}} year(s) on €{{wage}}/yr.",
+          "successful": "Completed: {{player}} agreed to {{years}} year(s) on {{wage}}/yr.",
           "stalled": "Still difficult: {{player}} — {{detail}}",
           "failed": "Failed: {{player}} — {{detail}}"
         },
         "notes": {
           "managerBlocked": "You told me not to reopen contract talks yet.",
           "completed": "I was able to close this one without needing you to step in.",
-          "beyondLimits": "Their camp want around €{{wage}}/yr for {{years}} years, which is beyond the delegation limits.",
+          "beyondLimits": "Their camp want around {{wage}}/yr for {{years}} years, which is beyond the delegation limits.",
           "boardWagePolicy": "Board wage policy blocks this renewal. Keep annual wages near €{{budget}} while we recover.",
-          "prefersManager": "They would listen, but they still want about €{{wage}}/yr for {{years}} years and prefer to hear from you directly.",
+          "prefersManager": "They would listen, but they still want about {{wage}}/yr for {{years}} years and prefer to hear from you directly.",
           "relationshipBlocked": "They are not willing to commit through me under the current relationship and contract situation."
         }
       },
@@ -3398,9 +3719,17 @@
           "subject9": "el_yuste — the data cools the optimism again",
           "body9": "Yuste opened charts on stream and left a hard reading: \"Do not talk to me about feelings if the data is going down. You can have one good match, but the trend rules.\"\n\nThe audience debate is active again."
         }
+      },
+      "contractTerminated": {
+        "subject": "Contract terminated: {{player}}",
+        "body": "You terminated {{player}}'s contract. The player is now a free agent. Termination cost: €{{cost}}."
       }
     },
     "news": {
+      "ladder": {
+        "headline": "{{promoted}} promoted to {{upper}}, {{relegated}} relegated",
+        "body": "{{promoted}} move up from {{lower}} to {{upper}}, while {{relegated}} drop down after season {{season}}."
+      },
       "matchReport": {
         "headline": {
           "homeWin": {
@@ -3440,6 +3769,16 @@
         "headline1": "League Split Set to Begin",
         "headline2": "Can {{favourite}} Control the Meta? Split Preview",
         "body": "The league is set to kick off with {{teamCount}} teams entering the split.\n\nAnalyst predictions have {{favourite}} as the early favourites, but {{darkHorse}} could be the dark horse to watch this campaign.\n\nWith coaching staffs refining draft prep, this split promises to be one of the most competitive in recent memory. Every map will matter as the playoff race heats up.\n\nTeams: {{teamList}}"
+      },
+      "newClub": {
+        "replace": {
+          "headline": "{{team}} take over {{replaced}}'s place in the {{league}}",
+          "body": "{{team}} ({{origin}}), a team founded this year, take over the place of {{replaced}} in the {{league}}.\n\nA brand-new squad and a first-time head coach start from zero, and the rest of the league will be watching how quickly the newcomers find their footing."
+        },
+        "join": {
+          "headline": "{{team}} join the {{league}} as its newest team",
+          "body": "{{team}} ({{origin}}), a team founded this year, join the {{league}} as an extra team, so the league grows by one team this season. The newcomers start without an academy.\n\nA brand-new squad and a first-time head coach start from zero, and the rest of the league will be watching how quickly the newcomers find their footing."
+        }
       },
       "weeklyDigest": {
         "headline": "Weekly Power Rankings — Week of {{weekStart}}",
@@ -3722,10 +4061,221 @@
     "serieA": "Serie A",
     "usernamePlaceholder": "{{username}}"
   },
+  "bugReport": {
+    "title": "Report bug / suggest improvement",
+    "subtitle": "Share the ZIP file with the development team",
+    "placeholder": "Describe what happened, what you expected, and how to reproduce it...",
+    "contextPreview": "Context that will be included",
+    "generate": "Generate report",
+    "exporting": "Generating ZIP file...",
+    "done": "Report generated successfully",
+    "openFolder": "Open location",
+    "error": "Failed to generate the report"
+  },
   "titleBar": {
     "appLogoAlt": "App logo",
     "appName": "OL Manager",
     "close": "Close",
-    "minimize": "Minimize"
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore"
+  },
+  "onAir": {
+    "nav": {
+      "rail": "Main navigation",
+      "strip": "{{group}} sections",
+      "skip": "Skip to main content",
+      "bug": "Report bug",
+      "manager": "Manager profile",
+      "settings": "Settings",
+      "exit": "Exit",
+      "openGroup": "{{group}}"
+    },
+    "bar": {
+      "phase": {
+        "morning": "Morning",
+        "scrimBlock": "Scrims",
+        "reviewBlock": "Review",
+        "trainingBlock": "Training",
+        "evening": "Evening"
+      },
+      "save": "Save",
+      "saved": "Saved",
+      "toResolve_one": "{{count}} to resolve",
+      "toResolve_other": "{{count}} to resolve",
+      "continueMenu": "More ways to advance",
+      "continue": "Continue",
+      "matchDay": "Match day",
+      "skipToMatchDay": "Skip to match day",
+      "skipToNextDay": "Skip to next day",
+      "clock": "Game date and phase"
+    },
+    "tags": {
+      "blocker": "Blocker",
+      "contract": "Contract",
+      "alert": "Alert",
+      "selected": "Selected",
+      "promoted": "Promoted",
+      "relegated": "Relegated",
+      "opponent": "Opponent",
+      "you": "You"
+    },
+    "home": {
+      "needsSubtitle": "Resolve these before you continue.",
+      "needsEmptyTag": "All clear",
+      "seasonChip": "S{{season}}",
+      "formLabel": "{{team}} form",
+      "openSchedule": "Open schedule",
+      "daysToMatch_one": "day to the match",
+      "daysToMatch_other": "days to the match",
+      "daysToGo_one": "{{count}} day to go",
+      "daysToGo_other": "{{count}} days to go",
+      "matchDay": "Match day",
+      "restsOn": "Your club rests on matchday {{n}}",
+      "restWeek": "Rest week",
+      "formAfterFirst": "{{team}}'s form appears after their first match",
+      "yourClub": "Your club",
+      "startingFive": "Starting five",
+      "notSet": "Not set",
+      "needsTitle": "Needs your call",
+      "noticesTitle": "Worth a look",
+      "needsEmpty": "Nothing needs your call",
+      "seeAll": "See all {{count}}",
+      "showLess": "Show less",
+      "contractDays_one": "{{count}} day left",
+      "contractDays_other": "{{count}} days left",
+      "inboxTitle": "Inbox",
+      "inboxTitleShort": "Inbox",
+      "inboxEmpty": "Your inbox is clear",
+      "unreadCount_one": "{{count}} unread",
+      "unreadCount_other": "{{count}} unread",
+      "openInbox": "Open inbox",
+      "standingsTitle": "Standings",
+      "standingsEmpty": "No standings yet",
+      "standingsGap": "Gap in the table",
+      "standingsPreseason": "Season not started",
+      "bestOf": "Best of {{count}}",
+      "formWin": "Win",
+      "formLoss": "Loss",
+      "formDraw": "Draw",
+      "needsEmptyHint": "You can continue whenever you are ready.",
+      "moreContracts_one": "{{count}} more contract renewal not shown",
+      "moreContracts_other": "{{count}} more contract renewals not shown",
+      "unreadRow": "Unread",
+      "position": "Position",
+      "vsAt": {
+        "home": "vs",
+        "away": "at"
+      }
+    },
+    "roles": {
+      "TOP": "Top",
+      "JUNGLE": "Jungle",
+      "MID": "Mid",
+      "ADC": "ADC",
+      "SUPPORT": "Support"
+    },
+    "calls": {
+      "actions": {
+        "fixLineup": "Fix lineup",
+        "openSquad": "Open squad",
+        "openScrims": "Open scrims",
+        "openFinances": "Open finances",
+        "openContracts": "Open contracts",
+        "openInbox": "Open inbox",
+        "openAcademy": "Open academy",
+        "renew": "Renew",
+        "review": "Review"
+      },
+      "consequence": {
+        "incomplete_lineup": "Your starting five is incomplete.",
+        "main_roster_minimum": "The main roster is below the minimum size.",
+        "main_missing_roles": "The main roster is missing required roles.",
+        "academy_missing_roles": "The academy roster is missing required roles.",
+        "key_contract_risk": "A key player's contract is close to expiring.",
+        "contract_wage_risk": "Wage commitments are putting the budget at risk.",
+        "scrim_setup_required": "Scrim setup is required before the next match.",
+        "scrim_decision_required": "A scrim decision is waiting for you.",
+        "urgent_messages": "Urgent messages are waiting in your inbox.",
+        "advance_blocked": "Could not advance automatically. Review the pending blockers.",
+        "assistant_advance_limit": "The Assistant Coach hit its automatic advance limit. Review the state yourself.",
+        "contract_one": "Expires in {{count}} day",
+        "contract_other": "Expires in {{count}} days",
+        "generic": "Review this before you continue."
+      }
+    },
+    "squad": {
+      "substitutes": "Substitutes",
+      "searchSubstitutes": "Search substitutes",
+      "perYearLabel": "per year",
+      "wagePerYear": "Wage per year",
+      "swapUnavailable": "No substitutes available to swap in",
+      "transferListToggle": "Transfer list",
+      "loanListToggle": "Loan list",
+      "startingFive": "Starting five",
+      "slotsFilled": "{{count}} of 5 slots filled",
+      "benchCount": "{{shown}} of {{total}}",
+      "energy": "Energy",
+      "morale": "Morale",
+      "fitness": "Fitness",
+      "age": "Age",
+      "perYear": "/yr",
+      "wageFull": "Full wage",
+      "contractUntil": "Contract until",
+      "openContract": "Open contract",
+      "renew": "Renew",
+      "profile": "Profile",
+      "transferList": "List for transfer",
+      "removeFromTransferList": "Remove from transfer list",
+      "swap": "Swap",
+      "swapPlayer": "Swap {{role}}",
+      "lowEnergy": "{{names}}: energy {{pct}}%",
+      "benchEmptyTitle": "The bench is empty",
+      "benchEmptyBody": "Sign players from the market or promote talent from your academy.",
+      "benchFilteredTitle": "No bench players for this role",
+      "benchFilteredBody": "No bench player matches this role filter. Try another role or clear the filter.",
+      "browseMarket": "Browse market",
+      "openAcademy": "Open academy",
+      "clearFilter": "Clear filter",
+      "filterAllRoles": "All roles",
+      "selectedAria": "Selected player",
+      "fill": "Fill slot",
+      "fillSlot": "Fill {{role}} slot",
+      "slotEmpty": "No player in this slot",
+      "transferListedTag": "Transfer listed",
+      "loanListedTag": "Loan listed",
+      "roleFilter": "Filter bench by role",
+      "sortBy": "Sort bench by",
+      "sortAscending": "ascending",
+      "sortDescending": "descending",
+      "importLimit": "Import limit reached"
+    }
+  },
+  "advance": {
+    "blockers": {
+      "scrimSetup": "Define the weekly scrim setup (objective and rivals) or delegate the advance to continue.",
+      "scrimDecision": "Make a scrim decision before continuing.",
+      "scrimAutoFailed": "Automatic delegation could not resolve the scrim decision. Review it manually.",
+      "advanceBlocked": "Could not advance automatically. Review the pending blockers.",
+      "assistantLimit": "Assistant Coach reached the automatic advance attempt limit. Review the state manually.",
+      "urgentMessages_one": "{{count}} urgent unread message",
+      "urgentMessages_other": "{{count}} urgent unread messages",
+      "incompleteLineupTooFew": "Your lineup has only {{selected}} of the {{required}} players it needs — set your lineup",
+      "incompleteLineupRoles_one": "Your lineup is missing the role {{roles}}. Make sure you have TOP, JUNGLE, MID, ADC and SUPPORT.",
+      "incompleteLineupRoles_other": "Your lineup is missing the roles {{roles}}. Make sure you have TOP, JUNGLE, MID, ADC and SUPPORT.",
+      "keyContractRisk": "Key player contract risk in squad planning: {{players}}",
+      "contractWageRisk": "{{amount}} of wages are tied to at-risk contracts — review your wage budget",
+      "mainRosterMinimum_one": "Main roster incomplete: you have {{count}} player. You need at least 5 to advance.",
+      "mainRosterMinimum_other": "Main roster incomplete: you have {{count}} players. You need at least 5 to advance.",
+      "mainMissingRoles": "Main roster incomplete by role: at least one player is missing in {{roles}}. You cannot advance until TOP, JUNGLE, MID, ADC and SUPPORT are covered.",
+      "academyMissingRoles": "Academy incomplete: at least one player is missing in {{roles}}. You cannot advance until every role is covered."
+    },
+    "notices": {
+      "assistantResolvedDecision": "Assistant Coach resolved the post-scrim decision automatically to unblock the advance.",
+      "assistantConfiguredSetup": "Assistant Coach configured the weekly scrim setup automatically.",
+      "assistantResolvedDayBoth": "Assistant Coach resolved the weekly setup and the post-scrim decision automatically to advance the day.",
+      "assistantResolvedDaySetup": "Assistant Coach resolved the weekly setup automatically to advance the day.",
+      "assistantResolvedDayDecision": "Assistant Coach resolved the post-scrim decision automatically to advance the day."
+    }
   }
 }

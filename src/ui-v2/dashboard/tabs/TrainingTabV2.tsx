@@ -447,8 +447,8 @@ export function TrainingTabV2({
                         className={cn(
                           "ml-1 tabular-nums",
                           soloQ.delta >= 0
-                            ? "text-emerald-400"
-                            : "text-red-400",
+                            ? "text-positive"
+                            : "text-negative",
                         )}
                       >
                         {soloQ.delta >= 0
@@ -501,27 +501,27 @@ export function TrainingTabV2({
               className={cn(
                 "flex items-start gap-3 rounded-xl border-2 p-4",
                 staffAdvice.level === "critical" &&
-                  "border-red-500/40 bg-red-500/10",
+                  "border-negative/40 bg-negative/10",
                 staffAdvice.level === "warn" &&
-                  "border-amber-500/40 bg-amber-500/10",
+                  "border-warning/40 bg-warning/10",
                 staffAdvice.level === "ok" &&
-                  "border-emerald-500/40 bg-emerald-500/10",
+                  "border-positive/40 bg-positive/10",
               )}
             >
               {staffAdvice.level === "critical" ? (
-                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-red-400" />
+                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-negative" />
               ) : staffAdvice.level === "warn" ? (
-                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-400" />
+                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" />
               ) : (
-                <Info className="mt-0.5 size-5 shrink-0 text-emerald-400" />
+                <Info className="mt-0.5 size-5 shrink-0 text-positive" />
               )}
               <div>
                 <p
                   className={cn(
                     "mb-0.5 font-heading text-xs font-bold uppercase tracking-wider",
-                    staffAdvice.level === "critical" && "text-red-400",
-                    staffAdvice.level === "warn" && "text-amber-400",
-                    staffAdvice.level === "ok" && "text-emerald-400",
+                    staffAdvice.level === "critical" && "text-negative",
+                    staffAdvice.level === "warn" && "text-warning",
+                    staffAdvice.level === "ok" && "text-positive",
                   )}
                 >
                   {staffAdvice.level === "critical"
@@ -571,8 +571,8 @@ export function TrainingTabV2({
                     >
                       <div
                         className={cn(
-                          "text-primary",
-                          isActive && "text-primary",
+                          "text-club-text",
+                          isActive && "text-club-text",
                         )}
                       >
                         {SCHEDULE_ICONS[scheduleId]}
@@ -592,7 +592,7 @@ export function TrainingTabV2({
                           <span
                             key={idx}
                             className={cn(
-                              "flex size-4 items-center justify-center rounded-full text-[8px] font-heading font-bold",
+                              "flex size-4 items-center justify-center rounded-full text-2xs font-heading font-bold",
                               activeDays.includes(idx)
                                 ? "bg-primary text-primary-foreground"
                                 : "bg-muted text-muted-foreground/50",
@@ -670,7 +670,7 @@ export function TrainingTabV2({
                           {attrs.map((attr) => (
                             <span
                               key={attr}
-                              className="rounded bg-muted px-1.5 py-0.5 font-heading text-[10px] uppercase tracking-wider text-muted-foreground"
+                              className="rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground"
                             >
                               {statLabel(attr)}
                             </span>
@@ -847,7 +847,7 @@ export function TrainingTabV2({
                 {(exhaustedCount > 0 || criticalCount > 0) && (
                   <div className="border-t border-border pt-2">
                     {criticalCount > 0 && (
-                      <p className="flex items-center gap-1 text-xs text-red-400">
+                      <p className="flex items-center gap-1 text-xs text-negative">
                         <AlertTriangle className="size-3 shrink-0" />
                         {t("training.criticalCondition", {
                           defaultValue: "{{count}} player(s) critical condition",
@@ -856,7 +856,7 @@ export function TrainingTabV2({
                       </p>
                     )}
                     {exhaustedCount > 0 && (
-                      <p className="mt-0.5 flex items-center gap-1 text-xs text-amber-400">
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-warning">
                         <AlertTriangle className="size-3 shrink-0" />
                         {t("training.exhaustedPlayers", {
                           defaultValue: "{{count}} player(s) exhausted",
@@ -896,14 +896,14 @@ export function TrainingTabV2({
                       <span className="font-heading text-xs font-bold uppercase tracking-wider text-foreground">
                         {group.name}
                       </span>
-                      <span className="font-heading text-[10px] tabular-nums text-muted-foreground">
+                      <span className="font-heading text-2xs tabular-nums text-muted-foreground">
                         {group.player_ids.length}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleDeleteGroup(group.id)}
                         disabled={isSaving}
-                        className="ml-1 flex size-4 items-center justify-center rounded-full text-muted-foreground/50 hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                        className="ml-1 flex size-4 items-center justify-center rounded-full text-muted-foreground/50 hover:bg-negative/20 hover:text-negative transition-colors"
                       >
                         <X className="size-3" />
                       </button>
@@ -932,7 +932,7 @@ export function TrainingTabV2({
                             <button
                               type="button"
                               onClick={() => setShowCreateGroup(true)}
-                              className="rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                              className="rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-club-text transition-colors hover:bg-primary/20"
                             >
                               + {t("training.groups.addGroup", "Añadir grupo")}
                             </button>
@@ -948,12 +948,12 @@ export function TrainingTabV2({
                             value={newGroupName}
                             onChange={(e) => setNewGroupName(e.target.value)}
                             placeholder={t("training.groups.groupNamePlaceholder", "Nombre del grupo")}
-                            className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs text-foreground outline-none"
+                            className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs text-foreground"
                           />
                           <select
                             value={newGroupFocus}
                             onChange={(e) => setNewGroupFocus(e.target.value)}
-                            className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs text-foreground outline-none"
+                            className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs text-foreground"
                           >
                             {TRAINING_FOCUS_IDS.map((f) => (
                               <option key={f} value={f}>
@@ -973,7 +973,7 @@ export function TrainingTabV2({
                               type="button"
                               onClick={handleAddGroup}
                               disabled={!newGroupName.trim()}
-                              className="rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+                              className="rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-club-text transition-colors hover:bg-primary/20 disabled:opacity-50"
                             >
                               {t("common.create", "Crear")}
                             </button>
@@ -987,18 +987,18 @@ export function TrainingTabV2({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="font-heading text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      <TableHead className="font-heading text-2xs font-bold uppercase tracking-widest text-muted-foreground">
                         {t("common.player", { defaultValue: "Player" })}
                       </TableHead>
-                      <TableHead className="font-heading text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      <TableHead className="font-heading text-2xs font-bold uppercase tracking-widest text-muted-foreground">
                         {t("common.position", { defaultValue: "Pos" })}
                       </TableHead>
-                      <TableHead className="font-heading text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      <TableHead className="font-heading text-2xs font-bold uppercase tracking-widest text-muted-foreground">
                         {t("training.groups.group", {
                           defaultValue: "Group",
                         })}
                       </TableHead>
-                      <TableHead className="font-heading text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      <TableHead className="font-heading text-2xs font-bold uppercase tracking-widest text-muted-foreground">
                         {t("training.effectiveFocus", {
                           defaultValue: "Focus",
                         })}
@@ -1036,7 +1036,7 @@ export function TrainingTabV2({
                               disabled={isSaving}
                                 className={cn(
                                   "w-full max-w-[130px] rounded-md border bg-transparent pl-2 pr-8 py-1 font-heading text-xs uppercase tracking-wider text-foreground transition-colors",
-                                "border-border focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary",
+                                "border-border focus:border-primary",
                                 isSaving && "pointer-events-none opacity-50",
                               )}
                             >
@@ -1055,9 +1055,9 @@ export function TrainingTabV2({
                           <TableCell>
                             <span
                               className={cn(
-                                "inline-block rounded px-2 py-0.5 font-heading text-[11px] uppercase tracking-wider",
+                                "inline-block rounded px-2 py-0.5 font-heading text-caption uppercase tracking-wider",
                                 hasIndividualFocus
-                                  ? "border border-primary/30 bg-primary/10 text-primary"
+                                  ? "border border-primary/30 bg-primary/10 text-club-text"
                                   : "text-muted-foreground",
                               )}
                             >

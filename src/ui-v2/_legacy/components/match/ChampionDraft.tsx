@@ -2630,7 +2630,7 @@ export default function ChampionDraft({
             <div className="absolute inset-0 bg-background/72" />
 
             <div className="relative z-10 border-t-2 border-primary/90 bg-background/40 w-[250px] p-2.5">
-              <p className="font-heading uppercase font-bold tracking-[0.08em] mb-1 truncate text-primary [text-shadow:0_0_10px_rgba(0,0,0,0.9)] text-sm">
+              <p className="font-heading uppercase font-bold tracking-[0.08em] mb-1 truncate text-club-text [text-shadow:0_0_10px_rgba(0,0,0,0.9)] text-sm">
                 {blueHeader}
               </p>
               <div className="flex gap-1">
@@ -2940,12 +2940,12 @@ export default function ChampionDraft({
                   ))}
                 </div>
                 {controlledScrimBonusTotal > 0 ? (
-                  <div className="mt-2 rounded border border-primary/20 bg-primary/5 px-2 py-1.5 text-2xs text-primary">
+                  <div className="mt-2 rounded border border-primary/20 bg-primary/5 px-2 py-1.5 text-2xs text-club-text">
                     <p className="font-semibold uppercase tracking-wide">
                       {t("match.draft.scrimSignalTitle", { defaultValue: "Scrim prep" })} +{controlledScrimBonusTotal}
                     </p>
-                    <p className="mt-1 text-primary/80">
-                      {controlledScrimSignal.reasons.join(" · ")}
+                    <p className="mt-1 text-club-text/80">
+                      {controlledScrimSignal.reasons.map((reason) => t(`match.draft.scrimSignalReasons.${reason}`, { defaultValue: reason })).join(" · ")}
                     </p>
                   </div>
                 ) : null}
@@ -2972,7 +2972,7 @@ export default function ChampionDraft({
               <div className="relative grid grid-cols-1 lg:grid-cols-[1fr_auto_auto] gap-2 items-center">
                 <div className="flex flex-wrap gap-1">
                   <button
-                    className={`px-2 py-1 text-xs border rounded ${roleFilter === "ALL" ? "border-cyan-300/80 bg-primary/10 text-primary" : "border-white/20 text-gray-200"}`}
+                    className={`px-2 py-1 text-xs border rounded ${roleFilter === "ALL" ? "border-cyan-300/80 bg-primary/10 text-club-text" : "border-white/20 text-gray-200"}`}
                     onClick={() => setRoleFilter("ALL")}
                   >
                     ALL
@@ -2980,7 +2980,7 @@ export default function ChampionDraft({
                   {ROLE_ORDER.map((role) => (
                       <button
                         key={`chip-${role}`}
-                        className={`px-2 py-1 text-xs border rounded ${roleFilter === role ? "border-cyan-300/80 bg-primary/10 text-primary" : "border-white/20 text-gray-200"}`}
+                        className={`px-2 py-1 text-xs border rounded ${roleFilter === role ? "border-cyan-300/80 bg-primary/10 text-club-text" : "border-white/20 text-gray-200"}`}
                         onClick={() => setRoleFilter(role)}
                       >
                       {role}
@@ -3004,7 +3004,7 @@ export default function ChampionDraft({
                   {(["ALL", "S", "A", "B", "C", "D"] as const).map((tier) => (
                     <button
                       key={`tier-${tier}`}
-                      className={`px-2 py-1 text-xs border rounded ${metaTierFilter === tier ? "border-cyan-300/80 bg-primary/10 text-primary" : "border-white/20 text-gray-200"}`}
+                      className={`px-2 py-1 text-xs border rounded ${metaTierFilter === tier ? "border-cyan-300/80 bg-primary/10 text-club-text" : "border-white/20 text-gray-200"}`}
                       onClick={() => setMetaTierFilter(tier)}
                     >
                       {tier}
@@ -3183,7 +3183,7 @@ export default function ChampionDraft({
                         || counterConsultUsesLeft <= 0
                         || consultedCounterChampionIds.has(pendingChampionId)
                       }
-                      className="rounded-md border border-cyan-300/40 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-primary px-2 py-1 text-2xs font-heading font-bold uppercase tracking-wide"
+                      className="rounded-md border border-cyan-300/40 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-club-text px-2 py-1 text-2xs font-heading font-bold uppercase tracking-wide"
                     >
                       {t("match.draft.counterIntelConsult", { defaultValue: "Consulta al staff" })}
                       {` (${counterConsultUsesLeft})`}

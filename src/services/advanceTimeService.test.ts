@@ -41,13 +41,72 @@ describe("advanceTimeService", () => {
     mockedInvoke.mockResolvedValueOnce(blockers);
 
     await expect(checkBlockingActions("test")).resolves.toEqual(blockers);
-    expect(mockedInvoke).toHaveBeenCalledWith("check_blocking_actions");
+    expect(mockedInvoke).toHaveBeenCalledWith("check_blocking_actions", {});
+  });
+
+  it("sends the mode and the scrim-stop switch to the blocker command", async () => {
+    mockedInvoke.mockResolvedValueOnce([]);
+
+    await checkBlockingActions("test", { mode: "delegate", includeScrimStops: false });
+
+    expect(mockedInvoke).toHaveBeenCalledWith("check_blocking_actions", {
+      mode: "delegate",
+      includeScrimStops: false,
+    });
+  });
+
+  it("words the backend scrim blockers through i18n and leaves the others untouched", async () => {
+    const roster = { id: "main_roster_minimum", severity: "warn", text: "Backend text", tab: "Squad" };
+    mockedInvoke.mockResolvedValueOnce([
+      roster,
+      { id: "scrim_setup_required", severity: "warn", text: "raw", tab: "Scrims" },
+      { id: "scrim_decision_required", severity: "warn", text: "raw", tab: "Scrims" },
+    ]);
+
+    const blockers = await checkBlockingActions("test");
+
+    expect(blockers[0]).toEqual(roster);
+    expect(blockers[1].text).toBe(
+      "Define the weekly scrim setup (objective and rivals) or delegate the advance to continue.",
+    );
+    expect(blockers[2].text).toBe("Make a scrim decision before continuing.");
+  });
+
+  it("words a blocker that carries params through i18n", async () => {
+    mockedInvoke.mockResolvedValueOnce([
+      { id: "urgent_messages", severity: "info", text: "1 urgent unread message(s)", tab: "Inbox", params: { count: 1 } },
+    ]);
+
+    const [blocker] = await checkBlockingActions("test");
+
+    expect(blocker.text).toBe("1 urgent unread message");
+  });
+
+  it("words the blockers a skip to match day answers with", async () => {
+    mockedInvoke.mockResolvedValueOnce({
+      action: "blocked",
+      blockers: [
+        { id: "urgent_messages", severity: "info", text: "2 urgent unread message(s)", tab: "Inbox", params: { count: 2 } },
+        { id: "main_roster_minimum", severity: "warn", text: "Backend text", tab: "Squad" },
+      ],
+    });
+
+    const response = await skipToMatchDay();
+
+    expect(response.blockers?.[0].text).toBe("2 urgent unread messages");
+    expect(response.blockers?.[1].text).toBe("Backend text");
   });
 
   it("falls back to an empty blocker list when the blocker command fails", async () => {
     mockedInvoke.mockRejectedValueOnce(new Error("boom"));
 
     await expect(checkBlockingActions("test")).resolves.toEqual([]);
+  });
+
+  it("rethrows a failed blocker check when asked to, so callers can keep their state", async () => {
+    mockedInvoke.mockRejectedValueOnce(new Error("boom"));
+
+    await expect(checkBlockingActions("test", { rethrow: true })).rejects.toThrow("boom");
   });
 
   it("calls the skip-to-match-day backend command", async () => {

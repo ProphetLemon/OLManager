@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { PlayerData } from "@/store/gameStore";
@@ -6,6 +6,8 @@ import type { PlayerData } from "@/store/gameStore";
 // ─── Mocks ───────────────────────────────────────────────────────────────
 
 const ES_TRANSLATIONS: Record<string, string> = {
+  "dashboard.squad": "Plantilla ES",
+  "onAir.home.startingFive": "Cinco titular ES",
   "common.condition": "Condition",
   "common.morale": "Morale",
   "tactics.lol.roles.TOP": "Top",
@@ -76,6 +78,26 @@ describe("RosterLineupV2", () => {
     expect(conditionElements.length).toBeGreaterThanOrEqual(1);
     const moraleElements = screen.getAllByText("Morale");
     expect(moraleElements.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("localises the card title and the starting-five link", async () => {
+    const { RosterLineupV2 } = await import("./RosterLineupV2");
+    const onNavigate = vi.fn();
+    render(<RosterLineupV2 roster={[]} onNavigate={onNavigate} />);
+    expect(screen.getByText("Plantilla ES")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cinco titular ES" }));
+    expect(onNavigate).toHaveBeenCalledWith("Squad");
+    expect(screen.queryByText("Plantilla")).toBeNull();
+    expect(screen.queryByText("5 titular")).toBeNull();
+  });
+
+  it("falls back to English defaults when the keys are missing", async () => {
+    const { RosterLineupV2 } = await import("./RosterLineupV2");
+    delete ES_TRANSLATIONS["dashboard.squad"];
+    delete ES_TRANSLATIONS["onAir.home.startingFive"];
+    render(<RosterLineupV2 roster={[]} />);
+    expect(screen.getByText("Squad")).toBeInTheDocument();
+    expect(screen.getByText("Starting five")).toBeInTheDocument();
   });
 
   it("renders OVR for players", async () => {

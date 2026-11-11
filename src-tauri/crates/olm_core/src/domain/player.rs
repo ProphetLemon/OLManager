@@ -199,6 +199,50 @@ impl PlayerAttributes {
             + u32::from(self.mental_resilience))
             / 9) as u8
     }
+
+    /// The nine attributes as an array, in field declaration order: mechanics, laning,
+    /// teamfighting, macro_play, consistency, shotcalling, champion_pool, discipline,
+    /// mental_resilience. Inverse of [`PlayerAttributes::from_array`].
+    pub fn as_array(&self) -> [u8; 9] {
+        [
+            self.mechanics,
+            self.laning,
+            self.teamfighting,
+            self.macro_play,
+            self.consistency,
+            self.shotcalling,
+            self.champion_pool,
+            self.discipline,
+            self.mental_resilience,
+        ]
+    }
+
+    /// Builds attributes from an array in the order documented on
+    /// [`PlayerAttributes::as_array`].
+    pub fn from_array(values: [u8; 9]) -> Self {
+        let [
+            mechanics,
+            laning,
+            teamfighting,
+            macro_play,
+            consistency,
+            shotcalling,
+            champion_pool,
+            discipline,
+            mental_resilience,
+        ] = values;
+        Self {
+            mechanics,
+            laning,
+            teamfighting,
+            macro_play,
+            consistency,
+            shotcalling,
+            champion_pool,
+            discipline,
+            mental_resilience,
+        }
+    }
 }
 
 fn default_attr() -> u8 {

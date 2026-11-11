@@ -379,6 +379,18 @@ pub fn load_external_more_fa_seed() -> Option<DraftSeedRoot> {
     None
 }
 
+/// Parse `free_agents.json`. Like the competition loader, a player without a
+/// `natural_position` takes it from `position`, so champion masteries seed for them.
+fn parse_free_agent_players(content: &str) -> Option<Vec<Player>> {
+    let mut data = serde_json::from_str::<PlayerDataFile>(content).ok()?;
+    for player in &mut data.players {
+        if player.natural_position == crate::domain::stats::LolRole::Unknown {
+            player.natural_position = player.position;
+        }
+    }
+    Some(data.players)
+}
+
 /// Load and cache free agent players from `data/players/free_agents.json`.
 /// Uses OnceLock for lazy init — file is read once per process lifetime.
 pub fn load_free_agent_players() -> &'static Vec<Player> {
@@ -408,13 +420,13 @@ pub fn load_free_agent_players() -> &'static Vec<Player> {
 
         for path in candidates.iter().flatten() {
             if let Ok(content) = std::fs::read_to_string(path)
-                && let Ok(data) = serde_json::from_str::<PlayerDataFile>(&content) {
+                && let Some(players) = parse_free_agent_players(&content) {
                     info!(
                         "[game] loaded {} free agent players from {:?}",
-                        data.players.len(),
+                        players.len(),
                         path
                     );
-                    return data.players;
+                    return players;
                 }
         }
 
@@ -548,6 +560,10 @@ pub fn apply_default_initial_contract_end(
     let mut report = ContractDefaultsReport::default();
 
     for player in players.iter_mut() {
+        // Free agents have no contract to default; the signing sets one.
+        if player.team_id.is_none() {
+            continue;
+        }
         let current = player
             .contract_end
             .as_deref()
@@ -567,9 +583,43 @@ pub fn apply_default_initial_contract_end(
     report
 }
 
+/// Authored placeholder ladder: some data files carry `market_value == 15 * wage`
+/// (uncorrelated with OVR) instead of a real valuation.
+const PLACEHOLDER_MARKET_VALUE_WAGE_MULTIPLE: u64 = 15;
+
+pub(crate) fn has_placeholder_market_value(player: &Player) -> bool {
+    player.wage > 0
+        && player.market_value
+            == PLACEHOLDER_MARKET_VALUE_WAGE_MULTIPLE * u64::from(player.wage)
+}
+
+/// Leaves every player without a team contract-free, as a manual release does:
+/// no `contract_end` and a wage of 0, so the signing ask comes from
+/// `expected_signing_wage` (which floors a free agent at the LEC wage scale) instead
+/// of a stale seed wage. Returns how many free agents were changed.
+///
+/// Run it once the world is assembled (after the market-value pass, which needs the
+/// authored wage, and after roster fills, which pick free agents by their pool state).
+pub fn clear_free_agent_contracts(players: &mut [Player]) -> usize {
+    let mut changed = 0;
+    for player in players.iter_mut().filter(|p| p.team_id.is_none()) {
+        if player.contract_end.is_some() || player.wage != 0 {
+            player.contract_end = None;
+            player.wage = 0;
+            changed += 1;
+        }
+    }
+    changed
+}
+
+/// Fills missing market values with the seed formula. Authored placeholder values
+/// (see [`has_placeholder_market_value`]) are recomputed the same way; any other
+/// authored value is kept. Idempotent: the formula output depends only on OVR and
+/// potential. Run it before free-agent wages are cleared, since the placeholder
+/// signature needs the authored wage.
 pub fn apply_default_market_values(players: &mut [Player]) {
     for player in players.iter_mut() {
-        if player.market_value > 0 {
+        if player.market_value > 0 && !has_placeholder_market_value(player) {
             continue;
         }
         let ovr = potential::calculate_lol_ovr(player);
@@ -707,6 +757,22 @@ pub fn suggested_seed_market_value(ovr: u8, potential: u8, is_academy: bool) -> 
     };
 
     round_seed_market_value(adjusted_value)
+}
+
+/// Whole days from the game clock's date to the first league fixture of the
+/// active league. Friendlies and playoffs do not count; 0 when no league fixture
+/// is scheduled.
+pub fn days_until_first_league_fixture(game: &Game) -> u32 {
+    let today = game.clock.current_date.date_naive();
+    game.active_league()
+        .into_iter()
+        .flat_map(|league| &league.fixtures)
+        .filter(|fixture| fixture.counts_for_league_standings())
+        .filter_map(|fixture| NaiveDate::parse_from_str(&fixture.date, "%Y-%m-%d").ok())
+        .min()
+        .map_or(0, |first| {
+            u32::try_from((first - today).num_days()).unwrap_or(0)
+        })
 }
 
 pub fn academy_overview_message(
@@ -956,11 +1022,15 @@ pub fn ensure_example_academy_pool(game: &mut Game) {
 #[cfg(test)]
 mod tests {
     use super::{
-        apply_default_initial_contract_end, calculate_age_on_date,
-        default_initial_contract_end_for_start_year, legacy_new_game_start_date,
-        new_game_start_date,
+        apply_default_initial_contract_end, apply_default_market_values, calculate_age_on_date,
+        days_until_first_league_fixture, default_initial_contract_end_for_start_year,
+        legacy_new_game_start_date, new_game_start_date,
     };
     use chrono::{Datelike, NaiveDate};
+    use crate::clock::GameClock;
+    use crate::domain::league::{Fixture, FixtureStatus, League, MatchType};
+    use crate::domain::manager::Manager;
+    use crate::game::Game;
     use crate::domain::player::{Player, PlayerAttributes};
     use crate::domain::stats::LolRole;
 
@@ -989,6 +1059,7 @@ mod tests {
             default_attrs(),
         );
         player.contract_end = contract_end.map(str::to_string);
+        player.team_id = Some("team-1".to_string());
         player
     }
 
@@ -1002,6 +1073,89 @@ mod tests {
             "Arena".to_string(),
             1_000,
         )
+    }
+
+    fn player_with_value(id: &str, market_value: u64, wage: u32) -> Player {
+        let mut player = player_with_contract(id, None);
+        player.market_value = market_value;
+        player.wage = wage;
+        player
+    }
+
+    #[test]
+    fn placeholder_market_values_are_recomputed_and_real_ones_kept() {
+        let mut players = vec![
+            player_with_value("placeholder", 630_000, 42_000),
+            player_with_value("authored", 230_000, 356_000),
+            player_with_value("zero", 0, 40_000),
+        ];
+
+        apply_default_market_values(&mut players);
+
+        let formula = super::suggested_seed_market_value(
+            crate::potential::calculate_lol_ovr(&players[0]),
+            players[0].potential_base.max(crate::potential::calculate_lol_ovr(&players[0])),
+            false,
+        );
+        assert_eq!(players[0].market_value, formula);
+        assert_ne!(players[0].market_value, 630_000);
+        assert_eq!(players[1].market_value, 230_000);
+        assert_eq!(players[2].market_value, formula);
+        assert_eq!(players[0].wage, 42_000, "wages are never touched");
+
+        let after_first: Vec<u64> = players.iter().map(|p| p.market_value).collect();
+        apply_default_market_values(&mut players);
+        let after_second: Vec<u64> = players.iter().map(|p| p.market_value).collect();
+        assert_eq!(after_first, after_second, "the pass is idempotent");
+    }
+
+    #[test]
+    fn free_agent_without_natural_position_takes_it_from_position() {
+        let mut template = serde_json::to_value(player_with_contract("fa-1", None)).unwrap();
+        template["position"] = serde_json::json!("Mid");
+        template.as_object_mut().unwrap().remove("natural_position");
+        let json = serde_json::json!({ "players": [template] }).to_string();
+
+        let players = super::parse_free_agent_players(&json).expect("valid file");
+
+        assert_eq!(players[0].position, LolRole::Mid);
+        assert_eq!(players[0].natural_position, LolRole::Mid);
+    }
+
+    #[test]
+    fn free_agents_get_no_default_contract_but_rostered_players_do() {
+        let mut free_agent = player_with_contract("fa", None);
+        free_agent.team_id = None;
+        let mut rostered = player_with_contract("rostered", None);
+        rostered.team_id = Some("team-1".to_string());
+        let mut players = vec![free_agent, rostered];
+
+        let start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let report = apply_default_initial_contract_end(&mut players, start);
+
+        assert_eq!(players[0].contract_end, None);
+        assert_eq!(players[1].contract_end.as_deref(), Some("2027-11-30"));
+        assert_eq!((report.filled, report.extended), (1, 0));
+    }
+
+    #[test]
+    fn clearing_free_agent_contracts_zeroes_wage_and_end_only_for_free_agents() {
+        let mut free_agent = player_with_value("fa", 300_000, 42_000);
+        free_agent.team_id = None;
+        free_agent.contract_end = Some("2027-11-30".to_string());
+        let mut rostered = player_with_value("rostered", 300_000, 42_000);
+        rostered.team_id = Some("team-1".to_string());
+        rostered.contract_end = Some("2027-11-30".to_string());
+        let mut players = vec![free_agent, rostered];
+
+        let changed = super::clear_free_agent_contracts(&mut players);
+
+        assert_eq!(changed, 1);
+        assert_eq!((players[0].wage, players[0].contract_end.clone()), (0, None));
+        assert_eq!(players[0].market_value, 300_000);
+        assert_eq!(players[1].wage, 42_000);
+        assert_eq!(players[1].contract_end.as_deref(), Some("2027-11-30"));
+        assert_eq!(super::clear_free_agent_contracts(&mut players), 0, "idempotent");
     }
 
     #[test]
@@ -1100,6 +1254,84 @@ mod tests {
         assert_eq!(new_game_start_date(Some("soon")), legacy);
         assert_eq!(new_game_start_date(Some("")), legacy);
         assert_eq!(new_game_start_date(Some("2026-11-07")).year(), 2027);
+    }
+
+    fn fixture(date: &str, match_type: MatchType) -> Fixture {
+        Fixture {
+            id: format!("f-{date}"),
+            matchday: 1,
+            date: date.to_string(),
+            home_team_id: "a".to_string(),
+            away_team_id: "b".to_string(),
+            match_type,
+            best_of: 1,
+            status: FixtureStatus::Scheduled,
+            result: None,
+        }
+    }
+
+    /// A game on 2026-01-01 whose active league ("active") holds `active_dates`
+    /// and whose other league holds a league fixture on 2026-01-03.
+    fn game_with_fixtures(active_dates: &[(&str, MatchType)]) -> Game {
+        use chrono::TimeZone;
+        let clock = GameClock::new(chrono::Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap());
+        let manager = Manager::new(
+            "mgr".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1990-01-01".to_string(),
+            "ES".to_string(),
+        );
+        let mut game = Game::new(clock, manager, vec![], vec![], vec![], vec![]);
+        let ids = ["a".to_string(), "b".to_string()];
+        let mut active = League::new(
+            "l1".to_string(),
+            "Active".to_string(),
+            1,
+            &ids,
+            Some("active".to_string()),
+        );
+        active.fixtures = active_dates
+            .iter()
+            .map(|(date, kind)| fixture(date, kind.clone()))
+            .collect();
+        let mut other = League::new(
+            "l2".to_string(),
+            "Other".to_string(),
+            1,
+            &ids,
+            Some("other".to_string()),
+        );
+        other.fixtures = vec![fixture("2026-01-03", MatchType::League)];
+        game.leagues = vec![other, active];
+        game.user_competition_id = Some("active".to_string());
+        game
+    }
+
+    #[test]
+    fn countdown_counts_days_to_the_first_league_fixture_of_the_active_league() {
+        let game = game_with_fixtures(&[
+            ("2026-01-24", MatchType::League),
+            ("2026-01-17", MatchType::League),
+            ("2026-01-05", MatchType::Friendly),
+        ]);
+
+        // Not the friendly (Jan 5), not the other league (Jan 3).
+        assert_eq!(days_until_first_league_fixture(&game), 16);
+    }
+
+    #[test]
+    fn countdown_is_one_the_day_before_the_first_league_fixture() {
+        let game = game_with_fixtures(&[("2026-01-02", MatchType::League)]);
+
+        assert_eq!(days_until_first_league_fixture(&game), 1);
+    }
+
+    #[test]
+    fn countdown_is_zero_without_a_league_fixture() {
+        let game = game_with_fixtures(&[("2026-01-05", MatchType::Friendly)]);
+
+        assert_eq!(days_until_first_league_fixture(&game), 0);
     }
 
     #[test]

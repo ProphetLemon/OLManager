@@ -1,34 +1,20 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { compareStandingsByLolScore, GameStateData } from "@/store/gameStore";
 import { useGameStore } from "@/store/gameStore";
+import type { EndOfSeasonSummaryData } from "@/store/types";
+import { resolveSummaryPeriod } from "@/lib/season/summaryPeriod";
+import { PromotionRelegationCard } from "@/ui-v2/components/season/PromotionRelegationCard";
 import { Card, CardBody } from "@/ui-v2/_legacy/components/ui";
 import PlayoffBracketBoard from "@/ui-v2/_legacy/components/playoffs/PlayoffBracketBoard";
 import { Trophy, Award, Star, ArrowRight, Crown } from "lucide-react";
 
-interface EndOfSeasonSummary {
-  season: number;
-  league_name: string;
-  champion_id: string;
-  champion_name: string;
-  user_position: number;
-  user_points: number;
-  user_won: number;
-  user_lost: number;
-  user_maps_won: number;
-  user_maps_lost: number;
-  golden_boot_player: string;
-  golden_boot_goals: number;
-  poty_player: string;
-  poty_rating: number;
-  total_teams: number;
-}
-
 type AdvanceToNextSeasonResult = {
   action?: "fired";
   game: GameStateData;
-  summary: EndOfSeasonSummary;
+  summary: EndOfSeasonSummaryData;
 };
 
 interface EndOfSeasonScreenProps {
@@ -37,9 +23,7 @@ interface EndOfSeasonScreenProps {
 }
 
 function resolvePlayoffChampionTeamId(gameState: GameStateData): string | null {
-  const activeLeague = gameState?.user_competition_id
-    ? gameState.leagues.find(l => l.competition_id === gameState.user_competition_id)
-    : gameState.leagues[0];
+  const activeLeague = resolveUserLeague(gameState);
   const playoffFixtures = (activeLeague?.fixtures ?? [])
     .filter((fixture) => fixture.match_type === "Playoffs" && fixture.status === "Completed" && fixture.result)
     .sort((left, right) => right.matchday - left.matchday);
@@ -56,13 +40,13 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
   const { t } = useTranslation();
   const setShowFiredModal = useGameStore((s) => s.setShowFiredModal);
   const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState<EndOfSeasonSummary | null>(null);
-  const [step, setStep] = useState<"review" | "done">("review");
+  // The summary lives in the store so it survives the game update (which makes the
+  // season look incomplete and would otherwise unmount this screen) and tab switches.
+  const summary = useGameStore((s) => s.pendingSeasonSummary);
+  const setPendingSeasonSummary = useGameStore((s) => s.setPendingSeasonSummary);
+  const step: "review" | "done" = summary ? "done" : "review";
 
-  const league = gameState?.user_competition_id
-    ? gameState.leagues.find(l => l.competition_id === gameState.user_competition_id)
-        ?? gameState.leagues[0]
-    : gameState.leagues[0];
+  const league = resolveUserLeague(gameState);
   const userTeamId = gameState.manager.team_id;
   const userTeam = gameState.teams.find(t => t.id === userTeamId);
 
@@ -81,6 +65,9 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
   const championName = gameState.teams.find(t => t.id === championTeamId)?.name || "";
   const isChampion = championTeamId === userTeamId;
 
+  // After the rollover `league` is the new one: a split change keeps the closed season.
+  const summaryPeriod = summary ? resolveSummaryPeriod(summary.season, league?.season) : null;
+
   const handleAdvance = async () => {
     if (loading) return;
     setLoading(true);
@@ -91,9 +78,8 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
         setShowFiredModal(true);
         return;
       }
-      setSummary(result.summary);
+      setPendingSeasonSummary(result.summary);
       onGameUpdate(result.game);
-      setStep("done");
     } catch (err) {
       console.error("Failed to advance season:", err);
     } finally {
@@ -124,7 +110,7 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
               {t('endOfSeason.seasonComplete')}
             </h1>
             <p className="text-lg text-gray-500 dark:text-gray-400 mt-1">
-              {league?.name} — Season {league?.season}
+              {t('endOfSeason.leagueSeason', { league: league?.name, n: league?.season })}
             </p>
             {isChampion && (
               <p className="text-xl font-heading font-bold text-accent-500 mt-2 uppercase tracking-wider animate-pulse">
@@ -168,7 +154,7 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
               <PlayoffBracketBoard
                 league={league!}
                 teams={gameState.teams}
-                title={`${t("schedule.playoffs")} · Bracket`}
+                title={t("tournaments.playoffBracketTitle")}
               />
             </div>
           ) : (
@@ -227,17 +213,26 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
         </>
       )}
 
-      {step === "done" && summary && (
+      {step === "done" && summary && summaryPeriod && (
         <div className="text-center">
           <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center mb-4 shadow-lg shadow-primary-500/30">
             <Star className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-heading font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide mb-2">
-            {t('endOfSeason.newSeason', { n: summary.season + 1 })}
+            {summaryPeriod.kind === "season"
+              ? t('endOfSeason.newSeason', { n: summaryPeriod.season })
+              : t('endOfSeason.newSplit')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mb-8">
             {t('endOfSeason.newScheduleReleased')}
           </p>
+
+          <PromotionRelegationCard
+            summary={summary}
+            teams={gameState.teams}
+            leagues={gameState.leagues}
+            userTeamId={userTeamId}
+          />
 
           {/* Season summary awards */}
           {(summary.golden_boot_player || summary.poty_player) && (
@@ -270,11 +265,7 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
           )}
 
           <button
-            onClick={() => {
-              // Game state is already updated via onGameUpdate, just force re-render
-              // by calling onGameUpdate again with the current state
-              if (gameState) onGameUpdate(gameState);
-            }}
+            onClick={() => setPendingSeasonSummary(null)}
             className="px-8 py-3 bg-primary-500 text-white rounded-xl font-heading font-bold uppercase tracking-wider hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20"
           >
             {t('endOfSeason.continueDashboard')}

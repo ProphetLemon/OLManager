@@ -11,6 +11,7 @@ import {
   RequestBudgetExceededError,
   USER_AGENT,
   cacheKey,
+  formatStats,
 } from "../../../scripts/world/lib/mediawiki-client.mjs";
 
 const json = (body: unknown, init: ResponseInit = {}) =>
@@ -61,6 +62,82 @@ describe("MediaWikiClient", () => {
     await expect(client.get({ action: "query", titles: "A" })).resolves.toEqual({ ok: true });
     expect(client.stats.retries).toBe(2);
     expect(sleep).toHaveBeenCalledWith(2000);
+  });
+
+  describe("retry diagnostics", () => {
+    const params = { action: "query", titles: "A" };
+
+    it("records an HTTP 429 once and logs one retry with the backoff delay", async () => {
+      const log = vi.fn();
+      const fetchImpl = vi
+        .fn<FetchImpl>()
+        .mockResolvedValueOnce(json({}, { status: 429 }))
+        .mockResolvedValueOnce(json({ ok: true }));
+      const client = make(fetchImpl, { throttleMs: 1000, log });
+      await client.get(params);
+      expect(client.stats.retryReasons).toEqual({ "HTTP 429": 1 });
+      expect(log).toHaveBeenCalledTimes(1);
+      expect(log).toHaveBeenCalledWith("attempt 1/5 failed: HTTP 429; retrying in 2000 ms", {
+        attempt: 1,
+        maxAttempts: 5,
+        reason: "HTTP 429",
+        delayMs: 2000,
+      });
+    });
+
+    it("counts a retryable API error under api:<code>", async () => {
+      const fetchImpl = vi
+        .fn<FetchImpl>()
+        .mockResolvedValueOnce(json({ error: { code: "ratelimited", info: "slow down" } }))
+        .mockResolvedValueOnce(json({ ok: true }));
+      const client = make(fetchImpl);
+      await client.get(params);
+      expect(client.stats.retryReasons).toEqual({ "api:ratelimited": 1 });
+    });
+
+    it("counts a thrown timeout by its name", async () => {
+      const timeout = Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" });
+      const fetchImpl = vi.fn<FetchImpl>().mockRejectedValueOnce(timeout).mockResolvedValueOnce(json({ ok: true }));
+      const client = make(fetchImpl);
+      await client.get(params);
+      expect(client.stats.retryReasons).toEqual({ TimeoutError: 1 });
+    });
+
+    it("keeps a network failure code but never a URL", async () => {
+      const failure = Object.assign(new TypeError("fetch failed: https://lol.fandom.com/api.php?lgpassword=x"), {
+        cause: { code: "ECONNRESET" },
+      });
+      const fetchImpl = vi.fn<FetchImpl>().mockRejectedValueOnce(failure).mockResolvedValueOnce(json({ ok: true }));
+      const client = make(fetchImpl);
+      await client.get(params);
+      expect(Object.keys(client.stats.retryReasons)).toEqual(["TypeError: fetch failed: (ECONNRESET)"]);
+    });
+
+    it("attaches a stats snapshot to the final retry error and tells the log it gives up", async () => {
+      const log = vi.fn();
+      const client = make(vi.fn(async () => json({}, { status: 503 })), { maxRetries: 1, log });
+      const error = await client.get(params).catch((e) => e);
+      expect(error.message).toBe("HTTP 503");
+      expect(error.stats).toEqual({ network: 2, cacheHits: 0, retries: 1, retryReasons: { "HTTP 503": 2 } });
+      expect(log).toHaveBeenLastCalledWith("attempt 2/2 failed: HTTP 503; giving up", expect.objectContaining({ delayMs: undefined }));
+      expect(formatStats(error.stats)).toBe("2 live, 0 cached, 1 retries (HTTP 503: 2)");
+    });
+
+    it("attaches a stats snapshot when the request budget is exhausted", async () => {
+      const client = make(vi.fn(async () => json({ ok: true })), { maxRequests: 1 });
+      await client.get({ action: "query", titles: "A" });
+      const error = await client.get({ action: "query", titles: "B" }).catch((e) => e);
+      expect(error).toBeInstanceOf(RequestBudgetExceededError);
+      expect(error.stats).toEqual({ network: 1, cacheHits: 0, retries: 0, retryReasons: {} });
+    });
+
+    it("stays silent by default", async () => {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const fetchImpl = vi.fn<FetchImpl>().mockResolvedValueOnce(json({}, { status: 429 })).mockResolvedValueOnce(json({ ok: true }));
+      await make(fetchImpl).get(params);
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
   });
 
   it("gives up after the bounded attempts and does not cache failures", async () => {

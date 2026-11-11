@@ -271,7 +271,7 @@ pub struct DraftRelationshipContribution {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct DraftStateEvaluation {
     /// Existing evaluations are restricted to the manager's own players and redacted
     /// when their meta entry has not been discovered.
@@ -286,7 +286,7 @@ pub struct DraftStateEvaluation {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct VisiblePickEvaluation {
     pub champion_id: String,
     pub meta_power: Option<u8>,
@@ -823,6 +823,45 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(error, "Player not found: missing");
+    }
+
+    #[test]
+    fn state_evaluation_serializes_snake_case_keys_for_the_frontend() {
+        let game = game_with_player();
+        let evaluation = evaluate_draft_state(
+            &game,
+            &DraftStateInput {
+                viewer_team_id: "team".into(),
+                blue: DraftSideInput {
+                    team_id: "team".into(),
+                    picks: vec![DraftPickInput {
+                        player_id: "player".into(),
+                        champion_id: "Aatrox".into(),
+                        effective_role: LolRole::Top,
+                    }],
+                },
+                red: DraftSideInput {
+                    team_id: "rival".into(),
+                    picks: Vec::new(),
+                },
+                knowledge: DraftKnowledgeInput::default(),
+            },
+        )
+        .unwrap();
+        let json = serde_json::to_value(&evaluation).unwrap();
+        for key in [
+            "pick_evaluations",
+            "blue_relationship",
+            "red_relationship",
+            "outcome_blue_relationship",
+            "outcome_red_relationship",
+        ] {
+            assert!(json.get(key).is_some(), "missing key {key} in {json}");
+        }
+        let pick = &json["pick_evaluations"][0];
+        for key in ["champion_id", "skill_fit", "execution_risk"] {
+            assert!(pick.get(key).is_some(), "missing key {key} in {pick}");
+        }
     }
 
     #[test]

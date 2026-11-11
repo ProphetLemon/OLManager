@@ -37,6 +37,17 @@ fn team_strength_score(team: &Team, players: &[Player]) -> f64 {
     roster_scores.iter().take(starter_count).sum::<f64>() / starter_count as f64
 }
 
+/// Names of `teams`, strongest first by [`team_strength_score`]. Equal scores keep
+/// their input order, so a given world always ranks the same way.
+pub fn team_names_by_strength(teams: &[&Team], players: &[Player]) -> Vec<String> {
+    let mut scored: Vec<(f64, &str)> = teams
+        .iter()
+        .map(|team| (team_strength_score(team, players), team.name.as_str()))
+        .collect();
+    scored.sort_by(|a, b| b.0.total_cmp(&a.0));
+    scored.into_iter().map(|(_, name)| name.to_string()).collect()
+}
+
 fn expected_league_rank(user_team_id: &str, teams: &[Team], players: &[Player]) -> u32 {
     let Some(user_team) = teams.iter().find(|team| team.id == user_team_id) else {
         return teams.len().max(1) as u32;
@@ -62,16 +73,25 @@ fn objective_profile_for_rank(expected_rank: u32, num_teams: u32) -> ObjectivePr
     }
 }
 
+/// `playoff_places` is the number of playoff seeds of the user's split, when
+/// the competition declares one: a playoff contender never aims past them.
 fn objective_targets(
     expected_rank: u32,
     num_teams: u32,
     total_series: u32,
     total_winnable_maps: u32,
+    playoff_places: Option<u32>,
 ) -> ObjectiveTargets {
     let profile = objective_profile_for_rank(expected_rank, num_teams);
     let expected_pos = match profile {
         ObjectiveProfile::TitleContender => expected_rank.max(1),
-        ObjectiveProfile::PlayoffContender => expected_rank.max(num_teams.div_ceil(2).max(2)),
+        ObjectiveProfile::PlayoffContender => {
+            let target = expected_rank.max(num_teams.div_ceil(2).max(2));
+            match playoff_places {
+                Some(places) if places > 0 => target.min(places),
+                _ => target,
+            }
+        }
         ObjectiveProfile::MidTable => expected_rank.max((num_teams * 3).div_ceil(4).max(2)),
         ObjectiveProfile::Survival => num_teams.saturating_sub(1).max(1),
     }
@@ -104,6 +124,19 @@ fn fallback_series_count(num_teams: u32) -> u32 {
     } else {
         0
     }
+}
+
+/// Playoff seeds declared by the active league's current split, if any.
+fn playoff_places(game: &Game) -> Option<u32> {
+    let league = game.active_league()?;
+    game.competition_configs
+        .get(league.competition_id.as_ref()?)?
+        .schedule
+        .splits
+        .get(league.split_index)?
+        .playoffs
+        .as_ref()
+        .map(|playoffs| playoffs.teams)
 }
 
 fn active_league_teams(game: &Game) -> Vec<Team> {
@@ -225,7 +258,13 @@ pub fn generate_objectives(game: &mut Game) {
     let num_teams = active_teams.len() as u32;
     let expected_rank = expected_league_rank(&team.id, &active_teams, &game.players);
     let (total_series, total_winnable_maps) = scheduled_totals(game, &team.id, num_teams);
-    let targets = objective_targets(expected_rank, num_teams, total_series, total_winnable_maps);
+    let targets = objective_targets(
+        expected_rank,
+        num_teams,
+        total_series,
+        total_winnable_maps,
+        playoff_places(game),
+    );
 
     game.board_objectives = vec![
         BoardObjective {
@@ -342,7 +381,8 @@ pub fn evaluate_objective_result(game: &Game) -> ObjectiveEvaluation {
 mod tests {
     use super::{
         ObjectiveProfile, evaluate_objectives, expected_league_rank, generate_objectives,
-        objective_profile_for_rank, update_objective_progress,
+        objective_profile_for_rank, objective_targets, playoff_places, team_names_by_strength,
+        update_objective_progress,
     };
     use crate::clock::GameClock;
     use crate::domain::league::{
@@ -701,6 +741,23 @@ mod tests {
         assert_eq!(
             objective_profile_for_rank(10, 10),
             ObjectiveProfile::Survival
+        );
+    }
+
+    #[test]
+    fn team_names_by_strength_orders_by_roster_strength_and_keeps_ties_in_input_order() {
+        let game = make_ranked_strength_game("team10", 95);
+        let teams: Vec<&Team> = game.teams.iter().collect();
+
+        let names = team_names_by_strength(&teams, &game.players);
+
+        // Team 1 and Team 2 share a roster strength: input order decides.
+        assert_eq!(
+            names,
+            [
+                "Team 10", "Team 1", "Team 2", "Team 3", "Team 4", "Team 5", "Team 6", "Team 7",
+                "Team 8", "Team 9"
+            ]
         );
     }
 
@@ -1080,5 +1137,62 @@ mod tests {
             make_objective("c", ObjectiveType::GoalsScored, 1, false),
         ];
         assert_eq!(evaluate_objectives(&game), -15);
+    }
+
+    /// Club count and playoff seeds of every league the game data ships
+    /// (competition manifests plus the LES override).
+    const SHIPPED_LEAGUES: [(u32, u32); 5] = [(8, 4), (8, 6), (8, 8), (10, 6), (14, 10)];
+
+    #[test]
+    fn playoff_places_never_change_the_targets_of_the_shipped_leagues() {
+        for (clubs, places) in SHIPPED_LEAGUES {
+            for rank in 1..=clubs {
+                let capped = objective_targets(rank, clubs, 14, 30, Some(places));
+                let uncapped = objective_targets(rank, clubs, 14, 30, None);
+                assert_eq!(
+                    capped.expected_pos, uncapped.expected_pos,
+                    "{clubs} clubs, {places} seeds, rank {rank}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn shipped_playoff_contender_targets_stay_at_half_the_league() {
+        let targets: Vec<u32> = SHIPPED_LEAGUES
+            .iter()
+            .map(|&(clubs, places)| {
+                // The best rank that is a playoff contender rather than a title contender.
+                let rank = clubs.div_ceil(5) + 1;
+                objective_targets(rank, clubs, 14, 30, Some(places)).expected_pos
+            })
+            .collect();
+        assert_eq!(targets, [4, 4, 4, 5, 7]);
+    }
+
+    #[test]
+    fn a_nine_club_league_with_four_seeds_targets_the_fourth_place() {
+        let targets = objective_targets(5, 9, 16, 32, Some(4));
+        assert_eq!(targets.expected_pos, 4);
+        let without_seeds = objective_targets(5, 9, 16, 32, None);
+        assert_eq!(without_seeds.expected_pos, 5);
+    }
+
+    #[test]
+    fn playoff_places_come_from_the_current_split_of_the_league_config() {
+        let mut game = make_game(50, 1, 9);
+        assert_eq!(playoff_places(&game), None);
+
+        let manifest = serde_json::from_str(
+            r#"{"id":"les","name":"LES","region":"ES","teams_file":"t.json","players_file":"p.json",
+                "schedule":{"format":"single_round_robin","team_count":9,"splits":[
+                {"name":"Winter","best_of":1,"season_start":{"month":1,"day":17},
+                 "playoffs":{"format":"single_elimination","teams":4}}]}}"#,
+        )
+        .expect("manifest parses");
+        game.competition_configs.insert("les".to_string(), manifest);
+        game.leagues[0].competition_id = Some("les".to_string());
+
+        assert_eq!(playoff_places(&game), Some(4));
     }
 }

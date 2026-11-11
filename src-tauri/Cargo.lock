@@ -2863,6 +2863,7 @@ dependencies = [
  "ed25519-dalek",
  "flate2",
  "log",
+ "png 0.18.1",
  "rand 0.10.1",
  "rand 0.8.6",
  "rusqlite",
@@ -2870,6 +2871,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "thiserror 2.0.18",
  "ts-rs",
  "uuid 1.23.1",
 ]
@@ -2894,7 +2896,7 @@ dependencies = [
 
 [[package]]
 name = "openleaguemanager"
-version = "2026.1108.1"
+version = "2026.1111.1"
 dependencies = [
  "base64 0.22.1",
  "chrono",

@@ -502,7 +502,7 @@ export default function FinancesTab({
                 </div>
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    {t("finances.atRiskWages", { amount: atRiskWages })}
+                    {t("finances.atRiskWages", { amount: formatVal(atRiskWages) })}
                   </p>
                   {contractRiskPlayers.length > 0 ? (
                     <div className="flex items-center gap-2">

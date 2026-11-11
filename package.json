@@ -1,7 +1,7 @@
 {
   "name": "openleaguemanager",
   "private": true,
-  "version": "2026.1108.1",
+  "version": "2026.1111.1",
   "type": "module",
   "scripts": {
     "verify:champion-timings": "node scripts/verify-champion-timings.mjs",
@@ -11,6 +11,7 @@
     "build:types": "tsc -p tsconfig.release.json",
     "preview": "vite preview",
     "generate:splash-manifest": "tsx scripts/generate-splash-manifest.ts",
+    "generate:team-palette": "tsx scripts/generate-team-palette.ts",
     "prebuild": "npm run generate:splash-manifest",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -18,6 +19,8 @@
     "test:e2e": "playwright test --config e2e/playwright.config.ts",
     "test:e2e:ui": "playwright test --config e2e/playwright.config.ts --ui",
     "world:refresh": "node scripts/world/refresh.mjs",
+    "stats:fetch": "node scripts/stats/pro-stats.mjs",
+    "stats:build": "node scripts/stats/build-overrides.mjs",
     "release:fork": "node scripts/release/build-fork-release.mjs",
     "world:keygen": "node scripts/world/keygen.mjs",
     "world:sign": "node scripts/world/sign.mjs",

@@ -16,7 +16,7 @@ const SENTIMENT_CLASSES: Record<string, string> = {
   Worried: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   Angry: "bg-red-500/10 text-red-600 dark:text-red-400",
   Meltdown: "bg-red-500/10 text-red-600 dark:text-red-400",
-  Copium: "bg-primary/10 text-primary",
+  Copium: "bg-primary/10 text-club-text",
 };
 
 export function sentimentClasses(sentiment: string): string {

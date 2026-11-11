@@ -76,6 +76,12 @@ describe("WageNegotiationDialog", () => {
     expect(screen.getByText("Free agent")).toBeInTheDocument();
   });
 
+  it("hides the stale current wage and raise for a free agent", () => {
+    renderDialog({ target: { player, offerId: "o1", fromTeamId: null, fee: 0, destinationTeamId: "t1" } });
+    expect(screen.queryByText(/transfers\.currentAnnualWage|Salario anual actual/)).toBeNull();
+    expect(screen.queryByText("Raise +50%")).toBeNull();
+  });
+
   it("flags a wage above the annual budget", () => {
     renderDialog({ wageAmount: "2000000" });
     expect(screen.getByLabelText("Annual wage")).toHaveAttribute("aria-invalid", "true");

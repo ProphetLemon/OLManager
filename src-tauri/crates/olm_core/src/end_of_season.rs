@@ -3,10 +3,12 @@ use crate::domain::message::*;
 use crate::domain::player::PlayerSeasonStats;
 use crate::domain::team::{FinancialTransactionKind, TeamSeasonRecord};
 use crate::finances::{
-    BudgetImpact, FinanceTransactionInput, push_board_financial_health_mail,
+    BudgetImpact, FinanceTransactionInput, calc_annual_wages, push_board_financial_health_mail,
     push_prize_payout_mail, record_transaction,
 };
+use crate::custom_team::is_custom_team_id;
 use crate::game::Game;
+use crate::squad_generator::wage_budget_for_bill;
 use crate::generator::definitions::CompetitionManifest;
 use crate::roster_stability::{RosterStabilityReason, repair_league};
 use crate::schedule::{
@@ -16,8 +18,10 @@ use crate::season_awards::compute_season_awards;
 use chrono::{Datelike, TimeZone, Utc};
 use std::collections::HashMap;
 
+/// Fixtures in one single round robin. Valid for odd club counts too: with a
+/// bye each round, every pair still meets exactly once.
 pub fn expected_fixture_count(team_count: usize) -> Option<usize> {
-    if team_count >= 2 && team_count.is_multiple_of(2) {
+    if team_count >= 2 {
         Some((team_count * (team_count - 1)) / 2)
     } else {
         None
@@ -74,47 +78,98 @@ pub fn is_league_complete(league: &League) -> bool {
     regular_complete && playoffs_complete
 }
 
+/// Decided winner and loser of a playoff series, or `None` while it is open.
+fn series_outcome(fixture: &crate::domain::league::Fixture) -> Option<(&str, &str)> {
+    let result = fixture.result.as_ref()?;
+    if result.home_wins > result.away_wins {
+        Some((&fixture.home_team_id, &fixture.away_team_id))
+    } else if result.away_wins > result.home_wins {
+        Some((&fixture.away_team_id, &fixture.home_team_id))
+    } else {
+        None
+    }
+}
+
+/// Winner of the last playoff series (the split final), once it is decided.
+pub fn playoff_champion_id(league: &League) -> Option<String> {
+    league
+        .fixtures
+        .iter()
+        .filter(|fixture| fixture.match_type == MatchType::Playoffs)
+        .max_by_key(|fixture| fixture.matchday)
+        .and_then(series_outcome)
+        .map(|(champion, _)| champion.to_string())
+}
+
 /// Final position of a team once playoffs are taken into account.
 ///
-/// The playoff champion is 1st and the losing finalist 2nd. Any other playoff
-/// participant is placed no higher than 3rd, since it lost to a finalist. Teams
-/// outside the playoffs keep their regular-season rank. Without a decided
-/// playoff final the regular-season rank is returned unchanged.
+/// The playoff champion is 1st and the losing finalist 2nd. In a four-team
+/// bracket (two semifinals and a final) the semifinal losers take 3rd and 4th
+/// by regular-season rank. Any other playoff participant is placed no higher
+/// than 3rd, since it lost to a finalist. Teams outside the playoffs keep their
+/// regular-season rank. Without a decided playoff final the regular-season rank
+/// is returned unchanged.
 pub fn effective_final_position(league: &League, team_id: &str) -> u32 {
-    let regular_position = league
-        .sorted_standings()
+    let sorted = league.sorted_standings();
+    let regular_position = sorted
         .iter()
         .position(|s| s.team_id == team_id)
         .map(|i| (i + 1) as u32)
         .unwrap_or(99);
 
-    let mut playoff_fixtures = league
+    let playoff_fixtures: Vec<_> = league
         .fixtures
         .iter()
-        .filter(|fixture| fixture.match_type == MatchType::Playoffs);
-    let final_fixture = playoff_fixtures
-        .clone()
-        .max_by_key(|fixture| fixture.matchday);
+        .filter(|fixture| fixture.match_type == MatchType::Playoffs)
+        .collect();
+    let finalists = playoff_fixtures
+        .iter()
+        .max_by_key(|fixture| fixture.matchday)
+        .copied()
+        .and_then(series_outcome);
     let participated = playoff_fixtures
+        .iter()
         .any(|fixture| fixture.home_team_id == team_id || fixture.away_team_id == team_id);
 
-    let finalists = final_fixture.and_then(|fixture| {
-        let result = fixture.result.as_ref()?;
-        if result.home_wins > result.away_wins {
-            Some((&fixture.home_team_id, &fixture.away_team_id))
-        } else if result.away_wins > result.home_wins {
-            Some((&fixture.away_team_id, &fixture.home_team_id))
-        } else {
-            None
-        }
-    });
-
-    match finalists {
-        Some((champion, _)) if champion == team_id => 1,
-        Some((_, runner_up)) if runner_up == team_id => 2,
-        Some(_) if participated => regular_position.max(3),
-        _ => regular_position,
+    let Some((champion, runner_up)) = finalists else {
+        return regular_position;
+    };
+    if champion == team_id {
+        return 1;
     }
+    if runner_up == team_id {
+        return 2;
+    }
+    if !participated {
+        return regular_position;
+    }
+
+    // Four-team bracket: the two semifinal losers split 3rd and 4th by seed.
+    let first_round = playoff_fixtures.iter().map(|f| f.matchday).min();
+    let is_four_team_bracket = playoff_fixtures.len() == 3
+        && playoff_fixtures
+            .iter()
+            .filter(|fixture| Some(fixture.matchday) == first_round)
+            .count()
+            == 2;
+    if is_four_team_bracket {
+        let mut semifinal_losers: Vec<u32> = playoff_fixtures
+            .iter()
+            .filter_map(|fixture| series_outcome(fixture))
+            .map(|(_, loser)| loser)
+            .filter(|loser| *loser != runner_up)
+            .filter_map(|loser| sorted.iter().position(|s| s.team_id == loser))
+            .map(|i| (i + 1) as u32)
+            .collect();
+        semifinal_losers.sort_unstable();
+        if let Some(rank) = semifinal_losers
+            .iter()
+            .position(|position| *position == regular_position)
+        {
+            return 3 + rank as u32;
+        }
+    }
+    regular_position.max(3)
 }
 
 /// Check if the season is complete (all fixtures played).
@@ -162,11 +217,15 @@ const WAGE_BUDGET_SHARE_OF_FINANCE: f64 = 0.50;
 /// 0.04 and 0.33 of cash (median 0.20), so 22% is already of the initial order.
 const TRANSFER_BUDGET_SHARE_OF_FINANCE: f64 = 0.22;
 
-fn refresh_hiring_cycle_budgets(team: &mut crate::domain::team::Team) {
+/// `bill_floor` is the lowest wage budget the club may be left with (0 for none).
+/// A custom club passes the budget its current bill needs to stay at the derived
+/// 95%, so the founding room under the cap survives the yearly refresh.
+fn refresh_hiring_cycle_budgets(team: &mut crate::domain::team::Team, bill_floor: i64) {
     // After split settlements (prize/objectives), rebalance next-cycle planning
     // budgets from current treasury so offseason hiring decisions have coherent funds.
     let treasury = team.finance.max(0) as f64;
-    team.wage_budget = (treasury * WAGE_BUDGET_SHARE_OF_FINANCE).round() as i64;
+    team.wage_budget =
+        ((treasury * WAGE_BUDGET_SHARE_OF_FINANCE).round() as i64).max(bill_floor);
     team.transfer_budget = (treasury * TRANSFER_BUDGET_SHARE_OF_FINANCE).round() as i64;
 }
 
@@ -195,24 +254,56 @@ pub fn process_end_of_season_with_config(
 /// Unlike end_of_season, this does NOT record history, award prizes,
 /// reset player stats, or send board messages — only fixtures are created.
 pub fn process_end_of_split(game: &mut Game, manifest: &CompetitionManifest) {
-    let league = match game.active_league() {
-        Some(l) => l,
-        None => return,
+    let Some(league) = game.active_league() else {
+        return;
     };
-    let split_index = league.split_index;
-    let season = league.season;
-    let team_ids: Vec<String> = league.standings.iter().map(|s| s.team_id.clone()).collect();
-    let user_team_id = game.manager.team_id.clone().unwrap_or_default();
+    let user_team_id = game.manager.team_id.as_deref().filter(|id| !id.is_empty());
+    let mut new_league = build_split_league(
+        league,
+        manifest,
+        league.season,
+        league.split_index,
+        user_team_id,
+    );
+    // A split whose playoffs ran past the next split's start date (the LEC's Winter does)
+    // would leave the new calendar in the past, where no daily simulation plays it. Same
+    // rule as the background leagues: shift the whole calendar past the clock.
+    shift_fixtures_after(&mut new_league, game.clock.current_date.date_naive());
 
-    let mut new_league = generate_schedule_from_config(manifest, season, &team_ids, split_index);
+    if let Some(active) = game.active_league_mut() {
+        *active = new_league;
+    }
+}
 
-    if !user_team_id.is_empty() {
+/// Build the league for `split_index` of `season` from `manifest`, entered by the teams
+/// in `previous`'s standings.
+///
+/// Every league regeneration (split end, season wrap, background roll) goes through
+/// here so the league keeps the identity it already had: name, tier, logo, active flag
+/// and kind are carried over from `previous` instead of resetting to defaults. When
+/// `user_team_id` is given, the preseason friendlies for that team are added.
+pub fn build_split_league(
+    previous: &League,
+    manifest: &CompetitionManifest,
+    season: u32,
+    split_index: usize,
+    user_team_id: Option<&str>,
+) -> League {
+    let team_ids: Vec<String> = previous
+        .standings
+        .iter()
+        .map(|s| s.team_id.clone())
+        .collect();
+    let mut league = generate_schedule_from_config(manifest, season, &team_ids, split_index);
+
+    if let (Some(user_team_id), Some(split)) =
+        (user_team_id, manifest.schedule.splits.get(split_index))
+    {
         let opponents: Vec<String> = team_ids
             .iter()
             .filter(|tid| tid.as_str() != user_team_id)
             .cloned()
             .collect();
-        let split = &manifest.schedule.splits[split_index];
         let next_start = Utc
             .with_ymd_and_hms(
                 season as i32,
@@ -224,41 +315,52 @@ pub fn process_end_of_split(game: &mut Game, manifest: &CompetitionManifest) {
             )
             .unwrap();
         let friendlies = generate_preseason_friendlies(
-            &user_team_id,
+            user_team_id,
             &opponents,
             next_start,
             manifest.schedule.preseason_friendlies as usize,
         );
-        append_fixtures(&mut new_league, friendlies);
+        append_fixtures(&mut league, friendlies);
     }
 
-    if let Some(active) = game.active_league_mut() {
-        *active = new_league;
-    }
+    league.name = previous.name.clone();
+    league.logo = previous.logo.clone();
+    league.league_kind = previous.league_kind.clone();
+    league.tier = previous.tier;
+    league.active = previous.active;
+    league
 }
 
-/// Process end-of-season for background leagues (game.leagues[1..]).
-/// Records team history for completed bg leagues and generates next season via
-/// the competition manifest (looked up by competition_id).
-/// Skips bg leagues that are not complete, or have no competition_id.
+/// Process end-of-season for background leagues (every league except the
+/// user's active league, wherever it sits in `game.leagues`).
+/// Skips bg leagues that are not complete; see [`roll_completed_background_leagues`]
+/// for what happens to the complete ones.
 pub fn process_background_seasons(
     game: &mut Game,
     manifests: &HashMap<String, CompetitionManifest>,
 ) {
     // First pass: identify complete bg leagues (avoiding borrow conflicts)
-    let complete_indices: Vec<usize> = (1..game.leagues.len())
+    let active_index = game.active_league_index();
+    let complete_indices: Vec<usize> = (0..game.leagues.len())
+        .filter(|i| *i != active_index)
         .filter(|i| is_league_complete(&game.leagues[*i]))
         .collect();
+    roll_completed_background_leagues(game, manifests, &complete_indices);
+}
 
-    for i in complete_indices {
+/// Roll the given completed background leagues forward.
+/// Records team history for leagues that closed their season and generates the next
+/// split/season via the competition manifest (looked up by competition_id). Leagues
+/// without a competition_id or manifest keep their finished schedule.
+pub fn roll_completed_background_leagues(
+    game: &mut Game,
+    manifests: &HashMap<String, CompetitionManifest>,
+    completed_indices: &[usize],
+) {
+    for &i in completed_indices {
         let season = game.leagues[i].season;
         let final_standings = game.leagues[i].sorted_standings();
         let competition_id = game.leagues[i].competition_id.clone();
-        let team_ids: Vec<String> = game.leagues[i]
-            .standings
-            .iter()
-            .map(|entry| entry.team_id.clone())
-            .collect();
 
         // Determine if this split wraps the season (last split → new year).
         // Leagues without a known manifest are treated as end-of-season so that
@@ -272,21 +374,41 @@ pub fn process_background_seasons(
             })
             .unwrap_or(true);
 
+        // Ledger first: the league is replaced by its next split below.
+        if is_end_of_season {
+            crate::ladder::record_season_end(game, i);
+        } else {
+            crate::ladder::record_split_end(game, i);
+        }
+
         if is_end_of_season {
             // Record TeamSeasonRecord for each team (no prize money, no messages)
             for (idx, standing) in final_standings.iter().enumerate() {
                 if let Some(team) = game.teams.iter_mut().find(|t| t.id == standing.team_id) {
-                    let already_recorded =
-                        team.history.iter().any(|record| record.season == season);
-                    if !already_recorded {
+                    let position = (idx + 1) as u32;
+                    // The parallel simulation pre-creates the record with position 0;
+                    // fill in the real finish instead of treating it as recorded.
+                    if let Some(record) = team
+                        .history
+                        .iter_mut()
+                        .find(|record| record.season == season)
+                    {
+                        if record.league_position == 0 {
+                            record.league_position = position;
+                        }
+                        if record.competition_id.is_none() {
+                            record.competition_id = competition_id.clone();
+                        }
+                    } else {
                         team.history.push(TeamSeasonRecord {
                             season,
-                            league_position: (idx + 1) as u32,
+                            league_position: position,
                             played: standing.played,
                             won: standing.won,
                             lost: standing.lost,
                             kills_for: standing.maps_won,
                             kills_against: standing.maps_lost,
+                            competition_id: competition_id.clone(),
                         });
                     }
                     team.form.clear();
@@ -296,16 +418,43 @@ pub fn process_background_seasons(
 
         // Generate next split/season schedule
         if let Some(ref cid) = competition_id
-            && let Some(manifest) = manifests.get(cid) {
-                let next_idx = game.leagues[i].split_index + 1;
-                let (ns, split_idx) = if next_idx >= manifest.schedule.splits.len() {
-                    (season + 1, 0)
-                } else {
-                    (season, next_idx)
-                };
-                let new_league = generate_schedule_from_config(manifest, ns, &team_ids, split_idx);
-                game.leagues[i] = new_league;
-            }
+            && let Some(manifest) = manifests.get(cid)
+        {
+            let next_idx = game.leagues[i].split_index + 1;
+            let (ns, split_idx) = if next_idx >= manifest.schedule.splits.len() {
+                (season + 1, 0)
+            } else {
+                (season, next_idx)
+            };
+            let mut next = build_split_league(&game.leagues[i], manifest, ns, split_idx, None);
+            // A league that finishes while the next split's calendar window has already
+            // opened would get fixtures dated today or earlier, which no daily
+            // simulation ever plays. Shift the whole calendar past the clock instead.
+            let today = game.clock.current_date.date_naive();
+            shift_fixtures_after(&mut next, today);
+            game.leagues[i] = next;
+        }
+    }
+
+    // Both linked leagues may have just closed their season: apply the ladder.
+    crate::ladder_apply::apply_ladders(game, manifests);
+}
+
+/// Moves every fixture of `league` forward by the same number of days so the earliest one
+/// is dated after `date`. A league whose fixtures already start later is left untouched.
+fn shift_fixtures_after(league: &mut League, date: chrono::NaiveDate) {
+    let parse = |value: &str| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok();
+    let Some(earliest) = league.fixtures.iter().filter_map(|f| parse(&f.date)).min() else {
+        return;
+    };
+    if earliest > date {
+        return;
+    }
+    let shift = chrono::Duration::days((date - earliest).num_days() + 1);
+    for fixture in &mut league.fixtures {
+        if let Some(day) = parse(&fixture.date) {
+            fixture.date = (day + shift).format("%Y-%m-%d").to_string();
+        }
     }
 }
 
@@ -314,6 +463,10 @@ fn process_end_of_season_inner(
     _manifest: Option<&CompetitionManifest>,
 ) -> EndOfSeasonSummary {
     crate::board_objectives::update_objective_progress(game);
+
+    // Close the ledger season while the final standings and playoffs are intact.
+    let active_index = game.active_league_index();
+    crate::ladder::record_season_end(game, active_index);
 
     let league = match game.active_league() {
         Some(l) => l,
@@ -326,6 +479,7 @@ fn process_end_of_season_inner(
         .unwrap_or(&league.id)
         .to_string();
     let season = league.season;
+    let league_competition_id = league.competition_id.clone();
     let league_name = league.name.clone();
     let _current_split_index = league.split_index;
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
@@ -359,22 +513,7 @@ fn process_end_of_season_inner(
         .find(|s| s.team_id == user_team_id)
         .cloned();
 
-    let playoff_champion_id = league
-        .fixtures
-        .iter()
-        .filter(|fixture| fixture.match_type == MatchType::Playoffs)
-        .max_by_key(|fixture| fixture.matchday)
-        .and_then(|fixture| {
-            fixture.result.as_ref().and_then(|result| {
-                if result.home_wins > result.away_wins {
-                    Some(fixture.home_team_id.clone())
-                } else if result.away_wins > result.home_wins {
-                    Some(fixture.away_team_id.clone())
-                } else {
-                    None
-                }
-            })
-        });
+    let playoff_champion_id = playoff_champion_id(league);
 
     let champion_id = playoff_champion_id.unwrap_or_else(|| {
         final_standings
@@ -421,7 +560,20 @@ fn process_end_of_season_inner(
             .map(|e| e.value)
             .unwrap_or(0.0),
         total_teams: final_standings.len() as u32,
+        ..Default::default()
     };
+
+    // Custom clubs keep the wage budget their bill was derived for (see
+    // `refresh_hiring_cycle_budgets`); computed here because the loop below
+    // borrows the teams mutably.
+    let custom_bill_floors: HashMap<String, i64> = final_standings
+        .iter()
+        .filter(|standing| is_custom_team_id(&standing.team_id))
+        .map(|standing| {
+            let bill = calc_annual_wages(game, &standing.team_id);
+            (standing.team_id.clone(), wage_budget_for_bill(bill))
+        })
+        .collect();
 
     // 4. Record team season history
     for (idx, standing) in final_standings.iter().enumerate() {
@@ -437,6 +589,7 @@ fn process_end_of_season_inner(
                 lost: standing.lost,
                 kills_for: standing.maps_won,
                 kills_against: standing.maps_lost,
+                competition_id: league_competition_id.clone(),
             });
             // Reset form
             team.form.clear();
@@ -464,7 +617,8 @@ fn process_end_of_season_inner(
                 .ok();
             }
 
-            refresh_hiring_cycle_budgets(team);
+            let bill_floor = custom_bill_floors.get(&team.id).copied().unwrap_or(0);
+            refresh_hiring_cycle_budgets(team, bill_floor);
         }
     }
 
@@ -564,16 +718,12 @@ fn process_end_of_season_inner(
         active.split_index = 0;
     }
 
-    let team_names: Vec<String> = final_standings
+    let standing_teams: Vec<&crate::domain::team::Team> = final_standings
         .iter()
-        .map(|s| {
-            game.teams
-                .iter()
-                .find(|t| t.id == s.team_id)
-                .map(|t| t.name.clone())
-                .unwrap_or_default()
-        })
+        .filter_map(|s| game.teams.iter().find(|t| t.id == s.team_id))
         .collect();
+    let team_names =
+        crate::board_objectives::team_names_by_strength(&standing_teams, &game.players);
     game.news.push(crate::news::season_preview_article(
         &team_names,
         &game.clock.current_date.to_rfc3339(),
@@ -815,6 +965,12 @@ pub struct EndOfSeasonSummary {
     pub poty_player: String,
     pub poty_rating: f64,
     pub total_teams: u32,
+    /// Promotion and relegation decisions recorded for the finished season.
+    #[serde(default)]
+    pub ladder_movements: Vec<crate::ladder_report::LadderMovementReport>,
+    /// What the season meant for the user's club, when a swap touched it.
+    #[serde(default)]
+    pub user_ladder: Option<crate::ladder_report::UserLadder>,
 }
 
 #[cfg(test)]
@@ -835,11 +991,13 @@ mod summary_contract_tests {
                 "champion_name",
                 "golden_boot_goals",
                 "golden_boot_player",
+                "ladder_movements",
                 "league_name",
                 "poty_player",
                 "poty_rating",
                 "season",
                 "total_teams",
+                "user_ladder",
                 "user_lost",
                 "user_maps_lost",
                 "user_maps_won",
@@ -977,6 +1135,7 @@ mod tests {
             erls: vec![],
             reputation: None,
             nearby_country_codes: vec![],
+            promotion: None,
             legacy: false,
             active: true,
         }

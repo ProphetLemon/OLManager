@@ -60,7 +60,46 @@ describe("match messages render in the active language", () => {
     });
     const resolved = await renderIn("es", msg);
     expect(resolved.subject).toBe("¡Victoria! KOI:2-1 contra G2");
-    expect(resolved.body).toContain("Hemos ganado a G2 KOI:2-1");
+    expect(resolved.body).toContain("Hemos ganado a G2 2-1");
+  });
+
+  it("renders a result stored before the plain score params with the score from the right side", async () => {
+    // Old save: the user's club (G2) played away and lost 1-2, so the fixture reads KOI 2-1 G2.
+    const msg = stored({
+      subject: "Defeat: KOI G2:1-2 G2",
+      body: "Tough loss today, coach. We lost to KOI G2:1-2.",
+      subject_key: "be.msg.matchResult.templates.defeat_1.subject",
+      body_key: "be.msg.matchResult.templates.defeat_1.body",
+      i18n_params: { home: "KOI", away: "G2", score: "G2:1-2", opponent: "KOI", matchday: "3" },
+    });
+    const resolved = await renderIn("es", msg);
+    expect(resolved.subject).toBe("Derrota: KOI 2-1 G2");
+    expect(resolved.body).toContain("Perdimos contra KOI 1-2");
+  });
+
+  it("puts the opponent's wins first in a stored loss whose sentence has the opponent as subject", async () => {
+    // Old save: only `score` ("<user team>:<own wins>-<opponent wins>"), the user (KOI) lost 0-1 to SHI.
+    const msg = stored({
+      subject: "Loss: SHI defeats us KOI:0-1",
+      body: "Not our day, coach. SHI beat us KOI:0-1.",
+      subject_key: "be.msg.matchResult.templates.defeat_2.subject",
+      body_key: "be.msg.matchResult.templates.defeat_2.body",
+      i18n_params: { home: "KOI", away: "SHI", score: "KOI:0-1", opponent: "SHI", matchday: "2" },
+    });
+    const resolved = await renderIn("es", msg);
+    expect(resolved.subject).toBe("Derrota: SHI nos vence 1-0");
+    expect(resolved.body).toContain("SHI nos ganó 1-0");
+  });
+
+  it("derives the opponent's score from userScore for a message stored without it", async () => {
+    // Saves made after the plain score params but before opponentScore: no usable `score` prefix.
+    const msg = stored({
+      subject_key: "be.msg.matchResult.templates.defeat_2.subject",
+      body_key: "be.msg.matchResult.templates.defeat_2.body",
+      i18n_params: { home: "KOI", away: "SHI", userScore: "0-1", homeWins: "0", awayWins: "1", opponent: "SHI" },
+    });
+    const resolved = await renderIn("en", msg);
+    expect(resolved.subject).toBe("Loss: SHI defeats us 1-0");
   });
 });
 

@@ -42,7 +42,7 @@ pub struct Staff {
     pub contract_end: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "typescript", derive(TS))]
 #[cfg_attr(feature = "typescript", ts(export))]
 pub enum StaffRole {
@@ -93,6 +93,20 @@ impl Staff {
             wage: 0,
             contract_end: None,
         }
+    }
+
+    /// Whether the source data rated this member at all. A member shipped with
+    /// only a name and a role loads with every attribute at 0; the lowest
+    /// attribute in the complete data is 44, so 0 on all four means "no data".
+    pub fn has_attribute_data(&self) -> bool {
+        let a = &self.attributes;
+        a.coaching > 0 || a.judging_ability > 0 || a.judging_potential > 0 || a.physiotherapy > 0
+    }
+
+    /// A club owner is not part of the hired staff: never hired, never fired and
+    /// never counted for staff effects.
+    pub fn is_owner(&self) -> bool {
+        self.role == StaffRole::Owner
     }
 }
 

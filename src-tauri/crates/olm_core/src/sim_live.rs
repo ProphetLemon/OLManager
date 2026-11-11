@@ -169,6 +169,10 @@ struct ChampionRuntime {
     iq_score: f64,
     #[serde(default = "default_visible_stat")]
     competitive_score: f64,
+    /// Role-impact edge (clamped to +-4, Jungle scaled) the match setup sent
+    /// for this player. Old saves have no such field and load with 0.0.
+    #[serde(default)]
+    role_edge: f64,
     #[serde(default = "default_staff_execution")]
     staff_execution: f64,
     #[serde(default)]
@@ -1307,36 +1311,23 @@ fn seed_team(
         let iq_score = (macro_stat + consistency + shotcalling) / 3.0;
         let competitive_score = (champion_pool + discipline + mental_resilience) / 3.0;
 
-        let gameplay_delta = stat_delta(gameplay_score);
-        let iq_delta = stat_delta(iq_score);
-        let competitive_delta = stat_delta(competitive_score);
-        let mechanics_delta = stat_delta(mechanics);
-        let laning_delta = stat_delta(laning);
-        let teamfighting_delta = stat_delta(teamfighting);
         let consistency_delta = stat_delta(consistency);
         let discipline_delta = stat_delta(discipline);
         let champion_pool_delta = stat_delta(champion_pool);
 
-        let max_hp = (max_hp
-            * (1.0
-                + tuned_role_modifier * 0.012
-                + competitive_delta * 0.04
-                + teamfighting_delta * 0.02
-                + scrim_mental_bonus))
-            .clamp(120.0, 340.0);
+        // Visible stats and the role edge no longer scale the starting values:
+        // level-ups add HP and damage additively, so a one-off multiplier on
+        // the level-1 numbers vanished by level 3. They act through
+        // `champion_strength_damage_multiplier` for the whole match instead.
+        // Only the staff and scrim preparation terms stay here.
+        let max_hp = (max_hp * (1.0 + scrim_mental_bonus)).clamp(120.0, 340.0);
         let attack_damage = (14.0 + rng.next_f64() * 5.0)
             * (1.0
-                + tuned_role_modifier * 0.016
-                + gameplay_delta * 0.06
-                + mechanics_delta * 0.03
                 + staff_tactics_modifier * 0.015
                 + scrim_execution_bonus
                 + scrim_gameplay_bonus);
         let move_speed = (0.043
             + rng.next_f64() * 0.008
-            + (tuned_role_modifier * 0.00035)
-            + iq_delta * 0.001
-            + laning_delta * 0.0006
             + staff_tactics_modifier * 0.0004
             + scrim_iq_bonus * 0.0007)
             .clamp(0.036, 0.062);
@@ -1465,6 +1456,7 @@ fn seed_team(
             "competitiveScore".to_string(),
             Value::from(competitive_score),
         );
+        champion_obj.insert("roleEdge".to_string(), Value::from(tuned_role_modifier));
         champion_obj.insert("staffExecution".to_string(), Value::from(staff_execution));
         champion_obj.insert("summonerSpells".to_string(), Value::Array(summoner_spells));
         champion_obj.insert("igniteDotUntil".to_string(), Value::from(0.0));
@@ -1929,14 +1921,40 @@ fn stat_delta(score: f64) -> f64 {
     ((score - 70.0) / 30.0).clamp(-1.0, 1.0)
 }
 
-fn champion_micro_damage_multiplier(champion: &ChampionRuntime) -> f64 {
-    let gameplay = stat_delta(champion.gameplay_score);
-    (1.0 + gameplay * 0.07).clamp(0.84, 1.10)
+/// Exponent per point of power difference in `champion_strength_damage_multiplier`.
+/// [PLACEHOLDER] 0.45: at 95 vs 40 visible stats the stronger side deals about
+/// 2.3x the damage it takes and wins about 95% of matches; at 80 vs 60 about
+/// 1.35x and 60%+. Tune with the ignored sweep in `strength_tests`.
+const STRENGTH_DAMAGE_EXPONENT: f64 = 0.45;
+
+/// Weight of the role edge (+-4) in a champion's power, in stat-delta units.
+/// [PLACEHOLDER] 0.28: +4 against -4 is a damage ratio of about 1.25.
+const ROLE_EDGE_POWER_WEIGHT: f64 = 0.28;
+
+/// A champion's persistent strength in stat-delta units (each part -1..1):
+/// gameplay counts half, game knowledge and competitive mindset a quarter each.
+fn champion_power(champion: &ChampionRuntime) -> f64 {
+    0.5 * stat_delta(champion.gameplay_score)
+        + 0.25 * stat_delta(champion.iq_score)
+        + 0.25 * stat_delta(champion.competitive_score)
+        + ROLE_EDGE_POWER_WEIGHT * (champion.role_edge.clamp(-4.0, 4.0) / 4.0)
 }
 
+/// Champion-vs-champion damage factor `exp(K * (power(attacker) - power(defender)))`.
+/// Symmetric in the pair (a hit one way is the inverse of the hit back), so it
+/// scales both the damage a champion deals and the damage it absorbs, and an
+/// even pair gets exactly 1.0. Monotonic in the gap, so a bigger stat gap never
+/// helps the weaker side.
+fn champion_strength_damage_multiplier(attacker: &ChampionRuntime, defender: &ChampionRuntime) -> f64 {
+    (STRENGTH_DAMAGE_EXPONENT * (champion_power(attacker) - champion_power(defender))).exp()
+}
+
+/// Wave-clear factor, kept almost flat: a wide range let the high-stat team
+/// clear waves and overextend, which cost it towers and gold and made the
+/// stronger team lose at extreme gaps. [PLACEHOLDER] 1 +- 0.03.
 fn champion_lane_damage_multiplier(champion: &ChampionRuntime) -> f64 {
     let gameplay = stat_delta(champion.gameplay_score);
-    (1.0 + gameplay * 0.11).clamp(0.86, 1.18)
+    (1.0 + gameplay * 0.03).clamp(0.97, 1.03)
 }
 
 fn champion_structure_focus_multiplier(champion: &ChampionRuntime) -> f64 {
@@ -5331,7 +5349,8 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
     mark_tower_aggro_on_champion_attack(runtime, &attacker_snapshot, &target_snapshot, now);
 
     let attacker_has_elder = team_has_active_elder_buff(runtime, &attacker_snapshot.team);
-    let attacker_micro_mult = champion_micro_damage_multiplier(&attacker_snapshot);
+    let strength_mult =
+        champion_strength_damage_multiplier(&attacker_snapshot, &target_snapshot);
     let defender_hp_ratio = if target_snapshot.max_hp <= 0.0 {
         1.0
     } else {
@@ -5356,7 +5375,7 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
         let outgoing = attacker.attack_damage
             * CHAMPION_DAMAGE_TO_CHAMPION_MULTIPLIER
             * attack_damage_multiplier
-            * attacker_micro_mult;
+            * strength_mult;
         defender.hp -= outgoing;
         defender.last_damaged_by_champion_id = Some(attacker.id.clone());
         defender.last_damaged_by_champion_at = now;
@@ -5393,7 +5412,7 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
         let outgoing = attacker.attack_damage
             * CHAMPION_DAMAGE_TO_CHAMPION_MULTIPLIER
             * attack_damage_multiplier
-            * attacker_micro_mult;
+            * strength_mult;
         defender.hp -= outgoing;
         defender.last_damaged_by_champion_id = Some(attacker.id.clone());
         defender.last_damaged_by_champion_at = now;
@@ -6395,3 +6414,6 @@ mod runtime_tests;
 
 #[cfg(test)]
 mod economy_tests;
+
+#[cfg(test)]
+mod strength_tests;

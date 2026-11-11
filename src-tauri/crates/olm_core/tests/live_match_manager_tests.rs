@@ -367,9 +367,13 @@ fn instant_mode_completes() {
         live_match_manager::create_live_match(&game, 0, MatchMode::Instant, false).unwrap();
     let results = session.run_to_completion();
     assert!(session.is_finished());
+    // The engine used to run every match into the 60 minute limit. Matches now
+    // end when a nexus falls: allow stomps (well under 25 minutes) up to the
+    // limit, but not an instant finish. [PLACEHOLDER]
     assert!(
-        results.len() >= 55,
-        "Match should reach time limit (~60 min)"
+        (12..=62).contains(&results.len()),
+        "Match should last between 12 and 62 minute ticks, got {}",
+        results.len()
     );
 }
 

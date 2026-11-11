@@ -69,7 +69,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
     <div className="flex h-full flex-col gap-4 overflow-y-auto p-6 scrollbar-v2">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <ScanSearch className="size-5 text-primary" />
+        <ScanSearch className="size-5 text-club-text" />
         <h2 className="font-heading text-lg font-bold uppercase tracking-wider text-foreground">
           {t("scouting.title")}
         </h2>
@@ -81,9 +81,9 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
           {scouts.length > 0 && (
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-lg border border-border bg-card px-3 py-3 text-center">
-                <Eye className="mx-auto mb-1 size-4 text-primary" />
+                <Eye className="mx-auto mb-1 size-4 text-club-text" />
                 <p className="font-heading text-xl font-bold text-foreground tabular-nums">{scouts.length}</p>
-                <p className="font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{t("scouting.scouts")}</p>
+                <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("scouting.scouts")}</p>
               </div>
               <div className="rounded-lg border border-border bg-card px-3 py-3 text-center">
                 <Clock className="mx-auto mb-1 size-4 text-amber-400" />
@@ -94,7 +94,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                     style={{ width: `${totalCapacity > 0 ? (assignments.length / totalCapacity) * 100 : 0}%` }}
                   />
                 </div>
-                <p className="mt-1 font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{t("scouting.activeAssignments")}</p>
+                <p className="mt-1 font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("scouting.activeAssignments")}</p>
               </div>
               <div className="rounded-lg border border-border bg-card px-3 py-3 text-center">
                 <User className="mx-auto mb-1 size-4 text-emerald-400" />
@@ -105,7 +105,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                     style={{ width: `${scouts.length > 0 ? (availableScouts.length / scouts.length) * 100 : 0}%` }}
                   />
                 </div>
-                <p className="mt-1 font-heading text-[9px] uppercase tracking-wider text-muted-foreground">{t("scouting.freeSlots")}</p>
+                <p className="mt-1 font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("scouting.freeSlots")}</p>
               </div>
             </div>
           )}
@@ -129,12 +129,12 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                         return logo ? (
                           <img src={logo} alt={academyTeam.name} className="size-7 object-contain" />
                         ) : (
-                          <GraduationCap className="size-5 text-primary" />
+                          <GraduationCap className="size-5 text-club-text" />
                         );
                       })()}
                     </div>
                     <div>
-                      <p className="font-heading text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                         {t("scouting.academyScoutingTag")}
                       </p>
                       <p className="mt-1 font-heading text-sm font-bold text-foreground">
@@ -154,8 +154,8 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                 <div className="flex size-14 items-center justify-center rounded-xl bg-muted/70">
                   <GraduationCap className="size-7 text-muted-foreground/30" />
                 </div>
-                <div className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-amber-500/20 ring-2 ring-background">
-                  <span className="font-heading text-[10px] font-bold text-amber-400">!</span>
+                <div className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-warning/20 ring-2 ring-background">
+                  <span className="font-heading text-2xs font-bold text-warning">!</span>
                 </div>
               </div>
 
@@ -165,7 +165,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                 </h3>
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   {t("scouting.academyDescription", {
-                    defaultValue: "Adquirí un equipo de academy para desarrollar jóvenes talentos y alimentar tu primer equipo con jugadores formados en casa.",
+                    defaultValue: "Adquiere un equipo de academia para formar jóvenes talentos y nutrir a tu primer equipo con jugadores de la cantera.",
                   })}
                 </p>
               </div>
@@ -173,7 +173,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
               <button
                 type="button"
                 onClick={() => onNavigate?.("Youth")}
-                className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-2 font-heading text-xs font-bold uppercase tracking-wider text-primary transition-all hover:bg-primary/20 active:translate-y-px"
+                className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-2 font-heading text-xs font-bold uppercase tracking-wider text-club-text transition-all hover:bg-primary/20 active:translate-y-px"
               >
                 <GraduationCap className="size-4" />
                 {t("scouting.viewAcquisitionOptions")}
@@ -225,8 +225,8 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                 <div className="flex size-20 items-center justify-center rounded-2xl bg-muted/70">
                   <ScanSearch className="size-10 text-muted-foreground/30" />
                 </div>
-                <div className="absolute -right-1.5 -top-1.5 flex size-7 items-center justify-center rounded-full bg-amber-500/20 ring-2 ring-background">
-                  <span className="font-heading text-xs font-bold text-amber-400 tabular-nums">0</span>
+                <div className="absolute -right-1.5 -top-1.5 flex size-7 items-center justify-center rounded-full bg-warning/20 ring-2 ring-background">
+                  <span className="font-heading text-xs font-bold text-warning tabular-nums">0</span>
                 </div>
               </div>
 
@@ -236,7 +236,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                   {t("scouting.noScoutsDescription", {
-                    defaultValue: "No tenés ojeadores en tu staff. Contratá al menos uno desde la página de Staff para empezar a evaluar jugadores y descubrir talentos ocultos.",
+                    defaultValue: "No tienes ojeadores en tu staff. Contrata al menos uno desde la página de Staff para empezar a evaluar jugadores y descubrir talento oculto.",
                   })}
                 </p>
               </div>
@@ -244,7 +244,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
               <button
                 type="button"
                 onClick={() => onNavigate?.("Staff")}
-                className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wider text-primary transition-all hover:bg-primary/20 hover:shadow-sm hover:shadow-primary/10 active:translate-y-px"
+                className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wider text-club-text transition-all hover:bg-primary/20 hover:shadow-sm hover:shadow-primary/10 active:translate-y-px"
               >
                 <User className="size-4" />
                 {t("scouting.hireScoutCta", { defaultValue: "Contratar ojeador" })}
@@ -255,17 +255,17 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                   {
                     icon: Eye,
                     label: t("scouting.benefitEvaluate", { defaultValue: "Evaluar" }),
-                    desc: t("scouting.benefitEvaluateDesc", { defaultValue: "Conocé el potencial real de cada jugador" }),
+                    desc: t("scouting.benefitEvaluateDesc", { defaultValue: "Descubre el potencial real de cada jugador" }),
                   },
                   {
                     icon: Clock,
                     label: t("scouting.benefitCompare", { defaultValue: "Comparar" }),
-                    desc: t("scouting.benefitCompareDesc", { defaultValue: "Compará stats y encontrá la mejor opción" }),
+                    desc: t("scouting.benefitCompareDesc", { defaultValue: "Compara estadísticas y encuentra la mejor opción" }),
                   },
                   {
                     icon: GraduationCap,
                     label: t("scouting.benefitDiscover", { defaultValue: "Descubrir" }),
-                    desc: t("scouting.benefitDiscoverDesc", { defaultValue: "Descubrí talentos ocultos en la academia y el mercado" }),
+                    desc: t("scouting.benefitDiscoverDesc", { defaultValue: "Descubre talento oculto en la academia y en el mercado" }),
                   },
                 ].map((benefit) => (
                   <div
@@ -273,10 +273,10 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                     className="rounded-lg border border-border/40 bg-card/60 px-3 py-3 text-center transition-colors hover:border-border/80"
                   >
                     <benefit.icon className="mx-auto size-4 text-muted-foreground/50" />
-                    <p className="mt-1.5 font-heading text-[11px] font-bold uppercase tracking-wider text-foreground/80">
+                    <p className="mt-1.5 font-heading text-caption font-bold uppercase tracking-wider text-foreground/80">
                       {benefit.label}
                     </p>
-                    <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground/60">
+                    <p className="mt-0.5 text-2xs leading-relaxed text-muted-foreground/60">
                       {benefit.desc}
                     </p>
                   </div>

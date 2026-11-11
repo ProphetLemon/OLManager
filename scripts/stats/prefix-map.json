@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "note": "OLManager competition id -> Leaguepedia OverviewPage prefixes (SQL LIKE 'prefix%'). Every prefix ends with '/' so 'LPL/' never matches 'LPLOL/' and 'LCK/' never matches 'LCK CL/'. Inferred from tournament names, not verified per season.",
+  "competitions": {
+    "al": ["Arabian League/"],
+    "cblol": ["CBLOL/", "LTA South/"],
+    "cd": ["Circuito Desafiante/"],
+    "ebl": ["Esports Balkan League/"],
+    "hll": ["Hellenic Legends League/"],
+    "hm": ["Hitpoint Masters/"],
+    "lck": ["LCK/"],
+    "lckcl": ["LCK CL/"],
+    "lcp": ["LCP/"],
+    "lcs": ["LCS/", "LTA North/"],
+    "ldl": ["LDL/"],
+    "lec": ["LEC/"],
+    "les": ["LES/", "Superliga Domino's/"],
+    "lfl": ["LFL/"],
+    "lit": ["LIT/"],
+    "ljl": ["LJL/"],
+    "lpl": ["LPL/"],
+    "lplol": ["LPLOL/"],
+    "lrn": ["Liga Regional Norte/"],
+    "lrs": ["Liga Regional Sur/"],
+    "nacl": ["North American Challengers League/"],
+    "nlc": ["NLC/"],
+    "pcs": ["PCS/"],
+    "prm": ["Prime League 1st Division/"],
+    "rl": ["Rift Legends/"],
+    "rol": ["Road Of Legends/"],
+    "tcl": ["TCL/"],
+    "vcs": ["VCS/"]
+  },
+  "open": {
+    "LCK Academy Series": "Unconfirmed whether it is the same competition as LCK CL (both have about 1,000 games in 2025-2026); not mapped to lckcl.",
+    "Equal Esports Cup 2025": "Unconfirmed mapping to the eec competition; eec stays unmapped.",
+    "Equal Esports Cup 2026": "Unconfirmed mapping to the eec competition; eec stays unmapped.",
+    "TransIP Road Of Legends": "Unconfirmed whether it is the sponsored name of Road Of Legends (rol); not merged."
+  },
+  "confirmed": {
+    "Superliga Domino's": "Confirmed by the user on 2026-11-09 as the 2025 edition of LES (LES succeeds the LVP Superliga).",
+    "LTA North": "Confirmed by the user on 2026-11-09 as the 2025 LCS (the 2025 LTA North conference).",
+    "LTA South": "Confirmed by the user on 2026-11-09 as the 2025 CBLOL. The 2025 LTA South conference also held LLA teams, so the cblol cohort includes them for 2025."
+  }
+}

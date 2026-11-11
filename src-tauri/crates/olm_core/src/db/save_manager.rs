@@ -476,6 +476,8 @@ mod tests {
             retired_player_ids: Default::default(),
             world_overlay_as_of: None,
             residency_initialized: false,
+            removed_team_ids: Default::default(),
+            ladder: Default::default(),
         }
     }
 
@@ -696,6 +698,63 @@ mod tests {
 
         assert!(loaded.retired_player_ids.is_empty());
         assert_eq!(loaded.world_overlay_as_of, None);
+    }
+
+    #[test]
+    fn test_game_roundtrip_preserves_removed_team_ids() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut sm = SaveManager::init(&dir.path().join("saves")).unwrap();
+        let mut game = sample_game();
+        game.removed_team_ids = vec!["les-old".to_string(), "les-older".to_string()];
+
+        let save_id = sm.create_save(&game, "Removed").unwrap();
+        let loaded = sm.load_game(&save_id).unwrap();
+
+        assert_eq!(
+            loaded.removed_team_ids,
+            vec!["les-old".to_string(), "les-older".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_game_saved_before_custom_team_still_loads() {
+        let mut value = serde_json::to_value(sample_game()).unwrap();
+        value.as_object_mut().unwrap().remove("removed_team_ids");
+
+        let loaded: Game = serde_json::from_value(value).unwrap();
+
+        assert!(loaded.removed_team_ids.is_empty());
+    }
+
+    #[test]
+    fn old_save_without_ladder_field_deserializes() {
+        let mut value = serde_json::to_value(sample_game()).unwrap();
+        value.as_object_mut().unwrap().remove("ladder");
+
+        let loaded: Game = serde_json::from_value(value).unwrap();
+
+        assert!(loaded.ladder.tallies.is_empty() && loaded.ladder.outcomes.is_empty());
+    }
+
+    #[test]
+    fn test_game_roundtrip_preserves_ladder() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut sm = SaveManager::init(&dir.path().join("saves")).unwrap();
+        let mut game = sample_game();
+        game.ladder.outcomes.push(crate::ladder::SeasonOutcome {
+            competition_id: "les".to_string(),
+            season: 2026,
+            champion_id: Some("les-a".to_string()),
+            ..Default::default()
+        });
+
+        let save_id = sm.create_save(&game, "Ladder").unwrap();
+        let loaded = sm.load_game(&save_id).unwrap();
+
+        assert_eq!(
+            loaded.ladder.outcome("les", 2026).and_then(|o| o.champion_id.as_deref()),
+            Some("les-a")
+        );
     }
 
     #[test]

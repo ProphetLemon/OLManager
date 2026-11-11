@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -6,8 +6,27 @@ import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
 import type { GameStateData } from "@/store/gameStore";
+import type { EndOfSeasonSummaryData } from "@/store/types";
 
 // ─── Mocks ───────────────────────────────────────────────────────────────
+
+interface BlockerModalMock {
+  blockers: { id: string; severity: string; text: string; tab: string }[];
+  pendingAction?: () => void;
+}
+
+const shell = vi.hoisted(() => ({
+  header: null as Record<string, unknown> | null,
+  sidebar: null as Record<string, unknown> | null,
+  blockerModal: null as BlockerModalMock | null,
+  scrimResultNotice: null as string[] | null,
+  dismissScrimResultNotice: vi.fn(),
+  checkBlockingActions: vi.fn(),
+}));
+
+vi.mock("@/services/advanceTimeService", () => ({
+  checkBlockingActions: shell.checkBlockingActions,
+}));
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((command: string) => {
@@ -21,9 +40,10 @@ vi.mock("@tauri-apps/api/core", () => ({
   }),
 }));
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
+vi.mock("react-i18next", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-i18next")>();
+  return { ...actual, useTranslation: () => ({ t: (key: string) => key }) };
+});
 
 vi.mock("@/hooks/useAdvanceTime", () => ({
   useAdvanceTime: () => ({
@@ -33,9 +53,11 @@ vi.mock("@/hooks/useAdvanceTime", () => ({
     showMatchConfirm: false,
     setShowMatchConfirm: vi.fn(),
     matchMode: "live",
-    blockerModal: null,
+    blockerModal: shell.blockerModal,
     setBlockerModal: vi.fn(),
     autoDelegationNotice: null,
+    scrimResultNotice: shell.scrimResultNotice,
+    dismissScrimResultNotice: shell.dismissScrimResultNotice,
     handleContinue: vi.fn(),
     handleConfirmMatch: vi.fn(),
     handleSkipToMatchDay: vi.fn(),
@@ -45,6 +67,7 @@ vi.mock("@/hooks/useAdvanceTime", () => ({
 
 vi.mock("@/lib/teams/teamLogos", () => ({
   resolveTeamLogo: () => null,
+  resolveTeamLogoById: () => null,
 }));
 
 vi.mock("@/store/academySelectors", () => ({
@@ -72,9 +95,16 @@ vi.mock("@/lib/dashboard/helpers", () => ({
   getPendingIncomingOffersCount: () => 0,
 }));
 
-vi.mock("@/ui-v2/_legacy/components/dashboard/DashboardWorkspaceContent", () => ({
-  default: () => null,
-}));
+vi.mock("@/ui-v2/_legacy/components/dashboard/DashboardWorkspaceContent", async () => {
+  const { default: DashboardTabContent } = await import(
+    "@/ui-v2/_legacy/components/dashboard/DashboardTabContent"
+  );
+  return {
+    default: ({ dashboardTabContentModel }: { dashboardTabContentModel: never }) => (
+      <DashboardTabContent viewModel={dashboardTabContentModel} />
+    ),
+  };
+});
 
 vi.mock("@/ui-v2/_legacy/components/dashboard/DashboardOverlays", () => ({
   default: () => null,
@@ -85,16 +115,27 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/FiredModal", () => ({
 }));
 
 vi.mock("@/ui-v2/dashboard/DashboardHeaderV2", () => ({
-  DashboardHeaderV2: () => null,
+  DashboardHeaderV2: (props: Record<string, unknown>) => {
+    shell.header = props;
+    return null;
+  },
 }));
 
 vi.mock("@/ui-v2/dashboard/DashboardSidebarV2", () => ({
-  DashboardSidebarV2: ({ onNavClick }: { onNavClick: (tab: string) => void }) => (
-    <button onClick={() => onNavClick("Training")}>Training</button>
-  ),
+  DashboardSidebarV2: (props: Record<string, unknown>) => {
+    shell.sidebar = props;
+    const onNavClick = props.onNavClick as (tab: string) => void;
+    return <button onClick={() => onNavClick("Training")}>Training</button>;
+  },
 }));
 
-vi.mock("@/ui-v2/dashboard/tabs/HomeTabV2", () => ({ HomeTabV2: () => null }));
+vi.mock("@/ui-v2/dashboard/tabs/HomeTabV2", () => ({
+  HomeTabV2: () => (
+    <div data-testid="home-tab-v2">
+      <section id="needs-your-call" tabIndex={-1} aria-label="calls" />
+    </div>
+  ),
+}));
 vi.mock("@/ui-v2/dashboard/tabs/InboxTabV2", () => ({ InboxTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/ScheduleTabV2", () => ({ ScheduleTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/SquadTabV2", () => ({ SquadTabV2: () => null }));
@@ -230,5 +271,447 @@ describe("DashboardV2 tab sync", () => {
 
     const profile = await screen.findByTestId("player-profile");
     expect(profile.getAttribute("data-renewal")).toBe("true");
+  });
+});
+
+describe("DashboardV2 pending season summary", () => {
+  function freshSeasonState(): GameStateData {
+    return {
+      ...minimalGameState(),
+      user_competition_id: "les",
+      leagues: [
+        {
+          id: "l1",
+          competition_id: "les",
+          name: "LES",
+          season: 2,
+          fixtures: [],
+          standings: [{ team_id: "team-1", won: 0, lost: 0, points: 0 }],
+        },
+      ],
+    } as unknown as GameStateData;
+  }
+
+  const summary = {
+    season: 1,
+    league_name: "LES",
+    champion_id: "team-1",
+    champion_name: "Test Team",
+    user_position: 1,
+    user_points: 30,
+    user_won: 10,
+    user_lost: 2,
+    user_maps_won: 20,
+    user_maps_lost: 5,
+    golden_boot_player: "",
+    golden_boot_goals: 0,
+    poty_player: "",
+    poty_rating: 0,
+    total_teams: 2,
+    ladder_movements: [
+      {
+        lower_competition_id: "les",
+        lower_competition_name: "LES",
+        upper_competition_id: "lec",
+        upper_competition_name: "LEC",
+        season: 1,
+        status: "Applied",
+        promoted: [{ id: "team-1", name: "Test Team" }],
+        relegated: [],
+      },
+    ],
+    user_ladder: { result: "Promoted", from_competition_id: "les", to_competition_id: "lec" },
+  } as unknown as EndOfSeasonSummaryData;
+
+  beforeEach(() => {
+    useGameStore.setState({
+      hasActiveGame: true,
+      managerName: "Coach",
+      gameState: freshSeasonState(),
+      pendingSeasonSummary: summary,
+      isDirty: false,
+      showFiredModal: false,
+    });
+    useSettingsStore.setState({ loaded: true });
+  });
+
+  it("keeps the wrap summary on Home until it is dismissed", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByTestId("ladder-user-result", {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.queryByTestId("home-tab-v2")).toBeNull();
+
+    act(() => useGameStore.getState().setPendingSeasonSummary(null));
+
+    expect(await screen.findByTestId("home-tab-v2", {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.queryByTestId("ladder-user-result")).toBeNull();
+  });
+});
+
+describe("DashboardV2 shell wiring", () => {
+  beforeEach(() => {
+    shell.header = null;
+    shell.sidebar = null;
+    shell.blockerModal = null;
+    shell.scrimResultNotice = null;
+    shell.dismissScrimResultNotice.mockReset();
+    shell.checkBlockingActions.mockReset();
+    shell.checkBlockingActions.mockResolvedValue([]);
+    useGameStore.setState({
+      hasActiveGame: true,
+      managerName: "Coach",
+      gameState: minimalGameState(),
+      pendingSeasonSummary: null,
+      isDirty: false,
+      showFiredModal: false,
+    });
+    useSettingsStore.setState({ loaded: true });
+  });
+
+  async function renderDashboard() {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    return render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+  }
+
+  const lineupBlocker = {
+    id: "incomplete_lineup",
+    severity: "warn",
+    text: "Starting five is incomplete",
+    tab: "Squad",
+  };
+
+  it("renders a skip link that moves focus to the focusable main landmark", async () => {
+    await renderDashboard();
+
+    const link = await screen.findByRole("link", { name: "onAir.nav.skip" });
+    expect(link).toHaveAttribute("href", "#main-content");
+    expect(link).toHaveClass("focus:min-h-[var(--target-min)]");
+
+    const main = screen.getByRole("main");
+    expect(main).toHaveAttribute("id", "main-content");
+    expect(main).toHaveAttribute("tabindex", "-1");
+
+    fireEvent.click(link);
+    expect(document.activeElement).toBe(main);
+  });
+
+  it("passes the shell props to the header and the rail", async () => {
+    await renderDashboard();
+    await screen.findByTestId("home-tab-v2");
+
+    expect(shell.header).toMatchObject({
+      teamName: "Test Team",
+      activeTab: "Home",
+      isUnemployed: false,
+      callCount: 0,
+      compact: false,
+      badges: { unread: 0, offers: 0, players: 0, teams: 1, staff: 0 },
+    });
+    expect(typeof shell.header?.onNavClick).toBe("function");
+    expect(typeof shell.header?.onShowCalls).toBe("function");
+    expect(shell.sidebar).toMatchObject({ compact: false, activeTab: "Home" });
+  });
+
+  it("shows the scrim result notice on any tab and opens the Scrims tab from it", async () => {
+    shell.scrimResultNotice = ["Won against Rivals"];
+    await renderDashboard();
+    fireEvent.click(await screen.findByRole("button", { name: "Training" }));
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Training"));
+
+    expect(screen.getByRole("region", { name: "dashboard.scrimResultTitle" })).toHaveTextContent("Won against Rivals");
+    fireEvent.click(screen.getByRole("button", { name: "dashboard.scrimResultOpen" }));
+
+    expect(shell.dismissScrimResultNotice).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Scrims"));
+  });
+
+  it("keeps the header and rail active tab in sync with navigation", async () => {
+    await renderDashboard();
+    fireEvent.click(await screen.findByRole("button", { name: "Training" }));
+
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Training"));
+    expect(shell.sidebar?.activeTab).toBe("Training");
+  });
+
+  it("retains blockers after the modal closes and clears them on a day change", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>
+    );
+
+    shell.blockerModal = { blockers: [lineupBlocker], pendingAction: vi.fn() };
+    const view = render(tree());
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    // The modal is dismissed: the call stays listed.
+    shell.blockerModal = null;
+    view.rerender(tree());
+    expect(shell.header?.callCount).toBe(1);
+
+    // A new day starts: the retained blockers are dropped.
+    act(() => {
+      const state = minimalGameState();
+      useGameStore.setState({
+        gameState: { ...state, clock: { ...state.clock, current_date: "2025-06-20" } },
+      });
+    });
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("drops retained blockers when a later check returns an empty list", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>
+    );
+
+    shell.blockerModal = { blockers: [lineupBlocker] };
+    const view = render(tree());
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    shell.blockerModal = { blockers: [] };
+    view.rerender(tree());
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("drops retained blockers once a game state update shows they are resolved", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>
+    );
+
+    shell.blockerModal = { blockers: [lineupBlocker], pendingAction: vi.fn() };
+    const view = render(tree());
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    // The modal is dismissed and the user fixes the lineup: same day, new state.
+    shell.blockerModal = null;
+    view.rerender(tree());
+    shell.checkBlockingActions.mockResolvedValue([]);
+    act(() => {
+      useGameStore.setState({ gameState: { ...minimalGameState() } });
+    });
+
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalled());
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("keeps the blockers that are still unresolved after a refresh", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>
+    );
+    const rosterBlocker = { id: "main_roster_minimum", severity: "warn", text: "Roster too small", tab: "Squad" };
+
+    shell.blockerModal = { blockers: [lineupBlocker, rosterBlocker], pendingAction: vi.fn() };
+    const view = render(tree());
+    await waitFor(() => expect(shell.header?.callCount).toBe(2));
+
+    shell.blockerModal = null;
+    view.rerender(tree());
+    shell.checkBlockingActions.mockResolvedValue([rosterBlocker]);
+    act(() => {
+      useGameStore.setState({ gameState: { ...minimalGameState() } });
+    });
+
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+  });
+
+  const scrimSetup = {
+    id: "scrim_setup_required",
+    severity: "warn",
+    text: "Set up the weekly scrims",
+    tab: "Scrims",
+  };
+
+  async function renderWithRetainedScrimSetup() {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>
+    );
+    shell.blockerModal = { blockers: [scrimSetup] };
+    const view = render(tree());
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+    shell.blockerModal = null;
+    view.rerender(tree());
+    shell.checkBlockingActions.mockClear();
+    return view;
+  }
+
+  it("keeps a scrim blocker only while the backend check still reports it", async () => {
+    await renderWithRetainedScrimSetup();
+    shell.checkBlockingActions.mockResolvedValue([scrimSetup]);
+    act(() => useGameStore.setState({ gameState: { ...minimalGameState() } }));
+    await waitFor(() =>
+      expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", {
+        rethrow: true,
+        mode: "live",
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(shell.header?.callCount).toBe(1);
+
+    // The manager sets a weekly objective: the backend no longer blocks.
+    shell.checkBlockingActions.mockResolvedValue([]);
+    act(() => useGameStore.setState({ gameState: { ...minimalGameState() } }));
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("asks the backend with the delegate mode when the manager is unemployed", async () => {
+    await renderWithRetainedScrimSetup();
+    shell.checkBlockingActions.mockResolvedValue([]);
+    act(() =>
+      useGameStore.setState({
+        gameState: { ...minimalGameState(), manager: { ...minimalGameState().manager, team_id: null } },
+      }),
+    );
+    await waitFor(() =>
+      expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", {
+        rethrow: true,
+        mode: "delegate",
+      }),
+    );
+  });
+
+  it("re-runs the refresh and clears the scrim blocker when the scrims delegation is switched to auto", async () => {
+    await renderWithRetainedScrimSetup();
+    // The game state does not change: only the settings store fires.
+    shell.checkBlockingActions.mockResolvedValue([scrimSetup]);
+    act(() => useSettingsStore.setState({ settings: { ...useSettingsStore.getState().settings, scrim_review_mode: "assistant" } }));
+
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalled());
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("keeps the retained blockers when the refresh check fails", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>
+    );
+
+    shell.blockerModal = { blockers: [lineupBlocker], pendingAction: vi.fn() };
+    const view = render(tree());
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    shell.blockerModal = null;
+    view.rerender(tree());
+    shell.checkBlockingActions.mockRejectedValue(new Error("backend down"));
+    act(() => {
+      useGameStore.setState({ gameState: { ...minimalGameState() } });
+    });
+
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", { rethrow: true, mode: "live" }));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(shell.header?.callCount).toBe(1);
+  });
+
+  const academyBlocker = {
+    id: "academy_missing_roles",
+    severity: "warn",
+    text: "Academy incomplete",
+    tab: "YouthAcademy",
+  };
+
+  const nextDay = () => {
+    const state = minimalGameState();
+    useGameStore.setState({
+      gameState: { ...state, clock: { ...state.clock, current_date: "2025-06-20" } },
+    });
+  };
+
+  it("lists the blockers the pre-check reports on Home without a Continue press", async () => {
+    shell.checkBlockingActions.mockResolvedValue([academyBlocker]);
+    await renderDashboard();
+    await screen.findByTestId("home-tab-v2");
+
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+    expect(shell.checkBlockingActions).toHaveBeenCalledWith("dashboard-refresh", {
+      rethrow: true,
+      mode: "live",
+    });
+  });
+
+  it("shows the blocker that applies to the new day after the date changes", async () => {
+    await renderDashboard();
+    await screen.findByTestId("home-tab-v2");
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalled());
+    expect(shell.header?.callCount).toBe(0);
+
+    shell.checkBlockingActions.mockResolvedValue([academyBlocker]);
+    act(nextDay);
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    // Another day, nothing blocks any more: the panel goes back to empty.
+    shell.checkBlockingActions.mockResolvedValue([]);
+    act(() => {
+      const state = minimalGameState();
+      useGameStore.setState({
+        gameState: { ...state, clock: { ...state.clock, current_date: "2025-06-21" } },
+      });
+    });
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("keeps the previous list until the new day check answers, then drops it if the check fails", async () => {
+    shell.checkBlockingActions.mockResolvedValue([academyBlocker]);
+    await renderDashboard();
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    shell.checkBlockingActions.mockRejectedValue(new Error("backend down"));
+    act(nextDay);
+    // Never "all in order" while the answer is pending...
+    expect(shell.header?.callCount).toBe(1);
+    // ...and a stale list from another day is not kept once the check fails.
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(shell.header?.callCount).toBe(0));
+  });
+
+  it("does not check blockers while the blocker modal is open", async () => {
+    shell.blockerModal = { blockers: [lineupBlocker] };
+    await renderDashboard();
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(shell.checkBlockingActions).not.toHaveBeenCalled();
+  });
+
+  it("flags compact while a season summary is pending", async () => {
+    useGameStore.setState({
+      pendingSeasonSummary: { season: 1 } as unknown as EndOfSeasonSummaryData,
+    });
+    await renderDashboard();
+    await waitFor(() => expect(shell.header?.compact).toBe(true));
+    expect(shell.sidebar?.compact).toBe(true);
+  });
+
+  it("moves to Home and focuses the Needs your call panel from the header chip", async () => {
+    await renderDashboard();
+    fireEvent.click(await screen.findByRole("button", { name: "Training" }));
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Training"));
+
+    act(() => (shell.header?.onShowCalls as () => void)());
+
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Home"));
+    await waitFor(() => expect(document.activeElement?.id).toBe("needs-your-call"));
   });
 });

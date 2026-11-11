@@ -24,7 +24,7 @@ export default function PlayerProfileScoutActionV2({
 
   if (availability.alreadyScouting || scoutStatus === "sent") {
     return (
-      <span className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-primary">
+      <span className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-club-text">
         <ScanSearch className="size-3.5" /> {t("scouting.scoutingInProgress")}
       </span>
     );

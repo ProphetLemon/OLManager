@@ -43,7 +43,7 @@ function hasSpecialist(staff: StaffData[], specialization: string): boolean {
 export function getLolStaffEffectsForTeam(gameState: GameStateData | null | undefined, teamId: string | null | undefined): LolStaffEffectsData {
   if (!gameState || !teamId) return DEFAULT_LOL_STAFF_EFFECTS;
 
-  const teamStaff = gameState.staff.filter((member) => member.team_id === teamId);
+  const teamStaff = gameState.staff.filter((member) => member.team_id === teamId && member.role !== "Owner");
   if (teamStaff.length === 0) return DEFAULT_LOL_STAFF_EFFECTS;
 
   const coaches = teamStaff.filter((member) => member.role === "Coach" || member.role === "AssistantManager");

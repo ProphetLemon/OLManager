@@ -7,6 +7,9 @@ import { compareStandingsByLolScore, getStandingKillDiff } from "@/store/gameSto
 import { getTeamLogoPath } from "@/lib/schedule/helpers";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
+import { shortRoleKey } from "@/lib/squad/cards";
+import { getLolRoleForPlayer } from "@/lib/squad/helpers";
+import { listCompetitionLeagues } from "@/lib/world/leagueGroups";
 import { cn } from "@/ui-v2/lib/utils";
 import ScheduleCalendarView from "@/ui-v2/_legacy/components/schedule/ScheduleCalendarView";
 import type { StoredFixtureDraftResult } from "@/lib/schedule/helpers";
@@ -34,7 +37,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
   const [visible, setVisible] = useState(false);
   useEffect(() => setVisible(true), []);
 
-  const leagues = useMemo(() => (gameState.leagues ?? []).filter((l) => l.tier === 1 && l.active === true), [gameState.leagues]);
+  const leagues = useMemo(() => listCompetitionLeagues(gameState.leagues ?? []), [gameState.leagues]);
   const selectedLeague = selectedCid ? leagues.find((l) => (l.competition_id ?? l.id) === selectedCid) ?? null : null;
   const selectedTeamIds = selectedCid ? gameState.teams.filter((t) => t.competition_id === selectedCid).map((t) => t.id) : [];
   const selectedPlayers = selectedTeamIds.length > 0 ? gameState.players.filter((p) => p.team_id != null && selectedTeamIds.includes(p.team_id)) : [];
@@ -64,8 +67,8 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
       {/* ─── League selector pills ─── */}
       <div className="sticky top-0 z-10 border-b border-border bg-background/80 px-6 py-3 backdrop-blur-sm">
         <div className="flex items-center gap-2 mb-3">
-          <Globe className="size-5 text-primary" />
-          <h2 className="font-heading text-lg font-bold uppercase tracking-wider text-foreground">{t("competitions.title", "Competiciones")}</h2>
+          <Globe className="size-5 text-club-text" />
+          <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-foreground">{t("competitions.title", "Competiciones")}</h2>
         </div>
         <div className="flex flex-wrap gap-2">
           {leagues.map((league) => {
@@ -85,8 +88,8 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                   <CompetitionLogo league={league} cid={lcid} />
                 </div>
                 <div>
-                  <p className={cn("font-heading text-xs font-bold uppercase tracking-wide", sel ? "text-primary" : "text-foreground")}>{league.name}</p>
-                  <p className="text-[10px] text-muted-foreground/60">S{league.season} · {played}/{fixtures.length}</p>
+                  <p className={cn("font-heading text-xs font-bold uppercase tracking-wide", sel ? "text-club-text" : "text-foreground")}>{league.name}</p>
+                  <p className="text-2xs text-muted-foreground/60">S{league.season} · {played}/{fixtures.length}</p>
                 </div>
               </button>
             );
@@ -150,7 +153,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
               <div className="overflow-hidden rounded-xl border border-border">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-border bg-muted/30 text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <tr className="border-b border-border bg-muted/30 font-heading text-2xs uppercase tracking-wide text-muted-foreground">
                       <th className="w-10 px-4 py-3 font-heading font-bold">{t("competitions.tableHeader.pos")}</th>
                       <th className="px-4 py-3 font-heading font-bold">{t("competitions.tableHeader.team")}</th>
                       <th className="px-3 py-3 text-center font-heading font-bold">{t("competitions.tableHeader.played")}</th>
@@ -183,17 +186,17 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2.5">
                               {logo && <img src={logo} alt="" className="size-5 object-contain" />}
-                              <span className={cn("text-sm", isUser ? "font-bold text-primary" : "font-medium text-foreground")}>
+                              <span className={cn("text-sm", isUser ? "font-bold text-club-text" : "font-medium text-foreground")}>
                                 {team?.name ?? entry.team_id}
                               </span>
                             </div>
                           </td>
                           <td className="px-3 py-3 text-center text-xs tabular-nums text-muted-foreground">{entry.played}</td>
-                          <td className="px-3 py-3 text-center text-xs tabular-nums text-emerald-400 font-medium">{entry.won}</td>
-                          <td className="px-3 py-3 text-center text-xs tabular-nums text-red-400 font-medium">{entry.lost}</td>
+                          <td className="px-3 py-3 text-center text-xs tabular-nums text-positive font-medium">{entry.won}</td>
+                          <td className="px-3 py-3 text-center text-xs tabular-nums text-negative font-medium">{entry.lost}</td>
                           <td className="hidden px-3 py-3 text-center text-xs tabular-nums text-muted-foreground md:table-cell">{entry.maps_won ?? entry.kills_for ?? 0}</td>
                           <td className="hidden px-3 py-3 text-center text-xs tabular-nums text-muted-foreground md:table-cell">{entry.maps_lost ?? entry.kills_against ?? 0}</td>
-                          <td className={cn("px-3 py-3 text-center text-xs tabular-nums font-medium", diff >= 0 ? "text-emerald-400" : "text-red-400")}>{diff >= 0 ? "+" : ""}{diff}</td>
+                          <td className={cn("px-3 py-3 text-center text-xs tabular-nums font-medium", diff >= 0 ? "text-positive" : "text-negative")}>{diff >= 0 ? "+" : ""}{diff}</td>
                           <td className="hidden px-3 py-3 lg:table-cell">
                             <div className="flex items-center gap-2">
                               <div className="h-1.5 w-full max-w-16 overflow-hidden rounded-full bg-muted">
@@ -230,7 +233,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                   <div className="relative max-w-xs">
                     <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50" />
                     <input type="text" value={teamSearch} onChange={(e) => { setTeamSearch(e.target.value); setTeamPage(0); }}
-                      placeholder={t("competitions.searchTeam")} className="h-8 w-full rounded-lg border border-border bg-muted/30 pl-8 pr-3 text-xs text-foreground outline-none placeholder:text-muted-foreground/40" />
+                      placeholder={t("competitions.searchTeam")} className="h-8 w-full rounded-lg border border-border bg-muted/30 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground/40" />
                   </div>
                 )}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -278,13 +281,13 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                   <div className="relative max-w-xs">
                     <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50" />
                     <input type="text" value={playerSearch} onChange={(e) => { setPlayerSearch(e.target.value); setPlayerPage(0); }}
-                      placeholder={t("competitions.searchPlayer")} className="h-8 w-full rounded-lg border border-border bg-muted/30 pl-8 pr-3 text-xs text-foreground outline-none" />
+                      placeholder={t("competitions.searchPlayer")} className="h-8 w-full rounded-lg border border-border bg-muted/30 pl-8 pr-3 text-xs text-foreground" />
                   </div>
                 )}
                 <div className="overflow-hidden rounded-xl border border-border">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="border-b border-border bg-muted/30 text-[10px] uppercase tracking-widest text-muted-foreground">
+                      <tr className="border-b border-border bg-muted/30 font-heading text-2xs uppercase tracking-wide text-muted-foreground">
                         <th className="px-4 py-3 font-heading font-bold">{t("competitions.tableHeader.player")}</th>
                         <th className="px-4 py-3 font-heading font-bold">{t("competitions.tableHeader.role")}</th>
                         <th className="px-4 py-3 font-heading font-bold">{t("competitions.tableHeader.team")}</th>
@@ -303,16 +306,16 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                                 {photo && <img src={photo} alt={player.match_name} className="size-7 rounded-full object-cover" />}
                                 <div>
                                   <p className="text-sm font-medium text-foreground">{player.match_name}</p>
-                                  <p className="text-[11px] text-muted-foreground">{player.full_name}</p>
+                                  <p className="text-caption text-muted-foreground">{player.full_name}</p>
                                 </div>
                               </div>
                             </td>
                             <td className="px-4 py-2.5">
-                              <span className="inline-flex items-center rounded-md border border-border bg-card px-1.5 py-0.5 font-heading text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                {player.position}
+                              <span className="inline-flex items-center rounded-md border border-border bg-card px-1.5 py-0.5 font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">
+                                {t(shortRoleKey(getLolRoleForPlayer(player)), { defaultValue: player.position })}
                               </span>
                             </td>
-                            <td className="px-4 py-2.5 text-sm text-muted-foreground">{team?.name ?? "FA"}</td>
+                            <td className="px-4 py-2.5 text-sm text-muted-foreground">{team?.name ?? t("common.freeAgent")}</td>
                             <td className="px-4 py-2.5 text-center font-heading text-sm font-bold tabular-nums"
                               style={{ color: ovr >= 75 ? "#fb923c" : ovr >= 60 ? "#fbbf24" : "#94a3b8" }}>{ovr}</td>
                           </tr>
@@ -346,7 +349,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
           <div className="flex flex-1 items-center justify-center py-20">
             <div className="text-center">
               <Globe className="mx-auto mb-3 size-12 text-muted-foreground/15" />
-              <p className="font-heading text-sm uppercase tracking-wider text-muted-foreground/50">
+              <p className="font-heading text-sm uppercase tracking-wide text-muted-foreground/50">
                 {t("competitions.selectPrompt")}
               </p>
             </div>

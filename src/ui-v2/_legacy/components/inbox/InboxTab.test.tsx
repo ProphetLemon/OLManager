@@ -103,12 +103,12 @@ beforeAll(async function setupTestEnvironment(): Promise<void> {
       "be.msg.delegatedRenewals.body":
         "Boss, I went through our renewal list at {{team}}. {{successes}} completed, {{stalled}} still pending, {{failures}} failed.",
       "be.msg.delegatedRenewals.case.successful":
-        "Completed: {{player}} agreed to {{years}} year(s) on €{{wage}}/yr.",
+        "Completed: {{player}} agreed to {{years}} year(s) on {{wage}}/yr.",
       "be.msg.delegatedRenewals.case.stalled":
         "Still difficult: {{player}} — {{detail}}",
       "be.msg.delegatedRenewals.case.failed": "Failed: {{player}} — {{detail}}",
       "be.msg.delegatedRenewals.notes.beyondLimits":
-        "Their camp want around €{{wage}}/yr for {{years}} years, which is beyond the delegation limits.",
+        "Their camp want around {{wage}}/yr for {{years}} years, which is beyond the delegation limits.",
       "be.msg.delegatedRenewals.notes.relationshipBlocked":
         "They are not willing to commit through me under the current relationship and contract situation.",
     },
@@ -569,12 +569,12 @@ describe("InboxTab", function (): void {
     expect(screen.getByTestId("delegated-renewal-report")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Completed: Alex Done agreed to 3 year(s) on €24000/yr.",
+        `Completed: Alex Done agreed to 3 year(s) on €${(24000).toLocaleString()}/yr.`,
       ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Still difficult: Ben Pending — Their camp want around €26000/yr for 4 years, which is beyond the delegation limits.",
+        `Still difficult: Ben Pending — Their camp want around €${(26000).toLocaleString()}/yr for 4 years, which is beyond the delegation limits.`,
       ),
     ).toBeInTheDocument();
     expect(

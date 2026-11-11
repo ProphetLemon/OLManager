@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { scrimOpponentLogo } from "@/lib/scrims/opponentLogo";
 import { useTranslation } from "react-i18next";
 import { CalendarDays, ChevronRight, WandSparkles, Swords } from "lucide-react";
 
@@ -17,14 +18,6 @@ interface ScrimPlanningCardProps {
   isSaving: boolean;
   setIsSaving: (value: boolean) => void;
   readOnly?: boolean;
-}
-
-function teamLogoPath(teamId: string): string {
-  const slug = teamId.replace(/^lec-/, "");
-  if (slug === "shifters") {
-    return "/teams-icons/shifters.webp";
-  }
-  return `/teams-icons/${slug}.webp`;
 }
 
 function opponentLabel(teamName: string, ovr: number): string {
@@ -180,7 +173,7 @@ export default function ScrimPlanningCard({
                   <div className="flex items-center gap-2">
                     {primaryOpponentId ? (
                       <img
-                        src={teamLogoPath(primaryOpponentId)}
+                        src={scrimOpponentLogo(gameState.teams, primaryOpponentId)}
                         alt={t("training.scrims.opponentLogoAlt")}
                         className="h-8 w-8 rounded-lg bg-black/20 object-contain p-1"
                         loading="lazy"

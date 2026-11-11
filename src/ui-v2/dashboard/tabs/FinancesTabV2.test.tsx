@@ -49,7 +49,7 @@ vi.mock("react-i18next", () => ({
         "finances.contractRisk": "Contract risk",
         "finances.noContractRisks": "No contract risks",
         "finances.payroll": "Payroll",
-        "finances.wagePerWeek": "Wage",
+        "finances.wagePerYear": "Wage",
         "finances.marketValue": "Market value",
         "finances.facilities": "Facilities",
         "finances.recentLedger": "Recent ledger",

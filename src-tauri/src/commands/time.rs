@@ -3,6 +3,7 @@ use tauri::State;
 
 use crate::application::time_advancement::advance_time_with_mode as advance_time_with_mode_service;
 pub use crate::application::time_advancement::AdvanceTimeWithModeResponse;
+use crate::application::advance_blockers::{advance_block, DEFAULT_ADVANCE_MODE};
 use olm_core::game::Game;
 use olm_core::state::StateManager;
 
@@ -15,6 +16,14 @@ fn advance_time_internal(state: &StateManager) -> Result<Game, String> {
         "[cmd] advance_time: date={}",
         current_game.clock.current_date.format("%Y-%m-%d")
     );
+
+    if current_game
+        .active_league()
+        .is_some_and(olm_core::end_of_season::is_league_complete)
+    {
+        info!("[cmd] advance_time: split finished, nothing advanced");
+        return Ok(crate::client_game::game_for_client(&current_game));
+    }
 
     let mut captures = Vec::new();
     olm_core::turn::process_day_with_capture(&mut current_game, &mut |capture| {
@@ -57,17 +66,49 @@ pub fn compute_blocking_actions(game: &Game) -> Vec<serde_json::Value> {
     olm_core::time_blockers::compute_blocking_actions(game)
 }
 
+/// Every blocker "Continue" would hit in `mode`: the roster and contract
+/// blockers plus the scrim stops the advance command itself raises.
+pub fn blockers_for_advance(game: &Game, mode: &str) -> Vec<serde_json::Value> {
+    let mut blockers = compute_blocking_actions(game);
+    if let Some(block) = advance_block(game, mode) {
+        blockers.push(block.to_blocker());
+    }
+    blockers
+}
+
+/// `mode` is the match mode the advance would run with; when absent the
+/// frontend's Continue default applies. `include_scrim_stops` defaults to
+/// true; `skip_to_match_day` never raises the scrim stops, so its pre-check
+/// turns them off.
 #[tauri::command]
-pub fn check_blocking_actions(state: State<'_, StateManager>) -> Result<serde_json::Value, String> {
-    log::debug!("[cmd] check_blocking_actions");
+pub fn check_blocking_actions(
+    state: State<'_, StateManager>,
+    mode: Option<String>,
+    include_scrim_stops: Option<bool>,
+) -> Result<serde_json::Value, String> {
+    check_blocking_actions_internal(&state, mode.as_deref(), include_scrim_stops.unwrap_or(true))
+}
+
+fn check_blocking_actions_internal(
+    state: &StateManager,
+    mode: Option<&str>,
+    include_scrim_stops: bool,
+) -> Result<serde_json::Value, String> {
+    let mode = mode.unwrap_or(DEFAULT_ADVANCE_MODE);
+    log::debug!("[cmd] check_blocking_actions: mode={}", mode);
     let game = state
         .get_game(|g| g.clone())
         .ok_or("No active game session")?;
 
-    let blockers = compute_blocking_actions(&game);
+    let blockers = if include_scrim_stops {
+        blockers_for_advance(&game, mode)
+    } else {
+        compute_blocking_actions(&game)
+    };
     info!(
-        "[cmd] check_blocking_actions: date={}, blocker_count={}",
+        "[cmd] check_blocking_actions: date={}, mode={}, blocker_count={}",
         game.clock.current_date.format("%Y-%m-%d"),
+        mode,
         blockers.len()
     );
     Ok(serde_json::json!(blockers))
@@ -78,6 +119,9 @@ pub fn skip_to_match_day(state: State<'_, StateManager>) -> Result<serde_json::V
     skip_to_match_day_internal(&state)
 }
 
+/// Advances day by day until one of these happens: the user's club has a match today (it is
+/// played, then the skip stops), a blocker appears, the manager is fired, the active league is
+/// complete (so the end-of-split screen can take over), or 60 days have passed.
 fn skip_to_match_day_internal(state: &StateManager) -> Result<serde_json::Value, String> {
     info!("[cmd] skip_to_match_day");
     let mut game = state
@@ -97,6 +141,18 @@ fn skip_to_match_day_internal(state: &StateManager) -> Result<serde_json::Value,
     let mut match_simulated = false;
     loop {
         if days_skipped >= 60 {
+            break;
+        }
+
+        if game
+            .active_league()
+            .is_some_and(olm_core::end_of_season::is_league_complete)
+        {
+            info!(
+                "[cmd] skip_to_match_day: split finished, date={}, days_skipped={}",
+                game.clock.current_date.format("%Y-%m-%d"),
+                days_skipped
+            );
             break;
         }
 
@@ -213,7 +269,8 @@ fn skip_to_match_day_internal(state: &StateManager) -> Result<serde_json::Value,
 #[cfg(test)]
 mod tests {
     use super::{
-        advance_time_with_mode_internal, compute_blocking_actions, skip_to_match_day_internal,
+        advance_time_with_mode_internal, blockers_for_advance, check_blocking_actions_internal,
+        compute_blocking_actions, skip_to_match_day_internal,
     };
     use chrono::{TimeZone, Utc};
     use olm_core::clock::GameClock;
@@ -435,6 +492,57 @@ mod tests {
     }
 
     #[test]
+    fn skip_to_match_day_passes_the_clubs_bye_and_plays_its_next_match() {
+        let state = StateManager::new();
+        let mut game = make_game_with_matchday();
+        let bye_day = game.clock.current_date.format("%Y-%m-%d").to_string();
+        let club_day = "2025-06-18".to_string();
+        let mut third_team = Team::new(
+            "team3".to_string(),
+            "Third FC".to_string(),
+            "THI".to_string(),
+            "England".to_string(),
+            "Thirdtown".to_string(),
+            "Third Ground".to_string(),
+            21_000,
+        );
+        let third_players: Vec<Player> = (1..=11)
+            .map(|idx| {
+                let position = match idx {
+                    1 => LolRole::Support,
+                    2..=5 => LolRole::Top,
+                    6 => LolRole::Mid,
+                    7..=9 => LolRole::Jungle,
+                    _ => LolRole::Adc,
+                };
+                make_player(&format!("t{idx}"), &format!("Third {idx}"), "team3", position)
+            })
+            .collect();
+        third_team.active_lineup_ids = third_players.iter().map(|p| p.id.clone()).collect();
+        game.teams.push(third_team);
+        game.players.extend(third_players);
+        // The league plays today without the club (its bye); the club plays on the 18th.
+        let fixtures = &mut game.leagues[0].fixtures;
+        fixtures[0].date = club_day;
+        fixtures.push(scrim_week_fixture("bye-day", &bye_day, "team2", "team3"));
+        state.set_game(game);
+        state.set_stats_state(StatsState::default());
+
+        let response = skip_to_match_day_internal(&state).expect("skip response");
+
+        assert_eq!(response["action"], "arrived");
+        assert_eq!(response["match_simulated"], true);
+        let game = state.get_game(|g| g.clone()).unwrap();
+        let fixtures = &game.leagues[0].fixtures;
+        assert_eq!(fixtures[1].status, FixtureStatus::Completed);
+        assert_eq!(fixtures[0].status, FixtureStatus::Completed);
+        assert_eq!(
+            game.clock.current_date.date_naive(),
+            Utc.with_ymd_and_hms(2025, 6, 19, 12, 0, 0).unwrap().date_naive()
+        );
+    }
+
+    #[test]
     fn skip_to_match_day_does_not_play_the_match_while_blockers_remain() {
         let state = StateManager::new();
         let mut game = make_game_with_matchday();
@@ -448,6 +556,136 @@ mod tests {
         assert_eq!(response["action"], "blocked");
         let game = state.get_game(|g| g.clone()).unwrap();
         assert_eq!(game.leagues[0].fixtures[0].status, FixtureStatus::Scheduled);
+    }
+
+    #[test]
+    fn skip_to_match_day_does_not_advance_a_finished_split() {
+        let state = StateManager::new();
+        let mut game = make_game_with_matchday();
+        game.leagues[0].fixtures[0].status = FixtureStatus::Completed;
+        assert!(olm_core::end_of_season::is_league_complete(&game.leagues[0]));
+        let start = game.clock.current_date;
+        state.set_game(game);
+
+        let response = skip_to_match_day_internal(&state).expect("skip response");
+
+        assert_eq!(response["action"], "arrived");
+        assert_eq!(response["days_skipped"], 0);
+        assert_eq!(response["match_simulated"], false);
+        let game = state.get_game(|g| g.clone()).unwrap();
+        assert_eq!(game.clock.current_date, start);
+    }
+
+    fn make_finished_split_game() -> Game {
+        let mut game = make_game_with_matchday();
+        game.leagues[0].fixtures[0].status = FixtureStatus::Completed;
+        assert!(olm_core::end_of_season::is_league_complete(&game.leagues[0]));
+        game
+    }
+
+    #[test]
+    fn advance_time_with_mode_refuses_while_the_split_is_over() {
+        for mode in ["delegate", "live", "spectator", "instant"] {
+            for phase in [DayPhase::Morning, DayPhase::Evening] {
+                let state = StateManager::new();
+                let mut game = make_finished_split_game();
+                game.day_phase = phase.clone();
+                let start = game.clock.current_date;
+                let messages = game.messages.len();
+                state.set_game(game);
+                state.set_stats_state(StatsState::default());
+
+                let response = advance_time_with_mode_internal(&state, mode).expect("response");
+
+                assert_eq!(response.action, "season_complete", "mode {mode}, phase {phase:?}");
+                assert!(response.snapshot.is_none());
+                let returned = response.game.expect("current game");
+                assert_eq!(returned.clock.current_date, start);
+                let game = state.get_game(|g| g.clone()).unwrap();
+                assert_eq!(game.clock.current_date, start);
+                assert_eq!(game.day_phase, phase);
+                assert_eq!(game.messages.len(), messages);
+                assert_eq!(game.leagues[0].fixtures[0].status, FixtureStatus::Completed);
+                assert!(state.take_live_match().is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn advance_time_refuses_while_the_split_is_over() {
+        let state = StateManager::new();
+        let game = make_finished_split_game();
+        let start = game.clock.current_date;
+        let messages = game.messages.len();
+        state.set_game(game);
+        state.set_stats_state(StatsState::default());
+
+        let returned = super::advance_time_internal(&state).expect("current game");
+
+        assert_eq!(returned.clock.current_date, start);
+        let game = state.get_game(|g| g.clone()).unwrap();
+        assert_eq!(game.clock.current_date, start);
+        assert_eq!(game.messages.len(), messages);
+        let stats = state.get_stats_state(|current| current.clone()).unwrap();
+        assert!(stats.team_matches.is_empty());
+    }
+
+    #[test]
+    fn skip_to_match_day_stops_on_the_day_the_split_finishes() {
+        let state = StateManager::new();
+        let mut game = make_game_with_matchday();
+        let mut third_team = Team::new(
+            "team3".to_string(),
+            "Third FC".to_string(),
+            "THI".to_string(),
+            "England".to_string(),
+            "Thirdtown".to_string(),
+            "Third Ground".to_string(),
+            21_000,
+        );
+        let third_players: Vec<Player> = (1..=11)
+            .map(|idx| {
+                let position = match idx {
+                    1 => LolRole::Support,
+                    2..=5 => LolRole::Top,
+                    6 => LolRole::Mid,
+                    7..=9 => LolRole::Jungle,
+                    _ => LolRole::Adc,
+                };
+                make_player(&format!("t{idx}"), &format!("Third {idx}"), "team3", position)
+            })
+            .collect();
+        third_team.active_lineup_ids = third_players.iter().map(|p| p.id.clone()).collect();
+        game.teams.push(third_team);
+        game.players.extend(third_players);
+        // The club has played both of its matches; only team2 v team3 is left, three days ahead.
+        let league = &mut game.leagues[0];
+        league
+            .standings
+            .push(olm_core::domain::league::StandingEntry::new("team3".to_string()));
+        league.fixtures[0].status = FixtureStatus::Completed;
+        let mut club_vs_third = scrim_week_fixture("fixture-2", "2025-06-12", "team1", "team3");
+        club_vs_third.status = FixtureStatus::Completed;
+        league.fixtures.push(club_vs_third);
+        league
+            .fixtures
+            .push(scrim_week_fixture("fixture-3", "2025-06-18", "team2", "team3"));
+        assert!(!olm_core::end_of_season::is_league_complete(&game.leagues[0]));
+        state.set_game(game);
+        state.set_stats_state(StatsState::default());
+
+        let response = skip_to_match_day_internal(&state).expect("skip response");
+
+        assert_eq!(response["action"], "arrived");
+        assert_eq!(response["days_skipped"], 4);
+        assert_eq!(response["match_simulated"], false);
+        let game = state.get_game(|g| g.clone()).unwrap();
+        assert_eq!(game.leagues[0].fixtures[2].status, FixtureStatus::Completed);
+        assert!(olm_core::end_of_season::is_league_complete(&game.leagues[0]));
+        assert_eq!(
+            game.clock.current_date.date_naive(),
+            Utc.with_ymd_and_hms(2025, 6, 19, 12, 0, 0).unwrap().date_naive()
+        );
     }
 
     #[test]
@@ -485,6 +723,22 @@ mod tests {
         assert!(text.contains("JUNGLE"));
         assert!(text.contains("MID"));
         assert!(text.contains("ADC"));
+        let roles = role_blocker
+            .pointer("/params/roles")
+            .and_then(Value::as_str)
+            .expect("the blocker carries the missing roles for the interface");
+        assert!(roles.contains("JUNGLE") && roles.contains("MID") && roles.contains("ADC"));
+    }
+
+    #[test]
+    fn a_roster_under_five_players_reports_its_size_for_the_interface() {
+        let mut game = make_game(5);
+        game.players.truncate(4);
+
+        let blockers = compute_blocking_actions(&game);
+
+        let blocker = blocker_by_id(&blockers, "main_roster_minimum").expect("roster blocker");
+        assert_eq!(blocker.pointer("/params/count").and_then(Value::as_u64), Some(4));
     }
 
     #[test]
@@ -526,6 +780,11 @@ mod tests {
         assert_eq!(
             urgent.get("text").and_then(Value::as_str),
             Some("2 urgent unread message(s)")
+        );
+        assert_eq!(
+            urgent.pointer("/params/count").and_then(Value::as_u64),
+            Some(2),
+            "the interface words the blocker from the count, not from the English text"
         );
     }
 
@@ -571,6 +830,11 @@ mod tests {
             .unwrap();
         assert!(text.contains("Player 10"));
         assert!(text.contains("Player 11"));
+        let players = contract_blocker
+            .pointer("/params/players")
+            .and_then(Value::as_str)
+            .unwrap();
+        assert!(players.contains("Player 10") && players.contains("Player 11"));
     }
 
     #[test]
@@ -609,6 +873,10 @@ mod tests {
         let text = finance_blocker.get("text").and_then(Value::as_str).unwrap();
         assert!(text.contains("60000"));
         assert!(text.contains("wage budget"));
+        assert_eq!(
+            finance_blocker.pointer("/params/amount").and_then(Value::as_u64),
+            Some(60_000)
+        );
     }
 
     fn make_round_summary_game() -> Game {
@@ -975,6 +1243,37 @@ mod tests {
     }
 
     #[test]
+    fn manual_scrim_day_cancel_follow_up_is_accepted_after_a_lost_first_block() {
+        use crate::commands::squad::choose_daily_scrim_action_internal as choose;
+        let state = make_manual_scrim_day();
+
+        advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        let mut game = state.get_game(|g| g.clone()).expect("game");
+        game.teams[0].scrim_reports[0].won = Some(false);
+        state.set_game(game);
+
+        // The UI keeps "cancel scrims" local and then offers these three follow-ups.
+        choose(&state, 0, "VodReview".to_string()).expect("cancel follow-up");
+        let game = state.get_game(|g| g.clone()).expect("game");
+        assert!(game.teams[0].scrim_reports[0].post_decision.is_some());
+    }
+
+    #[test]
+    fn manual_scrim_day_won_second_block_only_closes_the_day_with_day_off() {
+        use crate::commands::squad::choose_daily_scrim_action_internal as choose;
+        let state = make_manual_scrim_day();
+
+        advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        force_scrim_win(&state, 0);
+        choose(&state, 0, "ContinueToBlock2".to_string()).expect("continue to block B");
+        force_scrim_win(&state, 1);
+
+        let rejected = choose(&state, 1, "VodReview".to_string()).unwrap_err();
+        assert!(rejected.contains("Block2GoodDecision"), "{rejected}");
+        choose(&state, 1, "DayOff".to_string()).expect("close the day");
+    }
+
+    #[test]
     fn scrim_context_offers_the_review_in_review_block_too() {
         let state = make_manual_scrim_day();
         advance_time_with_mode_internal(&state, "instant").expect("morning advance");
@@ -986,5 +1285,308 @@ mod tests {
             today_can_review(&state),
             (true, "PlayedNeedsReview".to_string())
         );
+    }
+
+    fn blocker_ids(blockers: &[Value]) -> Vec<String> {
+        blockers
+            .iter()
+            .filter_map(|blocker| blocker["id"].as_str().map(str::to_string))
+            .collect()
+    }
+
+    /// A game on the Wednesday that opens the weekly scrim window, nothing planned.
+    fn scrim_week_fixture(id: &str, date: &str, home: &str, away: &str) -> Fixture {
+        Fixture {
+            id: id.to_string(),
+            matchday: 1,
+            date: date.to_string(),
+            home_team_id: home.to_string(),
+            away_team_id: away.to_string(),
+            match_type: MatchType::League,
+            best_of: 1,
+            status: FixtureStatus::Scheduled,
+            result: None,
+        }
+    }
+
+    fn game_with_league_fixtures(mut game: Game, fixtures: Vec<Fixture>) -> Game {
+        game.leagues = vec![olm_core::domain::league::League {
+            id: "league-1".to_string(),
+            name: "League".to_string(),
+            season: 2025,
+            competition_id: None,
+            logo: None,
+            league_kind: LeagueKind::Main,
+            split_index: 0,
+            tier: 0,
+            active: false,
+            fixtures,
+            standings: Vec::new(),
+        }];
+        game
+    }
+
+    /// Wednesday 2025-06-18, scrims unplanned, and the club plays on Sunday
+    /// 2025-06-22: an ordinary week with a match to prepare for.
+    fn make_unplanned_scrim_window_game() -> Game {
+        let mut game = make_game(11);
+        game.clock.current_date = Utc.with_ymd_and_hms(2025, 6, 18, 12, 0, 0).unwrap();
+        game_with_league_fixtures(
+            game,
+            vec![scrim_week_fixture("md-sun", "2025-06-22", "team1", "team2")],
+        )
+    }
+
+    /// The same Wednesday, but the club rests: the league plays on Sunday
+    /// without it (a bye in an odd-sized league).
+    fn make_bye_week_scrim_window_game() -> Game {
+        let mut game = make_unplanned_scrim_window_game();
+        game.leagues[0].fixtures =
+            vec![scrim_week_fixture("md-sun", "2025-06-22", "team2", "team3")];
+        game
+    }
+
+    fn scrim_blocker_ids(game: &Game, mode: &str) -> Vec<String> {
+        blocker_ids(&blockers_for_advance(game, mode))
+            .into_iter()
+            .filter(|id| id.starts_with("scrim_"))
+            .collect()
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_in_the_normal_case() {
+        let game = make_unplanned_scrim_window_game();
+        assert_eq!(scrim_blocker_ids(&game, "live"), vec!["scrim_setup_required"]);
+    }
+
+    #[test]
+    fn advance_blockers_skip_scrim_setup_in_a_week_the_club_rests() {
+        let game = make_bye_week_scrim_window_game();
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_let_continue_through_a_week_the_club_rests() {
+        let state = StateManager::new();
+        state.set_game(make_bye_week_scrim_window_game());
+        let response = advance_time_with_mode_internal(&state, "live").expect("advance");
+        assert_eq!(response.action, "phase_advanced");
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_when_the_club_plays_later_in_the_week() {
+        let mut game = make_bye_week_scrim_window_game();
+        game.leagues[0]
+            .fixtures
+            .push(scrim_week_fixture("md-fri", "2025-06-20", "team1", "team2"));
+        assert_eq!(scrim_blocker_ids(&game, "live"), vec!["scrim_setup_required"]);
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_for_a_playoff_match_this_week() {
+        let mut game = make_bye_week_scrim_window_game();
+        let mut playoff = scrim_week_fixture("po-sat", "2025-06-21", "team1", "team3");
+        playoff.match_type = MatchType::Playoffs;
+        game.leagues[0].fixtures.push(playoff);
+        assert_eq!(scrim_blocker_ids(&game, "live"), vec!["scrim_setup_required"]);
+    }
+
+    #[test]
+    fn advance_blockers_skip_scrim_setup_in_the_bye_week_even_if_the_next_match_is_later() {
+        let mut game = make_bye_week_scrim_window_game();
+        let mut next = scrim_week_fixture("md-next", "2025-06-29", "team1", "team2");
+        next.matchday = 2;
+        game.leagues[0].fixtures.push(next);
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_when_the_club_already_played_this_week() {
+        let mut game = make_bye_week_scrim_window_game();
+        let mut played = scrim_week_fixture("md-mon", "2025-06-16", "team1", "team2");
+        played.status = FixtureStatus::Completed;
+        game.leagues[0].fixtures.push(played);
+        assert_eq!(
+            scrim_blocker_ids(&game, "live"),
+            vec!["scrim_setup_required"]
+        );
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_in_a_week_without_fixtures() {
+        let mut game = make_unplanned_scrim_window_game();
+        game.leagues[0].fixtures = vec![scrim_week_fixture(
+            "md-next",
+            "2025-06-29",
+            "team1",
+            "team2",
+        )];
+        assert_eq!(
+            scrim_blocker_ids(&game, "live"),
+            vec!["scrim_setup_required"]
+        );
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_when_only_others_play_playoffs() {
+        let mut game = make_unplanned_scrim_window_game();
+        let mut playoff = scrim_week_fixture("po-sat", "2025-06-21", "team2", "team3");
+        playoff.match_type = MatchType::Playoffs;
+        game.leagues[0].fixtures = vec![playoff];
+        assert_eq!(
+            scrim_blocker_ids(&game, "live"),
+            vec!["scrim_setup_required"]
+        );
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_when_the_club_plays_the_matchday_in_another_week() {
+        let mut game = make_bye_week_scrim_window_game();
+        game.leagues[0].fixtures.push(scrim_week_fixture(
+            "md-next",
+            "2025-06-29",
+            "team1",
+            "team2",
+        ));
+        assert_eq!(
+            scrim_blocker_ids(&game, "live"),
+            vec!["scrim_setup_required"]
+        );
+    }
+
+    #[test]
+    fn advance_blockers_report_scrim_setup_when_the_game_has_no_league() {
+        let mut game = make_unplanned_scrim_window_game();
+        game.leagues.clear();
+        assert_eq!(
+            scrim_blocker_ids(&game, "live"),
+            vec!["scrim_setup_required"]
+        );
+    }
+
+    #[test]
+    fn advance_blockers_skip_scrim_setup_on_a_match_day() {
+        let mut game = make_game_with_matchday();
+        game.clock.current_date = Utc.with_ymd_and_hms(2025, 6, 18, 12, 0, 0).unwrap();
+        game.leagues[0].fixtures[0].date = "2025-06-18".to_string();
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_skip_scrim_setup_when_delegating() {
+        let game = make_unplanned_scrim_window_game();
+        assert!(scrim_blocker_ids(&game, "delegate").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_skip_scrim_setup_for_an_unemployed_manager() {
+        let mut game = make_unplanned_scrim_window_game();
+        game.manager.team_id = None;
+        assert!(blockers_for_advance(&game, "delegate").is_empty());
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_skip_scrim_setup_once_the_week_has_an_objective() {
+        let mut game = make_unplanned_scrim_window_game();
+        game.teams[0].scrim_weekly_objective = Some(olm_core::domain::team::ScrimFocus::Macro);
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_report_an_unresolved_review_in_the_scrim_block() {
+        let state = make_manual_scrim_day();
+        advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        let game = state.get_game(|g| g.clone()).expect("game");
+        assert_eq!(game.day_phase, DayPhase::ScrimBlock);
+        assert_eq!(
+            scrim_blocker_ids(&game, "live"),
+            vec!["scrim_decision_required"]
+        );
+        // The decision blocks in delegate mode too: only the setup is delegable.
+        assert_eq!(
+            scrim_blocker_ids(&game, "delegate"),
+            vec!["scrim_decision_required"]
+        );
+    }
+
+    #[test]
+    fn advance_blockers_report_no_decision_once_the_review_is_resolved() {
+        let state = make_manual_scrim_day();
+        advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        force_scrim_win(&state, 0);
+        crate::commands::squad::choose_daily_scrim_action_internal(
+            &state,
+            0,
+            "OfferRest".to_string(),
+        )
+        .expect("offer rest");
+        let game = state.get_game(|g| g.clone()).expect("game");
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_report_nothing_in_the_evening() {
+        let mut game = make_unplanned_scrim_window_game();
+        game.day_phase = DayPhase::Evening;
+        assert!(scrim_blocker_ids(&game, "live").is_empty());
+    }
+
+    #[test]
+    fn advance_blockers_agree_with_the_advance_command() {
+        let state = StateManager::new();
+        state.set_game(make_unplanned_scrim_window_game());
+        assert_eq!(
+            scrim_blocker_ids(&state.get_game(|g| g.clone()).expect("game"), "live"),
+            vec!["scrim_setup_required"]
+        );
+        let response = advance_time_with_mode_internal(&state, "live").expect("blocked setup");
+        assert_eq!(response.action, "blocked_scrim_setup");
+
+        let state = make_manual_scrim_day();
+        advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        let game = state.get_game(|g| g.clone()).expect("game");
+        assert_eq!(scrim_blocker_ids(&game, "live"), vec!["scrim_decision_required"]);
+        let response = advance_time_with_mode_internal(&state, "live").expect("blocked decision");
+        assert_eq!(response.action, "blocked_scrim_decision");
+    }
+
+    #[test]
+    fn advance_blockers_check_does_not_mutate_the_game() {
+        let state = StateManager::new();
+        state.set_game(make_unplanned_scrim_window_game());
+        let before = state.get_game(|g| g.day_phase.clone()).expect("game");
+        check_blocking_actions_internal(&state, Some("live"), true).expect("check");
+        let after = state.get_game(|g| g.day_phase.clone()).expect("game");
+        assert_eq!(before, after);
+    }
+
+    #[test]
+    fn check_blocking_actions_defaults_to_the_live_mode_when_none_is_given() {
+        let state = StateManager::new();
+        state.set_game(make_unplanned_scrim_window_game());
+        let default = check_blocking_actions_internal(&state, None, true).expect("default");
+        let live = check_blocking_actions_internal(&state, Some("live"), true).expect("live");
+        assert_eq!(default, live);
+        assert!(blocker_ids(default.as_array().expect("array"))
+            .contains(&"scrim_setup_required".to_string()));
+    }
+
+    #[test]
+    fn check_blocking_actions_drops_the_scrim_setup_when_the_mode_is_delegate() {
+        let state = StateManager::new();
+        state.set_game(make_unplanned_scrim_window_game());
+        let delegated = check_blocking_actions_internal(&state, Some("delegate"), true).expect("delegate");
+        assert!(!blocker_ids(delegated.as_array().expect("array"))
+            .contains(&"scrim_setup_required".to_string()));
+    }
+
+    #[test]
+    fn check_blocking_actions_can_leave_the_scrim_stops_out_for_skip_to_match_day() {
+        let state = StateManager::new();
+        state.set_game(make_unplanned_scrim_window_game());
+        let without = check_blocking_actions_internal(&state, Some("live"), false).expect("skip");
+        assert!(!blocker_ids(without.as_array().expect("array"))
+            .contains(&"scrim_setup_required".to_string()));
     }
 }

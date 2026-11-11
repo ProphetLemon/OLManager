@@ -127,7 +127,7 @@ function MvpCard({ result, snapshot }: { result: DraftMatchResult; snapshot?: Ma
 
   return (
     <div className="rounded-xl border border-primary/20 bg-card p-4">
-      <p className="text-xs uppercase tracking-[0.2em] text-primary">{t("match.draftResult.mvp")}</p>
+      <p className="text-xs uppercase tracking-[0.2em] text-club-text">{t("match.draftResult.mvp")}</p>
       <div className="mt-3 flex items-center gap-3">
         {mvp?.photoUrl ? (
           <img src={mvp.photoUrl} alt={mvp.name} className="w-14 h-14 rounded-full object-cover border border-border" loading="lazy" />
@@ -272,7 +272,7 @@ export default function DraftResultScreen({
             {title}
           </h1>
           <div className="mt-3 flex items-center justify-center gap-4 text-3xl font-black">
-            {blueLogo ? <img src={blueLogo} alt="" className="w-9 h-9 object-contain" loading="lazy" /> : <span className="text-primary">{blueTri}</span>}
+            {blueLogo ? <img src={blueLogo} alt="" className="w-9 h-9 object-contain" loading="lazy" /> : <span className="text-club-text">{blueTri}</span>}
             <span>{displayHomeKills}</span>
             <span className="text-muted-foreground">-</span>
             <span>{displayAwayKills}</span>
@@ -362,14 +362,14 @@ export default function DraftResultScreen({
               <div className="space-y-2 text-sm">
                 {statRows.map((row) => (
                   <div key={row.label} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg bg-muted/30 px-3 py-2">
-                    <span className="text-primary font-semibold">{row.home}</span>
+                    <span className="text-club-text font-semibold">{row.home}</span>
                     <span className="text-center uppercase tracking-wider text-muted-foreground">{row.label}</span>
                     <span className="text-orange-400 font-semibold text-right">{row.away}</span>
                   </div>
                 ))}
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                {t("match.neutralObjectives")}: <span className="text-primary">{homeObjectives}</span> - <span className="text-orange-400">{awayObjectives}</span>
+                {t("match.neutralObjectives")}: <span className="text-club-text">{homeObjectives}</span> - <span className="text-orange-400">{awayObjectives}</span>
               </p>
             </div>
 

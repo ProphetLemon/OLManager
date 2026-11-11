@@ -5,24 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { GameStateData } from "@/store/gameStore";
 import { formatVal, getTeamName } from "@/lib/common/helpers";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
-import { resolveTeamLogo } from "@/lib/teams/teamLogos";
-
-function teamLogoFromId(teamId: string): string {
-  const slug = teamId.replace(/^lec-/, "");
-  if (slug === "shifters") {
-    return "/teams-icons/shifters.webp";
-  }
-  return `/team-logos/${slug}.png`;
-}
-
-function resolveTransferTeamLogo(teamId: string, teamName: string): string | null {
-  if (!teamId) return null;
-  const primary = teamLogoFromId(teamId);
-  if (primary.startsWith("/team-logos/") || primary.startsWith("http")) {
-    return primary;
-  }
-  return resolveTeamLogo(teamName);
-}
+import { resolveTransferTeamLogo } from "@/lib/teams/transferLogos";
 
 interface IncludedPlayerData {
   player_id: string;
@@ -136,8 +119,8 @@ export default function MarketTab({ gameState }: MarketTabProps) {
             );
             const fromTeamLogo = isFreeAgent
               ? null
-              : resolveTransferTeamLogo(entry.from_team_id, entry.from_team_name);
-            const toTeamLogo = resolveTransferTeamLogo(entry.to_team_id, entry.to_team_name);
+              : resolveTransferTeamLogo(gameState?.teams, entry.from_team_id, entry.from_team_name);
+            const toTeamLogo = resolveTransferTeamLogo(gameState?.teams, entry.to_team_id, entry.to_team_name);
 
             return (
               <div
@@ -212,13 +195,13 @@ export default function MarketTab({ gameState }: MarketTabProps) {
                     <p className="text-sm font-bold text-gray-800 dark:text-gray-200">
                       {entry.fee > 0 ? formatVal(entry.fee) : t("market.freeAgent")}
                     </p>
-                    <p className="text-[11px] text-gray-400">
+                    <p className="text-caption text-gray-400">
                       {formatDate(entry.date)}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-navy-700 pt-2">
+                <div className="mt-2 flex items-center gap-3 text-caption text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-navy-700 pt-2">
                   <span>
                     {t("market.wage")}: {formatVal(entry.annual_wage)}/yr
                   </span>
@@ -251,7 +234,7 @@ export default function MarketTab({ gameState }: MarketTabProps) {
 
                 {entry.included_players && entry.included_players.length > 0 && (
                   <div className="mt-2 border-t border-gray-100 dark:border-navy-700 pt-2">
-                    <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                    <p className="text-caption font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
                       {t("market.includedPlayers")}
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -262,6 +245,7 @@ export default function MarketTab({ gameState }: MarketTabProps) {
                           inc.player_profile_image_url,
                         );
                         const incToTeamLogo = resolveTransferTeamLogo(
+                          gameState?.teams,
                           entry.from_team_id,
                           entry.from_team_name,
                         );
@@ -283,7 +267,7 @@ export default function MarketTab({ gameState }: MarketTabProps) {
                               <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">
                                 {inc.player_name}
                               </p>
-                              <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
+                              <div className="flex items-center gap-1 text-2xs text-gray-400 dark:text-gray-500">
                                 <span className="text-gray-300 dark:text-gray-600">→</span>
                                 <img
                                   src={incToTeamLogo ?? undefined}

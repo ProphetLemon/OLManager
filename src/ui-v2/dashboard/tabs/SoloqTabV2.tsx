@@ -365,7 +365,7 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
           type="button"
           onClick={handleDelegateTraining}
           disabled={delegating}
-          className="rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-heading uppercase tracking-wider text-primary transition-all hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-heading uppercase tracking-wider text-club-text transition-all hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {delegating ? t("champions.delegating") : t("champions.delegateToCoach")}
         </button>
@@ -428,7 +428,7 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
                     )}
                   </div>
                   <div>
-                    <p className="cursor-pointer text-sm font-semibold text-foreground hover:text-primary" onClick={() => onSelectPlayer?.(player.id)}>{player.match_name}</p>
+                    <p className="cursor-pointer text-sm font-semibold text-foreground hover:text-club-text" onClick={() => onSelectPlayer?.(player.id)}>{player.match_name}</p>
                     <div className="mt-0.5 flex size-5 items-center justify-center rounded border border-border bg-muted/70">
                       <img src={ROLE_ICON_URLS[role]} alt={role} className="size-3 object-contain" />
                     </div>
@@ -444,13 +444,13 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
                       <span
                         className={cn(
                           "ml-1",
-                          soloQ.delta >= 0 ? "text-emerald-400" : "text-red-400",
+                          soloQ.delta >= 0 ? "text-positive" : "text-negative",
                         )}
                       >
                         {soloQ.delta >= 0 ? `+${soloQ.delta}` : soloQ.delta}
                       </span>
                     </p>
-                    <p className="text-[10px] text-muted-foreground">x{soloQMult.toFixed(1)}</p>
+                    <p className="text-2xs text-muted-foreground">x{soloQMult.toFixed(1)}</p>
                   </div>
                   <img
                     src={SOLOQ_EMBLEM_URLS[soloQ.tier]}
@@ -483,18 +483,18 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
                       <div className="relative z-10">
                       <div className="mb-1.5 flex items-start justify-between gap-1">
                         <div>
-                          <span className="text-[10px] font-heading uppercase tracking-wider text-muted-foreground">
+                          <span className="text-2xs font-heading uppercase tracking-wider text-muted-foreground">
                             P{slotIndex + 1}
                           </span>
                           <p className="text-xs font-heading uppercase tracking-wider text-foreground">
                             {slotLabels[slotIndex]}
                           </p>
                         </div>
-                        <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                        <Badge variant="outline" className="text-2xs text-muted-foreground">
                           x{gainHint.baseMult.toFixed(2)}
                         </Badge>
                       </div>
-                      <p className="mb-2 text-[10px] text-muted-foreground">{slotDescs[slotIndex]}</p>
+                      <p className="mb-2 text-2xs text-muted-foreground">{slotDescs[slotIndex]}</p>
 
                       <select
                         value={target}
@@ -527,7 +527,7 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
                         />
                       </div>
 
-                      <div className="mt-1 flex gap-2 text-[10px] text-muted-foreground">
+                      <div className="mt-1 flex gap-2 text-2xs text-muted-foreground">
                         <span className="tabular-nums">M{masteryValue}</span>
                         <span className="tabular-nums">SoloQ x{soloQMult.toFixed(1)}</span>
                       </div>

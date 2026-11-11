@@ -1,13 +1,34 @@
+//! Minute-level map model behind `simulate_lol`: background and AI-vs-AI league
+//! matches, user matches played in the turn and instant matches all run through
+//! it (`LiveMatchState::new(..).run_to_completion(..)` with
+//! `MatchConfig::default()` plus the clamped draft modifiers).
+//!
+//! Each minute: units walk to where their role wants them (laners stand on the
+//! lane front, the jungler farms then takes objectives, see `nav`), trade
+//! damage with the nearest enemy (`resolve_fights`, scaled by level, items and
+//! the fight skill gap), contest objectives (macro skill) and push the lane
+//! fronts toward the side with the stronger units nearby. A front pressed
+//! against a standing tower sieges it; the nexus ends the match.
+//!
+//! Outcome targets, all `[PLACEHOLDER]` pending playtest and measured by
+//! `pacing_tests`: even teams last 25-40 minutes with 15-35 kills and win
+//! 45-55% each side, a moderate rating gap wins at least 60%, 95 vs 40 at
+//! least 90%, and the win rate never falls as the gap widens. The map is
+//! mirror-symmetric (see `nav`), so a side never has a better route.
+//! `MatchConfig::home_advantage` is deliberately not applied.
+
 use rand::{Rng, RngExt};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::f64::consts::PI;
 use std::sync::OnceLock;
 
 use crate::engine::event::{EventType, MatchEvent};
-use crate::engine::types::{Side, TeamData, Zone};
+use crate::engine::types::{PlayerData, Side, TeamData, Zone};
 
 use super::{LiveMatchState, MatchPhase};
+
+mod nav;
+use nav::{lane_point, mirror, step_toward, walkable_point};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LolDragonKind {
@@ -70,6 +91,11 @@ pub struct LolLaneState {
     pub blue_wave: f64,
     #[serde(default = "default_wave")]
     pub red_wave: f64,
+    /// Where the lane is being contested, as an arc-length fraction of the lane
+    /// from the blue base (0) to the red base (1). Saves written before this
+    /// field deserialize to the neutral middle.
+    #[serde(default = "default_front")]
+    pub front: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -151,6 +177,38 @@ pub struct LolUnitState {
     /// Short-term energy (0-100). Affects damage dealt and received in fights.
     #[serde(default = "default_condition")]
     pub condition: u8,
+    /// Combat rating relative to a neutral player (rating 70 = 0.0, +0.1 per 10
+    /// rating points). Read by `resolve_fights`. Saves written before ratings
+    /// reached the engine deserialize to 0.0, i.e. a neutral player.
+    #[serde(default)]
+    pub fight_skill: f64,
+    /// Decision-making rating relative to a neutral player, same scale. Read by
+    /// objective contests.
+    #[serde(default)]
+    pub macro_skill: f64,
+}
+
+/// Rating of a player who neither helps nor hurts his team. [PLACEHOLDER]
+const NEUTRAL_RATING: f64 = 70.0;
+
+/// Combat rating of a player: mechanics and teamfighting decide fights, laning
+/// and consistency shape the trades around them. Weights sum to 1, so a roster
+/// with every attribute at `r` scores `(r - 70) / 100`. [PLACEHOLDER]
+pub(super) fn fight_skill(player: &PlayerData) -> f64 {
+    let rating = f64::from(player.mechanics) * 0.40
+        + f64::from(player.teamfighting) * 0.30
+        + f64::from(player.laning) * 0.20
+        + f64::from(player.consistency) * 0.10;
+    (rating - NEUTRAL_RATING) / 100.0
+}
+
+/// Decision-making rating: macro play first, then shotcalling and discipline.
+/// Same scale as `fight_skill`. [PLACEHOLDER]
+pub(super) fn macro_skill(player: &PlayerData) -> f64 {
+    let rating = f64::from(player.macro_play) * 0.50
+        + f64::from(player.shotcalling) * 0.30
+        + f64::from(player.discipline) * 0.20;
+    (rating - NEUTRAL_RATING) / 100.0
 }
 
 fn default_unit_hp() -> f64 {
@@ -161,6 +219,10 @@ fn default_wave() -> f64 {
     1.0
 }
 
+fn default_front() -> f64 {
+    0.5
+}
+
 fn default_condition() -> u8 {
     100
 }
@@ -169,7 +231,7 @@ fn default_level() -> u8 {
     1
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LaneKey {
     Top,
     Mid,
@@ -216,6 +278,7 @@ impl LolMapState {
             inhibitor_respawn_minute: None,
             blue_wave: 1.0,
             red_wave: 1.0,
+            front: default_front(),
         };
 
         let team_structures = || LolTeamStructuresState {
@@ -305,6 +368,8 @@ impl LolMapState {
                 damage_dealt: 0.0,
                 item_tier: 0,
                 condition: player.condition,
+                fight_skill: fight_skill(player),
+                macro_skill: macro_skill(player),
             });
         }
 
@@ -335,6 +400,8 @@ impl LolMapState {
                 damage_dealt: 0.0,
                 item_tier: 0,
                 condition: player.condition,
+                fight_skill: fight_skill(player),
+                macro_skill: macro_skill(player),
             });
         }
     }
@@ -463,8 +530,9 @@ impl LiveMatchState {
         };
 
         for lane in [LaneKey::Top, LaneKey::Mid, LaneKey::Bot] {
-            let home_anchor = lane_anchor(Side::Home, lane);
-            let away_anchor = lane_anchor(Side::Away, lane);
+            let front = lane_front(&self.lol_map, lane);
+            let home_anchor = lane_anchor(lane, front, Side::Home);
+            let away_anchor = lane_anchor(lane, front, Side::Away);
             let home_presence = lane_presence(&self.lol_map.units, Side::Home, lane, home_anchor);
             let away_presence = lane_presence(&self.lol_map.units, Side::Away, lane, away_anchor);
 
@@ -494,6 +562,9 @@ impl LiveMatchState {
     fn tick_progression(&mut self, minute: u8) {
         let passive_gold = if minute < 15 { 24.0 } else { 32.0 };
         for unit in &mut self.lol_map.units {
+            backfill_legacy_items(unit);
+        }
+        for unit in &mut self.lol_map.units {
             if !unit.alive {
                 continue;
             }
@@ -504,13 +575,20 @@ impl LiveMatchState {
         }
     }
 
-    fn tick_movement<R: Rng>(&mut self, minute: u8, rng: &mut R) {
-        let dragon_alive = self.lol_map.objectives.dragon.alive;
-        let herald_alive = self.lol_map.objectives.herald.alive;
-        let baron_alive = self.lol_map.objectives.baron.alive;
-        let grubs_alive = self.lol_map.objectives.grubs.alive;
+    fn tick_movement<R: Rng>(&mut self, minute: u8, _rng: &mut R) {
+        let view = MapView {
+            dragon_alive: self.lol_map.objectives.dragon.alive,
+            herald_alive: self.lol_map.objectives.herald.alive,
+            baron_alive: self.lol_map.objectives.baron.alive,
+            grubs_alive: self.lol_map.objectives.grubs.alive,
+            fronts: [
+                self.lol_map.blue.top.front,
+                self.lol_map.blue.mid.front,
+                self.lol_map.blue.bot.front,
+            ],
+        };
 
-        for _ in 0..8 {
+        for _ in 0..MOVE_SUBSTEPS {
             for unit in &mut self.lol_map.units {
                 if !unit.alive {
                     continue;
@@ -523,38 +601,23 @@ impl LiveMatchState {
                     } else {
                         red_spawn(unit.spawn_slot as usize)
                     };
-                    move_unit_with_walls(unit, base, 0.012, rng);
-                    if distance((unit.x, unit.y), base) < 0.02 {
+                    let (pos, _) = step_toward((unit.x, unit.y), base, RECALL_SPEED);
+                    (unit.x, unit.y) = pos;
+                    if distance(pos, base) < 0.02 {
                         unit.hp = 80.0;
                         unit.recall_available_minute = minute.saturating_add(6);
                     }
                     continue;
                 }
 
-                let route = role_route(
-                    unit.side,
-                    unit.role,
-                    minute,
-                    dragon_alive,
-                    herald_alive,
-                    baron_alive,
-                    grubs_alive,
-                );
-                if route.is_empty() {
-                    continue;
-                }
-
-                let idx = (unit.path_index as usize).min(route.len() - 1);
-                let target = route[idx];
+                let target = role_target(unit.side, unit.role, minute, &view);
                 unit.target_x = target.0;
                 unit.target_y = target.1;
+                unit.path_index = 0;
 
                 let speed = movement_speed(unit.role, unit.level, unit.item_tier);
-                move_unit_with_walls(unit, target, speed, rng);
-
-                if distance((unit.x, unit.y), target) < 0.025 {
-                    unit.path_index = ((idx + 1) % route.len()) as u8;
-                }
+                let (pos, _) = step_toward((unit.x, unit.y), target, speed);
+                (unit.x, unit.y) = pos;
             }
         }
     }
@@ -571,6 +634,7 @@ impl LiveMatchState {
             .iter()
             .map(|u| (u.side, u.alive, u.x, u.y, u.role, u.level, u.item_tier))
             .collect();
+        let fight_skills: Vec<f64> = self.lol_map.units.iter().map(|u| u.fight_skill).collect();
 
         let mut incoming = vec![0.0_f64; n];
         let mut killer = vec![None; n];
@@ -608,10 +672,14 @@ impl LiveMatchState {
                     Side::Home => self.config.home_draft_modifier,
                     Side::Away => self.config.away_draft_modifier,
                 };
+            // Skill gap between attacker and victim, applied to the whole match.
+            let skill_mult = (FIGHT_SKILL_K * (fight_skills[i] - fight_skills[victim])).exp();
             let damage = role_power(role)
+                * FIGHT_DAMAGE_SCALE
+                * skill_mult
                 * scale
                 * game_damage_scale(minute, self.config.late_game_damage_scale)
-                * rng.random_range(0.88..1.16)
+                * rng.random_range(FIGHT_ROLL_MIN..FIGHT_ROLL_MAX)
                 * (1.0 - best_dist / 0.095).clamp(0.45, 1.0)
                 * attack_mult
                 * defense_mult;
@@ -770,26 +838,55 @@ impl LiveMatchState {
         }
     }
 
+    /// Moves each lane front and sieges the tower it is pressed against.
+    ///
+    /// A lane front moves toward the side whose nearby units are stronger
+    /// (alive, healthy, levelled, itemised, skilled). It can never pass a
+    /// standing tower, and the side pressed against a tower damages it in
+    /// proportion to its edge over the defenders.
     fn resolve_structures<R: Rng>(
         &mut self,
         minute: u8,
         rng: &mut R,
         events: &mut Vec<MatchEvent>,
     ) {
-        for attacker in [Side::Home, Side::Away] {
-            for lane in [LaneKey::Top, LaneKey::Mid, LaneKey::Bot] {
-                let pressure = lane_pressure(&self.lol_map, attacker, lane, minute);
-                if pressure < 0.25 {
+        for lane in [LaneKey::Top, LaneKey::Mid, LaneKey::Bot] {
+            let front = lane_front(&self.lol_map, lane);
+            let point = lane_point(lane, front);
+            let home_force = lane_force(&self.lol_map.units, Side::Home, lane, point);
+            let away_force = lane_force(&self.lol_map.units, Side::Away, lane, point);
+            let total = home_force + away_force;
+            let edge = if total > 0.0 {
+                (home_force - away_force) / total
+            } else {
+                0.0
+            };
+            let (low, high) = front_bounds(&self.lol_map, lane);
+            let front = (front + LANE_PUSH_PER_MINUTE * edge).clamp(low, high);
+            set_lane_front(&mut self.lol_map, lane, front);
+
+            for attacker in [Side::Home, Side::Away] {
+                let (own, other) = if attacker == Side::Home {
+                    (home_force, away_force)
+                } else {
+                    (away_force, home_force)
+                };
+                let pressure = own - other * TOWER_DEFENCE;
+                if pressure <= 0.0 {
                     continue;
                 }
-
                 let Some(target) = next_target(&self.lol_map, attacker, lane) else {
                     continue;
                 };
+                if (front - target_front(attacker, target)).abs() > SIEGE_REACH {
+                    continue;
+                }
 
                 let scaling = team_scaling(&self.lol_map.units, attacker);
                 let dmg = pressure
                     * scaling
+                    * SIEGE_DAMAGE_SCALE
+                    * siege_time_factor(minute)
                     * rng.random_range(
                         self.config.structure_damage_min..self.config.structure_damage_max,
                     );
@@ -839,7 +936,8 @@ impl LiveMatchState {
             .filter(|u| u.alive && u.side == Side::Away)
             .count();
 
-        if home >= away {
+        // A tie alternates by minute so neither side collects the possession.
+        if home > away || (home == away && self.current_minute.is_multiple_of(2)) {
             self.possession = Side::Home;
             self.home_possession_ticks = self.home_possession_ticks.saturating_add(1);
         } else {
@@ -860,29 +958,54 @@ fn blue_spawn(slot: usize) -> (f64, f64) {
     P[slot.min(4)]
 }
 
+/// Red spawns mirror the blue ones across the base-swap diagonal, so both
+/// teams start the same walking distance from every lane.
 fn red_spawn(slot: usize) -> (f64, f64) {
-    const P: [(f64, f64); 5] = [
-        (0.86, 0.10),
-        (0.82, 0.12),
-        (0.78, 0.14),
-        (0.82, 0.07),
-        (0.76, 0.09),
-    ];
-    P[slot.min(4)]
+    mirror(blue_spawn(slot))
 }
 
-fn lane_anchor(side: Side, lane: LaneKey) -> (f64, f64) {
-    match (side, lane) {
-        (Side::Home, LaneKey::Top) => (0.30, 0.20),
-        (Side::Home, LaneKey::Mid) => (0.47, 0.53),
-        (Side::Home, LaneKey::Bot) => (0.30, 0.78),
-        (Side::Away, LaneKey::Top) => (0.70, 0.80),
-        (Side::Away, LaneKey::Mid) => (0.53, 0.47),
-        (Side::Away, LaneKey::Bot) => (0.70, 0.22),
+/// Contested point of `lane` for one side: each team stands slightly on its own
+/// side of the lane front so that opponents face each other.
+fn lane_anchor(lane: LaneKey, front: f64, side: Side) -> (f64, f64) {
+    let t = if side == Side::Home {
+        front - LANE_STANCE
+    } else {
+        front + LANE_STANCE
+    };
+    lane_point(lane, t)
+}
+
+/// Arc-length offset (fraction of the lane) between a team and the lane front.
+/// [PLACEHOLDER]
+const LANE_STANCE: f64 = 0.015;
+
+/// Camp the jungler clears before the first objective spawns. [PLACEHOLDER]
+fn jungle_camp(side: Side) -> (f64, f64) {
+    let home = (0.30, 0.66);
+    if side == Side::Home {
+        home
+    } else {
+        mirror(home)
+    }
+}
+/// Where a team contests an objective. The pits are walled in, so this is the
+/// closest walkable spot to the objective itself: presence is measured from
+/// where units can really stand.
+fn objective_anchor(name: &str) -> (f64, f64) {
+    static SPOTS: OnceLock<[(f64, f64); 5]> = OnceLock::new();
+    let spots = SPOTS.get_or_init(|| {
+        ["baron", "dragon", "grubs", "herald", ""].map(|n| walkable_point(raw_objective_anchor(n)))
+    });
+    match name {
+        "baron" => spots[0],
+        "dragon" => spots[1],
+        "grubs" => spots[2],
+        "herald" => spots[3],
+        _ => spots[4],
     }
 }
 
-fn objective_anchor(name: &str) -> (f64, f64) {
+fn raw_objective_anchor(name: &str) -> (f64, f64) {
     match name {
         "baron" => (0.3274739583333333, 0.2981770833333333),
         "dragon" => (0.673828125, 0.703125),
@@ -892,87 +1015,96 @@ fn objective_anchor(name: &str) -> (f64, f64) {
     }
 }
 
-fn role_route(
-    side: Side,
-    role: LolRole,
-    minute: u8,
+/// Objective and lane state a unit decides its destination from.
+struct MapView {
     dragon_alive: bool,
     herald_alive: bool,
     baron_alive: bool,
     grubs_alive: bool,
-) -> Vec<(f64, f64)> {
-    match (side, role) {
-        (_, LolRole::Top) => {
-            let route = vec![(0.30, 0.20), (0.55, 0.14), (0.78, 0.10)];
-            if side == Side::Home {
-                route
+    fronts: [f64; 3],
+}
+
+fn lane_slot(lane: LaneKey) -> usize {
+    match lane {
+        LaneKey::Top => 0,
+        LaneKey::Mid => 1,
+        LaneKey::Bot => 2,
+    }
+}
+
+/// Where a unit wants to be this minute. Laners stand on their lane front;
+/// the jungler farms, then takes objectives, then rotates between lanes; the
+/// support stays with the bot lane until it rotates to an objective.
+fn role_target(side: Side, role: LolRole, minute: u8, view: &MapView) -> (f64, f64) {
+    let on_lane = |lane: LaneKey| lane_anchor(lane, view.fronts[lane_slot(lane)], side);
+    match role {
+        LolRole::Top => on_lane(LaneKey::Top),
+        LolRole::Mid => on_lane(LaneKey::Mid),
+        LolRole::Adc => on_lane(LaneKey::Bot),
+        LolRole::Support => {
+            if minute >= 14 && view.dragon_alive {
+                objective_anchor("dragon")
+            } else if minute >= 14 && view.baron_alive {
+                objective_anchor("baron")
             } else {
-                route.into_iter().map(|(x, y)| (1.0 - x, 1.0 - y)).collect()
+                on_lane(LaneKey::Bot)
             }
         }
-        (_, LolRole::Mid) => {
-            let route = vec![(0.47, 0.53), (0.58, 0.42), (0.70, 0.30)];
-            if side == Side::Home {
-                route
+        LolRole::Jungle => {
+            if minute >= 20 && view.baron_alive {
+                objective_anchor("baron")
+            } else if minute >= 14 && view.herald_alive {
+                objective_anchor("herald")
+            } else if view.grubs_alive {
+                objective_anchor("grubs")
+            } else if view.dragon_alive {
+                objective_anchor("dragon")
+            } else if minute < 3 {
+                jungle_camp(side)
             } else {
-                route.into_iter().map(|(x, y)| (1.0 - x, 1.0 - y)).collect()
-            }
-        }
-        (_, LolRole::Adc) => {
-            let route = vec![(0.30, 0.78), (0.54, 0.84), (0.78, 0.90)];
-            if side == Side::Home {
-                route
-            } else {
-                route.into_iter().map(|(x, y)| (1.0 - x, 1.0 - y)).collect()
-            }
-        }
-        (_, LolRole::Support) => {
-            if minute < 14 {
-                let route = vec![(0.33, 0.77), (0.52, 0.83), (0.75, 0.88)];
-                if side == Side::Home {
-                    route
-                } else {
-                    route.into_iter().map(|(x, y)| (1.0 - x, 1.0 - y)).collect()
-                }
-            } else if dragon_alive {
-                vec![(0.46, 0.70), objective_anchor("dragon")]
-            } else if baron_alive {
-                vec![(0.44, 0.42), objective_anchor("baron")]
-            } else {
-                vec![(0.42, 0.60), (0.58, 0.42)]
-            }
-        }
-        (_, LolRole::Jungle) => {
-            if minute >= 20 && baron_alive {
-                vec![(0.43, 0.43), objective_anchor("baron")]
-            } else if minute >= 14 && herald_alive {
-                vec![(0.40, 0.40), objective_anchor("herald")]
-            } else if grubs_alive {
-                vec![(0.37, 0.36), objective_anchor("grubs")]
-            } else if dragon_alive {
-                vec![(0.56, 0.56), objective_anchor("dragon")]
-            } else {
-                let route = vec![(0.25, 0.46), (0.26, 0.56), (0.48, 0.64), (0.53, 0.74)];
-                if side == Side::Home {
-                    route
-                } else {
-                    route.into_iter().map(|(x, y)| (1.0 - x, 1.0 - y)).collect()
-                }
+                const GANK_ORDER: [LaneKey; 3] = [LaneKey::Top, LaneKey::Mid, LaneKey::Bot];
+                on_lane(GANK_ORDER[(minute as usize / 3) % GANK_ORDER.len()])
             }
         }
     }
 }
 
+/// Map units a unit walks per movement sub-step (8 per minute). Six times the
+/// first calibration so that crossing the map takes about two minutes instead of
+/// twelve; respawning champions rejoin their lane within a few minutes. [PLACEHOLDER]
+const MOVE_SUBSTEPS: usize = 8;
+
+/// Map units per sub-step while recalling. [PLACEHOLDER]
+const RECALL_SPEED: f64 = 0.07;
+
 fn movement_speed(role: LolRole, level: u8, item_tier: u8) -> f64 {
     let base = match role {
-        LolRole::Top => 0.0068,
-        LolRole::Jungle => 0.0078,
-        LolRole::Mid => 0.0072,
-        LolRole::Adc => 0.0070,
-        LolRole::Support => 0.0072,
+        LolRole::Top => 0.0408,
+        LolRole::Jungle => 0.0468,
+        LolRole::Mid => 0.0432,
+        LolRole::Adc => 0.0420,
+        LolRole::Support => 0.0432,
     };
     base * (1.0 + level.saturating_sub(1) as f64 * 0.004 + item_tier as f64 * 0.01)
 }
+
+/// Exponent applied to the fight skill gap (`exp(K * gap)`): with `K = 0.4`, a
+/// 20 point rating gap is a 1.08x damage edge per hit. Kills, levels and items
+/// compound it into a clear win-rate edge over a match.
+/// [PLACEHOLDER]
+const FIGHT_SKILL_K: f64 = 0.4;
+
+/// Damage multiplier that turns one hit per minute into lethal trades. The
+/// first calibration needed about 14 uninterrupted minutes to kill one
+/// champion; at this scale a lane pair kills within a few minutes of contact.
+/// [PLACEHOLDER]
+const FIGHT_DAMAGE_SCALE: f64 = 6.0;
+
+/// Per-hit damage roll. Wide enough that two equal champions rarely die in the
+/// same minute, so every trade has a winner and an underdog can still take
+/// one. [PLACEHOLDER]
+const FIGHT_ROLL_MIN: f64 = 0.55;
+const FIGHT_ROLL_MAX: f64 = 1.45;
 
 fn role_power(role: LolRole) -> f64 {
     match role {
@@ -1126,16 +1258,37 @@ fn tower_team_gold(target: StructureTarget) -> f64 {
 /// differently. [PLACEHOLDER]
 fn role_income_weight(role: LolRole) -> f64 {
     match role {
-        LolRole::Top => 0.98,
-        LolRole::Jungle => 0.83,
-        LolRole::Mid => 1.19,
+        LolRole::Top => 1.34,
+        LolRole::Jungle => 0.73,
+        LolRole::Mid => 1.29,
         LolRole::Adc => 1.45,
-        LolRole::Support => 0.56,
+        LolRole::Support => 0.44,
     }
 }
 
 fn credit_gold(unit: &mut LolUnitState, amount: f64) {
     unit.gold += amount * role_income_weight(unit.role);
+}
+
+/// Brings a unit saved before the item model in line with it.
+///
+/// Those saves derived `item_tier` from `floor(total gold / 1450)`, kept every
+/// coin in `gold` and have no `gold_spent` (it deserializes to 0). Left alone,
+/// the first tick would see all that gold as unspent and buy several items at
+/// once, a one-off power spike. The items the unit already owns are treated as
+/// bought at the breakpoint prices: `gold_spent` is backfilled and taken out of
+/// `gold`, so total earned gold is unchanged. The unit keeps its item count and
+/// may buy at most the one item its leftover gold now affords, like any other
+/// purchase. A unit with nothing spent and no items (every new match) is
+/// untouched, and a migrated unit has `gold_spent > 0`, so this runs once.
+fn backfill_legacy_items(unit: &mut LolUnitState) {
+    if unit.gold_spent > 0.0 || unit.item_tier == 0 {
+        return;
+    }
+    let owned = (unit.item_tier as usize).min(ITEM_PRICES.len());
+    let spent: f64 = ITEM_PRICES[..owned].iter().sum();
+    unit.gold_spent = spent;
+    unit.gold = (unit.gold - spent).max(0.0);
 }
 
 /// Converts unspent gold into completed items (at most six).
@@ -1164,6 +1317,10 @@ fn grant_team_gold(units: &mut [LolUnitState], side: Side, amount: f64, alive_on
     }
 }
 
+/// Exponent applied to a unit's macro skill when contesting an objective.
+/// [PLACEHOLDER]
+const MACRO_SKILL_K: f64 = 1.0;
+
 fn objective_presence(units: &[LolUnitState], side: Side, anchor: (f64, f64), radius: f64) -> f64 {
     units
         .iter()
@@ -1173,7 +1330,9 @@ fn objective_presence(units: &[LolUnitState], side: Side, anchor: (f64, f64), ra
             if d > radius {
                 0.0
             } else {
-                (1.0 + u.level as f64 * 0.03 + u.item_tier as f64 * 0.06) * (1.0 - d / radius)
+                (1.0 + u.level as f64 * 0.03 + u.item_tier as f64 * 0.06)
+                    * (MACRO_SKILL_K * u.macro_skill).exp()
+                    * (1.0 - d / radius)
             }
         })
         .sum()
@@ -1199,50 +1358,96 @@ fn grant_objective_rewards(
     }
 }
 
-fn lane_pressure(state: &LolMapState, attacker: Side, lane: LaneKey, minute: u8) -> f64 {
-    let target_anchor = structure_anchor(
-        attacker,
-        next_target(state, attacker, lane).unwrap_or(StructureTarget::Outer(lane)),
-    );
-    let champ_pressure: f64 = state
-        .units
-        .iter()
-        .filter(|u| u.alive && u.side == attacker)
-        .map(|u| {
-            let d = distance((u.x, u.y), target_anchor);
-            if d > 0.18 {
-                return 0.0;
-            }
-            let role = match u.role {
-                LolRole::Adc => 1.35,
-                LolRole::Mid => 1.10,
-                LolRole::Top => 1.05,
-                LolRole::Jungle => 0.95,
-                LolRole::Support => 0.80,
-            };
-            role * (1.0 + u.level as f64 * 0.03 + u.item_tier as f64 * 0.08) * (1.0 - d / 0.18)
-        })
-        .sum();
+/// Arc-length fraction a lane front moves per minute at full edge (all nearby
+/// strength on one side). Crossing from the middle to a tower takes about
+/// three minutes of total dominance. [PLACEHOLDER]
+const LANE_PUSH_PER_MINUTE: f64 = 0.3;
 
-    let (blue_wave, red_wave) = lane_waves(state, lane);
-    let wave_adv = if attacker == Side::Home {
-        (blue_wave - red_wave).max(0.0)
-    } else {
-        (red_wave - blue_wave).max(0.0)
-    };
+/// Share of the defenders' strength that counts against a siege (the tower and
+/// the wave fight for them). [PLACEHOLDER]
+const TOWER_DEFENCE: f64 = 0.5;
 
-    if wave_adv < 0.35 {
-        return 0.0;
-    }
+/// How close to a tower's line a front must be for its attackers to hit it.
+const SIEGE_REACH: f64 = 0.03;
 
-    let time = if minute < 14 {
-        0.70
+/// Multiplier turning the config's per-tick structure damage range into
+/// damage per minute. [PLACEHOLDER]
+const SIEGE_DAMAGE_SCALE: f64 = 80.0;
+
+/// Sieges start slow (no tower before the mid-teens) and speed up as the game
+/// goes on, so a stalled match still ends. [PLACEHOLDER]
+fn siege_time_factor(minute: u8) -> f64 {
+    if minute < 14 {
+        0.7
     } else if minute < 28 {
         1.0
     } else {
-        1.25
+        1.4
+    }
+}
+
+/// Radius around a lane front within which units count for that lane.
+const LANE_RADIUS: f64 = 0.20;
+
+/// Fighting strength of one unit: health, level, items and skill.
+fn unit_strength(unit: &LolUnitState) -> f64 {
+    let level = 1.0 + f64::from(unit.level.saturating_sub(1)) * 0.06;
+    let items = 1.0 + f64::from(unit.item_tier) * 0.10;
+    let health = (unit.hp / 100.0).clamp(0.25, 1.0);
+    level * items * health * (FIGHT_SKILL_K * unit.fight_skill).exp()
+}
+
+/// How much a unit of `role` counts toward `lane`: its own laner fully, the
+/// jungler and the bot-lane support most of the way, rotating laners less.
+fn lane_role_weight(role: LolRole, lane: LaneKey) -> f64 {
+    match (role, lane) {
+        (LolRole::Top, LaneKey::Top)
+        | (LolRole::Mid, LaneKey::Mid)
+        | (LolRole::Adc, LaneKey::Bot) => 1.0,
+        (LolRole::Support, LaneKey::Bot) => 0.7,
+        (LolRole::Jungle, _) => 0.8,
+        _ => 0.5,
+    }
+}
+
+/// Combined strength of `side`'s living units around the lane front `point`.
+fn lane_force(units: &[LolUnitState], side: Side, lane: LaneKey, point: (f64, f64)) -> f64 {
+    units
+        .iter()
+        .filter(|u| u.alive && u.side == side && distance((u.x, u.y), point) <= LANE_RADIUS)
+        .map(|u| lane_role_weight(u.role, lane) * unit_strength(u))
+        .sum()
+}
+
+/// Lane-front position (arc-length fraction from the blue base) of a tower
+/// that `attacker` is sieging.
+fn target_front(attacker: Side, target: StructureTarget) -> f64 {
+    let red = match target {
+        StructureTarget::Outer(_) => 0.78,
+        StructureTarget::Inner(_) => 0.86,
+        StructureTarget::Inhib(_) => 0.93,
+        StructureTarget::NexusTop | StructureTarget::NexusBot | StructureTarget::Nexus => 0.97,
     };
-    (champ_pressure * 0.28 + wave_adv * 0.16) * time
+    if attacker == Side::Home {
+        red
+    } else {
+        1.0 - red
+    }
+}
+
+/// The lane front cannot be pushed past a standing tower of either team.
+fn front_bounds(state: &LolMapState, lane: LaneKey) -> (f64, f64) {
+    let low = next_target(state, Side::Away, lane).map_or(0.02, |t| target_front(Side::Away, t));
+    let high = next_target(state, Side::Home, lane).map_or(0.98, |t| target_front(Side::Home, t));
+    (low, high)
+}
+
+fn set_lane_front(state: &mut LolMapState, lane: LaneKey, front: f64) {
+    match lane {
+        LaneKey::Top => state.blue.top.front = front,
+        LaneKey::Mid => state.blue.mid.front = front,
+        LaneKey::Bot => state.blue.bot.front = front,
+    }
 }
 
 fn team_scaling(units: &[LolUnitState], side: Side) -> f64 {
@@ -1289,28 +1494,6 @@ fn next_target(state: &LolMapState, attacker: Side, lane: LaneKey) -> Option<Str
         return Some(StructureTarget::Nexus);
     }
     None
-}
-
-fn structure_anchor(attacker: Side, target: StructureTarget) -> (f64, f64) {
-    let blue = match target {
-        StructureTarget::Outer(LaneKey::Top) => (0.186, 0.336),
-        StructureTarget::Inner(LaneKey::Top) => (0.124, 0.279),
-        StructureTarget::Inhib(LaneKey::Top) => (0.111, 0.222),
-        StructureTarget::Outer(LaneKey::Mid) => (0.348, 0.498),
-        StructureTarget::Inner(LaneKey::Mid) => (0.284, 0.435),
-        StructureTarget::Inhib(LaneKey::Mid) => (0.222, 0.374),
-        StructureTarget::Outer(LaneKey::Bot) => (0.510, 0.661),
-        StructureTarget::Inner(LaneKey::Bot) => (0.448, 0.597),
-        StructureTarget::Inhib(LaneKey::Bot) => (0.386, 0.534),
-        StructureTarget::NexusTop => (0.224, 0.766),
-        StructureTarget::NexusBot => (0.346, 0.888),
-        StructureTarget::Nexus => (0.231, 0.850),
-    };
-    if attacker == Side::Home {
-        (1.0 - blue.0, 1.0 - blue.1)
-    } else {
-        blue
-    }
 }
 
 fn deal_structure_damage(
@@ -1422,13 +1605,12 @@ fn push_event(
     minute_events.push(evt);
 }
 
-fn lane_waves(state: &LolMapState, lane: LaneKey) -> (f64, f64) {
-    let lane_state = match lane {
-        LaneKey::Top => &state.blue.top,
-        LaneKey::Mid => &state.blue.mid,
-        LaneKey::Bot => &state.blue.bot,
-    };
-    (lane_state.blue_wave, lane_state.red_wave)
+fn lane_front(state: &LolMapState, lane: LaneKey) -> f64 {
+    match lane {
+        LaneKey::Top => state.blue.top.front,
+        LaneKey::Mid => state.blue.mid.front,
+        LaneKey::Bot => state.blue.bot.front,
+    }
 }
 
 fn lane_waves_mut(state: &mut LolMapState, lane: LaneKey) -> (&mut f64, &mut f64) {
@@ -1440,44 +1622,27 @@ fn lane_waves_mut(state: &mut LolMapState, lane: LaneKey) -> (&mut f64, &mut f64
     (&mut lane_state.blue_wave, &mut lane_state.red_wave)
 }
 
-fn move_unit_with_walls<R: Rng>(
-    unit: &mut LolUnitState,
-    target: (f64, f64),
-    speed: f64,
-    rng: &mut R,
-) {
-    let dx = target.0 - unit.x;
-    let dy = target.1 - unit.y;
-    let dist = (dx * dx + dy * dy).sqrt();
-    if dist <= 1e-6 {
-        return;
-    }
-
-    let step = speed.min(dist);
-    let angle = dy.atan2(dx);
-
-    for offset in [0.0, PI / 8.0, -PI / 8.0, PI / 5.0, -PI / 5.0] {
-        let a = angle + offset + rng.random_range(-0.01..0.01);
-        let nx = (unit.x + a.cos() * step).clamp(0.0, 1.0);
-        let ny = (unit.y + a.sin() * step).clamp(0.0, 1.0);
-        if segment_blocked((unit.x, unit.y), (nx, ny)) {
-            continue;
-        }
-        unit.x = nx;
-        unit.y = ny;
-        return;
-    }
-}
-
 fn segment_blocked(a: (f64, f64), b: (f64, f64)) -> bool {
     if point_in_active_wall(b) {
         return true;
     }
-    active_walls().iter().any(|w| {
-        polygon_edges(&w.points)
-            .iter()
-            .any(|(p1, p2)| segments_intersect(a, b, *p1, *p2))
-    })
+    active_wall_edges()
+        .iter()
+        .any(|(p1, p2)| segments_intersect(a, b, *p1, *p2))
+}
+
+/// Edges of every active wall, flattened once (the lists are queried every
+/// movement sub-step).
+fn active_wall_edges() -> &'static [WallEdge] {
+    static EDGES: OnceLock<Vec<WallEdge>> = OnceLock::new();
+    EDGES
+        .get_or_init(|| {
+            active_walls()
+                .iter()
+                .flat_map(|w| polygon_edges(&w.points))
+                .collect()
+        })
+        .as_slice()
 }
 
 fn point_in_active_wall(point: (f64, f64)) -> bool {
@@ -1511,7 +1676,9 @@ fn active_walls() -> &'static [WallPolygon] {
         .as_slice()
 }
 
-fn polygon_edges(points: &[WallPoint]) -> Vec<((f64, f64), (f64, f64))> {
+type WallEdge = ((f64, f64), (f64, f64));
+
+fn polygon_edges(points: &[WallPoint]) -> Vec<WallEdge> {
     if points.len() < 2 {
         return Vec::new();
     }
@@ -1568,3 +1735,12 @@ fn distance(a: (f64, f64), b: (f64, f64)) -> f64 {
 
 #[cfg(test)]
 mod economy_unit_tests;
+
+#[cfg(test)]
+mod mobility_tests;
+#[cfg(test)]
+mod pacing_tests;
+#[cfg(test)]
+mod rating_tests;
+#[cfg(test)]
+mod test_support;

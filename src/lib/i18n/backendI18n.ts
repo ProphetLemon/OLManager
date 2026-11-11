@@ -22,7 +22,10 @@ import {
  */
 function resolve(key: string | undefined, fallback: string, params?: Record<string, string>): string {
   if (!key) return fallback;
-  const resolved = i18n.t(key, params ?? {});
+  // i18next picks a singular/plural form only for a numeric `count`; backend params are strings.
+  const options: Record<string, string | number> = { ...params };
+  if (/^\d+$/.test(params?.count ?? '')) options.count = Number(params?.count);
+  const resolved = i18n.t(key, options);
   // i18next returns the key itself if not found — fall back to raw string
   if (resolved === key) return fallback;
   return resolved;
@@ -74,11 +77,41 @@ function resolveParamValues(params?: Record<string, string>): Record<string, str
   return resolved;
 }
 
+const MATCH_RESULT_TEMPLATE_KEY = 'be.msg.matchResult.templates.';
+
+/**
+ * Messages stored before the result templates used plain scores only carry
+ * `score` ("<user team>:<own wins>-<opponent wins>"). Derive userScore, opponentScore,
+ * homeWins and awayWins from it so those messages still render in the locale text.
+ * Messages stored with userScore but without opponentScore get the reversed userScore.
+ */
+function inferMatchResultScoreParams(msg: MessageData, params?: Record<string, string>) {
+  if (!params || !msg.subject_key?.startsWith(MATCH_RESULT_TEMPLATE_KEY) || params.opponentScore) return params;
+  const separator = params.score?.lastIndexOf(':') ?? -1;
+  const wins = params.score?.slice(separator + 1).split('-');
+  if (separator >= 0 && wins?.length === 2) {
+    const userIsHome = params.score.slice(0, separator) === params.home;
+    return {
+      ...params,
+      userScore: `${wins[0]}-${wins[1]}`,
+      opponentScore: `${wins[1]}-${wins[0]}`,
+      homeWins: userIsHome ? wins[0] : wins[1],
+      awayWins: userIsHome ? wins[1] : wins[0],
+    };
+  }
+  const userWins = params.userScore?.split('-');
+  if (userWins?.length === 2) return { ...params, opponentScore: `${userWins[1]}-${userWins[0]}` };
+  return params;
+}
+
 /**
  * Resolve all translatable fields on a message, returning a copy with resolved strings.
  */
 export function resolveMessage(msg: MessageData): MessageData {
-  const inferredParams = msg.i18n_params ?? inferLegacyDelegatedRenewalsParams(msg);
+  const inferredParams = inferMatchResultScoreParams(
+    msg,
+    msg.i18n_params ?? inferLegacyDelegatedRenewalsParams(msg),
+  );
   const p = resolveParamValues(inferredParams);
   const resolved = {
     ...msg,

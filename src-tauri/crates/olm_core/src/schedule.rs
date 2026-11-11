@@ -31,6 +31,10 @@ pub enum LecSplit {
     Summer,
 }
 
+/// Fixture id prefix that marks the four-team single-elimination playoff
+/// bracket. The UI mirrors it to lay that bracket out as semifinals and a final.
+pub const FOUR_TEAM_PLAYOFF_ID_PREFIX: &str = "po4-";
+
 pub fn regular_best_of(split: LecSplit) -> u8 {
     match split {
         LecSplit::Winter => 1,
@@ -168,8 +172,9 @@ pub fn generate_single_round_league(
 /// Generate a single round-robin league (each pair plays once) with optional
 /// per-round day offsets from `start_date`.
 ///
-/// When `round_day_offsets` is provided, it must contain exactly n-1 values
-/// (one date offset for each round). This is useful for tournament formats like
+/// When `round_day_offsets` is provided, it must contain one date offset for
+/// each round (n-1 values, or n for an odd club count); a regular weekly list
+/// that is short of that is extended by its last step. This is useful for tournament formats like
 /// LEC Winter regular season superweeks (Sat/Sun/Mon).
 pub fn generate_single_round_league_with_offsets(
     name: &str,
@@ -260,6 +265,48 @@ impl SideHistory {
     }
 }
 
+/// Number of rounds in one round robin: `n - 1` for an even club count, `n`
+/// for an odd one (a bye slot is added, so every club rests exactly once).
+fn round_count(team_count: usize) -> usize {
+    if team_count.is_multiple_of(2) {
+        team_count.saturating_sub(1)
+    } else {
+        team_count
+    }
+}
+
+/// Day offsets for exactly `rounds` rounds, or `None` to use weekly dates.
+///
+/// A list that already has `rounds` entries is used as is. A shorter list that
+/// is a regular progression (two or more entries, constant positive step) is
+/// extended by that step, so a league that grew by one club keeps its weekly
+/// rhythm. Any other length mismatch is inconsistent data: it is logged and
+/// the caller falls back to the weekly default instead of failing the game.
+fn resolve_round_offsets(offsets: &[i64], rounds: usize) -> Option<std::borrow::Cow<'_, [i64]>> {
+    if offsets.len() == rounds {
+        return Some(std::borrow::Cow::Borrowed(offsets));
+    }
+    let step = match offsets {
+        [.., prev, last] => last - prev,
+        _ => 0,
+    };
+    let is_regular = step > 0 && offsets.windows(2).all(|pair| pair[1] - pair[0] == step);
+    if !is_regular || offsets.len() > rounds {
+        log::warn!(
+            "[schedule] {} round day offsets cannot cover {rounds} rounds; using weekly dates",
+            offsets.len()
+        );
+        return None;
+    }
+    let mut extended = offsets.to_vec();
+    let mut next = offsets[offsets.len() - 1];
+    while extended.len() < rounds {
+        next += step;
+        extended.push(next);
+    }
+    Some(std::borrow::Cow::Owned(extended))
+}
+
 /// Same as `generate_single_round_league_with_offsets_and_bo` but accepts
 /// an explicit `league_id` instead of generating a UUID. Used when the
 /// `competition_id` should be used as the league id for consistent frontend
@@ -294,12 +341,8 @@ pub fn generate_single_round_league_with_offsets_and_bo_with_id(
     let rounds = n - 1;
     let half = n / 2;
 
-    if let Some(offsets) = round_day_offsets {
-        assert!(
-            offsets.len() == rounds,
-            "round_day_offsets length must match round count"
-        );
-    }
+    let round_day_offsets =
+        round_day_offsets.and_then(|offsets| resolve_round_offsets(offsets, rounds));
 
     let mut indices: Vec<usize> = (0..n).collect();
     let mut matchday: u32 = 1;
@@ -309,6 +352,7 @@ pub fn generate_single_round_league_with_offsets_and_bo_with_id(
 
     for round_idx in 0..rounds {
         let day_offset = round_day_offsets
+            .as_deref()
             .and_then(|offsets| offsets.get(round_idx).copied())
             .unwrap_or((matchday as i64 - 1) * 7);
         let round_date = start_date + Duration::days(day_offset);
@@ -354,6 +398,28 @@ pub fn generate_single_round_league_with_offsets_and_bo_with_id(
     league
 }
 
+/// Team order used to build the schedule of one split.
+///
+/// With an odd club count the circle method gives the bye to a club decided by
+/// its slot, so a fixed list would make the same club rest on the same matchday
+/// in every split. The list is rotated by the global split number (season times
+/// splits per season plus split index) so consecutive splits and seasons move
+/// the bye to different clubs. Even leagues are returned unchanged.
+fn rotated_for_odd_league(
+    team_ids: &[String],
+    year: u32,
+    split_index: usize,
+    splits_per_season: usize,
+) -> Vec<String> {
+    let mut ordered = team_ids.to_vec();
+    if !ordered.len().is_multiple_of(2) {
+        let split_number = year as usize * splits_per_season + split_index;
+        let shift = split_number % ordered.len();
+        ordered.rotate_left(shift);
+    }
+    ordered
+}
+
 /// Generate a league schedule from a competition manifest.
 /// Supports "single_round_robin" and "double_round_robin" formats.
 /// League name is set to the manifest's name (no split suffix).
@@ -381,6 +447,9 @@ pub fn generate_schedule_from_config(
         return league;
     }
     let split = &config.splits[split_index];
+    let original_ids = team_ids;
+    let rotated = rotated_for_odd_league(team_ids, year, split_index, config.splits.len());
+    let team_ids = rotated.as_slice();
     let season_start = Utc
         .with_ymd_and_hms(
             year as i32,
@@ -420,11 +489,14 @@ pub fn generate_schedule_from_config(
                 },
                 split.best_of as u8,
             );
-            let last_offset = split
-                .superweek_offsets
-                .last()
-                .copied()
-                .unwrap_or(7 * (team_ids.len() as i64 - 1));
+            let weekly_last_offset = 7 * (team_ids.len() as i64 - 1);
+            let last_offset = if split.superweek_offsets.is_empty() {
+                weekly_last_offset
+            } else {
+                resolve_round_offsets(&split.superweek_offsets, round_count(team_ids.len()))
+                    .and_then(|offsets| offsets.last().copied())
+                    .unwrap_or(weekly_last_offset)
+            };
             let return_start = season_start + Duration::days(last_offset + 7);
             let return_league = generate_single_round_league_with_offsets_and_bo(
                 &format!("{} (Return)", manifest.name),
@@ -469,6 +541,11 @@ pub fn generate_schedule_from_config(
             )
         }
     };
+    // The schedule was built from the rotated order; standings keep the order
+    // the caller passed so the next split starts from the same list.
+    league
+        .standings
+        .sort_by_key(|entry| original_ids.iter().position(|id| *id == entry.team_id));
     league.competition_id = Some(manifest.id.clone());
     league.split_index = split_index;
     league
@@ -644,5 +721,239 @@ mod tests {
         assert!(friendlies.iter().all(|fixture| fixture.best_of == 1));
         assert_eq!(friendlies[0].date, "2026-07-11");
         assert_eq!(friendlies[2].date, "2026-07-25");
+    }
+
+    const LES_OFFSETS: [i64; 7] = [0, 7, 14, 21, 28, 35, 42];
+
+    fn club_ids(count: usize) -> Vec<String> {
+        (0..count).map(|i| format!("t{i}")).collect()
+    }
+
+    fn les_start() -> DateTime<Utc> {
+        Utc.with_ymd_and_hms(2026, 1, 17, 0, 0, 0).unwrap()
+    }
+
+    /// Pins the 8-club LES schedule: the odd-size support must not move a
+    /// single fixture or date of an even league.
+    #[test]
+    fn eight_club_les_schedule_is_unchanged() {
+        let league = generate_single_round_league_with_offsets(
+            "LES",
+            2026,
+            &club_ids(8),
+            les_start(),
+            Some(&LES_OFFSETS),
+        );
+        let actual: Vec<String> = league
+            .fixtures
+            .iter()
+            .map(|f| format!("{} {} {}", f.date, f.home_team_id, f.away_team_id))
+            .collect();
+        let expected = [
+            "2026-01-17 t0 t7",
+            "2026-01-17 t6 t1",
+            "2026-01-17 t2 t5",
+            "2026-01-17 t4 t3",
+            "2026-01-24 t6 t0",
+            "2026-01-24 t7 t5",
+            "2026-01-24 t1 t4",
+            "2026-01-24 t3 t2",
+            "2026-01-31 t5 t0",
+            "2026-01-31 t4 t6",
+            "2026-01-31 t7 t3",
+            "2026-01-31 t2 t1",
+            "2026-02-07 t0 t4",
+            "2026-02-07 t3 t5",
+            "2026-02-07 t6 t2",
+            "2026-02-07 t1 t7",
+            "2026-02-14 t0 t3",
+            "2026-02-14 t2 t4",
+            "2026-02-14 t5 t1",
+            "2026-02-14 t7 t6",
+            "2026-02-21 t2 t0",
+            "2026-02-21 t3 t1",
+            "2026-02-21 t4 t7",
+            "2026-02-21 t6 t5",
+            "2026-02-28 t1 t0",
+            "2026-02-28 t7 t2",
+            "2026-02-28 t3 t6",
+            "2026-02-28 t5 t4",
+        ];
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn nine_club_les_schedule_has_nine_weekly_matchdays() {
+        let league = generate_single_round_league_with_offsets(
+            "LES",
+            2026,
+            &club_ids(9),
+            les_start(),
+            Some(&LES_OFFSETS),
+        );
+        assert_eq!(league.fixtures.len(), 36);
+        let mut dates: Vec<&str> = league.fixtures.iter().map(|f| f.date.as_str()).collect();
+        dates.dedup();
+        assert_eq!(
+            dates,
+            [
+                "2026-01-17",
+                "2026-01-24",
+                "2026-01-31",
+                "2026-02-07",
+                "2026-02-14",
+                "2026-02-21",
+                "2026-02-28",
+                "2026-03-07",
+                "2026-03-14",
+            ]
+        );
+    }
+
+    #[test]
+    fn nine_club_schedule_gives_each_club_one_bye_and_no_double_booking() {
+        let teams = club_ids(9);
+        let league = generate_single_round_league_with_offsets(
+            "LES",
+            2026,
+            &teams,
+            les_start(),
+            Some(&LES_OFFSETS),
+        );
+        for matchday in 1..=9 {
+            let mut playing: Vec<&str> = league
+                .fixtures
+                .iter()
+                .filter(|f| f.matchday == matchday)
+                .flat_map(|f| [f.home_team_id.as_str(), f.away_team_id.as_str()])
+                .collect();
+            assert_eq!(playing.len(), 8, "matchday {matchday} has 4 fixtures");
+            playing.sort_unstable();
+            playing.dedup();
+            assert_eq!(
+                playing.len(),
+                8,
+                "a club plays twice on matchday {matchday}"
+            );
+        }
+        for team in &teams {
+            let played = league
+                .fixtures
+                .iter()
+                .filter(|f| f.home_team_id == *team || f.away_team_id == *team)
+                .count();
+            assert_eq!(played, 8, "{team} meets each rival once and rests once");
+        }
+    }
+
+    #[test]
+    fn only_odd_leagues_rotate_their_team_order_between_splits() {
+        let even = club_ids(8);
+        assert_eq!(rotated_for_odd_league(&even, 2026, 2, 3), even);
+        let odd = club_ids(9);
+        assert_eq!(rotated_for_odd_league(&odd, 2026, 0, 3)[0], "t3");
+        assert_eq!(rotated_for_odd_league(&odd, 2026, 1, 3)[0], "t4");
+    }
+
+    #[test]
+    fn regular_offsets_are_extended_by_their_step() {
+        assert_eq!(
+            resolve_round_offsets(&LES_OFFSETS, 9).as_deref(),
+            Some([0, 7, 14, 21, 28, 35, 42, 49, 56].as_slice())
+        );
+        assert_eq!(
+            resolve_round_offsets(&[0, 3, 6], 5).as_deref(),
+            Some([0, 3, 6, 9, 12].as_slice())
+        );
+    }
+
+    #[test]
+    fn offsets_that_match_the_round_count_are_used_as_is() {
+        assert_eq!(
+            resolve_round_offsets(&[0, 7, 15, 21], 4).as_deref(),
+            Some([0, 7, 15, 21].as_slice())
+        );
+    }
+
+    #[test]
+    fn irregular_offsets_fall_back_to_weekly_dates() {
+        assert_eq!(resolve_round_offsets(&[0, 7, 15, 21], 7), None);
+    }
+
+    #[test]
+    fn offsets_longer_than_the_round_count_fall_back_to_weekly_dates() {
+        assert_eq!(resolve_round_offsets(&LES_OFFSETS, 5), None);
+    }
+
+    #[test]
+    fn a_single_offset_cannot_define_a_step() {
+        assert_eq!(resolve_round_offsets(&[0], 3), None);
+    }
+
+    #[test]
+    fn a_nine_club_league_with_an_irregular_offset_list_plays_weekly() {
+        let irregular = [0, 7, 14, 22, 28, 35, 42];
+        let league = generate_single_round_league_with_offsets(
+            "LES",
+            2026,
+            &club_ids(9),
+            les_start(),
+            Some(&irregular),
+        );
+        let mut dates: Vec<&str> = league.fixtures.iter().map(|f| f.date.as_str()).collect();
+        dates.dedup();
+        assert_eq!(dates.len(), 9);
+        assert_eq!(dates[8], "2026-03-14");
+    }
+
+    #[test]
+    fn nine_club_double_round_robin_plays_a_return_leg_with_one_bye_per_club() {
+        let manifest: CompetitionManifest = serde_json::from_str(
+            r#"{"id":"les","name":"LES","region":"ES","teams_file":"t.json","players_file":"p.json",
+                "schedule":{"format":"double_round_robin","team_count":9,"preseason_friendlies":0,
+                "splits":[{"name":"Winter","best_of":1,"season_start":{"month":1,"day":17},
+                "superweek_offsets":[0,7,14,21,28,35,42]}]}}"#,
+        )
+        .expect("manifest parses");
+        let teams = club_ids(9);
+        let league = generate_schedule_from_config(&manifest, 2026, &teams, 0);
+
+        // Nine weekly rounds per leg; the return leg starts a week after the first.
+        let mut dates: Vec<&str> = league.fixtures.iter().map(|f| f.date.as_str()).collect();
+        dates.dedup();
+        assert_eq!(dates.len(), 18);
+        assert_eq!(dates[8], "2026-03-14");
+        assert_eq!(dates[9], "2026-03-21");
+
+        let (first_leg, return_leg): (Vec<&Fixture>, Vec<&Fixture>) = league
+            .fixtures
+            .iter()
+            .partition(|f| f.date.as_str() <= dates[8]);
+        assert_eq!((first_leg.len(), return_leg.len()), (36, 36));
+
+        for team in &teams {
+            for (name, leg) in [("first", &first_leg), ("return", &return_leg)] {
+                let rested = (0..9)
+                    .filter(|round| {
+                        !leg.iter().any(|f| {
+                            f.date == dates[*round + if name == "first" { 0 } else { 9 }]
+                                && (f.home_team_id == *team || f.away_team_id == *team)
+                        })
+                    })
+                    .count();
+                assert_eq!(rested, 1, "{team} must rest once in the {name} leg");
+            }
+        }
+        // Every first-leg pairing is replayed with the sides swapped.
+        for fixture in &first_leg {
+            assert!(
+                return_leg.iter().any(|r| {
+                    r.home_team_id == fixture.away_team_id && r.away_team_id == fixture.home_team_id
+                }),
+                "no return fixture for {} v {}",
+                fixture.home_team_id,
+                fixture.away_team_id
+            );
+        }
     }
 }

@@ -1,35 +1,21 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useEffect, useMemo, useRef } from "react";
-import { useRovingFocus } from "@/hooks/useRovingFocus";
-import {
-  Briefcase,
-  Mail,
-  Newspaper,
-  MessageCircle,
-  Calendar as CalendarIcon,
-  Users,
-  Crosshair,
-  Dumbbell,
-  Swords,
-  Trophy,
-  Gamepad2,
-  UserCog,
-  Eye,
-  GraduationCap,
-  DollarSign,
-  TrendingUp,
-  UsersRound,
-  Building2,
-  Globe,
-  Store,
-  Settings,
-  LogOut,
-} from "lucide-react";
-import { cn } from "@/ui-v2/lib/utils";
-import { Separator } from "@/ui-v2/components/ui/separator";
-import { Badge } from "@/ui-v2/components/ui/badge";
+import { LogOut, Settings } from "lucide-react";
 
-type Item = { tab: string; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number };
+import { useRovingFocus } from "@/hooks/useRovingFocus";
+import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
+import { RailItem } from "@/ui-v2/shell/RailItem";
+import {
+  RAIL_DIRECT,
+  RAIL_GROUPS,
+  groupForTab,
+  railStopForTab,
+  resolveGroupLanding,
+  type NavItem,
+  type RailGroupId,
+} from "@/ui-v2/shell/navModel";
+import type { ShellBadges } from "@/ui-v2/shell/shellTypes";
+import { cn } from "@/ui-v2/lib/utils";
 
 interface Props {
   activeTab: string;
@@ -47,6 +33,13 @@ interface Props {
   playerCount?: number;
   teamCount?: number;
   staffCount?: number;
+  /** Drops the visible labels; names stay available to assistive tech. */
+  compact?: boolean;
+}
+
+interface Stop {
+  id: string;
+  activate: () => void;
 }
 
 export function DashboardSidebarV2({
@@ -57,226 +50,245 @@ export function DashboardSidebarV2({
   managerName,
   managerFullName,
   managerAvatar,
-  teamName,
-  teamLogo,
   isUnemployed,
   onNavigateSettings,
   onExitClick,
   playerCount = 0,
   teamCount = 0,
   staffCount = 0,
+  compact = false,
 }: Props) {
   const { t } = useTranslation();
 
-  const top: Item[] = useMemo(() => [
-    { tab: "Home", label: t("dashboard.home"), icon: Briefcase },
-    { tab: "Inbox", label: t("dashboard.inbox"), icon: Mail, badge: unreadMessagesCount },
-    { tab: "News", label: t("dashboard.news"), icon: Newspaper },
-    { tab: "Social", label: t("dashboard.social", { defaultValue: "Social" }), icon: MessageCircle },
-    { tab: "Schedule", label: t("dashboard.schedule"), icon: CalendarIcon },
-  ], [t, unreadMessagesCount]);
+  const badges: ShellBadges = useMemo(
+    () => ({
+      unread: unreadMessagesCount,
+      offers: pendingOffersCount,
+      players: playerCount,
+      teams: teamCount,
+      staff: staffCount,
+    }),
+    [unreadMessagesCount, pendingOffersCount, playerCount, teamCount, staffCount],
+  );
 
-  const club: Item[] = useMemo(() => [
-    { tab: "Squad", label: t("dashboard.squad"), icon: Users },
-    { tab: "Tactics", label: t("dashboard.tactics"), icon: Crosshair },
-    { tab: "Training", label: t("dashboard.training"), icon: Dumbbell },
-    { tab: "Scrims", label: t("dashboard.scrims"), icon: Swords },
-    { tab: "Soloq", label: t("dashboard.soloq"), icon: Trophy },
-    { tab: "Meta", label: t("dashboard.meta"), icon: Gamepad2 },
-    { tab: "Staff", label: t("dashboard.staff"), icon: UserCog },
-    { tab: "Scouting", label: t("dashboard.scouting"), icon: Eye },
-    { tab: "Youth", label: t("dashboard.youthAcademy"), icon: GraduationCap },
-    { tab: "Finances", label: t("dashboard.finances"), icon: DollarSign },
-  ], [t]);
+  // Last tab seen inside each group, so a launcher reopens where the user left.
+  const lastVisited = useRef<Partial<Record<RailGroupId, string>>>({});
+  useEffect(() => {
+    const group = groupForTab(activeTab);
+    if (group) lastVisited.current[group] = activeTab;
+  }, [activeTab]);
 
-  const world: Item[] = useMemo(() => [
-    { tab: "Competitions", label: t("dashboard.competitions", { defaultValue: "Competiciones" }), icon: Globe },
-    { tab: "Players", label: t("dashboard.players"), icon: UsersRound, badge: playerCount },
-    { tab: "Teams", label: t("dashboard.teams"), icon: Building2, badge: teamCount },
-    { tab: "WorldStaff", label: t("dashboard.worldStaff", { defaultValue: "Staffs" }), icon: UserCog, badge: staffCount },
-    { tab: "ChampionsWorld", label: t("dashboard.champions_world"), icon: Gamepad2 },
-  ], [t, playerCount, teamCount, staffCount]);
+  const groups = useMemo(
+    () => RAIL_GROUPS.filter((g) => !(isUnemployed && g.hiddenWhenUnemployed)),
+    [isUnemployed],
+  );
 
-  const market: Item[] = useMemo(() => [
-    { tab: "Market", label: t("dashboard.market"), icon: Store },
-    { tab: "Transfers", label: t("dashboard.transfers"), icon: TrendingUp, badge: pendingOffersCount },
-  ], [t, pendingOffersCount]);
+  const stops: Stop[] = useMemo(
+    () => [
+      ...RAIL_DIRECT.map((item) => ({ id: item.tab, activate: () => onNavClick(item.tab) })),
+      ...groups.map((g) => ({
+        id: `group:${g.id}`,
+        activate: () => onNavClick(resolveGroupLanding(g.id, lastVisited.current)),
+      })),
+      { id: "settings", activate: onNavigateSettings },
+      { id: "exit", activate: onExitClick },
+      { id: "Manager", activate: () => onNavClick("Manager") },
+    ],
+    [groups, onNavClick, onNavigateSettings, onExitClick],
+  );
 
-  const allNavItems = useMemo(() => {
-    const items = [...top];
-    if (!isUnemployed) items.push(...club);
-    items.push(...market);
-    items.push(...world);
-    return items;
-  }, [top, club, market, world, isUnemployed]);
+  const currentStopId = activeTab === "Manager" ? "Manager" : railStopForTab(activeTab);
+  const controlledIndex = stops.findIndex((s) => s.id === currentStopId);
 
-  const initialNavIndex = useMemo(() => Math.max(0, allNavItems.findIndex((item) => item.tab === activeTab)), [allNavItems, activeTab]);
-  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const { activeIndex, handleKeyDown, getTabIndex } = useRovingFocus({
-    itemCount: allNavItems.length,
+  const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const stopsRef = useRef(stops);
+  stopsRef.current = stops;
+  const { activeIndex, shouldFocus, setActiveIndex, handleKeyDown, getTabIndex } = useRovingFocus({
+    itemCount: stops.length,
     columns: 1,
-    initialIndex: initialNavIndex,
-    onSelect: (i) => onNavClick(allNavItems[i]?.tab),
-    getItemLabel: (i) => allNavItems[i]?.label ?? "",
+    index: controlledIndex,
+    focusOnMount: false,
+    orientation: "vertical",
+    onSelect: (i) => stopsRef.current[i]?.activate(),
+    getItemLabel: (i) => itemRefs.current[stops[i]?.id ?? ""]?.title ?? "",
   });
 
+  // Depends on the focus intent only: `stops` is rebuilt whenever the parent passes new
+  // callbacks, and re-running on that would pull focus back into the rail.
   useEffect(() => {
-    itemRefs.current[activeIndex]?.focus();
-  }, [activeIndex]);
+    if (!shouldFocus || activeIndex < 0) return;
+    itemRefs.current[stopsRef.current[activeIndex]?.id ?? ""]?.focus();
+  }, [shouldFocus, activeIndex]);
+
+  // Only keys pressed on a roving stop drive the widget. The bug button and its modal
+  // (a React descendant of the nav) keep their own Enter, Space and typing.
+  const stopIndexOf = (target: EventTarget) =>
+    stops.findIndex((s) => itemRefs.current[s.id] === target);
+
+  const onNavKeyDown = (e: React.KeyboardEvent) => {
+    if (stopIndexOf(e.target) >= 0) handleKeyDown(e);
+  };
+
+  // Focus can land on a stop without the roving index moving (a click, Tab after a
+  // cancelled confirm). Enter and Space act on the roving index, so keep it on the
+  // focused stop, and keep that stop visible inside the scrolling area.
+  const onNavFocus = (e: React.FocusEvent) => {
+    const i = stopIndexOf(e.target);
+    if (i < 0) return;
+    if (i !== activeIndex) setActiveIndex(i);
+    (e.target as HTMLElement).scrollIntoView?.({ block: "nearest" });
+  };
+
+  // Fade cues that only show while the stops area has more content past an edge.
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [overflow, setOverflow] = useState({ top: false, bottom: false });
+  const measure = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const top = el.scrollTop > 1;
+    const bottom = el.scrollHeight - el.clientHeight - el.scrollTop > 1;
+    setOverflow((prev) => (prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
+  }, []);
+  useEffect(() => {
+    measure();
+    const el = scrollerRef.current;
+    window.addEventListener("resize", measure);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    if (el) observer?.observe(el);
+    return () => {
+      window.removeEventListener("resize", measure);
+      observer?.disconnect();
+    };
+  }, [measure, stops.length]);
+  const fadeMask = `linear-gradient(to bottom, ${overflow.top ? "transparent 0, #000 1.5rem" : "#000 0"}, ${
+    overflow.bottom ? "#000 calc(100% - 1.5rem), transparent 100%" : "#000 100%"
+  })`;
+
+  const indexOf = (id: string) => stops.findIndex((s) => s.id === id);
+  const itemProps = (id: string) => ({
+    tabIndex: getTabIndex(indexOf(id)),
+    buttonRef: (el: HTMLButtonElement | null) => {
+      itemRefs.current[id] = el;
+    },
+  });
+
+  const labelOf = (item: { labelKey: string; defaultLabel: string }) =>
+    t(item.labelKey, { defaultValue: item.defaultLabel });
+  const badgeOf = (item: NavItem) => (item.badge ? badges[item.badge] : undefined);
+
+  const hintOf = (g: { items: { labelKey: string; defaultLabel: string }[] }) =>
+    g.items.map(labelOf).join(", ");
+  const groupBadge = (id: RailGroupId) => (id === "market" ? badges.offers : undefined);
+  const managerLabel = t("onAir.nav.manager", { defaultValue: "Manager profile" });
+  const initials = Array.from((managerName ?? "").trim()).slice(0, 2).join("").toUpperCase();
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center gap-3 p-4">
-        {teamLogo ? (
-          <img src={teamLogo} alt={teamName ?? ""} className="size-9 rounded-md object-contain" />
-        ) : (
-          <div className="size-9 rounded-md bg-muted" />
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-xs uppercase tracking-widest text-muted-foreground">
-            {t("dashboard.brandTitle")}
-          </div>
-          <div className="truncate font-heading text-base font-bold text-primary">{t("dashboard.brandSubtitle")}</div>
-        </div>
-      </div>
-
-      <Separator />
-
-      <button
-        onClick={() => onNavClick("Manager")}
-        className={cn(
-          "flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-sidebar-accent",
-          activeTab === "Manager" && "bg-sidebar-accent",
-        )}
-      >
-        {managerAvatar ? (
-          <img src={managerAvatar} alt={managerName ?? ""} className="size-9 rounded-full object-cover ring-2 ring-primary/60" />
-        ) : (
-          <div className="size-9 rounded-full bg-muted ring-2 ring-primary/60" />
-        )}
-        <div className="min-w-0">
-          <div className="truncate text-sm font-medium">{managerName ?? "—"}</div>
-          {managerFullName && <div className="truncate text-xs text-muted-foreground">{managerFullName}</div>}
-        </div>
-      </button>
-
-      <Separator />
-
-      <nav
-        className="min-h-0 flex-1 overflow-y-auto px-2 py-3 text-sm scrollbar-v2"
-        onKeyDown={handleKeyDown}
-        tabIndex={-1}
-      >
-        <Group items={top} flatIndex={0} activeTab={activeTab} onNavClick={onNavClick} itemRefs={itemRefs} getTabIndex={getTabIndex} />
-
-        {!isUnemployed && (
-          <>
-            <SectionLabel>{t("dashboard.sectionClub")}</SectionLabel>
-            <Group items={club} flatIndex={top.length} activeTab={activeTab} onNavClick={onNavClick} itemRefs={itemRefs} getTabIndex={getTabIndex} />
-          </>
-        )}
-
-        <SectionLabel>{t("dashboard.sectionMarket", { defaultValue: "Market" })}</SectionLabel>
-        <Group items={market} flatIndex={top.length + (isUnemployed ? 0 : club.length)} activeTab={activeTab} onNavClick={onNavClick} itemRefs={itemRefs} getTabIndex={getTabIndex} />
-
-        <SectionLabel>{t("dashboard.sectionWorld")}</SectionLabel>
-        <Group items={world} flatIndex={top.length + (isUnemployed ? 0 : club.length) + market.length} activeTab={activeTab} onNavClick={onNavClick} itemRefs={itemRefs} getTabIndex={getTabIndex} />
-      </nav>
-
-      <Separator />
-
-      <div className="shrink-0 p-2 text-sm">
-        <FooterButton icon={Settings} label={t("dashboard.settings")} onClick={onNavigateSettings} />
-        <FooterButton
-          icon={LogOut}
-          label={t("dashboard.exitToMenu")}
-          onClick={onExitClick}
-          danger
-        />
-      </div>
-    </aside>
-  );
-}
-
-function Group({
-  items,
-  flatIndex,
-  activeTab,
-  onNavClick,
-  itemRefs,
-  getTabIndex,
-}: {
-  items: Item[];
-  flatIndex: number;
-  activeTab: string;
-  onNavClick: (tab: string) => void;
-  itemRefs: React.MutableRefObject<(HTMLButtonElement | null)[]>;
-  getTabIndex: (index: number) => 0 | -1;
-}) {
-  return (
-    <div className="space-y-0.5">
-      {items.map((it, localIdx) => {
-        const globalIdx = flatIndex + localIdx;
-        const Icon = it.icon;
-        const active = activeTab === it.tab;
-        return (
-          <button
-            key={it.tab}
-            ref={(el) => { itemRefs.current[globalIdx] = el; }}
-            tabIndex={getTabIndex(globalIdx)}
-            onClick={() => onNavClick(it.tab)}
-            className={cn(
-              "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors",
-              active
-                ? "bg-sidebar-accent text-foreground"
-                : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
-            )}
-          >
-            <Icon className="size-4 shrink-0" />
-            <span className="flex-1 truncate font-heading text-xs font-semibold uppercase tracking-wider">
-              {it.label}
-            </span>
-            {it.badge !== undefined && it.badge > 0 && (
-              <Badge className="h-5 px-1.5 text-[10px]">{it.badge}</Badge>
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="px-3 pt-4 pb-1 font-heading text-[10px] uppercase tracking-widest text-muted-foreground/70">
-      {children}
-    </div>
-  );
-}
-
-function FooterButton({
-  icon: Icon,
-  label,
-  onClick,
-  danger,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  onClick: () => void;
-  danger?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
+    <aside
       className={cn(
-        "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors",
-        danger
-          ? "text-destructive hover:bg-destructive/10"
-          : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
+        "flex h-full min-h-0 shrink-0 flex-col border-e border-line bg-rail text-sidebar-foreground",
+        compact ? "w-14" : "w-[4.75rem]",
       )}
     >
-      <Icon className="size-4" />
-      <span className="font-heading text-xs font-semibold uppercase tracking-wider">{label}</span>
-    </button>
+      <nav
+        aria-label={t("onAir.nav.rail", { defaultValue: "Main navigation" })}
+        className="flex min-h-0 flex-1 flex-col"
+        onKeyDown={onNavKeyDown}
+        onFocus={onNavFocus}
+      >
+        <div
+          ref={scrollerRef}
+          data-slot="rail-stops"
+          data-overflow-top={overflow.top ? "true" : undefined}
+          data-overflow-bottom={overflow.bottom ? "true" : undefined}
+          onScroll={measure}
+          style={{ maskImage: fadeMask, WebkitMaskImage: fadeMask }}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {RAIL_DIRECT.map((item) => (
+            <RailItem
+              key={item.tab}
+              icon={item.icon}
+              label={labelOf(item)}
+              active={activeTab === item.tab}
+              badge={badgeOf(item)}
+              compact={compact}
+              onClick={() => onNavClick(item.tab)}
+              {...itemProps(item.tab)}
+            />
+          ))}
+          <div role="separator" className="mx-3 my-1.5 border-t border-line" />
+          {groups.map((g) => (
+            <RailItem
+              key={g.id}
+              icon={g.icon}
+              label={labelOf(g)}
+              hint={hintOf(g)}
+              active={groupForTab(activeTab) === g.id}
+              badge={groupBadge(g.id)}
+              compact={compact}
+              onClick={() => onNavClick(resolveGroupLanding(g.id, lastVisited.current))}
+              {...itemProps(`group:${g.id}`)}
+            />
+          ))}
+        </div>
+
+        <div
+          data-slot="rail-pinned"
+          className="flex shrink-0 flex-col items-stretch border-t border-line py-1"
+        >
+          <div className="flex justify-center">
+            <FloatingBugButton placement="rail" />
+          </div>
+          <RailItem
+            icon={Settings}
+            label={t("dashboard.settings", { defaultValue: "Settings" })}
+            compact={compact}
+            onClick={onNavigateSettings}
+            {...itemProps("settings")}
+          />
+          <RailItem
+            icon={LogOut}
+            label={t("dashboard.exitToMenu", { defaultValue: "Exit" })}
+            tone="danger"
+            compact={compact}
+            onClick={onExitClick}
+            {...itemProps("exit")}
+          />
+          <button
+            type="button"
+            onClick={() => onNavClick("Manager")}
+            aria-label={managerName ? `${managerLabel}, ${managerName}` : managerLabel}
+            aria-current={activeTab === "Manager" ? "page" : undefined}
+            title={managerFullName ?? managerName ?? managerLabel}
+            {...{ tabIndex: getTabIndex(indexOf("Manager")) }}
+            ref={(el) => {
+              itemRefs.current.Manager = el;
+            }}
+            className="mx-auto my-1 flex size-[var(--hit)] items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+          >
+            {managerAvatar ? (
+              <img
+                src={managerAvatar}
+                alt=""
+                className={cn(
+                  "size-9 rounded-full object-cover ring-2",
+                  activeTab === "Manager" ? "ring-[3px] ring-club-text" : "ring-line",
+                )}
+              />
+            ) : (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "flex size-9 items-center justify-center rounded-full bg-muted font-heading text-xs font-bold text-foreground ring-2",
+                  activeTab === "Manager" ? "ring-[3px] ring-club-text" : "ring-line",
+                )}
+              >
+                {initials}
+              </span>
+            )}
+          </button>
+        </div>
+      </nav>
+    </aside>
   );
 }

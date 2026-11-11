@@ -5,25 +5,8 @@ import { invoke } from "@tauri-apps/api/core";
 import type { GameStateData } from "@/store/gameStore";
 import { formatVal, getTeamName } from "@/lib/common/helpers";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
-import { resolveTeamLogo } from "@/lib/teams/teamLogos";
+import { resolveTransferTeamLogo } from "@/lib/teams/transferLogos";
 import { cn } from "@/ui-v2/lib/utils";
-
-function teamLogoFromId(teamId: string): string {
-  const slug = teamId.replace(/^lec-/, "");
-  if (slug === "shifters") {
-    return "/teams-icons/shifters.webp";
-  }
-  return `/team-logos/${slug}.png`;
-}
-
-function resolveTransferTeamLogo(teamId: string, teamName: string): string | null {
-  if (!teamId) return null;
-  const primary = teamLogoFromId(teamId);
-  if (primary.startsWith("/team-logos/") || primary.startsWith("http")) {
-    return primary;
-  }
-  return resolveTeamLogo(teamName);
-}
 
 interface IncludedPlayerData {
   player_id: string;
@@ -137,8 +120,8 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
             );
             const fromTeamLogo = isFreeAgent
               ? null
-              : resolveTransferTeamLogo(entry.from_team_id, entry.from_team_name);
-            const toTeamLogo = resolveTransferTeamLogo(entry.to_team_id, entry.to_team_name);
+              : resolveTransferTeamLogo(gameState?.teams, entry.from_team_id, entry.from_team_name);
+            const toTeamLogo = resolveTransferTeamLogo(gameState?.teams, entry.to_team_id, entry.to_team_name);
 
             return (
               <div
@@ -183,7 +166,7 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
                           </>
                         )}
                         {isFreeAgent && (
-                          <span className="text-emerald-500">{t("market.freeAgent")}</span>
+                          <span className="text-positive">{t("market.freeAgent")}</span>
                         )}
                         <span className="text-muted-foreground/50">→</span>
                         <img
@@ -206,15 +189,15 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
                     <p className="text-sm font-bold text-foreground">
                       {entry.fee > 0 ? formatVal(entry.fee) : t("market.freeAgent")}
                     </p>
-                    <p className="text-[11px] text-muted-foreground/70">
+                    <p className="text-caption text-muted-foreground/70">
                       {formatDate(entry.date)}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-2 flex items-center gap-3 border-t border-border pt-2 text-[11px] text-muted-foreground">
+                <div className="mt-2 flex items-center gap-3 border-t border-border pt-2 text-caption text-muted-foreground">
                   <span>
-                    {t("market.wage")}: {formatVal(entry.annual_wage)}/yr
+                    {t("market.wage")}: {formatVal(entry.annual_wage)}{t("finances.perYearSuffix")}
                   </span>
                   {entry.contract_years > 0 && (
                     <span>
@@ -230,7 +213,7 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
                     <span
                       className={cn(
                         "font-semibold",
-                        entry.is_user_buying ? "text-emerald-500" : "text-amber-500",
+                        entry.is_user_buying ? "text-positive" : "text-warning",
                       )}
                     >
                       {entry.is_user_buying ? t("market.youBought") : t("market.youSold")}
@@ -240,7 +223,7 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
 
                 {entry.included_players && entry.included_players.length > 0 && (
                   <div className="mt-2 border-t border-border pt-2">
-                    <p className="mb-1.5 font-heading text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p className="mb-1.5 font-heading text-caption font-semibold uppercase tracking-wider text-muted-foreground">
                       {t("market.includedPlayers")}
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -251,6 +234,7 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
                           inc.player_profile_image_url,
                         );
                         const incToTeamLogo = resolveTransferTeamLogo(
+                          gameState?.teams,
                           entry.from_team_id,
                           entry.from_team_name,
                         );
@@ -272,7 +256,7 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
                               <p className="truncate text-xs font-semibold text-foreground">
                                 {inc.player_name}
                               </p>
-                              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <div className="flex items-center gap-1 text-2xs text-muted-foreground">
                                 <span className="text-muted-foreground/50">→</span>
                                 <img
                                   src={incToTeamLogo ?? undefined}

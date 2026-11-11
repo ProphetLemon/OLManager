@@ -1,6 +1,7 @@
 import type { FixtureData, TeamData } from "@/store/gameStore";
 import type { MatchModeType } from "@/hooks/useAdvanceTime";
 import type { BlockerModal } from "@/hooks/useAdvanceTime.helpers";
+import { canContinueAnyway } from "@/lib/home/blockerRules";
 import DashboardBlockerModal from "@/ui-v2/_legacy/components/dashboard/DashboardBlockerModal";
 import DashboardCloseConfirmModal from "@/ui-v2/_legacy/components/dashboard/DashboardCloseConfirmModal";
 import DashboardExitConfirmModal from "@/ui-v2/_legacy/components/dashboard/DashboardExitConfirmModal";
@@ -90,7 +91,9 @@ export default function DashboardOverlays({
         <DashboardBlockerModal
           blockerModal={blockerModal}
           onClose={() => setBlockerModal(null)}
-          onContinueAnyway={blockerModal.pendingAction ?? null}
+          onContinueAnyway={
+            canContinueAnyway(blockerModal.blockers) ? (blockerModal.pendingAction ?? null) : null
+          }
           onNavigate={(tab) => {
             setBlockerModal(null);
             handleNavigate(tab);

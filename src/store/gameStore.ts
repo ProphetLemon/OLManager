@@ -1,5 +1,6 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { create } from 'zustand';
-import type { GameStateData } from './types';
+import type { EndOfSeasonSummaryData, GameStateData } from './types';
 import { useTabUiStore } from './tabUiStore';
 
 // Re-export all types so existing imports from gameStore keep working
@@ -92,10 +93,7 @@ export {
 
 /** Return the player's active league */
 export function useActiveLeague(state: GameStateData) {
-  if (state.user_competition_id) {
-    return state.leagues.find((l) => l.competition_id === state.user_competition_id);
-  }
-  return state.leagues[0];
+  return resolveUserLeague(state) ?? undefined;
 }
 
 /** Return all competitions (for browsing/switching) */
@@ -119,10 +117,13 @@ interface GameStore {
   gameState: GameStateData | null;
   isDirty: boolean;
   showFiredModal: boolean;
+  /** End-of-season summary kept on screen after the backend already wrapped the season. */
+  pendingSeasonSummary: EndOfSeasonSummaryData | null;
   setGameActive: (active: boolean, managerName?: string) => void;
   setGameState: (state: GameStateData) => void;
   markClean: () => void;
   setShowFiredModal: (show: boolean) => void;
+  setPendingSeasonSummary: (summary: EndOfSeasonSummaryData | null) => void;
   clearGame: () => void;
 }
 
@@ -132,11 +133,13 @@ export const useGameStore = create<GameStore>((set) => ({
   gameState: null,
   isDirty: false,
   showFiredModal: false,
+  pendingSeasonSummary: null,
   setGameActive: (active, managerName) => {
     console.log("[store] setGameActive called:", { active, managerName });
     set({
       hasActiveGame: active,
-      managerName: managerName || null
+      managerName: managerName || null,
+      pendingSeasonSummary: null,
     });
   },
   setGameState: (state) => set((prev) => ({
@@ -145,6 +148,7 @@ export const useGameStore = create<GameStore>((set) => ({
   })),
   markClean: () => set({ isDirty: false }),
   setShowFiredModal: (show) => set({ showFiredModal: show }),
+  setPendingSeasonSummary: (summary) => set({ pendingSeasonSummary: summary }),
   clearGame: () => {
     useTabUiStore.getState().resetTabUi();
     set({
@@ -153,6 +157,7 @@ export const useGameStore = create<GameStore>((set) => ({
       gameState: null,
       isDirty: false,
       showFiredModal: false,
+      pendingSeasonSummary: null,
     });
   },
 }));

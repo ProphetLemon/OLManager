@@ -58,7 +58,7 @@ vi.mock("react-i18next", () => ({
       if (key === "finances.contractExpiresOn")
         return `Expires ${params?.date}`;
       if (key === "finances.atRiskWages")
-        return `€${params?.amount}/yr at risk`;
+        return `${params?.amount}/yr at risk`;
       if (key === "finances.noContractRisks")
         return "No imminent contract risks";
       if (key === "common.renewContract") return "Renew Contract";
@@ -560,7 +560,7 @@ describe("FinancesTab facilities", () => {
     expect(screen.getByText("Warning")).toBeInTheDocument();
     expect(screen.getByText("Expires 2025-04-30")).toBeInTheDocument();
     expect(screen.getByText("Expires 2025-10-15")).toBeInTheDocument();
-    expect(screen.getByText("€60000/yr at risk")).toBeInTheDocument();
+    expect(screen.getByText("€60K/yr at risk")).toBeInTheDocument();
     expect(
       screen.getAllByRole("button", { name: "Renew Contract" }),
     ).toHaveLength(2);

@@ -4,7 +4,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { DEFAULT_MAX_CACHE_AGE_DAYS, DEFAULT_THROTTLE_MS, MediaWikiClient } from "./lib/mediawiki-client.mjs";
+import { DEFAULT_MAX_CACHE_AGE_DAYS, DEFAULT_THROTTLE_MS, MediaWikiClient, formatStats } from "./lib/mediawiki-client.mjs";
+import { loginFromFile } from "./lib/bot-credentials.mjs";
 import { loadGateExceptions } from "./lib/gates.mjs";
 import { serializeOverlay } from "./lib/overlay.mjs";
 import { resolveKeyPath, signOverlayFile } from "./lib/signing.mjs";
@@ -17,6 +18,8 @@ const HELP = `Usage: node scripts/world/refresh.mjs [flags]
 
   --competitions a,b      competition ids (default: every covered competition)
   --offline               read the cache only; fail on a miss
+  --login                 log in with a Leaguepedia bot password from ~/.config/olmanager/leaguepedia-bot.env (opt-in;
+                          see scripts/champions/README.md, "Logging in"); ignored with --offline
   --cache-dir <dir>       HTTP cache (default scripts/world/.cache)
   --throttle-ms <n>       minimum delay between live requests (default ${DEFAULT_THROTTLE_MS})
   --max-requests <n>      cap on live requests (default 3000)
@@ -35,6 +38,7 @@ const { values } = parseArgs({
   options: {
     competitions: { type: "string" },
     offline: { type: "boolean", default: false },
+    login: { type: "boolean", default: false },
     "cache-dir": { type: "string", default: path.join(ROOT, "scripts/world/.cache") },
     "throttle-ms": { type: "string", default: String(DEFAULT_THROTTLE_MS) },
     "max-requests": { type: "string", default: "3000" },
@@ -65,6 +69,7 @@ const client = new MediaWikiClient({
   throttleMs: Number(values["throttle-ms"]),
   maxRequests: Number(values["max-requests"]),
   maxCacheAgeDays: Number(values["max-cache-age-days"]),
+  log,
 });
 const competitions = values.competitions ? values.competitions.split(",").map((s) => s.trim()).filter(Boolean) : undefined;
 const writeFile = (file, text) => {
@@ -121,10 +126,12 @@ async function refresh() {
 }
 
 try {
+  if (values.login) await loginFromFile(client, { log });
   if (values["build-team-map"]) await buildMap();
   else await refresh();
 } catch (error) {
   console.error(`[world] ${error.name}: ${error.message}`);
+  log(`requests: ${formatStats(client.stats)}`);
   process.exitCode = 2;
 }
 

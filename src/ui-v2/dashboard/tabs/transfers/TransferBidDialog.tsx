@@ -85,7 +85,11 @@ export default function TransferBidDialog({
           player={bidTarget}
           caption={
             <>
-              {getTeamName(teams, bidTarget.team_id)} •{" "}
+              {getTeamName(teams, bidTarget.team_id, {
+                freeAgent: t("common.freeAgent"),
+                unknown: t("common.unknown"),
+              })}{" "}
+              •{" "}
               {t("transfers.playerValue", { value: formatVal(bidTarget.market_value) })}
             </>
           }
@@ -96,7 +100,7 @@ export default function TransferBidDialog({
 
         <div>
           <label htmlFor="transfer-destination" className={FIELD_LABEL_CLASS}>
-            {t("transfers.destination", { defaultValue: "Destination" })}
+            {t("transfers.destination")}
           </label>
           <select
             id="transfer-destination"
@@ -137,7 +141,7 @@ export default function TransferBidDialog({
 
             {myTeam && bidFee !== null && bidProjection ? (
               <div className="space-y-2 rounded-lg border border-border bg-card/60 p-3">
-                <p className="font-heading text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <p className="font-heading text-caption font-bold uppercase tracking-wider text-muted-foreground">
                   {t("transfers.bidImpactTitle", { defaultValue: "Projected impact" })}
                 </p>
                 <p className="text-xs tabular-nums text-foreground/70">

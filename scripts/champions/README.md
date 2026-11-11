@@ -19,3 +19,32 @@ node scripts/champions/pro-matchups.mjs --offline   # cache only
 - Leaguepedia may answer `ratelimited` to anonymous Cargo queries; the run then fails. Do not switch to other sites.
 - Apply results through `assets/simulation/champion-counter-curation.json`, then run
   `node scripts/generate-champion-relationships.mjs` and `npm run verify:champion-relationships`.
+
+## Logging in
+
+Leaguepedia may answer `ratelimited` to anonymous requests. `--login` (on `pro-matchups.mjs` and
+`scripts/world/refresh.mjs`) logs in once with a MediaWiki bot password before the first query. It is opt-in.
+It is unverified whether a logged-in normal account avoids the Cargo rate limit; the first live run is the test.
+
+1. Log in to https://lol.fandom.com with a Fandom account.
+2. Open https://lol.fandom.com/wiki/Special:BotPasswords and create a bot named `olmanager`. Tick only "Basic
+   rights", "High API limits" and "Create, query and delete data through the Cargo extension". A bot-password session
+   keeps only the rights its grants include, so the Cargo grant makes sure queries stay allowed. A grant never adds
+   rights the account lacks, so a normal account still cannot delete Cargo data. Leave every edit, upload and admin
+   grant unticked. The page then shows the exact login name (`Account@olmanager`) and a password.
+3. Create the private file (works in fish and bash), then open it in an editor and write the two lines:
+
+   ```bash
+   mkdir -p ~/.config/olmanager
+   test -e ~/.config/olmanager/leaguepedia-bot.env || install -m 600 /dev/null ~/.config/olmanager/leaguepedia-bot.env
+   ```
+
+   ```
+   LEAGUEPEDIA_BOT_USER=<login name shown by Special:BotPasswords>
+   LEAGUEPEDIA_BOT_PASSWORD=<generated password>
+   ```
+
+4. Run with the flag: `node scripts/champions/pro-matchups.mjs --login` or `npm run world:refresh -- --login`.
+
+The file must not be readable by other users (`chmod 600`); the tool refuses it otherwise. Credentials are sent only
+over https to `lol.fandom.com`, cookies stay in memory, and login requests are never cached. Offline runs ignore `--login`.
