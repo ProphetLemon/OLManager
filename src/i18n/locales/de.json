@@ -147,6 +147,21 @@
           "playerContractPressure": {
             "body": "{{player}} möchte vor dem nächsten Ligafenster Klarheit. Bei noch {{days}} Tagen Vertragslaufzeit stellt sich die Frage, ob weiterhin mit einem Platz im Roster geplant wird oder ob andere Angebote vorbereitet werden sollten.\n\n\"Ich muss wissen, ob dieses Projekt nach dem Split noch einen Platz für mich hat.\""
           }
+        },
+        "personas": {
+          "dot-esports-reporter": "Reporter von Dot Esports",
+          "dexerto-reporter": "Reporter von Dexerto",
+          "esportmaniacos-desk": "Esportmaníacos-Redaktion",
+          "verified-analyst": "Verifizierter Analyst",
+          "draft-room-critic": "Draft-Kritiker",
+          "rift-instigator": "Der Rift-Provokateur",
+          "sideline-human": "Menschliche Seite am Spielfeldrand"
+        },
+        "outlets": {
+          "lec-post-match": "LEC-Interviews nach dem Match",
+          "league-beat": "Liga-Puls",
+          "tactical-rift-review": "Taktik-Rückblick der Rift",
+          "rift-desk": "Rift-Redaktion"
         }
       }
     }

@@ -177,6 +177,21 @@
           "playerContractPressure": {
             "body": "{{player}} quiere definiciones antes de la próxima ventana de liga. Con {{days}} días de contrato, pregunta si sigue dentro del plan del roster o si debería prepararse para otras ofertas.\n\n\"Necesito saber si este proyecto todavía tiene lugar para mí después del split.\""
           }
+        },
+        "personas": {
+          "dot-esports-reporter": "Reportero de Dot Esports",
+          "dexerto-reporter": "Reportero de Dexerto",
+          "esportmaniacos-desk": "Redacción de Esportmaníacos",
+          "verified-analyst": "Analista verificado",
+          "draft-room-critic": "Crítico del draft",
+          "rift-instigator": "El Instigador de la Grieta",
+          "sideline-human": "Ángulo humano desde la banda"
+        },
+        "outlets": {
+          "lec-post-match": "Entrevistas postpartido de la LEC",
+          "league-beat": "Pulso de la liga",
+          "tactical-rift-review": "Revista táctica de la Grieta",
+          "rift-desk": "Mesa de la Grieta"
         }
       }
     }

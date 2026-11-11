@@ -147,6 +147,21 @@
           "playerContractPressure": {
             "body": "{{player}} veut des clarifications avant la prochaine fenêtre de ligue. Avec {{days}} jours restants sur son contrat, il demande s'il fait toujours partie du plan roster ou s'il doit se préparer à d'autres offres.\n\n\"J'ai besoin de savoir si ce projet a encore une place pour moi après le split.\""
           }
+        },
+        "personas": {
+          "dot-esports-reporter": "Reporter de Dot Esports",
+          "dexerto-reporter": "Reporter de Dexerto",
+          "esportmaniacos-desk": "Rédaction d’Esportmaníacos",
+          "verified-analyst": "Analyste vérifié",
+          "draft-room-critic": "Critique du draft",
+          "rift-instigator": "L’Instigateur de la Faille",
+          "sideline-human": "Angle humain en bord de terrain"
+        },
+        "outlets": {
+          "lec-post-match": "Interviews d’après-match de la LEC",
+          "league-beat": "Le Pouls de la ligue",
+          "tactical-rift-review": "Revue tactique de la Faille",
+          "rift-desk": "Bureau de la Faille"
         }
       }
     }

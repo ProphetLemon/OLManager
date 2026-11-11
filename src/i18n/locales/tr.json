@@ -147,6 +147,21 @@
           "playerContractPressure": {
             "body": "{{player}}, bir sonraki lig penceresinden önce netlik istiyor. Anlaşmanın bitmesine {{days}} gün kala, kadro planının bir parçası olarak kalıp kalmadığını veya başka tekliflere hazırlanması gerekip gerekmediğini soruyor.\n\n\"Mevsim (split) bittikten sonra bu projede hala bana yer olup olmadığını bilmem lazım.\""
           }
+        },
+        "personas": {
+          "dot-esports-reporter": "Dot Esports Muhabiri",
+          "dexerto-reporter": "Dexerto Muhabiri",
+          "esportmaniacos-desk": "Esportmaníacos Editör Masası",
+          "verified-analyst": "Doğrulanmış analist",
+          "draft-room-critic": "Draft eleştirmeni",
+          "rift-instigator": "Rift Kışkırtıcısı",
+          "sideline-human": "Kenar çizgisinden insan hikâyesi"
+        },
+        "outlets": {
+          "lec-post-match": "LEC maç sonrası röportajları",
+          "league-beat": "Lig Nabzı",
+          "tactical-rift-review": "Rift Taktik İncelemesi",
+          "rift-desk": "Rift Masası"
         }
       }
     }

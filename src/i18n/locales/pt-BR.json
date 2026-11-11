@@ -147,6 +147,21 @@
           "playerContractPressure": {
             "body": "{{player}} quer definição antes da próxima janela da liga. Com {{days}} dias restantes de contrato, ele pergunta se continua no plano do elenco ou se deve se preparar para outras ofertas.\n\n\"Preciso saber se esse projeto ainda tem espaço pra mim depois do split.\""
           }
+        },
+        "personas": {
+          "dot-esports-reporter": "Repórter da Dot Esports",
+          "dexerto-reporter": "Repórter da Dexerto",
+          "esportmaniacos-desk": "Redação do Esportmaníacos",
+          "verified-analyst": "Analista verificado",
+          "draft-room-critic": "Crítico do draft",
+          "rift-instigator": "O Instigador da Rift",
+          "sideline-human": "Ângulo humano à beira do campo"
+        },
+        "outlets": {
+          "lec-post-match": "Entrevistas pós-jogo da LEC",
+          "league-beat": "Pulso da liga",
+          "tactical-rift-review": "Revista tática da Rift",
+          "rift-desk": "Redação Rift"
         }
       }
     }

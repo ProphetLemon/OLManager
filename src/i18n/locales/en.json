@@ -177,6 +177,21 @@
           "playerContractPressure": {
             "body": "{{player}} wants clarity before the next league window. With {{days}} days left on the deal, they ask whether they remain part of the roster plan or should prepare for other offers.\n\n\"I need to know if this project still has a place for me after the split.\""
           }
+        },
+        "personas": {
+          "dot-esports-reporter": "Dot Esports Reporter",
+          "dexerto-reporter": "Dexerto Reporter",
+          "esportmaniacos-desk": "Esportmaníacos Desk",
+          "verified-analyst": "Verified Analyst",
+          "draft-room-critic": "Draft Room Critic",
+          "rift-instigator": "The Rift Instigator",
+          "sideline-human": "Sideline Human Angle"
+        },
+        "outlets": {
+          "lec-post-match": "LEC Post-Match Interviews",
+          "league-beat": "League Beat",
+          "tactical-rift-review": "Tactical Rift Review",
+          "rift-desk": "Rift Desk"
         }
       }
     }
