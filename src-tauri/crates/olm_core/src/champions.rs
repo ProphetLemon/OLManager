@@ -790,19 +790,18 @@ fn ensure_initial_patch_state(game: &mut Game) {
     }
 
     ensure_patch_seed(&mut game.champion_patch);
-    let mut rng = StdRng::seed_from_u64(game.champion_patch.rng_seed);
 
-    let initial_working: Vec<WorkingMeta> = champion_catalog()
+    // A new career starts on the real professional meta. Sorted so that ties between
+    // roles at a tier boundary always break the same way.
+    let mut initial_working: Vec<WorkingMeta> = champion_catalog()
         .iter()
-        .map(|(champion_id, role)| {
-            let score = (base_role_score(role) + rng.random_range(-4..=4)).clamp(32, 82);
-            WorkingMeta {
-                champion_id: champion_id.clone(),
-                role: role.clone(),
-                score,
-            }
+        .map(|(champion_id, role)| WorkingMeta {
+            champion_id: champion_id.clone(),
+            role: role.clone(),
+            score: real_meta_score(champion_id, role),
         })
         .collect();
+    initial_working.sort_by(|a, b| (&a.role, &a.champion_id).cmp(&(&b.role, &b.champion_id)));
 
     let initial_tier_map = tier_map_from_working(&initial_working);
     let initial_meta: Vec<ChampionMetaEntry> = initial_working
@@ -2194,6 +2193,72 @@ mod tests {
             assert!(
                 top_band.abs_diff(expected) <= 1,
                 "{role}: {top_band} vs {expected}"
+            );
+        }
+    }
+
+    fn new_game_tiers() -> HashMap<(String, String), String> {
+        let mut game = game_with_lineup(Vec::new());
+        game.clock.current_date = test_date(2026, 1, 20);
+        game.champion_patch.rng_seed = 11;
+        ensure_initial_patch_state(&mut game);
+        game.champion_patch
+            .hidden_meta
+            .iter()
+            .map(|entry| {
+                (
+                    (entry.champion_id.clone(), entry.role.clone()),
+                    entry.tier.clone(),
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn new_game_meta_starts_on_the_professional_meta() {
+        let tiers = new_game_tiers();
+        for (champion, role) in [
+            ("Ezreal", "ADC"),
+            ("Yunara", "ADC"),
+            ("JarvanIV", "Jungle"),
+            ("XinZhao", "Jungle"),
+            ("Ryze", "Mid"),
+            ("KSante", "Top"),
+            ("Rumble", "Top"),
+            ("Nautilus", "Support"),
+        ] {
+            let tier = &tiers[&(champion.to_string(), role.to_string())];
+            assert!(
+                tier == "S" || tier == "A",
+                "{champion} {role} starts in tier {tier}"
+            );
+        }
+    }
+
+    #[test]
+    fn new_game_meta_keeps_the_tier_counts_of_the_old_seeding() {
+        let tiers = new_game_tiers();
+        // The old seeding ranked every pair at once, so these totals did not depend on the seed.
+        let count = |tier: &str| tiers.values().filter(|t| *t == tier).count();
+        assert_eq!(
+            ["S", "A", "B", "C", "D"].map(count),
+            [24, 44, 61, 44, 29]
+        );
+    }
+
+    #[test]
+    fn new_game_meta_gives_every_role_its_share_of_the_top_tier() {
+        let tiers = new_game_tiers();
+        for role in ["Top", "Jungle", "Mid", "ADC", "Support"] {
+            let in_role = tiers.keys().filter(|(_, r)| r == role).count();
+            let top = tiers
+                .iter()
+                .filter(|((_, r), tier)| r == role && *tier == "S")
+                .count();
+            let expected = (in_role as f64 * 0.12).round() as usize;
+            assert!(
+                top.abs_diff(expected) <= 2,
+                "{role}: {top} S of {in_role}, expected about {expected}"
             );
         }
     }
