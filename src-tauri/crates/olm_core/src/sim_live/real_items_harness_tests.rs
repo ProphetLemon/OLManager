@@ -186,3 +186,30 @@ fn measure_real_lineups() {
         println!("role share {role} {:.1}%", shares.iter().sum::<f64>() / shares.len() as f64 * 100.0);
     }
 }
+
+/// Items in the order they are bought: boots first, then table order.
+fn purchase_order(plan: &[ItemTemplate; 6]) -> Vec<&ItemTemplate> {
+    let (boots, rest): (Vec<_>, Vec<_>) = plan.iter().partition(|t| is_boots_item_key(t.key));
+    boots.into_iter().chain(rest).collect()
+}
+
+#[test]
+#[ignore = "writes the old and new purchase sequence of every champion and role to $DUMP_PATH"]
+fn dump_purchase_sequences() {
+    let mut out = String::from("champion,role,pro,old_new,sequence\n");
+    for id in catalogue_ids() {
+        for role in ROLES {
+            let old = category_plan(classify_item_build(role, &id));
+            let new = champion_item_plan(role, &id);
+            let pro = u8::from(!std::ptr::eq(old, new));
+            for (label, plan) in [("old", old), ("new", new)] {
+                let seq: Vec<String> = purchase_order(plan)
+                    .iter()
+                    .map(|t| format!("{}:{}:{}", t.cost, t.attack_damage, t.max_hp))
+                    .collect();
+                out.push_str(&format!("{id},{role},{pro},{label},{}\n", seq.join(" ")));
+            }
+        }
+    }
+    std::fs::write(std::env::var("DUMP_PATH").expect("DUMP_PATH"), out).expect("write");
+}
