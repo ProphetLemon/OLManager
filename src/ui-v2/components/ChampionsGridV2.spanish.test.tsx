@@ -36,4 +36,15 @@ describe("ChampionsGridV2 in the Spanish UI", () => {
     expect(screen.getByTitle("Jungla")).toBeInTheDocument();
     expect(screen.queryByTitle("JUNGLE")).toBeNull();
   });
+
+  it("shows the display name of a champion, not its id without spaces", () => {
+    const champions = [champion(1, "AurelionSol"), champion(2, "DrMundo"), champion(3, "MonkeyKing")];
+    render(<ChampionsGridV2 champions={champions} onChampionClick={() => {}} />);
+
+    expect(screen.getByText("Aurelion Sol")).toBeInTheDocument();
+    expect(screen.getByText("Dr. Mundo")).toBeInTheDocument();
+    expect(screen.getByText("Wukong")).toBeInTheDocument();
+    expect(screen.queryByText("AurelionSol")).toBeNull();
+    expect(screen.queryByText("MonkeyKing")).toBeNull();
+  });
 });

@@ -4132,21 +4132,25 @@
   "championPage": {
     "assists": "Assists",
     "bestAgainst": "Best Against",
+    "br": "BR",
     "champion": "Champion",
     "cs": "CS",
     "damage": "Damage",
     "deaths": "Deaths",
     "duration": "Duration",
     "gold": "Gold",
+    "kda": "KDA",
     "kills": "Kills",
     "noData": "No data available",
     "noHistory": "No match history",
     "noRoles": "No roles played",
+    "pr": "PR",
     "roles": "Roles",
     "topPlayers": "Top Players",
     "vision": "Vision",
     "weekly": "Weekly",
-    "worstAgainst": "Worst Against"
+    "worstAgainst": "Worst Against",
+    "wr": "WR"
   },
   "championsGrid": {
     "championCount_one": "{{count}} champion",

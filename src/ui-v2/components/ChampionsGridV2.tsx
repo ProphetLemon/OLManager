@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import type { ChampionData } from "@/store/types";
 import { resolveChampionTile } from "@/lib/champions/championImages";
+import { championDisplayName } from "@/lib/champions/championNames";
 import { cn } from "@/ui-v2/lib/utils";
 import championsSeed from "../../../assets/simulation/champions.json";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
@@ -133,7 +134,7 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
                 {tile && (
                   <img
                     src={tile}
-                    alt={champion.name}
+                    alt={championDisplayName(champion.champion_key, champion.name)}
                     className="size-full object-cover transition-transform duration-300 group-hover:scale-110"
                     loading="lazy"
                   />
@@ -141,7 +142,7 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 px-2 py-2">
                   <p className="truncate text-center font-heading text-caption font-bold uppercase tracking-wider text-white drop-shadow">
-                    {champion.champion_key}
+                    {championDisplayName(champion.champion_key, champion.name)}
                   </p>
                 </div>
                 {roles.length > 0 && (
