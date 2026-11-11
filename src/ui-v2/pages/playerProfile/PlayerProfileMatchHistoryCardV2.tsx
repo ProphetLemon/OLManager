@@ -6,6 +6,7 @@ import { formatDateShort } from "@/lib/common/helpers";
 import { Button } from "@/ui-v2/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
+import { ResultLetter } from "@/ui-v2/components/ResultLetter";
 import { SECTION_TITLE_CLASS } from "./PlayerProfileSectionV2";
 
 interface Props {
@@ -66,7 +67,7 @@ export default function PlayerProfileMatchHistoryCardV2({ history, t, language }
                     isWin ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative",
                   )}
                 >
-                  {isWin ? "W" : "L"}
+                  <ResultLetter kind={isWin ? "win" : "loss"} />
                 </span>
 
                 {championTile ? (

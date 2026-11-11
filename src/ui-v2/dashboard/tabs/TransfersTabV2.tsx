@@ -641,9 +641,9 @@ export function TransfersTabV2({
                   ? "border-primary bg-primary/10"
                   : "border-border bg-card text-muted-foreground hover:border-muted-foreground/50",
               )}
-              title={pos}
+              title={t(`onAir.roles.${pos}`)}
             >
-              <img src={ROLE_ICON_PATHS[pos]} alt={pos} className="size-4 object-contain" />
+              <img src={ROLE_ICON_PATHS[pos]} alt={t(`onAir.roles.${pos}`)} className="size-4 object-contain" />
             </button>
           ))}
         </div>

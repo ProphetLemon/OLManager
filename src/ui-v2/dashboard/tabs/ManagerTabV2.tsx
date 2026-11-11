@@ -15,6 +15,7 @@ import { MANAGER_ICON_PATHS, DEFAULT_MANAGER_ICON_PATH } from "@/lib/common/mana
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { cn } from "@/ui-v2/lib/utils";
+import { ResultLetter } from "@/ui-v2/components/ResultLetter";
 
 interface ManagerTabV2Props {
   gameState: GameStateData;
@@ -391,7 +392,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                             )}
                             title={`${getTeamName(gameState.teams, f.home_team_id)} ${f.result?.home_wins ?? 0}-${f.result?.away_wins ?? 0} ${getTeamName(gameState.teams, f.away_team_id)}`}
                           >
-                            {won ? "W" : "L"}
+                            <ResultLetter kind={won ? "win" : "loss"} />
                           </div>
                         );
                       })}

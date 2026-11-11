@@ -422,7 +422,7 @@ export function TrainingTabV2({
                     )}
                     <img
                       src={ROLE_ICON_PATHS[role]}
-                      alt={role}
+                      alt={t(`onAir.roles.${role}`)}
                       className="absolute bottom-0 left-0 size-4 rounded-tr bg-card/90 p-0.5"
                       loading="lazy"
                     />

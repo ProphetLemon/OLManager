@@ -17,6 +17,25 @@ const num = (value: unknown): number | null =>
 const str = (value: unknown): string | null =>
   typeof value === "string" && value.length > 0 ? value : null;
 
+const ALL_ROLES = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"] as const;
+
+const roleName = (role: string): string => i18n.t(`onAir.roles.${role}`, { defaultValue: role });
+
+/** The backend sends missing roles as raw enum names ("TOP, JUNGLE"); show them as the app names them. */
+const roleNames = (roles: string): string =>
+  roles
+    .split(",")
+    .map((role) => role.trim())
+    .filter((role) => role.length > 0)
+    .map(roleName)
+    .join(", ");
+
+/** The five roles for "TOP, JUNGLE, MID, ADC and SUPPORT" style texts; each locale writes its own "and". */
+const allRoleNames = () => {
+  const names = ALL_ROLES.map(roleName);
+  return { roleListHead: names.slice(0, -1).join(", "), roleListLast: names[names.length - 1] };
+};
+
 /**
  * Words a roster or inbox blocker from its id and the values the backend sends
  * in `params`, through i18n. The backend `text` is only an English fallback, so a
@@ -41,7 +60,7 @@ export function backendBlockerText(blocker: Pick<BlockerData, "id" | "params">):
       const roles = str(p.roles);
       const count = num(p.count);
       return p.reason === "missing_roles" && roles !== null && count !== null
-        ? i18n.t("advance.blockers.incompleteLineupRoles", { roles, count })
+        ? i18n.t("advance.blockers.incompleteLineupRoles", { roles: roleNames(roles), ...allRoleNames(), count })
         : null;
     }
     case "key_contract_risk": {
@@ -58,11 +77,11 @@ export function backendBlockerText(blocker: Pick<BlockerData, "id" | "params">):
     }
     case "main_missing_roles": {
       const roles = str(p.roles);
-      return roles === null ? null : i18n.t("advance.blockers.mainMissingRoles", { roles });
+      return roles === null ? null : i18n.t("advance.blockers.mainMissingRoles", { roles: roleNames(roles), ...allRoleNames() });
     }
     case "academy_missing_roles": {
       const roles = str(p.roles);
-      return roles === null ? null : i18n.t("advance.blockers.academyMissingRoles", { roles });
+      return roles === null ? null : i18n.t("advance.blockers.academyMissingRoles", { roles: roleNames(roles) });
     }
     default:
       return null;

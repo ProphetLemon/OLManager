@@ -3401,7 +3401,7 @@
           "reduceCancellations": "Réduisez les annulations la semaine prochaine ; la réputation de scrim fait partie de votre infrastructure compétitive.",
           "resetBeforeVolume": "Commencez la semaine prochaine par Mental Reset ou VOD Review avant d'ajouter du volume.",
           "narrowFocus": "Gardez le volume, mais resserrez le focus autour du problème récurrent ; la qualité est trop instable.",
-          "targetedDrills": "Planifiez Targeted Drills pour le problème récurrent et gardez le bloc principal de préparation stable.",
+          "targetedDrills": "Planifiez Exercices ciblés pour le problème récurrent et gardez le bloc principal de préparation stable.",
           "keepPlan": "Gardez le plan actuel : il produit des reps utiles sans surcharger le roster."
         }
       },
@@ -4113,9 +4113,10 @@
     "worstAgainst": "Worst Against"
   },
   "championsGrid": {
-    "championCount": "{{count}} champions",
-    "clearFilters": "Clear Filters",
-    "noResults": "No results"
+    "championCount_one": "{{count}} champion",
+    "championCount_other": "{{count}} champions",
+    "clearFilters": "Effacer les filtres",
+    "noResults": "Aucun résultat"
   },
   "competitions": {
     "heroMatches_one": "{{count}} match",
@@ -4300,6 +4301,9 @@
       "formWin": "Victoire",
       "formLoss": "Défaite",
       "formDraw": "Nul",
+      "formWinLetter": "V",
+      "formLossLetter": "D",
+      "formDrawLetter": "N",
       "needsEmptyHint": "Vous pouvez continuer quand vous êtes prêt.",
       "moreContracts_one": "{{count}} renouvellement de contrat de plus non affiché",
       "moreContracts_other": "{{count}} renouvellements de contrat de plus non affichés",
@@ -4403,13 +4407,13 @@
       "urgentMessages_one": "{{count}} message urgent non lu",
       "urgentMessages_other": "{{count}} messages urgents non lus",
       "incompleteLineupTooFew": "Ta composition ne compte que {{selected}} des {{required}} joueurs nécessaires — définis ta composition",
-      "incompleteLineupRoles_one": "Il manque le rôle {{roles}} dans ta composition. Assure-toi d'avoir TOP, JUNGLE, MID, ADC et SUPPORT.",
-      "incompleteLineupRoles_other": "Il manque les rôles {{roles}} dans ta composition. Assure-toi d'avoir TOP, JUNGLE, MID, ADC et SUPPORT.",
+      "incompleteLineupRoles_one": "Il manque le rôle {{roles}} dans ta composition. Assure-toi d'avoir {{roleListHead}} et {{roleListLast}}.",
+      "incompleteLineupRoles_other": "Il manque les rôles {{roles}} dans ta composition. Assure-toi d'avoir {{roleListHead}} et {{roleListLast}}.",
       "keyContractRisk": "Risque de contrat pour les joueurs clés dans la planification de l'effectif : {{players}}",
       "contractWageRisk": "{{amount}} de salaires sont liés à des contrats à risque — revois ton budget salarial",
       "mainRosterMinimum_one": "Effectif principal incomplet : tu as {{count}} joueur. Il t'en faut au moins 5 pour avancer.",
       "mainRosterMinimum_other": "Effectif principal incomplet : tu as {{count}} joueurs. Il t'en faut au moins 5 pour avancer.",
-      "mainMissingRoles": "Effectif principal incomplet par rôle : il manque au moins un joueur en {{roles}}. Tu ne peux pas avancer tant que TOP, JUNGLE, MID, ADC et SUPPORT ne sont pas couverts.",
+      "mainMissingRoles": "Effectif principal incomplet par rôle : il manque au moins un joueur en {{roles}}. Tu ne peux pas avancer tant que {{roleListHead}} et {{roleListLast}} ne sont pas couverts.",
       "academyMissingRoles": "Académie incomplète : il manque au moins un joueur en {{roles}}. Tu ne peux pas avancer tant que tous les rôles ne sont pas couverts."
     },
     "notices": {

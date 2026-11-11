@@ -4147,7 +4147,8 @@
     "worstAgainst": "Worst Against"
   },
   "championsGrid": {
-    "championCount": "{{count}} champions",
+    "championCount_one": "{{count}} champion",
+    "championCount_other": "{{count}} champions",
     "clearFilters": "Clear Filters",
     "noResults": "No results"
   },
@@ -4334,6 +4335,9 @@
       "formWin": "Win",
       "formLoss": "Loss",
       "formDraw": "Draw",
+      "formWinLetter": "W",
+      "formLossLetter": "L",
+      "formDrawLetter": "D",
       "needsEmptyHint": "You can continue whenever you are ready.",
       "moreContracts_one": "{{count}} more contract renewal not shown",
       "moreContracts_other": "{{count}} more contract renewals not shown",
@@ -4437,13 +4441,13 @@
       "urgentMessages_one": "{{count}} urgent unread message",
       "urgentMessages_other": "{{count}} urgent unread messages",
       "incompleteLineupTooFew": "Your lineup has only {{selected}} of the {{required}} players it needs — set your lineup",
-      "incompleteLineupRoles_one": "Your lineup is missing the role {{roles}}. Make sure you have TOP, JUNGLE, MID, ADC and SUPPORT.",
-      "incompleteLineupRoles_other": "Your lineup is missing the roles {{roles}}. Make sure you have TOP, JUNGLE, MID, ADC and SUPPORT.",
+      "incompleteLineupRoles_one": "Your lineup is missing the role {{roles}}. Make sure you have {{roleListHead}} and {{roleListLast}}.",
+      "incompleteLineupRoles_other": "Your lineup is missing the roles {{roles}}. Make sure you have {{roleListHead}} and {{roleListLast}}.",
       "keyContractRisk": "Key player contract risk in squad planning: {{players}}",
       "contractWageRisk": "{{amount}} of wages are tied to at-risk contracts — review your wage budget",
       "mainRosterMinimum_one": "Main roster incomplete: you have {{count}} player. You need at least 5 to advance.",
       "mainRosterMinimum_other": "Main roster incomplete: you have {{count}} players. You need at least 5 to advance.",
-      "mainMissingRoles": "Main roster incomplete by role: at least one player is missing in {{roles}}. You cannot advance until TOP, JUNGLE, MID, ADC and SUPPORT are covered.",
+      "mainMissingRoles": "Main roster incomplete by role: at least one player is missing in {{roles}}. You cannot advance until {{roleListHead}} and {{roleListLast}} are covered.",
       "academyMissingRoles": "Academy incomplete: at least one player is missing in {{roles}}. You cannot advance until every role is covered."
     },
     "notices": {
