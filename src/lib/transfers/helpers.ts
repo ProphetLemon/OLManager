@@ -112,5 +112,9 @@ export function mapTransferNegotiationError(
     return t("transfers.negotiationExpiredError");
   }
 
+  if (error.includes("Contract must be between 1 and 5 years")) {
+    return t("transfers.contractLengthError");
+  }
+
   return error;
 }

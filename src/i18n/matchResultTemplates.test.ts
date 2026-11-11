@@ -14,7 +14,8 @@ type Locale = { be: { msg: { matchResult: { templates: Record<string, Template> 
 
 const LOCALES: Record<string, Locale> = { de, en, es, fr, it: itLocale, pt, "pt-BR": ptBR, tr } as Record<string, Locale>;
 
-// {{score}} is "<user team>:<own wins>-<opponent wins>" and already names the user's club;
+// {{score}} is "<user team>:<own wins>-<opponent wins>" and already names the user's club, so no
+// template prints it as a bare score (the club name would show next to the opponent's);
 // {{homeWins}}-{{awayWins}} is the fixture-order series score; {{userScore}} puts the user's
 // club first and {{opponentScore}} puts the opponent first.
 describe("be.msg.matchResult.templates", () => {
@@ -40,6 +41,12 @@ describe("be.msg.matchResult.templates", () => {
     for (const [id, template] of Object.entries(templates)) {
       if (id === "defeat_2") continue;
       expect(`${template.subject}${template.body}`, id).not.toContain("{{opponentScore}}");
+    }
+  });
+
+  it.each(Object.entries(LOCALES))("%s prints the plain score, not the club-prefixed one", (_lang, locale) => {
+    for (const [id, template] of Object.entries(locale.be.msg.matchResult.templates)) {
+      expect(`${template.subject}${template.body}`, id).not.toContain("{{score}}");
     }
   });
 

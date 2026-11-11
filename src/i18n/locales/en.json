@@ -177,6 +177,21 @@
           "playerContractPressure": {
             "body": "{{player}} wants clarity before the next league window. With {{days}} days left on the deal, they ask whether they remain part of the roster plan or should prepare for other offers.\n\n\"I need to know if this project still has a place for me after the split.\""
           }
+        },
+        "personas": {
+          "dot-esports-reporter": "Dot Esports Reporter",
+          "dexerto-reporter": "Dexerto Reporter",
+          "esportmaniacos-desk": "Esportmaníacos Desk",
+          "verified-analyst": "Verified Analyst",
+          "draft-room-critic": "Draft Room Critic",
+          "rift-instigator": "The Rift Instigator",
+          "sideline-human": "Sideline Human Angle"
+        },
+        "outlets": {
+          "lec-post-match": "LEC Post-Match Interviews",
+          "league-beat": "League Beat",
+          "tactical-rift-review": "Tactical Rift Review",
+          "rift-desk": "Rift Desk"
         }
       }
     }
@@ -214,7 +229,8 @@
     "chooseWorld": "Choose World",
     "placeholderFirst": "e.g. Lee",
     "placeholderLast": "e.g. Sang-hyeok",
-    "nickname": "Nickname"
+    "nickname": "Nickname",
+    "placeholderNickname": "e.g. Faker"
   },
   "validation": {
     "required": "{{field}} is required",
@@ -299,7 +315,11 @@
       "exhausted": "{{count}} player(s) in critical condition (<25%)",
       "incompleteStartingXi": "Starting Five incomplete — set your lineup",
       "urgentUnread": "{{count}} urgent message(s) unread",
-      "matchTodayStartingXi": "Match today! Set your starting five"
+      "matchTodayStartingXi": "Match today! Set your starting five",
+      "financeCrisis": "Finances critical — balance {{balance}}, runway {{weeks}} week(s)",
+      "financeRunway": "Cash runway down to {{count}} week(s)",
+      "esportsSponsor": "{{sponsorName}} is an esports sponsor",
+      "wagePressure": "Wage bill at {{percent}}% of budget"
     },
     "unemployedBanner": "You are currently without a club. Job offers may arrive in your inbox.",
     "brandSubtitle": "Manager",
@@ -327,7 +347,8 @@
     "skipToMatchDayDesc": "Fast-forward to your next match and play it automatically",
     "matchDayTitle": "Match Day",
     "delegateWarning": "Your assistant will manage the match. You won't be able to intervene.",
-    "skipToNextDay": "Skip to Next Day"
+    "skipToNextDay": "Skip to Next Day",
+    "skipToNextDayDesc": "Advance to the next day"
   },
   "champions": {
     "170": "170+",
@@ -358,7 +379,22 @@
     "allChampions": "All Champions",
     "worldDescription": "Explore all League of Legends champions",
     "totalChampions": "Total",
-    "searchPlaceholder": "Search champions..."
+    "searchPlaceholder": "Search champions...",
+    "mastery": "Mastery",
+    "name": "Champion",
+    "of": "of",
+    "patchFallback": "No patch yet",
+    "patchLabel": "Patch",
+    "priorityHigh": "High priority",
+    "priorityMedium": "Medium priority",
+    "priorityLow": "Low priority",
+    "priorityHighDesc": "Gets the largest share of the training focus.",
+    "priorityMediumDesc": "Gets a moderate share of the training focus.",
+    "priorityLowDesc": "Gets the smallest share of the training focus.",
+    "results": "champion(s) found",
+    "roles": "Roles",
+    "staffMasteryImpact": "mastery learning",
+    "staffMetaImpact": "Scout read"
   },
   "exitConfirm": {
     "title": "Exit to Main Menu?",
@@ -668,7 +704,28 @@
       "Teamfighting": "Improves teamfight execution, objective focus, and 5v5 coordination.",
       "Macro": "Improves objective setup, map control, and mid/late decisions.",
       "Mental": "Improves mental stability, recovery, and consistency under pressure."
-    }
+    },
+    "assistantModeHint": "In Assistant mode, Continue advances 1 day and the staff resolves scrim decisions automatically.",
+    "cancellations": "Cancellations",
+    "nextOfficialRival": "Next official rival",
+    "noWeeklyReportYet": "Complete scrims to generate the weekly summary.",
+    "postScrimFeedback": "Post-scrim feedback",
+    "postScrimNextActionContinue": "Review already applied: use this feedback to adjust the rival and the focus for the next block.",
+    "postScrimNextActionReview": "Next action: choose a review decision in Home to turn this block into concrete progress.",
+    "reportQuality": "Quality",
+    "todayCancelCost": "Cancel cost",
+    "todayCancelled": "Today’s scrim block was cancelled. Prioritize recovery or drills.",
+    "todayLearning": "Learning value",
+    "todayNeedsReview": "Today’s scrim was played and is waiting for a review decision.",
+    "todayNoScrim": "No active scrim today. Adjust your weekly plan with intent.",
+    "todayPlanned": "A scrim is planned today. Check that Plan A/B/C still makes sense.",
+    "todayReviewed": "Today’s review was already applied. Continue with prep and training.",
+    "weeklyFailureCancellations": "Risk: too many cancellations",
+    "weeklyFailureConsistency": "Risk: inconsistent results",
+    "weeklyFailureIssue": "Recurring issue: {{issue}}",
+    "weeklyGainExecution": "Gain: better execution",
+    "weeklyGainExposure": "Gain: exposure to different styles",
+    "weeklyGainSolid": "Gain: solid scrim quality"
   },
   "season": {
     "preseasonStatus": "Preseason Status",
@@ -879,7 +936,9 @@
         "ageChanged": "The birth date must keep the player's age.",
         "general": "Could not check this edit. Try again."
       }
-    }
+    },
+    "noLeaguesMatch": "No leagues match your search",
+    "selectTeamErrorTitle": "Could not select team"
   },
   "youthAcademy": {
     "title": "Academy",
@@ -925,7 +984,8 @@
     "highPotentialBadge": "High Potential",
     "noStaffMatch": "No staff match your search",
     "potentialHiddenHint": "Potential is hidden until scouted",
-    "searchPlaceholder": "Search academy players..."
+    "searchPlaceholder": "Search academy players...",
+    "promoteTitle": "Promote to the first team"
   },
   "common": {
     "loading": "Loading...",
@@ -1076,7 +1136,16 @@
     "nextPage": "Next",
     "previousPage": "Previous",
     "saving": "Saving...",
-    "transferListed": "TR"
+    "transferListed": "TR",
+    "appearances": "GP",
+    "assists": "Assists",
+    "games": "Games",
+    "kills": "Kills",
+    "losses": "Losses",
+    "rating": "Rating",
+    "showMore": "Show more ({{count}})",
+    "vision": "Vision",
+    "wins": "Wins"
   },
   "teamSelection": {
     "title": "Choose Your Club",
@@ -1124,7 +1193,9 @@
     "importsInLineup": "Imports in the starting five: {{count}} / {{max}}",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
-    "noRoleAvailable": "No player available"
+    "noRoleAvailable": "No player available",
+    "activeLineupHint": "Core five-player League of Legends lineup.",
+    "missingRoleCoverage": "Missing role coverage"
   },
   "tactics": {
     "playStyle": "Play Style",
@@ -1452,7 +1523,11 @@
       "autofill": "Autofill"
     },
     "daysPerWeek": "days/week",
-    "emptyRoster": "Empty roster"
+    "emptyRoster": "Empty roster",
+    "tab": {
+      "training": "Training",
+      "soloq": "SoloQ"
+    }
   },
   "staff": {
     "myStaff": "My Staff ({{count}})",
@@ -1518,11 +1593,14 @@
       "recovery": "Recovery",
       "draftAnalysis": "Draft analysis",
       "futureMeta": "Future meta",
-      "tiltControl": "Tilt control"
+      "tiltControl": "Tilt control",
+      "title": "Impact"
     },
     "adjustFiltersHint": "Try adjusting filters or search",
     "hireFromAvailableHint": "Hire staff from the available tab",
-    "allStaffEmployedHint": "All staff are currently employed"
+    "allStaffEmployedHint": "All staff are currently employed",
+    "attributes": "Attributes",
+    "contractUntil": "Contract"
   },
   "finances": {
     "overview": "Financial Overview",
@@ -1643,7 +1721,9 @@
       "PrizeMoney": "Prize money",
       "BudgetRefresh": "Budget refresh",
       "Other": "Other"
-    }
+    },
+    "overviewTab": "Overview",
+    "facilitiesTab": "Facilities"
   },
   "inbox": {
     "title": "Inbox",
@@ -1734,11 +1814,12 @@
     "noTeam": "No team assigned",
     "players": "Players",
     "recentResults": "Recent Results",
-    "saveError": "Error saving profile",
+    "saveError": "Error saving profile: ",
     "seasons": "Seasons",
     "staff": "Staff",
     "teams": "Teams",
-    "winRate": "Win Rate"
+    "winRate": "Win Rate",
+    "settings": "Edit profile"
   },
   "boardObjectives": {
     "objective": {
@@ -1850,7 +1931,11 @@
     "bidImpactBalance": "Club balance {{before}} -> {{after}}",
     "bidImpactWagePressure": "Projected wage budget usage {{percent}}%",
     "bidImpactOverTransferBudget": "This bid exceeds your transfer budget",
-    "bidImpactOverBalance": "This bid would push the club into debt"
+    "bidImpactOverBalance": "This bid would push the club into debt",
+    "contractLengthError": "The contract must last between 1 and 5 years.",
+    "currentAnnualWage": "Current annual wage: {{wage}}",
+    "proposedWeekly": "Weekly equivalent: {{weekly}}/wk",
+    "wageIncrease": "Increase: +{{pct}}%"
   },
   "schedule": {
     "noSchedule": "No league schedule available.",
@@ -1877,7 +1962,8 @@
     "matchesForDate": "Matches for {{date}}",
     "noFixtures": "No fixtures available",
     "noMatchesOnDay": "No matches on this day",
-    "thisWeek": "This Week"
+    "thisWeek": "This Week",
+    "scrimVs": "Scrim vs {{team}}"
   },
   "players": {
     "searchPlaceholder": "Search by name or nationality...",
@@ -1928,7 +2014,15 @@
     "statPts": "Pts",
     "statRep": "Rep",
     "statSquad": "Squad",
-    "statValue": "Value"
+    "statValue": "Value",
+    "colPos": "Pos",
+    "colTeam": "Team",
+    "colOvr": "OVR",
+    "colRep": "Rep",
+    "colValue": "Value",
+    "colWr": "WR",
+    "colPlayers": "Players",
+    "recordShort": "{{won}}W {{lost}}L"
   },
   "teamsList": {
     "yourTeam": "Your Team",
@@ -1984,7 +2078,11 @@
     "comingSoonTitle": "Social Feed Coming Soon",
     "comingSoonBody": "The social feed is currently available for <strong>LEC</strong> only.",
     "comingSoonSub": "More leagues will be supported in a future update.",
-    "currentlyPlaying": "Currently playing:"
+    "currentlyPlaying": "Currently playing:",
+    "composerPlaceholder": "What is on the manager’s mind today?",
+    "mediaAlt": "Post media",
+    "post": "Post",
+    "posting": "Posting..."
   },
   "playerProfile": {
     "rename": {
@@ -2109,7 +2207,11 @@
     "startPotentialResearch": "Start Potential Research",
     "transferListed": "Transfer Listed",
     "transferOfferDestination": "Destination",
-    "transferOfferMainTeam": "Main team"
+    "transferOfferMainTeam": "Main team",
+    "career": "Career history",
+    "matchHistory": "Match history",
+    "noStats": "No matches played this season.",
+    "traits": "Traits"
   },
   "teamProfile": {
     "clubInfo": "Team Information",
@@ -2133,7 +2235,10 @@
     "winRate": "WR",
     "matchesPlayed": "Matches",
     "perMatch": "Per Match",
-    "recentMatches": "Recent Matches"
+    "recentMatches": "Recent Matches",
+    "side": "Side",
+    "kda": "K / D / A",
+    "economy": "Gold / Objectives"
   },
   "settings": {
     "title": "Settings",
@@ -2197,7 +2302,27 @@
     "checkNow": "Check Now",
     "updateAvailableDetail": "Version {{version}} is available",
     "upToDate": "You're up to date",
-    "noPlatformBuild": "A release exists, but it has no build for your system yet"
+    "noPlatformBuild": "A release exists, but it has no build for your system yet",
+    "autoImport": "Auto-import database",
+    "autoImportDesc": "Downloads the public OLMDBManager database (teams, players, staff and images) and updates the game data.",
+    "data": "Data",
+    "debugTools": "Debug tools",
+    "debugToolsDesc": "Enable internal tools like draft skip and World Editor",
+    "importCached": "Use last ZIP",
+    "importCacheEmpty": "No saved ZIP yet. The first online import will create one.",
+    "importCacheMissing": "There is no saved ZIP yet.",
+    "importCacheReady": "Saved ZIP: {{size}}",
+    "importDone": "{{players}} players, {{teams}} teams and {{staff}} staff imported. Images: {{photos}}.",
+    "importing": "Importing...",
+    "importOnline": "Import online",
+    "importRunning": "Downloading and unpacking data from OLMDBManager...",
+    "importZip": "Import ZIP",
+    "importZipPath": "/path/to/olmanager_export.zip",
+    "importZipPathRequired": "Enter the ZIP path.",
+    "players": "Players",
+    "staff": "Staff",
+    "teams": "Teams",
+    "uiScaleAndroidLocked": "Locked to XS on Android"
   },
   "preMatch": {
     "autoSelect": "Auto-Select Best Five",
@@ -2633,7 +2758,9 @@
       "roleUnknown": "Unknown"
     },
     "continue": "Continue",
-    "game": "Game"
+    "game": "Game",
+    "seriesGame": "Game {{game}}",
+    "noTimelineData": "No timeline data available."
   },
   "endOfSeason": {
     "seasonComplete": "Season Complete",
@@ -2856,7 +2983,7 @@
             "body": "A hard-fought draw today, coach. {{home}} {{homeWins}}-{{awayWins}} {{away}} against {{opponent}}.\n\nNot the result we wanted, but we showed character. Let's take the positives and work on the weaknesses.\n\nNext match is an opportunity to get back to winning ways."
           },
           "victory_1": {
-            "subject": "Victory! {{score}} against {{opponent}}",
+            "subject": "Victory! {{userScore}} against {{opponent}}",
             "body": "Great result today, coach! We beat {{opponent}} {{userScore}}.\n\nThe team executed the game plan well. Let's build on this momentum for the next match.\n\nWell done to everyone involved."
           },
           "victory_2": {
@@ -4296,5 +4423,15 @@
       "assistantResolvedDaySetup": "Assistant Coach resolved the weekly setup automatically to advance the day.",
       "assistantResolvedDayDecision": "Assistant Coach resolved the post-scrim decision automatically to advance the day."
     }
+  },
+  "community": {
+    "title": "Community",
+    "blurb": "Open League Manager is a free, open-source project made by and for the community. Join in, suggest ideas or contribute code: every bit of help counts.",
+    "mentionsTitle": "Mentions",
+    "mentionsSubtitle": "Thanks to everyone who has supported the project the most",
+    "mentionsEmpty": "Want to appear here? Join the Discord and contribute."
+  },
+  "patchNotes": {
+    "empty": "No release notes yet."
   }
 }

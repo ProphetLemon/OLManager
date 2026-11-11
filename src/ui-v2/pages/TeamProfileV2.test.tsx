@@ -52,6 +52,10 @@ vi.mock("react-i18next", () => ({
         "teamProfile.kda": "K / D / A",
         "teamProfile.economy": "Gold / Objectives",
         "teamProfile.side": "Side",
+        "match.draft.sides.blue": "Blue side",
+        "match.draft.sides.red": "Red side",
+        "match.victory": "Victory",
+        "match.defeat": "Defeat",
         "finances.wageBudget": "Wage Budget",
         "finances.transferBudget": "Transfer Budget",
         "finances.squadValue": "Squad Value",
@@ -304,7 +308,7 @@ describe("TeamProfileV2", () => {
         limit: 5,
       });
       expect(screen.getByText("Bravo FC")).toBeInTheDocument();
-      expect(screen.getByText("Red · Loss")).toBeInTheDocument();
+      expect(screen.getByText("Red side · Defeat")).toBeInTheDocument();
       expect(screen.getByText("16 / 7 / 3")).toBeInTheDocument();
       expect(screen.getByText("62000 / 88000")).toBeInTheDocument();
     });
