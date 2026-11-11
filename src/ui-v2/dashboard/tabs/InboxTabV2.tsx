@@ -26,6 +26,7 @@ import {
   UNREAD_FILTER,
   type MessageSortOrder,
 } from "@/lib/inbox/helpers";
+import { resolveInboxCategoryLabel } from "@/lib/inbox/categoryLabel";
 import { formatDateShort } from "@/lib/common/helpers";
 import { useTabUiStore } from "@/store/tabUiStore";
 
@@ -252,7 +253,7 @@ export function InboxTabV2({
             key={c}
             active={filter === c}
             onClick={() => setFilter((f) => (f === c ? null : c))}
-            label={`${c} (${categoryCounts.get(c)})`}
+            label={`${resolveInboxCategoryLabel(t, c)} (${categoryCounts.get(c)})`}
           />
         ))}
       </div>
