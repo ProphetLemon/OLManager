@@ -31,6 +31,7 @@ use super::economy_tests::{Side, EARLY_ROLE_SHARE_RANGE, ROLES, ROLE_SHARE_RANGE
 use super::gold_ledger::GoldSource;
 use super::objectives_detector_tests::objective_score;
 use super::tower_harness_tests::{drive_match, run_tower_tracked, Config, TowerScore};
+use super::TowerVictim;
 use super::*;
 
 const MINUTE_15_SEC: f64 = 900.0;
@@ -53,6 +54,8 @@ struct Profile {
     extreme: usize,
     /// Separate light matches for the side test; `0` reuses the even matches.
     sides: usize,
+    /// Even matches with a tank top laner and jungler, for the tank rows of T9.
+    tanks: usize,
     objectives: usize,
 }
 
@@ -64,6 +67,7 @@ fn profile_from_env() -> Profile {
             moderate: 200,
             extreme: 144,
             sides: 1000,
+            tanks: 40,
             objectives: 100,
         },
         _ => Profile {
@@ -72,6 +76,7 @@ fn profile_from_env() -> Profile {
             moderate: 20,
             extreme: 20,
             sides: 0,
+            tanks: 10,
             objectives: 20,
         },
     }
@@ -203,13 +208,16 @@ impl Played {
 }
 
 fn play(seed: usize, team_a: Side, team_b: Side, tracked: bool) -> Played {
+    play_with(seed, team_a, team_b, tracked, Config::watched(STEP_LIMIT_SEC))
+}
+
+fn play_with(seed: usize, team_a: Side, team_b: Side, tracked: bool, cfg: Config) -> Played {
     let a_is_blue = seed.is_multiple_of(2);
     let (blue, red) = if a_is_blue {
         (team_a, team_b)
     } else {
         (team_b, team_a)
     };
-    let cfg = Config::watched(STEP_LIMIT_SEC);
     let name = format!("scorecard-{seed}");
     let mut obs = Obs::default();
     let (tower, state) = if tracked {
@@ -438,8 +446,12 @@ fn score_even(card: &mut Scorecard, even: &[Played], all: &[&Played]) {
     }
 }
 
-fn score_towers(card: &mut Scorecard, even: &[Played]) {
-    let towers: Vec<&TowerScore> = even.iter().filter_map(|p| p.tower.as_ref()).collect();
+fn score_towers(card: &mut Scorecard, even: &[Played], tanks: &[Played]) {
+    let towers: Vec<&TowerScore> = even
+        .iter()
+        .chain(tanks)
+        .filter_map(|p| p.tower.as_ref())
+        .collect();
     for (slot, minute) in [15, 25, 35].into_iter().enumerate() {
         for (tank, limit, label) in [(false, SHOTS_NON_TANK_MAX, "non-tank"), (true, SHOTS_TANK_MAX, "tank")] {
             let shots: Vec<f64> = towers
@@ -699,6 +711,15 @@ fn print_balance_scorecard() {
     let extreme: Vec<Played> = par_map(profile.extreme, |i| {
         play(30_000 + i, Side::stat(95.0), Side::stat(40.0), false)
     });
+    let tanks: Vec<Played> = par_map(profile.tanks, |i| {
+        play_with(
+            40_000 + i,
+            even_pair.0,
+            even_pair.1,
+            true,
+            Config::watched_with_tanks(STEP_LIMIT_SEC),
+        )
+    });
     let sides: Vec<Played> = if profile.sides > 0 {
         par_map(profile.sides, |i| play(10_000 + i, even_pair.0, even_pair.1, false))
     } else {
@@ -711,7 +732,7 @@ fn print_balance_scorecard() {
     score_even(&mut card, &even, &all);
     score_strength(&mut card, &even, &moderate, &extreme, side_set);
     score_objectives(&mut card, profile.objectives);
-    score_towers(&mut card, &even);
+    score_towers(&mut card, &even, &tanks);
     score_income(&mut card, &even);
     card.rows.sort_by_key(|r| r.0[1..].parse::<u32>().unwrap_or(99));
 
@@ -730,6 +751,85 @@ fn print_balance_scorecard() {
     if let Ok(path) = std::env::var("SCORECARD_OUT") {
         std::fs::write(&path, &table).expect("write scorecard");
     }
+}
+
+/// Prints how champions that a tower killed got there: the last seconds of each of them.
+/// `SCORECARD_DEBUG_N` matches (default 6); every tower death prints one block.
+#[test]
+#[ignore = "diagnostic: prints the approach of every champion a tower killed"]
+fn debug_tower_deaths() {
+    use std::collections::VecDeque;
+    let matches: usize = std::env::var("SCORECARD_DEBUG_N")
+        .ok()
+        .and_then(|raw| raw.parse().ok())
+        .unwrap_or(6);
+    let reports: Vec<Vec<String>> = par_map(matches, |seed| {
+        let mut out = Vec::new();
+        let mut history: Vec<VecDeque<String>> = Vec::new();
+        drive_match(
+            &format!("scorecard-{seed}"),
+            Side::EVEN,
+            Side::EVEN,
+            Config::watched(STEP_LIMIT_SEC),
+            |rt| {
+                if history.is_empty() {
+                    history = vec![VecDeque::new(); rt.champions.len()];
+                }
+                for (i, c) in rt.champions.iter().enumerate() {
+                    let nearest = rt
+                        .structures
+                        .iter()
+                        .filter(|s| s.alive && s.kind == "tower" && s.team != c.team)
+                        .map(|s| dist(super::symmetric_structure_pos(s), c.pos))
+                        .fold(f64::INFINITY, f64::min);
+                    let line = format!(
+                        "t{:.0} {} pos({:.3},{:.3}) hp{:.0}% tower{:.3} dest{:?} {}",
+                        rt.time_sec,
+                        c.state,
+                        c.pos.x,
+                        c.pos.y,
+                        100.0 * c.hp / c.max_hp.max(1.0),
+                        nearest,
+                        c.target_path.last().map(|d| (d.x, d.y)),
+                        c.debug_ai_decision
+                    );
+                    let h = &mut history[i];
+                    h.push_back(line);
+                    if h.len() > 7 {
+                        h.pop_front();
+                    }
+                }
+                for shot in rt.tower_ledger.shots() {
+                    if let TowerVictim::Champion(ci) = shot.victim
+                        && shot.killed
+                    {
+                        let c = &rt.champions[ci];
+                        let allies = rt
+                            .champions
+                            .iter()
+                            .filter(|o| o.alive && o.team == c.team && o.id != c.id)
+                            .map(|o| format!("{}:{:.2}", o.role, dist(o.pos, c.pos)))
+                            .collect::<Vec<_>>()
+                            .join(" ");
+                        out.push(format!(
+                            "seed {seed} {} {} {} killed by {} at t{:.0} | allies {allies}\n    {}",
+                            c.team,
+                            c.role,
+                            c.state,
+                            rt.structures[shot.structure_idx].id,
+                            rt.time_sec,
+                            history[ci].iter().cloned().collect::<Vec<_>>().join("\n    ")
+                        ));
+                    }
+                }
+            },
+        );
+        out
+    });
+    for line in reports.iter().flatten().take(40) {
+        println!("{line}");
+    }
+    println!("tower deaths: {}", reports.iter().map(Vec::len).sum::<usize>());
 }
 
 // ------------------------------------------------------------ default tests

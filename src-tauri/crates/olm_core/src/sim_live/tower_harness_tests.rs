@@ -92,6 +92,14 @@ impl Config {
         }
     }
 
+    /// The watched match with a tank top laner and a tank jungler on both sides.
+    pub(super) fn watched_with_tanks(max_sec: f64) -> Config {
+        Config {
+            roster: Roster::Tanks,
+            ..Config::watched(max_sec)
+        }
+    }
+
     fn dt(self) -> f64 {
         0.05 * self.speed
     }
@@ -466,7 +474,7 @@ fn towers_in_range(runtime: &RuntimeState, team: &str, pos: Vec2) -> Vec<usize> 
             s.alive
                 && s.kind == "tower"
                 && normalized_team(&s.team) != normalized_team(team)
-                && dist_to(s.pos, pos) <= TOWER_ATTACK_RANGE
+                && dist_to(symmetric_structure_pos(s), pos) <= TOWER_ATTACK_RANGE
         })
         .map(|(i, _)| i)
         .collect()
@@ -479,7 +487,7 @@ fn minions_of_team_in_range(runtime: &RuntimeState, team: &str, tower: &Structur
         .filter(|m| {
             m.alive
                 && normalized_team(&m.team) == normalized_team(team)
-                && dist_to(m.pos, tower.pos) <= TOWER_ATTACK_RANGE
+                && dist_to(m.pos, symmetric_structure_pos(tower)) <= TOWER_ATTACK_RANGE
         })
         .count()
 }

@@ -444,10 +444,6 @@ fn run_detected_match_with(seed: usize, tick_path: bool) -> MatchReport {
     report
 }
 
-fn detect_batch(first_seed: usize, seeds: usize) -> Vec<MatchReport> {
-    detect_batch_with(first_seed, seeds, false)
-}
-
 /// What the balance scorecard reads from a batch of detected matches.
 pub(super) struct ObjectiveScore {
     pub(super) matches: usize,
@@ -717,7 +713,8 @@ fn print_report(reports: &[MatchReport]) {
 fn detect_objective_and_jungler_problems() {
     let n = env_count("SIM_DETECT_N", 100);
     let first = env_count("SIM_DETECT_FROM", 0);
-    let reports = detect_batch(first, n);
+    let tick_path = std::env::var("SIM_DETECT_TICK").is_ok();
+    let reports = detect_batch_with(first, n, tick_path);
     print_report(&reports);
 }
 
