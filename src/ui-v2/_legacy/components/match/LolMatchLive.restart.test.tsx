@@ -70,20 +70,8 @@ describe("LolMatchLive", () => {
     }) as unknown as typeof window.matchMedia;
   });
 
-  it("builds the simulation once when champion profiles load late", async () => {
-    let releaseChampionJson: (value: unknown) => void = () => undefined;
-    const championJson = new Promise((resolve) => {
-      releaseChampionJson = resolve;
-    });
-    const fetchMock = vi.fn((url: string) => {
-      if (url.endsWith("/champion.json")) {
-        return championJson.then(() => ({
-          ok: true,
-          json: async () => ({ data: { Ahri: { id: "Ahri", tags: ["Mage"], stats: { hp: 590, attackrange: 550 } } } }),
-        }));
-      }
-      return Promise.resolve({ ok: false, json: async () => ({}) });
-    });
+  it("builds the simulation once, from the local champion kits, without any network request", async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: false, json: async () => ({}) }));
     vi.stubGlobal("fetch", fetchMock);
 
     render(
@@ -97,11 +85,9 @@ describe("LolMatchLive", () => {
       />,
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    releaseChampionJson(undefined);
-    await waitFor(() => expect(constructed.count).toBeGreaterThanOrEqual(1), { timeout: 2000 });
+    await waitFor(() => expect(constructed.count).toBeGreaterThanOrEqual(1), { timeout: 10000 });
     await new Promise((resolve) => setTimeout(resolve, 300));
-    expect(fetchMock).toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(constructed.count).toBe(1);
     vi.unstubAllGlobals();
   });

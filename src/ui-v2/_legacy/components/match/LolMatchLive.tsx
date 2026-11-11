@@ -25,6 +25,7 @@ import {
   type StepView,
 } from "@/ui-v2/_legacy/components/match/lol-prototype/ui/stepInterpolation";
 import { LecLowerThirdPanel } from "@/ui-v2/_legacy/components/match/lol-prototype/ui/panels";
+import { buildChampionProfiles, loadChampionKits } from "@/ui-v2/_legacy/components/match/championProfiles";
 import { championPlaysRole, resolveRoleTier } from "@/lib/champions/championRoleFit";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { GameStateData } from "@/store/gameStore";
@@ -58,7 +59,6 @@ const SPEEDS = [
 // Longest slice of real time one animation frame may add to what the engine is asked to play.
 const BACKEND_MAX_FRAME_SEC = 0.25;
 
-const DDRAGON_VERSION = "14.24.1";
 const USE_RUST_SIM_V2 = true;
 const ICON_TOWER = "/lol-map-icons/icon_ui_tower_minimap.webp";
 const ICON_GOLD = "/lol-map-icons/gold.webp";
@@ -86,34 +86,10 @@ function championIconUrl(championId: string): string {
   return `/champion-tiles/${championId}.webp`;
 }
 
-function attackTypeFromStats(attackRange: number, tags: string[]) {
-  if (attackRange >= 300) return "ranged" as const;
-  if (tags.includes("Marksman")) return "ranged" as const;
-  return "melee" as const;
-}
-
-function normalizeAttackRange(attackRange: number) {
-  // Compact ranged vs melee spacing for this prototype:
-  // ranged should have some advantage, but not excessive standoff distance.
-  if (attackRange >= 300) return 0.056;
-  return 0.049;
-}
-
 function randomSeed10Digits() {
   const firstDigit = Math.floor(Math.random() * 9) + 1;
   const rest = Math.floor(Math.random() * 1_000_000_000).toString().padStart(9, "0");
   return `${firstDigit}${rest}`;
-}
-
-function classifyUltimateArchetype(name: string, description: string) {
-  const text = `${name} ${description}`.toLowerCase();
-  if (text.includes("execute") || text.includes("missing health") || text.includes("below")) return "execute";
-  if (text.includes("global") || text.includes("map") || text.includes("long range") || text.includes("anywhere")) return "global";
-  if (text.includes("dash") || text.includes("leap") || text.includes("charge") || text.includes("knockup") || text.includes("pull")) return "engage";
-  if (text.includes("heal") || text.includes("shield") || text.includes("invulner") || text.includes("stasis") || text.includes("untarget")) return "defensive";
-  if (text.includes("zone") || text.includes("field") || text.includes("storm") || text.includes("area") || text.includes("aoe")) return "zone";
-  if (text.includes("transform") || text.includes("form")) return "sustain";
-  return "burst";
 }
 
 function normalizeKey(value: string) {
@@ -533,62 +509,11 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
       }
 
       try {
-        const response = await fetch(`https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/data/en_US/champion.json`);
-        if (!response.ok) throw new Error(`champion.json status ${response.status}`);
-        const payload = await response.json() as {
-          data?: Record<string, { id: string; tags: string[]; stats: { hp: number; attackrange: number } }>;
-        };
-
-        const nextProfiles: Record<string, ChampionCombatProfile> = {};
-        const champions = payload.data ?? {};
-        pickedChampionIds.forEach((championId) => {
-          const data = champions[championId];
-          if (!data) return;
-          const attackType = attackTypeFromStats(data.stats.attackrange, data.tags ?? []);
-          const runtimeMod = runtimeModifierByChampionId[championId] ?? 1;
-          const baseHp = Math.round(data.stats.hp * runtimeMod);
-          const rangeBase = normalizeAttackRange(data.stats.attackrange);
-          const rangeWithMod = rangeBase * Math.max(0.92, Math.min(1.08, 1 + (runtimeMod - 1) * 0.35));
-          nextProfiles[championId] = {
-            baseHp,
-            attackType,
-            attackRange: rangeWithMod,
-          };
-        });
-
-        const uniqueChampionIds = Array.from(new Set(Object.values(championByPlayerId).filter(Boolean)));
-        const ultimateEntries = await Promise.all(uniqueChampionIds.map(async (championId) => {
-          try {
-            const detailResponse = await fetch(`https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/data/en_US/champion/${championId}.json`);
-            if (!detailResponse.ok) return [championId, null] as const;
-            const detailPayload = await detailResponse.json() as {
-              data?: Record<string, {
-                id: string;
-                spells?: Array<{ name?: string; description?: string; tooltip?: string; image?: { full?: string } }>;
-              }>;
-            };
-            const detail = detailPayload.data?.[championId];
-            const ultimate = detail?.spells?.[3];
-            const image = ultimate?.image?.full;
-            if (!ultimate || !image) return [championId, null] as const;
-            const description = ultimate.tooltip ?? ultimate.description ?? "";
-            const archetype = classifyUltimateArchetype(ultimate.name ?? "", description);
-            return [championId, {
-              archetype,
-              icon: `https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/img/spell/${image}`,
-            }] as const;
-          } catch {
-            return [championId, null] as const;
-          }
-        }));
-
+        const kits = await loadChampionKits();
         if (!cancelled) {
-          const mapped = ultimateEntries.reduce<Record<string, LolChampionUltimateProfile>>((acc, [championId, value]) => {
-            if (value) acc[championId] = value;
-            return acc;
-          }, {});
-          setChampionProfilesById(nextProfiles);
-          setChampionUltimatesById(mapped);
+          const { profiles, ultimates } = buildChampionProfiles(kits, pickedChampionIds, runtimeModifierByChampionId);
+          setChampionProfilesById(profiles);
+          setChampionUltimatesById(ultimates);
           setProfilesReady(true);
         }
       } catch {

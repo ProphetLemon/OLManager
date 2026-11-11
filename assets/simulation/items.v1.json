@@ -1,0 +1,8764 @@
+{
+  "schema": "olm.items.v1",
+  "patch": "16.22.1",
+  "date": "2026-11-11",
+  "locale": "en_US",
+  "source": "Riot Games Data Dragon (https://ddragon.leagueoflegends.com), static game data",
+  "generator": "scripts/game-data/ddragon.mjs",
+  "filter": {
+    "rule": "maps.11 is true; id < 100000; not hideFromAll; no requiredChampion; no requiredAlly; gold.purchasable is true and inStore is not false; one entry per name (lowest id)",
+    "total": 863,
+    "kept": 211,
+    "dropped": 652,
+    "droppedByReason": {
+      "other-mode": 548,
+      "not-purchasable": 47,
+      "hidden": 5,
+      "champion-only": 6,
+      "mode-variant-id": 43,
+      "duplicate-name": 3
+    },
+    "duplicateNames": [
+      {
+        "name": "Mosstomper Seedling",
+        "kept": "1103",
+        "dropped": "1105"
+      },
+      {
+        "name": "Gustwalker Hatchling",
+        "kept": "1102",
+        "dropped": "1106"
+      },
+      {
+        "name": "Scorchclaw Pup",
+        "kept": "1101",
+        "dropped": "1107"
+      }
+    ]
+  },
+  "retiredKeys": [
+    "ludens_companion",
+    "mobility_boots",
+    "opportunity",
+    "seraphs_embrace",
+    "trailblazer"
+  ],
+  "items": [
+    {
+      "id": 1001,
+      "key": "boots",
+      "name": "Boots",
+      "cost": 300,
+      "baseCost": 300,
+      "sellValue": 210,
+      "stats": {
+        "FlatMovementSpeedMod": 25
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Boots"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        3047,
+        3008,
+        3006,
+        3009,
+        3020,
+        3111,
+        3158
+      ],
+      "depth": 1,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/boots.png"
+    },
+    {
+      "id": 1004,
+      "key": "faerie_charm",
+      "name": "Faerie Charm",
+      "cost": 200,
+      "baseCost": 200,
+      "sellValue": 140,
+      "stats": {},
+      "statLines": [
+        {
+          "value": "50%",
+          "stat": "Base Mana Regen"
+        }
+      ],
+      "tags": [
+        "ManaRegen"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        3114,
+        4642
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/faerie_charm.png"
+    },
+    {
+      "id": 1006,
+      "key": "rejuvenation_bead",
+      "name": "Rejuvenation Bead",
+      "cost": 300,
+      "baseCost": 300,
+      "sellValue": 120,
+      "stats": {},
+      "statLines": [
+        {
+          "value": "100%",
+          "stat": "Base Health Regen"
+        }
+      ],
+      "tags": [
+        "HealthRegen"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        3109,
+        3211,
+        3801
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/rejuvenation_bead.png"
+    },
+    {
+      "id": 1011,
+      "key": "giants_belt",
+      "name": "Giant's Belt",
+      "cost": 900,
+      "baseCost": 500,
+      "sellValue": 630,
+      "stats": {
+        "FlatHPPoolMod": 350
+      },
+      "statLines": [
+        {
+          "value": "350",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health"
+      ],
+      "buildsFrom": [
+        1028
+      ],
+      "buildsInto": [
+        3084,
+        2525,
+        3083,
+        3116,
+        3119,
+        3143,
+        3748,
+        6665,
+        6609
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/giants_belt.png"
+    },
+    {
+      "id": 1018,
+      "key": "cloak_of_agility",
+      "name": "Cloak of Agility",
+      "cost": 600,
+      "baseCost": 600,
+      "sellValue": 420,
+      "stats": {
+        "FlatCritChanceMod": 0.15
+      },
+      "statLines": [
+        {
+          "value": "15%",
+          "stat": "Critical Strike Chance"
+        }
+      ],
+      "tags": [
+        "CriticalStrike"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        3031,
+        3086,
+        6670,
+        3033,
+        3508,
+        3095,
+        6676
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/cloak_of_agility.png"
+    },
+    {
+      "id": 1026,
+      "key": "blasting_wand",
+      "name": "Blasting Wand",
+      "cost": 850,
+      "baseCost": 850,
+      "sellValue": 595,
+      "stats": {
+        "FlatMagicDamageMod": 45
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Ability Power"
+        }
+      ],
+      "tags": [
+        "SpellDamage"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        2522,
+        3100,
+        3135,
+        3165,
+        3115,
+        2510,
+        3116,
+        3118,
+        6621,
+        6657
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/blasting_wand.png"
+    },
+    {
+      "id": 1027,
+      "key": "sapphire_crystal",
+      "name": "Sapphire Crystal",
+      "cost": 300,
+      "baseCost": 300,
+      "sellValue": 210,
+      "stats": {
+        "FlatMPPoolMod": 300
+      },
+      "statLines": [
+        {
+          "value": "300",
+          "stat": "Mana"
+        }
+      ],
+      "tags": [
+        "Mana"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        3024,
+        3802,
+        3803
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/sapphire_crystal.png"
+    },
+    {
+      "id": 1028,
+      "key": "ruby_crystal",
+      "name": "Ruby Crystal",
+      "cost": 400,
+      "baseCost": 400,
+      "sellValue": 280,
+      "stats": {
+        "FlatHPPoolMod": 150
+      },
+      "statLines": [
+        {
+          "value": "150",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        3742,
+        1011,
+        3068,
+        2021,
+        3147,
+        3067,
+        3211,
+        2502,
+        2526,
+        3044,
+        3053,
+        3066,
+        3075,
+        3152,
+        3161,
+        3801,
+        3803,
+        4401,
+        6660,
+        6662
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/ruby_crystal.png"
+    },
+    {
+      "id": 1029,
+      "key": "cloth_armor",
+      "name": "Cloth Armor",
+      "cost": 300,
+      "baseCost": 300,
+      "sellValue": 210,
+      "stats": {
+        "FlatArmorMod": 15
+      },
+      "statLines": [
+        {
+          "value": "15",
+          "stat": "Armor"
+        }
+      ],
+      "tags": [
+        "Armor"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        2420,
+        1031,
+        2019,
+        3047,
+        3024,
+        3050,
+        2524,
+        3076,
+        3082,
+        3190
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/cloth_armor.png"
+    },
+    {
+      "id": 1031,
+      "key": "chain_vest",
+      "name": "Chain Vest",
+      "cost": 800,
+      "baseCost": 500,
+      "sellValue": 560,
+      "stats": {
+        "FlatArmorMod": 40
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Armor"
+        }
+      ],
+      "tags": [
+        "Armor"
+      ],
+      "buildsFrom": [
+        1029
+      ],
+      "buildsInto": [
+        3742,
+        3068,
+        3109,
+        2502,
+        3075,
+        6665,
+        6662
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/chain_vest.png"
+    },
+    {
+      "id": 1033,
+      "key": "null_magic_mantle",
+      "name": "Null-Magic Mantle",
+      "cost": 400,
+      "baseCost": 400,
+      "sellValue": 280,
+      "stats": {
+        "FlatSpellBlockMod": 20
+      },
+      "statLines": [
+        {
+          "value": "20",
+          "stat": "Magic Resist"
+        }
+      ],
+      "tags": [
+        "SpellBlock"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        1057,
+        3140,
+        3050,
+        3211,
+        2524,
+        3155,
+        3111,
+        3190,
+        4632
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/null_magic_mantle.png"
+    },
+    {
+      "id": 1036,
+      "key": "long_sword",
+      "name": "Long Sword",
+      "cost": 350,
+      "baseCost": 350,
+      "sellValue": 245,
+      "stats": {
+        "FlatPhysicalDamageMod": 10
+      },
+      "statLines": [
+        {
+          "value": "10",
+          "stat": "Attack Damage"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        1053,
+        2019,
+        2021,
+        3077,
+        6670,
+        3133,
+        2517,
+        3142,
+        3004,
+        2523,
+        3032,
+        3035,
+        3044,
+        3051,
+        3155,
+        6690,
+        3123,
+        3134,
+        6699,
+        6692
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/long_sword.png"
+    },
+    {
+      "id": 1037,
+      "key": "pickaxe",
+      "name": "Pickaxe",
+      "cost": 875,
+      "baseCost": 875,
+      "sellValue": 613,
+      "stats": {
+        "FlatPhysicalDamageMod": 25
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Attack Damage"
+        }
+      ],
+      "tags": [
+        "Damage"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        3071,
+        6333,
+        3031,
+        3153,
+        2020,
+        2517,
+        3087,
+        6695,
+        2523,
+        3053,
+        3072,
+        3124,
+        3181,
+        3139,
+        3161,
+        6673,
+        6676,
+        6692
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/pickaxe.png"
+    },
+    {
+      "id": 1038,
+      "key": "b_f_sword",
+      "name": "B. F. Sword",
+      "cost": 1300,
+      "baseCost": 1300,
+      "sellValue": 910,
+      "stats": {
+        "FlatPhysicalDamageMod": 40
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Attack Damage"
+        }
+      ],
+      "tags": [
+        "Damage"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        3031,
+        3026,
+        3032,
+        3072,
+        3095
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/b_f_sword.png"
+    },
+    {
+      "id": 1042,
+      "key": "dagger",
+      "name": "Dagger",
+      "cost": 250,
+      "baseCost": 250,
+      "sellValue": 175,
+      "stats": {
+        "PercentAttackSpeedMod": 0.1
+      },
+      "statLines": [
+        {
+          "value": "10%",
+          "stat": "Attack Speed"
+        }
+      ],
+      "tags": [
+        "AttackSpeed"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        1043,
+        3086,
+        2510,
+        3006,
+        3046,
+        3051,
+        3073,
+        3144,
+        6631,
+        6675
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/dagger.png"
+    },
+    {
+      "id": 1043,
+      "key": "recurve_bow",
+      "name": "Recurve Bow",
+      "cost": 700,
+      "baseCost": 450,
+      "sellValue": 490,
+      "stats": {
+        "PercentAttackSpeedMod": 0.15
+      },
+      "statLines": [
+        {
+          "value": "15%",
+          "stat": "Attack Speed"
+        }
+      ],
+      "tags": [
+        "AttackSpeed",
+        "OnHit"
+      ],
+      "buildsFrom": [
+        1042
+      ],
+      "buildsInto": [
+        3302,
+        3153,
+        3115,
+        6672,
+        3091,
+        3124
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/recurve_bow.png"
+    },
+    {
+      "id": 1052,
+      "key": "amplifying_tome",
+      "name": "Amplifying Tome",
+      "cost": 400,
+      "baseCost": 400,
+      "sellValue": 280,
+      "stats": {
+        "FlatMagicDamageMod": 20
+      },
+      "statLines": [
+        {
+          "value": "20",
+          "stat": "Ability Power"
+        }
+      ],
+      "tags": [
+        "SpellDamage"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        3113,
+        2420,
+        3145,
+        3916,
+        3147,
+        3146,
+        3802,
+        4005,
+        2508,
+        3108,
+        3116,
+        3124,
+        4630,
+        4628,
+        4632,
+        4642
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/amplifying_tome.png"
+    },
+    {
+      "id": 1053,
+      "key": "vampiric_scepter",
+      "name": "Vampiric Scepter",
+      "cost": 900,
+      "baseCost": 550,
+      "sellValue": 630,
+      "stats": {
+        "FlatPhysicalDamageMod": 15,
+        "PercentLifeStealMod": 0.07
+      },
+      "statLines": [
+        {
+          "value": "15",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "7%",
+          "stat": "Life Steal"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "LifeSteal"
+      ],
+      "buildsFrom": [
+        1036
+      ],
+      "buildsInto": [
+        3153,
+        3146,
+        3072,
+        3074,
+        3139
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/vampiric_scepter.png"
+    },
+    {
+      "id": 1054,
+      "key": "dorans_shield",
+      "name": "Doran's Shield",
+      "cost": 450,
+      "baseCost": 450,
+      "sellValue": 180,
+      "stats": {
+        "FlatHPPoolMod": 110,
+        "FlatHPRegenMod": 0.8
+      },
+      "statLines": [
+        {
+          "value": "110",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": true,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/dorans_shield.png"
+    },
+    {
+      "id": 1055,
+      "key": "dorans_blade",
+      "name": "Doran's Blade",
+      "cost": 450,
+      "baseCost": 450,
+      "sellValue": 180,
+      "stats": {
+        "FlatHPPoolMod": 80,
+        "FlatPhysicalDamageMod": 10
+      },
+      "statLines": [
+        {
+          "value": "10",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "80",
+          "stat": "Health"
+        },
+        {
+          "value": "2.5%",
+          "stat": "Omnivamp"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "LifeSteal",
+        "SpellVamp",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": true,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/dorans_blade.png"
+    },
+    {
+      "id": 1056,
+      "key": "dorans_ring",
+      "name": "Doran's Ring",
+      "cost": 400,
+      "baseCost": 400,
+      "sellValue": 160,
+      "stats": {
+        "FlatHPPoolMod": 90,
+        "FlatMagicDamageMod": 18
+      },
+      "statLines": [
+        {
+          "value": "18",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "90",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Lane",
+        "ManaRegen",
+        "SpellDamage"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": true,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/dorans_ring.png"
+    },
+    {
+      "id": 1057,
+      "key": "negatron_cloak",
+      "name": "Negatron Cloak",
+      "cost": 850,
+      "baseCost": 450,
+      "sellValue": 595,
+      "stats": {
+        "FlatSpellBlockMod": 45
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Magic Resist"
+        }
+      ],
+      "tags": [
+        "SpellBlock"
+      ],
+      "buildsFrom": [
+        1033
+      ],
+      "buildsInto": [
+        2504,
+        8020,
+        3091,
+        6665,
+        4401
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/negatron_cloak.png"
+    },
+    {
+      "id": 1058,
+      "key": "needlessly_large_rod",
+      "name": "Needlessly Large Rod",
+      "cost": 1200,
+      "baseCost": 1200,
+      "sellValue": 840,
+      "stats": {
+        "FlatMagicDamageMod": 65
+      },
+      "statLines": [
+        {
+          "value": "65",
+          "stat": "Ability Power"
+        }
+      ],
+      "tags": [
+        "SpellDamage"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        3157,
+        4645,
+        3089,
+        3102
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/needlessly_large_rod.png"
+    },
+    {
+      "id": 1082,
+      "key": "dark_seal",
+      "name": "Dark Seal",
+      "cost": 350,
+      "baseCost": 350,
+      "sellValue": 140,
+      "stats": {
+        "FlatHPPoolMod": 50,
+        "FlatMagicDamageMod": 15
+      },
+      "statLines": [
+        {
+          "value": "15",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "50",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        3041
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": true,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/dark_seal.png"
+    },
+    {
+      "id": 1083,
+      "key": "cull",
+      "name": "Cull",
+      "cost": 450,
+      "baseCost": 450,
+      "sellValue": 180,
+      "stats": {
+        "FlatPhysicalDamageMod": 7
+      },
+      "statLines": [
+        {
+          "value": "7",
+          "stat": "Attack Damage"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "OnHit",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": true,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/cull.png"
+    },
+    {
+      "id": 1086,
+      "key": "dorans_bow",
+      "name": "Doran's Bow",
+      "cost": 400,
+      "baseCost": 400,
+      "sellValue": 160,
+      "stats": {
+        "FlatPhysicalDamageMod": 7,
+        "PercentAttackSpeedMod": 0.15
+      },
+      "statLines": [
+        {
+          "value": "7",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "15%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "1.5%",
+          "stat": "Omnivamp"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "AttackSpeed",
+        "SpellVamp",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": true,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/dorans_bow.png"
+    },
+    {
+      "id": 1101,
+      "key": "scorchclaw_pup",
+      "name": "Scorchclaw Pup",
+      "cost": 450,
+      "baseCost": 450,
+      "sellValue": 0,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "Jungle"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": true,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/scorchclaw_pup.png"
+    },
+    {
+      "id": 1102,
+      "key": "gustwalker_hatchling",
+      "name": "Gustwalker Hatchling",
+      "cost": 450,
+      "baseCost": 450,
+      "sellValue": 0,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "Jungle"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": true,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/gustwalker_hatchling.png"
+    },
+    {
+      "id": 1103,
+      "key": "mosstomper_seedling",
+      "name": "Mosstomper Seedling",
+      "cost": 450,
+      "baseCost": 450,
+      "sellValue": 0,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "Jungle"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": true,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/mosstomper_seedling.png"
+    },
+    {
+      "id": 1120,
+      "key": "dorans_helm",
+      "name": "Doran's Helm",
+      "cost": 450,
+      "baseCost": 450,
+      "sellValue": 180,
+      "stats": {
+        "FlatSpellBlockMod": 8,
+        "FlatHPPoolMod": 150,
+        "FlatArmorMod": 8
+      },
+      "statLines": [
+        {
+          "value": "150",
+          "stat": "Health"
+        },
+        {
+          "value": "8",
+          "stat": "Armor"
+        },
+        {
+          "value": "8",
+          "stat": "Magic Resist"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellBlock",
+        "Armor",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": true,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/dorans_helm.png"
+    },
+    {
+      "id": 2003,
+      "key": "health_potion",
+      "name": "Health Potion",
+      "cost": 50,
+      "baseCost": 50,
+      "sellValue": 20,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "HealthRegen",
+        "Consumable",
+        "Lane",
+        "Jungle"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": true,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/health_potion.png"
+    },
+    {
+      "id": 2019,
+      "key": "steel_sigil",
+      "name": "Steel Sigil",
+      "cost": 1100,
+      "baseCost": 150,
+      "sellValue": 770,
+      "stats": {
+        "FlatArmorMod": 30,
+        "FlatPhysicalDamageMod": 15
+      },
+      "statLines": [
+        {
+          "value": "15",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "30",
+          "stat": "Armor"
+        }
+      ],
+      "tags": [
+        "Armor",
+        "Damage"
+      ],
+      "buildsFrom": [
+        1029,
+        1036,
+        1029
+      ],
+      "buildsInto": [
+        6333,
+        3026
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/steel_sigil.png"
+    },
+    {
+      "id": 2020,
+      "key": "the_brutalizer",
+      "name": "The Brutalizer",
+      "cost": 1337,
+      "baseCost": 212,
+      "sellValue": 936,
+      "stats": {
+        "FlatPhysicalDamageMod": 25
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "5",
+          "stat": "Lethality"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CooldownReduction",
+        "ArmorPenetration"
+      ],
+      "buildsFrom": [
+        2022,
+        1037
+      ],
+      "buildsInto": [
+        6698,
+        2520,
+        6699,
+        6696
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/the_brutalizer.png"
+    },
+    {
+      "id": 2021,
+      "key": "tunneler",
+      "name": "Tunneler",
+      "cost": 1150,
+      "baseCost": 400,
+      "sellValue": 805,
+      "stats": {
+        "FlatHPPoolMod": 250,
+        "FlatPhysicalDamageMod": 15
+      },
+      "statLines": [
+        {
+          "value": "15",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "250",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage"
+      ],
+      "buildsFrom": [
+        1036,
+        1028
+      ],
+      "buildsInto": [
+        2501,
+        3053,
+        3073,
+        3814,
+        3181,
+        3161,
+        3748,
+        6610
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/tunneler.png"
+    },
+    {
+      "id": 2022,
+      "key": "glowing_mote",
+      "name": "Glowing Mote",
+      "cost": 250,
+      "baseCost": 250,
+      "sellValue": 175,
+      "stats": {},
+      "statLines": [
+        {
+          "value": "5",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "CooldownReduction"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        2020,
+        3024,
+        3133,
+        3802,
+        3067,
+        3057,
+        3108,
+        3158,
+        4642,
+        6660
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/glowing_mote.png"
+    },
+    {
+      "id": 2031,
+      "key": "refillable_potion",
+      "name": "Refillable Potion",
+      "cost": 150,
+      "baseCost": 150,
+      "sellValue": 60,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "HealthRegen",
+        "Consumable",
+        "Active",
+        "Lane",
+        "Jungle"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": true,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/refillable_potion.png"
+    },
+    {
+      "id": 2051,
+      "key": "guardians_horn",
+      "name": "Guardian's Horn",
+      "cost": 950,
+      "baseCost": 950,
+      "sellValue": 665,
+      "stats": {
+        "FlatHPPoolMod": 150,
+        "FlatHPRegenMod": 4
+      },
+      "statLines": [
+        {
+          "value": "150",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/guardians_horn.png"
+    },
+    {
+      "id": 2055,
+      "key": "control_ward",
+      "name": "Control Ward",
+      "cost": 75,
+      "baseCost": 75,
+      "sellValue": 30,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "Consumable",
+        "Lane",
+        "Stealth",
+        "Vision"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": true,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/control_ward.png"
+    },
+    {
+      "id": 2065,
+      "key": "shurelyas_battlesong",
+      "name": "Shurelya's Battlesong",
+      "cost": 2200,
+      "baseCost": 400,
+      "sellValue": 1540,
+      "stats": {
+        "FlatMagicDamageMod": 50,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "50",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        },
+        {
+          "value": "125%",
+          "stat": "Base Mana Regen"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "ManaRegen",
+        "Active",
+        "CooldownReduction",
+        "NonbootsMovement",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3113,
+        4642
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/shurelyas_battlesong.png"
+    },
+    {
+      "id": 2138,
+      "key": "elixir_of_iron",
+      "name": "Elixir of Iron",
+      "cost": 500,
+      "baseCost": 500,
+      "sellValue": 200,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "Health",
+        "Consumable",
+        "NonbootsMovement",
+        "Tenacity"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": true,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/elixir_of_iron.png"
+    },
+    {
+      "id": 2139,
+      "key": "elixir_of_sorcery",
+      "name": "Elixir of Sorcery",
+      "cost": 500,
+      "baseCost": 500,
+      "sellValue": 200,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "Consumable",
+        "ManaRegen",
+        "SpellDamage"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": true,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/elixir_of_sorcery.png"
+    },
+    {
+      "id": 2140,
+      "key": "elixir_of_wrath",
+      "name": "Elixir of Wrath",
+      "cost": 500,
+      "baseCost": 500,
+      "sellValue": 200,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "Consumable",
+        "Damage",
+        "LifeSteal",
+        "SpellVamp"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": true,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/elixir_of_wrath.png"
+    },
+    {
+      "id": 2141,
+      "key": "cappa_juice",
+      "name": "Cappa Juice",
+      "cost": 300,
+      "baseCost": 300,
+      "sellValue": 300,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "Damage",
+        "Consumable"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": true,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/cappa_juice.png"
+    },
+    {
+      "id": 2420,
+      "key": "seekers_armguard",
+      "name": "Seeker's Armguard",
+      "cost": 1600,
+      "baseCost": 500,
+      "sellValue": 640,
+      "stats": {
+        "FlatMagicDamageMod": 40,
+        "FlatArmorMod": 25
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "25",
+          "stat": "Armor"
+        }
+      ],
+      "tags": [
+        "Armor",
+        "SpellDamage",
+        "Active"
+      ],
+      "buildsFrom": [
+        1052,
+        1029,
+        1052
+      ],
+      "buildsInto": [
+        3157
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/seekers_armguard.png"
+    },
+    {
+      "id": 2501,
+      "key": "overlords_bloodmail",
+      "name": "Overlord's Bloodmail",
+      "cost": 3300,
+      "baseCost": 1000,
+      "sellValue": 2310,
+      "stats": {
+        "FlatHPPoolMod": 550,
+        "FlatPhysicalDamageMod": 40
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "550",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage"
+      ],
+      "buildsFrom": [
+        2021,
+        2021
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/overlords_bloodmail.png"
+    },
+    {
+      "id": 2502,
+      "key": "unending_despair",
+      "name": "Unending Despair",
+      "cost": 2800,
+      "baseCost": 800,
+      "sellValue": 1960,
+      "stats": {
+        "FlatHPPoolMod": 400,
+        "FlatArmorMod": 50
+      },
+      "statLines": [
+        {
+          "value": "400",
+          "stat": "Health"
+        },
+        {
+          "value": "50",
+          "stat": "Armor"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Armor",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        1031,
+        3067,
+        1028
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/unending_despair.png"
+    },
+    {
+      "id": 2503,
+      "key": "blackfire_torch",
+      "name": "Blackfire Torch",
+      "cost": 2800,
+      "baseCost": 700,
+      "sellValue": 1960,
+      "stats": {
+        "FlatMPPoolMod": 600,
+        "FlatMagicDamageMod": 80
+      },
+      "statLines": [
+        {
+          "value": "80",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "600",
+          "stat": "Mana"
+        },
+        {
+          "value": "20",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "Mana",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3802,
+        2508
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/blackfire_torch.png"
+    },
+    {
+      "id": 2504,
+      "key": "kaenic_rookern",
+      "name": "Kaenic Rookern",
+      "cost": 2900,
+      "baseCost": 800,
+      "sellValue": 2030,
+      "stats": {
+        "FlatSpellBlockMod": 80,
+        "FlatHPPoolMod": 400
+      },
+      "statLines": [
+        {
+          "value": "400",
+          "stat": "Health"
+        },
+        {
+          "value": "80",
+          "stat": "Magic Resist"
+        },
+        {
+          "value": "100%",
+          "stat": "Base Health Regen"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellBlock",
+        "HealthRegen"
+      ],
+      "buildsFrom": [
+        3211,
+        1057
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/kaenic_rookern.png"
+    },
+    {
+      "id": 2508,
+      "key": "fated_ashes",
+      "name": "Fated Ashes",
+      "cost": 900,
+      "baseCost": 500,
+      "sellValue": 630,
+      "stats": {
+        "FlatMagicDamageMod": 30
+      },
+      "statLines": [
+        {
+          "value": "30",
+          "stat": "Ability Power"
+        }
+      ],
+      "tags": [
+        "SpellDamage"
+      ],
+      "buildsFrom": [
+        1052
+      ],
+      "buildsInto": [
+        2503,
+        6653
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/fated_ashes.png"
+    },
+    {
+      "id": 2510,
+      "key": "dusk_and_dawn",
+      "name": "Dusk and Dawn",
+      "cost": 3100,
+      "baseCost": 300,
+      "sellValue": 2170,
+      "stats": {
+        "FlatHPPoolMod": 300,
+        "FlatMagicDamageMod": 60,
+        "PercentAttackSpeedMod": 0.2
+      },
+      "statLines": [
+        {
+          "value": "300",
+          "stat": "Health"
+        },
+        {
+          "value": "60",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "20",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "20%",
+          "stat": "Attack Speed"
+        }
+      ],
+      "tags": [
+        "Health",
+        "AttackSpeed",
+        "SpellDamage",
+        "OnHit",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3057,
+        1026,
+        3067,
+        1042
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/dusk_and_dawn.png"
+    },
+    {
+      "id": 2512,
+      "key": "fiendhunter_bolts",
+      "name": "Fiendhunter Bolts",
+      "cost": 2650,
+      "baseCost": 850,
+      "sellValue": 1855,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "PercentAttackSpeedMod": 0.45,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "45%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "CriticalStrike",
+        "AttackSpeed",
+        "NonbootsMovement",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3086,
+        3144
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/fiendhunter_bolts.png"
+    },
+    {
+      "id": 2517,
+      "key": "endless_hunger",
+      "name": "Endless Hunger",
+      "cost": 3100,
+      "baseCost": 825,
+      "sellValue": 2170,
+      "stats": {
+        "FlatPhysicalDamageMod": 65
+      },
+      "statLines": [
+        {
+          "value": "65",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "5%",
+          "stat": "Omnivamp"
+        },
+        {
+          "value": "20%",
+          "stat": "Tenacity"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "LifeSteal",
+        "SpellVamp",
+        "Tenacity",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3133,
+        1037,
+        1036
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/endless_hunger.png"
+    },
+    {
+      "id": 2520,
+      "key": "bastionbreaker",
+      "name": "Bastionbreaker",
+      "cost": 3000,
+      "baseCost": 663,
+      "sellValue": 2100,
+      "stats": {
+        "FlatPhysicalDamageMod": 55
+      },
+      "statLines": [
+        {
+          "value": "55",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "18",
+          "stat": "Lethality"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "ArmorPenetration",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        2020,
+        3134
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/bastionbreaker.png"
+    },
+    {
+      "id": 2522,
+      "key": "actualizer",
+      "name": "Actualizer",
+      "cost": 2800,
+      "baseCost": 750,
+      "sellValue": 1960,
+      "stats": {
+        "FlatMPPoolMod": 300,
+        "FlatMagicDamageMod": 90
+      },
+      "statLines": [
+        {
+          "value": "90",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "300",
+          "stat": "Mana"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "Mana",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3802,
+        1026
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/actualizer.png"
+    },
+    {
+      "id": 2523,
+      "key": "hexoptics_c44",
+      "name": "Hexoptics C44",
+      "cost": 2800,
+      "baseCost": 275,
+      "sellValue": 1960,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "FlatPhysicalDamageMod": 55
+      },
+      "statLines": [
+        {
+          "value": "55",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CriticalStrike"
+      ],
+      "buildsFrom": [
+        1037,
+        6670,
+        1036
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/hexoptics_c44.png"
+    },
+    {
+      "id": 2524,
+      "key": "bandlepipes",
+      "name": "Bandlepipes",
+      "cost": 2300,
+      "baseCost": 800,
+      "sellValue": 1610,
+      "stats": {
+        "FlatSpellBlockMod": 20,
+        "FlatHPPoolMod": 200,
+        "FlatArmorMod": 20
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "20",
+          "stat": "Armor"
+        },
+        {
+          "value": "20",
+          "stat": "Magic Resist"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellBlock",
+        "Armor",
+        "AttackSpeed",
+        "NonbootsMovement",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3067,
+        1029,
+        1033
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/bandlepipes.png"
+    },
+    {
+      "id": 2525,
+      "key": "protoplasm_harness",
+      "name": "Protoplasm Harness",
+      "cost": 2600,
+      "baseCost": 900,
+      "sellValue": 1820,
+      "stats": {
+        "FlatHPPoolMod": 600
+      },
+      "statLines": [
+        {
+          "value": "600",
+          "stat": "Health"
+        },
+        {
+          "value": "20",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "NonbootsMovement",
+        "Tenacity",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3067,
+        1011
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/protoplasm_harness.png"
+    },
+    {
+      "id": 2526,
+      "key": "whispering_circlet",
+      "name": "Whispering Circlet",
+      "cost": 2250,
+      "baseCost": 850,
+      "sellValue": 1575,
+      "stats": {
+        "FlatMPPoolMod": 300,
+        "FlatHPPoolMod": 200
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "8%",
+          "stat": "Heal and Shield Power"
+        },
+        {
+          "value": "75%",
+          "stat": "Base Mana Regen"
+        },
+        {
+          "value": "300",
+          "stat": "Mana"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Mana",
+        "ManaRegen"
+      ],
+      "buildsFrom": [
+        3114,
+        1028,
+        3070
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/whispering_circlet.png"
+    },
+    {
+      "id": 3003,
+      "key": "archangels_staff",
+      "name": "Archangel's Staff",
+      "cost": 2900,
+      "baseCost": 450,
+      "sellValue": 2030,
+      "stats": {
+        "FlatMPPoolMod": 600,
+        "FlatMagicDamageMod": 70
+      },
+      "statLines": [
+        {
+          "value": "70",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "600",
+          "stat": "Mana"
+        },
+        {
+          "value": "25",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "Mana",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3070,
+        3802,
+        3108
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/archangels_staff.png"
+    },
+    {
+      "id": 3004,
+      "key": "manamune",
+      "name": "Manamune",
+      "cost": 2900,
+      "baseCost": 1100,
+      "sellValue": 2030,
+      "stats": {
+        "FlatMPPoolMod": 500,
+        "FlatPhysicalDamageMod": 35
+      },
+      "statLines": [
+        {
+          "value": "35",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "500",
+          "stat": "Mana"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "Mana",
+        "CooldownReduction",
+        "OnHit",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3070,
+        3133,
+        1036
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/manamune.png"
+    },
+    {
+      "id": 3006,
+      "key": "berserkers_greaves",
+      "name": "Berserker's Greaves",
+      "cost": 1100,
+      "baseCost": 300,
+      "sellValue": 770,
+      "stats": {
+        "FlatMovementSpeedMod": 45,
+        "PercentAttackSpeedMod": 0.3
+      },
+      "statLines": [
+        {
+          "value": "30%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "45",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "AttackSpeed",
+        "Boots"
+      ],
+      "buildsFrom": [
+        1001,
+        1042,
+        1042
+      ],
+      "buildsInto": [
+        3172
+      ],
+      "depth": 2,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/berserkers_greaves.png"
+    },
+    {
+      "id": 3008,
+      "key": "gluttonous_greaves",
+      "name": "Gluttonous Greaves",
+      "cost": 1100,
+      "baseCost": 800,
+      "sellValue": 770,
+      "stats": {
+        "FlatMovementSpeedMod": 45
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Move Speed"
+        },
+        {
+          "value": "4%",
+          "stat": "Omnivamp"
+        }
+      ],
+      "tags": [
+        "LifeSteal",
+        "SpellVamp",
+        "Boots"
+      ],
+      "buildsFrom": [
+        1001
+      ],
+      "buildsInto": [
+        3168
+      ],
+      "depth": 2,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/gluttonous_greaves.png"
+    },
+    {
+      "id": 3009,
+      "key": "boots_of_swiftness",
+      "name": "Boots of Swiftness",
+      "cost": 1000,
+      "baseCost": 700,
+      "sellValue": 700,
+      "stats": {
+        "FlatMovementSpeedMod": 55
+      },
+      "statLines": [
+        {
+          "value": "55",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Boots"
+      ],
+      "buildsFrom": [
+        1001
+      ],
+      "buildsInto": [
+        3170
+      ],
+      "depth": 2,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/boots_of_swiftness.png"
+    },
+    {
+      "id": 3020,
+      "key": "sorcerers_shoes",
+      "name": "Sorcerer's Shoes",
+      "cost": 1100,
+      "baseCost": 800,
+      "sellValue": 770,
+      "stats": {
+        "FlatMovementSpeedMod": 45
+      },
+      "statLines": [
+        {
+          "value": "12",
+          "stat": "Magic Penetration"
+        },
+        {
+          "value": "45",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Boots",
+        "MagicPenetration"
+      ],
+      "buildsFrom": [
+        1001
+      ],
+      "buildsInto": [
+        3175
+      ],
+      "depth": 2,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/sorcerers_shoes.png"
+    },
+    {
+      "id": 3024,
+      "key": "glacial_buckler",
+      "name": "Glacial Buckler",
+      "cost": 900,
+      "baseCost": 50,
+      "sellValue": 630,
+      "stats": {
+        "FlatMPPoolMod": 300,
+        "FlatArmorMod": 25
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Armor"
+        },
+        {
+          "value": "300",
+          "stat": "Mana"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Armor",
+        "Mana",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        1029,
+        1027,
+        2022
+      ],
+      "buildsInto": [
+        3110
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/glacial_buckler.png"
+    },
+    {
+      "id": 3026,
+      "key": "guardian_angel",
+      "name": "Guardian Angel",
+      "cost": 3200,
+      "baseCost": 800,
+      "sellValue": 1280,
+      "stats": {
+        "FlatArmorMod": 45,
+        "FlatPhysicalDamageMod": 55
+      },
+      "statLines": [
+        {
+          "value": "55",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "45",
+          "stat": "Armor"
+        }
+      ],
+      "tags": [
+        "Armor",
+        "Damage"
+      ],
+      "buildsFrom": [
+        2019,
+        1038
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/guardian_angel.png"
+    },
+    {
+      "id": 3031,
+      "key": "infinity_edge",
+      "name": "Infinity Edge",
+      "cost": 3500,
+      "baseCost": 725,
+      "sellValue": 2450,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "FlatPhysicalDamageMod": 75
+      },
+      "statLines": [
+        {
+          "value": "75",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        },
+        {
+          "value": "30%",
+          "stat": "Critical Strike Damage"
+        }
+      ],
+      "tags": [
+        "CriticalStrike",
+        "Damage"
+      ],
+      "buildsFrom": [
+        1038,
+        1037,
+        1018
+      ],
+      "buildsInto": [],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/infinity_edge.png"
+    },
+    {
+      "id": 3032,
+      "key": "yun_tal_wildarrows",
+      "name": "Yun Tal Wildarrows",
+      "cost": 3000,
+      "baseCost": 750,
+      "sellValue": 2100,
+      "stats": {
+        "FlatPhysicalDamageMod": 50,
+        "PercentAttackSpeedMod": 0.45
+      },
+      "statLines": [
+        {
+          "value": "50",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "45%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "0%",
+          "stat": "Critical Strike Chance"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CriticalStrike",
+        "AttackSpeed"
+      ],
+      "buildsFrom": [
+        1038,
+        3144,
+        1036
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/yun_tal_wildarrows.png"
+    },
+    {
+      "id": 3033,
+      "key": "mortal_reminder",
+      "name": "Mortal Reminder",
+      "cost": 3000,
+      "baseCost": 150,
+      "sellValue": 2100,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "FlatPhysicalDamageMod": 35
+      },
+      "statLines": [
+        {
+          "value": "35",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "30%",
+          "stat": "Armor Penetration"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CriticalStrike",
+        "ArmorPenetration"
+      ],
+      "buildsFrom": [
+        3123,
+        3035,
+        1018
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/mortal_reminder.png"
+    },
+    {
+      "id": 3035,
+      "key": "last_whisper",
+      "name": "Last Whisper",
+      "cost": 1450,
+      "baseCost": 750,
+      "sellValue": 1015,
+      "stats": {
+        "FlatPhysicalDamageMod": 20
+      },
+      "statLines": [
+        {
+          "value": "20",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "18%",
+          "stat": "Armor Penetration"
+        }
+      ],
+      "tags": [
+        "ArmorPenetration",
+        "Damage"
+      ],
+      "buildsFrom": [
+        1036,
+        1036
+      ],
+      "buildsInto": [
+        3033,
+        3036,
+        6694
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/last_whisper.png"
+    },
+    {
+      "id": 3036,
+      "key": "lord_dominiks_regards",
+      "name": "Lord Dominik's Regards",
+      "cost": 3300,
+      "baseCost": 550,
+      "sellValue": 2310,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "FlatPhysicalDamageMod": 35
+      },
+      "statLines": [
+        {
+          "value": "35",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "35%",
+          "stat": "Armor Penetration"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CriticalStrike",
+        "ArmorPenetration"
+      ],
+      "buildsFrom": [
+        3035,
+        6670
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/lord_dominiks_regards.png"
+    },
+    {
+      "id": 3041,
+      "key": "mejais_soulstealer",
+      "name": "Mejai's Soulstealer",
+      "cost": 1500,
+      "baseCost": 1150,
+      "sellValue": 1050,
+      "stats": {
+        "FlatHPPoolMod": 100,
+        "FlatMagicDamageMod": 20
+      },
+      "statLines": [
+        {
+          "value": "20",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "100",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        1082
+      ],
+      "buildsInto": [],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/mejais_soulstealer.png"
+    },
+    {
+      "id": 3044,
+      "key": "phage",
+      "name": "Phage",
+      "cost": 1100,
+      "baseCost": 350,
+      "sellValue": 770,
+      "stats": {
+        "FlatHPPoolMod": 200,
+        "FlatPhysicalDamageMod": 15
+      },
+      "statLines": [
+        {
+          "value": "15",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "200",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        1028,
+        1036
+      ],
+      "buildsInto": [
+        3071,
+        3078,
+        3073,
+        6631
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/phage.png"
+    },
+    {
+      "id": 3046,
+      "key": "phantom_dancer",
+      "name": "Phantom Dancer",
+      "cost": 2650,
+      "baseCost": 950,
+      "sellValue": 1855,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "PercentAttackSpeedMod": 0.65,
+        "PercentMovementSpeedMod": 0.1
+      },
+      "statLines": [
+        {
+          "value": "65%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        },
+        {
+          "value": "10%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "CriticalStrike",
+        "AttackSpeed",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        1042,
+        3086,
+        1042
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/phantom_dancer.png"
+    },
+    {
+      "id": 3047,
+      "key": "plated_steelcaps",
+      "name": "Plated Steelcaps",
+      "cost": 1200,
+      "baseCost": 600,
+      "sellValue": 840,
+      "stats": {
+        "FlatMovementSpeedMod": 45,
+        "FlatArmorMod": 25
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Armor"
+        },
+        {
+          "value": "45",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Armor",
+        "Boots"
+      ],
+      "buildsFrom": [
+        1001,
+        1029
+      ],
+      "buildsInto": [
+        3174
+      ],
+      "depth": 2,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/plated_steelcaps.png"
+    },
+    {
+      "id": 3050,
+      "key": "zekes_convergence",
+      "name": "Zeke's Convergence",
+      "cost": 2200,
+      "baseCost": 700,
+      "sellValue": 1540,
+      "stats": {
+        "FlatSpellBlockMod": 25,
+        "FlatHPPoolMod": 300,
+        "FlatArmorMod": 25
+      },
+      "statLines": [
+        {
+          "value": "300",
+          "stat": "Health"
+        },
+        {
+          "value": "25",
+          "stat": "Armor"
+        },
+        {
+          "value": "25",
+          "stat": "Magic Resist"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellBlock",
+        "Armor",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3067,
+        1029,
+        1033
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/zekes_convergence.png"
+    },
+    {
+      "id": 3051,
+      "key": "hearthbound_axe",
+      "name": "Hearthbound Axe",
+      "cost": 1200,
+      "baseCost": 250,
+      "sellValue": 840,
+      "stats": {
+        "FlatPhysicalDamageMod": 20,
+        "PercentAttackSpeedMod": 0.2
+      },
+      "statLines": [
+        {
+          "value": "20",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "20%",
+          "stat": "Attack Speed"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "AttackSpeed"
+      ],
+      "buildsFrom": [
+        1036,
+        1042,
+        1036
+      ],
+      "buildsInto": [
+        3078,
+        3302,
+        6672
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/hearthbound_axe.png"
+    },
+    {
+      "id": 3053,
+      "key": "steraks_gage",
+      "name": "Sterak's Gage",
+      "cost": 3200,
+      "baseCost": 775,
+      "sellValue": 2240,
+      "stats": {
+        "FlatHPPoolMod": 400
+      },
+      "statLines": [
+        {
+          "value": "400",
+          "stat": "Health"
+        },
+        {
+          "value": "20%",
+          "stat": "Tenacity"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "Tenacity"
+      ],
+      "buildsFrom": [
+        1037,
+        2021,
+        1028
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/steraks_gage.png"
+    },
+    {
+      "id": 3057,
+      "key": "sheen",
+      "name": "Sheen",
+      "cost": 900,
+      "baseCost": 650,
+      "sellValue": 630,
+      "stats": {},
+      "statLines": [
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "OnHit",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        2022
+      ],
+      "buildsInto": [
+        3078,
+        3100,
+        2510,
+        3508,
+        6662
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/sheen.png"
+    },
+    {
+      "id": 3065,
+      "key": "spirit_visage",
+      "name": "Spirit Visage",
+      "cost": 2700,
+      "baseCost": 650,
+      "sellValue": 1890,
+      "stats": {
+        "FlatSpellBlockMod": 50,
+        "FlatHPPoolMod": 400
+      },
+      "statLines": [
+        {
+          "value": "400",
+          "stat": "Health"
+        },
+        {
+          "value": "50",
+          "stat": "Magic Resist"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "100%",
+          "stat": "Base Health Regen"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellBlock",
+        "HealthRegen",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3211,
+        3067
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/spirit_visage.png"
+    },
+    {
+      "id": 3066,
+      "key": "winged_moonplate",
+      "name": "Winged Moonplate",
+      "cost": 800,
+      "baseCost": 400,
+      "sellValue": 560,
+      "stats": {
+        "FlatHPPoolMod": 200,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Health",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        1028
+      ],
+      "buildsInto": [
+        3742,
+        3181,
+        4401
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/winged_moonplate.png"
+    },
+    {
+      "id": 3067,
+      "key": "kindlegem",
+      "name": "Kindlegem",
+      "cost": 800,
+      "baseCost": 150,
+      "sellValue": 560,
+      "stats": {
+        "FlatHPPoolMod": 200
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        1028,
+        2022
+      ],
+      "buildsInto": [
+        3071,
+        8020,
+        3165,
+        6620,
+        3050,
+        3109,
+        2502,
+        2510,
+        2524,
+        2525,
+        6617,
+        3065,
+        3152,
+        3119,
+        3190,
+        3222,
+        4629
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/kindlegem.png"
+    },
+    {
+      "id": 3068,
+      "key": "sunfire_aegis",
+      "name": "Sunfire Aegis",
+      "cost": 2800,
+      "baseCost": 700,
+      "sellValue": 1960,
+      "stats": {
+        "FlatHPPoolMod": 350,
+        "FlatArmorMod": 50
+      },
+      "statLines": [
+        {
+          "value": "350",
+          "stat": "Health"
+        },
+        {
+          "value": "50",
+          "stat": "Armor"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Armor",
+        "Aura",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        6660,
+        1031,
+        1028
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/sunfire_aegis.png"
+    },
+    {
+      "id": 3070,
+      "key": "tear_of_the_goddess",
+      "name": "Tear of the Goddess",
+      "cost": 400,
+      "baseCost": 400,
+      "sellValue": 280,
+      "stats": {
+        "FlatMPPoolMod": 240
+      },
+      "statLines": [
+        {
+          "value": "240",
+          "stat": "Mana"
+        }
+      ],
+      "tags": [
+        "Mana",
+        "ManaRegen"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [
+        3003,
+        3004,
+        2526,
+        3119
+      ],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/tear_of_the_goddess.png"
+    },
+    {
+      "id": 3071,
+      "key": "black_cleaver",
+      "name": "Black Cleaver",
+      "cost": 3000,
+      "baseCost": 225,
+      "sellValue": 2100,
+      "stats": {
+        "FlatHPPoolMod": 400,
+        "FlatPhysicalDamageMod": 45
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "400",
+          "stat": "Health"
+        },
+        {
+          "value": "20",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "CooldownReduction",
+        "OnHit",
+        "NonbootsMovement",
+        "ArmorPenetration",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3044,
+        3067,
+        1037
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/black_cleaver.png"
+    },
+    {
+      "id": 3072,
+      "key": "bloodthirster",
+      "name": "Bloodthirster",
+      "cost": 3400,
+      "baseCost": 325,
+      "sellValue": 2380,
+      "stats": {
+        "FlatPhysicalDamageMod": 80,
+        "PercentLifeStealMod": 0.15
+      },
+      "statLines": [
+        {
+          "value": "80",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "15%",
+          "stat": "Life Steal"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "LifeSteal"
+      ],
+      "buildsFrom": [
+        1038,
+        1037,
+        1053
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/bloodthirster.png"
+    },
+    {
+      "id": 3073,
+      "key": "experimental_hexplate",
+      "name": "Experimental Hexplate",
+      "cost": 3000,
+      "baseCost": 500,
+      "sellValue": 2100,
+      "stats": {
+        "FlatHPPoolMod": 450,
+        "FlatPhysicalDamageMod": 40,
+        "PercentAttackSpeedMod": 0.2
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "20%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "450",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "AttackSpeed",
+        "CooldownReduction",
+        "NonbootsMovement",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        2021,
+        1042,
+        3044
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/experimental_hexplate.png"
+    },
+    {
+      "id": 3074,
+      "key": "ravenous_hydra",
+      "name": "Ravenous Hydra",
+      "cost": 3300,
+      "baseCost": 150,
+      "sellValue": 2310,
+      "stats": {
+        "FlatPhysicalDamageMod": 65,
+        "PercentLifeStealMod": 0.12
+      },
+      "statLines": [
+        {
+          "value": "65",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "12%",
+          "stat": "Life Steal"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "LifeSteal",
+        "CooldownReduction",
+        "OnHit",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3077,
+        1053,
+        3133
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/ravenous_hydra.png"
+    },
+    {
+      "id": 3075,
+      "key": "thornmail",
+      "name": "Thornmail",
+      "cost": 2450,
+      "baseCost": 450,
+      "sellValue": 1715,
+      "stats": {
+        "FlatHPPoolMod": 150,
+        "FlatArmorMod": 75
+      },
+      "statLines": [
+        {
+          "value": "150",
+          "stat": "Health"
+        },
+        {
+          "value": "75",
+          "stat": "Armor"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Armor"
+      ],
+      "buildsFrom": [
+        3076,
+        1031,
+        1028
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/thornmail.png"
+    },
+    {
+      "id": 3076,
+      "key": "bramble_vest",
+      "name": "Bramble Vest",
+      "cost": 800,
+      "baseCost": 200,
+      "sellValue": 560,
+      "stats": {
+        "FlatArmorMod": 30
+      },
+      "statLines": [
+        {
+          "value": "30",
+          "stat": "Armor"
+        }
+      ],
+      "tags": [
+        "Armor"
+      ],
+      "buildsFrom": [
+        1029,
+        1029
+      ],
+      "buildsInto": [
+        3075
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/bramble_vest.png"
+    },
+    {
+      "id": 3077,
+      "key": "tiamat",
+      "name": "Tiamat",
+      "cost": 1200,
+      "baseCost": 500,
+      "sellValue": 840,
+      "stats": {
+        "FlatPhysicalDamageMod": 25
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Attack Damage"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "OnHit"
+      ],
+      "buildsFrom": [
+        1036,
+        1036
+      ],
+      "buildsInto": [
+        3074,
+        3748,
+        6698,
+        6631
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/tiamat.png"
+    },
+    {
+      "id": 3078,
+      "key": "trinity_force",
+      "name": "Trinity Force",
+      "cost": 3333,
+      "baseCost": 133,
+      "sellValue": 2333,
+      "stats": {
+        "FlatHPPoolMod": 333,
+        "FlatPhysicalDamageMod": 36,
+        "PercentAttackSpeedMod": 0.3
+      },
+      "statLines": [
+        {
+          "value": "36",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "30%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "333",
+          "stat": "Health"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "AttackSpeed",
+        "CooldownReduction",
+        "OnHit",
+        "NonbootsMovement",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3057,
+        3044,
+        3051
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/trinity_force.png"
+    },
+    {
+      "id": 3082,
+      "key": "wardens_mail",
+      "name": "Warden's Mail",
+      "cost": 1000,
+      "baseCost": 400,
+      "sellValue": 700,
+      "stats": {
+        "FlatArmorMod": 40
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Armor"
+        }
+      ],
+      "tags": [
+        "Armor"
+      ],
+      "buildsFrom": [
+        1029,
+        1029
+      ],
+      "buildsInto": [
+        3110,
+        3143
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/wardens_mail.png"
+    },
+    {
+      "id": 3083,
+      "key": "warmogs_armor",
+      "name": "Warmog's Armor",
+      "cost": 3100,
+      "baseCost": 500,
+      "sellValue": 2170,
+      "stats": {
+        "FlatHPPoolMod": 1000
+      },
+      "statLines": [
+        {
+          "value": "1000",
+          "stat": "Health"
+        },
+        {
+          "value": "100%",
+          "stat": "Base Health Regen"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen"
+      ],
+      "buildsFrom": [
+        1011,
+        1011,
+        3801
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/warmogs_armor.png"
+    },
+    {
+      "id": 3084,
+      "key": "heartsteel",
+      "name": "Heartsteel",
+      "cost": 3000,
+      "baseCost": 400,
+      "sellValue": 2100,
+      "stats": {
+        "FlatHPPoolMod": 900
+      },
+      "statLines": [
+        {
+          "value": "900",
+          "stat": "Health"
+        },
+        {
+          "value": "100%",
+          "stat": "Base Health Regen"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen"
+      ],
+      "buildsFrom": [
+        1011,
+        3801,
+        1011
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/heartsteel.png"
+    },
+    {
+      "id": 3085,
+      "key": "runaans_hurricane",
+      "name": "Runaan's Hurricane",
+      "cost": 2650,
+      "baseCost": 850,
+      "sellValue": 1855,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "PercentAttackSpeedMod": 0.4,
+        "PercentMovementSpeedMod": 0.05
+      },
+      "statLines": [
+        {
+          "value": "40%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        },
+        {
+          "value": "5%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "CriticalStrike",
+        "AttackSpeed",
+        "OnHit",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        3086,
+        3144
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/runaans_hurricane.png"
+    },
+    {
+      "id": 3086,
+      "key": "zeal",
+      "name": "Zeal",
+      "cost": 1200,
+      "baseCost": 350,
+      "sellValue": 840,
+      "stats": {
+        "FlatCritChanceMod": 0.15,
+        "PercentAttackSpeedMod": 0.15,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "15%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "15%",
+          "stat": "Critical Strike Chance"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "CriticalStrike",
+        "AttackSpeed",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        1018,
+        1042
+      ],
+      "buildsInto": [
+        2512,
+        3094,
+        3046,
+        3085,
+        6675
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/zeal.png"
+    },
+    {
+      "id": 3087,
+      "key": "statikk_shiv",
+      "name": "Statikk Shiv",
+      "cost": 3000,
+      "baseCost": 625,
+      "sellValue": 2100,
+      "stats": {
+        "FlatMagicDamageMod": 45,
+        "FlatPhysicalDamageMod": 45,
+        "PercentAttackSpeedMod": 0.3,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "45",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "30%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "AttackSpeed",
+        "SpellDamage",
+        "OnHit",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        3144,
+        3113,
+        1037
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/statikk_shiv.png"
+    },
+    {
+      "id": 3089,
+      "key": "rabadons_deathcap",
+      "name": "Rabadon's Deathcap",
+      "cost": 3500,
+      "baseCost": 1100,
+      "sellValue": 2450,
+      "stats": {
+        "FlatMagicDamageMod": 130
+      },
+      "statLines": [
+        {
+          "value": "130",
+          "stat": "Ability Power"
+        }
+      ],
+      "tags": [
+        "SpellDamage"
+      ],
+      "buildsFrom": [
+        1058,
+        1058
+      ],
+      "buildsInto": [],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/rabadons_deathcap.png"
+    },
+    {
+      "id": 3091,
+      "key": "wits_end",
+      "name": "Wit's End",
+      "cost": 2800,
+      "baseCost": 550,
+      "sellValue": 1960,
+      "stats": {
+        "FlatSpellBlockMod": 45,
+        "PercentAttackSpeedMod": 0.5
+      },
+      "statLines": [
+        {
+          "value": "50%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "45",
+          "stat": "Magic Resist"
+        },
+        {
+          "value": "20%",
+          "stat": "Tenacity"
+        }
+      ],
+      "tags": [
+        "SpellBlock",
+        "AttackSpeed",
+        "OnHit",
+        "Tenacity"
+      ],
+      "buildsFrom": [
+        1043,
+        1057,
+        1043
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/wits_end.png"
+    },
+    {
+      "id": 3094,
+      "key": "rapid_firecannon",
+      "name": "Rapid Firecannon",
+      "cost": 2650,
+      "baseCost": 850,
+      "sellValue": 1855,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "PercentAttackSpeedMod": 0.35,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "35%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "CriticalStrike",
+        "AttackSpeed",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        3086,
+        3144
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/rapid_firecannon.png"
+    },
+    {
+      "id": 3095,
+      "key": "stormrazor",
+      "name": "Stormrazor",
+      "cost": 3200,
+      "baseCost": 700,
+      "sellValue": 2240,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "FlatPhysicalDamageMod": 50,
+        "PercentAttackSpeedMod": 0.25
+      },
+      "statLines": [
+        {
+          "value": "50",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "25%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CriticalStrike",
+        "AttackSpeed",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        1038,
+        1018,
+        3144
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/stormrazor.png"
+    },
+    {
+      "id": 3100,
+      "key": "lich_bane",
+      "name": "Lich Bane",
+      "cost": 2900,
+      "baseCost": 250,
+      "sellValue": 2030,
+      "stats": {
+        "FlatMagicDamageMod": 100,
+        "PercentMovementSpeedMod": 0.06
+      },
+      "statLines": [
+        {
+          "value": "100",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "6%",
+          "stat": "Move Speed"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "OnHit",
+        "NonbootsMovement",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3057,
+        3113,
+        1026
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/lich_bane.png"
+    },
+    {
+      "id": 3102,
+      "key": "banshees_veil",
+      "name": "Banshee's Veil",
+      "cost": 3000,
+      "baseCost": 200,
+      "sellValue": 2100,
+      "stats": {
+        "FlatSpellBlockMod": 40,
+        "FlatMagicDamageMod": 105
+      },
+      "statLines": [
+        {
+          "value": "105",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "40",
+          "stat": "Magic Resist"
+        }
+      ],
+      "tags": [
+        "SpellBlock",
+        "SpellDamage"
+      ],
+      "buildsFrom": [
+        1058,
+        4632
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/banshees_veil.png"
+    },
+    {
+      "id": 3107,
+      "key": "redemption",
+      "name": "Redemption",
+      "cost": 2300,
+      "baseCost": 850,
+      "sellValue": 1610,
+      "stats": {
+        "FlatMagicDamageMod": 30
+      },
+      "statLines": [
+        {
+          "value": "30",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "100%",
+          "stat": "Base Mana Regen"
+        },
+        {
+          "value": "10%",
+          "stat": "Heal and Shield Power"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "ManaRegen",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3108,
+        3114
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/redemption.png"
+    },
+    {
+      "id": 3108,
+      "key": "fiendish_codex",
+      "name": "Fiendish Codex",
+      "cost": 850,
+      "baseCost": 200,
+      "sellValue": 595,
+      "stats": {
+        "FlatMagicDamageMod": 25
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        1052,
+        2022
+      ],
+      "buildsInto": [
+        3115,
+        3003,
+        3107,
+        3137,
+        8010,
+        6616,
+        4628,
+        4629,
+        4633
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/fiendish_codex.png"
+    },
+    {
+      "id": 3109,
+      "key": "knights_vow",
+      "name": "Knight's Vow",
+      "cost": 2300,
+      "baseCost": 400,
+      "sellValue": 1610,
+      "stats": {
+        "FlatHPPoolMod": 200,
+        "FlatArmorMod": 40
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "40",
+          "stat": "Armor"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "100%",
+          "stat": "Base Health Regen"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen",
+        "Armor",
+        "Aura",
+        "Active",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3067,
+        1031,
+        1006
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/knights_vow.png"
+    },
+    {
+      "id": 3110,
+      "key": "frozen_heart",
+      "name": "Frozen Heart",
+      "cost": 2500,
+      "baseCost": 600,
+      "sellValue": 1750,
+      "stats": {
+        "FlatMPPoolMod": 400,
+        "FlatArmorMod": 75
+      },
+      "statLines": [
+        {
+          "value": "75",
+          "stat": "Armor"
+        },
+        {
+          "value": "400",
+          "stat": "Mana"
+        },
+        {
+          "value": "20",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Armor",
+        "Mana",
+        "Aura",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3082,
+        3024
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/frozen_heart.png"
+    },
+    {
+      "id": 3111,
+      "key": "mercurys_treads",
+      "name": "Mercury's Treads",
+      "cost": 1250,
+      "baseCost": 550,
+      "sellValue": 875,
+      "stats": {
+        "FlatSpellBlockMod": 20,
+        "FlatMovementSpeedMod": 45
+      },
+      "statLines": [
+        {
+          "value": "20",
+          "stat": "Magic Resist"
+        },
+        {
+          "value": "45",
+          "stat": "Move Speed"
+        },
+        {
+          "value": "30%",
+          "stat": "Tenacity"
+        }
+      ],
+      "tags": [
+        "Boots",
+        "SpellBlock",
+        "Tenacity"
+      ],
+      "buildsFrom": [
+        1001,
+        1033
+      ],
+      "buildsInto": [
+        3173
+      ],
+      "depth": 2,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/mercurys_treads.png"
+    },
+    {
+      "id": 3112,
+      "key": "guardians_orb",
+      "name": "Guardian's Orb",
+      "cost": 950,
+      "baseCost": 950,
+      "sellValue": 665,
+      "stats": {
+        "FlatHPPoolMod": 150,
+        "FlatMagicDamageMod": 50
+      },
+      "statLines": [
+        {
+          "value": "50",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "150",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage",
+        "ManaRegen",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/guardians_orb.png"
+    },
+    {
+      "id": 3113,
+      "key": "aether_wisp",
+      "name": "Aether Wisp",
+      "cost": 900,
+      "baseCost": 500,
+      "sellValue": 630,
+      "stats": {
+        "FlatMagicDamageMod": 30,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "30",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "NonbootsMovement",
+        "SpellDamage"
+      ],
+      "buildsFrom": [
+        1052
+      ],
+      "buildsInto": [
+        3100,
+        2065,
+        3087,
+        3504,
+        4629,
+        4646
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/aether_wisp.png"
+    },
+    {
+      "id": 3114,
+      "key": "forbidden_idol",
+      "name": "Forbidden Idol",
+      "cost": 600,
+      "baseCost": 400,
+      "sellValue": 420,
+      "stats": {},
+      "statLines": [
+        {
+          "value": "50%",
+          "stat": "Base Mana Regen"
+        },
+        {
+          "value": "8%",
+          "stat": "Heal and Shield Power"
+        }
+      ],
+      "tags": [
+        "ManaRegen"
+      ],
+      "buildsFrom": [
+        1004
+      ],
+      "buildsInto": [
+        2526,
+        3107,
+        3222,
+        3504,
+        6616,
+        6621
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/forbidden_idol.png"
+    },
+    {
+      "id": 3115,
+      "key": "nashors_tooth",
+      "name": "Nashor's Tooth",
+      "cost": 2900,
+      "baseCost": 500,
+      "sellValue": 2030,
+      "stats": {
+        "FlatMagicDamageMod": 80,
+        "PercentAttackSpeedMod": 0.5
+      },
+      "statLines": [
+        {
+          "value": "80",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "50%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "AttackSpeed",
+        "SpellDamage",
+        "OnHit",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        1043,
+        1026,
+        3108
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/nashors_tooth.png"
+    },
+    {
+      "id": 3116,
+      "key": "rylais_crystal_scepter",
+      "name": "Rylai's Crystal Scepter",
+      "cost": 2600,
+      "baseCost": 450,
+      "sellValue": 1820,
+      "stats": {
+        "FlatHPPoolMod": 400,
+        "FlatMagicDamageMod": 65
+      },
+      "statLines": [
+        {
+          "value": "65",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "400",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage",
+        "Slow"
+      ],
+      "buildsFrom": [
+        1026,
+        1011,
+        1052
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/rylais_crystal_scepter.png"
+    },
+    {
+      "id": 3118,
+      "key": "malignance",
+      "name": "Malignance",
+      "cost": 2700,
+      "baseCost": 650,
+      "sellValue": 1890,
+      "stats": {
+        "FlatMPPoolMod": 600,
+        "FlatMagicDamageMod": 90
+      },
+      "statLines": [
+        {
+          "value": "90",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "600",
+          "stat": "Mana"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "Mana",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3802,
+        1026
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/malignance.png"
+    },
+    {
+      "id": 3119,
+      "key": "winters_approach",
+      "name": "Winter's Approach",
+      "cost": 2400,
+      "baseCost": 300,
+      "sellValue": 1680,
+      "stats": {
+        "FlatMPPoolMod": 500,
+        "FlatHPPoolMod": 550
+      },
+      "statLines": [
+        {
+          "value": "550",
+          "stat": "Health"
+        },
+        {
+          "value": "500",
+          "stat": "Mana"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Mana",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3070,
+        1011,
+        3067
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/winters_approach.png"
+    },
+    {
+      "id": 3123,
+      "key": "executioners_calling",
+      "name": "Executioner's Calling",
+      "cost": 800,
+      "baseCost": 450,
+      "sellValue": 560,
+      "stats": {
+        "FlatPhysicalDamageMod": 15
+      },
+      "statLines": [
+        {
+          "value": "15",
+          "stat": "Attack Damage"
+        }
+      ],
+      "tags": [
+        "Damage"
+      ],
+      "buildsFrom": [
+        1036
+      ],
+      "buildsInto": [
+        3033,
+        6609
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/executioners_calling.png"
+    },
+    {
+      "id": 3124,
+      "key": "guinsoos_rageblade",
+      "name": "Guinsoo's Rageblade",
+      "cost": 3000,
+      "baseCost": 1025,
+      "sellValue": 2100,
+      "stats": {
+        "FlatMagicDamageMod": 30,
+        "FlatPhysicalDamageMod": 30,
+        "PercentAttackSpeedMod": 0.25
+      },
+      "statLines": [
+        {
+          "value": "30",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "30",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "25%",
+          "stat": "Attack Speed"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "AttackSpeed",
+        "SpellDamage",
+        "OnHit"
+      ],
+      "buildsFrom": [
+        1052,
+        1043,
+        1037
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/guinsoos_rageblade.png"
+    },
+    {
+      "id": 3133,
+      "key": "caulfields_warhammer",
+      "name": "Caulfield's Warhammer",
+      "cost": 1050,
+      "baseCost": 100,
+      "sellValue": 735,
+      "stats": {
+        "FlatPhysicalDamageMod": 20
+      },
+      "statLines": [
+        {
+          "value": "20",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        1036,
+        2022,
+        1036
+      ],
+      "buildsInto": [
+        6333,
+        6697,
+        3156,
+        2517,
+        3004,
+        3508,
+        3074,
+        3179,
+        6609,
+        6610,
+        6692,
+        6694,
+        6696
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/caulfields_warhammer.png"
+    },
+    {
+      "id": 3134,
+      "key": "serrated_dirk",
+      "name": "Serrated Dirk",
+      "cost": 1000,
+      "baseCost": 300,
+      "sellValue": 700,
+      "stats": {
+        "FlatPhysicalDamageMod": 20
+      },
+      "statLines": [
+        {
+          "value": "20",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "10",
+          "stat": "Lethality"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "ArmorPenetration"
+      ],
+      "buildsFrom": [
+        1036,
+        1036
+      ],
+      "buildsInto": [
+        3142,
+        6697,
+        2520,
+        6695,
+        3814,
+        3179,
+        6676
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/serrated_dirk.png"
+    },
+    {
+      "id": 3135,
+      "key": "void_staff",
+      "name": "Void Staff",
+      "cost": 3000,
+      "baseCost": 1050,
+      "sellValue": 2100,
+      "stats": {
+        "FlatMagicDamageMod": 95
+      },
+      "statLines": [
+        {
+          "value": "95",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "40%",
+          "stat": "Magic Penetration"
+        }
+      ],
+      "tags": [
+        "MagicPenetration",
+        "SpellDamage"
+      ],
+      "buildsFrom": [
+        4630,
+        1026
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/void_staff.png"
+    },
+    {
+      "id": 3137,
+      "key": "cryptbloom",
+      "name": "Cryptbloom",
+      "cost": 3000,
+      "baseCost": 200,
+      "sellValue": 2100,
+      "stats": {
+        "FlatMagicDamageMod": 75
+      },
+      "statLines": [
+        {
+          "value": "75",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "30%",
+          "stat": "Magic Penetration"
+        },
+        {
+          "value": "20",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "MagicPenetration",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        4630,
+        3108,
+        3108
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/cryptbloom.png"
+    },
+    {
+      "id": 3139,
+      "key": "mercurial_scimitar",
+      "name": "Mercurial Scimitar",
+      "cost": 3200,
+      "baseCost": 125,
+      "sellValue": 2240,
+      "stats": {
+        "FlatSpellBlockMod": 35,
+        "FlatPhysicalDamageMod": 50,
+        "PercentLifeStealMod": 0.1
+      },
+      "statLines": [
+        {
+          "value": "50",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "35",
+          "stat": "Magic Resist"
+        },
+        {
+          "value": "10%",
+          "stat": "Life Steal"
+        }
+      ],
+      "tags": [
+        "SpellBlock",
+        "Damage",
+        "LifeSteal",
+        "Active",
+        "NonbootsMovement",
+        "Tenacity"
+      ],
+      "buildsFrom": [
+        3140,
+        1037,
+        1053
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/mercurial_scimitar.png"
+    },
+    {
+      "id": 3140,
+      "key": "quicksilver_sash",
+      "name": "Quicksilver Sash",
+      "cost": 1300,
+      "baseCost": 900,
+      "sellValue": 910,
+      "stats": {
+        "FlatSpellBlockMod": 30
+      },
+      "statLines": [
+        {
+          "value": "30",
+          "stat": "Magic Resist"
+        }
+      ],
+      "tags": [
+        "Active",
+        "SpellBlock"
+      ],
+      "buildsFrom": [
+        1033
+      ],
+      "buildsInto": [
+        3139
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/quicksilver_sash.png"
+    },
+    {
+      "id": 3142,
+      "key": "youmuus_ghostblade",
+      "name": "Youmuu's Ghostblade",
+      "cost": 2800,
+      "baseCost": 675,
+      "sellValue": 1960,
+      "stats": {
+        "FlatPhysicalDamageMod": 55,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "55",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "18",
+          "stat": "Lethality"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "Active",
+        "NonbootsMovement",
+        "ArmorPenetration"
+      ],
+      "buildsFrom": [
+        3134,
+        6690,
+        1036
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/youmuus_ghostblade.png"
+    },
+    {
+      "id": 3143,
+      "key": "randuins_omen",
+      "name": "Randuin's Omen",
+      "cost": 2700,
+      "baseCost": 800,
+      "sellValue": 1890,
+      "stats": {
+        "FlatHPPoolMod": 350,
+        "FlatArmorMod": 75
+      },
+      "statLines": [
+        {
+          "value": "350",
+          "stat": "Health"
+        },
+        {
+          "value": "75",
+          "stat": "Armor"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Armor",
+        "Active",
+        "Slow"
+      ],
+      "buildsFrom": [
+        3082,
+        1011
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/randuins_omen.png"
+    },
+    {
+      "id": 3144,
+      "key": "scouts_slingshot",
+      "name": "Scout's Slingshot",
+      "cost": 600,
+      "baseCost": 100,
+      "sellValue": 420,
+      "stats": {
+        "PercentAttackSpeedMod": 0.2
+      },
+      "statLines": [
+        {
+          "value": "20%",
+          "stat": "Attack Speed"
+        }
+      ],
+      "tags": [
+        "AttackSpeed"
+      ],
+      "buildsFrom": [
+        1042,
+        1042
+      ],
+      "buildsInto": [
+        2512,
+        3094,
+        3087,
+        3032,
+        3085,
+        3095
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/scouts_slingshot.png"
+    },
+    {
+      "id": 3145,
+      "key": "hextech_alternator",
+      "name": "Hextech Alternator",
+      "cost": 1100,
+      "baseCost": 300,
+      "sellValue": 770,
+      "stats": {
+        "FlatMagicDamageMod": 45
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Ability Power"
+        }
+      ],
+      "tags": [
+        "SpellDamage"
+      ],
+      "buildsFrom": [
+        1052,
+        1052
+      ],
+      "buildsInto": [
+        4645,
+        3146,
+        6655,
+        3152,
+        4646
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/hextech_alternator.png"
+    },
+    {
+      "id": 3146,
+      "key": "hextech_gunblade",
+      "name": "Hextech Gunblade",
+      "cost": 3000,
+      "baseCost": 600,
+      "sellValue": 2100,
+      "stats": {
+        "FlatMagicDamageMod": 80,
+        "FlatPhysicalDamageMod": 40
+      },
+      "statLines": [
+        {
+          "value": "80",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "40",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "10%",
+          "stat": "Omnivamp"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "LifeSteal",
+        "SpellDamage",
+        "Active",
+        "SpellVamp"
+      ],
+      "buildsFrom": [
+        1053,
+        3145,
+        1052
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/hextech_gunblade.png"
+    },
+    {
+      "id": 3147,
+      "key": "haunting_guise",
+      "name": "Haunting Guise",
+      "cost": 1300,
+      "baseCost": 500,
+      "sellValue": 910,
+      "stats": {
+        "FlatHPPoolMod": 200,
+        "FlatMagicDamageMod": 30
+      },
+      "statLines": [
+        {
+          "value": "30",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "200",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage"
+      ],
+      "buildsFrom": [
+        1052,
+        1028
+      ],
+      "buildsInto": [
+        8010,
+        4633,
+        6653
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/haunting_guise.png"
+    },
+    {
+      "id": 3152,
+      "key": "hextech_rocketbelt",
+      "name": "Hextech Rocketbelt",
+      "cost": 2650,
+      "baseCost": 350,
+      "sellValue": 1855,
+      "stats": {
+        "FlatHPPoolMod": 350,
+        "FlatMagicDamageMod": 60
+      },
+      "statLines": [
+        {
+          "value": "60",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "350",
+          "stat": "Health"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage",
+        "Active",
+        "CooldownReduction",
+        "NonbootsMovement",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3145,
+        3067,
+        1028
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/hextech_rocketbelt.png"
+    },
+    {
+      "id": 3153,
+      "key": "blade_of_the_ruined_king",
+      "name": "Blade of The Ruined King",
+      "cost": 3200,
+      "baseCost": 725,
+      "sellValue": 2240,
+      "stats": {
+        "FlatPhysicalDamageMod": 40,
+        "PercentAttackSpeedMod": 0.25,
+        "PercentLifeStealMod": 0.1
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "25%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "10%",
+          "stat": "Life Steal"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "AttackSpeed",
+        "LifeSteal",
+        "Slow",
+        "OnHit"
+      ],
+      "buildsFrom": [
+        1053,
+        1043,
+        1037
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/blade_of_the_ruined_king.png"
+    },
+    {
+      "id": 3155,
+      "key": "hexdrinker",
+      "name": "Hexdrinker",
+      "cost": 1300,
+      "baseCost": 200,
+      "sellValue": 910,
+      "stats": {
+        "FlatSpellBlockMod": 25,
+        "FlatPhysicalDamageMod": 25
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "25",
+          "stat": "Magic Resist"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "SpellBlock"
+      ],
+      "buildsFrom": [
+        1036,
+        1033,
+        1036
+      ],
+      "buildsInto": [
+        3156
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/hexdrinker.png"
+    },
+    {
+      "id": 3156,
+      "key": "maw_of_malmortius",
+      "name": "Maw of Malmortius",
+      "cost": 3100,
+      "baseCost": 750,
+      "sellValue": 2170,
+      "stats": {
+        "FlatSpellBlockMod": 40,
+        "FlatPhysicalDamageMod": 60
+      },
+      "statLines": [
+        {
+          "value": "60",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "40",
+          "stat": "Magic Resist"
+        }
+      ],
+      "tags": [
+        "SpellBlock",
+        "Damage",
+        "LifeSteal",
+        "SpellVamp",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3155,
+        3133
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/maw_of_malmortius.png"
+    },
+    {
+      "id": 3157,
+      "key": "zhonyas_hourglass",
+      "name": "Zhonya's Hourglass",
+      "cost": 3250,
+      "baseCost": 450,
+      "sellValue": 2275,
+      "stats": {
+        "FlatMagicDamageMod": 105,
+        "FlatArmorMod": 50
+      },
+      "statLines": [
+        {
+          "value": "105",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "50",
+          "stat": "Armor"
+        }
+      ],
+      "tags": [
+        "Armor",
+        "SpellDamage",
+        "Active"
+      ],
+      "buildsFrom": [
+        1058,
+        2420
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/zhonyas_hourglass.png"
+    },
+    {
+      "id": 3158,
+      "key": "ionian_boots_of_lucidity",
+      "name": "Ionian Boots of Lucidity",
+      "cost": 900,
+      "baseCost": 350,
+      "sellValue": 630,
+      "stats": {
+        "FlatMovementSpeedMod": 45
+      },
+      "statLines": [
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "45",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Boots",
+        "CooldownReduction"
+      ],
+      "buildsFrom": [
+        1001,
+        2022
+      ],
+      "buildsInto": [
+        3171
+      ],
+      "depth": 2,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/ionian_boots_of_lucidity.png"
+    },
+    {
+      "id": 3161,
+      "key": "spear_of_shojin",
+      "name": "Spear of Shojin",
+      "cost": 3100,
+      "baseCost": 675,
+      "sellValue": 2170,
+      "stats": {
+        "FlatHPPoolMod": 450,
+        "FlatPhysicalDamageMod": 45
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "450",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        1037,
+        2021,
+        1028
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/spear_of_shojin.png"
+    },
+    {
+      "id": 3165,
+      "key": "morellonomicon",
+      "name": "Morellonomicon",
+      "cost": 2850,
+      "baseCost": 400,
+      "sellValue": 1995,
+      "stats": {
+        "FlatHPPoolMod": 350,
+        "FlatMagicDamageMod": 75
+      },
+      "statLines": [
+        {
+          "value": "75",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "350",
+          "stat": "Health"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3916,
+        1026,
+        3067
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/morellonomicon.png"
+    },
+    {
+      "id": 3168,
+      "key": "immortal_path",
+      "name": "Immortal Path",
+      "cost": 1100,
+      "baseCost": 0,
+      "sellValue": 770,
+      "stats": {
+        "FlatMovementSpeedMod": 45
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Move Speed"
+        },
+        {
+          "value": "4%",
+          "stat": "Omnivamp"
+        }
+      ],
+      "tags": [
+        "LifeSteal",
+        "SpellVamp",
+        "Boots"
+      ],
+      "buildsFrom": [
+        3008
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/immortal_path.png"
+    },
+    {
+      "id": 3170,
+      "key": "swiftmarch",
+      "name": "Swiftmarch",
+      "cost": 1000,
+      "baseCost": 0,
+      "sellValue": 700,
+      "stats": {
+        "FlatMovementSpeedMod": 65
+      },
+      "statLines": [
+        {
+          "value": "65",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Boots"
+      ],
+      "buildsFrom": [
+        3009
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/swiftmarch.png"
+    },
+    {
+      "id": 3171,
+      "key": "crimson_lucidity",
+      "name": "Crimson Lucidity",
+      "cost": 900,
+      "baseCost": 0,
+      "sellValue": 630,
+      "stats": {
+        "FlatMovementSpeedMod": 45
+      },
+      "statLines": [
+        {
+          "value": "20",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "45",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "CooldownReduction",
+        "Boots"
+      ],
+      "buildsFrom": [
+        3158
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/crimson_lucidity.png"
+    },
+    {
+      "id": 3172,
+      "key": "gunmetal_greaves",
+      "name": "Gunmetal Greaves",
+      "cost": 1100,
+      "baseCost": 0,
+      "sellValue": 770,
+      "stats": {
+        "FlatMovementSpeedMod": 45,
+        "PercentAttackSpeedMod": 0.45,
+        "PercentLifeStealMod": 0.05
+      },
+      "statLines": [
+        {
+          "value": "45%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "45",
+          "stat": "Move Speed"
+        },
+        {
+          "value": "5%",
+          "stat": "Life Steal"
+        }
+      ],
+      "tags": [
+        "AttackSpeed",
+        "LifeSteal",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        3006
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/gunmetal_greaves.png"
+    },
+    {
+      "id": 3173,
+      "key": "chainlaced_crushers",
+      "name": "Chainlaced Crushers",
+      "cost": 1250,
+      "baseCost": 0,
+      "sellValue": 875,
+      "stats": {
+        "FlatSpellBlockMod": 25,
+        "FlatMovementSpeedMod": 45
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Magic Resist"
+        },
+        {
+          "value": "45",
+          "stat": "Move Speed"
+        },
+        {
+          "value": "30%",
+          "stat": "Tenacity"
+        }
+      ],
+      "tags": [
+        "SpellBlock",
+        "Boots",
+        "Tenacity",
+        "MagicResist"
+      ],
+      "buildsFrom": [
+        3111
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/chainlaced_crushers.png"
+    },
+    {
+      "id": 3174,
+      "key": "armored_advance",
+      "name": "Armored Advance",
+      "cost": 1200,
+      "baseCost": 0,
+      "sellValue": 840,
+      "stats": {
+        "FlatMovementSpeedMod": 45,
+        "FlatArmorMod": 35
+      },
+      "statLines": [
+        {
+          "value": "35",
+          "stat": "Armor"
+        },
+        {
+          "value": "45",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Armor",
+        "Boots"
+      ],
+      "buildsFrom": [
+        3047
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/armored_advance.png"
+    },
+    {
+      "id": 3175,
+      "key": "spellslingers_shoes",
+      "name": "Spellslinger's Shoes",
+      "cost": 1100,
+      "baseCost": 0,
+      "sellValue": 770,
+      "stats": {
+        "FlatMovementSpeedMod": 45
+      },
+      "statLines": [
+        {
+          "value": "20",
+          "stat": "Magic Penetration"
+        },
+        {
+          "value": "8%",
+          "stat": "Magic Penetration"
+        },
+        {
+          "value": "45",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Boots",
+        "MagicPenetration"
+      ],
+      "buildsFrom": [
+        3020
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": true,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/spellslingers_shoes.png"
+    },
+    {
+      "id": 3177,
+      "key": "guardians_blade",
+      "name": "Guardian's Blade",
+      "cost": 950,
+      "baseCost": 950,
+      "sellValue": 665,
+      "stats": {
+        "FlatHPPoolMod": 150,
+        "FlatPhysicalDamageMod": 30
+      },
+      "statLines": [
+        {
+          "value": "30",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "150",
+          "stat": "Health"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "Lane",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/guardians_blade.png"
+    },
+    {
+      "id": 3179,
+      "key": "umbral_glaive",
+      "name": "Umbral Glaive",
+      "cost": 2800,
+      "baseCost": 750,
+      "sellValue": 1960,
+      "stats": {
+        "FlatPhysicalDamageMod": 60
+      },
+      "statLines": [
+        {
+          "value": "60",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "18",
+          "stat": "Lethality"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "Vision",
+        "CooldownReduction",
+        "ArmorPenetration",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3134,
+        3133
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/umbral_glaive.png"
+    },
+    {
+      "id": 3181,
+      "key": "hullbreaker",
+      "name": "Hullbreaker",
+      "cost": 3000,
+      "baseCost": 175,
+      "sellValue": 2100,
+      "stats": {
+        "FlatHPPoolMod": 500,
+        "FlatPhysicalDamageMod": 40,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "500",
+          "stat": "Health"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        2021,
+        3066,
+        1037
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/hullbreaker.png"
+    },
+    {
+      "id": 3184,
+      "key": "guardians_hammer",
+      "name": "Guardian's Hammer",
+      "cost": 950,
+      "baseCost": 950,
+      "sellValue": 665,
+      "stats": {
+        "FlatHPPoolMod": 150,
+        "FlatPhysicalDamageMod": 25,
+        "PercentLifeStealMod": 0.05
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "150",
+          "stat": "Health"
+        },
+        {
+          "value": "5%",
+          "stat": "Life Steal"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "LifeSteal",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/guardians_hammer.png"
+    },
+    {
+      "id": 3190,
+      "key": "locket_of_the_iron_solari",
+      "name": "Locket of the Iron Solari",
+      "cost": 2200,
+      "baseCost": 700,
+      "sellValue": 1540,
+      "stats": {
+        "FlatSpellBlockMod": 30,
+        "FlatHPPoolMod": 200,
+        "FlatArmorMod": 30
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "30",
+          "stat": "Armor"
+        },
+        {
+          "value": "30",
+          "stat": "Magic Resist"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellBlock",
+        "Armor",
+        "Aura",
+        "Active",
+        "MagicResist",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3067,
+        1029,
+        1033
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/locket_of_the_iron_solari.png"
+    },
+    {
+      "id": 3211,
+      "key": "spectres_cowl",
+      "name": "Spectre's Cowl",
+      "cost": 1250,
+      "baseCost": 150,
+      "sellValue": 875,
+      "stats": {
+        "FlatSpellBlockMod": 35,
+        "FlatHPPoolMod": 200
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "35",
+          "stat": "Magic Resist"
+        },
+        {
+          "value": "100%",
+          "stat": "Base Health Regen"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen",
+        "SpellBlock"
+      ],
+      "buildsFrom": [
+        1028,
+        1033,
+        1006
+      ],
+      "buildsInto": [
+        2504,
+        3065,
+        6664
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/spectres_cowl.png"
+    },
+    {
+      "id": 3222,
+      "key": "mikaels_blessing",
+      "name": "Mikael's Blessing",
+      "cost": 2300,
+      "baseCost": 900,
+      "sellValue": 1610,
+      "stats": {
+        "FlatHPPoolMod": 250
+      },
+      "statLines": [
+        {
+          "value": "250",
+          "stat": "Health"
+        },
+        {
+          "value": "100%",
+          "stat": "Base Mana Regen"
+        },
+        {
+          "value": "12%",
+          "stat": "Heal and Shield Power"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "ManaRegen",
+        "Active",
+        "CooldownReduction",
+        "Tenacity",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3067,
+        3114
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/mikaels_blessing.png"
+    },
+    {
+      "id": 3302,
+      "key": "terminus",
+      "name": "Terminus",
+      "cost": 3000,
+      "baseCost": 1100,
+      "sellValue": 2100,
+      "stats": {
+        "FlatPhysicalDamageMod": 30,
+        "PercentAttackSpeedMod": 0.35
+      },
+      "statLines": [
+        {
+          "value": "30",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "35%",
+          "stat": "Attack Speed"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "AttackSpeed",
+        "OnHit",
+        "MagicPenetration",
+        "ArmorPenetration"
+      ],
+      "buildsFrom": [
+        3051,
+        1043
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/terminus.png"
+    },
+    {
+      "id": 3340,
+      "key": "stealth_ward",
+      "name": "Stealth Ward",
+      "cost": 0,
+      "baseCost": 0,
+      "sellValue": 0,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "Active",
+        "Jungle",
+        "Lane",
+        "Trinket",
+        "Vision"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": true,
+      "support": false,
+      "icon": "/lol-item-icons/stealth_ward.png"
+    },
+    {
+      "id": 3363,
+      "key": "farsight_alteration",
+      "name": "Farsight Alteration",
+      "cost": 0,
+      "baseCost": 0,
+      "sellValue": 0,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "Active",
+        "Trinket",
+        "Vision"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": true,
+      "support": false,
+      "icon": "/lol-item-icons/farsight_alteration.png"
+    },
+    {
+      "id": 3364,
+      "key": "oracle_lens",
+      "name": "Oracle Lens",
+      "cost": 0,
+      "baseCost": 0,
+      "sellValue": 0,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "Active",
+        "Trinket",
+        "Vision"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": true,
+      "support": false,
+      "icon": "/lol-item-icons/oracle_lens.png"
+    },
+    {
+      "id": 3504,
+      "key": "ardent_censer",
+      "name": "Ardent Censer",
+      "cost": 2200,
+      "baseCost": 700,
+      "sellValue": 1540,
+      "stats": {
+        "FlatMagicDamageMod": 45,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "10%",
+          "stat": "Heal and Shield Power"
+        },
+        {
+          "value": "125%",
+          "stat": "Base Mana Regen"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "AttackSpeed",
+        "SpellDamage",
+        "ManaRegen",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        3113,
+        3114
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/ardent_censer.png"
+    },
+    {
+      "id": 3508,
+      "key": "essence_reaver",
+      "name": "Essence Reaver",
+      "cost": 3050,
+      "baseCost": 500,
+      "sellValue": 2135,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "FlatPhysicalDamageMod": 50
+      },
+      "statLines": [
+        {
+          "value": "50",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "20",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CriticalStrike",
+        "ManaRegen",
+        "CooldownReduction",
+        "OnHit",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3057,
+        3133,
+        1018
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/essence_reaver.png"
+    },
+    {
+      "id": 3742,
+      "key": "dead_mans_plate",
+      "name": "Dead Man's Plate",
+      "cost": 2900,
+      "baseCost": 900,
+      "sellValue": 2030,
+      "stats": {
+        "FlatHPPoolMod": 350,
+        "FlatArmorMod": 55,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "350",
+          "stat": "Health"
+        },
+        {
+          "value": "55",
+          "stat": "Armor"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Armor",
+        "Slow",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        3066,
+        1028,
+        1031
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/dead_mans_plate.png"
+    },
+    {
+      "id": 3748,
+      "key": "titanic_hydra",
+      "name": "Titanic Hydra",
+      "cost": 3300,
+      "baseCost": 50,
+      "sellValue": 2310,
+      "stats": {
+        "FlatHPPoolMod": 600,
+        "FlatPhysicalDamageMod": 40
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "600",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen",
+        "Damage",
+        "OnHit"
+      ],
+      "buildsFrom": [
+        3077,
+        2021,
+        1011
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/titanic_hydra.png"
+    },
+    {
+      "id": 3801,
+      "key": "crystalline_bracer",
+      "name": "Crystalline Bracer",
+      "cost": 800,
+      "baseCost": 100,
+      "sellValue": 560,
+      "stats": {
+        "FlatHPPoolMod": 200
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "100%",
+          "stat": "Base Health Regen"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen"
+      ],
+      "buildsFrom": [
+        1028,
+        1006
+      ],
+      "buildsInto": [
+        3084,
+        3083
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/crystalline_bracer.png"
+    },
+    {
+      "id": 3802,
+      "key": "lost_chapter",
+      "name": "Lost Chapter",
+      "cost": 1200,
+      "baseCost": 250,
+      "sellValue": 840,
+      "stats": {
+        "FlatMPPoolMod": 300,
+        "FlatMagicDamageMod": 40
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "300",
+          "stat": "Mana"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "Mana",
+        "ManaRegen",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        1052,
+        1027,
+        2022
+      ],
+      "buildsInto": [
+        2522,
+        3003,
+        6655,
+        2503,
+        3118
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/lost_chapter.png"
+    },
+    {
+      "id": 3803,
+      "key": "catalyst_of_aeons",
+      "name": "Catalyst of Aeons",
+      "cost": 1300,
+      "baseCost": 200,
+      "sellValue": 910,
+      "stats": {
+        "FlatMPPoolMod": 375,
+        "FlatHPPoolMod": 300
+      },
+      "statLines": [
+        {
+          "value": "300",
+          "stat": "Health"
+        },
+        {
+          "value": "375",
+          "stat": "Mana"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen",
+        "Mana",
+        "ManaRegen"
+      ],
+      "buildsFrom": [
+        1028,
+        1028,
+        1027
+      ],
+      "buildsInto": [
+        6657
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/catalyst_of_aeons.png"
+    },
+    {
+      "id": 3814,
+      "key": "edge_of_night",
+      "name": "Edge of Night",
+      "cost": 3000,
+      "baseCost": 850,
+      "sellValue": 2100,
+      "stats": {
+        "FlatHPPoolMod": 250,
+        "FlatPhysicalDamageMod": 50
+      },
+      "statLines": [
+        {
+          "value": "50",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "15",
+          "stat": "Lethality"
+        },
+        {
+          "value": "250",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "ArmorPenetration"
+      ],
+      "buildsFrom": [
+        3134,
+        2021
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/edge_of_night.png"
+    },
+    {
+      "id": 3865,
+      "key": "world_atlas",
+      "name": "World Atlas",
+      "cost": 400,
+      "baseCost": 400,
+      "sellValue": 160,
+      "stats": {},
+      "statLines": [],
+      "tags": [
+        "Health",
+        "ManaRegen",
+        "Vision",
+        "GoldPer",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 1,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": true,
+      "icon": "/lol-item-icons/world_atlas.png"
+    },
+    {
+      "id": 3869,
+      "key": "celestial_opposition",
+      "name": "Celestial Opposition",
+      "cost": 400,
+      "baseCost": 0,
+      "sellValue": 160,
+      "stats": {
+        "FlatHPPoolMod": 200
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "75%",
+          "stat": "Base Health Regen"
+        },
+        {
+          "value": "75%",
+          "stat": "Base Mana Regen"
+        },
+        {
+          "value": "9",
+          "stat": "Gold Per 10 Seconds"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen",
+        "ManaRegen",
+        "Vision",
+        "GoldPer",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": true,
+      "icon": "/lol-item-icons/celestial_opposition.png"
+    },
+    {
+      "id": 3870,
+      "key": "dream_maker",
+      "name": "Dream Maker",
+      "cost": 400,
+      "baseCost": 0,
+      "sellValue": 160,
+      "stats": {
+        "FlatHPPoolMod": 200
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "75%",
+          "stat": "Base Health Regen"
+        },
+        {
+          "value": "75%",
+          "stat": "Base Mana Regen"
+        },
+        {
+          "value": "9",
+          "stat": "Gold Per 10 Seconds"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen",
+        "ManaRegen",
+        "Vision",
+        "GoldPer",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": true,
+      "icon": "/lol-item-icons/dream_maker.png"
+    },
+    {
+      "id": 3871,
+      "key": "zazzaks_realmspike",
+      "name": "Zaz'Zak's Realmspike",
+      "cost": 400,
+      "baseCost": 0,
+      "sellValue": 160,
+      "stats": {
+        "FlatHPPoolMod": 200
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "75%",
+          "stat": "Base Health Regen"
+        },
+        {
+          "value": "75%",
+          "stat": "Base Mana Regen"
+        },
+        {
+          "value": "9",
+          "stat": "Gold Per 10 Seconds"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen",
+        "ManaRegen",
+        "Vision",
+        "GoldPer",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": true,
+      "icon": "/lol-item-icons/zazzaks_realmspike.png"
+    },
+    {
+      "id": 3876,
+      "key": "solstice_sleigh",
+      "name": "Solstice Sleigh",
+      "cost": 400,
+      "baseCost": 0,
+      "sellValue": 160,
+      "stats": {
+        "FlatHPPoolMod": 200
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "75%",
+          "stat": "Base Health Regen"
+        },
+        {
+          "value": "75%",
+          "stat": "Base Mana Regen"
+        },
+        {
+          "value": "9",
+          "stat": "Gold Per 10 Seconds"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen",
+        "ManaRegen",
+        "Vision",
+        "GoldPer",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": true,
+      "icon": "/lol-item-icons/solstice_sleigh.png"
+    },
+    {
+      "id": 3877,
+      "key": "bloodsong",
+      "name": "Bloodsong",
+      "cost": 400,
+      "baseCost": 0,
+      "sellValue": 160,
+      "stats": {
+        "FlatHPPoolMod": 200
+      },
+      "statLines": [
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "75%",
+          "stat": "Base Health Regen"
+        },
+        {
+          "value": "75%",
+          "stat": "Base Mana Regen"
+        },
+        {
+          "value": "9",
+          "stat": "Gold Per 10 Seconds"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen",
+        "ManaRegen",
+        "Vision",
+        "GoldPer",
+        "Lane"
+      ],
+      "buildsFrom": [],
+      "buildsInto": [],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": true,
+      "icon": "/lol-item-icons/bloodsong.png"
+    },
+    {
+      "id": 3916,
+      "key": "oblivion_orb",
+      "name": "Oblivion Orb",
+      "cost": 800,
+      "baseCost": 400,
+      "sellValue": 560,
+      "stats": {
+        "FlatMagicDamageMod": 25
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Ability Power"
+        }
+      ],
+      "tags": [
+        "SpellDamage"
+      ],
+      "buildsFrom": [
+        1052
+      ],
+      "buildsInto": [
+        3165
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/oblivion_orb.png"
+    },
+    {
+      "id": 4005,
+      "key": "imperial_mandate",
+      "name": "Imperial Mandate",
+      "cost": 2400,
+      "baseCost": 700,
+      "sellValue": 1680,
+      "stats": {
+        "FlatMagicDamageMod": 60
+      },
+      "statLines": [
+        {
+          "value": "60",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "150%",
+          "stat": "Base Mana Regen"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "ManaRegen",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        1052,
+        4642,
+        1052
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/imperial_mandate.png"
+    },
+    {
+      "id": 4401,
+      "key": "force_of_nature",
+      "name": "Force of Nature",
+      "cost": 2800,
+      "baseCost": 750,
+      "sellValue": 1960,
+      "stats": {
+        "FlatSpellBlockMod": 55,
+        "FlatHPPoolMod": 400,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "400",
+          "stat": "Health"
+        },
+        {
+          "value": "55",
+          "stat": "Magic Resist"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellBlock",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        1057,
+        1028,
+        3066
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/force_of_nature.png"
+    },
+    {
+      "id": 4628,
+      "key": "horizon_focus",
+      "name": "Horizon Focus",
+      "cost": 2700,
+      "baseCost": 600,
+      "sellValue": 1890,
+      "stats": {
+        "FlatMagicDamageMod": 75
+      },
+      "statLines": [
+        {
+          "value": "75",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "25",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3108,
+        3108,
+        1052
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/horizon_focus.png"
+    },
+    {
+      "id": 4629,
+      "key": "cosmic_drive",
+      "name": "Cosmic Drive",
+      "cost": 3000,
+      "baseCost": 450,
+      "sellValue": 2100,
+      "stats": {
+        "FlatHPPoolMod": 350,
+        "FlatMagicDamageMod": 70,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "70",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "350",
+          "stat": "Health"
+        },
+        {
+          "value": "25",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage",
+        "NonbootsMovement",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3067,
+        3113,
+        3108
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/cosmic_drive.png"
+    },
+    {
+      "id": 4630,
+      "key": "blighting_jewel",
+      "name": "Blighting Jewel",
+      "cost": 1100,
+      "baseCost": 700,
+      "sellValue": 770,
+      "stats": {
+        "FlatMagicDamageMod": 25
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "13%",
+          "stat": "Magic Penetration"
+        }
+      ],
+      "tags": [
+        "MagicPenetration",
+        "SpellDamage"
+      ],
+      "buildsFrom": [
+        1052
+      ],
+      "buildsInto": [
+        3135,
+        3137
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/blighting_jewel.png"
+    },
+    {
+      "id": 4632,
+      "key": "verdant_barrier",
+      "name": "Verdant Barrier",
+      "cost": 1600,
+      "baseCost": 400,
+      "sellValue": 1120,
+      "stats": {
+        "FlatSpellBlockMod": 25,
+        "FlatMagicDamageMod": 40
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "25",
+          "stat": "Magic Resist"
+        }
+      ],
+      "tags": [
+        "SpellBlock",
+        "SpellDamage"
+      ],
+      "buildsFrom": [
+        1052,
+        1033,
+        1052
+      ],
+      "buildsInto": [
+        3102
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/verdant_barrier.png"
+    },
+    {
+      "id": 4633,
+      "key": "riftmaker",
+      "name": "Riftmaker",
+      "cost": 3100,
+      "baseCost": 950,
+      "sellValue": 2170,
+      "stats": {
+        "FlatHPPoolMod": 350,
+        "FlatMagicDamageMod": 70
+      },
+      "statLines": [
+        {
+          "value": "70",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "350",
+          "stat": "Health"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage",
+        "CooldownReduction",
+        "SpellVamp"
+      ],
+      "buildsFrom": [
+        3147,
+        3108
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/riftmaker.png"
+    },
+    {
+      "id": 4642,
+      "key": "bandleglass_mirror",
+      "name": "Bandleglass Mirror",
+      "cost": 900,
+      "baseCost": 50,
+      "sellValue": 630,
+      "stats": {
+        "FlatMagicDamageMod": 20
+      },
+      "statLines": [
+        {
+          "value": "20",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "100%",
+          "stat": "Base Mana Regen"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "ManaRegen",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        1004,
+        1052,
+        2022
+      ],
+      "buildsInto": [
+        2065,
+        6620,
+        4005,
+        6617
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/bandleglass_mirror.png"
+    },
+    {
+      "id": 4645,
+      "key": "shadowflame",
+      "name": "Shadowflame",
+      "cost": 3200,
+      "baseCost": 900,
+      "sellValue": 2240,
+      "stats": {
+        "FlatMagicDamageMod": 110
+      },
+      "statLines": [
+        {
+          "value": "110",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "15",
+          "stat": "Magic Penetration"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "MagicPenetration"
+      ],
+      "buildsFrom": [
+        3145,
+        1058
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/shadowflame.png"
+    },
+    {
+      "id": 4646,
+      "key": "stormsurge",
+      "name": "Stormsurge",
+      "cost": 2800,
+      "baseCost": 800,
+      "sellValue": 1960,
+      "stats": {
+        "FlatMagicDamageMod": 90,
+        "PercentMovementSpeedMod": 0.06
+      },
+      "statLines": [
+        {
+          "value": "90",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "15",
+          "stat": "Magic Penetration"
+        },
+        {
+          "value": "6%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "GoldPer",
+        "NonbootsMovement",
+        "MagicPenetration"
+      ],
+      "buildsFrom": [
+        3145,
+        3113
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/stormsurge.png"
+    },
+    {
+      "id": 6333,
+      "key": "deaths_dance",
+      "name": "Death's Dance",
+      "cost": 3300,
+      "baseCost": 275,
+      "sellValue": 2310,
+      "stats": {
+        "FlatArmorMod": 50,
+        "FlatPhysicalDamageMod": 60
+      },
+      "statLines": [
+        {
+          "value": "60",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "50",
+          "stat": "Armor"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Armor",
+        "Damage",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        2019,
+        1037,
+        3133
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/deaths_dance.png"
+    },
+    {
+      "id": 6609,
+      "key": "chempunk_chainsword",
+      "name": "Chempunk Chainsword",
+      "cost": 3000,
+      "baseCost": 250,
+      "sellValue": 2100,
+      "stats": {
+        "FlatHPPoolMod": 450,
+        "FlatPhysicalDamageMod": 45
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "450",
+          "stat": "Health"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3123,
+        1011,
+        3133
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/chempunk_chainsword.png"
+    },
+    {
+      "id": 6610,
+      "key": "sundered_sky",
+      "name": "Sundered Sky",
+      "cost": 3100,
+      "baseCost": 900,
+      "sellValue": 2170,
+      "stats": {
+        "FlatHPPoolMod": 400,
+        "FlatPhysicalDamageMod": 40
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "400",
+          "stat": "Health"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        2021,
+        3133
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/sundered_sky.png"
+    },
+    {
+      "id": 6616,
+      "key": "staff_of_flowing_water",
+      "name": "Staff of Flowing Water",
+      "cost": 2250,
+      "baseCost": 800,
+      "sellValue": 1575,
+      "stats": {
+        "FlatMagicDamageMod": 35
+      },
+      "statLines": [
+        {
+          "value": "35",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "10%",
+          "stat": "Heal and Shield Power"
+        },
+        {
+          "value": "125%",
+          "stat": "Base Mana Regen"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "ManaRegen",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3108,
+        3114
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/staff_of_flowing_water.png"
+    },
+    {
+      "id": 6617,
+      "key": "moonstone_renewer",
+      "name": "Moonstone Renewer",
+      "cost": 2200,
+      "baseCost": 500,
+      "sellValue": 1540,
+      "stats": {
+        "FlatHPPoolMod": 200,
+        "FlatMagicDamageMod": 25
+      },
+      "statLines": [
+        {
+          "value": "25",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "20",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "125%",
+          "stat": "Base Mana Regen"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage",
+        "ManaRegen",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3067,
+        4642
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/moonstone_renewer.png"
+    },
+    {
+      "id": 6620,
+      "key": "echoes_of_helia",
+      "name": "Echoes of Helia",
+      "cost": 2200,
+      "baseCost": 500,
+      "sellValue": 1540,
+      "stats": {
+        "FlatHPPoolMod": 200,
+        "FlatMagicDamageMod": 35
+      },
+      "statLines": [
+        {
+          "value": "35",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "200",
+          "stat": "Health"
+        },
+        {
+          "value": "20",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "125%",
+          "stat": "Base Mana Regen"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage",
+        "ManaRegen",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3067,
+        4642
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/echoes_of_helia.png"
+    },
+    {
+      "id": 6621,
+      "key": "dawncore",
+      "name": "Dawncore",
+      "cost": 2500,
+      "baseCost": 450,
+      "sellValue": 1750,
+      "stats": {
+        "FlatMagicDamageMod": 45
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "16%",
+          "stat": "Heal and Shield Power"
+        },
+        {
+          "value": "100%",
+          "stat": "Base Mana Regen"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "ManaRegen"
+      ],
+      "buildsFrom": [
+        1026,
+        3114,
+        3114
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/dawncore.png"
+    },
+    {
+      "id": 6631,
+      "key": "stridebreaker",
+      "name": "Stridebreaker",
+      "cost": 3300,
+      "baseCost": 750,
+      "sellValue": 2310,
+      "stats": {
+        "FlatHPPoolMod": 450,
+        "FlatPhysicalDamageMod": 40,
+        "PercentAttackSpeedMod": 0.25
+      },
+      "statLines": [
+        {
+          "value": "40",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "25%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "450",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Damage",
+        "AttackSpeed",
+        "Slow"
+      ],
+      "buildsFrom": [
+        3077,
+        3044,
+        1042
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/stridebreaker.png"
+    },
+    {
+      "id": 6653,
+      "key": "liandrys_torment",
+      "name": "Liandry's Torment",
+      "cost": 3000,
+      "baseCost": 800,
+      "sellValue": 2100,
+      "stats": {
+        "FlatHPPoolMod": 300,
+        "FlatMagicDamageMod": 60
+      },
+      "statLines": [
+        {
+          "value": "60",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "300",
+          "stat": "Health"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage"
+      ],
+      "buildsFrom": [
+        3147,
+        2508
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/liandrys_torment.png"
+    },
+    {
+      "id": 6655,
+      "key": "ludens_echo",
+      "name": "Luden's Echo",
+      "cost": 2750,
+      "baseCost": 450,
+      "sellValue": 1925,
+      "stats": {
+        "FlatMPPoolMod": 600,
+        "FlatMagicDamageMod": 100
+      },
+      "statLines": [
+        {
+          "value": "100",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "600",
+          "stat": "Mana"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "SpellDamage",
+        "Mana",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3802,
+        3145
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/ludens_echo.png"
+    },
+    {
+      "id": 6657,
+      "key": "rod_of_ages",
+      "name": "Rod of Ages",
+      "cost": 2600,
+      "baseCost": 450,
+      "sellValue": 1820,
+      "stats": {
+        "FlatMPPoolMod": 500,
+        "FlatHPPoolMod": 350,
+        "FlatMagicDamageMod": 45
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "350",
+          "stat": "Health"
+        },
+        {
+          "value": "500",
+          "stat": "Mana"
+        }
+      ],
+      "tags": [
+        "Health",
+        "HealthRegen",
+        "SpellDamage",
+        "Mana",
+        "ManaRegen"
+      ],
+      "buildsFrom": [
+        1026,
+        3803
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/rod_of_ages.png"
+    },
+    {
+      "id": 6660,
+      "key": "bamis_cinder",
+      "name": "Bami's Cinder",
+      "cost": 900,
+      "baseCost": 250,
+      "sellValue": 630,
+      "stats": {
+        "FlatHPPoolMod": 150
+      },
+      "statLines": [
+        {
+          "value": "150",
+          "stat": "Health"
+        },
+        {
+          "value": "5",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        1028,
+        2022
+      ],
+      "buildsInto": [
+        3068,
+        6664
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/bamis_cinder.png"
+    },
+    {
+      "id": 6662,
+      "key": "iceborn_gauntlet",
+      "name": "Iceborn Gauntlet",
+      "cost": 2900,
+      "baseCost": 800,
+      "sellValue": 2030,
+      "stats": {
+        "FlatHPPoolMod": 300,
+        "FlatArmorMod": 50
+      },
+      "statLines": [
+        {
+          "value": "300",
+          "stat": "Health"
+        },
+        {
+          "value": "50",
+          "stat": "Armor"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "Armor",
+        "CooldownReduction",
+        "Slow",
+        "OnHit",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3057,
+        1028,
+        1031
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/iceborn_gauntlet.png"
+    },
+    {
+      "id": 6664,
+      "key": "hollow_radiance",
+      "name": "Hollow Radiance",
+      "cost": 2800,
+      "baseCost": 650,
+      "sellValue": 1960,
+      "stats": {
+        "FlatSpellBlockMod": 40,
+        "FlatHPPoolMod": 400
+      },
+      "statLines": [
+        {
+          "value": "400",
+          "stat": "Health"
+        },
+        {
+          "value": "40",
+          "stat": "Magic Resist"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        },
+        {
+          "value": "100%",
+          "stat": "Base Health Regen"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellBlock",
+        "HealthRegen",
+        "Aura",
+        "MagicResist",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        6660,
+        3211
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/hollow_radiance.png"
+    },
+    {
+      "id": 6665,
+      "key": "jaksho_the_protean",
+      "name": "Jak'Sho, The Protean",
+      "cost": 3200,
+      "baseCost": 650,
+      "sellValue": 2240,
+      "stats": {
+        "FlatSpellBlockMod": 45,
+        "FlatHPPoolMod": 350,
+        "FlatArmorMod": 45
+      },
+      "statLines": [
+        {
+          "value": "350",
+          "stat": "Health"
+        },
+        {
+          "value": "45",
+          "stat": "Armor"
+        },
+        {
+          "value": "45",
+          "stat": "Magic Resist"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellBlock",
+        "Armor",
+        "MagicResist"
+      ],
+      "buildsFrom": [
+        1011,
+        1031,
+        1057
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/jaksho_the_protean.png"
+    },
+    {
+      "id": 6670,
+      "key": "noonquiver",
+      "name": "Noonquiver",
+      "cost": 1300,
+      "baseCost": 350,
+      "sellValue": 910,
+      "stats": {
+        "FlatCritChanceMod": 0.2,
+        "FlatPhysicalDamageMod": 15
+      },
+      "statLines": [
+        {
+          "value": "15",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "20%",
+          "stat": "Critical Strike Chance"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CriticalStrike"
+      ],
+      "buildsFrom": [
+        1036,
+        1018
+      ],
+      "buildsInto": [
+        2523,
+        3036,
+        6673
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/noonquiver.png"
+    },
+    {
+      "id": 6672,
+      "key": "kraken_slayer",
+      "name": "Kraken Slayer",
+      "cost": 3000,
+      "baseCost": 325,
+      "sellValue": 2100,
+      "stats": {
+        "FlatPhysicalDamageMod": 45,
+        "PercentAttackSpeedMod": 0.4,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "40%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "AttackSpeed",
+        "OnHit",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        6690,
+        3051,
+        1043
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/kraken_slayer.png"
+    },
+    {
+      "id": 6673,
+      "key": "immortal_shieldbow",
+      "name": "Immortal Shieldbow",
+      "cost": 3000,
+      "baseCost": 825,
+      "sellValue": 2100,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "FlatPhysicalDamageMod": 55
+      },
+      "statLines": [
+        {
+          "value": "55",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CriticalStrike"
+      ],
+      "buildsFrom": [
+        1037,
+        6670
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/immortal_shieldbow.png"
+    },
+    {
+      "id": 6675,
+      "key": "navori_flickerblade",
+      "name": "Navori Flickerblade",
+      "cost": 2650,
+      "baseCost": 950,
+      "sellValue": 1855,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "PercentAttackSpeedMod": 0.4,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "40%",
+          "stat": "Attack Speed"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "CriticalStrike",
+        "AttackSpeed",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        1042,
+        3086,
+        1042
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/navori_flickerblade.png"
+    },
+    {
+      "id": 6676,
+      "key": "the_collector",
+      "name": "The Collector",
+      "cost": 3000,
+      "baseCost": 525,
+      "sellValue": 2100,
+      "stats": {
+        "FlatCritChanceMod": 0.25,
+        "FlatPhysicalDamageMod": 50
+      },
+      "statLines": [
+        {
+          "value": "50",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "10",
+          "stat": "Lethality"
+        },
+        {
+          "value": "25%",
+          "stat": "Critical Strike Chance"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CriticalStrike",
+        "ArmorPenetration"
+      ],
+      "buildsFrom": [
+        1037,
+        3134,
+        1018
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/the_collector.png"
+    },
+    {
+      "id": 6690,
+      "key": "rectrix",
+      "name": "Rectrix",
+      "cost": 775,
+      "baseCost": 425,
+      "sellValue": 543,
+      "stats": {
+        "FlatPhysicalDamageMod": 15,
+        "PercentMovementSpeedMod": 0.04
+      },
+      "statLines": [
+        {
+          "value": "15",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "4%",
+          "stat": "Move Speed"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "NonbootsMovement"
+      ],
+      "buildsFrom": [
+        1036
+      ],
+      "buildsInto": [
+        6672,
+        3142
+      ],
+      "depth": 2,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/rectrix.png"
+    },
+    {
+      "id": 6692,
+      "key": "eclipse",
+      "name": "Eclipse",
+      "cost": 2900,
+      "baseCost": 625,
+      "sellValue": 2030,
+      "stats": {
+        "FlatPhysicalDamageMod": 60
+      },
+      "statLines": [
+        {
+          "value": "60",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CooldownReduction",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3133,
+        1037,
+        1036
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/eclipse.png"
+    },
+    {
+      "id": 6694,
+      "key": "seryldas_grudge",
+      "name": "Serylda's Grudge",
+      "cost": 3000,
+      "baseCost": 500,
+      "sellValue": 2100,
+      "stats": {
+        "FlatPhysicalDamageMod": 45
+      },
+      "statLines": [
+        {
+          "value": "45",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "35%",
+          "stat": "Armor Penetration"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "CooldownReduction",
+        "ArmorPenetration",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3133,
+        3035
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/seryldas_grudge.png"
+    },
+    {
+      "id": 6695,
+      "key": "serpents_fang",
+      "name": "Serpent's Fang",
+      "cost": 2500,
+      "baseCost": 625,
+      "sellValue": 1750,
+      "stats": {
+        "FlatPhysicalDamageMod": 55
+      },
+      "statLines": [
+        {
+          "value": "55",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "15",
+          "stat": "Lethality"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "ArmorPenetration"
+      ],
+      "buildsFrom": [
+        3134,
+        1037
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/serpents_fang.png"
+    },
+    {
+      "id": 6696,
+      "key": "axiom_arc",
+      "name": "Axiom Arc",
+      "cost": 2750,
+      "baseCost": 363,
+      "sellValue": 1925,
+      "stats": {
+        "FlatPhysicalDamageMod": 55
+      },
+      "statLines": [
+        {
+          "value": "55",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "18",
+          "stat": "Lethality"
+        },
+        {
+          "value": "20",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "ArmorPenetration",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        2020,
+        3133
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/axiom_arc.png"
+    },
+    {
+      "id": 6697,
+      "key": "hubris",
+      "name": "Hubris",
+      "cost": 2800,
+      "baseCost": 750,
+      "sellValue": 1960,
+      "stats": {
+        "FlatPhysicalDamageMod": 55
+      },
+      "statLines": [
+        {
+          "value": "55",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "18",
+          "stat": "Lethality"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "Active",
+        "CooldownReduction",
+        "ArmorPenetration",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3134,
+        3133
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/hubris.png"
+    },
+    {
+      "id": 6698,
+      "key": "profane_hydra",
+      "name": "Profane Hydra",
+      "cost": 2850,
+      "baseCost": 313,
+      "sellValue": 1995,
+      "stats": {
+        "FlatPhysicalDamageMod": 55
+      },
+      "statLines": [
+        {
+          "value": "55",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "18",
+          "stat": "Lethality"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "Active",
+        "CooldownReduction",
+        "ArmorPenetration",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3077,
+        2020
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/profane_hydra.png"
+    },
+    {
+      "id": 6699,
+      "key": "voltaic_cyclosword",
+      "name": "Voltaic Cyclosword",
+      "cost": 3000,
+      "baseCost": 963,
+      "sellValue": 2100,
+      "stats": {
+        "FlatPhysicalDamageMod": 55
+      },
+      "statLines": [
+        {
+          "value": "55",
+          "stat": "Attack Damage"
+        },
+        {
+          "value": "10",
+          "stat": "Lethality"
+        },
+        {
+          "value": "10",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Damage",
+        "Active",
+        "CooldownReduction",
+        "ArmorPenetration",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        2020,
+        1036,
+        1036
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/voltaic_cyclosword.png"
+    },
+    {
+      "id": 8010,
+      "key": "bloodletters_curse",
+      "name": "Bloodletter's Curse",
+      "cost": 2900,
+      "baseCost": 750,
+      "sellValue": 2030,
+      "stats": {
+        "FlatHPPoolMod": 400,
+        "FlatMagicDamageMod": 65
+      },
+      "statLines": [
+        {
+          "value": "65",
+          "stat": "Ability Power"
+        },
+        {
+          "value": "400",
+          "stat": "Health"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellDamage",
+        "CooldownReduction",
+        "MagicPenetration"
+      ],
+      "buildsFrom": [
+        3147,
+        3108
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/bloodletters_curse.png"
+    },
+    {
+      "id": 8020,
+      "key": "abyssal_mask",
+      "name": "Abyssal Mask",
+      "cost": 2650,
+      "baseCost": 1000,
+      "sellValue": 1855,
+      "stats": {
+        "FlatSpellBlockMod": 45,
+        "FlatHPPoolMod": 350
+      },
+      "statLines": [
+        {
+          "value": "350",
+          "stat": "Health"
+        },
+        {
+          "value": "45",
+          "stat": "Magic Resist"
+        },
+        {
+          "value": "15",
+          "stat": "Ability Haste"
+        }
+      ],
+      "tags": [
+        "Health",
+        "SpellBlock",
+        "CooldownReduction",
+        "MagicResist",
+        "AbilityHaste"
+      ],
+      "buildsFrom": [
+        3067,
+        1057
+      ],
+      "buildsInto": [],
+      "depth": 3,
+      "boots": false,
+      "starter": false,
+      "consumable": false,
+      "trinket": false,
+      "support": false,
+      "icon": "/lol-item-icons/abyssal_mask.png"
+    }
+  ]
+}
