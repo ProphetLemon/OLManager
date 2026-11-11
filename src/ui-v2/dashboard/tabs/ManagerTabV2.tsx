@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Building2, ChevronDown, Check, ImagePlus, Settings, Trophy, Users } from "lucide-react";
@@ -53,7 +54,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
     return () => document.removeEventListener("mousedown", handler);
   }, [nationalityOpen]);
 
-  const league = gameState.leagues?.[0];
+  const league = resolveUserLeague(gameState);
   const teamPlayers = useMemo(
     () => gameState.players.filter((p) => p.team_id === myTeam?.id),
     [gameState.players, myTeam],

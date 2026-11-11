@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Calendar as CalendarIcon, CalendarDays, ChevronRight } from "lucide-react";
@@ -46,9 +47,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
 
   const [fixtureResultView, setFixtureResultView] = useState<StoredFixtureDraftResult | null>(null);
   const [selectedDayStr, setSelectedDayStr] = useState<string | null>(null);
-  const league = gameState.user_competition_id
-    ? gameState.leagues.find((l) => l.competition_id === gameState.user_competition_id)
-    : gameState.leagues[0];
+  const league = resolveUserLeague(gameState) ?? undefined;
   const userTeamId = gameState.manager.team_id;
 
   const getFixtureGroupKey = (f: FixtureData): string => {
@@ -333,11 +332,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
 }
 
 function getActiveLeague(gameState: GameStateData) {
-  if (!gameState.leagues?.length) return null;
-  if (gameState.user_competition_id) {
-    return gameState.leagues.find((l) => l.competition_id === gameState.user_competition_id) ?? gameState.leagues[0];
-  }
-  return gameState.leagues[0];
+  return resolveUserLeague(gameState);
 }
 
 function WeekScheduleCard({
