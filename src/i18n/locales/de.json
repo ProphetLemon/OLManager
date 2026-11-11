@@ -2519,6 +2519,25 @@
     "compare": "Vergleichen"
   },
   "be": {
+    "ledger": {
+      "playerWages": "Monatliche Spielergehälter",
+      "staffWages": "Monatliche Staff-Gehälter",
+      "facilityUpkeep": "Monatlicher Anlagenunterhalt",
+      "sponsorshipIncome": "Monatliche Sponsoringeinnahmen",
+      "matchdayRevenue": "Monatliche Spieltagseinnahmen",
+      "staffHiring": "Kosten für die Staff-Verpflichtung: {{name}}",
+      "freeAgentSigning": "Verpflichtungsgebühr für den vertragslosen Spieler {{player}}",
+      "transferPurchase": "Ablöse für den Transfer von {{player}}",
+      "transferSale": "Einnahme aus dem Transfer von {{player}}",
+      "contractTermination": "Strafe für die Auflösung des Vertrags von {{player}}",
+      "seasonPrize": "Preisgeld der Saison {{season}} (Platz {{position}})",
+      "promotionFunding": "Aufstiegsfinanzierung",
+      "academyAcquisition": "Akademie-Erwerb: {{name}}",
+      "mainHubExpansion": "Erweiterung des Haupt-Anlagenzentrums",
+      "moduleUpgrade": "Upgrade des Anlagenmoduls: {{module}}",
+      "facilityUpgrade": "Anlagen-Upgrade: {{facility}}",
+      "facilityTypes": { "Training": "Training", "Medical": "Medizin", "Scouting": "Scouting" }
+    },
     "sender": {
       "assistantCoach": "Co-Trainer",
       "fitnessCoach": "Fitnesstrainer",

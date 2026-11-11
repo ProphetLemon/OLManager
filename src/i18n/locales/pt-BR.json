@@ -2519,6 +2519,25 @@
     "scoutingBadge": "Scouted"
   },
   "be": {
+    "ledger": {
+      "playerWages": "Salários mensais dos jogadores",
+      "staffWages": "Salários mensais do staff",
+      "facilityUpkeep": "Manutenção mensal das instalações",
+      "sponsorshipIncome": "Receitas mensais de patrocínio",
+      "matchdayRevenue": "Receitas mensais de dia de jogo",
+      "staffHiring": "Custo de contratação de staff: {{name}}",
+      "freeAgentSigning": "Custo da assinatura do agente livre {{player}}",
+      "transferPurchase": "Custo da transferência de {{player}}",
+      "transferSale": "Receita da transferência de {{player}}",
+      "contractTermination": "Multa pela rescisão do contrato de {{player}}",
+      "seasonPrize": "Premiação da temporada {{season}} (posição {{position}})",
+      "promotionFunding": "Financiamento da promoção",
+      "academyAcquisition": "Aquisição de academia: {{name}}",
+      "mainHubExpansion": "Expansão do centro principal das instalações",
+      "moduleUpgrade": "Melhoria do módulo das instalações: {{module}}",
+      "facilityUpgrade": "Melhoria das instalações: {{facility}}",
+      "facilityTypes": { "Training": "Treino", "Medical": "Médico", "Scouting": "Scouting" }
+    },
     "sender": {
       "assistantCoach": "Treinador assistente",
       "fitnessCoach": "Preparador físico",

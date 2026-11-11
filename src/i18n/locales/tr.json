@@ -2519,6 +2519,25 @@
     "compare": "Karşılaştır"
   },
   "be": {
+    "ledger": {
+      "playerWages": "Aylık oyuncu maaşları",
+      "staffWages": "Aylık personel maaşları",
+      "facilityUpkeep": "Aylık tesis bakımı",
+      "sponsorshipIncome": "Aylık sponsorluk geliri",
+      "matchdayRevenue": "Aylık maç günü geliri",
+      "staffHiring": "Personel işe alım bedeli: {{name}}",
+      "freeAgentSigning": "Serbest oyuncu {{player}} için imza bedeli",
+      "transferPurchase": "{{player}} transfer alım bedeli",
+      "transferSale": "{{player}} transfer satış geliri",
+      "contractTermination": "{{player}} sözleşmesinin fesih cezası",
+      "seasonPrize": "{{season}}. sezon ödül parası ({{position}}. sıra)",
+      "promotionFunding": "Yükselme desteği",
+      "academyAcquisition": "Akademi satın alımı: {{name}}",
+      "mainHubExpansion": "Ana tesis merkezinin genişletilmesi",
+      "moduleUpgrade": "Tesis modülü geliştirmesi: {{module}}",
+      "facilityUpgrade": "Tesis geliştirmesi: {{facility}}",
+      "facilityTypes": { "Training": "Antrenman", "Medical": "Sağlık", "Scouting": "Gözlem" }
+    },
     "sender": {
       "assistantCoach": "Yardımcı Antrenör",
       "fitnessCoach": "Fitness Antrenörü",
