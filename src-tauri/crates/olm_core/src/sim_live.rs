@@ -577,7 +577,9 @@ const TOWER_SHOT_RAMP_WINDOW_SEC: f64 = 3.0;
 const TOWER_SHOT_DAMAGE_TO_MINION: f64 = 24.0;
 const TOWER_ATTACK_RANGE: f64 = 0.08;
 const TOWER_ATTACK_CADENCE_SEC: f64 = 1.0;
-const TOWER_AGGRO_LOCK_SEC: f64 = 2.6;
+// Long enough for four shots at the cadence a tower really fires at (one per
+// two coarse ticks); every further attack on a defender renews it.
+const TOWER_AGGRO_LOCK_SEC: f64 = 4.0;
 const TOWER_AGGRO_VICTIM_RADIUS: f64 = 0.09;
 const TOWER_AGGRO_ATTACKER_RADIUS: f64 = 0.10;
 const EVENT_CAP: usize = 200;
@@ -5582,15 +5584,17 @@ fn mark_tower_aggro_on_champion_attack(
         if dist(tower.pos, victim.pos) > TOWER_AGGRO_VICTIM_RADIUS {
             continue;
         }
-        if dist(tower.pos, attacker.pos) > TOWER_AGGRO_ATTACKER_RADIUS {
+        // A tower cannot shoot beyond its range: a lock on an attacker outside
+        // it would only replace a lock the tower can use. The decision code
+        // still reads `TOWER_AGGRO_ATTACKER_RADIUS`.
+        if dist(tower.pos, attacker.pos) > TOWER_ATTACK_RANGE {
+            runtime.tower_ledger.record_lock(false);
             continue;
         }
 
         tower.forced_target_champion_id = Some(attacker.id.clone());
         tower.forced_target_until = now + TOWER_AGGRO_LOCK_SEC;
-        runtime
-            .tower_ledger
-            .record_lock(dist(tower.pos, attacker.pos) <= TOWER_ATTACK_RANGE);
+        runtime.tower_ledger.record_lock(true);
     }
 }
 

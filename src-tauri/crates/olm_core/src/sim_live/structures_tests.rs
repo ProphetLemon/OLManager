@@ -272,3 +272,97 @@ fn structures_saved_without_ramp_fields_still_load() {
     assert_eq!(loaded.ramp_shots, 0);
     assert!(loaded.ramp_target_id.is_none());
 }
+
+// ------------------------------------------------------------- tower aggro
+
+/// A defending tower at the middle of the map with its own team's champion
+/// beside it, and `attackers` of the other team at the given distances.
+fn aggro_scene(attacker_distances: &[f64]) -> RuntimeState {
+    let pos = Vec2 { x: 0.5, y: 0.5 };
+    let mut champions = vec![test_champion(
+        "victim",
+        "red",
+        "MID",
+        "mid",
+        Vec2 { x: 0.505, y: 0.5 },
+    )];
+    for (i, d) in attacker_distances.iter().enumerate() {
+        let mut attacker = test_champion(
+            &format!("attacker-{i}"),
+            "blue",
+            "MID",
+            "mid",
+            Vec2 { x: 0.5 + d, y: 0.5 },
+        );
+        attacker.max_hp = 100_000.0;
+        attacker.hp = 100_000.0;
+        champions.push(attacker);
+    }
+    let tower = test_structure("red-t", "red", "mid", pos);
+    let mut runtime = test_runtime(champions, vec![], vec![tower], empty_neutral());
+    runtime.champions[0].max_hp = 100_000.0;
+    runtime.champions[0].hp = 100_000.0;
+    runtime
+}
+
+fn lock_on(runtime: &mut RuntimeState, attacker_idx: usize) {
+    let attacker = runtime.champions[attacker_idx].clone();
+    let victim = runtime.champions[0].clone();
+    let now = runtime.time_sec;
+    mark_tower_aggro_on_champion_attack(runtime, &attacker, &victim, now);
+}
+
+#[test]
+fn an_attacker_outside_the_towers_range_does_not_steal_the_lock() {
+    let mut runtime = aggro_scene(&[0.05, 0.09]);
+    lock_on(&mut runtime, 1);
+    lock_on(&mut runtime, 2);
+    assert_eq!(
+        runtime.structures[0].forced_target_champion_id.as_deref(),
+        Some("attacker-0"),
+        "a lock on a champion the tower cannot reach replaced the usable one"
+    );
+}
+
+#[test]
+fn the_lock_outlasts_four_tower_shots() {
+    let mut runtime = aggro_scene(&[0.05]);
+    runtime
+        .minions
+        .push(test_minion("m", "blue", "mid", Vec2 { x: 0.505, y: 0.505 }));
+    runtime.minions[0].hp = 100_000.0;
+    runtime.minions[0].max_hp = 100_000.0;
+    lock_on(&mut runtime, 1);
+    let mut shots_at_champion = 0;
+    for _ in 0..4 {
+        resolve_structure_combat(&mut runtime);
+        if runtime
+            .tower_ledger
+            .shots()
+            .iter()
+            .any(|s| s.victim == TowerVictim::Champion(1))
+        {
+            shots_at_champion += 1;
+        }
+        runtime.time_sec += TOWER_ATTACK_CADENCE_SEC;
+    }
+    assert_eq!(shots_at_champion, 4, "the tower went back to the minion too early");
+}
+
+#[test]
+fn the_tower_goes_back_to_minions_when_the_lock_has_expired() {
+    let mut runtime = aggro_scene(&[0.05]);
+    runtime
+        .minions
+        .push(test_minion("m", "blue", "mid", Vec2 { x: 0.505, y: 0.505 }));
+    runtime.minions[0].hp = 100_000.0;
+    runtime.minions[0].max_hp = 100_000.0;
+    lock_on(&mut runtime, 1);
+    runtime.time_sec += TOWER_AGGRO_LOCK_SEC + 0.1;
+    resolve_structure_combat(&mut runtime);
+    assert!(runtime
+        .tower_ledger
+        .shots()
+        .iter()
+        .all(|s| s.victim == TowerVictim::Minion));
+}
