@@ -2457,6 +2457,8 @@
       },
       "playerLabel": "Jugador",
       "swapTargetTitle": "Elegir campeón para intercambiar",
+      "offRoleWarning": "{{champion}} no es un campeón de {{role}}. Rendirá peor en la partida.",
+      "offRolePickWarning": "{{champion}} no tiene un rol libre en tu equipo: alguien jugará fuera de su rol y rendirá peor en la partida.",
       "warnCounterLastPick": "Ojo con {{champion}}: está countereando tu última selección.",
       "warnTimingIdentity": "Nos falta identidad de timing. Busquemos un pick de Early o Late para cerrar mejor.",
       "warnRoleCoverage": "Nos están quedando huecos de rol. Sumemos un pick más flexible.",

@@ -329,7 +329,7 @@ fn champion_levels_up_when_xp_threshold_reached() {
     let mut runtime = test_runtime(vec![champion], vec![], vec![], neutral);
     let champion_id = runtime.champions[0].id.clone();
 
-    add_gold_xp_to_champion(&mut runtime, &champion_id, 0, 700);
+    add_gold_xp_to_champion(&mut runtime, &champion_id, 0, 700, GoldSource::Kill);
 
     assert!(runtime.champions[0].level >= 3);
     assert!(runtime.champions[0].max_hp > 100.0);

@@ -98,11 +98,11 @@ pub(super) fn tower_team_gold(structure_id: &str) -> i64 {
 /// [PLACEHOLDER] pending playtest.
 pub(super) fn role_income_weight(role: &str) -> f64 {
     match role {
-        "TOP" => 0.772,
-        "JGL" => 1.291,
+        "TOP" => 0.760,
+        "JGL" => 1.278,
         "MID" => 0.641,
         "ADC" => 1.388,
-        "SUP" => 1.709,
+        "SUP" => 1.700,
         _ => 1.0,
     }
 }

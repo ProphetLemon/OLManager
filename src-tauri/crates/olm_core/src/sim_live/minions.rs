@@ -187,8 +187,18 @@ pub(super) fn resolve_minion_combat(runtime: &mut RuntimeState) {
                 attacker.attack_cd_until = now + cadence;
             }
 
-            if runtime.minions[enemy_idx].hp <= 0.0 {
+            if runtime.minions[enemy_idx].hp <= 0.0 && runtime.minions[enemy_idx].alive {
                 runtime.minions[enemy_idx].alive = false;
+                let dead = &runtime.minions[enemy_idx];
+                if dead.kind != "summon" {
+                    runtime.farm_ledger.record_death(
+                        normalized_team(&dead.team) == "blue",
+                        normalized_lane(&dead.lane),
+                        MinionKiller::Minion,
+                        dead.last_hit_by_champion_id.as_ref(),
+                        dead.pos,
+                    );
+                }
             }
             continue;
         }
