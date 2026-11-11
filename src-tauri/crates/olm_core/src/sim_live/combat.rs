@@ -1256,6 +1256,18 @@ pub(super) fn pick_combat_target(
         .map(|candidate| candidate.target.clone())
 }
 
+/// The order in which champions act in a step. Each acts on the state the ones before
+/// him left, so whoever is first lands the first hit and takes the contested kill; with a
+/// fixed order the blue team was always first. The order is reversed on every other step.
+pub(super) fn combat_order(count: usize, time_sec: f64) -> Vec<usize> {
+    let step = (time_sec / super::runtime::FIXED_STEP_SEC).round() as i64;
+    if step % 2 == 0 {
+        (0..count).collect()
+    } else {
+        (0..count).rev().collect()
+    }
+}
+
 pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
     let now = runtime.time_sec;
     let mut neutral_timers = decode_neutral_timers_state(&runtime.neutral_timers)
@@ -1263,7 +1275,7 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
 
     tick_ignite_dot_effects(runtime, now);
 
-    for idx in 0..runtime.champions.len() {
+    for idx in combat_order(runtime.champions.len(), now) {
         if !champion_can_resolve_combat(&runtime.champions[idx], now) {
             continue;
         }

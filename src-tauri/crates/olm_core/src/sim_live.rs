@@ -6693,3 +6693,6 @@ mod tower_safety_tests;
 
 #[cfg(test)]
 mod trade_floor_tests;
+
+#[cfg(test)]
+mod combat_order_tests;
