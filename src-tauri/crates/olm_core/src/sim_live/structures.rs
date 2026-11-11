@@ -227,6 +227,7 @@ pub(super) fn select_structure_attack_target(
 
 pub(super) fn resolve_structure_combat(runtime: &mut super::RuntimeState) {
     let now = runtime.time_sec;
+    runtime.tower_ledger.begin_tick();
 
     for idx in 0..runtime.structures.len() {
         if !runtime.structures[idx].alive
@@ -257,7 +258,15 @@ pub(super) fn resolve_structure_combat(runtime: &mut super::RuntimeState) {
                         super::minion_is_baron_empowered(runtime, &runtime.minions[minion_idx]),
                         super::BARON_MINION_DAMAGE_REDUCTION,
                     );
+                    let hp_before = runtime.minions[minion_idx].hp;
                     runtime.minions[minion_idx].hp -= incoming;
+                    runtime.tower_ledger.record_shot(super::TowerShot {
+                        structure_idx: idx,
+                        victim: super::TowerVictim::Minion,
+                        damage: incoming,
+                        hp_before,
+                        killed: runtime.minions[minion_idx].hp <= 0.0,
+                    });
                     runtime.structures[idx].attack_cd_until =
                         structure_attack_cd_until(now, super::TOWER_ATTACK_CADENCE_SEC);
                     if runtime.minions[minion_idx].hp <= 0.0 {
@@ -278,7 +287,15 @@ pub(super) fn apply_tower_shot_to_champion(
     champion_idx: usize,
 ) {
     let now = runtime.time_sec;
+    let hp_before = runtime.champions[champion_idx].hp;
     runtime.champions[champion_idx].hp -= super::TOWER_SHOT_DAMAGE;
+    runtime.tower_ledger.record_shot(super::TowerShot {
+        structure_idx,
+        victim: super::TowerVictim::Champion(champion_idx),
+        damage: super::TOWER_SHOT_DAMAGE,
+        hp_before,
+        killed: runtime.champions[champion_idx].hp <= 0.0 && runtime.champions[champion_idx].alive,
+    });
     runtime.champions[champion_idx].last_damaged_at = now;
     super::cancel_recall(
         &mut runtime.champions[champion_idx],

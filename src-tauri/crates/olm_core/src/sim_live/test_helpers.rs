@@ -165,6 +165,7 @@ pub(super) fn test_runtime(
         lane_combat_state_by_champion: HashMap::new(),
         gold_ledger: GoldLedger::default(),
         farm_ledger: FarmLedger::default(),
+        tower_ledger: TowerLedger::default(),
         extra: HashMap::new(),
     }
 }

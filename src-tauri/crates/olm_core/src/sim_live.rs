@@ -20,6 +20,7 @@ mod runtime;
 mod session;
 mod state_init;
 mod structures;
+mod tower_ledger;
 mod trading;
 mod types;
 mod util;
@@ -51,6 +52,7 @@ use structures::{
     apply_damage_to_structure, create_structures, is_structure_targetable, resolve_structure_combat,
 };
 pub use types::*;
+use tower_ledger::{TowerLedger, TowerShot, TowerVictim};
 use types::{
     RuntimeEvent, RuntimeStats, RuntimeSummonerSpellSlot, RuntimeTeamStats, RuntimeUltimateSlot,
     Vec2, WardRuntime,
@@ -130,6 +132,9 @@ pub(crate) struct RuntimeState {
     /// How lane minions died, for the farming measurements; never read by the simulation.
     #[serde(default, skip)]
     farm_ledger: FarmLedger,
+    /// Tower shots of the current tick, for the tower measurements; never read by the simulation.
+    #[serde(default, skip)]
+    tower_ledger: TowerLedger,
     #[serde(default)]
     #[serde(flatten)]
     extra: HashMap<String, Value>,
@@ -5565,6 +5570,9 @@ fn mark_tower_aggro_on_champion_attack(
 
         tower.forced_target_champion_id = Some(attacker.id.clone());
         tower.forced_target_until = now + TOWER_AGGRO_LOCK_SEC;
+        runtime
+            .tower_ledger
+            .record_lock(dist(tower.pos, attacker.pos) <= TOWER_ATTACK_RANGE);
     }
 }
 
@@ -6507,3 +6515,6 @@ mod economy_harness_tests;
 
 #[cfg(test)]
 mod farm_harness_tests;
+
+#[cfg(test)]
+mod tower_harness_tests;
