@@ -1892,6 +1892,19 @@
     "killsDeathsObjectives": "K / D / Obiett.",
     "economy": "Oro / Danni"
   },
+  "linuxRender": {
+    "dialog": {
+      "title": "Modalità grafica",
+      "intro": "Scegli come il gioco deve disegnare la sua finestra.",
+      "fast": "Veloce",
+      "fastHint": "Consigliata. Usa la scheda grafica.",
+      "compat": "Compatibilità",
+      "compatHint": "Usala se la finestra del gioco sfarfalla, viene disegnata male o resta vuota. Più lenta, soprattutto a schermo intero.",
+      "remember": "Ricorda la mia scelta",
+      "rememberHint": "Potrai cambiarla più tardi nelle Impostazioni.",
+      "button": "Continua"
+    }
+  },
   "settings": {
     "title": "Impostazioni",
     "display": "Visualizzazione",
@@ -1941,6 +1954,11 @@
     "uiScaleDesc": "Regola dimensione del testo e spaziatura per migliorare la leggibilità",
     "highContrast": "Alto contrasto",
     "highContrastDesc": "Rafforza testo, bordi e contorno del focus per una migliore leggibilità",
+    "renderMode": "Modalità grafica",
+    "renderModeAsk": "Chiedi all'avvio",
+    "renderModeFast": "Veloce (consigliata)",
+    "renderModeCompat": "Compatibilità",
+    "renderModeDesc": "Usa Compatibilità se la finestra sfarfalla, viene disegnata male o resta vuota. È più lenta, soprattutto a schermo intero. Si applica al prossimo avvio del gioco.",
     "fullscreen": "Schermo intero",
     "fullscreenDesc": "Attiva la modalità schermo intero per un'esperienza immersiva",
     "enterFullscreen": "Entra",

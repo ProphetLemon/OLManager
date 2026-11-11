@@ -21,6 +21,7 @@ const DEFAULT_SETTINGS = {
   debug_tools_enabled: false,
   lol_hybrid_open_trade_confidence_high: 0.6,
   lol_hybrid_disengage_confidence_low: 0.32,
+  linux_render_mode: "ask",
 } as const;
 
 beforeEach(() => {

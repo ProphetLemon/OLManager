@@ -3,6 +3,8 @@ mod client_game;
 mod commands;
 mod discord_rpc;
 pub mod error;
+#[cfg(target_os = "linux")]
+mod linux_render;
 use commands::*;
 
 use crate::discord_rpc::DiscordRpcState;
@@ -123,13 +125,20 @@ fn seed_bundled_data_if_missing(app: &tauri::App) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     eprintln!("[OLManager] BUILD: format-v2-fix");
-    // Workaround for WebKitGTK DMABuf rendering issues on Wayland (Linux)
+    // WebKitGTK reads WEBKIT_DISABLE_DMABUF_RENDERER when the first web view is
+    // created, so the choice is made here, before the builder: a variable the
+    // user set wins, then the saved choice, else a native question is shown.
     #[cfg(target_os = "linux")]
-    {
-        if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err() {
-            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    let render_report = {
+        let report = linux_render::apply_at_startup();
+        // The log plugin is not initialised yet: print to stderr now and repeat
+        // the line through `log` in setup() so it also reaches the log file.
+        eprintln!("[OLManager] {}", report.line());
+        if let Some(error) = &report.save_error {
+            eprintln!("[OLManager] Could not remember the rendering choice: {error}");
         }
-    }
+        report
+    };
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -164,8 +173,15 @@ pub fn run() {
         })
         .manage(StateManager::new())
         .manage(SimLiveStoreState::default())
-        .setup(|app| {
+        .setup(move |app| {
             use tauri::Manager as TauriManager;
+            #[cfg(target_os = "linux")]
+            {
+                log::info!("[setup] {}", render_report.line());
+                if let Some(error) = &render_report.save_error {
+                    log::warn!("[setup] Could not remember the rendering choice: {error}");
+                }
+            }
             let app_data_dir = app
                 .path()
                 .app_data_dir()

@@ -2056,6 +2056,19 @@
     "killsDeathsObjectives": "K / D / Obj.",
     "economy": "Or / Dégâts"
   },
+  "linuxRender": {
+    "dialog": {
+      "title": "Mode graphique",
+      "intro": "Choisissez comment le jeu doit afficher sa fenêtre.",
+      "fast": "Rapide",
+      "fastHint": "Recommandé. Utilise la carte graphique.",
+      "compat": "Compatibilité",
+      "compatHint": "À utiliser si la fenêtre du jeu scintille, s'affiche mal ou reste vide. Plus lent, surtout en plein écran.",
+      "remember": "Mémoriser mon choix",
+      "rememberHint": "Vous pourrez le modifier plus tard dans les Paramètres.",
+      "button": "Continuer"
+    }
+  },
   "settings": {
     "title": "Paramètres",
     "display": "Affichage",
@@ -2105,6 +2118,11 @@
     "uiScaleDesc": "Ajuster la taille de police et l'espacement pour la lisibilité",
     "highContrast": "Contraste Élevé",
     "highContrastDesc": "Renforcer le texte, les bordures et le contour de focus pour une meilleure lisibilité",
+    "renderMode": "Mode graphique",
+    "renderModeAsk": "Demander au démarrage",
+    "renderModeFast": "Rapide (recommandé)",
+    "renderModeCompat": "Compatibilité",
+    "renderModeDesc": "Choisissez Compatibilité si la fenêtre scintille, s'affiche mal ou reste vide. C'est plus lent, surtout en plein écran. S'applique au prochain lancement du jeu.",
     "fullscreen": "Plein Écran",
     "fullscreenDesc": "Basculer en mode plein écran",
     "enterFullscreen": "Entrer",

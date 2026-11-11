@@ -2056,6 +2056,19 @@
     "killsDeathsObjectives": "K / D / Hedef",
     "economy": "Altın / Hasar"
   },
+  "linuxRender": {
+    "dialog": {
+      "title": "Grafik modu",
+      "intro": "Oyunun pencereyi nasıl çizeceğini seç.",
+      "fast": "Hızlı",
+      "fastHint": "Önerilir. Ekran kartını kullanır.",
+      "compat": "Uyumluluk",
+      "compatHint": "Oyun penceresi titriyorsa, yanlış çiziliyorsa veya boş kalıyorsa kullan. Daha yavaştır, özellikle tam ekranda.",
+      "remember": "Seçimimi hatırla",
+      "rememberHint": "Daha sonra Ayarlar'dan değiştirebilirsin.",
+      "button": "Devam"
+    }
+  },
   "settings": {
     "title": "Ayarlar",
     "display": "Görünüm",
@@ -2105,6 +2118,11 @@
     "uiScaleDesc": "Okunabilirlik için yazı tipi boyutunu ve boşlukları ayarlayın",
     "highContrast": "Yüksek Kontrast",
     "highContrastDesc": "Daha iyi okunabilirlik için metni, kenarlıkları ve odak çerçevesini güçlendirin",
+    "renderMode": "Grafik modu",
+    "renderModeAsk": "Başlangıçta sor",
+    "renderModeFast": "Hızlı (önerilen)",
+    "renderModeCompat": "Uyumluluk",
+    "renderModeDesc": "Pencere titriyorsa, yanlış çiziliyorsa veya boş kalıyorsa Uyumluluk'u seç. Daha yavaştır, özellikle tam ekranda. Oyunu bir sonraki açışında geçerli olur.",
     "fullscreen": "Tam Ekran",
     "fullscreenDesc": "Sürükleyici bir deneyim için tam ekran modunu açıp kapatın",
     "enterFullscreen": "Geç",

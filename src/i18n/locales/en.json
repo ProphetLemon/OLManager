@@ -2250,6 +2250,19 @@
     "killsDeathsObjectives": "K / D / Obj.",
     "economy": "Gold / Damage"
   },
+  "linuxRender": {
+    "dialog": {
+      "title": "Graphics mode",
+      "intro": "Choose how the game should draw its window.",
+      "fast": "Fast",
+      "fastHint": "Recommended. Uses the graphics card.",
+      "compat": "Compatibility",
+      "compatHint": "Use it if the game's window flickers, draws wrongly or stays blank. Slower, most of all in fullscreen.",
+      "remember": "Remember my choice",
+      "rememberHint": "You can change it later in Settings.",
+      "button": "Continue"
+    }
+  },
   "settings": {
     "title": "Settings",
     "display": "Display",
@@ -2299,6 +2312,11 @@
     "uiScaleDesc": "Adjust font size and spacing for readability",
     "highContrast": "High Contrast",
     "highContrastDesc": "Strengthen text, borders and the focus outline for improved readability",
+    "renderMode": "Graphics mode",
+    "renderModeAsk": "Ask at start",
+    "renderModeFast": "Fast (recommended)",
+    "renderModeCompat": "Compatibility",
+    "renderModeDesc": "Use Compatibility if the window flickers, draws wrongly or stays blank. It is slower, especially in fullscreen. Takes effect the next time you open the game.",
     "fullscreen": "Fullscreen",
     "fullscreenDesc": "Toggle fullscreen mode for an immersive experience",
     "enterFullscreen": "Enter",
