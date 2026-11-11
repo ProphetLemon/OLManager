@@ -12,6 +12,7 @@ import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { cn } from "@/ui-v2/lib/utils";
+import { ResultLetter } from "@/ui-v2/components/ResultLetter";
 
 interface ScrimPlanningCardV2Props {
   gameState: GameStateData;
@@ -177,7 +178,7 @@ export default function ScrimPlanningCardV2({
                     )}
                     {hasResult ? (
                       <Badge className={slotContext?.resultWon ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative"}>
-                        {slotContext?.resultWon ? "W" : "L"}
+                        <ResultLetter kind={slotContext?.resultWon ? "win" : "loss"} />
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-muted-foreground">

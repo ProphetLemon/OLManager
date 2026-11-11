@@ -25,6 +25,7 @@ import type {
 } from "@/store/gameStore";
 import { useTabUiField } from "@/store/tabUiStore";
 import { formatVal, calcAge, getTeamName } from "@/lib/common/helpers";
+import { formatNumber } from "@/lib/formatting/valueFormatting";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolvePlayerCurrentLolRole } from "@/lib/players/lolIdentity";
@@ -640,9 +641,9 @@ export function TransfersTabV2({
                   ? "border-primary bg-primary/10"
                   : "border-border bg-card text-muted-foreground hover:border-muted-foreground/50",
               )}
-              title={pos}
+              title={t(`onAir.roles.${pos}`)}
             >
-              <img src={ROLE_ICON_PATHS[pos]} alt={pos} className="size-4 object-contain" />
+              <img src={ROLE_ICON_PATHS[pos]} alt={t(`onAir.roles.${pos}`)} className="size-4 object-contain" />
             </button>
           ))}
         </div>
@@ -762,7 +763,7 @@ export function TransfersTabV2({
                         {player.soloq_lp ? (
                           <div className="flex items-center justify-end gap-2">
                             <span className="tabular-nums text-xs text-muted-foreground">
-                              {Math.round(player.soloq_lp).toLocaleString()} LP
+                              {formatNumber(Math.round(player.soloq_lp))} LP
                             </span>
                             <img
                               src={soloqTierImage(player.soloq_lp)}

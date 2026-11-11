@@ -43,8 +43,16 @@ describe("scrimSetupBlockedKey", () => {
     expect(scrimSetupBlockedKey(passed, false)).toBe("scrims.setupAllSlotsPassed");
   });
 
-  it("stays open while one slot can still be edited", () => {
+  it("explains the disabled slots and Autofill while some days have passed and others are still open", () => {
     const partial = week({ slots: [{ canEdit: false }, { canEdit: true }] as never });
-    expect(scrimSetupBlockedKey(partial, false)).toBeNull();
+    expect(scrimSetupBlockedKey(partial, false)).toBe("scrims.setupSomeSlotsPassed");
+  });
+
+  it("lets the assistant and a lock take priority over the partial-week text", () => {
+    const partial = week({ slots: [{ canEdit: false }, { canEdit: true }] as never });
+    expect(scrimSetupBlockedKey(partial, true)).toBe("scrims.assistantHandling");
+    expect(scrimSetupBlockedKey({ ...partial, setupLocked: true, setupLockedReason: "manual" }, false)).toBe(
+      "scrims.setupLockedManual",
+    );
   });
 });

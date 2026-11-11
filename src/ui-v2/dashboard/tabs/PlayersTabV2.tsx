@@ -353,14 +353,14 @@ export function PlayersTabV2({
                         ? "border-primary bg-primary/10 text-club-text"
                         : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground",
                     )}
-                    title={role}
+                    title={t(`onAir.roles.${role}`)}
                   >
                     <img
                       src={ROLE_ICON_URLS[role]}
-                      alt={role}
+                      alt=""
                       className="size-4 object-contain opacity-80"
                     />
-                    {role}
+                    {t(`onAir.roles.${role}`)}
                   </button>
                 );
               })}
@@ -552,7 +552,7 @@ export function PlayersTabV2({
                           <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted/50">
                             <img
                               src={ROLE_ICON_URLS[role]}
-                              alt={role}
+                              alt={t(`onAir.roles.${role}`)}
                               className="size-4 object-contain opacity-80"
                             />
                           </div>

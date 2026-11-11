@@ -667,6 +667,7 @@
     "setupLockedFirstWindow": "This week's first scrim day has already started, so the setup is locked. It reopens next Monday.",
     "setupLockedManual": "You confirmed this week's setup, so it is locked. It reopens next Monday.",
     "setupLockedWeekStarted": "A scrim block of this week has already been played, so the setup is locked. It reopens next Monday.",
+    "setupSomeSlotsPassed": "Some scrim days of this week have already passed or been played, so they can no longer be changed and Autofill is off. You can still plan the days that are left; everything reopens next Monday.",
     "setupUnlockWindow": "Setup may be changed before block begins",
     "streaks": "Streaks",
     "tags": {
@@ -2280,6 +2281,7 @@
     "savesCleared": "Saves cleared!",
     "about": "About",
     "statsCredit": "Player ratings in new games are derived from pro match statistics from Leaguepedia (lol.fandom.com), licensed under CC BY-SA 3.0.",
+    "riotNotice": "Open League Manager is not endorsed or sponsored by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc.",
     "matchModes": {
       "live": "Go to the Rift",
       "liveDesc": "Full match control",
@@ -2469,6 +2471,8 @@
       },
       "playerLabel": "Player",
       "swapTargetTitle": "Choose champion to swap",
+      "offRoleWarning": "{{champion}} is not a {{role}} champion. It will perform worse in the match.",
+      "offRolePickWarning": "{{champion}} has no free role in your team: someone will play off-role and perform worse in the match.",
       "warnCounterLastPick": "Careful with {{champion}}: it is countering your last pick.",
       "warnTimingIdentity": "We are missing a clear timing identity. Look for an Early or Late pick to close better.",
       "warnRoleCoverage": "We still have role gaps. Add a more flexible pick.",
@@ -4145,7 +4149,8 @@
     "worstAgainst": "Worst Against"
   },
   "championsGrid": {
-    "championCount": "{{count}} champions",
+    "championCount_one": "{{count}} champion",
+    "championCount_other": "{{count}} champions",
     "clearFilters": "Clear Filters",
     "noResults": "No results"
   },
@@ -4332,6 +4337,9 @@
       "formWin": "Win",
       "formLoss": "Loss",
       "formDraw": "Draw",
+      "formWinLetter": "W",
+      "formLossLetter": "L",
+      "formDrawLetter": "D",
       "needsEmptyHint": "You can continue whenever you are ready.",
       "moreContracts_one": "{{count}} more contract renewal not shown",
       "moreContracts_other": "{{count}} more contract renewals not shown",
@@ -4435,13 +4443,13 @@
       "urgentMessages_one": "{{count}} urgent unread message",
       "urgentMessages_other": "{{count}} urgent unread messages",
       "incompleteLineupTooFew": "Your lineup has only {{selected}} of the {{required}} players it needs — set your lineup",
-      "incompleteLineupRoles_one": "Your lineup is missing the role {{roles}}. Make sure you have TOP, JUNGLE, MID, ADC and SUPPORT.",
-      "incompleteLineupRoles_other": "Your lineup is missing the roles {{roles}}. Make sure you have TOP, JUNGLE, MID, ADC and SUPPORT.",
+      "incompleteLineupRoles_one": "Your lineup is missing the role {{roles}}. Make sure you have {{roleListHead}} and {{roleListLast}}.",
+      "incompleteLineupRoles_other": "Your lineup is missing the roles {{roles}}. Make sure you have {{roleListHead}} and {{roleListLast}}.",
       "keyContractRisk": "Key player contract risk in squad planning: {{players}}",
       "contractWageRisk": "{{amount}} of wages are tied to at-risk contracts — review your wage budget",
       "mainRosterMinimum_one": "Main roster incomplete: you have {{count}} player. You need at least 5 to advance.",
       "mainRosterMinimum_other": "Main roster incomplete: you have {{count}} players. You need at least 5 to advance.",
-      "mainMissingRoles": "Main roster incomplete by role: at least one player is missing in {{roles}}. You cannot advance until TOP, JUNGLE, MID, ADC and SUPPORT are covered.",
+      "mainMissingRoles": "Main roster incomplete by role: at least one player is missing in {{roles}}. You cannot advance until {{roleListHead}} and {{roleListLast}} are covered.",
       "academyMissingRoles": "Academy incomplete: at least one player is missing in {{roles}}. You cannot advance until every role is covered."
     },
     "notices": {

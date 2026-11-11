@@ -28,17 +28,34 @@ describe("backendBlockerText", () => {
     ).toContain("only 3 of the 5");
     expect(
       backendBlockerText({ id: "incomplete_lineup", params: { reason: "missing_roles", roles: "MID", count: 1 } }),
-    ).toContain("missing the role MID");
+    ).toContain("missing the role Mid");
     expect(
       backendBlockerText({ id: "incomplete_lineup", params: { reason: "missing_roles", roles: "MID, ADC", count: 2 } }),
-    ).toContain("missing the roles MID, ADC");
+    ).toContain("missing the roles Mid, ADC");
     expect(backendBlockerText({ id: "key_contract_risk", params: { players: "Ana, Bo" } })).toContain("Ana, Bo");
     expect(backendBlockerText({ id: "contract_wage_risk", params: { amount: 60000 } })).toContain("60000");
     expect(backendBlockerText({ id: "main_roster_minimum", params: { count: 4 } })).toContain("you have 4 players");
-    expect(backendBlockerText({ id: "main_missing_roles", params: { roles: "TOP" } })).toContain("missing in TOP");
+    expect(backendBlockerText({ id: "main_missing_roles", params: { roles: "TOP" } })).toContain("missing in Top");
     expect(backendBlockerText({ id: "academy_missing_roles", params: { roles: "SUPPORT" } })).toContain(
-      "missing in SUPPORT",
+      "missing in Support",
     );
+  });
+
+  it("writes the missing roles and the role list with the translated role names", async () => {
+    await i18n.changeLanguage("es");
+    const lineup = backendBlockerText({
+      id: "incomplete_lineup",
+      params: { reason: "missing_roles", roles: "JUNGLE, SUPPORT", count: 2 },
+    });
+    expect(lineup).toBe(
+      "A tu alineación le faltan los roles Jungla, Support. Asegúrate de tener Top, Jungla, Mid, ADC y Support.",
+    );
+    const main = backendBlockerText({ id: "main_missing_roles", params: { roles: "JUNGLE" } });
+    expect(main).toContain("falta al menos un jugador en Jungla.");
+    expect(main).toContain("hasta cubrir Top, Jungla, Mid, ADC y Support");
+    for (const text of [lineup, main]) {
+      expect(text).not.toMatch(/JUNGLE|TOP|SUPPORT/);
+    }
   });
 
   it("returns null when the params are missing or unusable, so the backend text stays", () => {

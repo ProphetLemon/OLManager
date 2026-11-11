@@ -17,7 +17,16 @@ import {
 } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
 import { LolSimV2Client } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/tauri-client";
 import { renderSimulation } from "@/ui-v2/_legacy/components/match/lol-prototype/ui/render";
+import {
+  EMPTY_STEP_VIEW,
+  nextStepView,
+  smoothClockSec,
+  stateToDraw,
+  type StepView,
+} from "@/ui-v2/_legacy/components/match/lol-prototype/ui/stepInterpolation";
 import { LecLowerThirdPanel } from "@/ui-v2/_legacy/components/match/lol-prototype/ui/panels";
+import { buildChampionProfiles, loadChampionKits } from "@/ui-v2/_legacy/components/match/championProfiles";
+import { championPlaysRole, resolveRoleTier } from "@/lib/champions/championRoleFit";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { GameStateData } from "@/store/gameStore";
 
@@ -47,7 +56,9 @@ const SPEEDS = [
   { id: "x12", value: 48 }
 ];
 
-const DDRAGON_VERSION = "14.24.1";
+// Longest slice of real time one animation frame may add to what the engine is asked to play.
+const BACKEND_MAX_FRAME_SEC = 0.25;
+
 const USE_RUST_SIM_V2 = true;
 const ICON_TOWER = "/lol-map-icons/icon_ui_tower_minimap.webp";
 const ICON_GOLD = "/lol-map-icons/gold.webp";
@@ -75,34 +86,10 @@ function championIconUrl(championId: string): string {
   return `/champion-tiles/${championId}.webp`;
 }
 
-function attackTypeFromStats(attackRange: number, tags: string[]) {
-  if (attackRange >= 300) return "ranged" as const;
-  if (tags.includes("Marksman")) return "ranged" as const;
-  return "melee" as const;
-}
-
-function normalizeAttackRange(attackRange: number) {
-  // Compact ranged vs melee spacing for this prototype:
-  // ranged should have some advantage, but not excessive standoff distance.
-  if (attackRange >= 300) return 0.056;
-  return 0.049;
-}
-
 function randomSeed10Digits() {
   const firstDigit = Math.floor(Math.random() * 9) + 1;
   const rest = Math.floor(Math.random() * 1_000_000_000).toString().padStart(9, "0");
   return `${firstDigit}${rest}`;
-}
-
-function classifyUltimateArchetype(name: string, description: string) {
-  const text = `${name} ${description}`.toLowerCase();
-  if (text.includes("execute") || text.includes("missing health") || text.includes("below")) return "execute";
-  if (text.includes("global") || text.includes("map") || text.includes("long range") || text.includes("anywhere")) return "global";
-  if (text.includes("dash") || text.includes("leap") || text.includes("charge") || text.includes("knockup") || text.includes("pull")) return "engage";
-  if (text.includes("heal") || text.includes("shield") || text.includes("invulner") || text.includes("stasis") || text.includes("untarget")) return "defensive";
-  if (text.includes("zone") || text.includes("field") || text.includes("storm") || text.includes("area") || text.includes("aoe")) return "zone";
-  if (text.includes("transform") || text.includes("form")) return "sustain";
-  return "burst";
 }
 
 function normalizeKey(value: string) {
@@ -488,7 +475,11 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
             : rawRole === "SUPPORT"
               ? "Support"
               : "Mid";
-      const tier = roleTierByChampion.get(`${mappedRole}:${championKey}`) ?? bestTierByChampion.get(championKey) ?? "B";
+      const tier = resolveRoleTier(
+        roleTierByChampion.get(`${mappedRole}:${championKey}`),
+        bestTierByChampion.get(championKey),
+        championPlaysRole(championId, rawRole === "TOP" || rawRole === "JUNGLE" || rawRole === "ADC" || rawRole === "SUPPORT" ? rawRole : "MID"),
+      );
       const tierDelta = tierWeight[tier] ?? 0;
       const modifier = Math.max(0.82, Math.min(1.25, 1 + masteryDelta + tierDelta));
 
@@ -518,62 +509,11 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
       }
 
       try {
-        const response = await fetch(`https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/data/en_US/champion.json`);
-        if (!response.ok) throw new Error(`champion.json status ${response.status}`);
-        const payload = await response.json() as {
-          data?: Record<string, { id: string; tags: string[]; stats: { hp: number; attackrange: number } }>;
-        };
-
-        const nextProfiles: Record<string, ChampionCombatProfile> = {};
-        const champions = payload.data ?? {};
-        pickedChampionIds.forEach((championId) => {
-          const data = champions[championId];
-          if (!data) return;
-          const attackType = attackTypeFromStats(data.stats.attackrange, data.tags ?? []);
-          const runtimeMod = runtimeModifierByChampionId[championId] ?? 1;
-          const baseHp = Math.round(data.stats.hp * runtimeMod);
-          const rangeBase = normalizeAttackRange(data.stats.attackrange);
-          const rangeWithMod = rangeBase * Math.max(0.92, Math.min(1.08, 1 + (runtimeMod - 1) * 0.35));
-          nextProfiles[championId] = {
-            baseHp,
-            attackType,
-            attackRange: rangeWithMod,
-          };
-        });
-
-        const uniqueChampionIds = Array.from(new Set(Object.values(championByPlayerId).filter(Boolean)));
-        const ultimateEntries = await Promise.all(uniqueChampionIds.map(async (championId) => {
-          try {
-            const detailResponse = await fetch(`https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/data/en_US/champion/${championId}.json`);
-            if (!detailResponse.ok) return [championId, null] as const;
-            const detailPayload = await detailResponse.json() as {
-              data?: Record<string, {
-                id: string;
-                spells?: Array<{ name?: string; description?: string; tooltip?: string; image?: { full?: string } }>;
-              }>;
-            };
-            const detail = detailPayload.data?.[championId];
-            const ultimate = detail?.spells?.[3];
-            const image = ultimate?.image?.full;
-            if (!ultimate || !image) return [championId, null] as const;
-            const description = ultimate.tooltip ?? ultimate.description ?? "";
-            const archetype = classifyUltimateArchetype(ultimate.name ?? "", description);
-            return [championId, {
-              archetype,
-              icon: `https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/img/spell/${image}`,
-            }] as const;
-          } catch {
-            return [championId, null] as const;
-          }
-        }));
-
+        const kits = await loadChampionKits();
         if (!cancelled) {
-          const mapped = ultimateEntries.reduce<Record<string, LolChampionUltimateProfile>>((acc, [championId, value]) => {
-            if (value) acc[championId] = value;
-            return acc;
-          }, {});
-          setChampionProfilesById(nextProfiles);
-          setChampionUltimatesById(mapped);
+          const { profiles, ultimates } = buildChampionProfiles(kits, pickedChampionIds, runtimeModifierByChampionId);
+          setChampionProfilesById(profiles);
+          setChampionUltimatesById(ultimates);
           setProfilesReady(true);
         }
       } catch {
@@ -595,6 +535,7 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
   const simRef = useRef<PrototypeSimulation | null>(null);
   const backendClientRef = useRef<LolSimV2Client | null>(null);
   const backendStateRef = useRef<LolSimV1RuntimeState | null>(null);
+  const backendViewRef = useRef<StepView>(EMPTY_STEP_VIEW);
   const backendTickInFlightRef = useRef(false);
   const backendPendingDtRef = useRef(0);
   const goldDiffTimelineRef = useRef<Array<{ minute: number; diff: number }>>([]);
@@ -618,6 +559,7 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
     simRef.current = tsSim;
     backendClientRef.current = null;
     backendStateRef.current = null;
+    backendViewRef.current = EMPTY_STEP_VIEW;
     backendTickInFlightRef.current = false;
     backendPendingDtRef.current = 0;
     goldDiffTimelineRef.current = [{ minute: 0, diff: 0 }];
@@ -642,6 +584,7 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
       })
       .then((response) => {
         if (disposed || backendClientRef.current !== client) return;
+        backendViewRef.current = nextStepView(backendViewRef.current, backendStateRef.current, response.state, performance.now());
         backendStateRef.current = response.state;
       })
       .catch(() => {
@@ -670,7 +613,8 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
       if (!sim || !canvas) return;
 
       if (!lastRef.current) lastRef.current = ts;
-      const dt = Math.min(0.05, (ts - lastRef.current) / 1000);
+      const elapsedSec = Math.max(0, (ts - lastRef.current) / 1000);
+      const dt = Math.min(0.05, elapsedSec);
       lastRef.current = ts;
 
       sim.setRunning(running);
@@ -681,15 +625,20 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
         backendPendingDtRef.current = 0;
       } else if (backendClient && backendStateRef.current) {
         // Acumulador anti-tirones: si backend está ocupado, no perdemos tiempo simulado.
-        backendPendingDtRef.current = Math.min(0.5, backendPendingDtRef.current + dt);
+        // The engine turns the real time into fixed steps, so it gets all of it at once.
+        backendPendingDtRef.current = Math.min(
+          0.5,
+          backendPendingDtRef.current + Math.min(BACKEND_MAX_FRAME_SEC, elapsedSec),
+        );
         if (!backendTickInFlightRef.current) {
           backendTickInFlightRef.current = true;
-          const dtForBackend = Math.min(0.05, backendPendingDtRef.current);
-          backendPendingDtRef.current = Math.max(0, backendPendingDtRef.current - dtForBackend);
+          const dtForBackend = backendPendingDtRef.current;
+          backendPendingDtRef.current = 0;
           void backendClient
             .tick({ dtSec: dtForBackend, running, speed })
             .then((response) => {
               if (backendClientRef.current !== backendClient) return;
+              backendViewRef.current = nextStepView(backendViewRef.current, backendStateRef.current, response.state, performance.now());
               backendStateRef.current = response.state;
             })
             .catch(() => {
@@ -727,7 +676,9 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
         canvas.width = size;
         canvas.height = size;
       }
-      renderSimulation(canvas, state, walls, championByPlayerId);
+      // Movement is blended between steps, so the map moves smoothly at every speed.
+      const drawn = state === backendStateRef.current ? stateToDraw(backendViewRef.current, state, performance.now()) : state;
+      renderSimulation(canvas, drawn, walls, championByPlayerId);
 
       if (state.winner && !finishedRef.current) {
         finishedRef.current = true;
@@ -806,7 +757,10 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
   const redVoidgrubs = Math.max(hudObjectiveCountersRef.current.redVoidgrubs, redVoidgrubsRaw);
   hudObjectiveCountersRef.current.blueVoidgrubs = blueVoidgrubs;
   hudObjectiveCountersRef.current.redVoidgrubs = redVoidgrubs;
-  const clock = `${Math.floor((state?.timeSec ?? 0) / 60)}:${Math.floor((state?.timeSec ?? 0) % 60).toString().padStart(2, "0")}`;
+  const clockSec = state && state === backendStateRef.current
+    ? smoothClockSec(state, backendViewRef.current.receivedAtMs, performance.now())
+    : (state?.timeSec ?? 0);
+  const clock = `${Math.floor(clockSec / 60)}:${Math.floor(clockSec % 60).toString().padStart(2, "0")}`;
   const blueBrand = teamBrand(snapshot.home_team.name, gameState?.teams);
   const redBrand = teamBrand(snapshot.away_team.name, gameState?.teams);
   const leagueLogo = gameState?.user_competition_id
@@ -916,6 +870,7 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
         .reset({ seed: nextSeed, aiMode, policy: simPolicy, initialState: { ...sim.state, speed } })
         .then((response) => {
           if (backendClientRef.current !== backendClient) return;
+          backendViewRef.current = nextStepView(backendViewRef.current, backendStateRef.current, response.state, performance.now());
           backendStateRef.current = response.state;
           setTick((v) => v + 1);
         })

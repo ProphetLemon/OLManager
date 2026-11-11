@@ -47,9 +47,9 @@ const NEUTRAL_TIMER_ICON: Partial<Record<NeutralTimerKey, keyof typeof NEUTRAL_O
 };
 
 const SUMMON_ICON_PATH = {
-  maiden: "https://ddragon.leagueoflegends.com/cdn/14.24.1/img/spell/YorickR.png",
-  daisy: "https://ddragon.leagueoflegends.com/cdn/14.24.1/img/spell/IvernR.png",
-  clone: "https://ddragon.leagueoflegends.com/cdn/14.24.1/img/spell/HallucinateFull.png",
+  maiden: "/lol-ultimate-icons/YorickR.png",
+  daisy: "/lol-ultimate-icons/IvernR.png",
+  clone: "/lol-ultimate-icons/HallucinateFull.png",
 } as const;
 
 function summonIconCandidates(kindRaw: unknown): string[] {
@@ -58,7 +58,7 @@ function summonIconCandidates(kindRaw: unknown): string[] {
     // Prefer custom Annie recast icon, fallback to Annie R when missing.
     return [
       "/lol-summon-icons/annie-r-recast.png",
-      "https://ddragon.leagueoflegends.com/cdn/14.24.1/img/spell/AnnieR.png",
+      "/lol-ultimate-icons/AnnieR.png",
     ];
   }
   if (kind === "maiden") return [SUMMON_ICON_PATH.maiden];

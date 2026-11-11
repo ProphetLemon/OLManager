@@ -15,7 +15,7 @@ pub(super) const FULL_MATCH_TICKS: u64 = 6000;
 /// `dt` 0.2 and speed 12 is 12 simulated minutes.
 const SHORT_RUN_TICKS: u64 = 1200;
 
-const ROLES: [&str; 5] = ["TOP", "JGL", "MID", "ADC", "SUP"];
+pub(super) const ROLES: [&str; 5] = ["TOP", "JGL", "MID", "ADC", "SUP"];
 
 /// Inclusive `(min, max)` share of a team's total gold per role.
 const ROLE_SHARE_RANGE: [(&str, f64, f64); 5] = [
@@ -53,7 +53,7 @@ impl Side {
     }
 }
 
-fn snapshot_with(home: Side, away: Side) -> Value {
+pub(super) fn snapshot_with(home: Side, away: Side) -> Value {
     let team = |prefix: &str, stat: f64| {
         let players: Vec<Value> = ROLES
             .iter()
@@ -252,7 +252,7 @@ pub(super) fn batch_size(default: usize) -> usize {
 /// minutes, measured with every role income weight set to 1.0 (no role
 /// weighting, everything else as shipped). [PLACEHOLDER] regenerate it with
 /// the same setup if the base economy changes.
-const NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN: f64 = 14_200.6;
+const NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN: f64 = 14_536.0;
 
 /// The role income weights only redistribute gold between roles; they must not
 /// inflate the team total. Measured against the unweighted baseline above the

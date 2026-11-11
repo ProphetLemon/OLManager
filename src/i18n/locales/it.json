@@ -1627,7 +1627,7 @@
     "matchesForDate": "Matches for {{date}}",
     "noFixtures": "No fixtures available",
     "noMatchesOnDay": "No matches on this day",
-    "thisWeek": "This Week",
+    "thisWeek": "Questa settimana",
     "scrimVs": "Scrim contro {{team}}"
   },
   "players": {
@@ -1923,6 +1923,7 @@
     "savesCleared": "Salvataggi cancellati!",
     "about": "Informazioni",
     "statsCredit": "Le valutazioni dei giocatori nelle nuove partite derivano dalle statistiche delle partite professionistiche di Leaguepedia (lol.fandom.com), con licenza CC BY-SA 3.0.",
+    "riotNotice": "Open League Manager non è approvato né sponsorizzato da Riot Games e non riflette le opinioni di Riot Games né di chiunque sia ufficialmente coinvolto nella produzione o nella gestione delle proprietà di Riot Games. League of Legends e Riot Games sono marchi o marchi registrati di Riot Games, Inc.",
     "matchModes": {
       "live": "Vai sulla Rift",
       "liveDesc": "Controllo completo della partita",
@@ -2236,6 +2237,8 @@
       },
       "playerLabel": "Player",
       "swapTargetTitle": "Choose champion to swap",
+      "offRoleWarning": "{{champion}} non è un campione {{role}}. Renderà meno nella partita.",
+      "offRolePickWarning": "{{champion}} non ha un ruolo libero nella tua squadra: qualcuno giocherà fuori ruolo e renderà meno nella partita.",
       "warnCounterLastPick": "Careful with {{champion}}: it is countering your last pick.",
       "warnTimingIdentity": "We are missing a clear timing identity. Look for an Early or Late pick to close better.",
       "warnRoleCoverage": "We still have role gaps. Add a more flexible pick.",
@@ -3449,7 +3452,7 @@
           "reduceCancellations": "Riduci gli annullamenti la prossima settimana; la reputazione negli scrim fa parte della tua infrastruttura competitiva.",
           "resetBeforeVolume": "Apri la prossima settimana con Mental Reset o VOD Review prima di aggiungere altro volume.",
           "narrowFocus": "Mantieni il volume ma restringi il focus sul problema ricorrente; la qualità è troppo instabile al momento.",
-          "targetedDrills": "Programma Targeted Drills per il problema ricorrente e mantieni stabile il blocco principale di preparazione.",
+          "targetedDrills": "Programma Esercizi mirati per il problema ricorrente e mantieni stabile il blocco principale di preparazione.",
           "keepPlan": "Mantieni il piano attuale: sta producendo ripetizioni utili senza sovraccaricare il roster."
         }
       },
@@ -3758,6 +3761,7 @@
     "setupLockedFirstWindow": "Il primo giorno di scrim di questa settimana è già iniziato, quindi la configurazione è bloccata. Si riapre lunedì prossimo.",
     "setupLockedManual": "Hai confermato la configurazione di questa settimana, quindi è bloccata. Si riapre lunedì prossimo.",
     "setupLockedWeekStarted": "Questa settimana è già stato giocato un blocco di scrim, quindi la configurazione è bloccata. Si riapre lunedì prossimo.",
+    "setupSomeSlotsPassed": "Alcuni giorni di scrim di questa settimana sono già passati o giocati, quindi non si possono più modificare e Compila auto è disattivato. Puoi ancora pianificare i giorni rimasti; tutto si riapre lunedì prossimo.",
     "setupUnlockWindow": "L'impostazione può essere modificata prima dell'inizio del blocco",
     "streaks": "Serie",
     "tags": {
@@ -4110,9 +4114,10 @@
     "worstAgainst": "Worst Against"
   },
   "championsGrid": {
-    "championCount": "{{count}} champions",
-    "clearFilters": "Clear Filters",
-    "noResults": "No results"
+    "championCount_one": "{{count}} campione",
+    "championCount_other": "{{count}} campioni",
+    "clearFilters": "Cancella i filtri",
+    "noResults": "Nessun risultato"
   },
   "competitions": {
     "heroMatches_one": "{{count}} partita",
@@ -4297,6 +4302,9 @@
       "formWin": "Vittoria",
       "formLoss": "Sconfitta",
       "formDraw": "Pareggio",
+      "formWinLetter": "V",
+      "formLossLetter": "P",
+      "formDrawLetter": "N",
       "needsEmptyHint": "Puoi continuare quando sei pronto.",
       "moreContracts_one": "{{count}} altro rinnovo di contratto non mostrato",
       "moreContracts_other": "{{count}} altri rinnovi di contratto non mostrati",
@@ -4400,13 +4408,13 @@
       "urgentMessages_one": "{{count}} messaggio urgente non letto",
       "urgentMessages_other": "{{count}} messaggi urgenti non letti",
       "incompleteLineupTooFew": "La tua formazione ha solo {{selected}} dei {{required}} giocatori necessari — imposta la formazione",
-      "incompleteLineupRoles_one": "Nella tua formazione manca il ruolo {{roles}}. Assicurati di avere TOP, JUNGLE, MID, ADC e SUPPORT.",
-      "incompleteLineupRoles_other": "Nella tua formazione mancano i ruoli {{roles}}. Assicurati di avere TOP, JUNGLE, MID, ADC e SUPPORT.",
+      "incompleteLineupRoles_one": "Nella tua formazione manca il ruolo {{roles}}. Assicurati di avere {{roleListHead}} e {{roleListLast}}.",
+      "incompleteLineupRoles_other": "Nella tua formazione mancano i ruoli {{roles}}. Assicurati di avere {{roleListHead}} e {{roleListLast}}.",
       "keyContractRisk": "Rischio contrattuale per i giocatori chiave nella pianificazione della rosa: {{players}}",
       "contractWageRisk": "{{amount}} di stipendi sono legati a contratti a rischio — rivedi il budget stipendi",
       "mainRosterMinimum_one": "Rosa principale incompleta: hai {{count}} giocatore. Te ne servono almeno 5 per avanzare.",
       "mainRosterMinimum_other": "Rosa principale incompleta: hai {{count}} giocatori. Te ne servono almeno 5 per avanzare.",
-      "mainMissingRoles": "Rosa principale incompleta per ruoli: manca almeno un giocatore in {{roles}}. Non puoi avanzare finché TOP, JUNGLE, MID, ADC e SUPPORT non sono coperti.",
+      "mainMissingRoles": "Rosa principale incompleta per ruoli: manca almeno un giocatore in {{roles}}. Non puoi avanzare finché {{roleListHead}} e {{roleListLast}} non sono coperti.",
       "academyMissingRoles": "Academy incompleta: manca almeno un giocatore in {{roles}}. Non puoi avanzare finché tutti i ruoli non sono coperti."
     },
     "notices": {

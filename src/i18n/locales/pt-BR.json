@@ -1791,7 +1791,7 @@
     "matchesForDate": "Matches for {{date}}",
     "noFixtures": "No fixtures available",
     "noMatchesOnDay": "No matches on this day",
-    "thisWeek": "This Week",
+    "thisWeek": "Esta semana",
     "scrimVs": "Scrim contra {{team}}"
   },
   "players": {
@@ -2087,6 +2087,7 @@
     "savesCleared": "Saves apagados!",
     "about": "Sobre",
     "statsCredit": "As notas dos jogadores em novos jogos são derivadas de estatísticas de partidas profissionais da Leaguepedia (lol.fandom.com), licenciadas sob CC BY-SA 3.0.",
+    "riotNotice": "O Open League Manager não é endossado nem patrocinado pela Riot Games e não reflete as opiniões da Riot Games nem de qualquer pessoa oficialmente envolvida na produção ou no gerenciamento das propriedades da Riot Games. League of Legends e Riot Games são marcas comerciais ou marcas registradas da Riot Games, Inc.",
     "matchModes": {
       "live": "Ir para o Rift",
       "liveDesc": "Controle total da partida",
@@ -2222,6 +2223,8 @@
       },
       "playerLabel": "Jogador",
       "swapTargetTitle": "Escolher campeão para trocar",
+      "offRoleWarning": "{{champion}} não é um campeão de {{role}}. Vai render pior na partida.",
+      "offRolePickWarning": "{{champion}} não tem uma função livre no seu time: alguém vai jogar fora da função e render pior na partida.",
       "warnCounterLastPick": "Cuidado com {{champion}}: está counterando sua última escolha.",
       "warnTimingIdentity": "Falta uma identidade clara de timing. Busque um pick de Early ou Late para fechar melhor.",
       "warnRoleCoverage": "Ainda temos lacunas de função. Adicione um pick mais flexível.",
@@ -3399,7 +3402,7 @@
           "reduceCancellations": "Reduza cancelamentos na próxima semana; a reputação de scrims faz parte da infraestrutura competitiva.",
           "resetBeforeVolume": "Comece a próxima semana com Mental Reset ou VOD Review antes de adicionar mais volume.",
           "narrowFocus": "Mantenha o volume, mas estreite o foco em torno do problema recorrente; a qualidade está muito instável.",
-          "targetedDrills": "Programe Targeted Drills para o problema recorrente e mantenha estável o bloco principal de preparação.",
+          "targetedDrills": "Programe Treinos direcionados para o problema recorrente e mantenha estável o bloco principal de preparação.",
           "keepPlan": "Mantenha o plano atual: está gerando reps úteis sem sobrecarregar o roster."
         }
       },
@@ -3959,6 +3962,7 @@
     "setupLockedFirstWindow": "O primeiro dia de scrims desta semana já começou, então a configuração está bloqueada. Reabre na próxima segunda-feira.",
     "setupLockedManual": "Você confirmou a configuração desta semana, então ela está bloqueada. Reabre na próxima segunda-feira.",
     "setupLockedWeekStarted": "Um bloco de scrims já foi jogado nesta semana, então a configuração está bloqueada. Reabre na próxima segunda-feira.",
+    "setupSomeSlotsPassed": "Alguns dias de scrims desta semana já passaram ou foram jogados, então não podem mais ser alterados e Preencher não está disponível. Você ainda pode planejar os dias que restam; tudo reabre na próxima segunda-feira.",
     "setupUnlockWindow": "A configuração pode ser alterada antes de o bloco começar",
     "streaks": "Sequências",
     "tags": {
@@ -4111,9 +4115,10 @@
     "worstAgainst": "Worst Against"
   },
   "championsGrid": {
-    "championCount": "{{count}} champions",
-    "clearFilters": "Clear Filters",
-    "noResults": "No results"
+    "championCount_one": "{{count}} campeão",
+    "championCount_other": "{{count}} campeões",
+    "clearFilters": "Limpar filtros",
+    "noResults": "Sem resultados"
   },
   "competitions": {
     "heroMatches_one": "{{count}} jogo",
@@ -4298,6 +4303,9 @@
       "formWin": "Vitória",
       "formLoss": "Derrota",
       "formDraw": "Empate",
+      "formWinLetter": "V",
+      "formLossLetter": "D",
+      "formDrawLetter": "E",
       "needsEmptyHint": "Você pode continuar quando estiver pronto.",
       "moreContracts_one": "Mais {{count}} renovação de contrato não exibida",
       "moreContracts_other": "Mais {{count}} renovações de contrato não exibidas",
@@ -4401,13 +4409,13 @@
       "urgentMessages_one": "{{count}} mensagem urgente não lida",
       "urgentMessages_other": "{{count}} mensagens urgentes não lidas",
       "incompleteLineupTooFew": "Sua escalação tem apenas {{selected}} dos {{required}} jogadores necessários — defina sua escalação",
-      "incompleteLineupRoles_one": "Falta a função {{roles}} na sua escalação. Garanta que você tenha TOP, JUNGLE, MID, ADC e SUPPORT.",
-      "incompleteLineupRoles_other": "Faltam as funções {{roles}} na sua escalação. Garanta que você tenha TOP, JUNGLE, MID, ADC e SUPPORT.",
+      "incompleteLineupRoles_one": "Falta a função {{roles}} na sua escalação. Garanta que você tenha {{roleListHead}} e {{roleListLast}}.",
+      "incompleteLineupRoles_other": "Faltam as funções {{roles}} na sua escalação. Garanta que você tenha {{roleListHead}} e {{roleListLast}}.",
       "keyContractRisk": "Risco de contrato de jogadores-chave no planejamento do elenco: {{players}}",
       "contractWageRisk": "{{amount}} em salários estão ligados a contratos em risco — revise seu orçamento salarial",
       "mainRosterMinimum_one": "Elenco principal incompleto: você tem {{count}} jogador. Você precisa de pelo menos 5 para avançar.",
       "mainRosterMinimum_other": "Elenco principal incompleto: você tem {{count}} jogadores. Você precisa de pelo menos 5 para avançar.",
-      "mainMissingRoles": "Elenco principal incompleto por funções: falta pelo menos um jogador em {{roles}}. Você não pode avançar até cobrir TOP, JUNGLE, MID, ADC e SUPPORT.",
+      "mainMissingRoles": "Elenco principal incompleto por funções: falta pelo menos um jogador em {{roles}}. Você não pode avançar até cobrir {{roleListHead}} e {{roleListLast}}.",
       "academyMissingRoles": "Academia incompleta: falta pelo menos um jogador em {{roles}}. Você não pode avançar até cobrir todas as funções."
     },
     "notices": {

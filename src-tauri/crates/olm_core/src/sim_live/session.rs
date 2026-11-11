@@ -22,6 +22,9 @@ pub struct SimLiveSession {
     pub tick_index: u64,
     pub wave_spawn_at: f64,
     pub next_minion_id: u64,
+    /// Game seconds collected towards the next fixed step. The session lives in memory
+    /// only, so a saved match carries no accumulator and needs no serde default.
+    pub step_accum_sec: f64,
     pub snapshot: Value,
     pub champion_by_player_id: HashMap<String, String>,
     pub champion_profiles_by_id: HashMap<String, LolChampionCombatProfileInput>,

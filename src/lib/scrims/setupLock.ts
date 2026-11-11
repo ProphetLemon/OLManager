@@ -17,5 +17,7 @@ export function scrimSetupBlockedKey(week: WeeklyScrimContext, assistantControls
     return (week.setupLockedReason && LOCK_REASON_KEYS[week.setupLockedReason]) || "scrims.setupLocked";
   }
   if (week.slots.length > 0 && week.slots.every((slot) => !slot.canEdit)) return "scrims.setupAllSlotsPassed";
+  // Some days are past or played: their selects and Autofill (which needs every slot open) are disabled.
+  if (week.slots.some((slot) => !slot.canEdit)) return "scrims.setupSomeSlotsPassed";
   return null;
 }

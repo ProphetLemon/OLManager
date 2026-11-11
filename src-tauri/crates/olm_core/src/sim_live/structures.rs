@@ -261,7 +261,7 @@ pub(super) fn resolve_structure_combat(runtime: &mut super::RuntimeState) {
                     runtime.structures[idx].attack_cd_until =
                         structure_attack_cd_until(now, super::TOWER_ATTACK_CADENCE_SEC);
                     if runtime.minions[minion_idx].hp <= 0.0 {
-                        super::register_minion_death(runtime, minion_idx);
+                        super::register_minion_death(runtime, minion_idx, super::MinionKiller::Tower);
                     }
                 }
                 StructureAttackTarget::Champion(champion_idx) => {

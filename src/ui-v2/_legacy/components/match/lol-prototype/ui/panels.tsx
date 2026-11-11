@@ -64,7 +64,6 @@ export function EventFeedPanel({ events }: EventsProps) {
 }
 
 const ROLE_ORDER: ChampionState["role"][] = ["TOP", "JGL", "MID", "ADC", "SUP"];
-const DDRAGON_VERSION = "14.24.1";
 
 function championIconUrl(championId: string | undefined) {
   if (!championId) return null;
@@ -80,10 +79,10 @@ function trinketIconUrl(trinketKey: string | undefined) {
   if (!trinketKey) return null;
   const key = trinketKey.trim().toLowerCase();
   if (key === "wardingtotem") {
-    return `https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/img/item/3340.png`;
+    return "/lol-item-icons/stealth_ward.png";
   }
   if (key === "oraclelens") {
-    return `https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/img/item/3364.png`;
+    return "/lol-item-icons/oracle_lens.png";
   }
   return null;
 }
@@ -100,7 +99,7 @@ function summonerSpellIconUrl(spellKey: string | undefined) {
   };
   const icon = byKey[normalized];
   if (!icon) return null;
-  return `https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/img/spell/${icon}.png`;
+  return `/lol-summoner-icons/${icon}.png`;
 }
 
 function sortByRole(champions: ChampionState[]) {
