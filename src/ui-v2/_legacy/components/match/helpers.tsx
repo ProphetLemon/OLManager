@@ -247,12 +247,20 @@ export function calcOvr(attrs: Record<string, number>): number {
   return Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
 }
 
+/** Fixtures of the league the user plays in; the backend indexes fixtures in that same league. */
+export function userLeagueFixtures(gameState: GameStateData | null): FixtureData[] | undefined {
+  const userLeague = gameState?.user_competition_id
+    ? gameState.leagues?.find((league) => league.competition_id === gameState.user_competition_id)
+    : undefined;
+  return (userLeague ?? gameState?.leagues?.[0])?.fixtures;
+}
+
 export function resolveMatchFixture(
   gameState: GameStateData | null,
   snapshot: MatchSnapshot | null,
   fixtureIndex?: number,
 ): FixtureData | null {
-  const fixtures = gameState?.leagues?.[0]?.fixtures;
+  const fixtures = userLeagueFixtures(gameState);
   if (!fixtures || !snapshot) return null;
 
   if (
