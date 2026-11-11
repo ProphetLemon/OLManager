@@ -2772,8 +2772,8 @@
             "body": "Dura derrota hoy, jefe. Perdimos contra {{opponent}} {{userScore}}.\n\nHay cosas que aprender de este partido. Revisemos dónde nos equivocamos y volvamos más fuertes.\n\nLa temporada es larga — nos recuperaremos."
           },
           "defeat_2": {
-            "subject": "Derrota: {{opponent}} nos vence {{userScore}}",
-            "body": "No fue nuestro día, jefe. {{opponent}} nos ganó {{userScore}}.\n\nNecesitamos analizar qué salió mal y abordar los problemas antes del próximo partido. Prepararé un desglose detallado de los momentos clave.\n\nManténgase enfocado — aún queda mucho en juego."
+            "subject": "Derrota: {{opponent}} nos vence {{opponentScore}}",
+            "body": "No fue nuestro día, jefe. {{opponent}} nos ganó {{opponentScore}}.\n\nNecesitamos analizar qué salió mal y abordar los problemas antes del próximo partido. Prepararé un desglose detallado de los momentos clave.\n\nManténgase enfocado — aún queda mucho en juego."
           },
           "draw_1": {
             "subject": "Empate: {{home}} {{homeWins}}-{{awayWins}} {{away}}",

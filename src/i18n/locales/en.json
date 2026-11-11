@@ -2783,8 +2783,8 @@
             "body": "Tough loss today, coach. We lost to {{opponent}} {{userScore}}.\n\nThere are things to learn from this match. Let's review where we went wrong and come back stronger.\n\nThe season is long — we'll bounce back."
           },
           "defeat_2": {
-            "subject": "Loss: {{opponent}} defeats us {{userScore}}",
-            "body": "Not our day, coach. {{opponent}} beat us {{userScore}}.\n\nWe need to analyze what went wrong and address the issues before the next match. I'll prepare a detailed breakdown of the key moments.\n\nStay focused — there's still plenty to play for."
+            "subject": "Loss: {{opponent}} defeats us {{opponentScore}}",
+            "body": "Not our day, coach. {{opponent}} beat us {{opponentScore}}.\n\nWe need to analyze what went wrong and address the issues before the next match. I'll prepare a detailed breakdown of the key moments.\n\nStay focused — there's still plenty to play for."
           },
           "draw_1": {
             "subject": "Draw: {{home}} {{homeWins}}-{{awayWins}} {{away}}",

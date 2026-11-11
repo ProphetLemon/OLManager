@@ -2619,8 +2619,8 @@
             "body": "Dure défaite aujourd'hui, coach. Nous avons perdu contre {{opponent}} {{userScore}}.\n\nIl y a des enseignements à tirer de ce match. Analysons nos erreurs et revenons plus forts.\n\nLa saison est longue — nous nous relèverons."
           },
           "defeat_2": {
-            "subject": "Défaite : {{opponent}} nous bat {{userScore}}",
-            "body": "Pas notre jour, coach. {{opponent}} nous a battus {{userScore}}.\n\nNous devons analyser ce qui n'a pas fonctionné et régler les problèmes avant le prochain match. Je vais préparer un bilan détaillé des moments clés.\n\nRestez concentré — il y a encore beaucoup à jouer."
+            "subject": "Défaite : {{opponent}} nous bat {{opponentScore}}",
+            "body": "Pas notre jour, coach. {{opponent}} nous a battus {{opponentScore}}.\n\nNous devons analyser ce qui n'a pas fonctionné et régler les problèmes avant le prochain match. Je vais préparer un bilan détaillé des moments clés.\n\nRestez concentré — il y a encore beaucoup à jouer."
           },
           "draw_1": {
             "subject": "Match nul : {{home}} {{homeWins}}-{{awayWins}} {{away}}",

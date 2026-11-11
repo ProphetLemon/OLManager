@@ -81,21 +81,27 @@ const MATCH_RESULT_TEMPLATE_KEY = 'be.msg.matchResult.templates.';
 
 /**
  * Messages stored before the result templates used plain scores only carry
- * `score` ("<user team>:<own wins>-<opponent wins>"). Derive userScore, homeWins and
- * awayWins from it so those messages still render in the locale text.
+ * `score` ("<user team>:<own wins>-<opponent wins>"). Derive userScore, opponentScore,
+ * homeWins and awayWins from it so those messages still render in the locale text.
+ * Messages stored with userScore but without opponentScore get the reversed userScore.
  */
 function inferMatchResultScoreParams(msg: MessageData, params?: Record<string, string>) {
-  if (!params || !msg.subject_key?.startsWith(MATCH_RESULT_TEMPLATE_KEY) || params.userScore) return params;
+  if (!params || !msg.subject_key?.startsWith(MATCH_RESULT_TEMPLATE_KEY) || params.opponentScore) return params;
   const separator = params.score?.lastIndexOf(':') ?? -1;
   const wins = params.score?.slice(separator + 1).split('-');
-  if (separator < 0 || wins?.length !== 2) return params;
-  const userIsHome = params.score.slice(0, separator) === params.home;
-  return {
-    ...params,
-    userScore: `${wins[0]}-${wins[1]}`,
-    homeWins: userIsHome ? wins[0] : wins[1],
-    awayWins: userIsHome ? wins[1] : wins[0],
-  };
+  if (separator >= 0 && wins?.length === 2) {
+    const userIsHome = params.score.slice(0, separator) === params.home;
+    return {
+      ...params,
+      userScore: `${wins[0]}-${wins[1]}`,
+      opponentScore: `${wins[1]}-${wins[0]}`,
+      homeWins: userIsHome ? wins[0] : wins[1],
+      awayWins: userIsHome ? wins[1] : wins[0],
+    };
+  }
+  const userWins = params.userScore?.split('-');
+  if (userWins?.length === 2) return { ...params, opponentScore: `${userWins[1]}-${userWins[0]}` };
+  return params;
 }
 
 /**

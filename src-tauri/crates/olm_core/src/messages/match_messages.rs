@@ -198,6 +198,8 @@ pub fn match_result_message(
                 ("homeWins", &home_goals.to_string()),
                 ("awayWins", &away_goals.to_string()),
                 ("userScore", &format!("{user_goals}-{opp_goals}")),
+                // Opponent's wins first, for sentences whose subject is the opponent.
+                ("opponentScore", &format!("{opp_goals}-{user_goals}")),
                 ("opponent", opponent),
                 ("matchday", &matchday.to_string()),
             ],
