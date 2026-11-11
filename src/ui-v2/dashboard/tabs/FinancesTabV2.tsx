@@ -43,6 +43,7 @@ import {
   getSponsorshipContractView,
 } from "@/lib/finances/lolFinanceContracts";
 import { getLolRoleForPlayer } from "@/lib/squad/helpers";
+import { shortRoleKey } from "@/lib/squad/cards";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
@@ -327,7 +328,10 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
               <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.transferBudgetRemaining", "Transfer budget remaining")}</p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">{formatVal(teamTransferBudget)}</p>
               <p className="mt-1 text-2xs text-muted-foreground">
-                {t("finances.transferSpendThisSeason", "Transfer spend this season")}: {formatVal(transferBudgetSummary.spend)} spent
+                {t("finances.transferSpendThisSeason", "Transfer spend this season")}: {t("finances.transferSpentAmount", {
+                  amount: formatVal(transferBudgetSummary.spend),
+                  defaultValue: `${formatVal(transferBudgetSummary.spend)} spent`,
+                })}
               </p>
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
                 <div className="h-full rounded-full bg-primary/60 transition-all" style={{ width: `${Math.min(100, transferBudgetSummary.usagePercent)}%` }} />
@@ -422,7 +426,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
               <div className="rounded-lg bg-muted/50 p-3 text-center">
                 <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.projectedAnnualNet")}</p>
                 <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", projectedAnnualNet >= 0 ? "text-positive" : "text-negative")}>
-                  {activeCurrencySymbol()}{projectedAnnualNet.toLocaleString()}{annualSuffix}
+                  {formatCurrencyAmount(projectedAnnualNet)}{annualSuffix}
                 </p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3 text-center">
@@ -679,7 +683,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                       <span className="inline-flex items-center gap-1">
                         {key === "name" && t("common.player")}
                         {key === "position" && t("common.position")}
-                        {key === "wage" && t("finances.wagePerWeek")}
+                        {key === "wage" && t("finances.wagePerYear")}
                         {key === "value" && t("finances.marketValue")}
                         {key === "contract" && t("common.contract")}
                         {sortKey === key ? (
@@ -716,11 +720,11 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                       </TableCell>
                       <TableCell className={cn(i % 2 === 1 && "bg-muted/20")}>
                         <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
-                          {role}
+                          {t(shortRoleKey(role), { defaultValue: role })}
                         </span>
                       </TableCell>
                       <TableCell className={cn("tabular-nums text-sm text-foreground", i % 2 === 1 && "bg-muted/20")}>
-                        {activeCurrencySymbol()}{safeFinanceNumber(p.wage).toLocaleString()}
+                        {formatCurrencyAmount(safeFinanceNumber(p.wage))}
                       </TableCell>
                       <TableCell className={cn("tabular-nums text-sm text-muted-foreground", i % 2 === 1 && "bg-muted/20")}>
                         {formatVal(safeFinanceNumber(p.market_value))}
