@@ -597,15 +597,6 @@ const OBJECTIVE_ASSIST_RADIUS: f64 = 0.24;
 const MAJOR_OBJECTIVE_TEAM_ASSIST_RADIUS: f64 = 0.52;
 /// Baron and Elder heal back to full health when nobody hit them for this long.
 const MAJOR_OBJECTIVE_RESET_AFTER_SEC: f64 = 20.0;
-/// Share of its own max health a champion loses on every hit it lands on Baron
-/// or Elder. Sized from detector runs: at minutes 20 to 30 a champion at the pit
-/// has about 125 attack damage and 1,600 health, so Baron falls to one of them
-/// in about 67 hits and to three in about 22. At 0.5% a group of three each
-/// loses about 11% of its health and two champions about 17%, a lone attacker
-/// about a third. Larger values (1% and 2% were tried) made Baron and Elder too
-/// costly: matches ran 2 to 3 minutes longer and the stronger team of a 95 against
-/// 40 matchup won 78 to 81% of 72 matches instead of 85 to 92%.
-const MAJOR_OBJECTIVE_RETURN_DAMAGE_RATIO: f64 = 0.005;
 const BASE_DEFENSE_RECALL_DISTANCE: f64 = 0.34;
 const NEXUS_DEFENSE_THREAT_RADIUS: f64 = 0.13;
 const ALLY_HELP_RADIUS: f64 = 0.205;
@@ -5020,22 +5011,6 @@ fn mark_neutral_taken(
     }
 }
 
-/// Baron and Elder hit back: each hit a champion lands costs it a share of its
-/// max health, and it dies when that runs out.
-fn apply_major_objective_return_damage(runtime: &mut RuntimeState, champion_idx: usize) {
-    let now = runtime.time_sec;
-    let champion = &mut runtime.champions[champion_idx];
-    champion.hp -= champion.max_hp * MAJOR_OBJECTIVE_RETURN_DAMAGE_RATIO;
-    champion.last_damaged_at = now;
-    cancel_recall(champion, now, &mut runtime.events);
-    if champion.hp <= 0.0 && champion.alive {
-        champion.alive = false;
-        champion.hp = 0.0;
-        champion.deaths += 1;
-        champion.respawn_at = now + champion_respawn_seconds(champion.level, now);
-    }
-}
-
 fn attack_neutral_if_in_range(
     runtime: &mut RuntimeState,
     neutral_timers: &mut NeutralTimersRuntime,
@@ -5109,10 +5084,6 @@ fn attack_neutral_if_in_range(
             let next_segments_cleared = ((1.0 - next_ratio) * 3.0).floor() as i64;
             voidgrub_segments_gained = (next_segments_cleared - prev_segments_cleared).max(0);
         }
-    }
-
-    if is_major {
-        apply_major_objective_return_damage(runtime, champion_idx);
     }
 
     if key == "voidgrubs" && voidgrub_segments_gained > 0 {

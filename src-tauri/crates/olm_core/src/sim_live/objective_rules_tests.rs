@@ -125,38 +125,17 @@ fn two_champions_may_start_baron_when_the_enemy_has_two_alive() {
 }
 
 #[test]
-fn group_of_three_takes_baron_and_survives_with_a_health_cost() {
+fn group_of_three_takes_baron_without_losing_health() {
     let mut runtime = baron_runtime(3);
     let mut neutral = baron();
 
     let rounds = hit_baron_until_dead(&mut runtime, &mut neutral, &[0, 1, 2], 400);
 
     assert!(rounds.is_some(), "the group never finished Baron");
-    for idx in 0..3 {
-        let champion = &runtime.champions[idx];
-        let ratio = champion.hp / champion.max_hp;
+    for champion in &runtime.champions[..3] {
         assert!(champion.alive, "{} died", champion.id);
-        assert!(
-            (0.6..=0.97).contains(&ratio),
-            "{} ended at {:.0}% health",
-            champion.id,
-            ratio * 100.0
-        );
+        assert_eq!(champion.hp, champion.max_hp, "Baron must not hit back");
     }
-}
-
-#[test]
-fn a_lone_attacker_pays_for_every_hit_it_lands() {
-    // Two more champions stand at the pit without hitting, so the group is
-    // ready; only one of them attacks and ends up hurt.
-    let mut runtime = baron_runtime(3);
-    let mut neutral = baron();
-
-    let rounds = hit_baron_until_dead(&mut runtime, &mut neutral, &[0], 400);
-
-    assert!(rounds.is_some());
-    let ratio = runtime.champions[0].hp / runtime.champions[0].max_hp;
-    assert!(ratio < 0.8, "the lone attacker kept {:.0}% health", ratio * 100.0);
 }
 
 #[test]
@@ -171,30 +150,6 @@ fn two_champions_take_baron_when_the_enemy_has_two_alive_and_survive() {
 
     assert!(rounds.is_some());
     assert!(runtime.champions[0].alive && runtime.champions[1].alive);
-}
-
-#[test]
-fn baron_hits_back_at_every_attacker() {
-    let mut runtime = baron_runtime(3);
-    let mut neutral = baron();
-
-    attack_neutral_if_in_range(&mut runtime, &mut neutral, 1, "baron");
-
-    assert!(runtime.champions[1].hp < TYPICAL_MAX_HP, "Baron did not hit back");
-    let expected = TYPICAL_MAX_HP * (1.0 - MAJOR_OBJECTIVE_RETURN_DAMAGE_RATIO);
-    assert!((runtime.champions[1].hp - expected).abs() < 1e-6);
-}
-
-#[test]
-fn baron_return_damage_can_kill_a_weak_attacker() {
-    let mut runtime = baron_runtime(3);
-    runtime.champions[1].hp = 1.0;
-    let mut neutral = baron();
-
-    attack_neutral_if_in_range(&mut runtime, &mut neutral, 1, "baron");
-
-    assert!(!runtime.champions[1].alive);
-    assert_eq!(runtime.champions[1].deaths, 1);
 }
 
 #[test]
