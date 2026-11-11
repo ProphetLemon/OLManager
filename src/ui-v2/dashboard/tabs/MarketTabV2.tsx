@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 
 import type { GameStateData } from "@/store/gameStore";
-import { formatVal, getTeamName } from "@/lib/common/helpers";
+import { formatVal, getLocale, getTeamName } from "@/lib/common/helpers";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolveTransferTeamLogo } from "@/lib/teams/transferLogos";
 import { cn } from "@/ui-v2/lib/utils";
@@ -47,7 +47,7 @@ interface MarketTabV2Props {
 type FilterType = "all" | "user" | "ai";
 
 export function MarketTabV2({ gameState }: MarketTabV2Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [entries, setEntries] = useState<TransferHistoryEntryData[]>([]);
   const [filter, setFilter] = useState<FilterType>("all");
 
@@ -66,7 +66,7 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
   const formatDate = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
-      return d.toLocaleDateString(undefined, {
+      return d.toLocaleDateString(getLocale(i18n.language), {
         year: "numeric",
         month: "short",
         day: "numeric",

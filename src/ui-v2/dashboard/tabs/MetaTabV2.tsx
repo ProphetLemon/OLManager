@@ -257,15 +257,15 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
           </CardContent>
         </Card>
 
-        <Card className="flex min-h-0 flex-1 flex-col">
+        <Card className="shrink-0">
           <CardHeader className="flex-row items-center justify-between space-y-0 shrink-0">
             <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
               {t("meta.discoveryStats")}
             </CardTitle>
             <span className="font-heading text-xs tabular-nums text-club-text">{t("meta.complete", { pct: discoveredPct })}</span>
           </CardHeader>
-          <CardContent className="flex min-h-0 flex-1 flex-col">
-            <div className="flex flex-1 flex-col justify-between gap-2">
+          <CardContent className="flex flex-col">
+            <div className="flex flex-col gap-2">
               {TIER_ORDER.map((tier) => {
                 const discovered = tierRows[tier].length;
                 return (
@@ -285,7 +285,7 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
           </CardContent>
         </Card>
 
-        <Card className="flex min-h-0 flex-1 flex-col">
+        <Card className="shrink-0">
           <CardHeader className="flex-row items-center justify-between space-y-0 shrink-0">
             <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
               {t("champions.masteryTrainingTitle")}
@@ -299,7 +299,7 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
               {delegating ? t("champions.delegating") : t("champions.delegateToCoach")}
             </button>
           </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto scrollbar-v2">
+          <CardContent>
             {ownPlayers.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
                 {t("meta.noPlayers", { defaultValue: "No players on your team." })}

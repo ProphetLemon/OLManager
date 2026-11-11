@@ -667,6 +667,7 @@
     "setupLockedFirstWindow": "El primer día de scrims de esta semana ya ha empezado, así que la configuración está bloqueada. Se reabre el próximo lunes.",
     "setupLockedManual": "Has confirmado la configuración de esta semana, así que está bloqueada. Se reabre el próximo lunes.",
     "setupLockedWeekStarted": "Ya se ha jugado un bloque de scrims esta semana, así que la configuración está bloqueada. Se reabre el próximo lunes.",
+    "setupSomeSlotsPassed": "Algunos días de scrims de esta semana ya han pasado o se han jugado, así que no se pueden cambiar y Rellenar no está disponible. Aún puedes planificar los días que quedan; todo se reabre el próximo lunes.",
     "setupUnlockWindow": "La configuración se puede cambiar antes de que empiece el bloque",
     "streaks": "Rachas",
     "tags": {
@@ -1958,7 +1959,7 @@
     "matchesForDate": "Matches for {{date}}",
     "noFixtures": "No fixtures available",
     "noMatchesOnDay": "No matches on this day",
-    "thisWeek": "This Week",
+    "thisWeek": "Esta semana",
     "scrimVs": "Scrim vs {{team}}"
   },
   "players": {
@@ -3583,7 +3584,7 @@
           "reduceCancellations": "Reduce cancelaciones la semana que viene; la reputación de scrims es parte de tu infraestructura competitiva.",
           "resetBeforeVolume": "Abre la semana que viene con Reset Mental o VOD Review antes de sumar más volumen.",
           "narrowFocus": "Mantén el volumen, pero ajusta el foco alrededor del problema recurrente; la calidad está demasiado ruidosa.",
-          "targetedDrills": "Programa Targeted Drills para el problema recurrente y mantén estable el bloque principal de preparación.",
+          "targetedDrills": "Programa Ejercicios dirigidos para el problema recurrente y mantén estable el bloque principal de preparación.",
           "keepPlan": "Mantén el plan actual: está generando reps útiles sin sobrecargar al roster."
         }
       },
@@ -4112,9 +4113,10 @@
     "worstAgainst": "Worst Against"
   },
   "championsGrid": {
-    "championCount": "{{count}} champions",
-    "clearFilters": "Clear Filters",
-    "noResults": "No results"
+    "championCount_one": "{{count}} campeón",
+    "championCount_other": "{{count}} campeones",
+    "clearFilters": "Borrar filtros",
+    "noResults": "Sin resultados"
   },
   "competitions": {
     "heroMatches_one": "{{count}} partido",
@@ -4299,6 +4301,9 @@
       "formWin": "Victoria",
       "formLoss": "Derrota",
       "formDraw": "Empate",
+      "formWinLetter": "V",
+      "formLossLetter": "D",
+      "formDrawLetter": "E",
       "needsEmptyHint": "Puedes continuar cuando estés listo.",
       "moreContracts_one": "{{count}} renovación de contrato más no se muestra",
       "moreContracts_other": "{{count}} renovaciones de contrato más no se muestran",
@@ -4402,13 +4407,13 @@
       "urgentMessages_one": "{{count}} mensaje urgente sin leer",
       "urgentMessages_other": "{{count}} mensajes urgentes sin leer",
       "incompleteLineupTooFew": "Tu alineación tiene solo {{selected}} de los {{required}} jugadores que necesita — define tu alineación",
-      "incompleteLineupRoles_one": "A tu alineación le falta el rol {{roles}}. Asegúrate de tener TOP, JUNGLE, MID, ADC y SUPPORT.",
-      "incompleteLineupRoles_other": "A tu alineación le faltan los roles {{roles}}. Asegúrate de tener TOP, JUNGLE, MID, ADC y SUPPORT.",
+      "incompleteLineupRoles_one": "A tu alineación le falta el rol {{roles}}. Asegúrate de tener {{roleListHead}} y {{roleListLast}}.",
+      "incompleteLineupRoles_other": "A tu alineación le faltan los roles {{roles}}. Asegúrate de tener {{roleListHead}} y {{roleListLast}}.",
       "keyContractRisk": "Riesgo de contrato de jugadores clave en la planificación de la plantilla: {{players}}",
       "contractWageRisk": "{{amount}} de salarios están ligados a contratos en riesgo — revisa tu presupuesto salarial",
       "mainRosterMinimum_one": "Plantilla principal incompleta: tienes {{count}} jugador. Necesitas al menos 5 para avanzar.",
       "mainRosterMinimum_other": "Plantilla principal incompleta: tienes {{count}} jugadores. Necesitas al menos 5 para avanzar.",
-      "mainMissingRoles": "Plantilla principal incompleta por roles: falta al menos un jugador en {{roles}}. No puedes avanzar hasta cubrir TOP, JUNGLE, MID, ADC y SUPPORT.",
+      "mainMissingRoles": "Plantilla principal incompleta por roles: falta al menos un jugador en {{roles}}. No puedes avanzar hasta cubrir {{roleListHead}} y {{roleListLast}}.",
       "academyMissingRoles": "Academia incompleta: falta al menos un jugador en {{roles}}. No puedes avanzar hasta cubrir todos los roles."
     },
     "notices": {

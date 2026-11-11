@@ -169,7 +169,7 @@ export default function PlayerProfileHeroCardV2({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-sm">
-              <img src={ROLE_ICON_PATHS[role]} alt={role} className="size-5 object-contain" title={role} />
+              <img src={ROLE_ICON_PATHS[role]} alt={t(`onAir.roles.${role}`)} className="size-5 object-contain" title={t(`onAir.roles.${role}`)} />
               {player.alternate_positions && player.alternate_positions.length > 0 && (
                 <span className="text-muted-foreground/70">{t("playerProfile.alsoPlays")} {player.alternate_positions.join(", ")}</span>
               )}
@@ -202,7 +202,7 @@ export default function PlayerProfileHeroCardV2({
                         rerollingRole && "cursor-not-allowed opacity-60",
                       )}
                     >
-                      {r}
+                      {t(`onAir.roles.${r}`)}
                     </button>
                   ))}
                 </div>

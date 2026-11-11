@@ -36,6 +36,7 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { cn } from "@/ui-v2/lib/utils";
+import { ResultLetter } from "@/ui-v2/components/ResultLetter";
 import ScrimPlanningCardV2 from "./ScrimPlanningCardV2";
 
 interface ScrimsTabV2Props {
@@ -538,7 +539,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                             "flex-1 rounded-sm transition-all",
                             r.won ? "bg-positive/60" : "bg-negative/60",
                           )}
-                          title={`${teamNameById.get(r.opponent_team_id) ?? r.opponent_team_id}: ${r.won ? "W" : "L"}`}
+                          title={`${teamNameById.get(r.opponent_team_id) ?? r.opponent_team_id}: ${t(r.won ? "onAir.home.formWin" : "onAir.home.formLoss")}`}
                         />
                       ))}
                     </div>
@@ -559,7 +560,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                               {teamNameById.get(r.opponent_team_id) ?? r.opponent_team_id}
                             </p>
                             <span className={cn("text-2xs font-bold", r.won ? "text-positive" : "text-negative")}>
-                              {r.won ? "W" : "L"}
+                              <ResultLetter kind={r.won ? "win" : "loss"} />
                             </span>
                           </div>
                           <p className="mt-0.5 text-2xs text-muted-foreground">{scrimFocusLabel(t, r.focus)} · Q{r.quality}</p>

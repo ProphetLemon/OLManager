@@ -1791,7 +1791,7 @@
     "matchesForDate": "Matches for {{date}}",
     "noFixtures": "No fixtures available",
     "noMatchesOnDay": "No matches on this day",
-    "thisWeek": "This Week",
+    "thisWeek": "Bu hafta",
     "scrimVs": "{{team}} ile scrim"
   },
   "players": {
@@ -3401,7 +3401,7 @@
           "reduceCancellations": "Gelecek hafta iptalleri azalt; scrim itibarı rekabetçi altyapının bir parçasıdır.",
           "resetBeforeVolume": "Daha fazla hacim eklemeden önce gelecek haftaya Mental Reset veya VOD Review ile başla.",
           "narrowFocus": "Hacmi koru ama odağı tekrarlayan sorun etrafında daralt; kalite şu anda fazla dalgalı.",
-          "targetedDrills": "Tekrarlayan sorun için Targeted Drills planla ve ana hazırlık bloğunu sabit tut.",
+          "targetedDrills": "Tekrarlayan sorun için Hedefli antrenmanlar planla ve ana hazırlık bloğunu sabit tut.",
           "keepPlan": "Mevcut planı koru: kadroyu yormadan işe yarar tekrarlar üretiyor."
         }
       },
@@ -3952,6 +3952,7 @@
     "setupLockedFirstWindow": "Bu haftanın ilk scrim günü başladı, bu yüzden kurulum kilitli. Gelecek pazartesi yeniden açılır.",
     "setupLockedManual": "Bu haftanın kurulumunu onayladın, bu yüzden kilitli. Gelecek pazartesi yeniden açılır.",
     "setupLockedWeekStarted": "Bu hafta bir scrim bloğu zaten oynandı, bu yüzden kurulum kilitli. Gelecek pazartesi yeniden açılır.",
+    "setupSomeSlotsPassed": "Bu haftanın bazı scrim günleri geçti ya da oynandı; bu yüzden artık değiştirilemez ve Otomatik doldur kapalıdır. Kalan günleri yine de planlayabilirsin; her şey gelecek pazartesi yeniden açılır.",
     "setupUnlockWindow": "Kurulum blok başlamadan önce değiştirilebilir",
     "streaks": "Seriler",
     "tags": {
@@ -4113,9 +4114,10 @@
     "worstAgainst": "Worst Against"
   },
   "championsGrid": {
-    "championCount": "{{count}} champions",
-    "clearFilters": "Clear Filters",
-    "noResults": "No results"
+    "championCount_one": "{{count}} şampiyon",
+    "championCount_other": "{{count}} şampiyon",
+    "clearFilters": "Filtreleri temizle",
+    "noResults": "Sonuç yok"
   },
   "competitions": {
     "heroMatches_one": "{{count}} maç",
@@ -4300,6 +4302,9 @@
       "formWin": "Galibiyet",
       "formLoss": "Mağlubiyet",
       "formDraw": "Beraberlik",
+      "formWinLetter": "G",
+      "formLossLetter": "M",
+      "formDrawLetter": "B",
       "needsEmptyHint": "Hazır olduğunda devam edebilirsin.",
       "moreContracts_one": "{{count}} sözleşme yenileme daha gösterilmiyor",
       "moreContracts_other": "{{count}} sözleşme yenileme daha gösterilmiyor",
@@ -4403,13 +4408,13 @@
       "urgentMessages_one": "{{count}} okunmamış acil mesaj",
       "urgentMessages_other": "{{count}} okunmamış acil mesaj",
       "incompleteLineupTooFew": "Kadronda ihtiyaç duyulan {{required}} oyuncudan yalnızca {{selected}} tanesi var — kadronu belirle",
-      "incompleteLineupRoles_one": "Kadronda {{roles}} rolü eksik. TOP, JUNGLE, MID, ADC ve SUPPORT rollerinin hepsinin dolu olduğundan emin ol.",
-      "incompleteLineupRoles_other": "Kadronda {{roles}} rolleri eksik. TOP, JUNGLE, MID, ADC ve SUPPORT rollerinin hepsinin dolu olduğundan emin ol.",
+      "incompleteLineupRoles_one": "Kadronda {{roles}} rolü eksik. {{roleListHead}} ve {{roleListLast}} rollerinin hepsinin dolu olduğundan emin ol.",
+      "incompleteLineupRoles_other": "Kadronda {{roles}} rolleri eksik. {{roleListHead}} ve {{roleListLast}} rollerinin hepsinin dolu olduğundan emin ol.",
       "keyContractRisk": "Kadro planlamasında kilit oyuncu sözleşme riski: {{players}}",
       "contractWageRisk": "Maaşların {{amount}} tutarı riskli sözleşmelere bağlı — maaş bütçeni gözden geçir",
       "mainRosterMinimum_one": "Ana kadro eksik: {{count}} oyuncun var. İlerlemek için en az 5 oyuncu gerekir.",
       "mainRosterMinimum_other": "Ana kadro eksik: {{count}} oyuncun var. İlerlemek için en az 5 oyuncu gerekir.",
-      "mainMissingRoles": "Ana kadro rollere göre eksik: {{roles}} rolünde en az bir oyuncu eksik. TOP, JUNGLE, MID, ADC ve SUPPORT dolana kadar ilerleyemezsin.",
+      "mainMissingRoles": "Ana kadro rollere göre eksik: {{roles}} rolünde en az bir oyuncu eksik. {{roleListHead}} ve {{roleListLast}} dolana kadar ilerleyemezsin.",
       "academyMissingRoles": "Akademi eksik: {{roles}} rolünde en az bir oyuncu eksik. Tüm roller dolana kadar ilerleyemezsin."
     },
     "notices": {

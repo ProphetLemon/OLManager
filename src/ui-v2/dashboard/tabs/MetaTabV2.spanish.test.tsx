@@ -88,4 +88,24 @@ describe("MetaTabV2 in the Spanish UI", () => {
     const roleLabels = [...container.querySelectorAll("button[title]")].map((node) => node.getAttribute("title"));
     expect(roleLabels).toContain("Jungla");
   });
+
+  // jsdom has no layout, so the collapse is pinned through the class contract. The page is a
+  // fixed-height flex column that scrolls; a card there with `flex-1 min-h-0` has a flex basis of
+  // zero and shrinks below its content, so the next card is drawn over its list.
+  it("lets the discovery and mastery cards keep the height of their content", () => {
+    const { container, getByText } = render(<MetaTabV2 gameState={buildState()} onViewChampion={vi.fn()} />);
+    const page = container.firstElementChild as HTMLElement;
+    expect(page).toHaveClass("overflow-y-auto");
+
+    for (const title of [i18n.t("meta.discoveryStats"), i18n.t("champions.masteryTrainingTitle")]) {
+      const card = getByText(title).closest('[data-slot="card"]') as HTMLElement;
+      expect(card.parentElement).toBe(page);
+      expect(card, title).toHaveClass("shrink-0");
+      expect(card, title).not.toHaveClass("flex-1");
+      expect(card, title).not.toHaveClass("min-h-0");
+      const content = card.querySelector('[data-slot="card-content"]') as HTMLElement;
+      expect(content, title).not.toHaveClass("flex-1");
+      expect(content, title).not.toHaveClass("min-h-0");
+    }
+  });
 });

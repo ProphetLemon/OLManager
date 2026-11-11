@@ -1791,7 +1791,7 @@
     "matchesForDate": "Matches for {{date}}",
     "noFixtures": "No fixtures available",
     "noMatchesOnDay": "No matches on this day",
-    "thisWeek": "This Week",
+    "thisWeek": "Diese Woche",
     "scrimVs": "Scrim gegen {{team}}"
   },
   "players": {
@@ -3401,7 +3401,7 @@
           "reduceCancellations": "Reduziere die Absagen nächste Woche; der Scrim-Ruf gehört zu deiner Wettbewerbsinfrastruktur.",
           "resetBeforeVolume": "Beginne die nächste Woche mit Mental Reset oder VOD Review, bevor du mehr Volumen hinzufügst.",
           "narrowFocus": "Behalte das Volumen bei, aber fokussiere dich enger auf das wiederkehrende Problem; die Qualität schwankt gerade zu stark.",
-          "targetedDrills": "Plane Targeted Drills für das wiederkehrende Problem ein und halte den Haupt-Vorbereitungsblock stabil.",
+          "targetedDrills": "Plane Gezielte Übungen für das wiederkehrende Problem ein und halte den Haupt-Vorbereitungsblock stabil.",
           "keepPlan": "Behalte den aktuellen Plan bei: Er liefert nützliche Wiederholungen, ohne den Kader zu überlasten."
         }
       },
@@ -3961,6 +3961,7 @@
     "setupLockedFirstWindow": "Der erste Scrim-Tag dieser Woche hat bereits begonnen, deshalb ist die Planung gesperrt. Sie öffnet am nächsten Montag wieder.",
     "setupLockedManual": "Du hast die Planung dieser Woche bestätigt, deshalb ist sie gesperrt. Sie öffnet am nächsten Montag wieder.",
     "setupLockedWeekStarted": "In dieser Woche wurde bereits ein Scrim-Block gespielt, deshalb ist die Planung gesperrt. Sie öffnet am nächsten Montag wieder.",
+    "setupSomeSlotsPassed": "Einige Scrim-Tage dieser Woche sind bereits vorbei oder gespielt, daher lassen sie sich nicht mehr ändern und Automatisch füllen ist deaktiviert. Die verbleibenden Tage kannst du noch planen; am nächsten Montag öffnet alles wieder.",
     "setupUnlockWindow": "Die Planung kann vor Blockbeginn geändert werden",
     "streaks": "Serien",
     "tags": {
@@ -4113,9 +4114,10 @@
     "worstAgainst": "Worst Against"
   },
   "championsGrid": {
-    "championCount": "{{count}} champions",
-    "clearFilters": "Clear Filters",
-    "noResults": "No results"
+    "championCount_one": "{{count}} Champion",
+    "championCount_other": "{{count}} Champions",
+    "clearFilters": "Filter zurücksetzen",
+    "noResults": "Keine Ergebnisse"
   },
   "competitions": {
     "heroMatches_one": "{{count}} Spiel",
@@ -4300,6 +4302,9 @@
       "formWin": "Sieg",
       "formLoss": "Niederlage",
       "formDraw": "Unentschieden",
+      "formWinLetter": "S",
+      "formLossLetter": "N",
+      "formDrawLetter": "U",
       "needsEmptyHint": "Du kannst weitermachen, sobald du bereit bist.",
       "moreContracts_one": "{{count}} weitere Vertragsverlängerung nicht angezeigt",
       "moreContracts_other": "{{count}} weitere Vertragsverlängerungen nicht angezeigt",
@@ -4403,13 +4408,13 @@
       "urgentMessages_one": "{{count}} dringende ungelesene Nachricht",
       "urgentMessages_other": "{{count}} dringende ungelesene Nachrichten",
       "incompleteLineupTooFew": "Deine Aufstellung hat nur {{selected}} von {{required}} nötigen Spielern — lege deine Aufstellung fest",
-      "incompleteLineupRoles_one": "In deiner Aufstellung fehlt die Rolle {{roles}}. Stelle sicher, dass du TOP, JUNGLE, MID, ADC und SUPPORT hast.",
-      "incompleteLineupRoles_other": "In deiner Aufstellung fehlen die Rollen {{roles}}. Stelle sicher, dass du TOP, JUNGLE, MID, ADC und SUPPORT hast.",
+      "incompleteLineupRoles_one": "In deiner Aufstellung fehlt die Rolle {{roles}}. Stelle sicher, dass du {{roleListHead}} und {{roleListLast}} hast.",
+      "incompleteLineupRoles_other": "In deiner Aufstellung fehlen die Rollen {{roles}}. Stelle sicher, dass du {{roleListHead}} und {{roleListLast}} hast.",
       "keyContractRisk": "Vertragsrisiko bei Schlüsselspielern in der Kaderplanung: {{players}}",
       "contractWageRisk": "{{amount}} der Gehälter hängen an gefährdeten Verträgen — überprüfe dein Gehaltsbudget",
       "mainRosterMinimum_one": "Hauptkader unvollständig: Du hast {{count}} Spieler. Du brauchst mindestens 5, um fortzufahren.",
       "mainRosterMinimum_other": "Hauptkader unvollständig: Du hast {{count}} Spieler. Du brauchst mindestens 5, um fortzufahren.",
-      "mainMissingRoles": "Hauptkader nach Rollen unvollständig: Mindestens ein Spieler fehlt auf {{roles}}. Du kannst erst fortfahren, wenn TOP, JUNGLE, MID, ADC und SUPPORT besetzt sind.",
+      "mainMissingRoles": "Hauptkader nach Rollen unvollständig: Mindestens ein Spieler fehlt auf {{roles}}. Du kannst erst fortfahren, wenn {{roleListHead}} und {{roleListLast}} besetzt sind.",
       "academyMissingRoles": "Akademie unvollständig: Mindestens ein Spieler fehlt auf {{roles}}. Du kannst erst fortfahren, wenn alle Rollen besetzt sind."
     },
     "notices": {

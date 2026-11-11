@@ -39,7 +39,7 @@ import {
   TableRow,
 } from "@/ui-v2/components/ui/table";
 import { cn } from "@/ui-v2/lib/utils";
-import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
+import { activeCurrencySymbol, formatNumber } from "@/lib/formatting/valueFormatting";
 
 interface YouthTabV2Props {
   gameState: GameStateData;
@@ -424,7 +424,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-foreground">{option.source_team_name}</p>
                           <p className="truncate text-xs text-muted-foreground">
-                            {option.league_name} · {option.country} · {activeCurrencySymbol()}{option.acquisition_cost.toLocaleString()}
+                            {option.league_name} · {option.country} · {activeCurrencySymbol()}{formatNumber(option.acquisition_cost)}
                           </p>
                         </div>
                         <button

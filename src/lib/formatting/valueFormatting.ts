@@ -1,3 +1,6 @@
+import i18n from "i18next";
+import { getLocale } from "./dateFormatting";
+
 export function calcAge(dob: string, asOfDate: string): number {
     const birthDate = new Date(dob);
     const currentDate = new Date(asOfDate);
@@ -33,10 +36,15 @@ export function activeCurrencySymbol(): string {
     return currencySymbol(activeCurrency);
 }
 
+/** Plain number grouped and separated the way the app language writes it ("12.345" in Spanish). */
+export function formatNumber(value: number): string {
+    return value.toLocaleString(getLocale(i18n.language));
+}
+
 /** Exact (non-compact) amount, e.g. "$12,345", using the selected currency. */
 export function formatCurrencyAmount(value: number): string {
     const sign = value < 0 ? "-" : "";
-    return `${sign}${activeCurrencySymbol()}${Math.abs(value).toLocaleString()}`;
+    return `${sign}${activeCurrencySymbol()}${formatNumber(Math.abs(value))}`;
 }
 
 export function formatVal(value: number, currency: string = activeCurrency): string {

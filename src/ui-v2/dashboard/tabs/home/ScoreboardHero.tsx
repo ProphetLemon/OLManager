@@ -5,6 +5,7 @@ import { CalendarDays, Users } from "lucide-react";
 import type { RestNoticeData, ScoreboardData, SideData } from "@/lib/home/scoreboard";
 import { formatMatchDate } from "@/lib/formatting/dateFormatting";
 import { Button } from "@/ui-v2/components/ui/button";
+import { ResultLetter, type ResultKind } from "@/ui-v2/components/ResultLetter";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { ClubShield } from "@/ui-v2/components/ui/club-shield";
 import { ScoreNumeral } from "@/ui-v2/components/ui/score-numeral";
@@ -29,10 +30,10 @@ export function shortNameSizeClass(shortName: string): string {
   return "text-[1.75rem] @2xl:text-[2.25rem]";
 }
 
-const FORM_TONE: Record<"W" | "L" | "D", { tone: TagTone; key: string; fallback: string }> = {
-  W: { tone: "positive", key: "onAir.home.formWin", fallback: "Win" },
-  L: { tone: "negative", key: "onAir.home.formLoss", fallback: "Loss" },
-  D: { tone: "neutral", key: "onAir.home.formDraw", fallback: "Draw" },
+const FORM_TONE: Record<"W" | "L" | "D", { tone: TagTone; kind: ResultKind }> = {
+  W: { tone: "positive", kind: "win" },
+  L: { tone: "negative", kind: "loss" },
+  D: { tone: "neutral", kind: "draw" },
 };
 
 const ROLE_ORDER = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"] as const;
@@ -160,8 +161,7 @@ function OpponentForm({ opponent }: { opponent: SideData }) {
           return (
             <li key={`${index}-${result}`}>
               <TagBlock size="sm" tone={entry.tone} slant={false} className="min-w-6">
-                <span aria-hidden="true">{result}</span>
-                <span className="sr-only">{t(entry.key, { defaultValue: entry.fallback })}</span>
+                <ResultLetter kind={entry.kind} />
               </TagBlock>
             </li>
           );

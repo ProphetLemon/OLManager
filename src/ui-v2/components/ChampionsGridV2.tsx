@@ -96,9 +96,9 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
               key={role}
               active={roleFilter === role}
               onClick={() => { setRoleFilter(roleFilter === role ? "ALL" : role); resetPage(); }}
-              title={role}
+              title={t(`onAir.roles.${role}`)}
             >
-              <img src={LOL_ROLE_ICON_URLS[role]} alt={role} className="size-4 object-contain" />
+              <img src={LOL_ROLE_ICON_URLS[role]} alt={t(`onAir.roles.${role}`)} className="size-4 object-contain" />
             </RoleButton>
           ))}
         </div>
