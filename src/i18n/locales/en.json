@@ -1928,7 +1928,15 @@
     "statPts": "Pts",
     "statRep": "Rep",
     "statSquad": "Squad",
-    "statValue": "Value"
+    "statValue": "Value",
+    "colPos": "Pos",
+    "colTeam": "Team",
+    "colOvr": "OVR",
+    "colRep": "Rep",
+    "colValue": "Value",
+    "colWr": "WR",
+    "colPlayers": "Players",
+    "recordShort": "{{won}}W {{lost}}L"
   },
   "teamsList": {
     "yourTeam": "Your Team",

@@ -190,7 +190,7 @@ export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
                 </span>
                 {standing && (
                   <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-                    {standing.won}W {standing.lost}L{wr !== null ? ` · ${wr}%` : ""}
+                    {t("teams.recordShort", { won: standing.won, lost: standing.lost })}{wr !== null ? ` · ${wr}%` : ""}
                   </span>
                 )}
               </CardContent>
