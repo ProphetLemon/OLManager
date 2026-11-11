@@ -39,8 +39,10 @@ const TRANSLATED_KEYS = [
   "transfers.browseMarket",
   "competitions.title",
   "competitions.heroSeason",
-  "competitions.heroTeams",
-  "competitions.heroMatches",
+  "competitions.heroTeams_one",
+  "competitions.heroTeams_other",
+  "competitions.heroMatches_one",
+  "competitions.heroMatches_other",
   "competitions.viewStandings",
   "competitions.viewTeams",
   "competitions.viewPlayers",
@@ -73,6 +75,7 @@ const TRANSLATED_KEYS = [
   "playerProfile.loanListed",
   "playerProfile.potentialResearchProgress",
   "playerProfile.startPotentialResearch",
+  "playerProfile.careerSeasonColumn",
 ] as const;
 
 /** Keys that did not exist; the English text is the source. */
@@ -118,7 +121,7 @@ const NEW_KEYS = [
 /** Words that are the same in the target language as in English. */
 const SAME_AS_ENGLISH: Record<string, string[]> = {
   "competitions.tableHeader.diff": ["fr", "de", "it"],
-  "competitions.heroTeams": ["de"],
+  "competitions.heroMatches_one": ["fr"],
   "competitions.viewTeams": ["de"],
   "competitions.tableHeader.team": ["de"],
   "transfers.destination": ["fr"],

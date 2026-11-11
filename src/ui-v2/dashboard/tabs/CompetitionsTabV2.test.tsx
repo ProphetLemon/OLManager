@@ -59,3 +59,40 @@ describe("CompetitionsTabV2 initial selection", () => {
     expect(screen.getAllByText("LEC").length).toBeGreaterThan(1);
   });
 });
+
+describe("CompetitionsTabV2 league header", () => {
+  function stateWithFixtures(fixtureCount: number, teamCount: number): GameStateData {
+    const state = buildState("MID");
+    state.leagues[0].season = 3;
+    state.leagues[0].fixtures = Array.from({ length: fixtureCount }, (_, index) => ({
+      id: `f${index}`,
+      status: "Scheduled",
+    })) as never;
+    state.teams = Array.from({ length: teamCount }, (_, index) => ({
+      id: `t${index}`,
+      name: `Team ${index}`,
+      short_name: `T${index}`,
+      competition_id: "lec",
+    })) as never;
+    return state;
+  }
+
+  it("says the season, the team count and the match count", () => {
+    render(<CompetitionsTabV2 gameState={stateWithFixtures(12, 4)} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /LEC/ }));
+
+    expect(screen.getByText("Season 3")).toBeInTheDocument();
+    expect(screen.getByText("4 teams")).toBeInTheDocument();
+    expect(screen.getByText("12 matches")).toBeInTheDocument();
+  });
+
+  it("uses the singular for one team and one match", () => {
+    render(<CompetitionsTabV2 gameState={stateWithFixtures(1, 1)} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /LEC/ }));
+
+    expect(screen.getByText("1 team")).toBeInTheDocument();
+    expect(screen.getByText("1 match")).toBeInTheDocument();
+  });
+});

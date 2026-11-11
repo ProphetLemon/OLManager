@@ -1995,6 +1995,7 @@
     "assists": "Passes D.",
     "avgRating": "Note Moyenne",
     "careerHistory": "Historique de Carrière",
+    "careerSeasonColumn": "Saison",
     "noCareer": "Aucun historique de carrière — première saison.",
     "nApps": "{{count}} matchs",
     "nAssists": "{{count}} passes D.",
@@ -4094,9 +4095,11 @@
     "noResults": "No results"
   },
   "competitions": {
-    "heroMatches": "Matchs",
-    "heroSeason": "Saison",
-    "heroTeams": "Équipes",
+    "heroMatches_one": "{{count}} match",
+    "heroMatches_other": "{{count}} matchs",
+    "heroSeason": "Saison {{season}}",
+    "heroTeams_one": "{{count}} équipe",
+    "heroTeams_other": "{{count}} équipes",
     "noPlayers": "Aucun joueur trouvé",
     "noPlayersMatch": "Aucun joueur ne correspond à votre recherche",
     "noStandings": "Aucun classement disponible",

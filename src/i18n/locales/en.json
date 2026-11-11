@@ -2184,6 +2184,7 @@
     "assists": "Assists",
     "avgRating": "Avg Rating",
     "careerHistory": "Career History",
+    "careerSeasonColumn": "Season",
     "noCareer": "No career history yet — first season.",
     "nApps": "{{count}} apps",
     "nAssists": "{{count}} assists",
@@ -4128,9 +4129,11 @@
     "noResults": "No results"
   },
   "competitions": {
-    "heroMatches": "Matches",
-    "heroSeason": "Season",
-    "heroTeams": "Teams",
+    "heroMatches_one": "{{count}} match",
+    "heroMatches_other": "{{count}} matches",
+    "heroSeason": "Season {{season}}",
+    "heroTeams_one": "{{count}} team",
+    "heroTeams_other": "{{count}} teams",
     "noPlayers": "No players found",
     "noPlayersMatch": "No players match your search",
     "noStandings": "No standings available",

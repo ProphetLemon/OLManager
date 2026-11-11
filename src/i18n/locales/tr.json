@@ -1995,6 +1995,7 @@
     "assists": "Asistler",
     "avgRating": "OVR. Reyting",
     "careerHistory": "Kariyer Geçmişi",
+    "careerSeasonColumn": "Sezon",
     "noCareer": "Henüz kariyer geçmişi yok — ilk sezon.",
     "nApps": "{{count}} maç",
     "nAssists": "{{count}} asist",
@@ -4094,9 +4095,11 @@
     "noResults": "No results"
   },
   "competitions": {
-    "heroMatches": "Maçlar",
-    "heroSeason": "Sezon",
-    "heroTeams": "Takımlar",
+    "heroMatches_one": "{{count}} maç",
+    "heroMatches_other": "{{count}} maç",
+    "heroSeason": "Sezon {{season}}",
+    "heroTeams_one": "{{count}} takım",
+    "heroTeams_other": "{{count}} takım",
     "noPlayers": "Oyuncu bulunamadı",
     "noPlayersMatch": "Aramanızla eşleşen oyuncu yok",
     "noStandings": "Puan durumu mevcut değil",

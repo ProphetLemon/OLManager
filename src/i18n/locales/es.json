@@ -2173,6 +2173,7 @@
     "assists": "Asistencias",
     "avgRating": "Nota Media",
     "careerHistory": "Historial de Carrera",
+    "careerSeasonColumn": "Temporada",
     "noCareer": "Sin historial de carrera — primera temporada.",
     "nApps": "{{count}} partidos",
     "nAssists": "{{count}} asistencias",
@@ -4093,9 +4094,11 @@
     "noResults": "No results"
   },
   "competitions": {
-    "heroMatches": "Partidos",
-    "heroSeason": "Temporada",
-    "heroTeams": "Equipos",
+    "heroMatches_one": "{{count}} partido",
+    "heroMatches_other": "{{count}} partidos",
+    "heroSeason": "Temporada {{season}}",
+    "heroTeams_one": "{{count}} equipo",
+    "heroTeams_other": "{{count}} equipos",
     "noPlayers": "No se encontraron jugadores",
     "noPlayersMatch": "Ningún jugador coincide con tu búsqueda",
     "noStandings": "No hay clasificación disponible",
