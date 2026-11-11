@@ -845,3 +845,32 @@ fn arc_fraction_runs_from_zero_at_the_blue_base_to_one_at_the_red_base() {
     assert!(arc_fraction(path[0], path) < 1e-9);
     assert!((arc_fraction(path[path.len() - 1], path) - 1.0).abs() < 1e-9);
 }
+
+/// Distance of every node of `lane`'s path from the base of the team that walks
+/// it, as a fraction of the path, for blue and for red (red walks it reversed).
+fn node_distances_from_own_base(lane: &str) -> (Vec<f64>, Vec<f64>) {
+    let fractions = |team: &str| -> Vec<f64> {
+        let path = lane_path_for(team, lane);
+        let mut walked = vec![0.0];
+        for pair in path.windows(2) {
+            let last = *walked.last().expect("non-empty");
+            walked.push(last + dist(pair[0], pair[1]));
+        }
+        let total = *walked.last().expect("non-empty");
+        walked.iter().map(|w| w / total).collect()
+    };
+    (fractions("blue"), fractions("red"))
+}
+
+/// Anchors, the first-wave approach and the wave front are chosen by node index,
+/// so node k must sit equally far from the blue base on the blue path and from
+/// the red base on the red path. In the mid lane it did not: node 1 was 13% of
+/// the way from the blue base and 24% from the red base, which put the red
+/// laner in front of the wave first and handed it the lane (98% of matches).
+#[test]
+fn mid_lane_node_k_is_equally_far_from_both_bases() {
+    let (blue, red) = node_distances_from_own_base("mid");
+    for (k, (b, r)) in blue.iter().zip(&red).enumerate() {
+        assert!((b - r).abs() < 0.01, "mid node {k}: {b:.3} from the blue base but {r:.3} from the red base");
+    }
+}
