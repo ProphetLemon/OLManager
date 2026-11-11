@@ -93,6 +93,8 @@ fn show(texts: &DialogTexts) -> Answer {
     window.connect_destroy(|_| gtk::main_quit());
 
     window.show_all();
+    // Enter activates Continue; a button must be able to be the default first.
+    button.set_can_default(true);
     button.grab_default();
     gtk::main();
     // Let GTK finish tearing the window down before tao takes over.
