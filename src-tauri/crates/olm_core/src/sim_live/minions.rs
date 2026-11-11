@@ -271,8 +271,13 @@ pub(super) fn resolve_minion_combat(runtime: &mut RuntimeState) {
         if let Some(champion_idx) = enemy_champion {
             let defender_mult =
                 team_damage_reduction_multiplier(runtime, &runtime.champions[champion_idx].team);
-            runtime.champions[champion_idx].hp -=
-                attacker_damage * MINION_DAMAGE_TO_CHAMPION_MULTIPLIER * defender_mult;
+            let minion_damage = attacker_damage * MINION_DAMAGE_TO_CHAMPION_MULTIPLIER * defender_mult;
+            runtime.champions[champion_idx].hp -= minion_damage;
+            runtime.farm_ledger.record_damage(
+                &runtime.champions[champion_idx].id,
+                DamageSource::Minion,
+                minion_damage,
+            );
             runtime.champions[champion_idx].last_damaged_at = now;
             cancel_recall(
                 &mut runtime.champions[champion_idx],

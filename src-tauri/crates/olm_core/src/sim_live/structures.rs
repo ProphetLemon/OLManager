@@ -279,6 +279,11 @@ pub(super) fn apply_tower_shot_to_champion(
 ) {
     let now = runtime.time_sec;
     runtime.champions[champion_idx].hp -= super::TOWER_SHOT_DAMAGE;
+    runtime.farm_ledger.record_damage(
+        &runtime.champions[champion_idx].id,
+        super::DamageSource::Tower,
+        super::TOWER_SHOT_DAMAGE,
+    );
     runtime.champions[champion_idx].last_damaged_at = now;
     super::cancel_recall(
         &mut runtime.champions[champion_idx],

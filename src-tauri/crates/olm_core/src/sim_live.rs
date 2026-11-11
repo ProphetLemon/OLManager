@@ -32,7 +32,7 @@ use economy::{
     role_adjusted_income, tower_team_gold,
 };
 use events::{log_event, push_event};
-use farm_ledger::{FarmLedger, MinionKiller};
+use farm_ledger::{DamageSource, FarmLedger, MinionKiller};
 use gold_ledger::{GoldLedger, GoldSource};
 use layout::{
     BASE_POSITION_BLUE, BASE_POSITION_RED, LANE_PATH_BOT_BLUE, LANE_PATH_MID_BLUE,
@@ -4254,6 +4254,11 @@ fn tick_ignite_dot_effects(runtime: &mut RuntimeState, now: f64) {
         }
 
         runtime.champions[idx].hp -= SUMMONER_IGNITE_DPS * 0.2;
+        runtime.farm_ledger.record_damage(
+            &runtime.champions[idx].id,
+            DamageSource::Other,
+            SUMMONER_IGNITE_DPS * 0.2,
+        );
         runtime.champions[idx].last_damaged_at = now;
 
         if runtime.champions[idx].hp > 0.0 {
@@ -5418,6 +5423,12 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
             * attack_damage_multiplier
             * strength_mult;
         defender.hp -= outgoing;
+        runtime
+            .farm_ledger
+            .record_damage(&defender.id, DamageSource::Champion, outgoing);
+        runtime
+            .farm_ledger
+            .record_champion_hit(&defender.id, &attacker.role, outgoing);
         defender.last_damaged_by_champion_id = Some(attacker.id.clone());
         defender.last_damaged_by_champion_at = now;
         defender.last_damaged_at = now;
@@ -5455,6 +5466,12 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
             * attack_damage_multiplier
             * strength_mult;
         defender.hp -= outgoing;
+        runtime
+            .farm_ledger
+            .record_damage(&defender.id, DamageSource::Champion, outgoing);
+        runtime
+            .farm_ledger
+            .record_champion_hit(&defender.id, &attacker.role, outgoing);
         defender.last_damaged_by_champion_id = Some(attacker.id.clone());
         defender.last_damaged_by_champion_at = now;
         defender.last_damaged_at = now;
