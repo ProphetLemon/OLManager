@@ -189,8 +189,35 @@ fn match_result_locale_text_names_each_team_once_with_the_right_score() {
                             );
                         }
                         let user_form = format!("{user_wins}-{opp_wins}");
+                        let opp_form = format!("{opp_wins}-{user_wins}");
+                        let opponent_name =
+                            if user_is_home { "Beta Club" } else { "Alpha Squad" };
+                        // A sentence whose subject is the opponent shows the opponent's wins
+                        // first; one whose subject is the user's club shows the club's first.
+                        if user_wins != opp_wins && key.ends_with("defeat_2.body") {
+                            assert!(
+                                text.contains(&format!(
+                                    "{opponent_name} beat us {opp_wins}-{user_wins}"
+                                )) || text.contains(&format!(
+                                        "{opponent_name} nos ganó {opp_wins}-{user_wins}"
+                                    )),
+                                "opponent-subject sentence must lead with the opponent, {ctx}"
+                            );
+                        }
+                        if user_wins > opp_wins && key.ends_with("victory_1.body") {
+                            assert!(
+                                text.contains(&format!(
+                                    "beat {opponent_name} {user_wins}-{opp_wins}"
+                                )) || text.contains(&format!(
+                                        "ganado a {opponent_name} {user_wins}-{opp_wins}"
+                                    )),
+                                "user-subject sentence must lead with the club, {ctx}"
+                            );
+                        }
                         assert!(
-                            text.contains(&fixture_order) || text.contains(&user_form),
+                            text.contains(&fixture_order)
+                                || text.contains(&user_form)
+                                || text.contains(&opp_form),
                             "no score from the stated side, {ctx}"
                         );
                     }

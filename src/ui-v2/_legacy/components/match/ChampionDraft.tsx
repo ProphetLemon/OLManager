@@ -2945,7 +2945,7 @@ export default function ChampionDraft({
                       {t("match.draft.scrimSignalTitle", { defaultValue: "Scrim prep" })} +{controlledScrimBonusTotal}
                     </p>
                     <p className="mt-1 text-club-text/80">
-                      {controlledScrimSignal.reasons.join(" · ")}
+                      {controlledScrimSignal.reasons.map((reason) => t(`match.draft.scrimSignalReasons.${reason}`, { defaultValue: reason })).join(" · ")}
                     </p>
                   </div>
                 ) : null}

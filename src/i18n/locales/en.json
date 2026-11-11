@@ -1670,7 +1670,7 @@
       "System": "System",
       "JobOffer": "Job Offers"
     },
-    "all": "All",
+    "all": "All ({{count}})",
     "close": "Close"
   },
   "manager": {
@@ -2293,6 +2293,12 @@
       "masterySourceScouting": "Scouting",
       "masterySourceStaff": "Staff read",
       "assistantCoach": "Assistant coach",
+      "scrimSignalTitle": "Scrim prep",
+      "scrimSignalReasons": {
+        "recent champion reps": "recent champion reps",
+        "scrimmed core together": "scrimmed core together",
+        "recent prep vs this opponent": "recent prep vs this opponent"
+      },
       "playerLabel": "Player",
       "swapTargetTitle": "Choose champion to swap",
       "warnCounterLastPick": "Careful with {{champion}}: it is countering your last pick.",
@@ -2783,8 +2789,8 @@
             "body": "Tough loss today, coach. We lost to {{opponent}} {{userScore}}.\n\nThere are things to learn from this match. Let's review where we went wrong and come back stronger.\n\nThe season is long — we'll bounce back."
           },
           "defeat_2": {
-            "subject": "Loss: {{opponent}} defeats us {{userScore}}",
-            "body": "Not our day, coach. {{opponent}} beat us {{userScore}}.\n\nWe need to analyze what went wrong and address the issues before the next match. I'll prepare a detailed breakdown of the key moments.\n\nStay focused — there's still plenty to play for."
+            "subject": "Loss: {{opponent}} defeats us {{opponentScore}}",
+            "body": "Not our day, coach. {{opponent}} beat us {{opponentScore}}.\n\nWe need to analyze what went wrong and address the issues before the next match. I'll prepare a detailed breakdown of the key moments.\n\nStay focused — there's still plenty to play for."
           },
           "draw_1": {
             "subject": "Draw: {{home}} {{homeWins}}-{{awayWins}} {{away}}",

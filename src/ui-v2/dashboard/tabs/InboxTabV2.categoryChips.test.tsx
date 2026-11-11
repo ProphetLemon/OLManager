@@ -72,6 +72,12 @@ describe("InboxTabV2 category filter chips", () => {
     expect(screen.queryByText("Training (2)")).not.toBeInTheDocument();
   });
 
+  it("labels and counts the first chip like the others in a Spanish render", async () => {
+    await renderInbox("es");
+    expect(screen.getByRole("button", { name: "Todos (3)" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^All/ })).not.toBeInTheDocument();
+  });
+
   it("shows the English label for a Training message in an English render", async () => {
     await renderInbox("en");
     const label = en.inbox.categories.training;

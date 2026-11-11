@@ -1517,7 +1517,7 @@
       "System": "Sistem",
       "JobOffer": "İş Teklifleri"
     },
-    "all": "All",
+    "all": "Tümü ({{count}})",
     "close": "Close"
   },
   "manager": {
@@ -2128,6 +2128,12 @@
       "masterySourceScouting": "Gözlem",
       "masterySourceStaff": "Personel Görüşü",
       "assistantCoach": "Asistan koç",
+      "scrimSignalTitle": "Scrim hazırlığı",
+      "scrimSignalReasons": {
+        "recent champion reps": "şampiyonla yakın zamanda yapılan tekrarlar",
+        "scrimmed core together": "scrimlerde birlikte çalışılan çekirdek",
+        "recent prep vs this opponent": "bu rakibe karşı yakın zamanlı hazırlık"
+      },
       "playerLabel": "Oyuncu",
       "swapTargetTitle": "Değiştirilecek şampiyonu seçin",
       "warnCounterLastPick": "Dikkatli olun: {{champion}} son seçiminizi (last pick) counterlıyor.",
@@ -2619,8 +2625,8 @@
             "body": "Bugün zor bir yenilgi, koç. {{opponent}} karşısında {{userScore}} kaybettik.\n\nBu maçtan çıkarılacak dersler var. Nerede hata yaptığımızı inceleyip daha güçlü dönelim.\n\nSezon uzun — toparlanacağız."
           },
           "defeat_2": {
-            "subject": "Mağlubiyet: {{opponent}} bizi {{userScore}} yendi",
-            "body": "Bizim günümüz değildi, koç. {{opponent}} bizi {{userScore}} yendi.\n\nNelerin ters gittiğini analiz edip bir sonraki maçtan önce sorunları gidermeliyiz. Kilit anların ayrıntılı bir dökümünü hazırlayacağım.\n\nOdağımızı koruyalım — hâlâ oynanacak çok şey var."
+            "subject": "Mağlubiyet: {{opponent}} bizi {{opponentScore}} yendi",
+            "body": "Bizim günümüz değildi, koç. {{opponent}} bizi {{opponentScore}} yendi.\n\nNelerin ters gittiğini analiz edip bir sonraki maçtan önce sorunları gidermeliyiz. Kilit anların ayrıntılı bir dökümünü hazırlayacağım.\n\nOdağımızı koruyalım — hâlâ oynanacak çok şey var."
           },
           "draw_1": {
             "subject": "Beraberlik: {{home}} {{homeWins}}-{{awayWins}} {{away}}",

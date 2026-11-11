@@ -1368,7 +1368,7 @@
       "System": "Sistema",
       "JobOffer": "Offerte di lavoro"
     },
-    "all": "All",
+    "all": "Tutti ({{count}})",
     "close": "Close"
   },
   "manager": {
@@ -2098,6 +2098,12 @@
       "masterySourceScouting": "Scouting",
       "masterySourceStaff": "Staff read",
       "assistantCoach": "Assistant coach",
+      "scrimSignalTitle": "Preparazione scrim",
+      "scrimSignalReasons": {
+        "recent champion reps": "ripetizioni recenti con il campione",
+        "scrimmed core together": "nucleo allenato insieme negli scrim",
+        "recent prep vs this opponent": "preparazione recente contro questo avversario"
+      },
       "playerLabel": "Player",
       "swapTargetTitle": "Choose champion to swap",
       "warnCounterLastPick": "Careful with {{champion}}: it is countering your last pick.",
@@ -3095,8 +3101,8 @@
             "body": "Dura sconfitta oggi, coach. Abbiamo perso contro {{opponent}} {{userScore}}.\n\nCi sono cose da imparare da questa partita. Rivediamo dove abbiamo sbagliato e torniamo più forti.\n\nLa stagione è lunga — ci riprenderemo."
           },
           "defeat_2": {
-            "subject": "Sconfitta: {{opponent}} ci batte {{userScore}}",
-            "body": "Non è stato il nostro giorno, coach. {{opponent}} ci ha battuti {{userScore}}.\n\nDobbiamo analizzare cosa è andato storto e risolvere i problemi prima della prossima partita. Preparerò un'analisi dettagliata dei momenti chiave.\n\nRestiamo concentrati — c'è ancora molto in palio."
+            "subject": "Sconfitta: {{opponent}} ci batte {{opponentScore}}",
+            "body": "Non è stato il nostro giorno, coach. {{opponent}} ci ha battuti {{opponentScore}}.\n\nDobbiamo analizzare cosa è andato storto e risolvere i problemi prima della prossima partita. Preparerò un'analisi dettagliata dei momenti chiave.\n\nRestiamo concentrati — c'è ancora molto in palio."
           },
           "draw_1": {
             "subject": "Pareggio: {{home}} {{homeWins}}-{{awayWins}} {{away}}",
