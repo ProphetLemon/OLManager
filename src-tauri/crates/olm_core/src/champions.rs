@@ -490,6 +490,125 @@ fn base_role_score(role: &str) -> i16 {
     }
 }
 
+/// Games a pair is assumed to have played at a 50% win rate before its own results count.
+const ANCHOR_WIN_RATE_PRIOR_GAMES: f64 = 50.0;
+/// Relative change of presence per unit of (shrunk) win rate: one point of win rate is 4%.
+const ANCHOR_WIN_RATE_GAIN: f64 = 4.0;
+/// Bounds of the win-rate factor, so that an extreme record cannot erase or double presence.
+const ANCHOR_WIN_RATE_FACTOR_MIN: f64 = 0.5;
+const ANCHOR_WIN_RATE_FACTOR_MAX: f64 = 1.5;
+/// Every game has two picks per role (one per side).
+const PICKS_PER_ROLE_AND_GAME: u32 = 2;
+/// Rank quantile (0 = best of the role) and score of the centre of each tier band: the
+/// bands of `tier_from_rank` on the scale of `tier_to_score`.
+const ANCHOR_SCORE_POINTS: [(f64, f64); 5] = [
+    (0.06, 82.0),
+    (0.23, 70.0),
+    (0.49, 58.0),
+    (0.75, 46.0),
+    (0.93, 34.0),
+];
+const ANCHOR_SCORE_MIN: f64 = 30.0;
+const ANCHOR_SCORE_MAX: f64 = 84.0;
+
+#[derive(Deserialize)]
+struct ProBuildsFile {
+    games: u32,
+    champions: HashMap<String, HashMap<String, ProBuildsPair>>,
+}
+
+#[derive(Deserialize)]
+struct ProBuildsPair {
+    games: u32,
+    wins: u32,
+}
+
+/// Professional strength of a champion-role pair, from its record: its presence (share of the
+/// role's picks) scaled by its win rate shrunk toward 50%. No games gives 0, the lowest value.
+fn real_meta_anchor(games: u32, wins: u32, role_picks: u32) -> f64 {
+    if games == 0 || role_picks == 0 {
+        return 0.0;
+    }
+    let presence = f64::from(games) / f64::from(role_picks);
+    let shrunk_win_rate = (f64::from(wins) + ANCHOR_WIN_RATE_PRIOR_GAMES / 2.0)
+        / (f64::from(games) + ANCHOR_WIN_RATE_PRIOR_GAMES);
+    let factor = (1.0 + ANCHOR_WIN_RATE_GAIN * (shrunk_win_rate - 0.5))
+        .clamp(ANCHOR_WIN_RATE_FACTOR_MIN, ANCHOR_WIN_RATE_FACTOR_MAX);
+    presence * factor
+}
+
+/// Score on the game's tier scale for a pair that sits at `quantile` of its role (0 = best).
+fn anchor_score_at_quantile(quantile: f64) -> i16 {
+    let segment = ANCHOR_SCORE_POINTS
+        .windows(2)
+        .find(|pair| quantile <= pair[1].0)
+        .unwrap_or(&ANCHOR_SCORE_POINTS[ANCHOR_SCORE_POINTS.len() - 2..]);
+    let ((q0, s0), (q1, s1)) = (segment[0], segment[1]);
+    let score = s0 + (s1 - s0) * (quantile - q0) / (q1 - q0);
+    score.clamp(ANCHOR_SCORE_MIN, ANCHOR_SCORE_MAX).round() as i16
+}
+
+/// Anchor score of every pair of the role catalogue, by `champion_role_key`. Each role is
+/// ranked on its own and mapped onto the tier scale, so every role has the same share of
+/// every tier. Computed from the embedded builds file, never saved.
+fn real_meta_scores() -> &'static HashMap<String, i16> {
+    static SCORES: OnceLock<HashMap<String, i16>> = OnceLock::new();
+    SCORES.get_or_init(|| {
+        let raw = include_str!("../../../../assets/simulation/champion-builds.v1.json");
+        let builds: ProBuildsFile = serde_json::from_str(raw).unwrap_or(ProBuildsFile {
+            games: 0,
+            champions: HashMap::new(),
+        });
+        let role_picks = builds.games * PICKS_PER_ROLE_AND_GAME;
+        let record = |champion_id: &str, role: &str| {
+            let pair = builds
+                .champions
+                .get(champion_id)
+                .and_then(|roles| {
+                    roles
+                        .iter()
+                        .find(|(name, _)| normalize_role(name).as_deref() == Some(role))
+                })
+                .map(|(_, pair)| pair);
+            real_meta_anchor(
+                pair.map_or(0, |pair| pair.games),
+                pair.map_or(0, |pair| pair.wins),
+                role_picks,
+            )
+        };
+
+        let mut by_role: HashMap<&str, Vec<(&str, f64)>> = HashMap::new();
+        for (champion_id, role) in champion_catalog() {
+            by_role
+                .entry(role)
+                .or_default()
+                .push((champion_id, record(champion_id, role)));
+        }
+
+        let mut scores = HashMap::new();
+        for (role, mut pairs) in by_role {
+            pairs.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(b.0)));
+            let total = pairs.len() as f64;
+            for (rank, (champion_id, _)) in pairs.iter().enumerate() {
+                let quantile = (rank as f64 + 0.5) / total;
+                scores.insert(
+                    champion_role_key(champion_id, role),
+                    anchor_score_at_quantile(quantile),
+                );
+            }
+        }
+        scores
+    })
+}
+
+/// Anchor score of one catalogue pair.
+fn real_meta_score(champion_id: &str, role: &str) -> i16 {
+    real_meta_scores()
+        .get(&champion_role_key(champion_id, role))
+        .copied()
+        .unwrap_or_else(|| base_role_score(role))
+}
+
 fn upsert_mastery(game: &mut Game, player_id: &str, champion_id: &str, value: u8) {
     let today = today_str(game);
     if let Some(existing) = game.champion_masteries.iter_mut().find(|entry| {
@@ -671,19 +790,18 @@ fn ensure_initial_patch_state(game: &mut Game) {
     }
 
     ensure_patch_seed(&mut game.champion_patch);
-    let mut rng = StdRng::seed_from_u64(game.champion_patch.rng_seed);
 
-    let initial_working: Vec<WorkingMeta> = champion_catalog()
+    // A new career starts on the real professional meta. Sorted so that ties between
+    // roles at a tier boundary always break the same way.
+    let mut initial_working: Vec<WorkingMeta> = champion_catalog()
         .iter()
-        .map(|(champion_id, role)| {
-            let score = (base_role_score(role) + rng.random_range(-4..=4)).clamp(32, 82);
-            WorkingMeta {
-                champion_id: champion_id.clone(),
-                role: role.clone(),
-                score,
-            }
+        .map(|(champion_id, role)| WorkingMeta {
+            champion_id: champion_id.clone(),
+            role: role.clone(),
+            score: real_meta_score(champion_id, role),
         })
         .collect();
+    initial_working.sort_by(|a, b| (&a.role, &a.champion_id).cmp(&(&b.role, &b.champion_id)));
 
     let initial_tier_map = tier_map_from_working(&initial_working);
     let initial_meta: Vec<ChampionMetaEntry> = initial_working
@@ -1375,11 +1493,12 @@ fn apply_patch(game: &mut Game) {
     let mut working: Vec<WorkingMeta> = catalog
         .iter()
         .map(|(champion_id, role)| {
+            // Scores revert toward the pair's real professional strength.
+            let mean = real_meta_score(champion_id, role);
             let previous_score = previous_tier_by_role
                 .get(&champion_role_key(champion_id, role))
                 .map(|tier| tier_to_score(tier))
-                .unwrap_or(base_role_score(role));
-            let mean = base_role_score(role);
+                .unwrap_or(mean);
             let drift: i16 = rng.random_range(-5..=5);
             let reversion = (mean - previous_score) / 4;
             let score = (previous_score + drift + reversion).clamp(30, 84);
@@ -2027,5 +2146,246 @@ mod tests {
             current_role_for_player(game, team_id, &player.id, player.natural_position),
             expected,
         );
+    }
+
+    #[test]
+    fn anchor_grows_with_presence_at_equal_win_rate() {
+        assert!(real_meta_anchor(2000, 1000, 25842) > real_meta_anchor(1000, 500, 25842));
+    }
+
+    #[test]
+    fn anchor_grows_with_win_rate_at_equal_presence() {
+        assert!(real_meta_anchor(1000, 560, 25842) > real_meta_anchor(1000, 500, 25842));
+        assert!(real_meta_anchor(1000, 500, 25842) > real_meta_anchor(1000, 440, 25842));
+    }
+
+    #[test]
+    fn anchor_of_twenty_games_at_eighty_percent_loses_to_two_thousand_at_fifty_two() {
+        assert!(real_meta_anchor(20, 16, 25842) < real_meta_anchor(2000, 1040, 25842));
+    }
+
+    #[test]
+    fn anchor_without_games_is_the_lowest() {
+        assert_eq!(real_meta_anchor(0, 0, 25842), 0.0);
+        assert!(real_meta_anchor(1, 0, 25842) > 0.0);
+    }
+
+    #[test]
+    fn anchor_scores_cover_the_catalogue_with_the_same_tier_shares_in_every_role() {
+        let scores = real_meta_scores();
+        assert_eq!(scores.len(), champion_catalog().len());
+        for role in ["Top", "Jungle", "Mid", "ADC", "Support"] {
+            let mut role_scores: Vec<i16> = champion_catalog()
+                .iter()
+                .filter(|(_, r)| r == role)
+                .map(|(champion_id, r)| real_meta_score(champion_id, r))
+                .collect();
+            role_scores.sort_unstable_by_key(|score| std::cmp::Reverse(*score));
+            let total = role_scores.len();
+            assert!(role_scores[0] >= 80, "{role} best {}", role_scores[0]);
+            assert!(
+                role_scores[total - 1] <= 34,
+                "{role} worst {}",
+                role_scores[total - 1]
+            );
+            let s_cut = anchor_score_at_quantile(0.12);
+            let top_band = role_scores.iter().filter(|score| **score > s_cut).count();
+            let expected = (total as f64 * 0.12).round() as usize;
+            assert!(
+                top_band.abs_diff(expected) <= 1,
+                "{role}: {top_band} vs {expected}"
+            );
+        }
+    }
+
+    fn new_game_tiers() -> HashMap<(String, String), String> {
+        let mut game = game_with_lineup(Vec::new());
+        game.clock.current_date = test_date(2026, 1, 20);
+        game.champion_patch.rng_seed = 11;
+        ensure_initial_patch_state(&mut game);
+        game.champion_patch
+            .hidden_meta
+            .iter()
+            .map(|entry| {
+                (
+                    (entry.champion_id.clone(), entry.role.clone()),
+                    entry.tier.clone(),
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn new_game_meta_starts_on_the_professional_meta() {
+        let tiers = new_game_tiers();
+        for (champion, role) in [
+            ("Ezreal", "ADC"),
+            ("Yunara", "ADC"),
+            ("JarvanIV", "Jungle"),
+            ("XinZhao", "Jungle"),
+            ("Ryze", "Mid"),
+            ("KSante", "Top"),
+            ("Rumble", "Top"),
+            ("Nautilus", "Support"),
+        ] {
+            let tier = &tiers[&(champion.to_string(), role.to_string())];
+            assert!(
+                tier == "S" || tier == "A",
+                "{champion} {role} starts in tier {tier}"
+            );
+        }
+    }
+
+    #[test]
+    fn new_game_meta_keeps_the_tier_counts_of_the_old_seeding() {
+        let tiers = new_game_tiers();
+        // The old seeding ranked every pair at once, so these totals did not depend on the seed.
+        let count = |tier: &str| tiers.values().filter(|t| *t == tier).count();
+        assert_eq!(
+            ["S", "A", "B", "C", "D"].map(count),
+            [24, 44, 61, 44, 29]
+        );
+    }
+
+    #[test]
+    fn new_game_meta_gives_every_role_its_share_of_the_top_tier() {
+        let tiers = new_game_tiers();
+        for role in ["Top", "Jungle", "Mid", "ADC", "Support"] {
+            let in_role = tiers.keys().filter(|(_, r)| r == role).count();
+            let top = tiers
+                .iter()
+                .filter(|((_, r), tier)| r == role && *tier == "S")
+                .count();
+            let expected = (in_role as f64 * 0.12).round() as usize;
+            assert!(
+                top.abs_diff(expected) <= 2,
+                "{role}: {top} S of {in_role}, expected about {expected}"
+            );
+        }
+    }
+
+    /// Spearman correlation (average ranks for ties) between the tier list and the anchors.
+    fn rank_correlation_with_anchors(game: &Game) -> f64 {
+        fn average_ranks(values: &[f64]) -> Vec<f64> {
+            let mut order: Vec<usize> = (0..values.len()).collect();
+            order.sort_by(|a, b| values[*a].total_cmp(&values[*b]));
+            let mut ranks = vec![0.0; values.len()];
+            let mut start = 0;
+            while start < order.len() {
+                let mut end = start;
+                while end + 1 < order.len() && values[order[end + 1]] == values[order[start]] {
+                    end += 1;
+                }
+                for index in &order[start..=end] {
+                    ranks[*index] = (start + end) as f64 / 2.0;
+                }
+                start = end + 1;
+            }
+            ranks
+        }
+        let entries = &game.champion_patch.hidden_meta;
+        let tier_scores: Vec<f64> = entries
+            .iter()
+            .map(|entry| f64::from(tier_to_score(&entry.tier)))
+            .collect();
+        let anchors: Vec<f64> = entries
+            .iter()
+            .map(|entry| f64::from(real_meta_score(&entry.champion_id, &entry.role)))
+            .collect();
+        let (a, b) = (average_ranks(&tier_scores), average_ranks(&anchors));
+        let mean = (a.len() as f64 - 1.0) / 2.0;
+        let (mut cov, mut var_a, mut var_b) = (0.0, 0.0, 0.0);
+        for (x, y) in a.iter().zip(&b) {
+            cov += (x - mean) * (y - mean);
+            var_a += (x - mean).powi(2);
+            var_b += (y - mean).powi(2);
+        }
+        cov / (var_a * var_b).sqrt()
+    }
+
+    fn tier_list(game: &Game) -> Vec<(String, String, String)> {
+        let mut list: Vec<_> = game
+            .champion_patch
+            .hidden_meta
+            .iter()
+            .map(|e| (e.champion_id.clone(), e.role.clone(), e.tier.clone()))
+            .collect();
+        list.sort();
+        list
+    }
+
+    fn patched_game(seed: u64) -> Game {
+        let mut game = game_with_lineup(Vec::new());
+        game.clock.current_date = test_date(2026, 1, 6); // Tuesday
+        game.champion_patch.rng_seed = seed;
+        ensure_initial_patch_state(&mut game);
+        game
+    }
+
+    fn roll_one_patch(game: &mut Game) {
+        game.clock.current_date += chrono::Duration::days(PATCH_INTERVAL_DAYS);
+        apply_patch(game);
+    }
+
+    #[test]
+    fn a_year_of_patches_changes_the_tier_list_every_time_and_stays_near_the_anchors() {
+        for seed in [3, 17, 91, 4242] {
+            let mut game = patched_game(seed);
+            let mut previous = tier_list(&game);
+            let mut worst = 1.0_f64;
+            for patch in 1..=26 {
+                roll_one_patch(&mut game);
+                let current = tier_list(&game);
+                assert_ne!(current, previous, "seed {seed}: patch {patch} changed nothing");
+                previous = current;
+                worst = worst.min(rank_correlation_with_anchors(&game));
+            }
+            let last = rank_correlation_with_anchors(&game);
+            println!("seed {seed}: worst correlation {worst:.3}, after 26 patches {last:.3}");
+            assert!(worst > 0.85, "seed {seed}: correlation fell to {worst:.3}");
+        }
+    }
+
+    #[test]
+    fn an_old_save_drifts_toward_the_anchors_patch_after_patch() {
+        let mut game = patched_game(5);
+        // The old kind of state: tiers ranked from the role base plus noise, unrelated to the anchors.
+        let mut rng = StdRng::seed_from_u64(99);
+        let old_working: Vec<WorkingMeta> = champion_catalog()
+            .iter()
+            .map(|(champion_id, role)| WorkingMeta {
+                champion_id: champion_id.clone(),
+                role: role.clone(),
+                score: base_role_score(role) + rng.random_range(-4..=4),
+            })
+            .collect();
+        let old_tiers = tier_map_from_working(&old_working);
+        for entry in &mut game.champion_patch.hidden_meta {
+            entry.tier = old_tiers[&champion_role_key(&entry.champion_id, &entry.role)].clone();
+        }
+
+        let mut checkpoints = Vec::new();
+        for patch in 0..=12 {
+            if patch > 0 {
+                roll_one_patch(&mut game);
+            }
+            if [0, 3, 6, 12].contains(&patch) {
+                checkpoints.push(rank_correlation_with_anchors(&game));
+            }
+        }
+        println!("old save correlation after 0, 3, 6, 12 patches: {checkpoints:.3?}");
+        assert!(checkpoints[0].abs() < 0.2, "start {:.3}", checkpoints[0]);
+        assert!(checkpoints.windows(2).all(|w| w[1] > w[0]), "{checkpoints:?}");
+        assert!(checkpoints[3] > 0.8, "after 12 patches {:.3}", checkpoints[3]);
+    }
+
+    #[test]
+    fn a_save_without_the_new_fields_still_loads() {
+        let state: ChampionPatchState = serde_json::from_str(
+            r#"{"current_patch":3,"last_patch_date":null,"hidden_meta":[{"champion_id":"Ahri","role":"Mid"}]}"#,
+        )
+        .expect("a save from before the anchor still deserializes");
+        assert_eq!(state.hidden_meta[0].tier, "C");
+        assert_eq!(state.rng_seed, 0);
     }
 }

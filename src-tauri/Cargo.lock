@@ -2896,7 +2896,7 @@ dependencies = [
 
 [[package]]
 name = "openleaguemanager"
-version = "2026.1111.3"
+version = "2026.1111.4"
 dependencies = [
  "base64 0.22.1",
  "chrono",

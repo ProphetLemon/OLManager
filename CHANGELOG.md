@@ -4,6 +4,18 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1111.4] - 2026-11-11
+
+### Changed
+
+- In a live match each champion buys the items professionals build on that champion in that role: boots first, then five items, from 12,921 professional games of the last twelve months (item data of patch 16.22.1). A champion with too few professional games in a role keeps the items of its class, where five items that no longer exist were replaced by current ones. The strength and the cost of a build are the same as before: what changes is which items they are.
+- The champion meta of a career starts from the real professional meta (the champions professionals pick most, adjusted by how often they win) instead of a random one. The patch the game generates every two weeks still moves champions up and down, now around their real standing. An existing career keeps its tiers and moves toward the real meta over its next patches. Every role now gets the same share of each tier; before, supports were almost never in the top tier.
+
+### Added
+
+- The item, ward and summoner spell icons of the live scoreboard carry their name, for the pointer and for screen readers.
+- A data file that describes what each champion's abilities do, for a feature that is coming. The match does not use it yet.
+
 ## [2026.1111.3] - 2026-11-11
 
 ### Changed
