@@ -4178,18 +4178,22 @@
     "southAmerica": "South America"
   },
   "meta": {
-    "complete": "Complete",
+    "complete": "{{pct}}% complete",
+    "discoveryEffect": "{{value}} discovery",
     "discoveryStats": "Discovery Stats",
     "gainMaximum": "Maximum gain",
     "gainMinimal": "Minimal gain",
     "gainModerate": "Moderate gain",
+    "masteryEffect": "{{value}} mastery",
     "noPlayers": "No players found",
     "patchMeta": "Patch Meta",
     "priorityHigh": "High priority",
     "priorityLow": "Low priority",
     "priorityMedium": "Medium priority",
+    "tierDiscovered_one": "{{count}} discovered",
+    "tierDiscovered_other": "{{count}} discovered",
     "unknownPatch": "Unknown patch",
-    "updated": "Updated"
+    "updated": "Updated {{date}}"
   },
   "placeholder": {
     "pendingDesign": "Pending design — coming soon"

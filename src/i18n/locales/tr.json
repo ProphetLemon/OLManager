@@ -4144,18 +4144,22 @@
     "southAmerica": "South America"
   },
   "meta": {
-    "complete": "Complete",
-    "discoveryStats": "Discovery Stats",
-    "gainMaximum": "Maximum gain",
-    "gainMinimal": "Minimal gain",
-    "gainModerate": "Moderate gain",
-    "noPlayers": "No players found",
-    "patchMeta": "Patch Meta",
-    "priorityHigh": "High priority",
-    "priorityLow": "Low priority",
-    "priorityMedium": "Medium priority",
-    "unknownPatch": "Unknown patch",
-    "updated": "Updated"
+    "complete": "%{{pct}} tamamlandı",
+    "discoveryEffect": "{{value}} keşif",
+    "discoveryStats": "Keşif İstatistikleri",
+    "gainMaximum": "Maksimum kazanç",
+    "gainMinimal": "Minimum kazanç",
+    "gainModerate": "Orta düzey kazanç",
+    "masteryEffect": "{{value}} ustalık",
+    "noPlayers": "Oyuncu bulunamadı",
+    "patchMeta": "Yama Metası",
+    "priorityHigh": "Yüksek öncelik",
+    "priorityLow": "Düşük öncelik",
+    "priorityMedium": "Orta öncelik",
+    "tierDiscovered_one": "{{count}} keşfedildi",
+    "tierDiscovered_other": "{{count}} keşfedildi",
+    "unknownPatch": "Bilinmeyen yama",
+    "updated": "Güncelleme: {{date}}"
   },
   "placeholder": {
     "pendingDesign": "Pending design — coming soon"

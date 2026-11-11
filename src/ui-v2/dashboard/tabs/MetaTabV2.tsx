@@ -10,6 +10,7 @@ import {
 import { normalizeChampionKey } from "@/lib/champions/championIds";
 import { resolveChampionTile } from "@/lib/champions/championImages";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
+import { formatDate } from "@/lib/formatting/dateFormatting";
 import { delegateChampionTraining } from "@/services/playerService";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
@@ -51,6 +52,14 @@ function championDisplayName(championId: string): string {
   return championId;
 }
 
+const ROLE_LABEL_KEYS: Record<UiRole, string> = {
+  Top: "onAir.roles.TOP",
+  Jungle: "onAir.roles.JUNGLE",
+  Mid: "onAir.roles.MID",
+  ADC: "onAir.roles.ADC",
+  Support: "onAir.roles.SUPPORT",
+};
+
 const TIER_ORDER: Array<"S" | "A" | "B" | "C" | "D"> = ["S", "A", "B", "C", "D"];
 const TIER_SORT_WEIGHT: Record<string, number> = { S: 0, A: 1, B: 2, C: 3, D: 4 };
 
@@ -63,7 +72,7 @@ const TIER_BADGE_CLASS: Record<string, string> = {
 };
 
 export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [metaRoleFilter, setMetaRoleFilter] = useState<"ALL" | UiRole>("ALL");
   const [delegating, setDelegating] = useState(false);
 
@@ -145,9 +154,9 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
               {t("meta.patchMeta")}
             </CardTitle>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span>{formatStaffEffectPercent(staffEffects.metaDiscovery)} discovery</span>
+              <span>{t("meta.discoveryEffect", { value: formatStaffEffectPercent(staffEffects.metaDiscovery) })}</span>
               <span className="text-border">·</span>
-              <span>{formatStaffEffectPercent(staffEffects.development)} mastery</span>
+              <span>{t("meta.masteryEffect", { value: formatStaffEffectPercent(staffEffects.development) })}</span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -158,7 +167,7 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
                 </p>
                 {patch?.last_patch_date && (
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {t("meta.updated")} {patch.last_patch_date}
+                    {t("meta.updated", { date: formatDate(patch.last_patch_date, i18n.language) })}
                   </p>
                 )}
               </div>
@@ -198,9 +207,9 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
                       ? "border-primary bg-primary/10"
                       : "border-border hover:border-muted-foreground/50",
                   )}
-                  title={role}
+                  title={t(ROLE_LABEL_KEYS[role])}
                 >
-                  <img src={ROLE_ICON_URLS[role]} alt={role} className="size-3.5 object-contain" />
+                  <img src={ROLE_ICON_URLS[role]} alt={t(ROLE_LABEL_KEYS[role])} className="size-3.5 object-contain" />
                 </button>
               ))}
             </div>
@@ -234,7 +243,7 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
                                 alt={championDisplayName(entry.champion_id)}
                                 className="size-full object-cover"
                                 loading="lazy"
-                                title={`${championDisplayName(entry.champion_id)} · ${entry.role}`}
+                                title={`${championDisplayName(entry.champion_id)} · ${t(ROLE_LABEL_KEYS[normalizeRole(entry.role)])}`}
                               />
                             </div>
                           </button>
@@ -253,7 +262,7 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
             <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
               {t("meta.discoveryStats")}
             </CardTitle>
-            <span className="font-heading text-xs tabular-nums text-club-text">{discoveredPct}% {t("meta.complete")}</span>
+            <span className="font-heading text-xs tabular-nums text-club-text">{t("meta.complete", { pct: discoveredPct })}</span>
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col">
             <div className="flex flex-1 flex-col justify-between gap-2">
@@ -265,7 +274,7 @@ export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2
                       <div className="flex items-center gap-2">
                         <span className={cn("inline-flex size-5 items-center justify-center rounded text-2xs font-heading font-bold", TIER_BADGE_CLASS[tier])}>{tier}</span>
                         <span className="text-xs text-muted-foreground">
-                          {discovered} discovered
+                          {t("meta.tierDiscovered", { count: discovered })}
                         </span>
                       </div>
                     </div>

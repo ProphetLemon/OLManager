@@ -368,7 +368,7 @@
     "low": "Baja",
     "discoveryProgress": "Progreso de descubrimiento",
     "delegating": "Delegando...",
-    "delegateToCoach": "Delegar al assistant coach",
+    "delegateToCoach": "Delegar al entrenador asistente",
     "loading": "Cargando campeones...",
     "error": "Error al cargar",
     "empty": "No hay campeones disponibles",
@@ -4143,18 +4143,22 @@
     "southAmerica": "South America"
   },
   "meta": {
-    "complete": "Complete",
-    "discoveryStats": "Discovery Stats",
-    "gainMaximum": "Maximum gain",
-    "gainMinimal": "Minimal gain",
-    "gainModerate": "Moderate gain",
-    "noPlayers": "No players found",
-    "patchMeta": "Patch Meta",
-    "priorityHigh": "High priority",
-    "priorityLow": "Low priority",
-    "priorityMedium": "Medium priority",
-    "unknownPatch": "Unknown patch",
-    "updated": "Updated"
+    "complete": "{{pct}}% completado",
+    "discoveryEffect": "{{value}} de descubrimiento",
+    "discoveryStats": "Estadísticas de descubrimiento",
+    "gainMaximum": "Ganancia máxima",
+    "gainMinimal": "Ganancia mínima",
+    "gainModerate": "Ganancia moderada",
+    "masteryEffect": "{{value}} de maestría",
+    "noPlayers": "No se han encontrado jugadores",
+    "patchMeta": "Meta del parche",
+    "priorityHigh": "Prioridad alta",
+    "priorityLow": "Prioridad baja",
+    "priorityMedium": "Prioridad media",
+    "tierDiscovered_one": "{{count}} descubierto",
+    "tierDiscovered_other": "{{count}} descubiertos",
+    "unknownPatch": "Parche desconocido",
+    "updated": "Actualizado el {{date}}"
   },
   "placeholder": {
     "pendingDesign": "Pending design — coming soon"
