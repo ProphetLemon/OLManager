@@ -9,6 +9,7 @@ mod champion_fit;
 mod combat;
 mod economy;
 mod events;
+mod gold_ledger;
 mod layout;
 mod macro_ai;
 mod minions;
@@ -30,6 +31,7 @@ use economy::{
     role_adjusted_income, tower_team_gold,
 };
 use events::{log_event, push_event};
+use gold_ledger::{GoldLedger, GoldSource};
 use layout::{
     BASE_POSITION_BLUE, BASE_POSITION_RED, LANE_PATH_BOT_BLUE, LANE_PATH_MID_BLUE,
     LANE_PATH_TOP_BLUE, ROLE_SEEDS, STRUCTURE_LAYOUT,
@@ -120,6 +122,9 @@ pub(crate) struct RuntimeState {
     events: Vec<RuntimeEvent>,
     #[serde(default, skip)]
     lane_combat_state_by_champion: HashMap<String, LanerCombatStateRuntime>,
+    /// Gold by source for the economy harness; never read by the simulation.
+    #[serde(default, skip)]
+    gold_ledger: GoldLedger,
     #[serde(default)]
     #[serde(flatten)]
     extra: HashMap<String, Value>,
@@ -4275,6 +4280,7 @@ fn tick_ignite_dot_effects(runtime: &mut RuntimeState, now: f64) {
                         &killer_id,
                         CHAMPION_KILL_GOLD,
                         CHAMPION_KILL_XP,
+                        GoldSource::Kill,
                     );
                     log_event(
                         runtime,
@@ -4816,7 +4822,13 @@ fn mark_neutral_taken(
                     ((xp as f64) * OFFROLE_JUNGLE_REWARD_MULTIPLIER).round() as i64,
                 )
             };
-            add_gold_xp_to_champion(runtime, &killer_id, award_gold, award_xp);
+            add_gold_xp_to_champion(
+                runtime,
+                &killer_id,
+                award_gold,
+                award_xp,
+                GoldSource::JungleCamp,
+            );
         }
         if let Some(base_cs) = jungle_camp_cs_reward(key) {
             let award_cs = if killer_role == "JGL" {
@@ -4839,7 +4851,13 @@ fn mark_neutral_taken(
         match decision.kind {
             NeutralCaptureKind::Dragon => {
                 team_stats_mut(&mut runtime.stats, &killer_team).dragons += 1;
-                add_gold_xp_to_champion(runtime, &killer_id, DRAGON_SECURE_GOLD, DRAGON_SECURE_XP);
+                add_gold_xp_to_champion(
+                    runtime,
+                    &killer_id,
+                    DRAGON_SECURE_GOLD,
+                    DRAGON_SECURE_XP,
+                    GoldSource::Dragon,
+                );
                 let dragon_kind = process_dragon_capture(runtime, neutral_timers, &killer_team);
                 log_event(
                     runtime,
@@ -4853,8 +4871,14 @@ fn mark_neutral_taken(
             }
             NeutralCaptureKind::Baron => {
                 team_stats_mut(&mut runtime.stats, &killer_team).barons += 1;
-                add_gold_xp_to_champion(runtime, &killer_id, 0, BARON_SECURE_XP);
-                award_team_gold(runtime, &killer_team, BARON_TEAM_GOLD, true);
+                add_gold_xp_to_champion(runtime, &killer_id, 0, BARON_SECURE_XP, GoldSource::Baron);
+                award_team_gold(
+                    runtime,
+                    &killer_team,
+                    BARON_TEAM_GOLD,
+                    true,
+                    GoldSource::Baron,
+                );
                 let mut buffs = runtime_buffs_from_extra(runtime.extra.get("teamBuffs"));
                 team_buffs_mut(&mut buffs, &killer_team).baron_until =
                     runtime.time_sec + BARON_BUFF_DURATION_SEC;
@@ -4874,6 +4898,7 @@ fn mark_neutral_taken(
                     &killer_id,
                     OBJECTIVE_SECURE_GOLD + 35,
                     OBJECTIVE_SECURE_XP + 55,
+                    GoldSource::Elder,
                 );
                 let mut buffs = runtime_buffs_from_extra(runtime.extra.get("teamBuffs"));
                 team_buffs_mut(&mut buffs, &killer_team).elder_until =
@@ -4894,6 +4919,7 @@ fn mark_neutral_taken(
                     &killer_id,
                     OBJECTIVE_SECURE_GOLD + 20,
                     OBJECTIVE_SECURE_XP + 30,
+                    GoldSource::Herald,
                 );
                 set_rift_herald_charge(runtime, &killer_team, &killer_id);
                 log_event(
@@ -4911,6 +4937,7 @@ fn mark_neutral_taken(
                     &killer_id,
                     OBJECTIVE_SECURE_GOLD,
                     OBJECTIVE_SECURE_XP,
+                    GoldSource::Voidgrub,
                 );
                 log_event(
                     runtime,
@@ -4927,6 +4954,7 @@ fn mark_neutral_taken(
                     &killer_id,
                     OBJECTIVE_SECURE_GOLD,
                     OBJECTIVE_SECURE_XP,
+                    GoldSource::OtherObjective,
                 );
                 log_event(
                     runtime,
@@ -5013,6 +5041,7 @@ fn attack_neutral_if_in_range(
             &killer_id,
             (OBJECTIVE_SECURE_GOLD / 3) * voidgrub_segments_gained,
             (OBJECTIVE_SECURE_XP / 3) * voidgrub_segments_gained,
+            GoldSource::Voidgrub,
         );
 
         for _ in 0..voidgrub_segments_gained {
@@ -5467,7 +5496,7 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
 
     let killer_team_stats = team_stats_mut(&mut runtime.stats, &killer_team);
     killer_team_stats.kills += 1;
-    add_gold_xp_to_champion(runtime, &killer_id, kill_gold, kill_xp);
+    add_gold_xp_to_champion(runtime, &killer_id, kill_gold, kill_xp, GoldSource::Kill);
 
     let assisters: Vec<String> = runtime
         .champions
@@ -5492,7 +5521,13 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
             {
                 champion.assists += 1;
             }
-            add_gold_xp_to_champion(runtime, &assist_id, shared_gold, shared_xp);
+            add_gold_xp_to_champion(
+                runtime,
+                &assist_id,
+                shared_gold,
+                shared_xp,
+                GoldSource::Assist,
+            );
         }
     }
 
@@ -5568,7 +5603,7 @@ fn award_recent_champion_kill_credit(
 
     let (kill_gold, kill_xp) = champion_kill_rewards(&killer_snapshot, &victim_snapshot);
     team_stats_mut(&mut runtime.stats, &killer_team).kills += 1;
-    add_gold_xp_to_champion(runtime, &killer_id, kill_gold, kill_xp);
+    add_gold_xp_to_champion(runtime, &killer_id, kill_gold, kill_xp, GoldSource::Kill);
 
     log_event(
         runtime,
@@ -5652,7 +5687,13 @@ fn tower_damage_multiplier(at_time_sec: f64, structure: &StructureRuntime) -> f6
     1.0 - reduction
 }
 
-fn add_gold_xp_to_champion(runtime: &mut RuntimeState, champion_id: &str, gold: i64, xp: i64) {
+fn add_gold_xp_to_champion(
+    runtime: &mut RuntimeState,
+    champion_id: &str,
+    gold: i64,
+    xp: i64,
+    source: GoldSource,
+) {
     if let Some(champion) = runtime
         .champions
         .iter_mut()
@@ -5664,11 +5705,18 @@ fn add_gold_xp_to_champion(runtime: &mut RuntimeState, champion_id: &str, gold: 
         apply_level_scaling(champion);
         let team_stats = team_stats_mut(&mut runtime.stats, &champion.team);
         team_stats.gold += gold;
+        runtime.gold_ledger.record(champion_id, source, gold);
     }
 }
 
 /// Pays `gold` to each member of `team` (only the living ones when `alive_only`).
-fn award_team_gold(runtime: &mut RuntimeState, team: &str, gold: i64, alive_only: bool) {
+fn award_team_gold(
+    runtime: &mut RuntimeState,
+    team: &str,
+    gold: i64,
+    alive_only: bool,
+    source: GoldSource,
+) {
     let team = normalized_team(team);
     let mut paid = 0;
     for champion in runtime
@@ -5679,6 +5727,7 @@ fn award_team_gold(runtime: &mut RuntimeState, team: &str, gold: i64, alive_only
     {
         champion.gold += gold;
         paid += gold;
+        runtime.gold_ledger.record(&champion.id, source, gold);
     }
     team_stats_mut(&mut runtime.stats, team).gold += paid;
 }
@@ -5760,6 +5809,9 @@ fn register_minion_death(runtime: &mut RuntimeState, minion_idx: usize) {
             if !support_cs_blocked {
                 let gold = role_adjusted_income(&champion.role, gold);
                 champion.gold += gold;
+                runtime
+                    .gold_ledger
+                    .record(&champion.id, GoldSource::LaneMinion, gold);
                 champion.cs += 1;
                 if champion.role == "SUP" {
                     champion.last_support_cs_at = now;
@@ -5787,7 +5839,7 @@ fn destroy_structure(runtime: &mut RuntimeState, structure_idx: usize, attacker_
         let team_stats = team_stats_mut(&mut runtime.stats, attacker_team);
         team_stats.towers += 1;
         let reward = tower_team_gold(&runtime.structures[structure_idx].id);
-        award_team_gold(runtime, attacker_team, reward, false);
+        award_team_gold(runtime, attacker_team, reward, false, GoldSource::Tower);
     }
 
     let event_type = if runtime.structures[structure_idx].kind == "nexus" {
@@ -6434,3 +6486,6 @@ mod champion_fit_tests;
 
 #[cfg(test)]
 mod economy_fingerprint_tests;
+
+#[cfg(test)]
+mod gold_ledger_tests;
