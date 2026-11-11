@@ -208,7 +208,7 @@ fn run_lead_match(n: usize, strong_on_blue: bool, strong: Side, weak: Side) -> L
         }
         let minute_mark = (now / 60.0) as u32;
         if minute_mark >= 10
-            && minute_mark % 5 == 0
+            && minute_mark.is_multiple_of(5)
             && report.timeline.last().is_none_or(|(m, ..)| *m < minute_mark)
         {
             let kills = |team: &str| {
