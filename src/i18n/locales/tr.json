@@ -1712,7 +1712,8 @@
     "bidImpactBalance": "Kulüp bakiyesi {{before}} -> {{after}}",
     "bidImpactWagePressure": "Tahmini maaş bütçesi kullanımı: %{{percent}}",
     "bidImpactOverTransferBudget": "Bu teklif transfer bütçenizi aşıyor",
-    "bidImpactOverBalance": "Bu teklif kulübü borca sokar"
+    "bidImpactOverBalance": "Bu teklif kulübü borca sokar",
+    "contractLengthError": "Sözleşme 1 ile 5 yıl arasında olmalıdır."
   },
   "schedule": {
     "noSchedule": "Lig fikstürü bulunmuyor.",

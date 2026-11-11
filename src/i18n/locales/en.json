@@ -1865,7 +1865,8 @@
     "bidImpactBalance": "Club balance {{before}} -> {{after}}",
     "bidImpactWagePressure": "Projected wage budget usage {{percent}}%",
     "bidImpactOverTransferBudget": "This bid exceeds your transfer budget",
-    "bidImpactOverBalance": "This bid would push the club into debt"
+    "bidImpactOverBalance": "This bid would push the club into debt",
+    "contractLengthError": "The contract must last between 1 and 5 years."
   },
   "schedule": {
     "noSchedule": "No league schedule available.",

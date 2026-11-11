@@ -1711,7 +1711,8 @@
     "bidImpactBalance": "Saldo do clube {{before}} -> {{after}}",
     "bidImpactWagePressure": "Utilização prevista do orçamento salarial: {{percent}}%",
     "bidImpactOverTransferBudget": "Esta proposta excede o orçamento de transferências",
-    "bidImpactOverBalance": "Esta proposta deixaria o clube endividado"
+    "bidImpactOverBalance": "Esta proposta deixaria o clube endividado",
+    "contractLengthError": "O contrato deve durar entre 1 e 5 anos."
   },
   "schedule": {
     "noSchedule": "Nenhum calendário de liga disponível.",

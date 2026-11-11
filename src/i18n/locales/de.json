@@ -1712,7 +1712,8 @@
     "bidImpactBalance": "Vereinskonto {{before}} -> {{after}}",
     "bidImpactWagePressure": "Voraussichtliche Auslastung des Gehaltsbudgets: {{percent}}%",
     "bidImpactOverTransferBudget": "Dieses Gebot übersteigt dein Transferbudget",
-    "bidImpactOverBalance": "Dieses Gebot würde den Verein in die Schulden treiben"
+    "bidImpactOverBalance": "Dieses Gebot würde den Verein in die Schulden treiben",
+    "contractLengthError": "Der Vertrag muss zwischen 1 und 5 Jahren laufen."
   },
   "schedule": {
     "noSchedule": "Kein Ligaspielplan verfügbar.",
