@@ -130,3 +130,51 @@ fn legacy_facility_upgrade_entry_point_expands_the_hub_cap_safely() {
     assert_eq!(game.teams[0].facilities.as_main_facility_hub().level, 2);
     assert_eq!(game.teams[0].facilities.scouting, 2);
 }
+
+#[test]
+fn facility_upgrade_ledger_line_names_the_facility_through_a_key() {
+    let mut game = make_game();
+
+    club::upgrade_facility(&mut game.teams[0], FacilityType::Medical, "2025-06-16").unwrap();
+
+    let entry = &game.teams[0].financial_ledger[0];
+    assert_eq!(entry.description_key.as_deref(), Some("be.ledger.facilityUpgrade"));
+    assert_eq!(
+        entry.description_params.get("facility").map(String::as_str),
+        Some("be.ledger.facilityTypes.Medical")
+    );
+    assert_eq!(entry.description, "Facility upgrade: Medical");
+}
+
+#[test]
+fn main_hub_expansion_ledger_line_carries_a_translation_key() {
+    let mut game = make_game();
+
+    club::expand_main_facility_hub(&mut game.teams[0], "2025-06-16").unwrap();
+
+    let entry = &game.teams[0].financial_ledger[0];
+    assert_eq!(entry.description_key.as_deref(), Some("be.ledger.mainHubExpansion"));
+    assert!(entry.description_params.is_empty());
+    assert_eq!(entry.description, "Main facility hub expansion");
+}
+
+#[test]
+fn module_upgrade_ledger_line_names_the_module_through_a_key() {
+    let mut game = make_game();
+    club::expand_main_facility_hub(&mut game.teams[0], "2025-06-16").unwrap();
+
+    club::upgrade_main_facility_module(
+        &mut game.teams[0],
+        MainFacilityModuleKind::RecoverySuite,
+        "2025-06-16",
+    )
+    .unwrap();
+
+    let entry = game.teams[0].financial_ledger.last().expect("module line");
+    assert_eq!(entry.description_key.as_deref(), Some("be.ledger.moduleUpgrade"));
+    assert_eq!(
+        entry.description_params.get("module").map(String::as_str),
+        Some("finances.facilityRecoverySuite")
+    );
+    assert_eq!(entry.description, "Facility module upgrade: RecoverySuite");
+}

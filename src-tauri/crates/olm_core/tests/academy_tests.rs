@@ -243,6 +243,11 @@ fn academy_acquisition_records_canonical_ledger_date_and_source() {
     assert_eq!(entry.date, "2026-03-15");
     assert_eq!(entry.kind, FinancialTransactionKind::AcademyAcquisition);
     assert_eq!(entry.source, "academy");
+    assert_eq!(
+        entry.description_key.as_deref(),
+        Some("be.ledger.academyAcquisition")
+    );
+    assert!(entry.description_params.contains_key("name"));
     assert_eq!(entry.source_id.as_deref(), Some(source_team_id.as_str()));
     let expected_correlation = format!("academy-acquisition:lec-team:{source_team_id}");
     assert_eq!(

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 #[cfg(feature = "typescript")]
 use ts_rs::TS;
 
@@ -809,6 +810,13 @@ pub struct FinancialTransaction {
     pub source_id: Option<String>,
     #[serde(default)]
     pub correlation_id: Option<String>,
+    /// Optional i18n key for the line text (frontend resolves via t()). `description`
+    /// keeps the English text as the fallback for saves written before this field.
+    #[serde(default)]
+    pub description_key: Option<String>,
+    /// Interpolation parameters for `description_key` (names, never ids or amounts)
+    #[serde(default)]
+    pub description_params: HashMap<String, String>,
 }
 
 fn default_financial_transaction_source() -> String {

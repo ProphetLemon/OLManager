@@ -79,11 +79,52 @@ pub enum FinanceTransactionError {
     SignKindMismatch,
 }
 
+/// Translatable text of a ledger line: an i18n key plus its parameters. The English
+/// `description` of the transaction stays as the fallback.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LedgerText {
+    pub key: String,
+    pub params: HashMap<String, String>,
+}
+
+impl LedgerText {
+    pub fn new(key: &str, params: &[(&str, &str)]) -> Self {
+        Self {
+            key: key.to_string(),
+            params: params
+                .iter()
+                .map(|(name, value)| ((*name).to_string(), (*value).to_string()))
+                .collect(),
+        }
+    }
+}
+
 pub fn record_transaction(
     team: &mut Team,
     input: FinanceTransactionInput,
 ) -> Result<FinancialTransaction, FinanceTransactionError> {
+    record_transaction_inner(team, input, None)
+}
+
+/// Same as `record_transaction`, and the line carries a translation key with its parameters.
+pub fn record_transaction_with_text(
+    team: &mut Team,
+    input: FinanceTransactionInput,
+    text: LedgerText,
+) -> Result<FinancialTransaction, FinanceTransactionError> {
+    record_transaction_inner(team, input, Some(text))
+}
+
+fn record_transaction_inner(
+    team: &mut Team,
+    input: FinanceTransactionInput,
+    text: Option<LedgerText>,
+) -> Result<FinancialTransaction, FinanceTransactionError> {
     validate_transaction_input(&input)?;
+    let (description_key, description_params) = match text {
+        Some(text) => (Some(text.key), text.params),
+        None => (None, HashMap::new()),
+    };
 
     let balance_before = team.finance;
     let balance_after = balance_before + input.amount;
@@ -125,6 +166,8 @@ pub fn record_transaction(
         source: input.source,
         source_id: input.source_id,
         correlation_id: input.correlation_id,
+        description_key,
+        description_params,
     };
     team.financial_ledger.push(transaction.clone());
     Ok(transaction)
@@ -650,7 +693,7 @@ pub fn process_monthly_finances(game: &mut Game) {
             .find(|expenses| expenses.team_id == team.id);
 
         if let Some(expenses) = monthly_expenses {
-            record_transaction(
+            record_transaction_with_text(
                 team,
                 FinanceTransactionInput {
                     date: today.clone(),
@@ -663,9 +706,10 @@ pub fn process_monthly_finances(game: &mut Game) {
                     source_id: Some("player-wages".to_string()),
                     correlation_id: Some(format!("monthly:{}:{}:player-wages", team.id, today)),
                 },
+                LedgerText::new("be.ledger.playerWages", &[]),
             )
             .ok();
-            record_transaction(
+            record_transaction_with_text(
                 team,
                 FinanceTransactionInput {
                     date: today.clone(),
@@ -678,9 +722,10 @@ pub fn process_monthly_finances(game: &mut Game) {
                     source_id: Some("staff-wages".to_string()),
                     correlation_id: Some(format!("monthly:{}:{}:staff-wages", team.id, today)),
                 },
+                LedgerText::new("be.ledger.staffWages", &[]),
             )
             .ok();
-            record_transaction(
+            record_transaction_with_text(
                 team,
                 FinanceTransactionInput {
                     date: today.clone(),
@@ -693,6 +738,7 @@ pub fn process_monthly_finances(game: &mut Game) {
                     source_id: Some("monthly-upkeep".to_string()),
                     correlation_id: Some(format!("facility-upkeep:{}:{}", team.id, today)),
                 },
+                LedgerText::new("be.ledger.facilityUpkeep", &[]),
             )
             .ok();
 
@@ -736,7 +782,7 @@ pub fn process_monthly_finances(game: &mut Game) {
             .unwrap_or(0);
 
         if sponsorship_income > 0 {
-            record_transaction(
+            record_transaction_with_text(
                 team,
                 FinanceTransactionInput {
                     date: today.clone(),
@@ -749,6 +795,7 @@ pub fn process_monthly_finances(game: &mut Game) {
                     source_id: team.sponsorship.as_ref().map(|s| s.sponsor_name.clone()),
                     correlation_id: Some(format!("sponsor-payout:{}:{}", team.id, today)),
                 },
+                LedgerText::new("be.ledger.sponsorshipIncome", &[]),
             )
             .ok();
             if Some(team.id.as_str()) == user_team_id.as_deref()
@@ -850,7 +897,7 @@ pub fn process_monthly_finances(game: &mut Game) {
                     avg_ticket,
                 );
 
-                record_transaction(
+                record_transaction_with_text(
                     team,
                     FinanceTransactionInput {
                         date: today.clone(),
@@ -863,6 +910,7 @@ pub fn process_monthly_finances(game: &mut Game) {
                         source_id: Some("matchday".to_string()),
                         correlation_id: Some(format!("matchday:{}:{}", team.id, today)),
                     },
+                    LedgerText::new("be.ledger.matchdayRevenue", &[]),
                 )
                 .ok();
             }
