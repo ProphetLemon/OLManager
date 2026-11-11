@@ -44,6 +44,25 @@ fn minion_has_lane_combat_target(
 }
 
 pub(super) fn move_minions(runtime: &mut RuntimeState, dt: f64) {
+    // Whether a minion holds to fight is decided on the positions at the start
+    // of the tick. Deciding it as the loop goes lets a minion that moves first
+    // step into reach and stops every enemy behind it in the list for free,
+    // which always favoured blue and put the first contact of a wave on red's
+    // side of the lane.
+    let engaged: Vec<bool> = runtime
+        .minions
+        .iter()
+        .map(|minion| {
+            minion.alive
+                && minion.kind != "summon"
+                && minion_has_lane_combat_target(
+                    minion,
+                    &runtime.minions,
+                    &runtime.champions,
+                    &runtime.structures,
+                )
+        })
+        .collect();
     for i in 0..runtime.minions.len() {
         if !runtime.minions[i].alive {
             continue;
@@ -91,13 +110,7 @@ pub(super) fn move_minions(runtime: &mut RuntimeState, dt: f64) {
             }
         }
 
-        let snapshot = runtime.minions[i].clone();
-        if minion_has_lane_combat_target(
-            &snapshot,
-            &runtime.minions,
-            &runtime.champions,
-            &runtime.structures,
-        ) {
+        if engaged[i] {
             continue;
         }
 
@@ -107,7 +120,7 @@ pub(super) fn move_minions(runtime: &mut RuntimeState, dt: f64) {
             runtime.minions[i].pos,
             MINION_STRUCTURE_BLOCKER_APPROACH_RANGE,
         ) {
-            let target = runtime.structures[structure_idx].pos;
+            let target = symmetric_structure_pos(&runtime.structures[structure_idx]);
             let attack_range = runtime.minions[i]
                 .attack_range
                 .max(MINION_STRUCTURE_BLOCKER_ATTACK_RANGE);

@@ -476,7 +476,7 @@ fn reached(traces: &[FarmTrace], checkpoint: usize) -> Vec<&FarmTrace> {
 /// Creep-score gap (blue minus red) per lane and checkpoint.
 fn table_cs_gap(traces: &[FarmTrace]) {
     println!("\n== F1 creep-score gap of the two laners of a lane (n = matches reaching the minute) ==");
-    println!("{:<5}{:>4}{:>6}{:>9}{:>8}{:>8}{:>8}{:>8}{:>9}", "lane", "min", "n", "mean cs", "|gap|50", "|gap|75", "|gap|90", "mean gap", "blue>red");
+    println!("{:<5}{:>4}{:>6}{:>9}{:>8}{:>8}{:>8}{:>8}{:>9}{:>9}", "lane", "min", "n", "mean cs", "|gap|50", "|gap|75", "|gap|90", "mean gap", "+-95%", "blue>red");
     for (lane_slot, (role, _)) in LANES.iter().enumerate() {
         for (cp, minute) in CHECKPOINT_MINUTES.iter().enumerate() {
             let rows = reached(traces, cp);
@@ -490,14 +490,16 @@ fn table_cs_gap(traces: &[FarmTrace]) {
                 .collect();
             let abs = sorted_abs(gaps.iter().copied());
             let blue_ahead = gaps.iter().filter(|g| **g > 0.0).count() as f64 / gaps.len().max(1) as f64;
+            let spread = (gaps.iter().map(|g| (g - mean(&gaps)).powi(2)).sum::<f64>() / gaps.len().max(2) as f64).sqrt();
             println!(
-                "{role:<5}{minute:>4}{:>6}{:>9.1}{:>8.0}{:>8.0}{:>8.0}{:>8.1}{:>8.0}%",
+                "{role:<5}{minute:>4}{:>6}{:>9.1}{:>8.0}{:>8.0}{:>8.0}{:>8.1}{:>9.1}{:>8.0}%",
                 rows.len(),
                 mean(&cs),
                 percentile(&abs, 0.5),
                 percentile(&abs, 0.75),
                 percentile(&abs, 0.9),
                 mean(&gaps),
+                1.96 * spread / (gaps.len().max(1) as f64).sqrt(),
                 100.0 * blue_ahead
             );
         }
@@ -1040,6 +1042,26 @@ fn mid_lane_node_k_is_equally_far_from_both_bases() {
     let (blue, red) = node_distances_from_own_base("mid");
     for (k, (b, r)) in blue.iter().zip(&red).enumerate() {
         assert!((b - r).abs() < 0.01, "mid node {k}: {b:.3} from the blue base but {r:.3} from the red base");
+    }
+}
+
+/// Same rule for the L-shaped lanes. Their nodes are not evenly spaced (the
+/// blue path has five nodes up the first leg), so the red path, which is the
+/// blue one reversed, put its node 1 at 25% of the way from the red base
+/// against 8% from the blue base in the top lane.
+#[test]
+fn top_lane_node_k_is_equally_far_from_both_bases() {
+    let (blue, red) = node_distances_from_own_base("top");
+    for (k, (b, r)) in blue.iter().zip(&red).enumerate() {
+        assert!((b - r).abs() < 0.01, "top node {k}: {b:.3} from the blue base but {r:.3} from the red base");
+    }
+}
+
+#[test]
+fn bot_lane_node_k_is_equally_far_from_both_bases() {
+    let (blue, red) = node_distances_from_own_base("bot");
+    for (k, (b, r)) in blue.iter().zip(&red).enumerate() {
+        assert!((b - r).abs() < 0.01, "bot node {k}: {b:.3} from the blue base but {r:.3} from the red base");
     }
 }
 

@@ -4,7 +4,7 @@ use super::{
     ChampionRuntime, FIRST_WAVE_CONTEST_UNTIL, LANE_EMPTY_ANCHOR_PROGRESS_MAX_INDEX, LanePressure,
     LaneRoleProfile, MINION_FIRST_WAVE_AT, MinionRuntime, RuntimeState, StructureRuntime, Vec2,
     base_position_for, clamp, closest_lane_path_index, dist, lane_path_for, normalize,
-    normalized_lane, normalized_team,
+    normalized_lane, normalized_team, symmetric_structure_pos,
 };
 
 pub(super) fn lane_role_profile(champion: &ChampionRuntime) -> Option<LaneRoleProfile> {
@@ -166,13 +166,13 @@ pub(super) fn lane_pre_wave_hold_pos(
                 && normalized_lane(&s.lane) == normalized_lane(&champion.lane)
         })
         .max_by(|a, b| {
-            let idx_a = closest_lane_path_index(a.pos, &lane_path);
-            let idx_b = closest_lane_path_index(b.pos, &lane_path);
+            let idx_a = closest_lane_path_index(symmetric_structure_pos(a), &lane_path);
+            let idx_b = closest_lane_path_index(symmetric_structure_pos(b), &lane_path);
             idx_a.cmp(&idx_b)
         });
 
     if let Some(tower) = allied_lane_tower {
-        return lane_fallback_pos_from_tower(champion, tower.pos, false);
+        return lane_fallback_pos_from_tower(champion, symmetric_structure_pos(tower), false);
     }
 
     lane_path

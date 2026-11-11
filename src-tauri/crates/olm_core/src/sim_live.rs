@@ -3142,8 +3142,8 @@ fn lane_farm_anchor_pos_v2(
         }
     }
 
-    // After lane start, MID should play tightly around wave instead of static lane anchor.
-    if champion.role == "MID" && now > FIRST_WAVE_CONTEST_UNTIL {
+    // After lane start, every solo laner plays tightly around the wave instead of a static lane anchor.
+    if matches!(champion.role.as_str(), "MID" | "TOP" | "ADC") && now > FIRST_WAVE_CONTEST_UNTIL {
         return Vec2 {
             x: clamp(wave_front.x, 0.01, 0.99),
             y: clamp(wave_front.y, 0.01, 0.99),
@@ -3167,30 +3167,31 @@ fn lane_farm_anchor_pos_v2(
                 && normalized_lane(&s.lane) == normalized_lane(&champion.lane)
         })
         .min_by(|a, b| {
-            dist(champion.pos, a.pos)
-                .partial_cmp(&dist(champion.pos, b.pos))
+            dist(champion.pos, symmetric_structure_pos(a))
+                .partial_cmp(&dist(champion.pos, symmetric_structure_pos(b)))
                 .unwrap_or(Ordering::Equal)
                 .then_with(|| a.id.cmp(&b.id))
         });
     let wave_at_own_tower = allied_lane_tower
-        .map(|tower| dist(wave_front, tower.pos) <= 0.11)
+        .map(|tower| dist(wave_front, symmetric_structure_pos(tower)) <= 0.11)
         .unwrap_or(false);
 
     if wave_at_own_tower && champion.role != "SUP"
         && let Some(tower) = allied_lane_tower {
+            let tower_pos = symmetric_structure_pos(tower);
             let to_wave_from_tower = normalize(Vec2 {
-                x: wave_front.x - tower.pos.x,
-                y: wave_front.y - tower.pos.y,
+                x: wave_front.x - tower_pos.x,
+                y: wave_front.y - tower_pos.y,
             });
             let front_offset = clamp(champion.attack_range * 0.7, 0.02, 0.034);
             return Vec2 {
                 x: clamp(
-                    tower.pos.x + to_wave_from_tower.x * front_offset,
+                    tower_pos.x + to_wave_from_tower.x * front_offset,
                     0.01,
                     0.99,
                 ),
                 y: clamp(
-                    tower.pos.y + to_wave_from_tower.y * front_offset,
+                    tower_pos.y + to_wave_from_tower.y * front_offset,
                     0.01,
                     0.99,
                 ),
@@ -5209,8 +5210,8 @@ fn should_engage_enemy_champion(
         structure.alive
             && structure.kind == "tower"
             && normalized_team(&structure.team) == normalized_team(&target.team)
-            && dist(structure.pos, target.pos) <= TOWER_AGGRO_VICTIM_RADIUS
-            && dist(structure.pos, attacker.pos) <= TOWER_AGGRO_ATTACKER_RADIUS
+            && dist(symmetric_structure_pos(structure), target.pos) <= TOWER_AGGRO_VICTIM_RADIUS
+            && dist(symmetric_structure_pos(structure), attacker.pos) <= TOWER_AGGRO_ATTACKER_RADIUS
     });
 
     if target_under_defending_tower && fight_plan != "Dive" {
@@ -5280,8 +5281,8 @@ fn can_champion_tower_dive(
         structure.alive
             && structure.kind == "tower"
             && normalized_team(&structure.team) == normalized_team(&target.team)
-            && dist(structure.pos, target.pos) <= TOWER_AGGRO_VICTIM_RADIUS
-            && dist(structure.pos, attacker.pos) <= TOWER_AGGRO_ATTACKER_RADIUS
+            && dist(symmetric_structure_pos(structure), target.pos) <= TOWER_AGGRO_VICTIM_RADIUS
+            && dist(symmetric_structure_pos(structure), attacker.pos) <= TOWER_AGGRO_ATTACKER_RADIUS
     });
 
     let Some(tower) = defending_tower else {
@@ -5947,6 +5948,28 @@ fn nearest_enemy_minion_index(
         .map(|(idx, _)| idx)
 }
 
+/// Where the lane play treats `structure` as standing: minions walking to a
+/// turret, laners keeping to their own turret, a turret's reach. The two sides
+/// of the map are mirror images, but the structure coordinates are not exact
+/// mirrors of each other (the top outer turrets differ by 0.009, the bottom
+/// ones by 0.017), and minions walk toward any turret within 0.24, so a gap
+/// that small decided which wave reached the other side's turret first. Red's
+/// structures are taken at the mirror of blue's. The structures themselves,
+/// and what the frontend draws, do not move.
+fn symmetric_structure_pos(structure: &StructureRuntime) -> Vec2 {
+    if normalized_team(&structure.team) != "red" {
+        return structure.pos;
+    }
+    let blue_id = structure.id.replacen("red-", "blue-", 1);
+    STRUCTURE_LAYOUT
+        .iter()
+        .find(|seed| seed.id == blue_id)
+        .map_or(structure.pos, |seed| Vec2 {
+            x: seed.pos.y,
+            y: seed.pos.x,
+        })
+}
+
 fn nearest_enemy_structure_index(
     structures: &[StructureRuntime],
     team: &str,
@@ -5963,11 +5986,11 @@ fn nearest_enemy_structure_index(
                 && (normalized_lane(&structure.lane) == normalized_lane(lane)
                     || structure.lane == "base")
                 && is_structure_targetable(structures, team, structure)
-                && dist(structure.pos, from) <= range
+                && dist(symmetric_structure_pos(structure), from) <= range
         })
         .min_by(|(idx_a, a), (idx_b, b)| {
-            dist(a.pos, from)
-                .partial_cmp(&dist(b.pos, from))
+            dist(symmetric_structure_pos(a), from)
+                .partial_cmp(&dist(symmetric_structure_pos(b), from))
                 .unwrap_or(Ordering::Equal)
                 .then_with(|| idx_a.cmp(idx_b))
         })
@@ -5988,13 +6011,13 @@ fn nearest_enemy_structure_blocker_index(
                 && structure.kind != "nexus"
                 && normalized_team(&structure.team) != normalized_team(team)
                 && is_structure_targetable(structures, team, structure)
-                && dist(structure.pos, from) <= range
+                && dist(symmetric_structure_pos(structure), from) <= range
         })
         .min_by(|(idx_a, a), (idx_b, b)| {
             let priority_a = if a.kind == "tower" { 0.0 } else { 0.035 };
             let priority_b = if b.kind == "tower" { 0.0 } else { 0.035 };
-            (dist(a.pos, from) + priority_a)
-                .partial_cmp(&(dist(b.pos, from) + priority_b))
+            (dist(symmetric_structure_pos(a), from) + priority_a)
+                .partial_cmp(&(dist(symmetric_structure_pos(b), from) + priority_b))
                 .unwrap_or(Ordering::Equal)
                 .then_with(|| idx_a.cmp(idx_b))
         })
@@ -6524,3 +6547,9 @@ mod economy_harness_tests;
 
 #[cfg(test)]
 mod farm_harness_tests;
+
+#[cfg(test)]
+mod symmetry_tests;
+
+#[cfg(test)]
+mod lane_play_tests;

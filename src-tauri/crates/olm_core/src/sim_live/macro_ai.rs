@@ -15,7 +15,7 @@ use super::{
     lane_fallback_pos_from_tower, lane_farm_anchor_pos_v2, lane_path_for, lane_pre_wave_hold_pos,
     lane_pressure_at, lane_role_profile, lane_wave_front_pos, normalize, normalized_lane,
     normalized_team, set_champion_direct_path, set_champion_direct_path_hysteresis, start_recall,
-    stat_delta,
+    stat_delta, symmetric_structure_pos,
 };
 
 const FORCED_LANE_RECALL_COOLDOWN_SEC: f64 = 55.0;
@@ -281,7 +281,9 @@ pub(super) fn pick_allied_lane_fallback_tower(
                 && normalized_team(&s.team) == normalized_team(&champion.team)
                 && normalized_lane(&s.lane) == normalized_lane(&champion.lane)
         })
-        .map(|(idx, tower)| (idx, closest_lane_path_index(tower.pos, lane_path)))
+        .map(|(idx, tower)| {
+            (idx, closest_lane_path_index(symmetric_structure_pos(tower), lane_path))
+        })
         .collect();
 
     towers.sort_by(|(idx_a, path_a), (idx_b, path_b)| {
@@ -426,7 +428,8 @@ pub(super) fn lane_retreat_anchor_pos(
     };
     let tower = &structures[tower_idx];
 
-    let tower_fallback = lane_fallback_pos_from_tower(champion, tower.pos, emergency);
+    let tower_fallback =
+        lane_fallback_pos_from_tower(champion, symmetric_structure_pos(tower), emergency);
     if champion.state == "recall" {
         return tower_fallback;
     }
