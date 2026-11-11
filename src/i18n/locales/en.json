@@ -2335,6 +2335,8 @@
       },
       "playerLabel": "Player",
       "swapTargetTitle": "Choose champion to swap",
+      "offRoleWarning": "{{champion}} is not a {{role}} champion. It will perform worse in the match.",
+      "offRolePickWarning": "{{champion}} has no free role in your team: someone will play off-role and perform worse in the match.",
       "warnCounterLastPick": "Careful with {{champion}}: it is countering your last pick.",
       "warnTimingIdentity": "We are missing a clear timing identity. Look for an Early or Late pick to close better.",
       "warnRoleCoverage": "We still have role gaps. Add a more flexible pick.",

@@ -2170,6 +2170,8 @@
       },
       "playerLabel": "Joueur",
       "swapTargetTitle": "Choisir un champion à échanger",
+      "offRoleWarning": "{{champion}} n'est pas un champion {{role}}. Il sera moins performant pendant le match.",
+      "offRolePickWarning": "{{champion}} n'a aucun rôle libre dans votre équipe : un joueur évoluera hors rôle et sera moins performant pendant le match.",
       "warnCounterLastPick": "Attention à {{champion}} : il contre votre dernier pick.",
       "warnTimingIdentity": "Il manque une identité de timing claire. Cherchez un pick Early ou Late pour mieux conclure.",
       "warnRoleCoverage": "Il reste des trous de rôle. Ajoutez un pick plus flexible.",
