@@ -31,7 +31,7 @@ export interface StandingsPanelData {
 
 const DEFAULT_LIMIT = 8;
 /** Leagues up to this size list every club instead of cutting at the limit. */
-const FULL_TABLE_MAX = 9;
+const FULL_TABLE_MAX = 10;
 const SHORT_NAME_MAX = 4;
 
 /** Names that already fit are kept; longer ones collapse to their initials (or a prefix for one word). */
