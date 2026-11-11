@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
@@ -291,11 +292,7 @@ export default function DashboardV2() {
   }, [gameState]);
   const todayMatchFixture = gameState ? getTodayMatchFixture(gameState) : null;
   const hasMatchToday = todayMatchFixture !== null;
-  const activeLeague = gameState?.user_competition_id
-    ? gameState.leagues.find(
-        (league) => league.competition_id === gameState.user_competition_id,
-      ) ?? gameState.leagues[0]
-    : gameState?.leagues[0];
+  const activeLeague = resolveUserLeague(gameState);
   const pendingSeasonSummary = useGameStore((s) => s.pendingSeasonSummary);
   // After advance_to_next_season the new league is not complete, but the wrap
   // summary must stay on Home until the user dismisses it.

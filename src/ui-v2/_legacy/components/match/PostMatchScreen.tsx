@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
@@ -190,7 +191,7 @@ export default function PostMatchScreen({
     ? (roundSummary?.completed_results || [])
         .filter((result) => result.fixture_id !== currentFixture?.id)
         .map((result) => {
-          const fixture = gameState.leagues?.[0]?.fixtures.find(
+          const fixture = resolveUserLeague(gameState)?.fixtures.find(
             (candidate) => candidate.id === result.fixture_id,
           );
 
@@ -213,7 +214,7 @@ export default function PostMatchScreen({
             awayTeamName: string;
           } => entry !== null,
         )
-    : (gameState.leagues?.[0]?.fixtures || [])
+    : (resolveUserLeague(gameState)?.fixtures || [])
         .filter(
           (fixture) =>
             fixture.id !== currentFixture?.id &&

@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { create } from 'zustand';
 import type { EndOfSeasonSummaryData, GameStateData } from './types';
 import { useTabUiStore } from './tabUiStore';
@@ -92,10 +93,7 @@ export {
 
 /** Return the player's active league */
 export function useActiveLeague(state: GameStateData) {
-  if (state.user_competition_id) {
-    return state.leagues.find((l) => l.competition_id === state.user_competition_id);
-  }
-  return state.leagues[0];
+  return resolveUserLeague(state) ?? undefined;
 }
 
 /** Return all competitions (for browsing/switching) */
