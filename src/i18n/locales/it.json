@@ -3760,6 +3760,7 @@
     "setupLockedFirstWindow": "Il primo giorno di scrim di questa settimana è già iniziato, quindi la configurazione è bloccata. Si riapre lunedì prossimo.",
     "setupLockedManual": "Hai confermato la configurazione di questa settimana, quindi è bloccata. Si riapre lunedì prossimo.",
     "setupLockedWeekStarted": "Questa settimana è già stato giocato un blocco di scrim, quindi la configurazione è bloccata. Si riapre lunedì prossimo.",
+    "setupSomeSlotsPassed": "Alcuni giorni di scrim di questa settimana sono già passati o giocati, quindi non si possono più modificare e Compila auto è disattivato. Puoi ancora pianificare i giorni rimasti; tutto si riapre lunedì prossimo.",
     "setupUnlockWindow": "L'impostazione può essere modificata prima dell'inizio del blocco",
     "streaks": "Serie",
     "tags": {

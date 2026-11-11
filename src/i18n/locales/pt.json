@@ -3960,6 +3960,7 @@
     "setupLockedFirstWindow": "O primeiro dia de scrims desta semana já começou, por isso a configuração está bloqueada. Reabre na próxima segunda-feira.",
     "setupLockedManual": "Confirmaste a configuração desta semana, por isso está bloqueada. Reabre na próxima segunda-feira.",
     "setupLockedWeekStarted": "Já foi jogado um bloco de scrims esta semana, por isso a configuração está bloqueada. Reabre na próxima segunda-feira.",
+    "setupSomeSlotsPassed": "Alguns dias de scrims desta semana já passaram ou foram jogados, por isso já não se podem alterar e Preencher não está disponível. Ainda podes planear os dias que restam; tudo reabre na próxima segunda-feira.",
     "setupUnlockWindow": "A configuração pode ser alterada antes de o bloco começar",
     "streaks": "Sequências",
     "tags": {

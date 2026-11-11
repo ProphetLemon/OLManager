@@ -3961,6 +3961,7 @@
     "setupLockedFirstWindow": "Der erste Scrim-Tag dieser Woche hat bereits begonnen, deshalb ist die Planung gesperrt. Sie öffnet am nächsten Montag wieder.",
     "setupLockedManual": "Du hast die Planung dieser Woche bestätigt, deshalb ist sie gesperrt. Sie öffnet am nächsten Montag wieder.",
     "setupLockedWeekStarted": "In dieser Woche wurde bereits ein Scrim-Block gespielt, deshalb ist die Planung gesperrt. Sie öffnet am nächsten Montag wieder.",
+    "setupSomeSlotsPassed": "Einige Scrim-Tage dieser Woche sind bereits vorbei oder gespielt, daher lassen sie sich nicht mehr ändern und Automatisch füllen ist deaktiviert. Die verbleibenden Tage kannst du noch planen; am nächsten Montag öffnet alles wieder.",
     "setupUnlockWindow": "Die Planung kann vor Blockbeginn geändert werden",
     "streaks": "Serien",
     "tags": {

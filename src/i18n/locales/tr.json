@@ -3952,6 +3952,7 @@
     "setupLockedFirstWindow": "Bu haftanın ilk scrim günü başladı, bu yüzden kurulum kilitli. Gelecek pazartesi yeniden açılır.",
     "setupLockedManual": "Bu haftanın kurulumunu onayladın, bu yüzden kilitli. Gelecek pazartesi yeniden açılır.",
     "setupLockedWeekStarted": "Bu hafta bir scrim bloğu zaten oynandı, bu yüzden kurulum kilitli. Gelecek pazartesi yeniden açılır.",
+    "setupSomeSlotsPassed": "Bu haftanın bazı scrim günleri geçti ya da oynandı; bu yüzden artık değiştirilemez ve Otomatik doldur kapalıdır. Kalan günleri yine de planlayabilirsin; her şey gelecek pazartesi yeniden açılır.",
     "setupUnlockWindow": "Kurulum blok başlamadan önce değiştirilebilir",
     "streaks": "Seriler",
     "tags": {

@@ -667,6 +667,7 @@
     "setupLockedFirstWindow": "This week's first scrim day has already started, so the setup is locked. It reopens next Monday.",
     "setupLockedManual": "You confirmed this week's setup, so it is locked. It reopens next Monday.",
     "setupLockedWeekStarted": "A scrim block of this week has already been played, so the setup is locked. It reopens next Monday.",
+    "setupSomeSlotsPassed": "Some scrim days of this week have already passed or been played, so they can no longer be changed and Autofill is off. You can still plan the days that are left; everything reopens next Monday.",
     "setupUnlockWindow": "Setup may be changed before block begins",
     "streaks": "Streaks",
     "tags": {

@@ -3961,6 +3961,7 @@
     "setupLockedFirstWindow": "Le premier jour de scrims de cette semaine a déjà commencé, la configuration est donc verrouillée. Elle rouvre lundi prochain.",
     "setupLockedManual": "Vous avez confirmé la configuration de cette semaine, elle est donc verrouillée. Elle rouvre lundi prochain.",
     "setupLockedWeekStarted": "Un bloc de scrims a déjà été joué cette semaine, la configuration est donc verrouillée. Elle rouvre lundi prochain.",
+    "setupSomeSlotsPassed": "Certains jours de scrims de cette semaine sont déjà passés ou joués : ils ne peuvent plus être modifiés et Remplir auto est désactivé. Tu peux encore planifier les jours restants ; tout rouvre lundi prochain.",
     "setupUnlockWindow": "La configuration peut être modifiée avant le début du bloc",
     "streaks": "Séries",
     "tags": {
