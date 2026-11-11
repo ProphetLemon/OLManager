@@ -496,34 +496,44 @@ fn full_matches_end_the_same_at_every_speed() {
         (2, Side::EVEN, Side::EVEN),
         (3, Side::stat(80.0), Side::stat(60.0)),
     ];
-    for (seed, home, away) in jobs {
-        let reference = play(seed, home, away, u64::MAX, regular(FRAME_SEC, 12.0));
-        println!("FULL seed {seed} reference {}", reference.fingerprint);
-        let check = |label: String, played: Played| {
-            println!("FULL seed {seed} {label} {}", played.fingerprint);
-            assert_eq!(
-                played.fingerprint, reference.fingerprint,
-                "seed {seed} {label}: the match ended differently"
-            );
-            assert_same_match(&format!("seed {seed} {label}"), &reference, &played, 1);
-        };
-        for speed in SPEEDS {
-            let played = play(seed, home, away, u64::MAX, regular(FRAME_SEC, speed));
-            check(format!("x{speed}"), played);
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = jobs
+            .into_iter()
+            .map(|(seed, home, away)| {
+                scope.spawn(move || {
+                    let reference = play(seed, home, away, u64::MAX, regular(FRAME_SEC, 12.0));
+                    println!("FULL seed {seed} reference {}", reference.fingerprint);
+                    let check = |label: String, played: Played| {
+                        println!("FULL seed {seed} {label} {}", played.fingerprint);
+                        assert_eq!(
+                            played.fingerprint, reference.fingerprint,
+                            "seed {seed} {label}: the match ended differently"
+                        );
+                        assert_same_match(&format!("seed {seed} {label}"), &reference, &played, 1);
+                    };
+                    for speed in SPEEDS {
+                        let played = play(seed, home, away, u64::MAX, regular(FRAME_SEC, speed));
+                        check(format!("x{speed}"), played);
+                    }
+                    check(
+                        "x12 irregular".to_string(),
+                        play(seed, home, away, u64::MAX, irregular(17, 12.0)),
+                    );
+                    check(
+                        "x1 irregular".to_string(),
+                        play(seed, home, away, u64::MAX, irregular(19, 1.0)),
+                    );
+                    check(
+                        "speed changes".to_string(),
+                        play(seed, home, away, u64::MAX, speed_changes()),
+                    );
+                })
+            })
+            .collect();
+        for handle in handles {
+            handle.join().expect("a full match differed between speeds");
         }
-        check(
-            "x12 irregular".to_string(),
-            play(seed, home, away, u64::MAX, irregular(17, 12.0)),
-        );
-        check(
-            "x1 irregular".to_string(),
-            play(seed, home, away, u64::MAX, irregular(19, 1.0)),
-        );
-        check(
-            "speed changes".to_string(),
-            play(seed, home, away, u64::MAX, speed_changes()),
-        );
-    }
+    });
 }
 
 /// The same seeds driven the way the watched match drives them at speed 12 (`tick`,
