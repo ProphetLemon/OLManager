@@ -2,16 +2,17 @@
 // ScoreboardGames, CC BY-SA 3.0). Writes assets/simulation/champion-builds.v1.json.
 //
 //   node scripts/game-data/pro-builds.mjs --since 2025-11-12 --until 2026-11-12 [--offline] [--probe]
-//        [--cache-dir <dir>] [--out <file>] [--min-games 20] [--max-requests 450] [--page-size 500]
+//        [--login] [--cache-dir <dir>] [--out <file>] [--min-games 20] [--max-requests 450] [--page-size 500]
 //
 // Same source and scope as scripts/champions/pro-matchups.mjs: every game of ScoreboardPlayers in the date window (no
 // league filter), through the world tooling client (generic User-Agent, 4 s throttle, maxlag, retries, on-disk cache).
-// Anonymous only: there is no login option here. If Leaguepedia refuses or rate limits, the run fails; it never falls
-// back to another host. The cache is a local artifact (default src-tauri/target/olm-scratch/lp-builds-cache).
+// Anonymous by default; --login uses the repository's bot-password helper exactly as pro-stats.mjs does (the helper
+// reads the credentials file; this script never does). If Leaguepedia refuses, the run fails; no other host is tried. The cache is a local artifact (default src-tauri/target/olm-scratch/lp-builds-cache).
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { clampPageSize } from "../champions/pro-matchups.mjs";
+import { loginFromFile } from "../world/lib/bot-credentials.mjs";
 import { MediaWikiClient, formatStats } from "../world/lib/mediawiki-client.mjs";
 import {
   DEFAULT_MIN_GAMES,
@@ -39,6 +40,8 @@ const HELP = `Usage: node scripts/game-data/pro-builds.mjs [flags]
   --until YYYY-MM-DD     end date, exclusive (required for a pull)
   --probe                fetch one row, print it and stop (confirms the field names)
   --offline              read the cache only; fail on a miss
+  --login                log in with the Leaguepedia bot password (opt-in; see scripts/champions/README.md, "Logging in");
+                         ignored with --offline
   --cache-dir <dir>      HTTP cache (default src-tauri/target/olm-scratch/lp-builds-cache)
   --out <file>           builds file (default assets/simulation/champion-builds.v1.json)
   --min-games <n>        minimum games with item data for a build of its own (default ${DEFAULT_MIN_GAMES})
@@ -53,6 +56,7 @@ export function parseArgs(argv) {
     until: null,
     probe: false,
     offline: false,
+    login: false,
     cacheDir: path.join(scratch, "lp-builds-cache"),
     out: path.join(root, "assets/simulation/champion-builds.v1.json"),
     minGames: DEFAULT_MIN_GAMES,
@@ -68,6 +72,7 @@ export function parseArgs(argv) {
     const flag = argv[i];
     if (flag === "--offline") args.offline = true;
     else if (flag === "--probe") args.probe = true;
+    else if (flag === "--login") args.login = true;
     else if (flag === "--help" || flag === "-h") args.help = true;
     else if (flag === "--since") args.since = value(++i, flag);
     else if (flag === "--until") args.until = value(++i, flag);
@@ -168,6 +173,7 @@ async function main() {
   const log = (message) => console.error(`[pro-builds] ${message}`);
   const client = new MediaWikiClient({ cacheDir: args.cacheDir, offline: args.offline, maxRequests: args.maxRequests, maxCacheAgeDays: 30, log });
   try {
+    if (args.login) await loginFromFile(client, { log });
     if (args.probe) {
       const data = await client.get(buildsParams({ since: args.since, until: args.until, offset: 0, pageSize: 1 }));
       console.log(JSON.stringify(data.cargoquery?.[0] ?? null, null, 2));

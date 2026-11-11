@@ -8,6 +8,7 @@ export interface ProBuildsArgs {
   until: string | null;
   probe: boolean;
   offline: boolean;
+  login: boolean;
   cacheDir: string;
   out: string;
   minGames: number;

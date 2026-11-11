@@ -57,7 +57,8 @@ export function canonicalRole(value: unknown): string | null;
 export function decodeEntities(text: unknown): string;
 export function parseItemNames(raw: unknown): string[];
 export function createChampionResolver(champions: { id: string; name: string }[]): (value: string) => string | null;
-export function createItemResolver(items: CatalogueItem[]): (name: string) => CatalogueItem | null;
+export const TRANSFORMED_ITEM_ALIASES: Readonly<Record<string, string>>;
+export function createItemResolver(items: CatalogueItem[], aliases?: Record<string, string>): (name: string) => CatalogueItem | null;
 export function isFinishedItem(item: CatalogueItem): boolean;
 export function normalizeRows(
   rawRows: RawBuildRow[],

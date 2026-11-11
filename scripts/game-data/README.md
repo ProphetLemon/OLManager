@@ -51,8 +51,9 @@ node scripts/game-data/pro-builds.mjs --since 2025-11-12 --until 2026-11-12 --of
 - Scope: the same as `scripts/champions/pro-matchups.mjs`: every game of Cargo `ScoreboardPlayers` (joined to
   `ScoreboardGames` for the patch) inside the date window, no league filter. Use the most recent twelve months.
 - Client: the world tooling client (generic User-Agent, 4 s throttle, maxlag, bounded retries, on-disk cache in
-  `src-tauri/target/olm-scratch/lp-builds-cache`). Anonymous only: there is no login option. When Leaguepedia answers
-  `ratelimited` the run fails after its retries; it never falls back to another host.
+  `src-tauri/target/olm-scratch/lp-builds-cache`). Anonymous by default; `--login` uses the bot-password helper of the other scripts
+  (see `scripts/champions/README.md`, "Logging in"). When Leaguepedia answers `ratelimited` the run fails after its
+  retries; it never falls back to another host.
 - Aggregation (per champion and role): games, wins, games with item data, how often each finished item was in the
   final build, the boots, and the most frequent three-item cores. Item names are mapped to `items.v1.json` keys;
   names that do not map are listed in `unmappedItems`. Finished means a complete recipe that is not boots, a

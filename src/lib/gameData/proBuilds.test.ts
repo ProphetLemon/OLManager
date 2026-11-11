@@ -104,6 +104,14 @@ describe("resolvers", () => {
     expect(resolveItem("Zeke's Convergence")?.key).toBe("zekes_convergence");
     expect(resolveItem("Removed Old Item")).toBeNull();
   });
+
+  it("counts a transformed in-game form as the item that was bought", () => {
+    const resolve = createItemResolver([...CATALOGUE, item("manamune"), item("archangels_staff")]);
+    expect(resolve("Muramana")?.key).toBe("manamune");
+    expect(resolve("Seraph's Embrace")?.key).toBe("archangels_staff");
+    expect(resolve("Fimbulwinter")).toBeNull();
+    expect(createItemResolver(CATALOGUE)("Muramana")).toBeNull();
+  });
 });
 
 describe("isFinishedItem", () => {
@@ -303,8 +311,10 @@ describe("Cargo query and parsing", () => {
 });
 
 describe("parseArgs", () => {
-  it("has no login option and rejects unknown flags", () => {
-    expect(() => parseArgs(["--login"])).toThrow(/unknown flag/);
+  it("is anonymous unless --login is given, and rejects unknown flags", () => {
+    expect(parseArgs([]).login).toBe(false);
+    expect(parseArgs(["--login"]).login).toBe(true);
+    expect(() => parseArgs(["--password"])).toThrow(/unknown flag/);
     expect(parseArgs(["--since", "2025-11-12", "--until", "2026-11-12", "--offline"])).toMatchObject({ since: "2025-11-12", until: "2026-11-12", offline: true, minGames: 20 });
   });
 });

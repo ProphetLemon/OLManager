@@ -55,10 +55,27 @@ export function createChampionResolver(champions) {
   return (value) => byName.get(canonical(value)) ?? null;
 }
 
+/**
+ * In-game forms that Data Dragon lists as not purchasable: the finished item transforms into them once its condition is
+ * met (Manamune into Muramana, Archangel's Staff into Seraph's Embrace, Winter's Approach into Fimbulwinter,
+ * Whispering Circlet into Diadem of Songs). Professional scoreboards record the transformed name, the player bought the
+ * base item, so the base item is counted. Checked against `into` in the 16.22.1 download (2526 into 2530).
+ */
+export const TRANSFORMED_ITEM_ALIASES = Object.freeze({
+  Muramana: "Manamune",
+  "Seraph's Embrace": "Archangel's Staff",
+  Fimbulwinter: "Winter's Approach",
+  "Diadem of Songs": "Whispering Circlet",
+});
+
 /** Resolves an item name to a catalogue item through the same key style as the icon files. Null when unknown. */
-export function createItemResolver(items) {
+export function createItemResolver(items, aliases = TRANSFORMED_ITEM_ALIASES) {
   const byKey = new Map(items.map((item) => [item.key, item]));
-  return (name) => byKey.get(itemKey(name)) ?? null;
+  const aliasKeys = new Map(Object.entries(aliases).map(([from, to]) => [itemKey(from), itemKey(to)]));
+  return (name) => {
+    const key = itemKey(name);
+    return byKey.get(key) ?? byKey.get(aliasKeys.get(key)) ?? null;
+  };
 }
 
 /** Finished items: complete recipes, not boots, consumables, trinkets, starters or the support quest line. */
@@ -184,7 +201,7 @@ export function recommendBuild(pair, { minGames = DEFAULT_MIN_GAMES } = {}) {
   };
 }
 
-const share = (count, total) => Math.round((count / total) * 1000) / 1000;
+const share = (count, total) => Math.round((count / total) * 10000) / 10000;
 
 /**
  * Builds the champion map of the file. A pair under the minimum sample (or without enough items) gets
