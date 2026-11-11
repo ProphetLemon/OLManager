@@ -61,6 +61,15 @@ struct Profile {
 
 fn profile_from_env() -> Profile {
     match std::env::var("SCORECARD_PROFILE").as_deref() {
+        Ok("mini") => Profile {
+            name: "mini",
+            even: 24,
+            moderate: 8,
+            extreme: 8,
+            sides: 0,
+            tanks: 0,
+            objectives: 0,
+        },
         Ok("full") => Profile {
             name: "full",
             even: 300,
@@ -123,6 +132,9 @@ struct At15 {
     /// Gold earned since the start, starting purse excluded.
     income: Vec<i64>,
     towers_down: i64,
+    max_hp: Vec<f64>,
+    /// Health taken so far from champions, minions, towers and anything else.
+    damage: Vec<[f64; 4]>,
 }
 
 #[derive(Default)]
@@ -131,6 +143,8 @@ struct Obs {
     was_recalling: Vec<bool>,
     /// Recalls begun before minute 15, per champion.
     recalls: Vec<u32>,
+    /// The same recalls by cause: the next item was affordable, low health, anything else.
+    recall_causes: Vec<[u32; 3]>,
     at15: Option<At15>,
 }
 
@@ -141,12 +155,21 @@ impl Obs {
             self.start_earned = rt.champions.iter().map(earned).collect();
             self.was_recalling = vec![false; rt.champions.len()];
             self.recalls = vec![0; rt.champions.len()];
+            self.recall_causes = vec![[0; 3]; rt.champions.len()];
         }
         if rt.time_sec <= MINUTE_15_SEC {
             for (i, champion) in rt.champions.iter().enumerate() {
                 let recalling = champion.alive && champion.state == "recall";
                 if recalling && !self.was_recalling[i] {
                     self.recalls[i] += 1;
+                    let cause = if champion_can_afford_next_item(champion) {
+                        0
+                    } else if champion.hp / champion.max_hp.max(1.0) <= RECALL_TRIGGER_HP_RATIO {
+                        1
+                    } else {
+                        2
+                    };
+                    self.recall_causes[i][cause] += 1;
                 }
                 self.was_recalling[i] = recalling;
             }
@@ -162,6 +185,26 @@ impl Obs {
                     .map(|(c, start)| earned(c) - start)
                     .collect(),
                 towers_down: rt.stats.blue.towers + rt.stats.red.towers,
+                max_hp: rt.champions.iter().map(|c| c.max_hp).collect(),
+                damage: rt
+                    .champions
+                    .iter()
+                    .map(|c| {
+                        [
+                            DamageSource::Champion,
+                            DamageSource::Minion,
+                            DamageSource::Tower,
+                            DamageSource::Other,
+                        ]
+                        .map(|source| {
+                            rt.farm_ledger
+                                .damage()
+                                .get(&(c.id.clone(), source))
+                                .copied()
+                                .unwrap_or(0.0)
+                        })
+                    })
+                    .collect(),
             });
         }
     }
@@ -416,6 +459,28 @@ fn score_even(card: &mut Scorecard, even: &[Played], all: &[&Played]) {
             })
             .collect();
         recall_means.push((role, mean(&values)));
+        let causes = (0..3).map(|cause| {
+            let values: Vec<f64> = even
+                .iter()
+                .flat_map(|p| {
+                    p.members
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, m)| m.role == role)
+                        .map(|(i, _)| f64::from(p.obs.recall_causes[i][cause]))
+                        .collect::<Vec<_>>()
+                })
+                .collect();
+            mean(&values)
+        });
+        let causes: Vec<f64> = causes.collect();
+        card.add(
+            "T5",
+            &format!("  {role} recalls by cause: item / low health / other"),
+            "",
+            format!("{:.1} / {:.1} / {:.1}", causes[0], causes[1], causes[2]),
+            None,
+        );
     }
     let listed: Vec<String> = recall_means.iter().map(|(r, v)| format!("{r} {v:.1}")).collect();
     card.add(
@@ -425,6 +490,37 @@ fn score_even(card: &mut Scorecard, even: &[Played], all: &[&Played]) {
         listed.join(", "),
         Some(recall_means.iter().all(|(_, v)| within(*v, 2.0, 5.0))),
     );
+    for role in LANERS {
+        let mut taken = [0.0f64; 4];
+        let mut max_hp = 0.0;
+        let mut laners = 0.0;
+        for p in &with15 {
+            let at = p.obs.at15.as_ref().expect("at15");
+            for (i, m) in p.members.iter().enumerate().filter(|(_, m)| m.role == role) {
+                let _ = m;
+                for (slot, value) in at.damage[i].iter().enumerate() {
+                    taken[slot] += value;
+                }
+                max_hp += at.max_hp[i];
+                laners += 1.0;
+            }
+        }
+        let share = |slot: usize| taken[slot] / max_hp.max(1.0);
+        card.add(
+            "T5",
+            &format!("  {role} health lost by 15, in maximum healths"),
+            "",
+            format!(
+                "champions {:.1} / minions {:.1} / towers {:.1} / other {:.1}",
+                share(0),
+                share(1),
+                share(2),
+                share(3)
+            ),
+            None,
+        );
+        let _ = laners;
+    }
     // T6 (lanes; the sides rate is added by the caller)
     for role in LANERS {
         let ahead = with15
