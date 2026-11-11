@@ -6431,3 +6431,6 @@ mod strength_tests;
 
 #[cfg(test)]
 mod champion_fit_tests;
+
+#[cfg(test)]
+mod economy_fingerprint_tests;
