@@ -1,3 +1,4 @@
+import { formatCurrencyAmount } from "@/lib/formatting/valueFormatting";
 import type { NegotiationFeedbackPanelData } from "@/lib/transfers/negotiationFeedback";
 
 export interface RenewalProjection {
@@ -108,8 +109,8 @@ export function getRenewalStatusMessage(
     context.renewalSuggestedYears !== null
   ) {
     return translate("playerProfile.renewalCounter", {
-      wage: context.renewalSuggestedWage,
-      years: context.renewalSuggestedYears,
+      wage: formatCurrencyAmount(context.renewalSuggestedWage),
+      count: context.renewalSuggestedYears,
     });
   }
 

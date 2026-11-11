@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import i18n from "@/i18n";
+import { formatCurrencyAmount } from "@/lib/formatting/valueFormatting";
 import {
   getRenewalStatusClassName,
   getRenewalStatusMessage,
@@ -20,7 +23,7 @@ const t = (key: string, params?: Record<string, string | number>): string => {
   }
 
   if (key === "playerProfile.renewalCounter") {
-    return `Counter ${params?.wage}/${params?.years}`;
+    return `Counter ${params?.wage}/${params?.count}`;
   }
 
   return key;
@@ -54,7 +57,7 @@ describe("PlayerProfile renewal helpers", () => {
         },
         t,
       ),
-    ).toBe("Counter 16000/4");
+    ).toBe(`Counter ${formatCurrencyAmount(16000)}/4`);
   });
 
   it("falls back to the raw error when no translated state applies", () => {
@@ -113,5 +116,39 @@ describe("isRenewalLengthInRange", () => {
 
   it.each([0, 6, 12, -1, 2.5, Number.NaN])("rejects %s years", (years) => {
     expect(isRenewalLengthInRange(years)).toBe(false);
+  });
+});
+
+describe("renewal counter-offer text", () => {
+  beforeAll(async () => {
+    await i18n.changeLanguage("es");
+  });
+
+  afterAll(async () => {
+    await i18n.changeLanguage("en");
+  });
+
+  function counterText(wage: number, years: number): string | null {
+    return getRenewalStatusMessage(
+      {
+        renewalSessionStatus: "open",
+        renewalStatus: "counter_offer",
+        renewalSuggestedWage: wage,
+        renewalSuggestedYears: years,
+        renewalError: null,
+      },
+      i18n.t.bind(i18n),
+    );
+  }
+
+  it("formats the wage with the app's money helper instead of printing the raw number", () => {
+    const text = counterText(176000, 3);
+
+    expect(text).toBe(`Quiere más: ${formatCurrencyAmount(176000)}/año por 3 años`);
+    expect(text).not.toContain("176000");
+  });
+
+  it("uses the singular for a one-year counter", () => {
+    expect(counterText(176000, 1)).toBe(`Quiere más: ${formatCurrencyAmount(176000)}/año por 1 año`);
   });
 });

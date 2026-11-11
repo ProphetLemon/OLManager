@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { formatCurrencyAmount } from "@/lib/formatting/valueFormatting";
 import { useState } from "react";
 import { beforeEach } from "vitest";
 import { describe, expect, it, vi } from "vitest";
@@ -71,7 +72,7 @@ vi.mock("react-i18next", () => ({
       if (key === "playerProfile.renewalAccepted") return "Offer accepted";
       if (key === "playerProfile.renewalRejected") return "Offer rejected";
       if (key === "playerProfile.renewalCounter")
-        return `Wants more: €${params?.wage}/wk for ${params?.years} years`;
+        return `Wants more: ${params?.wage}/wk for ${params?.count} years`;
       if (key === "playerProfile.renewalBlocked")
         return "Talks are blocked after your earlier decision";
       if (key === "playerProfile.renewalCooledOff")
@@ -735,7 +736,7 @@ describe("PlayerProfileV2 contract surfaces", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Wants more: €16000/wk for 4 years"),
+        screen.getByText(`Wants more: ${formatCurrencyAmount(16000)}/wk for 4 years`),
       ).toBeInTheDocument();
       expect(screen.getByText("Negotiation pulse")).toBeInTheDocument();
       expect(
