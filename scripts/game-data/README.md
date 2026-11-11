@@ -65,6 +65,9 @@ node scripts/game-data/pro-builds.mjs --since 2025-11-12 --until 2026-11-12 --of
   champion's first tag as `class`; its games and wins still count as presence.
 - The header records the leagues, window, first and last game, patches with their game counts, games, minimum sample
   and the date of the pull.
+- The game's champion meta reads this file too (`olm_core/src/champions.rs`, embedded with `include_str!`): a pair's
+  presence in its role's picks, adjusted by its win rate shrunk toward 50%, decides where a new career's tier list
+  starts and what the 14-day patches revert toward. Refreshing the file moves every career's anchors; nothing is saved.
 
 ## Ability archetypes
 
