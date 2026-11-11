@@ -162,13 +162,57 @@ fn weekly_scrim_setup_lock_state(
         return (false, None);
     }
 
-    if current_weekday > first_scrim_weekday
-        || (current_weekday == first_scrim_weekday && day_phase != DayPhase::Morning)
-    {
+    if scrim_setup_window_closed(first_scrim_weekday, current_weekday, &day_phase) {
+        // A week that was first planned after the window closed stays open
+        // until it is finalized or a scrim is played (both handled above).
+        if team.scrim_setup_locked_week_key.as_deref() == Some(late_setup_marker(week_key).as_str())
+        {
+            return (false, None);
+        }
         return (true, Some("first_scrim_window".to_string()));
     }
 
     (false, None)
+}
+
+fn scrim_setup_window_closed(
+    first_scrim_weekday: u8,
+    current_weekday: u8,
+    day_phase: &DayPhase,
+) -> bool {
+    current_weekday > first_scrim_weekday
+        || (current_weekday == first_scrim_weekday && *day_phase != DayPhase::Morning)
+}
+
+/// Value kept in `scrim_setup_locked_week_key` while a week planned after its
+/// setup window closed is still being set up. It differs from the plain week
+/// key (the finalize lock), so a new week or an old save ignores it.
+fn late_setup_marker(week_key: &str) -> String {
+    format!("{week_key}:late")
+}
+
+/// Keep the setup open for a week that gets its first plan after the window
+/// closed, so the player can fill the remaining slots across several edits.
+fn mark_late_setup_if_first_plan(
+    team: &mut olm_core::domain::team::Team,
+    week_key: &str,
+    current_weekday: u8,
+    day_phase: &DayPhase,
+) {
+    let first_scrim_weekday = scrim_slot_weekdays(effective_scrim_slots(
+        team.scrim_weekly_slots,
+        &team.training_schedule,
+    ))
+    .into_iter()
+    .min()
+    .unwrap_or(2);
+    let has_any_plan = team
+        .weekly_scrim_plan_team_ids
+        .iter()
+        .any(|plan| !plan.is_empty());
+    if !has_any_plan && scrim_setup_window_closed(first_scrim_weekday, current_weekday, day_phase) {
+        team.scrim_setup_locked_week_key = Some(late_setup_marker(week_key));
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -792,6 +836,13 @@ pub fn set_weekly_scrim_plans(
     state: State<'_, StateManager>,
     plans: Vec<Vec<String>>,
 ) -> Result<Game, String> {
+    set_weekly_scrim_plans_internal(&state, plans)
+}
+
+pub(crate) fn set_weekly_scrim_plans_internal(
+    state: &StateManager,
+    plans: Vec<Vec<String>>,
+) -> Result<Game, String> {
     info!("[cmd] set_weekly_scrim_plans: {} slots", plans.len());
     let mut game = state
         .get_game(|g| g.clone())
@@ -834,6 +885,7 @@ pub fn set_weekly_scrim_plans(
         if setup_locked {
             return Err("Weekly scrim setup is locked for this week".to_string());
         }
+        mark_late_setup_if_first_plan(team, &week_key, current_weekday, &game.day_phase);
         let previous_plans = team.weekly_scrim_plan_team_ids.clone();
         let mut next_plans: Vec<Vec<String>> = vec![Vec::new(); slot_days.len()];
 
@@ -1294,6 +1346,17 @@ pub(crate) fn choose_daily_scrim_action_internal(
         "MentalReset" => DailyScrimFlowEvent::MentalReset,
         "TargetedDrills" => DailyScrimFlowEvent::TargetedDrills,
         _ => return Err(format!("Unknown daily scrim action: {action}")),
+    };
+    // "CancelScrims" is not persisted, so its follow-ups reach us while the report is still
+    // in the bad block-1 decision.
+    let state_for_action = match (state_for_action, event) {
+        (
+            DailyScrimFlowState::Block1BadDecision,
+            DailyScrimFlowEvent::VodReview
+            | DailyScrimFlowEvent::MentalReset
+            | DailyScrimFlowEvent::TargetedDrills,
+        ) => DailyScrimFlowState::Block1BadCancelDecision,
+        (state, _) => state,
     };
     transition_daily_scrim_flow(state_for_action, event)?;
 
@@ -2203,5 +2266,178 @@ mod tests {
         assert_eq!(after.champion_pool, before.champion_pool);
         assert_eq!(after.discipline, before.discipline);
         assert_eq!(after.mental_resilience, before.mental_resilience);
+    }
+
+    mod weekly_setup {
+        use super::*;
+        use olm_core::domain::team::ScrimSlotResult;
+        use olm_core::game::DayPhase;
+        use olm_core::state::StateManager;
+
+        // 2025-01-01 is a Wednesday; with six slots the scrims fall on
+        // Wednesday (slots 0, 1), Thursday (2, 3) and Friday (4, 5).
+        const WEEK_KEY: &str = "2025-W1";
+
+        fn setup_state(day: u32, phase: DayPhase) -> StateManager {
+            let mut game = make_game();
+            for id in ["team-2", "team-3"] {
+                let mut other = game.teams[0].clone();
+                other.id = id.to_string();
+                game.teams.push(other);
+            }
+            game.teams[0].scrim_weekly_slots = 6;
+            game.clock.current_date = Utc.with_ymd_and_hms(2025, 1, day, 12, 0, 0).unwrap();
+            game.day_phase = phase;
+            let state = StateManager::new();
+            state.set_game(game);
+            state
+        }
+
+        fn move_to(state: &StateManager, day: u32, phase: DayPhase) {
+            let mut game = state.get_game(|g| g.clone()).unwrap();
+            game.clock.current_date = Utc.with_ymd_and_hms(2025, 1, day, 12, 0, 0).unwrap();
+            game.day_phase = phase;
+            state.set_game(game);
+        }
+
+        fn plans_for(slots: &[(usize, &[&str])]) -> Vec<Vec<String>> {
+            let mut plans = vec![Vec::new(); 6];
+            for (index, rivals) in slots {
+                plans[*index] = rivals.iter().map(|id| id.to_string()).collect();
+            }
+            plans
+        }
+
+        fn editable_slots(state: &StateManager) -> Vec<bool> {
+            super::super::get_scrim_context_internal(state)
+                .unwrap()
+                .week
+                .slots
+                .iter()
+                .map(|slot| slot.can_edit)
+                .collect()
+        }
+
+        #[test]
+        fn late_setup_stays_editable_after_the_first_rival_is_chosen() {
+            let state = setup_state(2, DayPhase::Morning);
+            assert_eq!(
+                editable_slots(&state),
+                vec![false, false, true, true, true, true]
+            );
+
+            super::super::set_weekly_scrim_plans_internal(
+                &state,
+                plans_for(&[(2, &["team-2"])]),
+            )
+            .unwrap();
+
+            assert_eq!(
+                editable_slots(&state),
+                vec![false, false, true, true, true, true]
+            );
+        }
+
+        #[test]
+        fn late_setup_accepts_more_choices_across_several_edits() {
+            let state = setup_state(2, DayPhase::Morning);
+            super::super::set_weekly_scrim_plans_internal(
+                &state,
+                plans_for(&[(2, &["team-2"])]),
+            )
+            .unwrap();
+
+            let game = super::super::set_weekly_scrim_plans_internal(
+                &state,
+                plans_for(&[(2, &["team-2", "team-3"]), (3, &["team-3"])]),
+            )
+            .unwrap();
+
+            assert_eq!(game.teams[0].weekly_scrim_plan_team_ids[2].len(), 2);
+            assert_eq!(game.teams[0].weekly_scrim_plan_team_ids[3], vec!["team-3"]);
+        }
+
+        #[test]
+        fn finalizing_a_late_setup_locks_it() {
+            let state = setup_state(2, DayPhase::Morning);
+            super::super::set_weekly_scrim_plans_internal(
+                &state,
+                plans_for(&[(2, &["team-2"])]),
+            )
+            .unwrap();
+            let mut game = state.get_game(|g| g.clone()).unwrap();
+            // What `finalize_weekly_scrim_setup` stores.
+            game.teams[0].scrim_setup_locked_week_key = Some(WEEK_KEY.to_string());
+            state.set_game(game);
+
+            assert_eq!(editable_slots(&state), vec![false; 6]);
+            assert!(super::super::set_weekly_scrim_plans_internal(
+                &state,
+                plans_for(&[(2, &["team-3"])])
+            )
+            .is_err());
+        }
+
+        #[test]
+        fn playing_a_scrim_locks_a_late_setup() {
+            let state = setup_state(2, DayPhase::Morning);
+            super::super::set_weekly_scrim_plans_internal(
+                &state,
+                plans_for(&[(2, &["team-2"])]),
+            )
+            .unwrap();
+            let mut game = state.get_game(|g| g.clone()).unwrap();
+            game.teams[0].scrim_slot_results.push(ScrimSlotResult {
+                week_key: WEEK_KEY.to_string(),
+                slot_index: 0,
+                weekday: 2,
+                opponent_team_id: "team-2".to_string(),
+                won: true,
+                simulated_on: "2025-01-01".to_string(),
+            });
+            state.set_game(game);
+
+            assert_eq!(editable_slots(&state), vec![false; 6]);
+        }
+
+        #[test]
+        fn a_week_planned_before_the_window_closed_still_locks_after_wednesday_morning() {
+            let state = setup_state(1, DayPhase::Morning);
+            super::super::set_weekly_scrim_plans_internal(
+                &state,
+                plans_for(&[(0, &["team-2"])]),
+            )
+            .unwrap();
+
+            move_to(&state, 1, DayPhase::Morning);
+            assert_eq!(
+                editable_slots(&state),
+                vec![true, true, true, true, true, true]
+            );
+
+            move_to(&state, 1, DayPhase::ScrimBlock);
+            assert_eq!(editable_slots(&state), vec![false; 6]);
+            assert!(super::super::set_weekly_scrim_plans_internal(
+                &state,
+                plans_for(&[(0, &["team-3"])])
+            )
+            .is_err());
+        }
+
+        #[test]
+        fn a_late_setup_does_not_keep_the_next_week_open() {
+            let state = setup_state(2, DayPhase::Morning);
+            super::super::set_weekly_scrim_plans_internal(
+                &state,
+                plans_for(&[(2, &["team-2"])]),
+            )
+            .unwrap();
+
+            // The following Thursday (2025-01-09, week 2) keeps the plan but
+            // the late-setup exception belonged to week 1.
+            move_to(&state, 9, DayPhase::Morning);
+
+            assert_eq!(editable_slots(&state), vec![false; 6]);
+        }
     }
 }

@@ -165,6 +165,7 @@ pub(super) fn test_runtime(
         },
         events: Vec::new(),
         lane_combat_state_by_champion: HashMap::new(),
+        gold_ledger: GoldLedger::default(),
         extra: HashMap::new(),
     }
 }

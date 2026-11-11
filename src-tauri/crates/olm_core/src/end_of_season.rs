@@ -3,8 +3,8 @@ use crate::domain::message::*;
 use crate::domain::player::PlayerSeasonStats;
 use crate::domain::team::{FinancialTransactionKind, TeamSeasonRecord};
 use crate::finances::{
-    BudgetImpact, FinanceTransactionInput, calc_annual_wages, push_board_financial_health_mail,
-    push_prize_payout_mail, record_transaction,
+    BudgetImpact, FinanceTransactionInput, LedgerText, calc_annual_wages,
+    push_board_financial_health_mail, push_prize_payout_mail, record_transaction_with_text,
 };
 use crate::custom_team::is_custom_team_id;
 use crate::game::Game;
@@ -258,13 +258,17 @@ pub fn process_end_of_split(game: &mut Game, manifest: &CompetitionManifest) {
         return;
     };
     let user_team_id = game.manager.team_id.as_deref().filter(|id| !id.is_empty());
-    let new_league = build_split_league(
+    let mut new_league = build_split_league(
         league,
         manifest,
         league.season,
         league.split_index,
         user_team_id,
     );
+    // A split whose playoffs ran past the next split's start date (the LEC's Winter does)
+    // would leave the new calendar in the past, where no daily simulation plays it. Same
+    // rule as the background leagues: shift the whole calendar past the clock.
+    shift_fixtures_after(&mut new_league, game.clock.current_date.date_naive());
 
     if let Some(active) = game.active_league_mut() {
         *active = new_league;
@@ -591,7 +595,7 @@ fn process_end_of_season_inner(
             team.form.clear();
 
             if prize_money > 0 {
-                record_transaction(
+                record_transaction_with_text(
                     team,
                     FinanceTransactionInput {
                         date: last_fixture_date.clone(),
@@ -609,6 +613,10 @@ fn process_end_of_season_inner(
                         source_id: Some(format!("season-{season}-position-{position}")),
                         correlation_id: Some(format!("prize:{}:{}:{}", team.id, season, position)),
                     },
+                    LedgerText::new(
+                        "be.ledger.seasonPrize",
+                        &[("season", &season.to_string()), ("position", &position.to_string())],
+                    ),
                 )
                 .ok();
             }

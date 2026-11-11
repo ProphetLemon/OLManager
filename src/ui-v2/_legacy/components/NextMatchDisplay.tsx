@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { useTranslation } from "react-i18next";
 import { Fragment } from "react";
 
@@ -73,7 +74,7 @@ export default function NextMatchDisplay({
 }) {
   const { t } = useTranslation();
   const userTeamId = gameState.manager.team_id;
-  const playerLeague = gameState.leagues[0];
+  const playerLeague = resolveUserLeague(gameState);
 
   if (!userTeamId || !playerLeague) {
     return (

@@ -26,7 +26,9 @@ import {
   ovrRating,
   type StaffAttrKey,
 } from "@/lib/staff/staffStats";
-import { calcAge, getTeamName } from "@/lib/common/helpers";
+import { getTeamName } from "@/lib/common/helpers";
+import { staffAge } from "@/lib/staff/staffAge";
+import { staffErrorKey } from "@/lib/staff/staffErrors";
 import { countryName } from "@/lib/common/countries";
 import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
@@ -84,15 +86,17 @@ export default function StaffProfileV2({
   const ovr = ovrRating(staff);
   const best = bestAttr(staff);
   const impactRows = getStaffImpactRows(staff);
-  const age = calcAge(staff.date_of_birth, gameState.clock.current_date);
+  const age = staffAge(staff, gameState.clock.current_date);
   const attrLabel = (key: StaffAttrKey) => t(ATTR_LABEL_KEYS[key]);
   const photo = resolveStaffPhoto(staff.profile_image_url);
   const roleIcon = ROLE_ICONS[staff.role] ?? <UserPlus className="size-5" />;
 
   const managerTeamId = gameState.manager.team_id;
-  const isOwnStaff = managerTeamId != null && staff.team_id === managerTeamId;
+  const isOwner = staff.role === "Owner";
+  // A club owner is neither hired nor dismissed.
+  const isOwnStaff = managerTeamId != null && staff.team_id === managerTeamId && !isOwner;
   const isFreeAgent = !staff.team_id;
-  const canHire = isFreeAgent && managerTeamId != null;
+  const canHire = isFreeAgent && managerTeamId != null && !isOwner;
   const realName = `${staff.first_name} ${staff.last_name}`.trim();
   const hasNickname = !!staff.nickname?.trim();
 
@@ -103,7 +107,7 @@ export default function StaffProfileV2({
       const updated = await fn(staffId);
       onGameUpdate?.(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(t(staffErrorKey(err)));
     } finally {
       setActionLoading(false);
     }
@@ -153,8 +157,12 @@ export default function StaffProfileV2({
                 {roleIcon}
                 {t(`staff.roles.${staff.role}`, { defaultValue: staff.role })}
               </span>
-              <span className="text-border">·</span>
-              <span>{t("common.age")} {age}</span>
+              {age != null && (
+                <>
+                  <span className="text-border">·</span>
+                  <span>{t("common.age")} {age}</span>
+                </>
+              )}
               {staff.nationality && (
                 <>
                   <span className="text-border">·</span>
@@ -179,6 +187,11 @@ export default function StaffProfileV2({
             </p>
 
             <div className="mt-2 flex flex-wrap gap-1.5">
+              {isOwner && (
+                <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-caption uppercase tracking-wider text-foreground">
+                  <Star className="size-3" /> {t("staff.clubOwner")}
+                </span>
+              )}
               {staff.specialization && (
                 <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-heading text-caption uppercase tracking-wider text-muted-foreground">
                   <Star className="size-3" /> {t(`staff.specializations.${staff.specialization}`)}

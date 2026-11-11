@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import type { TFunction } from "i18next";
 
 import { SOCIAL_CONTENT_PACK } from "@/content/lol/social/content";
@@ -349,10 +350,7 @@ export function buildPressConferenceQuestions({
   winnerSide,
   userResult,
 }: BuildPressConferenceQuestionsParams): PressQuestion[] {
-  const userLeague = gameState.user_competition_id
-    ? gameState.leagues?.find((l) => l.competition_id === gameState.user_competition_id)
-    : undefined;
-  const leagueId = userLeague?.id ?? gameState.leagues?.[0]?.id ?? DEFAULT_LEAGUE_ID;
+  const leagueId = resolveUserLeague(gameState)?.id ?? DEFAULT_LEAGUE_ID;
 
   const effectiveUserSide = controlledSide ?? registrySide(userSide);
   const inferredWinnerSide =

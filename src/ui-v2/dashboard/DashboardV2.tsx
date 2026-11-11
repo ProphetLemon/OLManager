@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
@@ -53,6 +54,7 @@ import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboar
 
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
+import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
 
 
 import { LazyFallback } from "@/ui-v2/components/LazyFallback";
@@ -290,11 +292,7 @@ export default function DashboardV2() {
   }, [gameState]);
   const todayMatchFixture = gameState ? getTodayMatchFixture(gameState) : null;
   const hasMatchToday = todayMatchFixture !== null;
-  const activeLeague = gameState?.user_competition_id
-    ? gameState.leagues.find(
-        (league) => league.competition_id === gameState.user_competition_id,
-      ) ?? gameState.leagues[0]
-    : gameState?.leagues[0];
+  const activeLeague = resolveUserLeague(gameState);
   const pendingSeasonSummary = useGameStore((s) => s.pendingSeasonSummary);
   // After advance_to_next_season the new league is not complete, but the wrap
   // summary must stay on Home until the user dismisses it.
@@ -310,6 +308,8 @@ export default function DashboardV2() {
     setBlockerModal,
     autoDelegationNotice,
     matchPlayedNotice,
+    scrimResultNotice,
+    dismissScrimResultNotice,
     handleContinue,
     handleConfirmMatch,
     handleSkipToMatchDay,
@@ -555,7 +555,8 @@ export default function DashboardV2() {
   const dashboardAlerts = gameState
     ? getDashboardAlerts(gameState, hasMatchToday, t)
     : [];
-  if (autoDelegationNotice) {
+  // The scrim result notice carries the Assistant Coach note itself.
+  if (autoDelegationNotice && !scrimResultNotice) {
     dashboardAlerts.unshift({
       id: "scrim_auto_delegate_notice",
       text: autoDelegationNotice,
@@ -644,7 +645,7 @@ export default function DashboardV2() {
       <a
         href={`#${MAIN_CONTENT_ID}`}
         onClick={handleSkipToMain}
-        className="sr-only rounded-md bg-club px-4 py-2 font-heading text-sm font-bold text-club-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100]"
+        className="sr-only rounded-md bg-club px-4 py-2 font-heading text-sm font-bold text-club-foreground focus:not-sr-only focus:min-h-[var(--target-min)] focus:fixed focus:left-4 focus:top-4 focus:z-[100]"
       >
         {t("onAir.nav.skip", { defaultValue: "Skip to main content" })}
       </a>
@@ -716,6 +717,16 @@ export default function DashboardV2() {
           callCount={callCount}
           onShowCalls={handleShowCalls}
           compact={showSeasonSummary}
+        />
+
+        <ScrimResultNoticeV2
+          lines={scrimResultNotice}
+          assistantNote={autoDelegationNotice}
+          onOpenScrims={() => {
+            dismissScrimResultNotice();
+            handleNavigate("Scrims");
+          }}
+          onDismiss={dismissScrimResultNotice}
         />
 
         <main

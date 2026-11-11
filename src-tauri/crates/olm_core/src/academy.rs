@@ -2,7 +2,9 @@ use crate::domain::message::{InboxMessage, MessageCategory, MessageContext, Mess
 use crate::domain::team::{
     AcademyLifecycle, AcademyMetadata, ErlAssignment, FinancialTransactionKind, Team, TeamKind,
 };
-use crate::finances::{BudgetImpact, FinanceTransactionInput, record_transaction};
+use crate::finances::{
+    BudgetImpact, FinanceTransactionInput, LedgerText, record_transaction_with_text,
+};
 use crate::game::Game;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -831,7 +833,7 @@ pub fn acquire_academy(
         return Err("Insufficient funds".to_string());
     }
 
-    record_transaction(
+    record_transaction_with_text(
         &mut game.teams[pidx],
         FinanceTransactionInput {
             date: game.clock.current_date.format("%Y-%m-%d").to_string(),
@@ -846,6 +848,7 @@ pub fn acquire_academy(
                 "academy-acquisition:{parent_team_id}:{source_team_id}"
             )),
         },
+        LedgerText::new("be.ledger.academyAcquisition", &[("name", &opt.name)]),
     )
     .map_err(|err| format!("Failed to record academy acquisition: {err:?}"))?;
     game.teams[pidx].academy_team_id = Some(source_team_id.to_string());

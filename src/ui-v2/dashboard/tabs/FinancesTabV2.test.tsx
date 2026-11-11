@@ -49,7 +49,7 @@ vi.mock("react-i18next", () => ({
         "finances.contractRisk": "Contract risk",
         "finances.noContractRisks": "No contract risks",
         "finances.payroll": "Payroll",
-        "finances.wagePerWeek": "Wage",
+        "finances.wagePerYear": "Wage",
         "finances.marketValue": "Market value",
         "finances.facilities": "Facilities",
         "finances.recentLedger": "Recent ledger",
@@ -78,6 +78,7 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/lib/i18n/backendI18n", () => ({
   resolveMessage: (message: unknown) => message,
+  resolveLedgerDescription: (entry: { description: string }) => entry.description,
 }));
 
 vi.mock("@/lib/players/playerPhotos", () => ({

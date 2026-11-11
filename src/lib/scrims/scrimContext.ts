@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import type {
   DayPhase,
   GameStateData,
@@ -188,7 +189,7 @@ export function deriveTodayScrimContext(gameState: GameStateData, team: TeamData
   const todaySlotIndices = weekdays
     .map((weekday, idx) => (weekday === todayWeekday ? idx : -1))
     .filter((idx) => idx >= 0);
-  const hasOfficialMatch = Boolean(gameState.leagues?.[0]?.fixtures.find((fixture) => {
+  const hasOfficialMatch = Boolean(resolveUserLeague(gameState)?.fixtures.find((fixture) => {
     if (fixture.status !== "Scheduled") return false;
     if (dateKey(fixture.date) !== today) return false;
     return fixture.home_team_id === team.id || fixture.away_team_id === team.id;
@@ -338,7 +339,7 @@ export function deriveWeeklyScrimContext(gameState: GameStateData, team: TeamDat
       counts[focus] = (counts[focus] ?? 0) + 1;
       return counts;
     }, {});
-  const nextOfficialFixture = (gameState.leagues?.[0]?.fixtures ?? [])
+  const nextOfficialFixture = (resolveUserLeague(gameState)?.fixtures ?? [])
     .filter((fixture) => {
       if (fixture.status !== "Scheduled") return false;
       if (fixture.home_team_id !== team.id && fixture.away_team_id !== team.id) return false;

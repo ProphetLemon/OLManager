@@ -1,6 +1,7 @@
 import React from "react";
 import { MatchEvent, MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import type { FixtureData, GameStateData } from "@/store/gameStore";
+import { resolveUserLeague } from "@/lib/userLeague";
 import {
   Circle,
   CircleOff,
@@ -247,12 +248,17 @@ export function calcOvr(attrs: Record<string, number>): number {
   return Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
 }
 
+/** Fixtures of the league the user plays in; the backend indexes fixtures in that same league. */
+export function userLeagueFixtures(gameState: GameStateData | null): FixtureData[] | undefined {
+  return resolveUserLeague(gameState)?.fixtures;
+}
+
 export function resolveMatchFixture(
   gameState: GameStateData | null,
   snapshot: MatchSnapshot | null,
   fixtureIndex?: number,
 ): FixtureData | null {
-  const fixtures = gameState?.leagues?.[0]?.fixtures;
+  const fixtures = userLeagueFixtures(gameState);
   if (!fixtures || !snapshot) return null;
 
   if (

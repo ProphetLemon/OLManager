@@ -5,7 +5,9 @@ use olm_core::academy::{
     validate_academy_acquisition, AcademyAcquisitionOption,
 };
 use olm_core::domain::team::{Team, TeamKind};
-use olm_core::finances::{record_transaction, BudgetImpact, FinanceTransactionInput};
+use olm_core::finances::{
+    record_transaction_with_text, BudgetImpact, FinanceTransactionInput, LedgerText,
+};
 use olm_core::game::Game;
 use olm_core::state::StateManager;
 use serde::{Deserialize, Serialize};
@@ -299,7 +301,7 @@ pub(crate) fn acquire_academy_team_in_game(
             .teams
             .get_mut(parent_index)
             .ok_or("Parent team not found".to_string())?;
-        record_transaction(
+        record_transaction_with_text(
             parent,
             FinanceTransactionInput {
                 date: game.clock.current_date.format("%Y-%m-%d").to_string(),
@@ -315,6 +317,7 @@ pub(crate) fn acquire_academy_team_in_game(
                     request.parent_team_id, academy_id
                 )),
             },
+            LedgerText::new("be.ledger.academyAcquisition", &[("name", &option.name)]),
         )
         .map_err(|err| format!("Failed to record academy acquisition: {err:?}"))?;
         parent.academy_team_id = Some(academy_id.clone());
@@ -720,6 +723,17 @@ mod tests {
             FinancialTransactionKind::AcademyAcquisition
         );
         assert_eq!(parent.financial_ledger[0].amount, -260_000);
+        assert_eq!(
+            parent.financial_ledger[0].description_key.as_deref(),
+            Some("be.ledger.academyAcquisition")
+        );
+        assert_eq!(
+            parent.financial_ledger[0]
+                .description_params
+                .get("name")
+                .map(String::as_str),
+            Some("Movistar KOI Fénix")
+        );
         assert!(updated
             .messages
             .iter()

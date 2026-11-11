@@ -45,7 +45,7 @@ export default function InboxMessageDetailPane({
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <MailOpen className="w-12 h-12 text-gray-300 dark:text-navy-600 mx-auto mb-3" />
-          <p className="text-sm text-gray-400 dark:text-gray-500 font-heading uppercase tracking-wider">
+          <p className="text-sm text-gray-400 dark:text-gray-500 font-heading uppercase tracking-wide">
             {t("inbox.selectMessage")}
           </p>
         </div>
@@ -172,7 +172,7 @@ export default function InboxMessageDetailPane({
                         className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 mt-2"
                       >
                         <CheckCircle2 className="w-4 h-4 text-primary-500" />
-                        <span className="font-heading font-bold uppercase tracking-wider text-xs">
+                        <span className="font-heading font-bold uppercase tracking-wide text-xs">
                           {t("inbox.responded")}
                         </span>
                       </div>
@@ -181,7 +181,7 @@ export default function InboxMessageDetailPane({
 
                   return (
                     <div key={action.id} className="space-y-2">
-                      <p className="text-xs font-heading font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 flex items-center gap-1.5 mb-3">
+                      <p className="text-xs font-heading font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 flex items-center gap-1.5 mb-3">
                         <MessageCircle className="w-3.5 h-3.5" />
                         {isPlayerEventMessage(selectedMessage.id)
                             ? t(

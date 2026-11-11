@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Briefcase,
@@ -17,7 +17,7 @@ import {
   Users,
 } from "lucide-react";
 
-import type { GameStateData } from "@/store/gameStore";
+import type { GameStateData, StaffData } from "@/store/gameStore";
 import { hireStaff, releaseStaff } from "@/services/staffService";
 import {
   formatStaffEffectPercent,
@@ -25,12 +25,16 @@ import {
 } from "@/lib/teams/lolStaffEffects";
 import { resolveStaffPhoto } from "@/lib/players/playerPhotos";
 import { staffDisplayName } from "@/lib/staff/staffName";
+import { staffAge } from "@/lib/staff/staffAge";
+import { staffErrorKey } from "@/lib/staff/staffErrors";
 import { ATTR_LABEL_KEYS, bestAttr, ovrRating, getStaffImpactRows } from "@/lib/staff/staffStats";
-import { calcAge, getTeamName } from "@/lib/common/helpers";
+import { getTeamName } from "@/lib/common/helpers";
 import { countryName } from "@/lib/common/countries";
 import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
+import { Button } from "@/ui-v2/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/ui-v2/components/ui/dialog";
 import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
 
 interface StaffTabV2Props {
@@ -59,11 +63,16 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [competitionFilter, setCompetitionFilter] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  const [releaseTarget, setReleaseTarget] = useState<StaffData | null>(null);
+  const releaseOpenerRef = useRef<HTMLElement | null>(null);
+  const cancelReleaseRef = useRef<HTMLButtonElement | null>(null);
   const PAGE_SIZE = 12;
 
   const myStaff = gameState.staff.filter((s) => s.team_id === userTeamId);
-  const availableStaff = gameState.staff.filter((s) => !s.team_id);
+  // Club owners belong to their club and are never offered in the market.
+  const availableStaff = gameState.staff.filter((s) => !s.team_id && s.role !== "Owner");
   const displayStaff = isWorldMode
     ? gameState.staff
     : view === "mystaff"
@@ -108,11 +117,13 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
   const handleHire = async (staffId: string) => {
     setActionLoading(staffId);
+    setActionError(null);
     try {
       const updated = await hireStaff(staffId);
       onGameUpdate(updated);
     } catch (err) {
       console.error("Failed to hire staff:", err);
+      setActionError(t(staffErrorKey(err)));
     } finally {
       setActionLoading(null);
     }
@@ -120,11 +131,13 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
   const handleRelease = async (staffId: string) => {
     setActionLoading(staffId);
+    setActionError(null);
     try {
       const updated = await releaseStaff(staffId);
       onGameUpdate(updated);
     } catch (err) {
       console.error("Failed to release staff:", err);
+      setActionError(t(staffErrorKey(err)));
     } finally {
       setActionLoading(null);
     }
@@ -222,8 +235,14 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
         </div>
       </div>
 
+      {actionError && (
+        <div role="alert" className="rounded-lg border border-negative/40 bg-negative/10 px-4 py-2 text-sm text-negative">
+          {actionError}
+        </div>
+      )}
+
       {/* Team impact banner */}
-      {view === "mystaff" && myStaff.length > 0 && (
+      {view === "mystaff" && myStaff.some((s) => s.role !== "Owner") && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
           <span className="font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
             {t("staff.lolImpactTeamTitle")}
@@ -259,7 +278,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                   {t("staff.noStaffMatch")}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground/60">
-                  Try adjusting filters or search
+                  {t("staff.adjustFiltersHint")}
                 </p>
               </>
             ) : (
@@ -271,7 +290,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                       {t("staff.noStaffMatch")}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground/60">
-                      Hire staff from the available tab
+                      {t("staff.hireFromAvailableHint")}
                     </p>
                   </>
                 ) : (
@@ -281,7 +300,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                       {t("staff.noAvailableStaff")}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground/60">
-                      All staff are currently employed
+                      {t("staff.allStaffEmployedHint")}
                     </p>
                   </>
                 )}
@@ -293,7 +312,8 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
         <div className="grid min-h-0 grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2 xl:grid-cols-3">
           {pageData.map((staff) => {
             const roleIcon = ROLE_ICONS[staff.role] || <GraduationCap className="size-4" />;
-            const age = calcAge(staff.date_of_birth, gameState.clock.current_date);
+            const age = staffAge(staff, gameState.clock.current_date);
+            const isOwner = staff.role === "Owner";
             const ovr = ovrRating(staff);
             const best = bestAttr(staff);
             const impactRows = getStaffImpactRows(staff);
@@ -338,8 +358,12 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                     {/* Role + Age + Nationality + Team */}
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
                       <span>{t(`staff.roles.${staff.role}`, { defaultValue: staff.role })}</span>
-                      <span className="text-border">·</span>
-                      <span>{t("common.age")} {age}</span>
+                      {age != null && (
+                        <>
+                          <span className="text-border">·</span>
+                          <span>{t("common.age")} {age}</span>
+                        </>
+                      )}
                       {staff.nationality && (
                         <>
                           <span className="text-border">·</span>
@@ -361,6 +385,11 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
                     {/* Specialization + Wage */}
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {isOwner && (
+                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-foreground">
+                          <Star className="size-3" /> {t("staff.clubOwner")}
+                        </span>
+                      )}
                       {staff.specialization && (
                         <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
                           <Star className="size-3" /> {t(`staff.specializations.${staff.specialization}`)}
@@ -408,18 +437,23 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
 
                   {/* Action */}
                   <div className="flex shrink-0 flex-col items-center justify-start gap-2">
-                    {!isWorldMode && view === "mystaff" && (
+                    {!isWorldMode && view === "mystaff" && !isOwner && (
                       <button
                         type="button"
                         disabled={actionLoading === staff.id}
-                        onClick={(e) => { e.stopPropagation(); handleRelease(staff.id); }}
-                        className="flex size-8 items-center justify-center rounded-lg bg-negative/10 text-negative transition-colors hover:bg-negative/20 disabled:pointer-events-none disabled:opacity-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          releaseOpenerRef.current = e.currentTarget;
+                          setReleaseTarget(staff);
+                        }}
+                        className="flex size-8 min-h-[var(--target-min)] min-w-[var(--target-min)] items-center justify-center rounded-lg bg-negative/10 text-negative transition-colors hover:bg-negative/20 disabled:pointer-events-none disabled:opacity-50"
+                        aria-label={t("staff.releaseStaffNamed", { name: staffDisplayName(staff) })}
                         title={t("staff.releaseStaff")}
                       >
                         {actionLoading === staff.id ? (
-                          <Loader2 className="size-4 animate-spin" />
+                          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                         ) : (
-                          <UserMinus className="size-4" />
+                          <UserMinus className="size-4" aria-hidden="true" />
                         )}
                       </button>
                     )}
@@ -466,6 +500,57 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
           </button>
         </div>
       )}
+      <Dialog
+        open={releaseTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setReleaseTarget(null);
+        }}
+      >
+        <DialogContent
+          className="max-w-sm"
+          initialFocus={cancelReleaseRef}
+          finalFocus={() => (releaseOpenerRef.current?.isConnected ? releaseOpenerRef.current : true)}
+        >
+          {releaseTarget ? (
+            <>
+              <DialogTitle className="text-lg text-foreground">
+                {t("staff.releaseConfirmTitle", { name: staffDisplayName(releaseTarget) })}
+              </DialogTitle>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t("staff.releaseConfirmMessage", {
+                  name: staffDisplayName(releaseTarget),
+                  role: t(`staff.roles.${releaseTarget.role}`, { defaultValue: releaseTarget.role }),
+                })}
+              </p>
+              <DialogFooter className="mt-6 flex-col">
+                <Button
+                  ref={cancelReleaseRef}
+                  type="button"
+                  variant="outline"
+                  size="touch"
+                  onClick={() => setReleaseTarget(null)}
+                  className="w-full font-heading font-bold uppercase tracking-wide"
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="touch"
+                  onClick={() => {
+                    const id = releaseTarget.id;
+                    setReleaseTarget(null);
+                    void handleRelease(id);
+                  }}
+                  className="w-full font-heading font-bold uppercase tracking-wide"
+                >
+                  {t("staff.releaseConfirmAction")}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

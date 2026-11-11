@@ -152,8 +152,44 @@ describe("CustomTeamWizardV2 identity step", () => {
     setup();
     fillIdentity("falke esports");
     fireEvent.blur(screen.getByLabelText("Club name"));
-    expect(screen.getByRole("alert")).toHaveTextContent("Another club already uses this name.");
+    // The suggested short name ("FAL") clashes too and is now explained as well.
+    expect(document.getElementById("custom-team-name-error")).toHaveTextContent("Another club already uses this name.");
     expect(next()).toBeDisabled();
+  });
+
+  it("explains a name clash as soon as it is typed, without waiting for a blur", () => {
+    setup();
+    fillIdentity();
+    const name = screen.getByLabelText("Club name");
+    fireEvent.change(name, { target: { value: "Falke Esports" } });
+
+    const error = document.getElementById("custom-team-name-error");
+    expect(error).toHaveTextContent("Another club already uses this name.");
+    expect(name).toHaveAttribute("aria-invalid", "true");
+    expect(name.getAttribute("aria-describedby")).toContain("custom-team-name-error");
+    expect(next()).toBeDisabled();
+
+    fireEvent.change(name, { target: { value: "Ray Esports" } });
+    expect(document.getElementById("custom-team-name-error")).toBeNull();
+    expect(name).not.toHaveAttribute("aria-invalid");
+    expect(name.getAttribute("aria-describedby") ?? "").not.toContain("custom-team-name-error");
+  });
+
+  it("explains a short name clash as soon as it is typed, without waiting for a blur", () => {
+    setup();
+    fillIdentity();
+    const short = screen.getByLabelText("Short name");
+    fireEvent.change(short, { target: { value: "fal" } });
+
+    const error = document.getElementById("custom-team-short-error");
+    expect(error).toHaveTextContent("Another club already uses this short name.");
+    expect(short).toHaveAttribute("aria-invalid", "true");
+    expect(short.getAttribute("aria-describedby")).toContain("custom-team-short-error");
+    expect(next()).toBeDisabled();
+
+    fireEvent.change(short, { target: { value: "ZZZ" } });
+    expect(document.getElementById("custom-team-short-error")).toBeNull();
+    expect(short).not.toHaveAttribute("aria-invalid");
   });
 
   it("goes back to the team grid on Escape from the first step", () => {

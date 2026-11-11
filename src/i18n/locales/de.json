@@ -220,6 +220,12 @@
     "inbox": "Posteingang",
     "matchPlayedByStaff": "Dein Staff hat das Spiel gegen {{opponent}} gespielt: {{score}}. Öffne den Spielplan für das Ergebnis.",
     "matchPlayedByStaffNoScore": "Dein Staff hat das Spiel gespielt. Öffne den Spielplan für das Ergebnis.",
+    "scrimResultTitle_one": "Scrim-Ergebnis",
+    "scrimResultTitle_other": "Scrim-Ergebnisse",
+    "scrimResultWon": "Sieg gegen {{rival}}",
+    "scrimResultLost": "Niederlage gegen {{rival}}",
+    "scrimResultOpen": "Scrims öffnen",
+    "scrimResultDismiss": "Schließen",
     "manager": "Head Coach",
     "squad": "Kader",
     "tactics": "Taktik",
@@ -269,7 +275,7 @@
     "worldStaff": "Staffs",
     "brandSubtitle": "Manager",
     "brandTitle": "Open League",
-    "competitions": "Competitions",
+    "competitions": "Wettbewerbe",
     "noActiveGame": "No active game",
     "noActiveGameDesc": "Start or load a game to continue.",
     "save": "Save",
@@ -1313,7 +1319,25 @@
     "noStaffMatch": "Kein Staffmitglied entspricht deinen Filtern.",
     "noAvailableStaff": "Kein Staff verfügbar.",
     "releaseStaff": "Staffmitglied entlassen",
+    "releaseStaffNamed": "{{name}} entlassen",
+    "releaseConfirmTitle": "{{name}} entlassen?",
+    "releaseConfirmMessage": "{{name}} ({{role}}) verlässt den Staff und geht zurück auf den Markt. Das lässt sich hier nicht rückgängig machen.",
+    "releaseConfirmAction": "Entlassen",
     "hireStaff": "Staffmitglied einstellen",
+    "clubOwner": "Vereinsbesitzer",
+    "errors": {
+      "generic": "Die Staff-Änderung konnte nicht abgeschlossen werden. Versuche es erneut.",
+      "no_game": "Es gibt kein aktives Spiel.",
+      "no_team": "Du leitest keinen Verein.",
+      "hiring_locked": "Staff-Verpflichtungen sind während der Saison gesperrt. Normale Verpflichtungen sind in der Offseason möglich.",
+      "not_found": "Dieses Staffmitglied existiert nicht mehr.",
+      "already_employed": "Dieses Staffmitglied arbeitet bereits für einen Verein.",
+      "insufficient_funds": "Der Verein hat nicht genug Geld, um dieses Staffmitglied zu verpflichten.",
+      "owner_not_hireable": "Vereinsbesitzer können nicht verpflichtet werden.",
+      "owner_not_fireable": "Der Vereinsbesitzer kann nicht entlassen werden.",
+      "not_your_team": "Dieses Staffmitglied arbeitet nicht für deinen Verein.",
+      "transaction_failed": "Die Verpflichtungskosten konnten nicht gebucht werden. Es wurde nichts geändert."
+    },
     "best": "Bester",
     "roles": {
       "AssistantManager": "Co-Trainer",
@@ -1353,7 +1377,10 @@
       "draftAnalysis": "Draft analysis",
       "futureMeta": "Future meta",
       "tiltControl": "Tilt control"
-    }
+    },
+    "adjustFiltersHint": "Passe die Filter oder die Suche an",
+    "hireFromAvailableHint": "Verpflichte Personal über den Reiter „Verfügbar“",
+    "allStaffEmployedHint": "Alle Mitarbeiter sind derzeit angestellt"
   },
   "finances": {
     "overview": "Finanzübersicht",
@@ -1380,6 +1407,7 @@
     "perMonthSuffix": "/Monat",
     "perWeekSuffix": "/Wo",
     "wagePerWeek": "Gehalt/Wo",
+    "wagePerYear": "Gehalt/Jahr",
     "marketValue": "Marktwert",
     "until": "Bis {{year}}",
     "facilities": "Einrichtungen",
@@ -1430,7 +1458,7 @@
     "contractRiskWarning": "Warnung",
     "contractRiskStable": "Stabil",
     "contractExpiresOn": "Läuft aus: {{date}}",
-    "atRiskWages": "€{{amount}}/Jahr gefährdet",
+    "atRiskWages": "{{amount}}/Jahr gefährdet",
     "noContractRisks": "Keine kurzfristigen Vertragsrisiken",
     "esportsSponsor": "Esports Sponsor",
     "mainHub": "Main Hub",
@@ -1447,7 +1475,22 @@
     "ledgerRunningBalance": "Saldo",
     "ledgerNoMatches": "Keine Transaktionen entsprechen den Filtern.",
     "ledgerSource": { "legacy": "Altbestand", "monthly": "Monatlich", "transfer": "Transfer", "staff": "Staff", "academy": "Akademie", "facility": "Einrichtungen", "sponsor": "Sponsor", "prize": "Prämie", "board": "Vorstand", "manual": "Manuell" },
-    "ledgerEmpty": "Noch keine Finanzbuchungen vorhanden."
+    "ledgerEmpty": "Noch keine Finanzbuchungen vorhanden.",
+    "ledgerKinds": {
+      "Salary": "Gehalt",
+      "StaffWage": "Staff-Gehalt",
+      "FacilityUpkeep": "Anlagenunterhalt",
+      "FacilityUpgrade": "Anlagen-Upgrade",
+      "TransferPurchase": "Transferkauf",
+      "TransferSale": "Transferverkauf",
+      "ReleasePenalty": "Strafe für Vertragsauflösung",
+      "AcademyAcquisition": "Akademie-Erwerb",
+      "Sponsorship": "Sponsoring",
+      "MatchdayRevenue": "Spieltagseinnahmen",
+      "PrizeMoney": "Preisgeld",
+      "BudgetRefresh": "Budgetaktualisierung",
+      "Other": "Sonstiges"
+    }
   },
   "inbox": {
     "title": "Posteingang",
@@ -1497,7 +1540,7 @@
       "System": "System",
       "JobOffer": "Stellenangebote"
     },
-    "all": "All",
+    "all": "Alle ({{count}})",
     "close": "Close"
   },
   "manager": {
@@ -1645,7 +1688,16 @@
     "wageFeedbackRejectedHeadline": "Die Gespräche sind gescheitert.",
     "wageFeedbackRejectedDetail": "Nach mehreren Runden ohne Einigung ziehen sich beide Seiten zurück.",
     "transferFeedbackWageNegotiationDetail": "Der Verein hat Ihre Ablöse akzeptiert. Jetzt gilt es, die Bedingungen mit dem Spieler zu vereinbaren.",
-    "browseMarket": "Browse Market"
+    "browseMarket": "Markt durchsuchen",
+    "destination": "Ziel",
+    "mainTeamDestination": "Erste Mannschaft",
+    "freeAgentSigningHint": "Dieser Spieler ist vertragslos und kann ohne Ablöse verpflichtet werden.",
+    "bidImpactTitle": "Voraussichtliche Auswirkung",
+    "bidImpactTransferBudget": "Transferbudget {{before}} -> {{after}}",
+    "bidImpactBalance": "Vereinskonto {{before}} -> {{after}}",
+    "bidImpactWagePressure": "Voraussichtliche Auslastung des Gehaltsbudgets: {{percent}}%",
+    "bidImpactOverTransferBudget": "Dieses Gebot übersteigt dein Transferbudget",
+    "bidImpactOverBalance": "Dieses Gebot würde den Verein in die Schulden treiben"
   },
   "schedule": {
     "noSchedule": "Kein Ligaspielplan verfügbar.",
@@ -1886,12 +1938,14 @@
     "promoteToMain": "In die erste Mannschaft befördern",
     "demoteToAcademy": "In die Akademie versetzen",
     "rerollWarning": "Positionswechsel würfelt Attribute neu und kann die OVR der Spieler verändern.",
-    "alsoPlays": "Also plays",
-    "editPosition": "Edit Position",
-    "loanListed": "Loan Listed",
-    "potentialResearchProgress": "Research progress ({{total}} stages)",
-    "startPotentialResearch": "Start Potential Research",
-    "transferListed": "Transfer Listed"
+    "alsoPlays": "Spielt auch",
+    "editPosition": "Position bearbeiten",
+    "loanListed": "Auf der Leihliste",
+    "potentialResearchProgress": "Forschungsfortschritt ({{total}} Stufen)",
+    "startPotentialResearch": "Potenzialanalyse starten",
+    "transferListed": "Auf der Transferliste",
+    "transferOfferDestination": "Ziel",
+    "transferOfferMainTeam": "Erste Mannschaft"
   },
   "teamProfile": {
     "clubInfo": "Vereinsinformationen",
@@ -2037,17 +2091,17 @@
     "academyRosterCount": "{{count}} players in the acquired roster",
     "academyPipelineHint": "Acquire an existing ERL team from Academy to unlock the pipeline.",
     "viewAcquisitionOptions": "View acquisition options",
-    "academyDescription": "Acquire an academy team to develop young talent and feed your first team with homegrown players.",
-    "academyPendingTitle": "No Academy",
-    "benefitCompare": "Compare",
-    "benefitCompareDesc": "Compare stats and find the best option",
-    "benefitDiscover": "Discover",
-    "benefitDiscoverDesc": "Discover hidden talent in the academy and market",
-    "benefitEvaluate": "Evaluate",
-    "benefitEvaluateDesc": "Discover each player's real potential",
-    "hireScoutCta": "Hire Scout",
-    "noScoutsDescription": "You have no scouts on your staff. Hire at least one from the Staff page to start evaluating players and discovering hidden talent.",
-    "noScoutsTitle": "No scouting team",
+    "academyDescription": "Erwirb ein Akademie-Team, um junge Talente auszubilden und deine erste Mannschaft mit Eigengewächsen zu versorgen.",
+    "academyPendingTitle": "Keine Akademie",
+    "benefitCompare": "Vergleichen",
+    "benefitCompareDesc": "Vergleiche Statistiken und finde die beste Option",
+    "benefitDiscover": "Entdecken",
+    "benefitDiscoverDesc": "Entdecke verborgene Talente in der Akademie und auf dem Markt",
+    "benefitEvaluate": "Bewerten",
+    "benefitEvaluateDesc": "Entdecke das wahre Potenzial jedes Spielers",
+    "hireScoutCta": "Scout verpflichten",
+    "noScoutsDescription": "Du hast keine Scouts in deinem Staff. Verpflichte mindestens einen über die Staff-Seite, um Spieler zu bewerten und verborgene Talente zu entdecken.",
+    "noScoutsTitle": "Kein Scouting-Team",
     "scoutingBadge": "Scouted"
   },
   "match": {
@@ -2108,8 +2162,16 @@
       "masterySourceScouting": "Scouting",
       "masterySourceStaff": "Staff read",
       "assistantCoach": "Assistant coach",
+      "scrimSignalTitle": "Scrim-Vorbereitung",
+      "scrimSignalReasons": {
+        "recent champion reps": "aktuelle Wiederholungen mit dem Champion",
+        "scrimmed core together": "Kern gemeinsam in Scrims gespielt",
+        "recent prep vs this opponent": "aktuelle Vorbereitung auf diesen Gegner"
+      },
       "playerLabel": "Player",
       "swapTargetTitle": "Choose champion to swap",
+      "offRoleWarning": "{{champion}} ist kein {{role}}-Champion. Er spielt im Match schlechter.",
+      "offRolePickWarning": "{{champion}} hat keine freie Rolle in deinem Team: Jemand spielt außerhalb seiner Rolle und im Match schlechter.",
       "warnCounterLastPick": "Careful with {{champion}}: it is countering your last pick.",
       "warnTimingIdentity": "We are missing a clear timing identity. Look for an Early or Late pick to close better.",
       "warnRoleCoverage": "We still have role gaps. Add a more flexible pick.",
@@ -2389,21 +2451,27 @@
     "keyStats": "Wichtige Stats",
     "continueDashboard": "Weiter zum Dashboard",
     "opponentIntel": {
-      "kicker": "Pre-match preparation",
-      "title": "Opponent intelligence",
-      "confidence": "Intel confidence",
-      "rivalPoolByRole": "Rival champion pool by role",
-      "noPoolYet": "No champion pool revealed yet.",
-      "suggestedBans": "Suggested bans",
-      "threat": "Threat",
-      "metaThreats": "Meta threats",
+      "kicker": "Vorbereitung vor dem Spiel",
+      "title": "Gegneranalyse",
+      "confidence": "Verlässlichkeit der Analyse",
+      "rivalPoolByRole": "Champion-Pool des Gegners nach Rolle",
+      "noPoolYet": "Noch kein Champion-Pool bekannt.",
+      "suggestedBans": "Empfohlene Bans",
+      "threat": "Bedrohung",
+      "metaThreats": "Meta-Bedrohungen",
       "meta": "Meta",
-      "masteryHighlights": "Mastery highlights"
+      "masteryHighlights": "Mastery-Highlights",
+      "quality": {
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch"
+      },
+      "roleUnknown": "Unbekannt"
     },
-    "draftStrategy": "Draft Strategy",
+    "draftStrategy": "Draft-Strategie",
     "condition": "Condition",
-    "continue": "Continue",
-    "game": "Game"
+    "continue": "Weiter",
+    "game": "Spiel"
   },
   "endOfSeason": {
     "seasonComplete": "Saison beendet",
@@ -2453,6 +2521,25 @@
     "compare": "Vergleichen"
   },
   "be": {
+    "ledger": {
+      "playerWages": "Monatliche Spielergehälter",
+      "staffWages": "Monatliche Staff-Gehälter",
+      "facilityUpkeep": "Monatlicher Anlagenunterhalt",
+      "sponsorshipIncome": "Monatliche Sponsoringeinnahmen",
+      "matchdayRevenue": "Monatliche Spieltagseinnahmen",
+      "staffHiring": "Kosten für die Staff-Verpflichtung: {{name}}",
+      "freeAgentSigning": "Verpflichtungsgebühr für den vertragslosen Spieler {{player}}",
+      "transferPurchase": "Ablöse für den Transfer von {{player}}",
+      "transferSale": "Einnahme aus dem Transfer von {{player}}",
+      "contractTermination": "Strafe für die Auflösung des Vertrags von {{player}}",
+      "seasonPrize": "Preisgeld der Saison {{season}} (Platz {{position}})",
+      "promotionFunding": "Aufstiegsfinanzierung",
+      "academyAcquisition": "Akademie-Erwerb: {{name}}",
+      "mainHubExpansion": "Erweiterung des Haupt-Anlagenzentrums",
+      "moduleUpgrade": "Upgrade des Anlagenmoduls: {{module}}",
+      "facilityUpgrade": "Anlagen-Upgrade: {{facility}}",
+      "facilityTypes": { "Training": "Training", "Medical": "Medizin", "Scouting": "Scouting" }
+    },
     "sender": {
       "assistantCoach": "Co-Trainer",
       "fitnessCoach": "Fitnesstrainer",
@@ -2599,8 +2686,8 @@
             "body": "Heute eine bittere Niederlage, Coach. Wir haben gegen {{opponent}} verloren: {{userScore}}.\n\nAus diesem Spiel können wir lernen. Analysieren wir, was schiefgelaufen ist, und kommen wir stärker zurück.\n\nDie Saison ist lang — wir fangen uns wieder."
           },
           "defeat_2": {
-            "subject": "Niederlage: {{opponent}} schlägt uns {{userScore}}",
-            "body": "Nicht unser Tag, Coach. {{opponent}} hat uns {{userScore}} geschlagen.\n\nWir müssen analysieren, was schiefgelaufen ist, und die Probleme vor dem nächsten Spiel beheben. Ich bereite eine detaillierte Aufschlüsselung der entscheidenden Momente vor.\n\nBleiben wir konzentriert — es steht noch viel auf dem Spiel."
+            "subject": "Niederlage: {{opponent}} schlägt uns {{opponentScore}}",
+            "body": "Nicht unser Tag, Coach. {{opponent}} hat uns {{opponentScore}} geschlagen.\n\nWir müssen analysieren, was schiefgelaufen ist, und die Probleme vor dem nächsten Spiel beheben. Ich bereite eine detaillierte Aufschlüsselung der entscheidenden Momente vor.\n\nBleiben wir konzentriert — es steht noch viel auf dem Spiel."
           },
           "draw_1": {
             "subject": "Unentschieden: {{home}} {{homeWins}}-{{awayWins}} {{away}}",
@@ -3120,9 +3207,9 @@
         "notes": {
           "managerBlocked": "Du hast mir gesagt, ich soll die Vertragsgespräche noch nicht wieder aufnehmen.",
           "completed": "Ich konnte das ohne dein Eingreifen abschließen.",
-          "beyondLimits": "Die Spielerseite will etwa €{{wage}}/Jahr für {{years}} Jahre, das liegt außerhalb der Delegationsgrenzen.",
+          "beyondLimits": "Die Spielerseite will etwa {{wage}}/Jahr für {{years}} Jahre, das liegt außerhalb der Delegationsgrenzen.",
           "boardWagePolicy": "Die Gehaltspolitik des Vorstands blockiert diese Verlängerung. Halte die Jahreslöhne während der Erholung nahe bei €{{budget}}.",
-          "prefersManager": "Sie würden zuhören, wollen aber noch etwa €{{wage}}/Jahr für {{years}} Jahre und bevorzugen ein Gespräch direkt mit dir.",
+          "prefersManager": "Sie würden zuhören, wollen aber noch etwa {{wage}}/Jahr für {{years}} Jahre und bevorzugen ein Gespräch direkt mit dir.",
           "relationshipBlocked": "Unter der aktuellen Beziehung und Vertragssituation wollen sie sich über mich nicht festlegen."
         }
       },
@@ -3465,6 +3552,10 @@
           "subject9": "el_yuste — the data cools the optimism again",
           "body9": "Yuste opened charts on stream and left a hard reading: \"Do not talk to me about feelings if the data is going down. You can have one good match, but the trend rules.\"\n\nThe audience debate is active again."
         }
+      },
+      "contractTerminated": {
+        "subject": "Vertrag aufgelöst: {{player}}",
+        "body": "Du hast den Vertrag von {{player}} aufgelöst. Der Spieler ist jetzt vertragslos. Kosten der Auflösung: €{{cost}}."
       }
     },
     "news": {
@@ -3878,17 +3969,17 @@
     "noResults": "No results"
   },
   "competitions": {
-    "heroMatches": "Matches",
-    "heroSeason": "Season",
+    "heroMatches": "Spiele",
+    "heroSeason": "Saison",
     "heroTeams": "Teams",
-    "noPlayers": "No players found",
-    "noPlayersMatch": "No players match your search",
-    "noStandings": "No standings available",
-    "noTeams": "No teams found",
-    "noTeamsMatch": "No teams match your search",
-    "searchPlayer": "Search player...",
-    "searchTeam": "Search team...",
-    "selectPrompt": "Select a competition to view details",
+    "noPlayers": "Keine Spieler gefunden",
+    "noPlayersMatch": "Kein Spieler passt zu deiner Suche",
+    "noStandings": "Keine Tabelle verfügbar",
+    "noTeams": "Keine Teams gefunden",
+    "noTeamsMatch": "Kein Team passt zu deiner Suche",
+    "searchPlayer": "Spieler suchen...",
+    "searchTeam": "Team suchen...",
+    "selectPrompt": "Wähle einen Wettbewerb, um Details zu sehen",
     "tableHeader": {
       "diff": "Diff",
       "losses": "L",
@@ -3896,17 +3987,17 @@
       "mapsWon": "MW",
       "ovr": "OVR",
       "played": "Pld",
-      "player": "Player",
+      "player": "Spieler",
       "pos": "#",
       "pts": "Pts",
-      "role": "Role",
+      "role": "Rolle",
       "team": "Team",
       "wins": "W",
       "wr": "WR%"
     },
-    "title": "Competitions",
-    "viewPlayers": "Players",
-    "viewStandings": "Standings",
+    "title": "Wettbewerbe",
+    "viewPlayers": "Spieler",
+    "viewStandings": "Tabelle",
     "viewTeams": "Teams"
   },
   "errorBoundary": {

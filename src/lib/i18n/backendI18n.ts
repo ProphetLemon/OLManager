@@ -6,6 +6,7 @@ import type {
   MessageAction,
   NewsArticle,
   BoardObjective,
+  FinancialTransactionData,
 } from '../../store/gameStore';
 import {
   inferLegacyDelegatedRenewalsParams,
@@ -37,6 +38,32 @@ export function resolveBackendText(
   params?: Record<string, string>,
 ): string {
   return resolve(key, fallback, params);
+}
+
+type Translate = (key: string, options?: Record<string, string>) => string;
+
+const DOTTED_KEY = /^[A-Za-z]+(\.[A-Za-z]+)+$/;
+
+/**
+ * Text of a finances ledger line: the translated key when the line has one that resolves,
+ * otherwise the English text stored with the line (saves from before the key existed).
+ * Empty when the line has neither, so the caller can fall back to the kind label.
+ * `translate` lets a caller with its own i18next instance (the `t` of useTranslation) resolve
+ * in its language. A parameter that is itself a dotted key (a facility name) is translated.
+ */
+export function resolveLedgerDescription(
+  entry: FinancialTransactionData,
+  translate: Translate = (key, options) => i18n.t(key, options),
+): string {
+  if (!entry.description_key) return entry.description;
+  const params: Record<string, string> = { ...entry.description_params };
+  for (const [name, value] of Object.entries(params)) {
+    if (!DOTTED_KEY.test(value)) continue;
+    const translated = translate(value);
+    if (translated !== value) params[name] = translated;
+  }
+  const text = translate(entry.description_key, params);
+  return text === entry.description_key ? entry.description : text;
 }
 
 function boardObjectiveFallback(objective: BoardObjective): string {
@@ -81,21 +108,27 @@ const MATCH_RESULT_TEMPLATE_KEY = 'be.msg.matchResult.templates.';
 
 /**
  * Messages stored before the result templates used plain scores only carry
- * `score` ("<user team>:<own wins>-<opponent wins>"). Derive userScore, homeWins and
- * awayWins from it so those messages still render in the locale text.
+ * `score` ("<user team>:<own wins>-<opponent wins>"). Derive userScore, opponentScore,
+ * homeWins and awayWins from it so those messages still render in the locale text.
+ * Messages stored with userScore but without opponentScore get the reversed userScore.
  */
 function inferMatchResultScoreParams(msg: MessageData, params?: Record<string, string>) {
-  if (!params || !msg.subject_key?.startsWith(MATCH_RESULT_TEMPLATE_KEY) || params.userScore) return params;
+  if (!params || !msg.subject_key?.startsWith(MATCH_RESULT_TEMPLATE_KEY) || params.opponentScore) return params;
   const separator = params.score?.lastIndexOf(':') ?? -1;
   const wins = params.score?.slice(separator + 1).split('-');
-  if (separator < 0 || wins?.length !== 2) return params;
-  const userIsHome = params.score.slice(0, separator) === params.home;
-  return {
-    ...params,
-    userScore: `${wins[0]}-${wins[1]}`,
-    homeWins: userIsHome ? wins[0] : wins[1],
-    awayWins: userIsHome ? wins[1] : wins[0],
-  };
+  if (separator >= 0 && wins?.length === 2) {
+    const userIsHome = params.score.slice(0, separator) === params.home;
+    return {
+      ...params,
+      userScore: `${wins[0]}-${wins[1]}`,
+      opponentScore: `${wins[1]}-${wins[0]}`,
+      homeWins: userIsHome ? wins[0] : wins[1],
+      awayWins: userIsHome ? wins[1] : wins[0],
+    };
+  }
+  const userWins = params.userScore?.split('-');
+  if (userWins?.length === 2) return { ...params, opponentScore: `${userWins[1]}-${userWins[0]}` };
+  return params;
 }
 
 /**

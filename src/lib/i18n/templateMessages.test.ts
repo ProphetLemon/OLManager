@@ -76,6 +76,31 @@ describe("match messages render in the active language", () => {
     expect(resolved.subject).toBe("Derrota: KOI 2-1 G2");
     expect(resolved.body).toContain("Perdimos contra KOI 1-2");
   });
+
+  it("puts the opponent's wins first in a stored loss whose sentence has the opponent as subject", async () => {
+    // Old save: only `score` ("<user team>:<own wins>-<opponent wins>"), the user (KOI) lost 0-1 to SHI.
+    const msg = stored({
+      subject: "Loss: SHI defeats us KOI:0-1",
+      body: "Not our day, coach. SHI beat us KOI:0-1.",
+      subject_key: "be.msg.matchResult.templates.defeat_2.subject",
+      body_key: "be.msg.matchResult.templates.defeat_2.body",
+      i18n_params: { home: "KOI", away: "SHI", score: "KOI:0-1", opponent: "SHI", matchday: "2" },
+    });
+    const resolved = await renderIn("es", msg);
+    expect(resolved.subject).toBe("Derrota: SHI nos vence 1-0");
+    expect(resolved.body).toContain("SHI nos ganó 1-0");
+  });
+
+  it("derives the opponent's score from userScore for a message stored without it", async () => {
+    // Saves made after the plain score params but before opponentScore: no usable `score` prefix.
+    const msg = stored({
+      subject_key: "be.msg.matchResult.templates.defeat_2.subject",
+      body_key: "be.msg.matchResult.templates.defeat_2.body",
+      i18n_params: { home: "KOI", away: "SHI", userScore: "0-1", homeWins: "0", awayWins: "1", opponent: "SHI" },
+    });
+    const resolved = await renderIn("en", msg);
+    expect(resolved.subject).toBe("Loss: SHI defeats us 1-0");
+  });
 });
 
 describe("player event messages render in the active language", () => {

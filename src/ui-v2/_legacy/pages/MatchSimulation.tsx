@@ -10,7 +10,7 @@ import {
   MatchDayStage,
 } from "@/ui-v2/_legacy/components/match/types";
 import { mapRuntimeEventsToMatchEvents, mergeRuntimeEventsIntoSnapshot } from "@/ui-v2/_legacy/components/match/matchRuntimeEvents";
-import { resolveMatchFixture } from "@/ui-v2/_legacy/components/match/helpers";
+import { resolveMatchFixture, userLeagueFixtures } from "@/ui-v2/_legacy/components/match/helpers";
 import PreMatchSetup from "@/ui-v2/_legacy/components/match/PreMatchSetup";
 import ChampionDraft, {
   authorizedRelationshipChampionIdsForViewer,
@@ -991,7 +991,7 @@ export default function MatchSimulation() {
   }, [currentFixture?.id]);
 
   const playoffFixtures =
-    gameState?.leagues?.[0]?.fixtures.filter(
+    userLeagueFixtures(gameState)?.filter(
       (fixture) => fixture.match_type === "Playoffs",
     ) ?? [];
 
@@ -1001,8 +1001,8 @@ export default function MatchSimulation() {
       : null;
 
   const preseasonFriendlyFixtures =
-    gameState?.leagues?.[0]?.fixtures
-      .filter((fixture) => fixture.match_type === "Friendly" && fixture.matchday === 0)
+    userLeagueFixtures(gameState)
+      ?.filter((fixture) => fixture.match_type === "Friendly" && fixture.matchday === 0)
       .sort((left, right) =>
         left.date.localeCompare(right.date) ||
         left.matchday - right.matchday ||

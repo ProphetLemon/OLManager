@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
@@ -22,9 +23,7 @@ interface EndOfSeasonScreenProps {
 }
 
 function resolvePlayoffChampionTeamId(gameState: GameStateData): string | null {
-  const activeLeague = gameState?.user_competition_id
-    ? gameState.leagues.find(l => l.competition_id === gameState.user_competition_id)
-    : gameState.leagues[0];
+  const activeLeague = resolveUserLeague(gameState);
   const playoffFixtures = (activeLeague?.fixtures ?? [])
     .filter((fixture) => fixture.match_type === "Playoffs" && fixture.status === "Completed" && fixture.result)
     .sort((left, right) => right.matchday - left.matchday);
@@ -47,10 +46,7 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
   const setPendingSeasonSummary = useGameStore((s) => s.setPendingSeasonSummary);
   const step: "review" | "done" = summary ? "done" : "review";
 
-  const league = gameState?.user_competition_id
-    ? gameState.leagues.find(l => l.competition_id === gameState.user_competition_id)
-        ?? gameState.leagues[0]
-    : gameState.leagues[0];
+  const league = resolveUserLeague(gameState);
   const userTeamId = gameState.manager.team_id;
   const userTeam = gameState.teams.find(t => t.id === userTeamId);
 

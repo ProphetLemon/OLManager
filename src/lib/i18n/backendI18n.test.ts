@@ -6,6 +6,7 @@ import {
   resolveAction,
   resolveNewsArticle,
   resolveBoardObjective,
+  resolveLedgerDescription,
 } from "./backendI18n";
 import type {
   MessageData,
@@ -342,7 +343,7 @@ describe("resolveMessage", () => {
         id: "delegated_renewals_2026-07-01_0",
         subject: "Assistant Report — Contract Renewals",
         body:
-          "Boss, I went through our renewal list at Lisbon Sporting. 4 completed, 2 still pending, 1 failed.\n\nCompleted: Claes agreed to 1 year(s) on €5000/wk.\nStill difficult: Vieira — Their camp want around €25000/wk for 3 years, which is beyond the delegation limits.\nFailed: Fernandes — You told me not to reopen contract talks yet.",
+          "Boss, I went through our renewal list at Lisbon Sporting. 4 completed, 2 still pending, 1 failed.\n\nCompleted: Claes agreed to 1 year(s) on €5000/wk.\nStill difficult: Vieira — Their camp want around €25000/wk for 3 years, which is beyond the delegation limits.\nStill difficult: Moreira — They would listen, but they still want about €18000/wk for 2 years and prefer to hear from you directly.\nFailed: Fernandes — You told me not to reopen contract talks yet.",
         sender: "Assistant Manager",
         sender_role: "Assistant Manager",
       });
@@ -362,6 +363,9 @@ describe("resolveMessage", () => {
       );
       expect(result.body).toContain(
         "Continua difícil: Vieira — O estafe deles quer cerca de €25000/ano por 3 anos, acima dos limites da delegação.",
+      );
+      expect(result.body).toContain(
+        "Continua difícil: Moreira — Eles até ouviriam, mas ainda querem cerca de €18000/ano por 2 anos e preferem falar diretamente com você.",
       );
       expect(result.body).toContain(
         "Falhou: Fernandes — Você me disse para ainda não reabrir as conversas contratuais.",
@@ -486,6 +490,59 @@ describe("resolveBackendText", () => {
   });
 });
 
+
+describe("resolveLedgerDescription", () => {
+  const line = {
+    date: "2026-01-03",
+    description: "Staff hiring cost: Ana Coach",
+    amount: -60_000,
+    kind: "StaffWage" as const,
+  };
+
+  it("resolves the key with its parameters", () => {
+    i18n.addResourceBundle("en", "translation", { "test.ledgerHire": "Hiring {{name}}" }, true, true);
+
+    expect(
+      resolveLedgerDescription({
+        ...line,
+        description_key: "test.ledgerHire",
+        description_params: { name: "Ana Coach" },
+      }),
+    ).toBe("Hiring Ana Coach");
+  });
+
+  it("keeps the stored description for a line without a key", () => {
+    expect(resolveLedgerDescription(line)).toBe("Staff hiring cost: Ana Coach");
+  });
+
+  it("keeps the stored description when the key does not exist", () => {
+    expect(
+      resolveLedgerDescription({ ...line, description_key: "test.ledgerMissing", description_params: {} }),
+    ).toBe("Staff hiring cost: Ana Coach");
+  });
+
+  it("translates a parameter that is itself a key and leaves a player name alone", () => {
+    i18n.addResourceBundle(
+      "en",
+      "translation",
+      { "test.ledgerModule": "Upgrade {{module}} for {{player}}", "test.ledgerFacility": "Scrims Room" },
+      true,
+      true,
+    );
+
+    expect(
+      resolveLedgerDescription({
+        ...line,
+        description_key: "test.ledgerModule",
+        description_params: { module: "test.ledgerFacility", player: "Dr. Mid: The Return" },
+      }),
+    ).toBe("Upgrade Scrims Room for Dr. Mid: The Return");
+  });
+
+  it("returns an empty text for a line with neither a key nor a description", () => {
+    expect(resolveLedgerDescription({ ...line, description: "" })).toBe("");
+  });
+});
 
 describe("transfer offer message locale", () => {
   const offer = {

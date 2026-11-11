@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Building2, ChevronDown, Check, ImagePlus, Settings, Trophy, Users } from "lucide-react";
@@ -53,7 +54,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
     return () => document.removeEventListener("mousedown", handler);
   }, [nationalityOpen]);
 
-  const league = gameState.leagues?.[0];
+  const league = resolveUserLeague(gameState);
   const teamPlayers = useMemo(
     () => gameState.players.filter((p) => p.team_id === myTeam?.id),
     [gameState.players, myTeam],
@@ -147,12 +148,12 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                     style={{ width: `${100 - Math.min(100, (mgr.reputation / 1000) * 100)}%` }}
                   />
                 </div>
-              <p className="mt-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.reputation")}</p>
+              <p className="mt-0.5 font-heading text-2xs uppercase tracking-wide text-muted-foreground">{t("manager.reputation")}</p>
             </div>
             <button
               type="button"
               onClick={handleOpenSettings}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-2xs font-heading font-bold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted"
             >
               <Settings className="size-3" />
               {t("manager.editProfile")}
@@ -192,7 +193,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
             ].map((s) => (
               <div key={s.label} className="rounded-lg border border-border bg-muted/20 px-2 py-2 text-center">
                 <p className="font-heading text-lg font-bold tabular-nums text-foreground">{s.value}</p>
-                <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{s.label}</p>
+                <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">{s.label}</p>
               </div>
             ))}
           </div>
@@ -203,7 +204,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="space-y-0">
-            <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
+            <CardTitle className="font-heading text-sm uppercase tracking-wide text-muted-foreground">
               {t("manager.boardStatus")}
             </CardTitle>
           </CardHeader>
@@ -211,7 +212,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
             <div className="flex flex-col gap-4">
               <div>
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="font-heading text-xs uppercase tracking-wider text-muted-foreground">{t("manager.board")}</span>
+                  <span className="font-heading text-xs uppercase tracking-wide text-muted-foreground">{t("manager.board")}</span>
                   <span className="font-heading text-sm font-bold tabular-nums text-foreground">{mgr.satisfaction}%</span>
                 </div>
                 <div className="relative h-2 overflow-hidden rounded-full">
@@ -238,7 +239,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
               </div>
               <div>
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="font-heading text-xs uppercase tracking-wider text-muted-foreground">{t("manager.fans")}</span>
+                  <span className="font-heading text-xs uppercase tracking-wide text-muted-foreground">{t("manager.fans")}</span>
                   <span className="font-heading text-sm font-bold tabular-nums text-foreground">{mgr.fan_approval ?? 50}%</span>
                 </div>
                 <div className="relative h-2 overflow-hidden rounded-full">
@@ -271,7 +272,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
         {/* Career history */}
         <Card>
           <CardHeader className="space-y-0">
-            <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
+            <CardTitle className="font-heading text-sm uppercase tracking-wide text-muted-foreground">
               {t("manager.careerHistory")}
             </CardTitle>
           </CardHeader>
@@ -279,7 +280,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
             {mgr.career_history.length > 0 ? (
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-border text-2xs uppercase tracking-widest text-muted-foreground">
+                  <tr className="border-b border-border font-heading text-2xs uppercase tracking-wide text-muted-foreground">
                     <th className="px-4 py-3 font-heading font-bold">{t("manager.club")}</th>
                     <th className="px-4 py-3 font-heading font-bold">{t("manager.period")}</th>
                     <th className="px-3 py-3 text-center font-heading font-bold">{t("common.played")}</th>
@@ -313,7 +314,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
         {/* Current team */}
         <Card>
           <CardHeader className="space-y-0">
-            <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
+            <CardTitle className="font-heading text-sm uppercase tracking-wide text-muted-foreground">
               <Building2 className="mr-1.5 inline size-4" />
               {t("manager.currentTeam", "Equipo actual")}
             </CardTitle>
@@ -342,24 +343,24 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                   <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
                     <Users className="mx-auto mb-1 size-4 text-club-text" />
                     <p className="font-heading text-lg font-bold tabular-nums text-foreground">{teamPlayers.length}</p>
-                    <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.players", "Jugadores")}</p>
+                    <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">{t("manager.players", "Jugadores")}</p>
                   </div>
                   <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
                     <Building2 className="mx-auto mb-1 size-4 text-amber-400" />
                     <p className="font-heading text-lg font-bold tabular-nums text-foreground">{teamStaff.length}</p>
-                    <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.staff", "Staff")}</p>
+                    <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">{t("manager.staff", "Staff")}</p>
                   </div>
                   <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
                     <Trophy className="mx-auto mb-1 size-4 text-emerald-400" />
                     <p className="font-heading text-lg font-bold tabular-nums text-foreground">{avgOvr}</p>
-                    <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("common.ovr")}</p>
+                    <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">{t("common.ovr")}</p>
                   </div>
                 </div>
 
                 {/* Recent results */}
                 {recentResults.length > 0 && (
                   <div>
-                    <p className="mb-2 font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <p className="mb-2 font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">
                       {t("manager.recentResults", "Últimos resultados")}
                     </p>
                     <div className="flex gap-1.5">
@@ -394,7 +395,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
         {/* Career highlights */}
         <Card>
           <CardHeader className="space-y-0">
-            <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
+            <CardTitle className="font-heading text-sm uppercase tracking-wide text-muted-foreground">
               <Trophy className="mr-1.5 inline size-4" />
               {t("manager.careerHighlights", "Trayectoria")}
             </CardTitle>
@@ -404,24 +405,24 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
                   <p className="font-heading text-lg font-bold tabular-nums text-foreground">{totalSeasons}</p>
-                  <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.seasons", "Temp.")}</p>
+                  <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">{t("manager.seasons", "Temp.")}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
                   <p className="font-heading text-lg font-bold tabular-nums text-foreground">{stats.trophies}</p>
-                  <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.trophies")}</p>
+                  <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">{t("manager.trophies")}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
                   <p className="font-heading text-lg font-bold tabular-nums text-foreground">
                     {stats.best_finish != null ? `#${stats.best_finish}` : "—"}
                   </p>
-                  <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("manager.bestFinish", "Mejor puesto")}</p>
+                  <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">{t("manager.bestFinish", "Mejor puesto")}</p>
                 </div>
               </div>
 
               {/* W/L ratio bar */}
               {stats.matches_managed > 0 && (
                 <div>
-                  <p className="mb-1.5 font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-1.5 font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">
                     {t("manager.winRate", "Efectividad")}
                   </p>
                   <div className="flex h-3 overflow-hidden rounded-full bg-muted">
@@ -438,7 +439,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
               {/* Season records from career history */}
               {mgr.career_history.length > 0 && (
                 <div>
-                  <p className="mb-1.5 font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-1.5 font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">
                     {t("manager.bestSeason", "Mejor temporada")}
                   </p>
                   {(() => {
@@ -465,7 +466,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowAvatarPicker(false)}>
           <div className="w-full max-w-xl rounded-xl border border-border bg-card p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-heading text-lg font-bold uppercase tracking-wider text-foreground">{t("manager.changeAvatar")}</h3>
+              <h3 className="font-heading text-lg font-bold uppercase tracking-wide text-foreground">{t("manager.changeAvatar")}</h3>
               <button type="button" onClick={() => setShowAvatarPicker(false)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
                 <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
               </button>
@@ -498,36 +499,36 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowSettings(false)}>
           <div className="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-heading text-lg font-bold uppercase tracking-wider text-foreground">{t("manager.editProfile")}</h3>
+              <h3 className="font-heading text-lg font-bold uppercase tracking-wide text-foreground">{t("manager.editProfile")}</h3>
               <button type="button" onClick={() => setShowSettings(false)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
                 <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.nickname")}</label>
+                <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">{t("createManager.nickname")}</label>
                 <input maxLength={20} value={formData.nickname} onChange={(e) => setFormData((p) => ({ ...p, nickname: e.target.value }))}
                   className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:border-primary/50" />
               </div>
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.firstName")}</label>
+                  <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">{t("createManager.firstName")}</label>
                   <input maxLength={30} value={formData.firstName} onChange={(e) => setFormData((p) => ({ ...p, firstName: e.target.value }))}
                     className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:border-primary/50" />
                 </div>
                 <div className="flex-1">
-                  <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.lastName")}</label>
+                  <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">{t("createManager.lastName")}</label>
                   <input maxLength={30} value={formData.lastName} onChange={(e) => setFormData((p) => ({ ...p, lastName: e.target.value }))}
                     className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:border-primary/50" />
                 </div>
               </div>
               <div>
-                <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.dob")}</label>
+                <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">{t("createManager.dob")}</label>
                 <input type="date" value={formData.dob} onChange={(e) => setFormData((p) => ({ ...p, dob: e.target.value }))}
                   className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:border-primary/50" />
               </div>
               <div ref={nationalityRef}>
-                <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">{t("createManager.countryOfOrigin")}</label>
+                <label className="mb-1 block font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">{t("createManager.countryOfOrigin")}</label>
                 <div className="relative">
                   <button type="button" onClick={() => setNationalityOpen(!nationalityOpen)}
                     className="flex w-full items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-left text-foreground transition-colors hover:border-primary/50">

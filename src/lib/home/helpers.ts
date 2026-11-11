@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { findNextFixture } from "../../lib/common/helpers";
 import { calculateLolOvr } from "../../lib/players/lolPlayerStats";
 import { hasCompetitiveStandings } from "../../lib/season/seasonContext";
@@ -62,7 +63,7 @@ function getStandingPosition(
   gameState: GameStateData,
   teamId: string,
 ): number | null {
-  const playerLeague = gameState.leagues[0];
+  const playerLeague = resolveUserLeague(gameState);
 
   if (!playerLeague) {
     return null;
@@ -86,9 +87,7 @@ export function getNextOpponentWidgetData(
   const userTeamId = gameState.manager.team_id;
   if (!userTeamId) return null;
 
-  const playerLeague =
-    gameState.leagues.find((l) => l.competition_id === gameState.user_competition_id) ??
-    gameState.leagues[0];
+  const playerLeague = resolveUserLeague(gameState);
 
   if (!playerLeague) return null;
 
@@ -183,7 +182,7 @@ export function getRecentResultsForTeam(
   teamId: string | null,
   limit = 5,
 ): HomeRecentResult[] {
-  const playerLeague = gameState.leagues[0];
+  const playerLeague = resolveUserLeague(gameState);
 
   if (!playerLeague || !teamId) {
     return [];

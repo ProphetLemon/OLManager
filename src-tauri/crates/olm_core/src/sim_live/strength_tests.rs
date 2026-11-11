@@ -7,7 +7,7 @@ use super::*;
 /// Damage one auto attack from `attacker` deals to `defender`, both fresh
 /// champions standing next to each other. Everything except the two score
 /// sets is identical, so the ratio of two calls isolates the strength terms.
-fn hit_damage(attacker: &ChampionRuntime, defender: &ChampionRuntime) -> f64 {
+pub(super) fn hit_damage(attacker: &ChampionRuntime, defender: &ChampionRuntime) -> f64 {
     let mut a = attacker.clone();
     let mut d = defender.clone();
     a.team = "blue".to_string();
@@ -21,7 +21,7 @@ fn hit_damage(attacker: &ChampionRuntime, defender: &ChampionRuntime) -> f64 {
     100_000.0 - runtime.champions[1].hp
 }
 
-fn with_scores(score: f64) -> ChampionRuntime {
+pub(super) fn with_scores(score: f64) -> ChampionRuntime {
     let mut champion = test_champion("c", "blue", "MID", "mid", Vec2 { x: 0.5, y: 0.5 });
     champion.gameplay_score = score;
     champion.iq_score = score;
@@ -37,7 +37,7 @@ fn duel_ratio(strong: f64, weak: f64) -> f64 {
 
 /// Before the fix the only persistent effect was a +-7% micro multiplier on
 /// the attacker (ratio 1.14 at 95 vs 40) and nothing on the defender.
-/// [PLACEHOLDER] bounds: the ratio at 95 vs 40 is about 2.1 with K = 0.40.
+/// [PLACEHOLDER] bounds: the ratio at 95 vs 40 is about 2.3 with K = 0.45.
 #[test]
 fn stats_scale_damage_dealt_and_taken() {
     let extreme = duel_ratio(95.0, 40.0);
@@ -224,31 +224,33 @@ fn stronger_team_wins_at_least() {
 }
 
 /// Even teams, no side bias: blue's win rate over `2 * ECON_N` identical
-/// pairings must sit in the band around 50%. Measured with the shipped
-/// constants: blue won 83 of 144 (57.6%); an earlier 48-match run gave 54%.
-/// That is above the 45-55% target but within two standard errors of it
-/// (SE about 4 points), so the band is asserted wide and the residual blue-side
-/// edge is a known open item: randomising the acting order per tick did not
-/// move it (it measured 62.5%, i.e. noise), and the structure layout is
-/// transpose-symmetric within a few hundredths, so the cause is still unknown.
-/// [PLACEHOLDER] target 45-55%, asserted 42-58%.
+/// pairings must sit in 45-55%. The default is 500 matches per orientation
+/// (1000 in all): if the true rate is 50% the standard error is 1.6 points, so
+/// the +-5 point band is 3.2 standard errors wide and a healthy engine fails
+/// it about 0.2% of the time. Matches use fixed seeds, so the run is
+/// repeatable. KNOWN FAILING: the shipped engine measures blue 555 of 1000
+/// (55.5%, 95% interval 52.4-58.6%), above the band; the causes found so far
+/// are in the commit message of the change that restored this band.
 /// `cargo test -p olm_core --lib sim_live::strength_tests::even_teams_have_no_side_bias -- --ignored --nocapture`
 #[test]
-#[ignore = "slow: 144 full matches (about 100 s debug); run when changing combat order or spawns"]
+#[ignore = "slow: 1000 full matches (about 20-30 min on 6 cores); known failing until the blue-side edge is fixed"]
 fn even_teams_have_no_side_bias() {
-    let n = batch_size(72);
+    let n = batch_size(500);
     let first = run_batch_sides(1000, n, Side::EVEN, Side::EVEN, FULL_MATCH_TICKS);
     let second = run_batch_sides(2000, n, Side::EVEN, Side::EVEN, FULL_MATCH_TICKS);
     let blue = wins(&first, "blue") + wins(&second, "blue");
     let total = first.len() + second.len();
     let rate = blue as f64 / total as f64;
+    let half_width = 1.96 * (rate * (1.0 - rate) / total as f64).sqrt();
     println!(
-        "even teams: blue won {blue} of {total} ({:.1}%)",
-        rate * 100.0
+        "even teams: blue won {blue} of {total} ({:.1}%, 95% interval {:.1}-{:.1}%)",
+        rate * 100.0,
+        (rate - half_width) * 100.0,
+        (rate + half_width) * 100.0
     );
     assert!(
-        (0.42..=0.58).contains(&rate),
-        "blue won {:.0}% of even matches",
+        (0.45..=0.55).contains(&rate),
+        "blue won {:.1}% of even matches",
         rate * 100.0
     );
 }

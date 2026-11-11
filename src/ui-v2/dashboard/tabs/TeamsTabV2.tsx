@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Building2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Filter, Search, SortAsc, Swords, Trophy } from "lucide-react";
@@ -30,8 +31,9 @@ export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
   const [page, setPage] = useState(0);
 
   const allStandings = useMemo(
-    () => [...(gameState.leagues?.[0]?.standings ?? [])].sort(compareStandingsByLolScore),
-    [gameState.leagues],
+    () => [...(resolveUserLeague(gameState)?.standings ?? [])].sort(compareStandingsByLolScore),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resolveUserLeague reads only these two fields
+    [gameState.leagues, gameState.user_competition_id],
   );
   const leagues = useMemo(() => gameState.leagues.map((l) => ({ id: l.competition_id ?? l.id, name: l.name })), [gameState.leagues]);
 

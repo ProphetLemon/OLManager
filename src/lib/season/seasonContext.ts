@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import type {
   GameStateData,
   SeasonContextData,
@@ -55,7 +56,7 @@ function normaliseSeasonContext(context: SeasonContextData): SeasonContextData {
 }
 
 function deriveSeasonContext(gameState: GameStateData): SeasonContextData {
-  const league = gameState.leagues[0];
+  const league = resolveUserLeague(gameState);
   if (!league) {
     return DEFAULT_SEASON_CONTEXT;
   }

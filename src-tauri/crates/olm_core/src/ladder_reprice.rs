@@ -28,7 +28,8 @@
 use crate::custom_team::league_median_profile;
 use crate::domain::team::{FinancialTransactionKind, Team, TeamKind};
 use crate::finances::{
-    BudgetImpact, FinanceTransactionInput, calc_annual_wages, record_transaction,
+    BudgetImpact, FinanceTransactionInput, LedgerText, calc_annual_wages,
+    record_transaction_with_text,
 };
 use crate::game::Game;
 
@@ -145,7 +146,8 @@ fn promote_economy(team: &mut Team, target: &crate::custom_team::ClubProfile, da
                 source_id: Some("promotion".to_string()),
                 correlation_id: None,
             };
-            if let Err(error) = record_transaction(team, input) {
+            let text = LedgerText::new("be.ledger.promotionFunding", &[]);
+            if let Err(error) = record_transaction_with_text(team, input, text) {
                 log::warn!(
                     "[ladder] promotion funding for {} failed: {error:?}",
                     team.id

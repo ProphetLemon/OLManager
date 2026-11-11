@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { useEffect, useState } from "react";
 import { GameStateData, FixtureData } from "@/store/gameStore";
 import { Card, CardBody, Badge } from "@/ui-v2/_legacy/components/ui";
@@ -55,9 +56,7 @@ export default function ScheduleTab({
     }
   }, [isDesktop, view]);
   const [fixtureResultView, setFixtureResultView] = useState<StoredFixtureDraftResult | null>(null);
-  const league = gameState.user_competition_id
-    ? gameState.leagues.find((l) => l.competition_id === gameState.user_competition_id)
-    : gameState.leagues[0];
+  const league = resolveUserLeague(gameState) ?? undefined;
   const userTeamId = gameState.manager.team_id;
 
   const seasonContext = resolveSeasonContext(gameState);

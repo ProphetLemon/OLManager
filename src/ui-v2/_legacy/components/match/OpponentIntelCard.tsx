@@ -1,8 +1,21 @@
 import type { OpponentIntelSnapshot } from "@/ui-v2/_legacy/components/match/opponentIntelService";
 import { useTranslation } from "react-i18next";
 
+import { shortRoleKey } from "@/lib/squad/cards";
+import type { LolRole } from "@/lib/home/scoreboard";
+
+const LOL_ROLES: readonly string[] = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"];
+
 export default function OpponentIntelCard({ intel }: { intel: OpponentIntelSnapshot }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // The intel service reports a role name from the seed data, or "Unknown" when it has none.
+  const roleLabel = (role: string): string => {
+    const upper = role.toUpperCase();
+    if (LOL_ROLES.includes(upper)) {
+      return t(shortRoleKey(upper as LolRole), { defaultValue: role });
+    }
+    return role === "Unknown" ? t("match.opponentIntel.roleUnknown", { defaultValue: role }) : role;
+  };
 
   return (
     <section className="rounded-2xl border border-border bg-card p-5">
@@ -14,7 +27,7 @@ export default function OpponentIntelCard({ intel }: { intel: OpponentIntelSnaps
         <div className="text-right">
           <p className="text-xs text-muted-foreground">{t("match.opponentIntel.confidence", "Intel confidence")}</p>
           <p className="font-heading font-bold text-sm text-club-text">
-            {intel.confidence.qualityLabel.toUpperCase()} · {intel.confidence.poolCoveragePct}%
+            {t(`match.opponentIntel.quality.${intel.confidence.qualityLabel}`, { defaultValue: intel.confidence.qualityLabel }).toLocaleUpperCase(i18n.language)} · {intel.confidence.poolCoveragePct}%
           </p>
         </div>
       </div>
@@ -24,7 +37,7 @@ export default function OpponentIntelCard({ intel }: { intel: OpponentIntelSnaps
           <h4 className="text-xs uppercase tracking-wider font-heading text-muted-foreground">{t("match.opponentIntel.rivalPoolByRole", "Rival champion pool by role")}</h4>
           {intel.playerPools.map((pool) => (
             <div key={`${pool.playerName}-${pool.role}`} className="rounded-xl border border-border p-3">
-              <p className="text-sm font-semibold text-foreground">{pool.playerName} <span className="text-xs text-muted-foreground">({pool.role})</span></p>
+              <p className="text-sm font-semibold text-foreground">{pool.playerName} <span className="text-xs text-muted-foreground">({roleLabel(pool.role)})</span></p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {pool.champions.length === 0 ? (
                   <span className="text-xs text-muted-foreground">{t("match.opponentIntel.noPoolYet", "No champion pool revealed yet.")}</span>

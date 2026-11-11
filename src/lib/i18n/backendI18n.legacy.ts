@@ -58,7 +58,8 @@ function resolveLegacyDelegatedRenewalsDetail(
     const beyondLimits = detail.match(LEGACY_DELEGATED_RENEWALS_BEYOND_LIMITS_RE);
     if (beyondLimits?.groups) {
         return resolve("be.msg.delegatedRenewals.notes.beyondLimits", detail, {
-            wage: beyondLimits.groups.wage,
+            // The locale text no longer carries the symbol; the persisted line did.
+            wage: `€${beyondLimits.groups.wage}`,
             years: beyondLimits.groups.years,
         });
     }
@@ -66,7 +67,7 @@ function resolveLegacyDelegatedRenewalsDetail(
     const prefersManager = detail.match(LEGACY_DELEGATED_RENEWALS_PREFERS_MANAGER_RE);
     if (prefersManager?.groups) {
         return resolve("be.msg.delegatedRenewals.notes.prefersManager", detail, {
-            wage: prefersManager.groups.wage,
+            wage: `€${prefersManager.groups.wage}`,
             years: prefersManager.groups.years,
         });
     }

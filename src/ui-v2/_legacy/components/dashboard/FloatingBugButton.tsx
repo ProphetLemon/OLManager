@@ -1,3 +1,4 @@
+import { resolveUserLeague } from "@/lib/userLeague";
 import { Bug } from "lucide-react";
 import { useState, type JSX } from "react";
 import { useTranslation } from "react-i18next";
@@ -59,7 +60,7 @@ export default function FloatingBugButton({
             currentDate: gameState.clock.current_date,
             dayPhase: gameState.day_phase ?? "Unknown",
             teamName: getManagerTeamName(gameState) ?? "Unknown",
-            leagueName: gameState.leagues?.[0]?.name ?? "Unknown",
+            leagueName: resolveUserLeague(gameState)?.name ?? "Unknown",
             lolPatch: gameState.champion_patch?.current_patch_label ?? "Unknown",
           }}
           saveJson={JSON.stringify(gameState, null, 2)}

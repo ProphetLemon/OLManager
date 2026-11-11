@@ -36,13 +36,15 @@ import {
   getTransferBudgetSummary,
   getSeasonNetSummary,
 } from "@/lib/finances/finance";
-import type { FinancialTransactionKind } from "@/store/types";
+import type { FinancialTransactionData, FinancialTransactionKind } from "@/store/types";
+import { resolveLedgerDescription } from "@/lib/i18n/backendI18n";
 import type { FacilityUpgradeId } from "@/lib/finances/lolFinanceContracts";
 import {
   getClubInstallationContract,
   getSponsorshipContractView,
 } from "@/lib/finances/lolFinanceContracts";
 import { getLolRoleForPlayer } from "@/lib/squad/helpers";
+import { shortRoleKey } from "@/lib/squad/cards";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
@@ -78,6 +80,7 @@ function getMainHubExpansionCost(level: number): number {
 
 type SortKey = "name" | "position" | "wage" | "value" | "contract";
 
+/** English fallbacks of the ledger kinds; the labels shown come from `finances.ledgerKinds.<kind>`. */
 const LEDGER_KIND_LABELS: Record<FinancialTransactionKind, string> = {
   Salary: "Salary",
   StaffWage: "Staff wage",
@@ -116,6 +119,11 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
   const { t } = useTranslation();
   const annualSuffix = t("finances.perYearSuffix", "/yr");
   const monthlySuffix = t("finances.perMonthSuffix", "/mo");
+  const ledgerKindLabel = (kind: FinancialTransactionKind): string =>
+    t(`finances.ledgerKinds.${kind}`, { defaultValue: LEDGER_KIND_LABELS[kind] ?? kind });
+  const ledgerLineText = (entry: FinancialTransactionData): string =>
+    resolveLedgerDescription(entry, (key, options) => t(key, options) as string) ||
+    ledgerKindLabel(entry.kind);
 
   const myTeam = gameState.teams.find((tm) => tm.id === gameState.manager.team_id);
   const roster = myTeam ? gameState.players.filter((p) => p.team_id === myTeam.id) : [];
@@ -152,12 +160,14 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
   const financialLedger = myTeam ? getFinancialLedger(myTeam) : [];
   const ledgerSources = useMemo(() => getLedgerSources(financialLedger), [financialLedger]);
   const filteredLedger = useMemo(
-    () => filterLedgerEntries(financialLedger, {
-      search: ledgerSearch,
-      kind: ledgerKindFilter,
-      source: ledgerSourceFilter,
-    }),
-    [financialLedger, ledgerSearch, ledgerKindFilter, ledgerSourceFilter],
+    () => filterLedgerEntries(
+      financialLedger,
+      { search: ledgerSearch, kind: ledgerKindFilter, source: ledgerSourceFilter },
+      ledgerLineText,
+    ),
+    // `t` changes with the language, so the search follows the language of the rows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [financialLedger, ledgerSearch, ledgerKindFilter, ledgerSourceFilter, t],
   );
   const ledgerGroups = useMemo(() => groupLedgerEntriesByDate(filteredLedger), [filteredLedger]);
   const totalValue = roster.reduce((s, p) => s + safeFinanceNumber(p.market_value), 0);
@@ -327,7 +337,10 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
               <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.transferBudgetRemaining", "Transfer budget remaining")}</p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">{formatVal(teamTransferBudget)}</p>
               <p className="mt-1 text-2xs text-muted-foreground">
-                {t("finances.transferSpendThisSeason", "Transfer spend this season")}: {formatVal(transferBudgetSummary.spend)} spent
+                {t("finances.transferSpendThisSeason", "Transfer spend this season")}: {t("finances.transferSpentAmount", {
+                  amount: formatVal(transferBudgetSummary.spend),
+                  defaultValue: `${formatVal(transferBudgetSummary.spend)} spent`,
+                })}
               </p>
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
                 <div className="h-full rounded-full bg-primary/60 transition-all" style={{ width: `${Math.min(100, transferBudgetSummary.usagePercent)}%` }} />
@@ -422,7 +435,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
               <div className="rounded-lg bg-muted/50 p-3 text-center">
                 <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">{t("finances.projectedAnnualNet")}</p>
                 <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", projectedAnnualNet >= 0 ? "text-positive" : "text-negative")}>
-                  {activeCurrencySymbol()}{projectedAnnualNet.toLocaleString()}{annualSuffix}
+                  {formatCurrencyAmount(projectedAnnualNet)}{annualSuffix}
                 </p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3 text-center">
@@ -479,7 +492,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                 >
                   <option value="all">{t("finances.ledgerAllKinds")}</option>
                   {(Object.keys(LEDGER_KIND_LABELS) as FinancialTransactionKind[]).map((kind) => (
-                    <option key={kind} value={kind}>{LEDGER_KIND_LABELS[kind]}</option>
+                    <option key={kind} value={kind}>{ledgerKindLabel(kind)}</option>
                   ))}
                 </select>
                 <label className="sr-only" htmlFor="ledger-source-filter">{t("finances.ledgerSourceFilter")}</label>
@@ -503,9 +516,9 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                     return (
                       <div key={`${entry.id ?? entry.date}-${entry.kind}-${index}`} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg bg-muted/40 px-3 py-2 text-sm md:grid-cols-[1fr_8rem_auto]">
                         <div className="min-w-0">
-                          <span className="block truncate text-foreground">{entry.description || (LEDGER_KIND_LABELS[entry.kind] ?? entry.kind)}</span>
+                          <span className="block truncate text-foreground">{ledgerLineText(entry)}</span>
                           <span className="mt-0.5 inline-flex gap-2 text-caption text-muted-foreground">
-                            <span>{LEDGER_KIND_LABELS[entry.kind] ?? entry.kind}</span>
+                            <span>{ledgerKindLabel(entry.kind)}</span>
                             <span>·</span>
                             <span>{t(getLedgerEntrySourceLabelKey(entry), getLedgerEntrySource(entry))}</span>
                           </span>
@@ -679,7 +692,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                       <span className="inline-flex items-center gap-1">
                         {key === "name" && t("common.player")}
                         {key === "position" && t("common.position")}
-                        {key === "wage" && t("finances.wagePerWeek")}
+                        {key === "wage" && t("finances.wagePerYear")}
                         {key === "value" && t("finances.marketValue")}
                         {key === "contract" && t("common.contract")}
                         {sortKey === key ? (
@@ -716,11 +729,11 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                       </TableCell>
                       <TableCell className={cn(i % 2 === 1 && "bg-muted/20")}>
                         <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
-                          {role}
+                          {t(shortRoleKey(role), { defaultValue: role })}
                         </span>
                       </TableCell>
                       <TableCell className={cn("tabular-nums text-sm text-foreground", i % 2 === 1 && "bg-muted/20")}>
-                        {activeCurrencySymbol()}{safeFinanceNumber(p.wage).toLocaleString()}
+                        {formatCurrencyAmount(safeFinanceNumber(p.wage))}
                       </TableCell>
                       <TableCell className={cn("tabular-nums text-sm text-muted-foreground", i % 2 === 1 && "bg-muted/20")}>
                         {formatVal(safeFinanceNumber(p.market_value))}

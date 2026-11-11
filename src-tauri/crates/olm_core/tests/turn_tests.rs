@@ -1330,6 +1330,12 @@ fn apply_match_report_condition_doesnt_underflow() {
 fn process_day_full_integration() {
     // Full integration: 2 teams, match day, verify everything updates
     let mut game = make_game_with_match();
+    // Everyone starts level and below the cap, so the matchday's partial recovery
+    // cannot hide what the match cost (a short game costs less than the recovery).
+    for p in game.players.iter_mut() {
+        p.condition = 80;
+    }
+    let squad: Vec<String> = game.players.iter().map(|p| p.id.clone()).collect();
     turn::process_day(&mut game);
 
     // Fixture completed
@@ -1351,9 +1357,22 @@ fn process_day_full_integration() {
     let has_appearances = game.players.iter().any(|p| p.stats.appearances > 0);
     assert!(has_appearances);
 
-    // Condition depleted
-    let all_full_condition = game.players.iter().all(|p| p.condition == 100);
-    assert!(!all_full_condition);
+    // Condition depleted: whoever played ends the day below whoever sat out.
+    // Only the starting squad counts: an emergency fill-in arrives at full condition.
+    let lowest_condition = |played: bool| -> u8 {
+        game.players
+            .iter()
+            .filter(|p| squad.contains(&p.id) && (p.stats.appearances > 0) == played)
+            .map(|p| p.condition)
+            .min()
+            .unwrap()
+    };
+    assert!(
+        lowest_condition(true) < lowest_condition(false),
+        "playing costs condition ({} played vs {} sat out)",
+        lowest_condition(true),
+        lowest_condition(false)
+    );
 
     // Form updated
     let home_form = &game.teams.iter().find(|t| t.id == "team1").unwrap().form;
@@ -1817,13 +1836,23 @@ fn matchday_recovery_is_smaller_than_a_rest_day() {
         }
     }
 
+    // Only the squad that started the day is measured. Processing a day can add an
+    // emergency fill-in to the rival, and a fill-in arrives at full condition, which
+    // says nothing about recovery.
+    let squad: Vec<String> = matchday
+        .players
+        .iter()
+        .filter(|p| p.team_id.as_deref() == Some("team2"))
+        .map(|p| p.id.clone())
+        .collect();
+
     turn::process_day(&mut matchday);
     turn::process_day(&mut rest_day);
 
     let benched = |game: &Game| -> u32 {
         game.players
             .iter()
-            .filter(|p| p.team_id.as_deref() == Some("team2"))
+            .filter(|p| squad.contains(&p.id))
             .map(|p| u32::from(p.condition))
             .max()
             .unwrap()

@@ -250,6 +250,12 @@
     "inbox": "Inbox",
     "matchPlayedByStaff": "Your staff played the match against {{opponent}}: {{score}}. Open the schedule for the result.",
     "matchPlayedByStaffNoScore": "Your staff played the match. Open the schedule for the result.",
+    "scrimResultTitle_one": "Scrim result",
+    "scrimResultTitle_other": "Scrim results",
+    "scrimResultWon": "Won against {{rival}}",
+    "scrimResultLost": "Lost against {{rival}}",
+    "scrimResultOpen": "Open Scrims",
+    "scrimResultDismiss": "Dismiss",
     "manager": "Head Coach",
     "squad": "Squad",
     "tactics": "Tactics",
@@ -1455,7 +1461,25 @@
     "noStaffMatch": "No staff members match your filters.",
     "noAvailableStaff": "No available staff found.",
     "releaseStaff": "Release staff member",
+    "releaseStaffNamed": "Release {{name}}",
+    "releaseConfirmTitle": "Release {{name}}?",
+    "releaseConfirmMessage": "{{name}} ({{role}}) will leave your staff and return to the market. This cannot be undone from here.",
+    "releaseConfirmAction": "Release",
     "hireStaff": "Hire staff member",
+    "clubOwner": "Club owner",
+    "errors": {
+      "generic": "The staff change could not be completed. Try again.",
+      "no_game": "There is no active game.",
+      "no_team": "You are not managing a club.",
+      "hiring_locked": "Staff hiring is closed during the season. Normal hires open in the offseason.",
+      "not_found": "That staff member no longer exists.",
+      "already_employed": "That staff member already works for a club.",
+      "insufficient_funds": "The club does not have enough funds to hire this staff member.",
+      "owner_not_hireable": "Club owners cannot be hired.",
+      "owner_not_fireable": "The club owner cannot be dismissed.",
+      "not_your_team": "That staff member does not work for your club.",
+      "transaction_failed": "The hiring cost could not be recorded. Nothing was changed."
+    },
     "best": "Best",
     "roles": {
       "AssistantManager": "Assistant Manager",
@@ -1495,7 +1519,10 @@
       "draftAnalysis": "Draft analysis",
       "futureMeta": "Future meta",
       "tiltControl": "Tilt control"
-    }
+    },
+    "adjustFiltersHint": "Try adjusting filters or search",
+    "hireFromAvailableHint": "Hire staff from the available tab",
+    "allStaffEmployedHint": "All staff are currently employed"
   },
   "finances": {
     "overview": "Financial Overview",
@@ -1521,6 +1548,7 @@
     "perMonthSuffix": "/mo",
     "perWeekSuffix": "/wk",
     "wagePerWeek": "Wage/wk",
+    "wagePerYear": "Wage/yr",
     "marketValue": "Market Value",
     "until": "Until {{year}}",
     "facilities": "Facility Hub",
@@ -1572,7 +1600,7 @@
     "contractRiskWarning": "Warning",
     "contractRiskStable": "Stable",
     "contractExpiresOn": "Expires {{date}}",
-    "atRiskWages": "€{{amount}}/yr at risk",
+    "atRiskWages": "{{amount}}/yr at risk",
     "noContractRisks": "No imminent contract risks",
     "esportsSponsor": "Esports Sponsor",
     "mainHub": "Main Hub",
@@ -1600,7 +1628,22 @@
       "board": "Board",
       "manual": "Manual"
     },
-    "ledgerEmpty": "No financial ledger entries yet."
+    "ledgerEmpty": "No financial ledger entries yet.",
+    "ledgerKinds": {
+      "Salary": "Salary",
+      "StaffWage": "Staff wage",
+      "FacilityUpkeep": "Facility upkeep",
+      "FacilityUpgrade": "Facility upgrade",
+      "TransferPurchase": "Transfer purchase",
+      "TransferSale": "Transfer sale",
+      "ReleasePenalty": "Release penalty",
+      "AcademyAcquisition": "Academy acquisition",
+      "Sponsorship": "Sponsorship",
+      "MatchdayRevenue": "Matchday revenue",
+      "PrizeMoney": "Prize money",
+      "BudgetRefresh": "Budget refresh",
+      "Other": "Other"
+    }
   },
   "inbox": {
     "title": "Inbox",
@@ -1650,7 +1693,7 @@
       "System": "System",
       "JobOffer": "Job Offers"
     },
-    "all": "All",
+    "all": "All ({{count}})",
     "close": "Close"
   },
   "manager": {
@@ -1798,7 +1841,16 @@
     "wageFeedbackRejectedHeadline": "Talks have broken down.",
     "wageFeedbackRejectedDetail": "After several rounds without common ground, both sides are walking away.",
     "transferFeedbackWageNegotiationDetail": "The club agreed to your fee. Now it is time to agree terms with the player.",
-    "browseMarket": "Browse Market"
+    "browseMarket": "Browse Market",
+    "destination": "Destination",
+    "mainTeamDestination": "Main team",
+    "freeAgentSigningHint": "This player is a free agent and can be signed without a transfer fee.",
+    "bidImpactTitle": "Projected impact",
+    "bidImpactTransferBudget": "Transfer budget {{before}} -> {{after}}",
+    "bidImpactBalance": "Club balance {{before}} -> {{after}}",
+    "bidImpactWagePressure": "Projected wage budget usage {{percent}}%",
+    "bidImpactOverTransferBudget": "This bid exceeds your transfer budget",
+    "bidImpactOverBalance": "This bid would push the club into debt"
   },
   "schedule": {
     "noSchedule": "No league schedule available.",
@@ -2055,7 +2107,9 @@
     "loanListed": "Loan Listed",
     "potentialResearchProgress": "Research progress ({{total}} stages)",
     "startPotentialResearch": "Start Potential Research",
-    "transferListed": "Transfer Listed"
+    "transferListed": "Transfer Listed",
+    "transferOfferDestination": "Destination",
+    "transferOfferMainTeam": "Main team"
   },
   "teamProfile": {
     "clubInfo": "Team Information",
@@ -2273,8 +2327,16 @@
       "masterySourceScouting": "Scouting",
       "masterySourceStaff": "Staff read",
       "assistantCoach": "Assistant coach",
+      "scrimSignalTitle": "Scrim prep",
+      "scrimSignalReasons": {
+        "recent champion reps": "recent champion reps",
+        "scrimmed core together": "scrimmed core together",
+        "recent prep vs this opponent": "recent prep vs this opponent"
+      },
       "playerLabel": "Player",
       "swapTargetTitle": "Choose champion to swap",
+      "offRoleWarning": "{{champion}} is not a {{role}} champion. It will perform worse in the match.",
+      "offRolePickWarning": "{{champion}} has no free role in your team: someone will play off-role and perform worse in the match.",
       "warnCounterLastPick": "Careful with {{champion}}: it is countering your last pick.",
       "warnTimingIdentity": "We are missing a clear timing identity. Look for an Early or Late pick to close better.",
       "warnRoleCoverage": "We still have role gaps. Add a more flexible pick.",
@@ -2564,7 +2626,13 @@
       "threat": "Threat",
       "metaThreats": "Meta threats",
       "meta": "Meta",
-      "masteryHighlights": "Mastery highlights"
+      "masteryHighlights": "Mastery highlights",
+      "quality": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "roleUnknown": "Unknown"
     },
     "continue": "Continue",
     "game": "Game"
@@ -2617,6 +2685,25 @@
     "compare": "Compare"
   },
   "be": {
+    "ledger": {
+      "playerWages": "Monthly player wages",
+      "staffWages": "Monthly staff wages",
+      "facilityUpkeep": "Monthly facility upkeep",
+      "sponsorshipIncome": "Monthly sponsorship income",
+      "matchdayRevenue": "Monthly matchday revenue",
+      "staffHiring": "Staff hiring cost: {{name}}",
+      "freeAgentSigning": "Free agent signing fee for {{player}}",
+      "transferPurchase": "Transfer purchase fee for {{player}}",
+      "transferSale": "Transfer sale fee for {{player}}",
+      "contractTermination": "Contract termination penalty for {{player}}",
+      "seasonPrize": "Season {{season}} prize money (position {{position}})",
+      "promotionFunding": "Promotion funding",
+      "academyAcquisition": "Academy acquisition: {{name}}",
+      "mainHubExpansion": "Main facility hub expansion",
+      "moduleUpgrade": "Facility module upgrade: {{module}}",
+      "facilityUpgrade": "Facility upgrade: {{facility}}",
+      "facilityTypes": { "Training": "Training", "Medical": "Medical", "Scouting": "Scouting" }
+    },
     "sender": {
       "assistantCoach": "Assistant Coach",
       "fitnessCoach": "Fitness Coach",
@@ -2763,8 +2850,8 @@
             "body": "Tough loss today, coach. We lost to {{opponent}} {{userScore}}.\n\nThere are things to learn from this match. Let's review where we went wrong and come back stronger.\n\nThe season is long — we'll bounce back."
           },
           "defeat_2": {
-            "subject": "Loss: {{opponent}} defeats us {{userScore}}",
-            "body": "Not our day, coach. {{opponent}} beat us {{userScore}}.\n\nWe need to analyze what went wrong and address the issues before the next match. I'll prepare a detailed breakdown of the key moments.\n\nStay focused — there's still plenty to play for."
+            "subject": "Loss: {{opponent}} defeats us {{opponentScore}}",
+            "body": "Not our day, coach. {{opponent}} beat us {{opponentScore}}.\n\nWe need to analyze what went wrong and address the issues before the next match. I'll prepare a detailed breakdown of the key moments.\n\nStay focused — there's still plenty to play for."
           },
           "draw_1": {
             "subject": "Draw: {{home}} {{homeWins}}-{{awayWins}} {{away}}",
@@ -3308,9 +3395,9 @@
         "notes": {
           "managerBlocked": "You told me not to reopen contract talks yet.",
           "completed": "I was able to close this one without needing you to step in.",
-          "beyondLimits": "Their camp want around €{{wage}}/yr for {{years}} years, which is beyond the delegation limits.",
+          "beyondLimits": "Their camp want around {{wage}}/yr for {{years}} years, which is beyond the delegation limits.",
           "boardWagePolicy": "Board wage policy blocks this renewal. Keep annual wages near €{{budget}} while we recover.",
-          "prefersManager": "They would listen, but they still want about €{{wage}}/yr for {{years}} years and prefer to hear from you directly.",
+          "prefersManager": "They would listen, but they still want about {{wage}}/yr for {{years}} years and prefer to hear from you directly.",
           "relationshipBlocked": "They are not willing to commit through me under the current relationship and contract situation."
         }
       },
@@ -3653,6 +3740,10 @@
           "subject9": "el_yuste — the data cools the optimism again",
           "body9": "Yuste opened charts on stream and left a hard reading: \"Do not talk to me about feelings if the data is going down. You can have one good match, but the trend rules.\"\n\nThe audience debate is active again."
         }
+      },
+      "contractTerminated": {
+        "subject": "Contract terminated: {{player}}",
+        "body": "You terminated {{player}}'s contract. The player is now a free agent. Termination cost: €{{cost}}."
       }
     },
     "news": {

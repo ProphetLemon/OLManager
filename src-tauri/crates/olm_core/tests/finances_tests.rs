@@ -761,6 +761,153 @@ fn monthly_recurring_expenses_create_categorized_ledger_entries() {
     }));
 }
 
+fn text_params(entry: &FinancialTransaction) -> Vec<(&str, &str)> {
+    let mut params: Vec<_> = entry
+        .description_params
+        .iter()
+        .map(|(name, value)| (name.as_str(), value.as_str()))
+        .collect();
+    params.sort();
+    params
+}
+
+#[test]
+fn monthly_expense_ledger_lines_carry_translation_keys() {
+    let mut game = make_game_on(2025, 6, 1);
+    game.teams[0].facilities = Facilities {
+        main_hub_level: 4,
+        training: 3,
+        medical: 2,
+        scouting: 1,
+        ..Default::default()
+    };
+
+    finances::process_monthly_finances(&mut game);
+
+    let keyed = |kind: FinancialTransactionKind| -> Option<(String, String)> {
+        game.teams[0]
+            .financial_ledger
+            .iter()
+            .find(|entry| entry.kind == kind)
+            .map(|entry| {
+                (
+                    entry.description_key.clone().unwrap_or_default(),
+                    entry.description.clone(),
+                )
+            })
+    };
+    assert_eq!(
+        keyed(FinancialTransactionKind::Salary),
+        Some(("be.ledger.playerWages".to_string(), "Monthly player wages".to_string()))
+    );
+    assert_eq!(
+        keyed(FinancialTransactionKind::StaffWage),
+        Some(("be.ledger.staffWages".to_string(), "Monthly staff wages".to_string()))
+    );
+    assert_eq!(
+        keyed(FinancialTransactionKind::FacilityUpkeep),
+        Some((
+            "be.ledger.facilityUpkeep".to_string(),
+            "Monthly facility upkeep".to_string()
+        ))
+    );
+    assert!(
+        game.teams[0]
+            .financial_ledger
+            .iter()
+            .all(|entry| entry.description_params.is_empty())
+    );
+}
+
+#[test]
+fn monthly_sponsorship_ledger_line_carries_a_translation_key() {
+    let mut game = make_first_of_month_game();
+    game.teams[0].sponsorship = Some(Sponsorship {
+        sponsor_name: "Acme Corp".to_string(),
+        base_value: 100_000,
+        remaining_months: 2,
+        bonus_criteria: vec![],
+    });
+
+    finances::process_monthly_finances(&mut game);
+
+    let entry = game.teams[0]
+        .financial_ledger
+        .iter()
+        .find(|entry| entry.kind == FinancialTransactionKind::Sponsorship)
+        .expect("a sponsorship line");
+    assert_eq!(entry.description_key.as_deref(), Some("be.ledger.sponsorshipIncome"));
+    assert_eq!(entry.description, "Monthly sponsorship income");
+}
+
+#[test]
+fn ledger_entry_without_translation_fields_loads_with_empty_defaults_and_writes_them_back() {
+    let entry: FinancialTransaction = serde_json::from_str(
+        r#"{"date":"2025-12-31","description":"Monthly player wages","amount":-5000,"kind":"Salary"}"#,
+    )
+    .expect("an entry saved before the translation fields loads");
+
+    assert_eq!(entry.description, "Monthly player wages");
+    assert_eq!(entry.description_key, None);
+    assert!(entry.description_params.is_empty());
+
+    let written = serde_json::to_value(&entry).expect("serializes");
+    assert_eq!(written["description"], "Monthly player wages");
+    assert_eq!(written["description_key"], serde_json::Value::Null);
+    assert_eq!(written["description_params"], serde_json::json!({}));
+    let reloaded: FinancialTransaction = serde_json::from_value(written).expect("reloads");
+    assert_eq!(reloaded, entry);
+}
+
+#[test]
+fn record_transaction_with_text_stores_the_key_and_params_and_keeps_the_english_text() {
+    let mut team = make_team("team1", "Test FC");
+    let transaction = finances::record_transaction_with_text(
+        &mut team,
+        FinanceTransactionInput {
+            date: "2026-01-15".to_string(),
+            description: "Staff hiring cost: Ana Coach".to_string(),
+            amount: -60_000,
+            kind: FinancialTransactionKind::StaffWage,
+            budget_impact: BudgetImpact::None,
+            affects_season_totals: true,
+            source: "staff".to_string(),
+            source_id: Some("staff-1".to_string()),
+            correlation_id: None,
+        },
+        finances::LedgerText::new("be.ledger.staffHiring", &[("name", "Ana Coach")]),
+    )
+    .expect("valid transaction records");
+
+    assert_eq!(transaction.description, "Staff hiring cost: Ana Coach");
+    assert_eq!(transaction.description_key.as_deref(), Some("be.ledger.staffHiring"));
+    assert_eq!(text_params(&transaction), vec![("name", "Ana Coach")]);
+    assert_eq!(team.financial_ledger[0], transaction);
+}
+
+#[test]
+fn record_transaction_without_text_leaves_the_key_empty() {
+    let mut team = make_team("team1", "Test FC");
+    let transaction = finances::record_transaction(
+        &mut team,
+        FinanceTransactionInput {
+            date: "2026-01-15".to_string(),
+            description: "Winter sponsorship payment".to_string(),
+            amount: 35_000,
+            kind: FinancialTransactionKind::Sponsorship,
+            budget_impact: BudgetImpact::None,
+            affects_season_totals: true,
+            source: "sponsor".to_string(),
+            source_id: None,
+            correlation_id: None,
+        },
+    )
+    .expect("valid transaction records");
+
+    assert_eq!(transaction.description_key, None);
+    assert!(transaction.description_params.is_empty());
+}
+
 #[test]
 fn monthly_sponsorship_payout_is_applied_and_duration_decrements_on_monday() {
     let mut game = make_first_of_month_game();
@@ -1139,6 +1286,10 @@ fn home_match_generates_income() {
         .collect();
     assert_eq!(matchday_entries.len(), 1);
     assert_eq!(matchday_entries[0].date, "2025-06-01");
+    assert_eq!(
+        matchday_entries[0].description_key.as_deref(),
+        Some("be.ledger.matchdayRevenue")
+    );
     assert!(matchday_entries[0].amount > 0);
     assert_eq!(
         final_finance,

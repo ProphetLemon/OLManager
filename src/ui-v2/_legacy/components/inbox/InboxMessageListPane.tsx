@@ -43,7 +43,7 @@ export default function InboxMessageListPane({
           <Mail className="w-4 h-4 text-accent-400" />
           {t("inbox.title")}
         </h3>
-        <p className="text-xs text-gray-400 mt-0.5 font-heading uppercase tracking-wider">
+        <p className="text-xs text-gray-400 mt-0.5 font-heading uppercase tracking-wide">
           {t("inbox.nMessages", { count: filteredMessages.length })}
         </p>
       </div>
