@@ -17,7 +17,8 @@
 //! each of 80 vs 60 and 95 vs 40, and 20 objective matches; it is what a rule
 //! change is iterated with. `full` plays 300 even matches, 200 at 80 vs 60, 144 at
 //! 95 vs 40, the 1,000-match side test and 100 objective matches; it closes a
-//! milestone. `SCORECARD_OUT` also writes the table to a file. The strength
+//! milestone. `SCORECARD_EVEN`, `SCORECARD_MODERATE`, `SCORECARD_EXTREME`, `SCORECARD_SIDES`,
+//! `SCORECARD_TANKS` and `SCORECARD_OBJECTIVES` override the counts of the profile. `SCORECARD_OUT` also writes the table to a file. The strength
 //! assertions of `strength_tests::stronger_team_wins_at_least` (skip path) and
 //! the default tests (T11) are separate commands.
 //!
@@ -60,6 +61,22 @@ struct Profile {
 }
 
 fn profile_from_env() -> Profile {
+    let mut profile = named_profile();
+    let override_count = |name: &str, slot: &mut usize| {
+        if let Some(count) = std::env::var(name).ok().and_then(|raw| raw.parse().ok()) {
+            *slot = count;
+        }
+    };
+    override_count("SCORECARD_EVEN", &mut profile.even);
+    override_count("SCORECARD_MODERATE", &mut profile.moderate);
+    override_count("SCORECARD_EXTREME", &mut profile.extreme);
+    override_count("SCORECARD_SIDES", &mut profile.sides);
+    override_count("SCORECARD_TANKS", &mut profile.tanks);
+    override_count("SCORECARD_OBJECTIVES", &mut profile.objectives);
+    profile
+}
+
+fn named_profile() -> Profile {
     match std::env::var("SCORECARD_PROFILE").as_deref() {
         Ok("mini") => Profile {
             name: "mini",

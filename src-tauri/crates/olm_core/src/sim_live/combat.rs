@@ -1395,7 +1395,12 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
             if let CombatTarget::Champion(enemy_idx) = &target {
                 let target_snapshot = runtime.champions[*enemy_idx].clone();
                 if attacker_snapshot.role != "JGL" {
-                    if should_force_laner_disengage(
+                    if trading::trade_floor_reached(
+                        &attacker_snapshot,
+                        &target_snapshot,
+                        &runtime.champions,
+                        &runtime.minions,
+                    ) || should_force_laner_disengage(
                         &attacker_snapshot,
                         target_snapshot.pos,
                         Some(&target_snapshot),
@@ -1448,6 +1453,18 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                     LANE_CHAMPION_TRADE_RADIUS,
                     ALLY_HELP_DAMAGE_RECENT_SEC,
                 ) == Some(champion_idx);
+
+                if attacker_snapshot.role != "JGL"
+                    && trading::trade_floor_reached(
+                        &attacker_snapshot,
+                        &target_snapshot,
+                        &runtime.champions,
+                        &runtime.minions,
+                    )
+                {
+                    issue_lane_disengage(runtime, idx, target_snapshot.pos);
+                    continue;
+                }
 
                 if attacker_snapshot.role != "JGL" && !retaliating_recent_attacker {
                     let open_eval = evaluate_open_trade_window(

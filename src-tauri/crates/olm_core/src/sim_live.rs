@@ -6690,3 +6690,6 @@ mod scorecard_tests;
 
 #[cfg(test)]
 mod tower_safety_tests;
+
+#[cfg(test)]
+mod trade_floor_tests;
