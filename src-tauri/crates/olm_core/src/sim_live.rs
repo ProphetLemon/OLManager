@@ -579,11 +579,11 @@ const TOWER_NEXUS_HP: f64 = 4590.0;
 const INHIBITOR_HP: f64 = 4000.0;
 const NEXUS_HP: f64 = 5500.0;
 const EARLY_TOWER_FORTIFICATION_END_AT: f64 = 14.0 * 60.0;
-const TOWER_FORTIFICATION_REDUCTION_AT_14: f64 = 0.90;
-const TOWER_FORTIFICATION_REDUCTION_AT_20: f64 = 0.80;
-const TOWER_FORTIFICATION_REDUCTION_AT_25: f64 = 0.70;
-const TOWER_FORTIFICATION_REDUCTION_AT_30: f64 = 0.60;
-const TOWER_FORTIFICATION_REDUCTION_AT_35: f64 = 0.35;
+const TOWER_FORTIFICATION_REDUCTION_AT_14: f64 = 0.50;
+const TOWER_FORTIFICATION_REDUCTION_AT_20: f64 = 0.20;
+const TOWER_FORTIFICATION_REDUCTION_AT_25: f64 = 0.00;
+const TOWER_FORTIFICATION_REDUCTION_AT_30: f64 = 0.00;
+const TOWER_FORTIFICATION_REDUCTION_AT_35: f64 = 0.00;
 const CHAMPION_ATTACK_CADENCE_SEC: f64 = 1.0;
 // A tower shot at a champion: flat part + growth per game minute + a share of
 // the target's maximum health, times a ramp while it keeps shooting the same
@@ -596,7 +596,7 @@ const TOWER_SHOT_MAX_HP_SHARE: f64 = 0.01;
 const TOWER_SHOT_RAMP_PER_SHOT: f64 = 0.4;
 const TOWER_SHOT_RAMP_MAX_STEPS: u32 = 3;
 const TOWER_SHOT_RAMP_WINDOW_SEC: f64 = 3.0;
-const TOWER_SHOT_DAMAGE_TO_MINION: f64 = 24.0;
+const TOWER_SHOT_DAMAGE_TO_MINION: f64 = 36.0;
 const TOWER_ATTACK_RANGE: f64 = 0.08;
 const TOWER_ATTACK_CADENCE_SEC: f64 = 1.0;
 // Long enough for four shots at the cadence a tower really fires at (one per
@@ -1991,7 +1991,7 @@ fn stat_delta(score: f64) -> f64 {
 /// [PLACEHOLDER] 0.45: at 95 vs 40 visible stats the stronger side deals about
 /// 2.3x the damage it takes and wins about 95% of matches; at 80 vs 60 about
 /// 1.35x and 60%+. Tune with the ignored sweep in `strength_tests`.
-const STRENGTH_DAMAGE_EXPONENT: f64 = 0.45;
+const STRENGTH_DAMAGE_EXPONENT: f64 = 0.38;
 
 /// Weight of the role edge (+-4) in a champion's power, in stat-delta units.
 /// [PLACEHOLDER] 0.28: +4 against -4 is a damage ratio of about 1.25.

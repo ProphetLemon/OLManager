@@ -366,3 +366,18 @@ fn the_tower_goes_back_to_minions_when_the_lock_has_expired() {
         .iter()
         .all(|s| s.victim == TowerVictim::Minion));
 }
+
+/// Towers fell far too slowly (a match went on for 45 to 60 minutes): the fortification took
+/// 90% of the damage before minute 20 and 35% after minute 35. It now ends at minute 25.
+#[test]
+fn a_tower_takes_more_damage_as_the_match_goes_on_and_all_of_it_from_minute_25() {
+    let tower = test_structure("blue-test-tower", "blue", "mid", Vec2 { x: 0.4, y: 0.4 });
+    let mut previous = 0.0;
+    for minute in 0..60 {
+        let multiplier = tower_damage_multiplier(f64::from(minute) * 60.0, &tower);
+        assert!(multiplier >= previous, "minute {minute}: {multiplier} after {previous}");
+        previous = multiplier;
+    }
+    assert_eq!(tower_damage_multiplier(25.0 * 60.0, &tower), 1.0);
+    assert!(tower_damage_multiplier(10.0 * 60.0, &tower) <= 0.5, "early towers fell too easily");
+}

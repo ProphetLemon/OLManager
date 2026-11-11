@@ -243,6 +243,10 @@ struct Member {
 }
 
 struct Played {
+    seed: usize,
+    /// Towers and Barons taken by blue and red.
+    blue_objectives: (i64, i64),
+    red_objectives: (i64, i64),
     winner_blue: Option<bool>,
     a_is_blue: bool,
     minutes: f64,
@@ -308,6 +312,9 @@ fn play_with(seed: usize, team_a: Side, team_b: Side, tracked: bool, cfg: Config
         })
         .collect();
     Played {
+        seed,
+        blue_objectives: (state.stats.blue.towers, state.stats.blue.barons),
+        red_objectives: (state.stats.red.towers, state.stats.red.barons),
         winner_blue: state.winner.as_deref().map(|w| w == "blue"),
         a_is_blue,
         minutes: state.time_sec / 60.0,
@@ -814,6 +821,23 @@ fn score_strength(card: &mut Scorecard, even: &[Played], moderate: &[Played], ex
             })
         })
         .count();
+    for p in played.iter().filter(|p| {
+        p.winner_blue.is_some_and(|blue| {
+            let (own, other) = if blue { (p.blue_kills, p.red_kills) } else { (p.red_kills, p.blue_kills) };
+            other - own >= BIG_LEAD_KILLS
+        })
+    }).take(12) {
+        let loser_blue = p.winner_blue == Some(false);
+        let (loser, winner) = if loser_blue { (p.blue_objectives, p.red_objectives) } else { (p.red_objectives, p.blue_objectives) };
+        let (lk, wk) = if loser_blue { (p.blue_kills, p.red_kills) } else { (p.red_kills, p.blue_kills) };
+        card.add(
+            "T7",
+            &format!("  lost with a lead: seed {} ({:.0} min)", p.seed, p.minutes),
+            "",
+            format!("loser kills {lk} towers {} barons {} | winner kills {wk} towers {} barons {}", loser.0, loser.1, winner.0, winner.1),
+            None,
+        );
+    }
     card.add(
         "T7",
         "matches lost by a team leading by 20+ kills",
@@ -995,6 +1019,83 @@ fn debug_tower_deaths() {
         println!("{line}");
     }
     println!("tower deaths: {}", reports.iter().map(Vec::len).sum::<usize>());
+}
+
+/// Prints a timeline of one 80 vs 60 match (`SCORECARD_SEED`, default 20005): every 120 s the
+/// kills, towers and living champions of each side, what the living ones are doing and how far
+/// the group of each side is from the other side's base.
+#[test]
+#[ignore = "diagnostic: timeline of one uneven match"]
+fn debug_match_timeline() {
+    let seed: usize = std::env::var("SCORECARD_SEED")
+        .ok()
+        .and_then(|raw| raw.parse().ok())
+        .unwrap_or(20_005);
+    let a_is_blue = seed.is_multiple_of(2);
+    let (a, b) = (Side::stat(80.0), Side::stat(60.0));
+    let (blue, red) = if a_is_blue { (a, b) } else { (b, a) };
+    println!("seed {seed}: blue is {}", if a_is_blue { "the stronger side" } else { "the weaker side" });
+    let mut next = 120.0;
+    let mut alive_structures: Vec<bool> = Vec::new();
+    let end = drive_match(&format!("scorecard-{seed}"), blue, red, Config::watched(STEP_LIMIT_SEC), |rt| {
+        if alive_structures.is_empty() {
+            alive_structures = rt.structures.iter().map(|s| s.alive).collect();
+        }
+        for (i, s) in rt.structures.iter().enumerate() {
+            if alive_structures[i] && !s.alive {
+                alive_structures[i] = false;
+                let near = |team: &str, champions: bool| -> String {
+                    if champions {
+                        rt.champions
+                            .iter()
+                            .filter(|c| c.alive && c.team == team && dist(c.pos, s.pos) <= 0.20)
+                            .map(|c| c.role.clone())
+                            .collect::<Vec<_>>()
+                            .join(",")
+                    } else {
+                        rt.minions
+                            .iter()
+                            .filter(|m| m.alive && m.team == team && dist(m.pos, s.pos) <= 0.12)
+                            .count()
+                            .to_string()
+                    }
+                };
+                let attacker = if s.team == "blue" { "red" } else { "blue" };
+                println!(
+                    "  t{:.0} {} fell: attackers' champions [{}] minions {} | defenders' champions [{}] minions {}",
+                    rt.time_sec, s.id, near(attacker, true), near(attacker, false), near(&s.team, true), near(&s.team, false)
+                );
+            }
+        }
+        if rt.time_sec < next {
+            return;
+        }
+        next += 120.0;
+        let describe = |team: &str| {
+            let living: Vec<&ChampionRuntime> =
+                rt.champions.iter().filter(|c| c.team == team && c.alive).collect();
+            let states: Vec<String> = living.iter().map(|c| format!("{}:{}", c.role, c.state)).collect();
+            let (sx, sy) = living.iter().fold((0.0, 0.0), |acc, c| (acc.0 + c.pos.x, acc.1 + c.pos.y));
+            let n = living.len().max(1) as f64;
+            format!("alive {} at ({:.2},{:.2}) [{}]", living.len(), sx / n, sy / n, states.join(" "))
+        };
+        println!(
+            "t{:>4.0} kills {:>2}-{:<2} towers {:>2}-{:<2} gold {}-{} | blue {} | red {}",
+            rt.time_sec,
+            rt.stats.blue.kills,
+            rt.stats.red.kills,
+            rt.stats.blue.towers,
+            rt.stats.red.towers,
+            rt.champions.iter().filter(|c| c.team == "blue").map(|c| c.gold + c.spent_gold).sum::<i64>(),
+            rt.champions.iter().filter(|c| c.team == "red").map(|c| c.gold + c.spent_gold).sum::<i64>(),
+            describe("blue"),
+            describe("red"),
+        );
+    });
+    println!(
+        "ended at {:.0} s, winner {:?}, towers {}-{}, kills {}-{}",
+        end.time_sec, end.winner, end.stats.blue.towers, end.stats.red.towers, end.stats.blue.kills, end.stats.red.kills
+    );
 }
 
 // ------------------------------------------------------------ default tests
