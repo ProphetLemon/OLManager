@@ -2564,3 +2564,26 @@ fn offer_just_under_the_counter_closes_the_deal_in_proportion() {
 
     assert_eq!(outcome.decision, TransferNegotiationDecision::Accepted);
 }
+
+#[test]
+fn wage_negotiation_refuses_contract_lengths_outside_one_to_five_years() {
+    for years in [0u8, 6, 12] {
+        let (mut game, offer_id) = no_wage_free_agent_with_accepted_offer();
+
+        let error = negotiate_player_wage(&mut game, "fa-no-wage", &offer_id, 300_000, years)
+            .expect_err("length outside 1 to 5 must be refused");
+
+        assert_eq!(error, "Contract must be between 1 and 5 years", "years = {years}");
+    }
+}
+
+#[test]
+fn wage_negotiation_accepts_the_shortest_and_longest_contract_lengths() {
+    for years in [1u8, 5] {
+        let (mut game, offer_id) = no_wage_free_agent_with_accepted_offer();
+
+        let result = negotiate_player_wage(&mut game, "fa-no-wage", &offer_id, 300_000, years);
+
+        assert!(result.is_ok(), "years = {years}: {result:?}");
+    }
+}

@@ -3,12 +3,14 @@ import { invoke } from "@tauri-apps/api/core";
 import type { GameStateData, PlayerData } from "@/store/gameStore";
 import { resolveBackendText } from "@/lib/i18n/backendI18n";
 import { formatDelegatedNoteParams } from "@/lib/i18n/delegatedRenewalNotes";
+import { mapTransferNegotiationError } from "@/lib/transfers/helpers";
 import {
   type DelegatedRenewalCaseData,
   type DelegatedRenewalResponseData,
   type NegotiationFeedbackData,
   getRenewalStatusClassName,
   getRenewalStatusMessage,
+  isRenewalLengthInRange,
   type RenewalProjectionData,
   type RenewalResponseData,
   type RenewalStatus,
@@ -52,7 +54,7 @@ export function usePlayerRenewal({
   const renewalOfferedWage = Number(renewalWage);
   const renewalOfferedYears = Number(renewalLength);
   const isRenewalWageValid = Number.isFinite(renewalOfferedWage) && renewalOfferedWage > 0;
-  const isRenewalLengthValid = Number.isInteger(renewalOfferedYears) && renewalOfferedYears > 0;
+  const isRenewalLengthValid = isRenewalLengthInRange(renewalOfferedYears);
   const renewalViolatesSoftCap =
     isRenewalWageValid && renewalProjection !== null && !renewalProjection.policy_allows;
   const renewalSubmitDisabled = shouldDisableRenewalSubmit({
@@ -168,7 +170,7 @@ export function usePlayerRenewal({
       }
     } catch (error) {
       setRenewalStatus("error");
-      setRenewalError(String(error));
+      setRenewalError(mapTransferNegotiationError(t, String(error)));
       setRenewalCooledOff(false);
     } finally {
       setRenewalSubmitting(false);
@@ -248,6 +250,7 @@ export function usePlayerRenewal({
     renewalLength,
     renewalIsTerminal,
     isRenewalWageValid,
+    isRenewalLengthValid,
     renewalViolatesSoftCap,
     renewalProjection,
     renewalStatusMessage,

@@ -17,6 +17,7 @@ interface PlayerProfileRenewalModalV2Props {
   renewalLength: string;
   renewalIsTerminal: boolean;
   isRenewalWageValid: boolean;
+  isRenewalLengthValid: boolean;
   renewalViolatesSoftCap: boolean;
   renewalProjection: RenewalProjection | null;
   renewalStatusMessage: string | null;
@@ -45,6 +46,7 @@ export default function PlayerProfileRenewalModalV2({
   renewalLength,
   renewalIsTerminal,
   isRenewalWageValid,
+  isRenewalLengthValid,
   renewalViolatesSoftCap,
   renewalProjection,
   renewalStatusMessage,
@@ -104,6 +106,8 @@ export default function PlayerProfileRenewalModalV2({
               value={renewalLength}
               onChange={(event) => onLengthChange(event.target.value)}
               disabled={renewalIsTerminal}
+              aria-invalid={!isRenewalLengthValid}
+              aria-describedby={isRenewalLengthValid ? undefined : "renewal-length-error"}
               className={FIELD_CLASS}
             />
           </div>
@@ -111,6 +115,12 @@ export default function PlayerProfileRenewalModalV2({
 
         {!isRenewalWageValid && renewalWage !== "" ? (
           <p className="text-sm text-destructive">{t("playerProfile.renewalInvalidWage")}</p>
+        ) : null}
+
+        {!isRenewalLengthValid ? (
+          <p id="renewal-length-error" className="text-sm text-destructive">
+            {t("transfers.contractLengthError")}
+          </p>
         ) : null}
 
         {renewalViolatesSoftCap ? (

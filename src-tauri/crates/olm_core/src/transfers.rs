@@ -2,7 +2,9 @@ use crate::contract_wage_policy::{
     AiTransferKind, SigningIntent, ai_signing_policy, ai_transfer_cap_try_consume,
     annual_team_wage_bill, wage_policy_allows_for_bill, wage_policy_room_for_new_signing,
 };
-use crate::contracts::{expected_contract_years, expected_signing_wage, expected_wage};
+use crate::contracts::{
+    expected_contract_years, expected_signing_wage, expected_wage, validate_contract_years,
+};
 use crate::domain::negotiation::{NegotiationFeedback, NegotiationMood};
 use crate::domain::player::{PlayerOfferItem, TransferOfferStatus, WageNegotiationStatus};
 use crate::domain::season::TransferWindowStatus;
@@ -2214,9 +2216,7 @@ pub fn negotiate_player_wage(
     annual_wage: u32,
     contract_years: u8,
 ) -> Result<WageNegotiationOutcome, String> {
-    if contract_years == 0 || contract_years > 5 {
-        return Err("Contract must be between 1 and 5 years".into());
-    }
+    validate_contract_years(u32::from(contract_years))?;
 
     let user_team_id = game.manager.team_id.clone().ok_or("No user team")?;
 

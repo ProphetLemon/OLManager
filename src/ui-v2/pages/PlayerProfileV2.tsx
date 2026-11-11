@@ -420,6 +420,7 @@ function PlayerProfileContent({
         renewalLength={renewal.renewalLength}
         renewalIsTerminal={renewal.renewalIsTerminal}
         isRenewalWageValid={renewal.isRenewalWageValid}
+        isRenewalLengthValid={renewal.isRenewalLengthValid}
         renewalViolatesSoftCap={renewal.renewalViolatesSoftCap}
         renewalProjection={renewal.renewalProjection}
         renewalStatusMessage={renewal.renewalStatusMessage}

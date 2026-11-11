@@ -46,6 +46,14 @@ export interface DelegatedRenewalResponseData {
   };
 }
 
+/** Same bounds as the backend rule (`validate_contract_years` in olm_core). */
+export const MIN_RENEWAL_YEARS = 1;
+export const MAX_RENEWAL_YEARS = 5;
+
+export function isRenewalLengthInRange(years: number): boolean {
+  return Number.isInteger(years) && years >= MIN_RENEWAL_YEARS && years <= MAX_RENEWAL_YEARS;
+}
+
 export type RenewalStatus =
   | "idle"
   | "accepted"

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getRenewalStatusClassName,
   getRenewalStatusMessage,
+  isRenewalLengthInRange,
   shouldDisableRenewalSubmit,
 } from "@/lib/playerProfile/renewal";
 
@@ -102,5 +103,15 @@ describe("PlayerProfile renewal helpers", () => {
         renewalViolatesSoftCap: true,
       }),
     ).toBe(true);
+  });
+});
+
+describe("isRenewalLengthInRange", () => {
+  it.each([1, 2, 5])("accepts %i years", (years) => {
+    expect(isRenewalLengthInRange(years)).toBe(true);
+  });
+
+  it.each([0, 6, 12, -1, 2.5, Number.NaN])("rejects %s years", (years) => {
+    expect(isRenewalLengthInRange(years)).toBe(false);
   });
 });
