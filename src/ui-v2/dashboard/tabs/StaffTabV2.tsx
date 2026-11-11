@@ -529,7 +529,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                   variant="outline"
                   size="touch"
                   onClick={() => setReleaseTarget(null)}
-                  className="w-full font-heading font-bold uppercase tracking-wider"
+                  className="w-full font-heading font-bold uppercase tracking-wide"
                 >
                   {t("common.cancel")}
                 </Button>
@@ -542,7 +542,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                     setReleaseTarget(null);
                     void handleRelease(id);
                   }}
-                  className="w-full font-heading font-bold uppercase tracking-wider"
+                  className="w-full font-heading font-bold uppercase tracking-wide"
                 >
                   {t("staff.releaseConfirmAction")}
                 </Button>
