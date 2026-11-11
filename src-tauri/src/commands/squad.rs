@@ -1347,6 +1347,17 @@ pub(crate) fn choose_daily_scrim_action_internal(
         "TargetedDrills" => DailyScrimFlowEvent::TargetedDrills,
         _ => return Err(format!("Unknown daily scrim action: {action}")),
     };
+    // "CancelScrims" is not persisted, so its follow-ups reach us while the report is still
+    // in the bad block-1 decision.
+    let state_for_action = match (state_for_action, event) {
+        (
+            DailyScrimFlowState::Block1BadDecision,
+            DailyScrimFlowEvent::VodReview
+            | DailyScrimFlowEvent::MentalReset
+            | DailyScrimFlowEvent::TargetedDrills,
+        ) => DailyScrimFlowState::Block1BadCancelDecision,
+        (state, _) => state,
+    };
     transition_daily_scrim_flow(state_for_action, event)?;
 
     if action == "CancelScrims" {

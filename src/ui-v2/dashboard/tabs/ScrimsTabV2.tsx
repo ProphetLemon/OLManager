@@ -28,6 +28,7 @@ import {
   setWeeklyScrimSlots,
   type DailyScrimAction,
 } from "@/services/trainingService";
+import { dailyScrimDecisionActions } from "@/lib/scrims/dailyDecisionActions";
 import { SCRIM_FOCUS_IMPACT_KEYS, SCRIM_FOCUS_OBJECTIVE_KEYS } from "@/lib/scrims/scrimFocusKeys";
 import { useScrimContextWithFallback } from "@/hooks/useScrimContextWithFallback";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -89,6 +90,17 @@ function stateIcon(state: string): LucideIcon {
     default: return CalendarDays;
   }
 }
+
+const DECISION_TEXT_KEY: Record<DailyScrimAction, string> = {
+  ContinueToBlock2: "continueBlock2",
+  OfferRest: "offerRest",
+  PushThrough: "pushThrough",
+  CancelScrims: "cancelScrims",
+  VodReview: "vodReview",
+  MentalReset: "mentalReset",
+  TargetedDrills: "targetedDrills",
+  DayOff: "dayOff",
+};
 
 const DECISION_META: Record<DailyScrimAction, { icon: LucideIcon; color: string }> = {
   ContinueToBlock2: { icon: TrendingUp, color: "text-positive" },
@@ -156,34 +168,17 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
     weeklyContext.lossStreak, weeklyContext.cancellations, planSignals, weeklyContext.reputation,
   );
 
-  const decisionOptions: Array<{ id: DailyScrimAction; label: string; description: string }> = (() => {
-    if (!todayContext.report) return [];
-    if (isFirstBlock && !todayContext.report.won && !showCancelFollowups) {
-      return [
-        { id: "PushThrough", label: t("scrims.decision.pushThrough"), description: t("scrims.decision.pushThroughDesc") },
-        { id: "CancelScrims", label: t("scrims.decision.cancelScrims"), description: t("scrims.decision.cancelScrimsDesc") },
-      ];
-    }
-    if (isFirstBlock && todayContext.report.won) {
-      return [
-        { id: "ContinueToBlock2", label: t("scrims.decision.continueBlock2"), description: t("scrims.decision.continueBlock2Desc") },
-        { id: "OfferRest", label: t("scrims.decision.offerRest"), description: t("scrims.decision.offerRestDesc") },
-      ];
-    }
-    if (showCancelFollowups) {
-      return [
-        { id: "VodReview", label: t("scrims.decision.vodReview"), description: t("scrims.decision.vodReviewDesc") },
-        { id: "MentalReset", label: t("scrims.decision.mentalReset"), description: t("scrims.decision.mentalResetDesc") },
-        { id: "TargetedDrills", label: t("scrims.decision.targetedDrills"), description: t("scrims.decision.targetedDrillsDesc") },
-      ];
-    }
-    return [
-      { id: "DayOff", label: t("scrims.decision.dayOff"), description: t("scrims.decision.dayOffDesc") },
-      { id: "VodReview", label: t("scrims.decision.vodReview"), description: t("scrims.decision.vodReviewDesc") },
-      { id: "MentalReset", label: t("scrims.decision.mentalReset"), description: t("scrims.decision.mentalResetDesc") },
-      { id: "TargetedDrills", label: t("scrims.decision.targetedDrills"), description: t("scrims.decision.targetedDrillsDesc") },
-    ];
-  })();
+  const decisionOptions: Array<{ id: DailyScrimAction; label: string; description: string }> = todayContext.report
+    ? dailyScrimDecisionActions({
+        isFirstBlock,
+        won: Boolean(todayContext.report.won),
+        showCancelFollowups,
+      }).map((id) => ({
+        id,
+        label: t(`scrims.decision.${DECISION_TEXT_KEY[id]}`),
+        description: t(`scrims.decision.${DECISION_TEXT_KEY[id]}Desc`),
+      }))
+    : [];
 
   const decisionImpactTags: Record<DailyScrimAction, string[]> = {
     ContinueToBlock2: [t("scrims.tags.momentumPlus"), t("scrims.tags.fatigueMinus"), t("scrims.tags.volumePlus")],

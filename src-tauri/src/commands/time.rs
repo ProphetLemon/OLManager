@@ -1243,6 +1243,37 @@ mod tests {
     }
 
     #[test]
+    fn manual_scrim_day_cancel_follow_up_is_accepted_after_a_lost_first_block() {
+        use crate::commands::squad::choose_daily_scrim_action_internal as choose;
+        let state = make_manual_scrim_day();
+
+        advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        let mut game = state.get_game(|g| g.clone()).expect("game");
+        game.teams[0].scrim_reports[0].won = Some(false);
+        state.set_game(game);
+
+        // The UI keeps "cancel scrims" local and then offers these three follow-ups.
+        choose(&state, 0, "VodReview".to_string()).expect("cancel follow-up");
+        let game = state.get_game(|g| g.clone()).expect("game");
+        assert!(game.teams[0].scrim_reports[0].post_decision.is_some());
+    }
+
+    #[test]
+    fn manual_scrim_day_won_second_block_only_closes_the_day_with_day_off() {
+        use crate::commands::squad::choose_daily_scrim_action_internal as choose;
+        let state = make_manual_scrim_day();
+
+        advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        force_scrim_win(&state, 0);
+        choose(&state, 0, "ContinueToBlock2".to_string()).expect("continue to block B");
+        force_scrim_win(&state, 1);
+
+        let rejected = choose(&state, 1, "VodReview".to_string()).unwrap_err();
+        assert!(rejected.contains("Block2GoodDecision"), "{rejected}");
+        choose(&state, 1, "DayOff".to_string()).expect("close the day");
+    }
+
+    #[test]
     fn scrim_context_offers_the_review_in_review_block_too() {
         let state = make_manual_scrim_day();
         advance_time_with_mode_internal(&state, "instant").expect("morning advance");

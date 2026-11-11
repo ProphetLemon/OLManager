@@ -261,7 +261,7 @@ fn match_result_template_message_carries_context_action_and_priority() {
             let standings = msg.actions.iter().find(|a| a.id == "view_standings");
             let standings = standings.expect("view_standings action");
             assert!(
-                matches!(&standings.action_type, ActionType::NavigateTo { route } if route == "/dashboard?tab=Schedule")
+                matches!(&standings.action_type, ActionType::NavigateTo { route } if route == "/dashboard?tab=Competitions")
             );
         }
     }

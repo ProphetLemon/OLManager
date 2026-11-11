@@ -139,6 +139,28 @@ describe("resolveMatchFixture", () => {
   it("returns null when no league fixtures are available", () => {
     expect(resolveMatchFixture({ leagues: [] } as unknown as GameStateData, makeSnapshot())).toBeNull();
   });
+
+  it("resolves the fixture from the user's league, not from the first league", () => {
+    const fixture = (id: string, matchType: string) => ({
+      id,
+      matchday: 2,
+      date: "2026-08-01",
+      home_team_id: "home1",
+      away_team_id: "away1",
+      match_type: matchType,
+      status: "Scheduled",
+      result: null,
+    });
+    const multiLeague = {
+      user_competition_id: "lec",
+      leagues: [
+        { id: "l-al", competition_id: "al", fixtures: [fixture("al-friendly", "Friendly")], standings: [] },
+        { id: "l-lec", competition_id: "lec", fixtures: [fixture("lec-league", "League")], standings: [] },
+      ],
+    } as unknown as GameStateData;
+
+    expect(resolveMatchFixture(multiLeague, makeSnapshot(), 0)?.id).toBe("lec-league");
+  });
 });
 
 // ---------------------------------------------------------------------------
