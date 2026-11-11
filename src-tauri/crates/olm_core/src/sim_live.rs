@@ -6549,6 +6549,10 @@ mod objectives_detector_tests;
 mod objective_rules_tests;
 
 #[cfg(test)]
+mod lead_detector_tests;
+
+
+#[cfg(test)]
 mod champion_fit_tests;
 
 #[cfg(test)]
