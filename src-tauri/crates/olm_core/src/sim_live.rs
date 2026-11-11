@@ -6489,3 +6489,6 @@ mod economy_fingerprint_tests;
 
 #[cfg(test)]
 mod gold_ledger_tests;
+
+#[cfg(test)]
+mod economy_harness_tests;
