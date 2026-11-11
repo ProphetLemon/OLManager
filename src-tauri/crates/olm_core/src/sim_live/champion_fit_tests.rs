@@ -2,7 +2,9 @@
 
 use std::collections::HashMap;
 
-use super::champion_fit::{champion_info, champion_plays_role, OFF_ROLE_EDGE_PENALTY};
+use super::champion_fit::{
+    champion_info, champion_plays_role, class_item_category, OFF_ROLE_EDGE_PENALTY,
+};
 use super::strength_tests::{hit_damage, with_scores};
 use super::economy_tests::{batch_size, snapshot_with, Side, FULL_MATCH_TICKS, ROLES};
 use super::*;
@@ -211,4 +213,92 @@ fn off_role_penalty_sweep() {
             wins as f64 / (per_side * 2) as f64 * 100.0
         );
     }
+}
+
+fn category_name(category: ItemBuildCategory) -> &'static str {
+    match category {
+        ItemBuildCategory::Tank => "Tank",
+        ItemBuildCategory::Bruiser => "Bruiser",
+        ItemBuildCategory::Colossus => "Colossus",
+        ItemBuildCategory::AssassinAd => "AssassinAd",
+        ItemBuildCategory::AssassinAp => "AssassinAp",
+        ItemBuildCategory::ControlMage => "ControlMage",
+        ItemBuildCategory::BattleMage => "BattleMage",
+        ItemBuildCategory::AdcCrit => "AdcCrit",
+        ItemBuildCategory::AdcAttackSpeed => "AdcAttackSpeed",
+        ItemBuildCategory::LethalityMarksman => "LethalityMarksman",
+        ItemBuildCategory::SupportEngage => "SupportEngage",
+        ItemBuildCategory::SupportEnchanter => "SupportEnchanter",
+        ItemBuildCategory::SupportDamage => "SupportDamage",
+    }
+}
+
+#[test]
+fn every_catalogue_champion_resolves_a_build_from_its_own_class() {
+    for id in catalogue_ids() {
+        assert!(
+            class_item_category(&id).is_some(),
+            "{id} has no category from its class tags"
+        );
+    }
+}
+
+#[test]
+fn ahri_gets_an_ability_power_build_in_every_role() {
+    for role in ROLES {
+        let category = category_name(classify_item_build(role, "Ahri"));
+        assert!(
+            matches!(category, "ControlMage" | "AssassinAp" | "BattleMage"),
+            "Ahri as {role} got {category}"
+        );
+    }
+}
+
+#[test]
+fn mages_and_marksmen_never_get_a_tank_or_bruiser_plan_from_their_role() {
+    let mut offenders = Vec::new();
+    for id in catalogue_ids() {
+        let info = champion_info(&id).expect("catalogue");
+        let primary = info.tags[0].as_str();
+        if !matches!(primary, "Mage" | "Marksman") {
+            continue;
+        }
+        for role in ROLES {
+            let category = category_name(classify_item_build(role, &id));
+            if matches!(category, "Tank" | "Bruiser" | "Colossus") {
+                offenders.push(format!("{id} as {role}: {category}"));
+            }
+        }
+    }
+    assert!(offenders.is_empty(), "{offenders:?}");
+}
+
+#[test]
+fn enchanter_supports_never_get_a_tank_or_bruiser_plan_from_their_role() {
+    let mut offenders = Vec::new();
+    for id in catalogue_ids() {
+        let info = champion_info(&id).expect("catalogue");
+        if info.tags[0] != "Support" || info.tags.get(1).is_some_and(|tag| tag == "Tank") {
+            continue;
+        }
+        for role in ROLES {
+            let category = category_name(classify_item_build(role, &id));
+            if matches!(category, "Tank" | "Bruiser" | "Colossus") {
+                offenders.push(format!("{id} as {role}: {category}"));
+            }
+        }
+    }
+    assert!(offenders.is_empty(), "{offenders:?}");
+}
+
+#[test]
+#[ignore = "writes the item category table of every champion and role to $DUMP_PATH"]
+fn dump_categories() {
+    let mut out = String::new();
+    for id in catalogue_ids() {
+        for role in ROLES {
+            out.push_str(&format!("{id},{role},{}\n", category_name(classify_item_build(role, &id))));
+        }
+    }
+    std::fs::write(std::env::var("DUMP_PATH").expect("DUMP_PATH"), out).expect("write");
 }

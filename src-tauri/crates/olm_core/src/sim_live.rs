@@ -6198,6 +6198,10 @@ fn classify_item_build(role: &str, champion_id: &str) -> ItemBuildCategory {
         return ItemBuildCategory::LethalityMarksman;
     }
 
+    if let Some(category) = champion_fit::class_item_category(champion_id) {
+        return category;
+    }
+
     match role {
         "TOP" | "JGL" => ItemBuildCategory::Bruiser,
         "MID" => ItemBuildCategory::ControlMage,

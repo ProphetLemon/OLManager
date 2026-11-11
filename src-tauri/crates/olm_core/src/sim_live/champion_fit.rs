@@ -7,7 +7,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use super::normalize_champion_key;
+use super::{normalize_champion_key, ItemBuildCategory};
 
 /// A champion that plays a role it does not have loses this much role edge
 /// (the same input as the tactics role impact, which the engine clamps to +-4
@@ -115,4 +115,26 @@ pub(super) fn off_role_edge_penalty(champion_id: &str, role: &str) -> f64 {
         Some(false) => OFF_ROLE_EDGE_PENALTY,
         _ => 0.0,
     }
+}
+
+/// Item build for a champion in no name list, from its own class tags, wherever
+/// it plays. The name lists in `classify_item_build` stay for what the tags
+/// cannot say (damage type of assassins and mages, attack-speed or lethality
+/// marksmen, engage or damage supports, colossus fighters). `None` when the
+/// catalogue has no tags for the champion, so the role decides.
+pub(super) fn class_item_category(champion_id: &str) -> Option<ItemBuildCategory> {
+    let info = champion_info(champion_id)?;
+    let primary = info.tags.first()?.as_str();
+    let secondary = info.tags.get(1).map(String::as_str);
+    Some(match (primary, secondary) {
+        ("Marksman", _) => ItemBuildCategory::AdcCrit,
+        ("Mage", _) => ItemBuildCategory::ControlMage,
+        ("Assassin", Some("Mage")) => ItemBuildCategory::AssassinAp,
+        ("Assassin", _) => ItemBuildCategory::AssassinAd,
+        ("Tank", Some("Support")) | ("Support", Some("Tank")) => ItemBuildCategory::SupportEngage,
+        ("Tank", _) => ItemBuildCategory::Tank,
+        ("Support", _) => ItemBuildCategory::SupportEnchanter,
+        ("Fighter", _) => ItemBuildCategory::Bruiser,
+        _ => return None,
+    })
 }
