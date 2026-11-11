@@ -11,6 +11,7 @@ mod economy;
 mod events;
 mod farm_ledger;
 mod gold_ledger;
+mod item_catalogue;
 mod layout;
 mod macro_ai;
 mod minions;
@@ -6513,3 +6514,6 @@ mod farm_harness_tests;
 
 #[cfg(test)]
 mod item_catalogue_tests;
+
+#[cfg(test)]
+mod real_items_harness_tests;

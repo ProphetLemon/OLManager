@@ -46,7 +46,7 @@ pub(super) struct ChampionInfo {
     pub(super) tags: Vec<String>,
 }
 
-fn role_code(catalogue_role: &str) -> Option<&'static str> {
+pub(super) fn role_code(catalogue_role: &str) -> Option<&'static str> {
     match catalogue_role {
         "Top" => Some("TOP"),
         "Jungle" => Some("JGL"),
