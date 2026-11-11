@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import kitsFile from "../../../assets/simulation/champion-kits.v1.json";
 import abilitiesFile from "../../../assets/simulation/champion-abilities.v1.json";
 import curatedFile from "../../../scripts/game-data/ability-archetypes.curated.json";
-import { ARCHETYPE_NAMES, ARCHETYPES, RANGE_CLASSES, SLOTS } from "../../../scripts/game-data/lib/ability-archetypes.mjs";
+import { ARCHETYPE_NAMES, ARCHETYPES, DAMAGE_KINDS, POKE_EXCLUDED_WITH, RANGE_CLASSES, SLOTS } from "../../../scripts/game-data/lib/ability-archetypes.mjs";
 import { parseArgs, render } from "../../../scripts/game-data/abilities.mjs";
 
 const root = path.resolve(__dirname, "../../..");
@@ -35,6 +35,7 @@ describe("champion-abilities.v1.json header", () => {
     expect(abilitiesFile.rangeClass.thresholds.meleeMax).toBeLessThan(abilitiesFile.rangeClass.thresholds.shortMax);
     expect(abilitiesFile.rangeClass.thresholds.shortMax).toBeLessThan(abilitiesFile.rangeClass.thresholds.mediumMax);
     expect(abilitiesFile.cooldownSec).toContain("middle rank");
+    expect(ARCHETYPE_NAMES).toHaveLength(18);
   });
 });
 
@@ -102,8 +103,48 @@ describe("champion-abilities.v1.json content", () => {
     }
     const fromFile = Object.values(champions).flat().filter((ability) => ability.origin === "curated").length;
     expect(fromFile).toBe(curated);
-    // Most abilities must come from the rules alone, otherwise the rules are not doing their job.
-    expect(fromFile).toBeLessThan(Object.values(champions).flat().length * 0.4);
+    // Well over half of the abilities must come from the rules alone, otherwise the rules are not doing their job.
+    expect(fromFile).toBeLessThan(Object.values(champions).flat().length * 0.5);
+  });
+
+  it("gives every ability at least one term, unless it is listed under noEffect with a reason", () => {
+    const noEffect = (curatedFile as { noEffect?: Record<string, Record<string, string>> }).noEffect ?? {};
+    for (const [id, abilities] of Object.entries(champions)) {
+      for (const ability of abilities) {
+        const reason = noEffect[id]?.[ability.slot];
+        if (ability.archetypes.length === 0) expect(reason, `${id} ${ability.slot} has no term and no noEffect reason`).toBeTypeOf("string");
+        else expect(reason, `${id} ${ability.slot} has terms and a noEffect entry`).toBeUndefined();
+      }
+    }
+    for (const [id, slots] of Object.entries(noEffect)) {
+      for (const [slot, reason] of Object.entries(slots)) expect(reason.length, `${id} ${slot}`).toBeGreaterThan(20);
+    }
+    // The target is zero: only a slot that is not an ability, or one that merely repeats another spell, may sit here.
+    const listed = Object.values(noEffect).reduce((sum, slots) => sum + Object.keys(slots).length, 0);
+    expect(listed).toBeLessThanOrEqual(5);
+  });
+
+  it("gives an ability at most one damage kind, and never poke together with dash, engage or hard_cc", () => {
+    for (const [id, abilities] of Object.entries(champions)) {
+      for (const ability of abilities) {
+        const label = `${id} ${ability.slot}`;
+        expect(DAMAGE_KINDS.filter((kind) => ability.archetypes.includes(kind)).length, label).toBeLessThanOrEqual(1);
+        if (ability.archetypes.includes("poke")) {
+          for (const excluded of POKE_EXCLUDED_WITH) expect(ability.archetypes, label).not.toContain(excluded);
+        }
+      }
+    }
+  });
+
+  it("counts abilities per damage kind inside loose bounds", () => {
+    const abilities = Object.values(champions).flat();
+    const count = (kind: string) => abilities.filter((ability) => ability.archetypes.includes(kind)).length;
+    expect(count("execute")).toBeGreaterThanOrEqual(10);
+    expect(count("execute")).toBeLessThanOrEqual(40);
+    expect(count("poke")).toBeGreaterThanOrEqual(40);
+    expect(count("poke")).toBeLessThanOrEqual(120);
+    expect(count("damage")).toBeGreaterThanOrEqual(250);
+    expect(count("damage")).toBeLessThanOrEqual(500);
   });
 
   it("counts champions per archetype inside loose bounds, so a broken rule shows", () => {
@@ -121,6 +162,12 @@ describe("champion-abilities.v1.json content", () => {
       stealth: [8, 30],
       untargetable: [10, 35],
       global: [6, 25],
+      ally_buff: [15, 60],
+      self_buff: [80, 165],
+      soft_cc: [70, 150],
+      damage: [130, 173],
+      zone: [35, 100],
+      summon: [10, 40],
     };
     for (const [name, [min, max]] of Object.entries(bounds)) {
       expect(counts[name], name).toBeGreaterThanOrEqual(min);
@@ -180,6 +227,48 @@ describe("named champions read from the committed file", () => {
 
   it("Kayle can make an ally untargetable", () => {
     has("Kayle", "R", "untargetable");
+  });
+
+  it("Nasus, Teemo and Trundle, which had no type at all, have a type on all four abilities", () => {
+    for (const id of ["Nasus", "Teemo", "Trundle"]) {
+      expect(champions[id].map((ability) => ability.slot), id).toEqual(SLOTS);
+      for (const ability of champions[id]) expect(ability.archetypes.length, `${id} ${ability.slot}`).toBeGreaterThan(0);
+    }
+  });
+
+  it("Garen's Decisive Strike and Ashe's Ranger's Focus are self buffs, Garen's also deals damage", () => {
+    has("Garen", "Q", "self_buff", "damage");
+    has("Ashe", "Q", "self_buff");
+    expect(champions.Ashe[0].archetypes).not.toContain("damage");
+  });
+
+  it("Zed's Shadow Slash is damage with a slow", () => {
+    has("Zed", "E", "damage", "soft_cc");
+  });
+
+  it("Teemo's ultimate is a zone and Annie's ultimate summons", () => {
+    has("Teemo", "R", "zone");
+    has("Annie", "R", "summon");
+  });
+
+  it("Zilean and Lulu buff allies", () => {
+    has("Zilean", "E", "ally_buff");
+    has("Lulu", "W", "ally_buff");
+  });
+
+  it("crowd-control skillshots are hard_cc plus damage, not poke, and a dash that hits is dash plus damage", () => {
+    has("Ahri", "E", "hard_cc", "damage");
+    has("Leona", "R", "hard_cc", "damage");
+    expect(champions.Ahri[2].archetypes).not.toContain("poke");
+    has("Ahri", "R", "dash", "damage");
+    has("Fizz", "Q", "dash", "damage");
+  });
+
+  it("a shield or a heal that deals no damage has no damage kind", () => {
+    for (const [id, slot] of [["Lulu", "E"], ["Janna", "E"], ["Soraka", "W"], ["Milio", "R"]] as const) {
+      const ability = champions[id].find((entry) => entry.slot === slot);
+      expect(DAMAGE_KINDS.some((kind) => ability?.archetypes.includes(kind)), `${id} ${slot}`).toBe(id === "Lulu");
+    }
   });
 
   it("the three champions new in this patch are classified from their texts", () => {

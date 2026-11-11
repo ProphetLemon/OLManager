@@ -3,11 +3,17 @@ export type ArchetypeName =
   | "ally_heal"
   | "self_shield"
   | "self_heal"
+  | "ally_buff"
+  | "self_buff"
   | "dash"
   | "engage"
   | "hard_cc"
+  | "soft_cc"
+  | "damage"
   | "poke"
   | "execute"
+  | "zone"
+  | "summon"
   | "stealth"
   | "untargetable"
   | "global";
@@ -20,6 +26,9 @@ export const RANGE_CLASSES: RangeClass[];
 export const SLOTS: Slot[];
 export const RANGE_THRESHOLDS: Readonly<{ selfMax: number; meleeMax: number; shortMax: number; mediumMax: number; globalMin: number }>;
 export const POKE_MIN_RANGE: number;
+export const DAMAGE_KINDS: ArchetypeName[];
+export const POKE_EXCLUDED_WITH: ArchetypeName[];
+export function assertDamageKinds(list: ArchetypeName[], label: string): void;
 
 export interface AbilityInput {
   description?: string;
@@ -38,6 +47,7 @@ export interface KitsInput {
 export type CuratedEntry = ArchetypeName[] | { archetypes?: ArchetypeName[]; rangeClass?: RangeClass };
 export interface CuratedInput {
   overrides: Record<string, Partial<Record<Slot, CuratedEntry>>>;
+  noEffect?: Record<string, Partial<Record<Slot, string>>>;
 }
 export interface AbilityEntry {
   slot: Slot;
@@ -56,6 +66,7 @@ export interface AbilitiesFile {
   cooldownSec: string;
   rangeClass: { rule: string; thresholds: Record<string, number>; classes: Record<RangeClass, string> };
   pokeMinRange: number;
+  noEffect: string;
   origin: Record<string, string>;
   archetypes: Record<ArchetypeName, string>;
   champions: Record<string, AbilityEntry[]>;
@@ -66,6 +77,7 @@ export interface AbilitiesReport {
   curated: number;
   ruleOnly: number;
   championsPerArchetype: Record<ArchetypeName, number>;
+  abilitiesPerDamageKind: Record<string, number>;
 }
 
 export function cooldownAtMiddleRank(cooldowns: number[] | undefined): number | null;
