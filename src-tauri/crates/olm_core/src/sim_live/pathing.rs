@@ -394,6 +394,17 @@ pub(super) fn move_champions(runtime: &mut RuntimeState, dt: f64) {
             champion.target_path_index = champion.target_path.len().saturating_sub(1);
         }
 
+        super::tower_safety::keep_out_of_bare_tower_reach(
+            champion,
+            &super::tower_safety::Surroundings {
+                now,
+                step_sec: dt,
+                champions: &champion_snapshot,
+                minions: &runtime.minions,
+                structures: &runtime.structures,
+            },
+        );
+
         if let Some(target) = champion
             .target_path
             .get(champion.target_path_index)

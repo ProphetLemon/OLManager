@@ -21,6 +21,7 @@ mod session;
 mod state_init;
 mod structures;
 mod tower_ledger;
+mod tower_safety;
 mod trading;
 mod types;
 mod util;
@@ -3125,7 +3126,28 @@ fn should_disengage_champion_trade(
     .decision
 }
 
+/// Where a laner stands to farm. A wave pushed to the enemy tower leaves the spot between
+/// the two fronts inside the tower's reach, with none of his minions left to take the
+/// shots there; he stands just outside it instead.
 fn lane_farm_anchor_pos_v2(
+    champion: &ChampionRuntime,
+    now: f64,
+    champions: &[ChampionRuntime],
+    minions: &[MinionRuntime],
+    structures: &[StructureRuntime],
+) -> Vec2 {
+    let anchor = lane_farm_anchor_toward_wave(champion, now, champions, minions, structures);
+    let around = tower_safety::Surroundings {
+        now,
+        step_sec: 0.0,
+        champions,
+        minions,
+        structures,
+    };
+    tower_safety::outside_bare_tower_reach(champion, anchor, &around)
+}
+
+fn lane_farm_anchor_toward_wave(
     champion: &ChampionRuntime,
     now: f64,
     champions: &[ChampionRuntime],
@@ -6665,3 +6687,6 @@ mod tower_harness_tests;
 
 #[cfg(test)]
 mod scorecard_tests;
+
+#[cfg(test)]
+mod tower_safety_tests;
