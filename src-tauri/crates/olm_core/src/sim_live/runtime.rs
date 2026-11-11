@@ -3,6 +3,19 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// Game seconds one engine step advances, at every playback speed. It is the step
+/// the engine was calibrated at, a 0.05 s frame at the speed value 12; the product
+/// is kept as written so that sums of game time stay bit-identical to that history.
+pub(super) const FIXED_STEP_SEC: f64 = 0.05 * 12.0;
+/// Longest real time one tick may add, in seconds; a stalled frame is honoured whole.
+const MAX_TICK_DT_SEC: f64 = 2.0;
+/// Steps one tick may run, so a long stall cannot freeze the app. The game time it
+/// leaves behind stays in the accumulator for the next ticks.
+const MAX_STEPS_PER_TICK: u32 = 100;
+/// Game time the accumulator may hold: two full ticks of steps. What exceeds it is
+/// dropped, so the match slows down instead of running without end after a stall.
+const MAX_ACCUMULATED_SEC: f64 = 2.0 * MAX_STEPS_PER_TICK as f64 * FIXED_STEP_SEC;
+
 /// Create a SimLiveSession from an init request, without storing it.
 /// Used by WebSocket handler where the session lives on the task stack.
 pub fn init_session_from_request(request: &SimLiveInitRequest) -> Result<SimLiveSession, String> {
@@ -26,6 +39,7 @@ pub fn init_session_from_request(request: &SimLiveInitRequest) -> Result<SimLive
         tick_index: 0,
         wave_spawn_at: MINION_FIRST_WAVE_AT,
         next_minion_id: 1,
+        step_accum_sec: 0.0,
         snapshot: request.snapshot.clone(),
         champion_by_player_id: request.champion_by_player_id.clone(),
         champion_profiles_by_id: request.champion_profiles_by_id.clone(),
@@ -41,7 +55,7 @@ pub fn init(
     request: SimLiveInitRequest,
 ) -> Result<SimLiveStateResponse, String> {
     let session = init_session_from_request(&request)?;
-    let state = encode_runtime_state(&session.state)?;
+    let state = encode_session_state(&session)?;
     let mut sessions = store
         .sessions
         .lock()
@@ -85,34 +99,30 @@ pub fn tick(
         session.state = runtime;
         return Ok(SimLiveStateResponse {
             session_id: session.id.clone(),
-            state: encode_runtime_state(&session.state)?,
+            state: encode_session_state(session)?,
         });
     }
 
-    let dt = request.dt_sec.clamp(0.0, 0.05) * speed;
-    if dt <= 0.0 {
+    let elapsed_game_sec = request.dt_sec.clamp(0.0, MAX_TICK_DT_SEC) * speed;
+    if elapsed_game_sec <= 0.0 {
         session.lane_combat_state_by_champion = runtime.lane_combat_state_by_champion.clone();
         session.state = runtime;
         return Ok(SimLiveStateResponse {
             session_id: session.id.clone(),
-            state: encode_runtime_state(&session.state)?,
+            state: encode_session_state(session)?,
         });
     }
 
-    runtime.time_sec += dt;
-    session.tick_index = session.tick_index.saturating_add(1);
-
-    spawn_waves_if_due(&mut runtime, session);
-    move_champions(&mut runtime, dt);
-    maybe_deploy_rift_herald_charge(&mut runtime);
-    place_wards(&mut runtime);
-    process_sweepers(&mut runtime);
-    move_minions(&mut runtime, dt);
-    resolve_minion_combat(&mut runtime);
-    resolve_champion_combat(&mut runtime);
-    resolve_structure_combat(&mut runtime);
-    tick_neutral_timers(&mut runtime);
-    cleanup_tick(&mut runtime);
+    session.step_accum_sec = (session.step_accum_sec + elapsed_game_sec).min(MAX_ACCUMULATED_SEC);
+    let mut steps = 0;
+    while session.step_accum_sec >= FIXED_STEP_SEC
+        && steps < MAX_STEPS_PER_TICK
+        && runtime.winner.is_none()
+    {
+        session.step_accum_sec -= FIXED_STEP_SEC;
+        run_step(&mut runtime, session);
+        steps += 1;
+    }
     if runtime.winner.is_some() {
         runtime.running = false;
     }
@@ -122,8 +132,26 @@ pub fn tick(
 
     Ok(SimLiveStateResponse {
         session_id: session.id.clone(),
-        state: encode_runtime_state(&session.state)?,
+        state: encode_session_state(session)?,
     })
+}
+
+/// One fixed step of the watched match.
+fn run_step(runtime: &mut RuntimeState, session: &mut SimLiveSession) {
+    runtime.time_sec += FIXED_STEP_SEC;
+    session.tick_index = session.tick_index.saturating_add(1);
+
+    spawn_waves_if_due(runtime, session);
+    move_champions(runtime, FIXED_STEP_SEC);
+    maybe_deploy_rift_herald_charge(runtime);
+    place_wards(runtime);
+    process_sweepers(runtime);
+    move_minions(runtime, FIXED_STEP_SEC);
+    resolve_minion_combat(runtime);
+    resolve_champion_combat(runtime);
+    resolve_structure_combat(runtime);
+    tick_neutral_timers(runtime);
+    cleanup_tick(runtime);
 }
 
 pub fn reset(
@@ -157,11 +185,12 @@ pub fn reset(
     session.state = decode_runtime_state(state)?;
     session.wave_spawn_at = MINION_FIRST_WAVE_AT;
     session.next_minion_id = 1;
+    session.step_accum_sec = 0.0;
     session.lane_combat_state_by_champion.clear();
 
     Ok(SimLiveStateResponse {
         session_id: session.id.clone(),
-        state: encode_runtime_state(&session.state)?,
+        state: encode_session_state(session)?,
     })
 }
 
@@ -219,7 +248,8 @@ pub fn run_to_completion(
                 &local_store,
                 SimLiveTickRequest {
                     session_id: session_id.clone(),
-                    dt_sec: request.dt_sec,
+                    // One frame, as the watched match sends: each call runs one step at speed 12.
+                    dt_sec: request.dt_sec.clamp(0.0, 0.05),
                     running: true,
                     speed: request.speed,
                 },
@@ -263,7 +293,7 @@ pub fn skip_to_end(
             winner: session.state.winner.clone(),
             elapsed_simulated_sec: session.state.time_sec,
             ticks: 0,
-            state: encode_runtime_state(&session.state)?,
+            state: encode_session_state(session)?,
         });
     }
 
@@ -284,8 +314,7 @@ pub fn skip_to_end(
         .extra
         .insert(SKIP_FAST_MODE_EXTRA_KEY.to_string(), Value::Bool(true));
 
-    let dt = request.dt_sec.clamp(0.0, 0.05) * request.speed.max(0.0);
-    if dt <= 0.0 {
+    if !(request.dt_sec > 0.0 && request.speed > 0.0) {
         runtime.extra.remove(SKIP_FAST_MODE_EXTRA_KEY);
         session.lane_combat_state_by_champion = runtime.lane_combat_state_by_champion.clone();
         session.state = runtime;
@@ -294,7 +323,7 @@ pub fn skip_to_end(
             winner: session.state.winner.clone(),
             elapsed_simulated_sec: session.state.time_sec,
             ticks: 0,
-            state: encode_runtime_state(&session.state)?,
+            state: encode_session_state(session)?,
         });
     }
 
@@ -308,16 +337,16 @@ pub fn skip_to_end(
 
         runtime.speed = request.speed.max(0.0);
         runtime.running = true;
-        runtime.time_sec += dt;
+        runtime.time_sec += FIXED_STEP_SEC;
         session.tick_index = session.tick_index.saturating_add(1);
 
         spawn_waves_if_due(&mut runtime, session);
-        move_champions(&mut runtime, dt);
+        move_champions(&mut runtime, FIXED_STEP_SEC);
         if fast_skip_macro_tick {
             place_wards(&mut runtime);
             process_sweepers(&mut runtime);
         }
-        move_minions(&mut runtime, dt);
+        move_minions(&mut runtime, FIXED_STEP_SEC);
         resolve_minion_combat(&mut runtime);
         resolve_champion_combat(&mut runtime);
         resolve_structure_combat(&mut runtime);
@@ -339,13 +368,27 @@ pub fn skip_to_end(
         winner: session.state.winner.clone(),
         elapsed_simulated_sec: session.state.time_sec,
         ticks,
-        state: encode_runtime_state(&session.state)?,
+        state: encode_session_state(session)?,
     })
 }
 
 fn decode_runtime_state(state: Value) -> Result<RuntimeState, String> {
     serde_json::from_value(state)
         .map_err(|err| format!("failed to decode sim_live runtime state: {err}"))
+}
+
+/// The runtime state plus what the view needs to draw movement between steps:
+/// the step size and the game time already collected towards the next step.
+fn encode_session_state(session: &SimLiveSession) -> Result<Value, String> {
+    let mut state = encode_runtime_state(&session.state)?;
+    if let Value::Object(map) = &mut state {
+        map.insert("stepSec".to_string(), Value::from(FIXED_STEP_SEC));
+        map.insert(
+            "stepAccumSec".to_string(),
+            Value::from(session.step_accum_sec),
+        );
+    }
+    Ok(state)
 }
 
 fn encode_runtime_state(state: &RuntimeState) -> Result<Value, String> {

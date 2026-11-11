@@ -6500,6 +6500,9 @@ mod champion_fit_tests;
 mod economy_fingerprint_tests;
 
 #[cfg(test)]
+mod fixed_step_tests;
+
+#[cfg(test)]
 mod gold_ledger_tests;
 
 #[cfg(test)]
