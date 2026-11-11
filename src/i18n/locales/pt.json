@@ -1318,6 +1318,10 @@
     "noStaffMatch": "Nenhum membro do staff corresponde aos filtros.",
     "noAvailableStaff": "Nenhum staff disponível.",
     "releaseStaff": "Dispensar membro do staff",
+    "releaseStaffNamed": "Dispensar {{name}}",
+    "releaseConfirmTitle": "Dispensar {{name}}?",
+    "releaseConfirmMessage": "{{name}} ({{role}}) vai sair do staff e voltar ao mercado. Não é possível anular a partir daqui.",
+    "releaseConfirmAction": "Dispensar",
     "hireStaff": "Contratar membro do staff",
     "clubOwner": "Proprietário do clube",
     "errors": {

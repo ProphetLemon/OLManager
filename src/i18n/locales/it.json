@@ -1170,6 +1170,10 @@
     "noStaffMatch": "Nessun membro dello staff corrisponde ai filtri.",
     "noAvailableStaff": "Nessun membro dello staff disponibile.",
     "releaseStaff": "Licenzia membro dello staff",
+    "releaseStaffNamed": "Licenzia {{name}}",
+    "releaseConfirmTitle": "Licenziare {{name}}?",
+    "releaseConfirmMessage": "{{name}} ({{role}}) lascerà lo staff e tornerà sul mercato. Da qui non si può annullare.",
+    "releaseConfirmAction": "Licenzia",
     "hireStaff": "Assumi membro dello staff",
     "clubOwner": "Proprietario del club",
     "errors": {

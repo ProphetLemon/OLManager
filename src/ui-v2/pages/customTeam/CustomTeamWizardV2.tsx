@@ -276,11 +276,14 @@ export default function CustomTeamWizardV2({
     return t("teamSelect.custom.errors.required");
   };
 
-  /** Inline error for a field: a backend rejection wins, local errors show once touched. */
+  /**
+   * Inline error for a field: a backend rejection wins, local errors show once touched. A clash
+   * with an existing club shows at once: it disables "next", so the reason cannot wait for a blur.
+   */
   const errorFor = (field: CustomTeamField): string | undefined => {
     if (backend?.field === field) return message(field, backend.code);
     const code = validation.errors[field];
-    return code && touched.has(field) ? message(field, code) : undefined;
+    return code && (code === "duplicate" || touched.has(field)) ? message(field, code) : undefined;
   };
 
   const describedBy = (id: string, field: CustomTeamField, hasHint: boolean) =>

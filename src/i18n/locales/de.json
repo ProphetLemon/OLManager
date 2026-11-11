@@ -1319,6 +1319,10 @@
     "noStaffMatch": "Kein Staffmitglied entspricht deinen Filtern.",
     "noAvailableStaff": "Kein Staff verfügbar.",
     "releaseStaff": "Staffmitglied entlassen",
+    "releaseStaffNamed": "{{name}} entlassen",
+    "releaseConfirmTitle": "{{name}} entlassen?",
+    "releaseConfirmMessage": "{{name}} ({{role}}) verlässt den Staff und geht zurück auf den Markt. Das lässt sich hier nicht rückgängig machen.",
+    "releaseConfirmAction": "Entlassen",
     "hireStaff": "Staffmitglied einstellen",
     "clubOwner": "Vereinsbesitzer",
     "errors": {

@@ -645,7 +645,7 @@ export default function DashboardV2() {
       <a
         href={`#${MAIN_CONTENT_ID}`}
         onClick={handleSkipToMain}
-        className="sr-only rounded-md bg-club px-4 py-2 font-heading text-sm font-bold text-club-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100]"
+        className="sr-only rounded-md bg-club px-4 py-2 font-heading text-sm font-bold text-club-foreground focus:not-sr-only focus:min-h-[var(--target-min)] focus:fixed focus:left-4 focus:top-4 focus:z-[100]"
       >
         {t("onAir.nav.skip", { defaultValue: "Skip to main content" })}
       </a>

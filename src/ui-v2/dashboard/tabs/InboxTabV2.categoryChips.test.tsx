@@ -83,4 +83,11 @@ describe("InboxTabV2 category filter chips", () => {
     const label = en.inbox.categories.training;
     expect(screen.getByRole("button", { name: `${label} (2)` })).toBeInTheDocument();
   });
+
+  it("gives the filter chips and the search input the minimum target height", async () => {
+    await renderInbox("en");
+    expect(screen.getByRole("button", { name: /^All/ })).toHaveClass("min-h-[var(--target-min)]");
+    expect(screen.getByRole("button", { name: /Training \(2\)/ })).toHaveClass("min-h-[var(--target-min)]");
+    expect(screen.getByRole("textbox")).toHaveClass("min-h-[var(--target-min)]");
+  });
 });

@@ -77,6 +77,7 @@ describe("StaffTabV2 hire and release errors", () => {
 
     render(<StaffTabV2 gameState={createGameState([createStaff()])} onGameUpdate={vi.fn()} />);
     fireEvent.click(screen.getByTitle("staff.releaseStaff"));
+    fireEvent.click(await screen.findByRole("button", { name: "staff.releaseConfirmAction" }));
 
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("staff.errors.owner_not_fireable"));
   });

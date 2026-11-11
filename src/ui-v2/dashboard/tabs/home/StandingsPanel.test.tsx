@@ -139,4 +139,11 @@ describe("StandingsPanel", () => {
     expect(container.querySelector('[data-slot="standings-name"]')).toHaveClass("min-w-0", "flex-1", "truncate")
     expect(screen.getByText("You").closest('[data-slot="tag-block"]')).toHaveClass("shrink-0")
   })
+
+  it("gives each team button the minimum target height", () => {
+    render(<StandingsPanel data={data()} onOpenTeams={vi.fn()} />)
+    const buttons = screen.getAllByRole("button")
+    expect(buttons.length).toBeGreaterThan(0)
+    for (const button of buttons) expect(button).toHaveClass("min-h-[var(--target-min)]")
+  })
 })
