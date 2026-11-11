@@ -192,7 +192,7 @@
     "scope": { "type": "league", "leagueIds": ["default", "lec"] },
     "personaIds": ["laure-valee", "verified-analyst", "kharasu-esports"],
     "tones": ["professional", "analytical"],
-    "requiredFacts": ["leagueId"],
+    "requiredFacts": ["leagueId", "seriesLength"],
     "excludedTags": [],
     "responseIds": ["focus-next-series", "credit-preparation", "stay-measured"],
     "weight": 1

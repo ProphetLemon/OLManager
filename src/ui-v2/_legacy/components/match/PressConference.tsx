@@ -18,6 +18,8 @@ interface PressConferenceProps {
   winnerSide?: "blue" | "red";
   /** Optional explicit result override. */
   userResult?: "win" | "loss";
+  /** Games in the series that just ended; series questions are only asked after more than one. */
+  seriesLength?: number;
   onFinish: () => void;
   onGameUpdate?: (game: GameStateData) => void;
 }
@@ -71,6 +73,7 @@ export default function PressConference({
   controlledSide,
   winnerSide,
   userResult,
+  seriesLength,
   onFinish,
   onGameUpdate,
 }: PressConferenceProps) {
@@ -83,6 +86,7 @@ export default function PressConference({
       controlledSide,
       winnerSide,
       userResult,
+      seriesLength,
       t,
       recentQuestionIds: readRecentPressQuestionIds(),
     }),

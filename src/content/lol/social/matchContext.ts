@@ -45,6 +45,8 @@ export interface ExtractMatchContextParams {
   match: DraftMatchResult | CompatibleMatchSummary;
   userSide: Side;
   leagueId?: string;
+  /** Games in the series the conference follows; only a multi-game series sets the `seriesLength` fact. */
+  seriesLength?: number;
   rivalry?: boolean;
   streak?: { type: Result; count: number };
   draft?: { strongSide?: "Top" | "Mid" | "Bot"; timing?: Timing };
@@ -198,6 +200,7 @@ export function extractMatchContext(params: ExtractMatchContextParams): MatchCon
   };
 
   if (params.leagueId) facts.leagueId = params.leagueId;
+  if (params.seriesLength !== undefined && params.seriesLength > 1) facts.seriesLength = params.seriesLength;
 
   addTag(tags, result);
 

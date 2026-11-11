@@ -91,6 +91,7 @@ describe("SOCIAL_CONTENT_PACK", () => {
       "objectiveDiff",
       "objectiveLead",
       "leagueId",
+      "seriesLength",
       "comebackGoldDeficit",
       "firstBloodSide",
       "strongSide",

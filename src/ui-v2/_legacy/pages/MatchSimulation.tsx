@@ -2036,6 +2036,7 @@ export default function MatchSimulation() {
           userSide={userSide || "Home"}
           controlledSide={userSelectedSide}
           winnerSide={finalDraftResult?.winnerSide}
+          seriesLength={seriesLength}
           onFinish={handleFinishMatch}
           onGameUpdate={setGameState}
         />
