@@ -4,6 +4,45 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1111.1] - 2026-11-11
+
+### Added
+
+- "On Air" redesign of the dashboard: an icon rail, a broadcast-style bar with the tabs of the active section under it, a new Home (scoreboard for the next match, a "Needs your call" panel, inbox and standings) and a new Squad view with player cards. The interface takes the colours of the club you manage.
+- Accessibility: a high-contrast theme, a visible keyboard focus ring, a larger minimum text size, a skip link and a 24 px minimum size for controls.
+- Playable regional leagues at team selection. The LES has a three-split season (Winter, Spring, Summer), each a single round robin followed by a top-four playoff.
+- Promotion and relegation between linked leagues (LES and LEC) at the end of the season, with the clubs repriced and the outcome shown in the season summary, the inbox and the news.
+- Create your own club in a regional league: a wizard at team selection where you name the club, pick its colours, upload a badge, and either replace an existing club or join the league as an additional one. The club starts with a generated founding squad whose players you can rename, and gets a founding welcome and a news article on day one.
+- Leagues with an odd number of clubs: each club has a rest week, shown on the Home scoreboard.
+- Player ratings derived from 2025 and 2026 match statistics from Leaguepedia, credited in the about screen.
+- Champion counters for the champions that had none.
+- Background leagues now play their playoffs and roll over to the next split on their own.
+- A notice with the result of your scrims when advancing the day resolves them.
+- A confirmation before releasing a staff member, and the reason shown when a club name cannot be used in the club wizard.
+- "Limón Edition" in the app titles.
+
+### Changed
+
+- The smallest interface scale on desktop is larger (a 12 px base instead of 9 px).
+- The Spanish texts use one register throughout.
+- Staff with no attributes in the database get generated attributes and a wage from the staff of the same role and league; an unknown age is hidden instead of shown as 0. Club owners cannot be released or hired and do not count as coaching staff.
+- Inbox result headlines are written from the result's point of view and "View standings" opens the competitions view.
+- In matches resolved from the draft result, champion synergies and counters count again (the evaluation had been failing silently).
+
+### Fixed
+
+- "Skip to match day" could run past the end of a split, and the clock could keep moving from the end-of-split screen. The clock now stops while the split is over, and the next split always starts with its first matchday in the future.
+- For a club outside the first league of the list (any LEC or LES career), a watched league match was labelled a friendly and its champion picks were never recorded; the team list, the manager tab, the team profile, the post-match round results and the scrim context read the wrong league. Every screen now reads the league you play in.
+- A watched match could crash on the champion counters catalogue; two console errors around the draft and the end of a watched match.
+- The weekly scrim setup locked after the first rival was chosen when the setup window had already closed; the scrim setup blocker no longer fires on a rest week.
+- The Home form strip and the inbox headlines could disagree with the standings.
+- Staff shown as "0 OVR" and "Age 0"; hiring a staff member with no wage failed.
+- Finances: the minus sign of a negative amount, a doubled currency symbol, an English word in a sentence, and the wage table's unit and role labels.
+- The scrim objective whose label did not match its effect.
+- English texts and raw keys in the Spanish interface (pre-match and post-match screens, staff market, transfer offers, scouting, market, competitions, inbox, urgent messages) and in the other locales.
+- The Home panel of pending decisions now updates without pressing Continue; the keyboard focus returns to the field in error in the club wizard.
+- Two tests that failed at random.
+
 ## [2026.1108.1] - 2026-11-08
 
 ### Added
