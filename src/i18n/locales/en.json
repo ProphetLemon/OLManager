@@ -1734,7 +1734,7 @@
     "noTeam": "No team assigned",
     "players": "Players",
     "recentResults": "Recent Results",
-    "saveError": "Error saving profile",
+    "saveError": "Error saving profile: ",
     "seasons": "Seasons",
     "staff": "Staff",
     "teams": "Teams",
