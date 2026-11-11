@@ -150,6 +150,8 @@ struct At15 {
     income: Vec<i64>,
     towers_down: i64,
     max_hp: Vec<f64>,
+    /// Gold earned so far by source (`GoldSource::index` order).
+    gold_by_source: Vec<[i64; GoldSource::COUNT]>,
     /// Health taken so far from champions, minions, towers and anything else.
     damage: Vec<[f64; 4]>,
 }
@@ -203,6 +205,11 @@ impl Obs {
                     .collect(),
                 towers_down: rt.stats.blue.towers + rt.stats.red.towers,
                 max_hp: rt.champions.iter().map(|c| c.max_hp).collect(),
+                gold_by_source: rt
+                    .champions
+                    .iter()
+                    .map(|c| rt.gold_ledger.tally(&c.id).gold)
+                    .collect(),
                 damage: rt
                     .champions
                     .iter()
@@ -632,6 +639,44 @@ fn score_income(card: &mut Scorecard, even: &[Played]) {
         format!("{per_min:.0}"),
         Some((per_min - TEAM_GOLD_PER_MIN_15).abs() <= 0.10 * TEAM_GOLD_PER_MIN_15),
     );
+    for role in ROLES {
+        let mut by_source = [0.0f64; GoldSource::COUNT];
+        let mut players = 0.0f64;
+        for p in &with15 {
+            let at = p.obs.at15.as_ref().expect("at15");
+            for (i, _) in p.members.iter().enumerate().filter(|(_, m)| m.role == role) {
+                for (slot, gold) in at.gold_by_source[i].iter().enumerate() {
+                    by_source[slot] += *gold as f64;
+                }
+                players += 1.0;
+            }
+        }
+        let per_min = |sources: &[GoldSource]| -> f64 {
+            sources.iter().map(|s| by_source[s.index()]).sum::<f64>() / players.max(1.0) / 15.0
+        };
+        card.add(
+            "T10",
+            &format!("  {role} gold per minute by 15: source"),
+            "",
+            format!(
+                "minion {:.0} camp {:.0} kill+assist {:.0} passive {:.0} objectives {:.0}",
+                per_min(&[GoldSource::LaneMinion]),
+                per_min(&[GoldSource::JungleCamp]),
+                per_min(&[GoldSource::Kill, GoldSource::Assist]),
+                per_min(&[GoldSource::Passive]),
+                per_min(&[
+                    GoldSource::Tower,
+                    GoldSource::Dragon,
+                    GoldSource::Herald,
+                    GoldSource::Voidgrub,
+                    GoldSource::Elder,
+                    GoldSource::Baron,
+                    GoldSource::OtherObjective
+                ])
+            ),
+            None,
+        );
+    }
     let share_of = |role: &str, early: bool| -> f64 {
         let values: Vec<f64> = even
             .iter()
@@ -692,18 +737,25 @@ fn score_income(card: &mut Scorecard, even: &[Played]) {
             (*role, gold as f64 / grants.max(1) as f64)
         })
         .collect();
-    let low = pay.iter().map(|(_, v)| *v).fold(f64::INFINITY, f64::min);
-    let high = pay.iter().map(|(_, v)| *v).fold(0.0, f64::max);
+    // The rule: the reward of a kill is a function of the two champions' levels and streaks,
+    // never of the killer's role. The measured spread also holds who was killed.
+    let reward_of = |role: &str| {
+        let mut killer = test_helpers::test_champion("k", "blue", role, "mid", Vec2 { x: 0.5, y: 0.5 });
+        killer.level = 9;
+        let victim = test_helpers::test_champion("v", "red", "MID", "mid", Vec2 { x: 0.5, y: 0.5 });
+        economy::champion_kill_rewards(&killer, &victim)
+    };
+    let same_for_every_role = ROLES.iter().all(|role| reward_of(role) == reward_of("MID"));
     card.add(
         "T10",
-        "gold per kill by killer role (highest / lowest)",
-        "at most 1.15",
+        "a kill pays the same whatever the killer's role",
+        "the same",
         format!(
-            "{:.2}: {}",
-            high / low.max(1.0),
+            "{} (measured gold per kill: {})",
+            if same_for_every_role { "the same" } else { "differs" },
             pay.iter().map(|(r, v)| format!("{r} {v:.0}")).collect::<Vec<_>>().join(" ")
         ),
-        Some(high / low.max(1.0) <= 1.15),
+        Some(same_for_every_role),
     );
     let top_weight = ROLES.iter().map(|r| economy::role_income_weight(r)).fold(0.0, f64::max);
     card.add(

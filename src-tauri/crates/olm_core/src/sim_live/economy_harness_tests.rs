@@ -69,6 +69,7 @@ const SOURCE_GROUPS: [(&str, &[GoldSource]); 8] = [
             GoldSource::Voidgrub,
             GoldSource::Elder,
             GoldSource::OtherObjective,
+            GoldSource::Passive,
         ],
     ),
 ];

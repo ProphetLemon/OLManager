@@ -84,32 +84,54 @@ pub(super) fn tower_team_gold(structure_id: &str) -> i64 {
     }
 }
 
-/// Relative weight of a role's farm, kill and assist income (ECON-003).
+/// Relative weight of a role's farm: lane minions at their last hit and jungle camps.
 ///
-/// The positional model lets the lane carries out-farm everyone else; these
-/// weights pull the share of total team gold each role earns toward the usual
-/// pro-play ranges (general knowledge, approximate): Top 20-23%, Jungle
-/// 17-20%, Mid 21-24%, Bot 23-27%, Support 10-14%. Objective gold shared by the
-/// whole team (Baron, towers) is not weighted. The weights are scaled so the
-/// team total matches the unweighted economy: the raw per-role income shares
-/// (about Top 26%, Jungle 15%, Mid 32%, Bot 17%, Support 9%) make the
-/// income-weighted mean about 1.03, so the unscaled weights were divided by
-/// that. A plain mean of 1.0 would cut team gold by about 14%.
-///
-/// Refit when the lane farming was made even: the solo laners now stand at the
-/// wave and farm about twice as much, and the support no longer takes lane
-/// minions from its ADC (about 70% of its early income), so its weight carries
-/// its share through kills and assists. At weight 1.0 the 12-minute shares are
-/// Top 31%, Jungle 13%, Mid 26%, Bot 25%, Support 5%.
+/// Kills, assists, objectives and the passive income pay the same whatever the role, so the
+/// weights only shape the farm. They pull the share of the team's gold each role earns toward
+/// the usual pro-play ranges (general knowledge, approximate): Top 20-23%, Jungle 17-20%,
+/// Mid 21-24%, Bot 23-27%, Support 10-14%. The support takes no minions (he leaves them to his
+/// ADC), so his share comes from the passive income and his item. At weight 1.0 the
+/// 12-minute shares are Top 24%, Jungle 18%, Mid 20%, Bot 23%, Support 14%; the weights move
+/// Top down and Bot up, and are kept close to 1.0 so that the team total stays at the unweighted
+/// baseline (`economy_tests::role_weights_keep_team_gold_at_the_unweighted_baseline`).
 /// [PLACEHOLDER] pending playtest.
 pub(super) fn role_income_weight(role: &str) -> f64 {
     match role {
-        "TOP" => 0.760,
-        "JGL" => 1.278,
-        "MID" => 0.641,
-        "ADC" => 1.388,
-        "SUP" => 1.700,
+        "TOP" => 0.850,
+        "JGL" => 1.000,
+        "MID" => 1.000,
+        "ADC" => 1.250,
+        "SUP" => 1.000,
         _ => 1.0,
+    }
+}
+
+/// Seconds into the match at which every player starts to earn passive gold.
+pub(super) const PASSIVE_GOLD_START_SEC: f64 = 110.0;
+/// Seconds between two payments of passive gold.
+pub(super) const PASSIVE_GOLD_PERIOD_SEC: f64 = 10.0;
+/// Gold of one payment: 1 gold per second, the same for every role and paid while dead
+/// (the real game pays about 2 per second; here it is half of it, with the minions
+/// worth less to match). [PLACEHOLDER] pending playtest.
+pub(super) const PASSIVE_GOLD_PER_PAYMENT: i64 = 10;
+/// Extra gold of one payment for the support: his item pays him for staying beside his
+/// ADC instead of taking the minions. [PLACEHOLDER] pending playtest.
+pub(super) const SUPPORT_ITEM_GOLD_PER_PAYMENT: i64 = 10;
+
+/// How many passive payments the match has made by `time_sec`.
+pub(super) fn passive_payments_due(time_sec: f64) -> i64 {
+    if time_sec < PASSIVE_GOLD_START_SEC {
+        return 0;
+    }
+    ((time_sec - PASSIVE_GOLD_START_SEC) / PASSIVE_GOLD_PERIOD_SEC).floor() as i64 + 1
+}
+
+/// Gold one passive payment gives a player of `role`.
+pub(super) fn passive_payment(role: &str) -> i64 {
+    if role == "SUP" {
+        PASSIVE_GOLD_PER_PAYMENT + SUPPORT_ITEM_GOLD_PER_PAYMENT
+    } else {
+        PASSIVE_GOLD_PER_PAYMENT
     }
 }
 

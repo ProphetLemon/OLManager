@@ -31,7 +31,7 @@ mod waves;
 pub use api::*;
 use economy::{
     BARON_TEAM_GOLD, champion_kill_rewards, jungle_camp_cs_reward, jungle_camp_reward,
-    role_adjusted_income, tower_team_gold,
+    passive_payment, passive_payments_due, role_adjusted_income, tower_team_gold,
 };
 use events::{log_event, push_event};
 use farm_ledger::{DamageSource, FarmLedger, MinionKiller};
@@ -549,12 +549,15 @@ const TRADE_SCORE_WEIGHT_TOWER_DISTANCE: f64 = 0.56;
 const TRADE_SCORE_WEIGHT_ENEMY_OVEREXTENDED: f64 = 0.74;
 const TRADE_SCORE_WEIGHT_FIRST_WAVE: f64 = -0.22;
 const ASSIST_RADIUS: f64 = 0.11;
-const CHAMPION_KILL_GOLD: i64 = 220;
-const CHAMPION_ASSIST_GOLD_TOTAL: i64 = 110;
+const CHAMPION_KILL_GOLD: i64 = 300;
+const CHAMPION_ASSIST_GOLD_TOTAL: i64 = 150;
+/// Gold of a lane minion's last hit, before the role weight. [PLACEHOLDER] pending playtest.
+const LANE_MINION_MELEE_GOLD: i64 = 31;
+const LANE_MINION_RANGED_GOLD: i64 = 23;
 const CHAMPION_KILL_XP: i64 = 180;
 const CHAMPION_LAST_DAMAGE_KILL_CREDIT_SEC: f64 = 60.0;
-const CHAMPION_KILL_GOLD_MIN: i64 = 150;
-const CHAMPION_KILL_GOLD_MAX: i64 = 450;
+const CHAMPION_KILL_GOLD_MIN: i64 = 200;
+const CHAMPION_KILL_GOLD_MAX: i64 = 600;
 const CHAMPION_KILL_XP_MIN: i64 = 150;
 const CHAMPION_KILL_XP_MAX: i64 = 360;
 const CHAMPION_RESPAWN_BASE_SEC: f64 = 18.0;
@@ -5835,7 +5838,13 @@ fn add_gold_xp_to_champion(
         .iter_mut()
         .find(|champion| champion.id == champion_id)
     {
-        let gold = role_adjusted_income(&champion.role, gold);
+        // The role weight shapes the farm (camps here, lane minions at their last hit); kills,
+        // assists and objectives pay the same whoever gets them.
+        let gold = if source == GoldSource::JungleCamp {
+            role_adjusted_income(&champion.role, gold)
+        } else {
+            gold
+        };
         champion.gold += gold;
         champion.xp += xp;
         apply_level_scaling(champion);
@@ -5866,6 +5875,32 @@ fn award_team_gold(
         runtime.gold_ledger.record(&champion.id, source, gold);
     }
     team_stats_mut(&mut runtime.stats, team).gold += paid;
+}
+
+/// Key of `RuntimeState::extra` that counts the passive payments already made.
+const PASSIVE_PAYMENTS_EXTRA_KEY: &str = "passiveGoldPayments";
+
+/// Pays every player the passive gold that fell due since the last step, living or dead.
+fn pay_passive_gold(runtime: &mut RuntimeState) {
+    let due = passive_payments_due(runtime.time_sec);
+    let paid = runtime
+        .extra
+        .get(PASSIVE_PAYMENTS_EXTRA_KEY)
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
+    if due <= paid {
+        return;
+    }
+    let payments = due - paid;
+    for champion in &mut runtime.champions {
+        let gold = payments * passive_payment(&champion.role);
+        champion.gold += gold;
+        runtime.gold_ledger.record(&champion.id, GoldSource::Passive, gold);
+        team_stats_mut(&mut runtime.stats, &champion.team).gold += gold;
+    }
+    runtime
+        .extra
+        .insert(PASSIVE_PAYMENTS_EXTRA_KEY.to_string(), json!(due));
 }
 
 fn add_cs_to_champion(runtime: &mut RuntimeState, champion_id: &str, cs: i64) {
@@ -5905,9 +5940,9 @@ fn register_minion_death(runtime: &mut RuntimeState, minion_idx: usize, killer: 
     );
     let minion_pos = runtime.minions[minion_idx].pos;
     let gold = if runtime.minions[minion_idx].kind == "ranged" {
-        44
+        LANE_MINION_RANGED_GOLD
     } else {
-        60
+        LANE_MINION_MELEE_GOLD
     };
     let xp = if runtime.minions[minion_idx].kind == "ranged" {
         40
@@ -6601,6 +6636,7 @@ fn cleanup_tick(runtime: &mut RuntimeState) {
         .wards
         .retain(|ward| ward.expires_at > runtime.time_sec);
 
+    pay_passive_gold(runtime);
     try_auto_buy_items(runtime);
 
     if runtime.events.len() > EVENT_CAP {
@@ -6696,3 +6732,6 @@ mod trade_floor_tests;
 
 #[cfg(test)]
 mod combat_order_tests;
+
+#[cfg(test)]
+mod income_tests;

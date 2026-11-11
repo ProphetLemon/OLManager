@@ -24,10 +24,12 @@ pub(super) enum GoldSource {
     /// Baron gold, shared by the living team.
     Baron,
     OtherObjective,
+    /// Income every player receives with the passing of time (and the support's item).
+    Passive,
 }
 
 impl GoldSource {
-    pub(super) const COUNT: usize = 11;
+    pub(super) const COUNT: usize = 12;
 
     #[cfg(test)]
     pub(super) const ALL: [GoldSource; GoldSource::COUNT] = [
@@ -42,6 +44,7 @@ impl GoldSource {
         GoldSource::Elder,
         GoldSource::Baron,
         GoldSource::OtherObjective,
+        GoldSource::Passive,
     ];
 
     pub(super) const fn index(self) -> usize {
@@ -62,6 +65,7 @@ impl GoldSource {
             GoldSource::Elder => "elder",
             GoldSource::Baron => "baron",
             GoldSource::OtherObjective => "other",
+            GoldSource::Passive => "passive",
         }
     }
 }
