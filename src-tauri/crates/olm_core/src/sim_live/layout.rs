@@ -363,11 +363,11 @@ pub(super) const LANE_PATH_TOP_BLUE: [Vec2; 11] = [
 
 pub(super) const LANE_PATH_MID_BLUE: [Vec2; 7] = [
     Vec2 { x: 0.12, y: 0.88 },
-    Vec2 { x: 0.22, y: 0.78 },
-    Vec2 { x: 0.34, y: 0.67 },
-    Vec2 { x: 0.46, y: 0.54 },
-    Vec2 { x: 0.58, y: 0.42 },
-    Vec2 { x: 0.7, y: 0.3 },
+    Vec2 { x: 0.248, y: 0.7533 },
+    Vec2 { x: 0.377, y: 0.6267 },
+    Vec2 { x: 0.505, y: 0.5 },
+    Vec2 { x: 0.633, y: 0.3733 },
+    Vec2 { x: 0.762, y: 0.2467 },
     Vec2 { x: 0.89, y: 0.12 },
 ];
 

@@ -1509,7 +1509,7 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                     Some(runtime.champions[idx].id.clone());
                 runtime.champions[idx].attack_cd_until = now + 0.75;
                 if runtime.minions[minion_idx].hp <= 0.0 {
-                    register_minion_death(runtime, minion_idx);
+                    register_minion_death(runtime, minion_idx, MinionKiller::Champion);
                 }
                 continue;
             }

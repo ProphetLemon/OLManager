@@ -9,6 +9,7 @@ mod champion_fit;
 mod combat;
 mod economy;
 mod events;
+mod farm_ledger;
 mod gold_ledger;
 mod layout;
 mod macro_ai;
@@ -31,6 +32,7 @@ use economy::{
     role_adjusted_income, tower_team_gold,
 };
 use events::{log_event, push_event};
+use farm_ledger::{FarmLedger, MinionKiller};
 use gold_ledger::{GoldLedger, GoldSource};
 use layout::{
     BASE_POSITION_BLUE, BASE_POSITION_RED, LANE_PATH_BOT_BLUE, LANE_PATH_MID_BLUE,
@@ -125,6 +127,9 @@ pub(crate) struct RuntimeState {
     /// Gold by source for the economy harness; never read by the simulation.
     #[serde(default, skip)]
     gold_ledger: GoldLedger,
+    /// How lane minions died, for the farming measurements; never read by the simulation.
+    #[serde(default, skip)]
+    farm_ledger: FarmLedger,
     #[serde(default)]
     #[serde(flatten)]
     extra: HashMap<String, Value>,
@@ -5748,7 +5753,7 @@ fn add_cs_to_champion(runtime: &mut RuntimeState, champion_id: &str, cs: i64) {
     }
 }
 
-fn register_minion_death(runtime: &mut RuntimeState, minion_idx: usize) {
+fn register_minion_death(runtime: &mut RuntimeState, minion_idx: usize, killer: MinionKiller) {
     if !runtime.minions[minion_idx].alive {
         return;
     }
@@ -5760,6 +5765,13 @@ fn register_minion_death(runtime: &mut RuntimeState, minion_idx: usize) {
     let last_hit = runtime.minions[minion_idx].last_hit_by_champion_id.clone();
     let minion_team = runtime.minions[minion_idx].team.clone();
     let minion_lane = runtime.minions[minion_idx].lane.clone();
+    runtime.farm_ledger.record_death(
+        normalized_team(&minion_team) == "blue",
+        normalized_lane(&minion_lane),
+        killer,
+        last_hit.as_ref(),
+        runtime.minions[minion_idx].pos,
+    );
     let minion_pos = runtime.minions[minion_idx].pos;
     let gold = if runtime.minions[minion_idx].kind == "ranged" {
         44
@@ -6492,3 +6504,6 @@ mod gold_ledger_tests;
 
 #[cfg(test)]
 mod economy_harness_tests;
+
+#[cfg(test)]
+mod farm_harness_tests;
