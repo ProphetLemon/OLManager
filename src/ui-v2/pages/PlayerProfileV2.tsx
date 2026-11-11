@@ -9,6 +9,7 @@ import {
   type LolRole,
 } from "@/lib/playerProfile/champions";
 import { getPlayerAge, getPlayerTeamName } from "@/lib/playerProfile/helpers";
+import { seasonTotalsFromHistory } from "@/lib/playerProfile/seasonTotals";
 import { canRenameFounder } from "@/lib/customTeam/founders";
 import { getScoutAvailability, type PlayerProfileScoutStatus } from "@/lib/playerProfile/scouting";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
@@ -182,6 +183,11 @@ function PlayerProfileContent({
     buildChampionPerformanceMap(playerHistory),
     gameState.champion_masteries ?? [],
     visibleChampionMasteryCount,
+  );
+  const seasonTotals = seasonTotalsFromHistory(
+    playerHistory,
+    gameState.leagues[0]?.season,
+    player.stats?.appearances,
   );
   const activePotentialResearchPlayer = gameState.players.find(
     (candidate) => (candidate.potential_research_eta_days ?? 0) > 0,
@@ -395,7 +401,7 @@ function PlayerProfileContent({
             title={t("playerProfile.traits", { defaultValue: "Rasgos" })}
           />
         ) : null}
-        {player.stats ? <PlayerProfileStatsCardV2 stats={player.stats} t={t} /> : null}
+        {player.stats ? <PlayerProfileStatsCardV2 stats={player.stats} totals={seasonTotals} t={t} /> : null}
         {player.career && player.career.length > 0 ? (
           <PlayerProfileCareerCardV2 career={player.career} gameState={gameState} t={t} />
         ) : null}

@@ -1,29 +1,33 @@
 import { useMemo } from "react";
 import { Swords, Skull, Handshake, Star, Pickaxe, TrendingUp, Eye, Crosshair } from "lucide-react";
 import type { PlayerSeasonStats } from "@/store/gameStore";
+import type { SeasonTotals } from "@/lib/playerProfile/seasonTotals";
 import { cn } from "@/ui-v2/lib/utils";
 import { PlayerProfileSectionV2 } from "./PlayerProfileSectionV2";
 
 interface Props {
   stats: PlayerSeasonStats;
+  /** Wins, losses, deaths, CS and vision of the running season, summed from the match records. */
+  totals?: SeasonTotals | null;
   t: (key: string, options?: Record<string, string>) => string;
 }
 
 const num = (value: unknown): number | null =>
   typeof value === "number" && Number.isFinite(value) ? value : null;
 
-export default function PlayerProfileStatsCardV2({ stats, t }: Props) {
+export default function PlayerProfileStatsCardV2({ stats, totals, t }: Props) {
   // The backend records `appearances`, `kills` and `assists` per season; the other numbers
-  // (wins, losses, deaths, CS, vision) are only kept per match, so they are shown only when
-  // the stats carry them instead of as a zero that looks like data.
+  // (wins, losses, deaths, CS, vision) are only kept per match, so they come from `totals`
+  // (summed from the match records) and are left out when neither source has them instead of
+  // showing a zero that looks like data.
   const games = num(stats.games_played) ?? num(stats.appearances) ?? 0;
-  const wins = num(stats.wins);
-  const losses = num(stats.losses);
+  const wins = num(stats.wins) ?? totals?.wins ?? null;
+  const losses = num(stats.losses) ?? totals?.losses ?? null;
   const kills = num(stats.kills);
   const assists = num(stats.assists);
-  const deaths = num(stats.deaths);
-  const cs = num(stats.cs);
-  const vision = num(stats.vision_score);
+  const deaths = num(stats.deaths) ?? totals?.deaths ?? null;
+  const cs = num(stats.cs) ?? totals?.cs ?? null;
+  const vision = num(stats.vision_score) ?? totals?.vision ?? null;
   const kda = useMemo(() => {
     if (games === 0 || kills === null || assists === null || deaths === null) return null;
     return ((kills + assists) / (deaths || 1)).toFixed(1);

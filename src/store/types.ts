@@ -291,6 +291,7 @@ export interface PlayerMatchStatsRecord {
 
 export interface PlayerMatchHistoryEntryData {
   fixtureId: string;
+  season: number;
   date: string;
   competition: string;
   matchday: number;
