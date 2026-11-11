@@ -32,7 +32,7 @@ describe("TeamProfileRecentMatchesCardV2 in the Spanish UI", () => {
 
     expect(text).toContain("Partidos recientes");
     expect(text).toContain("Lado");
-    expect(text).toContain("Oro / Objetivos");
+    expect(text).toContain("Oro / Daño");
     expect(text).toContain("Lado azul · Derrota");
     expect(text).toContain("Lado rojo · Victoria");
     for (const english of [/\bSide\b/, /Blue/, /Red\b/, /\bLoss\b/, /\bWin\b/, /Gold \/ Objectives/]) {
