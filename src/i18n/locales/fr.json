@@ -1992,7 +1992,10 @@
     "winRate": "WR",
     "matchesPlayed": "Matchs",
     "perMatch": "Par match",
-    "recentMatches": "Matchs récents"
+    "recentMatches": "Matchs récents",
+    "side": "Côté",
+    "kda": "K / D / A",
+    "economy": "Or / Objectifs"
   },
   "settings": {
     "title": "Paramètres",

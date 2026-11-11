@@ -2145,7 +2145,10 @@
     "winRate": "WR",
     "matchesPlayed": "Partidos",
     "perMatch": "Por partido",
-    "recentMatches": "Partidos recientes"
+    "recentMatches": "Partidos recientes",
+    "side": "Lado",
+    "kda": "K / D / A",
+    "economy": "Oro / Objetivos"
   },
   "settings": {
     "title": "Configuración",

@@ -18,21 +18,16 @@ const TITLE = "font-bold uppercase tracking-wider";
 
 export function TeamProfileRecentMatchesCardV2({ matches }: { matches: TeamRecentMatchEntry[] }) {
   const { t } = useTranslation();
-  const label = (key: string, fallback: string) => {
-    const translated = t(key);
-    return translated === key ? fallback : translated;
-  };
-
   if (matches.length === 0) return null;
 
-  const sideLabel = label("teamProfile.side", "Side");
-  const scoreLabel = label("teamProfile.kda", "K / D / A");
-  const economyLabel = label("teamProfile.economy", "Gold / Objectives");
+  const sideLabel = t("teamProfile.side");
+  const scoreLabel = t("teamProfile.kda");
+  const economyLabel = t("teamProfile.economy");
 
   return (
     <Card className="lg:col-span-3">
       <CardHeader>
-        <CardTitle className={TITLE}>{label("teamProfile.recentMatches", "Recent Matches")}</CardTitle>
+        <CardTitle className={TITLE}>{t("teamProfile.recentMatches")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {matches.map((match) => (
@@ -46,7 +41,7 @@ export function TeamProfileRecentMatchesCardV2({ matches }: { matches: TeamRecen
               </p>
               <p className="font-heading text-base font-bold text-foreground">{match.opponentName}</p>
             </div>
-            <MatchCell label={sideLabel} value={`${match.side} · ${match.result}`} />
+            <MatchCell label={sideLabel} value={`${t(match.side === "Blue" ? "match.draft.sides.blue" : "match.draft.sides.red")} · ${t(match.result === "Win" ? "match.victory" : "match.defeat")}`} />
             <MatchCell label={scoreLabel} value={`${match.kills} / ${match.deaths} / ${match.objectives}`} />
             <MatchCell label={economyLabel} value={`${match.goldEarned} / ${match.damageToChampions}`} />
           </div>

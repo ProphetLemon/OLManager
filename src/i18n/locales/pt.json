@@ -1991,7 +1991,10 @@
     "winRate": "WR",
     "matchesPlayed": "Jogos",
     "perMatch": "Por jogo",
-    "recentMatches": "Jogos recentes"
+    "recentMatches": "Jogos recentes",
+    "side": "Lado",
+    "kda": "K / D / A",
+    "economy": "Ouro / Objetivos"
   },
   "settings": {
     "title": "Definições",

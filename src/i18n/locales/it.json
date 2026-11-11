@@ -1828,7 +1828,10 @@
     "playStyleBalanced": "Balanced",
     "playStyleCounter": "Scaling & counter",
     "playStyleDirect": "Early skirmish",
-    "winRate": "WR"
+    "winRate": "WR",
+    "side": "Lato",
+    "kda": "K / D / A",
+    "economy": "Oro / Obiettivi"
   },
   "settings": {
     "title": "Impostazioni",
@@ -2197,8 +2200,8 @@
       "leagueLogoAlt": "League logo",
       "patchLabel": "Patch {{patch}}",
       "sides": {
-        "blue": "Blue side",
-        "red": "Red side"
+        "blue": "Lato blu",
+        "red": "Lato rosso"
       },
       "phrases": {
         "coachBan": {

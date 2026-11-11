@@ -1992,7 +1992,10 @@
     "winRate": "WR",
     "matchesPlayed": "Spiele",
     "perMatch": "Pro Spiel",
-    "recentMatches": "Letzte Spiele"
+    "recentMatches": "Letzte Spiele",
+    "side": "Seite",
+    "kda": "K / D / A",
+    "economy": "Gold / Ziele"
   },
   "settings": {
     "title": "Einstellungen",
@@ -2236,8 +2239,8 @@
       "leagueLogoAlt": "League logo",
       "patchLabel": "Patch {{patch}}",
       "sides": {
-        "blue": "Blue side",
-        "red": "Red side"
+        "blue": "Blaue Seite",
+        "red": "Rote Seite"
       },
       "phrases": {
         "coachBan": {

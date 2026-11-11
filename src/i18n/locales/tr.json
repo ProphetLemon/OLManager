@@ -1992,7 +1992,10 @@
     "winRate": "WR",
     "matchesPlayed": "Maçlar",
     "perMatch": "Maç Başına",
-    "recentMatches": "Son Maçlar"
+    "recentMatches": "Son Maçlar",
+    "side": "Taraf",
+    "kda": "K / D / A",
+    "economy": "Altın / Hedefler"
   },
   "settings": {
     "title": "Ayarlar",
