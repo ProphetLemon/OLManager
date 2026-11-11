@@ -1517,7 +1517,7 @@
       "System": "Sistem",
       "JobOffer": "İş Teklifleri"
     },
-    "all": "All",
+    "all": "Tümü ({{count}})",
     "close": "Close"
   },
   "manager": {

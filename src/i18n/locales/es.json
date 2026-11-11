@@ -1659,7 +1659,7 @@
       "System": "Sistema",
       "JobOffer": "Ofertas de empleo"
     },
-    "all": "All",
+    "all": "Todos ({{count}})",
     "close": "Close"
   },
   "manager": {

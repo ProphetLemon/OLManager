@@ -1517,7 +1517,7 @@
       "System": "Sistema",
       "JobOffer": "Ofertas de emprego"
     },
-    "all": "Todas",
+    "all": "Todas ({{count}})",
     "close": "Fechar"
   },
   "manager": {

@@ -1368,7 +1368,7 @@
       "System": "Sistema",
       "JobOffer": "Offerte di lavoro"
     },
-    "all": "All",
+    "all": "Tutti ({{count}})",
     "close": "Close"
   },
   "manager": {

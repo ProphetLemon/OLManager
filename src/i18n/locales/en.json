@@ -1670,7 +1670,7 @@
       "System": "System",
       "JobOffer": "Job Offers"
     },
-    "all": "All",
+    "all": "All ({{count}})",
     "close": "Close"
   },
   "manager": {

@@ -1517,7 +1517,7 @@
       "System": "System",
       "JobOffer": "Stellenangebote"
     },
-    "all": "All",
+    "all": "Alle ({{count}})",
     "close": "Close"
   },
   "manager": {
