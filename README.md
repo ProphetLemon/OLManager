@@ -212,6 +212,8 @@ Open League Manager is not endorsed or sponsored by Riot Games and does not refl
 
 Player ratings in new games are derived from pro match statistics from [Leaguepedia](https://lol.fandom.com), licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Method and refresh steps: [`docs/STAT_RATINGS.md`](docs/STAT_RATINGS.md). Whether ShareAlike applies to the derived rating asset is an open question for the owner.
 
+The item catalogue and champion kits under `assets/simulation/` (`items.v1.json`, `champion-kits.v1.json`) and the item, summoner spell and ability icons come from Riot Games' [Data Dragon](https://developer.riotgames.com/docs/lol#data-dragon). The champion builds and presence in `assets/simulation/champion-builds.v1.json` are aggregated from professional match data from [Leaguepedia](https://lol.fandom.com), licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/); that file is offered under the same licence. How to refresh them: [`scripts/game-data/README.md`](scripts/game-data/README.md).
+
 ---
 
 ## 8. Contributing
