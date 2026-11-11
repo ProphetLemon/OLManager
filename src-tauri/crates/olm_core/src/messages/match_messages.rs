@@ -139,7 +139,7 @@ fn with_result_extras(
         "View Standings",
         "be.msg.matchResult.actionStandings",
         ActionType::NavigateTo {
-            route: "/dashboard?tab=Schedule".to_string(),
+            route: "/dashboard?tab=Competitions".to_string(),
         },
     ))
     .with_context(MessageContext {
