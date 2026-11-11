@@ -191,7 +191,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                             </button>
                             <div className="flex w-16 shrink-0 items-center justify-center md:w-20">
                               <div className="flex flex-col items-center">
-                                <span className="font-heading text-xs font-bold uppercase tracking-widest text-muted-foreground/30">VS</span>
+                                <span className="font-heading text-xs font-bold uppercase tracking-widest text-muted-foreground/30">{t("common.vs")}</span>
                                 <span className="text-2xs text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date)}</span>
                               </div>
                             </div>
@@ -286,7 +286,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                           </span>
                         ) : (
                           <div className="flex flex-col items-center">
-                            <span className="font-heading text-xs font-bold uppercase tracking-widest text-muted-foreground/30">VS</span>
+                            <span className="font-heading text-xs font-bold uppercase tracking-widest text-muted-foreground/30">{t("common.vs")}</span>
                             <span className="text-2xs text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date)}</span>
                           </div>
                         )}

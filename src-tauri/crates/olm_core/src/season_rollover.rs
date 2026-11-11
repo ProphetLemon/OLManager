@@ -7,7 +7,7 @@ use log::info;
 
 use crate::end_of_season::{
     EndOfSeasonSummary, playoff_champion_id, process_background_seasons, process_end_of_season,
-    process_end_of_season_with_config, process_end_of_split,
+    process_end_of_season_with_config, process_end_of_split, record_split_in_career,
 };
 use crate::game::Game;
 use crate::generator::definitions::CompetitionManifest;
@@ -101,6 +101,7 @@ pub fn advance_season(game: &mut Game) -> AdvanceOutcome {
                 let summary = split_summary(game);
                 let active_index = game.active_league_index();
                 crate::ladder::record_split_end(game, active_index);
+                record_split_in_career(game);
                 if let Some(league) = game.active_league_mut() {
                     league.split_index += 1;
                 }

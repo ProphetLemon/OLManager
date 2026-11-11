@@ -147,6 +147,21 @@
           "playerContractPressure": {
             "body": "{{player}}, bir sonraki lig penceresinden önce netlik istiyor. Anlaşmanın bitmesine {{days}} gün kala, kadro planının bir parçası olarak kalıp kalmadığını veya başka tekliflere hazırlanması gerekip gerekmediğini soruyor.\n\n\"Mevsim (split) bittikten sonra bu projede hala bana yer olup olmadığını bilmem lazım.\""
           }
+        },
+        "personas": {
+          "dot-esports-reporter": "Dot Esports Muhabiri",
+          "dexerto-reporter": "Dexerto Muhabiri",
+          "esportmaniacos-desk": "Esportmaníacos Editör Masası",
+          "verified-analyst": "Doğrulanmış analist",
+          "draft-room-critic": "Draft eleştirmeni",
+          "rift-instigator": "Rift Kışkırtıcısı",
+          "sideline-human": "Kenar çizgisinden insan hikâyesi"
+        },
+        "outlets": {
+          "lec-post-match": "LEC maç sonrası röportajları",
+          "league-beat": "Lig Nabzı",
+          "tactical-rift-review": "Rift Taktik İncelemesi",
+          "rift-desk": "Rift Masası"
         }
       }
     }
@@ -184,7 +199,8 @@
     "chooseWorld": "Dünya Seç",
     "placeholderFirst": "örn. Lee",
     "placeholderLast": "örn. Sang-hyeok",
-    "nickname": "Nickname"
+    "nickname": "Nickname",
+    "placeholderNickname": "örn. Faker"
   },
   "validation": {
     "required": "{{field}} alanı zorunludur",
@@ -264,7 +280,11 @@
       "exhausted": "{{count}} oyuncunun durumu kritik (<%25)",
       "incompleteStartingXi": "İlk 5 eksik — kadronuzu belirleyin",
       "urgentUnread": "{{count}} acil okunmamış mesaj",
-      "matchTodayStartingXi": "Bugün maç var! İlk 5'ini belirle"
+      "matchTodayStartingXi": "Bugün maç var! İlk 5'ini belirle",
+      "financeCrisis": "Finanslar kritik — bakiye {{balance}}, {{weeks}} haftalık nakit",
+      "financeRunway": "Nakit süresi {{count}} haftaya düştü",
+      "esportsSponsor": "{{sponsorName}} bir espor sponsorudur",
+      "wagePressure": "Maaş yükü bütçenin %{{percent}} seviyesinde"
     },
     "unemployedBanner": "Şu anda bir kulübünüz yok. Gelen kutunuza iş teklifleri gelebilir.",
     "scrims": "Scrims",
@@ -298,7 +318,8 @@
     "skipToMatchDayDesc": "Bir sonraki maça atla ve otomatik oyna",
     "matchDayTitle": "Maç Günü",
     "delegateWarning": "Maçı asistanınız yönetecek. Maça müdahale edemeyeceksiniz.",
-    "skipToNextDay": "Skip to Next Day"
+    "skipToNextDay": "Skip to Next Day",
+    "skipToNextDayDesc": "Bir sonraki güne ilerle"
   },
   "champions": {
     "170": "170+",
@@ -329,7 +350,22 @@
     "allChampions": "All Champions",
     "worldDescription": "Explore all League of Legends champions",
     "totalChampions": "Total",
-    "searchPlaceholder": "Search champions..."
+    "searchPlaceholder": "Search champions...",
+    "mastery": "Ustalık",
+    "name": "Şampiyon",
+    "of": "/",
+    "patchFallback": "Henüz yama yok",
+    "patchLabel": "Yama",
+    "priorityHigh": "Yüksek öncelik",
+    "priorityMedium": "Orta öncelik",
+    "priorityLow": "Düşük öncelik",
+    "priorityHighDesc": "Antrenman odağının en büyük payını alır.",
+    "priorityMediumDesc": "Antrenman odağından orta düzeyde pay alır.",
+    "priorityLowDesc": "Antrenman odağından en küçük payı alır.",
+    "results": "şampiyon bulundu",
+    "roles": "Roller",
+    "staffMasteryImpact": "ustalık öğrenimi",
+    "staffMetaImpact": "Scout yorumu"
   },
   "exitConfirm": {
     "title": "Ana Menüye Çıkılsın mı?",
@@ -737,7 +773,9 @@
         "ageChanged": "Doğum tarihi oyuncunun yaşını korumalı.",
         "general": "Bu düzenleme denetlenemedi. Tekrar dene."
       }
-    }
+    },
+    "noLeaguesMatch": "Aramanızla eşleşen lig yok",
+    "selectTeamErrorTitle": "Takım seçilemedi"
   },
   "youthAcademy": {
     "title": "Akademi",
@@ -783,7 +821,8 @@
     "highPotentialBadge": "High Potential",
     "noStaffMatch": "No staff match your search",
     "potentialHiddenHint": "Potential is hidden until scouted",
-    "searchPlaceholder": "Search academy players..."
+    "searchPlaceholder": "Search academy players...",
+    "promoteTitle": "A takıma yükselt"
   },
   "common": {
     "loading": "Yükleniyor...",
@@ -821,6 +860,8 @@
     "results": "sonuç",
     "vs": "vs",
     "age": "Yaş",
+    "ageShort": "{{age}} yaş",
+    "breadcrumb": "Gezinti yolu",
     "ovr": "OVR",
     "year": "Yıl",
     "per_year_with_slash": "/yıl",
@@ -934,7 +975,16 @@
     "nextPage": "Next",
     "previousPage": "Previous",
     "saving": "Kaydediliyor...",
-    "transferListed": "TR"
+    "transferListed": "TR",
+    "appearances": "O",
+    "assists": "Asistler",
+    "games": "Maçlar",
+    "kills": "Öldürmeler",
+    "losses": "Mağlubiyetler",
+    "rating": "Puan",
+    "showMore": "Daha fazla göster ({{count}})",
+    "vision": "Vizyon",
+    "wins": "Galibiyetler"
   },
   "teamSelection": {
     "title": "Kulübünüzü Seçin",
@@ -982,7 +1032,9 @@
     "importsInLineup": "İlk beşteki yabancılar: {{count}} / {{max}}",
     "allStarting": "All players in the starting lineup",
     "benchSubstitutes": "Bench / Substitutes",
-    "noRoleAvailable": "No player available"
+    "noRoleAvailable": "No player available",
+    "activeLineupHint": "Çekirdek beş kişilik League of Legends kadrosu.",
+    "missingRoleCoverage": "Eksik rol kapsamı"
   },
   "tactics": {
     "playStyle": "Oyun Tarzı",
@@ -1310,7 +1362,11 @@
       "autofill": "Otomatik doldur"
     },
     "daysPerWeek": "days/week",
-    "emptyRoster": "Empty roster"
+    "emptyRoster": "Empty roster",
+    "tab": {
+      "training": "Antrenman",
+      "soloq": "SoloQ"
+    }
   },
   "staff": {
     "myStaff": "Personellerim ({{count}})",
@@ -1376,11 +1432,14 @@
       "recovery": "Toparlanma",
       "draftAnalysis": "Draft analizi",
       "futureMeta": "Gelecek meta",
-      "tiltControl": "Tilt kontrolü"
+      "tiltControl": "Tilt kontrolü",
+      "title": "Etki"
     },
     "adjustFiltersHint": "Filtreleri veya aramayı değiştirmeyi deneyin",
     "hireFromAvailableHint": "Müsait olanlar sekmesinden personel işe alın",
-    "allStaffEmployedHint": "Tüm personel şu anda sözleşmeli"
+    "allStaffEmployedHint": "Tüm personel şu anda sözleşmeli",
+    "attributes": "Nitelikler",
+    "contractUntil": "Sözleşme"
   },
   "finances": {
     "overview": "Finansal Özet",
@@ -1490,7 +1549,9 @@
       "PrizeMoney": "Ödül parası",
       "BudgetRefresh": "Bütçe yenileme",
       "Other": "Diğer"
-    }
+    },
+    "overviewTab": "Genel bakış",
+    "facilitiesTab": "Tesisler"
   },
   "inbox": {
     "title": "Gelen Kutusu",
@@ -1550,6 +1611,7 @@
     "boardStatus": "Yönetim Durumu",
     "satisfaction": "Memnuniyet",
     "careerHistory": "Kariyer Geçmişi",
+    "careerRecordLine": "{{wins}}G/{{losses}}M · %{{winRate}} galibiyet oranı",
     "club": "Kulüp",
     "period": "Dönem",
     "matches": "Maçlar",
@@ -1570,22 +1632,23 @@
     "fanMixed": "Taraftarların hisleri karışık.",
     "fanRestless": "Taraftarlar giderek huzursuzlaşıyor.",
     "fanUnrest": "Taraftarlar huzursuz — protestolar muhtemel.",
-    "bestFinish": "Best Finish",
-    "bestSeason": "Best Season",
-    "careerHighlights": "Career Highlights",
-    "changeAvatar": "Change Avatar",
-    "currentTeam": "Current Team",
-    "editProfile": "Edit Profile",
-    "leaguePosition": "League Position",
-    "noHistory": "No career history yet",
-    "noTeam": "No team assigned",
-    "players": "Players",
-    "recentResults": "Recent Results",
-    "saveError": "Error saving profile",
-    "seasons": "Seasons",
-    "staff": "Staff",
-    "teams": "Teams",
-    "winRate": "Win Rate"
+    "bestFinish": "En iyi sıralama",
+    "bestSeason": "En iyi sezon",
+    "careerHighlights": "Kariyer öne çıkanlar",
+    "changeAvatar": "Avatarı değiştir",
+    "currentTeam": "Mevcut takım",
+    "editProfile": "Profili düzenle",
+    "leaguePosition": "Lig sırası",
+    "noHistory": "Henüz kariyer geçmişi yok",
+    "noTeam": "Atanmış takım yok",
+    "players": "Oyuncular",
+    "recentResults": "Son sonuçlar",
+    "saveError": "Profil kaydedilirken hata oluştu: ",
+    "seasons": "Sezonlar",
+    "staff": "Personel",
+    "teams": "takım",
+    "winRate": "Galibiyet oranı",
+    "settings": "Profili düzenle"
   },
   "boardObjectives": {
     "objective": {
@@ -1697,7 +1760,11 @@
     "bidImpactBalance": "Kulüp bakiyesi {{before}} -> {{after}}",
     "bidImpactWagePressure": "Tahmini maaş bütçesi kullanımı: %{{percent}}",
     "bidImpactOverTransferBudget": "Bu teklif transfer bütçenizi aşıyor",
-    "bidImpactOverBalance": "Bu teklif kulübü borca sokar"
+    "bidImpactOverBalance": "Bu teklif kulübü borca sokar",
+    "contractLengthError": "Sözleşme 1 ile 5 yıl arasında olmalıdır.",
+    "currentAnnualWage": "Mevcut yıllık maaş: {{wage}}",
+    "proposedWeekly": "Haftalık karşılığı: {{weekly}}/hf.",
+    "wageIncrease": "Artış: +%{{pct}}"
   },
   "schedule": {
     "noSchedule": "Lig fikstürü bulunmuyor.",
@@ -1724,7 +1791,8 @@
     "matchesForDate": "Matches for {{date}}",
     "noFixtures": "No fixtures available",
     "noMatchesOnDay": "No matches on this day",
-    "thisWeek": "This Week"
+    "thisWeek": "This Week",
+    "scrimVs": "{{team}} ile scrim"
   },
   "players": {
     "searchPlaceholder": "İsme veya uyruğa göre ara...",
@@ -1766,16 +1834,24 @@
     "playStyleCounter": "Güçlenme (Scaling) & Avantaj",
     "playStyleDirect": "Erken çatışma (Skirmish)",
     "winRateShort": "Kazanma Oranı (WR)",
-    "nTeams": "{{count}} teams",
-    "nTeamsInLeague": "{{count}} teams in {{league}}",
-    "noMatch": "No teams match your search",
-    "noTeams": "No teams found",
-    "searchPlaceholder": "Search teams...",
+    "nTeams": "{{count}} takım",
+    "nTeamsInLeague": "{{league}} içinde {{count}} takım",
+    "noMatch": "Aramanızla eşleşen takım yok",
+    "noTeams": "Takım bulunamadı",
+    "searchPlaceholder": "Takım ara...",
     "statOvr": "OVR",
     "statPts": "Pts",
-    "statRep": "Rep",
-    "statSquad": "Squad",
-    "statValue": "Value"
+    "statRep": "İtibar",
+    "statSquad": "Kadro",
+    "statValue": "Değer",
+    "colPos": "Sıra",
+    "colTeam": "Takım",
+    "colOvr": "OVR",
+    "colRep": "İtibar",
+    "colValue": "Değer",
+    "colWr": "WR",
+    "colPlayers": "Oyuncular",
+    "recordShort": "{{won}}G {{lost}}M"
   },
   "teamsList": {
     "yourTeam": "Takımınız",
@@ -1871,7 +1947,8 @@
     "renewalBudgetWarning": "Maaş bütçesini aşıyor",
     "renewalAccepted": "Teklif kabul edildi",
     "renewalRejected": "Teklif reddedildi",
-    "renewalCounter": "Daha fazlasını istiyor: {{years}} yıl için yıllık €{{wage}}",
+    "renewalCounter_one": "Daha fazlasını istiyor: 1 yıl için yıllık {{wage}}",
+    "renewalCounter_other": "Daha fazlasını istiyor: {{count}} yıl için yıllık {{wage}}",
     "renewalBlocked": "Önceki kararınızdan sonra görüşmeler tıkandı",
     "renewalCooledOff": "Önceki görüşmeler soğudu, bu yüzden yepyeni bir görüşme başlıyor.",
     "delegateRenewal": "Asistan Koça Devret",
@@ -1922,6 +1999,7 @@
     "assists": "Asistler",
     "avgRating": "OVR. Reyting",
     "careerHistory": "Kariyer Geçmişi",
+    "careerSeasonColumn": "Sezon",
     "noCareer": "Henüz kariyer geçmişi yok — ilk sezon.",
     "nApps": "{{count}} maç",
     "nAssists": "{{count}} asist",
@@ -1945,7 +2023,11 @@
     "startPotentialResearch": "Potansiyel araştırmasını başlat",
     "transferListed": "Transfer listesinde",
     "transferOfferDestination": "Hedef",
-    "transferOfferMainTeam": "Ana takım"
+    "transferOfferMainTeam": "Ana takım",
+    "career": "Kariyer geçmişi",
+    "matchHistory": "Maç geçmişi",
+    "noStats": "Bu sezon henüz maç oynanmadı.",
+    "traits": "Özellikler"
   },
   "teamProfile": {
     "clubInfo": "Takım Bilgisi",
@@ -1969,7 +2051,10 @@
     "winRate": "WR",
     "matchesPlayed": "Maçlar",
     "perMatch": "Maç Başına",
-    "recentMatches": "Son Maçlar"
+    "recentMatches": "Son Maçlar",
+    "side": "Taraf",
+    "killsDeathsObjectives": "K / D / Hedef",
+    "economy": "Altın / Hasar"
   },
   "settings": {
     "title": "Ayarlar",
@@ -2033,7 +2118,27 @@
     "checkNow": "Şimdi Kontrol Et",
     "updateAvailableDetail": "Sürüm {{version}} mevcut",
     "upToDate": "Güncel versiyonu kullanıyorsunuz",
-    "noPlatformBuild": "Bir sürüm var, ancak sisteminiz için henüz bir yapı yok"
+    "noPlatformBuild": "Bir sürüm var, ancak sisteminiz için henüz bir yapı yok",
+    "autoImport": "Veritabanını otomatik içe aktar",
+    "autoImportDesc": "Herkese açık OLMDBManager veritabanını (takımlar, oyuncular, ekip ve görseller) indirir ve oyun verilerini günceller.",
+    "data": "Veriler",
+    "debugTools": "Hata ayıklama araçları",
+    "debugToolsDesc": "Draft atlama ve Dünya Düzenleyici gibi dahili araçları etkinleştirir",
+    "importCached": "Son ZIP’i kullan",
+    "importCacheEmpty": "Henüz kayıtlı ZIP yok. İlk çevrimiçi içe aktarma bir tane oluşturur.",
+    "importCacheMissing": "Henüz kayıtlı bir ZIP yok.",
+    "importCacheReady": "Kayıtlı ZIP: {{size}}",
+    "importDone": "{{players}} oyuncu, {{teams}} takım ve {{staff}} ekip üyesi içe aktarıldı. Görseller: {{photos}}.",
+    "importing": "İçe aktarılıyor...",
+    "importOnline": "Çevrimiçi içe aktar",
+    "importRunning": "Veriler OLMDBManager’dan indiriliyor ve açılıyor...",
+    "importZip": "ZIP içe aktar",
+    "importZipPath": "/yol/olmanager_export.zip",
+    "importZipPathRequired": "ZIP yolunu gir.",
+    "players": "Oyuncular",
+    "staff": "Ekip",
+    "teams": "Takımlar",
+    "uiScaleAndroidLocked": "Android’de XS’e kilitli"
   },
   "preMatch": {
     "autoSelect": "En İyi 5'liyi Otomatik Seç",
@@ -2347,7 +2452,20 @@
       "performance": "Performans",
       "gameTimeline": "Oyun zaman çizelgesi",
       "blueNext": "Sonraki Mavi",
-      "redNext": "Sonraki Kırmızı"
+      "redNext": "Sonraki Kırmızı",
+      "timelineEvents": {
+        "firstBlood": "İlk Kan",
+        "voidgrubs": "Boşluk Larvaları x3",
+        "dragon": "Ejderha",
+        "dragonSoul": "Ejderha Ruhu",
+        "elder": "Kadim Ejderha",
+        "herald": "Haberci",
+        "baron": "Baron",
+        "turret": "Kule",
+        "inhibitor": "İnhibitör",
+        "nexusTurret": "Nexus Kulesi",
+        "nexus": "Nexus"
+      }
     },
     "lolResult": {
       "dragonSummary": "{{kind}} Ejderi · Ev/Dep skorları {{home}}/{{away}} · Ruh {{soul}}",
@@ -2451,25 +2569,27 @@
     "draftStrategy": "Draft stratejisi",
     "condition": "Condition",
     "scrimPrep": {
-      "title": "Scrim prep carried into the match",
-      "summary": "Recent scrims gave this side a small {{focus}} execution signal. It affects timing and comfort, not a guaranteed result.",
+      "title": "Scrim hazırlığı maça taşındı",
+      "summary": "Son scrimler bu tarafa {{focus}} alanında küçük bir uygulama sinyali verdi. Oyunun temposunu ve şampiyon konforunu etkiler; sonucu garanti etmez.",
       "details": {
-        "opponentPrep": "Opponent prep +{{value}}",
-        "championComfort": "Champion comfort +{{value}}",
-        "focus": "Focus: {{focus}}"
+        "opponentPrep": "Rakip hazırlığı +{{value}}",
+        "championComfort": "Şampiyon konforu +{{value}}",
+        "focus": "Odak: {{focus}}"
       },
       "focus": {
-        "draftPrep": "draft prep",
-        "championPool": "champion pool",
-        "earlyGame": "early game",
-        "teamfighting": "teamfighting",
-        "macro": "macro",
-        "mental": "mental reset",
-        "general": "general prep"
+        "draftPrep": "draft hazırlığı",
+        "championPool": "şampiyon havuzu",
+        "earlyGame": "erken oyun",
+        "teamfighting": "takım savaşları",
+        "macro": "makro",
+        "mental": "zihinsel sıfırlama",
+        "general": "genel hazırlık"
       }
     },
     "continue": "Devam",
-    "game": "Oyun"
+    "game": "Oyun",
+    "seriesGame": "{{game}}. maç",
+    "noTimelineData": "Zaman çizelgesi verisi yok."
   },
   "endOfSeason": {
     "seasonComplete": "Sezon Tamamlandı",
@@ -2519,6 +2639,25 @@
     "compare": "Karşılaştır"
   },
   "be": {
+    "ledger": {
+      "playerWages": "Aylık oyuncu maaşları",
+      "staffWages": "Aylık personel maaşları",
+      "facilityUpkeep": "Aylık tesis bakımı",
+      "sponsorshipIncome": "Aylık sponsorluk geliri",
+      "matchdayRevenue": "Aylık maç günü geliri",
+      "staffHiring": "Personel işe alım bedeli: {{name}}",
+      "freeAgentSigning": "Serbest oyuncu {{player}} için imza bedeli",
+      "transferPurchase": "{{player}} transfer alım bedeli",
+      "transferSale": "{{player}} transfer satış geliri",
+      "contractTermination": "{{player}} sözleşmesinin fesih cezası",
+      "seasonPrize": "{{season}}. sezon ödül parası ({{position}}. sıra)",
+      "promotionFunding": "Yükselme desteği",
+      "academyAcquisition": "Akademi satın alımı: {{name}}",
+      "mainHubExpansion": "Ana tesis merkezinin genişletilmesi",
+      "moduleUpgrade": "Tesis modülü geliştirmesi: {{module}}",
+      "facilityUpgrade": "Tesis geliştirmesi: {{facility}}",
+      "facilityTypes": { "Training": "Antrenman", "Medical": "Sağlık", "Scouting": "Gözlem" }
+    },
     "sender": {
       "assistantCoach": "Yardımcı Antrenör",
       "fitnessCoach": "Fitness Antrenörü",
@@ -2673,7 +2812,7 @@
             "body": "Bugün çekişmeli bir beraberlik, koç. {{home}} {{homeWins}}-{{awayWins}} {{away}}, rakip {{opponent}}.\n\nİstediğimiz sonuç değildi ama karakter gösterdik. Olumlu yanları alıp zayıflıklar üzerinde çalışalım.\n\nSıradaki maç yeniden kazanmaya dönmek için bir fırsat."
           },
           "victory_1": {
-            "subject": "Galibiyet! {{opponent}} karşısında {{score}}",
+            "subject": "Galibiyet! {{opponent}} karşısında {{userScore}}",
             "body": "Bugün harika bir sonuç, koç! {{opponent}} takımını {{userScore}} yendik.\n\nTakım oyun planını iyi uyguladı. Bu ivmeyi bir sonraki maça taşıyalım.\n\nEmeği geçen herkese teşekkürler."
           },
           "victory_2": {
@@ -3238,30 +3377,30 @@
       },
       "scrimWeekly": {
         "subject": "Haftalık Scrim Personel Raporu",
-        "body": "Haftalık scrim raporu:\n\nOynanan: {{played}}\nGalibiyet: {{wins}}\nMağlubiyet: {{losses}}\nMevcut kaybetme serisi: {{lossStreak}}\n\nScrim gelişimi kaybedilen maçlarda bile uygulanır, ancak uzun mağlubiyet serileri morale zarar verir.",
+        "body": "Haftalık scrim raporu:\n\nOynanan: {{played}}\nGalibiyet: {{wins}}\nMağlubiyet: {{losses}}\nİptaller: {{cancellations}}\nOrtalama kalite: {{avgQuality}}\nMevcut kaybetme serisi: {{lossStreak}}\n\nAna odak: {{topFocus}}\nTekrarlayan sorun: {{recurringIssue}}\nEn çok çalışılan şampiyon: {{topChampion}}\n\nÖneri: {{recommendation}}",
         "focus": {
-          "draftPrep": "Draft prep",
-          "championPool": "Champion pool",
-          "earlyGame": "Early game",
-          "teamfighting": "Teamfighting",
-          "macro": "Macro",
-          "mental": "Mental"
+          "draftPrep": "Draft hazırlığı",
+          "championPool": "Şampiyon havuzu",
+          "earlyGame": "Erken oyun",
+          "teamfighting": "Takım savaşları",
+          "macro": "Makro",
+          "mental": "Zihinsel"
         },
         "issues": {
-          "draftGap": "Draft gap",
-          "lanePressure": "Lane pressure",
-          "objectiveSetup": "Objective setup",
-          "teamfightExecution": "Teamfight execution",
-          "championComfort": "Champion comfort",
+          "draftGap": "Draft açığı",
+          "lanePressure": "Koridor baskısı",
+          "objectiveSetup": "Hedef kurulumu",
+          "teamfightExecution": "Takım savaşı uygulaması",
+          "championComfort": "Şampiyon konforu",
           "tilt": "Tilt"
         },
         "recommendations": {
-          "lockPlans": "Lock Plan A/B/C earlier next week so the staff has usable prep data.",
-          "reduceCancellations": "Reduce cancellations next week; scrim reputation is part of your competitive infrastructure.",
-          "resetBeforeVolume": "Open next week with Mental Reset or VOD Review before adding more volume.",
-          "narrowFocus": "Keep the volume but narrow the focus around the recurring issue; quality is too noisy right now.",
-          "targetedDrills": "Schedule Targeted Drills for the recurring issue and keep the main prep block stable.",
-          "keepPlan": "Keep the current plan: it is producing useful reps without overloading the roster."
+          "lockPlans": "Personelin işe yarar hazırlık verisi olması için gelecek hafta Plan A/B/C'yi daha erken kilitle.",
+          "reduceCancellations": "Gelecek hafta iptalleri azalt; scrim itibarı rekabetçi altyapının bir parçasıdır.",
+          "resetBeforeVolume": "Daha fazla hacim eklemeden önce gelecek haftaya Mental Reset veya VOD Review ile başla.",
+          "narrowFocus": "Hacmi koru ama odağı tekrarlayan sorun etrafında daralt; kalite şu anda fazla dalgalı.",
+          "targetedDrills": "Tekrarlayan sorun için Targeted Drills planla ve ana hazırlık bloğunu sabit tut.",
+          "keepPlan": "Mevcut planı koru: kadroyu yormadan işe yarar tekrarlar üretiyor."
         }
       },
       "patchNotes": {
@@ -3806,7 +3945,11 @@
     "recentReports": "Son raporlar",
     "reviewDecisionApplied": "Karar scrim bloğuna uygulandı",
     "reviewed": "İncelendi",
+    "setupAllSlotsPassed": "Bu haftanın tüm scrim günleri geçti, planlanacak bir şey kalmadı. Planlama gelecek pazartesi yeniden açılır.",
     "setupLocked": "Blok başladığında kurulum kilitlenir",
+    "setupLockedFirstWindow": "Bu haftanın ilk scrim günü başladı, bu yüzden kurulum kilitli. Gelecek pazartesi yeniden açılır.",
+    "setupLockedManual": "Bu haftanın kurulumunu onayladın, bu yüzden kilitli. Gelecek pazartesi yeniden açılır.",
+    "setupLockedWeekStarted": "Bu hafta bir scrim bloğu zaten oynandı, bu yüzden kurulum kilitli. Gelecek pazartesi yeniden açılır.",
     "setupUnlockWindow": "Kurulum blok başlamadan önce değiştirilebilir",
     "streaks": "Seriler",
     "tags": {
@@ -3848,7 +3991,28 @@
       "Teamfighting": "Takım savaşı uygulamasını, hedef odağını ve 5v5 koordinasyonunu geliştirir.",
       "Macro": "Hedef kurulumunu, harita kontrolünü ve orta/geç oyun kararlarını geliştirir.",
       "Mental": "Baskı altında zihinsel istikrarı, toparlanmayı ve tutarlılığı geliştirir."
-    }
+    },
+    "assistantModeHint": "Asistan modunda Devam 1 gün ilerler ve ekip scrim kararlarını otomatik çözer.",
+    "cancellations": "İptaller",
+    "nextOfficialRival": "Sonraki resmi rakip",
+    "noWeeklyReportYet": "Haftalık özeti oluşturmak için scrimleri tamamla.",
+    "postScrimFeedback": "Scrim sonrası geri bildirim",
+    "postScrimNextActionContinue": "İnceleme zaten uygulandı: bu geri bildirimi sonraki blok için rakibi ve odağı ayarlamakta kullan.",
+    "postScrimNextActionReview": "Sonraki adım: bu bloğu somut ilerlemeye çevirmek için Ana Sayfa’da bir inceleme kararı seç.",
+    "reportQuality": "Kalite",
+    "todayCancelCost": "İptal maliyeti",
+    "todayCancelled": "Bugünkü scrim bloğu iptal edildi. Dinlenmeye veya egzersizlere öncelik ver.",
+    "todayLearning": "Öğrenme değeri",
+    "todayNeedsReview": "Bugünkü scrim oynandı ve bir inceleme kararı bekliyor.",
+    "todayNoScrim": "Bugün aktif scrim yok. Haftalık planını amaca uygun düzenle.",
+    "todayPlanned": "Bugün bir scrim planlandı. A/B/C planının hâlâ mantıklı olduğunu kontrol et.",
+    "todayReviewed": "Bugünkü inceleme zaten uygulandı. Hazırlık ve antrenmanla devam et.",
+    "weeklyFailureCancellations": "Risk: çok fazla iptal",
+    "weeklyFailureConsistency": "Risk: tutarsız sonuçlar",
+    "weeklyFailureIssue": "Tekrarlayan sorun: {{issue}}",
+    "weeklyGainExecution": "Kazanım: daha iyi uygulama",
+    "weeklyGainExposure": "Kazanım: farklı stillerle tanışma",
+    "weeklyGainSolid": "Kazanım: sağlam scrim kalitesi"
   },
   "updater": {
     "title": "Update Available",
@@ -3921,7 +4085,11 @@
     "comingSoonTitle": "Social Feed - Yakında",
     "comingSoonBody": "Sosyal feed şu anda sadece <strong>LEC</strong> için mevcut.",
     "comingSoonSub": "Diğer ligler gelecek bir güncellemede desteklenecek.",
-    "currentlyPlaying": "Şu an oynanan:"
+    "currentlyPlaying": "Şu an oynanan:",
+    "composerPlaceholder": "Menajer bugün ne düşünüyor?",
+    "mediaAlt": "Gönderi medyası",
+    "post": "Paylaş",
+    "posting": "Paylaşılıyor..."
   },
   "championPage": {
     "assists": "Assists",
@@ -3948,9 +4116,11 @@
     "noResults": "No results"
   },
   "competitions": {
-    "heroMatches": "Maçlar",
-    "heroSeason": "Sezon",
-    "heroTeams": "Takımlar",
+    "heroMatches_one": "{{count}} maç",
+    "heroMatches_other": "{{count}} maç",
+    "heroSeason": "Sezon {{season}}",
+    "heroTeams_one": "{{count}} takım",
+    "heroTeams_other": "{{count}} takım",
     "noPlayers": "Oyuncu bulunamadı",
     "noPlayersMatch": "Aramanızla eşleşen oyuncu yok",
     "noStandings": "Puan durumu mevcut değil",
@@ -3961,17 +4131,17 @@
     "selectPrompt": "Ayrıntıları görmek için bir turnuva seçin",
     "tableHeader": {
       "diff": "Fark",
-      "losses": "L",
-      "mapsLost": "ML",
-      "mapsWon": "MW",
+      "losses": "M",
+      "mapsLost": "HM",
+      "mapsWon": "HG",
       "ovr": "OVR",
-      "played": "Pld",
+      "played": "O",
       "player": "Oyuncu",
       "pos": "#",
-      "pts": "Pts",
+      "pts": "Puan",
       "role": "Rol",
       "team": "Takım",
-      "wins": "W",
+      "wins": "G",
       "wr": "WR%"
     },
     "title": "Turnuvalar",
@@ -3995,18 +4165,22 @@
     "southAmerica": "South America"
   },
   "meta": {
-    "complete": "Complete",
-    "discoveryStats": "Discovery Stats",
-    "gainMaximum": "Maximum gain",
-    "gainMinimal": "Minimal gain",
-    "gainModerate": "Moderate gain",
-    "noPlayers": "No players found",
-    "patchMeta": "Patch Meta",
-    "priorityHigh": "High priority",
-    "priorityLow": "Low priority",
-    "priorityMedium": "Medium priority",
-    "unknownPatch": "Unknown patch",
-    "updated": "Updated"
+    "complete": "%{{pct}} tamamlandı",
+    "discoveryEffect": "{{value}} keşif",
+    "discoveryStats": "Keşif İstatistikleri",
+    "gainMaximum": "Maksimum kazanç",
+    "gainMinimal": "Minimum kazanç",
+    "gainModerate": "Orta düzey kazanç",
+    "masteryEffect": "{{value}} ustalık",
+    "noPlayers": "Oyuncu bulunamadı",
+    "patchMeta": "Yama Metası",
+    "priorityHigh": "Yüksek öncelik",
+    "priorityLow": "Düşük öncelik",
+    "priorityMedium": "Orta öncelik",
+    "tierDiscovered_one": "{{count}} keşfedildi",
+    "tierDiscovered_other": "{{count}} keşfedildi",
+    "unknownPatch": "Bilinmeyen yama",
+    "updated": "Güncelleme: {{date}}"
   },
   "placeholder": {
     "pendingDesign": "Pending design — coming soon"
@@ -4243,5 +4417,15 @@
       "assistantResolvedDaySetup": "Yardımcı Antrenör günü ilerletmek için haftalık kurulumu otomatik olarak çözdü.",
       "assistantResolvedDayDecision": "Yardımcı Antrenör günü ilerletmek için scrim sonrası kararı otomatik olarak çözdü."
     }
+  },
+  "community": {
+    "title": "Topluluk",
+    "blurb": "Open League Manager, topluluk tarafından ve topluluk için yapılan ücretsiz, açık kaynaklı bir projedir. Katıl, fikir öner veya kod katkısında bulun: her yardım değerlidir.",
+    "mentionsTitle": "Anmalar",
+    "mentionsSubtitle": "Projeyi en çok destekleyenlere teşekkürler",
+    "mentionsEmpty": "Burada yer almak ister misin? Discord’a katıl ve katkıda bulun."
+  },
+  "patchNotes": {
+    "empty": "Henüz sürüm notu yok."
   }
 }

@@ -83,9 +83,22 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
       .slice(0, 5);
   }, [myTeam, league]);
 
+  // The backend adds a season to `career_stats` only when it ends, so the numbers shown are
+  // those totals plus the running season of the user's club (its row in the league table).
+  const totals = useMemo(() => {
+    const row = league?.standings?.find((entry) => entry.team_id === mgr.team_id);
+    const won = row?.won ?? 0;
+    const lost = row?.lost ?? 0;
+    return {
+      matches_managed: stats.matches_managed + won + lost,
+      wins: stats.wins + won,
+      losses: stats.losses + lost,
+    };
+  }, [league, mgr.team_id, stats.matches_managed, stats.wins, stats.losses]);
+
   const totalSeasons = useMemo(
-    () => mgr.career_history.length + (stats.matches_managed > 0 ? 1 : 0),
-    [mgr.career_history, stats.matches_managed],
+    () => mgr.career_history.length + (totals.matches_managed > 0 ? 1 : 0),
+    [mgr.career_history, totals.matches_managed],
   );
 
   const handleSelectAvatar = async (avatarPath: string) => {
@@ -184,11 +197,11 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
           {/* Quick stats row */}
           <div className="grid grid-cols-3 gap-2 md:w-64">
             {[
-              { label: t("manager.matches"), value: stats.matches_managed },
-              { label: t("manager.wins"), value: stats.wins },
-              { label: t("common.played"), value: stats.losses },
+              { label: t("manager.matches"), value: totals.matches_managed },
+              { label: t("manager.wins"), value: totals.wins },
+              { label: t("manager.losses"), value: totals.losses },
               { label: t("manager.trophies"), value: stats.trophies, icon: Trophy },
-              { label: t("manager.winPercent"), value: stats.matches_managed > 0 ? `${((stats.wins / stats.matches_managed) * 100).toFixed(0)}%` : "—" },
+              { label: t("manager.winPercent"), value: totals.matches_managed > 0 ? `${((totals.wins / totals.matches_managed) * 100).toFixed(0)}%` : "—" },
               { label: t("manager.board"), value: `${mgr.satisfaction}%` },
             ].map((s) => (
               <div key={s.label} className="rounded-lg border border-border bg-muted/20 px-2 py-2 text-center">
@@ -420,18 +433,18 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
               </div>
 
               {/* W/L ratio bar */}
-              {stats.matches_managed > 0 && (
+              {totals.matches_managed > 0 && (
                 <div>
                   <p className="mb-1.5 font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">
                     {t("manager.winRate", "Efectividad")}
                   </p>
                   <div className="flex h-3 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full bg-positive transition-all" style={{ width: `${(stats.wins / stats.matches_managed) * 100}%` }} />
-                    <div className="h-full bg-negative transition-all" style={{ width: `${(stats.losses / stats.matches_managed) * 100}%` }} />
+                    <div className="h-full bg-positive transition-all" style={{ width: `${(totals.wins / totals.matches_managed) * 100}%` }} />
+                    <div className="h-full bg-negative transition-all" style={{ width: `${(totals.losses / totals.matches_managed) * 100}%` }} />
                   </div>
                   <div className="mt-1 flex justify-between text-2xs text-muted-foreground">
-                    <span>{Math.round((stats.wins / stats.matches_managed) * 100)}% {t("manager.wins")}</span>
-                    <span>{Math.round((stats.losses / stats.matches_managed) * 100)}% {t("manager.losses")}</span>
+                    <span>{Math.round((totals.wins / totals.matches_managed) * 100)}% {t("manager.wins")}</span>
+                    <span>{Math.round((totals.losses / totals.matches_managed) * 100)}% {t("manager.losses")}</span>
                   </div>
                 </div>
               )}
@@ -448,7 +461,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                       <div className="rounded-lg border border-border bg-muted/20 p-2.5">
                         <p className="text-xs font-medium text-foreground">{best.team_name}</p>
                         <p className="mt-0.5 text-2xs text-muted-foreground">
-                          {best.wins}W/{best.losses}L · {Math.round((best.wins / Math.max(1, best.matches)) * 100)}% WR
+                          {t("manager.careerRecordLine", { wins: best.wins, losses: best.losses, winRate: Math.round((best.wins / Math.max(1, best.matches)) * 100) })}
                           {best.best_league_position != null && ` · #${best.best_league_position}`}
                         </p>
                       </div>

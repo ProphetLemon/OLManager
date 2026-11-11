@@ -111,9 +111,11 @@ export default function TeamProfileHeroCardV2({ team, viewModel }: TeamProfileHe
                   {team.city}, {countryName(team.country, locale)}
                 </span>
               </span>
-              <span className="flex items-center gap-1.5">
-                <Calendar className="size-4" /> {t("teams.est")} {team.founded_year}
-              </span>
+              {team.founded_year > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="size-4" /> {t("teams.est")} {team.founded_year}
+                </span>
+              )}
             </div>
             {team.competition_id && (
               <div className="mt-1 flex items-center gap-1.5 text-sm text-white/80">

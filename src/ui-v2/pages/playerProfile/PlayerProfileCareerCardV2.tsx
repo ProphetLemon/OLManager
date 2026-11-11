@@ -56,7 +56,7 @@ export default function PlayerProfileCareerCardV2({ career, gameState, t }: Prop
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("common.season")}</TableHead>
+              <TableHead>{t("playerProfile.careerSeasonColumn")}</TableHead>
               <TableHead>{t("common.team")}</TableHead>
               <TableHead className="text-center">{t("common.appearances", { defaultValue: "PJ" })}</TableHead>
               <TableHead className="text-center">{t("common.kills")}</TableHead>

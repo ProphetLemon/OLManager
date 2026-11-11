@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -29,5 +29,54 @@ describe("Settings segmented controls", () => {
       const button = screen.getByRole("button", { name: label });
       expect(button).toHaveClass("min-h-[var(--target-min)]", "min-w-[var(--target-min)]");
     }
+  });
+});
+
+describe("Settings switches", () => {
+  function renderSettings() {
+    useSettingsStore.setState({ loaded: true });
+    return render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>,
+    );
+  }
+
+  it("exposes the high-contrast toggle as a named switch with the minimum target size", () => {
+    renderSettings();
+    const toggle = screen.getByRole("switch", { name: /high contrast/i });
+
+    expect(toggle).toHaveAttribute("aria-checked", String(useSettingsStore.getState().settings.high_contrast));
+    expect(toggle).toHaveAccessibleDescription(/readability/i);
+    expect(toggle).toHaveClass("min-h-[var(--target-min)]", "min-w-[var(--target-min)]");
+    expect(toggle).toHaveAttribute("type", "button");
+  });
+
+  it("flips aria-checked when the switch is pressed", () => {
+    renderSettings();
+    const toggle = screen.getByRole("switch", { name: /high contrast/i });
+    const before = toggle.getAttribute("aria-checked");
+
+    fireEvent.click(toggle);
+
+    expect(screen.getByRole("switch", { name: /high contrast/i }).getAttribute("aria-checked")).not.toBe(before);
+  });
+
+  it("names every switch of the page after its visible label and gives each the floor", () => {
+    renderSettings();
+    const seen = new Set<string>();
+
+    for (const tab of [/display/i, /gameplay/i, /saves/i]) {
+      fireEvent.click(screen.getByRole("button", { name: tab }));
+      for (const toggle of screen.getAllByRole("switch")) {
+        expect(toggle, toggle.outerHTML).toHaveAccessibleName(/\S/);
+        expect(toggle).toHaveClass("min-h-[var(--target-min)]", "min-w-[var(--target-min)]");
+        seen.add(toggle.getAttribute("aria-labelledby") ?? "");
+      }
+    }
+
+    // high contrast, match commentary, confirm advance, debug tools and auto-save
+    expect(seen.size).toBeGreaterThanOrEqual(5);
+    expect(seen.has("")).toBe(false);
   });
 });

@@ -949,6 +949,7 @@ export default function DashboardV2() {
             <CompetitionsTabV2
               gameState={gameState}
               onSelectTeam={selectTeam}
+              initialCompetitionId={profileNavigation.initialCompetitionId}
             />
           </div>
         ) : profileNavigation.activeTab === "Market" &&

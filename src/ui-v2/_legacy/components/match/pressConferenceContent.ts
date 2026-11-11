@@ -37,8 +37,15 @@ interface Candidate {
   question: SocialQuestion;
   personaId: string;
   personaName: string;
+  outletId: string;
   outletName: string;
   weight: number;
+}
+
+/** Looks a content name up in the locale files; the pack's own text is the fallback. */
+function localizedName(t: TFunction | ((key: string) => string), key: string, fallback: string): string {
+  const value = (t as (key: string) => string)(key);
+  return value && value !== key ? value : fallback;
 }
 
 function isQuestionCoherentWithResult(candidate: Candidate, result: "win" | "loss"): boolean {
@@ -75,6 +82,8 @@ interface BuildPressConferenceQuestionsParams {
   winnerSide?: RegistrySide;
   /** Optional explicit result override. Takes precedence over winnerSide inference. */
   userResult?: "win" | "loss";
+  /** Games in the series that just ended (1, 3 or 5). Series questions need it to be above 1. */
+  seriesLength?: number;
 }
 
 const PRESS_CONFERENCE_QUESTION_TARGET = 3;
@@ -246,6 +255,7 @@ function buildCandidates(params: {
       question,
       personaId: persona.id,
       personaName: persona.displayName,
+      outletId: outlet.id,
       outletName: outlet.name,
       weight: persona.weight * outlet.weight * question.weight,
     }));
@@ -331,8 +341,16 @@ function buildPressQuestion(params: {
 
   return {
     id: params.candidate.question.id,
-    journalist: params.candidate.personaName,
-    outlet: params.candidate.outletName,
+    journalist: localizedName(
+      params.t,
+      `content.lol.social.personas.${params.candidate.personaId}`,
+      params.candidate.personaName,
+    ),
+    outlet: localizedName(
+      params.t,
+      `content.lol.social.outlets.${params.candidate.outletId}`,
+      params.candidate.outletName,
+    ),
     question: params.t(params.candidate.question.textKey),
     responses: safeResponses,
     playerId: targetPlayerId,
@@ -349,6 +367,7 @@ export function buildPressConferenceQuestions({
   controlledSide,
   winnerSide,
   userResult,
+  seriesLength,
 }: BuildPressConferenceQuestionsParams): PressQuestion[] {
   const leagueId = resolveUserLeague(gameState)?.id ?? DEFAULT_LEAGUE_ID;
 
@@ -366,6 +385,7 @@ export function buildPressConferenceQuestions({
     match: summary,
     userSide: effectiveUserSide,
     leagueId,
+    seriesLength,
   });
   const result = context.facts.result as "win" | "loss";
   const candidates = buildCandidates({
@@ -415,8 +435,8 @@ export function buildPressConferenceQuestions({
     return [
       {
         id: `fallback-post-match-${result}`,
-        journalist: "Verified Analyst",
-        outlet: "Rift Desk",
+        journalist: localizedName(t, "content.lol.social.personas.verified-analyst", "Verified Analyst"),
+        outlet: localizedName(t, "content.lol.social.outlets.rift-desk", "Rift Desk"),
         question: result === "win"
           ? t("content.lol.social.questions.cleanWinObjectives.text")
           : t("content.lol.social.questions.mentalResetAfterLoss.text"),

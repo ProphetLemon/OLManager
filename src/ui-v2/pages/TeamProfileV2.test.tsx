@@ -49,9 +49,13 @@ vi.mock("react-i18next", () => ({
         "teamProfile.objectives": "Objectives",
         "teamProfile.averageGameDuration": "Average Game Duration",
         "teamProfile.perMatch": "Per Match",
-        "teamProfile.kda": "K / D / A",
-        "teamProfile.economy": "Gold / Objectives",
+        "teamProfile.killsDeathsObjectives": "K / D / Obj.",
+        "teamProfile.economy": "Gold / Damage",
         "teamProfile.side": "Side",
+        "match.draft.sides.blue": "Blue side",
+        "match.draft.sides.red": "Red side",
+        "match.victory": "Victory",
+        "match.defeat": "Defeat",
         "finances.wageBudget": "Wage Budget",
         "finances.transferBudget": "Transfer Budget",
         "finances.squadValue": "Squad Value",
@@ -304,9 +308,9 @@ describe("TeamProfileV2", () => {
         limit: 5,
       });
       expect(screen.getByText("Bravo FC")).toBeInTheDocument();
-      expect(screen.getByText("Red · Loss")).toBeInTheDocument();
+      expect(screen.getByText("Red side · Defeat")).toBeInTheDocument();
       expect(screen.getByText("16 / 7 / 3")).toBeInTheDocument();
-      expect(screen.getByText("62000 / 88000")).toBeInTheDocument();
+      expect(screen.getByText("62,000 / 88,000")).toBeInTheDocument();
     });
   });
 
@@ -379,6 +383,18 @@ describe("TeamProfileV2", () => {
 
     const logo = await screen.findByAltText("Movistar KOI Fénix logo");
     expect(logo.getAttribute("src")).toBe("/teams-icons/movistarkoifenix.webp");
+  });
+
+  it("shows the founding year in the hero only when it is known", () => {
+    const { rerender } = render(
+      <TeamProfileV2 teamId="team-1" gameState={createGameState(createTeam({ founded_year: 1998 }))} onClose={vi.fn()} />,
+    );
+    expect(screen.getByText(/Est\. 1998/)).toBeInTheDocument();
+
+    rerender(
+      <TeamProfileV2 teamId="team-1" gameState={createGameState(createTeam({ founded_year: 0 }))} onClose={vi.fn()} />,
+    );
+    expect(screen.queryByText(/Est\./)).not.toBeInTheDocument();
   });
 
   it("shows ERL league in club details only for academy teams", async () => {

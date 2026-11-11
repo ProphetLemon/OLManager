@@ -1,3 +1,4 @@
+import { formatCurrencyAmount } from "@/lib/formatting/valueFormatting";
 import type { NegotiationFeedbackPanelData } from "@/lib/transfers/negotiationFeedback";
 
 export interface RenewalProjection {
@@ -44,6 +45,14 @@ export interface DelegatedRenewalResponseData {
     stalled_count: number;
     cases: DelegatedRenewalCaseData[];
   };
+}
+
+/** Same bounds as the backend rule (`validate_contract_years` in olm_core). */
+export const MIN_RENEWAL_YEARS = 1;
+export const MAX_RENEWAL_YEARS = 5;
+
+export function isRenewalLengthInRange(years: number): boolean {
+  return Number.isInteger(years) && years >= MIN_RENEWAL_YEARS && years <= MAX_RENEWAL_YEARS;
 }
 
 export type RenewalStatus =
@@ -100,8 +109,8 @@ export function getRenewalStatusMessage(
     context.renewalSuggestedYears !== null
   ) {
     return translate("playerProfile.renewalCounter", {
-      wage: context.renewalSuggestedWage,
-      years: context.renewalSuggestedYears,
+      wage: formatCurrencyAmount(context.renewalSuggestedWage),
+      count: context.renewalSuggestedYears,
     });
   }
 

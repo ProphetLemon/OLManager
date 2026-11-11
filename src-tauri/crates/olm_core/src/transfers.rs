@@ -2,7 +2,9 @@ use crate::contract_wage_policy::{
     AiTransferKind, SigningIntent, ai_signing_policy, ai_transfer_cap_try_consume,
     annual_team_wage_bill, wage_policy_allows_for_bill, wage_policy_room_for_new_signing,
 };
-use crate::contracts::{expected_contract_years, expected_signing_wage, expected_wage};
+use crate::contracts::{
+    expected_contract_years, expected_signing_wage, expected_wage, validate_contract_years,
+};
 use crate::domain::negotiation::{NegotiationFeedback, NegotiationMood};
 use crate::domain::player::{PlayerOfferItem, TransferOfferStatus, WageNegotiationStatus};
 use crate::domain::season::TransferWindowStatus;
@@ -10,7 +12,8 @@ use crate::domain::stats::LolRole;
 use crate::domain::team::{FinancialTransactionKind, TeamKind};
 use crate::domain::transfer_history::{IncludedPlayerEntry, TransferHistoryEntry};
 use crate::finances::{
-    BudgetImpact, FinanceTransactionInput, calc_annual_wages, record_transaction,
+    BudgetImpact, FinanceTransactionInput, LedgerText, calc_annual_wages,
+    record_transaction_with_text,
 };
 use crate::game::Game;
 use crate::roster_stability::{RosterStabilityReason, repair_team};
@@ -1708,12 +1711,18 @@ fn execute_free_agent_signing_with_payer(
         return Err("Player not found".to_string());
     }
 
+    let player_name = game
+        .players
+        .iter()
+        .find(|player| player.id == player_id)
+        .map(|player| player.match_name.clone())
+        .unwrap_or_else(|| player_id.to_string());
     if let Some(team) = game.teams.iter_mut().find(|team| team.id == payer_team_id) {
-        record_transaction(
+        record_transaction_with_text(
             team,
             FinanceTransactionInput {
                 date: game.clock.current_date.format("%Y-%m-%d").to_string(),
-                description: format!("Free agent signing fee for {player_id}"),
+                description: format!("Free agent signing fee for {player_name}"),
                 amount: -(fee as i64),
                 kind: FinancialTransactionKind::TransferPurchase,
                 budget_impact: BudgetImpact::Transfer(-(fee as i64)),
@@ -1722,6 +1731,7 @@ fn execute_free_agent_signing_with_payer(
                 source_id: Some(player_id.to_string()),
                 correlation_id: Some(format!("transfer:{payer_team_id}:{player_id}:free-agent")),
             },
+            LedgerText::new("be.ledger.freeAgentSigning", &[("player", &player_name)]),
         )
         .ok();
     }
@@ -2206,9 +2216,7 @@ pub fn negotiate_player_wage(
     annual_wage: u32,
     contract_years: u8,
 ) -> Result<WageNegotiationOutcome, String> {
-    if contract_years == 0 || contract_years > 5 {
-        return Err("Contract must be between 1 and 5 years".into());
-    }
+    validate_contract_years(u32::from(contract_years))?;
 
     let user_team_id = game.manager.team_id.clone().ok_or("No user team")?;
 
@@ -2617,11 +2625,11 @@ fn complete_transfer_with_wage(
     }
 
     if let Some(t) = game.teams.iter_mut().find(|t| t.id == payer_team_id) {
-        record_transaction(
+        record_transaction_with_text(
             t,
             FinanceTransactionInput {
                 date: date.to_string(),
-                description: format!("Transfer purchase fee for {player_id}"),
+                description: format!("Transfer purchase fee for {}", player_snapshot.match_name),
                 amount: -(fee as i64),
                 kind: FinancialTransactionKind::TransferPurchase,
                 budget_impact: BudgetImpact::Transfer(-(fee as i64)),
@@ -2632,6 +2640,10 @@ fn complete_transfer_with_wage(
                     "transfer:{payer_team_id}:{player_id}:{date}:purchase"
                 )),
             },
+            LedgerText::new(
+                "be.ledger.transferPurchase",
+                &[("player", &player_snapshot.match_name)],
+            ),
         )
         .ok();
     }
@@ -2644,11 +2656,11 @@ fn complete_transfer_with_wage(
 
         let credit_target_id = academy_owner_id.as_deref().unwrap_or(from_id);
         if let Some(t) = game.teams.iter_mut().find(|t| t.id == credit_target_id) {
-            record_transaction(
+            record_transaction_with_text(
                 t,
                 FinanceTransactionInput {
                     date: date.to_string(),
-                    description: format!("Transfer sale fee for {player_id}"),
+                    description: format!("Transfer sale fee for {}", player_snapshot.match_name),
                     amount: fee as i64,
                     kind: FinancialTransactionKind::TransferSale,
                     budget_impact: BudgetImpact::Transfer(
@@ -2661,6 +2673,10 @@ fn complete_transfer_with_wage(
                         "transfer:{credit_target_id}:{player_id}:{date}:sale"
                     )),
                 },
+                LedgerText::new(
+                    "be.ledger.transferSale",
+                    &[("player", &player_snapshot.match_name)],
+                ),
             )
             .ok();
         }
@@ -3077,7 +3093,7 @@ pub fn release_player_contract(game: &mut Game, player_id: &str) -> Result<i64, 
             ));
         }
 
-        record_transaction(
+        record_transaction_with_text(
             team,
             FinanceTransactionInput {
                 date: today.clone(),
@@ -3090,6 +3106,7 @@ pub fn release_player_contract(game: &mut Game, player_id: &str) -> Result<i64, 
                 source_id: Some(player_id.to_string()),
                 correlation_id: Some(format!("release:{owning_team_id}:{player_id}:{today}")),
             },
+            LedgerText::new("be.ledger.contractTermination", &[("player", &player_name)]),
         )
         .map_err(|err| format!("Failed to record release penalty: {err:?}"))?;
     }
@@ -3384,7 +3401,7 @@ fn execute_transfer_with_payer(
 
     // Debit the paying club; user academy signings are funded by the parent club.
     if let Some(t) = game.teams.iter_mut().find(|t| t.id == payer_team_id) {
-        record_transaction(
+        record_transaction_with_text(
             t,
             FinanceTransactionInput {
                 date: today.clone(),
@@ -3399,6 +3416,10 @@ fn execute_transfer_with_payer(
                     "transfer:{payer_team_id}:{player_id}:{today}:purchase"
                 )),
             },
+            LedgerText::new(
+                "be.ledger.transferPurchase",
+                &[("player", &player_snapshot.match_name)],
+            ),
         )
         .ok();
     }
@@ -3418,7 +3439,7 @@ fn execute_transfer_with_payer(
     // Credit selling team or academy owner
     let credit_target_id = academy_owner_id.as_deref().unwrap_or(from_team_id);
     if let Some(t) = game.teams.iter_mut().find(|t| t.id == credit_target_id) {
-        record_transaction(
+        record_transaction_with_text(
             t,
             FinanceTransactionInput {
                 date: today.clone(),
@@ -3435,6 +3456,7 @@ fn execute_transfer_with_payer(
                     "transfer:{credit_target_id}:{player_id}:{today}:sale"
                 )),
             },
+            LedgerText::new("be.ledger.transferSale", &[("player", &player_snapshot.match_name)]),
         )
         .ok();
     }

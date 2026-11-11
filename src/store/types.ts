@@ -51,6 +51,10 @@ export interface FinancialTransactionData {
   source?: string;
   source_id?: string | null;
   correlation_id?: string | null;
+  /** i18n key of the line text; absent in saves from before the key existed. */
+  description_key?: string | null;
+  /** Interpolation parameters of `description_key` (names, never ids). */
+  description_params?: Record<string, string>;
 }
 
 export interface TeamSeasonRecord {
@@ -233,6 +237,8 @@ export type MatchEndReason = "NexusDestroyed" | "Surrender";
 type LegacyCompatibilityValue = unknown;
 
 export interface PlayerSeasonStats {
+  /** Season appearances, as recorded by the backend (`appearances`). */
+  appearances?: number;
   games_played?: number;
   wins?: number;
   losses?: number;
@@ -285,6 +291,7 @@ export interface PlayerMatchStatsRecord {
 
 export interface PlayerMatchHistoryEntryData {
   fixtureId: string;
+  season: number;
   date: string;
   competition: string;
   matchday: number;

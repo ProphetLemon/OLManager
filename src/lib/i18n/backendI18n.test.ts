@@ -6,6 +6,7 @@ import {
   resolveAction,
   resolveNewsArticle,
   resolveBoardObjective,
+  resolveLedgerDescription,
 } from "./backendI18n";
 import type {
   MessageData,
@@ -489,6 +490,59 @@ describe("resolveBackendText", () => {
   });
 });
 
+
+describe("resolveLedgerDescription", () => {
+  const line = {
+    date: "2026-01-03",
+    description: "Staff hiring cost: Ana Coach",
+    amount: -60_000,
+    kind: "StaffWage" as const,
+  };
+
+  it("resolves the key with its parameters", () => {
+    i18n.addResourceBundle("en", "translation", { "test.ledgerHire": "Hiring {{name}}" }, true, true);
+
+    expect(
+      resolveLedgerDescription({
+        ...line,
+        description_key: "test.ledgerHire",
+        description_params: { name: "Ana Coach" },
+      }),
+    ).toBe("Hiring Ana Coach");
+  });
+
+  it("keeps the stored description for a line without a key", () => {
+    expect(resolveLedgerDescription(line)).toBe("Staff hiring cost: Ana Coach");
+  });
+
+  it("keeps the stored description when the key does not exist", () => {
+    expect(
+      resolveLedgerDescription({ ...line, description_key: "test.ledgerMissing", description_params: {} }),
+    ).toBe("Staff hiring cost: Ana Coach");
+  });
+
+  it("translates a parameter that is itself a key and leaves a player name alone", () => {
+    i18n.addResourceBundle(
+      "en",
+      "translation",
+      { "test.ledgerModule": "Upgrade {{module}} for {{player}}", "test.ledgerFacility": "Scrims Room" },
+      true,
+      true,
+    );
+
+    expect(
+      resolveLedgerDescription({
+        ...line,
+        description_key: "test.ledgerModule",
+        description_params: { module: "test.ledgerFacility", player: "Dr. Mid: The Return" },
+      }),
+    ).toBe("Upgrade Scrims Room for Dr. Mid: The Return");
+  });
+
+  it("returns an empty text for a line with neither a key nor a description", () => {
+    expect(resolveLedgerDescription({ ...line, description: "" })).toBe("");
+  });
+});
 
 describe("transfer offer message locale", () => {
   const offer = {

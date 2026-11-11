@@ -276,6 +276,7 @@ fn build_legacy_overview() -> PlayerStatsOverviewDto {
 fn to_dto(state: &StateManager, record: &PlayerMatchStatsRecord) -> PlayerMatchHistoryEntryDto {
     PlayerMatchHistoryEntryDto {
         fixture_id: record.fixture_id.clone(),
+        season: record.season,
         date: record.date.clone(),
         competition: competition_label(&record.match_type),
         matchday: record.matchday,

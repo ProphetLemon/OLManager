@@ -139,4 +139,10 @@ describe("transfers/helpers", () => {
     ).toBe("transfers.negotiationExpiredError");
     expect(mapTransferNegotiationError(t, "other error")).toBe("other error");
   });
+
+  it("maps the contract length rejection to the localized message", () => {
+    expect(
+      mapTransferNegotiationError(t, "Error: Contract must be between 1 and 5 years"),
+    ).toBe("transfers.contractLengthError");
+  });
 });

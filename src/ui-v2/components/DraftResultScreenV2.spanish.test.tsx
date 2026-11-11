@@ -121,4 +121,59 @@ describe("DraftResultScreenV2 in the Spanish UI", () => {
     expect(screen.getByRole("button", { name: "Partida 2/3" })).toBeInTheDocument();
     expect(screen.queryByText(/^Game /)).toBeNull();
   });
+
+  it("names the objectives of the match timeline in Spanish", () => {
+    const result = createResult({
+      timelineEvents: [
+        { minute: 4, side: "blue", type: "first_blood", label: "First Blood" },
+        { minute: 20, side: "red", type: "elder", label: "Elder Dragon" },
+        { minute: 25, side: "blue", type: "inhibitor", label: "Inhibitor" },
+        { minute: 30, side: "blue", type: "nexus_turret", label: "Nexus Turret" },
+        { minute: 31, side: "blue", type: "nexus", label: "Nexus" },
+      ],
+    });
+    render(
+      <DraftResultScreenV2
+        snapshot={snapshot}
+        controlledSide="blue"
+        result={result}
+        seriesGames={[{ gameIndex: 1, result, winnerSide: result.winnerSide }]}
+        seriesLength={1}
+        seriesGameIndex={1}
+        userSeriesWins={1}
+        opponentSeriesWins={0}
+        onContinue={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Primera sangre")).toBeInTheDocument();
+    expect(screen.getByText("Dragón Ancestral")).toBeInTheDocument();
+    expect(screen.getByText("Inhibidor")).toBeInTheDocument();
+    expect(screen.getByText("Torre del Nexo")).toBeInTheDocument();
+    expect(screen.queryByText("Nexus Turret")).toBeNull();
+    expect(screen.queryByText("Elder Dragon")).toBeNull();
+  });
+
+  it("keeps the stored label for an event type the screen does not know", () => {
+    const result = createResult({
+      timelineEvents: [
+        { minute: 12, side: "red", type: "future_event" as never, label: "Stored label" },
+      ],
+    });
+    render(
+      <DraftResultScreenV2
+        snapshot={snapshot}
+        controlledSide="blue"
+        result={result}
+        seriesGames={[{ gameIndex: 1, result, winnerSide: result.winnerSide }]}
+        seriesLength={1}
+        seriesGameIndex={1}
+        userSeriesWins={1}
+        opponentSeriesWins={0}
+        onContinue={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Stored label")).toBeInTheDocument();
+  });
 });

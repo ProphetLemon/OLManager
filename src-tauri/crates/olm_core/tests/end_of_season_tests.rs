@@ -785,6 +785,20 @@ fn champion_receives_prize_money_and_ledger_entry() {
 }
 
 #[test]
+fn prize_money_ledger_line_carries_the_season_and_position_as_parameters() {
+    let mut game = make_completed_season_game();
+
+    process_end_of_season(&mut game);
+
+    let team1 = game.teams.iter().find(|team| team.id == "team1").unwrap();
+    let entry = &team1.financial_ledger[0];
+    assert_eq!(entry.description_key.as_deref(), Some("be.ledger.seasonPrize"));
+    assert_eq!(entry.description_params.get("season").map(String::as_str), Some("1"));
+    assert_eq!(entry.description_params.get("position").map(String::as_str), Some("1"));
+    assert_eq!(entry.description, "Season 1 prize money for 1st place");
+}
+
+#[test]
 fn top_half_finish_receives_expected_prize_money() {
     let mut game = make_completed_season_game();
     game.teams.push(make_team("team3", "Third FC"));

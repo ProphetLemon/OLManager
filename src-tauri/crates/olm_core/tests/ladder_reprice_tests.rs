@@ -116,6 +116,17 @@ fn the_treasury_top_up_is_a_ledger_entry_outside_the_season_totals() {
 }
 
 #[test]
+fn the_treasury_top_up_line_carries_a_translation_key() {
+    let mut game = after_swap("lec1");
+    reprice(&mut game);
+
+    let promoted = game.teams.iter().find(|t| t.id == "reg1").expect("team");
+    let entry = promoted.financial_ledger.last().expect("ledger entry");
+    assert_eq!(entry.description_key.as_deref(), Some("be.ledger.promotionFunding"));
+    assert_eq!(entry.description, "Promotion funding");
+}
+
+#[test]
 fn clubs_that_did_not_move_are_unchanged() {
     let mut game = after_swap("lec1");
     let before: Vec<_> = UNMOVED.iter().map(|id| economy(&game, id)).collect();

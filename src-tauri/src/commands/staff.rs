@@ -3,7 +3,9 @@ use log::{info, warn};
 use tauri::State;
 
 use olm_core::domain::team::FinancialTransactionKind;
-use olm_core::finances::{record_transaction, BudgetImpact, FinanceTransactionInput};
+use olm_core::finances::{
+    record_transaction_with_text, BudgetImpact, FinanceTransactionInput, LedgerText,
+};
 use olm_core::game::Game;
 use olm_core::state::StateManager;
 
@@ -98,7 +100,7 @@ pub(crate) fn hire_staff_internal(state: &StateManager, staff_id: &str) -> Resul
         // A signing that costs nothing has nothing to record: the ledger refuses
         // zero-amount transactions.
         if staff.wage > 0 {
-            record_transaction(
+            record_transaction_with_text(
                 team,
                 FinanceTransactionInput {
                     date: game.clock.current_date.format("%Y-%m-%d").to_string(),
@@ -114,6 +116,10 @@ pub(crate) fn hire_staff_internal(state: &StateManager, staff_id: &str) -> Resul
                     source_id: Some(staff.id.clone()),
                     correlation_id: Some(format!("staff-hire:{}:{}", team_id, staff.id)),
                 },
+                LedgerText::new(
+                    "be.ledger.staffHiring",
+                    &[("name", &format!("{} {}", staff.first_name, staff.last_name))],
+                ),
             )
             .map_err(|err| {
                 warn!("[cmd] hire_staff: could not record the hiring transaction: {err:?}");
@@ -244,6 +250,17 @@ mod tests {
             FinancialTransactionKind::StaffWage
         );
         assert_eq!(team.financial_ledger[0].amount, -12_000);
+        assert_eq!(
+            team.financial_ledger[0].description_key.as_deref(),
+            Some("be.ledger.staffHiring")
+        );
+        assert_eq!(
+            team.financial_ledger[0]
+                .description_params
+                .get("name")
+                .map(String::as_str),
+            Some(format!("{} {}", staff.first_name, staff.last_name).as_str())
+        );
 
         let stored_game = state.get_game(|game| game.clone()).expect("stored game");
         let stored_staff = stored_game

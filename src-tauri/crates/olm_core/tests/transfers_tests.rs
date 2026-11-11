@@ -756,6 +756,70 @@ fn release_player_contract_records_release_penalty_ledger_entry() {
 }
 
 #[test]
+fn release_penalty_ledger_line_names_the_player_through_a_key() {
+    let mut player = make_user_player("player-release-text");
+    player.contract_end = Some("2027-08-01".to_string());
+    player.wage = 120_000;
+    let mut game = make_game_with_player(player, vec![], 5_000_000, 2_000_000);
+
+    release_player_contract(&mut game, "player-release-text").expect("release succeeds");
+
+    let team = game.teams.iter().find(|team| team.id == "team-1").unwrap();
+    let entry = &team.financial_ledger[0];
+    assert_eq!(entry.description_key.as_deref(), Some("be.ledger.contractTermination"));
+    assert_eq!(
+        entry.description_params.get("player").map(String::as_str),
+        Some("player-release-text. Test")
+    );
+    assert_eq!(
+        entry.description,
+        "Contract termination penalty for player-release-text. Test"
+    );
+}
+
+#[test]
+fn accepted_offer_ledger_lines_name_the_player_not_the_id() {
+    let mut player = make_user_player("player-offer-text");
+    player.contract_end = Some("2028-06-30".to_string());
+    player.morale = 88;
+    player.stats.appearances = 28;
+    player.transfer_listed = false;
+    player
+        .transfer_offers
+        .push(make_pending_incoming_offer("offer-text", 950_000));
+    let mut game = make_game_with_player(player, vec![], 5_000_000, 2_000_000);
+    game.teams[0].reputation = 1200;
+    game.teams[1].reputation = 900;
+    game.teams[1].finance = 6_000_000;
+    game.teams[1].transfer_budget = 3_000_000;
+
+    respond_to_offer(&mut game, "player-offer-text", "offer-text", true)
+        .expect("accepting a pending offer executes the transfer");
+
+    let seller = game.teams.iter().find(|team| team.id == "team-1").unwrap();
+    let buyer = game.teams.iter().find(|team| team.id == "team-2").unwrap();
+    for (entry, key, english) in [
+        (
+            &seller.financial_ledger[0],
+            "be.ledger.transferSale",
+            "Transfer sale fee for player-offer-text. Test",
+        ),
+        (
+            &buyer.financial_ledger[0],
+            "be.ledger.transferPurchase",
+            "Transfer purchase fee for player-offer-text. Test",
+        ),
+    ] {
+        assert_eq!(entry.description_key.as_deref(), Some(key));
+        assert_eq!(
+            entry.description_params.get("player").map(String::as_str),
+            Some("player-offer-text. Test")
+        );
+        assert_eq!(entry.description, english);
+    }
+}
+
+#[test]
 fn release_player_contract_sends_a_message_with_i18n_keys() {
     let mut player = make_user_player("player-release-msg");
     player.contract_end = Some("2027-08-01".to_string());
@@ -1427,6 +1491,22 @@ fn ai_free_agent_signing_prioritizes_missing_role() {
         FinancialTransactionKind::TransferPurchase
     );
     assert_eq!(ai_team.financial_ledger[0].amount, -210_000);
+    // A free agent signing names the player, never the id, in the key parameters and the text.
+    assert_eq!(
+        ai_team.financial_ledger[0].description_key.as_deref(),
+        Some("be.ledger.freeAgentSigning")
+    );
+    assert_eq!(
+        ai_team.financial_ledger[0]
+            .description_params
+            .get("player")
+            .map(String::as_str),
+        Some("fa-adc-needed. Test")
+    );
+    assert_eq!(
+        ai_team.financial_ledger[0].description,
+        "Free agent signing fee for fa-adc-needed. Test"
+    );
 }
 
 #[test]
@@ -1535,6 +1615,21 @@ fn ai_club_transfer_prioritizes_missing_role() {
         FinancialTransactionKind::TransferSale
     );
     assert_eq!(seller.financial_ledger[0].amount, 779_000);
+    assert_eq!(
+        buyer.financial_ledger[0].description_key.as_deref(),
+        Some("be.ledger.transferPurchase")
+    );
+    assert_eq!(
+        seller.financial_ledger[0].description_key.as_deref(),
+        Some("be.ledger.transferSale")
+    );
+    assert_eq!(
+        seller.financial_ledger[0]
+            .description_params
+            .get("player")
+            .map(String::as_str),
+        Some("seller-adc-needed. Test")
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -2468,4 +2563,27 @@ fn offer_just_under_the_counter_closes_the_deal_in_proportion() {
         negotiate_player_wage(&mut game, "star", &offer_id, almost, 3).expect("second offer");
 
     assert_eq!(outcome.decision, TransferNegotiationDecision::Accepted);
+}
+
+#[test]
+fn wage_negotiation_refuses_contract_lengths_outside_one_to_five_years() {
+    for years in [0u8, 6, 12] {
+        let (mut game, offer_id) = no_wage_free_agent_with_accepted_offer();
+
+        let error = negotiate_player_wage(&mut game, "fa-no-wage", &offer_id, 300_000, years)
+            .expect_err("length outside 1 to 5 must be refused");
+
+        assert_eq!(error, "Contract must be between 1 and 5 years", "years = {years}");
+    }
+}
+
+#[test]
+fn wage_negotiation_accepts_the_shortest_and_longest_contract_lengths() {
+    for years in [1u8, 5] {
+        let (mut game, offer_id) = no_wage_free_agent_with_accepted_offer();
+
+        let result = negotiate_player_wage(&mut game, "fa-no-wage", &offer_id, 300_000, years);
+
+        assert!(result.is_ok(), "years = {years}: {result:?}");
+    }
 }

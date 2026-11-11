@@ -106,6 +106,20 @@ function sideTeam(snapshot: MatchSnapshot, side: Side) {
   return side === "blue" ? snapshot.home_team : snapshot.away_team;
 }
 
+const TIMELINE_EVENT_KEYS: Record<DraftTimelineEvent["type"], string> = {
+  first_blood: "match.draftResult.timelineEvents.firstBlood",
+  voidgrubs: "match.draftResult.timelineEvents.voidgrubs",
+  dragon: "match.draftResult.timelineEvents.dragon",
+  dragon_soul: "match.draftResult.timelineEvents.dragonSoul",
+  elder: "match.draftResult.timelineEvents.elder",
+  herald: "match.draftResult.timelineEvents.herald",
+  baron: "match.draftResult.timelineEvents.baron",
+  turret: "match.draftResult.timelineEvents.turret",
+  inhibitor: "match.draftResult.timelineEvents.inhibitor",
+  nexus_turret: "match.draftResult.timelineEvents.nexusTurret",
+  nexus: "match.draftResult.timelineEvents.nexus",
+};
+
 function eventPillClass(event: DraftTimelineEvent): string {
   const sideBase =
     event.side === "blue"
@@ -263,6 +277,12 @@ export default function DraftResultScreenV2({
     seriesLength === 1 ||
     (displayedWinnerReachedTarget && displayedScoreSupportedByGames);
 
+  // The simulator stores an English label next to the stable event type; the type is what gets translated.
+  const timelineEventLabel = (event: DraftTimelineEvent): string => {
+    const key = TIMELINE_EVENT_KEYS[event.type];
+    return key ? t(key, { defaultValue: event.label }) : event.label;
+  };
+
   const renderTimeline = () => {
     const sorted = [...selectedResult.timelineEvents].sort((a, b) => a.minute - b.minute);
     const rows: Array<{ minute: number; blue: typeof sorted; red: typeof sorted }> = [];
@@ -294,14 +314,14 @@ export default function DraftResultScreenV2({
                   <div className="flex flex-col items-center justify-end flex-1 overflow-visible pb-2">
                     {row.blue.map((event, eIdx) => (
                     <span key={`blue-${eIdx}`} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-2xs whitespace-nowrap mt-1 ${eventPillClass(event)}`}>
-                      <span>{event.label}</span>
+                      <span>{timelineEventLabel(event)}</span>
                     </span>
                     ))}
                   </div>
                   <div className="flex flex-col items-center justify-start flex-1 overflow-visible pt-2">
                     {row.red.map((event, eIdx) => (
                       <span key={`red-${eIdx}`} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-2xs whitespace-nowrap mb-1 ${eventPillClass(event)}`}>
-                        <span>{event.label}</span>
+                        <span>{timelineEventLabel(event)}</span>
                       </span>
                     ))}
                   </div>

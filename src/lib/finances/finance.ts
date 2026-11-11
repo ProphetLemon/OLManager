@@ -71,9 +71,14 @@ export function getLedgerEntryBalanceAfter(
     : null;
 }
 
+/**
+ * `describe` returns the line text as the user reads it (translated); the search matches
+ * that text, so a Spanish word finds a Spanish row.
+ */
 export function filterLedgerEntries(
   entries: readonly FinancialTransactionData[],
   filters: LedgerFilters,
+  describe: (entry: FinancialTransactionData) => string = (entry) => entry.description,
 ): FinancialTransactionData[] {
   const normalizedSearch = filters.search.trim().toLowerCase();
   return entries.filter((entry) => {
@@ -86,7 +91,7 @@ export function filterLedgerEntries(
     if (!normalizedSearch) {
       return true;
     }
-    return [entry.date, entry.description, entry.kind, getLedgerEntrySource(entry)]
+    return [entry.date, describe(entry), entry.kind, getLedgerEntrySource(entry)]
       .join(" ")
       .toLowerCase()
       .includes(normalizedSearch);

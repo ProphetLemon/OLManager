@@ -194,6 +194,51 @@ fn get_player_match_history_returns_lol_first_fields() {
 }
 
 #[test]
+fn get_player_match_history_carries_the_season_of_each_record() {
+    let state = StateManager::new();
+    state.set_game(make_game(vec![make_player(
+        "player-1",
+        "team-1",
+        LolRole::Adc,
+    )]));
+    let mut previous_season = player_record(
+        "2024-06-10",
+        "player-1",
+        TeamSide::Blue,
+        MatchOutcome::Win,
+        3,
+        1,
+        8,
+        210,
+    );
+    previous_season.season = 2024;
+    state.set_stats_state(StatsState {
+        player_matches: vec![
+            previous_season,
+            player_record(
+                "2025-06-10",
+                "player-1",
+                TeamSide::Blue,
+                MatchOutcome::Win,
+                3,
+                1,
+                8,
+                210,
+            ),
+        ],
+        team_matches: vec![],
+    });
+
+    let history = get_player_match_history_internal(&state, "player-1", None).unwrap();
+    let seasons: Vec<serde_json::Value> = history
+        .iter()
+        .map(|entry| serde_json::to_value(entry).unwrap()["season"].clone())
+        .collect();
+
+    assert_eq!(seasons, vec![2025, 2024]);
+}
+
+#[test]
 fn get_player_stats_overview_aggregates_lol_metrics_by_position() {
     let state = StateManager::new();
     state.set_game(make_game(vec![

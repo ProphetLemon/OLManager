@@ -185,12 +185,14 @@ export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Building2 className="size-3.5" />{t("teams.hq")} {team.city}
                 </span>
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Trophy className="size-3.5" />{t("teams.est")} {team.founded_year}
-                </span>
+                {team.founded_year > 0 && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Trophy className="size-3.5" />{t("teams.est")} {team.founded_year}
+                  </span>
+                )}
                 {standing && (
                   <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-                    {standing.won}W {standing.lost}L{wr !== null ? ` · ${wr}%` : ""}
+                    {t("teams.recordShort", { won: standing.won, lost: standing.lost })}{wr !== null ? ` · ${wr}%` : ""}
                   </span>
                 )}
               </CardContent>

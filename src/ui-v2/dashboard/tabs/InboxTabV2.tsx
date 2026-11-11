@@ -35,6 +35,7 @@ import { Badge } from "@/ui-v2/components/ui/badge";
 import { Button } from "@/ui-v2/components/ui/button";
 import { Separator } from "@/ui-v2/components/ui/separator";
 import { cn } from "@/ui-v2/lib/utils";
+import { resolveUserLeague } from "@/lib/userLeague";
 
 interface Props {
   gameState: GameStateData;
@@ -147,7 +148,12 @@ export function InboxTabV2({
         // The Transfers view is persisted in the tab UI store; preselect it before navigating.
         useTabUiStore.getState().setTabField("transfers", "view", target.view);
       }
-      onNavigate?.(target.tab, target.context);
+      // "View standings" opens the user's league instead of an empty competitions view.
+      const userLeague = target.tab === "Competitions" ? resolveUserLeague(gameState) : null;
+      const context = userLeague
+        ? { ...target.context, competitionId: userLeague.competition_id ?? userLeague.id }
+        : target.context;
+      onNavigate?.(target.tab, context);
       if (!target.shouldResolveAction) return;
     }
     try {

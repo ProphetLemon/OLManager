@@ -54,7 +54,7 @@ describe("team profile standings use a series record, not football points", () =
     expect(matches.container).toBeEmptyDOMElement();
   });
 
-  it("falls back to english labels for missing recent-match translations", () => {
+  it("labels the recent-match cells through locale keys", () => {
     render(
       <TeamProfileRecentMatchesCardV2
         matches={[
@@ -67,8 +67,12 @@ describe("team profile standings use a series record, not football points", () =
       />,
     );
 
-    expect(screen.getByText("Recent Matches")).toBeInTheDocument();
-    expect(screen.getByText("K / D / A")).toBeInTheDocument();
+    expect(screen.getByText("teamProfile.recentMatches")).toBeInTheDocument();
+    expect(screen.getByText("teamProfile.side")).toBeInTheDocument();
+    expect(screen.getByText("teamProfile.killsDeathsObjectives")).toBeInTheDocument();
+    expect(screen.queryByText("teamProfile.kda")).toBeNull();
+    expect(screen.getByText("teamProfile.economy")).toBeInTheDocument();
+    expect(screen.getByText("match.draft.sides.blue · match.victory")).toBeInTheDocument();
     expect(screen.getByText("10 / 2 / 5")).toBeInTheDocument();
   });
 });

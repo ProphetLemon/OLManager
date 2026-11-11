@@ -232,6 +232,8 @@ describe("PressConference LoL social content", () => {
       t: (key: string) => key,
       random: () => 0,
       recentQuestionIds: ["clean-win-objectives"],
+      // A best-of-three: the series question is the third alternative once the recent one is excluded.
+      seriesLength: 3,
     });
 
     expect(questions).toHaveLength(3);

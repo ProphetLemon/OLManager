@@ -1,10 +1,10 @@
-use crate::domain::league::{FixtureStatus, League, MatchType};
+use crate::domain::league::{FixtureStatus, League, MatchType, StandingEntry};
 use crate::domain::message::*;
 use crate::domain::player::PlayerSeasonStats;
 use crate::domain::team::{FinancialTransactionKind, TeamSeasonRecord};
 use crate::finances::{
-    BudgetImpact, FinanceTransactionInput, calc_annual_wages, push_board_financial_health_mail,
-    push_prize_payout_mail, record_transaction,
+    BudgetImpact, FinanceTransactionInput, LedgerText, calc_annual_wages,
+    push_board_financial_health_mail, push_prize_payout_mail, record_transaction_with_text,
 };
 use crate::custom_team::is_custom_team_id;
 use crate::game::Game;
@@ -458,6 +458,78 @@ fn shift_fixtures_after(league: &mut League, date: chrono::NaiveDate) {
     }
 }
 
+/// Add one finished league table row of the user's club to the manager's career totals and
+/// to the open career entry of that club (created when there is none). `finish` is the
+/// club's final league position when the season is closing; a split that does not close the
+/// season passes `None` so the entry's best position is only ever set by a season end.
+fn add_standing_to_career(
+    game: &mut Game,
+    user_team_id: &str,
+    standing: &StandingEntry,
+    finish: Option<u32>,
+) {
+    let total_matches = standing.won + standing.lost;
+    game.manager.career_stats.matches_managed += total_matches;
+    game.manager.career_stats.wins += standing.won;
+    game.manager.career_stats.losses += standing.lost;
+    // Update or create career history entry for current team
+    let team_name = game
+        .teams
+        .iter()
+        .find(|t| t.id == user_team_id)
+        .map(|t| t.name.clone())
+        .unwrap_or_default();
+    let today_str = game.clock.current_date.format("%Y-%m-%d").to_string();
+    // Check if there's an existing open entry for this team
+    let existing = game
+        .manager
+        .career_history
+        .iter_mut()
+        .find(|e| e.team_id == user_team_id && e.end_date.is_none());
+    if let Some(entry) = existing {
+        entry.matches += total_matches;
+        entry.wins += standing.won;
+        entry.losses += standing.lost;
+        if let Some(position) = finish {
+            let prev_best = entry.best_league_position;
+            if prev_best.is_none() || prev_best.unwrap() > position {
+                entry.best_league_position = Some(position);
+            }
+        }
+    } else {
+        game.manager
+            .career_history
+            .push(crate::domain::manager::ManagerCareerEntry {
+                team_id: user_team_id.to_string(),
+                team_name,
+                start_date: today_str,
+                end_date: None,
+                matches: total_matches,
+                wins: standing.won,
+                losses: standing.lost,
+                best_league_position: finish,
+            });
+    }
+}
+
+/// Add the user's row of the finished split to the manager's career totals. Call it at a
+/// split end that does not close the season, before the next split replaces the league: the
+/// season end only sees the final split's table, so without this the earlier splits'
+/// matches never reach `career_stats`.
+pub fn record_split_in_career(game: &mut Game) {
+    let Some(user_team_id) = game.manager.team_id.clone() else {
+        return;
+    };
+    let Some(standing) = game
+        .active_league()
+        .and_then(|league| league.standings.iter().find(|s| s.team_id == user_team_id))
+        .cloned()
+    else {
+        return;
+    };
+    add_standing_to_career(game, &user_team_id, &standing, None);
+}
+
 fn process_end_of_season_inner(
     game: &mut Game,
     _manifest: Option<&CompetitionManifest>,
@@ -595,7 +667,7 @@ fn process_end_of_season_inner(
             team.form.clear();
 
             if prize_money > 0 {
-                record_transaction(
+                record_transaction_with_text(
                     team,
                     FinanceTransactionInput {
                         date: last_fixture_date.clone(),
@@ -613,6 +685,10 @@ fn process_end_of_season_inner(
                         source_id: Some(format!("season-{season}-position-{position}")),
                         correlation_id: Some(format!("prize:{}:{}:{}", team.id, season, position)),
                     },
+                    LedgerText::new(
+                        "be.ledger.seasonPrize",
+                        &[("season", &season.to_string()), ("position", &position.to_string())],
+                    ),
                 )
                 .ok();
             }
@@ -650,10 +726,6 @@ fn process_end_of_season_inner(
 
     // 6. Update manager career stats
     if let Some(standing) = &user_standing {
-        let total_matches = standing.won + standing.lost;
-        game.manager.career_stats.matches_managed += total_matches;
-        game.manager.career_stats.wins += standing.won;
-        game.manager.career_stats.losses += standing.lost;
         if user_position == 1 {
             game.manager.career_stats.trophies += 1;
         }
@@ -661,42 +733,7 @@ fn process_end_of_season_inner(
         if best.is_none() || best.unwrap() > user_position {
             game.manager.career_stats.best_finish = Some(user_position);
         }
-        // Update or create career history entry for current team
-        let team_name = game
-            .teams
-            .iter()
-            .find(|t| t.id == user_team_id)
-            .map(|t| t.name.clone())
-            .unwrap_or_default();
-        let today_str = game.clock.current_date.format("%Y-%m-%d").to_string();
-        // Check if there's an existing open entry for this team
-        let existing = game
-            .manager
-            .career_history
-            .iter_mut()
-            .find(|e| e.team_id == user_team_id && e.end_date.is_none());
-        if let Some(entry) = existing {
-            entry.matches += total_matches;
-            entry.wins += standing.won;
-            entry.losses += standing.lost;
-            let prev_best = entry.best_league_position;
-            if prev_best.is_none() || prev_best.unwrap() > user_position {
-                entry.best_league_position = Some(user_position);
-            }
-        } else {
-            game.manager
-                .career_history
-                .push(crate::domain::manager::ManagerCareerEntry {
-                    team_id: user_team_id.clone(),
-                    team_name,
-                    start_date: today_str,
-                    end_date: None,
-                    matches: total_matches,
-                    wins: standing.won,
-                    losses: standing.lost,
-                    best_league_position: Some(user_position),
-                });
-        }
+        add_standing_to_career(game, &user_team_id, standing, Some(user_position));
     }
 
     // 6b. Evaluate board objectives and adjust satisfaction

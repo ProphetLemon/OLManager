@@ -281,6 +281,19 @@ describe("finance helpers", () => {
     ]);
   });
 
+  it("searches the text the user sees when a describer is given", () => {
+    const entries: FinancialTransactionData[] = [
+      { date: "2026-01-03", description: "Staff hiring cost: Ana", amount: -60000, kind: "StaffWage", source: "staff" },
+      { date: "2026-01-04", description: "Monthly player wages", amount: -50000, kind: "Salary", source: "monthly" },
+    ];
+    const describe = (entry: FinancialTransactionData) =>
+      entry.kind === "StaffWage" ? "Coste de contratación de staff: Ana" : entry.description;
+    const filters = { search: "contratación", kind: "all" as const, source: "all" };
+
+    expect(filterLedgerEntries(entries, filters, describe).map((entry) => entry.kind)).toEqual(["StaffWage"]);
+    expect(filterLedgerEntries(entries, filters)).toEqual([]);
+  });
+
   it("provides legacy source and running balance fallbacks", () => {
     const legacyEntry: FinancialTransactionData = { date: "2026-01-03", description: "Old save", amount: -250000, kind: "Other" };
     const accountedEntry = { ...legacyEntry, source: "facility", balance_after: 750000 };

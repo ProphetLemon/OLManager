@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { formatCurrencyAmount } from "@/lib/formatting/valueFormatting";
 import { useState } from "react";
 import { beforeEach } from "vitest";
 import { describe, expect, it, vi } from "vitest";
@@ -71,7 +72,7 @@ vi.mock("react-i18next", () => ({
       if (key === "playerProfile.renewalAccepted") return "Offer accepted";
       if (key === "playerProfile.renewalRejected") return "Offer rejected";
       if (key === "playerProfile.renewalCounter")
-        return `Wants more: €${params?.wage}/wk for ${params?.years} years`;
+        return `Wants more: ${params?.wage}/wk for ${params?.count} years`;
       if (key === "playerProfile.renewalBlocked")
         return "Talks are blocked after your earlier decision";
       if (key === "playerProfile.renewalCooledOff")
@@ -368,6 +369,66 @@ describe("PlayerProfileV2 contract surfaces", () => {
     expect(screen.getByText("Mastery 82")).toBeInTheDocument();
     expect(screen.getByText("Orianna")).toBeInTheDocument();
     expect(screen.getByText("Mastery 74")).toBeInTheDocument();
+  });
+
+  describe("season stats card", () => {
+    const record = (fixtureId: string, season: number, result: string, cs: number) => ({
+      fixtureId,
+      season,
+      date: `2026-0${season}-01`,
+      competition: "League",
+      matchday: 1,
+      opponentTeamId: "team-2",
+      opponentName: "Bravo FC",
+      side: "Blue",
+      result,
+      role: "Mid",
+      championId: null,
+      gameDurationSeconds: 1800,
+      kills: 3,
+      deaths: 1,
+      assists: 5,
+      cs,
+      goldEarned: 10000,
+      damageToChampions: 20000,
+      visionScore: 20,
+      wardsPlaced: 5,
+    });
+
+    const renderWithHistory = async (appearances: number, history: unknown[]) => {
+      const base = createPlayer();
+      const player = createPlayer({ stats: { ...base.stats, appearances, kills: 6, assists: 10 } });
+      vi.mocked(invoke).mockImplementation(async (command: string) =>
+        command === "get_player_match_history" ? history : defaultInvokeResponse(command),
+      );
+      render(
+        <PlayerProfile player={player} gameState={createGameState(player)} isOwnClub onClose={vi.fn()} />,
+      );
+      await waitFor(() =>
+        expect(vi.mocked(invoke)).toHaveBeenCalledWith("get_player_match_history", expect.anything()),
+      );
+    };
+
+    it("shows wins, losses, CS and vision summed from the running season's records", async () => {
+      await renderWithHistory(2, [
+        record("f1", 1, "Win", 300),
+        record("f2", 1, "Loss", 250),
+        record("old", 0, "Win", 999),
+      ]);
+
+      expect(await screen.findByText("common.wins")).toBeInTheDocument();
+      expect(screen.getByText("common.losses")).toBeInTheDocument();
+      expect(screen.getByText("550")).toBeInTheDocument();
+      expect(screen.getByText("40")).toBeInTheDocument();
+    });
+
+    it("leaves the derived numbers out when the records do not cover every appearance", async () => {
+      await renderWithHistory(5, [record("f1", 1, "Win", 300), record("f2", 1, "Loss", 250)]);
+
+      expect(await screen.findByText("common.games")).toBeInTheDocument();
+      expect(screen.queryByText("common.wins")).toBeNull();
+      expect(screen.queryByText("CS")).toBeNull();
+    });
   });
 
   it("shows imported attributes for players outside your club", () => {
@@ -675,7 +736,7 @@ describe("PlayerProfileV2 contract surfaces", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Wants more: €16000/wk for 4 years"),
+        screen.getByText(`Wants more: ${formatCurrencyAmount(16000)}/wk for 4 years`),
       ).toBeInTheDocument();
       expect(screen.getByText("Negotiation pulse")).toBeInTheDocument();
       expect(
