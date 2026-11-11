@@ -88,6 +88,18 @@ describe("PlayerProfileStatsCardV2", () => {
     expect(screen.getByText("common.vision").nextSibling).toHaveTextContent("120");
   });
 
+  it("leaves the vision tile out when the match records hold no vision score", () => {
+    render(
+      <PlayerProfileStatsCardV2
+        stats={{ appearances: 5, kills: 8, assists: 19 } as never}
+        totals={{ wins: 3, losses: 2, kills: 8, deaths: 5, assists: 19, cs: 830, vision: 0 }}
+        t={t}
+      />,
+    );
+    expect(screen.getByText("CS").nextSibling).toHaveTextContent("830");
+    expect(screen.queryByText("common.vision")).toBeNull();
+  });
+
   it("leaves out numbers the season stats do not carry instead of showing zeros", () => {
     render(<PlayerProfileStatsCardV2 stats={{ appearances: 4, kills: 12, assists: 30 } as never} t={t} />);
     expect(screen.queryByText("common.wins")).toBeNull();
@@ -138,10 +150,10 @@ describe("PlayerProfileMatchHistoryCardV2", () => {
 
   it("lists the newest ten matches and expands to all", () => {
     render(<PlayerProfileMatchHistoryCardV2 history={entries} t={t} language="en" />);
-    expect(screen.getByText("vs Opp 11")).toBeInTheDocument();
-    expect(screen.queryByText("vs Opp 0")).toBeNull();
+    expect(screen.getByText("playerProfile.vs Opp 11")).toBeInTheDocument();
+    expect(screen.queryByText("playerProfile.vs Opp 0")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /common\.showMore/ }));
-    expect(screen.getByText("vs Opp 0")).toBeInTheDocument();
+    expect(screen.getByText("playerProfile.vs Opp 0")).toBeInTheDocument();
   });
 
   it("names the champion played in the row when the entry carries it", () => {

@@ -75,9 +75,10 @@ describe("CompetitionsTabV2 in the Spanish UI", () => {
     render(<CompetitionsTabV2 gameState={buildState()} />);
 
     fireEvent.click(screen.getByRole("button", { name: /LEC/ }));
-    expect(screen.getByText("Temporada")).toBeInTheDocument();
+    expect(screen.getByText("Temporada 1")).toBeInTheDocument();
+    expect(screen.getByText("1 equipo")).toBeInTheDocument();
+    expect(screen.getByText("0 partidos")).toBeInTheDocument();
     expect(screen.getAllByText("Equipos").length).toBeGreaterThan(0);
-    expect(screen.getByText("Partidos")).toBeInTheDocument();
     expect(screen.getByText("No hay clasificación disponible")).toBeInTheDocument();
     expectNoEnglish();
 

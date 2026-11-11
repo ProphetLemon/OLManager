@@ -325,7 +325,7 @@
     "low": "Faible",
     "discoveryProgress": "Progression de découverte",
     "delegating": "Déléguant...",
-    "delegateToCoach": "Déléguer à l'Assistant Coach",
+    "delegateToCoach": "Déléguer à l'entraîneur adjoint",
     "loading": "Chargement des champions...",
     "error": "Erreur de chargement",
     "empty": "Aucun champion disponible",
@@ -860,6 +860,8 @@
     "results": "résultats",
     "vs": "vs",
     "age": "Âge",
+    "ageShort": "{{age}} ans",
+    "breadcrumb": "Fil d'Ariane",
     "ovr": "OVR",
     "year": "Année",
     "per_year_with_slash": "/an",
@@ -1336,8 +1338,8 @@
       "objectives": {
         "none": "Aucun objectif défini",
         "draftPrep": "Préparer le draft contre le prochain rival",
-        "championPool": "Élargir le champion pool",
-        "earlyGame": "Corriger l'early game",
+        "championPool": "Élargir le pool de champions",
+        "earlyGame": "Corriger le début de partie",
         "teamfighting": "Améliorer les teamfights",
         "macro": "Travailler macro et objectifs",
         "mental": "Stabiliser le mental"
@@ -1346,7 +1348,7 @@
         "pickObjective": "Choisissez un objectif hebdomadaire avant de toucher aux rivaux : sans intention, le volume ne crée que du bruit.",
         "mentalReset": "Priorisez Mental Reset ou VOD Review : la série affecte déjà la qualité d'apprentissage.",
         "reduceCancellations": "Réduisez les annulations cette semaine ; la réputation de scrim est aussi une infrastructure compétitive.",
-        "moreVolumeForPool": "Pour élargir le champion pool, il faut au moins 4 blocs ; deux scrims ne donnent pas assez d'échantillon.",
+        "moreVolumeForPool": "Pour élargir le pool de champions, il faut au moins 4 blocs ; deux scrims ne donnent pas assez d'échantillon.",
         "noPlannedOpponents": "L'objectif est bon, mais aucun rival n'est verrouillé : fixez au moins un Plan A pour donner une direction à la semaine.",
         "draftPrepPlan": "Utilisez Plan A/B/C contre des équipes fortes : vous voulez punir le draft, pas farmer une confiance facile.",
         "strongerOpponents": "Pour cet objectif, il faut des rivaux qui vous mettent mal à l'aise ; trouvez au moins un bloc contre une équipe plus forte.",
@@ -1609,6 +1611,7 @@
     "boardStatus": "État de la Direction",
     "satisfaction": "Satisfaction",
     "careerHistory": "Historique de Carrière",
+    "careerRecordLine": "{{wins}}V/{{losses}}D · {{winRate}} % de victoires",
     "club": "Club",
     "period": "Période",
     "matches": "Matchs",
@@ -1944,7 +1947,8 @@
     "renewalBudgetWarning": "Dépasse le budget salarial",
     "renewalAccepted": "Offre acceptée",
     "renewalRejected": "Offre refusée",
-    "renewalCounter": "Il veut plus : €{{wage}}/an pour {{years}} ans",
+    "renewalCounter_one": "Il veut plus : {{wage}}/an pour 1 an",
+    "renewalCounter_other": "Il veut plus : {{wage}}/an pour {{count}} ans",
     "renewalBlocked": "Les discussions sont bloquées après votre décision précédente",
     "renewalCooledOff": "Les discussions précédentes se sont apaisées, donc cela repart comme une nouvelle négociation.",
     "delegateRenewal": "Déléguer à l'adjoint",
@@ -1995,6 +1999,7 @@
     "assists": "Passes D.",
     "avgRating": "Note Moyenne",
     "careerHistory": "Historique de Carrière",
+    "careerSeasonColumn": "Saison",
     "noCareer": "Aucun historique de carrière — première saison.",
     "nApps": "{{count}} matchs",
     "nAssists": "{{count}} passes D.",
@@ -2430,7 +2435,7 @@
     "startLive": "Aller au live",
     "scrimPrep": {
       "title": "La préparation de scrim est entrée dans le match",
-      "summary": "Les scrims récents ont donné à ce côté un petit signal d'exécution en {{focus}}. Cela affecte le timing et le confort, pas un résultat garanti.",
+      "summary": "Les scrims récents ont donné à ce côté un petit signal d'exécution en {{focus}}. Cela affecte le rythme de jeu et le confort, pas un résultat garanti.",
       "details": {
         "opponentPrep": "Préparation adversaire +{{value}}",
         "championComfort": "Confort champions +{{value}}",
@@ -2438,9 +2443,9 @@
       },
       "focus": {
         "draftPrep": "préparation draft",
-        "championPool": "champion pool",
-        "earlyGame": "early game",
-        "teamfighting": "teamfight",
+        "championPool": "pool de champions",
+        "earlyGame": "début de partie",
+        "teamfighting": "teamfights",
         "macro": "macro",
         "mental": "reset mental",
         "general": "préparation générale"
@@ -2465,7 +2470,20 @@
       "performance": "Performance",
       "gameTimeline": "Chronologie de la partie",
       "blueNext": "Bleu au suivant",
-      "redNext": "Rouge au suivant"
+      "redNext": "Rouge au suivant",
+      "timelineEvents": {
+        "firstBlood": "Premier sang",
+        "voidgrubs": "Larves du Néant x3",
+        "dragon": "Dragon",
+        "dragonSoul": "Âme du dragon",
+        "elder": "Dragon ancien",
+        "herald": "Héraut",
+        "baron": "Baron",
+        "turret": "Tourelle",
+        "inhibitor": "Inhibiteur",
+        "nexusTurret": "Tourelle du Nexus",
+        "nexus": "Nexus"
+      }
     },
     "lolResult": {
       "dragonSummary": "Dragon {{kind}} · Charges D/E {{home}}/{{away}} · Âme {{soul}}",
@@ -3363,7 +3381,7 @@
         "focus": {
           "draftPrep": "Préparation de draft",
           "championPool": "Pool de champions",
-          "earlyGame": "Early game",
+          "earlyGame": "Début de partie",
           "teamfighting": "Teamfights",
           "macro": "Macro",
           "mental": "Mental"
@@ -3936,7 +3954,11 @@
     "recentReports": "Rapports récents",
     "reviewDecisionApplied": "Décision appliquée au bloc de scrims",
     "reviewed": "Bilan fait",
+    "setupAllSlotsPassed": "Tous les jours de scrims de cette semaine sont passés : il n'y a plus rien à planifier. La planification rouvre lundi prochain.",
     "setupLocked": "La configuration est verrouillée une fois le bloc commencé",
+    "setupLockedFirstWindow": "Le premier jour de scrims de cette semaine a déjà commencé, la configuration est donc verrouillée. Elle rouvre lundi prochain.",
+    "setupLockedManual": "Vous avez confirmé la configuration de cette semaine, elle est donc verrouillée. Elle rouvre lundi prochain.",
+    "setupLockedWeekStarted": "Un bloc de scrims a déjà été joué cette semaine, la configuration est donc verrouillée. Elle rouvre lundi prochain.",
     "setupUnlockWindow": "La configuration peut être modifiée avant le début du bloc",
     "streaks": "Séries",
     "tags": {
@@ -4094,9 +4116,11 @@
     "noResults": "No results"
   },
   "competitions": {
-    "heroMatches": "Matchs",
-    "heroSeason": "Saison",
-    "heroTeams": "Équipes",
+    "heroMatches_one": "{{count}} match",
+    "heroMatches_other": "{{count}} matchs",
+    "heroSeason": "Saison {{season}}",
+    "heroTeams_one": "{{count}} équipe",
+    "heroTeams_other": "{{count}} équipes",
     "noPlayers": "Aucun joueur trouvé",
     "noPlayersMatch": "Aucun joueur ne correspond à votre recherche",
     "noStandings": "Aucun classement disponible",
@@ -4141,18 +4165,22 @@
     "southAmerica": "South America"
   },
   "meta": {
-    "complete": "Complete",
-    "discoveryStats": "Discovery Stats",
-    "gainMaximum": "Maximum gain",
-    "gainMinimal": "Minimal gain",
-    "gainModerate": "Moderate gain",
-    "noPlayers": "No players found",
-    "patchMeta": "Patch Meta",
-    "priorityHigh": "High priority",
-    "priorityLow": "Low priority",
-    "priorityMedium": "Medium priority",
-    "unknownPatch": "Unknown patch",
-    "updated": "Updated"
+    "complete": "{{pct}} % terminé",
+    "discoveryEffect": "{{value}} de découverte",
+    "discoveryStats": "Statistiques de découverte",
+    "gainMaximum": "Gain maximal",
+    "gainMinimal": "Gain minimal",
+    "gainModerate": "Gain modéré",
+    "masteryEffect": "{{value}} de maîtrise",
+    "noPlayers": "Aucun joueur trouvé",
+    "patchMeta": "Méta du patch",
+    "priorityHigh": "Priorité haute",
+    "priorityLow": "Priorité basse",
+    "priorityMedium": "Priorité moyenne",
+    "tierDiscovered_one": "{{count}} découvert",
+    "tierDiscovered_other": "{{count}} découverts",
+    "unknownPatch": "Patch inconnu",
+    "updated": "Mis à jour le {{date}}"
   },
   "placeholder": {
     "pendingDesign": "Pending design — coming soon"

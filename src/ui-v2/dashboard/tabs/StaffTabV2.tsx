@@ -35,7 +35,7 @@ import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { Button } from "@/ui-v2/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/ui-v2/components/ui/dialog";
-import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
+import { formatPlayerWage } from "@/lib/playerProfile/helpers";
 
 interface StaffTabV2Props {
   gameState: GameStateData;
@@ -397,7 +397,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                       )}
                       {staff.wage > 0 && (
                         <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-heading text-2xs uppercase tracking-wider text-muted-foreground">
-                          {activeCurrencySymbol()}{staff.wage.toLocaleString()}/año
+                          {formatPlayerWage(staff.wage, t("finances.perYearSuffix"))}
                         </span>
                       )}
                     </div>

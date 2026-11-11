@@ -768,7 +768,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                 </div>
                 <div>
                   <p className="font-heading text-sm font-bold text-foreground">
-                    {t("finances.mainHub", "Hub principal")} · Lv.{mainHubLevel}
+                    {t("finances.mainHub", "Hub principal")} · {t("finances.facilityLevel", { level: mainHubLevel })}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {t("finances.nextUpgradeCost", { amount: nextHubExpansionCost.toLocaleString() })}
@@ -808,7 +808,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                           {t(facility.labelKey, facility.label)}
                         </h3>
                         <span className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 font-heading text-2xs tabular-nums text-muted-foreground">
-                          Lv.{level}
+                          {t("finances.facilityLevel", { level })}
                         </span>
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground">{t(facility.effectKey)}</p>

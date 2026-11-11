@@ -39,4 +39,18 @@ describe("TeamProfileRecentMatchesCardV2 in the Spanish UI", () => {
       expect(text, String(english)).not.toMatch(english);
     }
   });
+
+  it("groups the gold with the locale separator and shows a dash where no damage was recorded", () => {
+    const matches = [
+      { ...MATCHES[0], goldEarned: 40426, damageToChampions: 0 },
+      { ...MATCHES[1], goldEarned: 63125, damageToChampions: 123456 },
+    ];
+    const { container } = render(<TeamProfileRecentMatchesCardV2 matches={matches as never} />);
+    const text = container.textContent ?? "";
+
+    expect(text).toContain("40.426 / —");
+    expect(text).toContain("63.125 / 123.456");
+    expect(text).not.toContain("40426");
+    expect(text).not.toMatch(/\/ 0(?!\d)/);
+  });
 });

@@ -87,9 +87,9 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
           <RoleButton
             active={roleFilter === "ALL"}
             onClick={() => { setRoleFilter("ALL"); resetPage(); }}
-            title={t("common.all", "All")}
+            title={t("common.all")}
           >
-            <span className="font-heading text-2xs font-bold uppercase tracking-widest">All</span>
+            <span className="font-heading text-2xs font-bold uppercase tracking-widest">{t("common.all")}</span>
           </RoleButton>
           {LOL_ROLE_ORDER.map((role) => (
             <RoleButton
@@ -185,7 +185,7 @@ export default function ChampionsGridV2({ champions, onChampionClick }: Champion
       {totalPages > 1 && (
         <div className="flex shrink-0 items-center justify-between border-t border-border pt-4">
           <p className="font-heading text-xs tabular-nums text-muted-foreground">
-            {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
+            {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} {t("champions.of")} {filtered.length}
           </p>
           <div className="flex items-center gap-1">
             <PageBtn disabled={safePage === 0} onClick={() => setPage(0)}>

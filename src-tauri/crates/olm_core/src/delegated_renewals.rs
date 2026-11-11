@@ -2,7 +2,7 @@ use crate::contract_wage_policy::renewal_wage_policy_allows;
 use crate::contracts::{
     ContractWarningStage, DelegatedRenewalCase, DelegatedRenewalOptions, DelegatedRenewalReport,
     DelegatedRenewalResultStatus, contract_warning_stage, expected_contract_years, expected_wage,
-    has_active_manager_block, round_up_to_nearest_thousand,
+    has_active_manager_block, round_up_to_nearest_thousand, validate_contract_years,
 };
 use crate::domain::message::{
     DelegatedRenewalCaseData as DelegatedRenewalCaseMessageData, DelegatedRenewalReportData,
@@ -20,6 +20,8 @@ pub fn delegate_renewals(
     game: &mut Game,
     options: DelegatedRenewalOptions,
 ) -> Result<DelegatedRenewalReport, String> {
+    validate_contract_years(options.max_contract_years)?;
+
     let manager_team_id = game
         .manager
         .team_id
@@ -41,7 +43,7 @@ pub fn delegate_renewals(
         .ok_or("No assistant manager assigned to your team".to_string())?;
     let current_date = game.clock.current_date.date_naive();
     let today = current_date.format("%Y-%m-%d").to_string();
-    let max_years = options.max_contract_years.max(1);
+    let max_years = options.max_contract_years;
     let selected_ids = options
         .player_ids
         .clone()

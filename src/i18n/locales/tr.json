@@ -860,6 +860,8 @@
     "results": "sonuç",
     "vs": "vs",
     "age": "Yaş",
+    "ageShort": "{{age}} yaş",
+    "breadcrumb": "Gezinti yolu",
     "ovr": "OVR",
     "year": "Yıl",
     "per_year_with_slash": "/yıl",
@@ -1609,6 +1611,7 @@
     "boardStatus": "Yönetim Durumu",
     "satisfaction": "Memnuniyet",
     "careerHistory": "Kariyer Geçmişi",
+    "careerRecordLine": "{{wins}}G/{{losses}}M · %{{winRate}} galibiyet oranı",
     "club": "Kulüp",
     "period": "Dönem",
     "matches": "Maçlar",
@@ -1944,7 +1947,8 @@
     "renewalBudgetWarning": "Maaş bütçesini aşıyor",
     "renewalAccepted": "Teklif kabul edildi",
     "renewalRejected": "Teklif reddedildi",
-    "renewalCounter": "Daha fazlasını istiyor: {{years}} yıl için yıllık €{{wage}}",
+    "renewalCounter_one": "Daha fazlasını istiyor: 1 yıl için yıllık {{wage}}",
+    "renewalCounter_other": "Daha fazlasını istiyor: {{count}} yıl için yıllık {{wage}}",
     "renewalBlocked": "Önceki kararınızdan sonra görüşmeler tıkandı",
     "renewalCooledOff": "Önceki görüşmeler soğudu, bu yüzden yepyeni bir görüşme başlıyor.",
     "delegateRenewal": "Asistan Koça Devret",
@@ -1995,6 +1999,7 @@
     "assists": "Asistler",
     "avgRating": "OVR. Reyting",
     "careerHistory": "Kariyer Geçmişi",
+    "careerSeasonColumn": "Sezon",
     "noCareer": "Henüz kariyer geçmişi yok — ilk sezon.",
     "nApps": "{{count}} maç",
     "nAssists": "{{count}} asist",
@@ -2447,7 +2452,20 @@
       "performance": "Performans",
       "gameTimeline": "Oyun zaman çizelgesi",
       "blueNext": "Sonraki Mavi",
-      "redNext": "Sonraki Kırmızı"
+      "redNext": "Sonraki Kırmızı",
+      "timelineEvents": {
+        "firstBlood": "İlk Kan",
+        "voidgrubs": "Boşluk Larvaları x3",
+        "dragon": "Ejderha",
+        "dragonSoul": "Ejderha Ruhu",
+        "elder": "Kadim Ejderha",
+        "herald": "Haberci",
+        "baron": "Baron",
+        "turret": "Kule",
+        "inhibitor": "İnhibitör",
+        "nexusTurret": "Nexus Kulesi",
+        "nexus": "Nexus"
+      }
     },
     "lolResult": {
       "dragonSummary": "{{kind}} Ejderi · Ev/Dep skorları {{home}}/{{away}} · Ruh {{soul}}",
@@ -2551,21 +2569,21 @@
     "draftStrategy": "Draft stratejisi",
     "condition": "Condition",
     "scrimPrep": {
-      "title": "Scrim prep carried into the match",
-      "summary": "Recent scrims gave this side a small {{focus}} execution signal. It affects timing and comfort, not a guaranteed result.",
+      "title": "Scrim hazırlığı maça taşındı",
+      "summary": "Son scrimler bu tarafa {{focus}} alanında küçük bir uygulama sinyali verdi. Oyunun temposunu ve şampiyon konforunu etkiler; sonucu garanti etmez.",
       "details": {
-        "opponentPrep": "Opponent prep +{{value}}",
-        "championComfort": "Champion comfort +{{value}}",
-        "focus": "Focus: {{focus}}"
+        "opponentPrep": "Rakip hazırlığı +{{value}}",
+        "championComfort": "Şampiyon konforu +{{value}}",
+        "focus": "Odak: {{focus}}"
       },
       "focus": {
-        "draftPrep": "draft prep",
-        "championPool": "champion pool",
-        "earlyGame": "early game",
-        "teamfighting": "teamfighting",
-        "macro": "macro",
-        "mental": "mental reset",
-        "general": "general prep"
+        "draftPrep": "draft hazırlığı",
+        "championPool": "şampiyon havuzu",
+        "earlyGame": "erken oyun",
+        "teamfighting": "takım savaşları",
+        "macro": "makro",
+        "mental": "zihinsel sıfırlama",
+        "general": "genel hazırlık"
       }
     },
     "continue": "Devam",
@@ -3359,30 +3377,30 @@
       },
       "scrimWeekly": {
         "subject": "Haftalık Scrim Personel Raporu",
-        "body": "Haftalık scrim raporu:\n\nOynanan: {{played}}\nGalibiyet: {{wins}}\nMağlubiyet: {{losses}}\nMevcut kaybetme serisi: {{lossStreak}}\n\nScrim gelişimi kaybedilen maçlarda bile uygulanır, ancak uzun mağlubiyet serileri morale zarar verir.",
+        "body": "Haftalık scrim raporu:\n\nOynanan: {{played}}\nGalibiyet: {{wins}}\nMağlubiyet: {{losses}}\nİptaller: {{cancellations}}\nOrtalama kalite: {{avgQuality}}\nMevcut kaybetme serisi: {{lossStreak}}\n\nAna odak: {{topFocus}}\nTekrarlayan sorun: {{recurringIssue}}\nEn çok çalışılan şampiyon: {{topChampion}}\n\nÖneri: {{recommendation}}",
         "focus": {
-          "draftPrep": "Draft prep",
-          "championPool": "Champion pool",
-          "earlyGame": "Early game",
-          "teamfighting": "Teamfighting",
-          "macro": "Macro",
-          "mental": "Mental"
+          "draftPrep": "Draft hazırlığı",
+          "championPool": "Şampiyon havuzu",
+          "earlyGame": "Erken oyun",
+          "teamfighting": "Takım savaşları",
+          "macro": "Makro",
+          "mental": "Zihinsel"
         },
         "issues": {
-          "draftGap": "Draft gap",
-          "lanePressure": "Lane pressure",
-          "objectiveSetup": "Objective setup",
-          "teamfightExecution": "Teamfight execution",
-          "championComfort": "Champion comfort",
+          "draftGap": "Draft açığı",
+          "lanePressure": "Koridor baskısı",
+          "objectiveSetup": "Hedef kurulumu",
+          "teamfightExecution": "Takım savaşı uygulaması",
+          "championComfort": "Şampiyon konforu",
           "tilt": "Tilt"
         },
         "recommendations": {
-          "lockPlans": "Lock Plan A/B/C earlier next week so the staff has usable prep data.",
-          "reduceCancellations": "Reduce cancellations next week; scrim reputation is part of your competitive infrastructure.",
-          "resetBeforeVolume": "Open next week with Mental Reset or VOD Review before adding more volume.",
-          "narrowFocus": "Keep the volume but narrow the focus around the recurring issue; quality is too noisy right now.",
-          "targetedDrills": "Schedule Targeted Drills for the recurring issue and keep the main prep block stable.",
-          "keepPlan": "Keep the current plan: it is producing useful reps without overloading the roster."
+          "lockPlans": "Personelin işe yarar hazırlık verisi olması için gelecek hafta Plan A/B/C'yi daha erken kilitle.",
+          "reduceCancellations": "Gelecek hafta iptalleri azalt; scrim itibarı rekabetçi altyapının bir parçasıdır.",
+          "resetBeforeVolume": "Daha fazla hacim eklemeden önce gelecek haftaya Mental Reset veya VOD Review ile başla.",
+          "narrowFocus": "Hacmi koru ama odağı tekrarlayan sorun etrafında daralt; kalite şu anda fazla dalgalı.",
+          "targetedDrills": "Tekrarlayan sorun için Targeted Drills planla ve ana hazırlık bloğunu sabit tut.",
+          "keepPlan": "Mevcut planı koru: kadroyu yormadan işe yarar tekrarlar üretiyor."
         }
       },
       "patchNotes": {
@@ -3927,7 +3945,11 @@
     "recentReports": "Son raporlar",
     "reviewDecisionApplied": "Karar scrim bloğuna uygulandı",
     "reviewed": "İncelendi",
+    "setupAllSlotsPassed": "Bu haftanın tüm scrim günleri geçti, planlanacak bir şey kalmadı. Planlama gelecek pazartesi yeniden açılır.",
     "setupLocked": "Blok başladığında kurulum kilitlenir",
+    "setupLockedFirstWindow": "Bu haftanın ilk scrim günü başladı, bu yüzden kurulum kilitli. Gelecek pazartesi yeniden açılır.",
+    "setupLockedManual": "Bu haftanın kurulumunu onayladın, bu yüzden kilitli. Gelecek pazartesi yeniden açılır.",
+    "setupLockedWeekStarted": "Bu hafta bir scrim bloğu zaten oynandı, bu yüzden kurulum kilitli. Gelecek pazartesi yeniden açılır.",
     "setupUnlockWindow": "Kurulum blok başlamadan önce değiştirilebilir",
     "streaks": "Seriler",
     "tags": {
@@ -4094,9 +4116,11 @@
     "noResults": "No results"
   },
   "competitions": {
-    "heroMatches": "Maçlar",
-    "heroSeason": "Sezon",
-    "heroTeams": "Takımlar",
+    "heroMatches_one": "{{count}} maç",
+    "heroMatches_other": "{{count}} maç",
+    "heroSeason": "Sezon {{season}}",
+    "heroTeams_one": "{{count}} takım",
+    "heroTeams_other": "{{count}} takım",
     "noPlayers": "Oyuncu bulunamadı",
     "noPlayersMatch": "Aramanızla eşleşen oyuncu yok",
     "noStandings": "Puan durumu mevcut değil",
@@ -4141,18 +4165,22 @@
     "southAmerica": "South America"
   },
   "meta": {
-    "complete": "Complete",
-    "discoveryStats": "Discovery Stats",
-    "gainMaximum": "Maximum gain",
-    "gainMinimal": "Minimal gain",
-    "gainModerate": "Moderate gain",
-    "noPlayers": "No players found",
-    "patchMeta": "Patch Meta",
-    "priorityHigh": "High priority",
-    "priorityLow": "Low priority",
-    "priorityMedium": "Medium priority",
-    "unknownPatch": "Unknown patch",
-    "updated": "Updated"
+    "complete": "%{{pct}} tamamlandı",
+    "discoveryEffect": "{{value}} keşif",
+    "discoveryStats": "Keşif İstatistikleri",
+    "gainMaximum": "Maksimum kazanç",
+    "gainMinimal": "Minimum kazanç",
+    "gainModerate": "Orta düzey kazanç",
+    "masteryEffect": "{{value}} ustalık",
+    "noPlayers": "Oyuncu bulunamadı",
+    "patchMeta": "Yama Metası",
+    "priorityHigh": "Yüksek öncelik",
+    "priorityLow": "Düşük öncelik",
+    "priorityMedium": "Orta öncelik",
+    "tierDiscovered_one": "{{count}} keşfedildi",
+    "tierDiscovered_other": "{{count}} keşfedildi",
+    "unknownPatch": "Bilinmeyen yama",
+    "updated": "Güncelleme: {{date}}"
   },
   "placeholder": {
     "pendingDesign": "Pending design — coming soon"

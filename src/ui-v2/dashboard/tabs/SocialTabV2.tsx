@@ -40,7 +40,7 @@ export function SocialTabV2({ gameState, onGameUpdate }: SocialTabV2Props) {
         </div>
         <div className="flex items-center gap-2 rounded-full bg-zinc-100 px-4 py-2 text-xs font-medium text-zinc-500">
           <Clock className="h-4 w-4" />
-          <span>{t("social.currentlyPlaying")} {activeLeague?.name ?? "Unknown League"}</span>
+          <span>{t("social.currentlyPlaying")} {activeLeague?.name ?? t("common.unknown")}</span>
         </div>
       </div>
     );

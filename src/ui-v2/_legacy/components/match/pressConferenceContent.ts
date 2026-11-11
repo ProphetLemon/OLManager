@@ -82,6 +82,8 @@ interface BuildPressConferenceQuestionsParams {
   winnerSide?: RegistrySide;
   /** Optional explicit result override. Takes precedence over winnerSide inference. */
   userResult?: "win" | "loss";
+  /** Games in the series that just ended (1, 3 or 5). Series questions need it to be above 1. */
+  seriesLength?: number;
 }
 
 const PRESS_CONFERENCE_QUESTION_TARGET = 3;
@@ -365,6 +367,7 @@ export function buildPressConferenceQuestions({
   controlledSide,
   winnerSide,
   userResult,
+  seriesLength,
 }: BuildPressConferenceQuestionsParams): PressQuestion[] {
   const leagueId = resolveUserLeague(gameState)?.id ?? DEFAULT_LEAGUE_ID;
 
@@ -382,6 +385,7 @@ export function buildPressConferenceQuestions({
     match: summary,
     userSide: effectiveUserSide,
     leagueId,
+    seriesLength,
   });
   const result = context.facts.result as "win" | "loss";
   const candidates = buildCandidates({

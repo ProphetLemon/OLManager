@@ -128,6 +128,63 @@ describe("PlayerProfileV2 actions", () => {
     expect(await screen.findByLabelText("playerProfile.renewalWage")).toHaveValue(12000);
   });
 
+  describe("renewal contract length", () => {
+    function openRenewal() {
+      render(
+        <PlayerProfileV2
+          gameState={gameState("team-1")}
+          playerId="player-1"
+          startWithRenewalModal
+          onClose={vi.fn()}
+          onGameUpdate={vi.fn()}
+        />,
+      );
+    }
+
+    async function typeLength(value: string) {
+      const field = await screen.findByLabelText("playerProfile.renewalLength");
+      fireEvent.change(field, { target: { value } });
+    }
+
+    it.each(["0", "6", "12"])("disables the offer and says why at %s years", async (years) => {
+      openRenewal();
+      await typeLength(years);
+
+      expect(screen.getByRole("button", { name: "playerProfile.renewalSubmit" })).toBeDisabled();
+      expect(screen.getByText("transfers.contractLengthError")).toBeInTheDocument();
+    });
+
+    it("allows the offer without a warning at 5 years", async () => {
+      openRenewal();
+      await typeLength("5");
+
+      expect(screen.getByRole("button", { name: "playerProfile.renewalSubmit" })).toBeEnabled();
+      expect(screen.queryByText("transfers.contractLengthError")).toBeNull();
+    });
+
+    it("never sends a length outside 1 to 5 to the backend", async () => {
+      openRenewal();
+      await typeLength("6");
+      fireEvent.click(screen.getByRole("button", { name: "playerProfile.renewalSubmit" }));
+
+      expect(vi.mocked(invoke)).not.toHaveBeenCalledWith("propose_renewal", expect.anything());
+    });
+
+    it("explains the backend length refusal in words", async () => {
+      vi.mocked(invoke).mockImplementation(async (command: string) => {
+        if (command === "propose_renewal") {
+          throw "Contract must be between 1 and 5 years";
+        }
+        return [];
+      });
+      openRenewal();
+      await typeLength("3");
+      fireEvent.click(screen.getByRole("button", { name: "playerProfile.renewalSubmit" }));
+
+      expect(await screen.findByText("transfers.contractLengthError")).toBeInTheDocument();
+    });
+  });
+
   it("does not open the renewal modal for a player of another club", () => {
     render(
       <PlayerProfileV2

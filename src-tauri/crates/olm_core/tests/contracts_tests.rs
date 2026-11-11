@@ -552,3 +552,106 @@ fn expected_wage_keeps_the_minimum_for_a_worthless_player() {
 
     assert!((25_000..=30_000).contains(&wage), "got {wage}");
 }
+
+const CONTRACT_LENGTH_MESSAGE: &str = "Contract must be between 1 and 5 years";
+
+fn renewal_for_years(
+    game: &mut Game,
+    years: u32,
+) -> Result<olm_core::contracts::RenewalOutcome, String> {
+    propose_renewal(
+        game,
+        "player-1",
+        RenewalOffer {
+            annual_wage: 15_000,
+            contract_years: years,
+        },
+    )
+}
+
+#[test]
+fn renewal_of_six_years_is_refused_and_leaves_the_contract_untouched() {
+    let mut game = make_game();
+    let original_wage = game.players[0].wage;
+    let original_end = game.players[0].contract_end.clone();
+
+    let error = renewal_for_years(&mut game, 6).expect_err("six years is outside the 1 to 5 rule");
+
+    assert_eq!(error, CONTRACT_LENGTH_MESSAGE);
+    assert_eq!(game.players[0].wage, original_wage);
+    assert_eq!(game.players[0].contract_end, original_end);
+}
+
+#[test]
+fn renewal_of_zero_years_is_refused_with_the_length_message() {
+    let mut game = make_game();
+
+    let error = renewal_for_years(&mut game, 0).expect_err("zero years is outside the 1 to 5 rule");
+
+    assert_eq!(error, CONTRACT_LENGTH_MESSAGE);
+}
+
+#[test]
+fn renewal_of_five_years_is_accepted() {
+    let mut game = make_game();
+
+    let outcome = renewal_for_years(&mut game, 5).expect("five years is the longest allowed");
+
+    assert!(matches!(outcome.decision, RenewalDecision::Accepted));
+    assert_eq!(game.players[0].contract_end.as_deref(), Some("2031-08-01"));
+}
+
+#[test]
+fn renewal_of_one_year_is_not_refused_by_the_length_rule() {
+    let mut game = make_game();
+
+    let result = renewal_for_years(&mut game, 1);
+
+    assert!(result.is_ok(), "one year is the shortest allowed: {result:?}");
+}
+
+fn delegation_with_max_years(
+    game: &mut Game,
+    years: u32,
+) -> Result<olm_core::contracts::DelegatedRenewalReport, String> {
+    delegate_renewals(
+        game,
+        DelegatedRenewalOptions {
+            player_ids: Some(vec!["player-1".to_string()]),
+            max_wage_increase_pct: 35,
+            max_contract_years: years,
+        },
+    )
+}
+
+#[test]
+fn delegated_renewal_cap_of_six_years_is_refused() {
+    let mut game = make_game();
+    game.staff.push(make_assistant_manager());
+
+    let error =
+        delegation_with_max_years(&mut game, 6).expect_err("a cap of six years is outside the rule");
+
+    assert_eq!(error, CONTRACT_LENGTH_MESSAGE);
+}
+
+#[test]
+fn delegated_renewal_cap_of_zero_years_is_refused() {
+    let mut game = make_game();
+    game.staff.push(make_assistant_manager());
+
+    let error = delegation_with_max_years(&mut game, 0)
+        .expect_err("a cap of zero years is outside the rule");
+
+    assert_eq!(error, CONTRACT_LENGTH_MESSAGE);
+}
+
+#[test]
+fn delegated_renewal_cap_of_five_years_is_accepted() {
+    let mut game = make_game();
+    game.staff.push(make_assistant_manager());
+
+    let result = delegation_with_max_years(&mut game, 5);
+
+    assert!(result.is_ok(), "a cap of five years is allowed: {result:?}");
+}

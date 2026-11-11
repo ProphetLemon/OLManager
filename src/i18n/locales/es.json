@@ -368,7 +368,7 @@
     "low": "Baja",
     "discoveryProgress": "Progreso de descubrimiento",
     "delegating": "Delegando...",
-    "delegateToCoach": "Delegar al assistant coach",
+    "delegateToCoach": "Delegar al entrenador asistente",
     "loading": "Cargando campeones...",
     "error": "Error al cargar",
     "empty": "No hay campeones disponibles",
@@ -662,7 +662,11 @@
     "recentReports": "Informes recientes",
     "reviewDecisionApplied": "Decisión aplicada al bloque de scrims",
     "reviewed": "Revisado",
+    "setupAllSlotsPassed": "Ya han pasado todos los días de scrims de esta semana y no queda nada por planificar. La planificación se reabre el próximo lunes.",
     "setupLocked": "La configuración se bloquea al empezar el bloque",
+    "setupLockedFirstWindow": "El primer día de scrims de esta semana ya ha empezado, así que la configuración está bloqueada. Se reabre el próximo lunes.",
+    "setupLockedManual": "Has confirmado la configuración de esta semana, así que está bloqueada. Se reabre el próximo lunes.",
+    "setupLockedWeekStarted": "Ya se ha jugado un bloque de scrims esta semana, así que la configuración está bloqueada. Se reabre el próximo lunes.",
     "setupUnlockWindow": "La configuración se puede cambiar antes de que empiece el bloque",
     "streaks": "Rachas",
     "tags": {
@@ -1023,6 +1027,8 @@
     "results": "resultados",
     "vs": "vs",
     "age": "Edad",
+    "ageShort": "{{age}} años",
+    "breadcrumb": "Ruta de navegación",
     "ovr": "OVR",
     "year": "Año",
     "per_year_with_slash": "/año",
@@ -1499,8 +1505,8 @@
       "objectives": {
         "none": "Sin objetivo definido",
         "draftPrep": "Preparar el draft contra el próximo rival",
-        "championPool": "Expandir champion pool",
-        "earlyGame": "Arreglar early game",
+        "championPool": "Ampliar el pool de campeones",
+        "earlyGame": "Corregir el juego temprano",
         "teamfighting": "Mejorar teamfights",
         "macro": "Pulir macro y objetivos",
         "mental": "Estabilizar mental"
@@ -1509,13 +1515,13 @@
         "pickObjective": "Elige un objetivo semanal antes de tocar rivales: sin intención, el volumen solo genera ruido.",
         "mentalReset": "Prioriza Mental Reset o VOD Review: la racha ya está afectando la calidad de aprendizaje.",
         "reduceCancellations": "Baja cancelaciones esta semana; la reputación de scrims también es infraestructura competitiva.",
-        "moreVolumeForPool": "Para expandir champion pool necesitas al menos 4 bloques; dos scrims no dan muestra suficiente.",
+        "moreVolumeForPool": "Para ampliar el pool de campeones necesitas al menos 4 bloques; dos scrims no dan muestra suficiente.",
         "noPlannedOpponents": "El objetivo está bien, pero no hay rivales fijados: cierra al menos Plan A para que la semana tenga dirección.",
         "draftPrepPlan": "Usa Plan A/B/C contra equipos fuertes: quieres castigar draft, no farmear confianza barata.",
         "strongerOpponents": "Para este objetivo te faltan rivales que te incomoden; busca al menos un bloque contra un equipo más fuerte.",
         "softerMentalWeek": "Semana mental: no abras con todos los rivales por encima de tu nivel. Mezcla un bloque controlado para reconstruir confianza.",
         "addFallbacksForReputation": "Tus rivales planificados tienen mejor reputación de scrims; agrega Plan B/C o vas a comerte rechazos evitables.",
-        "macroReview": "Marca un bloque de VOD Review: si el issue es setup de objetivos, más scrims sin revisión repiten el error.",
+        "macroReview": "Marca un bloque de VOD Review: si el problema es la preparación de objetivos, más scrims sin revisión repiten el error.",
         "narrowFocus": "La calidad promedio está baja; mantén volumen, pero estrecha el foco antes de sumar más rivales.",
         "keepPlan": "El plan actual está sano: mantén el objetivo, elige rivales exigentes y revisa el primer reporte antes de aumentar volumen."
       },
@@ -1772,6 +1778,7 @@
     "boardStatus": "Estado de la Directiva",
     "satisfaction": "Satisfacción",
     "careerHistory": "Historial de Carrera",
+    "careerRecordLine": "{{wins}}V/{{losses}}D · {{winRate}}% de victorias",
     "club": "Club",
     "period": "Período",
     "matches": "Partidos",
@@ -2122,7 +2129,8 @@
     "renewalBudgetWarning": "Supera el presupuesto salarial",
     "renewalAccepted": "Oferta aceptada",
     "renewalRejected": "Oferta rechazada",
-    "renewalCounter": "Quiere más: €{{wage}}/año por {{years}} años",
+    "renewalCounter_one": "Quiere más: {{wage}}/año por 1 año",
+    "renewalCounter_other": "Quiere más: {{wage}}/año por {{count}} años",
     "renewalBlocked": "Las conversaciones están bloqueadas tras tu decisión anterior",
     "renewalCooledOff": "Las conversaciones anteriores se enfriaron, así que esto vuelve a empezar como una negociación nueva.",
     "delegateRenewal": "Delegar al asistente",
@@ -2173,6 +2181,7 @@
     "assists": "Asistencias",
     "avgRating": "Nota Media",
     "careerHistory": "Historial de Carrera",
+    "careerSeasonColumn": "Temporada",
     "noCareer": "Sin historial de carrera — primera temporada.",
     "nApps": "{{count}} partidos",
     "nAssists": "{{count}} asistencias",
@@ -2609,17 +2618,17 @@
     "startLive": "Ir al live",
     "scrimPrep": {
       "title": "La preparación de scrims llegó al partido",
-      "summary": "Los scrims recientes le dieron a este lado una pequeña señal de ejecución en {{focus}}. Afecta timing y comfort, no garantiza el resultado.",
+      "summary": "Los scrims recientes le dieron a este lado una pequeña señal de ejecución en {{focus}}. Afecta al ritmo de la partida y al confort con los campeones, no garantiza el resultado.",
       "details": {
         "opponentPrep": "Preparación vs rival +{{value}}",
-        "championComfort": "Comfort de campeones +{{value}}",
+        "championComfort": "Confort de campeones +{{value}}",
         "focus": "Foco: {{focus}}"
       },
       "focus": {
-        "draftPrep": "draft prep",
-        "championPool": "champion pool",
-        "earlyGame": "early game",
-        "teamfighting": "teamfighting",
+        "draftPrep": "preparación del draft",
+        "championPool": "pool de campeones",
+        "earlyGame": "juego temprano",
+        "teamfighting": "teamfights",
         "macro": "macro",
         "mental": "reset mental",
         "general": "preparación general"
@@ -2644,7 +2653,20 @@
       "performance": "Rendimiento",
       "gameTimeline": "Cronología de la partida",
       "blueNext": "Azul siguiente",
-      "redNext": "Rojo siguiente"
+      "redNext": "Rojo siguiente",
+      "timelineEvents": {
+        "firstBlood": "Primera sangre",
+        "voidgrubs": "Larvas del Vacío x3",
+        "dragon": "Dragón",
+        "dragonSoul": "Alma de dragón",
+        "elder": "Dragón Ancestral",
+        "herald": "Heraldo",
+        "baron": "Barón",
+        "turret": "Torre",
+        "inhibitor": "Inhibidor",
+        "nexusTurret": "Torre del Nexo",
+        "nexus": "Nexo"
+      }
     },
     "lolResult": {
       "dragonSummary": "Dragón {{kind}} · Cargas L/V {{home}}/{{away}} · Alma {{soul}}",
@@ -3537,7 +3559,7 @@
       },
       "scrimWeekly": {
         "subject": "Informe semanal de scrims",
-        "body": "Informe semanal de scrims:\n\nJugados: {{played}}\nGanados: {{wins}}\nPerdidos: {{losses}}\nCancelaciones: {{cancellations}}\nCalidad promedio: {{avgQuality}}\nRacha actual de derrotas: {{lossStreak}}\n\nFoco principal: {{topFocus}}\nIssue recurrente: {{recurringIssue}}\nCampeón más practicado: {{topChampion}}\n\nRecomendación: {{recommendation}}",
+        "body": "Informe semanal de scrims:\n\nJugados: {{played}}\nGanados: {{wins}}\nPerdidos: {{losses}}\nCancelaciones: {{cancellations}}\nCalidad promedio: {{avgQuality}}\nRacha actual de derrotas: {{lossStreak}}\n\nFoco principal: {{topFocus}}\nProblema recurrente: {{recurringIssue}}\nCampeón más practicado: {{topChampion}}\n\nRecomendación: {{recommendation}}",
         "focus": {
           "draftPrep": "Preparación de draft",
           "championPool": "Pool de campeones",
@@ -3558,8 +3580,8 @@
           "lockPlans": "Cierra Plan A/B/C más temprano la semana que viene para que el staff tenga datos útiles de preparación.",
           "reduceCancellations": "Reduce cancelaciones la semana que viene; la reputación de scrims es parte de tu infraestructura competitiva.",
           "resetBeforeVolume": "Abre la semana que viene con Reset Mental o VOD Review antes de sumar más volumen.",
-          "narrowFocus": "Mantén el volumen, pero ajusta el foco alrededor del issue recurrente; la calidad está demasiado ruidosa.",
-          "targetedDrills": "Programa Targeted Drills para el issue recurrente y mantén estable el bloque principal de preparación.",
+          "narrowFocus": "Mantén el volumen, pero ajusta el foco alrededor del problema recurrente; la calidad está demasiado ruidosa.",
+          "targetedDrills": "Programa Targeted Drills para el problema recurrente y mantén estable el bloque principal de preparación.",
           "keepPlan": "Mantén el plan actual: está generando reps útiles sin sobrecargar al roster."
         }
       },
@@ -4093,9 +4115,11 @@
     "noResults": "No results"
   },
   "competitions": {
-    "heroMatches": "Partidos",
-    "heroSeason": "Temporada",
-    "heroTeams": "Equipos",
+    "heroMatches_one": "{{count}} partido",
+    "heroMatches_other": "{{count}} partidos",
+    "heroSeason": "Temporada {{season}}",
+    "heroTeams_one": "{{count}} equipo",
+    "heroTeams_other": "{{count}} equipos",
     "noPlayers": "No se encontraron jugadores",
     "noPlayersMatch": "Ningún jugador coincide con tu búsqueda",
     "noStandings": "No hay clasificación disponible",
@@ -4140,18 +4164,22 @@
     "southAmerica": "South America"
   },
   "meta": {
-    "complete": "Complete",
-    "discoveryStats": "Discovery Stats",
-    "gainMaximum": "Maximum gain",
-    "gainMinimal": "Minimal gain",
-    "gainModerate": "Moderate gain",
-    "noPlayers": "No players found",
-    "patchMeta": "Patch Meta",
-    "priorityHigh": "High priority",
-    "priorityLow": "Low priority",
-    "priorityMedium": "Medium priority",
-    "unknownPatch": "Unknown patch",
-    "updated": "Updated"
+    "complete": "{{pct}}% completado",
+    "discoveryEffect": "{{value}} de descubrimiento",
+    "discoveryStats": "Estadísticas de descubrimiento",
+    "gainMaximum": "Ganancia máxima",
+    "gainMinimal": "Ganancia mínima",
+    "gainModerate": "Ganancia moderada",
+    "masteryEffect": "{{value}} de maestría",
+    "noPlayers": "No se han encontrado jugadores",
+    "patchMeta": "Meta del parche",
+    "priorityHigh": "Prioridad alta",
+    "priorityLow": "Prioridad baja",
+    "priorityMedium": "Prioridad media",
+    "tierDiscovered_one": "{{count}} descubierto",
+    "tierDiscovered_other": "{{count}} descubiertos",
+    "unknownPatch": "Parche desconocido",
+    "updated": "Actualizado el {{date}}"
   },
   "placeholder": {
     "pendingDesign": "Pending design — coming soon"

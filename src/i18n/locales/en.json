@@ -662,7 +662,11 @@
     "recentReports": "Recent Reports",
     "reviewDecisionApplied": "Decision applied to scrim block",
     "reviewed": "Reviewed",
+    "setupAllSlotsPassed": "Every scrim day of this week has already passed, so there is nothing left to plan. Planning reopens next Monday.",
     "setupLocked": "Setup locked once block starts",
+    "setupLockedFirstWindow": "This week's first scrim day has already started, so the setup is locked. It reopens next Monday.",
+    "setupLockedManual": "You confirmed this week's setup, so it is locked. It reopens next Monday.",
+    "setupLockedWeekStarted": "A scrim block of this week has already been played, so the setup is locked. It reopens next Monday.",
     "setupUnlockWindow": "Setup may be changed before block begins",
     "streaks": "Streaks",
     "tags": {
@@ -1023,6 +1027,8 @@
     "results": "results",
     "vs": "vs",
     "age": "Age",
+    "ageShort": "{{age}} y/o",
+    "breadcrumb": "Breadcrumb",
     "ovr": "OVR",
     "year": "Year",
     "per_year_with_slash": "/year",
@@ -1783,6 +1789,7 @@
     "boardStatus": "Board Status",
     "satisfaction": "Satisfaction",
     "careerHistory": "Career History",
+    "careerRecordLine": "{{wins}}W/{{losses}}L · {{winRate}}% win rate",
     "club": "Club",
     "period": "Period",
     "matches": "Matches",
@@ -2133,7 +2140,8 @@
     "renewalBudgetWarning": "Exceeds wage budget",
     "renewalAccepted": "Offer accepted",
     "renewalRejected": "Offer rejected",
-    "renewalCounter": "Wants more: €{{wage}}/yr for {{years}} years",
+    "renewalCounter_one": "Wants more: {{wage}}/yr for 1 year",
+    "renewalCounter_other": "Wants more: {{wage}}/yr for {{count}} years",
     "renewalBlocked": "Talks are blocked after your earlier decision",
     "renewalCooledOff": "Previous talks cooled off, so this starts as a fresh conversation.",
     "delegateRenewal": "Delegate to Assistant",
@@ -2184,6 +2192,7 @@
     "assists": "Assists",
     "avgRating": "Avg Rating",
     "careerHistory": "Career History",
+    "careerSeasonColumn": "Season",
     "noCareer": "No career history yet — first season.",
     "nApps": "{{count}} apps",
     "nAssists": "{{count}} assists",
@@ -2656,7 +2665,20 @@
       "performance": "Performance",
       "gameTimeline": "Game timeline",
       "blueNext": "Blue next",
-      "redNext": "Red next"
+      "redNext": "Red next",
+      "timelineEvents": {
+        "firstBlood": "First Blood",
+        "voidgrubs": "Voidgrubs x3",
+        "dragon": "Dragon",
+        "dragonSoul": "Dragon Soul",
+        "elder": "Elder Dragon",
+        "herald": "Herald",
+        "baron": "Baron",
+        "turret": "Turret",
+        "inhibitor": "Inhibitor",
+        "nexusTurret": "Nexus Turret",
+        "nexus": "Nexus"
+      }
     },
     "lolResult": {
       "dragonSummary": "Dragon {{kind}} · H/A stacks {{home}}/{{away}} · Soul {{soul}}",
@@ -4128,9 +4150,11 @@
     "noResults": "No results"
   },
   "competitions": {
-    "heroMatches": "Matches",
-    "heroSeason": "Season",
-    "heroTeams": "Teams",
+    "heroMatches_one": "{{count}} match",
+    "heroMatches_other": "{{count}} matches",
+    "heroSeason": "Season {{season}}",
+    "heroTeams_one": "{{count}} team",
+    "heroTeams_other": "{{count}} teams",
     "noPlayers": "No players found",
     "noPlayersMatch": "No players match your search",
     "noStandings": "No standings available",
@@ -4175,18 +4199,22 @@
     "southAmerica": "South America"
   },
   "meta": {
-    "complete": "Complete",
+    "complete": "{{pct}}% complete",
+    "discoveryEffect": "{{value}} discovery",
     "discoveryStats": "Discovery Stats",
     "gainMaximum": "Maximum gain",
     "gainMinimal": "Minimal gain",
     "gainModerate": "Moderate gain",
+    "masteryEffect": "{{value}} mastery",
     "noPlayers": "No players found",
     "patchMeta": "Patch Meta",
     "priorityHigh": "High priority",
     "priorityLow": "Low priority",
     "priorityMedium": "Medium priority",
+    "tierDiscovered_one": "{{count}} discovered",
+    "tierDiscovered_other": "{{count}} discovered",
     "unknownPatch": "Unknown patch",
-    "updated": "Updated"
+    "updated": "Updated {{date}}"
   },
   "placeholder": {
     "pendingDesign": "Pending design — coming soon"

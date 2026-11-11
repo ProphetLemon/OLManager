@@ -44,6 +44,20 @@ impl ContractWarningStage {
     }
 }
 
+/// Shortest and longest contract, in years, that any path may set from a user choice.
+pub const MIN_CONTRACT_YEARS: u32 = 1;
+pub const MAX_CONTRACT_YEARS: u32 = 5;
+
+/// Single source of the contract-length rule. The message text is matched by the
+/// frontend (`mapTransferNegotiationError`), so keep it stable.
+pub fn validate_contract_years(years: u32) -> Result<(), String> {
+    if (MIN_CONTRACT_YEARS..=MAX_CONTRACT_YEARS).contains(&years) {
+        Ok(())
+    } else {
+        Err("Contract must be between 1 and 5 years".to_string())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RenewalOffer {
     pub annual_wage: u32,
@@ -225,6 +239,8 @@ pub fn propose_renewal(
     player_id: &str,
     offer: RenewalOffer,
 ) -> Result<RenewalOutcome, String> {
+    validate_contract_years(offer.contract_years)?;
+
     let manager_team_id = game
         .manager
         .team_id
