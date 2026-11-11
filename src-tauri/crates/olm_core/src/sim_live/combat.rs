@@ -446,6 +446,26 @@ pub(super) fn has_credible_kill_chance(
     (ttk_enemy <= ttk_self * 0.95 || low_enemy) && ally_pressure + 0.5 >= enemy_pressure
 }
 
+/// How far from its support an ADC still counts as "with" it.
+const SUPPORT_ADC_COMPANY_RADIUS: f64 = 0.2;
+
+/// A support does not take lane minions while its ADC is in lane next to it
+/// and able to: the minion would die unpaid (a support is paid for one in
+/// `SUPPORT_CS_MIN_INTERVAL_SEC`) and the ADC would lose the last hit.
+pub(super) fn support_leaves_minions_to_adc(
+    runtime: &RuntimeState,
+    champion: &ChampionRuntime,
+) -> bool {
+    champion.role == "SUP"
+        && runtime.champions.iter().any(|ally| {
+            ally.alive
+                && ally.role == "ADC"
+                && ally.state == "lane"
+                && normalized_team(&ally.team) == normalized_team(&champion.team)
+                && dist(ally.pos, champion.pos) <= SUPPORT_ADC_COMPANY_RADIUS
+        })
+}
+
 pub(super) fn pick_combat_target(
     runtime: &RuntimeState,
     champion_idx: usize,
@@ -847,6 +867,7 @@ pub(super) fn pick_combat_target(
         }
 
     let lane_mult = champion_lane_damage_multiplier(champion);
+    let leaves_minions_to_adc = support_leaves_minions_to_adc(runtime, champion);
 
     let lane_skirmish_enemy = runtime
         .champions
@@ -880,7 +901,7 @@ pub(super) fn pick_combat_target(
         .iter()
         .enumerate()
         .filter(|(_, m)| {
-            if objective_assist_active {
+            if objective_assist_active || leaves_minions_to_adc {
                 return false;
             }
             is_visible_lane_enemy_minion(runtime, champion_team, champion_lane, enemy_team, m)
@@ -902,7 +923,7 @@ pub(super) fn pick_combat_target(
         .iter()
         .enumerate()
         .filter(|(_, m)| {
-            if objective_assist_active {
+            if objective_assist_active || leaves_minions_to_adc {
                 return false;
             }
             is_visible_lane_enemy_minion(runtime, champion_team, champion_lane, enemy_team, m)
@@ -1075,7 +1096,7 @@ pub(super) fn pick_combat_target(
                     && normalized_team(&m.team) == enemy_team
                     && dist(champion.pos, m.pos) <= 0.20
             } else {
-                is_lane_enemy_minion(champion_lane, enemy_team, m)
+                !leaves_minions_to_adc && is_lane_enemy_minion(champion_lane, enemy_team, m)
             }
         })
         .min_by(|(idx_a, a), (idx_b, b)| {

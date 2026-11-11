@@ -95,14 +95,20 @@ pub(super) fn tower_team_gold(structure_id: &str) -> i64 {
 /// (about Top 26%, Jungle 15%, Mid 32%, Bot 17%, Support 9%) make the
 /// income-weighted mean about 1.03, so the unscaled weights were divided by
 /// that. A plain mean of 1.0 would cut team gold by about 14%.
+///
+/// Refit when the lane farming was made even: the solo laners now stand at the
+/// wave and farm about twice as much, and the support no longer takes lane
+/// minions from its ADC (about 70% of its early income), so its weight carries
+/// its share through kills and assists. At weight 1.0 the 12-minute shares are
+/// Top 31%, Jungle 13%, Mid 26%, Bot 25%, Support 5%.
 /// [PLACEHOLDER] pending playtest.
 pub(super) fn role_income_weight(role: &str) -> f64 {
     match role {
-        "TOP" => 0.760,
-        "JGL" => 1.278,
-        "MID" => 0.641,
-        "ADC" => 1.388,
-        "SUP" => 1.700,
+        "TOP" => 0.630,
+        "JGL" => 1.582,
+        "MID" => 0.763,
+        "ADC" => 0.948,
+        "SUP" => 3.540,
         _ => 1.0,
     }
 }

@@ -236,10 +236,13 @@ pub(super) fn resolve_structure_combat(runtime: &mut super::RuntimeState) {
             continue;
         }
 
+        // The reach of a turret is measured from the same spot on both sides of the map.
+        let mut reach_origin = runtime.structures[idx].clone();
+        reach_origin.pos = super::symmetric_structure_pos(&reach_origin);
         let (target, should_clear_forced_target) = select_structure_attack_target(
             &runtime.champions,
             &runtime.minions,
-            &runtime.structures[idx],
+            &reach_origin,
             now,
             super::TOWER_ATTACK_RANGE,
         );
@@ -279,6 +282,11 @@ pub(super) fn apply_tower_shot_to_champion(
 ) {
     let now = runtime.time_sec;
     runtime.champions[champion_idx].hp -= super::TOWER_SHOT_DAMAGE;
+    runtime.farm_ledger.record_damage(
+        &runtime.champions[champion_idx].id,
+        super::DamageSource::Tower,
+        super::TOWER_SHOT_DAMAGE,
+    );
     runtime.champions[champion_idx].last_damaged_at = now;
     super::cancel_recall(
         &mut runtime.champions[champion_idx],

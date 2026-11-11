@@ -252,7 +252,7 @@ pub(super) fn batch_size(default: usize) -> usize {
 /// minutes, measured with every role income weight set to 1.0 (no role
 /// weighting, everything else as shipped). [PLACEHOLDER] regenerate it with
 /// the same setup if the base economy changes.
-const NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN: f64 = 14_536.0;
+const NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN: f64 = 16_982.0;
 
 /// The role income weights only redistribute gold between roles; they must not
 /// inflate the team total. Measured against the unweighted baseline above the
@@ -363,4 +363,19 @@ fn print_economy_report() {
         wins(&strong_blue, "blue") + wins(&strong_red, "red"),
         strong_blue.len() + strong_red.len()
     );
+}
+
+/// Prints what the two default guards check: the mean team gold after 12
+/// minutes (copy it into `NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN` with every weight at
+/// 1.0) and each role's share of it.
+#[test]
+#[ignore = "measurement report; run with --ignored --nocapture"]
+fn print_early_economy_report() {
+    let outcomes = run_batch(0, 4, 0.0, 0.0, SHORT_RUN_TICKS);
+    let mean = outcomes.iter().map(|o| o.team_gold).sum::<f64>() / outcomes.len() as f64;
+    println!("team gold after 12 min: {mean:.1}");
+    let summary = summarize(&outcomes);
+    for role in ROLES {
+        println!("share {role}: {:.1}%", summary.role_share[role] * 100.0);
+    }
 }
