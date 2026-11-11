@@ -19,7 +19,8 @@ export default function PlayerProfileStatsCardV2({ stats, totals, t }: Props) {
   // The backend records `appearances`, `kills` and `assists` per season; the other numbers
   // (wins, losses, deaths, CS, vision) are only kept per match, so they come from `totals`
   // (summed from the match records) and are left out when neither source has them instead of
-  // showing a zero that looks like data.
+  // showing a zero that looks like data. No match engine records a vision score today, so a
+  // zero total means "not recorded" and the vision tile waits until a record carries it.
   const games = num(stats.games_played) ?? num(stats.appearances) ?? 0;
   const wins = num(stats.wins) ?? totals?.wins ?? null;
   const losses = num(stats.losses) ?? totals?.losses ?? null;
@@ -39,7 +40,7 @@ export default function PlayerProfileStatsCardV2({ stats, totals, t }: Props) {
     losses !== null && { icon: Crosshair, label: t("common.losses"), value: String(losses), color: "text-negative" },
     kda !== null && { icon: Star, label: "KDA", value: kda },
     cs !== null && { icon: Pickaxe, label: "CS", value: String(cs) },
-    vision !== null && { icon: Eye, label: t("common.vision"), value: String(vision) },
+    vision !== null && vision > 0 && { icon: Eye, label: t("common.vision"), value: String(vision) },
     kills !== null && { icon: Skull, label: t("common.kills"), value: String(kills) },
     assists !== null && { icon: Handshake, label: t("common.assists"), value: String(assists) },
   ].filter((item): item is { icon: typeof Swords; label: string; value: string; color?: string } => item !== false);
