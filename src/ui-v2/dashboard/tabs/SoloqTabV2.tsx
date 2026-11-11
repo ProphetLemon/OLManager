@@ -305,7 +305,7 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
       <Card className="h-full shrink-0 lg:w-80">
         <CardHeader>
           <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
-            SoloQ Ranks
+            {t("training.soloQRanks")}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto">
@@ -529,7 +529,7 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
 
                       <div className="mt-1 flex gap-2 text-2xs text-muted-foreground">
                         <span className="tabular-nums">M{masteryValue}</span>
-                        <span className="tabular-nums">SoloQ x{soloQMult.toFixed(1)}</span>
+                        <span className="tabular-nums">{t("common.soloq")} ×{soloQMult.toFixed(1)}</span>
                       </div>
                     </div>
                     </div>

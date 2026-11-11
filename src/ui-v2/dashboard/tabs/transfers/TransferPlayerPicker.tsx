@@ -69,7 +69,7 @@ export default function TransferPlayerPicker({
               <span className="flex-1 truncate text-left text-foreground">
                 {player.match_name || player.full_name}
               </span>
-              <span className="text-muted-foreground">{calcAge(player.date_of_birth, currentDate)}yo</span>
+              <span className="text-muted-foreground">{t("common.ageShort", { age: calcAge(player.date_of_birth, currentDate) })}</span>
               <span className="font-semibold tabular-nums text-foreground/80">
                 {formatVal(player.market_value)}
               </span>

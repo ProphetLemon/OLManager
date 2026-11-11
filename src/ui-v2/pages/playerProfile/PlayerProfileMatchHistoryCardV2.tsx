@@ -76,7 +76,7 @@ export default function PlayerProfileMatchHistoryCardV2({ history, t, language }
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">vs {entry.opponentName}</p>
+                  <p className="truncate text-sm font-medium text-foreground">{t("playerProfile.vs")} {entry.opponentName}</p>
                   <p className="text-caption text-muted-foreground">
                     {entry.championId ? `${entry.championId} · ` : ""}
                     {formatDateShort(entry.date, language)}

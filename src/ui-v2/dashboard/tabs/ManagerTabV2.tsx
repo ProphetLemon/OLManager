@@ -461,7 +461,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
                       <div className="rounded-lg border border-border bg-muted/20 p-2.5">
                         <p className="text-xs font-medium text-foreground">{best.team_name}</p>
                         <p className="mt-0.5 text-2xs text-muted-foreground">
-                          {best.wins}W/{best.losses}L · {Math.round((best.wins / Math.max(1, best.matches)) * 100)}% WR
+                          {t("manager.careerRecordLine", { wins: best.wins, losses: best.losses, winRate: Math.round((best.wins / Math.max(1, best.matches)) * 100) })}
                           {best.best_league_position != null && ` · #${best.best_league_position}`}
                         </p>
                       </div>

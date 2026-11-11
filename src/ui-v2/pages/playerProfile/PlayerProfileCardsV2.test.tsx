@@ -150,10 +150,10 @@ describe("PlayerProfileMatchHistoryCardV2", () => {
 
   it("lists the newest ten matches and expands to all", () => {
     render(<PlayerProfileMatchHistoryCardV2 history={entries} t={t} language="en" />);
-    expect(screen.getByText("vs Opp 11")).toBeInTheDocument();
-    expect(screen.queryByText("vs Opp 0")).toBeNull();
+    expect(screen.getByText("playerProfile.vs Opp 11")).toBeInTheDocument();
+    expect(screen.queryByText("playerProfile.vs Opp 0")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /common\.showMore/ }));
-    expect(screen.getByText("vs Opp 0")).toBeInTheDocument();
+    expect(screen.getByText("playerProfile.vs Opp 0")).toBeInTheDocument();
   });
 
   it("names the champion played in the row when the entry carries it", () => {

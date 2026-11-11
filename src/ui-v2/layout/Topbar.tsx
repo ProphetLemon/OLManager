@@ -24,7 +24,7 @@ export function Topbar() {
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-border bg-background/60 px-6 backdrop-blur">
-      <Breadcrumb>
+      <Breadcrumb aria-label={t("common.breadcrumb")}>
         <BreadcrumbList>
           {crumbs.map((c, i) => {
             const last = i === crumbs.length - 1;
