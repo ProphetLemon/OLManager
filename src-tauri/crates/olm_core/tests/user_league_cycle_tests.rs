@@ -555,3 +555,91 @@ fn background_roll_gives_the_team_its_real_position_over_a_zero_placeholder() {
     let team = game.teams.iter().find(|t| t.id == "reg4").unwrap();
     assert_eq!(team.history[0].league_position, 4);
 }
+
+/// The user's row of the running table of `lec`, the league the manager's club plays in.
+fn user_row(game: &Game) -> &StandingEntry {
+    league_by_id(game, "lec")
+        .standings
+        .iter()
+        .find(|s| s.team_id == "lec1")
+        .expect("user club row")
+}
+
+/// What the Manager tab shows: the career totals plus the user's row of the running table.
+fn career_plus_running_table(game: &Game) -> (u32, u32, u32) {
+    let stats = &game.manager.career_stats;
+    let row = user_row(game);
+    (
+        stats.matches_managed + row.won + row.lost,
+        stats.wins + row.won,
+        stats.losses + row.lost,
+    )
+}
+
+fn play_split(game: &mut Game, won: u32, lost: u32) {
+    let lec = game
+        .leagues
+        .iter_mut()
+        .find(|l| l.id == "lec")
+        .expect("lec league");
+    let row = lec
+        .standings
+        .iter_mut()
+        .find(|s| s.team_id == "lec1")
+        .expect("user club row");
+    row.won = won;
+    row.lost = lost;
+    row.played = won + lost;
+    for fixture in &mut lec.fixtures {
+        fixture.status = FixtureStatus::Completed;
+    }
+}
+
+#[test]
+fn career_totals_keep_every_split_of_a_three_split_season() {
+    let mut game = two_league_game(4, 4, "lec");
+    game.competition_configs = ["lec", "reg"]
+        .into_iter()
+        .map(|id| {
+            (
+                id.to_string(),
+                manifest(id, &["Winter", "Spring", "Summer"], None),
+            )
+        })
+        .collect();
+    let tables = [(5, 2), (3, 4), (6, 1)];
+    let (mut matches, mut wins, mut losses) = (0, 0, 0);
+
+    for (split, (won, lost)) in tables.into_iter().enumerate() {
+        play_split(&mut game, won, lost);
+        matches += won + lost;
+        wins += won;
+        losses += lost;
+        assert_eq!(
+            career_plus_running_table(&game),
+            (matches, wins, losses),
+            "before the end of split {split}"
+        );
+
+        advance_season(&mut game);
+
+        assert_eq!(
+            career_plus_running_table(&game),
+            (matches, wins, losses),
+            "after the end of split {split}"
+        );
+    }
+
+    let career = &game.manager.career_stats;
+    assert_eq!(
+        (career.matches_managed, career.wins, career.losses),
+        (matches, wins, losses),
+        "career totals after the season wrap"
+    );
+    let stint = &game.manager.career_history[0];
+    assert_eq!(
+        (stint.matches, stint.wins, stint.losses),
+        (matches, wins, losses),
+        "career history entry of the club after the season wrap"
+    );
+}

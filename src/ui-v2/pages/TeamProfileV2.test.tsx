@@ -49,7 +49,7 @@ vi.mock("react-i18next", () => ({
         "teamProfile.objectives": "Objectives",
         "teamProfile.averageGameDuration": "Average Game Duration",
         "teamProfile.perMatch": "Per Match",
-        "teamProfile.kda": "K / D / A",
+        "teamProfile.killsDeathsObjectives": "K / D / Obj.",
         "teamProfile.economy": "Gold / Objectives",
         "teamProfile.side": "Side",
         "match.draft.sides.blue": "Blue side",

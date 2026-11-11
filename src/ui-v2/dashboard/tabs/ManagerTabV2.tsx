@@ -199,7 +199,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
             {[
               { label: t("manager.matches"), value: totals.matches_managed },
               { label: t("manager.wins"), value: totals.wins },
-              { label: t("common.played"), value: totals.losses },
+              { label: t("manager.losses"), value: totals.losses },
               { label: t("manager.trophies"), value: stats.trophies, icon: Trophy },
               { label: t("manager.winPercent"), value: totals.matches_managed > 0 ? `${((totals.wins / totals.matches_managed) * 100).toFixed(0)}%` : "—" },
               { label: t("manager.board"), value: `${mgr.satisfaction}%` },

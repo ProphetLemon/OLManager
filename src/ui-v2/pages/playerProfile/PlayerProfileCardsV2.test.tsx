@@ -73,6 +73,21 @@ describe("PlayerProfileStatsCardV2", () => {
     expect(screen.getByText("30")).toBeInTheDocument();
   });
 
+  it("shows wins, losses, KDA, CS and vision from the season totals of the match records", () => {
+    render(
+      <PlayerProfileStatsCardV2
+        stats={{ appearances: 3, kills: 8, assists: 19 } as never}
+        totals={{ wins: 2, losses: 1, kills: 8, deaths: 5, assists: 19, cs: 830, vision: 120 }}
+        t={t}
+      />,
+    );
+    expect(screen.getByText("common.wins").nextSibling).toHaveTextContent("2");
+    expect(screen.getByText("common.losses").nextSibling).toHaveTextContent("1");
+    expect(screen.getByText("KDA").nextSibling).toHaveTextContent("5.4");
+    expect(screen.getByText("CS").nextSibling).toHaveTextContent("830");
+    expect(screen.getByText("common.vision").nextSibling).toHaveTextContent("120");
+  });
+
   it("leaves out numbers the season stats do not carry instead of showing zeros", () => {
     render(<PlayerProfileStatsCardV2 stats={{ appearances: 4, kills: 12, assists: 30 } as never} t={t} />);
     expect(screen.queryByText("common.wins")).toBeNull();

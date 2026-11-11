@@ -58,6 +58,17 @@ describe("player profile stats and career cards take their text from the locale"
     expect(text).not.toMatch(/\{count\}|\{\{count\}\}|common\./);
   });
 
+  it.each([
+    ["en", "Season"],
+    ["es", "Temporada"],
+    ["tr", "Sezon"],
+  ])("heads the season column of the career table with a plain %s label", async (language, label) => {
+    await i18n.changeLanguage(language);
+    const career = render(<PlayerProfileCareerCardV2 career={CAREER} gameState={GAME} t={t} />);
+    const header = career.container.querySelector("th")?.textContent;
+    expect(header).toBe(label);
+  });
+
   it("writes the career card in English with the count filled in", async () => {
     await i18n.changeLanguage("en");
     const career = render(<PlayerProfileCareerCardV2 career={CAREER} gameState={GAME} t={t} />);

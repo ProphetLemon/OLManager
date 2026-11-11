@@ -321,7 +321,7 @@
       "esportsSponsor": "{{sponsorName}} es un patrocinador de esports",
       "wagePressure": "La masa salarial está al {{percent}}% del presupuesto"
     },
-    "unemployedBanner": "Actualmente no tiene club. Las ofertas de trabajo pueden llegar a su bandeja de entrada.",
+    "unemployedBanner": "Actualmente no tienes club. Las ofertas de trabajo pueden llegar a tu bandeja de entrada.",
     "brandSubtitle": "Manager",
     "brandTitle": "Open League",
     "competitions": "Competiciones",
@@ -2226,7 +2226,7 @@
     "perMatch": "Por partido",
     "recentMatches": "Partidos recientes",
     "side": "Lado",
-    "kda": "K / D / A",
+    "killsDeathsObjectives": "K / D / Obj.",
     "economy": "Oro / Objetivos"
   },
   "settings": {
@@ -2905,9 +2905,9 @@
         "subject0": "Bienvenido a {{team}}",
         "subject1": "Nueva Era en {{team}}",
         "subject2": "{{team}} Espera Tu Liderazgo",
-        "body0": "La junta directiva de {{team}} está encantada de darle la bienvenida como nuevo entrenador.\n\nTenemos grandes esperanzas en su gestión y creemos que puede llevar a este club a la gloria. Su primera tarea será revisar la plantilla y preparar un plan táctico para la próxima temporada.\n\nLe deseamos la mejor de las suertes.",
-        "body1": "En nombre de toda la familia {{team}}, estamos encantados de anunciar su nombramiento como entrenador.\n\nLos aficionados están ansiosos por ver su visión para el equipo. Tómese su tiempo para evaluar la plantilla, revisar nuestra posición financiera y definir su enfoque táctico.\n\nLa junta le respalda.",
-        "body2": "¡Bienvenido a {{team}}! Los aficionados y el personal están emocionados por el futuro bajo su dirección.\n\nLe recomendamos que comience revisando las fortalezas y debilidades de su plantilla, y luego configure su plan de juego y régimen de entrenamiento preferidos.\n\nLa próxima temporada será una verdadera prueba — háganos sentir orgullosos.",
+        "body0": "La junta directiva de {{team}} está encantada de darte la bienvenida como nuevo entrenador.\n\nTenemos grandes esperanzas en tu gestión y creemos que puedes llevar a este club a la gloria. Tu primera tarea será revisar la plantilla y preparar un plan táctico para la próxima temporada.\n\nTe deseamos la mejor de las suertes.",
+        "body1": "En nombre de toda la familia {{team}}, estamos encantados de anunciar tu nombramiento como entrenador.\n\nLos aficionados están ansiosos por ver tu visión para el equipo. Tómate tu tiempo para evaluar la plantilla, revisar nuestra posición financiera y definir tu enfoque táctico.\n\nLa junta te respalda.",
+        "body2": "¡Bienvenido a {{team}}! Los aficionados y el personal están emocionados por el futuro bajo tu dirección.\n\nTe recomendamos que comiences revisando las fortalezas y debilidades de tu plantilla, y luego configures tu plan de juego y régimen de entrenamiento preferidos.\n\nLa próxima temporada será una verdadera prueba — haznos sentir orgullosos.",
         "actionReview": "Revisar Plantilla",
         "actionThank": "Agradecer a la Junta"
       },
@@ -2935,8 +2935,8 @@
           }
         },
         "subject": "Calendario de Temporada Publicado",
-        "body0": "El calendario de la {{league}} ha sido publicado. La temporada comienza el {{start}}.\n\nRevise la lista de partidos y asegúrese de que su plantilla esté lista para los desafíos que se avecinan. La preparación pretemporada será crucial.",
-        "body1": "¡Lista de partidos confirmada! La temporada de la {{league}} comienza el {{start}}.\n\nEstudie cuidadosamente los primeros partidos — un buen comienzo puede marcar el tono de toda la campaña. Asegúrese de que sus jugadores clave estén en forma.",
+        "body0": "El calendario de la {{league}} ha sido publicado. La temporada comienza el {{start}}.\n\nRevisa la lista de partidos y asegúrate de que tu plantilla esté lista para los desafíos que se avecinan. La preparación pretemporada será crucial.",
+        "body1": "¡Lista de partidos confirmada! La temporada de la {{league}} comienza el {{start}}.\n\nEstudia cuidadosamente los primeros partidos — un buen comienzo puede marcar el tono de toda la campaña. Asegúrate de que tus jugadores clave estén en forma.",
         "actionView": "Ver Calendario"
       },
       "preMatch": {
@@ -2952,8 +2952,8 @@
           }
         },
         "subject": "Próximo: vs {{opponent}} ({{venue}})",
-        "body0": "Su partido de {{venue}} contra {{opponent}} se acerca el {{matchDate}}.\n\nJornada {{matchday}} de la Primera División. Asegúrese de que su once titular esté en buena forma y sus tácticas estén definidas.\n\nAproveche al máximo jugar de {{venue}}.",
-        "body1": "Recordatorio: se enfrenta a {{opponent}} de {{venue}} el {{matchDate}}.\n\nEsta es la Jornada {{matchday}} — revise la condición física de su plantilla y considere ajustes tácticos.",
+        "body0": "Tu partido de {{venue}} contra {{opponent}} se acerca el {{matchDate}}.\n\nJornada {{matchday}} de la Primera División. Asegúrate de que tu once titular esté en buena forma y tus tácticas estén definidas.\n\nAprovecha al máximo jugar de {{venue}}.",
+        "body1": "Recordatorio: te enfrentas a {{opponent}} de {{venue}} el {{matchDate}}.\n\nEsta es la Jornada {{matchday}} — revisa la condición física de tu plantilla y considera ajustes tácticos.",
         "actionTactics": "Definir Tácticas",
         "actionScout": "Explorar Rival"
       },
@@ -2965,7 +2965,7 @@
           },
           "defeat_2": {
             "subject": "Derrota: {{opponent}} nos vence {{opponentScore}}",
-            "body": "No fue nuestro día, jefe. {{opponent}} nos ganó {{opponentScore}}.\n\nNecesitamos analizar qué salió mal y abordar los problemas antes del próximo partido. Prepararé un desglose detallado de los momentos clave.\n\nManténgase enfocado — aún queda mucho en juego."
+            "body": "No fue nuestro día, jefe. {{opponent}} nos ganó {{opponentScore}}.\n\nNecesitamos analizar qué salió mal y abordar los problemas antes del próximo partido. Prepararé un desglose detallado de los momentos clave.\n\nMantente enfocado — aún queda mucho en juego."
           },
           "draw_1": {
             "subject": "Empate: {{home}} {{homeWins}}-{{awayWins}} {{away}}",
@@ -2989,7 +2989,7 @@
           "victory0": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\n¡Un resultado excelente! El equipo realizó una gran actuación. Jornada {{matchday}} — mantén este impulso.",
           "victory1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\n¡Gran serie! El equipo mostró una gran templanza. Jornada {{matchday}} completada.",
           "defeat0": "Final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn resultado decepcionante. Necesitaremos reagruparnos y trabajar en las áreas que nos fallaron. Jornada {{matchday}} — aún hay tiempo para cambiar las cosas.",
-          "defeat1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNo es el resultado que queríamos. Jornada {{matchday}} — la junta querrá ver mejoras. Revise qué salió mal y prepárese para el próximo desafío.",
+          "defeat1": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nNo es el resultado que queríamos. Jornada {{matchday}} — la junta querrá ver mejoras. Revisa qué salió mal y prepárate para el próximo desafío.",
           "draw": "Resultado final: {{home}} {{homeGoals}} - {{awayGoals}} {{away}}.\n\nUn empate en la Jornada {{matchday}}. Dependiendo de otros resultados, podría ser valioso. El equipo luchó pero no logró imponerse."
         },
         "actionStandings": "Ver Clasificación"
@@ -3002,12 +3002,12 @@
           }
         },
         "subject": "Informe del Personal — Vacantes de Entrenadores",
-        "body": "Jefe, he revisado la situación del personal en {{team}} y quería señalar algunas cosas:\n\n• Un buen Entrenador mejorará significativamente la efectividad del entrenamiento — sus jugadores se desarrollarán más rápido.\n• Un Fisioterapeuta cualificado mantiene a los jugadores en plena forma y acelera la recuperación entre partidos.\n• Nuestros Ojeadores pueden ayudar a identificar objetivos de fichaje y evaluar rivales.\n\nRecomiendo encarecidamente cubrir las vacantes antes de que comience la temporada. Puede encontrar personal disponible en la sección de Personal.\n\nÉchele un vistazo cuando pueda.",
+        "body": "Jefe, he revisado la situación del personal en {{team}} y quería señalar algunas cosas:\n\n• Un buen Entrenador mejorará significativamente la efectividad del entrenamiento — tus jugadores se desarrollarán más rápido.\n• Un Fisioterapeuta cualificado mantiene a los jugadores en plena forma y acelera la recuperación entre partidos.\n• Nuestros Ojeadores pueden ayudar a identificar objetivos de fichaje y evaluar rivales.\n\nRecomiendo encarecidamente cubrir las vacantes antes de que comience la temporada. Puedes encontrar personal disponible en la sección de Personal.\n\nÉchale un vistazo cuando puedas.",
         "actionView": "Ver Personal"
       },
       "boardExpect": {
         "subject": "{{team}} — Objetivos de Temporada",
-        "body": "La junta ha establecido las siguientes expectativas para esta temporada:\n\n• Terminar en la mitad superior de la tabla de LEC\n• Mantener la estabilidad financiera\n• Desarrollar talento de academia para el proyecto de roster\n\nCumplir estos objetivos fortalecerá su posición. No cumplir las expectativas mínimas puede resultar en una revisión de su cargo.\n\nConfiamos en sus capacidades.",
+        "body": "La junta ha establecido las siguientes expectativas para esta temporada:\n\n• Terminar en la mitad superior de la tabla de LEC\n• Mantener la estabilidad financiera\n• Desarrollar talento de academia para el proyecto de roster\n\nCumplir estos objetivos fortalecerá tu posición. No cumplir las expectativas mínimas puede resultar en una revisión de tu cargo.\n\nConfiamos en tus capacidades.",
         "actionAccept": "Aceptar Objetivos"
       },
       "boardObjectives": {
@@ -3076,8 +3076,8 @@
           "subject": "URGENTE: Crisis de forma física del plantel",
           "body": {
             "intense": "Jefe, tenemos una crisis seria de condición física. {{criticalCount}} jugadores están en estado crítico y al borde del agotamiento:\n\n{{players}}\n\nLa condición física media de la plantilla está al {{avgCondition}}%. Con el programa Intenso actual (6 días de entrenamiento), la plantilla está siendo exigida en exceso. Cambiar a un programa Equilibrado les daría tiempo de recuperación.\n\nSi seguimos presionando sin descanso, el rendimiento y la moral se resentirán.",
-            "balanced": "Jefe, tenemos una crisis seria de condición física. {{criticalCount}} jugadores están en estado crítico y al borde del agotamiento:\n\n{{players}}\n\nLa condición física media de la plantilla está al {{avgCondition}}%. Incluso con un programa Equilibrado, la plantilla necesita atención. Considere cambiar a un programa Ligero temporalmente.\n\nSi seguimos presionando sin descanso, el rendimiento y la moral se resentirán.",
-            "light": "Jefe, tenemos una crisis seria de condición física. {{criticalCount}} jugadores están en estado crítico y al borde del agotamiento:\n\n{{players}}\n\nLa condición física media de la plantilla está al {{avgCondition}}%. La plantilla ya está en un programa Ligero — el problema puede ser la intensidad alta del entrenamiento. Considere reducir la intensidad.\n\nSi seguimos presionando sin descanso, el rendimiento y la moral se resentirán."
+            "balanced": "Jefe, tenemos una crisis seria de condición física. {{criticalCount}} jugadores están en estado crítico y al borde del agotamiento:\n\n{{players}}\n\nLa condición física media de la plantilla está al {{avgCondition}}%. Incluso con un programa Equilibrado, la plantilla necesita atención. Considera cambiar a un programa Ligero temporalmente.\n\nSi seguimos presionando sin descanso, el rendimiento y la moral se resentirán.",
+            "light": "Jefe, tenemos una crisis seria de condición física. {{criticalCount}} jugadores están en estado crítico y al borde del agotamiento:\n\n{{players}}\n\nLa condición física media de la plantilla está al {{avgCondition}}%. La plantilla ya está en un programa Ligero — el problema puede ser la intensidad alta del entrenamiento. Considera reducir la intensidad.\n\nSi seguimos presionando sin descanso, el rendimiento y la moral se resentirán."
           }
         },
         "warning": {
@@ -3106,11 +3106,11 @@
           },
           "bench_complaint_1": {
             "subject": "{{player}} quiere más minutos",
-            "body": "Jefe, {{player}} ha expresado frustración por su falta de minutos últimamente.\n\nCree que merece un puesto en la alineación titular. Esto podría convertirse en un problema mayor si no se maneja con cuidado.\n\n¿Cómo le gustaría manejar esto?"
+            "body": "Jefe, {{player}} ha expresado frustración por su falta de minutos últimamente.\n\nCree que merece un puesto en la alineación titular. Esto podría convertirse en un problema mayor si no se maneja con cuidado.\n\n¿Cómo te gustaría manejar esto?"
           },
           "bench_complaint_2": {
             "subject": "{{player}} insatisfecho con su rol",
-            "body": "{{player}} vino a verme hoy — no está contento con su rol actual en el equipo y quiere más oportunidades en la Grieta.\n\nSi no podemos ofrecerle más minutos pronto, podría buscar un traspaso en el próximo mercado.\n\nUsted decide, jefe."
+            "body": "{{player}} vino a verme hoy — no está contento con su rol actual en el equipo y quiere más oportunidades en la Grieta.\n\nSi no podemos ofrecerle más minutos pronto, podría buscar un traspaso en el próximo mercado.\n\nTú decides, jefe."
           },
           "happy_player_1": {
             "subject": "¡{{player}} está de buen humor!",
@@ -3118,15 +3118,15 @@
           },
           "happy_player_2": {
             "subject": "Buenas vibras de {{player}}",
-            "body": "Solo quería compartir que {{player}} está disfrutando mucho su tiempo en el club (moral: {{morale}}%).\n\nHa estado entrenando duro y apoyando a sus compañeros. Es genial ver una actitud tan positiva en la plantilla.\n\n¡Siga cultivando ese ambiente!"
+            "body": "Solo quería compartir que {{player}} está disfrutando mucho su tiempo en el club (moral: {{morale}}%).\n\nHa estado entrenando duro y apoyando a sus compañeros. Es genial ver una actitud tan positiva en la plantilla.\n\n¡Sigue cultivando ese ambiente!"
           },
           "contract_concern_1": {
             "subject": "Contrato por vencer: {{player}}",
-            "body": "Quería recordarle que el contrato de {{player}} expira pronto ({{days}} días restantes).\n\nSi no actuamos pronto, corremos el riesgo de perderlo sin compensación. Deberíamos considerar abrir negociaciones de renovación o ponerlo en el mercado.\n\n¿Qué plan tiene para {{player}}?"
+            "body": "Quería recordarte que el contrato de {{player}} expira pronto ({{days}} días restantes).\n\nSi no actuamos pronto, corremos el riesgo de perderlo sin compensación. Deberíamos considerar abrir negociaciones de renovación o ponerlo en el mercado.\n\n¿Qué plan tienes para {{player}}?"
           },
           "contract_concern_2": {
             "subject": "El contrato de {{player}} expira en {{days}} días",
-            "body": "Este es un recordatorio sobre la situación contractual de {{player}}. Con solo {{days}} días restantes en su contrato actual, debemos tomar una decisión.\n\nOpciones:\n• Abrir negociaciones de renovación\n• Ponerlo en el mercado mientras tenga valor\n• Dejar que el contrato expire\n\nPor favor, indíquenos cómo desea proceder."
+            "body": "Este es un recordatorio sobre la situación contractual de {{player}}. Con solo {{days}} días restantes en su contrato actual, debemos tomar una decisión.\n\nOpciones:\n• Abrir negociaciones de renovación\n• Ponerlo en el mercado mientras tenga valor\n• Dejar que el contrato expire\n\nPor favor, indícanos cómo deseas proceder."
           }
         },
         "respond": "Responder",
@@ -3291,11 +3291,11 @@
           },
           "media_pos_1": {
             "subject": "La prensa elogia la recuperación de {{team}}",
-            "body": "La prensa deportiva local ha destacado la impresionante recuperación de {{team}} esta temporada. El artículo elogia la disciplina táctica y el espíritu de lucha del equipo.\n\n\"{{team}} parece una plantilla completamente diferente bajo este cuerpo técnico,\" afirma el reportaje.\n\nSiga así, entrenador — la prensa lo está notando."
+            "body": "La prensa deportiva local ha destacado la impresionante recuperación de {{team}} esta temporada. El artículo elogia la disciplina táctica y el espíritu de lucha del equipo.\n\n\"{{team}} parece una plantilla completamente diferente bajo este cuerpo técnico,\" afirma el reportaje.\n\nSigue así, entrenador — la prensa lo está notando."
           },
           "media_pos_10": {
             "subject": "El entrenador de {{team}} nombrado entrenador de la semana",
-            "body": "Ha sido nombrado entrenador de la semana por una importante publicación de esports tras los recientes resultados de {{team}}.\n\nEl premio reconoce sus decisiones tácticas y la mejora en la coordinación del equipo en la Grieta.\n\nUn reconocimiento merecido por todo el trabajo duro."
+            "body": "Has sido nombrado entrenador de la semana por una importante publicación de esports tras los recientes resultados de {{team}}.\n\nEl premio reconoce tus decisiones tácticas y la mejora en la coordinación del equipo en la Grieta.\n\nUn reconocimiento merecido por todo el trabajo duro."
           },
           "media_pos_2": {
             "subject": "Esportmaniacos: \"{{team}} es un serio candidato\"",
@@ -3311,15 +3311,15 @@
           },
           "media_pos_5": {
             "subject": "La confianza de la afición en {{team}} está en máximos",
-            "body": "Una encuesta reciente muestra que la confianza de la afición en {{team}} ha alcanzado un máximo histórico. Los seguidores son optimistas sobre la dirección del club.\n\nLas ventas de abonos han aumentado y la actividad en redes sociales ha crecido significativamente.\n\nLos aficionados creen en lo que está construyendo."
+            "body": "Una encuesta reciente muestra que la confianza de la afición en {{team}} ha alcanzado un máximo histórico. Los seguidores son optimistas sobre la dirección del club.\n\nLas ventas de abonos han aumentado y la actividad en redes sociales ha crecido significativamente.\n\nLos aficionados creen en lo que estás construyendo."
           },
           "media_pos_6": {
             "subject": "\"{{team}} es la revelación del split\"",
-            "body": "Múltiples analistas están señalando a {{team}} como la revelación del split. Las recientes actuaciones del equipo han llamado la atención de toda la liga.\n\nEl artículo destaca su flexibilidad táctica y la profundidad de la plantilla como factores clave.\n\nEl respeto se gana, y usted lo está ganando."
+            "body": "Múltiples analistas están señalando a {{team}} como la revelación del split. Las recientes actuaciones del equipo han llamado la atención de toda la liga.\n\nEl artículo destaca su flexibilidad táctica y la profundidad de la plantilla como factores clave.\n\nEl respeto se gana, y tú lo estás ganando."
           },
           "media_pos_7": {
             "subject": "{{team}} aparece en documental positivo",
-            "body": "Una serie documental deportiva ha presentado a {{team}} en un segmento sobre reconstrucciones exitosas. La pieza entrevista a jugadores y personal sobre la transformación.\n\nEl documental destaca el cambio cultural que ha implementado desde que asumió el cargo.\n\nGran publicidad para el club."
+            "body": "Una serie documental deportiva ha presentado a {{team}} en un segmento sobre reconstrucciones exitosas. La pieza entrevista a jugadores y personal sobre la transformación.\n\nEl documental destaca el cambio cultural que has implementado desde que asumiste el cargo.\n\nGran publicidad para el club."
           },
           "media_pos_8": {
             "subject": "La prensa elogia a {{player}} por su forma reciente",
@@ -3327,7 +3327,7 @@
           },
           "media_pos_9": {
             "subject": "\"Los aficionados de {{team}} tienen razón para estar emocionados\"",
-            "body": "Un popular sitio de noticias de esports ha publicado un artículo titulado \"Por qué los aficionados de {{team}} tienen razón para estar emocionados.\"\n\nEl artículo desglosa las estadísticas mejoradas del equipo y la trayectoria positiva bajo su liderazgo.\n\nLa comunidad en general está empezando a reconocer el progreso."
+            "body": "Un popular sitio de noticias de esports ha publicado un artículo titulado \"Por qué los aficionados de {{team}} tienen razón para estar emocionados.\"\n\nEl artículo desglosa las estadísticas mejoradas del equipo y la trayectoria positiva bajo tu liderazgo.\n\nLa comunidad en general está empezando a reconocer el progreso."
           }
         }
       },
@@ -3401,7 +3401,7 @@
           },
           "rival_2": {
             "subject": "{{rival}} pregunta por {{player}}",
-            "body": "{{rival}} ha hecho consultas informales sobre la disponibilidad de {{player}}. Parecen estar interesados en reforzar su plantilla y ven a {{player}} como objetivo.\n\nAún no hay oferta formal, pero quería mantenerle informado."
+            "body": "{{rival}} ha hecho consultas informales sobre la disponibilidad de {{player}}. Parecen estar interesados en reforzar su plantilla y ven a {{player}} como objetivo.\n\nAún no hay oferta formal, pero quería mantenerte informado."
           },
           "rival_3": {
             "subject": "{{rival}} ojea a {{player}}",
@@ -3417,7 +3417,7 @@
           },
           "rival_6": {
             "subject": "{{rival}} valora una oferta por {{player}}",
-            "body": "{{rival}} está considerando hacer una oferta por {{player}}. Nos ven como una adición clave para su plantilla de cara al próximo split.\n\nLe mantendré informado si hay novedades."
+            "body": "{{rival}} está considerando hacer una oferta por {{player}}. Nos ven como una adición clave para su plantilla de cara al próximo split.\n\nTe mantendré informado si hay novedades."
           },
           "rival_7": {
             "subject": "Rumor: {{rival}} interesada en {{player}}",
@@ -3425,7 +3425,7 @@
           },
           "rival_8": {
             "subject": "{{rival}} contacta por {{player}}",
-            "body": "{{rival}} ha contactado para preguntar por {{player}}. Han solicitado información sobre la disponibilidad del jugador y sus demandas salariales.\n\nEsto podría avanzar rápido. ¿Cómo quiere manejarlo?"
+            "body": "{{rival}} ha contactado para preguntar por {{player}}. Han solicitado información sobre la disponibilidad del jugador y sus demandas salariales.\n\nEsto podría avanzar rápido. ¿Cómo quieres manejarlo?"
           },
           "rival_9": {
             "subject": "{{player}} atrae la atención de {{rival}}",
@@ -4024,7 +4024,7 @@
     "returnToMenu": "Volver al Menú Principal",
     "present": "Actual",
     "bestLabel": "Mejor",
-    "dismissalLetter": "La junta directiva ha decidido relevarle de sus funciones como entrenador de {{team}}, con efecto inmediato.\n\nLe agradecemos sus servicios y le deseamos lo mejor en su futura carrera.\n\nAtentamente,\nLa Junta Directiva"
+    "dismissalLetter": "La junta directiva ha decidido relevarte de tus funciones como entrenador de {{team}}, con efecto inmediato.\n\nTe agradecemos tus servicios y te deseamos lo mejor en tu futura carrera.\n\nAtentamente,\nLa Junta Directiva"
   },
   "jobs": {
     "opportunitiesTitle": "Oportunidades de empleo",

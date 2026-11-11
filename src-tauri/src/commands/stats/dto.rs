@@ -31,6 +31,7 @@ pub struct PlayerStatsOverviewDto {
 #[serde(rename_all = "camelCase")]
 pub struct PlayerMatchHistoryEntryDto {
     pub fixture_id: String,
+    pub season: u32,
     pub date: String,
     pub competition: String,
     pub matchday: u32,

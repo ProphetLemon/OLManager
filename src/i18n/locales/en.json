@@ -2237,7 +2237,7 @@
     "perMatch": "Per Match",
     "recentMatches": "Recent Matches",
     "side": "Side",
-    "kda": "K / D / A",
+    "killsDeathsObjectives": "K / D / Obj.",
     "economy": "Gold / Objectives"
   },
   "settings": {
