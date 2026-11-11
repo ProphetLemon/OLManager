@@ -227,6 +227,7 @@ pub(super) fn select_structure_attack_target(
 
 pub(super) fn resolve_structure_combat(runtime: &mut super::RuntimeState) {
     let now = runtime.time_sec;
+    runtime.tower_ledger.begin_tick();
 
     for idx in 0..runtime.structures.len() {
         if !runtime.structures[idx].alive
@@ -260,7 +261,17 @@ pub(super) fn resolve_structure_combat(runtime: &mut super::RuntimeState) {
                         super::minion_is_baron_empowered(runtime, &runtime.minions[minion_idx]),
                         super::BARON_MINION_DAMAGE_REDUCTION,
                     );
+                    runtime.structures[idx].ramp_target_id = None;
+                    runtime.structures[idx].ramp_shots = 0;
+                    let hp_before = runtime.minions[minion_idx].hp;
                     runtime.minions[minion_idx].hp -= incoming;
+                    runtime.tower_ledger.record_shot(super::TowerShot {
+                        structure_idx: idx,
+                        victim: super::TowerVictim::Minion,
+                        damage: incoming,
+                        hp_before,
+                        killed: runtime.minions[minion_idx].hp <= 0.0,
+                    });
                     runtime.structures[idx].attack_cd_until =
                         structure_attack_cd_until(now, super::TOWER_ATTACK_CADENCE_SEC);
                     if runtime.minions[minion_idx].hp <= 0.0 {
@@ -275,17 +286,54 @@ pub(super) fn resolve_structure_combat(runtime: &mut super::RuntimeState) {
     }
 }
 
+/// Damage of one tower shot at a champion: grows with the game minute (until
+/// `TOWER_SHOT_GROWTH_END_MINUTE`), takes a share of the target's maximum
+/// health, and ramps with each consecutive shot at the same champion.
+pub(super) fn tower_champion_shot_damage(
+    time_sec: f64,
+    target_max_hp: f64,
+    consecutive_shots: u32,
+) -> f64 {
+    let minute = (time_sec / 60.0).clamp(0.0, super::TOWER_SHOT_GROWTH_END_MINUTE);
+    let base = super::TOWER_SHOT_DAMAGE
+        + super::TOWER_SHOT_DAMAGE_PER_MINUTE * minute
+        + super::TOWER_SHOT_MAX_HP_SHARE * target_max_hp.max(0.0);
+    let ramp_steps = consecutive_shots.min(super::TOWER_SHOT_RAMP_MAX_STEPS);
+    base * (1.0 + super::TOWER_SHOT_RAMP_PER_SHOT * f64::from(ramp_steps))
+}
+
 pub(super) fn apply_tower_shot_to_champion(
     runtime: &mut super::RuntimeState,
     structure_idx: usize,
     champion_idx: usize,
 ) {
     let now = runtime.time_sec;
-    runtime.champions[champion_idx].hp -= super::TOWER_SHOT_DAMAGE;
+    let target_id = runtime.champions[champion_idx].id.clone();
+    let tower = &mut runtime.structures[structure_idx];
+    let consecutive = if tower.ramp_target_id.as_deref() == Some(target_id.as_str())
+        && now - tower.ramp_last_shot_at <= super::TOWER_SHOT_RAMP_WINDOW_SEC
+    {
+        tower.ramp_shots + 1
+    } else {
+        0
+    };
+    tower.ramp_target_id = Some(target_id);
+    tower.ramp_shots = consecutive;
+    tower.ramp_last_shot_at = now;
+    let damage = tower_champion_shot_damage(now, runtime.champions[champion_idx].max_hp, consecutive);
+    let hp_before = runtime.champions[champion_idx].hp;
+    runtime.champions[champion_idx].hp -= damage;
+    runtime.tower_ledger.record_shot(super::TowerShot {
+        structure_idx,
+        victim: super::TowerVictim::Champion(champion_idx),
+        damage,
+        hp_before,
+        killed: runtime.champions[champion_idx].hp <= 0.0 && runtime.champions[champion_idx].alive,
+    });
     runtime.farm_ledger.record_damage(
         &runtime.champions[champion_idx].id,
         super::DamageSource::Tower,
-        super::TOWER_SHOT_DAMAGE,
+        damage,
     );
     runtime.champions[champion_idx].last_damaged_at = now;
     super::cancel_recall(

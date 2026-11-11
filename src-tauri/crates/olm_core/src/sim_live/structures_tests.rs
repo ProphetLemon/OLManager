@@ -140,3 +140,229 @@ fn inner_towers_pay_no_more_than_outer_towers() {
     );
     assert!(economy::tower_team_gold("blue-mid-inhib-tower") > 0);
 }
+
+// ------------------------------------------------------------ tower damage
+
+/// Shots a lone tower needs to kill a fresh champion, shooting once per
+/// cadence from `time_sec` with nothing else in range.
+fn shots_to_kill(max_hp: f64, time_sec: f64) -> u32 {
+    let pos = Vec2 { x: 0.5, y: 0.5 };
+    let mut champion = test_champion("c", "blue", "MID", "mid", pos);
+    champion.max_hp = max_hp;
+    champion.hp = max_hp;
+    let tower = test_structure("red-t", "red", "mid", pos);
+    let mut runtime = test_runtime(vec![champion], vec![], vec![tower], empty_neutral());
+    runtime.time_sec = time_sec;
+    let mut shots = 0;
+    while runtime.champions[0].alive && shots < 500 {
+        resolve_structure_combat(&mut runtime);
+        shots += 1;
+        runtime.time_sec += TOWER_ATTACK_CADENCE_SEC;
+    }
+    shots
+}
+
+#[test]
+fn tower_shot_grows_with_the_game_minute() {
+    let early = structures::tower_champion_shot_damage(5.0 * 60.0, 1000.0, 0);
+    let late = structures::tower_champion_shot_damage(35.0 * 60.0, 1000.0, 0);
+    assert!(late > early * 1.5, "minute 5 {early:.0}, minute 35 {late:.0}");
+}
+
+#[test]
+fn tower_shot_takes_a_share_of_the_targets_maximum_health() {
+    let squishy = structures::tower_champion_shot_damage(900.0, 1000.0, 0);
+    let tank = structures::tower_champion_shot_damage(900.0, 3000.0, 0);
+    assert!(tank > squishy, "squishy {squishy:.0}, tank {tank:.0}");
+}
+
+#[test]
+fn tower_shot_ramps_with_consecutive_shots_up_to_a_cap() {
+    let first = structures::tower_champion_shot_damage(900.0, 1500.0, 0);
+    let third = structures::tower_champion_shot_damage(900.0, 1500.0, 2);
+    let capped = structures::tower_champion_shot_damage(900.0, 1500.0, 3);
+    let beyond = structures::tower_champion_shot_damage(900.0, 1500.0, 9);
+    assert!(third > first * 1.6, "first {first:.0}, third {third:.0}");
+    assert!((capped - beyond).abs() < 1e-9);
+}
+
+#[test]
+fn tower_keeps_ramping_on_the_champion_it_keeps_shooting() {
+    let pos = Vec2 { x: 0.5, y: 0.5 };
+    let mut champion = test_champion("c", "blue", "MID", "mid", pos);
+    champion.max_hp = 100_000.0;
+    champion.hp = 100_000.0;
+    let tower = test_structure("red-t", "red", "mid", pos);
+    let mut runtime = test_runtime(vec![champion], vec![], vec![tower], empty_neutral());
+    let mut dealt = Vec::new();
+    for _ in 0..4 {
+        let before = runtime.champions[0].hp;
+        resolve_structure_combat(&mut runtime);
+        dealt.push(before - runtime.champions[0].hp);
+        runtime.time_sec += TOWER_ATTACK_CADENCE_SEC;
+    }
+    assert!(dealt[1] > dealt[0] && dealt[2] > dealt[1], "{dealt:?}");
+}
+
+#[test]
+fn tower_ramp_restarts_after_it_shoots_a_minion() {
+    let pos = Vec2 { x: 0.5, y: 0.5 };
+    let mut champion = test_champion("c", "blue", "MID", "mid", pos);
+    champion.max_hp = 100_000.0;
+    champion.hp = 100_000.0;
+    let tower = test_structure("red-t", "red", "mid", pos);
+    let mut runtime = test_runtime(vec![champion], vec![], vec![tower], empty_neutral());
+    resolve_structure_combat(&mut runtime);
+    runtime.time_sec += TOWER_ATTACK_CADENCE_SEC;
+    resolve_structure_combat(&mut runtime);
+    let ramped = 100_000.0 - runtime.champions[0].hp;
+    runtime.time_sec += TOWER_ATTACK_CADENCE_SEC;
+    runtime
+        .minions
+        .push(test_minion("m", "blue", "mid", Vec2 { x: 0.501, y: 0.5 }));
+    resolve_structure_combat(&mut runtime);
+    runtime.minions[0].alive = false;
+    runtime.time_sec += TOWER_ATTACK_CADENCE_SEC;
+    let before = runtime.champions[0].hp;
+    resolve_structure_combat(&mut runtime);
+    let restarted = before - runtime.champions[0].hp;
+    assert!(restarted < ramped / 2.0, "restarted {restarted:.0}, ramped {ramped:.0}");
+}
+
+/// Maximum health of a non-tank champion in 200 seeded matches reaches about
+/// 1,300, 1,700 and 2,150 on average at minutes 15, 25 and 35; the values below
+/// are the high end. A tank with Warmog's goes beyond 3,000.
+#[test]
+fn tower_kills_a_non_tank_champion_in_at_most_eight_shots_at_every_stage() {
+    for (minute, max_hp) in [(15.0, 1500.0), (25.0, 1900.0), (35.0, 2400.0)] {
+        let shots = shots_to_kill(max_hp, minute * 60.0);
+        assert!(shots <= 8, "minute {minute}: {shots} shots for {max_hp} hp");
+    }
+}
+
+#[test]
+fn tower_kills_a_tank_in_at_most_fourteen_shots_but_later_than_a_carry() {
+    for minute in [15.0, 25.0, 35.0] {
+        let tank = shots_to_kill(3200.0, minute * 60.0);
+        let carry = shots_to_kill(1500.0, minute * 60.0);
+        assert!(tank <= 14, "minute {minute}: {tank} shots for the tank");
+        assert!(tank > carry, "minute {minute}: tank {tank}, carry {carry}");
+    }
+}
+
+#[test]
+fn a_dive_without_minions_is_over_in_seconds_even_at_minute_five() {
+    let shots = shots_to_kill(650.0, 5.0 * 60.0);
+    assert!(
+        f64::from(shots) * TOWER_ATTACK_CADENCE_SEC <= 10.0,
+        "{shots} shots"
+    );
+}
+
+/// Saves written before the ramp existed have no ramp fields.
+#[test]
+fn structures_saved_without_ramp_fields_still_load() {
+    let tower = test_structure("red-t", "red", "mid", Vec2 { x: 0.5, y: 0.5 });
+    let mut value = serde_json::to_value(&tower).expect("encode");
+    let object = value.as_object_mut().expect("object");
+    for key in ["rampTargetId", "rampShots", "rampLastShotAt"] {
+        object.remove(key);
+    }
+    let loaded: StructureRuntime = serde_json::from_value(value).expect("old save loads");
+    assert_eq!(loaded.ramp_shots, 0);
+    assert!(loaded.ramp_target_id.is_none());
+}
+
+// ------------------------------------------------------------- tower aggro
+
+/// A defending tower at the middle of the map with its own team's champion
+/// beside it, and `attackers` of the other team at the given distances.
+fn aggro_scene(attacker_distances: &[f64]) -> RuntimeState {
+    let pos = Vec2 { x: 0.5, y: 0.5 };
+    let mut champions = vec![test_champion(
+        "victim",
+        "red",
+        "MID",
+        "mid",
+        Vec2 { x: 0.505, y: 0.5 },
+    )];
+    for (i, d) in attacker_distances.iter().enumerate() {
+        let mut attacker = test_champion(
+            &format!("attacker-{i}"),
+            "blue",
+            "MID",
+            "mid",
+            Vec2 { x: 0.5 + d, y: 0.5 },
+        );
+        attacker.max_hp = 100_000.0;
+        attacker.hp = 100_000.0;
+        champions.push(attacker);
+    }
+    let tower = test_structure("red-t", "red", "mid", pos);
+    let mut runtime = test_runtime(champions, vec![], vec![tower], empty_neutral());
+    runtime.champions[0].max_hp = 100_000.0;
+    runtime.champions[0].hp = 100_000.0;
+    runtime
+}
+
+fn lock_on(runtime: &mut RuntimeState, attacker_idx: usize) {
+    let attacker = runtime.champions[attacker_idx].clone();
+    let victim = runtime.champions[0].clone();
+    let now = runtime.time_sec;
+    mark_tower_aggro_on_champion_attack(runtime, &attacker, &victim, now);
+}
+
+#[test]
+fn an_attacker_outside_the_towers_range_does_not_steal_the_lock() {
+    let mut runtime = aggro_scene(&[0.05, 0.09]);
+    lock_on(&mut runtime, 1);
+    lock_on(&mut runtime, 2);
+    assert_eq!(
+        runtime.structures[0].forced_target_champion_id.as_deref(),
+        Some("attacker-0"),
+        "a lock on a champion the tower cannot reach replaced the usable one"
+    );
+}
+
+#[test]
+fn the_lock_outlasts_four_tower_shots() {
+    let mut runtime = aggro_scene(&[0.05]);
+    runtime
+        .minions
+        .push(test_minion("m", "blue", "mid", Vec2 { x: 0.505, y: 0.505 }));
+    runtime.minions[0].hp = 100_000.0;
+    runtime.minions[0].max_hp = 100_000.0;
+    lock_on(&mut runtime, 1);
+    let mut shots_at_champion = 0;
+    for _ in 0..4 {
+        resolve_structure_combat(&mut runtime);
+        if runtime
+            .tower_ledger
+            .shots()
+            .iter()
+            .any(|s| s.victim == TowerVictim::Champion(1))
+        {
+            shots_at_champion += 1;
+        }
+        runtime.time_sec += TOWER_ATTACK_CADENCE_SEC;
+    }
+    assert_eq!(shots_at_champion, 4, "the tower went back to the minion too early");
+}
+
+#[test]
+fn the_tower_goes_back_to_minions_when_the_lock_has_expired() {
+    let mut runtime = aggro_scene(&[0.05]);
+    runtime
+        .minions
+        .push(test_minion("m", "blue", "mid", Vec2 { x: 0.505, y: 0.505 }));
+    runtime.minions[0].hp = 100_000.0;
+    runtime.minions[0].max_hp = 100_000.0;
+    lock_on(&mut runtime, 1);
+    runtime.time_sec += TOWER_AGGRO_LOCK_SEC + 0.1;
+    resolve_structure_combat(&mut runtime);
+    assert!(runtime
+        .tower_ledger
+        .shots()
+        .iter()
+        .all(|s| s.victim == TowerVictim::Minion));
+}
