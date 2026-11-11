@@ -554,7 +554,7 @@ type LeadRow = (f64, [f64; 5], f64);
 /// Distribution of the gold gap between the two players of a role.
 fn table_pair_gaps(traces: &[Trace]) {
     println!("\n== T4a |gold gap| between the two players of a role (earned gold, starting purse cancels) ==");
-    println!("{:<6}{:>4}{:>10}{:>6}{:>9}{:>8}{:>8}{:>8}{:>8}{:>11}", "role", "min", "towers", "n", "median", "p75", "p90", "p95", "max", ">=1000");
+    println!("{:<6}{:>4}{:>12}{:>6}{:>9}{:>8}{:>8}{:>8}{:>8}{:>14}", "role", "min", "towers", "n", "median", "p75", "p90", "p95", "max", ">=1000");
     for role in ROLES {
         for column in [1usize, 2] {
             for fallen in [false, true] {
@@ -570,7 +570,7 @@ fn table_pair_gaps(traces: &[Trace]) {
                 gaps.sort_by(f64::total_cmp);
                 let big = gaps.iter().filter(|g| **g >= 1000.0).count();
                 println!(
-                    "{role:<6}{:>4}{:>10}{:>6}{:>9.0}{:>8.0}{:>8.0}{:>8.0}{:>8.0}{:>11}",
+                    "{role:<6}{:>4}{:>12}{:>6}{:>9.0}{:>8.0}{:>8.0}{:>8.0}{:>8.0}{:>14}",
                     CHECKPOINT_MINUTES[column],
                     if fallen { "tower down" } else { "none down" },
                     gaps.len(),
