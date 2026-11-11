@@ -6,7 +6,7 @@ import type { GameStateData, PlayerSeasonStats } from "@/store/gameStore";
 import PlayerProfileCareerCardV2 from "./PlayerProfileCareerCardV2";
 import PlayerProfileStatsCardV2 from "./PlayerProfileStatsCardV2";
 
-const t = (key: string, options?: Record<string, string | number>) => i18n.t(key, options as never) as string;
+const t = (key: string, options?: Record<string, string | number>) => i18n.t(key, options as never) as unknown as string;
 
 const STATS = { games_played: 4, wins: 3, losses: 1, kills: 20, deaths: 5, assists: 30, cs: 800, vision_score: 90 } as PlayerSeasonStats;
 const GAME = { teams: [] } as unknown as GameStateData;
