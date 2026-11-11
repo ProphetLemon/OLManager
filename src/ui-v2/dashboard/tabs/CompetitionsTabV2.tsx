@@ -68,7 +68,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
       <div className="sticky top-0 z-10 border-b border-border bg-background/80 px-6 py-3 backdrop-blur-sm">
         <div className="flex items-center gap-2 mb-3">
           <Globe className="size-5 text-club-text" />
-          <h2 className="font-heading text-lg font-bold uppercase tracking-wider text-foreground">{t("competitions.title", "Competiciones")}</h2>
+          <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-foreground">{t("competitions.title", "Competiciones")}</h2>
         </div>
         <div className="flex flex-wrap gap-2">
           {leagues.map((league) => {
@@ -153,7 +153,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
               <div className="overflow-hidden rounded-xl border border-border">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-border bg-muted/30 text-2xs uppercase tracking-widest text-muted-foreground">
+                    <tr className="border-b border-border bg-muted/30 font-heading text-2xs uppercase tracking-wide text-muted-foreground">
                       <th className="w-10 px-4 py-3 font-heading font-bold">{t("competitions.tableHeader.pos")}</th>
                       <th className="px-4 py-3 font-heading font-bold">{t("competitions.tableHeader.team")}</th>
                       <th className="px-3 py-3 text-center font-heading font-bold">{t("competitions.tableHeader.played")}</th>
@@ -287,7 +287,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                 <div className="overflow-hidden rounded-xl border border-border">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="border-b border-border bg-muted/30 text-2xs uppercase tracking-widest text-muted-foreground">
+                      <tr className="border-b border-border bg-muted/30 font-heading text-2xs uppercase tracking-wide text-muted-foreground">
                         <th className="px-4 py-3 font-heading font-bold">{t("competitions.tableHeader.player")}</th>
                         <th className="px-4 py-3 font-heading font-bold">{t("competitions.tableHeader.role")}</th>
                         <th className="px-4 py-3 font-heading font-bold">{t("competitions.tableHeader.team")}</th>
@@ -311,7 +311,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
                               </div>
                             </td>
                             <td className="px-4 py-2.5">
-                              <span className="inline-flex items-center rounded-md border border-border bg-card px-1.5 py-0.5 font-heading text-2xs font-bold uppercase tracking-wider text-muted-foreground">
+                              <span className="inline-flex items-center rounded-md border border-border bg-card px-1.5 py-0.5 font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">
                                 {t(shortRoleKey(getLolRoleForPlayer(player)), { defaultValue: player.position })}
                               </span>
                             </td>
@@ -349,7 +349,7 @@ export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
           <div className="flex flex-1 items-center justify-center py-20">
             <div className="text-center">
               <Globe className="mx-auto mb-3 size-12 text-muted-foreground/15" />
-              <p className="font-heading text-sm uppercase tracking-wider text-muted-foreground/50">
+              <p className="font-heading text-sm uppercase tracking-wide text-muted-foreground/50">
                 {t("competitions.selectPrompt")}
               </p>
             </div>
