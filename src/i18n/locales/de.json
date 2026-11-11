@@ -2431,21 +2431,21 @@
     "simulateFailed": "Could not simulate the match. Please try again.",
     "startLive": "Go live",
     "scrimPrep": {
-      "title": "Scrim prep carried into the match",
-      "summary": "Recent scrims gave this side a small {{focus}} execution signal. It affects timing and comfort, not a guaranteed result.",
+      "title": "Scrim-Vorbereitung ins Spiel mitgenommen",
+      "summary": "Die letzten Scrims haben dieser Seite ein kleines Ausführungssignal in {{focus}} gegeben. Es beeinflusst Spieltempo und Champion-Komfort, garantiert aber kein Ergebnis.",
       "details": {
-        "opponentPrep": "Opponent prep +{{value}}",
-        "championComfort": "Champion comfort +{{value}}",
-        "focus": "Focus: {{focus}}"
+        "opponentPrep": "Gegnervorbereitung +{{value}}",
+        "championComfort": "Champion-Komfort +{{value}}",
+        "focus": "Fokus: {{focus}}"
       },
       "focus": {
-        "draftPrep": "draft prep",
-        "championPool": "champion pool",
-        "earlyGame": "early game",
-        "teamfighting": "teamfighting",
-        "macro": "macro",
-        "mental": "mental reset",
-        "general": "general prep"
+        "draftPrep": "Draft-Vorbereitung",
+        "championPool": "Champion-Pool",
+        "earlyGame": "Early Game",
+        "teamfighting": "Teamfights",
+        "macro": "Makro",
+        "mental": "mentaler Reset",
+        "general": "allgemeine Vorbereitung"
       }
     },
     "statKills": "Kills",
@@ -3373,8 +3373,8 @@
         "body": "Scouting finished evaluating {{player}}. New potential estimate: {{potential}}."
       },
       "scrimWeekly": {
-        "subject": "Weekly Scrim Staff Report",
-        "body": "Weekly scrim report:\n\nPlayed: {{played}}\nWins: {{wins}}\nLosses: {{losses}}\nCancellations: {{cancellations}}\nAverage quality: {{avgQuality}}\nCurrent loss streak: {{lossStreak}}\n\nMain focus: {{topFocus}}\nRecurring issue: {{recurringIssue}}\nMost practiced champion: {{topChampion}}\n\nRecommendation: {{recommendation}}",
+        "subject": "Wöchentlicher Scrim-Staff-Bericht",
+        "body": "Wöchentlicher Scrim-Bericht:\n\nGespielt: {{played}}\nSiege: {{wins}}\nNiederlagen: {{losses}}\nAbsagen: {{cancellations}}\nDurchschnittliche Qualität: {{avgQuality}}\nAktuelle Niederlagenserie: {{lossStreak}}\n\nHauptfokus: {{topFocus}}\nWiederkehrendes Problem: {{recurringIssue}}\nAm meisten geübter Champion: {{topChampion}}\n\nEmpfehlung: {{recommendation}}",
         "focus": {
           "draftPrep": "Draft-Vorbereitung",
           "championPool": "Champion-Pool",
@@ -3392,12 +3392,12 @@
           "tilt": "Tilt"
         },
         "recommendations": {
-          "lockPlans": "Lock Plan A/B/C earlier next week so the staff has usable prep data.",
-          "reduceCancellations": "Reduce cancellations next week; scrim reputation is part of your competitive infrastructure.",
-          "resetBeforeVolume": "Open next week with Mental Reset or VOD Review before adding more volume.",
-          "narrowFocus": "Keep the volume but narrow the focus around the recurring issue; quality is too noisy right now.",
-          "targetedDrills": "Schedule Targeted Drills for the recurring issue and keep the main prep block stable.",
-          "keepPlan": "Keep the current plan: it is producing useful reps without overloading the roster."
+          "lockPlans": "Lege Plan A/B/C nächste Woche früher fest, damit der Staff brauchbare Vorbereitungsdaten hat.",
+          "reduceCancellations": "Reduziere die Absagen nächste Woche; der Scrim-Ruf gehört zu deiner Wettbewerbsinfrastruktur.",
+          "resetBeforeVolume": "Beginne die nächste Woche mit Mental Reset oder VOD Review, bevor du mehr Volumen hinzufügst.",
+          "narrowFocus": "Behalte das Volumen bei, aber fokussiere dich enger auf das wiederkehrende Problem; die Qualität schwankt gerade zu stark.",
+          "targetedDrills": "Plane Targeted Drills für das wiederkehrende Problem ein und halte den Haupt-Vorbereitungsblock stabil.",
+          "keepPlan": "Behalte den aktuellen Plan bei: Er liefert nützliche Wiederholungen, ohne den Kader zu überlasten."
         }
       },
       "patchNotes": {

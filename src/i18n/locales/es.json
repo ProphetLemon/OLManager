@@ -1499,8 +1499,8 @@
       "objectives": {
         "none": "Sin objetivo definido",
         "draftPrep": "Preparar el draft contra el próximo rival",
-        "championPool": "Expandir champion pool",
-        "earlyGame": "Arreglar early game",
+        "championPool": "Ampliar el pool de campeones",
+        "earlyGame": "Corregir el juego temprano",
         "teamfighting": "Mejorar teamfights",
         "macro": "Pulir macro y objetivos",
         "mental": "Estabilizar mental"
@@ -1509,13 +1509,13 @@
         "pickObjective": "Elige un objetivo semanal antes de tocar rivales: sin intención, el volumen solo genera ruido.",
         "mentalReset": "Prioriza Mental Reset o VOD Review: la racha ya está afectando la calidad de aprendizaje.",
         "reduceCancellations": "Baja cancelaciones esta semana; la reputación de scrims también es infraestructura competitiva.",
-        "moreVolumeForPool": "Para expandir champion pool necesitas al menos 4 bloques; dos scrims no dan muestra suficiente.",
+        "moreVolumeForPool": "Para ampliar el pool de campeones necesitas al menos 4 bloques; dos scrims no dan muestra suficiente.",
         "noPlannedOpponents": "El objetivo está bien, pero no hay rivales fijados: cierra al menos Plan A para que la semana tenga dirección.",
         "draftPrepPlan": "Usa Plan A/B/C contra equipos fuertes: quieres castigar draft, no farmear confianza barata.",
         "strongerOpponents": "Para este objetivo te faltan rivales que te incomoden; busca al menos un bloque contra un equipo más fuerte.",
         "softerMentalWeek": "Semana mental: no abras con todos los rivales por encima de tu nivel. Mezcla un bloque controlado para reconstruir confianza.",
         "addFallbacksForReputation": "Tus rivales planificados tienen mejor reputación de scrims; agrega Plan B/C o vas a comerte rechazos evitables.",
-        "macroReview": "Marca un bloque de VOD Review: si el issue es setup de objetivos, más scrims sin revisión repiten el error.",
+        "macroReview": "Marca un bloque de VOD Review: si el problema es la preparación de objetivos, más scrims sin revisión repiten el error.",
         "narrowFocus": "La calidad promedio está baja; mantén volumen, pero estrecha el foco antes de sumar más rivales.",
         "keepPlan": "El plan actual está sano: mantén el objetivo, elige rivales exigentes y revisa el primer reporte antes de aumentar volumen."
       },
@@ -2611,17 +2611,17 @@
     "startLive": "Ir al live",
     "scrimPrep": {
       "title": "La preparación de scrims llegó al partido",
-      "summary": "Los scrims recientes le dieron a este lado una pequeña señal de ejecución en {{focus}}. Afecta timing y comfort, no garantiza el resultado.",
+      "summary": "Los scrims recientes le dieron a este lado una pequeña señal de ejecución en {{focus}}. Afecta al ritmo de la partida y al confort con los campeones, no garantiza el resultado.",
       "details": {
         "opponentPrep": "Preparación vs rival +{{value}}",
-        "championComfort": "Comfort de campeones +{{value}}",
+        "championComfort": "Confort de campeones +{{value}}",
         "focus": "Foco: {{focus}}"
       },
       "focus": {
-        "draftPrep": "draft prep",
-        "championPool": "champion pool",
-        "earlyGame": "early game",
-        "teamfighting": "teamfighting",
+        "draftPrep": "preparación del draft",
+        "championPool": "pool de campeones",
+        "earlyGame": "juego temprano",
+        "teamfighting": "teamfights",
         "macro": "macro",
         "mental": "reset mental",
         "general": "preparación general"
@@ -3552,7 +3552,7 @@
       },
       "scrimWeekly": {
         "subject": "Informe semanal de scrims",
-        "body": "Informe semanal de scrims:\n\nJugados: {{played}}\nGanados: {{wins}}\nPerdidos: {{losses}}\nCancelaciones: {{cancellations}}\nCalidad promedio: {{avgQuality}}\nRacha actual de derrotas: {{lossStreak}}\n\nFoco principal: {{topFocus}}\nIssue recurrente: {{recurringIssue}}\nCampeón más practicado: {{topChampion}}\n\nRecomendación: {{recommendation}}",
+        "body": "Informe semanal de scrims:\n\nJugados: {{played}}\nGanados: {{wins}}\nPerdidos: {{losses}}\nCancelaciones: {{cancellations}}\nCalidad promedio: {{avgQuality}}\nRacha actual de derrotas: {{lossStreak}}\n\nFoco principal: {{topFocus}}\nProblema recurrente: {{recurringIssue}}\nCampeón más practicado: {{topChampion}}\n\nRecomendación: {{recommendation}}",
         "focus": {
           "draftPrep": "Preparación de draft",
           "championPool": "Pool de campeones",
@@ -3573,8 +3573,8 @@
           "lockPlans": "Cierra Plan A/B/C más temprano la semana que viene para que el staff tenga datos útiles de preparación.",
           "reduceCancellations": "Reduce cancelaciones la semana que viene; la reputación de scrims es parte de tu infraestructura competitiva.",
           "resetBeforeVolume": "Abre la semana que viene con Reset Mental o VOD Review antes de sumar más volumen.",
-          "narrowFocus": "Mantén el volumen, pero ajusta el foco alrededor del issue recurrente; la calidad está demasiado ruidosa.",
-          "targetedDrills": "Programa Targeted Drills para el issue recurrente y mantén estable el bloque principal de preparación.",
+          "narrowFocus": "Mantén el volumen, pero ajusta el foco alrededor del problema recurrente; la calidad está demasiado ruidosa.",
+          "targetedDrills": "Programa Targeted Drills para el problema recurrente y mantén estable el bloque principal de preparación.",
           "keepPlan": "Mantén el plan actual: está generando reps útiles sin sobrecargar al roster."
         }
       },

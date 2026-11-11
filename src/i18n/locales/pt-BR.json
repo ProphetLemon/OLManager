@@ -1336,8 +1336,8 @@
       "objectives": {
         "none": "Sem objetivo definido",
         "draftPrep": "Preparar draft contra o próximo rival",
-        "championPool": "Expandir champion pool",
-        "earlyGame": "Corrigir early game",
+        "championPool": "Expandir o pool de campeões",
+        "earlyGame": "Corrigir o jogo inicial",
         "teamfighting": "Melhorar teamfights",
         "macro": "Aprimorar macro e objetivos",
         "mental": "Estabilizar mental"
@@ -1346,7 +1346,7 @@
         "pickObjective": "Escolha um objetivo semanal antes de mexer nos rivais: sem intenção, o volume só gera ruído.",
         "mentalReset": "Priorize Mental Reset ou VOD Review: a sequência já está afetando a qualidade de aprendizado.",
         "reduceCancellations": "Reduza cancelamentos esta semana; reputação de scrim também é infraestrutura competitiva.",
-        "moreVolumeForPool": "Para expandir champion pool você precisa de pelo menos 4 blocos; dois scrims não dão amostra suficiente.",
+        "moreVolumeForPool": "Para expandir o pool de campeões você precisa de pelo menos 4 blocos; dois scrims não dão amostra suficiente.",
         "noPlannedOpponents": "O objetivo está certo, mas não há rivais definidos: feche pelo menos o Plano A para dar direção à semana.",
         "draftPrepPlan": "Use Plano A/B/C contra times fortes: você quer pressionar draft, não farmar confiança barata.",
         "strongerOpponents": "Para este objetivo faltam rivais que te deixem desconfortável; procure pelo menos um bloco contra um time mais forte.",
@@ -2379,7 +2379,7 @@
     "startLive": "Ir para o live",
     "scrimPrep": {
       "title": "A preparação de scrims entrou na partida",
-      "summary": "Os scrims recentes deram a este lado um pequeno sinal de execução em {{focus}}. Afeta timing e conforto, não garante o resultado.",
+      "summary": "Os scrims recentes deram a este lado um pequeno sinal de execução em {{focus}}. Afeta o ritmo de jogo e o conforto, não garante o resultado.",
       "details": {
         "opponentPrep": "Preparação contra rival +{{value}}",
         "championComfort": "Conforto de campeões +{{value}}",
@@ -2387,9 +2387,9 @@
       },
       "focus": {
         "draftPrep": "preparação de draft",
-        "championPool": "champion pool",
-        "earlyGame": "early game",
-        "teamfighting": "teamfighting",
+        "championPool": "pool de campeões",
+        "earlyGame": "jogo inicial",
+        "teamfighting": "teamfights",
         "macro": "macro",
         "mental": "reset mental",
         "general": "preparação geral"

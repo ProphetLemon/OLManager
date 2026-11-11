@@ -1336,8 +1336,8 @@
       "objectives": {
         "none": "Aucun objectif défini",
         "draftPrep": "Préparer le draft contre le prochain rival",
-        "championPool": "Élargir le champion pool",
-        "earlyGame": "Corriger l'early game",
+        "championPool": "Élargir le pool de champions",
+        "earlyGame": "Corriger le début de partie",
         "teamfighting": "Améliorer les teamfights",
         "macro": "Travailler macro et objectifs",
         "mental": "Stabiliser le mental"
@@ -1346,7 +1346,7 @@
         "pickObjective": "Choisissez un objectif hebdomadaire avant de toucher aux rivaux : sans intention, le volume ne crée que du bruit.",
         "mentalReset": "Priorisez Mental Reset ou VOD Review : la série affecte déjà la qualité d'apprentissage.",
         "reduceCancellations": "Réduisez les annulations cette semaine ; la réputation de scrim est aussi une infrastructure compétitive.",
-        "moreVolumeForPool": "Pour élargir le champion pool, il faut au moins 4 blocs ; deux scrims ne donnent pas assez d'échantillon.",
+        "moreVolumeForPool": "Pour élargir le pool de champions, il faut au moins 4 blocs ; deux scrims ne donnent pas assez d'échantillon.",
         "noPlannedOpponents": "L'objectif est bon, mais aucun rival n'est verrouillé : fixez au moins un Plan A pour donner une direction à la semaine.",
         "draftPrepPlan": "Utilisez Plan A/B/C contre des équipes fortes : vous voulez punir le draft, pas farmer une confiance facile.",
         "strongerOpponents": "Pour cet objectif, il faut des rivaux qui vous mettent mal à l'aise ; trouvez au moins un bloc contre une équipe plus forte.",
@@ -2432,7 +2432,7 @@
     "startLive": "Aller au live",
     "scrimPrep": {
       "title": "La préparation de scrim est entrée dans le match",
-      "summary": "Les scrims récents ont donné à ce côté un petit signal d'exécution en {{focus}}. Cela affecte le timing et le confort, pas un résultat garanti.",
+      "summary": "Les scrims récents ont donné à ce côté un petit signal d'exécution en {{focus}}. Cela affecte le rythme de jeu et le confort, pas un résultat garanti.",
       "details": {
         "opponentPrep": "Préparation adversaire +{{value}}",
         "championComfort": "Confort champions +{{value}}",
@@ -2440,9 +2440,9 @@
       },
       "focus": {
         "draftPrep": "préparation draft",
-        "championPool": "champion pool",
-        "earlyGame": "early game",
-        "teamfighting": "teamfight",
+        "championPool": "pool de champions",
+        "earlyGame": "début de partie",
+        "teamfighting": "teamfights",
         "macro": "macro",
         "mental": "reset mental",
         "general": "préparation générale"
@@ -3378,7 +3378,7 @@
         "focus": {
           "draftPrep": "Préparation de draft",
           "championPool": "Pool de champions",
-          "earlyGame": "Early game",
+          "earlyGame": "Début de partie",
           "teamfighting": "Teamfights",
           "macro": "Macro",
           "mental": "Mental"
