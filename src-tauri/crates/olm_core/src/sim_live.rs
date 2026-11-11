@@ -6277,7 +6277,8 @@ fn classify_item_build(role: &str, champion_id: &str) -> ItemBuildCategory {
 }
 
 fn champion_item_plan(role: &str, champion_id: &str) -> &'static [ItemTemplate; 6] {
-    category_plan(classify_item_build(role, champion_id))
+    item_catalogue::pro_plan(role, champion_id)
+        .unwrap_or_else(|| category_plan(classify_item_build(role, champion_id)))
 }
 
 fn effective_item_cost(base_cost: i64) -> i64 {
@@ -6287,16 +6288,7 @@ fn effective_item_cost(base_cost: i64) -> i64 {
 }
 
 fn is_boots_item_key(key: &str) -> bool {
-    matches!(
-        key,
-        "plated_steelcaps"
-            | "mercurys_treads"
-            | "boots_of_swiftness"
-            | "sorcerers_shoes"
-            | "berserkers_greaves"
-            | "ionian_boots_of_lucidity"
-            | "mobility_boots"
-    )
+    item_catalogue::is_boots(key)
 }
 
 fn try_auto_buy_items(runtime: &mut RuntimeState) {
