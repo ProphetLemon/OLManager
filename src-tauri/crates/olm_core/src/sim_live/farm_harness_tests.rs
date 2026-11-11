@@ -670,13 +670,13 @@ fn debug_trace_mid() {
         if minute > to { break; }
         if minute < from { continue; }
         let tick = (rt.time_sec / 1.8).round() as u64;
-        if tick % 3 != 0 { continue; }
+        if !tick.is_multiple_of(3) { continue; }
         let mut line = format!("{:6.1}s", rt.time_sec);
         for blue in [true, false] {
             let i = laner_of(rt, &role, blue);
             let c = &rt.champions[i];
             let act = ["dead", "recall", "reach", "else"][activity(rt, i) as usize];
-            line += &format!(" | {} a{:.2} hp{:3.0} {:<6} {:<5} cs{:3} dec:{}", if blue {"B"} else {"R"}, arc_fraction(c.pos, path), c.hp, act, c.state, c.cs, &c.debug_ai_decision.chars().take(18).collect::<String>());
+            line += &format!(" | {} a{:.2} hp{:3.0} {:<6} {:<5} cs{:3} dec:{}", if blue {"B"} else {"R"}, arc_fraction(c.pos, path), c.hp, act, c.state, c.cs, c.debug_ai_decision.chars().take(18).collect::<String>());
         }
         let wave = |blue: bool| {
             let v: Vec<&MinionRuntime> = rt.minions.iter().filter(|m| m.alive && normalized_lane(&m.lane) == lane && (normalized_team(&m.team) == "blue") == blue).collect();
