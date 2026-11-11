@@ -16,6 +16,8 @@ pub(super) enum TowerVictim {
 }
 
 /// One tower shot.
+// The fields are read by the measurement harness, which only exists in test builds.
+#[cfg_attr(not(test), allow(dead_code))]
 #[derive(Debug, Clone, Copy)]
 pub(super) struct TowerShot {
     /// Index of the tower in `RuntimeState::structures`.

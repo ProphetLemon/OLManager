@@ -122,6 +122,9 @@ pub(super) fn test_structure(id: &str, team: &str, lane: &str, pos: Vec2) -> Str
         attack_cd_until: 0.0,
         forced_target_champion_id: None,
         forced_target_until: 0.0,
+        ramp_target_id: None,
+        ramp_shots: 0,
+        ramp_last_shot_at: 0.0,
     }
 }
 

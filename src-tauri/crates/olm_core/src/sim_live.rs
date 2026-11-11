@@ -276,6 +276,14 @@ struct StructureRuntime {
     forced_target_champion_id: Option<String>,
     #[serde(default)]
     forced_target_until: f64,
+    /// Champion the tower has been shooting in a row, for the damage ramp.
+    #[serde(default)]
+    ramp_target_id: Option<String>,
+    /// Shots in a row at `ramp_target_id` before the last one.
+    #[serde(default)]
+    ramp_shots: u32,
+    #[serde(default)]
+    ramp_last_shot_at: f64,
 }
 
 #[derive(Clone, Copy)]
@@ -555,7 +563,17 @@ const TOWER_FORTIFICATION_REDUCTION_AT_25: f64 = 0.70;
 const TOWER_FORTIFICATION_REDUCTION_AT_30: f64 = 0.60;
 const TOWER_FORTIFICATION_REDUCTION_AT_35: f64 = 0.35;
 const CHAMPION_ATTACK_CADENCE_SEC: f64 = 1.0;
+// A tower shot at a champion: flat part + growth per game minute + a share of
+// the target's maximum health, times a ramp while it keeps shooting the same
+// champion. [PLACEHOLDER] tuned so a lone tower kills a non-tank champion in
+// at most 8 shots and a tank in at most 14 at minutes 15, 25 and 35.
 const TOWER_SHOT_DAMAGE: f64 = 40.0;
+const TOWER_SHOT_DAMAGE_PER_MINUTE: f64 = 3.0;
+const TOWER_SHOT_GROWTH_END_MINUTE: f64 = 40.0;
+const TOWER_SHOT_MAX_HP_SHARE: f64 = 0.01;
+const TOWER_SHOT_RAMP_PER_SHOT: f64 = 0.4;
+const TOWER_SHOT_RAMP_MAX_STEPS: u32 = 3;
+const TOWER_SHOT_RAMP_WINDOW_SEC: f64 = 3.0;
 const TOWER_SHOT_DAMAGE_TO_MINION: f64 = 24.0;
 const TOWER_ATTACK_RANGE: f64 = 0.08;
 const TOWER_ATTACK_CADENCE_SEC: f64 = 1.0;

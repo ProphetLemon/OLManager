@@ -312,6 +312,13 @@ struct StretchDetail {
     who: String,
     items: String,
     state: String,
+    /// The champion's macro state when the stretch began.
+    start_state: String,
+    /// Own champions within 0.15 of the tower, himself excluded, when the stretch began.
+    allies_near: usize,
+    /// Enemy champions of the tower within 0.15 of it, alive, when the stretch began.
+    defenders_near: usize,
+    hp_frac_start: f64,
     max_hp: f64,
     attack_damage: f64,
     defenders: String,
@@ -642,8 +649,41 @@ fn observe(runtime: &RuntimeState, tracker: &mut Tracker) {
         run.killed_by_tower |= killed_now;
         let tower = &runtime.structures[towers[0]];
         let captured_due = !run.captured && run.ticks.len() as f64 * dt >= DEFENDER_CAPTURE_SEC;
+        if run.ticks.len() == 1 {
+            run.detail.start_state = champion.state.split("->").next().unwrap_or("").to_string();
+            run.detail.hp_frac_start = champion.hp / champion.max_hp.max(1.0);
+            run.detail.allies_near = runtime
+                .champions
+                .iter()
+                .filter(|o| {
+                    o.id != champion.id
+                        && o.alive
+                        && normalized_team(&o.team) == normalized_team(&champion.team)
+                        && dist_to(o.pos, tower.pos) <= 0.15
+                })
+                .count();
+            run.detail.defenders_near = runtime
+                .champions
+                .iter()
+                .filter(|o| {
+                    o.alive
+                        && normalized_team(&o.team) != normalized_team(&champion.team)
+                        && dist_to(o.pos, tower.pos) <= 0.15
+                })
+                .count();
+        }
         if run.ticks.len() == 1 || captured_due {
+            let (start_state, allies_near, defenders_near, hp_frac_start) = (
+                std::mem::take(&mut run.detail.start_state),
+                run.detail.allies_near,
+                run.detail.defenders_near,
+                run.detail.hp_frac_start,
+            );
             run.detail = StretchDetail {
+                start_state,
+                allies_near,
+                defenders_near,
+                hp_frac_start,
                 who: format!(
                     "{} {} lvl{}",
                     if champion.team == "blue" { "blue" } else { "red" },
@@ -918,6 +958,56 @@ fn table_bare_outcomes(traces: &[MatchTrace]) {
     println!("long bare stretches ended: {}", ends.join(", "));
 }
 
+fn table_tower_deaths(traces: &[MatchTrace]) {
+    println!("\n== Champions killed by a tower: what they were doing when the stretch began ==");
+    let deaths: Vec<&FinishedStretch> = traces
+        .iter()
+        .flat_map(|t| t.stretches.iter())
+        .filter(|f| f.stretch.end == End::DiedToTower)
+        .collect();
+    if deaths.is_empty() {
+        println!("none");
+        return;
+    }
+    let mut states: HashMap<String, usize> = HashMap::new();
+    for f in &deaths {
+        let state = f.detail.as_ref().map(|d| d.start_state.clone()).unwrap_or_default();
+        *states.entry(state).or_default() += 1;
+    }
+    let mut states: Vec<(String, usize)> = states.into_iter().collect();
+    states.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+    let listed: Vec<String> = states
+        .iter()
+        .map(|(s, c)| format!("{s} {c} ({:.0}%)", 100.0 * *c as f64 / deaths.len() as f64))
+        .collect();
+    println!("{} deaths; state at the start: {}", deaths.len(), listed.join(", "));
+    let durs = sorted(deaths.iter().map(|f| f.stretch.dur));
+    println!(
+        "stretch length at death: median {:.1} s, p90 {:.1} s, max {:.1} s",
+        percentile(&durs, 0.5),
+        percentile(&durs, 0.9),
+        percentile(&durs, 1.0)
+    );
+    let allies = sorted(deaths.iter().map(|f| f.detail.as_ref().map_or(0, |d| d.allies_near) as f64));
+    let defenders = sorted(deaths.iter().map(|f| f.detail.as_ref().map_or(0, |d| d.defenders_near) as f64));
+    let hp = sorted(deaths.iter().map(|f| f.detail.as_ref().map_or(0.0, |d| d.hp_frac_start)));
+    println!(
+        "own champions near at the start: median {:.0} (mean {:.1}); defenders near: median {:.0} (mean {:.1}); health at the start: median {:.0}%",
+        percentile(&allies, 0.5),
+        mean(&allies),
+        percentile(&defenders, 0.5),
+        mean(&defenders),
+        100.0 * percentile(&hp, 0.5)
+    );
+    let shielded: usize = deaths
+        .iter()
+        .filter(|f| f.parts.iter().any(|p| p.kind == Kind::Shielded))
+        .count();
+    println!(
+        "{shielded} of them also spent time shielded by minions inside the same stretch"
+    );
+}
+
 fn rows_at<'a>(traces: &'a [MatchTrace], snapshot: usize) -> Vec<&'a ChampionRow> {
     traces
         .iter()
@@ -1160,6 +1250,7 @@ fn measure_tower_pressure() {
     table_stretch_lengths(&traces);
     table_tower_behaviour(&traces);
     table_bare_outcomes(&traces);
+    table_tower_deaths(&traces);
     table_health_and_damage(&traces);
     table_shots_to_kill(&traces);
     table_longest(&traces, 10);
