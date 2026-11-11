@@ -1,0 +1,745 @@
+{
+  "schema": "olm.ability-archetypes.curated.v1",
+  "note": "Overrides of the keyword rules in scripts/game-data/lib/ability-archetypes.mjs, by champion id and slot. An entry is the final list of archetypes, or {archetypes?, rangeClass?}. Only abilities where the rules are wrong or incomplete are listed; the generator rejects an entry equal to the rule output.",
+  "overrides": {
+    "Aatrox": {
+      "Q": {
+        "rangeClass": "short"
+      },
+      "E": {
+        "rangeClass": "short"
+      },
+      "R": {
+        "archetypes": [
+          "self_heal"
+        ],
+        "rangeClass": "self"
+      }
+    },
+    "Akali": {
+      "R": [
+        "dash",
+        "execute"
+      ]
+    },
+    "Akshan": {
+      "E": [
+        "dash"
+      ]
+    },
+    "Alistar": {
+      "W": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ]
+    },
+    "Amumu": {
+      "Q": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ]
+    },
+    "Annie": {
+      "E": [
+        "ally_shield",
+        "self_shield"
+      ]
+    },
+    "Aphelios": {
+      "Q": [
+        "hard_cc",
+        "poke"
+      ]
+    },
+    "Ashe": {
+      "R": [
+        "hard_cc",
+        "global"
+      ]
+    },
+    "AurelionSol": {
+      "W": [
+        "dash"
+      ]
+    },
+    "Aurora": {
+      "E": [
+        "dash"
+      ]
+    },
+    "Belveth": {
+      "E": [
+        "self_heal"
+      ]
+    },
+    "Blitzcrank": {
+      "E": [
+        "hard_cc"
+      ]
+    },
+    "Braum": {
+      "Q": [
+        "poke"
+      ],
+      "E": {
+        "rangeClass": "short"
+      }
+    },
+    "Briar": {
+      "R": [
+        "self_heal",
+        "dash",
+        "engage",
+        "hard_cc",
+        "global"
+      ]
+    },
+    "Caitlyn": {
+      "E": [
+        "dash"
+      ]
+    },
+    "Corki": {
+      "W": [
+        "dash"
+      ]
+    },
+    "Darius": {
+      "R": [
+        "dash",
+        "execute"
+      ]
+    },
+    "Diana": {
+      "Q": [
+        "poke"
+      ],
+      "R": [
+        "hard_cc"
+      ]
+    },
+    "Draven": {
+      "R": [
+        "execute",
+        "global"
+      ]
+    },
+    "Ekko": {
+      "E": [
+        "dash"
+      ]
+    },
+    "Elise": {
+      "Q": [
+        "dash",
+        "execute"
+      ],
+      "E": [
+        "dash",
+        "hard_cc",
+        "poke"
+      ]
+    },
+    "Evelynn": {
+      "R": {
+        "rangeClass": "short"
+      }
+    },
+    "Ezreal": {
+      "R": [
+        "global"
+      ]
+    },
+    "Fiddlesticks": {
+      "Q": [
+        "hard_cc"
+      ]
+    },
+    "Fiora": {
+      "R": [
+        "ally_heal",
+        "self_heal"
+      ]
+    },
+    "Fizz": {
+      "E": [
+        "dash",
+        "untargetable"
+      ]
+    },
+    "Galio": {
+      "E": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ],
+      "R": [
+        "ally_shield",
+        "dash",
+        "engage",
+        "hard_cc"
+      ]
+    },
+    "Gangplank": {
+      "R": [
+        "global"
+      ]
+    },
+    "Gragas": {
+      "E": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ]
+    },
+    "Graves": {
+      "Q": [
+        "poke"
+      ]
+    },
+    "Gwen": {
+      "W": [
+        "untargetable"
+      ]
+    },
+    "Hecarim": {
+      "W": [
+        "self_heal"
+      ],
+      "R": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ]
+    },
+    "Heimerdinger": {
+      "W": [
+        "poke"
+      ]
+    },
+    "Hwei": {
+      "E": [
+        "hard_cc"
+      ]
+    },
+    "Ivern": {
+      "Q": [
+        "hard_cc",
+        "poke"
+      ],
+      "W": []
+    },
+    "Janna": {
+      "W": {
+        "rangeClass": "short"
+      },
+      "R": [
+        "ally_heal",
+        "hard_cc"
+      ]
+    },
+    "JarvanIV": {
+      "Q": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ]
+    },
+    "Jayce": {
+      "Q": [
+        "dash",
+        "poke"
+      ]
+    },
+    "Jhin": {
+      "E": [],
+      "R": [
+        "execute",
+        "poke"
+      ]
+    },
+    "KSante": {
+      "E": [
+        "ally_shield",
+        "self_shield",
+        "dash"
+      ]
+    },
+    "Kaisa": {
+      "W": [
+        "poke"
+      ]
+    },
+    "Kalista": {
+      "Q": [
+        "poke"
+      ],
+      "W": [],
+      "R": [
+        "hard_cc"
+      ]
+    },
+    "Karthus": {
+      "R": [
+        "global"
+      ]
+    },
+    "Katarina": {
+      "W": {
+        "archetypes": [],
+        "rangeClass": "self"
+      }
+    },
+    "Khazix": {
+      "Q": [],
+      "R": {
+        "rangeClass": "self"
+      }
+    },
+    "Kindred": {
+      "Q": [
+        "dash"
+      ],
+      "R": [
+        "ally_heal",
+        "self_heal",
+        "untargetable"
+      ]
+    },
+    "Kled": {
+      "R": [
+        "self_shield",
+        "dash"
+      ]
+    },
+    "KogMaw": {
+      "R": [
+        "poke"
+      ]
+    },
+    "Leblanc": {
+      "R": {
+        "rangeClass": "medium"
+      }
+    },
+    "LeeSin": {
+      "W": [
+        "ally_shield",
+        "self_shield",
+        "dash"
+      ]
+    },
+    "Leona": {
+      "Q": [
+        "hard_cc"
+      ]
+    },
+    "Lissandra": {
+      "E": [
+        "dash",
+        "poke"
+      ]
+    },
+    "Lulu": {
+      "W": [
+        "hard_cc"
+      ]
+    },
+    "Lux": {
+      "Q": [
+        "hard_cc",
+        "poke"
+      ],
+      "W": [
+        "ally_shield",
+        "self_shield"
+      ]
+    },
+    "MasterYi": {
+      "Q": [
+        "dash",
+        "untargetable"
+      ]
+    },
+    "Mel": {
+      "W": [
+        "ally_shield",
+        "self_shield"
+      ],
+      "R": [
+        "global"
+      ]
+    },
+    "MissFortune": {
+      "R": {
+        "rangeClass": "medium"
+      }
+    },
+    "Mordekaiser": {
+      "W": {
+        "rangeClass": "self"
+      }
+    },
+    "Morgana": {
+      "Q": [
+        "hard_cc",
+        "poke"
+      ],
+      "E": [
+        "ally_shield",
+        "self_shield"
+      ]
+    },
+    "Naafiri": {
+      "Q": [
+        "poke"
+      ],
+      "E": [
+        "dash"
+      ]
+    },
+    "Nautilus": {
+      "Q": [
+        "dash",
+        "engage",
+        "hard_cc",
+        "poke"
+      ]
+    },
+    "Neeko": {
+      "W": []
+    },
+    "Nidalee": {
+      "Q": [
+        "poke",
+        "execute"
+      ],
+      "W": [
+        "poke",
+        "dash"
+      ],
+      "E": [
+        "ally_heal"
+      ]
+    },
+    "Nilah": {
+      "W": [
+        "untargetable"
+      ]
+    },
+    "Nocturne": {
+      "R": [
+        "dash"
+      ]
+    },
+    "Nunu": {
+      "W": [
+        "hard_cc"
+      ]
+    },
+    "Orianna": {
+      "E": [
+        "ally_shield"
+      ],
+      "R": [
+        "hard_cc"
+      ]
+    },
+    "Ornn": {
+      "W": {
+        "rangeClass": "short"
+      },
+      "E": [
+        "dash",
+        "hard_cc"
+      ]
+    },
+    "Pantheon": {
+      "E": [
+        "untargetable"
+      ]
+    },
+    "Poppy": {
+      "W": []
+    },
+    "Rakan": {
+      "E": [
+        "ally_shield",
+        "dash"
+      ]
+    },
+    "Rammus": {
+      "R": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ]
+    },
+    "RekSai": {
+      "W": [
+        "hard_cc"
+      ]
+    },
+    "Rell": {
+      "E": []
+    },
+    "Renata": {
+      "R": [
+        "hard_cc"
+      ]
+    },
+    "Renekton": {
+      "W": [
+        "hard_cc"
+      ]
+    },
+    "Rengar": {
+      "R": [
+        "dash",
+        "stealth"
+      ]
+    },
+    "Riven": {
+      "E": [
+        "dash"
+      ]
+    },
+    "Ryze": {
+      "R": []
+    },
+    "Sejuani": {
+      "Q": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ]
+    },
+    "Senna": {
+      "E": [
+        "stealth",
+        "untargetable"
+      ]
+    },
+    "Sett": {
+      "W": {
+        "rangeClass": "short"
+      },
+      "R": [
+        "hard_cc"
+      ]
+    },
+    "Shen": {
+      "W": [
+        "ally_shield",
+        "self_shield"
+      ],
+      "R": [
+        "ally_shield",
+        "dash",
+        "global"
+      ]
+    },
+    "Shyvana": {
+      "Q": {
+        "rangeClass": "melee"
+      }
+    },
+    "Sion": {
+      "Q": {
+        "rangeClass": "short"
+      },
+      "E": [],
+      "R": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ]
+    },
+    "Skarner": {
+      "E": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ]
+    },
+    "Smolder": {
+      "W": [
+        "poke"
+      ],
+      "E": [
+        "dash"
+      ]
+    },
+    "Sona": {
+      "W": [
+        "ally_shield",
+        "ally_heal",
+        "self_heal"
+      ]
+    },
+    "Soraka": {
+      "R": [
+        "ally_heal",
+        "self_heal",
+        "global"
+      ]
+    },
+    "TahmKench": {
+      "W": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ],
+      "E": [
+        "self_shield",
+        "self_heal"
+      ],
+      "R": {
+        "rangeClass": "short"
+      }
+    },
+    "Taliyah": {
+      "W": [
+        "hard_cc"
+      ],
+      "E": [
+        "hard_cc"
+      ],
+      "R": [
+        "dash"
+      ]
+    },
+    "Thresh": {
+      "Q": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ],
+      "W": [
+        "ally_shield"
+      ],
+      "E": [
+        "hard_cc"
+      ]
+    },
+    "Tristana": {
+      "W": [
+        "dash"
+      ]
+    },
+    "Trundle": {
+      "W": []
+    },
+    "Tryndamere": {
+      "E": [
+        "dash"
+      ],
+      "R": [
+        "untargetable"
+      ]
+    },
+    "TwistedFate": {
+      "Q": [
+        "poke"
+      ],
+      "R": [
+        "dash",
+        "global"
+      ]
+    },
+    "Urgot": {
+      "E": [
+        "self_shield",
+        "dash"
+      ]
+    },
+    "Varus": {
+      "E": [
+        "poke"
+      ]
+    },
+    "Vayne": {
+      "Q": [
+        "dash"
+      ]
+    },
+    "Vi": {
+      "R": [
+        "dash",
+        "engage",
+        "hard_cc"
+      ]
+    },
+    "Vladimir": {
+      "W": [
+        "untargetable",
+        "self_heal"
+      ]
+    },
+    "Xayah": {
+      "W": []
+    },
+    "Xerath": {
+      "Q": [
+        "poke"
+      ],
+      "R": [
+        "poke"
+      ]
+    },
+    "XinZhao": {
+      "E": [
+        "dash"
+      ]
+    },
+    "Yone": {
+      "E": {
+        "rangeClass": "self"
+      }
+    },
+    "Yuumi": {
+      "W": [
+        "dash",
+        "untargetable"
+      ],
+      "E": [
+        "ally_shield",
+        "self_shield"
+      ],
+      "R": [
+        "ally_heal"
+      ]
+    },
+    "Zaahen": {
+      "Q": {
+        "rangeClass": "melee"
+      },
+      "E": {
+        "rangeClass": "short"
+      }
+    },
+    "Zac": {
+      "Q": [
+        "hard_cc"
+      ],
+      "E": [
+        "dash"
+      ]
+    },
+    "Zeri": {
+      "E": {
+        "rangeClass": "short"
+      }
+    },
+    "Zilean": {
+      "R": [
+        "untargetable"
+      ]
+    },
+    "Zyra": {
+      "W": []
+    }
+  }
+}
