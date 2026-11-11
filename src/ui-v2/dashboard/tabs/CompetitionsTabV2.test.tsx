@@ -50,3 +50,12 @@ describe("CompetitionsTabV2 players table", () => {
     expect(screen.queryByText("JUNGLE")).toBeNull();
   });
 });
+
+describe("CompetitionsTabV2 initial selection", () => {
+  it("opens the given competition with its standings view", () => {
+    render(<CompetitionsTabV2 gameState={buildState("MID")} initialCompetitionId="lec" />);
+
+    expect(screen.queryByText(i18n.t("competitions.selectPrompt"))).toBeNull();
+    expect(screen.getAllByText("LEC").length).toBeGreaterThan(1);
+  });
+});
