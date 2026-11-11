@@ -1,60 +1,30 @@
 //! The real item shop and the builds professionals use, for the live simulator.
 //!
 //! Two committed files feed it: `assets/simulation/items.v1.json` (the shop of
-//! one patch, with the real stats and costs) and
-//! `assets/simulation/champion-builds.v1.json` (for each champion and role, the
-//! boots and five items it ends a professional game with, or a marker that it
-//! has too few games and falls back on its class).
+//! one patch) and `assets/simulation/champion-builds.v1.json` (for each
+//! champion and role, the boots and five items it ends a professional game
+//! with, or a marker that it has too few games and falls back on its class).
 //!
 //! The engine knows only two effects of an item, attack damage and health, and
-//! the balance of the whole engine rests on how much of both a full build gives
-//! and what it costs. So a professional build keeps the budget of the class
-//! table the champion buys today: the six items together give exactly the same
-//! attack damage and health and cost exactly the same gold. What the real
-//! catalogue decides is which items they are, in which order they are bought,
-//! and how that budget is split among them ([`budget_weights`]).
+//! the balance of the whole engine rests on how much of both a champion holds
+//! after each purchase and what it has spent. Real item stats do not enter the
+//! engine until the owner decides they should, so a professional plan is the
+//! class table the champion buys today with the keys replaced: the boots take
+//! the cost, attack damage and health of the class table's boots, and the j-th
+//! item that is not boots, in purchase order, takes those of the class table's
+//! j-th item that is not boots. After any number of purchases a champion has
+//! spent the same gold and holds the same attack damage and health as with its
+//! class table; only the names and icons differ.
 
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use super::champion_fit::role_code;
-use super::{
-    category_plan, classify_item_build, normalize_champion_key, ItemTemplate, ITEM_COST_MIN,
-};
+use super::{category_plan, classify_item_build, normalize_champion_key, ItemTemplate};
 
 const ITEMS_JSON: &str = include_str!("../../../../../assets/simulation/items.v1.json");
 const BUILDS_JSON: &str = include_str!("../../../../../assets/simulation/champion-builds.v1.json");
-
-/// Statistic that counts as one point of a stat score: a typical full item
-/// carries about one point of its main stat. Offence, defence and utility
-/// scores are sums of `value / UNIT` over the stats of an item.
-const ATTACK_DAMAGE_UNIT: f64 = 60.0;
-const ABILITY_POWER_UNIT: f64 = 100.0;
-const ATTACK_SPEED_UNIT: f64 = 0.35;
-const CRIT_CHANCE_UNIT: f64 = 0.25;
-const LETHALITY_UNIT: f64 = 18.0;
-const ARMOR_PENETRATION_UNIT: f64 = 30.0;
-const MAGIC_PENETRATION_UNIT: f64 = 15.0;
-/// Points an on-hit item earns for its effect, which has no number of its own.
-const ON_HIT_POINTS: f64 = 0.5;
-const HEALTH_UNIT: f64 = 400.0;
-const ARMOR_UNIT: f64 = 50.0;
-const MAGIC_RESIST_UNIT: f64 = 50.0;
-const ABILITY_HASTE_UNIT: f64 = 20.0;
-const MANA_UNIT: f64 = 600.0;
-const MOVE_SPEED_UNIT: f64 = 0.08;
-const HEAL_SHIELD_UNIT: f64 = 15.0;
-const SUSTAIN_UNIT: f64 = 0.10;
-
-/// How much of its utility score an item adds to both budgets: utility items
-/// (haste, mana, movement, heal and shield power, sustain) take a small share
-/// of the damage and of the health.
-const UTILITY_WEIGHT: f64 = 0.25;
-/// Every item that is not boots keeps a sliver of both budgets, so an item
-/// without a stat of one kind still gets a whole-number share, and a budget is
-/// never left with no item able to carry it.
-const BUDGET_FLOOR: f64 = 0.05;
 
 #[derive(Deserialize)]
 struct ItemsFile {
@@ -64,20 +34,7 @@ struct ItemsFile {
 #[derive(Deserialize)]
 struct ItemEntry {
     key: String,
-    cost: i64,
-    #[serde(default)]
-    stats: HashMap<String, f64>,
-    #[serde(rename = "statLines", default)]
-    stat_lines: Vec<StatLine>,
-    #[serde(default)]
-    tags: Vec<String>,
     boots: bool,
-}
-
-#[derive(Deserialize)]
-struct StatLine {
-    stat: String,
-    value: String,
 }
 
 #[derive(Deserialize)]
@@ -96,171 +53,17 @@ struct BuildEntry {
     items: Vec<String>,
 }
 
-/// The real stats of an item that the budget split reads. Percentages are
-/// fractions except penetration and heal and shield power, which keep the
-/// number the shop prints (`35%` is `35.0`).
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
-pub(super) struct ItemStats {
-    pub(super) attack_damage: f64,
-    pub(super) ability_power: f64,
-    pub(super) attack_speed: f64,
-    pub(super) crit_chance: f64,
-    pub(super) lethality: f64,
-    pub(super) armor_penetration: f64,
-    pub(super) magic_penetration: f64,
-    pub(super) on_hit: bool,
-    pub(super) health: f64,
-    pub(super) armor: f64,
-    pub(super) magic_resist: f64,
-    pub(super) ability_haste: f64,
-    pub(super) mana: f64,
-    pub(super) move_speed: f64,
-    pub(super) heal_shield_power: f64,
-    /// Life steal plus omnivamp.
-    pub(super) sustain: f64,
-}
-
 pub(super) struct CatalogueItem {
     pub(super) key: &'static str,
-    pub(super) cost: i64,
     pub(super) boots: bool,
-    pub(super) stats: ItemStats,
 }
 
 pub(super) struct ItemCatalogue {
     items: HashMap<&'static str, CatalogueItem>,
     /// The plan of each professional build by normalised champion key and role
-    /// code: its six items in purchase order, boots first, with the budget of
-    /// the champion's class table split among them.
+    /// code: its six items in purchase order, boots first, each in the slot of
+    /// the champion's class table.
     plans: HashMap<String, Vec<(&'static str, [ItemTemplate; 6])>>,
-}
-
-fn item_stats(entry: &ItemEntry) -> ItemStats {
-    let flat = |name: &str| entry.stats.get(name).copied().unwrap_or(0.0);
-    let line = |name: &str| {
-        entry
-            .stat_lines
-            .iter()
-            .find(|line| line.stat == name)
-            .and_then(|line| line.value.trim_end_matches('%').parse::<f64>().ok())
-            .unwrap_or(0.0)
-    };
-    ItemStats {
-        attack_damage: flat("FlatPhysicalDamageMod"),
-        ability_power: flat("FlatMagicDamageMod"),
-        attack_speed: flat("PercentAttackSpeedMod"),
-        crit_chance: flat("FlatCritChanceMod"),
-        lethality: line("Lethality"),
-        armor_penetration: line("Armor Penetration"),
-        magic_penetration: line("Magic Penetration"),
-        on_hit: entry.tags.iter().any(|tag| tag == "OnHit"),
-        health: flat("FlatHPPoolMod"),
-        armor: flat("FlatArmorMod"),
-        magic_resist: flat("FlatSpellBlockMod"),
-        ability_haste: line("Ability Haste"),
-        mana: flat("FlatMPPoolMod"),
-        move_speed: flat("PercentMovementSpeedMod"),
-        heal_shield_power: line("Heal and Shield Power"),
-        sustain: flat("PercentLifeStealMod") + line("Omnivamp") / 100.0,
-    }
-}
-
-/// Points of offence: attack damage, ability power, attack speed, crit,
-/// lethality, penetration and on-hit effects.
-pub(super) fn offence_points(stats: &ItemStats) -> f64 {
-    stats.attack_damage / ATTACK_DAMAGE_UNIT
-        + stats.ability_power / ABILITY_POWER_UNIT
-        + stats.attack_speed / ATTACK_SPEED_UNIT
-        + stats.crit_chance / CRIT_CHANCE_UNIT
-        + stats.lethality / LETHALITY_UNIT
-        + stats.armor_penetration / ARMOR_PENETRATION_UNIT
-        + stats.magic_penetration / MAGIC_PENETRATION_UNIT
-        + if stats.on_hit { ON_HIT_POINTS } else { 0.0 }
-}
-
-/// Points of defence: health, armor and magic resist.
-pub(super) fn defence_points(stats: &ItemStats) -> f64 {
-    stats.health / HEALTH_UNIT + stats.armor / ARMOR_UNIT + stats.magic_resist / MAGIC_RESIST_UNIT
-}
-
-/// Points of utility: ability haste, mana, movement, heal and shield power
-/// and sustain.
-pub(super) fn utility_points(stats: &ItemStats) -> f64 {
-    stats.ability_haste / ABILITY_HASTE_UNIT
-        + stats.mana / MANA_UNIT
-        + stats.move_speed / MOVE_SPEED_UNIT
-        + stats.heal_shield_power / HEAL_SHIELD_UNIT
-        + stats.sustain / SUSTAIN_UNIT
-}
-
-/// Weights with which an item takes part in the build's attack damage budget
-/// and in its health budget, as `(damage, health)`. An offensive item weighs
-/// more in the damage budget, a defensive one in the health budget, a utility
-/// item adds a quarter of its utility points to both, and boots weigh nothing
-/// in either: they stay cheap and weak as in the class tables.
-pub(super) fn budget_weights(stats: &ItemStats, boots: bool) -> (f64, f64) {
-    if boots {
-        return (0.0, 0.0);
-    }
-    let utility = UTILITY_WEIGHT * utility_points(stats);
-    (
-        BUDGET_FLOOR + offence_points(stats) + utility,
-        BUDGET_FLOOR + defence_points(stats) + utility,
-    )
-}
-
-/// Splits `total` into whole numbers proportional to `weights` that add up to
-/// exactly `total` (largest remainder; ties go to the earlier item). `None`
-/// when there is something to split and no weight to split it by.
-pub(super) fn apportion(total: i64, weights: &[f64]) -> Option<Vec<i64>> {
-    if total == 0 {
-        return Some(vec![0; weights.len()]);
-    }
-    let sum: f64 = weights.iter().sum();
-    if sum <= 0.0 {
-        return None;
-    }
-    let exact: Vec<f64> = weights.iter().map(|w| total as f64 * w / sum).collect();
-    let mut shares: Vec<i64> = exact.iter().map(|x| x.floor() as i64).collect();
-    let left = (total - shares.iter().sum::<i64>()).max(0) as usize;
-    let mut by_remainder: Vec<usize> = (0..weights.len()).collect();
-    by_remainder.sort_by(|&a, &b| {
-        (exact[b] - shares[b] as f64).total_cmp(&(exact[a] - shares[a] as f64))
-    });
-    for &i in by_remainder.iter().take(left) {
-        shares[i] += 1;
-    }
-    Some(shares)
-}
-
-/// [`apportion`] with no share below `floor`: an item whose proportional share
-/// falls under it is held at `floor` and the rest is split among the others.
-/// The engine never charges less than its minimum item price, so a smaller
-/// share would change the cost of the build.
-pub(super) fn apportion_with_floor(total: i64, weights: &[f64], floor: i64) -> Option<Vec<i64>> {
-    let mut held = vec![false; weights.len()];
-    loop {
-        let rest = total - held.iter().filter(|&&h| h).count() as i64 * floor;
-        let active: Vec<usize> = (0..weights.len()).filter(|&i| !held[i]).collect();
-        let sum: f64 = active.iter().map(|&i| weights[i]).sum();
-        let below: Vec<usize> = active
-            .iter()
-            .copied()
-            .filter(|&i| (rest as f64 * weights[i] / sum) < floor as f64)
-            .collect();
-        if below.is_empty() {
-            let active_weights: Vec<f64> = active.iter().map(|&i| weights[i]).collect();
-            let split = apportion(rest, &active_weights)?;
-            let mut shares = vec![floor; weights.len()];
-            for (&i, share) in active.iter().zip(split) {
-                shares[i] = share;
-            }
-            return Some(shares);
-        }
-        for i in below {
-            held[i] = true;
-        }
-    }
 }
 
 impl ItemCatalogue {
@@ -270,63 +73,51 @@ impl ItemCatalogue {
             .ok_or_else(|| format!("item `{key}` is not in the item catalogue"))
     }
 
-    /// The six items of a plan: the professional items in purchase order, boots
-    /// first, completed from the class table when the build has no boots or
-    /// fewer than five items. The class table's attack damage, health and gold
-    /// are the budget; the real stats and costs of the six decide each share.
+    /// The six items of a plan: the professional items in purchase order,
+    /// boots first, completed from the class table when the build has no boots
+    /// or fewer than five items. Each takes the cost, attack damage and health
+    /// of the class table slot in the same position of the purchase order.
     fn assemble_plan(
         &self,
         build: &[&'static str],
         class_table: &[ItemTemplate; 6],
     ) -> Result<[ItemTemplate; 6], String> {
+        let mut class_boots = None;
+        let mut class_rest = Vec::new();
+        for template in class_table {
+            if self.item(template.key)?.boots && class_boots.is_none() {
+                class_boots = Some(template);
+            } else {
+                class_rest.push(template);
+            }
+        }
+        let class_boots = class_boots.ok_or("a class table has no boots")?;
+        if class_rest.len() != 5 {
+            return Err("a class table needs exactly one pair of boots".to_string());
+        }
+
         let mut keys: Vec<&'static str> = build.to_vec();
         if !keys.iter().any(|key| self.items[key].boots) {
-            let boots = class_table
-                .iter()
-                .filter_map(|template| self.items.get(template.key))
-                .find(|item| item.boots)
-                .ok_or("a class table has no boots")?;
-            keys.insert(0, boots.key);
+            keys.insert(0, self.item(class_boots.key)?.key);
         }
-        for template in class_table {
+        for template in &class_rest {
             let item = self.item(template.key)?;
-            if keys.len() < 6 && !item.boots && !keys.contains(&item.key) {
+            if keys.len() < 6 && !keys.contains(&item.key) {
                 keys.push(item.key);
             }
         }
-        if keys.len() != 6 {
-            return Err(format!("a plan needs six items, got {keys:?}"));
+        if keys.len() != 6 || !self.items[keys[0]].boots {
+            return Err(format!("a plan needs boots and five items, got {keys:?}"));
         }
 
-        let items: Vec<&CatalogueItem> = keys.iter().map(|key| &self.items[key]).collect();
-        let weights: Vec<(f64, f64)> = items
-            .iter()
-            .map(|item| budget_weights(&item.stats, item.boots))
-            .collect();
-        let costs: Vec<f64> = items.iter().map(|item| item.cost as f64).collect();
-        let split = |total: f64, weights: Vec<f64>| {
-            apportion(total.round() as i64, &weights).ok_or("a budget has no item to carry it")
-        };
-        let attack_damage = split(
-            class_table.iter().map(|t| t.attack_damage).sum(),
-            weights.iter().map(|w| w.0).collect(),
-        )?;
-        let max_hp = split(
-            class_table.iter().map(|t| t.max_hp).sum(),
-            weights.iter().map(|w| w.1).collect(),
-        )?;
-        let cost = apportion_with_floor(
-            class_table.iter().map(|t| t.cost).sum(),
-            &costs,
-            ITEM_COST_MIN,
-        )
-        .ok_or("the gold budget cannot give every item the minimum price")?;
-
-        Ok(std::array::from_fn(|i| ItemTemplate {
-            key: items[i].key,
-            cost: cost[i],
-            attack_damage: attack_damage[i] as f64,
-            max_hp: max_hp[i] as f64,
+        Ok(std::array::from_fn(|i| {
+            let slot = if i == 0 { class_boots } else { class_rest[i - 1] };
+            ItemTemplate {
+                key: keys[i],
+                cost: slot.cost,
+                attack_damage: slot.attack_damage,
+                max_hp: slot.max_hp,
+            }
         }))
     }
 }
@@ -348,9 +139,7 @@ pub(super) fn parse(items_json: &str, builds_json: &str) -> Result<ItemCatalogue
         let key: &'static str = Box::leak(entry.key.clone().into_boxed_str());
         let item = CatalogueItem {
             key,
-            cost: entry.cost,
             boots: entry.boots,
-            stats: item_stats(entry),
         };
         if catalogue.items.insert(key, item).is_some() {
             return Err(format!("item `{key}` appears twice"));
