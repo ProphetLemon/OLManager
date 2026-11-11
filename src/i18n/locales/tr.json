@@ -3942,7 +3942,11 @@
     "recentReports": "Son raporlar",
     "reviewDecisionApplied": "Karar scrim bloğuna uygulandı",
     "reviewed": "İncelendi",
+    "setupAllSlotsPassed": "Bu haftanın tüm scrim günleri geçti, planlanacak bir şey kalmadı. Planlama gelecek pazartesi yeniden açılır.",
     "setupLocked": "Blok başladığında kurulum kilitlenir",
+    "setupLockedFirstWindow": "Bu haftanın ilk scrim günü başladı, bu yüzden kurulum kilitli. Gelecek pazartesi yeniden açılır.",
+    "setupLockedManual": "Bu haftanın kurulumunu onayladın, bu yüzden kilitli. Gelecek pazartesi yeniden açılır.",
+    "setupLockedWeekStarted": "Bu hafta bir scrim bloğu zaten oynandı, bu yüzden kurulum kilitli. Gelecek pazartesi yeniden açılır.",
     "setupUnlockWindow": "Kurulum blok başlamadan önce değiştirilebilir",
     "streaks": "Seriler",
     "tags": {

@@ -3951,7 +3951,11 @@
     "recentReports": "Rapports récents",
     "reviewDecisionApplied": "Décision appliquée au bloc de scrims",
     "reviewed": "Bilan fait",
+    "setupAllSlotsPassed": "Tous les jours de scrims de cette semaine sont passés : il n'y a plus rien à planifier. La planification rouvre lundi prochain.",
     "setupLocked": "La configuration est verrouillée une fois le bloc commencé",
+    "setupLockedFirstWindow": "Le premier jour de scrims de cette semaine a déjà commencé, la configuration est donc verrouillée. Elle rouvre lundi prochain.",
+    "setupLockedManual": "Vous avez confirmé la configuration de cette semaine, elle est donc verrouillée. Elle rouvre lundi prochain.",
+    "setupLockedWeekStarted": "Un bloc de scrims a déjà été joué cette semaine, la configuration est donc verrouillée. Elle rouvre lundi prochain.",
     "setupUnlockWindow": "La configuration peut être modifiée avant le début du bloc",
     "streaks": "Séries",
     "tags": {

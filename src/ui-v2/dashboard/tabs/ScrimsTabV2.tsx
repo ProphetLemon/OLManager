@@ -29,6 +29,7 @@ import {
   type DailyScrimAction,
 } from "@/services/trainingService";
 import { dailyScrimDecisionActions } from "@/lib/scrims/dailyDecisionActions";
+import { scrimSetupBlockedKey } from "@/lib/scrims/setupLock";
 import { SCRIM_FOCUS_IMPACT_KEYS, SCRIM_FOCUS_OBJECTIVE_KEYS } from "@/lib/scrims/scrimFocusKeys";
 import { useScrimContextWithFallback } from "@/hooks/useScrimContextWithFallback";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -161,6 +162,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   const todayRisk = riskLevel(planSignals.maxOpponentOvr, planSignals.ownOvr, estimatedRepGap);
   const setupLocked = weeklyContext.setupLocked;
   const assistantControls = settings.scrim_review_mode === "assistant";
+  const setupBlockedKey = scrimSetupBlockedKey(weeklyContext, assistantControls);
   const dailyBlockMeta = todayContext.report ? deriveDailyScrimBlockMeta(effectiveWeeklyScrimSlots(myTeam), gameState.clock.current_date, todayContext.report.slot_index) : null;
   const isFirstBlock = dailyBlockMeta?.blockNumber === 1;
   const staffSuggestions = buildStaffSuggestions(
@@ -239,6 +241,11 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
         {/* ── Main column ── */}
         <div className="flex flex-col gap-4">
+          {setupBlockedKey ? (
+            <p role="status" className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              {t(setupBlockedKey)}
+            </p>
+          ) : null}
           <ScrimPlanningCardV2
             gameState={gameState}
             weeklyContext={weeklyContext}
@@ -382,7 +389,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
               </div>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
                 <p className="text-xs text-muted-foreground">
-                  {setupLocked ? t("scrims.setupLocked") : assistantControls ? t("scrims.assistantHandling") : t("scrims.setupUnlockWindow")}
+                  {setupBlockedKey ? t(setupBlockedKey) : t("scrims.setupUnlockWindow")}
                 </p>
                 <button
                   type="button"

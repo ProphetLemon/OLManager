@@ -3950,7 +3950,11 @@
     "recentReports": "Relatórios recentes",
     "reviewDecisionApplied": "Decisão aplicada ao bloco de scrims",
     "reviewed": "Revisto",
+    "setupAllSlotsPassed": "Todos os dias de scrims desta semana já passaram e não há mais nada para planear. O planeamento reabre na próxima segunda-feira.",
     "setupLocked": "A configuração fica bloqueada quando o bloco começa",
+    "setupLockedFirstWindow": "O primeiro dia de scrims desta semana já começou, por isso a configuração está bloqueada. Reabre na próxima segunda-feira.",
+    "setupLockedManual": "Confirmaste a configuração desta semana, por isso está bloqueada. Reabre na próxima segunda-feira.",
+    "setupLockedWeekStarted": "Já foi jogado um bloco de scrims esta semana, por isso a configuração está bloqueada. Reabre na próxima segunda-feira.",
     "setupUnlockWindow": "A configuração pode ser alterada antes de o bloco começar",
     "streaks": "Sequências",
     "tags": {
