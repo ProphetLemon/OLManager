@@ -395,6 +395,7 @@ describe("DashboardV2 shell wiring", () => {
 
     const link = await screen.findByRole("link", { name: "onAir.nav.skip" });
     expect(link).toHaveAttribute("href", "#main-content");
+    expect(link).toHaveClass("focus:min-h-[var(--target-min)]");
 
     const main = screen.getByRole("main");
     expect(main).toHaveAttribute("id", "main-content");

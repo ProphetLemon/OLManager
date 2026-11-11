@@ -102,7 +102,7 @@ export function StandingsPanel({ data, onOpenTeams }: StandingsPanelProps) {
                     type="button"
                     onClick={onOpenTeams}
                     title={row.name}
-                    className="flex min-h-6 w-full min-w-0 items-center gap-1.5 rounded-md text-start hover:underline"
+                    className="flex min-h-[var(--target-min)] w-full min-w-0 items-center gap-1.5 rounded-md text-start hover:underline"
                   >
                     <ClubShield name={row.name} logoUrl={row.logoUrl} size="sm" />
                     <span data-slot="standings-short" className="w-10 shrink-0 font-heading text-base font-semibold uppercase leading-none tracking-wide">{row.shortName}</span>

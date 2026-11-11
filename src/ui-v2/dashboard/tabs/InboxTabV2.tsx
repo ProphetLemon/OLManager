@@ -199,7 +199,7 @@ export function InboxTabV2({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("common.search")}
-              className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground"
+              className="min-h-[var(--target-min)] flex-1 bg-transparent text-sm placeholder:text-muted-foreground"
             />
           </div>
 
@@ -319,7 +319,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
+        "min-h-[var(--target-min)] rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
         active
           ? "border-primary bg-primary/10 text-club-text"
           : accent

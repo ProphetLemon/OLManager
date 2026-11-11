@@ -653,7 +653,7 @@ function GameSegmented({
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-heading font-bold uppercase tracking-wider transition-all ${
+          className={`flex min-h-[var(--target-min)] min-w-[var(--target-min)] items-center justify-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-heading font-bold uppercase tracking-wider transition-all ${
             value === opt.value
               ? "border-accent-400 text-accent-400 bg-accent-400/10"
               : "border-border text-foreground/80 hover:border-white/35 hover:text-foreground"
