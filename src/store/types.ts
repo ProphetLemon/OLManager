@@ -51,6 +51,10 @@ export interface FinancialTransactionData {
   source?: string;
   source_id?: string | null;
   correlation_id?: string | null;
+  /** i18n key of the line text; absent in saves from before the key existed. */
+  description_key?: string | null;
+  /** Interpolation parameters of `description_key` (names, never ids). */
+  description_params?: Record<string, string>;
 }
 
 export interface TeamSeasonRecord {

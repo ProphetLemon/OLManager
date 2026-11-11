@@ -2683,6 +2683,25 @@
     "compare": "Compare"
   },
   "be": {
+    "ledger": {
+      "playerWages": "Monthly player wages",
+      "staffWages": "Monthly staff wages",
+      "facilityUpkeep": "Monthly facility upkeep",
+      "sponsorshipIncome": "Monthly sponsorship income",
+      "matchdayRevenue": "Monthly matchday revenue",
+      "staffHiring": "Staff hiring cost: {{name}}",
+      "freeAgentSigning": "Free agent signing fee for {{player}}",
+      "transferPurchase": "Transfer purchase fee for {{player}}",
+      "transferSale": "Transfer sale fee for {{player}}",
+      "contractTermination": "Contract termination penalty for {{player}}",
+      "seasonPrize": "Season {{season}} prize money (position {{position}})",
+      "promotionFunding": "Promotion funding",
+      "academyAcquisition": "Academy acquisition: {{name}}",
+      "mainHubExpansion": "Main facility hub expansion",
+      "moduleUpgrade": "Facility module upgrade: {{module}}",
+      "facilityUpgrade": "Facility upgrade: {{facility}}",
+      "facilityTypes": { "Training": "Training", "Medical": "Medical", "Scouting": "Scouting" }
+    },
     "sender": {
       "assistantCoach": "Assistant Coach",
       "fitnessCoach": "Fitness Coach",

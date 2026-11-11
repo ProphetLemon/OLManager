@@ -6,6 +6,7 @@ import type {
   MessageAction,
   NewsArticle,
   BoardObjective,
+  FinancialTransactionData,
 } from '../../store/gameStore';
 import {
   inferLegacyDelegatedRenewalsParams,
@@ -37,6 +38,32 @@ export function resolveBackendText(
   params?: Record<string, string>,
 ): string {
   return resolve(key, fallback, params);
+}
+
+type Translate = (key: string, options?: Record<string, string>) => string;
+
+const DOTTED_KEY = /^[A-Za-z]+(\.[A-Za-z]+)+$/;
+
+/**
+ * Text of a finances ledger line: the translated key when the line has one that resolves,
+ * otherwise the English text stored with the line (saves from before the key existed).
+ * Empty when the line has neither, so the caller can fall back to the kind label.
+ * `translate` lets a caller with its own i18next instance (the `t` of useTranslation) resolve
+ * in its language. A parameter that is itself a dotted key (a facility name) is translated.
+ */
+export function resolveLedgerDescription(
+  entry: FinancialTransactionData,
+  translate: Translate = (key, options) => i18n.t(key, options),
+): string {
+  if (!entry.description_key) return entry.description;
+  const params: Record<string, string> = { ...entry.description_params };
+  for (const [name, value] of Object.entries(params)) {
+    if (!DOTTED_KEY.test(value)) continue;
+    const translated = translate(value);
+    if (translated !== value) params[name] = translated;
+  }
+  const text = translate(entry.description_key, params);
+  return text === entry.description_key ? entry.description : text;
 }
 
 function boardObjectiveFallback(objective: BoardObjective): string {

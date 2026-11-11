@@ -78,6 +78,7 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/lib/i18n/backendI18n", () => ({
   resolveMessage: (message: unknown) => message,
+  resolveLedgerDescription: (entry: { description: string }) => entry.description,
 }));
 
 vi.mock("@/lib/players/playerPhotos", () => ({

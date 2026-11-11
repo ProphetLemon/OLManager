@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import i18next from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -151,5 +151,90 @@ describe("FinancesTabV2 in the Spanish UI", () => {
     expect(screen.queryByText("Staff wage")).toBeNull();
     expect(screen.queryByText("Salary")).toBeNull();
     expect(screen.getByRole("option", { name: "Compra de traspaso" })).toBeInTheDocument();
+  });
+
+  describe("ledger line text", () => {
+    const ledgerLine = (overrides: Record<string, unknown>) => ({
+      date: "2026-01-03",
+      description: "Staff hiring cost: Ana Coach",
+      amount: -60_000,
+      kind: "StaffWage",
+      source: "staff",
+      balance_after: 940_000,
+      ...overrides,
+    });
+    const withLedger = (lines: Record<string, unknown>[]) =>
+      gameState([player()], { financial_ledger: lines } as unknown as Partial<TeamData>);
+
+    it("shows a line that has a key in Spanish, with the name in the text", async () => {
+      await renderSpanish(
+        withLedger([
+          ledgerLine({
+            description_key: "be.ledger.staffHiring",
+            description_params: { name: "Ana Coach" },
+          }),
+        ]),
+      );
+      expect(screen.getByText("Coste de contratación de staff: Ana Coach")).toBeInTheDocument();
+      expect(screen.queryByText("Staff hiring cost: Ana Coach")).toBeNull();
+    });
+
+    it("translates a facility name that comes as a key parameter", async () => {
+      await renderSpanish(
+        withLedger([
+          ledgerLine({
+            description: "Facility module upgrade: ScrimsRoom",
+            kind: "FacilityUpgrade",
+            description_key: "be.ledger.moduleUpgrade",
+            description_params: { module: "finances.facilityScrimsRoom" },
+          }),
+        ]),
+      );
+      expect(screen.getByText("Mejora de módulo de instalaciones: Sala de scrims")).toBeInTheDocument();
+    });
+
+    it("shows the stored description for a line without a key", async () => {
+      await renderSpanish(withLedger([ledgerLine({})]));
+      expect(screen.getByText("Staff hiring cost: Ana Coach")).toBeInTheDocument();
+    });
+
+    it("shows the stored description when the key is not in the locale", async () => {
+      await renderSpanish(
+        withLedger([
+          ledgerLine({
+            description_key: "be.ledger.doesNotExist",
+            description_params: { name: "Ana Coach" },
+          }),
+        ]),
+      );
+      expect(screen.getByText("Staff hiring cost: Ana Coach")).toBeInTheDocument();
+      expect(screen.queryByText("be.ledger.doesNotExist")).toBeNull();
+    });
+
+    it("shows the kind label for a line with neither a key nor a description", async () => {
+      await renderSpanish(withLedger([ledgerLine({ description: "" })]));
+      expect(screen.getAllByText("Salario del staff").length).toBeGreaterThan(1);
+    });
+
+    it("finds a line by a word of its translated text", async () => {
+      await renderSpanish(
+        withLedger([
+          ledgerLine({
+            description_key: "be.ledger.staffHiring",
+            description_params: { name: "Ana Coach" },
+          }),
+          ledgerLine({
+            description: "Monthly player wages",
+            kind: "Salary",
+            description_key: "be.ledger.playerWages",
+          }),
+        ]),
+      );
+      fireEvent.change(screen.getByPlaceholderText("Buscar transacciones"), {
+        target: { value: "contratación" },
+      });
+      expect(screen.getByText("Coste de contratación de staff: Ana Coach")).toBeInTheDocument();
+      expect(screen.queryByText("Salarios mensuales de jugadores")).toBeNull();
+    });
   });
 });

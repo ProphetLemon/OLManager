@@ -3,8 +3,8 @@ use crate::domain::message::*;
 use crate::domain::player::PlayerSeasonStats;
 use crate::domain::team::{FinancialTransactionKind, TeamSeasonRecord};
 use crate::finances::{
-    BudgetImpact, FinanceTransactionInput, calc_annual_wages, push_board_financial_health_mail,
-    push_prize_payout_mail, record_transaction,
+    BudgetImpact, FinanceTransactionInput, LedgerText, calc_annual_wages,
+    push_board_financial_health_mail, push_prize_payout_mail, record_transaction_with_text,
 };
 use crate::custom_team::is_custom_team_id;
 use crate::game::Game;
@@ -595,7 +595,7 @@ fn process_end_of_season_inner(
             team.form.clear();
 
             if prize_money > 0 {
-                record_transaction(
+                record_transaction_with_text(
                     team,
                     FinanceTransactionInput {
                         date: last_fixture_date.clone(),
@@ -613,6 +613,10 @@ fn process_end_of_season_inner(
                         source_id: Some(format!("season-{season}-position-{position}")),
                         correlation_id: Some(format!("prize:{}:{}:{}", team.id, season, position)),
                     },
+                    LedgerText::new(
+                        "be.ledger.seasonPrize",
+                        &[("season", &season.to_string()), ("position", &position.to_string())],
+                    ),
                 )
                 .ok();
             }

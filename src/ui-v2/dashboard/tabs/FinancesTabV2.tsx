@@ -36,7 +36,8 @@ import {
   getTransferBudgetSummary,
   getSeasonNetSummary,
 } from "@/lib/finances/finance";
-import type { FinancialTransactionKind } from "@/store/types";
+import type { FinancialTransactionData, FinancialTransactionKind } from "@/store/types";
+import { resolveLedgerDescription } from "@/lib/i18n/backendI18n";
 import type { FacilityUpgradeId } from "@/lib/finances/lolFinanceContracts";
 import {
   getClubInstallationContract,
@@ -120,6 +121,9 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
   const monthlySuffix = t("finances.perMonthSuffix", "/mo");
   const ledgerKindLabel = (kind: FinancialTransactionKind): string =>
     t(`finances.ledgerKinds.${kind}`, { defaultValue: LEDGER_KIND_LABELS[kind] ?? kind });
+  const ledgerLineText = (entry: FinancialTransactionData): string =>
+    resolveLedgerDescription(entry, (key, options) => t(key, options) as string) ||
+    ledgerKindLabel(entry.kind);
 
   const myTeam = gameState.teams.find((tm) => tm.id === gameState.manager.team_id);
   const roster = myTeam ? gameState.players.filter((p) => p.team_id === myTeam.id) : [];
@@ -156,12 +160,14 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
   const financialLedger = myTeam ? getFinancialLedger(myTeam) : [];
   const ledgerSources = useMemo(() => getLedgerSources(financialLedger), [financialLedger]);
   const filteredLedger = useMemo(
-    () => filterLedgerEntries(financialLedger, {
-      search: ledgerSearch,
-      kind: ledgerKindFilter,
-      source: ledgerSourceFilter,
-    }),
-    [financialLedger, ledgerSearch, ledgerKindFilter, ledgerSourceFilter],
+    () => filterLedgerEntries(
+      financialLedger,
+      { search: ledgerSearch, kind: ledgerKindFilter, source: ledgerSourceFilter },
+      ledgerLineText,
+    ),
+    // `t` changes with the language, so the search follows the language of the rows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [financialLedger, ledgerSearch, ledgerKindFilter, ledgerSourceFilter, t],
   );
   const ledgerGroups = useMemo(() => groupLedgerEntriesByDate(filteredLedger), [filteredLedger]);
   const totalValue = roster.reduce((s, p) => s + safeFinanceNumber(p.market_value), 0);
@@ -510,7 +516,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                     return (
                       <div key={`${entry.id ?? entry.date}-${entry.kind}-${index}`} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg bg-muted/40 px-3 py-2 text-sm md:grid-cols-[1fr_8rem_auto]">
                         <div className="min-w-0">
-                          <span className="block truncate text-foreground">{entry.description || ledgerKindLabel(entry.kind)}</span>
+                          <span className="block truncate text-foreground">{ledgerLineText(entry)}</span>
                           <span className="mt-0.5 inline-flex gap-2 text-caption text-muted-foreground">
                             <span>{ledgerKindLabel(entry.kind)}</span>
                             <span>·</span>

@@ -1,7 +1,9 @@
 use crate::domain::team::{
     Facilities, FacilityType, FinancialTransactionKind, MainFacilityModuleKind, Team,
 };
-use crate::finances::{BudgetImpact, FinanceTransactionInput, record_transaction};
+use crate::finances::{
+    BudgetImpact, FinanceTransactionInput, LedgerText, record_transaction_with_text,
+};
 
 pub const BASE_FACILITY_UPGRADE_COST: i64 = 250_000;
 pub const BASE_MAIN_HUB_EXPANSION_COST: i64 = 500_000;
@@ -70,7 +72,7 @@ pub fn expand_main_facility_hub(team: &mut Team, date: &str) -> Result<i64, Stri
         ));
     }
 
-    record_transaction(
+    record_transaction_with_text(
         team,
         FinanceTransactionInput {
             date: date.to_string(),
@@ -83,6 +85,7 @@ pub fn expand_main_facility_hub(team: &mut Team, date: &str) -> Result<i64, Stri
             source_id: Some("main-hub".to_string()),
             correlation_id: Some(format!("facility:{}:{date}:main-hub", team.id)),
         },
+        LedgerText::new("be.ledger.mainHubExpansion", &[]),
     )
     .map_err(|err| format!("Failed to record facility expansion: {err:?}"))?;
     team.facilities.main_hub_level = team
@@ -112,7 +115,7 @@ pub fn upgrade_main_facility_module(
         ));
     }
 
-    record_transaction(
+    record_transaction_with_text(
         team,
         FinanceTransactionInput {
             date: date.to_string(),
@@ -125,6 +128,10 @@ pub fn upgrade_main_facility_module(
             source_id: Some(format!("{module:?}")),
             correlation_id: Some(format!("facility:{}:{date}:{module:?}", team.id)),
         },
+        LedgerText::new(
+            "be.ledger.moduleUpgrade",
+            &[("module", &format!("finances.facility{module:?}"))],
+        ),
     )
     .map_err(|err| format!("Failed to record facility module upgrade: {err:?}"))?;
     set_module_level(
@@ -155,7 +162,7 @@ pub fn upgrade_facility(
         team.facilities.main_hub_level = target_level;
     }
 
-    record_transaction(
+    record_transaction_with_text(
         team,
         FinanceTransactionInput {
             date: date.to_string(),
@@ -168,6 +175,10 @@ pub fn upgrade_facility(
             source_id: Some(format!("{facility_type:?}")),
             correlation_id: Some(format!("facility:{}:{date}:{facility_type:?}", team.id)),
         },
+        LedgerText::new(
+            "be.ledger.facilityUpgrade",
+            &[("facility", &format!("be.ledger.facilityTypes.{facility_type:?}"))],
+        ),
     )
     .map_err(|err| format!("Failed to record facility upgrade: {err:?}"))?;
 
