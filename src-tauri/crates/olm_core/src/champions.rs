@@ -490,6 +490,125 @@ fn base_role_score(role: &str) -> i16 {
     }
 }
 
+/// Games a pair is assumed to have played at a 50% win rate before its own results count.
+const ANCHOR_WIN_RATE_PRIOR_GAMES: f64 = 50.0;
+/// Relative change of presence per unit of (shrunk) win rate: one point of win rate is 4%.
+const ANCHOR_WIN_RATE_GAIN: f64 = 4.0;
+/// Bounds of the win-rate factor, so that an extreme record cannot erase or double presence.
+const ANCHOR_WIN_RATE_FACTOR_MIN: f64 = 0.5;
+const ANCHOR_WIN_RATE_FACTOR_MAX: f64 = 1.5;
+/// Every game has two picks per role (one per side).
+const PICKS_PER_ROLE_AND_GAME: u32 = 2;
+/// Rank quantile (0 = best of the role) and score of the centre of each tier band: the
+/// bands of `tier_from_rank` on the scale of `tier_to_score`.
+const ANCHOR_SCORE_POINTS: [(f64, f64); 5] = [
+    (0.06, 82.0),
+    (0.23, 70.0),
+    (0.49, 58.0),
+    (0.75, 46.0),
+    (0.93, 34.0),
+];
+const ANCHOR_SCORE_MIN: f64 = 30.0;
+const ANCHOR_SCORE_MAX: f64 = 84.0;
+
+#[derive(Deserialize)]
+struct ProBuildsFile {
+    games: u32,
+    champions: HashMap<String, HashMap<String, ProBuildsPair>>,
+}
+
+#[derive(Deserialize)]
+struct ProBuildsPair {
+    games: u32,
+    wins: u32,
+}
+
+/// Professional strength of a champion-role pair, from its record: its presence (share of the
+/// role's picks) scaled by its win rate shrunk toward 50%. No games gives 0, the lowest value.
+fn real_meta_anchor(games: u32, wins: u32, role_picks: u32) -> f64 {
+    if games == 0 || role_picks == 0 {
+        return 0.0;
+    }
+    let presence = f64::from(games) / f64::from(role_picks);
+    let shrunk_win_rate = (f64::from(wins) + ANCHOR_WIN_RATE_PRIOR_GAMES / 2.0)
+        / (f64::from(games) + ANCHOR_WIN_RATE_PRIOR_GAMES);
+    let factor = (1.0 + ANCHOR_WIN_RATE_GAIN * (shrunk_win_rate - 0.5))
+        .clamp(ANCHOR_WIN_RATE_FACTOR_MIN, ANCHOR_WIN_RATE_FACTOR_MAX);
+    presence * factor
+}
+
+/// Score on the game's tier scale for a pair that sits at `quantile` of its role (0 = best).
+fn anchor_score_at_quantile(quantile: f64) -> i16 {
+    let segment = ANCHOR_SCORE_POINTS
+        .windows(2)
+        .find(|pair| quantile <= pair[1].0)
+        .unwrap_or(&ANCHOR_SCORE_POINTS[ANCHOR_SCORE_POINTS.len() - 2..]);
+    let ((q0, s0), (q1, s1)) = (segment[0], segment[1]);
+    let score = s0 + (s1 - s0) * (quantile - q0) / (q1 - q0);
+    score.clamp(ANCHOR_SCORE_MIN, ANCHOR_SCORE_MAX).round() as i16
+}
+
+/// Anchor score of every pair of the role catalogue, by `champion_role_key`. Each role is
+/// ranked on its own and mapped onto the tier scale, so every role has the same share of
+/// every tier. Computed from the embedded builds file, never saved.
+fn real_meta_scores() -> &'static HashMap<String, i16> {
+    static SCORES: OnceLock<HashMap<String, i16>> = OnceLock::new();
+    SCORES.get_or_init(|| {
+        let raw = include_str!("../../../../assets/simulation/champion-builds.v1.json");
+        let builds: ProBuildsFile = serde_json::from_str(raw).unwrap_or(ProBuildsFile {
+            games: 0,
+            champions: HashMap::new(),
+        });
+        let role_picks = builds.games * PICKS_PER_ROLE_AND_GAME;
+        let record = |champion_id: &str, role: &str| {
+            let pair = builds
+                .champions
+                .get(champion_id)
+                .and_then(|roles| {
+                    roles
+                        .iter()
+                        .find(|(name, _)| normalize_role(name).as_deref() == Some(role))
+                })
+                .map(|(_, pair)| pair);
+            real_meta_anchor(
+                pair.map_or(0, |pair| pair.games),
+                pair.map_or(0, |pair| pair.wins),
+                role_picks,
+            )
+        };
+
+        let mut by_role: HashMap<&str, Vec<(&str, f64)>> = HashMap::new();
+        for (champion_id, role) in champion_catalog() {
+            by_role
+                .entry(role)
+                .or_default()
+                .push((champion_id, record(champion_id, role)));
+        }
+
+        let mut scores = HashMap::new();
+        for (role, mut pairs) in by_role {
+            pairs.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(b.0)));
+            let total = pairs.len() as f64;
+            for (rank, (champion_id, _)) in pairs.iter().enumerate() {
+                let quantile = (rank as f64 + 0.5) / total;
+                scores.insert(
+                    champion_role_key(champion_id, role),
+                    anchor_score_at_quantile(quantile),
+                );
+            }
+        }
+        scores
+    })
+}
+
+/// Anchor score of one catalogue pair.
+fn real_meta_score(champion_id: &str, role: &str) -> i16 {
+    real_meta_scores()
+        .get(&champion_role_key(champion_id, role))
+        .copied()
+        .unwrap_or_else(|| base_role_score(role))
+}
+
 fn upsert_mastery(game: &mut Game, player_id: &str, champion_id: &str, value: u8) {
     let today = today_str(game);
     if let Some(existing) = game.champion_masteries.iter_mut().find(|entry| {
@@ -2027,5 +2146,55 @@ mod tests {
             current_role_for_player(game, team_id, &player.id, player.natural_position),
             expected,
         );
+    }
+
+    #[test]
+    fn anchor_grows_with_presence_at_equal_win_rate() {
+        assert!(real_meta_anchor(2000, 1000, 25842) > real_meta_anchor(1000, 500, 25842));
+    }
+
+    #[test]
+    fn anchor_grows_with_win_rate_at_equal_presence() {
+        assert!(real_meta_anchor(1000, 560, 25842) > real_meta_anchor(1000, 500, 25842));
+        assert!(real_meta_anchor(1000, 500, 25842) > real_meta_anchor(1000, 440, 25842));
+    }
+
+    #[test]
+    fn anchor_of_twenty_games_at_eighty_percent_loses_to_two_thousand_at_fifty_two() {
+        assert!(real_meta_anchor(20, 16, 25842) < real_meta_anchor(2000, 1040, 25842));
+    }
+
+    #[test]
+    fn anchor_without_games_is_the_lowest() {
+        assert_eq!(real_meta_anchor(0, 0, 25842), 0.0);
+        assert!(real_meta_anchor(1, 0, 25842) > 0.0);
+    }
+
+    #[test]
+    fn anchor_scores_cover_the_catalogue_with_the_same_tier_shares_in_every_role() {
+        let scores = real_meta_scores();
+        assert_eq!(scores.len(), champion_catalog().len());
+        for role in ["Top", "Jungle", "Mid", "ADC", "Support"] {
+            let mut role_scores: Vec<i16> = champion_catalog()
+                .iter()
+                .filter(|(_, r)| r == role)
+                .map(|(champion_id, r)| real_meta_score(champion_id, r))
+                .collect();
+            role_scores.sort_unstable_by_key(|score| std::cmp::Reverse(*score));
+            let total = role_scores.len();
+            assert!(role_scores[0] >= 80, "{role} best {}", role_scores[0]);
+            assert!(
+                role_scores[total - 1] <= 34,
+                "{role} worst {}",
+                role_scores[total - 1]
+            );
+            let s_cut = anchor_score_at_quantile(0.12);
+            let top_band = role_scores.iter().filter(|score| **score > s_cut).count();
+            let expected = (total as f64 * 0.12).round() as usize;
+            assert!(
+                top_band.abs_diff(expected) <= 1,
+                "{role}: {top_band} vs {expected}"
+            );
+        }
     }
 }
