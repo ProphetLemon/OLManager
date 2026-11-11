@@ -32,10 +32,9 @@ use super::*;
 /// Checkpoint minutes at which every champion is snapshotted.
 const CHECKPOINT_MINUTES: [u32; 6] = [5, 10, 15, 20, 25, 30];
 
-/// Simulated seconds per tick: `dt_sec` 0.2 is clamped to 0.05 and scaled by speed 12.
-/// Playback speed of the run, `ECON_HARNESS_SPEED` (default 12). The engine advances
-/// `0.05 s * speed` of game time per step, so 12 measures the step of the x12 button and
-/// 1 the step of the x1 button a spectator watches at.
+/// Playback speed of the run, `ECON_HARNESS_SPEED` (default 12). The engine runs fixed
+/// steps whatever the speed, so it only changes how many `tick` calls a step takes in
+/// `tick` mode and has no effect in `skip` mode.
 fn harness_speed() -> f64 {
     std::env::var("ECON_HARNESS_SPEED")
         .ok()
@@ -44,9 +43,9 @@ fn harness_speed() -> f64 {
         .unwrap_or(12.0)
 }
 
-/// Game seconds per engine step at the harness speed.
+/// Game seconds per engine step.
 fn tick_sec() -> f64 {
-    0.05 * harness_speed()
+    runtime::FIXED_STEP_SEC
 }
 
 /// Step limit of a full match, kept at the same game time whatever the speed.
@@ -90,7 +89,7 @@ impl Drive {
         }
     }
 
-    /// Tick count of each checkpoint. `skip_to_end` decides macro actions on
+    /// Step count of each checkpoint. `skip_to_end` decides macro actions on
     /// every third tick counted from the start of each call, so a chunk must
     /// be a multiple of three ticks for a chunked run to equal a single call.
     fn checkpoint_ticks(self) -> [u64; 6] {
@@ -260,22 +259,26 @@ fn run_trace(
             }
         }
         Drive::Tick => {
+            // One 0.05 s frame per call, as the watched match sends.
             while done < max_ticks && !has_winner(&store, &session_id) {
                 tick(
                     &store,
                     SimLiveTickRequest {
                         session_id: session_id.clone(),
-                        dt_sec: 0.2,
+                        dt_sec: 0.05,
                         running: true,
                         speed: harness_speed(),
                     },
                 )
                 .expect("tick");
-                done += 1;
-                if let Some(i) = targets.iter().position(|&t| t == done)
-                    && !has_winner(&store, &session_id)
-                {
-                    checkpoints[i] = Some(snapshot(&store, &session_id, &start));
+                done = store.sessions.lock().expect("lock")[&session_id].tick_index;
+                for (i, &target) in targets.iter().enumerate() {
+                    if checkpoints[i].is_none()
+                        && done >= target
+                        && !has_winner(&store, &session_id)
+                    {
+                        checkpoints[i] = Some(snapshot(&store, &session_id, &start));
+                    }
                 }
             }
         }

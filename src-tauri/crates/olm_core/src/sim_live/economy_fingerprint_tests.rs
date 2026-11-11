@@ -45,7 +45,11 @@ fn fingerprint_match(label: &str, n: usize, home: Side, away: Side, max_ticks: u
     )
     .expect("skip");
     let sessions = store.sessions.lock().expect("lock");
-    let state = &sessions[&session_id].state;
+    format!("{label} {n} {}", state_fingerprint(&sessions[&session_id].state))
+}
+
+/// Winner, duration, kills, towers and, per champion, final gold, KDA, creep score and level.
+pub(super) fn state_fingerprint(state: &RuntimeState) -> String {
     let champions: Vec<String> = state
         .champions
         .iter()
@@ -63,7 +67,7 @@ fn fingerprint_match(label: &str, n: usize, home: Side, away: Side, max_ticks: u
         })
         .collect();
     format!(
-        "{label} {n} winner={:?} t={:.3} kills={}+{} towers={}+{} {}",
+        "winner={:?} t={:.3} kills={}+{} towers={}+{} {}",
         state.winner,
         state.time_sec,
         state.stats.blue.kills,

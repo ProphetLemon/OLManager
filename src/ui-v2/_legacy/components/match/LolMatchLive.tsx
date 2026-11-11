@@ -17,6 +17,13 @@ import {
 } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
 import { LolSimV2Client } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/tauri-client";
 import { renderSimulation } from "@/ui-v2/_legacy/components/match/lol-prototype/ui/render";
+import {
+  EMPTY_STEP_VIEW,
+  nextStepView,
+  smoothClockSec,
+  stateToDraw,
+  type StepView,
+} from "@/ui-v2/_legacy/components/match/lol-prototype/ui/stepInterpolation";
 import { LecLowerThirdPanel } from "@/ui-v2/_legacy/components/match/lol-prototype/ui/panels";
 import { championPlaysRole, resolveRoleTier } from "@/lib/champions/championRoleFit";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -47,6 +54,9 @@ const SPEEDS = [
   { id: "x8", value: 32 },
   { id: "x12", value: 48 }
 ];
+
+// Longest slice of real time one animation frame may add to what the engine is asked to play.
+const BACKEND_MAX_FRAME_SEC = 0.25;
 
 const DDRAGON_VERSION = "14.24.1";
 const USE_RUST_SIM_V2 = true;
@@ -600,6 +610,7 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
   const simRef = useRef<PrototypeSimulation | null>(null);
   const backendClientRef = useRef<LolSimV2Client | null>(null);
   const backendStateRef = useRef<LolSimV1RuntimeState | null>(null);
+  const backendViewRef = useRef<StepView>(EMPTY_STEP_VIEW);
   const backendTickInFlightRef = useRef(false);
   const backendPendingDtRef = useRef(0);
   const goldDiffTimelineRef = useRef<Array<{ minute: number; diff: number }>>([]);
@@ -623,6 +634,7 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
     simRef.current = tsSim;
     backendClientRef.current = null;
     backendStateRef.current = null;
+    backendViewRef.current = EMPTY_STEP_VIEW;
     backendTickInFlightRef.current = false;
     backendPendingDtRef.current = 0;
     goldDiffTimelineRef.current = [{ minute: 0, diff: 0 }];
@@ -647,6 +659,7 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
       })
       .then((response) => {
         if (disposed || backendClientRef.current !== client) return;
+        backendViewRef.current = nextStepView(backendViewRef.current, backendStateRef.current, response.state, performance.now());
         backendStateRef.current = response.state;
       })
       .catch(() => {
@@ -675,7 +688,8 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
       if (!sim || !canvas) return;
 
       if (!lastRef.current) lastRef.current = ts;
-      const dt = Math.min(0.05, (ts - lastRef.current) / 1000);
+      const elapsedSec = Math.max(0, (ts - lastRef.current) / 1000);
+      const dt = Math.min(0.05, elapsedSec);
       lastRef.current = ts;
 
       sim.setRunning(running);
@@ -686,15 +700,20 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
         backendPendingDtRef.current = 0;
       } else if (backendClient && backendStateRef.current) {
         // Acumulador anti-tirones: si backend está ocupado, no perdemos tiempo simulado.
-        backendPendingDtRef.current = Math.min(0.5, backendPendingDtRef.current + dt);
+        // The engine turns the real time into fixed steps, so it gets all of it at once.
+        backendPendingDtRef.current = Math.min(
+          0.5,
+          backendPendingDtRef.current + Math.min(BACKEND_MAX_FRAME_SEC, elapsedSec),
+        );
         if (!backendTickInFlightRef.current) {
           backendTickInFlightRef.current = true;
-          const dtForBackend = Math.min(0.05, backendPendingDtRef.current);
-          backendPendingDtRef.current = Math.max(0, backendPendingDtRef.current - dtForBackend);
+          const dtForBackend = backendPendingDtRef.current;
+          backendPendingDtRef.current = 0;
           void backendClient
             .tick({ dtSec: dtForBackend, running, speed })
             .then((response) => {
               if (backendClientRef.current !== backendClient) return;
+              backendViewRef.current = nextStepView(backendViewRef.current, backendStateRef.current, response.state, performance.now());
               backendStateRef.current = response.state;
             })
             .catch(() => {
@@ -732,7 +751,9 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
         canvas.width = size;
         canvas.height = size;
       }
-      renderSimulation(canvas, state, walls, championByPlayerId);
+      // Movement is blended between steps, so the map moves smoothly at every speed.
+      const drawn = state === backendStateRef.current ? stateToDraw(backendViewRef.current, state, performance.now()) : state;
+      renderSimulation(canvas, drawn, walls, championByPlayerId);
 
       if (state.winner && !finishedRef.current) {
         finishedRef.current = true;
@@ -811,7 +832,10 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
   const redVoidgrubs = Math.max(hudObjectiveCountersRef.current.redVoidgrubs, redVoidgrubsRaw);
   hudObjectiveCountersRef.current.blueVoidgrubs = blueVoidgrubs;
   hudObjectiveCountersRef.current.redVoidgrubs = redVoidgrubs;
-  const clock = `${Math.floor((state?.timeSec ?? 0) / 60)}:${Math.floor((state?.timeSec ?? 0) % 60).toString().padStart(2, "0")}`;
+  const clockSec = state && state === backendStateRef.current
+    ? smoothClockSec(state, backendViewRef.current.receivedAtMs, performance.now())
+    : (state?.timeSec ?? 0);
+  const clock = `${Math.floor(clockSec / 60)}:${Math.floor(clockSec % 60).toString().padStart(2, "0")}`;
   const blueBrand = teamBrand(snapshot.home_team.name, gameState?.teams);
   const redBrand = teamBrand(snapshot.away_team.name, gameState?.teams);
   const leagueLogo = gameState?.user_competition_id
@@ -921,6 +945,7 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
         .reset({ seed: nextSeed, aiMode, policy: simPolicy, initialState: { ...sim.state, speed } })
         .then((response) => {
           if (backendClientRef.current !== backendClient) return;
+          backendViewRef.current = nextStepView(backendViewRef.current, backendStateRef.current, response.state, performance.now());
           backendStateRef.current = response.state;
           setTick((v) => v + 1);
         })

@@ -49,6 +49,10 @@ export type LolSimV1RuntimeState = Pick<
   "timeSec" | "running" | "winner" | "showWalls" | "champions" | "minions" | "structures" | "objectives" | "neutralTimers" | "stats" | "events"
 > & {
   speed: number;
+  /** Game seconds one engine step advances; the same at every playback speed. */
+  stepSec?: number;
+  /** Game seconds of the next step already collected, from 0 to `stepSec`. */
+  stepAccumSec?: number;
   goldDiffTimeline?: Array<{ minute: number; diff: number }>;
 };
 
