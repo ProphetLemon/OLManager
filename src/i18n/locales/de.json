@@ -2128,6 +2128,12 @@
       "masterySourceScouting": "Scouting",
       "masterySourceStaff": "Staff read",
       "assistantCoach": "Assistant coach",
+      "scrimSignalTitle": "Scrim-Vorbereitung",
+      "scrimSignalReasons": {
+        "recent champion reps": "aktuelle Wiederholungen mit dem Champion",
+        "scrimmed core together": "Kern gemeinsam in Scrims gespielt",
+        "recent prep vs this opponent": "aktuelle Vorbereitung auf diesen Gegner"
+      },
       "playerLabel": "Player",
       "swapTargetTitle": "Choose champion to swap",
       "warnCounterLastPick": "Careful with {{champion}}: it is countering your last pick.",

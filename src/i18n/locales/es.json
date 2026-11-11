@@ -2281,6 +2281,12 @@
       "masterySourceScouting": "Scouting",
       "masterySourceStaff": "Lectura staff",
       "assistantCoach": "Segundo entrenador",
+      "scrimSignalTitle": "Preparación de scrims",
+      "scrimSignalReasons": {
+        "recent champion reps": "reps recientes con el campeón",
+        "scrimmed core together": "núcleo entrenado junto en scrims",
+        "recent prep vs this opponent": "preparación reciente contra este rival"
+      },
       "playerLabel": "Jugador",
       "swapTargetTitle": "Elegir campeón para intercambiar",
       "warnCounterLastPick": "Ojo con {{champion}}: está countereando tu última selección.",

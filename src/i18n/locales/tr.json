@@ -2128,6 +2128,12 @@
       "masterySourceScouting": "Gözlem",
       "masterySourceStaff": "Personel Görüşü",
       "assistantCoach": "Asistan koç",
+      "scrimSignalTitle": "Scrim hazırlığı",
+      "scrimSignalReasons": {
+        "recent champion reps": "şampiyonla yakın zamanda yapılan tekrarlar",
+        "scrimmed core together": "scrimlerde birlikte çalışılan çekirdek",
+        "recent prep vs this opponent": "bu rakibe karşı yakın zamanlı hazırlık"
+      },
       "playerLabel": "Oyuncu",
       "swapTargetTitle": "Değiştirilecek şampiyonu seçin",
       "warnCounterLastPick": "Dikkatli olun: {{champion}} son seçiminizi (last pick) counterlıyor.",
