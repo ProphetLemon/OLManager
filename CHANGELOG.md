@@ -4,6 +4,29 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1111.2] - 2026-11-11
+
+### Changed
+
+- A player's season card shows games, wins, losses, KDA, creep score, kills and assists from the matches actually recorded, and each row of the match history names the champion played.
+- The manager's career numbers count the running season, and every split of a season reaches the career totals (only the last one did).
+- A contract is 1 to 5 years long on every path: renewals and delegated renewals now follow the rule the transfer negotiation already had, and the renewal dialog says so.
+- The weekly scrim form says why it is disabled and when it opens again.
+
+### Fixed
+
+- The finances ledger is written in the game's language, and transfer lines name the player instead of printing an id.
+- Raw keys instead of text in the Teams list headers and in about a hundred other labels that had no translation; a test now fails when a label is used in code and missing from a language.
+- English text in the Spanish interface: the Manager tab, the press conference, the team profile, the league table header, the Meta tab, the match timeline, the scrim report. The same texts are translated in the other languages.
+- "View standings" in a result message opens your league's table, and the Home standings panel lists all ten clubs of a ten-club league.
+- The league header shows the season and the number of teams and matches.
+- A victory message could print the score as "Club:2-1".
+- Number formats in the renewal counter-offer and the team profile; a dash instead of 0 where a match recorded no damage; no vision figure where nothing records it; no founding year for clubs that have none.
+- Labels that said one thing and showed another: the manager's losses, the "K / D / A" cell that shows objectives, the gold cell that shows damage.
+- The settings switches have a name and a role for assistive technology and a larger target.
+- A press question about a multi-game series after a single game.
+- Spanish texts that addressed the reader as "usted".
+
 ## [2026.1111.1] - 2026-11-11
 
 ### Added
