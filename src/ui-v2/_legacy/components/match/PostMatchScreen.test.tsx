@@ -547,6 +547,66 @@ describe("PostMatchScreen", function (): void {
     expect(screen.getByText("1. Alice")).toBeInTheDocument();
   });
 
+  it("finds the other matches of the round in the user's league when it is not the first one", function (): void {
+    const gameState = makeGameState();
+    gameState.user_competition_id = "les";
+    gameState.leagues = [
+      { id: "league-lec", competition_id: "lec", name: "LEC", season: 1, fixtures: [], standings: [] },
+      {
+        id: "league-les",
+        competition_id: "les",
+        name: "LES",
+        season: 1,
+        fixtures: [makeReportedFixture("fx1")],
+        standings: [],
+      },
+    ] as unknown as GameStateData["leagues"];
+
+    render(
+      <PostMatchScreen
+        snapshot={makeSnapshot()}
+        gameState={gameState}
+        currentFixture={{
+          id: "fixture-1",
+          matchday: 4,
+          date: "2026-08-01",
+          home_team_id: "team1",
+          away_team_id: "team2",
+          match_type: "League",
+          status: "Completed",
+          result: null,
+        }}
+        userSide="Home"
+        isSpectator={false}
+        importantEvents={[]}
+        roundSummary={{
+          matchday: 4,
+          is_complete: true,
+          pending_fixture_count: 0,
+          completed_results: [
+            {
+              fixture_id: "fx1",
+              home_team_id: "team1",
+              home_team_name: "Alpha FC",
+              away_team_id: "team2",
+              away_team_name: "Beta FC",
+              home_goals: 2,
+              away_goals: 1,
+            },
+          ],
+          standings_delta: [],
+          notable_upset: null,
+          top_scorer_delta: [],
+        }}
+        onPressConference={() => { }}
+        onFinish={() => { }}
+      />,
+    );
+
+    expect(screen.getByText("Alpha FC 2 - 1 Beta FC")).toBeInTheDocument();
+    expect(screen.getByText("View details")).toBeInTheDocument();
+  });
+
   it("opens a read-only detail modal for another completed fixture", function (): void {
     const gameState = makeGameState();
     gameState.leagues[0] = {
