@@ -64,8 +64,12 @@ fn take_stuck_log() -> Vec<StuckEvent> {
 /// Tracks how long one champion stayed within `IDLE_RADIUS` of an anchor.
 struct IdleTracker {
     radius: f64,
-    anchor: Option<(f64, Vec2)>,
+    anchor: Option<(f64, Vec2, String)>,
 }
+
+/// A finished stretch: when it began and ended, where it began and the note
+/// taken at its start.
+type Finished = (f64, f64, Vec2, String);
 
 impl IdleTracker {
     fn new(radius: f64) -> Self {
@@ -75,26 +79,34 @@ impl IdleTracker {
         }
     }
 
-    /// Feeds one observation. Returns `(start, end)` of a finished stretch that
-    /// lasted longer than `IDLE_LIMIT_SEC`; `eligible` false ends any stretch.
-    fn observe(&mut self, time: f64, pos: Vec2, eligible: bool) -> Option<(f64, f64)> {
-        match self.anchor {
-            Some((_, anchor)) if eligible && dist(anchor, pos) <= self.radius => None,
-            Some((start, _)) => {
-                self.anchor = eligible.then_some((time, pos));
-                (time - start > IDLE_LIMIT_SEC).then_some((start, time))
-            }
-            None => {
-                self.anchor = eligible.then_some((time, pos));
-                None
+    /// Feeds one observation. Returns a finished stretch that lasted longer
+    /// than `IDLE_LIMIT_SEC`; `eligible` false ends any stretch. `note` is
+    /// evaluated only when a new stretch starts.
+    fn observe(
+        &mut self,
+        time: f64,
+        pos: Vec2,
+        eligible: bool,
+        note: impl FnOnce() -> String,
+    ) -> Option<Finished> {
+        match &self.anchor {
+            Some((_, anchor, _)) if eligible && dist(*anchor, pos) <= self.radius => None,
+            _ => {
+                let finished = self
+                    .anchor
+                    .take()
+                    .filter(|(start, ..)| time - start > IDLE_LIMIT_SEC)
+                    .map(|(start, anchor, note)| (start, time, anchor, note));
+                self.anchor = eligible.then(|| (time, pos, note()));
+                finished
             }
         }
     }
 
     /// Closes the stretch still open when the match ends.
-    fn finish(&mut self, time: f64) -> Option<(f64, f64)> {
-        let (start, _) = self.anchor.take()?;
-        (time - start > IDLE_LIMIT_SEC).then_some((start, time))
+    fn finish(&mut self, time: f64) -> Option<Finished> {
+        let (start, anchor, note) = self.anchor.take()?;
+        (time - start > IDLE_LIMIT_SEC).then_some((start, time, anchor, note))
     }
 }
 
@@ -107,6 +119,8 @@ struct IdleStretch {
     start: f64,
     end: f64,
     path_empty: bool,
+    /// Where the champion was heading and the nearest jungle camp, for the report.
+    note: String,
     /// Nearest alive Baron, Elder, dragon, herald or grubs and its distance.
     objective_alive: Option<(String, f64)>,
 }
@@ -123,6 +137,9 @@ struct ObjectiveKill {
     last_killer_side: usize,
     last_other_side: usize,
     killer_level: i64,
+    /// Mean attack damage and max health of the killer's champions at the pit.
+    near_attack_damage: f64,
+    near_max_hp: f64,
     jungler_level: i64,
     jungler_kills: i64,
     jungler_deaths: i64,
@@ -161,6 +178,39 @@ fn near_pit(champions: &[ChampionRuntime], pos: Vec2, team: &str) -> Vec<i64> {
         })
         .map(|c| c.level)
         .collect()
+}
+
+fn describe_heading(
+    champion: &ChampionRuntime,
+    timers: Option<&NeutralTimersRuntime>,
+    now: f64,
+) -> String {
+    let target = champion
+        .target_path
+        .last()
+        .map(|t| format!("target ({:.2},{:.2}) at {:.3}", t.x, t.y, dist(champion.pos, *t)))
+        .unwrap_or_else(|| "no target".to_string());
+    let camp = timers
+        .and_then(|t| {
+            t.entities
+                .values()
+                .map(|timer| (timer, dist(champion.pos, timer.pos)))
+                .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Ordering::Equal))
+        })
+        .map(|(timer, d)| {
+            format!(
+                "nearest {} at {d:.3} alive {} hp {:.0} spawn in {:.0}s los {} cd {:.1} champion hp {:.0}%",
+                timer.key,
+                timer.alive,
+                timer.hp,
+                timer.next_spawn_at.map_or(-1.0, |at| at - now),
+                nav_grid().has_line_of_sight(champion.pos, timer.pos),
+                champion.attack_cd_until - now,
+                champion.hp / champion.max_hp * 100.0
+            )
+        })
+        .unwrap_or_default();
+    format!("{target}; {camp}")
 }
 
 fn run_detected_match(seed: usize) -> MatchReport {
@@ -244,6 +294,19 @@ fn run_detected_match(seed: usize) -> MatchReport {
                         .iter()
                         .find(|c| normalized_team(&c.team) == killer_team && c.role == "JGL");
                     let near = near_pit(&state.champions, timer.pos, killer_team);
+                    let near_champions: Vec<&ChampionRuntime> = state
+                        .champions
+                        .iter()
+                        .filter(|c| {
+                            c.alive
+                                && normalized_team(&c.team) == killer_team
+                                && dist(c.pos, timer.pos) <= OBJECTIVE_ATTEMPT_RADIUS
+                        })
+                        .collect();
+                    let mean = |f: fn(&ChampionRuntime) -> f64| {
+                        near_champions.iter().map(|c| f(c)).sum::<f64>()
+                            / near_champions.len().max(1) as f64
+                    };
                     report.objective_kills.push(ObjectiveKill {
                         key: key.to_string(),
                         time: now,
@@ -253,6 +316,8 @@ fn run_detected_match(seed: usize) -> MatchReport {
                         last_killer_side: attempt.last.get(killer_team).copied().unwrap_or(0),
                         last_other_side: attempt.last.get(other).copied().unwrap_or(0),
                         killer_level: near.iter().copied().max().unwrap_or(0),
+                        near_attack_damage: mean(|c| c.attack_damage),
+                        near_max_hp: mean(|c| c.max_hp),
                         jungler_level: jungler.map_or(0, |j| j.level),
                         jungler_kills: jungler.map_or(0, |j| j.kills),
                         jungler_deaths: jungler.map_or(0, |j| j.deaths),
@@ -289,22 +354,32 @@ fn run_detected_match(seed: usize) -> MatchReport {
                 let tracker = trackers
                     .entry((champion.id.clone(), kind))
                     .or_insert_with(|| IdleTracker::new(radius));
-                if let Some((start, end)) = tracker.observe(now, champion.pos, eligible) {
+                let note = || {
+                    if champion.role == "JGL" {
+                        describe_heading(champion, timers.as_ref(), now)
+                    } else {
+                        String::new()
+                    }
+                };
+                if let Some((start, end, anchor, note)) =
+                    tracker.observe(now, champion.pos, eligible, note)
+                {
                     let objective_alive = timers.as_ref().and_then(|t| {
                         t.entities
                             .values()
                             .filter(|timer| timer.alive && is_objective_neutral_key(&timer.key))
-                            .map(|timer| (timer.key.clone(), dist(champion.pos, timer.pos)))
+                            .map(|timer| (timer.key.clone(), dist(anchor, timer.pos)))
                             .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Ordering::Equal))
                     });
                     report.idle.push(IdleStretch {
                         kind,
                         role: champion.role.clone(),
                         state: champion.state.clone(),
-                        pos: champion.pos,
+                        pos: anchor,
                         start,
                         end,
                         path_empty: champion.target_path.is_empty(),
+                        note,
                         objective_alive,
                     });
                 }
@@ -323,7 +398,7 @@ fn run_detected_match(seed: usize) -> MatchReport {
     // one has a meaningful open stretch.
     for champion in state.champions.iter().filter(|_| state.winner.is_none()) {
         for kind in ["still", "loiter"] {
-            if let Some((start, end)) = trackers
+            if let Some((start, end, anchor, note)) = trackers
                 .get_mut(&(champion.id.clone(), kind))
                 .and_then(|tracker| tracker.finish(state.time_sec))
             {
@@ -331,10 +406,11 @@ fn run_detected_match(seed: usize) -> MatchReport {
                     kind,
                     role: champion.role.clone(),
                     state: champion.state.clone(),
-                    pos: champion.pos,
+                    pos: anchor,
                     start,
                     end,
                     path_empty: champion.target_path.is_empty(),
+                    note,
                     objective_alive: None,
                 });
             }
@@ -422,7 +498,7 @@ fn print_report(reports: &[MatchReport]) {
                 .map(move |k| (r.seed, k))
         }) {
             println!(
-                "  seed {seed} {:>5.1} min {} peak {}v{} last {}v{} killer lvl {} | jgl lvl {} {}/{}",
+                "  seed {seed} {:>5.1} min {} peak {}v{} last {}v{} killer lvl {} ad {:.0} hp {:.0} | jgl lvl {} {}/{}",
                 kill.time / 60.0,
                 kill.team,
                 kill.peak_killer_side,
@@ -430,6 +506,8 @@ fn print_report(reports: &[MatchReport]) {
                 kill.last_killer_side,
                 kill.last_other_side,
                 kill.killer_level,
+                kill.near_attack_damage,
+                kill.near_max_hp,
                 kill.jungler_level,
                 kill.jungler_kills,
                 kill.jungler_deaths
@@ -499,13 +577,14 @@ fn print_report(reports: &[MatchReport]) {
         }
         for (seed, stretch) in jungler.iter().take(12).map(|entry| **entry) {
             println!(
-                "  seed {seed} JGL {:.1}-{:.1} min at ({:.2},{:.2}) state {} path_empty {} objective {:?}",
+                "  seed {seed} JGL {:.1}-{:.1} min at ({:.2},{:.2}) state {} path_empty {} | {} | objective {:?}",
                 stretch.start / 60.0,
                 stretch.end / 60.0,
                 stretch.pos.x,
                 stretch.pos.y,
                 stretch.state,
                 stretch.path_empty,
+                stretch.note,
                 stretch.objective_alive
             );
         }
@@ -586,24 +665,30 @@ fn at(x: f64, y: f64) -> Vec2 {
 #[test]
 fn idle_tracker_reports_a_stretch_longer_than_the_limit() {
     let mut tracker = IdleTracker::new(IDLE_RADIUS);
-    assert_eq!(tracker.observe(0.0, at(0.5, 0.5), true), None);
-    assert_eq!(tracker.observe(30.0, at(0.505, 0.5), true), None);
-    assert_eq!(tracker.observe(50.0, at(0.505, 0.5), true), None);
-    assert_eq!(tracker.observe(60.0, at(0.7, 0.5), true), Some((0.0, 60.0)));
+    let note = || "start".to_string();
+    assert!(tracker.observe(0.0, at(0.5, 0.5), true, note).is_none());
+    assert!(tracker.observe(30.0, at(0.505, 0.5), true, note).is_none());
+    assert!(tracker.observe(50.0, at(0.505, 0.5), true, note).is_none());
+    let (start, end, anchor, note) = tracker
+        .observe(60.0, at(0.7, 0.5), true, || "next".to_string())
+        .expect("a 60 s stretch");
+    assert_eq!((start, end, anchor.x, note.as_str()), (0.0, 60.0, 0.5, "start"));
 }
 
 #[test]
 fn idle_tracker_ignores_short_stretches_and_fights() {
     let mut tracker = IdleTracker::new(IDLE_RADIUS);
-    tracker.observe(0.0, at(0.5, 0.5), true);
-    assert_eq!(tracker.observe(30.0, at(0.5, 0.5), false), None);
-    assert_eq!(tracker.observe(40.0, at(0.5, 0.5), true), None);
-    assert_eq!(tracker.finish(60.0), None);
+    let note = || String::new();
+    tracker.observe(0.0, at(0.5, 0.5), true, note);
+    assert!(tracker.observe(30.0, at(0.5, 0.5), false, note).is_none());
+    assert!(tracker.observe(40.0, at(0.5, 0.5), true, note).is_none());
+    assert!(tracker.finish(60.0).is_none());
 }
 
 #[test]
 fn idle_tracker_closes_the_open_stretch_at_the_end_of_the_match() {
     let mut tracker = IdleTracker::new(IDLE_RADIUS);
-    tracker.observe(10.0, at(0.5, 0.5), true);
-    assert_eq!(tracker.finish(100.0), Some((10.0, 100.0)));
+    tracker.observe(10.0, at(0.5, 0.5), true, String::new);
+    let (start, end, ..) = tracker.finish(100.0).expect("a 90 s stretch");
+    assert_eq!((start, end), (10.0, 100.0));
 }
