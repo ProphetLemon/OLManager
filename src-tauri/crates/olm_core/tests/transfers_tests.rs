@@ -756,6 +756,41 @@ fn release_player_contract_records_release_penalty_ledger_entry() {
 }
 
 #[test]
+fn release_player_contract_sends_a_message_with_i18n_keys() {
+    let mut player = make_user_player("player-release-msg");
+    player.contract_end = Some("2027-08-01".to_string());
+    player.wage = 120_000;
+    let mut game = make_game_with_player(player, vec![], 5_000_000, 2_000_000);
+
+    let penalty =
+        release_player_contract(&mut game, "player-release-msg").expect("release succeeds");
+
+    let message = game
+        .messages
+        .iter()
+        .find(|message| message.id == "contract_terminated_player-release-msg")
+        .expect("the termination message is sent");
+    assert_eq!(
+        message.subject_key.as_deref(),
+        Some("be.msg.contractTerminated.subject")
+    );
+    assert_eq!(
+        message.body_key.as_deref(),
+        Some("be.msg.contractTerminated.body")
+    );
+    assert_eq!(
+        message.i18n_params.get("player").map(String::as_str),
+        Some("player-release-msg. Test")
+    );
+    assert_eq!(
+        message.i18n_params.get("cost").map(String::as_str),
+        Some(penalty.to_string().as_str())
+    );
+    // The stored text stays English for saves and clients that ignore the keys.
+    assert!(message.subject.starts_with("Contract terminated:"));
+}
+
+#[test]
 fn accepting_pending_offer_executes_transfer_even_for_reluctant_player() {
     let mut player = make_user_player("player-accept-reluctant");
     player.contract_end = Some("2028-06-30".to_string());
