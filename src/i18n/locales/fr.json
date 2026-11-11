@@ -2719,7 +2719,7 @@
             "body": "Un match nul très disputé aujourd'hui, coach. {{home}} {{homeWins}}-{{awayWins}} {{away}} contre {{opponent}}.\n\nCe n'est pas le résultat espéré, mais nous avons montré du caractère. Gardons le positif et travaillons sur nos faiblesses.\n\nLe prochain match est l'occasion de renouer avec la victoire."
           },
           "victory_1": {
-            "subject": "Victoire ! {{score}} contre {{opponent}}",
+            "subject": "Victoire ! {{userScore}} contre {{opponent}}",
             "body": "Superbe résultat aujourd'hui, coach ! Nous avons battu {{opponent}} {{userScore}}.\n\nL'équipe a bien appliqué le plan de jeu. Capitalisons sur cet élan pour le prochain match.\n\nBravo à tous ceux qui y ont contribué."
           },
           "victory_2": {

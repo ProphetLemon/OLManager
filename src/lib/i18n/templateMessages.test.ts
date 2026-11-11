@@ -59,8 +59,23 @@ describe("match messages render in the active language", () => {
       i18n_params: { home: "KOI", away: "G2", score: "KOI:2-1", opponent: "G2", matchday: "3" },
     });
     const resolved = await renderIn("es", msg);
-    expect(resolved.subject).toBe("¡Victoria! KOI:2-1 contra G2");
+    expect(resolved.subject).toBe("¡Victoria! 2-1 contra G2");
+    expect(resolved.subject).not.toContain("KOI");
     expect(resolved.body).toContain("Hemos ganado a G2 2-1");
+  });
+
+  it("prints a victory subject with the plain score in every language, never the club-prefixed one", async () => {
+    const msg = stored({
+      subject: "Victory! 2-1 against G2",
+      subject_key: "be.msg.matchResult.templates.victory_1.subject",
+      body_key: "be.msg.matchResult.templates.victory_1.body",
+      i18n_params: { home: "KOI", away: "G2", score: "KOI:2-1", userScore: "2-1", opponent: "G2", matchday: "3" },
+    });
+    for (const lang of ["en", "es", "fr", "de", "it", "pt", "pt-BR", "tr"]) {
+      const resolved = await renderIn(lang, msg);
+      expect(resolved.subject, lang).toContain("2-1");
+      expect(resolved.subject, lang).not.toContain("KOI");
+    }
   });
 
   it("renders a result stored before the plain score params with the score from the right side", async () => {

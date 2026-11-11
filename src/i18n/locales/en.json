@@ -2883,7 +2883,7 @@
             "body": "A hard-fought draw today, coach. {{home}} {{homeWins}}-{{awayWins}} {{away}} against {{opponent}}.\n\nNot the result we wanted, but we showed character. Let's take the positives and work on the weaknesses.\n\nNext match is an opportunity to get back to winning ways."
           },
           "victory_1": {
-            "subject": "Victory! {{score}} against {{opponent}}",
+            "subject": "Victory! {{userScore}} against {{opponent}}",
             "body": "Great result today, coach! We beat {{opponent}} {{userScore}}.\n\nThe team executed the game plan well. Let's build on this momentum for the next match.\n\nWell done to everyone involved."
           },
           "victory_2": {

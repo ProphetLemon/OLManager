@@ -2719,7 +2719,7 @@
             "body": "Bugün çekişmeli bir beraberlik, koç. {{home}} {{homeWins}}-{{awayWins}} {{away}}, rakip {{opponent}}.\n\nİstediğimiz sonuç değildi ama karakter gösterdik. Olumlu yanları alıp zayıflıklar üzerinde çalışalım.\n\nSıradaki maç yeniden kazanmaya dönmek için bir fırsat."
           },
           "victory_1": {
-            "subject": "Galibiyet! {{opponent}} karşısında {{score}}",
+            "subject": "Galibiyet! {{opponent}} karşısında {{userScore}}",
             "body": "Bugün harika bir sonuç, koç! {{opponent}} takımını {{userScore}} yendik.\n\nTakım oyun planını iyi uyguladı. Bu ivmeyi bir sonraki maça taşıyalım.\n\nEmeği geçen herkese teşekkürler."
           },
           "victory_2": {

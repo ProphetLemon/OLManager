@@ -2718,7 +2718,7 @@
             "body": "Um empate muito disputado hoje, treinador. {{home}} {{homeWins}}-{{awayWins}} {{away}} contra {{opponent}}.\n\nNão foi o resultado que queríamos, mas mostrámos caráter. Vamos aproveitar o lado positivo e trabalhar as fraquezas.\n\nO próximo jogo é uma oportunidade para voltar às vitórias."
           },
           "victory_1": {
-            "subject": "Vitória! {{score}} contra {{opponent}}",
+            "subject": "Vitória! {{userScore}} contra {{opponent}}",
             "body": "Grande resultado hoje, treinador! Vencemos o {{opponent}} {{userScore}}.\n\nA equipa executou bem o plano de jogo. Vamos aproveitar este embalo para o próximo jogo.\n\nParabéns a todos os envolvidos."
           },
           "victory_2": {

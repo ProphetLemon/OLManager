@@ -2719,7 +2719,7 @@
             "body": "Ein hart erkämpftes Unentschieden heute, Coach. {{home}} {{homeWins}}-{{awayWins}} {{away}} gegen {{opponent}}.\n\nNicht das Ergebnis, das wir wollten, aber wir haben Charakter gezeigt. Nehmen wir das Positive mit und arbeiten an den Schwächen.\n\nDas nächste Spiel ist die Chance, wieder zu gewinnen."
           },
           "victory_1": {
-            "subject": "Sieg! {{score}} gegen {{opponent}}",
+            "subject": "Sieg! {{userScore}} gegen {{opponent}}",
             "body": "Tolles Ergebnis heute, Coach! Wir haben {{opponent}} mit {{userScore}} geschlagen.\n\nDas Team hat den Spielplan gut umgesetzt. Bauen wir auf diesem Schwung für das nächste Spiel auf.\n\nGut gemacht an alle Beteiligten."
           },
           "victory_2": {
