@@ -33,7 +33,26 @@ use super::*;
 const CHECKPOINT_MINUTES: [u32; 6] = [5, 10, 15, 20, 25, 30];
 
 /// Simulated seconds per tick: `dt_sec` 0.2 is clamped to 0.05 and scaled by speed 12.
-const TICK_SEC: f64 = 0.6;
+/// Playback speed of the run, `ECON_HARNESS_SPEED` (default 12). The engine advances
+/// `0.05 s * speed` of game time per step, so 12 measures the step of the x12 button and
+/// 1 the step of the x1 button a spectator watches at.
+fn harness_speed() -> f64 {
+    std::env::var("ECON_HARNESS_SPEED")
+        .ok()
+        .and_then(|v| v.parse::<f64>().ok())
+        .filter(|v| *v > 0.0)
+        .unwrap_or(12.0)
+}
+
+/// Game seconds per engine step at the harness speed.
+fn tick_sec() -> f64 {
+    0.05 * harness_speed()
+}
+
+/// Step limit of a full match, kept at the same game time whatever the speed.
+fn full_match_ticks() -> u64 {
+    (FULL_MATCH_TICKS as f64 * 0.6 / tick_sec()).round() as u64
+}
 
 /// Source groups the tables print, in column order.
 const SOURCE_GROUPS: [(&str, &[GoldSource]); 8] = [
@@ -76,7 +95,7 @@ impl Drive {
     /// be a multiple of three ticks for a chunked run to equal a single call.
     fn checkpoint_ticks(self) -> [u64; 6] {
         CHECKPOINT_MINUTES.map(|minute| {
-            let exact = (f64::from(minute) * 60.0 / TICK_SEC).round() as u64;
+            let exact = (f64::from(minute) * 60.0 / tick_sec()).round() as u64;
             match self {
                 Drive::Tick => exact,
                 Drive::Skip => exact.div_ceil(3) * 3,
@@ -151,7 +170,7 @@ fn skip_ticks(store: &SimLiveStoreState, session_id: &str, max_ticks: u64) {
         SimLiveSkipToEndRequest {
             session_id: session_id.to_string(),
             dt_sec: 0.2,
-            speed: 12.0,
+            speed: harness_speed(),
             max_ticks,
         },
     )
@@ -248,7 +267,7 @@ fn run_trace(
                         session_id: session_id.clone(),
                         dt_sec: 0.2,
                         running: true,
-                        speed: 12.0,
+                        speed: harness_speed(),
                     },
                 )
                 .expect("tick");
@@ -296,7 +315,7 @@ fn run_traces(
                             let seed = first_seed + i;
                             // With unequal teams alternate the side of team A.
                             let a_is_blue = seed.is_multiple_of(2);
-                            run_trace(seed, drive, team_a, team_b, a_is_blue, FULL_MATCH_TICKS)
+                            run_trace(seed, drive, team_a, team_b, a_is_blue, full_match_ticks())
                         })
                         .collect::<Vec<_>>()
                 })
