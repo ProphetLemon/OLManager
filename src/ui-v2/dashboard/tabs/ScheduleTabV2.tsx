@@ -27,7 +27,7 @@ interface Props {
 }
 
 export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [view, setView] = useState<"fixtures" | "calendar">("fixtures");
   const [isDesktop, setIsDesktop] = useState<boolean>(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return true;
@@ -57,14 +57,14 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
   };
 
   const getFixtureGroupLabel = (f: FixtureData): string => {
-    if (f.match_type === "League") return `${t("schedule.matchday", { number: f.matchday })} — ${formatMatchDate(f.date)}`;
+    if (f.match_type === "League") return `${t("schedule.matchday", { number: f.matchday })} — ${formatMatchDate(f.date, i18n.language)}`;
     if (f.match_type === "Playoffs") {
       const playoffStart = league?.fixtures?.filter((c) => c.match_type === "Playoffs").map((c) => c.matchday).reduce((min, v) => Math.min(min, v), Infinity);
       const round = Number.isFinite(playoffStart) ? f.matchday - (playoffStart ?? 0) + 1 : f.matchday;
-      return `${t("schedule.playoffs")} · ${t("schedule.round", { number: round })} — ${formatMatchDate(f.date)}`;
+      return `${t("schedule.playoffs")} · ${t("schedule.round", { number: round })} — ${formatMatchDate(f.date, i18n.language)}`;
     }
-    if (f.match_type === "PreseasonTournament") return `${t("season.preseasonTournament")} — ${formatMatchDate(f.date)}`;
-    return `${t("season.friendly")} — ${formatMatchDate(f.date)}`;
+    if (f.match_type === "PreseasonTournament") return `${t("season.preseasonTournament")} — ${formatMatchDate(f.date, i18n.language)}`;
+    return `${t("season.friendly")} — ${formatMatchDate(f.date, i18n.language)}`;
   };
 
   if (!league) {
@@ -159,7 +159,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                 <Card className="overflow-hidden animate-fade-in-up" data-fixture-date={selectedDayStr}>
                   <div className="border-b border-border bg-muted/30 px-5 py-3">
                     <h4 className="font-heading text-sm font-bold uppercase tracking-wider text-foreground">
-                      {dayFixtures.length > 0 ? getFixtureGroupLabel(dayFixtures[0]) : t("schedule.matchesForDate", { date: formatMatchDate(selectedDayStr) })}
+                      {dayFixtures.length > 0 ? getFixtureGroupLabel(dayFixtures[0]) : t("schedule.matchesForDate", { date: formatMatchDate(selectedDayStr, i18n.language) })}
                     </h4>
                   </div>
                   {dayFixtures.length === 0 ? (
@@ -192,7 +192,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                             <div className="flex w-16 shrink-0 items-center justify-center md:w-20">
                               <div className="flex flex-col items-center">
                                 <span className="font-heading text-xs font-bold uppercase tracking-widest text-muted-foreground/30">{t("common.vs")}</span>
-                                <span className="text-2xs text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date)}</span>
+                                <span className="text-2xs text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date, i18n.language)}</span>
                               </div>
                             </div>
                             <button onClick={() => onSelectTeam(f.away_team_id)}
@@ -287,7 +287,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
                         ) : (
                           <div className="flex flex-col items-center">
                             <span className="font-heading text-xs font-bold uppercase tracking-widest text-muted-foreground/30">{t("common.vs")}</span>
-                            <span className="text-2xs text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date)}</span>
+                            <span className="text-2xs text-muted-foreground/30 tabular-nums">{formatMatchDate(f.date, i18n.language)}</span>
                           </div>
                         )}
                       </div>
@@ -354,6 +354,8 @@ function WeekScheduleCard({
   monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
   monday.setHours(0, 0, 0, 0);
 
+  const fullDay = new Intl.DateTimeFormat(i18n.language, { dateStyle: "full" });
+
   const week = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
@@ -399,7 +401,7 @@ function WeekScheduleCard({
             return (
               <div
                 key={d.date.toISOString()}
-                title={isMatch && opp ? `vs ${opp.name}` : d.date.toDateString()}
+                title={isMatch && opp ? `${t("common.vs")} ${opp.name}` : fullDay.format(d.date)}
                 onClick={() => {
                   const y = d.date.getFullYear();
                   const m = String(d.date.getMonth() + 1).padStart(2, "0");

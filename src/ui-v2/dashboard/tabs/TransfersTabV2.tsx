@@ -25,6 +25,7 @@ import type {
 } from "@/store/gameStore";
 import { useTabUiField } from "@/store/tabUiStore";
 import { formatVal, calcAge, getTeamName } from "@/lib/common/helpers";
+import { formatNumber } from "@/lib/formatting/valueFormatting";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolvePlayerCurrentLolRole } from "@/lib/players/lolIdentity";
@@ -762,7 +763,7 @@ export function TransfersTabV2({
                         {player.soloq_lp ? (
                           <div className="flex items-center justify-end gap-2">
                             <span className="tabular-nums text-xs text-muted-foreground">
-                              {Math.round(player.soloq_lp).toLocaleString()} LP
+                              {formatNumber(Math.round(player.soloq_lp))} LP
                             </span>
                             <img
                               src={soloqTierImage(player.soloq_lp)}

@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 
+import i18n from "@/i18n";
 import { useSettingsStore } from "@/store/settingsStore";
-import { calcAge, formatCurrencyAmount, formatVal } from "./valueFormatting";
+import { calcAge, formatCurrencyAmount, formatNumber, formatVal } from "./valueFormatting";
 
 describe("calcAge", () => {
   it("calculates age relative to the provided in-game date", () => {
@@ -77,5 +78,30 @@ describe("negative, zero and positive amounts", () => {
     useSettingsStore.setState({ settings: { ...useSettingsStore.getState().settings, currency: "USD" } });
 
     expect(formatCurrencyAmount(-51_250)).toBe("-$" + (51_250).toLocaleString());
+  });
+});
+
+describe("number grouping follows the app language", () => {
+  afterEach(async () => {
+    await i18n.changeLanguage("en");
+  });
+
+  it.each([
+    ["en", "€12,345,678"],
+    ["es", "€12.345.678"],
+    ["de", "€12.345.678"],
+    ["fr", "€12 345 678"],
+  ])("groups an exact amount in %s as %s", async (language, expected) => {
+    await i18n.changeLanguage(language);
+
+    expect(formatCurrencyAmount(12_345_678)).toBe(expected);
+  });
+
+  it("formats plain numbers with the app language", async () => {
+    await i18n.changeLanguage("es");
+    expect(formatNumber(1_234_567)).toBe("1.234.567");
+
+    await i18n.changeLanguage("en");
+    expect(formatNumber(1_234_567)).toBe("1,234,567");
   });
 });

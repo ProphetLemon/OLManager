@@ -7,6 +7,7 @@ import { resolveChampionTile, resolveChampionSplash } from "@/lib/champions/cham
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { cn } from "@/ui-v2/lib/utils";
+import { formatNumber } from "@/lib/formatting/valueFormatting";
 
 interface Props { championKey: string; onClose: () => void; }
 
@@ -117,8 +118,8 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
               { label: t("championPage.kills"), val: s ? s.avg_kills.toFixed(1) : "—", icon: Swords, c: "text-red-400" },
               { label: t("championPage.deaths"), val: s ? s.avg_deaths.toFixed(1) : "—", icon: Activity, c: "text-amber-400" },
               { label: t("championPage.assists"), val: s ? s.avg_assists.toFixed(1) : "—", icon: TrendingUp, c: "text-emerald-400" },
-              { label: t("championPage.gold"), val: s ? s.avg_gold.toLocaleString() : "—", icon: Crown, c: "text-yellow-400" },
-              { label: t("championPage.damage"), val: s ? s.avg_damage.toLocaleString() : "—", icon: Swords, c: "text-orange-400" },
+              { label: t("championPage.gold"), val: s ? formatNumber(s.avg_gold) : "—", icon: Crown, c: "text-yellow-400" },
+              { label: t("championPage.damage"), val: s ? formatNumber(s.avg_damage) : "—", icon: Swords, c: "text-orange-400" },
               { label: t("championPage.cs"), val: s ? s.avg_cs.toFixed(0) : "—", icon: TrendingUp, c: "text-blue-400" },
             ].map((st) => (
               <div key={st.label}

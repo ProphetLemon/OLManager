@@ -59,4 +59,12 @@ describe("MarketTabV2 in the Spanish UI", () => {
     await waitFor(() => expect(screen.getByText(expected)).toBeInTheDocument());
     expect(screen.queryByText(/\/yr/)).toBeNull();
   });
+
+  it("writes the transfer date in Spanish", async () => {
+    invokeMock.mockResolvedValue([entry(150_000)]);
+    render(<MarketTabV2 gameState={gameState} />);
+
+    await waitFor(() => expect(screen.getByText("1 ago 2026")).toBeInTheDocument());
+    expect(screen.queryByText(/Aug/)).toBeNull();
+  });
 });
