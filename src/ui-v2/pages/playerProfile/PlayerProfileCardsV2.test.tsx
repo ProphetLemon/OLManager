@@ -129,6 +129,11 @@ describe("PlayerProfileMatchHistoryCardV2", () => {
     expect(screen.getByText("vs Opp 0")).toBeInTheDocument();
   });
 
+  it("names the champion played in the row when the entry carries it", () => {
+    const withChampion = [{ ...entries[0], championId: "Malphite" }] as unknown as PlayerMatchHistoryEntryData[];
+    render(<PlayerProfileMatchHistoryCardV2 history={withChampion} t={t} language="en" />);
+    expect(screen.getByText(/Malphite/)).toBeInTheDocument();
+  });
 });
 
 describe("PlayerProfileContractCardV2", () => {
