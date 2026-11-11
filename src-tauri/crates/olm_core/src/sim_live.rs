@@ -216,6 +216,20 @@ struct ChampionRuntime {
     forced_lane_recall_cd_until: f64,
     #[serde(default)]
     debug_ai_decision: String,
+    /// Targets the champion must not pick again until the time shown.
+    #[serde(default)]
+    avoid_targets: Vec<AvoidedTarget>,
+    /// When the champion started waiting at a Baron or Elder pit for a group
+    /// to form; 0 while it is not waiting.
+    #[serde(default)]
+    objective_wait_since: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AvoidedTarget {
+    pos: Vec2,
+    until: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -436,6 +450,10 @@ struct NeutralTimerRuntime {
     times_spawned: i64,
     #[serde(default)]
     times_taken: i64,
+    /// Last time a champion damaged it; Baron and Elder heal back to full when
+    /// nobody has hit them for a while.
+    #[serde(default)]
+    last_hit_at: Option<f64>,
     pos: Vec2,
     #[serde(default)]
     #[serde(flatten)]
@@ -571,6 +589,17 @@ const JUNGLE_CAMP_WAIT_FOR_SPAWN_SEC: f64 = 35.0;
 const OBJECTIVE_ATTEMPT_RADIUS: f64 = 0.12;
 const OBJECTIVE_ASSIST_RADIUS: f64 = 0.24;
 const MAJOR_OBJECTIVE_TEAM_ASSIST_RADIUS: f64 = 0.52;
+/// Baron and Elder heal back to full health when nobody hit them for this long.
+const MAJOR_OBJECTIVE_RESET_AFTER_SEC: f64 = 20.0;
+/// Share of its own max health a champion loses on every hit it lands on Baron
+/// or Elder. Sized from detector runs: at minutes 20 to 30 a champion at the pit
+/// has about 125 attack damage and 1,600 health, so Baron falls to one of them
+/// in about 67 hits and to three in about 22. At 0.5% a group of three each
+/// loses about 11% of its health and two champions about 17%, a lone attacker
+/// about a third. Larger values (1% and 2% were tried) made Baron and Elder too
+/// costly: matches ran 2 to 3 minutes longer and the stronger team of a 95 against
+/// 40 matchup won 78 to 81% of 72 matches instead of 85 to 92%.
+const MAJOR_OBJECTIVE_RETURN_DAMAGE_RATIO: f64 = 0.005;
 const BASE_DEFENSE_RECALL_DISTANCE: f64 = 0.34;
 const NEXUS_DEFENSE_THREAT_RADIUS: f64 = 0.13;
 const ALLY_HELP_RADIUS: f64 = 0.205;
@@ -3265,9 +3294,30 @@ fn issue_lane_disengage(runtime: &mut RuntimeState, champion_idx: usize, threat_
         )
     };
 
+    // A jungler who will not fight for an objective leaves it alone for a while
+    // instead of walking back to it on his next decision.
+    let contested_objective = (champion_snapshot.role == "JGL")
+        .then(|| decode_neutral_timers_state(&runtime.neutral_timers))
+        .flatten()
+        .and_then(|timers| {
+            macro_ai::nearest_alive_objective_pos(
+                &champion_snapshot,
+                &timers,
+                OBJECTIVE_ASSIST_RADIUS,
+            )
+        });
+
     let champion = &mut runtime.champions[champion_idx];
     if champion.role != "JGL" {
         mark_lane_disengage(champion, now, &mut runtime.lane_combat_state_by_champion);
+    }
+    if let Some(objective_pos) = contested_objective {
+        macro_ai::avoid_target(
+            champion,
+            objective_pos,
+            now,
+            macro_ai::OBJECTIVE_AVOID_COOLDOWN_SEC,
+        );
     }
     champion.state = "lane".to_string();
     set_champion_direct_path(champion, fallback);
@@ -4935,6 +4985,22 @@ fn mark_neutral_taken(
     }
 }
 
+/// Baron and Elder hit back: each hit a champion lands costs it a share of its
+/// max health, and it dies when that runs out.
+fn apply_major_objective_return_damage(runtime: &mut RuntimeState, champion_idx: usize) {
+    let now = runtime.time_sec;
+    let champion = &mut runtime.champions[champion_idx];
+    champion.hp -= champion.max_hp * MAJOR_OBJECTIVE_RETURN_DAMAGE_RATIO;
+    champion.last_damaged_at = now;
+    cancel_recall(champion, now, &mut runtime.events);
+    if champion.hp <= 0.0 && champion.alive {
+        champion.alive = false;
+        champion.hp = 0.0;
+        champion.deaths += 1;
+        champion.respawn_at = now + champion_respawn_seconds(champion.level, now);
+    }
+}
+
 fn attack_neutral_if_in_range(
     runtime: &mut RuntimeState,
     neutral_timers: &mut NeutralTimersRuntime,
@@ -4954,6 +5020,25 @@ fn attack_neutral_if_in_range(
         && runtime.time_sec >= SUPPORT_OPEN_ROAM_AT_SEC
         && is_jungle_camp_key(key)
     {
+        return false;
+    }
+
+    let is_major = macro_ai::is_major_objective_key(key);
+    if is_major
+        && !macro_ai::major_objective_group_ready(
+            &runtime.champions,
+            &runtime.champions[champion_idx].team,
+            timer.pos,
+        )
+    {
+        // The group fell apart (or never formed): leave the pit alone for a while.
+        let now = runtime.time_sec;
+        macro_ai::avoid_target(
+            &mut runtime.champions[champion_idx],
+            timer.pos,
+            now,
+            macro_ai::OBJECTIVE_AVOID_COOLDOWN_SEC,
+        );
         return false;
     }
 
@@ -4979,6 +5064,7 @@ fn attack_neutral_if_in_range(
     if let Some(timer_mut) = neutral_timers.entities.get_mut(key) {
         let prev_hp = timer_mut.hp;
         timer_mut.hp -= damage;
+        timer_mut.last_hit_at = Some(runtime.time_sec);
         killed = timer_mut.hp <= 0.0;
 
         if key == "voidgrubs" {
@@ -4988,6 +5074,10 @@ fn attack_neutral_if_in_range(
             let next_segments_cleared = ((1.0 - next_ratio) * 3.0).floor() as i64;
             voidgrub_segments_gained = (next_segments_cleared - prev_segments_cleared).max(0);
         }
+    }
+
+    if is_major {
+        apply_major_objective_return_damage(runtime, champion_idx);
     }
 
     if key == "voidgrubs" && voidgrub_segments_gained > 0 {
@@ -6420,3 +6510,6 @@ mod strength_tests;
 
 #[cfg(test)]
 mod objectives_detector_tests;
+
+#[cfg(test)]
+mod objective_rules_tests;

@@ -477,16 +477,25 @@ pub(super) fn pick_combat_target(
 
     // Junglers finish their current/next camp route before considering ganks.
     if champion.role == "JGL" {
-        if neutral_objective_alive(neutral_timers) {
-            if let Some(neutral_key) = nearest_attackable_neutral_key(
+        // An alive objective only takes priority while the jungler is at it and
+        // the decision logic would send him there; otherwise he keeps farming.
+        // Using the same check keeps combat from pulling him back to a pit his
+        // decision just walked him away from.
+        if neutral_objective_alive(neutral_timers)
+            && let Some(neutral_key) = nearest_attackable_neutral_key(
                 champion,
                 neutral_timers,
                 0.0,
                 OBJECTIVE_ATTEMPT_RADIUS,
-            ) {
-                return Some(CombatTarget::Neutral(neutral_key));
-            }
-            return None;
+            )
+            && neutral_timers
+                .entities
+                .get(&neutral_key)
+                .is_some_and(|timer| {
+                    macro_ai::jungler_may_take_neutral(champion, timer, &runtime.champions, now)
+                })
+        {
+            return Some(CombatTarget::Neutral(neutral_key));
         }
 
         if own_jungle_camps_available_or_pending(neutral_timers, &champion.team, now) {
