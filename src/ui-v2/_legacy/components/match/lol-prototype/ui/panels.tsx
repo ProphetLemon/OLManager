@@ -1,4 +1,5 @@
 import type { ChampionState, SimEvent, TeamId } from "@/ui-v2/_legacy/components/match/lol-prototype/engine/types";
+import { itemDisplayName, summonerSpellName, trinketItemKey, useItemNames, type ItemNamesByKey } from "@/ui-v2/_legacy/components/match/itemNames";
 
 function ts(sec: number) {
   const m = Math.floor(sec / 60).toString().padStart(2, "0");
@@ -111,7 +112,7 @@ interface LecLowerThirdProps {
   championByPlayerId?: Record<string, string>;
   timeSec?: number;
 }
-function Slot({ className = "h-4 w-4", trinket = false, goldBorder = false, itemKey, spellKey, iconUrl, cooldownText }: {
+function Slot({ className = "h-4 w-4", trinket = false, goldBorder = false, itemKey, spellKey, iconUrl, cooldownText, label }: {
   className?: string;
   trinket?: boolean;
   goldBorder?: boolean;
@@ -119,6 +120,8 @@ function Slot({ className = "h-4 w-4", trinket = false, goldBorder = false, item
   spellKey?: string;
   iconUrl?: string;
   cooldownText?: string;
+  /** Name of what the icon shows; it is the alt text and the pointer tooltip. */
+  label?: string;
 }) {
   const icon = itemKey ? itemIconUrl(itemKey) : (spellKey ? summonerSpellIconUrl(spellKey) : undefined);
   const effectiveIcon = iconUrl ?? icon ?? undefined;
@@ -126,7 +129,7 @@ function Slot({ className = "h-4 w-4", trinket = false, goldBorder = false, item
   const borderClass = trinket || goldBorder ? "border-amber-400/90" : "border-white/15";
   return (
     <div className={`${className} relative overflow-hidden border ${borderClass} bg-black`}>
-      {effectiveIcon ? <img src={effectiveIcon} alt={itemKey ?? spellKey ?? "slot"} className="h-full w-full object-cover" loading="lazy" /> : null}
+      {effectiveIcon ? <img src={effectiveIcon} alt={label ?? "slot"} title={label} className="h-full w-full object-cover" loading="lazy" /> : null}
       {shouldShowCd ? (
         <div className="absolute inset-0 flex items-center justify-center bg-black/55 text-2xs font-black text-amber-300">
           {cooldownText}
@@ -158,6 +161,14 @@ function championTotalGold(champion: ChampionState | undefined) {
   return champion.gold + champion.spentGold;
 }
 
+function spellLabel(key: string | undefined) {
+  return key ? summonerSpellName(key) : undefined;
+}
+
+function itemLabel(key: string | undefined, names: ItemNamesByKey | null) {
+  return key ? itemDisplayName(key, names) : undefined;
+}
+
 function SidePane({ champion, team, championByPlayerId, timeSec }: {
   champion: ChampionState | undefined;
   team: TeamId;
@@ -165,6 +176,7 @@ function SidePane({ champion, team, championByPlayerId, timeSec }: {
   timeSec: number;
 }) {
   const red = team === "red";
+  const itemNames = useItemNames();
   const icon = championIconUrl(champion && championByPlayerId ? championByPlayerId[champion.id] : undefined);
   const hpBase = champion && champion.maxHp > 0 ? Math.max(0, Math.min(1, champion.hp / champion.maxHp)) : 0;
   const hp = champion && !champion.alive ? 0 : hpBase;
@@ -180,6 +192,7 @@ function SidePane({ champion, team, championByPlayerId, timeSec }: {
   const boughtItems = purchasedItemCount(champion);
   const itemKeys = champion?.items ?? [];
   const trinketIcon = trinketIconUrl(champion?.trinketKey);
+  const trinketLabel = itemLabel(trinketItemKey(champion?.trinketKey), itemNames);
   const trinketCd = (() => {
     if (!champion) return undefined;
     const trinket = champion.trinketKey?.toLowerCase();
@@ -226,20 +239,21 @@ function SidePane({ champion, team, championByPlayerId, timeSec }: {
       {!red && (
         <>
           <div className="items-group flex gap-[2px]">
-            <Slot className="trinket h-[18px] w-[18px]" trinket iconUrl={trinketIcon ?? undefined} cooldownText={trinketCd} />
+            <Slot className="trinket h-[18px] w-[18px]" trinket iconUrl={trinketIcon ?? undefined} cooldownText={trinketCd} label={trinketLabel} />
             {Array.from({ length: 6 }).map((_, idx) => (
               <Slot
                 // eslint-disable-next-line react/no-array-index-key
                 key={`blue-item-${idx}`}
                 itemKey={idx < boughtItems ? itemKeys[idx] : undefined}
+                label={idx < boughtItems ? itemLabel(itemKeys[idx], itemNames) : undefined}
                 className={`item h-[18px] w-[18px] ${idx < boughtItems ? "border-emerald-300/90 bg-emerald-400/35" : ""}`}
               />
             ))}
           </div>
           <Slot className="respawn h-[22px] w-[22px]" iconUrl={ultimateIcon} cooldownText={ultimateCd} goldBorder />
           <div className="spells flex flex-col gap-[1px]">
-            <Slot className="spell h-[12px] w-[12px]" spellKey={firstSummoner?.key} cooldownText={firstSummonerCd} />
-            <Slot className="spell h-[12px] w-[12px]" spellKey={secondSummoner?.key} cooldownText={secondSummonerCd} />
+            <Slot className="spell h-[12px] w-[12px]" spellKey={firstSummoner?.key} cooldownText={firstSummonerCd} label={spellLabel(firstSummoner?.key)} />
+            <Slot className="spell h-[12px] w-[12px]" spellKey={secondSummoner?.key} cooldownText={secondSummonerCd} label={spellLabel(secondSummoner?.key)} />
           </div>
           <div className="portrait-container relative h-[34px] w-[34px] border border-white/15 bg-black">
             {icon ? <img src={icon} alt={name} className={`h-full w-full object-cover ${champion && (!champion.alive || banished) ? "grayscale opacity-55" : ""}`} /> : null}
@@ -293,8 +307,8 @@ function SidePane({ champion, team, championByPlayerId, timeSec }: {
             </div>
           </div>
           <div className="spells flex flex-col gap-[1px]">
-            <Slot className="spell h-[12px] w-[12px]" spellKey={firstSummoner?.key} cooldownText={firstSummonerCd} />
-            <Slot className="spell h-[12px] w-[12px]" spellKey={secondSummoner?.key} cooldownText={secondSummonerCd} />
+            <Slot className="spell h-[12px] w-[12px]" spellKey={firstSummoner?.key} cooldownText={firstSummonerCd} label={spellLabel(firstSummoner?.key)} />
+            <Slot className="spell h-[12px] w-[12px]" spellKey={secondSummoner?.key} cooldownText={secondSummonerCd} label={spellLabel(secondSummoner?.key)} />
           </div>
           <Slot className="respawn h-[22px] w-[22px]" iconUrl={ultimateIcon} cooldownText={ultimateCd} goldBorder />
           <div className="items-group flex gap-[2px]">
@@ -303,10 +317,11 @@ function SidePane({ champion, team, championByPlayerId, timeSec }: {
                 // eslint-disable-next-line react/no-array-index-key
                 key={`red-item-${idx}`}
                 itemKey={idx < boughtItems ? itemKeys[idx] : undefined}
+                label={idx < boughtItems ? itemLabel(itemKeys[idx], itemNames) : undefined}
                 className={`item h-[18px] w-[18px] ${idx < boughtItems ? "border-emerald-300/90 bg-emerald-400/35" : ""}`}
               />
             ))}
-            <Slot className="trinket h-[18px] w-[18px]" trinket iconUrl={trinketIcon ?? undefined} cooldownText={trinketCd} />
+            <Slot className="trinket h-[18px] w-[18px]" trinket iconUrl={trinketIcon ?? undefined} cooldownText={trinketCd} label={trinketLabel} />
           </div>
         </>
       )}
