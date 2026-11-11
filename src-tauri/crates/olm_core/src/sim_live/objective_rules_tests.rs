@@ -106,6 +106,21 @@ fn jungler_alone_at_baron_does_not_hit_it() {
 }
 
 #[test]
+fn laners_trading_in_their_lanes_near_the_pit_are_not_a_group() {
+    // The top laner and the mid laner stand 0.25 to 0.3 from the pit, the
+    // distance the lanes lie at: they are not at Baron, so the jungler waits.
+    let mut runtime = baron_runtime(1);
+    runtime.champions[1].pos = Vec2 { x: 0.16, y: 0.50 };
+    runtime.champions[2].pos = Vec2 { x: 0.60, y: 0.33 };
+    let mut neutral = baron();
+
+    let hit = attack_neutral_if_in_range(&mut runtime, &mut neutral, 0, "baron");
+
+    assert!(!hit, "the jungler hit Baron with the laners still in their lanes");
+    assert_eq!(neutral.entities["baron"].hp, 9_000.0);
+}
+
+#[test]
 fn two_champions_do_not_start_baron_against_a_full_team() {
     let mut runtime = baron_runtime(2);
     let mut neutral = baron();
@@ -284,7 +299,7 @@ fn waiting_jungler_rallies_the_laners_to_baron() {
 #[test]
 fn jungler_gives_up_waiting_for_a_group_and_leaves_baron_alone() {
     let mut runtime = baron_runtime(1);
-    // Close enough to rotate (0.52) but not at the pit yet (0.36).
+    // Close enough to rotate (0.52) but not at the pit yet (0.24).
     runtime.champions[1].pos = Vec2 { x: 0.3, y: 0.72 };
     runtime.champions[2].pos = Vec2 { x: 0.55, y: 0.62 };
     let neutral = timers(&[("baron", BARON_POS, 9_000.0), gromp_blue()]);
