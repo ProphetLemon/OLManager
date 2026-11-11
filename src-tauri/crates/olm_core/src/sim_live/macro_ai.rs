@@ -1542,6 +1542,31 @@ pub(super) fn jungler_may_take_neutral(
     !is_major_objective_key(&timer.key) || major_group_can_form(champion, timer.pos, champions)
 }
 
+/// Champions that defend a base tower against a wave with no enemy champion at it.
+const WAVE_DEFENDERS: usize = 2;
+
+/// Whether `champion` is one of the `WAVE_DEFENDERS` living allies nearest to
+/// `pos` (ties broken by id, so every ally computes the same set).
+fn is_nearest_to_defend(
+    champion: &ChampionRuntime,
+    champions: &[ChampionRuntime],
+    pos: Vec2,
+) -> bool {
+    let nearer = champions
+        .iter()
+        .filter(|ally| {
+            ally.alive
+                && ally.id != champion.id
+                && normalized_team(&ally.team) == normalized_team(&champion.team)
+        })
+        .filter(|ally| {
+            let (d_ally, d_self) = (dist(ally.pos, pos), dist(champion.pos, pos));
+            d_ally < d_self || (d_ally == d_self && ally.id < champion.id)
+        })
+        .count();
+    nearer < WAVE_DEFENDERS
+}
+
 fn allied_nexus_under_threat_pos(
     champion: &ChampionRuntime,
     champions: &[ChampionRuntime],
@@ -1571,7 +1596,11 @@ fn allied_nexus_under_threat_pos(
                 && normalized_team(&enemy.team) != normalized_team(&champion.team)
                 && dist(enemy.pos, tower.pos) <= NEXUS_DEFENSE_THREAT_RADIUS
         });
-        if champion_threat || minion_threat {
+        // An enemy champion at the base calls the whole team home. A wave alone
+        // only needs the nearest champions: the rest of the team keeps playing.
+        if champion_threat
+            || (minion_threat && is_nearest_to_defend(champion, champions, tower.pos))
+        {
             return Some(tower.pos);
         }
     }

@@ -6551,6 +6551,8 @@ mod objective_rules_tests;
 #[cfg(test)]
 mod lead_detector_tests;
 
+#[cfg(test)]
+mod base_defense_tests;
 
 #[cfg(test)]
 mod champion_fit_tests;

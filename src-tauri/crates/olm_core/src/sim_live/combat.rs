@@ -446,6 +446,51 @@ pub(super) fn has_credible_kill_chance(
     (ttk_enemy <= ttk_self * 0.95 || low_enemy) && ally_pressure + 0.5 >= enemy_pressure
 }
 
+/// A champion this close to a tower of his own base clears the enemy minions
+/// that threaten it, whatever lane they belong to.
+const BASE_WAVE_CLEAR_RADIUS: f64 = 0.2;
+
+/// The enemy minion at an allied nexus tower that a champion standing near it
+/// attacks: the nearest one inside the tower's threat radius, unless an enemy
+/// champion is within trading reach.
+fn base_wave_minion_idx(runtime: &RuntimeState, champion_idx: usize) -> Option<usize> {
+    let champion = &runtime.champions[champion_idx];
+    let enemy_in_reach = runtime.champions.iter().any(|enemy| {
+        enemy.alive
+            && normalized_team(&enemy.team) != normalized_team(&champion.team)
+            && dist(champion.pos, enemy.pos) <= LANE_CHAMPION_TRADE_RADIUS
+    });
+    if enemy_in_reach {
+        // An enemy champion at the tower is dealt with by the ordinary rules.
+        return None;
+    }
+    runtime
+        .structures
+        .iter()
+        .filter(|tower| {
+            tower.alive
+                && tower.kind == "tower"
+                && tower.id.contains("nexus")
+                && normalized_team(&tower.team) == normalized_team(&champion.team)
+                && dist(champion.pos, tower.pos) <= BASE_WAVE_CLEAR_RADIUS
+        })
+        .flat_map(|tower| {
+            runtime
+                .minions
+                .iter()
+                .enumerate()
+                .filter(move |(_, minion)| {
+                    minion.alive
+                        && normalized_team(&minion.team) != normalized_team(&tower.team)
+                        && dist(minion.pos, tower.pos) <= NEXUS_DEFENSE_THREAT_RADIUS
+                })
+        })
+        .min_by(|(idx_a, a), (idx_b, b)| {
+            compare_by_distance_stable(champion.pos, *idx_a, a.pos, *idx_b, b.pos)
+        })
+        .map(|(idx, _)| idx)
+}
+
 pub(super) fn pick_combat_target(
     runtime: &RuntimeState,
     champion_idx: usize,
@@ -650,6 +695,10 @@ pub(super) fn pick_combat_target(
         .map(|(idx, _)| idx);
     if let Some(enemy_idx) = kill_window_enemy {
         return Some(CombatTarget::Champion(enemy_idx));
+    }
+
+    if let Some(minion_idx) = base_wave_minion_idx(runtime, champion_idx) {
+        return Some(CombatTarget::Minion(minion_idx));
     }
 
     let ally_help_focus_enemy = runtime
