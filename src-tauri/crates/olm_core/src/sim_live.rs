@@ -6662,3 +6662,6 @@ mod lane_play_tests;
 
 #[cfg(test)]
 mod tower_harness_tests;
+
+#[cfg(test)]
+mod scorecard_tests;

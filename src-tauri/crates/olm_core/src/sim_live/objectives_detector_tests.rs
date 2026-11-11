@@ -213,7 +213,38 @@ fn describe_heading(
     format!("{target}; {camp}")
 }
 
-fn run_detected_match(seed: usize) -> MatchReport {
+/// Advances one sample (`SAMPLE_TICKS` steps) the way `skip_to_end` or the watched match does.
+fn advance_sample(store: &SimLiveStoreState, session_id: &str, tick_path: bool) -> u64 {
+    if tick_path {
+        for _ in 0..SAMPLE_TICKS {
+            tick(
+                store,
+                SimLiveTickRequest {
+                    session_id: session_id.to_string(),
+                    dt_sec: 0.05,
+                    running: true,
+                    speed: 12.0,
+                },
+            )
+            .expect("tick");
+        }
+        return SAMPLE_TICKS;
+    }
+    skip_to_end(
+        store,
+        SimLiveSkipToEndRequest {
+            session_id: session_id.to_string(),
+            dt_sec: 0.2,
+            speed: 12.0,
+            max_ticks: SAMPLE_TICKS,
+        },
+    )
+    .expect("skip")
+    .ticks
+}
+
+/// `tick_path` drives the match one `tick` call per step, as the watched match does.
+fn run_detected_match_with(seed: usize, tick_path: bool) -> MatchReport {
     take_stuck_log();
     let store = SimLiveStoreState::default();
     let session_id = format!("objectives-{seed}");
@@ -244,17 +275,7 @@ fn run_detected_match(seed: usize) -> MatchReport {
     let mut ticks = 0u64;
 
     while ticks < FULL_MATCH_TICKS {
-        let step = skip_to_end(
-            &store,
-            SimLiveSkipToEndRequest {
-                session_id: session_id.clone(),
-                dt_sec: 0.2,
-                speed: 12.0,
-                max_ticks: SAMPLE_TICKS,
-            },
-        )
-        .expect("skip");
-        ticks += step.ticks;
+        ticks += advance_sample(&store, &session_id, tick_path);
 
         let sessions = store.sessions.lock().expect("lock");
         let state = &sessions[&session_id].state;
@@ -424,6 +445,55 @@ fn run_detected_match(seed: usize) -> MatchReport {
 }
 
 fn detect_batch(first_seed: usize, seeds: usize) -> Vec<MatchReport> {
+    detect_batch_with(first_seed, seeds, false)
+}
+
+/// What the balance scorecard reads from a batch of detected matches.
+pub(super) struct ObjectiveScore {
+    pub(super) matches: usize,
+    pub(super) baron_kills: usize,
+    /// Baron kills whose killing side peaked at one champion in attack range.
+    pub(super) baron_solo: usize,
+    pub(super) elder_kills: usize,
+    pub(super) elder_solo: usize,
+    /// Jungler stretches standing still (inside `IDLE_RADIUS`) for over `IDLE_LIMIT_SEC`.
+    pub(super) jungler_idle: usize,
+    /// Jungler stretches hovering (inside `LOITER_RADIUS`) for over `IDLE_LIMIT_SEC`.
+    pub(super) jungler_loiter: usize,
+}
+
+/// Plays `seeds` even matches from `first_seed` and condenses the objective and jungler findings.
+pub(super) fn objective_score(first_seed: usize, seeds: usize, tick_path: bool) -> ObjectiveScore {
+    let reports = detect_batch_with(first_seed, seeds, tick_path);
+    let kills_of = |key: &str| -> (usize, usize) {
+        let all: Vec<&ObjectiveKill> = reports
+            .iter()
+            .flat_map(|r| r.objective_kills.iter())
+            .filter(|k| k.key == key)
+            .collect();
+        (all.len(), all.iter().filter(|k| k.peak_killer_side <= 1).count())
+    };
+    let jungler = |kind: &str| -> usize {
+        reports
+            .iter()
+            .flat_map(|r| r.idle.iter())
+            .filter(|s| s.kind == kind && s.role == "JGL")
+            .count()
+    };
+    let (baron_kills, baron_solo) = kills_of("baron");
+    let (elder_kills, elder_solo) = kills_of("elder");
+    ObjectiveScore {
+        matches: reports.len(),
+        baron_kills,
+        baron_solo,
+        elder_kills,
+        elder_solo,
+        jungler_idle: jungler("still"),
+        jungler_loiter: jungler("loiter"),
+    }
+}
+
+fn detect_batch_with(first_seed: usize, seeds: usize, tick_path: bool) -> Vec<MatchReport> {
     let workers = std::thread::available_parallelism()
         .map(|n| n.get())
         .unwrap_or(4)
@@ -434,7 +504,7 @@ fn detect_batch(first_seed: usize, seeds: usize) -> Vec<MatchReport> {
                 scope.spawn(move || {
                     (worker..seeds)
                         .step_by(workers)
-                        .map(|n| run_detected_match(first_seed + n))
+                        .map(|n| run_detected_match_with(first_seed + n, tick_path))
                         .collect::<Vec<_>>()
                 })
             })

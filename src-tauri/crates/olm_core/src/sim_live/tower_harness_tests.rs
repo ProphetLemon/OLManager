@@ -58,13 +58,13 @@ const DEFENDER_CAPTURE_SEC: f64 = 6.0;
 const DEFENDER_LIST_RADIUS: f64 = 0.20;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum Roster {
+pub(super) enum Roster {
     Plain,
     Tanks,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum Drive {
+pub(super) enum Drive {
     /// `tick`: what the watched match does.
     Tick,
     /// `skip_to_end`: macro decisions every third tick.
@@ -72,14 +72,26 @@ enum Drive {
 }
 
 #[derive(Clone, Copy)]
-struct Config {
-    roster: Roster,
-    drive: Drive,
+pub(super) struct Config {
+    pub(super) roster: Roster,
+    pub(super) drive: Drive,
     /// Speed of the request; one tick lasts `0.05 * speed` simulated seconds.
-    speed: f64,
+    pub(super) speed: f64,
+    /// Game seconds after which an undecided match is abandoned.
+    pub(super) max_sec: f64,
 }
 
 impl Config {
+    /// The watched match: one fixed step per tick, macro decisions on every step.
+    pub(super) fn watched(max_sec: f64) -> Config {
+        Config {
+            roster: Roster::Plain,
+            drive: Drive::Tick,
+            speed: 12.0,
+            max_sec,
+        }
+    }
+
     fn dt(self) -> f64 {
         0.05 * self.speed
     }
@@ -106,6 +118,7 @@ fn config_from_env() -> Config {
         roster,
         drive,
         speed,
+        max_sec: MAX_MATCH_SEC,
     }
 }
 
@@ -186,7 +199,7 @@ fn step(
 }
 
 /// Plays one match, calling `observe` after every tick. Returns the final state.
-fn drive_match(
+pub(super) fn drive_match(
     seed: &str,
     blue: Side,
     red: Side,
@@ -205,7 +218,7 @@ fn drive_match(
     }
     observe(&runtime);
     let mut ticks = 0u64;
-    while runtime.winner.is_none() && runtime.time_sec < MAX_MATCH_SEC {
+    while runtime.winner.is_none() && runtime.time_sec < cfg.max_sec {
         step(&mut runtime, &mut session, cfg, ticks);
         ticks += 1;
         observe(&runtime);
@@ -812,6 +825,71 @@ fn run_traces(first_seed: usize, count: usize, team_a: Side, team_b: Side, cfg: 
     traces
 }
 
+// ------------------------------------------------------- balance scorecard
+
+/// What the balance scorecard reads about the towers of one match.
+pub(super) struct TowerScore {
+    /// Length in seconds of every stretch inside a living enemy tower's range with none of the
+    /// champion's minions in it.
+    pub(super) bare_secs: Vec<f64>,
+    /// Bare stretches over `LONG_STRETCH_SEC` that were not "shot the whole time and he died or left".
+    pub(super) long_bare_violations: usize,
+    /// Champions a tower killed.
+    pub(super) tower_deaths: u32,
+    /// All champion deaths of the match.
+    pub(super) deaths: i64,
+    /// Shots a lone tower needs to kill each champion at minutes 15, 25 and 35: `(tank, shots)`.
+    pub(super) shots_to_kill: [Vec<(bool, u32)>; 3],
+}
+
+/// Plays one match with the tower tracker running and `extra` observing every step.
+pub(super) fn run_tower_tracked(
+    seed: &str,
+    blue: Side,
+    red: Side,
+    cfg: Config,
+    mut extra: impl FnMut(&RuntimeState),
+) -> (TowerScore, RuntimeState) {
+    let mut tracker = Tracker::new(cfg);
+    let final_state = drive_match(seed, blue, red, cfg, |rt| {
+        observe(rt, &mut tracker);
+        extra(rt);
+    });
+    let dt = cfg.dt();
+    let open = std::mem::take(&mut tracker.open);
+    for run in open.into_iter().flatten() {
+        tracker.stretches.push(finish_run(run, End::MatchEnd, dt));
+    }
+    let bare: Vec<&Stretch> = tracker
+        .stretches
+        .iter()
+        .flat_map(|f| f.parts.iter())
+        .filter(|p| p.kind == Kind::Bare)
+        .collect();
+    let long_bare_violations = bare
+        .iter()
+        .filter(|s| {
+            s.dur > LONG_STRETCH_SEC
+                && !(s.max_gap <= CONTINUOUS_FIRE_GAP_SEC
+                    && matches!(s.end, End::DiedToTower | End::Left | End::DiedOther))
+        })
+        .count();
+    let shots_to_kill = [1usize, 2, 3].map(|snapshot| {
+        tracker.snapshots[snapshot]
+            .iter()
+            .map(|row| (row.tank, row.shots_to_kill))
+            .collect()
+    });
+    let score = TowerScore {
+        bare_secs: bare.iter().map(|s| s.dur).collect(),
+        long_bare_violations,
+        tower_deaths: tracker.tower_kills,
+        deaths: final_state.champions.iter().map(|c| c.deaths).sum(),
+        shots_to_kill,
+    };
+    (score, final_state)
+}
+
 // --------------------------------------------------------------- statistics
 
 fn percentile(sorted: &[f64], p: f64) -> f64 {
@@ -1268,6 +1346,7 @@ fn driver_in_tick_mode_matches_the_tick_function() {
         roster: Roster::Plain,
         drive: Drive::Tick,
         speed: 12.0,
+        max_sec: MAX_MATCH_SEC,
     };
     let driven = drive_match("tower-driver-check", Side::EVEN, Side::EVEN, cfg, |_| {});
     let store = SimLiveStoreState::default();
@@ -1316,6 +1395,7 @@ fn driver_in_skip_mode_matches_skip_to_end() {
         roster: Roster::Plain,
         drive: Drive::Skip,
         speed: 12.0,
+        max_sec: MAX_MATCH_SEC,
     };
     let driven = drive_match("tower-driver-check", Side::EVEN, Side::EVEN, cfg, |_| {});
     let store = SimLiveStoreState::default();

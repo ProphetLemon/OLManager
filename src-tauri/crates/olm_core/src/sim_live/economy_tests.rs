@@ -18,7 +18,7 @@ const SHORT_RUN_TICKS: u64 = 1200;
 pub(super) const ROLES: [&str; 5] = ["TOP", "JGL", "MID", "ADC", "SUP"];
 
 /// Inclusive `(min, max)` share of a team's total gold per role.
-const ROLE_SHARE_RANGE: [(&str, f64, f64); 5] = [
+pub(super) const ROLE_SHARE_RANGE: [(&str, f64, f64); 5] = [
     ("TOP", 0.20, 0.23),
     ("JGL", 0.17, 0.20),
     ("MID", 0.21, 0.24),
@@ -280,7 +280,7 @@ fn role_weights_keep_team_gold_at_the_unweighted_baseline() {
 /// same run gives Top 27%, Jungle 15%, Mid 32%, Bot 16%, Support 11%, outside
 /// four of the five bands, so the check still catches broken weights.
 /// [PLACEHOLDER] the full-match targets stay in `ROLE_SHARE_RANGE`.
-const EARLY_ROLE_SHARE_RANGE: [(&str, f64, f64); 5] = [
+pub(super) const EARLY_ROLE_SHARE_RANGE: [(&str, f64, f64); 5] = [
     ("TOP", 0.17, 0.24),
     ("JGL", 0.15, 0.21),
     ("MID", 0.19, 0.26),
