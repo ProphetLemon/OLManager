@@ -9,7 +9,7 @@ them; nothing downloads data at match start.
 | `node scripts/game-data/pro-builds.mjs` | `champion-builds.v1.json` | Leaguepedia `ScoreboardPlayers` (CC BY-SA 3.0) |
 
 Pure transformation lives in `lib/*.mjs` (typed by `lib/*.d.mts`) and is tested in `src/lib/gameData/`. The committed
-files are checked by `src/lib/gameData/gameDataFiles.test.ts` and `championBuildsFile.test.ts`.
+Data Dragon files are checked by `src/lib/gameData/gameDataFiles.test.ts`.
 
 ## Data Dragon: items, champion kits, icons
 
@@ -42,4 +42,24 @@ node scripts/game-data/ddragon.mjs --version 16.22.1 --offline   # rebuild from 
 
 ## Leaguepedia: builds and presence
 
-See the section below, added with `pro-builds.mjs`.
+```bash
+node scripts/game-data/pro-builds.mjs --probe --since 2026-11-01 --until 2026-11-12   # one row: confirms the fields
+node scripts/game-data/pro-builds.mjs --since 2025-11-12 --until 2026-11-12           # the pull (about 300 pages)
+node scripts/game-data/pro-builds.mjs --since 2025-11-12 --until 2026-11-12 --offline # rebuild from the cache
+```
+
+- Scope: the same as `scripts/champions/pro-matchups.mjs`: every game of Cargo `ScoreboardPlayers` (joined to
+  `ScoreboardGames` for the patch) inside the date window, no league filter. Use the most recent twelve months.
+- Client: the world tooling client (generic User-Agent, 4 s throttle, maxlag, bounded retries, on-disk cache in
+  `src-tauri/target/olm-scratch/lp-builds-cache`). Anonymous only: there is no login option. When Leaguepedia answers
+  `ratelimited` the run fails after its retries; it never falls back to another host.
+- Aggregation (per champion and role): games, wins, games with item data, how often each finished item was in the
+  final build, the boots, and the most frequent three-item cores. Item names are mapped to `items.v1.json` keys;
+  names that do not map are listed in `unmappedItems`. Finished means a complete recipe that is not boots, a
+  consumable, a trinket, a starter or the support quest line.
+- Recommended build: the most frequent boots plus the five most frequent finished items, most frequent first (ties by
+  key). A pair with fewer than `minGames` games with item data (default 20: a 50% item then has a standard error of
+  about 11 points, and it is the sample the lane matchup script requires) gets `build: null, fallback: "class"` and its
+  champion's first tag as `class`; its games and wins still count as presence.
+- The header records the leagues, window, first and last game, patches with their game counts, games, minimum sample
+  and the date of the pull.
