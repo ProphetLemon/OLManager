@@ -2270,6 +2270,7 @@
     "savesCleared": "¡Guardados borrados!",
     "about": "Acerca de",
     "statsCredit": "Las valoraciones de los jugadores en partidas nuevas se derivan de estadísticas de partidos profesionales de Leaguepedia (lol.fandom.com), con licencia CC BY-SA 3.0.",
+    "riotNotice": "Open League Manager no está avalado ni patrocinado por Riot Games y no refleja las opiniones de Riot Games ni de nadie oficialmente implicado en la producción o gestión de las propiedades de Riot Games. League of Legends y Riot Games son marcas comerciales o marcas registradas de Riot Games, Inc.",
     "matchModes": {
       "live": "Ir a la Grieta",
       "liveDesc": "Control total del partido",

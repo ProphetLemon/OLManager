@@ -2087,6 +2087,7 @@
     "savesCleared": "Sauvegardes supprimées !",
     "about": "À propos",
     "statsCredit": "Les notes des joueurs dans les nouvelles parties sont dérivées des statistiques de matchs professionnels de Leaguepedia (lol.fandom.com), sous licence CC BY-SA 3.0.",
+    "riotNotice": "Open League Manager n'est ni approuvé ni sponsorisé par Riot Games et ne reflète pas les opinions de Riot Games ni de toute personne officiellement impliquée dans la production ou la gestion des propriétés de Riot Games. League of Legends et Riot Games sont des marques commerciales ou des marques déposées de Riot Games, Inc.",
     "matchModes": {
       "live": "Aller sur la Faille",
       "liveDesc": "Contrôle total du match",

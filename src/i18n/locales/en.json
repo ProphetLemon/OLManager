@@ -2281,6 +2281,7 @@
     "savesCleared": "Saves cleared!",
     "about": "About",
     "statsCredit": "Player ratings in new games are derived from pro match statistics from Leaguepedia (lol.fandom.com), licensed under CC BY-SA 3.0.",
+    "riotNotice": "Open League Manager is not endorsed or sponsored by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc.",
     "matchModes": {
       "live": "Go to the Rift",
       "liveDesc": "Full match control",

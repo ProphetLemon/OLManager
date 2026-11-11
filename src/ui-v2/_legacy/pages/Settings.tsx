@@ -510,6 +510,7 @@ export default function Settings() {
               </span>
             </div>
             <p className="text-xs text-muted-foreground/70 mt-4">{t("settings.statsCredit")}</p>
+            <p className="text-xs text-muted-foreground/70 mt-2">{t("settings.riotNotice")}</p>
           </div>
         ),
       },

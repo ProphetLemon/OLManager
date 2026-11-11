@@ -204,6 +204,10 @@ This repository is licensed under the **GNU General Public License v3.0**. See [
 
 Code and assets inherited from OpenFootManager are treated as GPL-3.0-compatible unless a later audit documents otherwise. Third-party datasets, generated caches, and source-derived content such as Leaguepedia data are **not** automatically GPL by inheritance; they require separate provenance, attribution, and redistribution review. See [`docs/DATA_PROVENANCE.md`](docs/DATA_PROVENANCE.md).
 
+### Riot Games
+
+Open League Manager is not endorsed or sponsored by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc. This is a free, non-commercial fan project.
+
 ### Third-party data credits
 
 Player ratings in new games are derived from pro match statistics from [Leaguepedia](https://lol.fandom.com), licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Method and refresh steps: [`docs/STAT_RATINGS.md`](docs/STAT_RATINGS.md). Whether ShareAlike applies to the derived rating asset is an open question for the owner.
