@@ -11,6 +11,7 @@ mod economy;
 mod events;
 mod farm_ledger;
 mod gold_ledger;
+mod item_catalogue;
 mod layout;
 mod macro_ai;
 mod minions;
@@ -796,7 +797,7 @@ const ASSASSIN_AD_ITEM_PLAN: [ItemTemplate; 6] = [
         max_hp: 0.0,
     },
     ItemTemplate {
-        key: "opportunity",
+        key: "serpents_fang",
         cost: 2700,
         attack_damage: 55.0,
         max_hp: 0.0,
@@ -868,7 +869,7 @@ const ASSASSIN_AP_ITEM_PLAN: [ItemTemplate; 6] = [
 
 const CONTROL_MAGE_ITEM_PLAN: [ItemTemplate; 6] = [
     ItemTemplate {
-        key: "ludens_companion",
+        key: "hextech_rocketbelt",
         cost: 2900,
         attack_damage: 35.0,
         max_hp: 0.0,
@@ -886,7 +887,7 @@ const CONTROL_MAGE_ITEM_PLAN: [ItemTemplate; 6] = [
         max_hp: 0.0,
     },
     ItemTemplate {
-        key: "seraphs_embrace",
+        key: "blackfire_torch",
         cost: 3000,
         attack_damage: 28.0,
         max_hp: 0.0,
@@ -919,7 +920,7 @@ const BATTLE_MAGE_ITEM_PLAN: [ItemTemplate; 6] = [
         max_hp: 400.0,
     },
     ItemTemplate {
-        key: "seraphs_embrace",
+        key: "bloodletters_curse",
         cost: 3000,
         attack_damage: 28.0,
         max_hp: 0.0,
@@ -1030,7 +1031,7 @@ const LETHALITY_MARKSMAN_ITEM_PLAN: [ItemTemplate; 6] = [
         max_hp: 0.0,
     },
     ItemTemplate {
-        key: "opportunity",
+        key: "infinity_edge",
         cost: 2700,
         attack_damage: 55.0,
         max_hp: 0.0,
@@ -1063,7 +1064,7 @@ const LETHALITY_MARKSMAN_ITEM_PLAN: [ItemTemplate; 6] = [
 
 const SUPPORT_ENGAGE_ITEM_PLAN: [ItemTemplate; 6] = [
     ItemTemplate {
-        key: "trailblazer",
+        key: "protoplasm_harness",
         cost: 2400,
         attack_damage: 8.0,
         max_hp: 350.0,
@@ -1093,7 +1094,7 @@ const SUPPORT_ENGAGE_ITEM_PLAN: [ItemTemplate; 6] = [
         max_hp: 350.0,
     },
     ItemTemplate {
-        key: "mobility_boots",
+        key: "mercurys_treads",
         cost: 1000,
         attack_damage: 0.0,
         max_hp: 0.0,
@@ -6276,7 +6277,8 @@ fn classify_item_build(role: &str, champion_id: &str) -> ItemBuildCategory {
 }
 
 fn champion_item_plan(role: &str, champion_id: &str) -> &'static [ItemTemplate; 6] {
-    category_plan(classify_item_build(role, champion_id))
+    item_catalogue::pro_plan(role, champion_id)
+        .unwrap_or_else(|| category_plan(classify_item_build(role, champion_id)))
 }
 
 fn effective_item_cost(base_cost: i64) -> i64 {
@@ -6286,16 +6288,7 @@ fn effective_item_cost(base_cost: i64) -> i64 {
 }
 
 fn is_boots_item_key(key: &str) -> bool {
-    matches!(
-        key,
-        "plated_steelcaps"
-            | "mercurys_treads"
-            | "boots_of_swiftness"
-            | "sorcerers_shoes"
-            | "berserkers_greaves"
-            | "ionian_boots_of_lucidity"
-            | "mobility_boots"
-    )
+    item_catalogue::is_boots(key)
 }
 
 fn try_auto_buy_items(runtime: &mut RuntimeState) {
@@ -6510,3 +6503,9 @@ mod economy_harness_tests;
 
 #[cfg(test)]
 mod farm_harness_tests;
+
+#[cfg(test)]
+mod item_catalogue_tests;
+
+#[cfg(test)]
+mod real_items_harness_tests;
