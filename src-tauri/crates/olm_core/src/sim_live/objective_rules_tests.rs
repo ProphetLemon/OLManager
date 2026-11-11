@@ -505,3 +505,39 @@ fn saved_state_without_the_new_fields_still_loads() {
     let loaded: NeutralTimerRuntime = serde_json::from_value(timer).unwrap();
     assert!(loaded.last_hit_at.is_none());
 }
+
+fn at_distance(from: Vec2, away: f64) -> Vec2 {
+    Vec2 {
+        x: from.x + away,
+        y: from.y,
+    }
+}
+
+/// Laners trading 0.25 to 0.3 from the pit counted as the group and the jungler hit Baron
+/// alone while they hovered there: two of the three must be close to the pit.
+#[test]
+fn a_group_of_three_with_only_one_close_to_the_pit_is_not_ready() {
+    let mut champions = vec![
+        fighter("jgl", "blue", "JGL", at_distance(BARON_POS, 0.02)),
+        fighter("top", "blue", "TOP", at_distance(BARON_POS, 0.30)),
+        fighter("mid", "blue", "MID", at_distance(BARON_POS, 0.32)),
+    ];
+    champions.extend((0..5).map(|n| fighter(&format!("r{n}"), "red", "TOP", FAR_AWAY)));
+
+    assert!(
+        !macro_ai::major_objective_group_ready(&champions, "blue", BARON_POS),
+        "three within 0.36 counted as a group with one of them at the pit"
+    );
+}
+
+#[test]
+fn a_group_of_three_with_two_close_to_the_pit_is_ready() {
+    let mut champions = vec![
+        fighter("jgl", "blue", "JGL", at_distance(BARON_POS, 0.02)),
+        fighter("top", "blue", "TOP", at_distance(BARON_POS, 0.10)),
+        fighter("mid", "blue", "MID", at_distance(BARON_POS, 0.32)),
+    ];
+    champions.extend((0..5).map(|n| fighter(&format!("r{n}"), "red", "TOP", FAR_AWAY)));
+
+    assert!(macro_ai::major_objective_group_ready(&champions, "blue", BARON_POS));
+}

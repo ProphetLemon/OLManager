@@ -28,6 +28,11 @@ const WALK_TO_BASE_HEAL_DISTANCE: f64 = 0.17;
 /// Champions of a team within `MAJOR_OBJECTIVE_GROUP_RADIUS` of the pit count as
 /// being at it.
 const MAJOR_OBJECTIVE_GROUP_RADIUS: f64 = 0.36;
+/// Of those, this many must be within `MAJOR_OBJECTIVE_CLOSE_RADIUS`: laners trading
+/// 0.25 to 0.3 from the pit counted as present, and the jungler hit Baron alone for
+/// minutes while they hovered there.
+const MAJOR_OBJECTIVE_CLOSE_RADIUS: f64 = 0.16;
+const MAJOR_OBJECTIVE_CLOSE_COUNT: usize = 2;
 const MAJOR_OBJECTIVE_MIN_GROUP: usize = 3;
 const MAJOR_OBJECTIVE_SHORT_GROUP: usize = 2;
 const MAJOR_OBJECTIVE_SHORT_ENEMIES_ALIVE: usize = 2;
@@ -87,15 +92,19 @@ pub(super) fn major_objective_group_ready(
     team: &str,
     pos: Vec2,
 ) -> bool {
-    let present = champions
-        .iter()
-        .filter(|ally| {
-            ally.alive
-                && normalized_team(&ally.team) == normalized_team(team)
-                && dist(ally.pos, pos) <= MAJOR_OBJECTIVE_GROUP_RADIUS
-        })
-        .count();
-    present >= major_group_required(champions, team)
+    let within = |radius: f64| {
+        champions
+            .iter()
+            .filter(|ally| {
+                ally.alive
+                    && normalized_team(&ally.team) == normalized_team(team)
+                    && dist(ally.pos, pos) <= radius
+            })
+            .count()
+    };
+    let required = major_group_required(champions, team);
+    within(MAJOR_OBJECTIVE_GROUP_RADIUS) >= required
+        && within(MAJOR_OBJECTIVE_CLOSE_RADIUS) >= MAJOR_OBJECTIVE_CLOSE_COUNT.min(required)
 }
 
 /// Whether enough of the jungler's team is close enough to rotate to the pit
