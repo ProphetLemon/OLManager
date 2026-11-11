@@ -1884,7 +1884,7 @@
     "playStyleDirect": "Early skirmish",
     "winRate": "WR",
     "side": "Lato",
-    "kda": "K / D / A",
+    "killsDeathsObjectives": "K / D / Obiett.",
     "economy": "Oro / Obiettivi"
   },
   "settings": {

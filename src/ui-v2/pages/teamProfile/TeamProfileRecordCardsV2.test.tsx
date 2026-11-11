@@ -69,7 +69,8 @@ describe("team profile standings use a series record, not football points", () =
 
     expect(screen.getByText("teamProfile.recentMatches")).toBeInTheDocument();
     expect(screen.getByText("teamProfile.side")).toBeInTheDocument();
-    expect(screen.getByText("teamProfile.kda")).toBeInTheDocument();
+    expect(screen.getByText("teamProfile.killsDeathsObjectives")).toBeInTheDocument();
+    expect(screen.queryByText("teamProfile.kda")).toBeNull();
     expect(screen.getByText("teamProfile.economy")).toBeInTheDocument();
     expect(screen.getByText("match.draft.sides.blue · match.victory")).toBeInTheDocument();
     expect(screen.getByText("10 / 2 / 5")).toBeInTheDocument();

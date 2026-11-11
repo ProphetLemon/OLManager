@@ -56,6 +56,12 @@ describe("ManagerTabV2 career totals", () => {
     expect(screen.getByText("60%")).toBeTruthy();
   });
 
+  it("labels the losses tile as losses, not as matches played", () => {
+    render(<ManagerTabV2 gameState={buildState({ matches_managed: 20, wins: 12, losses: 8 })} />);
+
+    expect(screen.getByText("10").nextElementSibling?.textContent).toBe("Losses");
+  });
+
   it("shows the matches played so far in a first season, before any total is saved", () => {
     render(<ManagerTabV2 gameState={buildState({ matches_managed: 0, wins: 0, losses: 0 })} />);
 

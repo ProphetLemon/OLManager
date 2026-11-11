@@ -2048,7 +2048,7 @@
     "perMatch": "Pro Spiel",
     "recentMatches": "Letzte Spiele",
     "side": "Seite",
-    "kda": "K / D / A",
+    "killsDeathsObjectives": "K / D / Ziele",
     "economy": "Gold / Ziele"
   },
   "settings": {

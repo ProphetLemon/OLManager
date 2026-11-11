@@ -2048,7 +2048,7 @@
     "perMatch": "Maç Başına",
     "recentMatches": "Son Maçlar",
     "side": "Taraf",
-    "kda": "K / D / A",
+    "killsDeathsObjectives": "K / D / Hedef",
     "economy": "Altın / Hedefler"
   },
   "settings": {

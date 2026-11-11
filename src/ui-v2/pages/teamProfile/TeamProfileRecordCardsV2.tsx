@@ -21,7 +21,7 @@ export function TeamProfileRecentMatchesCardV2({ matches }: { matches: TeamRecen
   if (matches.length === 0) return null;
 
   const sideLabel = t("teamProfile.side");
-  const scoreLabel = t("teamProfile.kda");
+  const scoreLabel = t("teamProfile.killsDeathsObjectives");
   const economyLabel = t("teamProfile.economy");
 
   return (

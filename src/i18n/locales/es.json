@@ -2226,7 +2226,7 @@
     "perMatch": "Por partido",
     "recentMatches": "Partidos recientes",
     "side": "Lado",
-    "kda": "K / D / A",
+    "killsDeathsObjectives": "K / D / Obj.",
     "economy": "Oro / Objetivos"
   },
   "settings": {
