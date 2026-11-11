@@ -797,7 +797,7 @@ const ASSASSIN_AD_ITEM_PLAN: [ItemTemplate; 6] = [
         max_hp: 0.0,
     },
     ItemTemplate {
-        key: "experimental_hexplate",
+        key: "serpents_fang",
         cost: 2700,
         attack_damage: 55.0,
         max_hp: 0.0,
