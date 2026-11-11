@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -610,6 +610,9 @@ function GameTab({
   );
 }
 
+/** Ids of the visible label and description of the row a control sits in. */
+const GameRowContext = createContext<{ labelId: string; descriptionId: string } | null>(null);
+
 function GameRow({
   label,
   description,
@@ -621,20 +624,27 @@ function GameRow({
   danger?: boolean;
   children: React.ReactNode;
 }) {
+  const id = useId();
+  const ids = { labelId: `${id}-label`, descriptionId: `${id}-description` };
   return (
-    <div className="flex items-center justify-between gap-4 py-4 border-b border-border/40 last:border-b-0">
-      <div className="flex-1 min-w-0">
-        <p
-          className={`text-sm font-heading font-bold uppercase tracking-wider ${
-            danger ? "text-red-400" : "text-foreground"
-          }`}
-        >
-          {label}
-        </p>
-        <p className="text-xs text-muted-foreground/70 mt-1 normal-case">{description}</p>
+    <GameRowContext.Provider value={ids}>
+      <div className="flex items-center justify-between gap-4 py-4 border-b border-border/40 last:border-b-0">
+        <div className="flex-1 min-w-0">
+          <p
+            id={ids.labelId}
+            className={`text-sm font-heading font-bold uppercase tracking-wider ${
+              danger ? "text-red-400" : "text-foreground"
+            }`}
+          >
+            {label}
+          </p>
+          <p id={ids.descriptionId} className="text-xs text-muted-foreground/70 mt-1 normal-case">
+            {description}
+          </p>
+        </div>
+        <div className="shrink-0">{children}</div>
       </div>
-      <div className="shrink-0">{children}</div>
-    </div>
+    </GameRowContext.Provider>
   );
 }
 
@@ -674,22 +684,34 @@ function GameToggle({
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
+  const row = useContext(GameRowContext);
+  // The button is the hit area (never under --target-min); the track inside stays small.
   return (
     <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-labelledby={row?.labelId}
+      aria-describedby={row?.descriptionId}
       onClick={() => onChange(!checked)}
-      className={`relative w-11 h-6 rounded-full border transition-colors duration-200 ${
-        checked
-          ? "bg-accent-400/20 border-accent-400"
-          : "bg-muted/30 border-border"
-      }`}
+      className="flex min-h-[var(--target-min)] min-w-[var(--target-min)] items-center justify-center"
     >
-      <div
-        className={`absolute top-0.5 w-5 h-5 rounded-full shadow-sm transition-transform duration-200 ${
+      <span
+        aria-hidden="true"
+        className={`relative block w-11 h-6 rounded-full border transition-colors duration-200 ${
           checked
-            ? "translate-x-[22px] bg-accent-400"
-            : "translate-x-0.5 bg-muted"
+            ? "bg-accent-400/20 border-accent-400"
+            : "bg-muted/30 border-border"
         }`}
-      />
+      >
+        <span
+          className={`absolute top-0.5 block w-5 h-5 rounded-full shadow-sm transition-transform duration-200 ${
+            checked
+              ? "translate-x-[22px] bg-accent-400"
+              : "translate-x-0.5 bg-muted"
+          }`}
+        />
+      </span>
     </button>
   );
 }
