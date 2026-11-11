@@ -86,4 +86,21 @@ describe("CompetitionsTabV2 in the Spanish UI", () => {
     expect(screen.getByText("Rol")).toBeInTheDocument();
     expectNoEnglish();
   });
+
+  it("writes the league table header with the Spanish abbreviations", () => {
+    const state = buildState();
+    (state as unknown as { manager: unknown }).manager = { team_id: "t1" };
+    state.leagues[0].standings = [
+      { team_id: "t1", played: 2, won: 1, lost: 1, maps_won: 2, maps_lost: 2, points: 3 },
+    ] as never;
+    render(<CompetitionsTabV2 gameState={state} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /LEC/ }));
+    const headers = screen.getAllByRole("columnheader").map((cell) => cell.textContent);
+
+    expect(headers).toEqual(expect.arrayContaining(["PJ", "PG", "PP", "MG", "MP", "Dif", "WR%"]));
+    for (const english of ["Pld", "W", "L", "MW", "ML"]) {
+      expect(headers, english).not.toContain(english);
+    }
+  });
 });
