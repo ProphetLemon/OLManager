@@ -3328,9 +3328,9 @@
         "notes": {
           "managerBlocked": "You told me not to reopen contract talks yet.",
           "completed": "I was able to close this one without needing you to step in.",
-          "beyondLimits": "Their camp want around €{{wage}}/yr for {{years}} years, which is beyond the delegation limits.",
+          "beyondLimits": "Their camp want around {{wage}}/yr for {{years}} years, which is beyond the delegation limits.",
           "boardWagePolicy": "Board wage policy blocks this renewal. Keep annual wages near €{{budget}} while we recover.",
-          "prefersManager": "They would listen, but they still want about €{{wage}}/yr for {{years}} years and prefer to hear from you directly.",
+          "prefersManager": "They would listen, but they still want about {{wage}}/yr for {{years}} years and prefer to hear from you directly.",
           "relationshipBlocked": "They are not willing to commit through me under the current relationship and contract situation."
         }
       },

@@ -108,7 +108,7 @@ beforeAll(async function setupTestEnvironment(): Promise<void> {
         "Still difficult: {{player}} — {{detail}}",
       "be.msg.delegatedRenewals.case.failed": "Failed: {{player}} — {{detail}}",
       "be.msg.delegatedRenewals.notes.beyondLimits":
-        "Their camp want around €{{wage}}/yr for {{years}} years, which is beyond the delegation limits.",
+        "Their camp want around {{wage}}/yr for {{years}} years, which is beyond the delegation limits.",
       "be.msg.delegatedRenewals.notes.relationshipBlocked":
         "They are not willing to commit through me under the current relationship and contract situation.",
     },
@@ -574,7 +574,7 @@ describe("InboxTab", function (): void {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Still difficult: Ben Pending — Their camp want around €26000/yr for 4 years, which is beyond the delegation limits.",
+        `Still difficult: Ben Pending — Their camp want around €${(26000).toLocaleString()}/yr for 4 years, which is beyond the delegation limits.`,
       ),
     ).toBeInTheDocument();
     expect(

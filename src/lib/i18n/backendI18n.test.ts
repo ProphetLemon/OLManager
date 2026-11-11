@@ -342,7 +342,7 @@ describe("resolveMessage", () => {
         id: "delegated_renewals_2026-07-01_0",
         subject: "Assistant Report — Contract Renewals",
         body:
-          "Boss, I went through our renewal list at Lisbon Sporting. 4 completed, 2 still pending, 1 failed.\n\nCompleted: Claes agreed to 1 year(s) on €5000/wk.\nStill difficult: Vieira — Their camp want around €25000/wk for 3 years, which is beyond the delegation limits.\nFailed: Fernandes — You told me not to reopen contract talks yet.",
+          "Boss, I went through our renewal list at Lisbon Sporting. 4 completed, 2 still pending, 1 failed.\n\nCompleted: Claes agreed to 1 year(s) on €5000/wk.\nStill difficult: Vieira — Their camp want around €25000/wk for 3 years, which is beyond the delegation limits.\nStill difficult: Moreira — They would listen, but they still want about €18000/wk for 2 years and prefer to hear from you directly.\nFailed: Fernandes — You told me not to reopen contract talks yet.",
         sender: "Assistant Manager",
         sender_role: "Assistant Manager",
       });
@@ -362,6 +362,9 @@ describe("resolveMessage", () => {
       );
       expect(result.body).toContain(
         "Continua difícil: Vieira — O estafe deles quer cerca de €25000/ano por 3 anos, acima dos limites da delegação.",
+      );
+      expect(result.body).toContain(
+        "Continua difícil: Moreira — Eles até ouviriam, mas ainda querem cerca de €18000/ano por 2 anos e preferem falar diretamente com você.",
       );
       expect(result.body).toContain(
         "Falhou: Fernandes — Você me disse para ainda não reabrir as conversas contratuais.",

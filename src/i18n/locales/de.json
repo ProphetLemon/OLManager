@@ -3140,9 +3140,9 @@
         "notes": {
           "managerBlocked": "Du hast mir gesagt, ich soll die Vertragsgespräche noch nicht wieder aufnehmen.",
           "completed": "Ich konnte das ohne dein Eingreifen abschließen.",
-          "beyondLimits": "Die Spielerseite will etwa €{{wage}}/Jahr für {{years}} Jahre, das liegt außerhalb der Delegationsgrenzen.",
+          "beyondLimits": "Die Spielerseite will etwa {{wage}}/Jahr für {{years}} Jahre, das liegt außerhalb der Delegationsgrenzen.",
           "boardWagePolicy": "Die Gehaltspolitik des Vorstands blockiert diese Verlängerung. Halte die Jahreslöhne während der Erholung nahe bei €{{budget}}.",
-          "prefersManager": "Sie würden zuhören, wollen aber noch etwa €{{wage}}/Jahr für {{years}} Jahre und bevorzugen ein Gespräch direkt mit dir.",
+          "prefersManager": "Sie würden zuhören, wollen aber noch etwa {{wage}}/Jahr für {{years}} Jahre und bevorzugen ein Gespräch direkt mit dir.",
           "relationshipBlocked": "Unter der aktuellen Beziehung und Vertragssituation wollen sie sich über mich nicht festlegen."
         }
       },

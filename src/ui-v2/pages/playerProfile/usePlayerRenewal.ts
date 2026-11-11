@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { GameStateData, PlayerData } from "@/store/gameStore";
 import { resolveBackendText } from "@/lib/i18n/backendI18n";
+import { formatDelegatedNoteParams } from "@/lib/i18n/delegatedRenewalNotes";
 import {
   type DelegatedRenewalCaseData,
   type DelegatedRenewalResponseData,
@@ -213,7 +214,7 @@ export function usePlayerRenewal({
       const note = resolveBackendText(
         delegatedCase.note_key,
         delegatedCase.note,
-        delegatedCase.note_params,
+        formatDelegatedNoteParams(delegatedCase.note_params),
       );
 
       if (delegatedCase.status === "stalled") {
