@@ -165,7 +165,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                 </h3>
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   {t("scouting.academyDescription", {
-                    defaultValue: "Adquirí un equipo de academy para desarrollar jóvenes talentos y alimentar tu primer equipo con jugadores formados en casa.",
+                    defaultValue: "Adquiere un equipo de academia para formar jóvenes talentos y nutrir a tu primer equipo con jugadores de la cantera.",
                   })}
                 </p>
               </div>
@@ -236,7 +236,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                   {t("scouting.noScoutsDescription", {
-                    defaultValue: "No tenés ojeadores en tu staff. Contratá al menos uno desde la página de Staff para empezar a evaluar jugadores y descubrir talentos ocultos.",
+                    defaultValue: "No tienes ojeadores en tu staff. Contrata al menos uno desde la página de Staff para empezar a evaluar jugadores y descubrir talento oculto.",
                   })}
                 </p>
               </div>
@@ -255,17 +255,17 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
                   {
                     icon: Eye,
                     label: t("scouting.benefitEvaluate", { defaultValue: "Evaluar" }),
-                    desc: t("scouting.benefitEvaluateDesc", { defaultValue: "Conocé el potencial real de cada jugador" }),
+                    desc: t("scouting.benefitEvaluateDesc", { defaultValue: "Descubre el potencial real de cada jugador" }),
                   },
                   {
                     icon: Clock,
                     label: t("scouting.benefitCompare", { defaultValue: "Comparar" }),
-                    desc: t("scouting.benefitCompareDesc", { defaultValue: "Compará stats y encontrá la mejor opción" }),
+                    desc: t("scouting.benefitCompareDesc", { defaultValue: "Compara estadísticas y encuentra la mejor opción" }),
                   },
                   {
                     icon: GraduationCap,
                     label: t("scouting.benefitDiscover", { defaultValue: "Descubrir" }),
-                    desc: t("scouting.benefitDiscoverDesc", { defaultValue: "Descubrí talentos ocultos en la academia y el mercado" }),
+                    desc: t("scouting.benefitDiscoverDesc", { defaultValue: "Descubre talento oculto en la academia y en el mercado" }),
                   },
                 ].map((benefit) => (
                   <div

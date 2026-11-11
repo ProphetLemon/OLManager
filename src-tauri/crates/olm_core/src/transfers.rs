@@ -3122,7 +3122,16 @@ pub fn release_player_contract(game: &mut Game, player_id: &str) -> Result<i64, 
             today,
         )
         .with_category(crate::domain::message::MessageCategory::Contract)
-        .with_priority(crate::domain::message::MessagePriority::High),
+        .with_priority(crate::domain::message::MessagePriority::High)
+        // The stored text is English; the keys let the UI render it in the active language.
+        .with_i18n(
+            "be.msg.contractTerminated.subject",
+            "be.msg.contractTerminated.body",
+            std::collections::HashMap::from([
+                ("player".to_string(), player_name.clone()),
+                ("cost".to_string(), penalty.to_string()),
+            ]),
+        ),
         "director_of_football",
         vec![("player", &player_name)],
     );

@@ -197,7 +197,7 @@ export function MarketTabV2({ gameState }: MarketTabV2Props) {
 
                 <div className="mt-2 flex items-center gap-3 border-t border-border pt-2 text-caption text-muted-foreground">
                   <span>
-                    {t("market.wage")}: {formatVal(entry.annual_wage)}/yr
+                    {t("market.wage")}: {formatVal(entry.annual_wage)}{t("finances.perYearSuffix")}
                   </span>
                   {entry.contract_years > 0 && (
                     <span>

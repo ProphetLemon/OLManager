@@ -85,7 +85,11 @@ export default function TransferBidDialog({
           player={bidTarget}
           caption={
             <>
-              {getTeamName(teams, bidTarget.team_id)} •{" "}
+              {getTeamName(teams, bidTarget.team_id, {
+                freeAgent: t("common.freeAgent"),
+                unknown: t("common.unknown"),
+              })}{" "}
+              •{" "}
               {t("transfers.playerValue", { value: formatVal(bidTarget.market_value) })}
             </>
           }
@@ -96,7 +100,7 @@ export default function TransferBidDialog({
 
         <div>
           <label htmlFor="transfer-destination" className={FIELD_LABEL_CLASS}>
-            {t("transfers.destination", { defaultValue: "Destination" })}
+            {t("transfers.destination")}
           </label>
           <select
             id="transfer-destination"

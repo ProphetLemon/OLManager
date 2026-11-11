@@ -1519,7 +1519,10 @@
       "draftAnalysis": "Draft analysis",
       "futureMeta": "Future meta",
       "tiltControl": "Tilt control"
-    }
+    },
+    "adjustFiltersHint": "Try adjusting filters or search",
+    "hireFromAvailableHint": "Hire staff from the available tab",
+    "allStaffEmployedHint": "All staff are currently employed"
   },
   "finances": {
     "overview": "Financial Overview",
@@ -1545,6 +1548,7 @@
     "perMonthSuffix": "/mo",
     "perWeekSuffix": "/wk",
     "wagePerWeek": "Wage/wk",
+    "wagePerYear": "Wage/yr",
     "marketValue": "Market Value",
     "until": "Until {{year}}",
     "facilities": "Facility Hub",
@@ -1596,7 +1600,7 @@
     "contractRiskWarning": "Warning",
     "contractRiskStable": "Stable",
     "contractExpiresOn": "Expires {{date}}",
-    "atRiskWages": "€{{amount}}/yr at risk",
+    "atRiskWages": "{{amount}}/yr at risk",
     "noContractRisks": "No imminent contract risks",
     "esportsSponsor": "Esports Sponsor",
     "mainHub": "Main Hub",
@@ -1624,7 +1628,22 @@
       "board": "Board",
       "manual": "Manual"
     },
-    "ledgerEmpty": "No financial ledger entries yet."
+    "ledgerEmpty": "No financial ledger entries yet.",
+    "ledgerKinds": {
+      "Salary": "Salary",
+      "StaffWage": "Staff wage",
+      "FacilityUpkeep": "Facility upkeep",
+      "FacilityUpgrade": "Facility upgrade",
+      "TransferPurchase": "Transfer purchase",
+      "TransferSale": "Transfer sale",
+      "ReleasePenalty": "Release penalty",
+      "AcademyAcquisition": "Academy acquisition",
+      "Sponsorship": "Sponsorship",
+      "MatchdayRevenue": "Matchday revenue",
+      "PrizeMoney": "Prize money",
+      "BudgetRefresh": "Budget refresh",
+      "Other": "Other"
+    }
   },
   "inbox": {
     "title": "Inbox",
@@ -1822,7 +1841,16 @@
     "wageFeedbackRejectedHeadline": "Talks have broken down.",
     "wageFeedbackRejectedDetail": "After several rounds without common ground, both sides are walking away.",
     "transferFeedbackWageNegotiationDetail": "The club agreed to your fee. Now it is time to agree terms with the player.",
-    "browseMarket": "Browse Market"
+    "browseMarket": "Browse Market",
+    "destination": "Destination",
+    "mainTeamDestination": "Main team",
+    "freeAgentSigningHint": "This player is a free agent and can be signed without a transfer fee.",
+    "bidImpactTitle": "Projected impact",
+    "bidImpactTransferBudget": "Transfer budget {{before}} -> {{after}}",
+    "bidImpactBalance": "Club balance {{before}} -> {{after}}",
+    "bidImpactWagePressure": "Projected wage budget usage {{percent}}%",
+    "bidImpactOverTransferBudget": "This bid exceeds your transfer budget",
+    "bidImpactOverBalance": "This bid would push the club into debt"
   },
   "schedule": {
     "noSchedule": "No league schedule available.",
@@ -2079,7 +2107,9 @@
     "loanListed": "Loan Listed",
     "potentialResearchProgress": "Research progress ({{total}} stages)",
     "startPotentialResearch": "Start Potential Research",
-    "transferListed": "Transfer Listed"
+    "transferListed": "Transfer Listed",
+    "transferOfferDestination": "Destination",
+    "transferOfferMainTeam": "Main team"
   },
   "teamProfile": {
     "clubInfo": "Team Information",
@@ -2594,7 +2624,13 @@
       "threat": "Threat",
       "metaThreats": "Meta threats",
       "meta": "Meta",
-      "masteryHighlights": "Mastery highlights"
+      "masteryHighlights": "Mastery highlights",
+      "quality": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "roleUnknown": "Unknown"
     },
     "continue": "Continue",
     "game": "Game"
@@ -3683,6 +3719,10 @@
           "subject9": "el_yuste — the data cools the optimism again",
           "body9": "Yuste opened charts on stream and left a hard reading: \"Do not talk to me about feelings if the data is going down. You can have one good match, but the trend rules.\"\n\nThe audience debate is active again."
         }
+      },
+      "contractTerminated": {
+        "subject": "Contract terminated: {{player}}",
+        "body": "You terminated {{player}}'s contract. The player is now a free agent. Termination cost: €{{cost}}."
       }
     },
     "news": {

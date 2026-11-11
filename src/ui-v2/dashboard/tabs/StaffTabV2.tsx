@@ -278,7 +278,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                   {t("staff.noStaffMatch")}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground/60">
-                  Try adjusting filters or search
+                  {t("staff.adjustFiltersHint")}
                 </p>
               </>
             ) : (
@@ -290,7 +290,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                       {t("staff.noStaffMatch")}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground/60">
-                      Hire staff from the available tab
+                      {t("staff.hireFromAvailableHint")}
                     </p>
                   </>
                 ) : (
@@ -300,7 +300,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                       {t("staff.noAvailableStaff")}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground/60">
-                      All staff are currently employed
+                      {t("staff.allStaffEmployedHint")}
                     </p>
                   </>
                 )}

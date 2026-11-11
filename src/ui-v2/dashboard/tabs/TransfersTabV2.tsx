@@ -800,7 +800,7 @@ export function TransfersTabV2({
                         {formatVal(player.market_value)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
-                        {formatVal(player.wage)}/yr
+                        {formatVal(player.wage)}{annualSuffix}
                       </TableCell>
                       <TableCell className="text-center">
                         <span
