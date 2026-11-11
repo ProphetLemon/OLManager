@@ -285,7 +285,7 @@ enum End {
     Left,
     TowerFell,
     /// The match ended while he was in range.
-    MatchEnd,
+    Finished,
     /// A bare or shielded part that continued as the other kind.
     ChangedKind,
 }
@@ -787,7 +787,7 @@ fn run_trace(seed: usize, team_a: Side, team_b: Side, cfg: Config) -> MatchTrace
     let dt = cfg.dt();
     let open = std::mem::take(&mut tracker.open);
     for run in open.into_iter().flatten() {
-        tracker.stretches.push(finish_run(run, End::MatchEnd, dt));
+        tracker.stretches.push(finish_run(run, End::Finished, dt));
     }
     let blue_won = final_state.winner.as_deref().map(|w| w == "blue");
     MatchTrace {
@@ -866,7 +866,7 @@ pub(super) fn run_tower_tracked(
     let dt = cfg.dt();
     let open = std::mem::take(&mut tracker.open);
     for run in open.into_iter().flatten() {
-        tracker.stretches.push(finish_run(run, End::MatchEnd, dt));
+        tracker.stretches.push(finish_run(run, End::Finished, dt));
     }
     let bare: Vec<&Stretch> = tracker
         .stretches
@@ -934,7 +934,7 @@ const PHASE_LABELS: [&str; 3] = ["0-15", "15-25", "25-end"];
 
 // ------------------------------------------------------------------- tables
 
-fn stretches_of<'a>(traces: &'a [MatchTrace], kind: Kind) -> Vec<&'a Stretch> {
+fn stretches_of(traces: &[MatchTrace], kind: Kind) -> Vec<&Stretch> {
     let mut out = Vec::new();
     for trace in traces {
         for finished in &trace.stretches {
@@ -957,13 +957,12 @@ fn table_stretch_lengths(traces: &[MatchTrace]) {
         ("shielded", Kind::Shielded),
     ] {
         let all = stretches_of(traces, kind);
-        for phase in 0..4 {
+        for (phase, name) in PHASE_LABELS.iter().copied().chain(std::iter::once("all")).enumerate() {
             let durs = sorted(
                 all.iter()
                     .filter(|s| phase == 3 || phase_of(s.start_t) == phase)
                     .map(|s| s.dur),
             );
-            let name = if phase == 3 { "all" } else { PHASE_LABELS[phase] };
             println!(
                 "{label:<9} {name:<7} {:>6} {:>10.2} {:>7.1} {:>7.1} {:>7.1} {:>7.1}",
                 durs.len(),
@@ -982,7 +981,7 @@ fn table_tower_behaviour(traces: &[MatchTrace]) {
     println!("kind      phase    ticks   {}", SILENCE_LABELS.join(" | "));
     for (label, kind) in [("bare", Kind::Bare), ("shielded", Kind::Shielded)] {
         let all = stretches_of(traces, kind);
-        for phase in 0..4 {
+        for (phase, name) in PHASE_LABELS.iter().copied().chain(std::iter::once("all")).enumerate() {
             let mut counts = [0u64; 5];
             for s in all.iter().filter(|s| phase == 3 || phase_of(s.start_t) == phase) {
                 for (i, c) in s.silence.iter().enumerate() {
@@ -990,7 +989,6 @@ fn table_tower_behaviour(traces: &[MatchTrace]) {
                 }
             }
             let total: u64 = counts.iter().sum();
-            let name = if phase == 3 { "all" } else { PHASE_LABELS[phase] };
             let shares: Vec<String> = counts
                 .iter()
                 .map(|&c| format!("{:5.1}%", 100.0 * c as f64 / total.max(1) as f64))
@@ -1094,7 +1092,7 @@ fn table_tower_deaths(traces: &[MatchTrace]) {
     );
 }
 
-fn rows_at<'a>(traces: &'a [MatchTrace], snapshot: usize) -> Vec<&'a ChampionRow> {
+fn rows_at(traces: &[MatchTrace], snapshot: usize) -> Vec<&ChampionRow> {
     traces
         .iter()
         .flat_map(|t| t.snapshots[snapshot].iter())
