@@ -5288,12 +5288,11 @@
         "slot": "W",
         "name": "Astral Infusion",
         "archetypes": [
-          "ally_heal",
-          "self_heal"
+          "ally_heal"
         ],
         "cooldownSec": 4,
         "rangeClass": "short",
-        "origin": "rule"
+        "origin": "curated"
       },
       {
         "slot": "E",
@@ -6689,10 +6688,12 @@
       {
         "slot": "Q",
         "name": "Prowling Projectile",
-        "archetypes": [],
+        "archetypes": [
+          "poke"
+        ],
         "cooldownSec": 6.5,
         "rangeClass": "long",
-        "origin": "rule"
+        "origin": "curated"
       },
       {
         "slot": "W",

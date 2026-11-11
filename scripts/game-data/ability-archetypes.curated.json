@@ -580,6 +580,9 @@
       ]
     },
     "Soraka": {
+      "W": [
+        "ally_heal"
+      ],
       "R": [
         "ally_heal",
         "self_heal",
@@ -700,6 +703,9 @@
       }
     },
     "Yuumi": {
+      "Q": [
+        "poke"
+      ],
       "W": [
         "dash",
         "untargetable"
