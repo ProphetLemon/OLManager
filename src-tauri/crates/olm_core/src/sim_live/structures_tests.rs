@@ -381,3 +381,27 @@ fn a_tower_takes_more_damage_as_the_match_goes_on_and_all_of_it_from_minute_25()
     assert_eq!(tower_damage_multiplier(25.0 * 60.0, &tower), 1.0);
     assert!(tower_damage_multiplier(10.0 * 60.0, &tower) <= 0.5, "early towers fell too easily");
 }
+
+#[test]
+fn every_red_structure_stands_at_the_mirror_image_of_its_blue_counterpart() {
+    let structures = create_structures();
+    let pos_of = |id: &str| -> (f64, f64) {
+        let structure = structures
+            .iter()
+            .find(|s| s["id"] == id)
+            .unwrap_or_else(|| panic!("no structure {id}"));
+        (
+            structure["pos"]["x"].as_f64().expect("x"),
+            structure["pos"]["y"].as_f64().expect("y"),
+        )
+    };
+    for structure in structures.iter().filter(|s| s["team"] == "red") {
+        let id = structure["id"].as_str().expect("id");
+        let (rx, ry) = pos_of(id);
+        let (bx, by) = pos_of(&id.replacen("red-", "blue-", 1));
+        assert!(
+            (rx - by).abs() < 1e-9 && (ry - bx).abs() < 1e-9,
+            "{id} is at ({rx:.4}, {ry:.4}), its blue counterpart at ({bx:.4}, {by:.4})"
+        );
+    }
+}

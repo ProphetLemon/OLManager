@@ -99,8 +99,8 @@ pub(super) fn role_income_weight(role: &str) -> f64 {
     match role {
         "TOP" => 0.850,
         "JGL" => 1.000,
-        "MID" => 1.000,
-        "ADC" => 1.300,
+        "MID" => 0.950,
+        "ADC" => 1.250,
         "SUP" => 1.000,
         _ => 1.0,
     }
