@@ -26,11 +26,8 @@ const WALK_TO_BASE_HEAL_DISTANCE: f64 = 0.17;
 /// or Elder, or only `MAJOR_OBJECTIVE_SHORT_GROUP` once the enemy has at most
 /// `MAJOR_OBJECTIVE_SHORT_ENEMIES_ALIVE` champions alive.
 /// Champions of a team within `MAJOR_OBJECTIVE_GROUP_RADIUS` of the pit count as
-/// being at it. Detector runs: at 0.36 laners trading in their lanes 0.25 to 0.3
-/// from the pit counted as "present" and the jungler hit Baron alone for over
-/// a minute (4% of Baron kills and 9% of Elder kills had one champion in attack
-/// range); at 0.24 that no longer happens in 100 even matches.
-const MAJOR_OBJECTIVE_GROUP_RADIUS: f64 = 0.24;
+/// being at it.
+const MAJOR_OBJECTIVE_GROUP_RADIUS: f64 = 0.36;
 const MAJOR_OBJECTIVE_MIN_GROUP: usize = 3;
 const MAJOR_OBJECTIVE_SHORT_GROUP: usize = 2;
 const MAJOR_OBJECTIVE_SHORT_ENEMIES_ALIVE: usize = 2;
