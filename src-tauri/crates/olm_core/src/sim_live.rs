@@ -1649,8 +1649,8 @@ fn neutral_timer_templates() -> Vec<NeutralTimerTemplate> {
             combat_grace_until: None,
             unlocked: true,
             pos: Vec2 {
-                x: 0.2584635416666667,
-                y: 0.56640625,
+                x: 0.3528645833333333,
+                y: 0.525390625,
             },
         },
         NeutralTimerTemplate {
@@ -1679,8 +1679,8 @@ fn neutral_timer_templates() -> Vec<NeutralTimerTemplate> {
             combat_grace_until: None,
             unlocked: true,
             pos: Vec2 {
-                x: 0.4759114583333333,
-                y: 0.6432291666666666,
+                x: 0.458,
+                y: 0.691,
             },
         },
         NeutralTimerTemplate {
@@ -1694,8 +1694,8 @@ fn neutral_timer_templates() -> Vec<NeutralTimerTemplate> {
             combat_grace_until: None,
             unlocked: true,
             pos: Vec2 {
-                x: 0.748046875,
-                y: 0.4361979166666667,
+                x: 0.691,
+                y: 0.458,
             },
         },
         NeutralTimerTemplate {
@@ -6735,3 +6735,6 @@ mod combat_order_tests;
 
 #[cfg(test)]
 mod income_tests;
+
+#[cfg(test)]
+mod camp_symmetry_tests;
