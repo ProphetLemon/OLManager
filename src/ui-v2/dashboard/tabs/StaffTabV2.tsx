@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Briefcase,
@@ -17,7 +17,7 @@ import {
   Users,
 } from "lucide-react";
 
-import type { GameStateData } from "@/store/gameStore";
+import type { GameStateData, StaffData } from "@/store/gameStore";
 import { hireStaff, releaseStaff } from "@/services/staffService";
 import {
   formatStaffEffectPercent,
@@ -33,6 +33,8 @@ import { countryName } from "@/lib/common/countries";
 import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
+import { Button } from "@/ui-v2/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/ui-v2/components/ui/dialog";
 import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
 
 interface StaffTabV2Props {
@@ -63,6 +65,9 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  const [releaseTarget, setReleaseTarget] = useState<StaffData | null>(null);
+  const releaseOpenerRef = useRef<HTMLElement | null>(null);
+  const cancelReleaseRef = useRef<HTMLButtonElement | null>(null);
   const PAGE_SIZE = 12;
 
   const myStaff = gameState.staff.filter((s) => s.team_id === userTeamId);
@@ -436,14 +441,19 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
                       <button
                         type="button"
                         disabled={actionLoading === staff.id}
-                        onClick={(e) => { e.stopPropagation(); handleRelease(staff.id); }}
-                        className="flex size-8 items-center justify-center rounded-lg bg-negative/10 text-negative transition-colors hover:bg-negative/20 disabled:pointer-events-none disabled:opacity-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          releaseOpenerRef.current = e.currentTarget;
+                          setReleaseTarget(staff);
+                        }}
+                        className="flex size-8 min-h-[var(--target-min)] min-w-[var(--target-min)] items-center justify-center rounded-lg bg-negative/10 text-negative transition-colors hover:bg-negative/20 disabled:pointer-events-none disabled:opacity-50"
+                        aria-label={t("staff.releaseStaffNamed", { name: staffDisplayName(staff) })}
                         title={t("staff.releaseStaff")}
                       >
                         {actionLoading === staff.id ? (
-                          <Loader2 className="size-4 animate-spin" />
+                          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                         ) : (
-                          <UserMinus className="size-4" />
+                          <UserMinus className="size-4" aria-hidden="true" />
                         )}
                       </button>
                     )}
@@ -490,6 +500,57 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
           </button>
         </div>
       )}
+      <Dialog
+        open={releaseTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setReleaseTarget(null);
+        }}
+      >
+        <DialogContent
+          className="max-w-sm"
+          initialFocus={cancelReleaseRef}
+          finalFocus={() => (releaseOpenerRef.current?.isConnected ? releaseOpenerRef.current : true)}
+        >
+          {releaseTarget ? (
+            <>
+              <DialogTitle className="text-lg text-foreground">
+                {t("staff.releaseConfirmTitle", { name: staffDisplayName(releaseTarget) })}
+              </DialogTitle>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t("staff.releaseConfirmMessage", {
+                  name: staffDisplayName(releaseTarget),
+                  role: t(`staff.roles.${releaseTarget.role}`, { defaultValue: releaseTarget.role }),
+                })}
+              </p>
+              <DialogFooter className="mt-6 flex-col">
+                <Button
+                  ref={cancelReleaseRef}
+                  type="button"
+                  variant="outline"
+                  size="touch"
+                  onClick={() => setReleaseTarget(null)}
+                  className="w-full font-heading font-bold uppercase tracking-wider"
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="touch"
+                  onClick={() => {
+                    const id = releaseTarget.id;
+                    setReleaseTarget(null);
+                    void handleRelease(id);
+                  }}
+                  className="w-full font-heading font-bold uppercase tracking-wider"
+                >
+                  {t("staff.releaseConfirmAction")}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

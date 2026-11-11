@@ -1319,6 +1319,10 @@
     "noStaffMatch": "Nenhum membro da comissão corresponde aos seus filtros.",
     "noAvailableStaff": "Nenhuma comissão técnica disponível.",
     "releaseStaff": "Dispensar membro da comissão",
+    "releaseStaffNamed": "Dispensar {{name}}",
+    "releaseConfirmTitle": "Dispensar {{name}}?",
+    "releaseConfirmMessage": "{{name}} ({{role}}) vai sair da comissão e voltar ao mercado. Não dá para desfazer por aqui.",
+    "releaseConfirmAction": "Dispensar",
     "hireStaff": "Contratar membro da comissão",
     "clubOwner": "Proprietário do clube",
     "errors": {

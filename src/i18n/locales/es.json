@@ -1461,6 +1461,10 @@
     "noStaffMatch": "Ningún miembro del staff coincide con tus filtros.",
     "noAvailableStaff": "No hay staff disponible.",
     "releaseStaff": "Despedir miembro del staff",
+    "releaseStaffNamed": "Despedir a {{name}}",
+    "releaseConfirmTitle": "¿Despedir a {{name}}?",
+    "releaseConfirmMessage": "{{name}} ({{role}}) dejará tu staff y volverá al mercado. No podrás deshacerlo desde aquí.",
+    "releaseConfirmAction": "Despedir",
     "hireStaff": "Contratar miembro del staff",
     "clubOwner": "Propietario del club",
     "errors": {

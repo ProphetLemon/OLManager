@@ -1319,6 +1319,10 @@
     "noStaffMatch": "Filtrelerinizle eşleşen personel bulunamadı.",
     "noAvailableStaff": "Uygun personel bulunamadı.",
     "releaseStaff": "Personeli serbest bırak",
+    "releaseStaffNamed": "{{name}} serbest bırak",
+    "releaseConfirmTitle": "{{name}} serbest bırakılsın mı?",
+    "releaseConfirmMessage": "{{name}} ({{role}}) kadrodan ayrılıp transfer pazarına dönecek. Buradan geri alınamaz.",
+    "releaseConfirmAction": "Serbest bırak",
     "hireStaff": "Personel işe al",
     "clubOwner": "Kulüp sahibi",
     "errors": {

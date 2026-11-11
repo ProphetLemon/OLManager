@@ -1319,6 +1319,10 @@
     "noStaffMatch": "Aucun membre du staff ne correspond à vos filtres.",
     "noAvailableStaff": "Aucun staff disponible.",
     "releaseStaff": "Libérer un membre du staff",
+    "releaseStaffNamed": "Libérer {{name}}",
+    "releaseConfirmTitle": "Libérer {{name}} ?",
+    "releaseConfirmMessage": "{{name}} ({{role}}) quittera le staff et retournera sur le marché. Impossible d'annuler depuis ici.",
+    "releaseConfirmAction": "Libérer",
     "hireStaff": "Engager un membre du staff",
     "clubOwner": "Propriétaire du club",
     "errors": {
