@@ -7,7 +7,7 @@ use super::*;
 /// Damage one auto attack from `attacker` deals to `defender`, both fresh
 /// champions standing next to each other. Everything except the two score
 /// sets is identical, so the ratio of two calls isolates the strength terms.
-fn hit_damage(attacker: &ChampionRuntime, defender: &ChampionRuntime) -> f64 {
+pub(super) fn hit_damage(attacker: &ChampionRuntime, defender: &ChampionRuntime) -> f64 {
     let mut a = attacker.clone();
     let mut d = defender.clone();
     a.team = "blue".to_string();
@@ -21,7 +21,7 @@ fn hit_damage(attacker: &ChampionRuntime, defender: &ChampionRuntime) -> f64 {
     100_000.0 - runtime.champions[1].hp
 }
 
-fn with_scores(score: f64) -> ChampionRuntime {
+pub(super) fn with_scores(score: f64) -> ChampionRuntime {
     let mut champion = test_champion("c", "blue", "MID", "mid", Vec2 { x: 0.5, y: 0.5 });
     champion.gameplay_score = score;
     champion.iq_score = score;

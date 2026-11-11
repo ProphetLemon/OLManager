@@ -18,6 +18,7 @@ import {
 import { LolSimV2Client } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/tauri-client";
 import { renderSimulation } from "@/ui-v2/_legacy/components/match/lol-prototype/ui/render";
 import { LecLowerThirdPanel } from "@/ui-v2/_legacy/components/match/lol-prototype/ui/panels";
+import { championPlaysRole, resolveRoleTier } from "@/lib/champions/championRoleFit";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { GameStateData } from "@/store/gameStore";
 
@@ -488,7 +489,11 @@ export default function LolMatchLive({ gameState, snapshot: initialSnapshot, blu
             : rawRole === "SUPPORT"
               ? "Support"
               : "Mid";
-      const tier = roleTierByChampion.get(`${mappedRole}:${championKey}`) ?? bestTierByChampion.get(championKey) ?? "B";
+      const tier = resolveRoleTier(
+        roleTierByChampion.get(`${mappedRole}:${championKey}`),
+        bestTierByChampion.get(championKey),
+        championPlaysRole(championId, rawRole === "TOP" || rawRole === "JUNGLE" || rawRole === "ADC" || rawRole === "SUPPORT" ? rawRole : "MID"),
+      );
       const tierDelta = tierWeight[tier] ?? 0;
       const modifier = Math.max(0.82, Math.min(1.25, 1 + masteryDelta + tierDelta));
 

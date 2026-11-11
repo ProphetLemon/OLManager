@@ -5,6 +5,7 @@ use std::collections::{BinaryHeap, HashMap, VecDeque};
 use std::sync::OnceLock;
 
 mod api;
+mod champion_fit;
 mod combat;
 mod economy;
 mod events;
@@ -1456,7 +1457,13 @@ fn seed_team(
             "competitiveScore".to_string(),
             Value::from(competitive_score),
         );
-        champion_obj.insert("roleEdge".to_string(), Value::from(tuned_role_modifier));
+        let off_role_penalty = champion_id.map_or(0.0, |id| {
+            champion_fit::off_role_edge_penalty(id, role_seed.role)
+        });
+        champion_obj.insert(
+            "roleEdge".to_string(),
+            Value::from(tuned_role_modifier - off_role_penalty),
+        );
         champion_obj.insert("staffExecution".to_string(), Value::from(staff_execution));
         champion_obj.insert("summonerSpells".to_string(), Value::Array(summoner_spells));
         champion_obj.insert("igniteDotUntil".to_string(), Value::from(0.0));
@@ -6417,3 +6424,6 @@ mod economy_tests;
 
 #[cfg(test)]
 mod strength_tests;
+
+#[cfg(test)]
+mod champion_fit_tests;
