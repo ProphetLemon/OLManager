@@ -2466,7 +2466,20 @@
       "performance": "Performance",
       "gameTimeline": "Game timeline",
       "blueNext": "Blue next",
-      "redNext": "Red next"
+      "redNext": "Red next",
+      "timelineEvents": {
+        "firstBlood": "Erstes Blut",
+        "voidgrubs": "Leerenlarven x3",
+        "dragon": "Drache",
+        "dragonSoul": "Drachenseele",
+        "elder": "Ältester Drache",
+        "herald": "Herold",
+        "baron": "Baron",
+        "turret": "Turm",
+        "inhibitor": "Inhibitor",
+        "nexusTurret": "Nexusturm",
+        "nexus": "Nexus"
+      }
     },
     "lolResult": {
       "dragonSummary": "Dragon {{kind}} · H/A stacks {{home}}/{{away}} · Soul {{soul}}",

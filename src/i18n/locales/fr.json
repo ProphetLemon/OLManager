@@ -2466,7 +2466,20 @@
       "performance": "Performance",
       "gameTimeline": "Chronologie de la partie",
       "blueNext": "Bleu au suivant",
-      "redNext": "Rouge au suivant"
+      "redNext": "Rouge au suivant",
+      "timelineEvents": {
+        "firstBlood": "Premier sang",
+        "voidgrubs": "Larves du Néant x3",
+        "dragon": "Dragon",
+        "dragonSoul": "Âme du dragon",
+        "elder": "Dragon ancien",
+        "herald": "Héraut",
+        "baron": "Baron",
+        "turret": "Tourelle",
+        "inhibitor": "Inhibiteur",
+        "nexusTurret": "Tourelle du Nexus",
+        "nexus": "Nexus"
+      }
     },
     "lolResult": {
       "dragonSummary": "Dragon {{kind}} · Charges D/E {{home}}/{{away}} · Âme {{soul}}",

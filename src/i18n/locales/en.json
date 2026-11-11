@@ -2657,7 +2657,20 @@
       "performance": "Performance",
       "gameTimeline": "Game timeline",
       "blueNext": "Blue next",
-      "redNext": "Red next"
+      "redNext": "Red next",
+      "timelineEvents": {
+        "firstBlood": "First Blood",
+        "voidgrubs": "Voidgrubs x3",
+        "dragon": "Dragon",
+        "dragonSoul": "Dragon Soul",
+        "elder": "Elder Dragon",
+        "herald": "Herald",
+        "baron": "Baron",
+        "turret": "Turret",
+        "inhibitor": "Inhibitor",
+        "nexusTurret": "Nexus Turret",
+        "nexus": "Nexus"
+      }
     },
     "lolResult": {
       "dragonSummary": "Dragon {{kind}} · H/A stacks {{home}}/{{away}} · Soul {{soul}}",

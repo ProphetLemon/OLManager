@@ -2448,7 +2448,20 @@
       "performance": "Performans",
       "gameTimeline": "Oyun zaman çizelgesi",
       "blueNext": "Sonraki Mavi",
-      "redNext": "Sonraki Kırmızı"
+      "redNext": "Sonraki Kırmızı",
+      "timelineEvents": {
+        "firstBlood": "İlk Kan",
+        "voidgrubs": "Boşluk Larvaları x3",
+        "dragon": "Ejderha",
+        "dragonSoul": "Ejderha Ruhu",
+        "elder": "Kadim Ejderha",
+        "herald": "Haberci",
+        "baron": "Baron",
+        "turret": "Kule",
+        "inhibitor": "İnhibitör",
+        "nexusTurret": "Nexus Kulesi",
+        "nexus": "Nexus"
+      }
     },
     "lolResult": {
       "dragonSummary": "{{kind}} Ejderi · Ev/Dep skorları {{home}}/{{away}} · Ruh {{soul}}",

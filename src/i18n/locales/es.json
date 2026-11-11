@@ -2645,7 +2645,20 @@
       "performance": "Rendimiento",
       "gameTimeline": "Cronología de la partida",
       "blueNext": "Azul siguiente",
-      "redNext": "Rojo siguiente"
+      "redNext": "Rojo siguiente",
+      "timelineEvents": {
+        "firstBlood": "Primera sangre",
+        "voidgrubs": "Larvas del Vacío x3",
+        "dragon": "Dragón",
+        "dragonSoul": "Alma de dragón",
+        "elder": "Dragón Ancestral",
+        "herald": "Heraldo",
+        "baron": "Barón",
+        "turret": "Torre",
+        "inhibitor": "Inhibidor",
+        "nexusTurret": "Torre del Nexo",
+        "nexus": "Nexo"
+      }
     },
     "lolResult": {
       "dragonSummary": "Dragón {{kind}} · Cargas L/V {{home}}/{{away}} · Alma {{soul}}",

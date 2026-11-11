@@ -2348,7 +2348,20 @@
       "performance": "Performance",
       "gameTimeline": "Game timeline",
       "blueNext": "Blue next",
-      "redNext": "Red next"
+      "redNext": "Red next",
+      "timelineEvents": {
+        "firstBlood": "Primo sangue",
+        "voidgrubs": "Larve del Vuoto x3",
+        "dragon": "Drago",
+        "dragonSoul": "Anima del drago",
+        "elder": "Drago Ancestrale",
+        "herald": "Araldo",
+        "baron": "Barone",
+        "turret": "Torre",
+        "inhibitor": "Inibitore",
+        "nexusTurret": "Torre del Nexus",
+        "nexus": "Nexus"
+      }
     },
     "lolResult": {
       "dragonSummary": "Dragon {{kind}} · H/A stacks {{home}}/{{away}} · Soul {{soul}}",

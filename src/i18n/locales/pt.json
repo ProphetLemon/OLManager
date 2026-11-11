@@ -2465,7 +2465,20 @@
       "performance": "Desempenho",
       "gameTimeline": "Linha do tempo da partida",
       "blueNext": "Azul na próxima",
-      "redNext": "Vermelho na próxima"
+      "redNext": "Vermelho na próxima",
+      "timelineEvents": {
+        "firstBlood": "Primeiro Sangue",
+        "voidgrubs": "Larvas do Vazio x3",
+        "dragon": "Dragão",
+        "dragonSoul": "Alma de Dragão",
+        "elder": "Dragão Ancião",
+        "herald": "Arauto",
+        "baron": "Barão",
+        "turret": "Torre",
+        "inhibitor": "Inibidor",
+        "nexusTurret": "Torre do Nexus",
+        "nexus": "Nexus"
+      }
     },
     "lolResult": {
       "dragonSummary": "Dragão {{kind}} · Acúmulo C/F {{home}}/{{away}} · Alma {{soul}}",
