@@ -3140,9 +3140,9 @@
         "notes": {
           "managerBlocked": "Bana sözleşme görüşmelerine henüz başlamamamı söylemiştiniz.",
           "completed": "Sizin devreye girmenize gerek kalmadan işi bitirdim.",
-          "beyondLimits": "Onların kampı {{years}} yıl için yıllık €{{wage}} civarında bir şey istiyor, bu da yetki sınırlarımı aşıyor.",
+          "beyondLimits": "Onların kampı {{years}} yıl için yıllık {{wage}} civarında bir şey istiyor, bu da yetki sınırlarımı aşıyor.",
           "boardWagePolicy": "Yönetimin maaş politikası bu yenilemeyi engelliyor. yıllık maaşları €{{budget}} civarında tutun.",
-          "prefersManager": "Beni dinlerlerdi ama hala {{years}} yıl için yıllık €{{wage}} civarında istiyorlar ve doğrudan sizden duymayı tercih ediyorlar.",
+          "prefersManager": "Beni dinlerlerdi ama hala {{years}} yıl için yıllık {{wage}} civarında istiyorlar ve doğrudan sizden duymayı tercih ediyorlar.",
           "relationshipBlocked": "Mevcut ilişkiler ve sözleşme durumu altında benim aracılığımı istemiyorlar."
         }
       },

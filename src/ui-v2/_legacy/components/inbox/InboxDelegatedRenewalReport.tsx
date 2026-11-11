@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import type { MessageData } from "@/store/gameStore";
 import { resolveBackendText } from "@/lib/i18n/backendI18n";
 import { formatCurrencyAmount } from "@/lib/formatting/valueFormatting";
+import { formatDelegatedNoteParams } from "@/lib/i18n/delegatedRenewalNotes";
 import { renderMessageBodyLine } from "@/ui-v2/_legacy/components/inbox/inboxHelpers";
 
 interface InboxDelegatedRenewalReportProps {
@@ -28,7 +29,7 @@ export default function InboxDelegatedRenewalReport({
           const detail = resolveBackendText(
             renewalCase.note_key,
             "",
-            renewalCase.note_params,
+            formatDelegatedNoteParams(renewalCase.note_params),
           );
 
           const line =

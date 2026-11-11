@@ -3140,9 +3140,9 @@
         "notes": {
           "managerBlocked": "Tu m'as dit de ne pas rouvrir les discussions contractuelles pour l'instant.",
           "completed": "J'ai pu régler ce dossier sans que tu aies besoin d'intervenir.",
-          "beyondLimits": "Le clan du joueur veut environ €{{wage}}/an pour {{years}} ans, au-delà des limites de délégation.",
+          "beyondLimits": "Le clan du joueur veut environ {{wage}}/an pour {{years}} ans, au-delà des limites de délégation.",
           "boardWagePolicy": "La politique salariale du conseil bloque ce renouvellement. Maintiens la masse salariale annuelle près de €{{budget}} pendant la phase de redressement.",
-          "prefersManager": "Ils écouteraient, mais demandent encore environ €{{wage}}/an pour {{years}} ans et préfèrent parler directement avec toi.",
+          "prefersManager": "Ils écouteraient, mais demandent encore environ {{wage}}/an pour {{years}} ans et préfèrent parler directement avec toi.",
           "relationshipBlocked": "Ils ne sont pas prêts à s'engager par mon intermédiaire dans le contexte relationnel et contractuel actuel."
         }
       },

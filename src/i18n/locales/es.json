@@ -3293,9 +3293,9 @@
         "notes": {
           "managerBlocked": "Me dijiste que todavía no reabriera las conversaciones contractuales.",
           "completed": "Pude cerrar esta sin que tuvieras que intervenir.",
-          "beyondLimits": "Su entorno pide alrededor de €{{wage}}/año por {{years}} años, fuera de los límites de delegación.",
+          "beyondLimits": "Su entorno pide alrededor de {{wage}}/año por {{years}} años, fuera de los límites de delegación.",
           "boardWagePolicy": "La política salarial de la directiva bloquea esta renovación. Mantén los salarios anuales cerca de €{{budget}} mientras nos recuperamos.",
-          "prefersManager": "Escucharían, pero siguen pidiendo unos €{{wage}}/año por {{years}} años y prefieren hablar contigo directamente.",
+          "prefersManager": "Escucharían, pero siguen pidiendo unos {{wage}}/año por {{years}} años y prefieren hablar contigo directamente.",
           "relationshipBlocked": "No están dispuestos a comprometerse a través de mí con la relación y situación contractual actuales."
         }
       },

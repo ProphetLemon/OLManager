@@ -226,7 +226,7 @@
     "scrimResultLost": "Derrota contra {{rival}}",
     "scrimResultOpen": "Abrir Scrims",
     "scrimResultDismiss": "Fechar",
-    "manager": "Head Coach",
+    "manager": "Treinador Principal",
     "squad": "Elenco",
     "tactics": "Táticas",
     "training": "Treino",
@@ -259,7 +259,7 @@
     "searchPlayers": "Jogadores",
     "searchChampions": "Campeões",
     "scouting": "Scouting",
-    "youthAcademy": "Academy",
+    "youthAcademy": "Academia",
     "saveGame": "Salvar jogo",
     "saving": "Salvando...",
     "saved": "Salvo!",
@@ -275,16 +275,16 @@
     "worldStaff": "Staffs",
     "brandSubtitle": "Manager",
     "brandTitle": "Open League",
-    "competitions": "Competitions",
-    "noActiveGame": "No active game",
-    "noActiveGameDesc": "Start or load a game to continue.",
-    "save": "Save",
+    "competitions": "Competições",
+    "noActiveGame": "Nenhum jogo ativo",
+    "noActiveGameDesc": "Inicie ou carregue um jogo para continuar.",
+    "save": "Salvar",
     "phaseLabels": {
-      "morning": "Morning",
+      "morning": "Manhã",
       "scrimBlock": "Scrims",
-      "reviewBlock": "Review",
-      "trainingBlock": "Training",
-      "evening": "Evening"
+      "reviewBlock": "Revisão",
+      "trainingBlock": "Treino",
+      "evening": "Noite"
     }
   },
   "champions": {
@@ -1517,8 +1517,8 @@
       "System": "Sistema",
       "JobOffer": "Ofertas de emprego"
     },
-    "all": "All",
-    "close": "Close"
+    "all": "Todas",
+    "close": "Fechar"
   },
   "manager": {
     "managerOf": "Head Coach do {{team}}",
@@ -3140,9 +3140,9 @@
         "notes": {
           "managerBlocked": "Você me disse para ainda não reabrir as conversas contratuais.",
           "completed": "Consegui fechar essa sem que você precisasse intervir.",
-          "beyondLimits": "O estafe deles quer cerca de €{{wage}}/ano por {{years}} anos, acima dos limites da delegação.",
+          "beyondLimits": "O estafe deles quer cerca de {{wage}}/ano por {{years}} anos, acima dos limites da delegação.",
           "boardWagePolicy": "A política salarial da diretoria bloqueia esta renovação. Mantenha os salários anuais perto de €{{budget}} enquanto nos recuperamos.",
-          "prefersManager": "Eles até ouviriam, mas ainda querem cerca de €{{wage}}/ano por {{years}} anos e preferem falar diretamente com você.",
+          "prefersManager": "Eles até ouviriam, mas ainda querem cerca de {{wage}}/ano por {{years}} anos e preferem falar diretamente com você.",
           "relationshipBlocked": "Eles não estão dispostos a se comprometer por meu intermédio com o relacionamento e a situação contratual atuais."
         }
       },
@@ -3962,17 +3962,17 @@
     "pendingDesign": "Pending design — coming soon"
   },
   "sidebar": {
-    "accountSettings": "Account Settings",
-    "backToTeam": "Back to {{teamName}}",
-    "betting": "Betting",
+    "accountSettings": "Configurações da conta",
+    "backToTeam": "Voltar para {{teamName}}",
+    "betting": "Apostas",
     "bundesliga": "Bundesliga",
     "leaguesInsider": "Leagues Insider",
     "ligue1": "Ligue 1",
-    "liveMatches": "Live Matches",
-    "liveTransmissionSettings": "Live Transmission Settings",
-    "logout": "Logout",
-    "matchesHistory": "Match History",
-    "playersDatabase": "Players Database",
+    "liveMatches": "Partidas ao vivo",
+    "liveTransmissionSettings": "Configurações da transmissão ao vivo",
+    "logout": "Sair",
+    "matchesHistory": "Histórico de partidas",
+    "playersDatabase": "Banco de jogadores",
     "premier": "Premier League",
     "serieA": "Serie A",
     "usernamePlaceholder": "{{username}}"
