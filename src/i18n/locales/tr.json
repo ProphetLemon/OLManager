@@ -2056,6 +2056,19 @@
     "killsDeathsObjectives": "K / D / Hedef",
     "economy": "Altın / Hasar"
   },
+  "linuxRender": {
+    "dialog": {
+      "title": "Grafik modu",
+      "intro": "Oyunun pencereyi nasıl çizeceğini seç.",
+      "fast": "Hızlı",
+      "fastHint": "Önerilir. Ekran kartını kullanır.",
+      "compat": "Uyumluluk",
+      "compatHint": "Oyun penceresi titriyorsa, yanlış çiziliyorsa veya boş kalıyorsa kullan. Daha yavaştır, özellikle tam ekranda.",
+      "remember": "Seçimimi hatırla",
+      "rememberHint": "Daha sonra Ayarlar'dan değiştirebilirsin.",
+      "button": "Devam"
+    }
+  },
   "settings": {
     "title": "Ayarlar",
     "display": "Görünüm",

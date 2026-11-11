@@ -2239,6 +2239,19 @@
     "killsDeathsObjectives": "K / D / Obj.",
     "economy": "Oro / Daño"
   },
+  "linuxRender": {
+    "dialog": {
+      "title": "Modo gráfico",
+      "intro": "Elige cómo debe dibujar el juego su ventana.",
+      "fast": "Rápido",
+      "fastHint": "Recomendado. Usa la tarjeta gráfica.",
+      "compat": "Compatibilidad",
+      "compatHint": "Úsalo si la ventana del juego parpadea, se dibuja mal o se queda en blanco. Es más lento, sobre todo en pantalla completa.",
+      "remember": "Recordar mi elección",
+      "rememberHint": "Podrás cambiarla más tarde en Configuración.",
+      "button": "Continuar"
+    }
+  },
   "settings": {
     "title": "Configuración",
     "display": "Pantalla",

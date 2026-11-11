@@ -2056,6 +2056,19 @@
     "killsDeathsObjectives": "K / D / Ziele",
     "economy": "Gold / Schaden"
   },
+  "linuxRender": {
+    "dialog": {
+      "title": "Grafikmodus",
+      "intro": "Wähle, wie das Spiel sein Fenster zeichnen soll.",
+      "fast": "Schnell",
+      "fastHint": "Empfohlen. Nutzt die Grafikkarte.",
+      "compat": "Kompatibilität",
+      "compatHint": "Verwende ihn, wenn das Spielfenster flackert, falsch dargestellt wird oder leer bleibt. Langsamer, vor allem im Vollbildmodus.",
+      "remember": "Meine Wahl merken",
+      "rememberHint": "Du kannst sie später in den Einstellungen ändern.",
+      "button": "Weiter"
+    }
+  },
   "settings": {
     "title": "Einstellungen",
     "display": "Anzeige",

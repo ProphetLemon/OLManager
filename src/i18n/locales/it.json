@@ -1892,6 +1892,19 @@
     "killsDeathsObjectives": "K / D / Obiett.",
     "economy": "Oro / Danni"
   },
+  "linuxRender": {
+    "dialog": {
+      "title": "Modalità grafica",
+      "intro": "Scegli come il gioco deve disegnare la sua finestra.",
+      "fast": "Veloce",
+      "fastHint": "Consigliata. Usa la scheda grafica.",
+      "compat": "Compatibilità",
+      "compatHint": "Usala se la finestra del gioco sfarfalla, viene disegnata male o resta vuota. Più lenta, soprattutto a schermo intero.",
+      "remember": "Ricorda la mia scelta",
+      "rememberHint": "Potrai cambiarla più tardi nelle Impostazioni.",
+      "button": "Continua"
+    }
+  },
   "settings": {
     "title": "Impostazioni",
     "display": "Visualizzazione",

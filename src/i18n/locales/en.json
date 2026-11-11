@@ -2250,6 +2250,19 @@
     "killsDeathsObjectives": "K / D / Obj.",
     "economy": "Gold / Damage"
   },
+  "linuxRender": {
+    "dialog": {
+      "title": "Graphics mode",
+      "intro": "Choose how the game should draw its window.",
+      "fast": "Fast",
+      "fastHint": "Recommended. Uses the graphics card.",
+      "compat": "Compatibility",
+      "compatHint": "Use it if the game's window flickers, draws wrongly or stays blank. Slower, most of all in fullscreen.",
+      "remember": "Remember my choice",
+      "rememberHint": "You can change it later in Settings.",
+      "button": "Continue"
+    }
+  },
   "settings": {
     "title": "Settings",
     "display": "Display",
