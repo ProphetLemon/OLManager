@@ -237,6 +237,8 @@ export type MatchEndReason = "NexusDestroyed" | "Surrender";
 type LegacyCompatibilityValue = unknown;
 
 export interface PlayerSeasonStats {
+  /** Season appearances, as recorded by the backend (`appearances`). */
+  appearances?: number;
   games_played?: number;
   wins?: number;
   losses?: number;

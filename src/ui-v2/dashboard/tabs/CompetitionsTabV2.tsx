@@ -14,7 +14,12 @@ import { cn } from "@/ui-v2/lib/utils";
 import ScheduleCalendarView from "@/ui-v2/_legacy/components/schedule/ScheduleCalendarView";
 import type { StoredFixtureDraftResult } from "@/lib/schedule/helpers";
 
-interface Props { gameState: GameStateData; onSelectTeam?: (id: string) => void }
+interface Props {
+  gameState: GameStateData;
+  onSelectTeam?: (id: string) => void;
+  /** Competition selected on open (for example the user's league from a message action). */
+  initialCompetitionId?: string | null;
+}
 type View = "standings" | "calendar" | "teams" | "players";
 
 const REGION_GRADIENT: Record<string, string> = {
@@ -26,9 +31,9 @@ const REGION_GRADIENT: Record<string, string> = {
 const TEAM_PAGE_SIZE = 24;
 const PLAYER_PAGE_SIZE = 50;
 
-export function CompetitionsTabV2({ gameState, onSelectTeam }: Props) {
+export function CompetitionsTabV2({ gameState, onSelectTeam, initialCompetitionId = null }: Props) {
   const { t } = useTranslation();
-  const [selectedCid, setSelectedCid] = useState<string | null>(null);
+  const [selectedCid, setSelectedCid] = useState<string | null>(initialCompetitionId);
   const [view, setView] = useState<View>("standings");
   const [teamPage, setTeamPage] = useState(0);
   const [playerPage, setPlayerPage] = useState(0);

@@ -64,6 +64,23 @@ describe("PlayerProfileStatsCardV2", () => {
     expect(screen.getByText("6.0")).toBeInTheDocument();
     expect(screen.getByText("900")).toBeInTheDocument();
   });
+
+  it("shows the season numbers the backend records (appearances, kills, assists)", () => {
+    render(<PlayerProfileStatsCardV2 stats={{ appearances: 4, kills: 12, assists: 30 } as never} t={t} />);
+    expect(screen.queryByText("playerProfile.noStats")).toBeNull();
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("12")).toBeInTheDocument();
+    expect(screen.getByText("30")).toBeInTheDocument();
+  });
+
+  it("leaves out numbers the season stats do not carry instead of showing zeros", () => {
+    render(<PlayerProfileStatsCardV2 stats={{ appearances: 4, kills: 12, assists: 30 } as never} t={t} />);
+    expect(screen.queryByText("common.wins")).toBeNull();
+    expect(screen.queryByText("common.losses")).toBeNull();
+    expect(screen.queryByText("KDA")).toBeNull();
+    expect(screen.queryByText("CS")).toBeNull();
+    expect(screen.queryByText("common.vision")).toBeNull();
+  });
 });
 
 const career = (season: number, team = `Team ${season}`): CareerEntry =>
@@ -110,6 +127,12 @@ describe("PlayerProfileMatchHistoryCardV2", () => {
     expect(screen.queryByText("vs Opp 0")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /common\.showMore/ }));
     expect(screen.getByText("vs Opp 0")).toBeInTheDocument();
+  });
+
+  it("names the champion played in the row when the entry carries it", () => {
+    const withChampion = [{ ...entries[0], championId: "Malphite" }] as unknown as PlayerMatchHistoryEntryData[];
+    render(<PlayerProfileMatchHistoryCardV2 history={withChampion} t={t} language="en" />);
+    expect(screen.getByText(/Malphite/)).toBeInTheDocument();
   });
 });
 

@@ -41,3 +41,23 @@ describe("TeamsTabV2 standings", () => {
     expect(screen.queryByText(/0W 5L/)).toBeNull();
   });
 });
+
+describe("TeamsTabV2 founding year", () => {
+  const withFounded = (founded_year: number): GameStateData => {
+    const state = buildState();
+    (state.teams[0] as unknown as { founded_year: number }).founded_year = founded_year;
+    return state;
+  };
+
+  it("shows the founding year when it is known", () => {
+    render(<TeamsTabV2 gameState={withFounded(2012)} onSelectTeam={() => {}} />);
+
+    expect(screen.getByText(/2012/)).toBeTruthy();
+  });
+
+  it("hides the founding year when it is 0", () => {
+    render(<TeamsTabV2 gameState={withFounded(0)} onSelectTeam={() => {}} />);
+
+    expect(screen.queryByText(new RegExp(`${i18n.t("teams.est")} 0`))).toBeNull();
+  });
+});

@@ -381,6 +381,18 @@ describe("TeamProfileV2", () => {
     expect(logo.getAttribute("src")).toBe("/teams-icons/movistarkoifenix.webp");
   });
 
+  it("shows the founding year in the hero only when it is known", () => {
+    const { rerender } = render(
+      <TeamProfileV2 teamId="team-1" gameState={createGameState(createTeam({ founded_year: 1998 }))} onClose={vi.fn()} />,
+    );
+    expect(screen.getByText(/Est\. 1998/)).toBeInTheDocument();
+
+    rerender(
+      <TeamProfileV2 teamId="team-1" gameState={createGameState(createTeam({ founded_year: 0 }))} onClose={vi.fn()} />,
+    );
+    expect(screen.queryByText(/Est\./)).not.toBeInTheDocument();
+  });
+
   it("shows ERL league in club details only for academy teams", async () => {
     const academyTeam = createTeam({
       id: "academy-lfl-solary",
