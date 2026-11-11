@@ -1493,11 +1493,12 @@ fn apply_patch(game: &mut Game) {
     let mut working: Vec<WorkingMeta> = catalog
         .iter()
         .map(|(champion_id, role)| {
+            // Scores revert toward the pair's real professional strength.
+            let mean = real_meta_score(champion_id, role);
             let previous_score = previous_tier_by_role
                 .get(&champion_role_key(champion_id, role))
                 .map(|tier| tier_to_score(tier))
-                .unwrap_or(base_role_score(role));
-            let mean = base_role_score(role);
+                .unwrap_or(mean);
             let drift: i16 = rng.random_range(-5..=5);
             let reversion = (mean - previous_score) / 4;
             let score = (previous_score + drift + reversion).clamp(30, 84);
@@ -2261,5 +2262,130 @@ mod tests {
                 "{role}: {top} S of {in_role}, expected about {expected}"
             );
         }
+    }
+
+    /// Spearman correlation (average ranks for ties) between the tier list and the anchors.
+    fn rank_correlation_with_anchors(game: &Game) -> f64 {
+        fn average_ranks(values: &[f64]) -> Vec<f64> {
+            let mut order: Vec<usize> = (0..values.len()).collect();
+            order.sort_by(|a, b| values[*a].total_cmp(&values[*b]));
+            let mut ranks = vec![0.0; values.len()];
+            let mut start = 0;
+            while start < order.len() {
+                let mut end = start;
+                while end + 1 < order.len() && values[order[end + 1]] == values[order[start]] {
+                    end += 1;
+                }
+                for index in &order[start..=end] {
+                    ranks[*index] = (start + end) as f64 / 2.0;
+                }
+                start = end + 1;
+            }
+            ranks
+        }
+        let entries = &game.champion_patch.hidden_meta;
+        let tier_scores: Vec<f64> = entries
+            .iter()
+            .map(|entry| f64::from(tier_to_score(&entry.tier)))
+            .collect();
+        let anchors: Vec<f64> = entries
+            .iter()
+            .map(|entry| f64::from(real_meta_score(&entry.champion_id, &entry.role)))
+            .collect();
+        let (a, b) = (average_ranks(&tier_scores), average_ranks(&anchors));
+        let mean = (a.len() as f64 - 1.0) / 2.0;
+        let (mut cov, mut var_a, mut var_b) = (0.0, 0.0, 0.0);
+        for (x, y) in a.iter().zip(&b) {
+            cov += (x - mean) * (y - mean);
+            var_a += (x - mean).powi(2);
+            var_b += (y - mean).powi(2);
+        }
+        cov / (var_a * var_b).sqrt()
+    }
+
+    fn tier_list(game: &Game) -> Vec<(String, String, String)> {
+        let mut list: Vec<_> = game
+            .champion_patch
+            .hidden_meta
+            .iter()
+            .map(|e| (e.champion_id.clone(), e.role.clone(), e.tier.clone()))
+            .collect();
+        list.sort();
+        list
+    }
+
+    fn patched_game(seed: u64) -> Game {
+        let mut game = game_with_lineup(Vec::new());
+        game.clock.current_date = test_date(2026, 1, 6); // Tuesday
+        game.champion_patch.rng_seed = seed;
+        ensure_initial_patch_state(&mut game);
+        game
+    }
+
+    fn roll_one_patch(game: &mut Game) {
+        game.clock.current_date += chrono::Duration::days(PATCH_INTERVAL_DAYS);
+        apply_patch(game);
+    }
+
+    #[test]
+    fn a_year_of_patches_changes_the_tier_list_every_time_and_stays_near_the_anchors() {
+        for seed in [3, 17, 91, 4242] {
+            let mut game = patched_game(seed);
+            let mut previous = tier_list(&game);
+            let mut worst = 1.0_f64;
+            for patch in 1..=26 {
+                roll_one_patch(&mut game);
+                let current = tier_list(&game);
+                assert_ne!(current, previous, "seed {seed}: patch {patch} changed nothing");
+                previous = current;
+                worst = worst.min(rank_correlation_with_anchors(&game));
+            }
+            let last = rank_correlation_with_anchors(&game);
+            println!("seed {seed}: worst correlation {worst:.3}, after 26 patches {last:.3}");
+            assert!(worst > 0.85, "seed {seed}: correlation fell to {worst:.3}");
+        }
+    }
+
+    #[test]
+    fn an_old_save_drifts_toward_the_anchors_patch_after_patch() {
+        let mut game = patched_game(5);
+        // The old kind of state: tiers ranked from the role base plus noise, unrelated to the anchors.
+        let mut rng = StdRng::seed_from_u64(99);
+        let old_working: Vec<WorkingMeta> = champion_catalog()
+            .iter()
+            .map(|(champion_id, role)| WorkingMeta {
+                champion_id: champion_id.clone(),
+                role: role.clone(),
+                score: base_role_score(role) + rng.random_range(-4..=4),
+            })
+            .collect();
+        let old_tiers = tier_map_from_working(&old_working);
+        for entry in &mut game.champion_patch.hidden_meta {
+            entry.tier = old_tiers[&champion_role_key(&entry.champion_id, &entry.role)].clone();
+        }
+
+        let mut checkpoints = Vec::new();
+        for patch in 0..=12 {
+            if patch > 0 {
+                roll_one_patch(&mut game);
+            }
+            if [0, 3, 6, 12].contains(&patch) {
+                checkpoints.push(rank_correlation_with_anchors(&game));
+            }
+        }
+        println!("old save correlation after 0, 3, 6, 12 patches: {checkpoints:.3?}");
+        assert!(checkpoints[0].abs() < 0.2, "start {:.3}", checkpoints[0]);
+        assert!(checkpoints.windows(2).all(|w| w[1] > w[0]), "{checkpoints:?}");
+        assert!(checkpoints[3] > 0.8, "after 12 patches {:.3}", checkpoints[3]);
+    }
+
+    #[test]
+    fn a_save_without_the_new_fields_still_loads() {
+        let state: ChampionPatchState = serde_json::from_str(
+            r#"{"current_patch":3,"last_patch_date":null,"hidden_meta":[{"champion_id":"Ahri","role":"Mid"}]}"#,
+        )
+        .expect("a save from before the anchor still deserializes");
+        assert_eq!(state.hidden_meta[0].tier, "C");
+        assert_eq!(state.rng_seed, 0);
     }
 }
