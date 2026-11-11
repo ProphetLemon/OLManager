@@ -227,6 +227,20 @@ struct ChampionRuntime {
     forced_lane_recall_cd_until: f64,
     #[serde(default)]
     debug_ai_decision: String,
+    /// Targets the champion must not pick again until the time shown.
+    #[serde(default)]
+    avoid_targets: Vec<AvoidedTarget>,
+    /// When the champion started waiting at a Baron or Elder pit for a group
+    /// to form; 0 while it is not waiting.
+    #[serde(default)]
+    objective_wait_since: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AvoidedTarget {
+    pos: Vec2,
+    until: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -447,6 +461,10 @@ struct NeutralTimerRuntime {
     times_spawned: i64,
     #[serde(default)]
     times_taken: i64,
+    /// Last time a champion damaged it; Baron and Elder heal back to full when
+    /// nobody has hit them for a while.
+    #[serde(default)]
+    last_hit_at: Option<f64>,
     pos: Vec2,
     #[serde(default)]
     #[serde(flatten)]
@@ -582,6 +600,8 @@ const JUNGLE_CAMP_WAIT_FOR_SPAWN_SEC: f64 = 35.0;
 const OBJECTIVE_ATTEMPT_RADIUS: f64 = 0.12;
 const OBJECTIVE_ASSIST_RADIUS: f64 = 0.24;
 const MAJOR_OBJECTIVE_TEAM_ASSIST_RADIUS: f64 = 0.52;
+/// Baron and Elder heal back to full health when nobody hit them for this long.
+const MAJOR_OBJECTIVE_RESET_AFTER_SEC: f64 = 20.0;
 const BASE_DEFENSE_RECALL_DISTANCE: f64 = 0.34;
 const NEXUS_DEFENSE_THREAT_RADIUS: f64 = 0.13;
 const ALLY_HELP_RADIUS: f64 = 0.205;
@@ -3283,9 +3303,30 @@ fn issue_lane_disengage(runtime: &mut RuntimeState, champion_idx: usize, threat_
         )
     };
 
+    // A jungler who will not fight for an objective leaves it alone for a while
+    // instead of walking back to it on his next decision.
+    let contested_objective = (champion_snapshot.role == "JGL")
+        .then(|| decode_neutral_timers_state(&runtime.neutral_timers))
+        .flatten()
+        .and_then(|timers| {
+            macro_ai::nearest_alive_objective_pos(
+                &champion_snapshot,
+                &timers,
+                OBJECTIVE_ASSIST_RADIUS,
+            )
+        });
+
     let champion = &mut runtime.champions[champion_idx];
     if champion.role != "JGL" {
         mark_lane_disengage(champion, now, &mut runtime.lane_combat_state_by_champion);
+    }
+    if let Some(objective_pos) = contested_objective {
+        macro_ai::avoid_target(
+            champion,
+            objective_pos,
+            now,
+            macro_ai::OBJECTIVE_AVOID_COOLDOWN_SEC,
+        );
     }
     champion.state = "lane".to_string();
     set_champion_direct_path(champion, fallback);
@@ -5003,6 +5044,25 @@ fn attack_neutral_if_in_range(
         return false;
     }
 
+    let is_major = macro_ai::is_major_objective_key(key);
+    if is_major
+        && !macro_ai::major_objective_group_ready(
+            &runtime.champions,
+            &runtime.champions[champion_idx].team,
+            timer.pos,
+        )
+    {
+        // The group fell apart (or never formed): leave the pit alone for a while.
+        let now = runtime.time_sec;
+        macro_ai::avoid_target(
+            &mut runtime.champions[champion_idx],
+            timer.pos,
+            now,
+            macro_ai::OBJECTIVE_AVOID_COOLDOWN_SEC,
+        );
+        return false;
+    }
+
     let distance = dist(runtime.champions[champion_idx].pos, timer.pos);
     let is_objective = is_objective_neutral_key(key);
     let max_range = if is_objective {
@@ -5025,6 +5085,7 @@ fn attack_neutral_if_in_range(
     if let Some(timer_mut) = neutral_timers.entities.get_mut(key) {
         let prev_hp = timer_mut.hp;
         timer_mut.hp -= damage;
+        timer_mut.last_hit_at = Some(runtime.time_sec);
         killed = timer_mut.hp <= 0.0;
 
         if key == "voidgrubs" {
@@ -6532,6 +6593,18 @@ mod economy_tests;
 
 #[cfg(test)]
 mod strength_tests;
+
+#[cfg(test)]
+mod objectives_detector_tests;
+
+#[cfg(test)]
+mod objective_rules_tests;
+
+#[cfg(test)]
+mod lead_detector_tests;
+
+#[cfg(test)]
+mod base_defense_tests;
 
 #[cfg(test)]
 mod champion_fit_tests;

@@ -424,6 +424,18 @@ pub(super) fn move_champions(runtime: &mut RuntimeState, dt: f64) {
             }
 
             if champion.path_stuck_for_sec >= super::CHAMPION_STUCK_TRIGGER_SEC {
+                #[cfg(test)]
+                super::objectives_detector_tests::record_stuck(now, champion, Some(target));
+                // Do not pick the same target again at once: the next decision
+                // chooses another one.
+                if let Some(unreachable) = champion.target_path.last().copied() {
+                    super::macro_ai::avoid_target(
+                        champion,
+                        unreachable,
+                        now,
+                        super::macro_ai::UNREACHABLE_TARGET_AVOID_SEC,
+                    );
+                }
                 champion.path_stuck_for_sec = 0.0;
                 champion.next_decision_at = now;
                 if champion.role == "JGL" {

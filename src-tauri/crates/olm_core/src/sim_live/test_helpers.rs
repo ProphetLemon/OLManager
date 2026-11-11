@@ -83,6 +83,8 @@ pub(super) fn test_champion(
         path_stuck_for_sec: 0.0,
         forced_lane_recall_cd_until: 0.0,
         debug_ai_decision: String::new(),
+        avoid_targets: Vec::new(),
+        objective_wait_since: 0.0,
     }
 }
 
@@ -187,6 +189,7 @@ pub(super) fn test_neutral_timer(key: &str, pos: Vec2, alive: bool) -> NeutralTi
         last_taken_at: None,
         times_spawned: 1,
         times_taken: 0,
+        last_hit_at: None,
         pos,
         extra: HashMap::new(),
     }
