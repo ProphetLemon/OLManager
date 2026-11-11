@@ -78,7 +78,7 @@ struct Played {
 }
 
 fn play(n: usize, team_a: Side, team_b: Side, ids: &[String]) -> Played {
-    let a_is_blue = n % 2 == 0;
+    let a_is_blue = n.is_multiple_of(2);
     let (blue, red) = if a_is_blue { (team_a, team_b) } else { (team_b, team_a) };
     let mut champions = real_lineup(n as u64, "h", ids);
     champions.extend(real_lineup(n as u64, "a", ids));
