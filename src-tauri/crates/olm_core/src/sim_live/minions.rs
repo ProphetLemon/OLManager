@@ -63,7 +63,7 @@ pub(super) fn move_minions(runtime: &mut RuntimeState, dt: f64) {
                 )
         })
         .collect();
-    for i in 0..runtime.minions.len() {
+    for (i, holds_to_fight) in engaged.iter().copied().enumerate() {
         if !runtime.minions[i].alive {
             continue;
         }
@@ -110,7 +110,7 @@ pub(super) fn move_minions(runtime: &mut RuntimeState, dt: f64) {
             }
         }
 
-        if engaged[i] {
+        if holds_to_fight {
             continue;
         }
 
