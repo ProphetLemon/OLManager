@@ -10,6 +10,7 @@ import {
 } from "@/lib/playerProfile/champions";
 import { getPlayerAge, getPlayerTeamName } from "@/lib/playerProfile/helpers";
 import { seasonTotalsFromHistory } from "@/lib/playerProfile/seasonTotals";
+import { resolveUserLeague } from "@/lib/userLeague";
 import { canRenameFounder } from "@/lib/customTeam/founders";
 import { getScoutAvailability, type PlayerProfileScoutStatus } from "@/lib/playerProfile/scouting";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
@@ -186,7 +187,7 @@ function PlayerProfileContent({
   );
   const seasonTotals = seasonTotalsFromHistory(
     playerHistory,
-    gameState.leagues[0]?.season,
+    resolveUserLeague(gameState)?.season,
     player.stats?.appearances,
   );
   const activePotentialResearchPlayer = gameState.players.find(
