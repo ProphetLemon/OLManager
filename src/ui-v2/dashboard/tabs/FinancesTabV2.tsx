@@ -79,6 +79,7 @@ function getMainHubExpansionCost(level: number): number {
 
 type SortKey = "name" | "position" | "wage" | "value" | "contract";
 
+/** English fallbacks of the ledger kinds; the labels shown come from `finances.ledgerKinds.<kind>`. */
 const LEDGER_KIND_LABELS: Record<FinancialTransactionKind, string> = {
   Salary: "Salary",
   StaffWage: "Staff wage",
@@ -117,6 +118,8 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
   const { t } = useTranslation();
   const annualSuffix = t("finances.perYearSuffix", "/yr");
   const monthlySuffix = t("finances.perMonthSuffix", "/mo");
+  const ledgerKindLabel = (kind: FinancialTransactionKind): string =>
+    t(`finances.ledgerKinds.${kind}`, { defaultValue: LEDGER_KIND_LABELS[kind] ?? kind });
 
   const myTeam = gameState.teams.find((tm) => tm.id === gameState.manager.team_id);
   const roster = myTeam ? gameState.players.filter((p) => p.team_id === myTeam.id) : [];
@@ -483,7 +486,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                 >
                   <option value="all">{t("finances.ledgerAllKinds")}</option>
                   {(Object.keys(LEDGER_KIND_LABELS) as FinancialTransactionKind[]).map((kind) => (
-                    <option key={kind} value={kind}>{LEDGER_KIND_LABELS[kind]}</option>
+                    <option key={kind} value={kind}>{ledgerKindLabel(kind)}</option>
                   ))}
                 </select>
                 <label className="sr-only" htmlFor="ledger-source-filter">{t("finances.ledgerSourceFilter")}</label>
@@ -507,9 +510,9 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                     return (
                       <div key={`${entry.id ?? entry.date}-${entry.kind}-${index}`} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg bg-muted/40 px-3 py-2 text-sm md:grid-cols-[1fr_8rem_auto]">
                         <div className="min-w-0">
-                          <span className="block truncate text-foreground">{entry.description || (LEDGER_KIND_LABELS[entry.kind] ?? entry.kind)}</span>
+                          <span className="block truncate text-foreground">{entry.description || ledgerKindLabel(entry.kind)}</span>
                           <span className="mt-0.5 inline-flex gap-2 text-caption text-muted-foreground">
-                            <span>{LEDGER_KIND_LABELS[entry.kind] ?? entry.kind}</span>
+                            <span>{ledgerKindLabel(entry.kind)}</span>
                             <span>·</span>
                             <span>{t(getLedgerEntrySourceLabelKey(entry), getLedgerEntrySource(entry))}</span>
                           </span>

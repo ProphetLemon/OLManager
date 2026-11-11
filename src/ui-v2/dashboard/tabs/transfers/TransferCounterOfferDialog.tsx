@@ -70,7 +70,11 @@ export default function TransferCounterOfferDialog({
           player={counterTarget.player}
           caption={
             <>
-              {getTeamName(teams, counterTarget.fromTeamId)} •
+              {getTeamName(teams, counterTarget.fromTeamId, {
+                freeAgent: t("common.freeAgent"),
+                unknown: t("common.unknown"),
+              })}{" "}
+              •
               {t("transfers.currentOffer", { fee: formatVal(counterTarget.fee) })}
             </>
           }

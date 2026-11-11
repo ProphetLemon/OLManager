@@ -1373,7 +1373,10 @@
       "draftAnalysis": "Análise de draft",
       "futureMeta": "Meta futuro",
       "tiltControl": "Controle de tilt"
-    }
+    },
+    "adjustFiltersHint": "Tente alterar os filtros ou a busca",
+    "hireFromAvailableHint": "Contrate pessoal na aba de disponíveis",
+    "allStaffEmployedHint": "Todo o pessoal está atualmente contratado"
   },
   "finances": {
     "overview": "Visão Financeira",
@@ -1468,7 +1471,22 @@
     "ledgerRunningBalance": "Saldo",
     "ledgerNoMatches": "Nenhuma transação corresponde aos filtros.",
     "ledgerSource": { "legacy": "Legado", "monthly": "Mensal", "transfer": "Transferência", "staff": "Staff", "academy": "Academia", "facility": "Instalações", "sponsor": "Patrocinador", "prize": "Prêmio", "board": "Diretoria", "manual": "Manual" },
-    "ledgerEmpty": "Ainda não há movimentações financeiras."
+    "ledgerEmpty": "Ainda não há movimentações financeiras.",
+    "ledgerKinds": {
+      "Salary": "Salário",
+      "StaffWage": "Salário do staff",
+      "FacilityUpkeep": "Manutenção das instalações",
+      "FacilityUpgrade": "Melhoria das instalações",
+      "TransferPurchase": "Compra de transferência",
+      "TransferSale": "Venda de transferência",
+      "ReleasePenalty": "Multa de rescisão",
+      "AcademyAcquisition": "Aquisição de academia",
+      "Sponsorship": "Patrocínio",
+      "MatchdayRevenue": "Receitas de dia de jogo",
+      "PrizeMoney": "Premiação",
+      "BudgetRefresh": "Renovação do orçamento",
+      "Other": "Outros"
+    }
   },
   "inbox": {
     "title": "Caixa de Entrada",
@@ -1666,7 +1684,16 @@
     "wageFeedbackRejectedHeadline": "As conversas se romperam.",
     "wageFeedbackRejectedDetail": "Após várias rodadas sem acordo, ambos os lados desistem.",
     "transferFeedbackWageNegotiationDetail": "O clube aceitou sua taxa. Agora é hora de acertar os termos com o jogador.",
-    "browseMarket": "Browse Market"
+    "browseMarket": "Ver mercado",
+    "destination": "Destino",
+    "mainTeamDestination": "Time principal",
+    "freeAgentSigningHint": "Este jogador é agente livre e pode ser contratado sem taxa de transferência.",
+    "bidImpactTitle": "Impacto projetado",
+    "bidImpactTransferBudget": "Orçamento de transferências {{before}} -> {{after}}",
+    "bidImpactBalance": "Saldo do clube {{before}} -> {{after}}",
+    "bidImpactWagePressure": "Utilização prevista do orçamento salarial: {{percent}}%",
+    "bidImpactOverTransferBudget": "Esta proposta excede o orçamento de transferências",
+    "bidImpactOverBalance": "Esta proposta deixaria o clube endividado"
   },
   "schedule": {
     "noSchedule": "Nenhum calendário de liga disponível.",
@@ -1907,12 +1934,14 @@
     "promoteToMain": "Promover ao time principal",
     "demoteToAcademy": "Rebaixar para o academy",
     "rerollWarning": "Alterar a posição recalcula atributos e pode mudar o OVR dos jogadores.",
-    "alsoPlays": "Also plays",
-    "editPosition": "Edit Position",
-    "loanListed": "Loan Listed",
-    "potentialResearchProgress": "Research progress ({{total}} stages)",
-    "startPotentialResearch": "Start Potential Research",
-    "transferListed": "Transfer Listed"
+    "alsoPlays": "Também joga",
+    "editPosition": "Editar posição",
+    "loanListed": "Na lista de empréstimos",
+    "potentialResearchProgress": "Progresso da pesquisa ({{total}} fases)",
+    "startPotentialResearch": "Iniciar pesquisa de potencial",
+    "transferListed": "Na lista de transferências",
+    "transferOfferDestination": "Destino",
+    "transferOfferMainTeam": "Time principal"
   },
   "teamProfile": {
     "clubInfo": "Informações do Clube",
@@ -2363,21 +2392,27 @@
     "keyStats": "Estatísticas-Chave",
     "continueDashboard": "Continuar para o Painel",
     "opponentIntel": {
-      "kicker": "Pre-match preparation",
-      "title": "Opponent intelligence",
-      "confidence": "Intel confidence",
-      "rivalPoolByRole": "Rival champion pool by role",
-      "noPoolYet": "No champion pool revealed yet.",
-      "suggestedBans": "Suggested bans",
-      "threat": "Threat",
-      "metaThreats": "Meta threats",
+      "kicker": "Preparação pré-jogo",
+      "title": "Informações sobre o adversário",
+      "confidence": "Confiança na informação",
+      "rivalPoolByRole": "Pool de campeões rival por função",
+      "noPoolYet": "Ainda não foi revelado nenhum pool de campeões.",
+      "suggestedBans": "Bans sugeridos",
+      "threat": "Ameaça",
+      "metaThreats": "Ameaças do meta",
       "meta": "Meta",
-      "masteryHighlights": "Mastery highlights"
+      "masteryHighlights": "Destaques de maestria",
+      "quality": {
+        "low": "Baixa",
+        "medium": "Média",
+        "high": "Alta"
+      },
+      "roleUnknown": "Desconhecido"
     },
-    "draftStrategy": "Draft Strategy",
+    "draftStrategy": "Estratégia de draft",
     "condition": "Condition",
-    "continue": "Continue",
-    "game": "Game"
+    "continue": "Continuar",
+    "game": "Jogo"
   },
   "endOfSeason": {
     "seasonComplete": "Temporada Encerrada",
@@ -2466,17 +2501,17 @@
     "academyRosterCount": "{{count}} jogadores no elenco adquirido",
     "academyPipelineHint": "Adquira uma equipe ERL existente no Academy para desbloquear o pipeline.",
     "viewAcquisitionOptions": "Ver opções de aquisição",
-    "academyDescription": "Acquire an academy team to develop young talent and feed your first team with homegrown players.",
-    "academyPendingTitle": "No Academy",
-    "benefitCompare": "Compare",
-    "benefitCompareDesc": "Compare stats and find the best option",
-    "benefitDiscover": "Discover",
-    "benefitDiscoverDesc": "Discover hidden talent in the academy and market",
-    "benefitEvaluate": "Evaluate",
-    "benefitEvaluateDesc": "Discover each player's real potential",
-    "hireScoutCta": "Hire Scout",
-    "noScoutsDescription": "You have no scouts on your staff. Hire at least one from the Staff page to start evaluating players and discovering hidden talent.",
-    "noScoutsTitle": "No scouting team",
+    "academyDescription": "Adquira um time de academia para desenvolver jovens talentos e abastecer o time principal com jogadores da base.",
+    "academyPendingTitle": "Sem academia",
+    "benefitCompare": "Comparar",
+    "benefitCompareDesc": "Compare estatísticas e encontre a melhor opção",
+    "benefitDiscover": "Descobrir",
+    "benefitDiscoverDesc": "Descubra talento escondido na academia e no mercado",
+    "benefitEvaluate": "Avaliar",
+    "benefitEvaluateDesc": "Descubra o verdadeiro potencial de cada jogador",
+    "hireScoutCta": "Contratar olheiro",
+    "noScoutsDescription": "Você não tem olheiros na sua comissão. Contrate pelo menos um na página de Staff para começar a avaliar jogadores e descobrir talentos escondidos.",
+    "noScoutsTitle": "Sem time de observação",
     "scoutingBadge": "Scouted"
   },
   "be": {
@@ -3492,6 +3527,10 @@
           "subject9": "el_yuste — the data cools the optimism again",
           "body9": "Yuste opened charts on stream and left a hard reading: \"Do not talk to me about feelings if the data is going down. You can have one good match, but the trend rules.\"\n\nThe audience debate is active again."
         }
+      },
+      "contractTerminated": {
+        "subject": "Contrato rescindido: {{player}}",
+        "body": "Você rescindiu o contrato de {{player}}. O jogador agora é agente livre. Custo da rescisão: €{{cost}}."
       }
     },
     "news": {
@@ -3905,36 +3944,36 @@
     "noResults": "No results"
   },
   "competitions": {
-    "heroMatches": "Matches",
-    "heroSeason": "Season",
-    "heroTeams": "Teams",
-    "noPlayers": "No players found",
-    "noPlayersMatch": "No players match your search",
-    "noStandings": "No standings available",
-    "noTeams": "No teams found",
-    "noTeamsMatch": "No teams match your search",
-    "searchPlayer": "Search player...",
-    "searchTeam": "Search team...",
-    "selectPrompt": "Select a competition to view details",
+    "heroMatches": "Jogos",
+    "heroSeason": "Temporada",
+    "heroTeams": "Times",
+    "noPlayers": "Nenhum jogador encontrado",
+    "noPlayersMatch": "Nenhum jogador corresponde à sua busca",
+    "noStandings": "Classificação indisponível",
+    "noTeams": "Nenhum time encontrado",
+    "noTeamsMatch": "Nenhum time corresponde à sua busca",
+    "searchPlayer": "Buscar jogador...",
+    "searchTeam": "Buscar time...",
+    "selectPrompt": "Selecione uma competição para ver os detalhes",
     "tableHeader": {
-      "diff": "Diff",
+      "diff": "Dif",
       "losses": "L",
       "mapsLost": "ML",
       "mapsWon": "MW",
       "ovr": "OVR",
       "played": "Pld",
-      "player": "Player",
+      "player": "Jogador",
       "pos": "#",
       "pts": "Pts",
-      "role": "Role",
-      "team": "Team",
+      "role": "Função",
+      "team": "Time",
       "wins": "W",
       "wr": "WR%"
     },
-    "title": "Competitions",
-    "viewPlayers": "Players",
-    "viewStandings": "Standings",
-    "viewTeams": "Teams"
+    "title": "Competições",
+    "viewPlayers": "Jogadores",
+    "viewStandings": "Classificação",
+    "viewTeams": "Times"
   },
   "errorBoundary": {
     "reload": "Reload",

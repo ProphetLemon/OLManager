@@ -131,4 +131,25 @@ describe("FinancesTabV2 in the Spanish UI", () => {
     expect(screen.getByText("Jungla")).toBeInTheDocument();
     expect(screen.queryByText("JUNGLE")).toBeNull();
   });
+
+  it("shows the ledger kinds in Spanish", async () => {
+    await renderSpanish(
+      gameState([player()], {
+        financial_ledger: [
+          {
+            date: "2026-01-03",
+            description: "Staff hiring cost: Ana Coach",
+            amount: -60_000,
+            kind: "StaffWage",
+            source: "staff",
+            balance_after: 940_000,
+          },
+        ],
+      } as unknown as Partial<TeamData>),
+    );
+    expect(screen.getAllByText("Salario del staff").length).toBeGreaterThan(1);
+    expect(screen.queryByText("Staff wage")).toBeNull();
+    expect(screen.queryByText("Salary")).toBeNull();
+    expect(screen.getByRole("option", { name: "Compra de traspaso" })).toBeInTheDocument();
+  });
 });
