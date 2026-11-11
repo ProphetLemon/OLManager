@@ -38,7 +38,7 @@
       "social": {
         "events": {
           "fanPetitionDraftObjectives": {
-            "body": "Una ola de seguidores de {{team}} organizó una campaña pidiendo una identidad de draft más clara y una mejor planificación de objetivos.\n\n\"Queremos planes proactivos en la Grieta, no escalado pasivo todas las series. Demuestren que el equipo sabe cómo quiere ganar.\"\n\nEl hilo está ganando tracción en las redes sociales de los esports. ¿Cómo respondés?"
+            "body": "Una ola de seguidores de {{team}} organizó una campaña pidiendo una identidad de draft más clara y una mejor planificación de objetivos.\n\n\"Queremos planes proactivos en la Grieta, no escalado pasivo todas las series. Demuestren que el equipo sabe cómo quiere ganar.\"\n\nEl hilo está ganando tracción en las redes sociales de los esports. ¿Cómo respondes?"
           }
         },
         "questions": {
@@ -340,7 +340,7 @@
     "masteryTrainingTitle": "Entrenamiento de maestrías",
     "noTarget": "Sin objetivo",
     "currentMastery": "Maestría: {{value}}",
-    "selectChampion": "Elegí un campeón",
+    "selectChampion": "Elige un campeón",
     "gain": "Ganancia",
     "high": "Alta",
     "moderate": "Moderada",
@@ -458,7 +458,7 @@
     "fullRoster": "Plantilla completa",
     "todayScrimReviewVs": "Review vs {{team}}",
     "todayScrimReview": "Review post-scrim",
-    "todayScrimReviewDetail": "Elegí cómo convertir el scrim de hoy en aprendizaje.",
+    "todayScrimReviewDetail": "Elige cómo convertir el scrim de hoy en aprendizaje.",
     "todayMatch": "Partido de hoy",
     "today": "Hoy",
     "currentPhase": "Fase actual",
@@ -469,44 +469,44 @@
     "cancelCost": "Costo de cancelar",
     "recommendation": "Recomendación",
     "recommendationHighRisk": "Riesgo alto: mejor cancelar y revisar antes de forzar más volumen.",
-    "recommendationNormalRisk": "Riesgo manejable: continuá si necesitás reps, cancelá si priorizás recuperación.",
+    "recommendationNormalRisk": "Riesgo manejable: continúa si necesitas reps, cancela si priorizas recuperación.",
     "scrimDecision": {
       "cancelScrims": {
-        "desc": "Cancelá el próximo bloque y pasá a trabajo correctivo.",
+        "desc": "Cancela el próximo bloque y pasa a trabajo correctivo.",
         "benefits": "Protege recuperación y reduce riesgo inmediato.",
-        "costs": "Perdés volumen planificado del día.",
+        "costs": "Pierdes volumen planificado del día.",
         "when": "Cuando el estado del equipo es inestable y cae la calidad."
       },
       "continueBlock2": {
-        "desc": "Mantené el plan y jugá el segundo bloque."
+        "desc": "Mantén el plan y juega el segundo bloque."
       },
       "vodReview": {
-        "desc": "Revisá VOD para extraer aprendizaje concreto de los errores."
+        "desc": "Revisa VOD para extraer aprendizaje concreto de los errores."
       },
       "mentalReset": {
-        "desc": "Priorizá moral y reseteo de tilt antes de próximas sesiones."
+        "desc": "Prioriza moral y reseteo de tilt antes de próximas sesiones."
       },
       "targetedDrills": {
-        "desc": "Hacé drills focalizados sobre el issue detectado."
+        "desc": "Haz drills focalizados sobre el issue detectado."
       },
       "offerRest": {
-        "desc": "Ofrecé descanso tras un buen bloque para cuidar condición."
+        "desc": "Ofrece descanso tras un buen bloque para cuidar condición."
       },
       "dayOff": {
         "desc": "Dale resto del día libre al equipo para recuperar."
       },
       "pushThrough": {
-        "desc": "Forzá volumen pese al golpe para maximizar reps."
+        "desc": "Fuerza volumen pese al golpe para maximizar reps."
       }
     },
     "scrimFeedback": {
       "cancelledTitle": "Scrims del día cancelados",
-      "cancelledDetail": "Elegí una respuesta correctiva para cerrar el día."
+      "cancelledDetail": "Elige una respuesta correctiva para cerrar el día."
     },
     "todayScrimOpen": "Bloque scrim libre",
-    "todayScrimDetail": "Definí cómo usar el bloque de scrim de hoy.",
+    "todayScrimDetail": "Define cómo usar el bloque de scrim de hoy.",
     "todayTraining": "Foco de entrenamiento",
-    "todayTrainingDetail": "Sin scrim bloqueado: aprovechá para entrenar y recuperar.",
+    "todayTrainingDetail": "Sin scrim bloqueado: aprovecha para entrenar y recuperar.",
     "awayVenue": "Away",
     "finances": {
       "balance": "Balance",
@@ -907,7 +907,7 @@
     "loadOptionsError": "No se pudieron cargar las opciones de academia.",
     "academyCardTitle": "Academia",
     "acquisitionLoading": "Cargando opciones para adquirir academia...",
-    "acquisitionIntro": "Todavía no tenés academia vinculada. Elegí un equipo ERL para adquirirla.",
+    "acquisitionIntro": "Todavía no tienes academia vinculada. Elige un equipo ERL para adquirirla.",
     "acquisitionNoOptions": "No hay opciones de academia disponibles para tu equipo en este momento.",
     "placeholderCustomName": "Nombre personalizado (opcional)",
     "placeholderCustomShortName": "Sigla personalizada (opcional)",
@@ -1262,7 +1262,7 @@
       "score": "Score",
       "roleImpact": "Impacto por rol",
       "variance": "varianza",
-      "tip": "Tip: si el score de coherencia es bajo, intentá alinear lado fuerte + ruta de jungla + timing.",
+      "tip": "Tip: si el score de coherencia es bajo, intenta alinear lado fuerte + ruta de jungla + timing.",
       "autoSave": "Los cambios se guardan automáticamente"
     },
     "draftStrategy": "Draft Strategy"
@@ -1423,7 +1423,7 @@
       "noFallback": "Sin alternativa",
       "pending": "Pendiente",
       "weeklyObjective": "Objetivo semanal",
-      "weeklyObjectiveDescription": "Definí qué querés aprender esta semana. El objetivo guía los reportes y hace que Plan A/B/C tenga intención.",
+      "weeklyObjectiveDescription": "Define qué quieres aprender esta semana. El objetivo guía los reportes y hace que Plan A/B/C tenga intención.",
       "staffSuggestions": "Sugerencias del staff",
       "objectives": {
         "none": "Sin objetivo definido",
@@ -1435,18 +1435,18 @@
         "mental": "Estabilizar mental"
       },
       "staff": {
-        "pickObjective": "Elegí un objetivo semanal antes de tocar rivales: sin intención, el volumen solo genera ruido.",
-        "mentalReset": "Priorizá Mental Reset o VOD Review: la racha ya está afectando la calidad de aprendizaje.",
-        "reduceCancellations": "Bajá cancelaciones esta semana; la reputación de scrims también es infraestructura competitiva.",
-        "moreVolumeForPool": "Para expandir champion pool necesitás al menos 4 bloques; dos scrims no dan muestra suficiente.",
-        "noPlannedOpponents": "El objetivo está bien, pero no hay rivales fijados: cerrá al menos Plan A para que la semana tenga dirección.",
-        "draftPrepPlan": "Usá Plan A/B/C contra equipos fuertes: querés castigar draft, no farmear confianza barata.",
-        "strongerOpponents": "Para este objetivo te faltan rivales que te incomoden; buscá al menos un bloque contra un equipo más fuerte.",
-        "softerMentalWeek": "Semana mental: no abras con todos los rivales por encima de tu nivel. Mezclá un bloque controlado para reconstruir confianza.",
-        "addFallbacksForReputation": "Tus rivales planificados tienen mejor reputación de scrims; agregá Plan B/C o vas a comerte rechazos evitables.",
-        "macroReview": "Marcá un bloque de VOD Review: si el issue es setup de objetivos, más scrims sin revisión repiten el error.",
-        "narrowFocus": "La calidad promedio está baja; mantené volumen, pero estrechá el foco antes de sumar más rivales.",
-        "keepPlan": "El plan actual está sano: mantené el objetivo, elegí rivales exigentes y revisá el primer reporte antes de aumentar volumen."
+        "pickObjective": "Elige un objetivo semanal antes de tocar rivales: sin intención, el volumen solo genera ruido.",
+        "mentalReset": "Prioriza Mental Reset o VOD Review: la racha ya está afectando la calidad de aprendizaje.",
+        "reduceCancellations": "Baja cancelaciones esta semana; la reputación de scrims también es infraestructura competitiva.",
+        "moreVolumeForPool": "Para expandir champion pool necesitas al menos 4 bloques; dos scrims no dan muestra suficiente.",
+        "noPlannedOpponents": "El objetivo está bien, pero no hay rivales fijados: cierra al menos Plan A para que la semana tenga dirección.",
+        "draftPrepPlan": "Usa Plan A/B/C contra equipos fuertes: quieres castigar draft, no farmear confianza barata.",
+        "strongerOpponents": "Para este objetivo te faltan rivales que te incomoden; busca al menos un bloque contra un equipo más fuerte.",
+        "softerMentalWeek": "Semana mental: no abras con todos los rivales por encima de tu nivel. Mezcla un bloque controlado para reconstruir confianza.",
+        "addFallbacksForReputation": "Tus rivales planificados tienen mejor reputación de scrims; agrega Plan B/C o vas a comerte rechazos evitables.",
+        "macroReview": "Marca un bloque de VOD Review: si el issue es setup de objetivos, más scrims sin revisión repiten el error.",
+        "narrowFocus": "La calidad promedio está baja; mantén volumen, pero estrecha el foco antes de sumar más rivales.",
+        "keepPlan": "El plan actual está sano: mantén el objetivo, elige rivales exigentes y revisa el primer reporte antes de aumentar volumen."
       },
       "selectOpponent": "Elegir rival",
       "autofill": "Rellenar"
@@ -1562,7 +1562,7 @@
     "nextUpgradeCost": "Siguiente mejora: €{{amount}}",
     "upgradeFacility": "Mejorar",
     "expandOffices": "Ampliar oficinas",
-    "hubExpansionRequired": "Necesitás ampliar oficinas para desbloquear este módulo",
+    "hubExpansionRequired": "Necesitas ampliar oficinas para desbloquear este módulo",
     "insufficientFunds": "Fondos insuficientes",
     "sponsors": "Patrocinadores",
     "activeSponsor": "Patrocinador activo",
@@ -1937,7 +1937,7 @@
     "subtitle": "Timeline de la comunidad",
     "description": "Sin efectos de gameplay. Solo equipos, jugadores, fans y cuentas meme siendo gente normal de internet.",
     "emptyTitle": "El timeline esta tranquilo",
-    "emptyBody": "Jugá partidos y la comunidad va a empezar a postear banter, hot takes y análisis dudoso.",
+    "emptyBody": "Juega partidos y la comunidad va a empezar a postear banter, hot takes y análisis dudoso.",
     "comingSoonTitle": "Social Feed - Próximamente",
     "comingSoonBody": "El feed social está disponible solo para <strong>LEC</strong> por ahora.",
     "comingSoonSub": "Más ligas estarán disponibles en una futura actualización.",
@@ -1977,14 +1977,14 @@
     "releaseContractConfirm": "¿Rescindir a este jugador y pagar la penalización?",
     "releasePenalty": "Costo de rescisión",
     "makeTransferOffer": "Hacer oferta",
-    "transferOfferPrompt": "Ingresá el monto de la oferta (€)",
+    "transferOfferPrompt": "Ingresa el monto de la oferta (€)",
     "transferOfferAmount": "Monto de la oferta",
     "transferOfferSubmit": "Enviar oferta",
-    "transferOfferInvalid": "Ingresá un monto de oferta valido.",
+    "transferOfferInvalid": "Ingresa un monto de oferta valido.",
     "transferOfferBudgetError": "Tu presupuesto de fichajes no alcanza para este monto.",
     "transferOfferFundsError": "No tenes fondos suficientes para esta oferta.",
     "transferOfferWindowClosed": "El mercado esta cerrado.",
-    "transferOfferFailed": "No se pudo enviar la oferta. Probá de nuevo.",
+    "transferOfferFailed": "No se pudo enviar la oferta. Prueba de nuevo.",
     "renewalWage": "Salario ofrecido",
     "renewalLength": "Duración del contrato",
     "renewalSubmit": "Enviar oferta",
@@ -2208,7 +2208,7 @@
     "academyAcquired": "Academia adquirida",
     "academyPending": "Adquisición de academia pendiente",
     "academyRosterCount": "{{count}} jugadores en la plantilla adquirida",
-    "academyPipelineHint": "Adquirí un equipo ERL existente desde Academia para desbloquear el pipeline.",
+    "academyPipelineHint": "Adquiere un equipo ERL existente desde Academia para desbloquear el pipeline.",
     "viewAcquisitionOptions": "Ver opciones de adquisición",
     "academyDescription": "Acquire an academy team to develop young talent and feed your first team with homegrown players.",
     "academyPendingTitle": "No Academy",
@@ -2268,7 +2268,7 @@
       "noChampionsForFilters": "No hay campeones disponibles con los filtros actuales.",
       "searchPlaceholder": "Buscar...",
       "selected": "Seleccionado",
-      "selectThenConfirm": "Seleccioná un campeón y confirmá",
+      "selectThenConfirm": "Selecciona un campeón y confirma",
       "rivalMasteryBandTooltip": "Nivel estimado. Ojea a este jugador para ver la maestría exacta.",
       "rivalMasteryLegend": "La maestría rival se muestra como Alta / Media / Baja hasta que ojees al jugador.",
       "rivalMasteryBand": {
@@ -2290,9 +2290,9 @@
       "championSelection": "Selección de campeones",
       "stepCounter": "Paso {{current}}/{{total}}",
       "tipsTitle": "Tips para draft",
-      "tip1": "Negá comfort picks del rival en Bans 1.",
-      "tip2": "Asegurá prioridad de línea en tus primeras selecciones.",
-      "tip3": "Evitá composiciones sin front-to-back ni engage claro.",
+      "tip1": "Niega comfort picks del rival en Bans 1.",
+      "tip2": "Asegura prioridad de línea en tus primeras selecciones.",
+      "tip3": "Evita composiciones sin front-to-back ni engage claro.",
       "enemyComfortTitle": "Maestría rival",
       "enemyComfortSubtitle": "Referencia de comfort picks (placeholder)",
       "counterIntelTitle": "Counter intel · {{champion}}",
@@ -2440,7 +2440,7 @@
     "simulate": "Simular",
     "simulating": "Simulando...",
     "simulatingFromTactics": "Simulando la partida...",
-    "simulateFailed": "No se pudo simular la partida. Volvé a intentarlo.",
+    "simulateFailed": "No se pudo simular la partida. Vuelve a intentarlo.",
     "startLive": "Ir al live",
     "scrimPrep": {
       "title": "La preparación de scrims llegó al partido",
@@ -3185,7 +3185,7 @@
       },
       "fanPetition": {
         "subject": "Petición de la afición — Identidad de draft",
-        "body": "Un grupo de seguidores de {{team}} organizó una petición pidiendo una identidad de draft más clara y una mejor planificación de objetivos.\n\n\"Queremos planes proactivos en la Grieta, no escalado pasivo todas las series. Demuestren que el equipo sabe cómo quiere ganar.\"\n\nMás de 500 firmas hasta ahora. ¿Cómo respondés?",
+        "body": "Un grupo de seguidores de {{team}} organizó una petición pidiendo una identidad de draft más clara y una mejor planificación de objetivos.\n\n\"Queremos planes proactivos en la Grieta, no escalado pasivo todas las series. Demuestren que el equipo sabe cómo quiere ganar.\"\n\nMás de 500 firmas hasta ahora. ¿Cómo respondes?",
         "options": {
           "listenFans": {
             "label": "Escuchar a la afición",
@@ -3245,7 +3245,7 @@
           }
         },
         "subject": "Rumor de fichaje — {{player}} en la órbita de {{rival}}",
-        "body0": "Nos llegó información de que {{rival}} ya empezó a moverse por {{player}}.\n\nSu staff fue visto revisando series recientes y datos de solo queue, y nuestras fuentes creen que pronto podría llegar una oferta formal.\n\n¿Cómo querés que respondamos si hacen contacto?",
+        "body0": "Nos llegó información de que {{rival}} ya empezó a moverse por {{player}}.\n\nSu staff fue visto revisando series recientes y datos de solo queue, y nuestras fuentes creen que pronto podría llegar una oferta formal.\n\n¿Cómo quieres que respondamos si hacen contacto?",
         "body1": "La prensa de esports está reportando que {{player}} es un objetivo concreto para {{rival}}.\n\nEl jugador llamó la atención por sus últimos rendimientos en stage. Aún no hay oferta oficial, pero la presión viene creciendo rápido.\n\n¿Cuál es tu postura?",
         "options": {
           "notForSale": {
@@ -3335,7 +3335,7 @@
       },
       "transferOffer": {
         "subject": "Oferta recibida por {{player}}",
-        "body": "{{club}} presentó una oferta de {{fee}} por {{player}}. Revisá la propuesta en la pestaña de Transferencias para aceptarla o rechazarla.",
+        "body": "{{club}} presentó una oferta de {{fee}} por {{player}}. Revisa la propuesta en la pestaña de Transferencias para aceptarla o rechazarla.",
         "actionReview": "Revisar oferta",
         "actionView": "Ver oferta"
       },
@@ -3363,12 +3363,12 @@
           "tilt": "Tilt"
         },
         "recommendations": {
-          "lockPlans": "Cerrá Plan A/B/C más temprano la semana que viene para que el staff tenga datos útiles de preparación.",
-          "reduceCancellations": "Reducí cancelaciones la semana que viene; la reputación de scrims es parte de tu infraestructura competitiva.",
-          "resetBeforeVolume": "Abrí la semana que viene con Reset Mental o VOD Review antes de sumar más volumen.",
-          "narrowFocus": "Mantené el volumen, pero ajustá el foco alrededor del issue recurrente; la calidad está demasiado ruidosa.",
-          "targetedDrills": "Programá Targeted Drills para el issue recurrente y mantené estable el bloque principal de preparación.",
-          "keepPlan": "Mantené el plan actual: está generando reps útiles sin sobrecargar al roster."
+          "lockPlans": "Cierra Plan A/B/C más temprano la semana que viene para que el staff tenga datos útiles de preparación.",
+          "reduceCancellations": "Reduce cancelaciones la semana que viene; la reputación de scrims es parte de tu infraestructura competitiva.",
+          "resetBeforeVolume": "Abre la semana que viene con Reset Mental o VOD Review antes de sumar más volumen.",
+          "narrowFocus": "Mantén el volumen, pero ajusta el foco alrededor del issue recurrente; la calidad está demasiado ruidosa.",
+          "targetedDrills": "Programa Targeted Drills para el issue recurrente y mantén estable el bloque principal de preparación.",
+          "keepPlan": "Mantén el plan actual: está generando reps útiles sin sobrecargar al roster."
         }
       },
       "patchNotes": {
@@ -3377,7 +3377,7 @@
       },
       "academyWeeklyEmpty": {
         "subject": "Reporte semanal de academia",
-        "body": "La academia {{academy}} no tiene jugadores activos esta semana. Revisá adquisición y promoción para mantener el pipeline."
+        "body": "La academia {{academy}} no tiene jugadores activos esta semana. Revisa adquisición y promoción para mantener el pipeline."
       },
       "academyWeekly": {
         "subject": "Reporte semanal de academia: {{academy}}",
@@ -3671,7 +3671,7 @@
         "headline0": "Resumen jornada {{matchday}}: {{totalMaps}} mapas (maps) en la Grieta",
         "headline1": "Jornada {{matchday}} de liga: todos los resultados",
         "headline2": "Drafts, objetivos y mapas definen la jornada {{matchday}}",
-        "body": "La jornada {{matchday}} terminó. Acá van todos los resultados de series:\n\n{{results}}\n\nSe jugaron {{totalMaps}} mapas en {{matchCount}} series."
+        "body": "La jornada {{matchday}} terminó. Aquí van todos los resultados de series:\n\n{{results}}\n\nSe jugaron {{totalMaps}} mapas en {{matchCount}} series."
       },
       "standings": {
         "headline0": "{{leader}} lidera la tabla tras la jornada {{matchday}}",
