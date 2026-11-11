@@ -9,28 +9,36 @@ interface Props {
   t: (key: string, options?: Record<string, string>) => string;
 }
 
+const num = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : null;
+
 export default function PlayerProfileStatsCardV2({ stats, t }: Props) {
-  const games = stats.games_played ?? 0;
-  const wins = stats.wins ?? 0;
-  const losses = stats.losses ?? 0;
+  // The backend records `appearances`, `kills` and `assists` per season; the other numbers
+  // (wins, losses, deaths, CS, vision) are only kept per match, so they are shown only when
+  // the stats carry them instead of as a zero that looks like data.
+  const games = num(stats.games_played) ?? num(stats.appearances) ?? 0;
+  const wins = num(stats.wins);
+  const losses = num(stats.losses);
+  const kills = num(stats.kills);
+  const assists = num(stats.assists);
+  const deaths = num(stats.deaths);
+  const cs = num(stats.cs);
+  const vision = num(stats.vision_score);
   const kda = useMemo(() => {
-    if (games === 0 || (stats.kills ?? 0) === 0) return null;
-    const deaths = stats.deaths ?? 0;
-    const assists = stats.assists ?? 0;
-    const d = deaths || 1;
-    return (((stats.kills ?? 0) + assists) / d).toFixed(1);
-  }, [stats, games]);
+    if (games === 0 || kills === null || assists === null || deaths === null) return null;
+    return ((kills + assists) / (deaths || 1)).toFixed(1);
+  }, [games, kills, assists, deaths]);
 
   const items = [
     { icon: Swords, label: t("common.games"), value: String(games) },
-    { icon: TrendingUp, label: t("common.wins"), value: String(wins), color: "text-positive" },
-    { icon: Crosshair, label: t("common.losses"), value: String(losses), color: "text-negative" },
-    { icon: Star, label: "KDA", value: kda ?? "—" },
-    { icon: Pickaxe, label: "CS", value: String(stats.cs ?? 0) },
-    { icon: Eye, label: t("common.vision"), value: String(stats.vision_score ?? 0) },
-    { icon: Skull, label: t("common.kills"), value: String(stats.kills ?? 0) },
-    { icon: Handshake, label: t("common.assists"), value: String(stats.assists ?? 0) },
-  ];
+    wins !== null && { icon: TrendingUp, label: t("common.wins"), value: String(wins), color: "text-positive" },
+    losses !== null && { icon: Crosshair, label: t("common.losses"), value: String(losses), color: "text-negative" },
+    kda !== null && { icon: Star, label: "KDA", value: kda },
+    cs !== null && { icon: Pickaxe, label: "CS", value: String(cs) },
+    vision !== null && { icon: Eye, label: t("common.vision"), value: String(vision) },
+    kills !== null && { icon: Skull, label: t("common.kills"), value: String(kills) },
+    assists !== null && { icon: Handshake, label: t("common.assists"), value: String(assists) },
+  ].filter((item): item is { icon: typeof Swords; label: string; value: string; color?: string } => item !== false);
 
   return (
     <PlayerProfileSectionV2
