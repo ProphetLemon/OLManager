@@ -6723,3 +6723,6 @@ mod item_catalogue_tests;
 
 #[cfg(test)]
 mod real_items_harness_tests;
+
+#[cfg(test)]
+mod captured_replay_harness_tests;
