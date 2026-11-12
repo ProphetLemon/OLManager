@@ -546,6 +546,13 @@ struct Played {
     levels: Vec<(String, String, i64)>,
     /// Moments in which the action stopped, from the observer.
     contact: ContactStats,
+    /// Champion deaths in the match, from every cause.
+    deaths: i64,
+    /// Deaths a tower dealt the last shot of.
+    tower_deaths: u32,
+    /// Of those, deaths with no minion of the victim's team in the tower's reach: a dive
+    /// without a wave to take the shots.
+    tower_deaths_bare: u32,
 }
 
 impl Played {
@@ -589,6 +596,7 @@ fn play(n: usize, template: &SimLiveInitRequest, dt_sec: f64, speed: f64, exact:
 
     let mut cleared_at: [Option<f64>; 2] = [None, None];
     let mut observer = ContactObserver::new();
+    let (mut tower_deaths, mut tower_deaths_bare) = (0_u32, 0_u32);
     loop {
         tick(
             &store,
@@ -603,6 +611,23 @@ fn play(n: usize, template: &SimLiveInitRequest, dt_sec: f64, speed: f64, exact:
         let sessions = store.sessions.lock().expect("lock");
         let state = &sessions[&session_id].state;
         observer.observe(state);
+        // One call runs exactly one engine step at the default dt and speed, and the ledger
+        // keeps the shots of the last step, so no kill is missed or counted twice.
+        for shot in state.tower_ledger.shots().iter().filter(|shot| shot.killed) {
+            if let TowerVictim::Champion(victim) = shot.victim {
+                let team = normalized_team(&state.champions[victim].team);
+                let origin = symmetric_structure_pos(&state.structures[shot.structure_idx]);
+                tower_deaths += 1;
+                let covered = state.minions.iter().any(|minion| {
+                    minion.alive
+                        && normalized_team(&minion.team) == team
+                        && dist(minion.pos, origin) <= TOWER_ATTACK_RANGE
+                });
+                if !covered {
+                    tower_deaths_bare += 1;
+                }
+            }
+        }
         // Blue clears the red towers and the other way round.
         for (slot, enemy) in [(0, "red"), (1, "blue")] {
             if cleared_at[slot].is_none()
@@ -640,6 +665,9 @@ fn play(n: usize, template: &SimLiveInitRequest, dt_sec: f64, speed: f64, exact:
             .map(|c| (c.team.clone(), c.role.clone(), c.level))
             .collect(),
         contact: observer.stats.clone(),
+        deaths: state.champions.iter().map(|c| c.deaths).sum(),
+        tower_deaths,
+        tower_deaths_bare,
     }
 }
 
@@ -858,6 +886,14 @@ fn replay_captured_start() {
     for p in played.iter().filter(|p| !p.contact.stuck_examples.is_empty()).take(6) {
         println!("stuck examples seed {}: {}", p.seed, p.contact.stuck_examples.join("; "));
     }
+
+    let deaths: i64 = played.iter().map(|p| p.deaths).sum();
+    let tower_deaths: u32 = played.iter().map(|p| p.tower_deaths).sum();
+    let tower_deaths_bare: u32 = played.iter().map(|p| p.tower_deaths_bare).sum();
+    println!(
+        "deaths to towers {tower_deaths} of {deaths} ({:.1}%), of them without an allied minion in the tower's reach {tower_deaths_bare}",
+        100.0 * f64::from(tower_deaths) / deaths.max(1) as f64
+    );
 
     let mut levels: BTreeMap<(String, String), Vec<f64>> = BTreeMap::new();
     for p in &played {
