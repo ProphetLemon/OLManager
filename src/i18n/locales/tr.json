@@ -743,7 +743,7 @@
         "none": "Yeniden çekme hakkı kalmadı",
         "noneReason": "Bu kulüp için {{max}} yeniden çekme hakkının hepsini kullandın.",
         "confirmLabel": "Yeniden çekmeyi onayla",
-        "confirmText": "Yeniden çekmek yeni bir kadro oluşturur ve düzenlemelerini siler.",
+        "confirmText": "Yeniden çekmek yeni bir kadro oluşturur; düzenlemelerini ve fotoğraflarını siler.",
         "confirm": "Yine de yeniden çek",
         "keep": "Bu kadroyu koru",
         "ready_one": "Yeni kadro hazır. {{count}} yeniden çekme hakkı kaldı.",

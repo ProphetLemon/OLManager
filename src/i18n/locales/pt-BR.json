@@ -743,7 +743,7 @@
         "none": "Sem sorteios restantes",
         "noneReason": "Você usou os {{max}} sorteios deste clube.",
         "confirmLabel": "Confirmar novo sorteio",
-        "confirmText": "Um novo sorteio gera outro elenco e descarta as suas edições.",
+        "confirmText": "Um novo sorteio gera outro elenco e descarta as suas edições e fotos.",
         "confirm": "Sortear mesmo assim",
         "keep": "Manter este elenco",
         "ready_one": "Novo elenco pronto. {{count}} sorteio restante.",

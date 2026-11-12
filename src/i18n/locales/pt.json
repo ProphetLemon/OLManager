@@ -742,7 +742,7 @@
         "none": "Sem sorteios restantes",
         "noneReason": "Usaste os {{max}} sorteios deste clube.",
         "confirmLabel": "Confirmar novo sorteio",
-        "confirmText": "Um novo sorteio gera outro plantel e descarta as tuas edições.",
+        "confirmText": "Um novo sorteio gera outro plantel e descarta as tuas edições e fotos.",
         "confirm": "Sortear mesmo assim",
         "keep": "Manter este plantel",
         "ready_one": "Novo plantel pronto. {{count}} sorteio restante.",
