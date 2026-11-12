@@ -1,8 +1,9 @@
 // Classification of champion abilities into a small closed vocabulary of archetypes. Pure functions, no I/O.
 //
-// The vocabulary holds only effects a spectator can see and an engine with positions, health, damage and time can act
-// on. Slows, silences, plain damage, steroids and vision are deliberately absent: an ability with only those has an
-// empty list. Input is untrusted JSON: every field is read defensively.
+// The vocabulary holds the effects an engine with positions, health, damage and time can act on. Every ability has at
+// least one term; an ability that deals damage has exactly one damage kind (`execute`, `poke` or `damage`). An ability
+// that truly fits no term is listed with a reason under `noEffect` in the curated file. Input is untrusted JSON: every
+// field is read defensively.
 
 /** The closed vocabulary, in the order archetypes are listed in the output. */
 export const ARCHETYPES = {
@@ -10,11 +11,17 @@ export const ARCHETYPES = {
   ally_heal: "Restores health to another allied champion.",
   self_shield: "Shields only the caster.",
   self_heal: "Heals only the caster (drains and sustain abilities included).",
+  ally_buff: "Strengthens another allied champion without shielding or healing it (speed, damage, attack speed, resistances).",
+  self_buff: "Strengthens the caster for a time or changes how it fights: attack speed, attack damage, range, resistances, movement speed, empowered next attack, stacking abilities, stance, weapon and form switches.",
   dash: "Moves the caster quickly over a short distance (dashes, leaps, blinks, shadow swaps).",
   engage: "A gap closer or long-range tool whose purpose is to start a fight on an enemy, with crowd control on arrival.",
   hard_cc: "Stops an enemy from acting: stun, root, knock-up or knock-back, suppression, charm, fear, taunt, sleep, polymorph.",
-  poke: "Damage from well beyond attack range that needs no commitment.",
-  execute: "Damage that grows with the target's missing health, or kills below a threshold.",
+  soft_cc: "Hinders an enemy without stopping it: slow, silence, blind, disarm, ground, cripple, nearsight.",
+  damage: "Damage kind: deals damage to enemies and is neither poke nor execute (the ordinary damaging ability, single target or area).",
+  poke: "Damage kind: damage from well beyond attack range (900 or more) with no dash, engage or hard crowd control on the same ability.",
+  execute: "Damage kind: damage that grows with the target's missing health, or kills below a threshold.",
+  zone: "Leaves something on the ground that lasts and affects those who stay in it or cross it: damaging or slowing areas, traps, walls and terrain.",
+  summon: "Creates a unit that fights or blocks on its own (pets, turrets, clones, plants).",
   stealth: "Invisibility or camouflage.",
   untargetable: "The caster or an ally cannot be targeted or damaged for a moment (stasis, invulnerability, attaching to an ally).",
   global: "Reaches across the map (an ability can be global and something else).",
@@ -26,7 +33,11 @@ export const SLOTS = ["Q", "W", "E", "R"];
 
 /** Range thresholds in game units, applied to the kit's range at the middle rank. A range up to `selfMax` is self-cast. */
 export const RANGE_THRESHOLDS = Object.freeze({ selfMax: 25, meleeMax: 350, shortMax: 700, mediumMax: 1200, globalMin: 10000 });
-/** An ability needs at least this range (and some damage) to count as poke by the keyword rules. */
+/** The damage kinds: an ability that deals damage has exactly one of them, an ability that deals none has none. */
+export const DAMAGE_KINDS = ["execute", "poke", "damage"];
+/** Terms that exclude `poke` on the same ability. */
+export const POKE_EXCLUDED_WITH = ["dash", "engage", "hard_cc"];
+/** An ability needs at least this range (and some damage, and none of POKE_EXCLUDED_WITH) to count as poke by the keyword rules. */
 export const POKE_MIN_RANGE = 900;
 
 /** Words that mark an effect as reaching an ally. */
@@ -37,13 +48,25 @@ const SELF_WORDS = /\b(herself|himself|itself|themselves|themself|oneself|her ow
 const SHIELD = /\bshield(?:s|ed|ing)?\b/;
 const HEAL = /\b(?:heal(?:s|ed|ing)?\b|restor(?:e|es|ed|ing)\b[^.]{0,40}\bhealth|recover(?:s|ed|ing)?\b[^.]{0,40}\bhealth|drain(?:s|ed|ing)?\b[^.]{0,40}\bhealth|life ?steal\b)/;
 const HEAL_NEGATIVE = /(?:heal(?:ing)? reduction|reduces? (?:their )?healing|reduced healing|healing (?:and|or) shield(?:ing)? (?:received|reduction))/g;
-const DASH = /\b(?:dash(?:es|ed|ing)?|leap(?:s|ed|ing)?|blink(?:s|ed|ing)?|lunge(?:s|d)?|vault(?:s|ed|ing)?|swaps? (?:places|positions)|shadow swap|flips?|hurls? (?:herself|himself|itself)|launches (?:herself|himself|itself)|teleports? (?:herself|himself|to))\b/;
+const DASH = /\b(?:rams? (?:a |the )?target|hops? (?:backward|back|forward)|warping backwards|beelines|rolls evasively|flies (?:a short distance|over)|charg(?:es|ing) (?:forward|to|toward|towards|in|at)|rush(?:es)? (?:to|forward|toward|towards|in)|run(?:s)? down|tumbl(?:es|ing)|rolls? (?:to|toward|forward|in)|dives?|jump(?:s)? (?:to|toward|towards|forward|into|over)|pulls? (?:herself|himself|itself)|propels?|slides?|steps? forward|dash(?:es|ed|ing)?|leap(?:s|ed|ing)?|blink(?:s|ed|ing)?|lunge(?:s|d)?|vault(?:s|ed|ing)?|swaps? (?:places|positions)|shadow swap|flips?|hurls? (?:herself|himself|itself)|launches (?:herself|himself|itself)|teleports? (?:herself|himself|to))\b/;
 const HARD_CC = /\b(?:stun(?:s|ned|ning)?|root(?:s|ed|ing)?|snare[sd]?|ensnare[sd]?|immobili[sz](?:e|es|ed|ing)|knock(?:s|ed|ing)?\b[^.]{0,30}\b(?:up|back|aside|away|airborne|into the air)|(?:knock\w*|pop\w*|toss\w*|launch\w*|throw\w*|hurl\w*)\b[^.]{0,30}\binto the air|drag(?:s|ged|ging)?|airborne|suppress(?:es|ed|ing)?|charm(?:s|ed|ing)?|fear(?:s|ed|ing)?|terrif(?:y|ies|ied)|flee|taunt(?:s|ed|ing)?|put(?:s)? (?:\w+ )?to sleep|asleep|sleep|polymorph(?:s|ed)?|petrif(?:y|ies|ied)|pull(?:s|ed|ing)? (?:all |the |nearby |an |each |every )?(?:enem(?:y|ies)|champions?|targets?|them|him|her|units?)|yank(?:s|ed)?)\b/;
-const EXECUTE = /(?:missing health|execut(?:e|es|ed|ion)\b|below \d+% (?:of )?(?:their |its |the target's |his |her )?(?:maximum |max )?health|(?:maximum |max )?health (?:is )?below|lowest health|kills? (?:the |any )?(?:target|enemy|champion)s?[^.]{0,40}(?:below|under)|% (?:of )?(?:their |its )?(?:max(?:imum)? )?health or less)/;
+const EXECUTE = /(?:missing health|execut(?:e|es|ed|ing|ion)\b|below \d+% (?:of )?(?:their |its |the target's |his |her )?(?:maximum |max )?health|(?:maximum |max )?health (?:is )?below|lowest health|kills? (?:the |any )?(?:target|enemy|champion)s?[^.]{0,40}(?:below|under)|% (?:of )?(?:their |its )?(?:max(?:imum)? )?health or less)/;
 const STEALTH = /\b(?:invisib(?:le|ility)|stealth(?:ed)?|camouflage[sd]?|become[s]? unseen|unseen|conceal(?:s|ed)?)\b/;
 const UNTARGETABLE = /\b(?:untargetable|invulnerab(?:le|ility)|stasis|cannot be targeted|can't be targeted|immune to all damage|banish(?:es|ed)? (?:herself|himself|itself))/;
 const GLOBAL_TEXT = /\b(?:anywhere on the map|across the map|global(?:ly)?|entire map|any location on the map|anywhere on the rift|map-wide|map wide)\b/;
 const DAMAGE = /\bdamag(?:e|es|ed|ing)\b/;
+/** Phrases where "damage" is something the caster or an ally takes, resists or has, not something an enemy receives. */
+const DAMAGE_NOT_DEALT = /\b(?:reduc\w*|absorb\w*|block\w*|prevent\w*|negat\w*|mitigat\w*|immune to|protect\w*(?: \w+){0,2} from|resist\w*|survive\w*|withstand\w*|tak(?:es|en|ing)|incoming|received)\b(?: \w+){0,3} (?:damage|attacks?)\b|\bdamage (?:reduction|taken|received|mitigation|resistance|immunity)\b|\b(?:attack|ability) damage\b|\bfrom (?:all )?damage\b|\bdamage (?:from|to) (?:herself|himself|itself)\b/g;
+const SOFT_CC = /\b(?:slow(?:s|ed|ing)?|silenc(?:e|es|ed|ing)|blind(?:s|ed|ing)?|disarm(?:s|ed|ing)?|grounded|grounding|cripple[sd]?|crippling|nearsight(?:s|ed)?|exhaust(?:s|ed)?|reduc\w*(?: \w+){0,3} (?:movement|move|attack) speed|shackle[sd]?|tangl(?:e|es|ed|ing)|hamper\w*)\b/;
+const BUFF_STAT = "attack speed|attack damage|move(?:ment)? speed|armor|magic resist\\w*|resistances?|lethality|critical|crit\\w*|attack range|range|ability power|stats|haste|tenacity|life ?steal|omnivamp|ability haste|bonus health|health regeneration";
+const BUFF = new RegExp(`\\b(?:gains?|gaining|granting|grants?|increas(?:es|ed|ing)|boosts?|empower(?:s|ed|ing)?|enhanc(?:es|ed|ing)|amplif(?:y|ies|ied)|bolsters?|buffs?)\\b(?: \\w+){0,6} (?:${BUFF_STAT})\\b`);
+const EMPOWER = /\b(?:next (?:basic )?attacks?|next (?:\d+|two|three|few) (?:basic )?attacks?|empower(?:s|ed|ing)?|enhanced attacks?|stance|transforms?|switch(?:es)? (?:between|to))\b/;
+/** Buffs worded without a verb of gaining: "a burst of Move Speed", "Attack Speed is increased", "damage reduction". */
+const BUFF_NOUN = /\b(?:(?:burst|surge) of (?:\w+ ){0,2}(?:move(?:ment)? speed|attack speed)|(?:move(?:ment)? speed|attack speed|attack damage|armor|magic resist\w*) (?:is|are) (?:greatly |further )?(?:increased|boosted)|damage reduction|(?:takes?|taking) reduced|reduc(?:es|ing) (?:the |incoming )?(?:\w+ ){0,2}damage (?:she|he|it|they) (?:would )?(?:take|receive)|reduc(?:es|ing) (?:incoming )?(?:\w+ ){0,3}damage for|dodges? all|bonus (?:attack speed|move(?:ment)? speed)|speed towards)\b/;
+const ZONE = /\b(?:(?:creates?|summons?|conjures?|places?|lays?|sets|leaves?|drops?|opens?|plants?|releases?|scatters?|unleashes?|calls?|forms?|throws?|lobs?|uncovers?|reveals?) (?:down )?(?:an? |the |several |multiple |two |three )?(?:\w+ ){0,3}(?:zone|traps?|mines?|walls?|fields?|pools?|clouds?|puddles?|patch(?:es)?|rifts?|portals?|fissures?|trails?|storms?|barriers?|pillars?|vortex|minefield|mist|flames|circle|cage|prison|area|hole|shrine|keg|cover|rain|tornado|thicket|brush|screen|gate|domain|ground)|minefield|fissure|tornado|sandstorm|blizzard|shrine|lingers?|persists?|desecrat\w+|impassable|(?:is|are) left)\b/;
+const SUMMON = /\b(?:turrets?|clones?|illusions?|decoys?|golems?|tibbers|totems?|voidlings?|spiderlings?|tentacles?|ghouls?|zombies?|drones?|sand soldiers?|packmates?|sentinels?|maiden|walkers|sentry|(?:summons?|spawns?|creates?|conjures?|raises?|calls?) (?:a |an |\d+ |his |her |the )?(?:\w+ )?(?:copy|plant|pet|minion|soldier|unit|friend|ally|riders|elemental|creature|spirit|bear))\b/;
+/** Attack verbs: an ability that strikes, fires or blasts something deals damage even when its text never says "damage". */
+const ATTACK_VERBS = /\b(?:strik(?:es|ing)|slash(?:es|ing)?|stab(?:s|bing)?|fires?|shoots?|hurls?|throws?|blasts?|smash(?:es)?|explod(?:es|ing)|explosion|bombard\w*|lash(?:es)?|punch(?:es)?|kicks?|bites?|impal(?:es|ing)|slams?|swings?|cleaves?|torch(?:es)?|detonat\w+|barrage|bolts?|volley|missiles?|beam|shots?|rockets?|bombs?|projectiles?|slicing|slice[sd]?|thrusts?|attacks? (?:enemies|nearby))\b/;
 
 /** Lowercases and keeps what the patterns need. */
 function normalise(description) {
@@ -110,13 +133,28 @@ export function classifyAbilityText(ability) {
   if (dash) found.add("dash");
   if (hardCc) found.add("hard_cc");
   if (dash && hardCc) found.add("engage");
-  if (EXECUTE.test(text) && (DAMAGE.test(text) || /\bkill|\bexecut/.test(text))) found.add("execute");
+  if (SOFT_CC.test(text)) found.add("soft_cc");
+
+  const buffText = text.replace(/\b(?:enemies'?|enemy|enemy champions'?|their|its|target'?s?) (?:\w+ )?(?:attack speed|armor|magic resist\w*|resistances?|move(?:ment)? speed)\b/g, " ");
+  if (BUFF.test(buffText) || BUFF_NOUN.test(buffText) || EMPOWER.test(buffText)) {
+    if (ally) found.add("ally_buff");
+    if (!ally || reflexive) found.add("self_buff");
+  }
+  if (ZONE.test(text)) found.add("zone");
+  if (SUMMON.test(text)) found.add("summon");
   if (STEALTH.test(text)) found.add("stealth");
   if (UNTARGETABLE.test(text)) found.add("untargetable");
   // Data Dragon's huge ranges are placeholders as often as real map-wide reach, so `global` comes from the text alone.
   const global = GLOBAL_TEXT.test(text);
   if (global) found.add("global");
-  if (!global && !dash && DAMAGE.test(text) && range >= POKE_MIN_RANGE && range < RANGE_THRESHOLDS.globalMin) found.add("poke");
+
+  // Exactly one damage kind for an ability that deals damage, none otherwise.
+  const dealsDamage = DAMAGE.test(text.replace(DAMAGE_NOT_DEALT, " ")) || ATTACK_VERBS.test(text);
+  if (EXECUTE.test(text) && (dealsDamage || /\bkill|\bexecut/.test(text))) found.add("execute");
+  else if (dealsDamage) {
+    const pokeRange = !global && range >= POKE_MIN_RANGE && range < RANGE_THRESHOLDS.globalMin;
+    found.add(pokeRange && !dash && !hardCc ? "poke" : "damage");
+  }
 
   return ARCHETYPE_NAMES.filter((name) => found.has(name));
 }
@@ -125,6 +163,16 @@ export function classifyAbilityText(ability) {
 export function curatedParts(entry) {
   if (Array.isArray(entry)) return { archetypes: entry, rangeClass: undefined };
   return { archetypes: entry?.archetypes, rangeClass: entry?.rangeClass };
+}
+
+/** Throws when a list breaks the damage-kind rules: at most one kind, and no poke together with dash, engage or hard_cc. */
+export function assertDamageKinds(list, label) {
+  const kinds = DAMAGE_KINDS.filter((name) => list.includes(name));
+  if (kinds.length > 1) throw new Error(`${label} has more than one damage kind (${kinds.join(", ")})`);
+  if (list.includes("poke")) {
+    const clash = POKE_EXCLUDED_WITH.filter((name) => list.includes(name));
+    if (clash.length > 0) throw new Error(`${label} is poke together with ${clash.join(", ")}`);
+  }
 }
 
 /** Rejects a curated file that names an unknown champion, slot or archetype, or repeats what the rules already say. */
@@ -148,11 +196,27 @@ export function validateCurated(curated, kitChampions, ruleOutput) {
         if (!ARCHETYPE_NAMES.includes(name)) throw new Error(`curated entry ${championId}.${slot} names unknown archetype ${String(name)}`);
       }
       if (new Set(list).size !== list.length) throw new Error(`curated entry ${championId}.${slot} repeats an archetype`);
+      assertDamageKinds(list, `curated entry ${championId}.${slot}`);
       const fromRules = ruleOutput(championId, slot).archetypes;
       const sorted = ARCHETYPE_NAMES.filter((name) => list.includes(name));
       if (sorted.length === fromRules.length && sorted.every((name, i) => name === fromRules[i])) {
         throw new Error(`curated entry ${championId}.${slot} equals the rule output; remove it`);
       }
+    }
+  }
+  validateNoEffect(curated.noEffect, kitChampions);
+}
+
+/** `noEffect` maps champion id and slot to the reason an ability fits none of the terms. */
+function validateNoEffect(noEffect, kitChampions) {
+  if (noEffect === undefined) return;
+  if (typeof noEffect !== "object" || noEffect === null || Array.isArray(noEffect)) throw new Error("curated `noEffect` is not an object");
+  for (const [championId, slots] of Object.entries(noEffect)) {
+    if (!Object.hasOwn(kitChampions, championId)) throw new Error(`noEffect names unknown champion ${championId}`);
+    if (typeof slots !== "object" || slots === null || Array.isArray(slots)) throw new Error(`noEffect entry ${championId} is not an object`);
+    for (const [slot, reason] of Object.entries(slots)) {
+      if (!SLOTS.includes(slot)) throw new Error(`noEffect entry ${championId} names unknown slot ${slot}`);
+      if (typeof reason !== "string" || reason.trim().length < 10) throw new Error(`noEffect entry ${championId}.${slot} needs a reason`);
     }
   }
 }
@@ -174,6 +238,7 @@ export function buildAbilities({ kits, curated }) {
 
   const champions = {};
   const championsPerArchetype = Object.fromEntries(ARCHETYPE_NAMES.map((name) => [name, 0]));
+  const abilitiesPerDamageKind = Object.fromEntries([...DAMAGE_KINDS, "none"].map((name) => [name, 0]));
   let abilityCount = 0;
   let curatedCount = 0;
   for (const championId of Object.keys(kitChampions).sort()) {
@@ -186,6 +251,11 @@ export function buildAbilities({ kits, curated }) {
       const entry = curated.overrides[championId]?.[ability.slot];
       const override = entry === undefined ? undefined : curatedParts(entry);
       const archetypes = override?.archetypes ? ARCHETYPE_NAMES.filter((name) => override.archetypes.includes(name)) : classifyAbilityText(ability);
+      const noEffectReason = curated.noEffect?.[championId]?.[ability.slot];
+      if (archetypes.length === 0 && noEffectReason === undefined) throw new Error(`${championId} ${ability.slot} has no archetype and is not listed under noEffect`);
+      if (archetypes.length > 0 && noEffectReason !== undefined) throw new Error(`${championId} ${ability.slot} is listed under noEffect but has archetypes`);
+      assertDamageKinds(archetypes, `${championId} ${ability.slot}`);
+      abilitiesPerDamageKind[DAMAGE_KINDS.find((kind) => archetypes.includes(kind)) ?? "none"] += 1;
       for (const name of archetypes) seen.add(name);
       abilityCount += 1;
       if (override) curatedCount += 1;
@@ -221,6 +291,7 @@ export function buildAbilities({ kits, curated }) {
       },
     },
     pokeMinRange: POKE_MIN_RANGE,
+    noEffect: "Abilities with an empty list fit none of the terms; each is listed with its reason under `noEffect` in the curated file.",
     origin: { rule: "the keyword rules alone produced the archetypes", curated: "scripts/game-data/ability-archetypes.curated.json set or corrected them" },
     archetypes: { ...ARCHETYPES },
     champions,
@@ -231,6 +302,7 @@ export function buildAbilities({ kits, curated }) {
     curated: curatedCount,
     ruleOnly: abilityCount - curatedCount,
     championsPerArchetype,
+    abilitiesPerDamageKind,
   };
   return { file, report };
 }

@@ -131,6 +131,17 @@ macOS builds are ad-hoc signed but not notarized (no Apple Developer account), s
 xattr -dr com.apple.quarantine "/Applications/Open League Manager.app"
 ```
 
+### Linux: blank or flickering window
+
+On Linux the game asks, the first time it starts, how it should draw its window: **Fast** (recommended, uses the graphics card) or **Compatibility** (slower, most of all in fullscreen, but it avoids drawing problems seen with some graphics drivers on Wayland). Tick "remember my choice" to stop being asked; otherwise it asks again at the next start. You can change the choice at any time in Settings, under "Graphics mode" (it applies the next time you open the game).
+
+If the window flickers, draws wrongly or stays blank, choose Compatibility. As a last resort, and for scripts, you can start the game with the variable set; when it is set the game never asks and never overrides it:
+
+```bash
+WEBKIT_DISABLE_DMABUF_RENDERER=1 <command that starts the game>   # compatibility rendering
+WEBKIT_DISABLE_DMABUF_RENDERER=0 <command that starts the game>   # accelerated rendering
+```
+
 ---
 
 ## 5. Project Structure

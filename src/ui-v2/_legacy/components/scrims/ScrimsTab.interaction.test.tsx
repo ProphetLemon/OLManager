@@ -168,7 +168,7 @@ describe("ScrimsTab interactions", () => {
     chooseDailyScrimActionMock.mockResolvedValue(gameState());
     const onGameUpdate = vi.fn();
 
-    render(<ScrimsTab gameState={gameStateWithPhase("ReviewBlock")} onGameUpdate={onGameUpdate} />);
+    render(<ScrimsTab gameState={gameStateWithPhase("ScrimBlock")} onGameUpdate={onGameUpdate} />);
 
     fireEvent.click(screen.getByText("VOD Review"));
 
@@ -187,7 +187,7 @@ describe("ScrimsTab interactions", () => {
       .mockReturnValueOnce(makeContextWithSlot(1))
       .mockReturnValue(makeContextWithSlot(0));
 
-    const { rerender } = render(<ScrimsTab gameState={gameStateWithPhase("ReviewBlock")} onGameUpdate={onGameUpdate} />);
+    const { rerender } = render(<ScrimsTab gameState={gameStateWithPhase("ScrimBlock")} onGameUpdate={onGameUpdate} />);
 
     fireEvent.click(screen.getByText("VOD Review"));
 
@@ -195,7 +195,7 @@ describe("ScrimsTab interactions", () => {
       expect(chooseDailyScrimActionMock).toHaveBeenCalledWith(1, "VodReview");
     });
 
-    rerender(<ScrimsTab gameState={gameStateWithPhase("ReviewBlock")} onGameUpdate={onGameUpdate} />);
+    rerender(<ScrimsTab gameState={gameStateWithPhase("ScrimBlock")} onGameUpdate={onGameUpdate} />);
 
     await waitFor(() => {
       expect(screen.getByText("Push Through")).toBeInTheDocument();
@@ -208,8 +208,8 @@ describe("ScrimsTab interactions", () => {
     expect(screen.getByText("VOD Review")).toBeInTheDocument();
   });
 
-  it("hides review decision buttons outside the scrim and review blocks", () => {
-    render(<ScrimsTab gameState={gameStateWithPhase("TrainingBlock")} onGameUpdate={vi.fn()} />);
+  it("hides review decision buttons in the morning, before the scrims are played", () => {
+    render(<ScrimsTab gameState={gameStateWithPhase("Morning")} onGameUpdate={vi.fn()} />);
 
     expect(screen.queryByText("VOD Review")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Delegar al Assistant Coach" })).not.toBeInTheDocument();
@@ -220,7 +220,7 @@ describe("ScrimsTab interactions", () => {
     const onGameUpdate = vi.fn();
     useScrimContextWithFallbackMock.mockReturnValue(makeContextWithSlot(0));
 
-    render(<ScrimsTab gameState={gameStateWithPhase("ReviewBlock")} onGameUpdate={onGameUpdate} />);
+    render(<ScrimsTab gameState={gameStateWithPhase("ScrimBlock")} onGameUpdate={onGameUpdate} />);
 
     expect(screen.getByText("Push Through")).toBeInTheDocument();
     expect(screen.getByText("Cancel scrims")).toBeInTheDocument();
@@ -257,7 +257,7 @@ describe("ScrimsTab interactions", () => {
       },
     });
 
-    render(<ScrimsTab gameState={gameStateWithPhase("ReviewBlock")} onGameUpdate={vi.fn()} />);
+    render(<ScrimsTab gameState={gameStateWithPhase("ScrimBlock")} onGameUpdate={vi.fn()} />);
 
     expect(screen.getByText("Continue to block 2")).toBeInTheDocument();
     expect(screen.getByText("Offer rest")).toBeInTheDocument();

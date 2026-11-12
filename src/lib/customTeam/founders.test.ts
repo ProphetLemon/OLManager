@@ -8,6 +8,7 @@ import {
   canRenameFounder,
   diffOverride,
   isEmptyOverrides,
+  isEmptyPhotos,
   newFoundingSeed,
   overrideCount,
   parseFounderError,
@@ -16,6 +17,7 @@ import {
   renamePlayer,
   roleKey,
   withRoleOverride,
+  withRolePhoto,
 } from "./founders";
 import type { FounderFieldReason } from "./founders";
 
@@ -177,5 +179,46 @@ describe("canRenameFounder", () => {
     expect(canRenameFounder({ id: "gen-ray-mid-1", team_id: "les-custom-ray" }, null)).toBe(false);
     // A generated id on a club that is not a custom club is rejected by the backend too.
     expect(canRenameFounder({ id: "gen-ray-mid-1", team_id: "les-b" }, "les-b")).toBe(false);
+  });
+});
+
+describe("founder photos", () => {
+  const PHOTO = "data:image/png;base64,AAAA";
+
+  it("sets the photo of one role and leaves the others alone", () => {
+    const photos = withRolePhoto({ top: "data:image/png;base64,TTTT" }, "MID", PHOTO);
+
+    expect(photos).toEqual({ top: "data:image/png;base64,TTTT", mid: PHOTO });
+  });
+
+  it("replaces the photo of a role", () => {
+    expect(withRolePhoto({ mid: "old" }, "MID", PHOTO)).toEqual({ mid: PHOTO });
+  });
+
+  it("removes the key when the photo is cleared, so nothing is sent for it", () => {
+    const photos = withRolePhoto({ mid: PHOTO }, "MID", null);
+
+    expect(photos).toEqual({});
+    expect(isEmptyPhotos(photos)).toBe(true);
+    expect(isEmptyPhotos(undefined)).toBe(true);
+    expect(isEmptyPhotos({ adc: PHOTO })).toBe(false);
+  });
+
+  it("does not change the photos it was given", () => {
+    const before = { mid: PHOTO };
+
+    withRolePhoto(before, "MID", null);
+
+    expect(before).toEqual({ mid: PHOTO });
+  });
+
+  it("parses an invalid_photo rejection from creating the club", () => {
+    const raw = JSON.stringify({ kind: "invalid_photo", role: "SUPPORT", reason: "not_png" });
+
+    expect(parseFounderError(raw)).toEqual({ kind: "invalid_photo", role: "SUPPORT" });
+  });
+
+  it("ignores an invalid_photo rejection for a role it does not know", () => {
+    expect(parseFounderError(JSON.stringify({ kind: "invalid_photo", role: "COACH" }))).toBeNull();
   });
 });

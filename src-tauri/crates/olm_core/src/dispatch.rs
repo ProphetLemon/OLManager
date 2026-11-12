@@ -310,12 +310,8 @@ pub fn dispatch(command: &str, args: &Value, game: &mut Game) -> Result<Dispatch
             Ok(DispatchResult::GameModified(json!(game)))
         }
         "delegate_scrim_decision" => {
-            if game.day_phase != crate::game::DayPhase::ScrimBlock
-                && game.day_phase != crate::game::DayPhase::ReviewBlock
-            {
-                return Err(
-                    "Delegation is only available during ScrimBlock/ReviewBlock".to_string()
-                );
+            if game.day_phase != crate::game::DayPhase::ScrimBlock {
+                return Err("Delegation is only available during ScrimBlock".to_string());
             }
             let tid = manager_team_id(game)?;
             if let Some(team) = game.teams.iter_mut().find(|t| t.id == tid) {

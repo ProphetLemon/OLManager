@@ -300,10 +300,7 @@
     "save": "Save",
     "phaseLabels": {
       "morning": "Morning",
-      "scrimBlock": "Scrims",
-      "reviewBlock": "Review",
-      "trainingBlock": "Training",
-      "evening": "Evening"
+      "scrimBlock": "Scrims"
     }
   },
   "continueMenu": {
@@ -534,30 +531,15 @@
       "viewAll": "View All"
     },
     "phase": {
-      "evening": {
-        "title": "Evening",
-        "description": "Evening block",
-        "actionLabel": "View Details"
-      },
       "morning": {
         "title": "Morning",
         "description": "Morning block",
         "actionLabel": "View Details"
       },
-      "reviewBlock": {
-        "title": "Review",
-        "description": "Review block",
-        "actionLabel": "Review Now"
-      },
       "scrimBlock": {
         "title": "Scrims",
         "description": "Scrim block",
         "actionLabel": "Start Scrims"
-      },
-      "trainingBlock": {
-        "title": "Training",
-        "description": "Training block",
-        "actionLabel": "Start Training"
       }
     },
     "view": "View",
@@ -728,6 +710,26 @@
       "wage": "Maaş {{value}}",
       "edit": "Düzenle",
       "editAria": "{{nick}} oyuncusunu düzenle, {{role}}",
+      "photo": {
+        "add": "Fotoğraf ekle",
+        "replace": "Fotoğrafı değiştir",
+        "remove": "Fotoğrafı kaldır",
+        "addAria": "{{nick}} için fotoğraf ekle, {{role}}",
+        "replaceAria": "{{nick}} oyuncusunun fotoğrafını değiştir, {{role}}",
+        "removeAria": "{{nick}} oyuncusunun fotoğrafını kaldır, {{role}}",
+        "previewAlt": "{{nick}} fotoğrafı, {{role}}",
+        "hint": "PNG, JPEG veya WebP, en fazla 2 MB. Görselin ortası kare olarak kullanılır. Fotoğraf yoksa varsayılan avatar kullanılır.",
+        "processing": "Fotoğraf hazırlanıyor...",
+        "installFailed": "{{role}} oyuncusunun fotoğrafı kullanılamadı. Başka bir tane seçin ya da kaldırın.",
+        "errors": {
+          "unsupportedType": "PNG, JPEG veya WebP görseli kullanın. SVG ve diğer biçimler kabul edilmez.",
+          "fileTooLarge": "Bu dosya 2 MB'tan büyük. Daha küçük bir görsel seçin.",
+          "unreadable": "Bu görsel okunamadı. Başka bir dosya deneyin.",
+          "invalid": "Bu görsel fotoğraf olarak kullanılamaz. Başka bir dosya deneyin.",
+          "tooBig": "Bu görsel çok büyük. Daha küçük bir tane deneyin.",
+          "failed": "Fotoğraf hazırlanamadı. Tekrar deneyin."
+        }
+      },
       "attributes": "Özellikler",
       "editsDropped": "Düzenlemelerin bu kulübe artık uymuyor, bu yüzden oluşturulan kadro geri yüklendi.",
       "installFailed": "Kadro reddedildi. {{role}}, {{field}}: {{reason}}",
@@ -2056,6 +2058,19 @@
     "killsDeathsObjectives": "K / D / Hedef",
     "economy": "Altın / Hasar"
   },
+  "linuxRender": {
+    "dialog": {
+      "title": "Grafik modu",
+      "intro": "Oyunun pencereyi nasıl çizeceğini seç.",
+      "fast": "Hızlı",
+      "fastHint": "Önerilir. Ekran kartını kullanır.",
+      "compat": "Uyumluluk",
+      "compatHint": "Oyun penceresi titriyorsa, yanlış çiziliyorsa veya boş kalıyorsa kullan. Daha yavaştır, özellikle tam ekranda.",
+      "remember": "Seçimimi hatırla",
+      "rememberHint": "Daha sonra Ayarlar'dan değiştirebilirsin.",
+      "button": "Devam"
+    }
+  },
   "settings": {
     "title": "Ayarlar",
     "display": "Görünüm",
@@ -2105,6 +2120,11 @@
     "uiScaleDesc": "Okunabilirlik için yazı tipi boyutunu ve boşlukları ayarlayın",
     "highContrast": "Yüksek Kontrast",
     "highContrastDesc": "Daha iyi okunabilirlik için metni, kenarlıkları ve odak çerçevesini güçlendirin",
+    "renderMode": "Grafik modu",
+    "renderModeAsk": "Başlangıçta sor",
+    "renderModeFast": "Hızlı (önerilen)",
+    "renderModeCompat": "Uyumluluk",
+    "renderModeDesc": "Pencere titriyorsa, yanlış çiziliyorsa veya boş kalıyorsa Uyumluluk'u seç. Daha yavaştır, özellikle tam ekranda. Oyunu bir sonraki açışında geçerli olur.",
     "fullscreen": "Tam Ekran",
     "fullscreenDesc": "Sürükleyici bir deneyim için tam ekran modunu açıp kapatın",
     "enterFullscreen": "Geç",
@@ -4096,23 +4116,27 @@
     "posting": "Paylaşılıyor..."
   },
   "championPage": {
-    "assists": "Assists",
-    "bestAgainst": "Best Against",
-    "champion": "Champion",
+    "assists": "Asistler",
+    "bestAgainst": "En İyi Olduğu Rakipler",
+    "br": "BR",
+    "champion": "Şampiyon",
     "cs": "CS",
-    "damage": "Damage",
-    "deaths": "Deaths",
-    "duration": "Duration",
-    "gold": "Gold",
-    "kills": "Kills",
-    "noData": "No data available",
-    "noHistory": "No match history",
-    "noRoles": "No roles played",
-    "roles": "Roles",
-    "topPlayers": "Top Players",
-    "vision": "Vision",
-    "weekly": "Weekly",
-    "worstAgainst": "Worst Against"
+    "damage": "Hasar",
+    "deaths": "Ölümler",
+    "duration": "Süre",
+    "gold": "Altın",
+    "kda": "KDA",
+    "kills": "Öldürmeler",
+    "noData": "Veri yok",
+    "noHistory": "Maç geçmişi yok",
+    "noRoles": "Oynanmış rol yok",
+    "pr": "PR",
+    "roles": "Roller",
+    "topPlayers": "En İyi Oyuncular",
+    "vision": "Vizyon",
+    "weekly": "Haftalık",
+    "worstAgainst": "En Kötü Olduğu Rakipler",
+    "wr": "WR"
   },
   "championsGrid": {
     "championCount_one": "{{count}} şampiyon",
@@ -4239,10 +4263,7 @@
     "bar": {
       "phase": {
         "morning": "Sabah",
-        "scrimBlock": "Scrim",
-        "reviewBlock": "İnceleme",
-        "trainingBlock": "Antrenman",
-        "evening": "Akşam"
+        "scrimBlock": "Scrim"
       },
       "save": "Kaydet",
       "saved": "Kaydedildi",

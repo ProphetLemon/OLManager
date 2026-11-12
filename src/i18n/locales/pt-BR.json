@@ -301,10 +301,7 @@
     "save": "Salvar",
     "phaseLabels": {
       "morning": "Manhã",
-      "scrimBlock": "Scrims",
-      "reviewBlock": "Revisão",
-      "trainingBlock": "Treino",
-      "evening": "Noite"
+      "scrimBlock": "Scrims"
     }
   },
   "champions": {
@@ -534,30 +531,15 @@
       "viewAll": "View All"
     },
     "phase": {
-      "evening": {
-        "title": "Evening",
-        "description": "Evening block",
-        "actionLabel": "View Details"
-      },
       "morning": {
         "title": "Morning",
         "description": "Morning block",
         "actionLabel": "View Details"
       },
-      "reviewBlock": {
-        "title": "Review",
-        "description": "Review block",
-        "actionLabel": "Review Now"
-      },
       "scrimBlock": {
         "title": "Scrims",
         "description": "Scrim block",
         "actionLabel": "Start Scrims"
-      },
-      "trainingBlock": {
-        "title": "Training",
-        "description": "Training block",
-        "actionLabel": "Start Training"
       }
     },
     "view": "View",
@@ -728,6 +710,26 @@
       "wage": "Salário {{value}}",
       "edit": "Editar",
       "editAria": "Editar {{nick}}, {{role}}",
+      "photo": {
+        "add": "Adicionar foto",
+        "replace": "Trocar foto",
+        "remove": "Remover foto",
+        "addAria": "Adicionar uma foto para {{nick}}, {{role}}",
+        "replaceAria": "Trocar a foto de {{nick}}, {{role}}",
+        "removeAria": "Remover a foto de {{nick}}, {{role}}",
+        "previewAlt": "Foto de {{nick}}, {{role}}",
+        "hint": "PNG, JPEG ou WebP, de até 2 MB. O centro da imagem é usado como um quadrado. Sem foto, o avatar padrão é usado.",
+        "processing": "Preparando a foto...",
+        "installFailed": "Não foi possível usar a foto de {{role}}. Escolha outra ou remova-a.",
+        "errors": {
+          "unsupportedType": "Use uma imagem PNG, JPEG ou WebP. SVG e outros formatos não são aceitos.",
+          "fileTooLarge": "Esse arquivo tem mais de 2 MB. Escolha uma imagem menor.",
+          "unreadable": "Não foi possível ler essa imagem. Tente outro arquivo.",
+          "invalid": "Essa imagem não pode ser usada como foto. Tente outro arquivo.",
+          "tooBig": "Essa imagem é grande demais. Tente uma menor.",
+          "failed": "Não foi possível preparar a foto. Tente novamente."
+        }
+      },
       "attributes": "Atributos",
       "editsDropped": "Suas edições não combinam mais com este clube, então o elenco gerado foi restaurado.",
       "installFailed": "Elenco recusado. {{role}}, {{field}}: {{reason}}",
@@ -2056,6 +2058,19 @@
     "killsDeathsObjectives": "K / D / Obj.",
     "economy": "Ouro / Dano"
   },
+  "linuxRender": {
+    "dialog": {
+      "title": "Modo gráfico",
+      "intro": "Escolha como o jogo deve desenhar a janela.",
+      "fast": "Rápido",
+      "fastHint": "Recomendado. Usa a placa de vídeo.",
+      "compat": "Compatibilidade",
+      "compatHint": "Use se a janela do jogo piscar, for desenhada de forma errada ou ficar em branco. É mais lento, principalmente em tela cheia.",
+      "remember": "Lembrar minha escolha",
+      "rememberHint": "Você pode alterar depois nas Configurações.",
+      "button": "Continuar"
+    }
+  },
   "settings": {
     "title": "Configurações",
     "display": "Exibição",
@@ -2105,6 +2120,11 @@
     "uiScaleDesc": "Ajuste o tamanho da fonte e espaçamento para melhor leitura",
     "highContrast": "Alto Contraste",
     "highContrastDesc": "Reforçar o texto, as bordas e o contorno de foco para melhorar a legibilidade",
+    "renderMode": "Modo gráfico",
+    "renderModeAsk": "Perguntar ao iniciar",
+    "renderModeFast": "Rápido (recomendado)",
+    "renderModeCompat": "Compatibilidade",
+    "renderModeDesc": "Use Compatibilidade se a janela piscar, for desenhada de forma errada ou ficar em branco. É mais lento, principalmente em tela cheia. Vale na próxima vez que você abrir o jogo.",
     "fullscreen": "Tela Cheia",
     "fullscreenDesc": "Ativar modo tela cheia para uma experiência imersiva",
     "enterFullscreen": "Entrar",
@@ -4096,23 +4116,27 @@
     "posting": "Publicando..."
   },
   "championPage": {
-    "assists": "Assists",
-    "bestAgainst": "Best Against",
-    "champion": "Champion",
+    "assists": "Assistências",
+    "bestAgainst": "Melhor contra",
+    "br": "BR",
+    "champion": "Campeão",
     "cs": "CS",
-    "damage": "Damage",
-    "deaths": "Deaths",
-    "duration": "Duration",
-    "gold": "Gold",
-    "kills": "Kills",
-    "noData": "No data available",
-    "noHistory": "No match history",
-    "noRoles": "No roles played",
-    "roles": "Roles",
-    "topPlayers": "Top Players",
-    "vision": "Vision",
-    "weekly": "Weekly",
-    "worstAgainst": "Worst Against"
+    "damage": "Dano",
+    "deaths": "Mortes",
+    "duration": "Duração",
+    "gold": "Ouro",
+    "kda": "KDA",
+    "kills": "Abates",
+    "noData": "Sem dados disponíveis",
+    "noHistory": "Sem histórico de partidas",
+    "noRoles": "Nenhuma função jogada",
+    "pr": "PR",
+    "roles": "Funções",
+    "topPlayers": "Melhores jogadores",
+    "vision": "Visão",
+    "weekly": "Semanal",
+    "worstAgainst": "Pior contra",
+    "wr": "WR"
   },
   "championsGrid": {
     "championCount_one": "{{count}} campeão",
@@ -4239,10 +4263,7 @@
     "bar": {
       "phase": {
         "morning": "Manhã",
-        "scrimBlock": "Scrims",
-        "reviewBlock": "Análise",
-        "trainingBlock": "Treino",
-        "evening": "Noite"
+        "scrimBlock": "Scrims"
       },
       "save": "Salvar",
       "saved": "Salvo",

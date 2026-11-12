@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useSettingsStore } from "@/store/settingsStore";
 import Settings from "./Settings";
@@ -78,5 +78,69 @@ describe("Settings switches", () => {
     // high contrast, match commentary, confirm advance, debug tools and auto-save
     expect(seen.size).toBeGreaterThanOrEqual(5);
     expect(seen.has("")).toBe(false);
+  });
+});
+
+describe("Settings graphics mode", () => {
+  const LINUX_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko)";
+  const WINDOWS_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/605.1.15";
+  const ANDROID_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36";
+
+  function renderWithUserAgent(userAgent: string, updateSettings = vi.fn().mockResolvedValue(undefined)) {
+    vi.spyOn(window.navigator, "userAgent", "get").mockReturnValue(userAgent);
+    useSettingsStore.setState({
+      loaded: true,
+      updateSettings,
+      settings: { ...useSettingsStore.getState().settings, linux_render_mode: "ask" },
+    });
+    return render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>,
+    );
+  }
+
+  const originalUpdateSettings = useSettingsStore.getState().updateSettings;
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    useSettingsStore.setState({ updateSettings: originalUpdateSettings });
+  });
+
+  it("shows the three-way control on Linux", () => {
+    renderWithUserAgent(LINUX_UA);
+
+    expect(screen.getByRole("button", { name: "Ask at start" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Fast (recommended)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Compatibility" })).toBeInTheDocument();
+  });
+
+  it("marks the chosen option as pressed, not only by colour", () => {
+    renderWithUserAgent(LINUX_UA);
+
+    expect(screen.getByRole("button", { name: "Ask at start" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Fast (recommended)" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Compatibility" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("does not show the control on Windows", () => {
+    renderWithUserAgent(WINDOWS_UA);
+
+    expect(screen.queryByRole("button", { name: "Compatibility" })).not.toBeInTheDocument();
+  });
+
+  it("does not show the control on Android, whose user agent also says Linux", () => {
+    renderWithUserAgent(ANDROID_UA);
+
+    expect(screen.queryByRole("button", { name: "Compatibility" })).not.toBeInTheDocument();
+  });
+
+  it("saves the chosen mode through the settings store", () => {
+    const updateSettings = vi.fn().mockResolvedValue(undefined);
+    renderWithUserAgent(LINUX_UA, updateSettings);
+
+    fireEvent.click(screen.getByRole("button", { name: "Compatibility" }));
+
+    expect(updateSettings).toHaveBeenCalledWith({ linux_render_mode: "compatibility" });
   });
 });

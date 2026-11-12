@@ -32,6 +32,7 @@ const NAMESPACES: Array<{ path: string[]; prefix: string; sources: string[] }> =
       "../../ui-v2/pages/customTeam/CustomTeamWizardV2.tsx",
       "../../ui-v2/pages/customTeam/founders/FoundersStep.tsx",
       "../../ui-v2/pages/customTeam/founders/FounderEditDialog.tsx",
+      "../../ui-v2/pages/customTeam/founders/FounderPhotoControl.tsx",
     ],
   },
   {

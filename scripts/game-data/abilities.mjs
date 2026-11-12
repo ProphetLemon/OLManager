@@ -62,6 +62,7 @@ function main() {
   const { text, report } = render(kits, curated);
   log(`champions ${report.champions}, abilities ${report.abilities}: ${report.ruleOnly} from the rules alone, ${report.curated} curated`);
   log(`champions per archetype: ${Object.entries(report.championsPerArchetype).map(([name, count]) => `${name} ${count}`).join(", ")}`);
+  log(`abilities per damage kind: ${Object.entries(report.abilitiesPerDamageKind).map(([name, count]) => `${name} ${count}`).join(", ")}`);
   if (args.check) {
     const onDisk = fs.existsSync(args.out) ? fs.readFileSync(args.out, "utf8") : null;
     if (onDisk !== text) throw new Error(`${args.out} is out of date; run node scripts/game-data/abilities.mjs`);

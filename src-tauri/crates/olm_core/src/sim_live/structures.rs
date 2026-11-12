@@ -13,17 +13,38 @@ pub(super) enum StructureAttackTarget {
     Champion(usize),
 }
 
+/// Where a structure of the layout stands in the match. The map is symmetric under swapping
+/// the two coordinates, but the red coordinates of the layout are up to 0.017 off the mirror
+/// image of the blue ones (outer top 0.009, outer bottom 0.017). That small gap decided the
+/// lanes: with it a lone mid laner of the blue side led the red one by 44 creep score at
+/// minute 15 (blue ahead in 92% of the matches), without it by 1 (56%). Red structures are
+/// therefore placed at the mirror image of their blue counterparts.
+pub(super) fn mirrored_structure_pos(seed: &StructureSeed) -> Vec2 {
+    if seed.team != "red" {
+        return seed.pos;
+    }
+    let blue_id = seed.id.replacen("red-", "blue-", 1);
+    STRUCTURE_LAYOUT
+        .iter()
+        .find(|blue| blue.id == blue_id)
+        .map_or(seed.pos, |blue| Vec2 {
+            x: blue.pos.y,
+            y: blue.pos.x,
+        })
+}
+
 pub(super) fn create_structures() -> Vec<Value> {
     STRUCTURE_LAYOUT
         .iter()
         .map(|s| {
             let hp = structure_base_hp(s);
+            let mirrored = mirrored_structure_pos(s);
             json!({
                 "id": s.id,
                 "team": s.team,
                 "lane": s.lane,
                 "kind": s.kind,
-                "pos": { "x": s.pos.x, "y": s.pos.y },
+                "pos": { "x": mirrored.x, "y": mirrored.y },
                 "hp": hp,
                 "maxHp": hp,
                 "alive": true,
@@ -52,6 +73,28 @@ fn structure_base_hp(seed: &StructureSeed) -> f64 {
         }
         _ => TOWER_OUTER_HP,
     }
+}
+
+/// How near to a structure of the enemy base an allied champion must be for the minions to
+/// hurt it.
+const BASE_BREAK_CHAMPION_RADIUS: f64 = 0.2;
+
+/// Whether a wave on its own cannot hurt `structure`: the inhibitors, the nexus and the towers
+/// that guard them fall to minions only when an allied champion is at them. A team 25 kills
+/// behind took such a base with its waves while the champions that had killed its team were
+/// somewhere else; with this rule a base is broken by whoever has champions alive.
+pub(super) fn wave_alone_cannot_break(
+    champions: &[ChampionRuntime],
+    structure: &StructureRuntime,
+    attacker_team: &str,
+) -> bool {
+    let guards_base = structure.id.contains("inhib") || structure.id.contains("nexus");
+    guards_base
+        && !champions.iter().any(|champion| {
+            champion.alive
+                && normalized_team(&champion.team) == normalized_team(attacker_team)
+                && dist(champion.pos, structure.pos) <= BASE_BREAK_CHAMPION_RADIUS
+        })
 }
 
 pub(super) fn is_structure_targetable(
@@ -227,6 +270,7 @@ pub(super) fn select_structure_attack_target(
 
 pub(super) fn resolve_structure_combat(runtime: &mut super::RuntimeState) {
     let now = runtime.time_sec;
+    runtime.tower_ledger.begin_tick();
 
     for idx in 0..runtime.structures.len() {
         if !runtime.structures[idx].alive
@@ -236,10 +280,13 @@ pub(super) fn resolve_structure_combat(runtime: &mut super::RuntimeState) {
             continue;
         }
 
+        // The reach of a turret is measured from the same spot on both sides of the map.
+        let mut reach_origin = runtime.structures[idx].clone();
+        reach_origin.pos = super::symmetric_structure_pos(&reach_origin);
         let (target, should_clear_forced_target) = select_structure_attack_target(
             &runtime.champions,
             &runtime.minions,
-            &runtime.structures[idx],
+            &reach_origin,
             now,
             super::TOWER_ATTACK_RANGE,
         );
@@ -257,7 +304,17 @@ pub(super) fn resolve_structure_combat(runtime: &mut super::RuntimeState) {
                         super::minion_is_baron_empowered(runtime, &runtime.minions[minion_idx]),
                         super::BARON_MINION_DAMAGE_REDUCTION,
                     );
+                    runtime.structures[idx].ramp_target_id = None;
+                    runtime.structures[idx].ramp_shots = 0;
+                    let hp_before = runtime.minions[minion_idx].hp;
                     runtime.minions[minion_idx].hp -= incoming;
+                    runtime.tower_ledger.record_shot(super::TowerShot {
+                        structure_idx: idx,
+                        victim: super::TowerVictim::Minion,
+                        damage: incoming,
+                        hp_before,
+                        killed: runtime.minions[minion_idx].hp <= 0.0,
+                    });
                     runtime.structures[idx].attack_cd_until =
                         structure_attack_cd_until(now, super::TOWER_ATTACK_CADENCE_SEC);
                     if runtime.minions[minion_idx].hp <= 0.0 {
@@ -272,13 +329,55 @@ pub(super) fn resolve_structure_combat(runtime: &mut super::RuntimeState) {
     }
 }
 
+/// Damage of one tower shot at a champion: grows with the game minute (until
+/// `TOWER_SHOT_GROWTH_END_MINUTE`), takes a share of the target's maximum
+/// health, and ramps with each consecutive shot at the same champion.
+pub(super) fn tower_champion_shot_damage(
+    time_sec: f64,
+    target_max_hp: f64,
+    consecutive_shots: u32,
+) -> f64 {
+    let minute = (time_sec / 60.0).clamp(0.0, super::TOWER_SHOT_GROWTH_END_MINUTE);
+    let base = super::TOWER_SHOT_DAMAGE
+        + super::TOWER_SHOT_DAMAGE_PER_MINUTE * minute
+        + super::TOWER_SHOT_MAX_HP_SHARE * target_max_hp.max(0.0);
+    let ramp_steps = consecutive_shots.min(super::TOWER_SHOT_RAMP_MAX_STEPS);
+    base * (1.0 + super::TOWER_SHOT_RAMP_PER_SHOT * f64::from(ramp_steps))
+}
+
 pub(super) fn apply_tower_shot_to_champion(
     runtime: &mut super::RuntimeState,
     structure_idx: usize,
     champion_idx: usize,
 ) {
     let now = runtime.time_sec;
-    runtime.champions[champion_idx].hp -= super::TOWER_SHOT_DAMAGE;
+    let target_id = runtime.champions[champion_idx].id.clone();
+    let tower = &mut runtime.structures[structure_idx];
+    let consecutive = if tower.ramp_target_id.as_deref() == Some(target_id.as_str())
+        && now - tower.ramp_last_shot_at <= super::TOWER_SHOT_RAMP_WINDOW_SEC
+    {
+        tower.ramp_shots + 1
+    } else {
+        0
+    };
+    tower.ramp_target_id = Some(target_id);
+    tower.ramp_shots = consecutive;
+    tower.ramp_last_shot_at = now;
+    let damage = tower_champion_shot_damage(now, runtime.champions[champion_idx].max_hp, consecutive);
+    let hp_before = runtime.champions[champion_idx].hp;
+    runtime.champions[champion_idx].hp -= damage;
+    runtime.tower_ledger.record_shot(super::TowerShot {
+        structure_idx,
+        victim: super::TowerVictim::Champion(champion_idx),
+        damage,
+        hp_before,
+        killed: runtime.champions[champion_idx].hp <= 0.0 && runtime.champions[champion_idx].alive,
+    });
+    runtime.farm_ledger.record_damage(
+        &runtime.champions[champion_idx].id,
+        super::DamageSource::Tower,
+        damage,
+    );
     runtime.champions[champion_idx].last_damaged_at = now;
     super::cancel_recall(
         &mut runtime.champions[champion_idx],
@@ -314,9 +413,7 @@ pub(super) fn apply_damage_to_structure(
         return;
     }
 
-    let multiplier =
-        super::tower_damage_multiplier(runtime.time_sec, &runtime.structures[structure_idx]);
-    let mut damage = raw_damage.max(0.0) * multiplier;
+    let mut damage = raw_damage.max(0.0);
     if runtime.structures[structure_idx].kind == "tower"
         && runtime.time_sec >= super::EARLY_TOWER_FORTIFICATION_END_AT
     {

@@ -586,7 +586,7 @@ mod tests {
     #[test]
     fn advance_time_with_mode_refuses_while_the_split_is_over() {
         for mode in ["delegate", "live", "spectator", "instant"] {
-            for phase in [DayPhase::Morning, DayPhase::Evening] {
+            for phase in [DayPhase::Morning, DayPhase::ScrimBlock] {
                 let state = StateManager::new();
                 let mut game = make_finished_split_game();
                 game.day_phase = phase.clone();
@@ -1046,19 +1046,22 @@ mod tests {
     }
 
     #[test]
-    fn advance_time_with_mode_advances_phase_before_processing_non_match_day() {
+    fn advance_time_with_mode_ends_a_day_without_scrims_in_one_advance() {
         let state = StateManager::new();
         let game = make_game(11);
         let start_date = game.clock.current_date;
         state.set_game(game);
 
         let response =
-            advance_time_with_mode_internal(&state, "delegate").expect("phase advance response");
+            advance_time_with_mode_internal(&state, "delegate").expect("day advance response");
 
-        assert_eq!(response.action, "phase_advanced");
+        assert_eq!(response.action, "advanced");
         let game = response.game.expect("game response");
-        assert_eq!(game.day_phase, DayPhase::ScrimBlock);
-        assert_eq!(game.clock.current_date, start_date);
+        assert_eq!(game.day_phase, DayPhase::Morning);
+        assert_eq!(
+            game.clock.current_date,
+            start_date + chrono::Duration::days(1)
+        );
     }
 
     #[test]
@@ -1102,11 +1105,11 @@ mod tests {
     }
 
     #[test]
-    fn advance_time_with_mode_processes_day_from_evening_phase() {
+    fn advance_time_with_mode_processes_day_from_the_scrim_phase() {
         let state = StateManager::new();
         let mut game = make_game(11);
         let start_date = game.clock.current_date;
-        game.day_phase = DayPhase::Evening;
+        game.day_phase = DayPhase::ScrimBlock;
         state.set_game(game);
 
         let response =
@@ -1219,8 +1222,8 @@ mod tests {
         // Closing the day with block B's decision releases the block.
         choose(&state, 1, "DayOff".to_string()).expect("close the day");
         let released = advance_time_with_mode_internal(&state, "instant").expect("released");
-        assert_eq!(released.action, "phase_advanced");
-        assert_eq!(scrim_phase(&state), DayPhase::ReviewBlock);
+        assert_eq!(released.action, "advanced");
+        assert_eq!(scrim_phase(&state), DayPhase::Morning);
     }
 
     #[test]
@@ -1238,8 +1241,8 @@ mod tests {
         assert_eq!(game.teams[0].scrim_reports.len(), 1);
 
         let released = advance_time_with_mode_internal(&state, "instant").expect("released");
-        assert_eq!(released.action, "phase_advanced");
-        assert_eq!(scrim_phase(&state), DayPhase::ReviewBlock);
+        assert_eq!(released.action, "advanced");
+        assert_eq!(scrim_phase(&state), DayPhase::Morning);
     }
 
     #[test]
@@ -1274,17 +1277,310 @@ mod tests {
     }
 
     #[test]
-    fn scrim_context_offers_the_review_in_review_block_too() {
+    fn scrim_context_offers_the_review_in_a_game_saved_in_a_removed_phase() {
         let state = make_manual_scrim_day();
         advance_time_with_mode_internal(&state, "instant").expect("morning advance");
         let mut game = state.get_game(|g| g.clone()).expect("game");
-        game.day_phase = DayPhase::ReviewBlock;
+        game.day_phase = DayPhase::from_id("ReviewBlock");
+        assert_eq!(game.day_phase, DayPhase::ScrimBlock);
         state.set_game(game);
 
         assert_eq!(
             today_can_review(&state),
             (true, "PlayedNeedsReview".to_string())
         );
+    }
+
+    #[test]
+    fn a_day_without_scrims_or_a_match_ends_in_one_advance() {
+        let state = StateManager::new();
+        let mut game = make_game(11);
+        // Monday: the weekly scrim slots start on Wednesday.
+        game.clock.current_date = Utc.with_ymd_and_hms(2025, 6, 16, 12, 0, 0).unwrap();
+        state.set_game(game);
+
+        let response = advance_time_with_mode_internal(&state, "instant").expect("advance");
+
+        assert_eq!(response.action, "advanced");
+        let game = response.game.expect("game");
+        assert_eq!(game.day_phase, DayPhase::Morning);
+        assert_eq!(game.clock.current_date.format("%Y-%m-%d").to_string(), "2025-06-17");
+    }
+
+    #[test]
+    fn a_day_with_scrims_goes_to_the_scrim_phase_and_then_to_the_next_day() {
+        use crate::commands::squad::choose_daily_scrim_action_internal as choose;
+        let state = make_manual_scrim_day();
+
+        let first = advance_time_with_mode_internal(&state, "instant").expect("morning advance");
+        assert_eq!(first.action, "phase_advanced");
+        assert_eq!(scrim_phase(&state), DayPhase::ScrimBlock);
+
+        let blocked = advance_time_with_mode_internal(&state, "instant").expect("blocked");
+        assert_eq!(blocked.action, "blocked_scrim_decision");
+        assert_eq!(scrim_phase(&state), DayPhase::ScrimBlock);
+
+        force_scrim_win(&state, 0);
+        choose(&state, 0, "OfferRest".to_string()).expect("decide");
+        let next = advance_time_with_mode_internal(&state, "instant").expect("next day");
+
+        assert_eq!(next.action, "advanced");
+        let game = next.game.expect("game");
+        assert_eq!(game.day_phase, DayPhase::Morning);
+        assert_eq!(game.clock.current_date.format("%Y-%m-%d").to_string(), "2025-06-19");
+    }
+
+    #[test]
+    fn an_old_save_in_a_removed_phase_ends_its_day_with_one_advance() {
+        for id in ["ReviewBlock", "TrainingBlock", "Evening"] {
+            let state = StateManager::new();
+            let mut game = make_game(11);
+            game.day_phase = DayPhase::from_id(id);
+            state.set_game(game);
+
+            let response = advance_time_with_mode_internal(&state, "instant").expect(id);
+
+            assert_eq!(response.action, "advanced", "{id}");
+            assert_eq!(response.game.expect("game").day_phase, DayPhase::Morning, "{id}");
+        }
+    }
+
+    #[test]
+    fn skip_to_match_day_from_either_phase_reaches_the_match_day() {
+        for phase in [DayPhase::Morning, DayPhase::ScrimBlock] {
+            let state = StateManager::new();
+            let mut game = make_game_with_matchday();
+            game.clock.current_date = Utc.with_ymd_and_hms(2025, 6, 15, 12, 0, 0).unwrap();
+            let fixture_day = game.clock.current_date + chrono::Duration::days(2);
+            game.leagues[0].fixtures[0].date = fixture_day.format("%Y-%m-%d").to_string();
+            game.day_phase = phase.clone();
+            state.set_game(game);
+            state.set_stats_state(StatsState::default());
+
+            let response = skip_to_match_day_internal(&state).expect("skip");
+
+            assert_eq!(response["action"], "arrived", "{phase:?}");
+            assert_eq!(response["match_simulated"], true, "{phase:?}");
+        }
+    }
+
+    /// A week of the same game, Monday 30 June to Sunday 6 July (it crosses a month end): Wednesday
+    /// and Thursday have two scrim blocks each, the other five days are rest days, and the club's
+    /// next match is the following Thursday.
+    fn make_scrim_week_game() -> Game {
+        let mut game = make_game_with_matchday();
+        game.clock.current_date = Utc.with_ymd_and_hms(2025, 6, 30, 12, 0, 0).unwrap();
+        game.leagues[0].fixtures[0].date = "2025-07-10".to_string();
+        // The daily random events skip a day whose message id is already in the inbox; the
+        // media story moves morale, so a week would otherwise depend on the dice.
+        for day in 0..7 {
+            let date = (game.clock.current_date + chrono::Duration::days(day))
+                .format("%Y-%m-%d")
+                .to_string();
+            for kind in ["sponsor", "media", "community", "fan_petition", "rival_interest", "allio", "yuste"] {
+                game.messages.push(make_message(
+                    &format!("{kind}_{date}"),
+                    MessagePriority::Low,
+                    true,
+                ));
+            }
+        }
+        game.teams[0].scrim_weekly_slots = 4;
+        game.teams[0].weekly_scrim_plan_team_ids = ["team2", "team3", "team4", "team5"]
+            .iter()
+            .map(|id| vec![id.to_string()])
+            .collect();
+        for (id, name) in [("team3", "Third"), ("team4", "Fourth"), ("team5", "Fifth")] {
+            game.teams.push(Team::new(
+                id.to_string(),
+                format!("{name} FC"),
+                name[..3].to_uppercase(),
+                "England".to_string(),
+                format!("{name}town"),
+                format!("{name} Ground"),
+                21_000,
+            ));
+        }
+        game
+    }
+
+    /// The five-phase sequence that existed before the day was reduced to two phases, rebuilt
+    /// from the same building blocks, so a week can be played both ways. `old_phase` counts the
+    /// presses of the day: 0 Morning, 1 ScrimBlock, 2 ReviewBlock, 3 TrainingBlock, 4 Evening.
+    fn press_old_flow(state: &StateManager, old_phase: &mut u8) -> String {
+        use crate::application::advance_blockers::{advance_block, scheduled_user_fixture_index};
+        use chrono::Datelike;
+        let mut game = state.get_game(|g| g.clone()).expect("game");
+        let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+        if scheduled_user_fixture_index(&game, &today).is_some() {
+            *old_phase = 0;
+            return advance_time_with_mode_internal(state, "instant").expect("match day").action;
+        }
+        game.day_phase = if *old_phase == 0 { DayPhase::Morning } else { DayPhase::ScrimBlock };
+        if *old_phase < 4 {
+            // Only Morning (setup) and ScrimBlock (decision) ever blocked.
+            if *old_phase <= 1 {
+                if let Some(block) = advance_block(&game, "instant") {
+                    state.set_game(game);
+                    return block.action().to_string();
+                }
+            }
+            if *old_phase == 0 {
+                let weekday = game.clock.current_date.weekday().num_days_from_monday();
+                olm_core::training::process_scrim_block(&mut game, weekday);
+            }
+            *old_phase += 1;
+            state.set_game(game);
+            return "phase_advanced".to_string();
+        }
+        olm_core::turn::process_day_with_capture(&mut game, &mut |_| {});
+        *old_phase = 0;
+        state.set_game(game);
+        "advanced".to_string()
+    }
+
+    /// Plays the first unresolved scrim review of today the way a player would: block A of a
+    /// day continues to block B, block B closes the day.
+    fn decide_today(state: &StateManager) {
+        use crate::commands::squad::choose_daily_scrim_action_internal as choose;
+        let game = state.get_game(|g| g.clone()).expect("game");
+        let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+        let slot = game.teams[0]
+            .scrim_reports
+            .iter()
+            .find(|report| report.date == today && report.post_decision.is_none())
+            .expect("an unresolved report")
+            .slot_index;
+        force_scrim_win(state, slot);
+        let action = if slot % 2 == 0 { "ContinueToBlock2" } else { "DayOff" };
+        choose(state, slot, action.to_string()).expect("decision");
+    }
+
+    /// Plays seven days and returns how many presses each day took.
+    fn play_week(state: &StateManager, old_flow: bool) -> Vec<u32> {
+        let mut old_phase = 0u8;
+        let mut presses = Vec::new();
+        for _ in 0..7 {
+            let start = state.get_game(|g| g.clock.current_date).expect("game");
+            let mut count = 0;
+            for _ in 0..12 {
+                let action = if old_flow {
+                    press_old_flow(state, &mut old_phase)
+                } else {
+                    advance_time_with_mode_internal(state, "instant").expect("press").action
+                };
+                match action.as_str() {
+                    "blocked_scrim_decision" => decide_today(state),
+                    "advanced" | "phase_advanced" => count += 1,
+                    other => panic!("unexpected action {other}"),
+                }
+                if state.get_game(|g| g.clock.current_date).expect("game") != start {
+                    break;
+                }
+            }
+            presses.push(count);
+        }
+        presses
+    }
+
+    /// The game as data, without the phase and without what the game draws from an unseeded
+    /// random generator, so two runs of the same flow give the same value: the attribute and
+    /// fitness training rolls, board targets, champion mastery and patch, AI lineups, transfer
+    /// offers, and every message but the weekly scrim summary and the mood report.
+    fn comparable(state: &StateManager) -> Value {
+        let game = state.get_game(|g| g.clone()).expect("game");
+        let mut value = serde_json::to_value(&game).expect("serialize");
+        let root = value.as_object_mut().expect("object");
+        for key in ["day_phase", "board_objectives", "champion_masteries", "champion_patch"] {
+            root.remove(key);
+        }
+        for player in root["players"].as_array_mut().expect("players") {
+            let player = player.as_object_mut().expect("player");
+            for key in ["attributes", "fitness", "champion_training_targets", "transfer_offers"] {
+                player.remove(key);
+            }
+        }
+        for team in root["teams"].as_array_mut().expect("teams") {
+            team.as_object_mut().expect("team").remove("active_lineup_ids");
+        }
+        let messages = root["messages"].as_array_mut().expect("messages");
+        messages.retain(|message| {
+            matches!(
+                message["subject_key"].as_str(),
+                Some("be.msg.scrimWeekly.subject" | "be.msg.moodReport.subject")
+            )
+        });
+        for message in messages {
+            message.as_object_mut().expect("message").remove("id");
+        }
+        value
+    }
+
+    /// Every path at which two JSON values differ, with both sides (at most 40 entries).
+    fn collect_differences(old: &Value, new: &Value, path: &str, out: &mut Vec<String>) {
+        collect_differences_cap(old, new, path, out, 40)
+    }
+
+    fn collect_differences_cap(old: &Value, new: &Value, path: &str, out: &mut Vec<String>, cap: usize) {
+        if out.len() >= cap {
+            return;
+        }
+        match (old, new) {
+            (Value::Object(a), Value::Object(b)) => {
+                for key in a.keys().chain(b.keys().filter(|key| !a.contains_key(*key))) {
+                    let child = format!("{path}.{key}");
+                    match (a.get(key), b.get(key)) {
+                        (Some(x), Some(y)) => collect_differences_cap(x, y, &child, out, cap),
+                        (x, y) => out.push(format!("{child}: old={x:?} new={y:?}")),
+                    }
+                }
+            }
+            (Value::Array(a), Value::Array(b)) if a.len() == b.len() => {
+                for (index, (x, y)) in a.iter().zip(b).enumerate() {
+                    collect_differences_cap(x, y, &format!("{path}[{index}]"), out, cap);
+                }
+            }
+            _ if old != new => out.push(format!("{path}: old={old} new={new}")),
+            _ => {}
+        }
+    }
+
+    fn week_played(old_flow: bool) -> (StateManager, Vec<u32>) {
+        let state = StateManager::new();
+        state.set_game(make_scrim_week_game());
+        state.set_stats_state(StatsState::default());
+        let presses = play_week(&state, old_flow);
+        (state, presses)
+    }
+
+    fn assert_same_week(old: &StateManager, new: &StateManager) {
+        let mut differences = Vec::new();
+        collect_differences(&comparable(old), &comparable(new), "game", &mut differences);
+        assert!(differences.is_empty(), "the weeks differ at:\n{}", differences.join("\n"));
+    }
+
+    #[test]
+    fn two_weeks_played_with_the_same_flow_compare_equal() {
+        // Guards the comparison below: whatever it leaves in must not depend on the random rolls.
+        let (first, _) = week_played(false);
+        let (second, _) = week_played(false);
+        assert_same_week(&first, &second);
+    }
+
+    #[test]
+    fn a_week_played_with_the_new_flow_is_the_same_game_as_with_the_old_flow() {
+        let (old_state, old_presses) = week_played(true);
+        let (new_state, new_presses) = week_played(false);
+
+        // Mon..Sun: the old day took five presses; the new one takes one, or two on the scrim days.
+        assert_eq!(old_presses, vec![5, 5, 5, 5, 5, 5, 5]);
+        assert_eq!(new_presses, vec![1, 1, 2, 2, 1, 1, 1]);
+        let game = new_state.get_game(|g| g.clone()).expect("game");
+        assert_eq!(game.clock.current_date.format("%Y-%m-%d").to_string(), "2025-07-07");
+        assert_eq!(game.teams[0].scrim_reports.len(), 4);
+        assert!(game.teams[0].scrim_reports.iter().all(|r| r.post_decision.is_some()));
+
+        assert_same_week(&old_state, &new_state);
     }
 
     fn blocker_ids(blockers: &[Value]) -> Vec<String> {
@@ -1370,7 +1666,7 @@ mod tests {
         let state = StateManager::new();
         state.set_game(make_bye_week_scrim_window_game());
         let response = advance_time_with_mode_internal(&state, "live").expect("advance");
-        assert_eq!(response.action, "phase_advanced");
+        assert_eq!(response.action, "advanced");
     }
 
     #[test]
@@ -1526,9 +1822,9 @@ mod tests {
     }
 
     #[test]
-    fn advance_blockers_report_nothing_in_the_evening() {
+    fn advance_blockers_report_no_scrim_setup_in_the_scrim_phase() {
         let mut game = make_unplanned_scrim_window_game();
-        game.day_phase = DayPhase::Evening;
+        game.day_phase = DayPhase::ScrimBlock;
         assert!(scrim_blocker_ids(&game, "live").is_empty());
     }
 

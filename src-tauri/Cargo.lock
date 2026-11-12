@@ -2896,7 +2896,7 @@ dependencies = [
 
 [[package]]
 name = "openleaguemanager"
-version = "2026.1111.4"
+version = "2026.1112.2"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -2904,6 +2904,7 @@ dependencies = [
  "discord-rich-presence",
  "ed25519-dalek",
  "flate2",
+ "gtk",
  "log",
  "olm_core",
  "rand 0.10.1",

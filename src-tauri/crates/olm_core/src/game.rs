@@ -19,16 +19,18 @@ use crate::generator::definitions::CompetitionManifest;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+/// Where the current day stands.
+///
+/// A day on which the user's club played scrims has two phases: `Morning`, and
+/// `ScrimBlock` once the scrims are played and their review is decided. Any
+/// other day is processed in a single advance from `Morning`.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "typescript", derive(TS))]
 #[cfg_attr(feature = "typescript", ts(export))]
 pub enum DayPhase {
     #[default]
     Morning,
     ScrimBlock,
-    ReviewBlock,
-    TrainingBlock,
-    Evening,
 }
 
 impl DayPhase {
@@ -36,30 +38,25 @@ impl DayPhase {
         match self {
             Self::Morning => "Morning",
             Self::ScrimBlock => "ScrimBlock",
-            Self::ReviewBlock => "ReviewBlock",
-            Self::TrainingBlock => "TrainingBlock",
-            Self::Evening => "Evening",
         }
     }
 
+    /// The single place a stored phase is parsed. The identifiers of the phases
+    /// that no longer exist (`ReviewBlock`, `TrainingBlock`, `Evening`) read as
+    /// the scrim phase, whose next advance ends the day; anything unknown is
+    /// `Morning`.
     pub fn from_id(value: &str) -> Self {
         match value {
-            "ScrimBlock" => Self::ScrimBlock,
-            "ReviewBlock" => Self::ReviewBlock,
-            "TrainingBlock" => Self::TrainingBlock,
-            "Evening" => Self::Evening,
+            "ScrimBlock" | "ReviewBlock" | "TrainingBlock" | "Evening" => Self::ScrimBlock,
             _ => Self::Morning,
         }
     }
+}
 
-    pub fn next(&self) -> Self {
-        match self {
-            Self::Morning => Self::ScrimBlock,
-            Self::ScrimBlock => Self::ReviewBlock,
-            Self::ReviewBlock => Self::TrainingBlock,
-            Self::TrainingBlock => Self::Evening,
-            Self::Evening => Self::Evening,
-        }
+impl<'de> Deserialize<'de> for DayPhase {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let id = String::deserialize(deserializer)?;
+        Ok(Self::from_id(&id))
     }
 }
 
@@ -292,5 +289,38 @@ impl Game {
                     .position(|l| l.competition_id.as_deref() == Some(cid))
             })
             .unwrap_or(0)
+    }
+}
+
+#[cfg(test)]
+mod day_phase_tests {
+    use super::DayPhase;
+
+    #[test]
+    fn from_id_reads_every_removed_phase_as_the_scrim_phase() {
+        for id in ["ScrimBlock", "ReviewBlock", "TrainingBlock", "Evening"] {
+            assert_eq!(DayPhase::from_id(id), DayPhase::ScrimBlock, "{id}");
+        }
+    }
+
+    #[test]
+    fn from_id_reads_morning_and_unknown_values_as_morning() {
+        for id in ["Morning", "", "Midnight"] {
+            assert_eq!(DayPhase::from_id(id), DayPhase::Morning, "{id}");
+        }
+    }
+
+    #[test]
+    fn deserializing_goes_through_from_id() {
+        let phase: DayPhase = serde_json::from_str("\"Evening\"").unwrap();
+        assert_eq!(phase, DayPhase::ScrimBlock);
+    }
+
+    #[test]
+    fn the_stored_ids_round_trip() {
+        for phase in [DayPhase::Morning, DayPhase::ScrimBlock] {
+            assert_eq!(DayPhase::from_id(phase.as_id()), phase);
+            assert_eq!(serde_json::to_string(&phase).unwrap(), format!("\"{}\"", phase.as_id()));
+        }
     }
 }

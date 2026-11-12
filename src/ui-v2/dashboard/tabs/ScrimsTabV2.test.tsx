@@ -162,8 +162,10 @@ describe("ScrimsTabV2 pending review decision", () => {
     });
   });
 
-  it("keeps showing the decision buttons in ReviewBlock", () => {
-    render(<ScrimsTabV2 gameState={gameStateWithPhase("ReviewBlock")} onGameUpdate={vi.fn()} />);
+  it("keeps showing the decision buttons when the scrim phase is re-rendered", () => {
+    const { rerender } = render(<ScrimsTabV2 gameState={gameStateWithPhase("ScrimBlock")} onGameUpdate={vi.fn()} />);
+
+    rerender(<ScrimsTabV2 gameState={gameStateWithPhase("ScrimBlock")} onGameUpdate={vi.fn()} />);
 
     expect(screen.getByText("scrims.decision.vodReview")).toBeInTheDocument();
   });

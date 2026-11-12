@@ -80,7 +80,9 @@ export function parseLogoError(raw: unknown): LogoErrorCode {
   if (text.startsWith("{")) {
     try {
       const parsed: unknown = JSON.parse(text);
-      if (parsed && typeof parsed === "object" && (parsed as { kind?: unknown }).kind === "invalid_logo") {
+      const kind = parsed && typeof parsed === "object" ? (parsed as { kind?: unknown }).kind : undefined;
+      // `prepare_custom_portrait` answers with the same reasons under its own kind.
+      if (kind === "invalid_logo" || kind === "invalid_portrait") {
         const reason = (parsed as { reason?: unknown }).reason;
         return (typeof reason === "string" && REASON_TO_CODE[reason]) || "failed";
       }
@@ -171,8 +173,18 @@ async function checkDeclaredSize(file: Blob): Promise<void> {
   if (size.width > LOGO_MAX_SOURCE_SIDE || size.height > LOGO_MAX_SOURCE_SIDE) throw new LogoUploadError("tooBig");
 }
 
-/** Decodes `file`, draws it fitted into 256x256 on a canvas and exports a PNG data URI. */
-export async function rasterizeToPngDataUri(file: Blob): Promise<string> {
+/** Where the decoded image lands: fitted whole (the badge), or its centre cropped to a square. */
+export interface RasterizeTarget {
+  /** Longest side of the output, in pixels. */
+  side: number;
+  /** Keep the centred square of the image instead of the whole picture. */
+  square: boolean;
+}
+
+const LOGO_TARGET: RasterizeTarget = { side: LOGO_MAX_SIDE, square: false };
+
+/** Decodes `file`, draws it into `target` on a canvas and exports a PNG data URI. */
+export async function rasterizeToPngDataUri(file: Blob, target: RasterizeTarget = LOGO_TARGET): Promise<string> {
   await checkDeclaredSize(file);
   let bitmap: ImageBitmap;
   try {
@@ -181,7 +193,17 @@ export async function rasterizeToPngDataUri(file: Blob): Promise<string> {
     throw new LogoUploadError("unreadable");
   }
   try {
-    const { width, height } = fitLogoSize(bitmap.width, bitmap.height);
+    // A square target reads the centred square of the picture; the badge reads all of it.
+    const cropSide = Math.min(bitmap.width, bitmap.height);
+    const source = target.square
+      ? {
+          x: Math.floor((bitmap.width - cropSide) / 2),
+          y: Math.floor((bitmap.height - cropSide) / 2),
+          width: cropSide,
+          height: cropSide,
+        }
+      : { x: 0, y: 0, width: bitmap.width, height: bitmap.height };
+    const { width, height } = fitLogoSize(source.width, source.height, target.side);
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
@@ -189,7 +211,11 @@ export async function rasterizeToPngDataUri(file: Blob): Promise<string> {
     if (!context) throw new LogoUploadError("unreadable");
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
-    context.drawImage(bitmap, 0, 0, width, height);
+    if (target.square) {
+      context.drawImage(bitmap, source.x, source.y, source.width, source.height, 0, 0, width, height);
+    } else {
+      context.drawImage(bitmap, 0, 0, width, height);
+    }
     const dataUri = canvas.toDataURL("image/png");
     if (!dataUri.startsWith("data:image/png;base64,")) throw new LogoUploadError("unreadable");
     return dataUri;

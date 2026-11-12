@@ -301,10 +301,7 @@
     "save": "Save",
     "phaseLabels": {
       "morning": "Morning",
-      "scrimBlock": "Scrims",
-      "reviewBlock": "Review",
-      "trainingBlock": "Training",
-      "evening": "Evening"
+      "scrimBlock": "Scrims"
     }
   },
   "continueMenu": {
@@ -534,30 +531,15 @@
       "viewAll": "View All"
     },
     "phase": {
-      "evening": {
-        "title": "Evening",
-        "description": "Evening block",
-        "actionLabel": "View Details"
-      },
       "morning": {
         "title": "Morning",
         "description": "Morning block",
         "actionLabel": "View Details"
       },
-      "reviewBlock": {
-        "title": "Review",
-        "description": "Review block",
-        "actionLabel": "Review Now"
-      },
       "scrimBlock": {
         "title": "Scrims",
         "description": "Scrim block",
         "actionLabel": "Start Scrims"
-      },
-      "trainingBlock": {
-        "title": "Training",
-        "description": "Training block",
-        "actionLabel": "Start Training"
       }
     },
     "view": "View",
@@ -728,6 +710,26 @@
       "wage": "Gehalt {{value}}",
       "edit": "Bearbeiten",
       "editAria": "{{nick}} bearbeiten, {{role}}",
+      "photo": {
+        "add": "Foto hinzufügen",
+        "replace": "Foto ändern",
+        "remove": "Foto entfernen",
+        "addAria": "Foto für {{nick}} hinzufügen, {{role}}",
+        "replaceAria": "Foto von {{nick}} ändern, {{role}}",
+        "removeAria": "Foto von {{nick}} entfernen, {{role}}",
+        "previewAlt": "Foto von {{nick}}, {{role}}",
+        "hint": "PNG, JPEG oder WebP, bis zu 2 MB. Die Bildmitte wird als Quadrat verwendet. Ohne Foto wird der Standard-Avatar verwendet.",
+        "processing": "Das Foto wird vorbereitet...",
+        "installFailed": "Das Foto für {{role}} konnte nicht verwendet werden. Wähle ein anderes oder entferne es.",
+        "errors": {
+          "unsupportedType": "Verwende ein PNG-, JPEG- oder WebP-Bild. SVG und andere Formate werden nicht akzeptiert.",
+          "fileTooLarge": "Die Datei ist größer als 2 MB. Wähle ein kleineres Bild.",
+          "unreadable": "Das Bild konnte nicht gelesen werden. Versuche eine andere Datei.",
+          "invalid": "Das Bild kann nicht als Foto verwendet werden. Versuche eine andere Datei.",
+          "tooBig": "Das Bild ist zu groß. Versuche ein kleineres.",
+          "failed": "Das Foto konnte nicht vorbereitet werden. Versuche es erneut."
+        }
+      },
       "attributes": "Attribute",
       "editsDropped": "Deine Änderungen passen nicht mehr zu diesem Verein, deshalb wurde der erzeugte Kader wiederhergestellt.",
       "installFailed": "Kader abgelehnt. {{role}}, {{field}}: {{reason}}",
@@ -2056,6 +2058,19 @@
     "killsDeathsObjectives": "K / D / Ziele",
     "economy": "Gold / Schaden"
   },
+  "linuxRender": {
+    "dialog": {
+      "title": "Grafikmodus",
+      "intro": "Wähle, wie das Spiel sein Fenster zeichnen soll.",
+      "fast": "Schnell",
+      "fastHint": "Empfohlen. Nutzt die Grafikkarte.",
+      "compat": "Kompatibilität",
+      "compatHint": "Verwende ihn, wenn das Spielfenster flackert, falsch dargestellt wird oder leer bleibt. Langsamer, vor allem im Vollbildmodus.",
+      "remember": "Meine Wahl merken",
+      "rememberHint": "Du kannst sie später in den Einstellungen ändern.",
+      "button": "Weiter"
+    }
+  },
   "settings": {
     "title": "Einstellungen",
     "display": "Anzeige",
@@ -2105,6 +2120,11 @@
     "uiScaleDesc": "Schriftgröße und Abstand für bessere Lesbarkeit anpassen",
     "highContrast": "Hoher Kontrast",
     "highContrastDesc": "Text, Rahmen und Fokusumrandung für bessere Lesbarkeit verstärken",
+    "renderMode": "Grafikmodus",
+    "renderModeAsk": "Beim Start fragen",
+    "renderModeFast": "Schnell (empfohlen)",
+    "renderModeCompat": "Kompatibilität",
+    "renderModeDesc": "Wähle Kompatibilität, wenn das Fenster flackert, falsch dargestellt wird oder leer bleibt. Das ist langsamer, vor allem im Vollbildmodus. Gilt ab dem nächsten Spielstart.",
     "fullscreen": "Vollbild",
     "fullscreenDesc": "Vollbildmodus umschalten",
     "enterFullscreen": "Aktivieren",
@@ -4096,23 +4116,27 @@
     "posting": "Wird gepostet..."
   },
   "championPage": {
-    "assists": "Assists",
-    "bestAgainst": "Best Against",
+    "assists": "Vorlagen",
+    "bestAgainst": "Am besten gegen",
+    "br": "BR",
     "champion": "Champion",
     "cs": "CS",
-    "damage": "Damage",
-    "deaths": "Deaths",
-    "duration": "Duration",
+    "damage": "Schaden",
+    "deaths": "Tode",
+    "duration": "Dauer",
     "gold": "Gold",
+    "kda": "KDA",
     "kills": "Kills",
-    "noData": "No data available",
-    "noHistory": "No match history",
-    "noRoles": "No roles played",
-    "roles": "Roles",
-    "topPlayers": "Top Players",
-    "vision": "Vision",
-    "weekly": "Weekly",
-    "worstAgainst": "Worst Against"
+    "noData": "Keine Daten verfügbar",
+    "noHistory": "Kein Spielverlauf",
+    "noRoles": "Keine Rollen gespielt",
+    "pr": "PR",
+    "roles": "Rollen",
+    "topPlayers": "Top-Spieler",
+    "vision": "Sicht",
+    "weekly": "Wöchentlich",
+    "worstAgainst": "Am schlechtesten gegen",
+    "wr": "WR"
   },
   "championsGrid": {
     "championCount_one": "{{count}} Champion",
@@ -4239,10 +4263,7 @@
     "bar": {
       "phase": {
         "morning": "Morgen",
-        "scrimBlock": "Scrims",
-        "reviewBlock": "Analyse",
-        "trainingBlock": "Training",
-        "evening": "Abend"
+        "scrimBlock": "Scrims"
       },
       "save": "Speichern",
       "saved": "Gespeichert",

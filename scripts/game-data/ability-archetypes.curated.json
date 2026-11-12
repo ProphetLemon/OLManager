@@ -1,722 +1,1997 @@
 {
   "schema": "olm.ability-archetypes.curated.v1",
-  "note": "Overrides of the keyword rules in scripts/game-data/lib/ability-archetypes.mjs, by champion id and slot. An entry is the final list of archetypes, or {archetypes?, rangeClass?}. Only abilities where the rules are wrong or incomplete are listed; the generator rejects an entry equal to the rule output.",
+  "note": "Overrides of the keyword rules in scripts/game-data/lib/ability-archetypes.mjs, by champion id and slot. An entry is the final list of archetypes, or {archetypes?, rangeClass?}. Only abilities where the rules are wrong or incomplete are listed; the generator rejects an entry equal to the rule output. `noEffect` lists the abilities that fit none of the terms, each with its reason.",
   "overrides": {
     "Aatrox": {
       "Q": {
         "rangeClass": "short"
       },
+      "W": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      },
       "E": {
+        "archetypes": [
+          "self_heal",
+          "dash"
+        ],
+        "rangeClass": "short"
+      },
+      "R": {
+        "rangeClass": "self"
+      }
+    },
+    "Akshan": {
+      "W": {
+        "archetypes": [
+          "self_buff",
+          "stealth"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "dash",
+          "damage"
+        ]
+      }
+    },
+    "Amumu": {
+      "W": {
+        "archetypes": [
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      }
+    },
+    "Annie": {
+      "E": {
+        "archetypes": [
+          "ally_shield",
+          "self_shield",
+          "ally_buff",
+          "self_buff",
+          "damage"
+        ]
+      }
+    },
+    "Aphelios": {
+      "W": {
+        "archetypes": [
+          "self_buff"
+        ]
+      }
+    },
+    "Ashe": {
+      "W": {
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "global"
+        ]
+      }
+    },
+    "AurelionSol": {
+      "W": {
+        "archetypes": [
+          "self_buff",
+          "dash"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ]
+      }
+    },
+    "Azir": {
+      "Q": {
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_shield",
+          "dash",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "hard_cc",
+          "damage",
+          "summon"
+        ]
+      }
+    },
+    "Bard": {
+      "Q": {
+        "archetypes": [
+          "hard_cc",
+          "soft_cc"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "ally_heal",
+          "ally_buff",
+          "zone"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "hard_cc",
+          "untargetable"
+        ]
+      }
+    },
+    "Belveth": {
+      "E": {
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_buff",
+          "summon"
+        ]
+      }
+    },
+    "Blitzcrank": {
+      "W": {
+        "archetypes": [
+          "self_buff"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ]
+      }
+    },
+    "Braum": {
+      "Q": {
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "ally_buff",
+          "self_buff",
+          "dash"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_shield"
+        ],
         "rangeClass": "short"
       },
       "R": {
         "archetypes": [
-          "self_heal"
-        ],
-        "rangeClass": "self"
-      }
-    },
-    "Akali": {
-      "R": [
-        "dash",
-        "execute"
-      ]
-    },
-    "Akshan": {
-      "E": [
-        "dash"
-      ]
-    },
-    "Alistar": {
-      "W": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ]
-    },
-    "Amumu": {
-      "Q": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ]
-    },
-    "Annie": {
-      "E": [
-        "ally_shield",
-        "self_shield"
-      ]
-    },
-    "Aphelios": {
-      "Q": [
-        "hard_cc",
-        "poke"
-      ]
-    },
-    "Ashe": {
-      "R": [
-        "hard_cc",
-        "global"
-      ]
-    },
-    "AurelionSol": {
-      "W": [
-        "dash"
-      ]
-    },
-    "Aurora": {
-      "E": [
-        "dash"
-      ]
-    },
-    "Belveth": {
-      "E": [
-        "self_heal"
-      ]
-    },
-    "Blitzcrank": {
-      "E": [
-        "hard_cc"
-      ]
-    },
-    "Braum": {
-      "Q": [
-        "poke"
-      ],
-      "E": {
-        "rangeClass": "short"
+          "hard_cc",
+          "soft_cc",
+          "zone"
+        ]
       }
     },
     "Briar": {
-      "R": [
-        "self_heal",
-        "dash",
-        "engage",
-        "hard_cc",
-        "global"
-      ]
+      "Q": {
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "dash",
+          "engage",
+          "hard_cc",
+          "global"
+        ]
+      }
     },
     "Caitlyn": {
-      "E": [
-        "dash"
-      ]
+      "E": {
+        "archetypes": [
+          "dash",
+          "soft_cc"
+        ]
+      }
+    },
+    "Camille": {
+      "R": {
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ]
+      }
+    },
+    "Chogath": {
+      "E": {
+        "archetypes": [
+          "self_buff",
+          "soft_cc",
+          "damage"
+        ]
+      }
     },
     "Corki": {
-      "W": [
-        "dash"
-      ]
+      "Q": {
+        "archetypes": [
+          "damage"
+        ]
+      }
     },
     "Darius": {
-      "R": [
-        "dash",
-        "execute"
-      ]
+      "E": {
+        "archetypes": [
+          "self_buff",
+          "hard_cc"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "dash",
+          "execute"
+        ]
+      }
     },
     "Diana": {
-      "Q": [
-        "poke"
-      ],
-      "R": [
-        "hard_cc"
-      ]
+      "Q": {
+        "archetypes": [
+          "poke"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ]
+      }
     },
     "Draven": {
-      "R": [
-        "execute",
-        "global"
-      ]
+      "R": {
+        "archetypes": [
+          "execute",
+          "global"
+        ]
+      }
     },
     "Ekko": {
-      "E": [
-        "dash"
-      ]
+      "Q": {
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "self_shield",
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "zone"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_heal",
+          "dash",
+          "damage",
+          "untargetable"
+        ]
+      }
     },
     "Elise": {
-      "Q": [
-        "dash",
-        "execute"
-      ],
-      "E": [
-        "dash",
-        "hard_cc",
-        "poke"
-      ]
+      "Q": {
+        "archetypes": [
+          "dash",
+          "execute"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "self_buff",
+          "damage",
+          "summon"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ]
+      }
     },
     "Evelynn": {
+      "W": {
+        "archetypes": [
+          "hard_cc"
+        ]
+      },
       "R": {
+        "archetypes": [
+          "dash",
+          "damage",
+          "untargetable"
+        ],
         "rangeClass": "short"
       }
     },
     "Ezreal": {
-      "R": [
-        "global"
-      ]
+      "R": {
+        "archetypes": [
+          "damage",
+          "global"
+        ]
+      }
     },
     "Fiddlesticks": {
-      "Q": [
-        "hard_cc"
-      ]
+      "Q": {
+        "archetypes": [
+          "hard_cc"
+        ]
+      }
     },
     "Fiora": {
-      "R": [
-        "ally_heal",
-        "self_heal"
-      ]
+      "W": {
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "soft_cc"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "ally_heal",
+          "self_heal",
+          "self_buff"
+        ]
+      }
     },
     "Fizz": {
-      "E": [
-        "dash",
-        "untargetable"
-      ]
+      "E": {
+        "archetypes": [
+          "dash",
+          "damage",
+          "untargetable"
+        ]
+      }
     },
     "Galio": {
-      "E": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ],
-      "R": [
-        "ally_shield",
-        "dash",
-        "engage",
-        "hard_cc"
-      ]
+      "E": {
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "ally_shield",
+          "dash",
+          "engage",
+          "hard_cc"
+        ]
+      }
     },
     "Gangplank": {
-      "R": [
-        "global"
-      ]
-    },
-    "Gragas": {
-      "E": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ]
+      "R": {
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone",
+          "global"
+        ]
+      }
     },
     "Graves": {
-      "Q": [
-        "poke"
-      ]
+      "W": {
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ]
+      }
     },
     "Gwen": {
-      "W": [
-        "untargetable"
-      ]
+      "W": {
+        "archetypes": [
+          "zone",
+          "untargetable"
+        ]
+      }
     },
     "Hecarim": {
-      "W": [
-        "self_heal"
-      ],
-      "R": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ]
+      "Q": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ]
+      }
     },
     "Heimerdinger": {
-      "W": [
-        "poke"
-      ]
+      "R": {
+        "archetypes": [
+          "self_buff"
+        ]
+      }
     },
     "Hwei": {
-      "E": [
-        "hard_cc"
-      ]
+      "Q": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "self_buff"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_buff",
+          "hard_cc"
+        ]
+      }
+    },
+    "Illaoi": {
+      "Q": {
+        "archetypes": [
+          "self_buff",
+          "damage",
+          "summon"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "dash",
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "hard_cc",
+          "summon"
+        ]
+      }
+    },
+    "Irelia": {
+      "Q": {
+        "archetypes": [
+          "self_heal",
+          "dash",
+          "damage"
+        ]
+      }
     },
     "Ivern": {
-      "Q": [
-        "hard_cc",
-        "poke"
-      ],
-      "W": []
+      "Q": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "ally_buff",
+          "self_buff",
+          "zone"
+        ]
+      }
     },
     "Janna": {
+      "Q": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      },
       "W": {
+        "archetypes": [
+          "self_buff",
+          "soft_cc",
+          "damage"
+        ],
         "rangeClass": "short"
       },
-      "R": [
-        "ally_heal",
-        "hard_cc"
-      ]
+      "E": {
+        "archetypes": [
+          "ally_shield",
+          "ally_buff"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "ally_heal",
+          "hard_cc",
+          "zone"
+        ]
+      }
     },
     "JarvanIV": {
-      "Q": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ]
+      "Q": {
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "ally_buff",
+          "self_buff",
+          "damage",
+          "zone"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "dash",
+          "damage",
+          "zone"
+        ]
+      }
     },
     "Jayce": {
-      "Q": [
-        "dash",
-        "poke"
-      ]
+      "Q": {
+        "archetypes": [
+          "dash",
+          "soft_cc",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_buff"
+        ]
+      }
     },
     "Jhin": {
-      "E": [],
-      "R": [
-        "execute",
-        "poke"
-      ]
+      "E": {
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ]
+      }
+    },
+    "Jinx": {
+      "Q": {
+        "archetypes": [
+          "self_buff"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "hard_cc",
+          "damage",
+          "zone"
+        ]
+      }
     },
     "KSante": {
-      "E": [
-        "ally_shield",
-        "self_shield",
-        "dash"
-      ]
-    },
-    "Kaisa": {
-      "W": [
-        "poke"
-      ]
+      "E": {
+        "archetypes": [
+          "ally_shield",
+          "self_shield",
+          "dash"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ]
+      }
     },
     "Kalista": {
-      "Q": [
-        "poke"
-      ],
-      "W": [],
-      "R": [
-        "hard_cc"
-      ]
+      "W": {
+        "archetypes": [
+          "self_buff"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "ally_buff",
+          "hard_cc"
+        ]
+      }
     },
     "Karthus": {
-      "R": [
-        "global"
-      ]
+      "W": {
+        "archetypes": [
+          "soft_cc",
+          "zone"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "damage",
+          "global"
+        ]
+      }
     },
     "Katarina": {
       "W": {
-        "archetypes": [],
+        "archetypes": [
+          "self_buff"
+        ],
         "rangeClass": "self"
       }
     },
+    "Kayle": {
+      "Q": {
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "damage",
+          "untargetable"
+        ]
+      }
+    },
+    "Kayn": {
+      "E": {
+        "archetypes": [
+          "self_buff"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "damage",
+          "untargetable"
+        ]
+      }
+    },
+    "Kennen": {
+      "W": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      }
+    },
     "Khazix": {
-      "Q": [],
+      "Q": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      },
       "R": {
         "rangeClass": "self"
       }
     },
     "Kindred": {
-      "Q": [
-        "dash"
-      ],
-      "R": [
-        "ally_heal",
-        "self_heal",
-        "untargetable"
-      ]
+      "R": {
+        "archetypes": [
+          "ally_heal",
+          "self_heal",
+          "zone",
+          "untargetable"
+        ]
+      }
     },
     "Kled": {
-      "R": [
-        "self_shield",
-        "dash"
-      ]
+      "Q": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_shield",
+          "ally_buff",
+          "dash"
+        ]
+      }
     },
     "KogMaw": {
-      "R": [
-        "poke"
-      ]
+      "R": {
+        "archetypes": [
+          "poke"
+        ]
+      }
     },
     "Leblanc": {
+      "E": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      },
       "R": {
         "rangeClass": "medium"
       }
     },
     "LeeSin": {
-      "W": [
-        "ally_shield",
-        "self_shield",
-        "dash"
-      ]
+      "W": {
+        "archetypes": [
+          "ally_shield",
+          "self_shield",
+          "self_buff",
+          "dash"
+        ]
+      }
     },
     "Leona": {
-      "Q": [
-        "hard_cc"
-      ]
+      "Q": {
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ]
+      }
     },
     "Lissandra": {
-      "E": [
-        "dash",
-        "poke"
-      ]
+      "E": {
+        "archetypes": [
+          "dash",
+          "damage"
+        ]
+      }
+    },
+    "Lucian": {
+      "R": {
+        "archetypes": [
+          "damage"
+        ]
+      }
     },
     "Lulu": {
-      "W": [
-        "hard_cc"
-      ]
+      "W": {
+        "archetypes": [
+          "ally_buff",
+          "hard_cc"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "ally_shield",
+          "ally_buff",
+          "damage"
+        ]
+      }
     },
     "Lux": {
-      "Q": [
-        "hard_cc",
-        "poke"
-      ],
-      "W": [
-        "ally_shield",
-        "self_shield"
-      ]
+      "Q": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "ally_shield",
+          "self_shield"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ]
+      }
+    },
+    "Malphite": {
+      "Q": {
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "self_buff"
+        ]
+      }
+    },
+    "Malzahar": {
+      "Q": {
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "summon"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "hard_cc",
+          "damage",
+          "zone"
+        ]
+      }
+    },
+    "Maokai": {
+      "E": {
+        "archetypes": [
+          "summon"
+        ]
+      }
     },
     "MasterYi": {
-      "Q": [
-        "dash",
-        "untargetable"
-      ]
+      "Q": {
+        "archetypes": [
+          "dash",
+          "damage",
+          "untargetable"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_buff"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_buff"
+        ]
+      }
     },
     "Mel": {
-      "W": [
-        "ally_shield",
-        "self_shield"
-      ],
-      "R": [
-        "global"
-      ]
+      "W": {
+        "archetypes": [
+          "ally_shield",
+          "self_shield",
+          "ally_buff",
+          "self_buff",
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "zone"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "damage",
+          "global"
+        ]
+      }
+    },
+    "Milio": {
+      "E": {
+        "archetypes": [
+          "ally_shield",
+          "ally_buff"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "ally_heal"
+        ]
+      }
     },
     "MissFortune": {
       "R": {
         "rangeClass": "medium"
       }
     },
+    "MonkeyKing": {
+      "W": {
+        "archetypes": [
+          "dash",
+          "summon",
+          "stealth"
+        ]
+      }
+    },
     "Mordekaiser": {
       "W": {
+        "archetypes": [
+          "self_shield",
+          "self_heal"
+        ],
         "rangeClass": "self"
+      },
+      "R": {
+        "archetypes": [
+          "self_buff",
+          "hard_cc"
+        ]
       }
     },
     "Morgana": {
-      "Q": [
-        "hard_cc",
-        "poke"
-      ],
-      "E": [
-        "ally_shield",
-        "self_shield"
-      ]
+      "Q": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "poke",
+          "zone"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "ally_shield",
+          "self_shield"
+        ]
+      }
     },
     "Naafiri": {
-      "Q": [
-        "poke"
-      ],
-      "E": [
-        "dash"
-      ]
+      "Q": {
+        "archetypes": [
+          "poke"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "dash",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_shield",
+          "dash",
+          "damage"
+        ]
+      }
+    },
+    "Nami": {
+      "E": {
+        "archetypes": [
+          "ally_buff",
+          "soft_cc"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "ally_buff",
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ]
+      }
+    },
+    "Nasus": {
+      "Q": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "soft_cc"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "damage",
+          "zone"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      }
     },
     "Nautilus": {
-      "Q": [
-        "dash",
-        "engage",
-        "hard_cc",
-        "poke"
-      ]
+      "Q": {
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "self_shield",
+          "damage"
+        ]
+      }
     },
     "Neeko": {
-      "W": []
+      "W": {
+        "archetypes": [
+          "self_buff",
+          "damage",
+          "summon"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      }
     },
     "Nidalee": {
-      "Q": [
-        "poke",
-        "execute"
-      ],
-      "W": [
-        "poke",
-        "dash"
-      ],
-      "E": [
-        "ally_heal"
-      ]
-    },
-    "Nilah": {
-      "W": [
-        "untargetable"
-      ]
+      "Q": {
+        "archetypes": [
+          "self_buff",
+          "execute"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "dash",
+          "damage",
+          "zone"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "ally_heal",
+          "ally_buff",
+          "damage"
+        ]
+      }
     },
     "Nocturne": {
-      "R": [
-        "dash"
-      ]
+      "R": {
+        "archetypes": [
+          "dash",
+          "soft_cc"
+        ]
+      }
     },
-    "Nunu": {
-      "W": [
-        "hard_cc"
-      ]
+    "Olaf": {
+      "Q": {
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ]
+      }
     },
     "Orianna": {
-      "E": [
-        "ally_shield"
-      ],
-      "R": [
-        "hard_cc"
-      ]
+      "W": {
+        "archetypes": [
+          "ally_buff",
+          "soft_cc",
+          "damage",
+          "zone"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "ally_shield",
+          "ally_buff",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      }
     },
     "Ornn": {
       "W": {
         "rangeClass": "short"
       },
-      "E": [
-        "dash",
-        "hard_cc"
-      ]
+      "E": {
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ]
+      }
     },
     "Pantheon": {
-      "E": [
-        "untargetable"
-      ]
+      "E": {
+        "archetypes": [
+          "damage",
+          "untargetable"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "dash",
+          "damage"
+        ]
+      }
     },
     "Poppy": {
-      "W": []
+      "Q": {
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "self_buff",
+          "soft_cc"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      }
+    },
+    "Qiyana": {
+      "W": {
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "damage"
+        ]
+      }
+    },
+    "Quinn": {
+      "Q": {
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "self_buff"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      }
     },
     "Rakan": {
-      "E": [
-        "ally_shield",
-        "dash"
-      ]
+      "E": {
+        "archetypes": [
+          "ally_shield",
+          "dash"
+        ]
+      }
     },
     "Rammus": {
-      "R": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ]
-    },
-    "RekSai": {
-      "W": [
-        "hard_cc"
-      ]
+      "Q": {
+        "archetypes": [
+          "dash",
+          "soft_cc",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ]
+      }
     },
     "Rell": {
-      "E": []
+      "W": {
+        "archetypes": [
+          "self_shield",
+          "self_buff",
+          "hard_cc"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "ally_buff",
+          "self_buff",
+          "damage"
+        ]
+      }
     },
     "Renata": {
-      "R": [
-        "hard_cc"
-      ]
+      "Q": {
+        "archetypes": [
+          "hard_cc"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "ally_buff"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "hard_cc"
+        ]
+      }
     },
     "Renekton": {
-      "W": [
-        "hard_cc"
-      ]
+      "W": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "dash",
+          "damage"
+        ]
+      }
     },
     "Rengar": {
-      "R": [
-        "dash",
-        "stealth"
-      ]
+      "E": {
+        "archetypes": [
+          "hard_cc",
+          "soft_cc"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "stealth"
+        ]
+      }
     },
     "Riven": {
-      "E": [
-        "dash"
-      ]
+      "E": {
+        "archetypes": [
+          "self_shield",
+          "dash"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_buff"
+        ]
+      }
+    },
+    "Rumble": {
+      "W": {
+        "archetypes": [
+          "self_shield",
+          "self_buff"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ]
+      }
     },
     "Ryze": {
-      "R": []
+      "R": {
+        "archetypes": [
+          "zone"
+        ]
+      }
     },
     "Sejuani": {
-      "Q": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ]
+      "R": {
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "zone"
+        ]
+      }
     },
     "Senna": {
-      "E": [
-        "stealth",
-        "untargetable"
-      ]
+      "E": {
+        "archetypes": [
+          "ally_buff",
+          "self_buff",
+          "zone",
+          "stealth",
+          "untargetable"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "ally_shield",
+          "damage",
+          "global"
+        ]
+      }
+    },
+    "Seraphine": {
+      "W": {
+        "archetypes": [
+          "ally_shield",
+          "ally_heal",
+          "ally_buff"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ]
+      }
     },
     "Sett": {
       "W": {
         "rangeClass": "short"
       },
-      "R": [
-        "hard_cc"
-      ]
+      "R": {
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ]
+      }
+    },
+    "Shaco": {
+      "Q": {
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "stealth"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "hard_cc",
+          "summon"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "summon"
+        ]
+      }
     },
     "Shen": {
-      "W": [
-        "ally_shield",
-        "self_shield"
-      ],
-      "R": [
-        "ally_shield",
-        "dash",
-        "global"
-      ]
+      "Q": {
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "ally_shield",
+          "self_shield"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "ally_shield",
+          "dash",
+          "global"
+        ]
+      }
     },
     "Shyvana": {
       "Q": {
         "rangeClass": "melee"
+      },
+      "W": {
+        "archetypes": [
+          "self_shield",
+          "self_heal",
+          "self_buff",
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ]
+      }
+    },
+    "Singed": {
+      "W": {
+        "archetypes": [
+          "soft_cc",
+          "zone"
+        ]
       }
     },
     "Sion": {
       "Q": {
         "rangeClass": "short"
       },
-      "E": [],
-      "R": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ]
+      "W": {
+        "archetypes": [
+          "self_shield",
+          "self_buff",
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ]
+      }
     },
-    "Skarner": {
-      "E": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ]
+    "Sivir": {
+      "E": {
+        "archetypes": [
+          "self_buff"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "ally_buff",
+          "self_buff"
+        ]
+      }
     },
     "Smolder": {
-      "W": [
-        "poke"
-      ],
-      "E": [
-        "dash"
-      ]
+      "Q": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ]
+      }
     },
     "Sona": {
-      "W": [
-        "ally_shield",
-        "ally_heal",
-        "self_heal"
-      ]
+      "W": {
+        "archetypes": [
+          "ally_shield",
+          "ally_heal",
+          "self_heal"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "ally_buff",
+          "self_buff"
+        ]
+      }
     },
     "Soraka": {
-      "W": [
-        "ally_heal"
-      ],
-      "R": [
-        "ally_heal",
-        "self_heal",
-        "global"
-      ]
+      "W": {
+        "archetypes": [
+          "ally_heal"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "ally_heal",
+          "self_heal",
+          "global"
+        ]
+      }
+    },
+    "Swain": {
+      "W": {
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "soft_cc",
+          "damage"
+        ]
+      }
+    },
+    "Syndra": {
+      "Q": {
+        "archetypes": [
+          "damage",
+          "zone"
+        ]
+      }
     },
     "TahmKench": {
-      "W": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ],
-      "E": [
-        "self_shield",
-        "self_heal"
-      ],
+      "E": {
+        "archetypes": [
+          "self_shield",
+          "self_heal"
+        ]
+      },
       "R": {
+        "archetypes": [
+          "ally_shield",
+          "hard_cc",
+          "damage"
+        ],
         "rangeClass": "short"
       }
     },
     "Taliyah": {
-      "W": [
-        "hard_cc"
-      ],
-      "E": [
-        "hard_cc"
-      ],
-      "R": [
-        "dash"
-      ]
+      "Q": {
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "zone"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "dash",
+          "zone"
+        ]
+      }
+    },
+    "Taric": {
+      "Q": {
+        "archetypes": [
+          "ally_heal"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "ally_shield",
+          "ally_buff"
+        ]
+      }
+    },
+    "Teemo": {
+      "W": {
+        "archetypes": [
+          "self_buff"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ]
+      }
     },
     "Thresh": {
-      "Q": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ],
-      "W": [
-        "ally_shield"
-      ],
-      "E": [
-        "hard_cc"
-      ]
+      "Q": {
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "ally_shield",
+          "zone"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ]
+      }
     },
     "Tristana": {
-      "W": [
-        "dash"
-      ]
+      "Q": {
+        "archetypes": [
+          "self_buff"
+        ]
+      }
     },
     "Trundle": {
-      "W": []
+      "W": {
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "zone"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_buff"
+        ]
+      }
     },
     "Tryndamere": {
-      "E": [
-        "dash"
-      ],
-      "R": [
-        "untargetable"
-      ]
+      "W": {
+        "archetypes": [
+          "soft_cc"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "dash",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "untargetable"
+        ]
+      }
     },
     "TwistedFate": {
-      "Q": [
-        "poke"
-      ],
-      "R": [
-        "dash",
-        "global"
-      ]
+      "Q": {
+        "archetypes": [
+          "poke"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "dash",
+          "global"
+        ]
+      }
+    },
+    "Udyr": {
+      "W": {
+        "archetypes": [
+          "self_shield",
+          "self_heal"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ]
+      }
     },
     "Urgot": {
-      "E": [
-        "self_shield",
-        "dash"
-      ]
+      "W": {
+        "archetypes": [
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_shield",
+          "dash",
+          "engage",
+          "hard_cc"
+        ]
+      }
     },
     "Varus": {
-      "E": [
-        "poke"
-      ]
+      "Q": {
+        "archetypes": [
+          "poke"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ]
+      }
     },
     "Vayne": {
-      "Q": [
-        "dash"
-      ]
+      "Q": {
+        "archetypes": [
+          "self_buff",
+          "dash"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "self_buff"
+        ]
+      }
     },
-    "Vi": {
-      "R": [
-        "dash",
-        "engage",
-        "hard_cc"
-      ]
+    "Veigar": {
+      "Q": {
+        "archetypes": [
+          "poke"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "hard_cc",
+          "zone"
+        ]
+      }
+    },
+    "Velkoz": {
+      "W": {
+        "archetypes": [
+          "poke"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      }
+    },
+    "Viego": {
+      "Q": {
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "self_buff",
+          "zone",
+          "stealth"
+        ]
+      }
     },
     "Vladimir": {
-      "W": [
-        "untargetable",
-        "self_heal"
-      ]
+      "W": {
+        "archetypes": [
+          "self_heal",
+          "soft_cc",
+          "zone",
+          "untargetable"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_heal",
+          "damage",
+          "zone"
+        ]
+      }
+    },
+    "Warwick": {
+      "R": {
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ]
+      }
     },
     "Xayah": {
-      "W": []
+      "W": {
+        "archetypes": [
+          "self_buff"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "dash",
+          "damage",
+          "untargetable"
+        ]
+      }
     },
     "Xerath": {
-      "Q": [
-        "poke"
-      ],
-      "R": [
-        "poke"
-      ]
+      "Q": {
+        "archetypes": [
+          "poke"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "poke"
+        ]
+      }
     },
     "XinZhao": {
-      "E": [
-        "dash"
-      ]
+      "Q": {
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ]
+      }
+    },
+    "Yasuo": {
+      "W": {
+        "archetypes": [
+          "zone"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ]
+      }
     },
     "Yone": {
       "E": {
         "rangeClass": "self"
       }
     },
+    "Yorick": {
+      "E": {
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_buff",
+          "summon"
+        ]
+      }
+    },
+    "Yunara": {
+      "Q": {
+        "archetypes": [
+          "self_buff"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "self_buff"
+        ]
+      }
+    },
     "Yuumi": {
-      "Q": [
-        "poke"
-      ],
-      "W": [
-        "dash",
-        "untargetable"
-      ],
-      "E": [
-        "ally_shield",
-        "self_shield"
-      ],
-      "R": [
-        "ally_heal"
-      ]
+      "Q": {
+        "archetypes": [
+          "ally_buff",
+          "soft_cc",
+          "poke"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "ally_buff",
+          "dash",
+          "untargetable"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "ally_shield",
+          "self_shield",
+          "ally_buff",
+          "self_buff"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "ally_heal",
+          "damage"
+        ]
+      }
     },
     "Zaahen": {
       "Q": {
@@ -727,25 +2002,107 @@
       }
     },
     "Zac": {
-      "Q": [
-        "hard_cc"
-      ],
-      "E": [
-        "dash"
-      ]
+      "Q": {
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "dash"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ]
+      }
     },
     "Zeri": {
       "E": {
+        "archetypes": [
+          "dash"
+        ],
         "rangeClass": "short"
       }
     },
+    "Ziggs": {
+      "W": {
+        "archetypes": [
+          "dash",
+          "hard_cc",
+          "damage"
+        ]
+      }
+    },
     "Zilean": {
-      "R": [
-        "untargetable"
-      ]
+      "W": {
+        "archetypes": [
+          "self_buff"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "ally_buff",
+          "soft_cc"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "untargetable"
+        ]
+      }
+    },
+    "Zoe": {
+      "W": {
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ]
+      }
     },
     "Zyra": {
-      "W": []
+      "Q": {
+        "archetypes": [
+          "damage",
+          "summon"
+        ]
+      },
+      "W": {
+        "archetypes": [
+          "summon"
+        ]
+      },
+      "E": {
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "summon"
+        ]
+      },
+      "R": {
+        "archetypes": [
+          "hard_cc",
+          "damage",
+          "zone",
+          "summon"
+        ]
+      }
+    }
+  },
+  "noEffect": {
+    "Aphelios": {
+      "E": "Placeholder slot: the kit text says Aphelios has no third ability; the slot only shows the next weapon in the queue."
+    },
+    "Leblanc": {
+      "R": "Mimic recasts one of her other basic abilities; it has no effect of its own, so it carries no type."
+    },
+    "Sylas": {
+      "R": "Hijack steals an enemy ultimate and casts it as that spell; it has no effect of its own, so it carries no type."
     }
   }
 }

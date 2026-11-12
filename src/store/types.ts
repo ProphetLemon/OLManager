@@ -1,4 +1,4 @@
-import type { FounderOverrides } from "@/lib/customTeam/founders";
+import type { FounderOverrides, FounderPhotos } from "@/lib/customTeam/founders";
 
 export interface TeamColors {
   primary: string;
@@ -753,6 +753,8 @@ export interface CustomTeamSpec {
   founding_seed?: number;
   /** Identity edits to the generated founders, per role. */
   founder_overrides?: FounderOverrides;
+  /** Profile photos of the generated founders, per role, from `prepare_custom_portrait`. */
+  founder_photos?: FounderPhotos;
 }
 
 export interface TeamSummary {
@@ -799,7 +801,7 @@ export interface LeagueData {
 export type SeasonPhase = "Preseason" | "InSeason" | "PostSeason";
 
 export type TransferWindowStatus = "Closed" | "Open" | "DeadlineDay";
-export type DayPhase = "Morning" | "ScrimBlock" | "ReviewBlock" | "TrainingBlock" | "Evening";
+export type DayPhase = "Morning" | "ScrimBlock";
 
 export interface TransferWindowContextData {
   status: TransferWindowStatus;

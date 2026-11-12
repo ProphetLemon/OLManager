@@ -17,6 +17,8 @@ export interface AppSettings {
   debug_tools_enabled: boolean;
   lol_hybrid_open_trade_confidence_high: number;
   lol_hybrid_disengage_confidence_low: number;
+  /** Linux only: how the webview renders, decided at the next start. */
+  linux_render_mode: "ask" | "accelerated" | "compatibility";
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -34,6 +36,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   debug_tools_enabled: false,
   lol_hybrid_open_trade_confidence_high: 0.6,
   lol_hybrid_disengage_confidence_low: 0.32,
+  linux_render_mode: "ask",
 };
 
 function isAndroidDevice(): boolean {

@@ -18,7 +18,7 @@ const SHORT_RUN_TICKS: u64 = 1200;
 pub(super) const ROLES: [&str; 5] = ["TOP", "JGL", "MID", "ADC", "SUP"];
 
 /// Inclusive `(min, max)` share of a team's total gold per role.
-const ROLE_SHARE_RANGE: [(&str, f64, f64); 5] = [
+pub(super) const ROLE_SHARE_RANGE: [(&str, f64, f64); 5] = [
     ("TOP", 0.20, 0.23),
     ("JGL", 0.17, 0.20),
     ("MID", 0.21, 0.24),
@@ -252,7 +252,7 @@ pub(super) fn batch_size(default: usize) -> usize {
 /// minutes, measured with every role income weight set to 1.0 (no role
 /// weighting, everything else as shipped). [PLACEHOLDER] regenerate it with
 /// the same setup if the base economy changes.
-const NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN: f64 = 14_536.0;
+const NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN: f64 = 15_564.0;
 
 /// The role income weights only redistribute gold between roles; they must not
 /// inflate the team total. Measured against the unweighted baseline above the
@@ -280,7 +280,7 @@ fn role_weights_keep_team_gold_at_the_unweighted_baseline() {
 /// same run gives Top 27%, Jungle 15%, Mid 32%, Bot 16%, Support 11%, outside
 /// four of the five bands, so the check still catches broken weights.
 /// [PLACEHOLDER] the full-match targets stay in `ROLE_SHARE_RANGE`.
-const EARLY_ROLE_SHARE_RANGE: [(&str, f64, f64); 5] = [
+pub(super) const EARLY_ROLE_SHARE_RANGE: [(&str, f64, f64); 5] = [
     ("TOP", 0.17, 0.24),
     ("JGL", 0.15, 0.21),
     ("MID", 0.19, 0.26),
@@ -363,4 +363,19 @@ fn print_economy_report() {
         wins(&strong_blue, "blue") + wins(&strong_red, "red"),
         strong_blue.len() + strong_red.len()
     );
+}
+
+/// Prints what the two default guards check: the mean team gold after 12
+/// minutes (copy it into `NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN` with every weight at
+/// 1.0) and each role's share of it.
+#[test]
+#[ignore = "measurement report; run with --ignored --nocapture"]
+fn print_early_economy_report() {
+    let outcomes = run_batch(0, 4, 0.0, 0.0, SHORT_RUN_TICKS);
+    let mean = outcomes.iter().map(|o| o.team_gold).sum::<f64>() / outcomes.len() as f64;
+    println!("team gold after 12 min: {mean:.1}");
+    let summary = summarize(&outcomes);
+    for role in ROLES {
+        println!("share {role}: {:.1}%", summary.role_share[role] * 100.0);
+    }
 }

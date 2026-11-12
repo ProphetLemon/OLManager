@@ -347,18 +347,22 @@ pub(super) const STRUCTURE_LAYOUT: [StructureSeed; 30] = [
     },
 ];
 
+/// Top lane. The map is symmetric about the diagonal that swaps the two bases,
+/// so node `n - 1 - k` is node `k` with x and y exchanged: red walks the same
+/// line as blue, the other way, and node k is as far from the red base as from
+/// the blue one. The corner is the one node on the diagonal.
 pub(super) const LANE_PATH_TOP_BLUE: [Vec2; 11] = [
     Vec2 { x: 0.108, y: 0.88 },
     Vec2 { x: 0.096, y: 0.76 },
     Vec2 { x: 0.091, y: 0.67 },
     Vec2 { x: 0.087, y: 0.56 },
-    Vec2 { x: 0.084, y: 0.43 },
     Vec2 { x: 0.082, y: 0.31 },
-    Vec2 { x: 0.104, y: 0.20 },
-    Vec2 { x: 0.182, y: 0.11 },
-    Vec2 { x: 0.266, y: 0.08 },
-    Vec2 { x: 0.516, y: 0.08 },
-    Vec2 { x: 0.89, y: 0.12 },
+    Vec2 { x: 0.14, y: 0.14 },
+    Vec2 { x: 0.31, y: 0.082 },
+    Vec2 { x: 0.56, y: 0.087 },
+    Vec2 { x: 0.67, y: 0.091 },
+    Vec2 { x: 0.76, y: 0.096 },
+    Vec2 { x: 0.88, y: 0.108 },
 ];
 
 pub(super) const LANE_PATH_MID_BLUE: [Vec2; 7] = [
@@ -371,6 +375,7 @@ pub(super) const LANE_PATH_MID_BLUE: [Vec2; 7] = [
     Vec2 { x: 0.89, y: 0.12 },
 ];
 
+/// Bottom lane, symmetric about the same diagonal as [`LANE_PATH_TOP_BLUE`].
 pub(super) const LANE_PATH_BOT_BLUE: [Vec2; 13] = [
     Vec2 { x: 0.12, y: 0.88 },
     Vec2 { x: 0.24, y: 0.89 },
@@ -378,11 +383,11 @@ pub(super) const LANE_PATH_BOT_BLUE: [Vec2; 13] = [
     Vec2 { x: 0.49, y: 0.907 },
     Vec2 { x: 0.62, y: 0.909 },
     Vec2 { x: 0.72, y: 0.912 },
-    Vec2 { x: 0.84, y: 0.86 },
-    Vec2 { x: 0.91, y: 0.80 },
-    Vec2 { x: 0.908, y: 0.65 },
-    Vec2 { x: 0.916, y: 0.57 },
-    Vec2 { x: 0.918, y: 0.48 },
-    Vec2 { x: 0.912, y: 0.35 },
-    Vec2 { x: 0.89, y: 0.12 },
+    Vec2 { x: 0.86, y: 0.86 },
+    Vec2 { x: 0.912, y: 0.72 },
+    Vec2 { x: 0.909, y: 0.62 },
+    Vec2 { x: 0.907, y: 0.49 },
+    Vec2 { x: 0.9, y: 0.36 },
+    Vec2 { x: 0.89, y: 0.24 },
+    Vec2 { x: 0.88, y: 0.12 },
 ];
