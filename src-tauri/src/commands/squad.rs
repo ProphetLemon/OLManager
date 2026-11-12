@@ -1247,10 +1247,8 @@ fn apply_manager_post_scrim_decision(
         .get_game(|g| g.clone())
         .ok_or("No active game session".to_string())?;
 
-    if game.day_phase != DayPhase::ReviewBlock && game.day_phase != DayPhase::ScrimBlock {
-        return Err(
-            "Post-scrim decisions are only available during ScrimBlock/ReviewBlock".to_string(),
-        );
+    if game.day_phase != DayPhase::ScrimBlock {
+        return Err("Post-scrim decisions are only available during ScrimBlock".to_string());
     }
 
     let decision = parse_post_scrim_decision(&decision)?;
@@ -1403,8 +1401,8 @@ pub fn delegate_scrim_decision(state: State<'_, StateManager>) -> Result<Game, S
         .get_game(|g| g.clone())
         .ok_or("No active game session".to_string())?;
 
-    if game.day_phase != DayPhase::ReviewBlock && game.day_phase != DayPhase::ScrimBlock {
-        return Err("Delegation is only available during ScrimBlock/ReviewBlock".to_string());
+    if game.day_phase != DayPhase::ScrimBlock {
+        return Err("Delegation is only available during ScrimBlock".to_string());
     }
 
     let manager_team_id = game
@@ -1541,10 +1539,8 @@ pub(crate) fn get_scrim_context_internal(
 
     let today_context = if let Some(report) = unresolved_report.clone() {
         // The backend blocks advancing in ScrimBlock while a report is unresolved, so the
-        // decision must be offered in ScrimBlock as well as ReviewBlock.
-        // The backend blocks advancing in ScrimBlock while a report is unresolved, so the
-        // decision must be offered in ScrimBlock as well as ReviewBlock.
-        let decision_phase_active = matches!(day_phase, "ScrimBlock" | "ReviewBlock");
+        // decision is offered there.
+        let decision_phase_active = day_phase == "ScrimBlock";
         let report_opponent_team_id = report.opponent_team_id.clone();
         TodayScrimContextResponse {
             state: "PlayedNeedsReview".to_string(),
