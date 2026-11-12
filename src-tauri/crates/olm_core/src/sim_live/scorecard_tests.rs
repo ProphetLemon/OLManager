@@ -1001,10 +1001,11 @@ fn debug_tower_deaths() {
                             .collect::<Vec<_>>()
                             .join(" ");
                         out.push(format!(
-                            "seed {seed} {} {} {} killed by {} at t{:.0} | allies {allies}\n    {}",
+                            "seed {seed} {} {} {} push {} killed by {} at t{:.0} | allies {allies}\n    {}",
                             c.team,
                             c.role,
                             c.state,
+                            c.push.is_some(),
                             rt.structures[shot.structure_idx].id,
                             rt.time_sec,
                             history[ci].iter().cloned().collect::<Vec<_>>().join("\n    ")
@@ -1019,6 +1020,10 @@ fn debug_tower_deaths() {
         println!("{line}");
     }
     println!("tower deaths: {}", reports.iter().map(Vec::len).sum::<usize>());
+    println!(
+        "tower deaths while the champion had a push order: {}",
+        reports.iter().flatten().filter(|line| line.contains(" push true ")).count()
+    );
 }
 
 /// Prints a timeline of one 80 vs 60 match (`SCORECARD_SEED`, default 20005): every 120 s the

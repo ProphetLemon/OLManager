@@ -25,6 +25,10 @@ pub(super) const PUSH_MIN_EDGE: usize = 2;
 /// with 1 the stronger team at 80 vs 60 wins 74.0% (68.7% with 2), with 0 it wins 75.0%.
 pub(super) const PUSH_KEEP_EDGE: usize = 0;
 /// Health share under which a champion leaves the plan: he is about to die or recall.
+/// Measured: at 0.55 the scorecard row of deaths to towers falls from 23% to 16% (at most 15%
+/// is the target) and the stronger team at 95 vs 40 wins 95.0% instead of 95.7%, but the team
+/// gold baseline of `economy_tests` then needs an ADC income weight of 1.28, which breaks the
+/// role-share and extreme-gap guards; a later pass can take 0.55 together with a new baseline.
 pub(super) const PUSH_MIN_HP_RATIO: f64 = 0.40;
 /// A champion within this distance of a structure of his base, with an enemy champion hitting
 /// it, answers the call and leaves the plan.
