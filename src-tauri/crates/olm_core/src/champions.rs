@@ -94,7 +94,6 @@ pub struct ChampionPatchState {
     pub rng_seed: u64,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct ChampionCatalogRoot {
     data: ChampionCatalogData,
@@ -209,13 +208,36 @@ fn mastery_signal_for_player(game: &Game, player_id: &str) -> f64 {
         .filter(|entry| entry.player_id == player_id)
         .map(|entry| entry.mastery)
         .collect();
-    if values.is_empty() {
+    values.sort_by_key(|value| std::cmp::Reverse(*value));
+    mastery_signal_from_top(&values[..values.len().min(3)])
+}
+
+/// The mastery signal from a player's highest masteries (at most three, descending).
+fn mastery_signal_from_top(top: &[u8]) -> f64 {
+    if top.is_empty() {
         return 0.0;
     }
-    values.sort_by_key(|value| std::cmp::Reverse(*value));
-    let top = values.into_iter().take(3).collect::<Vec<_>>();
     let avg = top.iter().map(|value| f64::from(*value)).sum::<f64>() / top.len() as f64;
     (avg - 60.0).max(0.0)
+}
+
+/// Every player's three highest masteries (descending) in one pass over the table,
+/// instead of one scan of the whole table per player.
+fn top_masteries_by_player(game: &Game) -> HashMap<&str, ([u8; 3], usize)> {
+    let mut by_player: HashMap<&str, ([u8; 3], usize)> = HashMap::new();
+    for entry in &game.champion_masteries {
+        let (top, len) = by_player.entry(entry.player_id.as_str()).or_default();
+        if *len < 3 {
+            top[*len] = entry.mastery;
+            *len += 1;
+        } else if entry.mastery > top[2] {
+            top[2] = entry.mastery;
+        } else {
+            continue;
+        }
+        top[..*len].sort_unstable_by_key(|value| std::cmp::Reverse(*value));
+    }
+    by_player
 }
 
 const SOLOQ_POINTS_BASELINE: f64 = 3000.0;
@@ -272,7 +294,13 @@ fn soloq_grind_quality(game: &Game, player: &crate::domain::player::Player) -> f
         .team_id
         .as_deref()
         .and_then(|team_id| game.teams.iter().find(|team| team.id == team_id));
+    soloq_grind_quality_with_team(player, team)
+}
 
+fn soloq_grind_quality_with_team(
+    player: &crate::domain::player::Player,
+    team: Option<&crate::domain::team::Team>,
+) -> f64 {
     let focus = player
         .training_focus
         .clone()
@@ -294,20 +322,72 @@ fn soloq_grind_quality(game: &Game, player: &crate::domain::player::Player) -> f
 /// time, and a small daily drift keeps the number alive. Clamped so neglect
 /// can't sink a player far below their skill and the grind can't run away.
 fn soloq_points_at(game: &Game, player: &crate::domain::player::Player, day_index: i64) -> f64 {
+    soloq_points_from(
+        player,
+        mastery_signal_for_player(game, &player.id),
+        soloq_grind_quality(game, player),
+        day_index,
+    )
+}
+
+/// [`soloq_points_at`] with the two game-wide lookups (mastery signal, grind quality)
+/// already resolved, so callers that rate every player can resolve them in bulk.
+fn soloq_points_from(
+    player: &crate::domain::player::Player,
+    mastery_signal: f64,
+    grind_quality: f64,
+    day_index: i64,
+) -> f64 {
     let ovr = f64::from(crate::potential::calculate_lol_ovr(player));
-    let mastery_signal = mastery_signal_for_player(game, &player.id);
     let id_jitter = f64::from(hash_text(&player.id) % 121) - 60.0;
 
     let skill_base = 3520.0 + (ovr - 76.0) * 52.0 + mastery_signal * 4.0 + id_jitter;
     let skill_floor = skill_base - SOLOQ_SKILL_FLOOR_DROP;
 
-    let grind_quality = soloq_grind_quality(game, player);
     let ramp = (day_index.max(0) as f64 / SOLOQ_TRAINING_RAMP_DAYS).min(1.0);
     let training_mod = (grind_quality - 1.0) * SOLOQ_TRAINING_SWING * ramp;
 
     let drift = (pseudo_random(&format!("{}:{}", player.id, day_index)) * 90.0 - 45.0).round();
 
     (skill_base + training_mod + drift).clamp(skill_floor, SOLOQ_POINTS_MAX)
+}
+
+/// Recomputes every player's cached `soloq_lp` for the current day. One pass over the
+/// mastery table and a team index replace a per-player table scan, team scan and
+/// player lookup, so the cost is linear in players.
+fn refresh_soloq_lp(game: &mut Game) {
+    let day_index = days_between(game.clock.start_date, game.clock.current_date);
+    let top_masteries = top_masteries_by_player(game);
+    let mut teams_by_id: HashMap<&str, &crate::domain::team::Team> =
+        HashMap::with_capacity(game.teams.len());
+    for team in &game.teams {
+        // `find` semantics: the first team with an id wins.
+        teams_by_id.entry(team.id.as_str()).or_insert(team);
+    }
+
+    let lps: Vec<f64> = game
+        .players
+        .iter()
+        .map(|player| {
+            let mastery_signal = top_masteries
+                .get(player.id.as_str())
+                .map_or(0.0, |(top, len)| mastery_signal_from_top(&top[..*len]));
+            let team = player
+                .team_id
+                .as_deref()
+                .and_then(|team_id| teams_by_id.get(team_id).copied());
+            let points = soloq_points_from(
+                player,
+                mastery_signal,
+                soloq_grind_quality_with_team(player, team),
+                day_index,
+            );
+            (points - SOLOQ_POINTS_BASELINE).max(0.0)
+        })
+        .collect();
+    for (player, lp) in game.players.iter_mut().zip(lps) {
+        player.soloq_lp = lp;
+    }
 }
 
 fn soloq_points_for_player(game: &Game, player: &crate::domain::player::Player) -> f64 {
@@ -901,26 +981,18 @@ fn seed_initial_discovery(game: &mut Game) {
 }
 
 pub fn bootstrap_champion_state(game: &mut Game) {
-    bootstrap_seed_masteries(game);
-    ensure_initial_patch_state(game);
-    seed_initial_discovery(game);
+    seed_champion_state(game);
 
     // Populate soloq_lp for all players so the frontend reads instant data
     // even on initial game load (not only after the first day advance).
-    let day_index = days_between(game.clock.start_date, game.clock.current_date);
-    let player_ids: Vec<String> = game.players.iter().map(|p| p.id.clone()).collect();
-    for player_id in &player_ids {
-        let idx = game
-            .players
-            .iter()
-            .position(|p| &p.id == player_id)
-            .unwrap();
-        let lp = {
-            let player = &game.players[idx];
-            (soloq_points_at(game, player, day_index) - SOLOQ_POINTS_BASELINE).max(0.0)
-        };
-        game.players[idx].soloq_lp = lp;
-    }
+    refresh_soloq_lp(game);
+}
+
+/// The seeding half of [`bootstrap_champion_state`]: masteries, patch and discovery.
+fn seed_champion_state(game: &mut Game) {
+    bootstrap_seed_masteries(game);
+    ensure_initial_patch_state(game);
+    seed_initial_discovery(game);
 }
 
 pub fn set_player_training_target(
@@ -1733,25 +1805,12 @@ fn process_meta_discovery(game: &mut Game) {
 }
 
 pub fn process_daily_champion_system(game: &mut Game) {
-    bootstrap_champion_state(game);
+    seed_champion_state(game);
     apply_mastery_decay(game);
 
     // Cache SoloQ LP in each player so the frontend can read it synchronously
     // from gameState.players instead of issuing a separate IPC invoke.
-    let day_index = days_between(game.clock.start_date, game.clock.current_date);
-    let player_ids: Vec<String> = game.players.iter().map(|p| p.id.clone()).collect();
-    for player_id in &player_ids {
-        let idx = game
-            .players
-            .iter()
-            .position(|p| &p.id == player_id)
-            .unwrap();
-        let lp = {
-            let player = &game.players[idx];
-            (soloq_points_at(game, player, day_index) - SOLOQ_POINTS_BASELINE).max(0.0)
-        };
-        game.players[idx].soloq_lp = lp;
-    }
+    refresh_soloq_lp(game);
 
     if should_roll_patch(game, &game.champion_patch) {
         apply_patch(game);
@@ -2241,10 +2300,7 @@ mod tests {
         let tiers = new_game_tiers();
         // The old seeding ranked every pair at once, so these totals did not depend on the seed.
         let count = |tier: &str| tiers.values().filter(|t| *t == tier).count();
-        assert_eq!(
-            ["S", "A", "B", "C", "D"].map(count),
-            [24, 44, 61, 44, 29]
-        );
+        assert_eq!(["S", "A", "B", "C", "D"].map(count), [24, 44, 61, 44, 29]);
     }
 
     #[test]
@@ -2336,7 +2392,10 @@ mod tests {
             for patch in 1..=26 {
                 roll_one_patch(&mut game);
                 let current = tier_list(&game);
-                assert_ne!(current, previous, "seed {seed}: patch {patch} changed nothing");
+                assert_ne!(
+                    current, previous,
+                    "seed {seed}: patch {patch} changed nothing"
+                );
                 previous = current;
                 worst = worst.min(rank_correlation_with_anchors(&game));
             }
@@ -2375,8 +2434,15 @@ mod tests {
         }
         println!("old save correlation after 0, 3, 6, 12 patches: {checkpoints:.3?}");
         assert!(checkpoints[0].abs() < 0.2, "start {:.3}", checkpoints[0]);
-        assert!(checkpoints.windows(2).all(|w| w[1] > w[0]), "{checkpoints:?}");
-        assert!(checkpoints[3] > 0.8, "after 12 patches {:.3}", checkpoints[3]);
+        assert!(
+            checkpoints.windows(2).all(|w| w[1] > w[0]),
+            "{checkpoints:?}"
+        );
+        assert!(
+            checkpoints[3] > 0.8,
+            "after 12 patches {:.3}",
+            checkpoints[3]
+        );
     }
 
     #[test]
@@ -2389,3 +2455,6 @@ mod tests {
         assert_eq!(state.rng_seed, 0);
     }
 }
+
+#[cfg(test)]
+mod soloq_equivalence_tests;
