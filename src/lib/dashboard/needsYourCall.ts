@@ -133,12 +133,15 @@ const GENERIC_CONSEQUENCE = "Review this before moving on.";
 const ALERT_ALIASES: Record<string, string> = {
   urgent: "urgent_messages",
   match_lineup: "incomplete_lineup",
+  // On the first scrim day the hard setup blocker says the same thing.
+  scrim_week_open: "scrim_setup_required",
 };
 
 const ALERT_ACTIONS: Record<string, string> = {
   incomplete_lineup: ACTIONS.fixLineup,
   match_lineup: ACTIONS.fixLineup,
   urgent: ACTIONS.openInbox,
+  scrim_week_open: ACTIONS.openScrims,
   finance_crisis: ACTIONS.openFinances,
   finance_runway: ACTIONS.openFinances,
   wage_pressure: ACTIONS.openFinances,

@@ -13,6 +13,7 @@ import {
   buildActiveLineupIds,
   LOL_ACTIVE_ROLES,
 } from "@/lib/squad/helpers";
+import { getScrimWeekOpenAlert } from "@/lib/scrims/scrimWeekNotice";
 
 export interface DashboardAlert {
   id: string;
@@ -137,6 +138,7 @@ export function getDashboardAlerts(
   gameState: GameStateData,
   hasMatchToday: boolean,
   t: DashboardAlertTranslator,
+  options: { assistantResolvesScrims?: boolean } = {},
 ): DashboardAlert[] {
   const alerts: DashboardAlert[] = [];
   const myTeam = gameState.teams.find(
@@ -263,6 +265,10 @@ export function getDashboardAlerts(
       severity: "warn",
     });
   }
+
+  // Non-blocking: the Assistant Coach plans the week itself, so it has nothing to tell then.
+  const scrimWeekOpen = options.assistantResolvesScrims ? null : getScrimWeekOpenAlert(gameState, t);
+  if (scrimWeekOpen) alerts.push(scrimWeekOpen);
 
   return alerts;
 }
