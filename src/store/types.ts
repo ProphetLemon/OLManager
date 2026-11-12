@@ -799,7 +799,7 @@ export interface LeagueData {
 export type SeasonPhase = "Preseason" | "InSeason" | "PostSeason";
 
 export type TransferWindowStatus = "Closed" | "Open" | "DeadlineDay";
-export type DayPhase = "Morning" | "ScrimBlock" | "ReviewBlock" | "TrainingBlock" | "Evening";
+export type DayPhase = "Morning" | "ScrimBlock";
 
 export interface TransferWindowContextData {
   status: TransferWindowStatus;

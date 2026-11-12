@@ -75,9 +75,6 @@ export function DashboardHeaderV2({
   const phaseLabels: Record<string, string> = {
     Morning: t("onAir.bar.phase.morning", { defaultValue: "Morning" }),
     ScrimBlock: t("onAir.bar.phase.scrimBlock", { defaultValue: "Scrims" }),
-    ReviewBlock: t("onAir.bar.phase.reviewBlock", { defaultValue: "Review" }),
-    TrainingBlock: t("onAir.bar.phase.trainingBlock", { defaultValue: "Training" }),
-    Evening: t("onAir.bar.phase.evening", { defaultValue: "Evening" }),
   };
   const phase = dayPhase ? { key: dayPhase, label: phaseLabels[dayPhase] ?? dayPhase } : undefined;
 

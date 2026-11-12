@@ -7,7 +7,9 @@ use olm_core::game::{DayPhase, Game};
 use olm_core::live_match_manager::{self, MatchMode};
 use olm_core::state::StateManager;
 
-use super::advance_blockers::{advance_block, scheduled_user_fixture_index, AdvanceBlock};
+use super::advance_blockers::{
+    advance_block, scheduled_user_fixture_index, user_played_scrims_today, AdvanceBlock,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AdvanceTimeWithModeResponse {
@@ -178,7 +180,7 @@ pub fn advance_time_with_mode(
             })
         }
         _ => {
-            if user_fixture_idx.is_none() && game.day_phase != DayPhase::Evening {
+            if user_fixture_idx.is_none() {
                 if let Some(block) = advance_block(&game, mode) {
                     state.set_game(game.clone());
                     return Ok(blocked_response(block, &game));
@@ -186,18 +188,21 @@ pub fn advance_time_with_mode(
                 if game.day_phase == DayPhase::Morning {
                     let weekday_num = game.clock.current_date.weekday().num_days_from_monday();
                     olm_core::training::process_scrim_block(&mut game, weekday_num);
+                    // A day on which the user's club played scrims stops here so the result
+                    // can be seen and decided; any other day is processed in this same advance.
+                    if user_played_scrims_today(&game) {
+                        game.day_phase = DayPhase::ScrimBlock;
+                        state.set_game(game.clone());
+                        return Ok(AdvanceTimeWithModeResponse {
+                            action: "phase_advanced".to_string(),
+                            game: Some(crate::client_game::game_for_client(&game)),
+                            snapshot: None,
+                            fixture_index: None,
+                            mode: None,
+                            round_summary: None,
+                        });
+                    }
                 }
-
-                game.day_phase = game.day_phase.next();
-                state.set_game(game.clone());
-                return Ok(AdvanceTimeWithModeResponse {
-                    action: "phase_advanced".to_string(),
-                    game: Some(crate::client_game::game_for_client(&game)),
-                    snapshot: None,
-                    fixture_index: None,
-                    mode: None,
-                    round_summary: None,
-                });
             }
 
             info!(

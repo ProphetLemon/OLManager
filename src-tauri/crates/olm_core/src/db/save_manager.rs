@@ -727,6 +727,18 @@ mod tests {
     }
 
     #[test]
+    fn a_save_stored_in_a_removed_day_phase_loads_in_the_scrim_phase() {
+        for id in ["ReviewBlock", "TrainingBlock", "Evening"] {
+            let mut value = serde_json::to_value(sample_game()).unwrap();
+            value["day_phase"] = serde_json::json!(id);
+
+            let loaded: Game = serde_json::from_value(value).unwrap();
+
+            assert_eq!(loaded.day_phase, crate::game::DayPhase::ScrimBlock, "{id}");
+        }
+    }
+
+    #[test]
     fn old_save_without_ladder_field_deserializes() {
         let mut value = serde_json::to_value(sample_game()).unwrap();
         value.as_object_mut().unwrap().remove("ladder");

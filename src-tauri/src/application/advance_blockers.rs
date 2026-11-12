@@ -77,6 +77,12 @@ fn user_team(game: &Game) -> Option<&Team> {
     game.teams.iter().find(|team| &team.id == team_id)
 }
 
+/// Whether the user's club has a scrim report dated today: the scrims were played.
+pub fn user_played_scrims_today(game: &Game) -> bool {
+    let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+    user_team(game).is_some_and(|team| team.scrim_reports.iter().any(|report| report.date == today))
+}
+
 fn has_unresolved_scrim_review_today(game: &Game) -> bool {
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
     user_team(game).is_some_and(|team| {
@@ -186,12 +192,12 @@ fn has_no_weekly_scrim_setup(game: &Game) -> bool {
 /// Only the normal-advance branch can block: a user match today routes to the
 /// live, spectator or delegate branches, and an evening advance always plays
 /// the day. The weekly setup is required in every week except the club's
-/// bye week (see [`user_club_rests_this_week`]). The scrim decision is checked in `ScrimBlock` only: resolving the
-/// scrims in `Morning` does not change the phase, so the decision it creates
-/// is raised by the following advance.
+/// bye week (see [`user_club_rests_this_week`]). The scrim decision is checked in `ScrimBlock` only: a `Morning`
+/// advance that plays the day's scrims moves the game to `ScrimBlock`, so the decision they create is raised by
+/// the following advance.
 pub fn advance_block(game: &Game, mode: &str) -> Option<AdvanceBlock> {
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
-    if scheduled_user_fixture_index(game, &today).is_some() || game.day_phase == DayPhase::Evening {
+    if scheduled_user_fixture_index(game, &today).is_some() {
         return None;
     }
     if mode != "delegate" && has_no_weekly_scrim_setup(game) {

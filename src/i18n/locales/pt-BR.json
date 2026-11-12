@@ -301,10 +301,7 @@
     "save": "Salvar",
     "phaseLabels": {
       "morning": "Manhã",
-      "scrimBlock": "Scrims",
-      "reviewBlock": "Revisão",
-      "trainingBlock": "Treino",
-      "evening": "Noite"
+      "scrimBlock": "Scrims"
     }
   },
   "champions": {
@@ -534,30 +531,15 @@
       "viewAll": "View All"
     },
     "phase": {
-      "evening": {
-        "title": "Evening",
-        "description": "Evening block",
-        "actionLabel": "View Details"
-      },
       "morning": {
         "title": "Morning",
         "description": "Morning block",
         "actionLabel": "View Details"
       },
-      "reviewBlock": {
-        "title": "Review",
-        "description": "Review block",
-        "actionLabel": "Review Now"
-      },
       "scrimBlock": {
         "title": "Scrims",
         "description": "Scrim block",
         "actionLabel": "Start Scrims"
-      },
-      "trainingBlock": {
-        "title": "Training",
-        "description": "Training block",
-        "actionLabel": "Start Training"
       }
     },
     "view": "View",
@@ -4261,10 +4243,7 @@
     "bar": {
       "phase": {
         "morning": "Manhã",
-        "scrimBlock": "Scrims",
-        "reviewBlock": "Análise",
-        "trainingBlock": "Treino",
-        "evening": "Noite"
+        "scrimBlock": "Scrims"
       },
       "save": "Salvar",
       "saved": "Salvo",

@@ -136,7 +136,7 @@ export default function ScrimsTab({
   const [decisionFeedback, setDecisionFeedback] = useState<string | null>(null);
   const [showCancelFollowups, setShowCancelFollowups] = useState(false);
   const dayPhase = gameState.day_phase ?? "Morning";
-  const reviewPhaseActive = dayPhase === "ScrimBlock" || dayPhase === "ReviewBlock";
+  const reviewPhaseActive = dayPhase === "ScrimBlock";
   const remoteScrimContext = useScrimContextWithFallback(gameState);
   const myTeam = gameState.teams.find(
     (team) => team.id === gameState.manager.team_id,
