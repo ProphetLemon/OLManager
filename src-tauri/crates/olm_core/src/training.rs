@@ -873,9 +873,7 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
         })
         .map(|player| player.id.clone())
         .collect();
-    for player_id in rival_player_ids {
-        crate::champions::ensure_training_targets_from_mastery(game, &player_id);
-    }
+    crate::champions::ensure_training_targets_for_players(game, &rival_player_ids);
 
     let current_year = u32::try_from(game.clock.current_date.year()).unwrap_or(0);
 

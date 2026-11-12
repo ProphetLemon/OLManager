@@ -1131,35 +1131,83 @@ pub fn training_targets_for_player(player: &crate::domain::player::Player) -> Ve
 }
 
 pub fn ensure_training_targets_from_mastery(game: &mut Game, player_id: &str) {
-    let has_existing_targets = game
-        .players
-        .iter()
-        .find(|candidate| candidate.id == player_id)
-        .is_some_and(|player| !training_targets_for_player(player).is_empty());
-    if has_existing_targets {
+    ensure_training_targets_for_players(game, &[player_id.to_string()]);
+}
+
+/// [`ensure_training_targets_from_mastery`] for many players, with the player and mastery
+/// lookups built once instead of one scan of each table per player.
+///
+/// The picks only read the champion patch, the mastery table and the player's own
+/// targets, and the only thing written is that player's targets, so choosing every
+/// target first and writing afterwards gives what calling the single-player form in
+/// order gave.
+pub fn ensure_training_targets_for_players(game: &mut Game, player_ids: &[String]) {
+    if player_ids.is_empty() {
         return;
     }
 
-    let role = game
-        .players
-        .iter()
-        .find(|candidate| candidate.id == player_id)
-        .map(|player| match player.natural_position {
-            crate::domain::player::LolRole::Top => "Top",
-            crate::domain::player::LolRole::Jungle => "Jungle",
-            crate::domain::player::LolRole::Mid => "Mid",
-            crate::domain::player::LolRole::Adc => "ADC",
-            crate::domain::player::LolRole::Support => "Support",
-            crate::domain::player::LolRole::Unknown => "Unknown",
-        })
-        .unwrap_or("Unknown");
+    let updates: Vec<(usize, Vec<String>)> = {
+        let mut player_at: HashMap<&str, usize> = HashMap::with_capacity(game.players.len());
+        for (position, player) in game.players.iter().enumerate() {
+            player_at.entry(player.id.as_str()).or_insert(position);
+        }
+        let mut masteries_of: HashMap<&str, Vec<&ChampionMasteryEntry>> = HashMap::new();
+        for entry in &game.champion_masteries {
+            masteries_of
+                .entry(entry.player_id.as_str())
+                .or_default()
+                .push(entry);
+        }
+        let discovered: HashSet<String> = game
+            .champion_patch
+            .discovered_champion_ids
+            .iter()
+            .map(|id| normalize_key(id))
+            .collect();
 
-    let discovered: HashSet<String> = game
-        .champion_patch
-        .discovered_champion_ids
-        .iter()
-        .map(|id| normalize_key(id))
-        .collect();
+        player_ids
+            .iter()
+            .filter_map(|player_id| {
+                let position = *player_at.get(player_id.as_str())?;
+                let player = &game.players[position];
+                if !training_targets_for_player(player).is_empty() {
+                    return None;
+                }
+                let masteries = masteries_of
+                    .get(player_id.as_str())
+                    .map_or(&[][..], Vec::as_slice);
+                let selected = pick_training_targets(game, player, &discovered, masteries);
+                (!selected.is_empty()).then_some((position, selected))
+            })
+            .collect()
+    };
+
+    for (position, selected) in updates {
+        let targets = &mut game.players[position].champion_training_targets;
+        targets.clear();
+        targets.extend(selected);
+        targets.truncate(3);
+        targets.resize(3, String::new());
+    }
+}
+
+/// Up to three training targets for `player`: the champions of the current meta in the
+/// player's role that need the most mastery, then the player's best masteries.
+/// `masteries` are the player's own entries, in table order.
+fn pick_training_targets(
+    game: &Game,
+    player: &crate::domain::player::Player,
+    discovered: &HashSet<String>,
+    masteries: &[&ChampionMasteryEntry],
+) -> Vec<String> {
+    let role = match player.natural_position {
+        crate::domain::player::LolRole::Top => "Top",
+        crate::domain::player::LolRole::Jungle => "Jungle",
+        crate::domain::player::LolRole::Mid => "Mid",
+        crate::domain::player::LolRole::Adc => "ADC",
+        crate::domain::player::LolRole::Support => "Support",
+        crate::domain::player::LolRole::Unknown => "Unknown",
+    };
 
     let tier_score = |tier: &str| -> i32 {
         match tier.to_uppercase().as_str() {
@@ -1172,10 +1220,8 @@ pub fn ensure_training_targets_from_mastery(game: &mut Game, player_id: &str) {
         }
     };
 
-    let mastery_map: HashMap<String, u8> = game
-        .champion_masteries
+    let mastery_map: HashMap<String, u8> = masteries
         .iter()
-        .filter(|entry| entry.player_id == player_id)
         .map(|entry| (normalize_key(&entry.champion_id), entry.mastery))
         .collect();
 
@@ -1218,10 +1264,8 @@ pub fn ensure_training_targets_from_mastery(game: &mut Game, player_id: &str) {
     }
 
     if selected.len() < 3 {
-        let mut ranked_masteries: Vec<(String, u8)> = game
-            .champion_masteries
+        let mut ranked_masteries: Vec<(String, u8)> = masteries
             .iter()
-            .filter(|entry| entry.player_id == player_id)
             .map(|entry| (entry.champion_id.clone(), entry.mastery))
             .collect();
         ranked_masteries.sort_by_key(|entry| std::cmp::Reverse(entry.1));
@@ -1238,20 +1282,7 @@ pub fn ensure_training_targets_from_mastery(game: &mut Game, player_id: &str) {
         }
     }
 
-    if selected.is_empty() {
-        return;
-    }
-
-    if let Some(player) = game
-        .players
-        .iter_mut()
-        .find(|candidate| candidate.id == player_id)
-    {
-        player.champion_training_targets.clear();
-        player.champion_training_targets.extend(selected);
-        player.champion_training_targets.truncate(3);
-        player.champion_training_targets.resize(3, String::new());
-    }
+    selected
 }
 
 pub fn delegate_champion_training_to_coach(game: &mut Game) -> Result<usize, String> {
