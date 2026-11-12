@@ -973,7 +973,7 @@
     "fitness": "Fitness",
     "action": "Action",
     "backToMenu": "Back to Menu",
-    "create": "Create",
+    "create": "Erstellen",
     "loanListed": "CD",
     "nextPage": "Next",
     "previousPage": "Previous",
@@ -1317,8 +1317,8 @@
         "3": "Makro-Lab",
         "4": "Reset-Block"
       },
-      "groupNamePlaceholder": "Group name...",
-      "newGroup": "New Group"
+      "groupNamePlaceholder": "Gruppenname...",
+      "newGroup": "Neue Gruppe"
     },
     "scrims": {
       "title": "Wöchentliche Scrims",

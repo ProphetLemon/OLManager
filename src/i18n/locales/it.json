@@ -809,7 +809,7 @@
     "fitness": "Fitness",
     "action": "Action",
     "backToMenu": "Back to Menu",
-    "create": "Create",
+    "create": "Crea",
     "loanListed": "CD",
     "nextPage": "Next",
     "previousPage": "Previous",
@@ -1153,8 +1153,8 @@
         "3": "Lab macro",
         "4": "Blocco reset"
       },
-      "groupNamePlaceholder": "Group name...",
-      "newGroup": "New Group"
+      "groupNamePlaceholder": "Nome del gruppo...",
+      "newGroup": "Nuovo gruppo"
     },
     "scrims": {
       "title": "Scrim settimanali",

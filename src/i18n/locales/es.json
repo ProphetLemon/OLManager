@@ -1027,7 +1027,7 @@
     "potential": "Potencial",
     "growth": "Crecimiento",
     "traits": "Rasgos",
-    "condition": "Energia",
+    "condition": "Energía",
     "potWorldClass": "Clase Mundial",
     "potExcellent": "Excelente",
     "potPromising": "Prometedor",
@@ -1098,7 +1098,7 @@
     "ovr": "OVR",
     "year": "Año",
     "per_year_with_slash": "/año",
-    "condition": "Energia",
+    "condition": "Energía",
     "fitness": "Estado Físico",
     "morale": "Moral",
     "potential": "Potencial",
@@ -1203,7 +1203,7 @@
     },
     "action": "Action",
     "backToMenu": "Back to Menu",
-    "create": "Create",
+    "create": "Crear",
     "loanListed": "CD",
     "nextPage": "Next",
     "previousPage": "Previous",
@@ -1547,8 +1547,8 @@
         "3": "Laboratorio macro",
         "4": "Bloque reset"
       },
-      "groupNamePlaceholder": "Group name...",
-      "newGroup": "New Group"
+      "groupNamePlaceholder": "Nombre del grupo...",
+      "newGroup": "Nuevo grupo"
     },
     "scrims": {
       "title": "Scrims semanales",
@@ -2464,7 +2464,7 @@
     "scoutingPlayer": "Ojeando: <strong>{{name}}</strong> — {{days}}d restantes",
     "showingRange": "Mostrando {{from}}–{{to}} de {{total}}",
     "viewPlayer": "Ver",
-    "condition": "Energia",
+    "condition": "Energía",
     "morale": "Moral",
     "estimatedAttributes": "Atributos estimados",
     "undiscovered": "No descubierto",
