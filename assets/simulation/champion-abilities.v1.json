@@ -1,0 +1,8134 @@
+{
+  "schema": "olm.champion-abilities.v1",
+  "patch": "16.22.1",
+  "date": "2026-11-11",
+  "source": "assets/simulation/champion-kits.v1.json (Riot Games Data Dragon ability descriptions) plus scripts/game-data/ability-archetypes.curated.json",
+  "generator": "scripts/game-data/abilities.mjs",
+  "cooldownSec": "Cooldown in seconds at the middle rank of the kit's list (rank 3 of 5, rank 2 of 3); null when that cooldown is 0.",
+  "rangeClass": {
+    "rule": "Kit range at the middle rank, in game units; a map-wide text promotes it to global.",
+    "thresholds": {
+      "selfMax": 25,
+      "meleeMax": 350,
+      "shortMax": 700,
+      "mediumMax": 1200,
+      "globalMin": 10000
+    },
+    "classes": {
+      "self": "up to 25",
+      "melee": "up to 350",
+      "short": "up to 700",
+      "medium": "up to 1200",
+      "long": "below 10000",
+      "global": "10000 or more"
+    }
+  },
+  "pokeMinRange": 900,
+  "noEffect": "Abilities with an empty list fit none of the terms; each is listed with its reason under `noEffect` in the curated file.",
+  "origin": {
+    "rule": "the keyword rules alone produced the archetypes",
+    "curated": "scripts/game-data/ability-archetypes.curated.json set or corrected them"
+  },
+  "archetypes": {
+    "ally_shield": "Gives another allied champion a shield.",
+    "ally_heal": "Restores health to another allied champion.",
+    "self_shield": "Shields only the caster.",
+    "self_heal": "Heals only the caster (drains and sustain abilities included).",
+    "ally_buff": "Strengthens another allied champion without shielding or healing it (speed, damage, attack speed, resistances).",
+    "self_buff": "Strengthens the caster for a time or changes how it fights: attack speed, attack damage, range, resistances, movement speed, empowered next attack, stacking abilities, stance, weapon and form switches.",
+    "dash": "Moves the caster quickly over a short distance (dashes, leaps, blinks, shadow swaps).",
+    "engage": "A gap closer or long-range tool whose purpose is to start a fight on an enemy, with crowd control on arrival.",
+    "hard_cc": "Stops an enemy from acting: stun, root, knock-up or knock-back, suppression, charm, fear, taunt, sleep, polymorph.",
+    "soft_cc": "Hinders an enemy without stopping it: slow, silence, blind, disarm, ground, cripple, nearsight.",
+    "damage": "Damage kind: deals damage to enemies and is neither poke nor execute (the ordinary damaging ability, single target or area).",
+    "poke": "Damage kind: damage from well beyond attack range (900 or more) with no dash, engage or hard crowd control on the same ability.",
+    "execute": "Damage kind: damage that grows with the target's missing health, or kills below a threshold.",
+    "zone": "Leaves something on the ground that lasts and affects those who stay in it or cross it: damaging or slowing areas, traps, walls and terrain.",
+    "summon": "Creates a unit that fights or blocks on its own (pets, turrets, clones, plants).",
+    "stealth": "Invisibility or camouflage.",
+    "untargetable": "The caster or an ally cannot be targeted or damaged for a moment (stasis, invulnerability, attaching to an ally).",
+    "global": "Reaches across the map (an ability can be global and something else)."
+  },
+  "champions": {
+    "Aatrox": [
+      {
+        "slot": "Q",
+        "name": "The Darkin Blade",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Infernal Chains",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Umbral Dash",
+        "archetypes": [
+          "self_heal",
+          "dash"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "World Ender",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "hard_cc"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "self",
+        "origin": "curated"
+      }
+    ],
+    "Ahri": [
+      {
+        "slot": "Q",
+        "name": "Orb of Deception",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Fox-Fire",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Charm",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Spirit Rush",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Akali": [
+      {
+        "slot": "Q",
+        "name": "Five Point Strike",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 1.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Twilight Shroud",
+        "archetypes": [
+          "self_buff",
+          "zone",
+          "stealth"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Shuriken Flip",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Perfect Execution",
+        "archetypes": [
+          "dash",
+          "execute"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Akshan": [
+      {
+        "slot": "Q",
+        "name": "Avengerang",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Going Rogue",
+        "archetypes": [
+          "self_buff",
+          "stealth"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Heroic Swing",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Comeuppance",
+        "archetypes": [
+          "execute"
+        ],
+        "cooldownSec": 85,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Alistar": [
+      {
+        "slot": "Q",
+        "name": "Pulverize",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Headbutt",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Trample",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Unbreakable Will",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "self",
+        "origin": "rule"
+      }
+    ],
+    "Ambessa": [
+      {
+        "slot": "Q",
+        "name": "Cunning Sweep / Sundering Slam",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Repudiation",
+        "archetypes": [
+          "self_shield",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Lacerate",
+        "archetypes": [
+          "dash",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Public Execution",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 115,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Amumu": [
+      {
+        "slot": "Q",
+        "name": "Bandage Toss",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 3,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Despair",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 1,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Tantrum",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Curse of the Sad Mummy",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 125,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Anivia": [
+      {
+        "slot": "Q",
+        "name": "Flash Frost",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Crystallize",
+        "archetypes": [
+          "zone"
+        ],
+        "cooldownSec": 17,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Frostbite",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Glacial Storm",
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 3,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Annie": [
+      {
+        "slot": "Q",
+        "name": "Disintegrate",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Incinerate",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Molten Shield",
+        "archetypes": [
+          "ally_shield",
+          "self_shield",
+          "ally_buff",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Summon: Tibbers",
+        "archetypes": [
+          "damage",
+          "summon"
+        ],
+        "cooldownSec": 115,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Aphelios": [
+      {
+        "slot": "Q",
+        "name": "Weapon Abilites",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "summon"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Phase",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 0.8,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Weapon Queue System",
+        "archetypes": [],
+        "cooldownSec": null,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Moonlight Vigil",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Ashe": [
+      {
+        "slot": "Q",
+        "name": "Ranger's Focus",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Volley",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Hawkshot",
+        "archetypes": [
+          "global"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "global",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Enchanted Crystal Arrow",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "global"
+        ],
+        "cooldownSec": 80,
+        "rangeClass": "global",
+        "origin": "curated"
+      }
+    ],
+    "AurelionSol": [
+      {
+        "slot": "Q",
+        "name": "Breath of Light",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 3,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Astral Flight",
+        "archetypes": [
+          "self_buff",
+          "dash"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Singularity",
+        "archetypes": [
+          "hard_cc",
+          "execute",
+          "zone"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Falling Star / The Skies Descend",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Aurora": [
+      {
+        "slot": "Q",
+        "name": "Twofold Hex",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Across the Veil",
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "stealth"
+        ],
+        "cooldownSec": 20,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "The Weirding",
+        "archetypes": [
+          "dash",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Between Worlds",
+        "archetypes": [
+          "dash",
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "melee",
+        "origin": "rule"
+      }
+    ],
+    "Azir": [
+      {
+        "slot": "Q",
+        "name": "Conquering Sands",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Arise!",
+        "archetypes": [
+          "damage",
+          "summon"
+        ],
+        "cooldownSec": 1.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Shifting Sands",
+        "archetypes": [
+          "self_shield",
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 19,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Emperor's Divide",
+        "archetypes": [
+          "hard_cc",
+          "damage",
+          "summon"
+        ],
+        "cooldownSec": 105,
+        "rangeClass": "melee",
+        "origin": "curated"
+      }
+    ],
+    "Bard": [
+      {
+        "slot": "Q",
+        "name": "Cosmic Binding",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Caretaker's Shrine",
+        "archetypes": [
+          "ally_heal",
+          "ally_buff",
+          "zone"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Magical Journey",
+        "archetypes": [
+          "zone"
+        ],
+        "cooldownSec": 19,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Tempered Fate",
+        "archetypes": [
+          "hard_cc",
+          "untargetable"
+        ],
+        "cooldownSec": 95,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Belveth": [
+      {
+        "slot": "Q",
+        "name": "Void Surge",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 2.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Above and Below",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Royal Maelstrom",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Endless Banquet",
+        "archetypes": [
+          "self_buff",
+          "summon"
+        ],
+        "cooldownSec": 1,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Blitzcrank": [
+      {
+        "slot": "Q",
+        "name": "Rocket Grab",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Overdrive",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Power Fist",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Static Field",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 40,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Brand": [
+      {
+        "slot": "Q",
+        "name": "Sear",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Pillar of Flame",
+        "archetypes": [
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Conflagration",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Pyroclasm",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Braum": [
+      {
+        "slot": "Q",
+        "name": "Winter's Bite",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Stand Behind Me",
+        "archetypes": [
+          "ally_buff",
+          "self_buff",
+          "dash"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Unbreakable",
+        "archetypes": [
+          "self_shield"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Glacial Fissure",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "zone"
+        ],
+        "cooldownSec": 115,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Briar": [
+      {
+        "slot": "Q",
+        "name": "Head Rush",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Blood Frenzy / Snack Attack",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "dash",
+          "execute"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Chilling Scream",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Certain Death",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "dash",
+          "engage",
+          "hard_cc",
+          "global"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "global",
+        "origin": "curated"
+      }
+    ],
+    "Caitlyn": [
+      {
+        "slot": "Q",
+        "name": "Piltover Peacemaker",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Yordle Snap Trap",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "zone"
+        ],
+        "cooldownSec": 0.5,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "90 Caliber Net",
+        "archetypes": [
+          "dash",
+          "soft_cc"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Ace in the Hole",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Camille": [
+      {
+        "slot": "Q",
+        "name": "Precision Protocol",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Tactical Sweep",
+        "archetypes": [
+          "self_heal",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Hookshot",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "The Hextech Ultimatum",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 115,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Cassiopeia": [
+      {
+        "slot": "Q",
+        "name": "Noxious Blast",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 3.5,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Miasma",
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 20,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Twin Fang",
+        "archetypes": [
+          "self_heal",
+          "damage"
+        ],
+        "cooldownSec": 0.75,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Petrifying Gaze",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Chogath": [
+      {
+        "slot": "Q",
+        "name": "Rupture",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Feral Scream",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Vorpal Spikes",
+        "archetypes": [
+          "self_buff",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Feast",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 70,
+        "rangeClass": "melee",
+        "origin": "rule"
+      }
+    ],
+    "Corki": [
+      {
+        "slot": "Q",
+        "name": "Phosphorus Bomb",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Valkyrie",
+        "archetypes": [
+          "dash",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Gatling Gun",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Missile Barrage",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 2,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Darius": [
+      {
+        "slot": "Q",
+        "name": "Decimate",
+        "archetypes": [
+          "self_heal",
+          "damage"
+        ],
+        "cooldownSec": 6.5,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Crippling Strike",
+        "archetypes": [
+          "self_buff",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Apprehend",
+        "archetypes": [
+          "self_buff",
+          "hard_cc"
+        ],
+        "cooldownSec": 21,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Noxian Guillotine",
+        "archetypes": [
+          "dash",
+          "execute"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Diana": [
+      {
+        "slot": "Q",
+        "name": "Crescent Strike",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Pale Cascade",
+        "archetypes": [
+          "self_shield",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Lunar Rush",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Moonfall",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "DrMundo": [
+      {
+        "slot": "Q",
+        "name": "Infected Bonesaw",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Heart Zapper",
+        "archetypes": [
+          "self_heal",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Blunt Force Trauma",
+        "archetypes": [
+          "self_buff",
+          "execute"
+        ],
+        "cooldownSec": 7.5,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Maximum Dosage",
+        "archetypes": [
+          "self_heal",
+          "self_buff"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "self",
+        "origin": "rule"
+      }
+    ],
+    "Draven": [
+      {
+        "slot": "Q",
+        "name": "Spinning Axe",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Blood Rush",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Stand Aside",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Whirling Death",
+        "archetypes": [
+          "execute",
+          "global"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "global",
+        "origin": "curated"
+      }
+    ],
+    "Ekko": [
+      {
+        "slot": "Q",
+        "name": "Timewinder",
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Parallel Convergence",
+        "archetypes": [
+          "self_shield",
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Phase Dive",
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Chronobreak",
+        "archetypes": [
+          "self_heal",
+          "dash",
+          "damage",
+          "untargetable"
+        ],
+        "cooldownSec": 80,
+        "rangeClass": "medium",
+        "origin": "curated"
+      }
+    ],
+    "Elise": [
+      {
+        "slot": "Q",
+        "name": "Neurotoxin / Venomous Bite",
+        "archetypes": [
+          "dash",
+          "execute"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Volatile Spiderling / Skittering Frenzy",
+        "archetypes": [
+          "self_buff",
+          "damage",
+          "summon"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Cocoon / Rappel",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Spider Form",
+        "archetypes": [
+          "self_buff",
+          "summon"
+        ],
+        "cooldownSec": 3,
+        "rangeClass": "self",
+        "origin": "rule"
+      }
+    ],
+    "Evelynn": [
+      {
+        "slot": "Q",
+        "name": "Hate Spike",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Allure",
+        "archetypes": [
+          "hard_cc"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Whiplash",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Last Caress",
+        "archetypes": [
+          "dash",
+          "damage",
+          "untargetable"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Ezreal": [
+      {
+        "slot": "Q",
+        "name": "Mystic Shot",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Essence Flux",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Arcane Shift",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 20,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Trueshot Barrage",
+        "archetypes": [
+          "damage",
+          "global"
+        ],
+        "cooldownSec": 105,
+        "rangeClass": "global",
+        "origin": "curated"
+      }
+    ],
+    "Fiddlesticks": [
+      {
+        "slot": "Q",
+        "name": "Terrify",
+        "archetypes": [
+          "hard_cc"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Bountiful Harvest",
+        "archetypes": [
+          "self_heal",
+          "execute"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Reap",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Crowstorm",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Fiora": [
+      {
+        "slot": "Q",
+        "name": "Lunge",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 9.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Riposte",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "soft_cc"
+        ],
+        "cooldownSec": 20,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Bladework",
+        "archetypes": [
+          "self_buff",
+          "soft_cc"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Grand Challenge",
+        "archetypes": [
+          "ally_heal",
+          "self_heal",
+          "self_buff"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Fizz": [
+      {
+        "slot": "Q",
+        "name": "Urchin Strike",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Seastone Trident",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Playful / Trickster",
+        "archetypes": [
+          "dash",
+          "damage",
+          "untargetable"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Chum the Waters",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Galio": [
+      {
+        "slot": "Q",
+        "name": "Winds of War",
+        "archetypes": [
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Shield of Durand",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Justice Punch",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Hero's Entrance",
+        "archetypes": [
+          "ally_shield",
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": 160,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Gangplank": [
+      {
+        "slot": "Q",
+        "name": "Parrrley",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 4.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Remove Scurvy",
+        "archetypes": [
+          "self_heal"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Powder Keg",
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Cannon Barrage",
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone",
+          "global"
+        ],
+        "cooldownSec": 140,
+        "rangeClass": "global",
+        "origin": "curated"
+      }
+    ],
+    "Garen": [
+      {
+        "slot": "Q",
+        "name": "Decisive Strike",
+        "archetypes": [
+          "self_buff",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Courage",
+        "archetypes": [
+          "self_shield",
+          "self_buff"
+        ],
+        "cooldownSec": 17,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Judgment",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 7.5,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Demacian Justice",
+        "archetypes": [
+          "execute"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Gnar": [
+      {
+        "slot": "Q",
+        "name": "Boomerang Throw / Boulder Toss",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Hyper / Wallop",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Hop / Crunch",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 17,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "GNAR!",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 60,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Gragas": [
+      {
+        "slot": "Q",
+        "name": "Barrel Roll",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Drunken Rage",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Body Slam",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Explosive Cask",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 85,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Graves": [
+      {
+        "slot": "Q",
+        "name": "End of the Line",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 9.5,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Smoke Screen",
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 22,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Quickdraw",
+        "archetypes": [
+          "self_buff",
+          "dash"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Collateral Damage",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 80,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Gwen": [
+      {
+        "slot": "Q",
+        "name": "Snip Snip!",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Hallowed Mist",
+        "archetypes": [
+          "zone",
+          "untargetable"
+        ],
+        "cooldownSec": 20,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Skip 'n Slash",
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Needlework",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Hecarim": [
+      {
+        "slot": "Q",
+        "name": "Rampage",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Spirit of Dread",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Devastating Charge",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Onslaught of Shadows",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Heimerdinger": [
+      {
+        "slot": "Q",
+        "name": "H-28 G Evolution Turret",
+        "archetypes": [
+          "damage",
+          "summon"
+        ],
+        "cooldownSec": 1,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Hextech Micro-Rockets",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "CH-2 Electron Storm Grenade",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "UPGRADE!!!",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 85,
+        "rangeClass": "self",
+        "origin": "curated"
+      }
+    ],
+    "Hwei": [
+      {
+        "slot": "Q",
+        "name": "Subject: Disaster",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Subject: Serenity",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 17,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Subject: Torment",
+        "archetypes": [
+          "self_buff",
+          "hard_cc"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Spiraling Despair",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Illaoi": [
+      {
+        "slot": "Q",
+        "name": "Tentacle Smash",
+        "archetypes": [
+          "self_buff",
+          "damage",
+          "summon"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Harsh Lesson",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Test of Spirit",
+        "archetypes": [
+          "hard_cc",
+          "summon"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Leap of Faith",
+        "archetypes": [
+          "damage",
+          "summon"
+        ],
+        "cooldownSec": 95,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Irelia": [
+      {
+        "slot": "Q",
+        "name": "Bladesurge",
+        "archetypes": [
+          "self_heal",
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Defiant Dance",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Flawless Duet",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Vanguard's Edge",
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 105,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Ivern": [
+      {
+        "slot": "Q",
+        "name": "Rootcaller",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Brushmaker",
+        "archetypes": [
+          "ally_buff",
+          "self_buff",
+          "zone"
+        ],
+        "cooldownSec": 0.5,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Triggerseed",
+        "archetypes": [
+          "ally_shield",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Daisy!",
+        "archetypes": [
+          "summon"
+        ],
+        "cooldownSec": 130,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Janna": [
+      {
+        "slot": "Q",
+        "name": "Howling Gale",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Zephyr",
+        "archetypes": [
+          "self_buff",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Eye Of The Storm",
+        "archetypes": [
+          "ally_shield",
+          "ally_buff"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Monsoon",
+        "archetypes": [
+          "ally_heal",
+          "hard_cc",
+          "zone"
+        ],
+        "cooldownSec": 115,
+        "rangeClass": "medium",
+        "origin": "curated"
+      }
+    ],
+    "JarvanIV": [
+      {
+        "slot": "Q",
+        "name": "Dragon Strike",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Golden Aegis",
+        "archetypes": [
+          "self_shield",
+          "soft_cc"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Demacian Standard",
+        "archetypes": [
+          "ally_buff",
+          "self_buff",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Cataclysm",
+        "archetypes": [
+          "dash",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 105,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Jax": [
+      {
+        "slot": "Q",
+        "name": "Leap Strike",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Empower",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Counter Strike",
+        "archetypes": [
+          "self_buff",
+          "hard_cc"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Grandmaster-at-Arms",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "melee",
+        "origin": "rule"
+      }
+    ],
+    "Jayce": [
+      {
+        "slot": "Q",
+        "name": "To the Skies! / Shock Blast",
+        "archetypes": [
+          "dash",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Lightning Field / Hyper Charge",
+        "archetypes": [
+          "self_buff",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Thundering Blow / Acceleration Gate",
+        "archetypes": [
+          "ally_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Mercury Cannon / Mercury Hammer",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Jhin": [
+      {
+        "slot": "Q",
+        "name": "Dancing Grenade",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Deadly Flourish",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Captive Audience",
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 2,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Curtain Call",
+        "archetypes": [
+          "soft_cc",
+          "execute"
+        ],
+        "cooldownSec": 105,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Jinx": [
+      {
+        "slot": "Q",
+        "name": "Switcheroo!",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 0.9,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Zap!",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Flame Chompers!",
+        "archetypes": [
+          "hard_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 17,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Super Mega Death Rocket!",
+        "archetypes": [
+          "execute",
+          "global"
+        ],
+        "cooldownSec": 65,
+        "rangeClass": "global",
+        "origin": "rule"
+      }
+    ],
+    "KSante": [
+      {
+        "slot": "Q",
+        "name": "Ntofo Strikes",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 3.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Path Maker",
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Footwork",
+        "archetypes": [
+          "ally_shield",
+          "self_shield",
+          "dash"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "All Out",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "melee",
+        "origin": "curated"
+      }
+    ],
+    "Kaisa": [
+      {
+        "slot": "Q",
+        "name": "Icathian Rain",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Void Seeker",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 17,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Supercharge",
+        "archetypes": [
+          "self_buff",
+          "stealth"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Killer Instinct",
+        "archetypes": [
+          "dash"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Kalista": [
+      {
+        "slot": "Q",
+        "name": "Pierce",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Sentinel",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 30,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Rend",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Fate's Call",
+        "archetypes": [
+          "ally_buff",
+          "hard_cc"
+        ],
+        "cooldownSec": 140,
+        "rangeClass": "medium",
+        "origin": "curated"
+      }
+    ],
+    "Karma": [
+      {
+        "slot": "Q",
+        "name": "Inner Flame",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Focused Resolve",
+        "archetypes": [
+          "self_heal",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Inspire",
+        "archetypes": [
+          "ally_shield",
+          "ally_buff"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Mantra",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 38,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Karthus": [
+      {
+        "slot": "Q",
+        "name": "Lay Waste",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Wall of Pain",
+        "archetypes": [
+          "soft_cc",
+          "zone"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Defile",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 0.5,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Requiem",
+        "archetypes": [
+          "damage",
+          "global"
+        ],
+        "cooldownSec": 180,
+        "rangeClass": "global",
+        "origin": "curated"
+      }
+    ],
+    "Kassadin": [
+      {
+        "slot": "Q",
+        "name": "Null Sphere",
+        "archetypes": [
+          "self_shield",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Nether Blade",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Force Pulse",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 19,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Riftwalk",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 3.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Katarina": [
+      {
+        "slot": "Q",
+        "name": "Bouncing Blade",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Preparation",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Shunpo",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Death Lotus",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 60,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Kayle": [
+      {
+        "slot": "Q",
+        "name": "Radiant Blast",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Celestial Blessing",
+        "archetypes": [
+          "ally_heal",
+          "self_heal",
+          "ally_buff",
+          "self_buff"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Starfire Spellblade",
+        "archetypes": [
+          "self_buff",
+          "execute"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Divine Judgment",
+        "archetypes": [
+          "damage",
+          "untargetable"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "medium",
+        "origin": "curated"
+      }
+    ],
+    "Kayn": [
+      {
+        "slot": "Q",
+        "name": "Reaping Slash",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Blade's Reach",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Shadow Step",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 17,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Umbral Trespass",
+        "archetypes": [
+          "damage",
+          "untargetable"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Kennen": [
+      {
+        "slot": "Q",
+        "name": "Thundering Shuriken",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 5.5,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Electrical Surge",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 9.5,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Lightning Rush",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Slicing Maelstrom",
+        "archetypes": [
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Khazix": [
+      {
+        "slot": "Q",
+        "name": "Taste Their Fear",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Void Spike",
+        "archetypes": [
+          "self_heal",
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Leap",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Void Assault",
+        "archetypes": [
+          "self_buff",
+          "stealth"
+        ],
+        "cooldownSec": 85,
+        "rangeClass": "self",
+        "origin": "curated"
+      }
+    ],
+    "Kindred": [
+      {
+        "slot": "Q",
+        "name": "Dance of Arrows",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Wolf's Frenzy",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Mounting Dread",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Lamb's Respite",
+        "archetypes": [
+          "ally_heal",
+          "self_heal",
+          "zone",
+          "untargetable"
+        ],
+        "cooldownSec": 140,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Kled": [
+      {
+        "slot": "Q",
+        "name": "Bear Trap on a Rope",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Violent Tendencies",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Jousting",
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Chaaaaaaaarge!!!",
+        "archetypes": [
+          "self_shield",
+          "ally_buff",
+          "dash"
+        ],
+        "cooldownSec": 125,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "KogMaw": [
+      {
+        "slot": "Q",
+        "name": "Caustic Spittle",
+        "archetypes": [
+          "self_buff",
+          "poke"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Bio-Arcane Barrage",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 17,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Void Ooze",
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Living Artillery",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 1.5,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Leblanc": [
+      {
+        "slot": "Q",
+        "name": "Sigil of Malice",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Distortion",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 12.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Ethereal Chains",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 12.5,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Mimic",
+        "archetypes": [],
+        "cooldownSec": 35,
+        "rangeClass": "medium",
+        "origin": "curated"
+      }
+    ],
+    "LeeSin": [
+      {
+        "slot": "Q",
+        "name": "Sonic Wave / Resonating Strike",
+        "archetypes": [
+          "dash",
+          "execute"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Safeguard / Iron Will",
+        "archetypes": [
+          "ally_shield",
+          "self_shield",
+          "self_buff",
+          "dash"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Tempest / Cripple",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Dragon's Rage",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 85,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Leona": [
+      {
+        "slot": "Q",
+        "name": "Shield of Daybreak",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Eclipse",
+        "archetypes": [
+          "self_shield",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Zenith Blade",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Solar Flare",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 75,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Lillia": [
+      {
+        "slot": "Q",
+        "name": "Blooming Blows",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Watch Out! Eep!",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Swirlseed",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Lilting Lullaby",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 130,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Lissandra": [
+      {
+        "slot": "Q",
+        "name": "Ice Shard",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Ring of Frost",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Glacial Path",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Frozen Tomb",
+        "archetypes": [
+          "self_heal",
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "untargetable"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Locke": [
+      {
+        "slot": "Q",
+        "name": "Ritual Nails",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Soul Ignition",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Ashen Pursuit",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Purgatory",
+        "archetypes": [
+          "execute"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Lucian": [
+      {
+        "slot": "Q",
+        "name": "Piercing Light",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Ardent Blaze",
+        "archetypes": [
+          "self_buff",
+          "poke"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Relentless Pursuit",
+        "archetypes": [
+          "dash"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "The Culling",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Lulu": [
+      {
+        "slot": "Q",
+        "name": "Glitterlance",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Whimsy",
+        "archetypes": [
+          "ally_buff",
+          "hard_cc"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Help, Pix!",
+        "archetypes": [
+          "ally_shield",
+          "ally_buff",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Wild Growth",
+        "archetypes": [
+          "ally_buff",
+          "hard_cc",
+          "soft_cc"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Lux": [
+      {
+        "slot": "Q",
+        "name": "Light Binding",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Prismatic Barrier",
+        "archetypes": [
+          "ally_shield",
+          "self_shield"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Lucent Singularity",
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Final Spark",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 50,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Malphite": [
+      {
+        "slot": "Q",
+        "name": "Seismic Shard",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Thunderclap",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Ground Slam",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Unstoppable Force",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 115,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Malzahar": [
+      {
+        "slot": "Q",
+        "name": "Call of the Void",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Void Swarm",
+        "archetypes": [
+          "summon"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Malefic Visions",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Nether Grasp",
+        "archetypes": [
+          "hard_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Maokai": [
+      {
+        "slot": "Q",
+        "name": "Bramble Smash",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Twisted Advance",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "untargetable"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Sapling Toss",
+        "archetypes": [
+          "summon"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Nature's Grasp",
+        "archetypes": [
+          "hard_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "MasterYi": [
+      {
+        "slot": "Q",
+        "name": "Alpha Strike",
+        "archetypes": [
+          "dash",
+          "damage",
+          "untargetable"
+        ],
+        "cooldownSec": 19,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Meditate",
+        "archetypes": [
+          "self_heal",
+          "self_buff"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Wuju Style",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Highlander",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 85,
+        "rangeClass": "self",
+        "origin": "curated"
+      }
+    ],
+    "Mel": [
+      {
+        "slot": "Q",
+        "name": "Radiant Barrage",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Rebuttal",
+        "archetypes": [
+          "ally_shield",
+          "self_shield",
+          "ally_buff",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 27,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Solar Snare",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Golden Eclipse",
+        "archetypes": [
+          "damage",
+          "global"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "global",
+        "origin": "curated"
+      }
+    ],
+    "Milio": [
+      {
+        "slot": "Q",
+        "name": "Ultra Mega Fire Kick",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Cozy Campfire",
+        "archetypes": [
+          "ally_heal",
+          "ally_buff",
+          "zone"
+        ],
+        "cooldownSec": 25,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Warm Hugs",
+        "archetypes": [
+          "ally_shield",
+          "ally_buff"
+        ],
+        "cooldownSec": 0.5,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Breath of Life",
+        "archetypes": [
+          "ally_heal"
+        ],
+        "cooldownSec": 145,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "MissFortune": [
+      {
+        "slot": "Q",
+        "name": "Double Up",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Strut",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Make It Rain",
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Bullet Time",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "medium",
+        "origin": "curated"
+      }
+    ],
+    "MonkeyKing": [
+      {
+        "slot": "Q",
+        "name": "Crushing Blow",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Warrior Trickster",
+        "archetypes": [
+          "dash",
+          "summon",
+          "stealth"
+        ],
+        "cooldownSec": 20,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Nimbus Strike",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 8.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Cyclone",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "melee",
+        "origin": "rule"
+      }
+    ],
+    "Mordekaiser": [
+      {
+        "slot": "Q",
+        "name": "Obliterate",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Indestructible",
+        "archetypes": [
+          "self_shield",
+          "self_heal"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Death's Grasp",
+        "archetypes": [
+          "hard_cc"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Realm of Death",
+        "archetypes": [
+          "self_buff",
+          "hard_cc"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Morgana": [
+      {
+        "slot": "Q",
+        "name": "Dark Binding",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Tormented Shadow",
+        "archetypes": [
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Black Shield",
+        "archetypes": [
+          "ally_shield",
+          "self_shield"
+        ],
+        "cooldownSec": 21,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Soul Shackles",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Naafiri": [
+      {
+        "slot": "Q",
+        "name": "Darkin Daggers",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "The Call of the Pack",
+        "archetypes": [
+          "self_buff",
+          "summon",
+          "untargetable"
+        ],
+        "cooldownSec": 22,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Eviscerate",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Hounds' Pursuit",
+        "archetypes": [
+          "self_shield",
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 95,
+        "rangeClass": "medium",
+        "origin": "curated"
+      }
+    ],
+    "Nami": [
+      {
+        "slot": "Q",
+        "name": "Aqua Prison",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Ebb and Flow",
+        "archetypes": [
+          "ally_heal",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Tidecaller's Blessing",
+        "archetypes": [
+          "ally_buff",
+          "soft_cc"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Tidal Wave",
+        "archetypes": [
+          "ally_buff",
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Nasus": [
+      {
+        "slot": "Q",
+        "name": "Siphoning Strike",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 5.5,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Wither",
+        "archetypes": [
+          "soft_cc"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Spirit Fire",
+        "archetypes": [
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Fury of the Sands",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Nautilus": [
+      {
+        "slot": "Q",
+        "name": "Dredge Line",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Titan's Wrath",
+        "archetypes": [
+          "self_shield",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Riptide",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Depth Charge",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Neeko": [
+      {
+        "slot": "Q",
+        "name": "Blooming Burst",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Shapesplitter",
+        "archetypes": [
+          "self_buff",
+          "damage",
+          "summon"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Tangle-Barbs",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Pop Blossom",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 105,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Nidalee": [
+      {
+        "slot": "Q",
+        "name": "Javelin Toss / Takedown",
+        "archetypes": [
+          "self_buff",
+          "execute"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Bushwhack / Pounce",
+        "archetypes": [
+          "dash",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Primal Surge / Swipe",
+        "archetypes": [
+          "ally_heal",
+          "ally_buff",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Aspect Of The Cougar",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 3,
+        "rangeClass": "self",
+        "origin": "rule"
+      }
+    ],
+    "Nilah": [
+      {
+        "slot": "Q",
+        "name": "Formless Blade",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Jubilant Veil",
+        "archetypes": [
+          "ally_buff",
+          "self_buff"
+        ],
+        "cooldownSec": 24,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Slipstream",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 0.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Apotheosis",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 95,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Nocturne": [
+      {
+        "slot": "Q",
+        "name": "Duskbringer",
+        "archetypes": [
+          "self_buff",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Shroud of Darkness",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Unspeakable Horror",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Paranoia",
+        "archetypes": [
+          "dash",
+          "soft_cc"
+        ],
+        "cooldownSec": 130,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Nunu": [
+      {
+        "slot": "Q",
+        "name": "Consume",
+        "archetypes": [
+          "self_heal",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Biggest Snowball Ever!",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Snowball Barrage",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Absolute Zero",
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Olaf": [
+      {
+        "slot": "Q",
+        "name": "Undertow",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Tough It Out",
+        "archetypes": [
+          "self_shield",
+          "self_buff"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Reckless Swing",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Ragnarok",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Orianna": [
+      {
+        "slot": "Q",
+        "name": "Command: Attack",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Command: Dissonance",
+        "archetypes": [
+          "ally_buff",
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Command: Protect",
+        "archetypes": [
+          "ally_shield",
+          "ally_buff",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Command: Shockwave",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 95,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Ornn": [
+      {
+        "slot": "Q",
+        "name": "Volcanic Rupture",
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Bellows Breath",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Searing Charge",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Call of the Forge God",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "summon"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Pantheon": [
+      {
+        "slot": "Q",
+        "name": "Comet Spear",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 9.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Shield Vault",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Aegis Assault",
+        "archetypes": [
+          "damage",
+          "untargetable"
+        ],
+        "cooldownSec": 20,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Grand Starfall",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 165,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Poppy": [
+      {
+        "slot": "Q",
+        "name": "Hammer Shock",
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Steadfast Presence",
+        "archetypes": [
+          "self_buff",
+          "soft_cc"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Heroic Charge",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Keeper's Verdict",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Pyke": [
+      {
+        "slot": "Q",
+        "name": "Bone Skewer",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Ghostwater Dive",
+        "archetypes": [
+          "self_buff",
+          "stealth"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Phantom Undertow",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Death From Below",
+        "archetypes": [
+          "dash",
+          "execute"
+        ],
+        "cooldownSec": 85,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Qiyana": [
+      {
+        "slot": "Q",
+        "name": "Elemental Wrath / Edge of Ixtal",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Terrashape",
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Audacity",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Supreme Display of Talent",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Quinn": [
+      {
+        "slot": "Q",
+        "name": "Blinding Assault",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Heightened Senses",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 40,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Vault",
+        "archetypes": [
+          "dash",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Behind Enemy Lines",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 3,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Rakan": [
+      {
+        "slot": "Q",
+        "name": "Gleaming Quill",
+        "archetypes": [
+          "ally_heal",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Grand Entrance",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Battle Dance",
+        "archetypes": [
+          "ally_shield",
+          "dash"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "The Quickness",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "melee",
+        "origin": "rule"
+      }
+    ],
+    "Rammus": [
+      {
+        "slot": "Q",
+        "name": "Powerball",
+        "archetypes": [
+          "dash",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Defensive Ball Curl",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Frenzying Taunt",
+        "archetypes": [
+          "hard_cc"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Soaring Slam",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 105,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "RekSai": [
+      {
+        "slot": "Q",
+        "name": "Queen's Wrath / Prey Seeker",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 3,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Burrow / Un-burrow",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Furious Bite / Tunnel",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Void Rush",
+        "archetypes": [
+          "dash",
+          "damage",
+          "untargetable"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Rell": [
+      {
+        "slot": "Q",
+        "name": "Shattering Strike",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Ferromancy: Crash Down",
+        "archetypes": [
+          "self_shield",
+          "self_buff",
+          "hard_cc"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Full Tilt",
+        "archetypes": [
+          "ally_buff",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Magnet Storm",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "melee",
+        "origin": "rule"
+      }
+    ],
+    "Renata": [
+      {
+        "slot": "Q",
+        "name": "Handshake",
+        "archetypes": [
+          "hard_cc"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Bailout",
+        "archetypes": [
+          "ally_buff"
+        ],
+        "cooldownSec": 26,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Loyalty Program",
+        "archetypes": [
+          "ally_shield",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Hostile Takeover",
+        "archetypes": [
+          "hard_cc"
+        ],
+        "cooldownSec": 130,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Renekton": [
+      {
+        "slot": "Q",
+        "name": "Cull the Meek",
+        "archetypes": [
+          "self_heal",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Ruthless Predator",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Slice and Dice",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Dominus",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "self",
+        "origin": "rule"
+      }
+    ],
+    "Rengar": [
+      {
+        "slot": "Q",
+        "name": "Savagery",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 0.25,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Battle Roar",
+        "archetypes": [
+          "self_heal",
+          "damage"
+        ],
+        "cooldownSec": 0.25,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Bola Strike",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc"
+        ],
+        "cooldownSec": 0.25,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Thrill of the Hunt",
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "stealth"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Riven": [
+      {
+        "slot": "Q",
+        "name": "Broken Wings",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Ki Burst",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Valor",
+        "archetypes": [
+          "self_shield",
+          "dash"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Blade of the Exile",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "melee",
+        "origin": "curated"
+      }
+    ],
+    "Rumble": [
+      {
+        "slot": "Q",
+        "name": "Flamespitter",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Scrap Shield",
+        "archetypes": [
+          "self_shield",
+          "self_buff"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Electro Harpoon",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 0.5,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "The Equalizer",
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 105,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Ryze": [
+      {
+        "slot": "Q",
+        "name": "Overload",
+        "archetypes": [
+          "self_buff",
+          "poke"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Rune Prison",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Spell Flux",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 3,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Realm Warp",
+        "archetypes": [
+          "zone"
+        ],
+        "cooldownSec": 160,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Samira": [
+      {
+        "slot": "Q",
+        "name": "Flair",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Blade Whirl",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 26,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Wild Rush",
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Inferno Trigger",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Sejuani": [
+      {
+        "slot": "Q",
+        "name": "Arctic Assault",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Winter's Wrath",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Permafrost",
+        "archetypes": [
+          "hard_cc"
+        ],
+        "cooldownSec": 1.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Glacial Prison",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "zone"
+        ],
+        "cooldownSec": 105,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Senna": [
+      {
+        "slot": "Q",
+        "name": "Piercing Darkness",
+        "archetypes": [
+          "ally_heal",
+          "damage"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Last Embrace",
+        "archetypes": [
+          "hard_cc"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Curse of the Black Mist",
+        "archetypes": [
+          "ally_buff",
+          "self_buff",
+          "zone",
+          "stealth",
+          "untargetable"
+        ],
+        "cooldownSec": 23,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Dawning Shadow",
+        "archetypes": [
+          "ally_shield",
+          "damage",
+          "global"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "global",
+        "origin": "curated"
+      }
+    ],
+    "Seraphine": [
+      {
+        "slot": "Q",
+        "name": "High Note",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Surround Sound",
+        "archetypes": [
+          "ally_shield",
+          "ally_heal",
+          "ally_buff"
+        ],
+        "cooldownSec": 22,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Beat Drop",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Encore",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 140,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Sett": [
+      {
+        "slot": "Q",
+        "name": "Knuckle Down",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Haymaker",
+        "archetypes": [
+          "self_shield",
+          "damage"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Facebreaker",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "The Show Stopper",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Shaco": [
+      {
+        "slot": "Q",
+        "name": "Deceive",
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "stealth"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Jack In The Box",
+        "archetypes": [
+          "hard_cc",
+          "summon"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Two-Shiv Poison",
+        "archetypes": [
+          "soft_cc",
+          "execute"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Hallucinate",
+        "archetypes": [
+          "summon"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "melee",
+        "origin": "curated"
+      }
+    ],
+    "Shen": [
+      {
+        "slot": "Q",
+        "name": "Twilight Assault",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 6.5,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Spirit's Refuge",
+        "archetypes": [
+          "ally_shield",
+          "self_shield"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Shadow Dash",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Stand United",
+        "archetypes": [
+          "ally_shield",
+          "dash",
+          "global"
+        ],
+        "cooldownSec": 180,
+        "rangeClass": "global",
+        "origin": "curated"
+      }
+    ],
+    "Shyvana": [
+      {
+        "slot": "Q",
+        "name": "Emberstrike",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Inferno Aegis",
+        "archetypes": [
+          "self_shield",
+          "self_heal",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 11.5,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Molten Burst",
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Dragon's Descent",
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Singed": [
+      {
+        "slot": "Q",
+        "name": "Poison Trail",
+        "archetypes": [
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Mega Adhesive",
+        "archetypes": [
+          "soft_cc",
+          "zone"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Fling",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Insanity Potion",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "self",
+        "origin": "rule"
+      }
+    ],
+    "Sion": [
+      {
+        "slot": "Q",
+        "name": "Decimating Smash",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Soul Furnace",
+        "archetypes": [
+          "self_shield",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Roar of the Slayer",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Unstoppable Onslaught",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Sivir": [
+      {
+        "slot": "Q",
+        "name": "Boomerang Blade",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Ricochet",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Spell Shield",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 21,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "On The Hunt",
+        "archetypes": [
+          "ally_buff",
+          "self_buff"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "medium",
+        "origin": "curated"
+      }
+    ],
+    "Skarner": [
+      {
+        "slot": "Q",
+        "name": "Shattered Earth / Upheaval",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 5.5,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Seismic Bastion",
+        "archetypes": [
+          "self_shield",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Ixtal's Impact",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 20,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Impale",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 105,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Smolder": [
+      {
+        "slot": "Q",
+        "name": "Super Scorcher Breath",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 4.5,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Achooo!",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Flap, Flap, Flap",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 20,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "MMOOOMMMM!",
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Sona": [
+      {
+        "slot": "Q",
+        "name": "Hymn of Valor",
+        "archetypes": [
+          "ally_buff",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Aria of Perseverance",
+        "archetypes": [
+          "ally_shield",
+          "ally_heal",
+          "self_heal"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Song of Celerity",
+        "archetypes": [
+          "ally_buff",
+          "self_buff"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Crescendo",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Soraka": [
+      {
+        "slot": "Q",
+        "name": "Starcall",
+        "archetypes": [
+          "self_heal",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Astral Infusion",
+        "archetypes": [
+          "ally_heal"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Equinox",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "zone"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Wish",
+        "archetypes": [
+          "ally_heal",
+          "self_heal",
+          "global"
+        ],
+        "cooldownSec": 135,
+        "rangeClass": "global",
+        "origin": "curated"
+      }
+    ],
+    "Swain": [
+      {
+        "slot": "Q",
+        "name": "Death's Hand",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Vision of Empire",
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Nevermove",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Demonic Ascension",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Sylas": [
+      {
+        "slot": "Q",
+        "name": "Chain Lash",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Kingslayer",
+        "archetypes": [
+          "self_heal",
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Abscond / Abduct",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Hijack",
+        "archetypes": [],
+        "cooldownSec": 55,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Syndra": [
+      {
+        "slot": "Q",
+        "name": "Dark Sphere",
+        "archetypes": [
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Force of Will",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Scatter the Weak",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Unleashed Power",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "TahmKench": [
+      {
+        "slot": "Q",
+        "name": "Tongue Lash",
+        "archetypes": [
+          "self_heal",
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Abyssal Dive",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 19,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Thick Skin",
+        "archetypes": [
+          "self_shield",
+          "self_heal"
+        ],
+        "cooldownSec": 3,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Devour",
+        "archetypes": [
+          "ally_shield",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Taliyah": [
+      {
+        "slot": "Q",
+        "name": "Threaded Volley",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Seismic Shove",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Unraveled Earth",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Weaver's Wall",
+        "archetypes": [
+          "dash",
+          "zone"
+        ],
+        "cooldownSec": 150,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Talon": [
+      {
+        "slot": "Q",
+        "name": "Noxian Diplomacy",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Rake",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Assassin's Path",
+        "archetypes": [
+          "dash"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Shadow Assault",
+        "archetypes": [
+          "self_buff",
+          "damage",
+          "stealth"
+        ],
+        "cooldownSec": 80,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Taric": [
+      {
+        "slot": "Q",
+        "name": "Starlight's Touch",
+        "archetypes": [
+          "ally_heal"
+        ],
+        "cooldownSec": 3,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Bastion",
+        "archetypes": [
+          "ally_shield",
+          "ally_buff"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Dazzle",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Cosmic Radiance",
+        "archetypes": [
+          "untargetable"
+        ],
+        "cooldownSec": 150,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Teemo": [
+      {
+        "slot": "Q",
+        "name": "Blinding Dart",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Move Quick",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Toxic Shot",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Noxious Trap",
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 0.25,
+        "rangeClass": "medium",
+        "origin": "curated"
+      }
+    ],
+    "Thresh": [
+      {
+        "slot": "Q",
+        "name": "Death Sentence",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Dark Passage",
+        "archetypes": [
+          "ally_shield",
+          "zone"
+        ],
+        "cooldownSec": 19,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Flay",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 11.5,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "The Box",
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Tristana": [
+      {
+        "slot": "Q",
+        "name": "Rapid Fire",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Rocket Jump",
+        "archetypes": [
+          "dash",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Explosive Charge",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Buster Shot",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Trundle": [
+      {
+        "slot": "Q",
+        "name": "Chomp",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 3.5,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Frozen Domain",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "zone"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Pillar of Ice",
+        "archetypes": [
+          "soft_cc",
+          "zone"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Subjugate",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Tryndamere": [
+      {
+        "slot": "Q",
+        "name": "Bloodlust",
+        "archetypes": [
+          "self_heal",
+          "self_buff"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Mocking Shout",
+        "archetypes": [
+          "soft_cc"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Spinning Slash",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Undying Rage",
+        "archetypes": [
+          "untargetable"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "TwistedFate": [
+      {
+        "slot": "Q",
+        "name": "Wild Cards",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 5.5,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Pick a Card",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Stacked Deck",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Destiny",
+        "archetypes": [
+          "dash",
+          "global"
+        ],
+        "cooldownSec": 140,
+        "rangeClass": "global",
+        "origin": "curated"
+      }
+    ],
+    "Twitch": [
+      {
+        "slot": "Q",
+        "name": "Ambush",
+        "archetypes": [
+          "self_buff",
+          "stealth"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Venom Cask",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Contaminate",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Spray and Pray",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Udyr": [
+      {
+        "slot": "Q",
+        "name": "Wilding Claw",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Iron Mantle",
+        "archetypes": [
+          "self_shield",
+          "self_heal"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Blazing Stampede",
+        "archetypes": [
+          "self_buff",
+          "hard_cc"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Wingborne Storm",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Urgot": [
+      {
+        "slot": "Q",
+        "name": "Corrosive Charge",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Purge",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Disdain",
+        "archetypes": [
+          "self_shield",
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Fear Beyond Death",
+        "archetypes": [
+          "execute"
+        ],
+        "cooldownSec": 85,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Varus": [
+      {
+        "slot": "Q",
+        "name": "Piercing Arrow",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Blighted Quiver",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 40,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Hail of Arrows",
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Chain of Corruption",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 80,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Vayne": [
+      {
+        "slot": "Q",
+        "name": "Tumble",
+        "archetypes": [
+          "self_buff",
+          "dash"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Silver Bolts",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Condemn",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Final Hour",
+        "archetypes": [
+          "self_buff",
+          "stealth"
+        ],
+        "cooldownSec": 85,
+        "rangeClass": "self",
+        "origin": "rule"
+      }
+    ],
+    "Veigar": [
+      {
+        "slot": "Q",
+        "name": "Baleful Strike",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Dark Matter",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Event Horizon",
+        "archetypes": [
+          "hard_cc",
+          "zone"
+        ],
+        "cooldownSec": 17,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Primordial Burst",
+        "archetypes": [
+          "execute"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Velkoz": [
+      {
+        "slot": "Q",
+        "name": "Plasma Fission",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Void Rift",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 1.5,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Tectonic Disruption",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Life Form Disintegration Ray",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Vex": [
+      {
+        "slot": "Q",
+        "name": "Mistral Bolt",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Personal Space",
+        "archetypes": [
+          "self_shield",
+          "damage"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Looming Darkness",
+        "archetypes": [
+          "soft_cc",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Shadow Surge",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Vi": [
+      {
+        "slot": "Q",
+        "name": "Vault Breaker",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Denting Blows",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Relentless Force",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 1,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Cease and Desist",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 115,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Viego": [
+      {
+        "slot": "Q",
+        "name": "Blade of the Ruined King",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Spectral Maw",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Harrowed Path",
+        "archetypes": [
+          "self_buff",
+          "zone",
+          "stealth"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Heartbreaker",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "execute"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Viktor": [
+      {
+        "slot": "Q",
+        "name": "Siphon Power",
+        "archetypes": [
+          "self_shield",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Gravity Field",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "zone"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Hextech Ray",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Arcane Storm",
+        "archetypes": [
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Vladimir": [
+      {
+        "slot": "Q",
+        "name": "Transfusion",
+        "archetypes": [
+          "self_heal",
+          "damage"
+        ],
+        "cooldownSec": 6.8,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Sanguine Pool",
+        "archetypes": [
+          "self_heal",
+          "soft_cc",
+          "zone",
+          "untargetable"
+        ],
+        "cooldownSec": 22,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Tides of Blood",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Hemoplague",
+        "archetypes": [
+          "self_heal",
+          "damage",
+          "zone"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Volibear": [
+      {
+        "slot": "Q",
+        "name": "Thundering Smash",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Frenzied Maul",
+        "archetypes": [
+          "self_heal",
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Sky Splitter",
+        "archetypes": [
+          "self_shield",
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Stormbringer",
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 135,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Warwick": [
+      {
+        "slot": "Q",
+        "name": "Jaws of the Beast",
+        "archetypes": [
+          "self_heal",
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Blood Hunt",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 60,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Primal Howl",
+        "archetypes": [
+          "self_buff",
+          "hard_cc"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Infinite Duress",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Xayah": [
+      {
+        "slot": "Q",
+        "name": "Double Daggers",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Deadly Plumage",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Bladecaller",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "long",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Featherstorm",
+        "archetypes": [
+          "dash",
+          "damage",
+          "untargetable"
+        ],
+        "cooldownSec": 120,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Xerath": [
+      {
+        "slot": "Q",
+        "name": "Arcanopulse",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Eye of Destruction",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Shocking Orb",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 12,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Rite of the Arcane",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 115,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "XinZhao": [
+      {
+        "slot": "Q",
+        "name": "Three Talon Strike",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Wind Becomes Lightning",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Audacious Charge",
+        "archetypes": [
+          "self_buff",
+          "dash",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Crescent Guard",
+        "archetypes": [
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Yasuo": [
+      {
+        "slot": "Q",
+        "name": "Steel Tempest",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Wind Wall",
+        "archetypes": [
+          "zone"
+        ],
+        "cooldownSec": 21,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Sweeping Blade",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 0.3,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Last Breath",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 50,
+        "rangeClass": "long",
+        "origin": "curated"
+      }
+    ],
+    "Yone": [
+      {
+        "slot": "Q",
+        "name": "Mortal Steel",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Spirit Cleave",
+        "archetypes": [
+          "self_shield",
+          "damage"
+        ],
+        "cooldownSec": 14,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Soul Unbound",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Fate Sealed",
+        "archetypes": [
+          "dash",
+          "engage",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Yorick": [
+      {
+        "slot": "Q",
+        "name": "Last Rites",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Dark Procession",
+        "archetypes": [
+          "zone"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Mourning Mist",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Eulogy of the Isles",
+        "archetypes": [
+          "self_buff",
+          "summon"
+        ],
+        "cooldownSec": 130,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ],
+    "Yunara": [
+      {
+        "slot": "Q",
+        "name": "Cultivation of Spirit",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "self",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Arc of Judgment | Arc of Ruin",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Kanmei's Steps | Untouchable Shadow",
+        "archetypes": [
+          "self_buff",
+          "dash"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "self",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Transcend One's Self",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "self",
+        "origin": "curated"
+      }
+    ],
+    "Yuumi": [
+      {
+        "slot": "Q",
+        "name": "Prowling Projectile",
+        "archetypes": [
+          "ally_buff",
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 6.5,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "You and Me!",
+        "archetypes": [
+          "ally_buff",
+          "dash",
+          "untargetable"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Zoomies",
+        "archetypes": [
+          "ally_shield",
+          "self_shield",
+          "ally_buff",
+          "self_buff"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Final Chapter",
+        "archetypes": [
+          "ally_heal",
+          "damage"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "medium",
+        "origin": "curated"
+      }
+    ],
+    "Zaahen": [
+      {
+        "slot": "Q",
+        "name": "The Darkin Glaive",
+        "archetypes": [
+          "self_heal",
+          "self_buff",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 7,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Dreaded Return",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 13,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Aureate Rush",
+        "archetypes": [
+          "dash",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Grim Deliverance",
+        "archetypes": [
+          "self_heal",
+          "damage"
+        ],
+        "cooldownSec": 95,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Zac": [
+      {
+        "slot": "Q",
+        "name": "Stretching Strikes",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Unstable Matter",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Elastic Slingshot",
+        "archetypes": [
+          "dash"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "melee",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Let's Bounce!",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 105,
+        "rangeClass": "melee",
+        "origin": "curated"
+      }
+    ],
+    "Zed": [
+      {
+        "slot": "Q",
+        "name": "Razor Shuriken",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Living Shadow",
+        "archetypes": [
+          "dash"
+        ],
+        "cooldownSec": 18,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Shadow Slash",
+        "archetypes": [
+          "soft_cc",
+          "damage"
+        ],
+        "cooldownSec": 4,
+        "rangeClass": "melee",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Death Mark",
+        "archetypes": [
+          "dash",
+          "damage",
+          "untargetable"
+        ],
+        "cooldownSec": 110,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Zeri": [
+      {
+        "slot": "Q",
+        "name": "Burst Fire",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "short",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Ultrashock Laser",
+        "archetypes": [
+          "soft_cc",
+          "poke"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "E",
+        "name": "Spark Surge",
+        "archetypes": [
+          "dash"
+        ],
+        "cooldownSec": 21,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Lightning Crash",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 75,
+        "rangeClass": "medium",
+        "origin": "rule"
+      }
+    ],
+    "Ziggs": [
+      {
+        "slot": "Q",
+        "name": "Bouncing Bomb",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 5,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Satchel Charge",
+        "archetypes": [
+          "dash",
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Hexplosive Minefield",
+        "archetypes": [
+          "soft_cc",
+          "poke",
+          "zone"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Mega Inferno Bomb",
+        "archetypes": [
+          "poke"
+        ],
+        "cooldownSec": 95,
+        "rangeClass": "long",
+        "origin": "rule"
+      }
+    ],
+    "Zilean": [
+      {
+        "slot": "Q",
+        "name": "Time Bomb",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 9,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Rewind",
+        "archetypes": [
+          "self_buff"
+        ],
+        "cooldownSec": 10,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Time Warp",
+        "archetypes": [
+          "ally_buff",
+          "soft_cc"
+        ],
+        "cooldownSec": 15,
+        "rangeClass": "short",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Chronoshift",
+        "archetypes": [
+          "untargetable"
+        ],
+        "cooldownSec": 90,
+        "rangeClass": "medium",
+        "origin": "curated"
+      }
+    ],
+    "Zoe": [
+      {
+        "slot": "Q",
+        "name": "Paddle Star!",
+        "archetypes": [
+          "damage"
+        ],
+        "cooldownSec": 7.5,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "W",
+        "name": "Spell Thief",
+        "archetypes": [
+          "self_buff",
+          "damage"
+        ],
+        "cooldownSec": 0.25,
+        "rangeClass": "long",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Sleepy Trouble Bubble",
+        "archetypes": [
+          "hard_cc",
+          "damage"
+        ],
+        "cooldownSec": 16,
+        "rangeClass": "medium",
+        "origin": "rule"
+      },
+      {
+        "slot": "R",
+        "name": "Portal Jump",
+        "archetypes": [
+          "dash"
+        ],
+        "cooldownSec": 8,
+        "rangeClass": "short",
+        "origin": "rule"
+      }
+    ],
+    "Zyra": [
+      {
+        "slot": "Q",
+        "name": "Deadly Spines",
+        "archetypes": [
+          "damage",
+          "summon"
+        ],
+        "cooldownSec": 6,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "W",
+        "name": "Rampant Growth",
+        "archetypes": [
+          "summon"
+        ],
+        "cooldownSec": null,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "E",
+        "name": "Grasping Roots",
+        "archetypes": [
+          "hard_cc",
+          "soft_cc",
+          "damage",
+          "summon"
+        ],
+        "cooldownSec": 11,
+        "rangeClass": "medium",
+        "origin": "curated"
+      },
+      {
+        "slot": "R",
+        "name": "Stranglethorns",
+        "archetypes": [
+          "hard_cc",
+          "damage",
+          "zone",
+          "summon"
+        ],
+        "cooldownSec": 100,
+        "rangeClass": "short",
+        "origin": "curated"
+      }
+    ]
+  }
+}

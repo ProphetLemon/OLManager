@@ -75,6 +75,8 @@ export default function Settings() {
     ? settings.language
     : "es";
   const isAndroid = /Android/i.test(navigator.userAgent);
+  // Android reports "Linux" too; the rendering mode only exists on the desktop build.
+  const isLinuxDesktop = /Linux/i.test(navigator.userAgent) && !isAndroid;
 
   // Where to go back to
   const returnTo = (location.state as { from?: string })?.from || "/";
@@ -255,6 +257,28 @@ export default function Settings() {
                 onChange={(v) => handleUpdate({ high_contrast: v })}
               />
             </GameRow>
+
+            {isLinuxDesktop ? (
+              <GameRow
+                label={t("settings.renderMode", "Graphics mode")}
+                description={t(
+                  "settings.renderModeDesc",
+                  "Use Compatibility if the window flickers, draws wrongly or stays blank. It is slower, especially in fullscreen. Takes effect the next time you open the game.",
+                )}
+              >
+                <GameSegmented
+                  options={[
+                    { value: "ask", label: t("settings.renderModeAsk", "Ask at start") },
+                    { value: "accelerated", label: t("settings.renderModeFast", "Fast (recommended)") },
+                    { value: "compatibility", label: t("settings.renderModeCompat", "Compatibility") },
+                  ]}
+                  value={settings.linux_render_mode}
+                  onChange={(v) =>
+                    handleUpdate({ linux_render_mode: v as AppSettings["linux_render_mode"] })
+                  }
+                />
+              </GameRow>
+            ) : null}
 
             <GameRow
               label={t("settings.fullscreen", "Fullscreen")}

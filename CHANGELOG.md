@@ -4,6 +4,39 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1111.4] - 2026-11-11
+
+### Changed
+
+- In a live match each champion buys the items professionals build on that champion in that role: boots first, then five items, from 12,921 professional games of the last twelve months (item data of patch 16.22.1). A champion with too few professional games in a role keeps the items of its class, where five items that no longer exist were replaced by current ones. The strength and the cost of a build are the same as before: what changes is which items they are.
+- The champion meta of a career starts from the real professional meta (the champions professionals pick most, adjusted by how often they win) instead of a random one. The patch the game generates every two weeks still moves champions up and down, now around their real standing. An existing career keeps its tiers and moves toward the real meta over its next patches. Every role now gets the same share of each tier; before, supports were almost never in the top tier.
+
+### Added
+
+- The item, ward and summoner spell icons of the live scoreboard carry their name, for the pointer and for screen readers.
+- A data file that describes what each champion's abilities do, for a feature that is coming. The match does not use it yet.
+
+## [2026.1111.3] - 2026-11-11
+
+### Changed
+
+- A live match now plays the same at every speed button. The engine used a different time step at each speed, so the farm, the gold, the kills and the length of a match depended on how fast it was watched (at x1, a top laner reached about twelve minions per minute and matches ran close to an hour). It now always advances with the step the game is balanced for, and the map blends movement between steps so it stays smooth.
+- The live match no longer downloads champion data and icons when it starts. Everything it needs ships with the game (data of patch 16.22.1), so a watched match is the same without an internet connection.
+- In the draft the AI no longer puts a champion in a role it does not play, and the player is warned when doing so; a champion off its role plays worse in the match. The items a champion buys follow its class rather than its lane.
+
+### Added
+
+- A notice in Settings and in the README that the project is not endorsed or sponsored by Riot Games.
+- Data files with the current item catalogue, the champions' abilities and the builds of professional play, for features that are coming. The match does not use them yet.
+
+### Fixed
+
+- The mid lane was decided by position: the red player reached the first wave first and got ahead in almost every even match.
+- Schedule dates and the week heading in the game's language, and numbers grouped the way that language groups them.
+- English left in the interface: the champion count, role names in filters and in the missing-role alert, the letters of a win and a loss, the name of a training option.
+- A card of the Meta tab drawn over another one.
+- The weekly scrim form did not say why it was disabled when only some days had passed.
+
 ## [2026.1111.2] - 2026-11-11
 
 ### Changed

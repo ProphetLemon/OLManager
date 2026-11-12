@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "@/i18n";
 import { invoke } from "@tauri-apps/api/core";
 import { Swords, Shield, Crosshair, Zap, TrendingUp, Crown, BarChart3, Activity, ArrowLeft } from "lucide-react";
 import { resolveChampionTile, resolveChampionSplash } from "@/lib/champions/championImages";
+import { championDisplayName } from "@/lib/champions/championNames";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { cn } from "@/ui-v2/lib/utils";
@@ -24,12 +24,12 @@ interface Stats {
   weekly_history: { week_label: string; games: number; win_rate: number; avg_kda: number }[];
 }
 
-const ROLE_META: Record<string, { icon: typeof Shield; color: string; label: string }> = {
-  TOP: { icon: Shield, color: "text-red-400", label: "TOP" },
-  JUNGLE: { icon: Crosshair, color: "text-green-400", label: "JGL" },
-  MID: { icon: Zap, color: "text-amber-400", label: "MID" },
-  ADC: { icon: Crosshair, color: "text-blue-400", label: "ADC" },
-  SUPPORT: { icon: Shield, color: "text-purple-400", label: "SUP" },
+const ROLE_META: Record<string, { icon: typeof Shield; color: string; labelKey: string }> = {
+  TOP: { icon: Shield, color: "text-red-400", labelKey: "onAir.roles.TOP" },
+  JUNGLE: { icon: Crosshair, color: "text-green-400", labelKey: "onAir.roles.JUNGLE" },
+  MID: { icon: Zap, color: "text-amber-400", labelKey: "onAir.roles.MID" },
+  ADC: { icon: Crosshair, color: "text-blue-400", labelKey: "onAir.roles.ADC" },
+  SUPPORT: { icon: Shield, color: "text-purple-400", labelKey: "onAir.roles.SUPPORT" },
 };
 
 export default function ChampionPageV2({ championKey, onClose }: Props) {
@@ -38,6 +38,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
   const splash = resolveChampionSplash(championKey);
   const tile = resolveChampionTile(championKey);
   const heroRef = useRef<HTMLDivElement>(null);
+  const displayName = championDisplayName(championKey, s?.champion_name);
 
   useEffect(() => {
     invoke<Stats>("get_champion_stats", { championKey })
@@ -50,7 +51,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
       {/* ─── HERO ─── */}
       <div ref={heroRef} className="relative flex min-h-[40vh] items-end overflow-hidden">
         {splash && (
-          <img src={splash} alt={championKey}
+          <img src={splash} alt={displayName}
             className="absolute inset-0 size-full object-cover object-top transition-all duration-[1.5s] hover:scale-105" />
         )}
         {/* Gradient layers */}
@@ -68,19 +69,19 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
 
         {/* Watermark name */}
         <div className="pointer-events-none absolute -right-8 -top-8 select-none text-[18vw] font-heading font-black uppercase leading-none text-white/5 md:-right-12 md:-top-12 md:text-[16vw]">
-          {s?.champion_name ?? championKey}
+          {displayName}
         </div>
 
         {/* Hero content */}
         <div className="relative z-10 flex w-full flex-col gap-6 p-6 pb-8 md:flex-row md:items-end md:justify-between">
           <div className="flex items-center gap-4">
             <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white/20 bg-black/40 shadow-2xl backdrop-blur">
-              {tile && <img src={tile} alt={championKey} className="size-full object-cover" />}
+              {tile && <img src={tile} alt={displayName} className="size-full object-cover" />}
             </div>
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="font-heading text-3xl font-black uppercase tracking-wide text-white drop-shadow-lg md:text-4xl">
-                  {s?.champion_name ?? championKey}
+                  {displayName}
                 </h1>
                 {s && <Badge className="bg-white/20 text-white backdrop-blur">{s.total_games}g</Badge>}
               </div>
@@ -93,10 +94,10 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
           {/* Hero stats — glass cards */}
           <div className="grid grid-cols-4 gap-3">
             {[
-              { label: "WR", val: s ? `${s.win_rate}%` : "—", acc: s && s.win_rate >= 50 ? "text-positive" : "text-negative" },
-              { label: "PR", val: s ? `${s.pick_rate}%` : "—", acc: "text-club-text" },
-              { label: "BR", val: s ? `${s.ban_rate}%` : "—", acc: "text-amber-400" },
-              { label: "KDA", val: s ? s.avg_kda.toFixed(1) : "—", acc: s ? "text-white" : "text-white/40" },
+              { label: t("championPage.wr"), val: s ? `${s.win_rate}%` : "—", acc: s && s.win_rate >= 50 ? "text-positive" : "text-negative" },
+              { label: t("championPage.pr"), val: s ? `${s.pick_rate}%` : "—", acc: "text-club-text" },
+              { label: t("championPage.br"), val: s ? `${s.ban_rate}%` : "—", acc: "text-amber-400" },
+              { label: t("championPage.kda"), val: s ? s.avg_kda.toFixed(1) : "—", acc: s ? "text-white" : "text-white/40" },
             ].map((st) => (
               <div key={st.label}
                 className="rounded-xl border border-white/15 bg-black/50 px-3 py-2.5 text-center backdrop-blur-md transition-all hover:border-primary/40 hover:bg-black/60">
@@ -153,7 +154,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
                     return (
                       <div key={r.role} className="flex items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2.5 transition-colors hover:bg-muted/30">
                         <Icon className={cn("size-4 shrink-0", meta.color)} />
-                        <span className="min-w-14 font-heading text-xs font-bold uppercase tracking-wider text-foreground">{meta.label}</span>
+                        <span className="min-w-14 font-heading text-xs font-bold uppercase tracking-wider text-foreground">{t(meta.labelKey)}</span>
                         <span className="text-xs tabular-nums text-muted-foreground/60">{r.games}g</span>
                         <div className="flex-1">
                           <div className="h-2 overflow-hidden rounded-full bg-muted">
@@ -262,6 +263,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
 function MatchupBlock({ title, items, type }: {
   title: string; items?: { vs_champion_key: string; vs_champion_name: string; games: number; wins: number; win_rate: number }[]; type: "best" | "worst";
 }) {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -279,8 +281,8 @@ function MatchupBlock({ title, items, type }: {
                 <div key={item.vs_champion_key}
                   className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/20">
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    {tile && <img src={tile} alt={item.vs_champion_name} className="size-8 shrink-0 rounded object-cover" />}
-                    <span className="truncate text-sm font-medium text-foreground">{item.vs_champion_name}</span>
+                    {tile && <img src={tile} alt={championDisplayName(item.vs_champion_key, item.vs_champion_name)} className="size-8 shrink-0 rounded object-cover" />}
+                    <span className="truncate text-sm font-medium text-foreground">{championDisplayName(item.vs_champion_key, item.vs_champion_name)}</span>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <span className="text-xs tabular-nums text-muted-foreground/60">{item.games}g</span>
@@ -294,7 +296,7 @@ function MatchupBlock({ title, items, type }: {
             })}
           </div>
         ) : (
-          <p className="px-4 py-4 text-sm text-muted-foreground">{i18n.t("championPage.noData")}</p>
+          <p className="px-4 py-4 text-sm text-muted-foreground">{t("championPage.noData")}</p>
         )}
       </CardContent>
     </Card>

@@ -7,6 +7,7 @@ them; nothing downloads data at match start.
 |---------|--------|--------|
 | `node scripts/game-data/ddragon.mjs` | `items.v1.json`, `champion-kits.v1.json`, icons under `public/` | Riot Data Dragon (`ddragon.leagueoflegends.com`) |
 | `node scripts/game-data/pro-builds.mjs` | `champion-builds.v1.json` | Leaguepedia `ScoreboardPlayers` (CC BY-SA 3.0) |
+| `node scripts/game-data/abilities.mjs` | `champion-abilities.v1.json` | `champion-kits.v1.json` plus `ability-archetypes.curated.json` (no network) |
 
 Pure transformation lives in `lib/*.mjs` (typed by `lib/*.d.mts`) and is tested in `src/lib/gameData/`. The committed
 Data Dragon files are checked by `src/lib/gameData/gameDataFiles.test.ts`.
@@ -64,3 +65,48 @@ node scripts/game-data/pro-builds.mjs --since 2025-11-12 --until 2026-11-12 --of
   champion's first tag as `class`; its games and wins still count as presence.
 - The header records the leagues, window, first and last game, patches with their game counts, games, minimum sample
   and the date of the pull.
+- The game's champion meta reads this file too (`olm_core/src/champions.rs`, embedded with `include_str!`): a pair's
+  presence in its role's picks, adjusted by its win rate shrunk toward 50%, decides where a new career's tier list
+  starts and what the 14-day patches revert toward. Refreshing the file moves every career's anchors; nothing is saved.
+
+## Ability archetypes
+
+```bash
+node scripts/game-data/abilities.mjs           # regenerate assets/simulation/champion-abilities.v1.json
+node scripts/game-data/abilities.mjs --check   # write nothing; exit 1 when the committed file is out of date
+```
+
+`champion-abilities.v1.json` says, for each champion's Q, W, E and R, which of a closed vocabulary of eighteen terms it
+has (`ally_shield`, `ally_heal`, `self_shield`, `self_heal`, `ally_buff`, `self_buff`, `dash`, `engage`, `hard_cc`,
+`soft_cc`, `damage`, `poke`, `execute`, `zone`, `summon`, `stealth`, `untargetable`, `global`; the definitions are in the
+file's header), its cooldown at the middle rank, and a range class. It has no magnitudes: how much a shield absorbs or how
+long a stun lasts is for the engine to decide by term. It reads only committed files; there is no network.
+
+- Every ability has at least one term. The generator fails on an empty list unless the ability is listed under `noEffect`
+  in the curated file with a reason (an ability that fits none of the terms, such as a slot that is not an ability, or a
+  spell that only recasts another one). The list is meant to stay empty or tiny.
+- Damage kind: an ability that deals damage has exactly one of `execute`, `poke`, `damage`; one that deals none has none.
+  `execute` grows with missing health or kills below a threshold. `poke` needs a range of 900 or more (`pokeMinRange` in the
+  header) and no `dash`, `engage` or `hard_cc` on the same ability. Everything else that deals damage is `damage`, so a
+  crowd-control skillshot is `hard_cc` plus `damage` and a dash that hits is `dash` plus `damage`. The generator rejects a
+  list that breaks these rules.
+- Rules: `lib/ability-archetypes.mjs` holds a table of keyword patterns over the ability description, applied by
+  `classifyAbilityText`. Data Dragon's descriptions are one-paragraph summaries, so the rules are only a first pass.
+  `global` comes from the text alone, because Data Dragon uses huge ranges (25000) as a placeholder as often as for real
+  map-wide reach. Roughly three abilities in five come out of the rules unchanged.
+- Curation: `ability-archetypes.curated.json` lists, by champion id and slot, every ability where the rules are wrong or
+  incomplete. An entry is the final list of terms, or `{ "archetypes": [...], "rangeClass": "..." }` (either key is
+  optional; a range class alone corrects a placeholder range). `origin` is `curated` for those abilities and `rule` for
+  the rest. The generator fails on an entry that names an unknown champion, slot, archetype or range class, repeats an
+  archetype, or equals what the rules already give, so the file stays as small as possible.
+- Cooldown: `cooldownSec` is the kit's cooldown at the middle rank (rank 3 of 5, rank 2 of 3), `null` when it is 0.
+- Range class: `rangeClass` comes from the kit's range at the middle rank with the thresholds printed in the header
+  (`self` up to 25, `melee` up to 350, `short` up to 700, `medium` up to 1200, `long` below 10000, `global` for the
+  `global` archetype). A placeholder range on an ability that is not global is classed `long` and corrected in the
+  curated file when that is wrong.
+- Counts: the command prints how many champions have each term, how many abilities have each damage kind and how many come from the rules alone.
+  `src/lib/gameData/championAbilitiesFile.test.ts` asserts loose bounds on them, so a broken rule shows.
+
+On a new patch: run `ddragon.mjs` to refresh the kits, then `abilities.mjs`. Read the diff of the generated file. A new
+champion or a reworded ability may need a curated entry; an entry the rules now reproduce makes the generator fail
+(delete it); an entry for a removed champion fails too. When the rules change, rerun and review the same diff.

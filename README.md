@@ -131,6 +131,17 @@ macOS builds are ad-hoc signed but not notarized (no Apple Developer account), s
 xattr -dr com.apple.quarantine "/Applications/Open League Manager.app"
 ```
 
+### Linux: blank or flickering window
+
+On Linux the game asks, the first time it starts, how it should draw its window: **Fast** (recommended, uses the graphics card) or **Compatibility** (slower, most of all in fullscreen, but it avoids drawing problems seen with some graphics drivers on Wayland). Tick "remember my choice" to stop being asked; otherwise it asks again at the next start. You can change the choice at any time in Settings, under "Graphics mode" (it applies the next time you open the game).
+
+If the window flickers, draws wrongly or stays blank, choose Compatibility. As a last resort, and for scripts, you can start the game with the variable set; when it is set the game never asks and never overrides it:
+
+```bash
+WEBKIT_DISABLE_DMABUF_RENDERER=1 <command that starts the game>   # compatibility rendering
+WEBKIT_DISABLE_DMABUF_RENDERER=0 <command that starts the game>   # accelerated rendering
+```
+
 ---
 
 ## 5. Project Structure
@@ -211,6 +222,8 @@ Open League Manager is not endorsed or sponsored by Riot Games and does not refl
 ### Third-party data credits
 
 Player ratings in new games are derived from pro match statistics from [Leaguepedia](https://lol.fandom.com), licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Method and refresh steps: [`docs/STAT_RATINGS.md`](docs/STAT_RATINGS.md). Whether ShareAlike applies to the derived rating asset is an open question for the owner.
+
+The item catalogue and champion kits under `assets/simulation/` (`items.v1.json`, `champion-kits.v1.json`) and the item, summoner spell and ability icons come from Riot Games' [Data Dragon](https://developer.riotgames.com/docs/lol#data-dragon). The champion builds and presence in `assets/simulation/champion-builds.v1.json` are aggregated from professional match data from [Leaguepedia](https://lol.fandom.com), licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/); that file is offered under the same licence. How to refresh them: [`scripts/game-data/README.md`](scripts/game-data/README.md).
 
 ---
 
