@@ -5,6 +5,7 @@ export const DEFAULT_MAX_LAG: number;
 export const DEFAULT_MAX_CACHE_AGE_DAYS: number;
 
 export class OfflineCacheMissError extends Error {
+  constructor(params: Record<string, string>);
   params: Record<string, string>;
 }
 export class RequestBudgetExceededError extends Error {

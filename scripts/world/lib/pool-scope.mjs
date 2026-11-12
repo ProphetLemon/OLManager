@@ -117,6 +117,8 @@ export function chunkNames(leagues) {
 const OFFICIAL = '(T.IsOfficial="1" OR (L.IsOfficial="Yes" AND L.Level IN ("Primary","Secondary")))';
 const NOT_OFFICIAL = '(T.IsOfficial IS NULL OR T.IsOfficial="0") AND (L.IsOfficial IS NULL OR L.IsOfficial<>"Yes" OR L.Level IS NULL OR L.Level NOT IN ("Primary","Secondary"))';
 const NOT_QUALIFIER = '(T.IsQualifier IS NULL OR T.IsQualifier="0")';
+/** Cargo clause (Tournaments=T) for tournaments Leaguepedia does not flag as qualifiers. */
+export const NOT_QUALIFIER_CLAUSE = NOT_QUALIFIER;
 
 /**
  * Cargo `where` clauses (on Tournaments=T, Leagues=L) that cut the loose filter into three disjoint classes:
@@ -145,13 +147,14 @@ export const OPEN_QUALIFIER_ENTRIES = 60;
 /**
  * Split the qualifier-flagged tournaments of the strict filter by roster size.
  * @param {Map<string, number>} entryCount roster entries per tournament page
+ * @param {number} [threshold] largest roster a qualifier-flagged tournament may have to count as small
  */
-export function qualifierSplit(tournaments, classes, entryCount) {
+export function qualifierSplit(tournaments, classes, entryCount, threshold = OPEN_QUALIFIER_ENTRIES) {
   const small = [];
   const open = [];
   for (const t of tournaments) {
     if (!classes.get(t.page)?.strict || !t.qualifier) continue;
-    ((entryCount.get(t.page) ?? 0) <= OPEN_QUALIFIER_ENTRIES ? small : open).push(t.page);
+    ((entryCount.get(t.page) ?? 0) <= threshold ? small : open).push(t.page);
   }
   return { small: small.sort(), open: open.sort() };
 }
@@ -216,6 +219,31 @@ export function tierFromAggregates({ leagueLevelMin, tournamentLevelMin, tournam
   return 3;
 }
 
+/** Tournament levels from best to worst; anything else ranks after them. */
+export const LEVEL_ORDER = Object.freeze(["Primary", "Secondary", "Minor", "Tertiary"]);
+const levelRank = (level) => (LEVEL_ORDER.includes(level) ? LEVEL_ORDER.indexOf(level) : LEVEL_ORDER.length);
+
+/** The better of two tournament level labels; empty labels lose to any label, and null means neither is known. */
+export function bestLevel(...levels) {
+  const known = levels.map(text).filter(Boolean);
+  return known.length === 0 ? null : known.reduce((best, level) => (levelRank(level) < levelRank(best) ? level : best));
+}
+
+/** `GROUP_CONCAT` joins the tournament pages with this separator (a character no wiki page title can contain). */
+export const TOURS_SEPARATOR = "|";
+/** MySQL's default `group_concat_max_len` is 1024; a list this long may have lost its tail. */
+export const TOURS_MAX_CHARS = 1000;
+
+/** The tournament pages of a `tours` value, and whether the list may have been cut at the server's length limit. */
+export function parseTournaments(value) {
+  const raw = text(value);
+  if (!raw) return { tournaments: [], truncated: false };
+  const truncated = raw.length >= TOURS_MAX_CHARS;
+  const list = raw.split(TOURS_SEPARATOR).map((x) => x.trim()).filter(Boolean);
+  if (truncated) list.pop();
+  return { tournaments: [...new Set(list)].sort(), truncated };
+}
+
 /** A person from one aggregated Cargo row (one row per person; see pool-scope.mjs for the query). */
 export function personFromRow(row) {
   const profile = {
@@ -223,6 +251,7 @@ export function personFromRow(row) {
     residency: text(row.res), role: text(row.prole), team: text(row.team), currentTeams: "",
   };
   const roles = [row.rmin, row.rmax].map(text).filter(Boolean);
+  const { tournaments, truncated } = parseTournaments(row.tours);
   return {
     page: text(row.player),
     profile,
@@ -232,8 +261,11 @@ export function personFromRow(row) {
       leagueLevelMin: text(row.lmin), tournamentLevelMin: text(row.tmin), tournamentOfficial: text(row.toff), leagueOfficial: text(row.loff),
     }),
     region: profile.residency || text(row.region) || "(none)",
+    bestLevel: bestLevel(row.lmin, row.tmin),
     lastStart: text(row.last),
     entries: Number(row.n) || 0,
+    tournaments,
+    toursTruncated: truncated,
   };
 }
 
@@ -246,8 +278,11 @@ export function mergePerson(a, b) {
     roles,
     ...describePerson(roles, profileRole),
     tier: Math.min(a.tier, b.tier),
+    bestLevel: bestLevel(a.bestLevel, b.bestLevel),
     lastStart: a.lastStart > b.lastStart ? a.lastStart : b.lastStart,
     entries: a.entries + b.entries,
+    tournaments: [...new Set([...(a.tournaments ?? []), ...(b.tournaments ?? [])])].sort(),
+    toursTruncated: Boolean(a.toursTruncated || b.toursTruncated),
   };
 }
 

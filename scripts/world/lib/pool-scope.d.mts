@@ -44,8 +44,13 @@ export interface Person {
   staffLabel: string | null;
   tier: number;
   region: string;
+  bestLevel: string | null;
   lastStart: string;
   entries: number;
+  /** Tournament pages of the person inside the queried filter (empty when the query did not ask for them). */
+  tournaments: string[];
+  /** The tournament list may have lost its tail to the server's GROUP_CONCAT length limit. */
+  toursTruncated: boolean;
 }
 export type GameStatus =
   | { status: "in-game"; id: string }
@@ -78,7 +83,13 @@ export const CLASS_FILTERS: Readonly<Record<CargoClass, readonly FilterName[]>>;
 export function cargoClasses(tournaments: Tournament[], since: string): Record<CargoClass, string[]>;
 export const OPEN_QUALIFIER_ENTRIES: number;
 export function chunkNames(names: string[]): string[][];
-export function qualifierSplit(tournaments: Tournament[], classes: Map<string, TournamentClass>, entryCount: Map<string, number>): { small: string[]; open: string[] };
+export function qualifierSplit(tournaments: Tournament[], classes: Map<string, TournamentClass>, entryCount: Map<string, number>, threshold?: number): { small: string[]; open: string[] };
+export const NOT_QUALIFIER_CLAUSE: string;
+export const LEVEL_ORDER: readonly string[];
+export function bestLevel(...levels: unknown[]): string | null;
+export const TOURS_SEPARATOR: string;
+export const TOURS_MAX_CHARS: number;
+export function parseTournaments(value: unknown): { tournaments: string[]; truncated: boolean };
 export function pageClauses(pages: string[]): string[];
 export function mergePerson(a: Person, b: Person): Person;
 export function playerPosition(label: unknown): string | null;
