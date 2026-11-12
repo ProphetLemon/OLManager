@@ -105,7 +105,23 @@ struct SnapshotPlayer {
     vision: f64,
     passing: f64,
     leadership: f64,
+    /// The nine attributes as the app sends them, in the order of `APP_ATTRIBUTE_KEYS`; `None`
+    /// for one the snapshot does not carry.
+    reported: [Option<f64>; 9],
 }
+
+/// The attribute names the app's snapshot uses, in the order `player_visible_stats` returns them.
+const APP_ATTRIBUTE_KEYS: [&str; 9] = [
+    "mechanics",
+    "laning",
+    "teamfighting",
+    "macro_play",
+    "consistency",
+    "shotcalling",
+    "champion_pool",
+    "discipline",
+    "mental_resilience",
+];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -1908,6 +1924,12 @@ fn snapshot_team_players(snapshot: &Value, team_key: &str) -> Vec<SnapshotPlayer
                         vision: stat("vision"),
                         passing: stat("passing"),
                         leadership: stat("leadership"),
+                        reported: APP_ATTRIBUTE_KEYS.map(|key| {
+                            player
+                                .get(key)
+                                .and_then(Value::as_f64)
+                                .map(|value| value.clamp(1.0, 99.0))
+                        }),
                     })
                 })
                 .collect()
@@ -1919,7 +1941,26 @@ fn avg4(a: f64, b: f64, c: f64, d: f64) -> f64 {
     (a + b + c + d) / 4.0
 }
 
+/// The nine visible attributes of a player. The app sends them under their own names; each one
+/// the snapshot carries is used as it is, and one it lacks (a snapshot of the old harnesses, a
+/// saved match from before) comes from the football-style keys, which default to 70.
 fn player_visible_stats(player: &SnapshotPlayer) -> (f64, f64, f64, f64, f64, f64, f64, f64, f64) {
+    let derived = derived_visible_stats(player);
+    let r = &player.reported;
+    (
+        r[0].unwrap_or(derived.0),
+        r[1].unwrap_or(derived.1),
+        r[2].unwrap_or(derived.2),
+        r[3].unwrap_or(derived.3),
+        r[4].unwrap_or(derived.4),
+        r[5].unwrap_or(derived.5),
+        r[6].unwrap_or(derived.6),
+        r[7].unwrap_or(derived.7),
+        r[8].unwrap_or(derived.8),
+    )
+}
+
+fn derived_visible_stats(player: &SnapshotPlayer) -> (f64, f64, f64, f64, f64, f64, f64, f64, f64) {
     let mechanics = avg4(
         player.dribbling,
         player.agility,
@@ -6669,6 +6710,9 @@ mod lead_detector_tests;
 
 #[cfg(test)]
 mod base_defense_tests;
+
+#[cfg(test)]
+mod attribute_tests;
 
 #[cfg(test)]
 mod team_push_tests;
