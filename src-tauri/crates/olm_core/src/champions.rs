@@ -732,6 +732,53 @@ fn upsert_mastery(game: &mut Game, player_id: &str, champion_id: &str, value: u8
     });
 }
 
+/// Where each `(player, champion)` mastery sits in `game.champion_masteries`, so a bulk
+/// seed can upsert in O(1) instead of scanning the table per entry.
+///
+/// Keys use the same comparison as [`upsert_mastery`] (player id as is, champion id
+/// through [`normalize_key`]). When the table already holds a key twice the first entry
+/// wins, as it does for `Iterator::find`.
+struct MasteryIndex {
+    today: String,
+    positions: HashMap<(String, String), usize>,
+}
+
+impl MasteryIndex {
+    fn new(game: &Game) -> Self {
+        let mut positions = HashMap::with_capacity(game.champion_masteries.len());
+        for (position, entry) in game.champion_masteries.iter().enumerate() {
+            positions
+                .entry((entry.player_id.clone(), normalize_key(&entry.champion_id)))
+                .or_insert(position);
+        }
+        Self {
+            today: today_str(game),
+            positions,
+        }
+    }
+
+    /// Same effect as [`upsert_mastery`] on the table this index was built from, provided
+    /// every later change to the table goes through this method.
+    fn upsert(&mut self, game: &mut Game, player_id: &str, champion_id: &str, value: u8) {
+        let value = value.clamp(MIN_MASTERY, MASTERY_CAP);
+        let key = (player_id.to_string(), normalize_key(champion_id));
+        if let Some(&position) = self.positions.get(&key) {
+            let existing = &mut game.champion_masteries[position];
+            existing.mastery = value;
+            existing.last_active_on = self.today.clone();
+            return;
+        }
+
+        self.positions.insert(key, game.champion_masteries.len());
+        game.champion_masteries.push(ChampionMasteryEntry {
+            player_id: player_id.to_string(),
+            champion_id: champion_id.to_string(),
+            mastery: value,
+            last_active_on: self.today.clone(),
+        });
+    }
+}
+
 pub fn bootstrap_seed_masteries(game: &mut Game) {
     // Preserve existing masteries from saves (Flow C).
     if !game.champion_masteries.is_empty() {
@@ -767,6 +814,7 @@ pub fn bootstrap_seed_masteries(game: &mut Game) {
         })
         .collect();
 
+    let mut index = MasteryIndex::new(game);
     for (player_id, role_str) in &player_roles {
         let Some(champions) = by_role.get(role_str.as_str()) else {
             continue;
@@ -792,7 +840,7 @@ pub fn bootstrap_seed_masteries(game: &mut Game) {
         for champion_id in sorted.iter().take(count) {
             let mastery_seed = format!("{}_{}_mastery", player_id, champion_id);
             let mastery = 40 + (hash_text(&mastery_seed) as u8 % 41); // 40..80
-            upsert_mastery(game, player_id, champion_id, mastery);
+            index.upsert(game, player_id, champion_id, mastery);
         }
     }
 }
@@ -2480,6 +2528,8 @@ mod tests {
     }
 }
 
+#[cfg(test)]
+mod pool_equivalence_tests;
 #[cfg(test)]
 mod soloq_decay_tests;
 #[cfg(test)]
