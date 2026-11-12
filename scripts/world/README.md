@@ -21,7 +21,7 @@ npm run verify:world-overlay [-- path/to/overlay.json [path/to/data]]
 Flags: `--competitions a,b` `--offline` `--cache-dir` `--throttle-ms` (4000) `--max-requests` (3000) `--max-cache-age-days` (7) `--as-of`
 `--out` `--report` (default `scripts/world/out/report.md`) `--build-team-map` `--allow-gate-failures` `--dry-run`
 (writes the overlay only when `--out` is given) `--gate-exceptions` (default `scripts/world/gate-exceptions.json`)
-`--data-dir` `--team-map` `--id-map`.
+`--data-dir` `--team-map` `--id-map` `--pool` `--pool-since` `--pool-cap` `--pool-probe` (see "Adding the active-pros pool").
 
 Live runs re-fetch cache entries older than `--max-cache-age-days`; offline runs read any age. `as_of` defaults to the
 fetch date of the oldest cache entry used (an explicit `--as-of` wins, with a warning when it is newer than that).
@@ -150,3 +150,59 @@ cup-qualifier level tournaments, and all limited to leagues (`Tournaments.League
 non-qualifier tournament of such a league). People already in the game are matched with `lib/match.mjs` and the reviewed
 `id-map.json`; people whose current team is in `team-map.json` are left to the roster overlay. Tests: `src/lib/world/pool-scope.test.ts`
 with recorded rows in `scripts/world/fixtures/pool-scope/`.
+
+## Adding the active-pros pool (`--pool`)
+
+Opt-in. Without `--pool` the refresh writes exactly what it wrote before (a test pins the bytes). With it, the overlay also
+carries `add` operations for **teamless free agents**: the players and staff of the pool measured above, so they can be found and
+signed in a new game.
+
+```bash
+# Live: the people queries are heavy (about one a minute); run once, keep the cache. Needs the bot login.
+npm run world:refresh -- --login --pool --dry-run --out /tmp/overlay.json --report /tmp/report.md
+npm run world:refresh -- --offline --pool --pool-cap 60 --pool-probe Send0o      # replays the cache of an earlier live run
+```
+
+Flags: `--pool` `--pool-since YYYY-MM-DD` (default 2023-11-12, three years) `--pool-cap n` (default 60) `--pool-probe <page>`
+(default `Send0o`; `""` for none). Code: `lib/pool-fetch.mjs` (queries), `lib/pool.mjs` (selection, ids, ops),
+`lib/pool-gates.mjs`, `lib/pool-report.mjs`. Tests: `src/lib/world/pool.test.ts`, `pool-refresh.test.ts` with the recorded rows in
+`scripts/world/fixtures/pool/`.
+
+**Who is in.** The `recommended` tournament filter above; people not retired (`Players.IsRetired` 0 or empty) **with a Leaguepedia
+Players page** (it is the only source of country, birth date and role); qualifier-flagged tournaments only when they have at most
+`--pool-cap` roster entries (promotion stages and closed qualifiers stay, open qualifiers go). The cap leaves a qualifier out
+whole; it never keeps "the first 60 names" of one. **Who is out.** Anybody the game has (`lib/match.mjs` plus the reviewed
+`id-map.json`), anybody whose current team is in `team-map.json` (the roster overlay handles them), anybody the same run's roster
+overlay adds or moves, players with no usable position, staff whose label is not coaching/analysis/scouting, and anybody the
+matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision`). Those are listed in the report with the reason.
+
+**Op shape** (the game's `Player`/`Staff` record, `team_id: null`, plus a `pool` object the game ignores; `Bot` becomes `ADC`):
+
+```json
+{ "op": "add", "player": { "id": "player-bea33543", "team_id": null, "position": "Top", "nationality": "ES", "full_name": "...",
+    "date_of_birth": "2004-02-25", "attributes": { "...": 70 }, "potential_base": 74, "wage": 0, "market_value": 0, "contract_end": "" },
+  "evidence": "https://lol.fandom.com/wiki/Send0o", "dob_approx": true,
+  "pool": { "page": "Send0o", "kind": "player", "role": "Top", "region": "EMEA", "country": "Spain", "birth_date": null, "tier": 2,
+    "best_level": "Secondary", "entries": 11, "last_start": "2026-09-23", "games": 106, "tournaments": 11,
+    "leagues": ["..."], "levels": { "Secondary": 11 }, "rating": "tier-default-placeholder" } }
+```
+
+- **Ids** are `player-`/`staff-` + the first 8 hex of `sha256("leaguepedia:" + page title)`, the same function the roster refresh uses, so
+  they depend only on the Leaguepedia page: equal across runs and machines, whatever the input order.
+- **Ratings are a placeholder.** `pool.rating` is `tier-default-placeholder`: the game's median per position (staff: per role) shifted
+  by the person's tier (1 top flight, 0; 2 official circuit, -6; 3 recurring seasonal league, -12), with the usual seeded jitter. A4
+  replaces them from stats; `pool.games` (scoreboard rows in the window, `null` if that query was unavailable), `entries`, `tier`,
+  `best_level`, `leagues` and `levels` are what it reads. `wage`, `market_value` and `contract_end` are the roster refresh's empty
+  values. `dob_approx` is set when the page has no birth date. Staff nationality is the country name, as in the roster refresh.
+- The tournament list of each person is summarised (count, leagues, levels) to keep the overlay small; a list longer than the wiki's
+  `GROUP_CONCAT` limit sets `pool.tournaments_truncated`.
+
+**Gates** (a failed gate exits non-zero and writes nothing unless `--allow-gate-failures`): `pool-size` (at most 5,000 pool players,
+800 pool staff, and the game's own limit of 5,000 ops per list), `pool-complete` (every person has a name and a game role),
+`pool-ids` (derived from the page, unique, none of the game's), `pool-no-duplicates` (no pool person matches a game record or another
+pool person) and `pool-overlay-size` (the app rejects an overlay over 4 MiB: `MAX_OVERLAY_BYTES`). The roster refresh's
+`max-adds-per-team` gate ignores teamless adds.
+
+**Report.** A new "Active-pros pool" section: the funnel (who was left out and why), counts by position, region, level, tier and staff
+kind, the effect of the qualifier cap (tournaments and roster entries kept and left out), a sample per region, the probe (is
+`--pool-probe` in, and if not, which of his tournaments counts and why not) and the refused and ambiguous people with reasons.

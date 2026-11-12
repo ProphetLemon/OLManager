@@ -1,11 +1,13 @@
 // Markdown review report: everything a maintainer must read before committing an overlay.
+import { renderPoolSection } from "./pool-report.mjs";
+
 const md = (text) => String(text ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");
 
 function opLine(entry) {
   return `- \`${entry.op.op}\` ${md(entry.note)} - [evidence](${entry.op.evidence})`;
 }
 
-export function renderReport({ asOf, license, selected, world, teamRows, unmapped, unreadable, ops, gates, issues, clientStats, warnings }) {
+export function renderReport({ asOf, license, selected, world, teamRows, unmapped, unreadable, ops, gates, issues, clientStats, warnings, pool = null }) {
   const lines = [];
   lines.push(`# Roster refresh review (as of ${asOf})`, "");
   lines.push(`- Source: Leaguepedia, license: ${md(license.text)} ${license.url}`);
@@ -54,6 +56,8 @@ export function renderReport({ asOf, license, selected, world, teamRows, unmappe
   lines.push(`- Player ids present in several shards (the game keeps both records): ${world.duplicates.players.length}`);
   for (const d of world.duplicates.players) lines.push(`  - ${d.id}: ${d.shards.join(", ")}`);
   lines.push(`- Staff ids present in several shards: ${world.duplicates.staff.length}`, "");
+
+  if (pool) lines.push(...renderPoolSection(pool));
 
   if (warnings.length) lines.push("## Warnings", "", ...warnings.map((w) => `- ${md(w)}`), "");
   return `${lines.join("\n")}\n`;

@@ -99,7 +99,8 @@ export function runGates({ overlay, world, coveredTeamIds, options = {}, gateExc
 
   const overfull = [];
   const addsPerTeam = new Map();
-  for (const op of playerOps) if (op.op === "add") addsPerTeam.set(op.player.team_id, (addsPerTeam.get(op.player.team_id) ?? 0) + 1);
+  // Teamless adds (the active-pros pool's free agents) belong to no team, so they never count against one.
+  for (const op of playerOps) if (op.op === "add" && op.player.team_id) addsPerTeam.set(op.player.team_id, (addsPerTeam.get(op.player.team_id) ?? 0) + 1);
   for (const [teamId, count] of addsPerTeam) if (count > config.maxAddsPerTeam) overfull.push(`${teamId} +${count}`);
   results.push(gate("max-adds-per-team", "team", overfull.length === 0, overfull.length ? `too many new players: ${overfull.join(", ")}` : `no team gains more than ${config.maxAddsPerTeam} new players`));
 

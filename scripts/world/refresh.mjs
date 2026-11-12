@@ -11,6 +11,7 @@ import { serializeOverlay } from "./lib/overlay.mjs";
 import { resolveKeyPath, signOverlayFile } from "./lib/signing.mjs";
 import { runRefresh } from "./lib/pipeline.mjs";
 import { buildTeamMap, loadTeamMap, summarizeTeamMap } from "./lib/team-map.mjs";
+import { DEFAULT_POOL_PROBE, DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP } from "./lib/pool.mjs";
 import { coveredCompetitionIds, loadWorld } from "./lib/world.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
@@ -32,6 +33,14 @@ const HELP = `Usage: node scripts/world/refresh.mjs [flags]
   --dry-run               do not write the overlay unless --out is given explicitly
   --gate-exceptions <file> reviewed max-changed-share exceptions (default scripts/world/gate-exceptions.json; missing = none)
   --data-dir, --team-map, --id-map   override input locations (tests, experiments)
+
+Active-pros pool (opt-in; without --pool the output is unchanged): add, as teamless free agents, the non-retired players and
+staff with a Leaguepedia Players page and a roster entry in a league tournament of the last years (the "recommended" filter
+of pool-scope.mjs), minus people the game already has or the roster overlay handles. See scripts/world/README.md.
+  --pool                  turn the pool on (needs --login for live runs; the people queries are heavy, run it once and keep the cache)
+  --pool-since YYYY-MM-DD first tournament start date (default ${DEFAULT_POOL_SINCE})
+  --pool-cap <n>          qualifier-flagged tournaments count only up to <n> roster entries (default ${DEFAULT_QUALIFIER_CAP})
+  --pool-probe <page>     Leaguepedia page whose inclusion the report explains (default ${DEFAULT_POOL_PROBE}; "" for none)
 `;
 
 const { values } = parseArgs({
@@ -53,6 +62,10 @@ const { values } = parseArgs({
     "team-map": { type: "string", default: path.join(ROOT, "scripts/world/team-map.json") },
     "gate-exceptions": { type: "string", default: path.join(ROOT, "scripts/world/gate-exceptions.json") },
     "id-map": { type: "string", default: path.join(ROOT, "scripts/world/id-map.json") },
+    pool: { type: "boolean", default: false },
+    "pool-since": { type: "string", default: DEFAULT_POOL_SINCE },
+    "pool-cap": { type: "string", default: String(DEFAULT_QUALIFIER_CAP) },
+    "pool-probe": { type: "string", default: DEFAULT_POOL_PROBE },
     help: { type: "boolean", default: false },
   },
 });
@@ -99,11 +112,13 @@ async function refresh() {
     client,
     gateExceptions: loadGateExceptions(values["gate-exceptions"]),
     asOf: values["as-of"],
+    pool: values.pool ? { since: values["pool-since"], cap: Number(values["pool-cap"]), probe: values["pool-probe"] } : undefined,
     log,
   });
   writeFile(values.report, result.report);
   const failed = result.gates.results.filter((g) => !g.ok);
   console.log(`players: ${result.summary.players} ops, staff: ${result.summary.staff} ops, unmapped teams: ${result.summary.unmapped}, unreadable pages: ${result.summary.unreadable}`);
+  if (result.pool) console.log(`pool: ${result.pool.selection.players.length} players, ${result.pool.selection.staff.length} staff added as free agents (${result.pool.bytes} bytes of overlay)`);
   console.log(`gates: ${result.gates.results.length - failed.length}/${result.gates.results.length} passed${failed.length ? ` (FAILED: ${failed.map((g) => g.name).join(", ")})` : ""}`);
   console.log(`requests: ${client.stats.network} live, ${client.stats.cacheHits} cached; report: ${values.report}`);
   if (failed.length && !values["allow-gate-failures"]) {

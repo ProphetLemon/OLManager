@@ -2,6 +2,9 @@ import type { MediaWikiClient } from "./mediawiki-client.mjs";
 import type { GateExceptions, GateResult } from "./gates.mjs";
 import type { World } from "./world.mjs";
 import type { RosterOverlay } from "./overlay-schema.mjs";
+import type { PoolInputs } from "./pool-fetch.mjs";
+import type { ProbeExplanation } from "./pool-report.mjs";
+import type { PoolSelection } from "./pool.mjs";
 
 export interface OpEntry {
   op: Record<string, any>;
@@ -18,6 +21,8 @@ export interface RefreshResult {
   summary: { players: number; staff: number; unmapped: number; unreadable: number; coverage: string[] };
   warnings: string[];
   ops: { players: OpEntry[]; staff: OpEntry[]; skipped: Array<{ kind: string; subject: string; detail: string }> };
+  /** Present only when the run was asked for the active-pros pool. */
+  pool?: { settings: { since: string; cap: number }; inputs: PoolInputs; selection: PoolSelection; probe: ProbeExplanation | null; bytes: number };
 }
 export function loadIdMap(file: string | undefined): Record<string, any>;
 export function fetchTeamRoster(client: MediaWikiClient, title: string): Promise<{ error?: string; players: any[]; staff: any[] }>;
@@ -30,5 +35,7 @@ export function runRefresh(options: {
   asOf?: string;
   gateOptions?: Record<string, number>;
   gateExceptions?: GateExceptions;
+  /** Opt-in active-pros pool; `inputs` replaces the Leaguepedia queries (tests). */
+  pool?: { since?: string; cap?: number; probe?: string; inputs?: PoolInputs };
   log?: (message: string) => void;
 }): Promise<RefreshResult>;
