@@ -35,6 +35,9 @@ export interface FounderIdentityOverride {
 
 export type FounderOverrides = Partial<Record<FounderRoleKey, FounderIdentityOverride>>;
 
+/** Profile photos per role: the normalized `data:image/png;base64,...` each founder was given. */
+export type FounderPhotos = Partial<Record<FounderRoleKey, string>>;
+
 export type FounderField = "nick" | "full_name" | "nationality" | "birth_date";
 
 export const FOUNDER_FIELDS: readonly FounderField[] = ["nick", "full_name", "nationality", "birth_date"];
@@ -135,6 +138,7 @@ export type FounderFieldReason =
 
 export type FounderError =
   | { kind: "invalid_field"; role: FounderRole; field: FounderField; reason: FounderFieldReason }
+  | { kind: "invalid_photo"; role: FounderRole }
   | { kind: "player_not_found"; player_id: string }
   | { kind: "not_a_founder"; player_id: string }
   | { kind: "nothing_to_change" };
@@ -180,6 +184,12 @@ export function parseFounderError(raw: unknown): FounderError | null {
         };
       }
       return null;
+    }
+    case "invalid_photo": {
+      const { role } = record;
+      return typeof role === "string" && (FOUNDER_ROLES as readonly string[]).includes(role)
+        ? { kind: "invalid_photo", role: role as FounderRole }
+        : null;
     }
     case "player_not_found":
     case "not_a_founder":
@@ -267,6 +277,20 @@ export function withRoleOverride(
 /** Number of founders with at least one identity edit. */
 export function overrideCount(overrides: FounderOverrides): number {
   return Object.keys(overrides).length;
+}
+
+// ---------------------------------------------------------------- photos
+
+export function isEmptyPhotos(photos: FounderPhotos | undefined): boolean {
+  return !photos || Object.keys(photos).length === 0;
+}
+
+/** Photos with `role` set to `photo`, or removed when `photo` is null. */
+export function withRolePhoto(photos: FounderPhotos, role: FounderRole, photo: string | null): FounderPhotos {
+  const key = roleKey(role);
+  const { [key]: _removed, ...rest } = photos;
+  void _removed;
+  return photo ? { ...rest, [key]: photo } : rest;
 }
 
 // ------------------------------------------------------------ rename rule

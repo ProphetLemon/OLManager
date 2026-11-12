@@ -15,6 +15,7 @@ import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
 import { Meter } from "@/ui-v2/components/ui/meter";
 import { TagBlock } from "@/ui-v2/components/ui/tag-block";
 import FounderEditDialog from "./FounderEditDialog";
+import FounderPhotoControl from "./FounderPhotoControl";
 import type { FoundingSquadState } from "./useFoundingSquad";
 
 /** Attribute field to its `playerProfile.lolStats` label key. */
@@ -47,8 +48,9 @@ export default function FoundersStep({ state, installError }: FoundersStepProps)
   // in flight; only then does the next ready state count as the answer to announce.
   const announceNext = useRef<"idle" | "asked" | "loading">("idle");
 
-  const { squad, generated, status, overrides, rerollsLeft } = state;
-  const editedCount = overrideCount(overrides);
+  const { squad, generated, status, overrides, photos, rerollsLeft } = state;
+  // A reroll discards the photos too, so they ask for the same confirmation as the edits.
+  const editedCount = overrideCount(overrides) + Object.keys(photos).length;
   const noRerolls = rerollsLeft <= 0;
   const busy = status === "loading";
 
@@ -207,6 +209,8 @@ export default function FoundersStep({ state, installError }: FoundersStepProps)
                   key={player.id}
                   player={player}
                   edited={Boolean(overrides[roleKey(player.role)])}
+                  photo={photos[roleKey(player.role)] ?? null}
+                  onPhoto={(photo) => state.setPhoto(player.role, photo)}
                   language={i18n.language}
                   disabled={status !== "ready"}
                   onEdit={() => setEditingId(player.id)}
@@ -234,7 +238,9 @@ export default function FoundersStep({ state, installError }: FoundersStepProps)
 function InstallError({ error }: { error: FounderError }) {
   const { t } = useTranslation();
   const text =
-    error.kind === "invalid_field"
+    error.kind === "invalid_photo"
+      ? t("teamSelect.founders.photo.installFailed", { role: t(`onAir.roles.${error.role}`) })
+      : error.kind === "invalid_field"
       ? t("teamSelect.founders.installFailed", {
           role: t(`onAir.roles.${error.role}`),
           field: t(`teamSelect.founders.dialog.fields.${error.field}`),
@@ -255,12 +261,14 @@ function InstallError({ error }: { error: FounderError }) {
 interface FounderRowProps {
   player: FounderSummary;
   edited: boolean;
+  photo: string | null;
+  onPhoto: (photo: string | null) => void;
   language: string;
   disabled: boolean;
   onEdit: () => void;
 }
 
-function FounderRow({ player, edited, language, disabled, onEdit }: FounderRowProps) {
+function FounderRow({ player, edited, photo, onPhoto, language, disabled, onEdit }: FounderRowProps) {
   const { t } = useTranslation();
   const role = t(`onAir.roles.${player.role}`);
   return (
@@ -309,6 +317,16 @@ function FounderRow({ player, edited, language, disabled, onEdit }: FounderRowPr
           <Pencil aria-hidden="true" />
           {t("teamSelect.founders.edit")}
         </Button>
+      </div>
+      <div className="mt-3">
+        <FounderPhotoControl
+          playerId={player.id}
+          nick={player.nick}
+          roleLabel={role}
+          photo={photo}
+          onChange={onPhoto}
+          disabled={disabled}
+        />
       </div>
       <dl
         role="group"

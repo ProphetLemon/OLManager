@@ -189,4 +189,60 @@ describe("useFoundingSquad", () => {
     act(() => result.current.retry());
     await waitFor(() => expect(result.current.inSync).toBe(true));
   });
+
+  describe("photos", () => {
+    const PHOTO = "data:image/png;base64,AAAA";
+
+    it("starts without photos", async () => {
+      const { result } = renderHook(() => useFoundingSquad(input));
+      await waitFor(() => expect(result.current.inSync).toBe(true));
+
+      expect(result.current.photos).toEqual({});
+    });
+
+    it("keeps a chosen photo per role without previewing the squad again", async () => {
+      const { result } = renderHook(() => useFoundingSquad(input));
+      await waitFor(() => expect(result.current.inSync).toBe(true));
+      const previews = calls.length;
+
+      act(() => result.current.setPhoto("MID", PHOTO));
+
+      expect(result.current.photos).toEqual({ mid: PHOTO });
+      expect(result.current.inSync).toBe(true);
+      expect(calls).toHaveLength(previews);
+    });
+
+    it("removes a photo with null", async () => {
+      const { result } = renderHook(() => useFoundingSquad(input));
+      await waitFor(() => expect(result.current.inSync).toBe(true));
+      act(() => result.current.setPhoto("MID", PHOTO));
+
+      act(() => result.current.setPhoto("MID", null));
+
+      expect(result.current.photos).toEqual({});
+    });
+
+    it("keeps the photos through an identity edit", async () => {
+      const { result } = renderHook(() => useFoundingSquad(input));
+      await waitFor(() => expect(result.current.inSync).toBe(true));
+      act(() => result.current.setPhoto("TOP", PHOTO));
+
+      await act(async () => {
+        await result.current.applyOverrides({ mid: { nick: "Ray" } });
+      });
+
+      expect(result.current.photos).toEqual({ top: PHOTO });
+    });
+
+    it("drops the photos with a reroll, because the squad is five other people", async () => {
+      const { result } = renderHook(() => useFoundingSquad(input));
+      await waitFor(() => expect(result.current.inSync).toBe(true));
+      act(() => result.current.setPhoto("TOP", PHOTO));
+
+      act(() => result.current.reroll());
+      await waitFor(() => expect(result.current.inSync).toBe(true));
+
+      expect(result.current.photos).toEqual({});
+    });
+  });
 });

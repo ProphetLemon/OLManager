@@ -896,6 +896,26 @@
       "wage": "Wage {{value}}",
       "edit": "Edit",
       "editAria": "Edit {{nick}}, {{role}}",
+      "photo": {
+        "add": "Add photo",
+        "replace": "Change photo",
+        "remove": "Remove photo",
+        "addAria": "Add a photo for {{nick}}, {{role}}",
+        "replaceAria": "Change the photo of {{nick}}, {{role}}",
+        "removeAria": "Remove the photo of {{nick}}, {{role}}",
+        "previewAlt": "Photo of {{nick}}, {{role}}",
+        "hint": "PNG, JPEG or WebP, up to 2 MB. The centre of the image is used as a square. Without a photo, the default avatar is used.",
+        "processing": "Preparing the photo...",
+        "installFailed": "The photo of the {{role}} could not be used. Choose another one or remove it.",
+        "errors": {
+          "unsupportedType": "Use a PNG, JPEG or WebP image. SVG and other formats are not accepted.",
+          "fileTooLarge": "That file is larger than 2 MB. Pick a smaller image.",
+          "unreadable": "That image could not be read. Try another file.",
+          "invalid": "That image could not be used as a photo. Try another file.",
+          "tooBig": "That image is too large to use. Try a smaller one.",
+          "failed": "The photo could not be prepared. Try again."
+        }
+      },
       "attributes": "Attributes",
       "editsDropped": "Your edits no longer fit this club, so the generated squad was restored.",
       "installFailed": "Squad rejected. {{role}}, {{field}}: {{reason}}",

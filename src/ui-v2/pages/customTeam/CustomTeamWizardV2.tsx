@@ -20,7 +20,7 @@ import {
 } from "@/lib/customTeam";
 import type { CustomTeamField, CustomTeamMode, ValidationCode } from "@/lib/customTeam";
 import { allNationalities } from "@/lib/common/countries";
-import { isEmptyOverrides, parseFounderError } from "@/lib/customTeam/founders";
+import { isEmptyOverrides, isEmptyPhotos, parseFounderError } from "@/lib/customTeam/founders";
 import type { CompetitionSummary, CustomTeamSpec, TeamSummary } from "@/store/types";
 import { Card, CardContent, CardHeader } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
@@ -230,6 +230,16 @@ export default function CustomTeamWizardV2({
     if (error) setAckedError(error);
   }, [squadKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Changing a photo also answers a founder rejection (a photo the backend refused).
+  const firstPhotos = useRef(true);
+  useEffect(() => {
+    if (firstPhotos.current) {
+      firstPhotos.current = false;
+      return;
+    }
+    if (error) setAckedError(error);
+  }, [squad.photos]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // A fresh submission clears the error; forget the acknowledgement so an
   // identical rejection is shown again.
   useEffect(() => {
@@ -341,6 +351,7 @@ export default function CustomTeamWizardV2({
         // The install reproduces the last preview: same seed and same edits.
         founding_seed: squad.seed,
         ...(isEmptyOverrides(squad.overrides) ? {} : { founder_overrides: squad.overrides }),
+        ...(isEmptyPhotos(squad.photos) ? {} : { founder_photos: squad.photos }),
       },
       mode === "join" ? null : replacesId,
     );

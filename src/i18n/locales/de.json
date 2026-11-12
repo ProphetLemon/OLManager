@@ -728,6 +728,26 @@
       "wage": "Gehalt {{value}}",
       "edit": "Bearbeiten",
       "editAria": "{{nick}} bearbeiten, {{role}}",
+      "photo": {
+        "add": "Foto hinzufügen",
+        "replace": "Foto ändern",
+        "remove": "Foto entfernen",
+        "addAria": "Foto für {{nick}} hinzufügen, {{role}}",
+        "replaceAria": "Foto von {{nick}} ändern, {{role}}",
+        "removeAria": "Foto von {{nick}} entfernen, {{role}}",
+        "previewAlt": "Foto von {{nick}}, {{role}}",
+        "hint": "PNG, JPEG oder WebP, bis zu 2 MB. Die Bildmitte wird als Quadrat verwendet. Ohne Foto wird der Standard-Avatar verwendet.",
+        "processing": "Das Foto wird vorbereitet...",
+        "installFailed": "Das Foto für {{role}} konnte nicht verwendet werden. Wähle ein anderes oder entferne es.",
+        "errors": {
+          "unsupportedType": "Verwende ein PNG-, JPEG- oder WebP-Bild. SVG und andere Formate werden nicht akzeptiert.",
+          "fileTooLarge": "Die Datei ist größer als 2 MB. Wähle ein kleineres Bild.",
+          "unreadable": "Das Bild konnte nicht gelesen werden. Versuche eine andere Datei.",
+          "invalid": "Das Bild kann nicht als Foto verwendet werden. Versuche eine andere Datei.",
+          "tooBig": "Das Bild ist zu groß. Versuche ein kleineres.",
+          "failed": "Das Foto konnte nicht vorbereitet werden. Versuche es erneut."
+        }
+      },
       "attributes": "Attribute",
       "editsDropped": "Deine Änderungen passen nicht mehr zu diesem Verein, deshalb wurde der erzeugte Kader wiederhergestellt.",
       "installFailed": "Kader abgelehnt. {{role}}, {{field}}: {{reason}}",

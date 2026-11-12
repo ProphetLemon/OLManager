@@ -7,10 +7,13 @@ import {
   newFoundingSeed,
   parseFounderError,
   previewFoundingSquad,
+  withRolePhoto,
 } from "@/lib/customTeam/founders";
 import type {
   FounderError,
   FounderOverrides,
+  FounderPhotos,
+  FounderRole,
   FoundingSquadSummary,
 } from "@/lib/customTeam/founders";
 
@@ -38,6 +41,8 @@ export interface FoundingSquadState {
   error: string | null;
   seed: number;
   overrides: FounderOverrides;
+  /** Profile photos chosen for the founders; they never change the preview. */
+  photos: FounderPhotos;
   rerollsLeft: number;
   /** An identity edit made on a previous preview no longer fit and was dropped. */
   editsDropped: boolean;
@@ -45,6 +50,8 @@ export interface FoundingSquadState {
   inSync: boolean;
   reroll: () => void;
   retry: () => void;
+  /** Sets the photo of the founder in `role`, or removes it with `null`. */
+  setPhoto: (role: FounderRole, photo: string | null) => void;
   /**
    * Validates `next` by previewing it. Resolves with the backend's field error,
    * `SUPERSEDED` when a newer request replaced this one (nothing was kept), or
@@ -78,6 +85,9 @@ export function useFoundingSquad({
   const [seed, setSeed] = useState(() => newFoundingSeed());
   const [rerollsUsed, setRerollsUsed] = useState(0);
   const [overrides, setOverrides] = useState<FounderOverrides>({});
+  // Photos are not part of the preview key: the preview does not carry them, so choosing one
+  // neither refetches the squad nor closes Create club.
+  const [photos, setPhotos] = useState<FounderPhotos>({});
   const [squad, setSquad] = useState<FoundingSquadSummary | null>(null);
   const [generated, setGenerated] = useState<FoundingSquadSummary | null>(null);
   const [previewKey, setPreviewKey] = useState<string | null>(null);
@@ -143,8 +153,15 @@ export function useFoundingSquad({
     setRerollsUsed((used) => used + 1);
     setSeed(newFoundingSeed());
     setOverrides({});
+    // A new squad is five other people: the old photos would sit on strangers.
+    setPhotos({});
     setEditsDropped(false);
   }, [rerollsUsed]);
+
+  const setPhoto = useCallback(
+    (role: FounderRole, photo: string | null) => setPhotos((current) => withRolePhoto(current, role, photo)),
+    [],
+  );
 
   const retry = useCallback(() => setRetryTick((tick) => tick + 1), []);
 
@@ -185,11 +202,13 @@ export function useFoundingSquad({
     error,
     seed,
     overrides,
+    photos,
     rerollsLeft: MAX_REROLLS - rerollsUsed,
     editsDropped,
     inSync: status === "ready" && previewKey === currentKey && squad !== null,
     reroll,
     retry,
+    setPhoto,
     applyOverrides,
   };
 }

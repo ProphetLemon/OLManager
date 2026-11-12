@@ -52,6 +52,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "typescript")]
 use ts_rs::TS;
 
+use crate::custom_logo::{self, LogoError};
 use crate::domain::player::Player;
 use crate::domain::stats::LolRole;
 use crate::game::Game;
@@ -137,6 +138,79 @@ impl FounderOverrides {
     }
 }
 
+/// Profile photos chosen for the founders, per role, as the
+/// `data:image/png;base64,...` strings `prepare_custom_portrait` returns. A role
+/// left out keeps the default avatar. Photos are stored in the player, so a save
+/// carries them and needs no file on the creator's disk.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "typescript", derive(TS))]
+#[cfg_attr(feature = "typescript", ts(export))]
+pub struct FounderPhotos {
+    /// Photo of the top laner.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(optional))]
+    pub top: Option<String>,
+    /// Photo of the jungler.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(optional))]
+    pub jungle: Option<String>,
+    /// Photo of the mid laner.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(optional))]
+    pub mid: Option<String>,
+    /// Photo of the bot laner.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(optional))]
+    pub adc: Option<String>,
+    /// Photo of the support.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(optional))]
+    pub support: Option<String>,
+}
+
+impl FounderPhotos {
+    /// The photo for `role`, if any.
+    pub fn for_role(&self, role: LolRole) -> Option<&str> {
+        match role {
+            LolRole::Top => self.top.as_deref(),
+            LolRole::Jungle => self.jungle.as_deref(),
+            LolRole::Mid => self.mid.as_deref(),
+            LolRole::Adc => self.adc.as_deref(),
+            LolRole::Support => self.support.as_deref(),
+            LolRole::Unknown => None,
+        }
+    }
+
+    /// Whether no role carries a photo.
+    pub fn is_empty(&self) -> bool {
+        [&self.top, &self.jungle, &self.mid, &self.adc, &self.support]
+            .iter()
+            .all(|slot| slot.is_none())
+    }
+}
+
+/// A founder photo the image process rejected.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct FounderPhotoError {
+    /// Role of the founder the photo was for.
+    pub role: LolRole,
+    /// Why the image was rejected.
+    pub reason: LogoError,
+}
+
+impl fmt::Display for FounderPhotoError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:?} founder photo rejected: {}",
+            self.role,
+            self.reason.reason()
+        )
+    }
+}
+
+impl std::error::Error for FounderPhotoError {}
+
 /// The identity field an error is about.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -202,6 +276,8 @@ impl std::error::Error for FounderEditError {}
 pub enum FounderError {
     /// A field failed validation.
     InvalidField(FounderEditError),
+    /// A founder photo was not a usable image.
+    InvalidPhoto(FounderPhotoError),
     /// No player has this id.
     PlayerNotFound {
         /// The id that was asked for.
@@ -227,6 +303,7 @@ impl fmt::Display for FounderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidField(error) => write!(f, "{error}"),
+            Self::InvalidPhoto(error) => write!(f, "{error}"),
             Self::PlayerNotFound { player_id } => write!(f, "player '{player_id}' was not found"),
             Self::NotAFounder { player_id } => {
                 write!(f, "player '{player_id}' is not a founder of your club")
@@ -591,6 +668,36 @@ pub fn apply_founder_overrides(
         if let Some(birth_date) = validated.birth_date {
             player.date_of_birth = birth_date;
         }
+    }
+    Ok(())
+}
+
+/// Gives each founder in `player_ids` the photo chosen for his role, after
+/// validating and re-encoding it with [`custom_logo::normalize_portrait`]: the
+/// stored string is the normalized one, never the input. Every photo is checked
+/// before any player is changed, so an error leaves the game untouched.
+pub fn apply_founder_photos(
+    game: &mut Game,
+    player_ids: &[String],
+    photos: &FounderPhotos,
+) -> Result<(), FounderPhotoError> {
+    let mut prepared = Vec::new();
+    for (index, player) in game.players.iter().enumerate() {
+        if !player_ids.contains(&player.id) {
+            continue;
+        }
+        let Some(raw) = photos.for_role(player.natural_position) else {
+            continue;
+        };
+        let normalized =
+            custom_logo::normalize_portrait(raw).map_err(|reason| FounderPhotoError {
+                role: player.natural_position,
+                reason,
+            })?;
+        prepared.push((index, normalized));
+    }
+    for (index, normalized) in prepared {
+        game.players[index].profile_image_url = Some(normalized);
     }
     Ok(())
 }

@@ -727,6 +727,26 @@
       "wage": "Salário {{value}}",
       "edit": "Editar",
       "editAria": "Editar {{nick}}, {{role}}",
+      "photo": {
+        "add": "Adicionar foto",
+        "replace": "Alterar foto",
+        "remove": "Remover foto",
+        "addAria": "Adicionar uma foto para {{nick}}, {{role}}",
+        "replaceAria": "Alterar a foto de {{nick}}, {{role}}",
+        "removeAria": "Remover a foto de {{nick}}, {{role}}",
+        "previewAlt": "Foto de {{nick}}, {{role}}",
+        "hint": "PNG, JPEG ou WebP, até 2 MB. O centro da imagem é usado como um quadrado. Sem foto, é usado o avatar predefinido.",
+        "processing": "A preparar a foto...",
+        "installFailed": "Não foi possível usar a foto de {{role}}. Escolhe outra ou remove-a.",
+        "errors": {
+          "unsupportedType": "Usa uma imagem PNG, JPEG ou WebP. SVG e outros formatos não são aceites.",
+          "fileTooLarge": "Esse ficheiro tem mais de 2 MB. Escolhe uma imagem mais pequena.",
+          "unreadable": "Não foi possível ler essa imagem. Tenta outro ficheiro.",
+          "invalid": "Essa imagem não pode ser usada como foto. Tenta outro ficheiro.",
+          "tooBig": "Essa imagem é demasiado grande. Tenta uma mais pequena.",
+          "failed": "Não foi possível preparar a foto. Tenta novamente."
+        }
+      },
       "attributes": "Atributos",
       "editsDropped": "As tuas edições já não se adequam a este clube, por isso o plantel gerado foi restaurado.",
       "installFailed": "Plantel rejeitado. {{role}}, {{field}}: {{reason}}",

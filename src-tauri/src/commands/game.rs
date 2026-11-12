@@ -39,7 +39,7 @@ pub struct TeamSelectionData {
 
 use olm_core::competitions::{competition_id_from_team_id_known, sanitize_competition_references};
 use olm_core::custom_team::{self, CustomTeamSpec};
-use olm_core::founder_identity::{FounderError, FounderOverrides};
+use olm_core::founder_identity::{FounderError, FounderOverrides, apply_founder_photos};
 use olm_core::founding_squad::{
     FoundingSquadError, FoundingSquadOutcome, FoundingSquadSummary, install_founding_squad_with,
     plan_founding_squad,
@@ -314,6 +314,10 @@ fn install_generated_squad(
         &args.overrides,
     ) {
         Ok(outcome) => {
+            if let Some(photos) = spec.founder_photos.as_ref().filter(|p| !p.is_empty()) {
+                apply_founder_photos(game, &outcome.player_ids, photos)
+                    .map_err(FounderError::InvalidPhoto)?;
+            }
             info!(
                 "[game] founding squad for {} (seed {}): {} players, wage budget {} (peer median {}, {} peers{})",
                 team_id,
@@ -435,6 +439,8 @@ pub async fn preview_founding_squad(
             logo_data_uri: None,
             founding_seed: Some(seed),
             founder_overrides,
+            // The preview never carries photos: they do not change a single stat.
+            founder_photos: None,
         };
         preview_founding_squad_world(&NewGameWorldInputs {
             data_dir: &data_dir,
@@ -1831,6 +1837,7 @@ mod tests {
             logo_data_uri: None,
             founding_seed: None,
             founder_overrides: None,
+            founder_photos: None,
         }
     }
 
@@ -3249,6 +3256,7 @@ mod tests {
                 logo_data_uri: None,
                 founding_seed: None,
                 founder_overrides: None,
+                founder_photos: None,
             }
         }
 
@@ -5491,6 +5499,7 @@ mod tests {
                 logo_data_uri: None,
                 founding_seed: Some(seed),
                 founder_overrides: overrides,
+                founder_photos: None,
             };
             preview_founding_squad_world(&NewGameWorldInputs {
                 data_dir: &data,
@@ -5792,6 +5801,73 @@ mod tests {
             let json = serde_json::to_string(&game).expect("serialize");
             let loaded: Game = serde_json::from_str(&json).expect("deserialize");
             assert_eq!(squad_fingerprint(&game, &id), squad_fingerprint(&loaded, &id));
+        }
+
+        /// A 6x2 red PNG: wider than tall, so the portrait process must crop it square.
+        const RED_STRIP_PNG: &str = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAACCAYAAAB7Xa1eAAAAEklEQVR4nGM4ISf3HxtmwCUBAFf2GCVZSxv0AAAAAElFTkSuQmCC";
+
+        fn game_with_photos(
+            photos: olm_core::founder_identity::FounderPhotos,
+        ) -> Result<(Game, String), String> {
+            let spec = CustomTeamSpec {
+                founder_photos: Some(photos),
+                ..install_spec("RAY", 7, None)
+            };
+            try_build_world(LES_SLOT, Some(&spec)).map(|(game, _overlay, id)| (game, id))
+        }
+
+        /// A founder photo chosen in the wizard is stored, square and re-encoded, in the player of
+        /// that role, and a save round trip keeps it without any file on disk.
+        #[test]
+        fn a_founder_photo_is_stored_in_the_player_and_survives_a_save_round_trip() {
+            let (game, id) = game_with_photos(olm_core::founder_identity::FounderPhotos {
+                mid: Some(RED_STRIP_PNG.to_string()),
+                ..Default::default()
+            })
+            .expect("world");
+
+            let stored = |game: &Game, role| {
+                founders(game, &id)
+                    .into_iter()
+                    .find(|p| p.natural_position == role)
+                    .and_then(|p| p.profile_image_url.clone())
+            };
+            let photo = stored(&game, LolRole::Mid).expect("mid photo");
+            assert_eq!(
+                Some(photo.clone()),
+                olm_core::custom_logo::normalize_portrait(RED_STRIP_PNG).ok()
+            );
+            assert!(photo.starts_with("data:image/png;base64,"));
+            for role in [LolRole::Top, LolRole::Jungle, LolRole::Adc, LolRole::Support] {
+                assert_eq!(stored(&game, role), None, "{role:?}");
+            }
+            let json = serde_json::to_string(&game).expect("serialize");
+            let loaded: Game = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(stored(&loaded, LolRole::Mid), Some(photo));
+        }
+
+        /// A photo the image process refuses rejects the creation with a wire error that names
+        /// the founder's role and the reason.
+        #[test]
+        fn a_founder_photo_that_is_not_an_image_rejects_the_creation() {
+            let error = game_with_photos(olm_core::founder_identity::FounderPhotos {
+                support: Some("data:image/svg+xml;base64,PHN2Zy8+".to_string()),
+                ..Default::default()
+            })
+            .expect_err("rejected");
+
+            let wire: serde_json::Value =
+                serde_json::from_str(&error).unwrap_or_else(|_| panic!("not a wire error: {error}"));
+            assert_eq!(wire["kind"], "invalid_photo");
+            assert_eq!(wire["role"], "SUPPORT");
+            assert_eq!(wire["reason"], "not_png");
+        }
+
+        /// A club created without photos keeps every founder on the default avatar.
+        #[test]
+        fn a_club_without_photos_keeps_the_default_avatars() {
+            let (game, id) = custom_game();
+            assert!(founders(&game, &id).iter().all(|p| p.profile_image_url.is_none()));
         }
 
         /// When the generator refuses (a league median above what it supports), club

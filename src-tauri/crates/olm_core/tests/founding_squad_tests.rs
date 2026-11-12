@@ -26,6 +26,7 @@ fn spec(seed: Option<u32>) -> CustomTeamSpec {
         logo_data_uri: None,
         founding_seed: seed,
         founder_overrides: None,
+        founder_photos: None,
     }
 }
 

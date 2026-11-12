@@ -17,7 +17,7 @@ use crate::competitions::is_selectable_competition;
 use crate::custom_logo::{self, LogoError};
 use crate::domain::player::Player;
 use crate::domain::team::{AcademyLifecycle, Facilities, Team, TeamColors, TeamKind};
-use crate::founder_identity::FounderOverrides;
+use crate::founder_identity::{FounderOverrides, FounderPhotos};
 use crate::game::Game;
 use crate::game_setup;
 use crate::generator::definitions::CompetitionManifest;
@@ -66,6 +66,13 @@ pub struct CustomTeamSpec {
     #[serde(default)]
     #[cfg_attr(feature = "typescript", ts(optional))]
     pub founder_overrides: Option<FounderOverrides>,
+    /// Profile photos for the generated founders, per role, as
+    /// `data:image/png;base64,...` URIs. Each is validated and re-encoded when the
+    /// squad is installed (see [`crate::founder_identity::apply_founder_photos`]).
+    /// Optional so older payloads still parse.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(optional))]
+    pub founder_photos: Option<FounderPhotos>,
 }
 
 /// Why a custom club could not be created.
@@ -220,6 +227,7 @@ pub fn validate_spec(
         logo_data_uri,
         founding_seed: spec.founding_seed,
         founder_overrides: spec.founder_overrides.clone(),
+        founder_photos: spec.founder_photos.clone(),
     })
 }
 
