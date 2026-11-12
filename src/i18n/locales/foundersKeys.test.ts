@@ -44,6 +44,11 @@ const NAMESPACES: Array<{ path: string[]; prefix: string; sources: string[] }> =
       "../../ui-v2/pages/playerProfile/PlayerProfileRenameModalV2.tsx",
     ],
   },
+  {
+    path: ["playerProfile", "photo"],
+    prefix: "playerProfile.photo",
+    sources: ["../../ui-v2/pages/playerProfile/PlayerProfilePhotoControlV2.tsx"],
+  },
 ];
 
 function leaves(tree: unknown, prefix = ""): Record<string, string> {

@@ -1901,6 +1901,17 @@
     }
   },
   "playerProfile": {
+    "photo": {
+      "add": "Fotoğraf ekle",
+      "change": "Fotoğrafı değiştir",
+      "remove": "Fotoğrafı kaldır",
+      "addAria": "{{nick}} için fotoğraf ekle",
+      "changeAria": "{{nick}} oyuncusunun fotoğrafını değiştir",
+      "removeAria": "{{nick}} oyuncusunun fotoğrafını kaldır",
+      "processing": "Fotoğraf hazırlanıyor...",
+      "saveFailed": "Fotoğraf kaydedilemedi. Tekrar dene.",
+      "notAFounder": "Fotoğrafı yalnızca kulübünün başladığı oyuncular değiştirebilir."
+    },
     "rename": {
       "action": "Yeniden adlandır",
       "actionAria": "{{nick}} oyuncusunu yeniden adlandır",

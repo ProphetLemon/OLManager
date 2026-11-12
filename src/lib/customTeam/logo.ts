@@ -81,8 +81,9 @@ export function parseLogoError(raw: unknown): LogoErrorCode {
     try {
       const parsed: unknown = JSON.parse(text);
       const kind = parsed && typeof parsed === "object" ? (parsed as { kind?: unknown }).kind : undefined;
-      // `prepare_custom_portrait` answers with the same reasons under its own kind.
-      if (kind === "invalid_logo" || kind === "invalid_portrait") {
+      // `prepare_custom_portrait` answers with the same reasons under its own kind, and
+      // `set_player_photo` under the founder error kind `invalid_photo`.
+      if (kind === "invalid_logo" || kind === "invalid_portrait" || kind === "invalid_photo") {
         const reason = (parsed as { reason?: unknown }).reason;
         return (typeof reason === "string" && REASON_TO_CODE[reason]) || "failed";
       }
