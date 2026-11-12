@@ -14,9 +14,14 @@ import { DEFAULT_GATE_OPTIONS, runGates } from "./gates.mjs";
 import { applyRosterFloor } from "./roster-floor.mjs";
 import { lookupInfobox, lookupPlayerStatus } from "./player-status.mjs";
 import { buildOps } from "./ops.mjs";
-import { OFFLINE_LICENSE, buildOverlay, todayUtc } from "./overlay.mjs";
+import { OFFLINE_LICENSE, buildOverlay, serializeOverlay, todayUtc } from "./overlay.mjs";
 import { renderReport } from "./report.mjs";
-import { EMPTY_ID_MAP } from "./match.mjs";
+import { EMPTY_ID_MAP, buildIndex, playerEntity, staffEntity } from "./match.mjs";
+import { fetchPoolInputs } from "./pool-fetch.mjs";
+import { runPoolGates } from "./pool-gates.mjs";
+import { explainProbe } from "./pool-report.mjs";
+import { gameTeamKeys } from "./pool-scope.mjs";
+import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, POOL_LIMITS, buildPoolOps, selectPool } from "./pool.mjs";
 import { loadTeamMap } from "./team-map.mjs";
 import { coveredCompetitionIds, loadWorld } from "./world.mjs";
 
@@ -47,6 +52,8 @@ export async function fetchTeamRoster(client, title) {
  * @param {string} [options.asOf] defaults to the fetch date of the oldest cache entry used
  * @param {object} [options.gateOptions]
  * @param {import("./gates.mjs").GateExceptions} [options.gateExceptions] reviewed max-changed-share exceptions
+ * @param {{since?: string, cap?: number, probe?: string, inputs?: object}} [options.pool] opt-in active-pros pool: teamless free
+ *   agents from the league tournaments of the last years (see lib/pool.mjs). `inputs` replaces the Leaguepedia queries (tests).
  * @param {(message: string) => void} [options.log]
  */
 export async function runRefresh(options) {
@@ -116,7 +123,31 @@ export async function runRefresh(options) {
   const built = buildOps({ world, analysis, statuses, infoboxes, baselines });
   const minRosterSize = options.gateOptions?.minRosterSize ?? DEFAULT_GATE_OPTIONS.minRosterSize;
   const floored = applyRosterFloor({ world, players: built.players, minRosterSize });
-  const ops = { ...built, players: floored.players, skipped: [...built.skipped, ...floored.skipped] };
+  let ops = { ...built, players: floored.players, skipped: [...built.skipped, ...floored.skipped] };
+
+  // --- active-pros pool (opt-in): teamless free agents next to the roster operations ---------------------
+  let poolRun = null;
+  if (options.pool) {
+    const settings = { since: options.pool.since ?? DEFAULT_POOL_SINCE, cap: options.pool.cap ?? DEFAULT_QUALIFIER_CAP };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(settings.since)) throw new Error(`pool: --pool-since must be YYYY-MM-DD, got "${settings.since}"`);
+    if (!Number.isInteger(settings.cap) || settings.cap < 0) throw new Error(`pool: --pool-cap must be a non-negative integer, got "${settings.cap}"`);
+    const inputs = options.pool.inputs ?? (await fetchPoolInputs({ client: options.client, ...settings, probe: options.pool.probe ?? "", log }));
+    warnings.push(...inputs.warnings);
+    const context = {
+      playerIndex: buildIndex(world.players.map(playerEntity)),
+      staffIndex: buildIndex(world.staff.map(staffEntity)),
+      overrides,
+      teamKeys: gameTeamKeys(teamMap),
+    };
+    const rosterIds = new Set([...ops.players, ...ops.staff].map((entry) => entry.id));
+    const selection = selectPool({ people: inputs.people, context, world, rosterIds });
+    const poolOps = buildPoolOps({
+      selection, baselines, games: inputs.games, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])),
+    });
+    ops = { players: [...ops.players, ...poolOps.players], staff: [...ops.staff, ...poolOps.staff], skipped: [...ops.skipped, ...poolOps.skipped] };
+    poolRun = { settings, inputs, selection };
+    log(`pool: ${poolOps.players.length} players, ${poolOps.staff.length} staff as free agents`);
+  }
 
   let license = OFFLINE_LICENSE;
   try {
@@ -136,7 +167,18 @@ export async function runRefresh(options) {
   }
   const asOf = options.asOf ?? oldestFetch ?? todayUtc();
   const overlay = buildOverlay({ asOf, license, coverage, players: ops.players, staff: ops.staff });
-  const gates = runGates({ overlay, world, coveredTeamIds: readableTeamIds, options: options.gateOptions, gateExceptions: options.gateExceptions });
+  let gates = runGates({ overlay, world, coveredTeamIds: readableTeamIds, options: options.gateOptions, gateExceptions: options.gateExceptions });
+  let poolReport = null;
+  if (poolRun) {
+    const bytes = Buffer.byteLength(serializeOverlay(overlay));
+    const results = [...gates.results, ...runPoolGates({ overlay, world, overrides, collisions: poolRun.selection.collisions, bytes })];
+    gates = { ok: results.every((r) => r.ok), results };
+    const { inputs, selection, settings } = poolRun;
+    poolReport = {
+      settings, inputs, selection, limits: POOL_LIMITS, bytes,
+      probe: inputs.probe ? explainProbe({ probe: inputs.probe, tournaments: inputs.tournaments, classes: inputs.classes, entryCount: inputs.entryCount, cap: settings.cap, since: settings.since, selection }) : null,
+    };
+  }
 
   const teamRows = selectedTeams.map((teamId) => {
     const team = world.teams.get(teamId);
@@ -152,8 +194,9 @@ export async function runRefresh(options) {
 
   const report = renderReport({
     asOf: overlay.as_of, license, selected, world, teamRows, unmapped, unreadable, ops, gates,
-    issues: analysis.issues, clientStats: options.client.stats, warnings,
+    issues: analysis.issues, clientStats: options.client.stats, warnings, pool: poolReport,
   });
 
-  return { overlay, gates, report, world, summary: { players: ops.players.length, staff: ops.staff.length, unmapped: unmapped.length, unreadable: unreadable.length, coverage }, warnings, ops };
+  const summary = { players: ops.players.length, staff: ops.staff.length, unmapped: unmapped.length, unreadable: unreadable.length, coverage };
+  return { overlay, gates, report, world, summary, warnings, ops, ...(poolRun ? { pool: { ...poolRun, probe: poolReport.probe, bytes: poolReport.bytes } } : {}) };
 }
