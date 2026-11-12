@@ -184,6 +184,22 @@ fn scrim_setup_window_closed(
         || (current_weekday == first_scrim_weekday && *day_phase != DayPhase::Morning)
 }
 
+/// Whether the career began in the current ISO week after every scrim day of
+/// that week had passed, so the setup lock comes from the career start and not
+/// from anything the player did. With slots on Friday a Friday start is not
+/// "late": those slots are still ahead.
+fn career_started_after_scrim_days(
+    start_date: chrono::DateTime<chrono::Utc>,
+    current_date: chrono::DateTime<chrono::Utc>,
+    slot_days: &[u8],
+) -> bool {
+    let Some(last_slot_day) = slot_days.iter().copied().max() else {
+        return false;
+    };
+    start_date.iso_week() == current_date.iso_week()
+        && start_date.weekday().num_days_from_monday() as u8 > last_slot_day
+}
+
 /// Value kept in `scrim_setup_locked_week_key` while a week planned after its
 /// setup window closed is still being set up. It differs from the plain week
 /// key (the finalize lock), so a new week or an old save ignores it.
@@ -1659,8 +1675,20 @@ pub(crate) fn get_scrim_context_internal(
         }
     };
 
-    let (setup_locked, setup_locked_reason) =
+    let (setup_locked, mut setup_locked_reason) =
         weekly_scrim_setup_lock_state(team, &week_key, current_weekday, game.day_phase.clone());
+    if setup_locked_reason.as_deref() == Some("first_scrim_window")
+        && career_started_after_scrim_days(
+            game.clock.start_date,
+            game.clock.current_date,
+            &scrim_slot_weekdays(effective_scrim_slots(
+                team.scrim_weekly_slots,
+                &team.training_schedule,
+            )),
+        )
+    {
+        setup_locked_reason = Some("career_started_late".to_string());
+    }
 
     let slots: Vec<WeeklyScrimSlotContextResponse> = (0..capacity as usize)
         .map(|index| {
@@ -2453,6 +2481,54 @@ mod tests {
                 plans_for(&[(0, &["team-3"])])
             )
             .is_err());
+        }
+
+        /// A career that began on Friday 2025-01-03 with a plan already filled in,
+        /// viewed on `day` of January with `slots` weekly scrim slots.
+        fn lock_reason_for_friday_start(slots: u8, day: u32) -> Option<String> {
+            let state = setup_state(3, DayPhase::Morning);
+            let mut game = state.get_game(|g| g.clone()).unwrap();
+            game.teams[0].scrim_weekly_slots = slots;
+            game.teams[0].weekly_scrim_plan_team_ids = plans_for(&[(0, &["team-2"])]);
+            game.clock.start_date = Utc.with_ymd_and_hms(2025, 1, 3, 12, 0, 0).unwrap();
+            game.clock.current_date = Utc.with_ymd_and_hms(2025, 1, day, 12, 0, 0).unwrap();
+            state.set_game(game);
+            super::super::get_scrim_context_internal(&state)
+                .unwrap()
+                .week
+                .setup_locked_reason
+        }
+
+        #[test]
+        fn a_career_started_after_the_scrim_days_says_so() {
+            // Balanced: Wednesday and Thursday slots are over by Friday.
+            assert_eq!(
+                lock_reason_for_friday_start(4, 3).as_deref(),
+                Some("career_started_late")
+            );
+            // Still the same ISO week on Sunday.
+            assert_eq!(
+                lock_reason_for_friday_start(4, 5).as_deref(),
+                Some("career_started_late")
+            );
+        }
+
+        #[test]
+        fn a_friday_start_with_friday_slots_keeps_the_regular_lock() {
+            // Intense: Friday slots are still ahead, so the lock is not about the career start.
+            assert_eq!(
+                lock_reason_for_friday_start(6, 3).as_deref(),
+                Some("first_scrim_window")
+            );
+        }
+
+        #[test]
+        fn the_week_after_the_career_start_keeps_the_regular_lock() {
+            // Thursday 2025-01-09 is in the next ISO week.
+            assert_eq!(
+                lock_reason_for_friday_start(4, 9).as_deref(),
+                Some("first_scrim_window")
+            );
         }
 
         #[test]

@@ -3997,6 +3997,7 @@
     "reviewed": "Bilan fait",
     "setupAllSlotsPassed": "Tous les jours de scrims de cette semaine sont passés : il n'y a plus rien à planifier. La planification rouvre lundi prochain.",
     "setupLocked": "La configuration est verrouillée une fois le bloc commencé",
+    "setupLockedCareerStart": "Votre carrière commence après les jours de scrims de cette semaine. La planification ouvre le {{date}}.",
     "setupLockedFirstWindow": "Le premier jour de scrims de cette semaine a déjà commencé, la configuration est donc verrouillée. Elle rouvre lundi prochain.",
     "setupLockedManual": "Vous avez confirmé la configuration de cette semaine, elle est donc verrouillée. Elle rouvre lundi prochain.",
     "setupLockedWeekStarted": "Un bloc de scrims a déjà été joué cette semaine, la configuration est donc verrouillée. Elle rouvre lundi prochain.",

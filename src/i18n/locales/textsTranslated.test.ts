@@ -120,6 +120,7 @@ const NEW_KEYS = [
     "updated",
   ].map((key) => `meta.${key}`),
   "scrims.setupAllSlotsPassed",
+  "scrims.setupLockedCareerStart",
   "scrims.setupLockedFirstWindow",
   "scrims.setupLockedManual",
   "scrims.setupLockedWeekStarted",

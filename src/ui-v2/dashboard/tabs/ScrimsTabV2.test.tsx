@@ -10,6 +10,7 @@ const useScrimContextWithFallbackMock = vi.fn();
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
+    i18n: { language: "en" },
     t: (key: string, fallback?: string | { defaultValue?: string }) => {
       if (key === "scrims.reviewDecisionApplied") return "Decisión aplicada.";
       if (typeof fallback === "string") return fallback;

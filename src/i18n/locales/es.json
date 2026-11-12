@@ -647,6 +647,7 @@
     "reviewed": "Revisado",
     "setupAllSlotsPassed": "Ya han pasado todos los días de scrims de esta semana y no queda nada por planificar. La planificación se reabre el próximo lunes.",
     "setupLocked": "La configuración se bloquea al empezar el bloque",
+    "setupLockedCareerStart": "Tu carrera empieza después de los días de scrim de esta semana. La planificación se abre el {{date}}.",
     "setupLockedFirstWindow": "El primer día de scrims de esta semana ya ha empezado, así que la configuración está bloqueada. Se reabre el próximo lunes.",
     "setupLockedManual": "Has confirmado la configuración de esta semana, así que está bloqueada. Se reabre el próximo lunes.",
     "setupLockedWeekStarted": "Ya se ha jugado un bloque de scrims esta semana, así que la configuración está bloqueada. Se reabre el próximo lunes.",
