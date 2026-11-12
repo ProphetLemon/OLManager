@@ -3931,7 +3931,7 @@
     "reviewBlockTitle": "Blockauswertung",
     "reviewWin": "Sieg",
     "reviewLoss": "Niederlage",
-    "reportFocus": "Fokus",
+    "reportFocus": "Berichtsfokus",
     "detectedIssue": "Erkanntes Problem",
     "freeDayOff": "Den Rest des Tages freigeben",
     "decision": {
@@ -4030,7 +4030,8 @@
     "weeklyReportInline": "Wochenbericht",
     "weeklyVolume": "Wochenumfang",
     "cancelFollowupPrompt": "Scrims abgesagt. Wähle eine Folgeaktion.",
-    "lossStreak": "{{count}} Niederlagen in Folge",
+    "lossStreak_one": "{{count}} Niederlage in Folge",
+    "lossStreak_other": "{{count}} Niederlagen in Folge",
     "risk": {
       "high": "Hoch",
       "medium": "Mittel",

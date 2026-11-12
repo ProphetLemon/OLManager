@@ -3931,7 +3931,7 @@
     "reviewBlockTitle": "Revisão do bloco",
     "reviewWin": "Vitória",
     "reviewLoss": "Derrota",
-    "reportFocus": "Foco",
+    "reportFocus": "Foco do relatório",
     "detectedIssue": "Problema detectado",
     "freeDayOff": "Dar o resto do dia de folga",
     "decision": {
@@ -4030,7 +4030,8 @@
     "weeklyReportInline": "Relatório semanal",
     "weeklyVolume": "Volume semanal",
     "cancelFollowupPrompt": "Scrims cancelados. Escolha o seguimento.",
-    "lossStreak": "Sequência de {{count}} derrotas",
+    "lossStreak_one": "Sequência de {{count}} derrota",
+    "lossStreak_other": "Sequência de {{count}} derrotas",
     "risk": {
       "high": "Alto",
       "medium": "Médio",

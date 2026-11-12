@@ -578,11 +578,11 @@
   },
   "scrims": {
     "reputation": "Rep scrims",
-    "reviewBlockTitle": "Review del bloque",
+    "reviewBlockTitle": "Revisión del bloque",
     "reviewWin": "Victoria",
     "reviewLoss": "Derrota",
-    "reportFocus": "Enfoque",
-    "detectedIssue": "Issue detectado",
+    "reportFocus": "Enfoque del informe",
+    "detectedIssue": "Problema detectado",
     "freeDayOff": "Dar resto del día libre",
     "decision": {
       "cancelScrims": "Cancelar scrims",
@@ -592,7 +592,7 @@
       "targetedDrills": "Ejercicios dirigidos",
       "offerRest": "Ofrecer descanso",
       "dayOff": "Dar resto del día libre",
-      "pushThrough": "Push Through",
+      "pushThrough": "Forzar el bloque",
       "cancelScrimsDesc": "Cancela el siguiente bloque y pasa a trabajo correctivo.",
       "continueBlock2Desc": "Mantén el plan y juega el segundo bloque.",
       "dayOffDesc": "Da el resto del día libre y recupera.",
@@ -680,7 +680,8 @@
     "weeklyReportInline": "Informe semanal",
     "weeklyVolume": "Volumen semanal",
     "cancelFollowupPrompt": "Scrims cancelados. Elige qué hacer después.",
-    "lossStreak": "Racha de {{count}} derrotas",
+    "lossStreak_one": "Racha de {{count}} derrota",
+    "lossStreak_other": "Racha de {{count}} derrotas",
     "risk": {
       "high": "Alto",
       "medium": "Medio",

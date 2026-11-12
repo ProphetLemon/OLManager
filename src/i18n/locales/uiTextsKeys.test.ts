@@ -26,11 +26,13 @@ const LOCALES: Record<string, Tree> = {
   tr: tr as Tree,
 };
 
+/** A key the code asks for with a `count` has no text of its own: its `_other` form stands for the family. */
 function lookup(locale: Tree, key: string): string | undefined {
   let node: string | Tree | undefined = locale;
-  for (const part of key.split(".")) {
+  const parts = key.split(".");
+  for (const [index, part] of parts.entries()) {
     if (!node || typeof node === "string") return undefined;
-    node = node[part];
+    node = node[part] ?? (index === parts.length - 1 ? node[`${part}_other`] : undefined);
   }
   return typeof node === "string" ? node : undefined;
 }
@@ -138,7 +140,6 @@ describe("Scrims tab keys", () => {
     "scrims.manualLabel": ["es", "pt", "pt-BR"],
     "scrims.block": ["de"],
     "scrims.impactLabel": ["fr"],
-    "scrims.reportFocus": ["it"],
     "scrims.effect.condition": ["fr"],
     "scrims.effect.morale": ["it"],
     "scrims.result.blockLabel": ["de"],

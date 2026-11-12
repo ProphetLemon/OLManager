@@ -581,7 +581,7 @@
     "reviewBlockTitle": "Block review",
     "reviewWin": "Win",
     "reviewLoss": "Loss",
-    "reportFocus": "Focus",
+    "reportFocus": "Report focus",
     "detectedIssue": "Detected issue",
     "freeDayOff": "Give the rest of the day off",
     "decision": {
@@ -680,7 +680,8 @@
     "weeklyReportInline": "Weekly Report",
     "weeklyVolume": "Weekly Volume",
     "cancelFollowupPrompt": "Scrims cancelled. Pick a follow-up.",
-    "lossStreak": "{{count}}L streak",
+    "lossStreak_one": "{{count}}L streak",
+    "lossStreak_other": "{{count}}L streak",
     "risk": {
       "high": "High",
       "medium": "Medium",

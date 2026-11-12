@@ -3931,7 +3931,7 @@
     "reviewBlockTitle": "Bilan du bloc",
     "reviewWin": "Victoire",
     "reviewLoss": "Défaite",
-    "reportFocus": "Axe",
+    "reportFocus": "Axe du rapport",
     "detectedIssue": "Problème détecté",
     "freeDayOff": "Donner le reste de la journée de repos",
     "decision": {
@@ -4030,7 +4030,8 @@
     "weeklyReportInline": "Rapport hebdomadaire",
     "weeklyVolume": "Volume hebdomadaire",
     "cancelFollowupPrompt": "Scrims annulés. Choisis la suite.",
-    "lossStreak": "Série de {{count}} défaites",
+    "lossStreak_one": "Série de {{count}} défaite",
+    "lossStreak_other": "Série de {{count}} défaites",
     "risk": {
       "high": "Élevé",
       "medium": "Moyen",

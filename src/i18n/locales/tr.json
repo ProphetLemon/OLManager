@@ -3922,7 +3922,7 @@
     "reviewBlockTitle": "Blok değerlendirmesi",
     "reviewWin": "Galibiyet",
     "reviewLoss": "Mağlubiyet",
-    "reportFocus": "Odak",
+    "reportFocus": "Rapor odağı",
     "detectedIssue": "Tespit edilen sorun",
     "freeDayOff": "Günün geri kalanını izin ver",
     "decision": {
@@ -4021,7 +4021,8 @@
     "weeklyReportInline": "Haftalık rapor",
     "weeklyVolume": "Haftalık hacim",
     "cancelFollowupPrompt": "Scrim'ler iptal edildi. Bir devam seçeneği belirle.",
-    "lossStreak": "{{count}} mağlubiyet serisi",
+    "lossStreak_one": "{{count}} mağlubiyet serisi",
+    "lossStreak_other": "{{count}} mağlubiyet serisi",
     "risk": {
       "high": "Yüksek",
       "medium": "Orta",
