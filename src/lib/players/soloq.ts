@@ -1,7 +1,11 @@
 export type SoloQTier = "Challenger" | "Grandmaster" | "Master" | "Unranked";
 
+/**
+ * Tier of an LP value. 0 LP is the floor of the ladder and reads Master ("Master 0 LP"); only a
+ * missing value is Unranked.
+ */
 export function tierFromLp(lp?: number | null): SoloQTier {
-  if (!lp || lp <= 0) return "Unranked";
+  if (lp === null || lp === undefined || Number.isNaN(lp)) return "Unranked";
   if (lp >= 1300) return "Challenger";
   if (lp >= 800) return "Grandmaster";
   return "Master";
