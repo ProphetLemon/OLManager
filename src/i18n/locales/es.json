@@ -2085,6 +2085,17 @@
     "posting": "Publicando..."
   },
   "playerProfile": {
+    "photo": {
+      "add": "Añadir foto",
+      "change": "Cambiar foto",
+      "remove": "Quitar foto",
+      "addAria": "Añadir una foto para {{nick}}",
+      "changeAria": "Cambiar la foto de {{nick}}",
+      "removeAria": "Quitar la foto de {{nick}}",
+      "processing": "Preparando la foto...",
+      "saveFailed": "No se pudo guardar la foto. Inténtalo de nuevo.",
+      "notAFounder": "Solo pueden cambiar la foto los jugadores con los que empezó tu club."
+    },
     "rename": {
       "action": "Renombrar",
       "actionAria": "Renombrar a {{nick}}",

@@ -2096,6 +2096,17 @@
     "posting": "Posting..."
   },
   "playerProfile": {
+    "photo": {
+      "add": "Add photo",
+      "change": "Change photo",
+      "remove": "Remove photo",
+      "addAria": "Add a photo for {{nick}}",
+      "changeAria": "Change the photo of {{nick}}",
+      "removeAria": "Remove the photo of {{nick}}",
+      "processing": "Preparing the photo...",
+      "saveFailed": "The photo could not be saved. Try again.",
+      "notAFounder": "Only the players your club started with can change their photo."
+    },
     "rename": {
       "action": "Rename",
       "actionAria": "Rename {{nick}}",

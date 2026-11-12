@@ -1902,6 +1902,17 @@
     }
   },
   "playerProfile": {
+    "photo": {
+      "add": "Ajouter une photo",
+      "change": "Changer la photo",
+      "remove": "Retirer la photo",
+      "addAria": "Ajouter une photo pour {{nick}}",
+      "changeAria": "Changer la photo de {{nick}}",
+      "removeAria": "Retirer la photo de {{nick}}",
+      "processing": "Préparation de la photo...",
+      "saveFailed": "La photo n'a pas pu être enregistrée. Réessaie.",
+      "notAFounder": "Seuls les joueurs avec lesquels ton club a démarré peuvent changer leur photo."
+    },
     "rename": {
       "action": "Renommer",
       "actionAria": "Renommer {{nick}}",

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { EyeOff, Pencil, Shield, User } from "lucide-react";
 import type { PlayerData } from "@/store/gameStore";
 import { formatPlayerMarketValue, formatPlayerWage } from "@/lib/playerProfile/helpers";
@@ -42,6 +43,8 @@ interface PlayerProfileHeroCardV2Props {
   onToggleLoanList?: () => void;
   /** Offered only for the manager's own generated founders. */
   onRename?: () => void;
+  /** Change or remove photo; offered only for the manager's own generated founders. */
+  photoControl?: ReactNode;
   t: (key: string, options?: Record<string, string | number>) => string;
   teamLogoUrl?: string | null;
   soloqTier?: SoloQTier;
@@ -72,6 +75,7 @@ export default function PlayerProfileHeroCardV2({
   onToggleTransferList,
   onToggleLoanList,
   onRename,
+  photoControl = null,
   t,
   language = "en",
   teamLogoUrl,
@@ -141,6 +145,7 @@ export default function PlayerProfileHeroCardV2({
                 {academyActionLoading ? "..." : academyActionLabel}
               </button>
             )}
+            {photoControl}
           </div>
 
           {/* Center: name + details */}

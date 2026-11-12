@@ -1738,6 +1738,17 @@
     "allTeams": "All teams"
   },
   "playerProfile": {
+    "photo": {
+      "add": "Aggiungi foto",
+      "change": "Cambia foto",
+      "remove": "Rimuovi foto",
+      "addAria": "Aggiungi una foto per {{nick}}",
+      "changeAria": "Cambia la foto di {{nick}}",
+      "removeAria": "Rimuovi la foto di {{nick}}",
+      "processing": "Preparazione della foto...",
+      "saveFailed": "Non è stato possibile salvare la foto. Riprova.",
+      "notAFounder": "Solo i giocatori con cui il tuo club è partito possono cambiare la foto."
+    },
     "rename": {
       "action": "Rinomina",
       "actionAria": "Rinomina {{nick}}",

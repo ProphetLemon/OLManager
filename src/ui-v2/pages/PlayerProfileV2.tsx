@@ -37,6 +37,7 @@ import PlayerProfileMatchHistoryCardV2 from "@/ui-v2/pages/playerProfile/PlayerP
 import PlayerProfileReleaseModalV2 from "@/ui-v2/pages/playerProfile/PlayerProfileReleaseModalV2";
 import PlayerProfileRenameModalV2 from "@/ui-v2/pages/playerProfile/PlayerProfileRenameModalV2";
 import PlayerProfileRenewalModalV2 from "@/ui-v2/pages/playerProfile/PlayerProfileRenewalModalV2";
+import PlayerProfilePhotoControlV2 from "@/ui-v2/pages/playerProfile/PlayerProfilePhotoControlV2";
 import PlayerProfileStatsCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileStatsCardV2";
 import PlayerProfileTraitsCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileTraitsCardV2";
 import PlayerProfileTransferOfferModalV2 from "@/ui-v2/pages/playerProfile/PlayerProfileTransferOfferModalV2";
@@ -352,6 +353,9 @@ function PlayerProfileContent({
           onGameUpdate && isOwnClub ? () => void handleToggleList("toggle_loan_list") : undefined
         }
         onRename={canRename ? () => setShowRenameModal(true) : undefined}
+        photoControl={
+          canRename ? <PlayerProfilePhotoControlV2 player={player} onChanged={(updated) => onGameUpdate?.(updated)} /> : null
+        }
         t={t}
       />
 
