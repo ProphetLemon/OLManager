@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { DECISION_IMPACT_TAGS } from "../../lib/scrims/decisionTags";
 import de from "./de.json";
 import en from "./en.json";
 import es from "./es.json";
@@ -143,8 +144,11 @@ describe("Scrims tab keys", () => {
   };
 
   it("translates every text the Scrims tab and its planning card show, in every locale", () => {
+    const tagKeys = Object.values(DECISION_IMPACT_TAGS)
+      .flat()
+      .map((tag) => `scrims.tags.${tag}`);
     const keys = [
-      ...new Set([...literalKeys("ScrimsTabV2.tsx"), ...literalKeys("ScrimPlanningCardV2.tsx")]),
+      ...new Set([...literalKeys("ScrimsTabV2.tsx"), ...literalKeys("ScrimPlanningCardV2.tsx"), ...tagKeys]),
     ].filter((key) => lookup(LOCALES.en, key) !== undefined);
     expect(keys.length).toBeGreaterThan(60);
     expectTranslated(keys, sameAsEnglishOk);
@@ -166,7 +170,7 @@ describe("Scrims tab keys", () => {
     );
   });
 
-  it("keeps the sign of every impact tag, which the tab uses to color it", () => {
+  it("keeps the sign of every impact tag, which states the direction of the change", () => {
     for (const [lang, tree] of Object.entries(LOCALES)) {
       const tags = (tree.scrims as Tree).tags as Record<string, string>;
       for (const [name, text] of Object.entries(tags)) {
