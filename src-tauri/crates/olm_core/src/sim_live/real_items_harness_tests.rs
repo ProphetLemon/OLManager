@@ -447,14 +447,18 @@ fn trace_numbers_plan() {
     let mut structures_alive: Vec<String> = Vec::new();
     let mut first_tower_at: Option<f64> = None;
     let mut deaths_before: [i64; 10] = [0; 10];
-    for _ in 0..FULL_MATCH_TICKS {
+    let mut damage_before: [f64; 10] = [0.0; 10];
+    let detail_from: f64 = env_or("PLAN_DETAIL_FROM", 1.0e9);
+    let detail_all: bool = env_or("PLAN_DETAIL_ALL", 0) == 1;
+    // Three steps per call keep the one-in-three macro tick of a continuous run.
+    for _ in 0..(FULL_MATCH_TICKS / 3) {
         skip_to_end(
             &store,
             SimLiveSkipToEndRequest {
                 session_id: session_id.clone(),
                 dt_sec: 0.2,
                 speed: 12.0,
-                max_ticks: 1,
+                max_ticks: 3,
             },
         )
         .expect("skip");
@@ -480,16 +484,15 @@ fn trace_numbers_plan() {
             }
         }
         structures_alive = now_alive;
-        for shot in state.tower_ledger.shots() {
-            if let TowerVictim::Champion(idx) = shot.victim {
-                let champion = &state.champions[idx];
-                let slot = usize::from(champion.team == "red");
-                if champion.push.is_some()
-                    && let Some(episode) = open[slot].as_mut()
-                {
-                    episode.tower_damage_to_pushers += shot.damage;
-                }
+        for (idx, champion) in state.champions.iter().enumerate() {
+            let slot = usize::from(champion.team == "red");
+            let total = state.tower_ledger.damage_to_champion(idx);
+            if champion.push.is_some()
+                && let Some(episode) = open[slot].as_mut()
+            {
+                episode.tower_damage_to_pushers += total - damage_before[idx];
             }
+            damage_before[idx] = total;
         }
         for (idx, champion) in state.champions.iter().enumerate() {
             let slot = usize::from(champion.team == "red");
@@ -499,6 +502,29 @@ fn trace_numbers_plan() {
                 episode.deaths_of_pushers += 1;
             }
             deaths_before[idx] = champion.deaths;
+        }
+        if detail_all && now >= detail_from && (now / 0.6).round() as i64 % 9 == 0 {
+            let line: Vec<String> = state
+                .champions
+                .iter()
+                .map(|c| {
+                    if c.alive {
+                        format!(
+                            "{}{} {} {:.0}% @{:.2},{:.2}->{}",
+                            &c.team[..1],
+                            c.role,
+                            c.state,
+                            c.hp / c.max_hp.max(1.0) * 100.0,
+                            c.pos.x,
+                            c.pos.y,
+                            c.target_path.last().map_or("none".to_string(), |p| format!("{:.2},{:.2}", p.x, p.y))
+                        )
+                    } else {
+                        format!("{}{} dead", &c.team[..1], c.role)
+                    }
+                })
+                .collect();
+            println!("  all t={now:.0}: {}", line.join("; "));
         }
         for (slot, team) in ["blue", "red"].into_iter().enumerate() {
             let push = &state.team_push[slot];
@@ -513,6 +539,31 @@ fn trace_numbers_plan() {
             }
             if let Some(episode) = open[slot].as_mut() {
                 episode.target_at_end = push.target_id.clone().unwrap_or_default();
+            }
+            if push.active && now >= detail_from && (now / 0.6).round() as i64 % 9 == 0 {
+                let target = state.structures.iter().find(|s| Some(&s.id) == push.target_id.as_ref());
+                let target_pos = target.map(|s| s.pos);
+                let line: Vec<String> = state
+                    .champions
+                    .iter()
+                    .filter(|c| c.team == team)
+                    .map(|c| {
+                        let gap = target_pos.map_or(f64::NAN, |p| dist(c.pos, p));
+                        if c.alive {
+                            format!("{} {} {:.0}% d{:.2} @{:.2},{:.2}->{}", c.role, c.state, c.hp / c.max_hp.max(1.0) * 100.0, gap, c.pos.x, c.pos.y, c.target_path.last().map_or("none".to_string(), |p| format!("{:.2},{:.2}", p.x, p.y)))
+                        } else {
+                            format!("{} dead", c.role)
+                        }
+                    })
+                    .collect();
+                println!(
+                    "    t={now:.0} {team} -> {} hp {:.0} window {:.0}s dive {}: {}",
+                    push.target_id.clone().unwrap_or_default(),
+                    target.map_or(0.0, |s| s.hp),
+                    push.window_ends_at - now,
+                    push.dive,
+                    line.join("; ")
+                );
             }
             if !push.active
                 && let Some(episode) = open[slot].take()
@@ -557,4 +608,105 @@ fn trace_numbers_plan() {
         done.iter().map(|e| e.tower_damage_to_pushers).sum::<f64>() / done.len().max(1) as f64,
         done.iter().map(|e| e.deaths_of_pushers as f64).sum::<f64>() / done.len().max(1) as f64,
     );
+}
+
+/// Plays a match to `PROBE_AT` seconds and prints, for each champion, the combat target and the
+/// answer of every gate between the target and the first hit.
+///
+/// ```text
+/// PROBE_AT=1906 REAL_ITEMS_TRACE_SEED=1120 REAL_ITEMS_PAIR=95,40 cargo test --release -p olm_core \
+///   --lib sim_live::real_items_harness_tests::probe_combat_gates -- --ignored --nocapture
+/// ```
+#[test]
+#[ignore = "measurement: prints the combat decision of every champion at one moment"]
+fn probe_combat_gates() {
+    let n: usize = env_or("REAL_ITEMS_TRACE_SEED", 1000);
+    let at: f64 = env_or("PROBE_AT", 1800.0);
+    let pair = std::env::var("REAL_ITEMS_PAIR").unwrap_or_else(|_| "70,70".to_string());
+    let (a, b) = pair.split_once(',').expect("REAL_ITEMS_PAIR=a,b");
+    let (team_a, team_b) = (
+        Side::stat(a.parse().expect("stat a")),
+        Side::stat(b.parse().expect("stat b")),
+    );
+    let ids = catalogue_ids();
+    let a_is_blue = n.is_multiple_of(2);
+    let (blue, red) = if a_is_blue { (team_a, team_b) } else { (team_b, team_a) };
+    let mut champions = real_lineup(n as u64, "h", &ids);
+    champions.extend(real_lineup(n as u64, "a", &ids));
+    let store = SimLiveStoreState::default();
+    let session_id = format!("real-items-{n}");
+    init(
+        &store,
+        SimLiveInitRequest {
+            session_id: session_id.clone(),
+            seed: format!("real-items-seed-{n}"),
+            snapshot: snapshot_with(blue, red),
+            champion_by_player_id: champions,
+            champion_profiles_by_id: HashMap::new(),
+            champion_ultimates_by_id: HashMap::new(),
+            initial_state: None,
+            ai_mode: SimulatorAiMode::default(),
+            policy: SimulatorPolicyConfig::default(),
+        },
+    )
+    .expect("init");
+    for _ in 0..(FULL_MATCH_TICKS / 3) {
+        skip_to_end(
+            &store,
+            SimLiveSkipToEndRequest {
+                session_id: session_id.clone(),
+                dt_sec: 0.2,
+                speed: 12.0,
+                max_ticks: 3,
+            },
+        )
+        .expect("skip");
+        let sessions = store.sessions.lock().expect("lock");
+        let state = &sessions[&session_id].state;
+        if state.time_sec < at && state.winner.is_none() {
+            continue;
+        }
+        let timers = decode_neutral_timers_state(&state.neutral_timers)
+            .unwrap_or_else(neutral_timers_default_runtime_state);
+        println!("t={:.0} winner {:?}", state.time_sec, state.winner);
+        for (idx, c) in state.champions.iter().enumerate() {
+            if !c.alive {
+                println!("{}{} dead", &c.team[..1], c.role);
+                continue;
+            }
+            let target = combat::pick_combat_target(state, idx, state.time_sec, &timers);
+            let what = match &target {
+                Some(CombatTarget::Champion(e)) => {
+                    let enemy = &state.champions[*e];
+                    let floor = trading::trade_floor_reached(c, enemy, &state.champions, &state.minions);
+                    let open = evaluate_open_trade_window(
+                        c, enemy, state.time_sec, &state.champions, &state.minions, &state.structures,
+                        &state.lane_combat_state_by_champion, state.ai_mode, &state.policy,
+                    );
+                    let dis = evaluate_disengage_champion_trade(
+                        c, enemy, state.time_sec, &state.champions, &state.minions, &state.structures,
+                        state.ai_mode, &state.policy,
+                    );
+                    let engage = should_engage_enemy_champion(state, idx, *e);
+                    let ctx = in_lane_trade_context(c, enemy.pos, true, &state.champions, &state.minions, &state.structures);
+                    let force = should_force_laner_disengage(
+                        c, enemy.pos, Some(enemy), &state.champions, &state.minions, &state.structures,
+                    );
+                    format!(
+                        "champion {}{} d{:.3} range {:.3} floor {floor} open {} disengage {} engage {engage} lane_ctx {ctx} force_disengage {force}",
+                        &enemy.team[..1], enemy.role, dist(c.pos, enemy.pos), c.attack_range, open.decision, dis.decision
+                    )
+                }
+                Some(CombatTarget::Minion(m)) => format!("minion {}", state.minions[*m].id),
+                Some(CombatTarget::Structure(s)) => format!("structure {}", state.structures[*s].id),
+                Some(CombatTarget::Neutral(k)) => format!("neutral {k}"),
+                None => "none".to_string(),
+            };
+            println!(
+                "{}{} {} {:.0}% @{:.2},{:.2} -> {what}",
+                &c.team[..1], c.role, c.state, c.hp / c.max_hp.max(1.0) * 100.0, c.pos.x, c.pos.y
+            );
+        }
+        break;
+    }
 }

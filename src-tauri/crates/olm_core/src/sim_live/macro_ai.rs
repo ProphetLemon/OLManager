@@ -1598,7 +1598,7 @@ fn allied_nexus_under_threat_pos(
     minions: &[MinionRuntime],
     structures: &[StructureRuntime],
 ) -> Option<Vec2> {
-    let allied_nexus_towers: Vec<&StructureRuntime> = structures
+    let mut allied_nexus_towers: Vec<&StructureRuntime> = structures
         .iter()
         .filter(|structure| {
             structure.alive
@@ -1607,6 +1607,19 @@ fn allied_nexus_under_threat_pos(
                 && normalized_team(&structure.team) == normalized_team(&champion.team)
         })
         .collect();
+    if allied_nexus_towers.is_empty() {
+        // With both towers down the nexus itself is what the enemy is after: a match was lost
+        // by a team with 34 kills to 3 whose champions stood 0.2 from a nexus that four
+        // enemy champions were hitting, because nothing called them home.
+        allied_nexus_towers = structures
+            .iter()
+            .filter(|structure| {
+                structure.alive
+                    && structure.kind == "nexus"
+                    && normalized_team(&structure.team) == normalized_team(&champion.team)
+            })
+            .collect();
+    }
     if allied_nexus_towers.is_empty() {
         return None;
     }

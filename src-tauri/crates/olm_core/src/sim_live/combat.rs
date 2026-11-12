@@ -518,6 +518,46 @@ fn nearest_base_wave_minion_idx(runtime: &RuntimeState, champion_idx: usize) -> 
         .map(|(idx, _)| idx)
 }
 
+/// Health share under which a champion no longer goes out of his way to fight at his base.
+const BASE_DEFENDER_MIN_HP_RATIO: f64 = 0.30;
+
+/// The enemy champion at the base of the champion that he defends against: one within reach
+/// that stands at the nexus or a nexus tower (the zone that calls the team home). Laning rules
+/// (trade floor, chase leash, trade window) do not apply to him: a team with five champions at
+/// its nexus stood by for 40 seconds while one wounded enemy champion destroyed it.
+pub(super) fn base_intruder_idx(runtime: &RuntimeState, champion_idx: usize) -> Option<usize> {
+    let champion = &runtime.champions[champion_idx];
+    if !champion.alive || champion.max_hp <= 0.0 || champion.hp / champion.max_hp <= BASE_DEFENDER_MIN_HP_RATIO {
+        return None;
+    }
+    let team = normalized_team(&champion.team);
+    let guarded: Vec<&StructureRuntime> = runtime
+        .structures
+        .iter()
+        .filter(|s| {
+            s.alive
+                && normalized_team(&s.team) == team
+                && (s.kind == "nexus" || (s.kind == "tower" && s.id.contains("nexus")))
+        })
+        .collect();
+    runtime
+        .champions
+        .iter()
+        .enumerate()
+        .filter(|(_, enemy)| {
+            enemy.alive
+                && normalized_team(&enemy.team) != team
+                && dist(champion.pos, enemy.pos) <= LANE_CHAMPION_TRADE_RADIUS
+                && guarded.iter().any(|s| dist(s.pos, enemy.pos) <= NEXUS_DEFENSE_THREAT_RADIUS)
+        })
+        .min_by(|(idx_a, a), (idx_b, b)| {
+            a.hp.total_cmp(&b.hp)
+                .then(dist(champion.pos, a.pos).total_cmp(&dist(champion.pos, b.pos)))
+                .then(idx_a.cmp(idx_b))
+        })
+        .map(|(idx, _)| idx)
+}
+
 pub(super) fn pick_combat_target(
     runtime: &RuntimeState,
     champion_idx: usize,
@@ -544,6 +584,11 @@ pub(super) fn pick_combat_target(
         LANE_CHAMPION_TRADE_RADIUS,
         ALLY_HELP_DAMAGE_RECENT_SEC,
     ) {
+        return Some(CombatTarget::Champion(enemy_idx));
+    }
+
+    // An enemy champion at the nexus comes before anything else.
+    if let Some(enemy_idx) = base_intruder_idx(runtime, champion_idx) {
         return Some(CombatTarget::Champion(enemy_idx));
     }
 
@@ -1466,7 +1511,8 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
         if dist(attacker_snapshot.pos, target_pos) > attack_range {
             if let CombatTarget::Champion(enemy_idx) = &target {
                 let target_snapshot = runtime.champions[*enemy_idx].clone();
-                if attacker_snapshot.role != "JGL" {
+                let defending_base = base_intruder_idx(runtime, idx) == Some(*enemy_idx);
+                if attacker_snapshot.role != "JGL" && !defending_base {
                     if trading::trade_floor_reached(
                         &attacker_snapshot,
                         &target_snapshot,
@@ -1519,14 +1565,17 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
         match target {
             CombatTarget::Champion(champion_idx) => {
                 let target_snapshot = runtime.champions[champion_idx].clone();
-                let retaliating_recent_attacker = recent_attacker_target_idx(
-                    runtime,
-                    idx,
-                    LANE_CHAMPION_TRADE_RADIUS,
-                    ALLY_HELP_DAMAGE_RECENT_SEC,
-                ) == Some(champion_idx);
+                let defending_base = base_intruder_idx(runtime, idx) == Some(champion_idx);
+                let retaliating_recent_attacker = defending_base
+                    || recent_attacker_target_idx(
+                        runtime,
+                        idx,
+                        LANE_CHAMPION_TRADE_RADIUS,
+                        ALLY_HELP_DAMAGE_RECENT_SEC,
+                    ) == Some(champion_idx);
 
                 if attacker_snapshot.role != "JGL"
+                    && !defending_base
                     && trading::trade_floor_reached(
                         &attacker_snapshot,
                         &target_snapshot,
@@ -1624,6 +1673,7 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                     })
                     .count();
                 if attacker_after.role != "JGL"
+                    && !defending_base
                     && champion_idx < runtime.champions.len()
                     && runtime.champions[champion_idx].alive
                     && !(attacker_after.state == "objective"

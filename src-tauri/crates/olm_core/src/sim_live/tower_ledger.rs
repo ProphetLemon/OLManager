@@ -34,6 +34,8 @@ pub(super) struct TowerLedger {
     shots: Vec<TowerShot>,
     locks: u32,
     unusable_locks: u32,
+    /// Tower damage dealt to each champion (by index) since the start of the match.
+    champion_damage: Vec<f64>,
 }
 
 impl TowerLedger {
@@ -43,6 +45,12 @@ impl TowerLedger {
     }
 
     pub(super) fn record_shot(&mut self, shot: TowerShot) {
+        if let TowerVictim::Champion(idx) = shot.victim {
+            if self.champion_damage.len() <= idx {
+                self.champion_damage.resize(idx + 1, 0.0);
+            }
+            self.champion_damage[idx] += shot.damage;
+        }
         self.shots.push(shot);
     }
 
@@ -61,6 +69,12 @@ impl TowerLedger {
     }
 
     /// Locks set so far and how many of them the tower could not use.
+    /// Tower damage dealt to the champion at `idx` since the start of the match.
+    #[cfg(test)]
+    pub(super) fn damage_to_champion(&self, idx: usize) -> f64 {
+        self.champion_damage.get(idx).copied().unwrap_or(0.0)
+    }
+
     #[cfg(test)]
     pub(super) fn lock_counts(&self) -> (u32, u32) {
         (self.locks, self.unusable_locks)

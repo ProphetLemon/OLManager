@@ -252,3 +252,86 @@ fn a_laner_who_declines_a_trade_away_from_his_base_backs_away() {
 
     assert_eq!(runtime.minions[0].hp, before, "a laner far from his base hit a minion instead of backing away");
 }
+
+/// A match was lost by a team with 34 kills to 3: both its nexus towers were down, four enemy
+/// champions hit the nexus, and its champions stood 0.2 from it because only nexus towers
+/// called the team home.
+#[test]
+fn the_team_defends_the_nexus_when_both_nexus_towers_are_down() {
+    let mut nexus = test_structure("blue-nexus", "blue", "base", tower_pos());
+    nexus.kind = "nexus".to_string();
+    let mut champions = blue_team();
+    champions.push(red_champion_at(tower_pos()));
+    let snapshot = champions.clone();
+
+    let defenders = (0..5)
+        .filter(|&idx| {
+            let mut champion = champions[idx].clone();
+            macro_ai::decide_champion_state(
+                &mut champion,
+                LANE_COMBAT_UNLOCK_AT + 600.0,
+                &[],
+                std::slice::from_ref(&nexus),
+                &snapshot,
+                Some(&empty_neutral()),
+                &RuntimeTeamTactics::default(),
+                &RuntimeTeamBuffState::default(),
+            );
+            champion.state == "recall"
+                || (champion.state == "objective"
+                    && champion
+                        .target_path
+                        .last()
+                        .is_some_and(|target| dist(*target, tower_pos()) < 0.01))
+        })
+        .count();
+
+    assert_eq!(defenders, 5, "the team stood by while an enemy champion hit its nexus");
+}
+
+/// Seed 1120 of the 95 vs 40 harness: five blue champions at their nexus, one wounded red
+/// champion hitting it, and the blue top laner declined the trade because the intruder stood
+/// beyond his lane's chase leash; the nexus fell with 23 kills to 2 for the team that lost it.
+fn nexus_siege(attacker_role: &str) -> RuntimeState {
+    let tower = tower_pos();
+    let mut defender = test_champion(
+        "blue-TOP",
+        "blue",
+        attacker_role,
+        "top",
+        Vec2 { x: tower.x + 0.02, y: tower.y + 0.02 },
+    );
+    defender.state = "lane".to_string();
+    let mut intruder = red_champion_at(Vec2 { x: tower.x + 0.04, y: tower.y + 0.03 });
+    intruder.hp = intruder.max_hp * 0.46;
+    test_runtime(vec![defender, intruder], vec![], vec![nexus_tower()], empty_neutral())
+}
+
+#[test]
+fn a_champion_picks_the_enemy_champion_hitting_his_nexus_over_a_minion() {
+    let mut runtime = nexus_siege("TOP");
+    runtime.minions.push(red_minion_at_the_tower());
+
+    let target = pick_combat_target(&runtime, 0, runtime.time_sec, &empty_neutral());
+
+    assert!(matches!(target, Some(CombatTarget::Champion(1))), "the defender looked away from the intruder");
+}
+
+#[test]
+fn a_wounded_champion_does_not_go_for_the_intruder() {
+    let mut runtime = nexus_siege("TOP");
+    runtime.champions[0].hp = runtime.champions[0].max_hp * 0.2;
+
+    assert_eq!(combat::base_intruder_idx(&runtime, 0), None);
+}
+
+#[test]
+fn a_defender_hits_the_intruder_instead_of_backing_off_the_laning_rules() {
+    let mut runtime = nexus_siege("TOP");
+    // Far from the lane he would defend, the intruder is past the chase leash.
+    let before = runtime.champions[1].hp;
+
+    resolve_champion_combat(&mut runtime);
+
+    assert!(runtime.champions[1].hp < before, "the defender declined to fight at his own nexus");
+}
