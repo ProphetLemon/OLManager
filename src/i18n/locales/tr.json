@@ -280,7 +280,7 @@
       "exhausted": "{{count}} oyuncunun durumu kritik (<%25)",
       "incompleteStartingXi": "İlk 5 eksik — kadronuzu belirleyin",
       "urgentUnread": "{{count}} acil okunmamış mesaj",
-      "scrimWeekOpen": "Bu haftanın scrim'leri henüz planlanmadı. İlk scrim gününden önce planla.",
+      "scrimWeekOpen": "Bu haftanın scrim'leri henüz planlanmadı. Önündeki scrim günlerini planla.",
       "matchTodayStartingXi": "Bugün maç var! İlk 5'ini belirle",
       "financeCrisis": "Finanslar kritik — bakiye {{balance}}, {{weeks}} haftalık nakit",
       "financeRunway": "Nakit süresi {{count}} haftaya düştü",

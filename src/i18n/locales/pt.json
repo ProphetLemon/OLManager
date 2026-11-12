@@ -284,7 +284,7 @@
       "exhausted": "{{count}} jogador(es) em condição crítica (<25%)",
       "incompleteStartingXi": "A equipa titular está incompleta — define a tua equipa",
       "urgentUnread": "{{count}} mensagem(ns) urgente(s) por ler",
-      "scrimWeekOpen": "Os scrims desta semana ainda não estão planeados. Prepara-os antes do primeiro dia de scrims.",
+      "scrimWeekOpen": "Os scrims desta semana ainda não estão planeados. Planeia os dias de scrims que ainda faltam.",
       "matchTodayStartingXi": "Jogo hoje! Define a tua equipa titular",
       "financeCrisis": "Finanças críticas — saldo {{balance}}, margem de {{weeks}} semana(s)",
       "financeRunway": "A margem de caixa desce para {{count}} semana(s)",

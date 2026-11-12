@@ -80,7 +80,7 @@ export function getScrimWeekOpenAlert(
   return {
     id: SCRIM_WEEK_OPEN_ALERT_ID,
     text: t("dashboard.alerts.scrimWeekOpen", {
-      defaultValue: "This week's scrims are not planned yet. Set them up before the first scrim day.",
+      defaultValue: "This week's scrims are not planned yet. Plan the scrim days still ahead.",
     }),
     tab: "Scrims",
     severity: "info",

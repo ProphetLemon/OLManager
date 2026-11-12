@@ -285,7 +285,7 @@
       "exhausted": "{{count}} Spieler in kritischer Verfassung (<25%)",
       "incompleteStartingXi": "Starter Five unvollständig — stelle deine Aufstellung ein",
       "urgentUnread": "{{count}} dringende Nachricht(en) ungelesen",
-      "scrimWeekOpen": "Die Scrims dieser Woche sind noch nicht geplant. Plane sie vor dem ersten Scrim-Tag.",
+      "scrimWeekOpen": "Die Scrims dieser Woche sind noch nicht geplant. Plane die Scrim-Tage, die noch vor dir liegen.",
       "matchTodayStartingXi": "Heute ist Spieltag! Stelle deine Starter Five ein",
       "financeCrisis": "Finanzen kritisch — Kontostand {{balance}}, Reichweite {{weeks}} Woche(n)",
       "financeRunway": "Liquiditätsreichweite nur noch {{count}} Woche(n)",
