@@ -86,6 +86,37 @@ async function skippedDraft(
   return payload;
 }
 
+
+async function unattendedDraft(
+  blueId: string,
+  redId: string,
+  signature: Signature,
+): Promise<ChampionDraftResultPayload> {
+  const onComplete = vi.fn();
+  const snapshot = { home_team: team(blueId), away_team: team(redId) } as unknown as MatchSnapshot;
+  render(
+    <ChampionDraft
+      snapshot={snapshot}
+      onComplete={onComplete}
+      allAi
+      autoFinalize
+      gameState={gameStateFor(blueId, redId, signature)}
+    />,
+  );
+  await act(async () => {
+    await Promise.resolve();
+  });
+  for (let i = 0; i < 60 && onComplete.mock.calls.length === 0; i += 1) {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(11_000);
+    });
+  }
+  expect(onComplete).toHaveBeenCalledTimes(1);
+  const payload = onComplete.mock.calls[0][0] as ChampionDraftResultPayload;
+  cleanup();
+  return payload;
+}
+
 const picksOf = (payload: ChampionDraftResultPayload, side: "blue" | "red"): string[] =>
   payload[side].picks.map((pick) => pick.championId);
 
@@ -147,5 +178,23 @@ describe("ChampionDraft skip draft depends on the teams that play", () => {
     const redSignatureBanned = first.red.filter((id) => blueBans.has(id)).length;
     const blueSignatureBanned = first.blue.filter((id) => redBans.has(id)).length;
     expect(redSignatureBanned + blueSignatureBanned).toBeGreaterThanOrEqual(1);
+  });
+
+  it("lets the AI of a manual draft pick what its own players master", async () => {
+    const one = await unattendedDraft("alpha", "bravo", first);
+
+    const bluePicks = new Set(picksOf(one, "blue"));
+    const redPicks = new Set(picksOf(one, "red"));
+    // The opponent bans some of them, so not all five can be picked.
+    expect(first.blue.filter((id) => bluePicks.has(id)).length).toBeGreaterThanOrEqual(2);
+    expect(first.red.filter((id) => redPicks.has(id)).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("gives two different matchups different AI picks in a manual draft", async () => {
+    const one = await unattendedDraft("alpha", "bravo", first);
+    const two = await unattendedDraft("charlie", "delta", second);
+
+    expect(picksOf(one, "blue").slice().sort()).not.toEqual(picksOf(two, "blue").slice().sort());
+    expect(picksOf(one, "red").slice().sort()).not.toEqual(picksOf(two, "red").slice().sort());
   });
 });

@@ -1374,6 +1374,43 @@ export default function ChampionDraft({
     searchTerm,
   ]);
 
+  /**
+   * The one score the AI uses for a pick, in a manual draft and when the draft is skipped:
+   * mastery of the players of the open roles the champion can fill, patch meta, counters
+   * against the enemy picks and a bonus for covering a missing role.
+   */
+  const scoreAiPick = (
+    side: Side,
+    champion: ChampionData,
+    ownPicks: DraftSelection[],
+    enemyPicks: DraftSelection[],
+    missingRoles: Role[],
+  ): number => {
+    const mastery = resolveOpenRoleMastery(side, champion.id, missingRoles);
+    const meta = metaScoreForChampion(champion);
+    const roleNeedBonus =
+      missingRoles.length > 0 && champion.roleHints.some((role) => missingRoles.includes(role)) ? 12 : 0;
+    let counter = 0;
+
+    const candidateRole = ROLE_ORDER[ownPicks.length];
+    enemyPicks.forEach((enemyPick, enemyIdx) => {
+      const enemyRole = ROLE_ORDER[enemyIdx];
+      counter +=
+        laneCounterValue(champion.id, candidateRole, enemyPick.championId, enemyRole) *
+        AI_WEIGHTS.pick.counterAdvantageWeight;
+      counter -=
+        laneCounterValue(enemyPick.championId, enemyRole, champion.id, candidateRole) *
+        AI_WEIGHTS.pick.counterRiskWeight;
+    });
+
+    return (
+      mastery * AI_WEIGHTS.pick.masteryWeight +
+      meta * AI_WEIGHTS.pick.metaWeight +
+      counter +
+      roleNeedBonus
+    );
+  };
+
   const getAvailableChampions = (): ChampionData[] =>
     champions.filter((champion) => !usedChampionIds.has(champion.id));
 
@@ -1407,22 +1444,7 @@ export default function ChampionDraft({
       let bestScore = Number.NEGATIVE_INFINITY;
 
       scoringPool.forEach((champion) => {
-        const roleNeedBonus =
-          missingRoles.length > 0 && champion.roleHints.some((role) => missingRoles.includes(role)) ? 12 : 0;
-        let counter = 0;
-
-        const candidateRole = ROLE_ORDER[ownPicks.length];
-        enemyPicks.forEach((enemyPick, enemyIdx) => {
-          const enemyRole = ROLE_ORDER[enemyIdx];
-          counter +=
-            laneCounterValue(champion.id, candidateRole, enemyPick.championId, enemyRole) *
-            AI_WEIGHTS.pick.counterAdvantageWeight;
-          counter -=
-            laneCounterValue(enemyPick.championId, enemyRole, champion.id, candidateRole) *
-            AI_WEIGHTS.pick.counterRiskWeight;
-        });
-
-        const score = 50 + counter + roleNeedBonus;
+        const score = scoreAiPick(aiSide, champion, ownPicks, enemyPicks, missingRoles);
         if (score > bestScore) {
           bestScore = score;
           bestChampion = champion;
@@ -1538,29 +1560,7 @@ export default function ChampionDraft({
         let bestScore = Number.NEGATIVE_INFINITY;
 
         scoringPool.forEach((champion) => {
-          const mastery = resolveOpenRoleMastery(aiSide, champion.id, missingRoles);
-          const meta = metaScoreForChampion(champion);
-          const roleNeedBonus =
-            missingRoles.length > 0 && champion.roleHints.some((role) => missingRoles.includes(role)) ? 12 : 0;
-          let counter = 0;
-
-          const candidateRole = ROLE_ORDER[ownPicks.length];
-          enemyPicks.forEach((enemyPick, enemyIdx) => {
-            const enemyRole = ROLE_ORDER[enemyIdx];
-            counter +=
-              laneCounterValue(champion.id, candidateRole, enemyPick.championId, enemyRole) *
-              AI_WEIGHTS.pick.counterAdvantageWeight;
-            counter -=
-              laneCounterValue(enemyPick.championId, enemyRole, champion.id, candidateRole) *
-              AI_WEIGHTS.pick.counterRiskWeight;
-          });
-
-          const score =
-            mastery * AI_WEIGHTS.pick.masteryWeight +
-            meta * AI_WEIGHTS.pick.metaWeight +
-            counter +
-            roleNeedBonus;
-
+          const score = scoreAiPick(aiSide, champion, ownPicks, enemyPicks, missingRoles);
           if (score > bestScore) {
             bestScore = score;
             bestChampion = champion;
