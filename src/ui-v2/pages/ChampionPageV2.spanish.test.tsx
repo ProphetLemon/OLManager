@@ -68,7 +68,7 @@ describe("ChampionPageV2 in the Spanish UI", () => {
     invokeMock.mockResolvedValue(statsFor("Ahri", "Ahri"));
     const ChampionPageV2 = (await import("./ChampionPageV2")).default;
     render(<ChampionPageV2 championKey="Ahri" onClose={() => {}} />);
-    await waitFor(() => expect(screen.getByText("10g")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("10 part.")).toBeInTheDocument());
 
     for (const english of ENGLISH_TEXTS) {
       expect(screen.queryByText(english)).toBeNull();
