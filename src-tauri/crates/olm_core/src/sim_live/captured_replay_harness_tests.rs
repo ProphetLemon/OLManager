@@ -21,6 +21,8 @@
 //! - `CAPTURED_DT` and `CAPTURED_SPEED`: the `dtSec` and `speed` of every tick call
 //!   (defaults 0.05 and 12.0; see `DEFAULT_TICK_DT_SEC`).
 //! - `CAPTURED_VERBOSE=1`: one line per match.
+//! - `CAPTURED_EXACT=1`: one match with the captured seed and session id themselves,
+//!   to compare with the result the app showed for that very match.
 //!
 //! The captured `initialState` (built by the TypeScript simulation) is deserialised
 //! with the request, but the engine's `init` does not read it, exactly as in the app.
@@ -111,11 +113,14 @@ fn alive_towers(state: &RuntimeState, team: &str) -> usize {
         .count()
 }
 
-fn play(n: usize, template: &SimLiveInitRequest, dt_sec: f64, speed: f64) -> Played {
-    let session_id = format!("captured-replay-{n}");
+fn play(n: usize, template: &SimLiveInitRequest, dt_sec: f64, speed: f64, exact: bool) -> Played {
     let mut request = template.clone();
-    request.session_id = session_id.clone();
-    request.seed = format!("{}-{n}", template.seed);
+    // The exact replay changes nothing, so it plays the very match the app played.
+    if !exact {
+        request.session_id = format!("captured-replay-{n}");
+        request.seed = format!("{}-{n}", template.seed);
+    }
+    let session_id = request.session_id.clone();
     let store = SimLiveStoreState::default();
     init(&store, request).expect("init");
 
@@ -199,6 +204,8 @@ fn replay_captured_start() {
     let dt_sec: f64 = env_or("CAPTURED_DT", DEFAULT_TICK_DT_SEC);
     let speed: f64 = env_or("CAPTURED_SPEED", DEFAULT_TICK_SPEED);
     let verbose = env_or("CAPTURED_VERBOSE", 0_u8) != 0;
+    let exact = env_or("CAPTURED_EXACT", 0_u8) != 0;
+    let n = if exact { 1 } else { n };
     assert!(n > 0, "CAPTURED_N must be at least 1");
     assert!(dt_sec > 0.0 && speed > 0.0, "CAPTURED_DT and CAPTURED_SPEED must be positive");
 
@@ -210,7 +217,7 @@ fn replay_captured_start() {
                 scope.spawn(move || {
                     (worker..n)
                         .step_by(workers)
-                        .map(|i| play(first + i, template, dt_sec, speed))
+                        .map(|i| play(first + i, template, dt_sec, speed, exact))
                         .collect::<Vec<_>>()
                 })
             })
