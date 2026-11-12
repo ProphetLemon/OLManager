@@ -1,4 +1,4 @@
-<h1 align="center">Open League Manager</h1>
+<h1 align="center">Open League Manager · Limón Edition 🍋</h1>
 
 <p align="center">
   <a href="https://v2.tauri.app/">
@@ -61,6 +61,10 @@ The game looks for a new release when it starts and offers a one-click update: d
 
 [`CHANGELOG.md`](CHANGELOG.md) lists every release. The same notes are in the game's patch-notes panel.
 
+### Something went wrong?
+
+The bug button in the game saves a ZIP file with your description of the problem and your save game, then opens the folder where it is. Send that file along when you report the problem: with the save, the problem can be reproduced.
+
 ### Linux: blank or flickering window
 
 On Linux the game asks, the first time it starts, how it should draw its window: **Fast** (recommended, uses the graphics card) or **Compatibility** (slower, most of all in fullscreen, but it avoids drawing problems seen with some graphics drivers on Wayland). Tick "remember my choice" to stop being asked; otherwise it asks again at the next start. You can change the choice at any time in Settings, under "Graphics mode" (it applies the next time you open the game).
@@ -89,9 +93,13 @@ You also need the system libraries Tauri requires on your OS: see the [Tauri v2 
 ## Run the game in development
 
 ```bash
+git clone --recurse-submodules https://github.com/ProphetLemon/OLManager.git
+cd OLManager
 npm ci
 npm run tauri dev
 ```
+
+The game data in `data/` is a git submodule (the original project's `olmanager-data` repository). In a clone made without `--recurse-submodules`, run `git submodule update --init` once.
 
 ## Checks
 
@@ -193,7 +201,7 @@ The full branch table and the release steps are in [`docs/RELEASING-FORK.md`](do
 
 This repository is licensed under the **GNU General Public License v3.0**. See [`LICENSE`](LICENSE).
 
-Code and assets inherited from OpenFootManager are treated as GPL-3.0-compatible unless a later audit documents otherwise. Third-party datasets, generated caches, and source-derived content such as Leaguepedia data are **not** automatically GPL by inheritance; they require separate provenance, attribution, and redistribution review. See [`docs/DATA_PROVENANCE.md`](docs/DATA_PROVENANCE.md).
+Code and assets inherited from OpenFootManager are treated as GPL-3.0-compatible unless a later audit documents otherwise. Third-party datasets, generated caches, and source-derived content such as Leaguepedia data are **not** automatically GPL by inheritance; they require separate provenance, attribution, and redistribution review. See [`docs/DATA_PROVENANCE.md`](https://github.com/ProphetLemon/OLManager/blob/c63d7e9f/docs/DATA_PROVENANCE.md) (removed from the tree by the original project in June 2026; the link is its last version).
 
 ### Riot Games
 
