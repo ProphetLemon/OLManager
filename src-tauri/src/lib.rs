@@ -236,6 +236,7 @@ pub fn run() {
             select_team,
             preview_founding_squad,
             prepare_custom_logo,
+            prepare_custom_portrait,
             get_saves,
             load_game,
             get_active_game,

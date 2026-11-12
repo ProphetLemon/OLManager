@@ -26,6 +26,7 @@ fn spec() -> CustomTeamSpec {
         logo_data_uri: None,
         founding_seed: None,
         founder_overrides: None,
+        founder_photos: None,
     }
 }
 

@@ -878,6 +878,26 @@
       "wage": "Salario {{value}}",
       "edit": "Editar",
       "editAria": "Editar a {{nick}}, {{role}}",
+      "photo": {
+        "add": "Añadir foto",
+        "replace": "Cambiar foto",
+        "remove": "Quitar foto",
+        "addAria": "Añadir una foto para {{nick}}, {{role}}",
+        "replaceAria": "Cambiar la foto de {{nick}}, {{role}}",
+        "removeAria": "Quitar la foto de {{nick}}, {{role}}",
+        "previewAlt": "Foto de {{nick}}, {{role}}",
+        "hint": "PNG, JPEG o WebP, de hasta 2 MB. Se usa el centro de la imagen como un cuadrado. Sin foto se usa el avatar por defecto.",
+        "processing": "Preparando la foto...",
+        "installFailed": "No se pudo usar la foto de {{role}}. Elige otra o quítala.",
+        "errors": {
+          "unsupportedType": "Usa una imagen PNG, JPEG o WebP. No se aceptan SVG ni otros formatos.",
+          "fileTooLarge": "Ese archivo pesa más de 2 MB. Elige una imagen más pequeña.",
+          "unreadable": "No se pudo leer esa imagen. Prueba con otro archivo.",
+          "invalid": "Esa imagen no se puede usar como foto. Prueba con otro archivo.",
+          "tooBig": "Esa imagen es demasiado grande. Prueba con una más pequeña.",
+          "failed": "No se pudo preparar la foto. Inténtalo de nuevo."
+        }
+      },
       "attributes": "Atributos",
       "editsDropped": "Tus ediciones ya no encajan con este club, así que se restauró la plantilla generada.",
       "installFailed": "Plantilla rechazada. {{role}}, {{field}}: {{reason}}",

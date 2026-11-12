@@ -546,6 +546,26 @@
       "wage": "Stipendio {{value}}",
       "edit": "Modifica",
       "editAria": "Modifica {{nick}}, {{role}}",
+      "photo": {
+        "add": "Aggiungi foto",
+        "replace": "Cambia foto",
+        "remove": "Rimuovi foto",
+        "addAria": "Aggiungi una foto per {{nick}}, {{role}}",
+        "replaceAria": "Cambia la foto di {{nick}}, {{role}}",
+        "removeAria": "Rimuovi la foto di {{nick}}, {{role}}",
+        "previewAlt": "Foto di {{nick}}, {{role}}",
+        "hint": "PNG, JPEG o WebP, fino a 2 MB. Il centro dell'immagine viene usato come quadrato. Senza foto si usa l'avatar predefinito.",
+        "processing": "Preparazione della foto...",
+        "installFailed": "Non è stato possibile usare la foto di {{role}}. Scegline un'altra o rimuovila.",
+        "errors": {
+          "unsupportedType": "Usa un'immagine PNG, JPEG o WebP. SVG e altri formati non sono accettati.",
+          "fileTooLarge": "Il file supera i 2 MB. Scegli un'immagine più piccola.",
+          "unreadable": "Impossibile leggere l'immagine. Prova con un altro file.",
+          "invalid": "Questa immagine non può essere usata come foto. Prova con un altro file.",
+          "tooBig": "L'immagine è troppo grande. Prova con una più piccola.",
+          "failed": "Impossibile preparare la foto. Riprova."
+        }
+      },
       "attributes": "Attributi",
       "editsDropped": "Le tue modifiche non sono più adatte a questo club, quindi è stata ripristinata la rosa generata.",
       "installFailed": "Rosa rifiutata. {{role}}, {{field}}: {{reason}}",

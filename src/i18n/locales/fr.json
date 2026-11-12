@@ -710,6 +710,26 @@
       "wage": "Salaire {{value}}",
       "edit": "Modifier",
       "editAria": "Modifier {{nick}}, {{role}}",
+      "photo": {
+        "add": "Ajouter une photo",
+        "replace": "Changer la photo",
+        "remove": "Retirer la photo",
+        "addAria": "Ajouter une photo pour {{nick}}, {{role}}",
+        "replaceAria": "Changer la photo de {{nick}}, {{role}}",
+        "removeAria": "Retirer la photo de {{nick}}, {{role}}",
+        "previewAlt": "Photo de {{nick}}, {{role}}",
+        "hint": "PNG, JPEG ou WebP, jusqu'à 2 Mo. Le centre de l'image est utilisé sous forme de carré. Sans photo, l'avatar par défaut est utilisé.",
+        "processing": "Préparation de la photo...",
+        "installFailed": "La photo du joueur {{role}} n'a pas pu être utilisée. Choisissez-en une autre ou retirez-la.",
+        "errors": {
+          "unsupportedType": "Utilisez une image PNG, JPEG ou WebP. Les SVG et les autres formats sont refusés.",
+          "fileTooLarge": "Ce fichier dépasse 2 Mo. Choisissez une image plus petite.",
+          "unreadable": "Cette image n'a pas pu être lue. Essayez un autre fichier.",
+          "invalid": "Cette image ne peut pas servir de photo. Essayez un autre fichier.",
+          "tooBig": "Cette image est trop grande. Essayez-en une plus petite.",
+          "failed": "La photo n'a pas pu être préparée. Réessayez."
+        }
+      },
       "attributes": "Attributs",
       "editsDropped": "Tes modifications ne conviennent plus à ce club : l'effectif généré a été rétabli.",
       "installFailed": "Effectif refusé. {{role}}, {{field}} : {{reason}}",

@@ -710,6 +710,26 @@
       "wage": "Salário {{value}}",
       "edit": "Editar",
       "editAria": "Editar {{nick}}, {{role}}",
+      "photo": {
+        "add": "Adicionar foto",
+        "replace": "Trocar foto",
+        "remove": "Remover foto",
+        "addAria": "Adicionar uma foto para {{nick}}, {{role}}",
+        "replaceAria": "Trocar a foto de {{nick}}, {{role}}",
+        "removeAria": "Remover a foto de {{nick}}, {{role}}",
+        "previewAlt": "Foto de {{nick}}, {{role}}",
+        "hint": "PNG, JPEG ou WebP, de até 2 MB. O centro da imagem é usado como um quadrado. Sem foto, o avatar padrão é usado.",
+        "processing": "Preparando a foto...",
+        "installFailed": "Não foi possível usar a foto de {{role}}. Escolha outra ou remova-a.",
+        "errors": {
+          "unsupportedType": "Use uma imagem PNG, JPEG ou WebP. SVG e outros formatos não são aceitos.",
+          "fileTooLarge": "Esse arquivo tem mais de 2 MB. Escolha uma imagem menor.",
+          "unreadable": "Não foi possível ler essa imagem. Tente outro arquivo.",
+          "invalid": "Essa imagem não pode ser usada como foto. Tente outro arquivo.",
+          "tooBig": "Essa imagem é grande demais. Tente uma menor.",
+          "failed": "Não foi possível preparar a foto. Tente novamente."
+        }
+      },
       "attributes": "Atributos",
       "editsDropped": "Suas edições não combinam mais com este clube, então o elenco gerado foi restaurado.",
       "installFailed": "Elenco recusado. {{role}}, {{field}}: {{reason}}",

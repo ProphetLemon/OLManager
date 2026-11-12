@@ -6,8 +6,9 @@ use olm_core::domain::player::{LolRole, Player, PlayerAttributes};
 use olm_core::domain::team::Team;
 use olm_core::founder_identity::{
     FounderEditError, FounderEditReason as Reason, FounderError, FounderField as Field,
-    FounderIdentityOverride, FounderOverrides, birth_date_bounds, fold_key, normalize_full_name,
-    normalize_nick, rename_founder, validate_birth_date, validate_nationality,
+    FounderIdentityOverride, FounderOverrides, FounderPhotos, apply_founder_photos,
+    birth_date_bounds, fold_key, normalize_full_name, normalize_nick, rename_founder,
+    validate_birth_date, validate_nationality,
 };
 use olm_core::founding_squad::{
     FoundingSquadError, install_founding_squad, install_founding_squad_with, plan_founding_squad,
@@ -32,6 +33,7 @@ fn spec() -> CustomTeamSpec {
         logo_data_uri: None,
         founding_seed: None,
         founder_overrides: None,
+        founder_photos: None,
     }
 }
 
@@ -446,6 +448,7 @@ fn an_old_payload_without_overrides_still_parses() {
     let json = r##"{"name":"Rayo","short_name":"RAY","primary_color":"#112233","secondary_color":"#ffffff","country":"ES"}"##;
     let parsed: CustomTeamSpec = serde_json::from_str(json).expect("old payload");
     assert_eq!(parsed.founder_overrides, None);
+    assert_eq!(parsed.founder_photos, None);
 }
 
 #[test]
@@ -1393,4 +1396,133 @@ fn a_typographic_apostrophe_is_stored_as_ascii_on_install() {
         .find(|p| p.natural_position == LolRole::Top)
         .expect("top");
     assert_eq!(top.full_name, "María D'Arc");
+}
+
+// ---------------------------------------------------------------------------
+// Founder photos
+// ---------------------------------------------------------------------------
+
+fn photo_uri(width: u32, height: u32, pixel: [u8; 4]) -> String {
+    use base64::Engine as _;
+    let data: Vec<u8> = (0..width * height).flat_map(|_| pixel).collect();
+    let mut out = Vec::new();
+    let mut encoder = png::Encoder::new(&mut out, width, height);
+    encoder.set_color(png::ColorType::Rgba);
+    encoder.set_depth(png::BitDepth::Eight);
+    let mut writer = encoder.write_header().expect("header");
+    writer.write_image_data(&data).expect("pixels");
+    writer.finish().expect("finish");
+    format!(
+        "data:image/png;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(out)
+    )
+}
+
+fn founder_ids(game: &Game) -> Vec<String> {
+    founders(game).iter().map(|p| p.id.clone()).collect()
+}
+
+fn photo_of(game: &Game, role: LolRole) -> Option<String> {
+    founders(game)
+        .into_iter()
+        .find(|p| p.natural_position == role)
+        .and_then(|p| p.profile_image_url.clone())
+}
+
+#[test]
+fn a_payload_with_photos_parses_per_role() {
+    let json = r##"{"name":"Rayo","short_name":"RAY","primary_color":"#112233","secondary_color":"#ffffff","country":"ES","founder_photos":{"mid":"data:image/png;base64,AAAA"}}"##;
+
+    let parsed: CustomTeamSpec = serde_json::from_str(json).expect("payload");
+
+    let photos = parsed.founder_photos.expect("photos");
+    assert_eq!(photos.mid.as_deref(), Some("data:image/png;base64,AAAA"));
+    assert_eq!(photos.top, None);
+}
+
+#[test]
+fn a_photo_is_stored_normalized_in_the_founder_of_its_role() {
+    let mut game = with_custom_club();
+    install_founding_squad(&mut game, "les", CUSTOM, Some("ES"), 7).expect("squad");
+    let ids = founder_ids(&game);
+    let photos = FounderPhotos {
+        mid: Some(photo_uri(400, 200, [9, 8, 7, 255])),
+        ..FounderPhotos::default()
+    };
+
+    apply_founder_photos(&mut game, &ids, &photos).expect("photos");
+
+    let stored = photo_of(&game, LolRole::Mid).expect("mid photo");
+    assert_eq!(
+        Some(stored),
+        Some(olm_core::custom_logo::normalize_portrait(photos.mid.as_deref().unwrap()).unwrap())
+    );
+}
+
+#[test]
+fn founders_without_a_photo_keep_the_default_avatar() {
+    let mut game = with_custom_club();
+    install_founding_squad(&mut game, "les", CUSTOM, Some("ES"), 7).expect("squad");
+    let ids = founder_ids(&game);
+    let photos = FounderPhotos {
+        mid: Some(photo_uri(50, 50, [1, 1, 1, 255])),
+        ..FounderPhotos::default()
+    };
+
+    apply_founder_photos(&mut game, &ids, &photos).expect("photos");
+
+    for role in [
+        LolRole::Top,
+        LolRole::Jungle,
+        LolRole::Adc,
+        LolRole::Support,
+    ] {
+        assert_eq!(photo_of(&game, role), None, "{role:?}");
+    }
+}
+
+#[test]
+fn a_photo_that_is_not_an_image_is_rejected_and_nothing_is_stored() {
+    let mut game = with_custom_club();
+    install_founding_squad(&mut game, "les", CUSTOM, Some("ES"), 7).expect("squad");
+    let ids = founder_ids(&game);
+    let photos = FounderPhotos {
+        top: Some(photo_uri(50, 50, [1, 1, 1, 255])),
+        support: Some("data:image/svg+xml;base64,PHN2Zy8+".to_string()),
+        ..FounderPhotos::default()
+    };
+
+    let error = apply_founder_photos(&mut game, &ids, &photos).expect_err("rejected");
+
+    assert_eq!(error.role, LolRole::Support);
+    assert_eq!(error.reason, olm_core::custom_logo::LogoError::NotPng);
+    assert_eq!(photo_of(&game, LolRole::Top), None);
+}
+
+#[test]
+fn a_photo_rejection_travels_as_a_wire_error_with_the_role_and_reason() {
+    let error = FounderError::InvalidPhoto(olm_core::founder_identity::FounderPhotoError {
+        role: LolRole::Support,
+        reason: olm_core::custom_logo::LogoError::TooLarge,
+    });
+
+    let wire: Value = serde_json::from_str(&error.to_wire()).expect("json");
+
+    assert_eq!(wire["kind"], "invalid_photo");
+    assert_eq!(wire["role"], "SUPPORT");
+    assert_eq!(wire["reason"], "too_large");
+}
+
+#[test]
+fn photos_only_reach_the_given_players() {
+    let mut game = with_custom_club();
+    install_founding_squad(&mut game, "les", CUSTOM, Some("ES"), 7).expect("squad");
+    let photos = FounderPhotos {
+        top: Some(photo_uri(50, 50, [1, 1, 1, 255])),
+        ..FounderPhotos::default()
+    };
+
+    apply_founder_photos(&mut game, &[], &photos).expect("nothing to give");
+
+    assert_eq!(photo_of(&game, LolRole::Top), None);
 }

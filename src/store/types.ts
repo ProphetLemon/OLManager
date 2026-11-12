@@ -1,4 +1,4 @@
-import type { FounderOverrides } from "@/lib/customTeam/founders";
+import type { FounderOverrides, FounderPhotos } from "@/lib/customTeam/founders";
 
 export interface TeamColors {
   primary: string;
@@ -753,6 +753,8 @@ export interface CustomTeamSpec {
   founding_seed?: number;
   /** Identity edits to the generated founders, per role. */
   founder_overrides?: FounderOverrides;
+  /** Profile photos of the generated founders, per role, from `prepare_custom_portrait`. */
+  founder_photos?: FounderPhotos;
 }
 
 export interface TeamSummary {

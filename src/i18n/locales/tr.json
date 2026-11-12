@@ -710,6 +710,26 @@
       "wage": "Maaş {{value}}",
       "edit": "Düzenle",
       "editAria": "{{nick}} oyuncusunu düzenle, {{role}}",
+      "photo": {
+        "add": "Fotoğraf ekle",
+        "replace": "Fotoğrafı değiştir",
+        "remove": "Fotoğrafı kaldır",
+        "addAria": "{{nick}} için fotoğraf ekle, {{role}}",
+        "replaceAria": "{{nick}} oyuncusunun fotoğrafını değiştir, {{role}}",
+        "removeAria": "{{nick}} oyuncusunun fotoğrafını kaldır, {{role}}",
+        "previewAlt": "{{nick}} fotoğrafı, {{role}}",
+        "hint": "PNG, JPEG veya WebP, en fazla 2 MB. Görselin ortası kare olarak kullanılır. Fotoğraf yoksa varsayılan avatar kullanılır.",
+        "processing": "Fotoğraf hazırlanıyor...",
+        "installFailed": "{{role}} oyuncusunun fotoğrafı kullanılamadı. Başka bir tane seçin ya da kaldırın.",
+        "errors": {
+          "unsupportedType": "PNG, JPEG veya WebP görseli kullanın. SVG ve diğer biçimler kabul edilmez.",
+          "fileTooLarge": "Bu dosya 2 MB'tan büyük. Daha küçük bir görsel seçin.",
+          "unreadable": "Bu görsel okunamadı. Başka bir dosya deneyin.",
+          "invalid": "Bu görsel fotoğraf olarak kullanılamaz. Başka bir dosya deneyin.",
+          "tooBig": "Bu görsel çok büyük. Daha küçük bir tane deneyin.",
+          "failed": "Fotoğraf hazırlanamadı. Tekrar deneyin."
+        }
+      },
       "attributes": "Özellikler",
       "editsDropped": "Düzenlemelerin bu kulübe artık uymuyor, bu yüzden oluşturulan kadro geri yüklendi.",
       "installFailed": "Kadro reddedildi. {{role}}, {{field}}: {{reason}}",
