@@ -115,6 +115,14 @@ describe("Settings graphics mode", () => {
     expect(screen.getByRole("button", { name: "Compatibility" })).toBeInTheDocument();
   });
 
+  it("marks the chosen option as pressed, not only by colour", () => {
+    renderWithUserAgent(LINUX_UA);
+
+    expect(screen.getByRole("button", { name: "Ask at start" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Fast (recommended)" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Compatibility" })).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("does not show the control on Windows", () => {
     renderWithUserAgent(WINDOWS_UA);
 
