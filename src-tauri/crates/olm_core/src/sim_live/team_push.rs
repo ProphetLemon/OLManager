@@ -17,6 +17,21 @@ use super::{
     normalized_team, team_buffs_for_runtime,
 };
 
+/// Champions that must be able to push for the ending to be the plan.
+const ENDING_MIN_CHAMPIONS: usize = 3;
+/// How many champions fewer than the enemy the team may have and still go for the open nexus:
+/// 0 left matches 2.6 to 2.9 minutes between the last tower and the nexus, 1 gives 1.3.
+const ENDING_OUTNUMBERED_BY: usize = 1;
+/// Champions that gather before the ending goes in (or all that can push, if fewer).
+const ENDING_GROUP: usize = 4;
+/// Distance from the enemy nexus of the rally point.
+const ENDING_RALLY_DISTANCE: f64 = 0.30;
+/// Radius around the rally point that counts as gathered.
+const ENDING_RALLY_RADIUS: f64 = 0.12;
+/// A champion this near the nexus is already in; he counts as gathered.
+const ENDING_ENGAGED_RADIUS: f64 = 0.22;
+/// Seconds the team waits for the fourth champion before it goes in with three.
+const ENDING_GATHER_SEC: f64 = 40.0;
 /// Champions alive that a team needs over its opponent to start the plan.
 pub(super) const PUSH_MIN_EDGE: usize = 2;
 /// Champions alive that a team needs over its opponent to go on with a plan it started: it
@@ -56,6 +71,15 @@ pub(crate) struct TeamPush {
     pub(super) dive: bool,
     #[serde(default)]
     pub(super) since: f64,
+    /// Whether the plan is the ending: the enemy nexus can be attacked and taking it is the plan.
+    #[serde(default)]
+    pub(super) ending: bool,
+    /// Whether the team has gathered at the rally point and goes for the nexus.
+    #[serde(default)]
+    pub(super) assembled: bool,
+    /// When the team began to gather for the ending.
+    #[serde(default)]
+    pub(super) rally_since: f64,
     /// When the numbers advantage ends because enemy champions come back, or the buff runs out.
     #[serde(default)]
     pub(super) window_ends_at: f64,
@@ -76,6 +100,9 @@ pub(crate) struct PushOrder {
     pub(super) structure_id: String,
     pub(super) structure_pos: Vec2,
     pub(super) dive: bool,
+    /// Where to gather before the ending goes in; `None` once the team is together.
+    #[serde(default)]
+    pub(super) rally: Option<Vec2>,
 }
 
 fn health_ratio(champion: &ChampionRuntime) -> f64 {
@@ -132,7 +159,16 @@ fn evaluate(runtime: &RuntimeState, team: &str, previous: &TeamPush) -> TeamPush
         || (theirs == 0 && ours >= 1)
         || (previous.active && previous.dive && ours >= theirs + PUSH_KEEP_EDGE);
     let holds_buff = buff_ends_at > now && ours >= 3 && ours >= theirs;
-    if !numbers_edge && !holds_buff {
+    // The enemy nexus can be attacked and the team is not outnumbered: taking it is the plan.
+    let open_nexus = runtime.structures.iter().find(|s| {
+        s.kind == "nexus"
+            && normalized_team(&s.team) == enemy_of(team)
+            && is_structure_targetable(&runtime.structures, team, s)
+    });
+    let ending = open_nexus.is_some()
+        && ours >= ENDING_MIN_CHAMPIONS
+        && ours + ENDING_OUTNUMBERED_BY >= theirs;
+    if !numbers_edge && !holds_buff && !ending {
         return keep_totals(previous);
     }
 
@@ -148,6 +184,10 @@ fn evaluate(runtime: &RuntimeState, team: &str, previous: &TeamPush) -> TeamPush
         .collect();
     if pushers.is_empty() {
         return keep_totals(previous);
+    }
+
+    if let Some(nexus) = open_nexus.filter(|_| ending && pushers.len() >= ENDING_MIN_CHAMPIONS) {
+        return ending_plan(runtime, team, &pushers, previous, nexus, numbers_edge);
     }
 
     let window_ends_at = if numbers_edge {
@@ -166,6 +206,53 @@ fn evaluate(runtime: &RuntimeState, team: &str, previous: &TeamPush) -> TeamPush
         since: if previous.active { previous.since } else { now },
         window_ends_at,
         target_id: Some(target_id),
+        active_sec: previous.active_sec,
+        entered: previous.entered + u32::from(!previous.active),
+        ..TeamPush::default()
+    }
+}
+
+/// Where the team gathers before it goes in: on the line to its own base, out of reach of
+/// whoever defends the enemy fountain.
+fn rally_point(nexus: &StructureRuntime, team: &str) -> Vec2 {
+    let base = base_position_for(team);
+    let toward_base = normalize(Vec2 { x: base.x - nexus.pos.x, y: base.y - nexus.pos.y });
+    Vec2 {
+        x: clamp(nexus.pos.x + toward_base.x * ENDING_RALLY_DISTANCE, 0.01, 0.99),
+        y: clamp(nexus.pos.y + toward_base.y * ENDING_RALLY_DISTANCE, 0.01, 0.99),
+    }
+}
+
+/// The ending: the enemy nexus is the target. The champions gather at the rally point first,
+/// so that the defenders of the fountain meet the team and not one champion at a time.
+fn ending_plan(
+    runtime: &RuntimeState,
+    team: &str,
+    pushers: &[&ChampionRuntime],
+    previous: &TeamPush,
+    nexus: &StructureRuntime,
+    numbers_edge: bool,
+) -> TeamPush {
+    let now = runtime.time_sec;
+    let rally = rally_point(nexus, team);
+    let near = pushers
+        .iter()
+        .filter(|c| dist(c.pos, rally) <= ENDING_RALLY_RADIUS || dist(c.pos, nexus.pos) <= ENDING_ENGAGED_RADIUS)
+        .count();
+    let need = ENDING_GROUP.min(pushers.len());
+    let rally_since = if previous.ending { previous.rally_since } else { now };
+    let assembled = (previous.ending && previous.assembled)
+        || near >= need
+        || (near >= ENDING_MIN_CHAMPIONS && now - rally_since > ENDING_GATHER_SEC);
+    TeamPush {
+        active: true,
+        dive: numbers_edge,
+        ending: true,
+        assembled,
+        rally_since,
+        since: if previous.active { previous.since } else { now },
+        window_ends_at: now + 60.0,
+        target_id: Some(nexus.id.clone()),
         active_sec: previous.active_sec,
         entered: previous.entered + u32::from(!previous.active),
     }
@@ -256,6 +343,7 @@ pub(super) fn orders(runtime: &RuntimeState) -> [Option<PushOrder>; 2] {
             structure_id: structure.id.clone(),
             structure_pos: structure.pos,
             dive: push.dive,
+            rally: (push.ending && !push.assembled).then(|| rally_point(structure, team)),
         })
     })
 }
@@ -267,6 +355,9 @@ pub(super) fn order_slot(team: &str) -> usize {
 /// Where a champion of `team` stands to hit the structure of `order`: short of it, on the side
 /// of his own base.
 pub(super) fn stand_position(order: &PushOrder, team: &str) -> Vec2 {
+    if let Some(rally) = order.rally {
+        return rally;
+    }
     let base = base_position_for(team);
     let toward_base = normalize(Vec2 {
         x: base.x - order.structure_pos.x,

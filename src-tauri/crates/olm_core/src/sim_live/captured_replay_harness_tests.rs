@@ -334,3 +334,162 @@ fn replay_captured_start() {
         println!("{team} final level: {}", line.join(", "));
     }
 }
+
+/// Plays one seed of a captured start and, from the moment one team has destroyed every enemy
+/// tower, prints every `CAPTURED_TRACE_EVERY` seconds (default 20) where the champions are, the
+/// plan of each team, the health of the nexuses and inhibitors, and every death.
+///
+/// ```text
+/// CAPTURED_INIT=init-1.json CAPTURED_TRACE_SEED=89 cargo test --release -p olm_core --lib \
+///   sim_live::captured_replay_harness_tests::trace_captured_ending -- --ignored --nocapture
+/// ```
+#[test]
+#[ignore = "measurement: traces the end of one captured-start match"]
+fn trace_captured_ending() {
+    let path = std::env::var("CAPTURED_INIT").expect("CAPTURED_INIT");
+    let template = load_captured_request(&path).unwrap_or_else(|e| panic!("{e}"));
+    let n: usize = env_or("CAPTURED_TRACE_SEED", 0);
+    let every: f64 = env_or("CAPTURED_TRACE_EVERY", 20.0);
+    let mut request = template.clone();
+    request.session_id = format!("captured-replay-{n}");
+    request.seed = format!("{}-{n}", template.seed);
+    let session_id = request.session_id.clone();
+    let store = SimLiveStoreState::default();
+    init(&store, request).expect("init");
+    let mut tracing_from: Option<f64> = None;
+    let mut next_print = 0.0;
+    let mut alive_before: Vec<bool> = Vec::new();
+    loop {
+        tick(
+            &store,
+            SimLiveTickRequest {
+                session_id: session_id.clone(),
+                dt_sec: DEFAULT_TICK_DT_SEC,
+                running: true,
+                speed: DEFAULT_TICK_SPEED,
+            },
+        )
+        .expect("tick");
+        let sessions = store.sessions.lock().expect("lock");
+        let state = &sessions[&session_id].state;
+        let now = state.time_sec;
+        if tracing_from.is_none()
+            && ["red", "blue"].iter().any(|t| alive_towers(state, t) == 0)
+        {
+            tracing_from = Some(now);
+            println!("first team with every enemy tower down at {:.1} min (towers left blue {} red {})", now / 60.0, alive_towers(state, "blue"), alive_towers(state, "red"));
+        }
+        if alive_before.is_empty() {
+            alive_before = state.champions.iter().map(|c| c.alive).collect();
+        }
+        if tracing_from.is_some() {
+            for (i, c) in state.champions.iter().enumerate() {
+                if alive_before[i] && !c.alive {
+                    println!("  t={now:.0} {}{} dies", &c.team[..1], c.role);
+                }
+            }
+        }
+        alive_before = state.champions.iter().map(|c| c.alive).collect();
+        if tracing_from.is_some() && now >= next_print {
+            next_print = now + every;
+            let structure = |id: &str| {
+                state.structures.iter().find(|s| s.id == id).map_or("?".to_string(), |s| {
+                    if s.alive { format!("{:.0}", s.hp) } else { "x".to_string() }
+                })
+            };
+            let line: Vec<String> = state
+                .champions
+                .iter()
+                .map(|c| {
+                    if c.alive {
+                        format!(
+                            "{}{} {} {:.0}% @{:.2},{:.2}{}",
+                            &c.team[..1],
+                            c.role,
+                            c.state,
+                            c.hp / c.max_hp.max(1.0) * 100.0,
+                            c.pos.x,
+                            c.pos.y,
+                            if c.push.is_some() { " P" } else { "" }
+                        )
+                    } else {
+                        format!("{}{} dead({:.0}s)", &c.team[..1], c.role, c.respawn_at - now)
+                    }
+                })
+                .collect();
+            println!(
+                "t={now:.0} nexus b {} r {} | inhibs b {}/{}/{} r {}/{}/{} | nexus towers b {}/{} r {}/{} | plan b {} r {}\n    {}",
+                structure("blue-nexus"), structure("red-nexus"),
+                structure("blue-inhib-top"), structure("blue-inhib-mid"), structure("blue-inhib-bot"),
+                structure("red-inhib-top"), structure("red-inhib-mid"), structure("red-inhib-bot"),
+                structure("blue-nexus-top-tower"), structure("blue-nexus-bot-tower"),
+                structure("red-nexus-top-tower"), structure("red-nexus-bot-tower"),
+                state.team_push[0].active, state.team_push[1].active,
+                line.join("; ")
+            );
+        }
+        if state.winner.is_some() || now >= GAME_LIMIT_SEC {
+            println!("winner {:?} at {:.1} min", state.winner, now / 60.0);
+            break;
+        }
+    }
+}
+
+/// Plays one seed of a captured start to `CAPTURED_PROBE_AT` seconds and prints, for each
+/// champion, the combat target and whether it is in reach.
+#[test]
+#[ignore = "measurement: prints the combat target of every champion at one moment of a captured-start match"]
+fn probe_captured_targets() {
+    let path = std::env::var("CAPTURED_INIT").expect("CAPTURED_INIT");
+    let template = load_captured_request(&path).unwrap_or_else(|e| panic!("{e}"));
+    let n: usize = env_or("CAPTURED_TRACE_SEED", 0);
+    let at: f64 = env_or("CAPTURED_PROBE_AT", 1800.0);
+    let mut request = template.clone();
+    request.session_id = format!("captured-replay-{n}");
+    request.seed = format!("{}-{n}", template.seed);
+    let session_id = request.session_id.clone();
+    let store = SimLiveStoreState::default();
+    init(&store, request).expect("init");
+    loop {
+        tick(
+            &store,
+            SimLiveTickRequest {
+                session_id: session_id.clone(),
+                dt_sec: DEFAULT_TICK_DT_SEC,
+                running: true,
+                speed: DEFAULT_TICK_SPEED,
+            },
+        )
+        .expect("tick");
+        let sessions = store.sessions.lock().expect("lock");
+        let state = &sessions[&session_id].state;
+        if state.time_sec < at && state.winner.is_none() {
+            continue;
+        }
+        let timers = decode_neutral_timers_state(&state.neutral_timers)
+            .unwrap_or_else(neutral_timers_default_runtime_state);
+        println!("t={:.0} winner {:?}", state.time_sec, state.winner);
+        for (idx, c) in state.champions.iter().enumerate() {
+            if !c.alive {
+                println!("{}{} dead", &c.team[..1], c.role);
+                continue;
+            }
+            let target = combat::pick_combat_target(state, idx, state.time_sec, &timers);
+            let what = match &target {
+                Some(CombatTarget::Champion(e)) => {
+                    let enemy = &state.champions[*e];
+                    format!("champion {}{} d{:.3} range {:.3} hp {:.0}%", &enemy.team[..1], enemy.role, dist(c.pos, enemy.pos), c.attack_range, enemy.hp / enemy.max_hp * 100.0)
+                }
+                Some(CombatTarget::Minion(m)) => format!("minion d{:.3}", dist(c.pos, state.minions[*m].pos)),
+                Some(CombatTarget::Structure(s)) => format!("structure {}", state.structures[*s].id),
+                Some(CombatTarget::Neutral(k)) => format!("neutral {k}"),
+                None => "none".to_string(),
+            };
+            println!(
+                "{}{} {} {:.0}% @{:.2},{:.2} cd {:.1} -> {what}",
+                &c.team[..1], c.role, c.state, c.hp / c.max_hp.max(1.0) * 100.0, c.pos.x, c.pos.y, c.attack_cd_until - state.time_sec
+            );
+        }
+        break;
+    }
+}
