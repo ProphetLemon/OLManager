@@ -1,9 +1,9 @@
-//! The indexed mastery seed and the batched training-target pick must give exactly what
-//! the per-entry and per-player code gave.
+//! The indexed mastery seed, the batched training-target pick and the batched mastery
+//! training ticks must give exactly what the per-entry and per-player code gave.
 //!
 //! The `legacy_*` functions are the previous implementation (copied, only renamed): one
-//! scan of the mastery table per upsert, and one scan of the player and mastery tables per
-//! rostered player.
+//! scan of the mastery table per upsert, one scan of the player and mastery tables per
+//! rostered player, and several table scans per training attempt.
 
 use super::*;
 use crate::clock::GameClock;
@@ -204,6 +204,89 @@ fn legacy_ensure_training_targets_from_mastery(game: &mut Game, player_id: &str)
     }
 }
 
+fn legacy_soloq_lp_for_player(game: &Game, player: &Player) -> f64 {
+    let day_index = days_between(game.clock.start_date, game.clock.current_date);
+    let formula_lp = (soloq_points_at(game, player, day_index) - SOLOQ_POINTS_BASELINE).max(0.0);
+    soloq_decay::displayed_lp(game.soloq_decay_mode, player, formula_lp)
+}
+
+fn legacy_mastery_gain_multiplier_for_player(game: &Game, player_id: &str) -> f64 {
+    let Some(player) = game
+        .players
+        .iter()
+        .find(|candidate| candidate.id == player_id)
+    else {
+        return 1.0;
+    };
+    soloq_multiplier_for_tier(soloq_tier_from_lp(legacy_soloq_lp_for_player(game, player)))
+}
+
+fn legacy_apply_training_mastery_progress(
+    game: &mut Game,
+    player_id: &str,
+    champion_id: &str,
+    gain_factor: f64,
+    rng: &mut impl Rng,
+) {
+    let current = mastery_for_player_champion(game, player_id, champion_id);
+    let Some(player) = game
+        .players
+        .iter()
+        .find(|candidate| candidate.id == player_id)
+    else {
+        return;
+    };
+
+    let mechanics = f64::from(player.attributes.mechanics.min(100)) / 100.0;
+    let champion_pool = f64::from(player.attributes.champion_pool.min(100)) / 100.0;
+    let stat_push = (mechanics * 0.6) + (champion_pool * 0.6);
+
+    let headroom = f64::from(MASTERY_CAP.saturating_sub(current)) / 75.0;
+    let chance = (0.16 + gain_factor * 0.26 + headroom * 0.2 + stat_push * 0.18).clamp(0.14, 0.88);
+    let roll: f64 = rng.random_range(0.0..1.0);
+    if roll > chance {
+        return;
+    }
+
+    let stat_bonus = if mechanics >= 0.85 && champion_pool >= 0.85 {
+        2
+    } else if mechanics >= 0.72 || champion_pool >= 0.72 {
+        1
+    } else {
+        0
+    };
+
+    let gain = if current >= 90 {
+        2 + stat_bonus
+    } else if current >= 75 {
+        3 + stat_bonus
+    } else {
+        4 + stat_bonus
+    };
+    let next = current.saturating_add(gain).min(MASTERY_CAP);
+    upsert_mastery(game, player_id, champion_id, next);
+}
+
+fn legacy_apply_training_ticks(
+    game: &mut Game,
+    ticks: &[(String, String, f64, u8)],
+    rng: &mut StdRng,
+) {
+    for (player_id, champion_id, gain, attempts) in ticks {
+        let soloq_mult = legacy_mastery_gain_multiplier_for_player(game, player_id);
+        let effective_gain = gain * soloq_mult;
+        for _ in 0..*attempts {
+            legacy_apply_training_mastery_progress(
+                game,
+                player_id,
+                champion_id,
+                effective_gain,
+                rng,
+            );
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Fixture
 // ---------------------------------------------------------------------------
@@ -219,6 +302,7 @@ fn player(index: usize) -> Player {
         4 => LolRole::Support,
         _ => LolRole::Unknown,
     };
+    let level = 45 + (index * 7 % 56) as u8;
     let mut player = Player::new(
         format!("p{index:03}"),
         format!("p{index:03}"),
@@ -227,18 +311,18 @@ fn player(index: usize) -> Player {
         "Spain".to_string(),
         role,
         PlayerAttributes {
-            mental_resilience: 60,
-            champion_pool: 60,
-            laning: 60,
-            mechanics: 60,
-            macro_play: 60,
-            consistency: 60,
-            discipline: 60,
-            teamfighting: 60,
-            shotcalling: 60,
+            mental_resilience: level,
+            champion_pool: level.saturating_add(3).min(100),
+            laning: level,
+            mechanics: level.saturating_add(5).min(100),
+            macro_play: level,
+            consistency: level,
+            discipline: level,
+            teamfighting: level,
+            shotcalling: level,
         },
     );
-    // Rostered players come first, the rest are free agents.
+    // Two players in three are rostered, the rest are free agents.
     player.team_id = (index % 3 != 0).then(|| "t1".to_string());
     player
 }
@@ -467,4 +551,120 @@ fn single_player_pick_should_match_the_previous_scan() {
     }
 
     assert_eq!(targets(&single), targets(&scanning));
+}
+
+// ---------------------------------------------------------------------------
+// Training ticks
+// ---------------------------------------------------------------------------
+
+/// Ticks for every player: a champion the player has, the same one spelled differently,
+/// and one the player has not played; plus an unknown player and a repeated pair.
+fn ticks(game: &Game) -> Vec<(String, String, f64, u8)> {
+    let mut ticks = Vec::new();
+    for (index, player) in game.players.iter().enumerate() {
+        let known = game
+            .champion_masteries
+            .iter()
+            .find(|entry| entry.player_id == player.id)
+            .map(|entry| entry.champion_id.clone());
+        let attempts = 1 + (index % 4) as u8;
+        let gain = 0.2 + (index % 7) as f64 * 0.05;
+        if let Some(known) = known {
+            ticks.push((player.id.clone(), known.to_lowercase(), gain, attempts));
+            ticks.push((player.id.clone(), known, gain, attempts));
+        }
+        ticks.push((
+            player.id.clone(),
+            format!("Fresh{}", index % 5),
+            gain,
+            attempts,
+        ));
+        ticks.push((player.id.clone(), "Fresh0".to_string(), gain, 2));
+    }
+    ticks.push(("nobody".to_string(), "Ahri".to_string(), 0.3, 3));
+    ticks
+}
+
+#[test]
+fn fixture_should_cover_more_than_one_soloq_multiplier() {
+    let game = seeded_fixture();
+
+    let multipliers: HashSet<u64> = game
+        .players
+        .iter()
+        .map(|player| legacy_mastery_gain_multiplier_for_player(&game, &player.id).to_bits())
+        .collect();
+
+    assert!(multipliers.len() >= 2, "{} multipliers", multipliers.len());
+}
+
+#[test]
+fn soloq_lp_for_player_should_match_the_previous_chain() {
+    let game = seeded_fixture();
+
+    for player in &game.players {
+        assert_eq!(
+            soloq_lp_for_player(&game, player).to_bits(),
+            legacy_soloq_lp_for_player(&game, player).to_bits(),
+            "{}",
+            player.id
+        );
+    }
+}
+
+#[test]
+fn batched_ticks_should_match_the_per_attempt_scans() {
+    let (mut batched, mut scanning) = (seeded_fixture(), seeded_fixture());
+    batched.clock.current_date += chrono::Duration::days(2);
+    scanning.clock.current_date += chrono::Duration::days(2);
+    let ticks = ticks(&batched);
+    let (mut batched_rng, mut scanning_rng) =
+        (StdRng::seed_from_u64(11), StdRng::seed_from_u64(11));
+
+    apply_training_mastery_ticks(&mut batched, &ticks, &mut batched_rng);
+    legacy_apply_training_ticks(&mut scanning, &ticks, &mut scanning_rng);
+
+    assert_eq!(mastery_rows(&batched), mastery_rows(&scanning));
+    assert_eq!(
+        batched_rng.random_range(0.0..1.0_f64).to_bits(),
+        scanning_rng.random_range(0.0..1.0_f64).to_bits(),
+        "the random stream must be left at the same point"
+    );
+}
+
+#[test]
+fn batched_ticks_should_change_the_table() {
+    let mut game = seeded_fixture();
+    let before = mastery_rows(&game);
+    let ticks = ticks(&game);
+
+    apply_training_mastery_ticks(&mut game, &ticks, &mut StdRng::seed_from_u64(11));
+
+    assert_ne!(mastery_rows(&game), before);
+}
+
+#[test]
+fn mastery_index_signal_should_follow_upserts_like_the_table_scan() {
+    let mut game = seeded_fixture();
+    let mut index = MasteryIndex::new(&game);
+    let calls = [
+        ("p001", "Fresh0", 99),
+        ("p001", "Fresh1", 98),
+        ("p001", "FRESH0", 97),
+        ("p002", "Fresh0", 1),
+        ("p004", "Ahri", 100),
+        ("nobody", "Ahri", 80),
+    ];
+
+    for (player_id, champion_id, value) in calls {
+        index.upsert(&mut game, player_id, champion_id, value);
+        for player in &game.players {
+            assert_eq!(
+                index.mastery_signal(&game, &player.id).to_bits(),
+                mastery_signal_for_player(&game, &player.id).to_bits(),
+                "{} after {player_id}/{champion_id}",
+                player.id
+            );
+        }
+    }
 }
