@@ -77,7 +77,7 @@ export default function PlayerProfileChampionsCardV2({
                     </p>
                     {item.games > 0 ? (
                       <p className="font-heading text-2xl font-black leading-none tabular-nums">
-                        {item.games} <span className="text-lg">{t("playerProfile.championGames")}</span>
+                        {item.games} <span className="text-lg">{t("playerProfile.championGames", { count: item.games })}</span>
                       </p>
                     ) : null}
                   </div>
