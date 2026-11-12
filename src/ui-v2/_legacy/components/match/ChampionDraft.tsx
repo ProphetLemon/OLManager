@@ -1193,16 +1193,33 @@ export default function ChampionDraft({
     return masteryByChampion.get(normalizeKey(championId)) ?? 25;
   };
 
-  const resolveTeamChampionMastery = (side: Side, championId: string): number => {
-    const teamId = side === "blue" ? homeTeamSeed?.id : awayTeamSeed?.id;
-    const teamPlayers = side === "blue" ? bluePlayers : redPlayers;
-    if (!teamId || teamPlayers.length === 0) return 25;
+  /** Mastery of the player who fills `roleIndex` of `side`, as the game stores it. */
+  const resolveRolePlayerMastery = (side: Side, roleIndex: number, championId: string): number => {
+    const player = (side === "blue" ? bluePlayers : redPlayers)[roleIndex];
+    if (!player) return 25;
+    return runtimeMasteryByPlayerId.get(player.id)?.get(normalizeKey(championId)) ?? 25;
+  };
 
+  /** Best mastery any player of the team has on the champion (what a ban takes away). */
+  const resolveTeamChampionMastery = (side: Side, championId: string): number => {
     let best = 25;
-    teamPlayers.forEach((player) => {
-      const masteryByChampion = playerMasteryMap.get(`${teamId}:${normalizeKey(player.name)}`);
-      const value = masteryByChampion?.get(normalizeKey(championId)) ?? 25;
-      if (value > best) best = value;
+    ROLE_ORDER.forEach((_, roleIndex) => {
+      best = Math.max(best, resolveRolePlayerMastery(side, roleIndex, championId));
+    });
+    return best;
+  };
+
+  /** Best mastery among the still open roles of the team that the champion can fill. */
+  const resolveOpenRoleMastery = (
+    side: Side,
+    championId: string,
+    openRoles: Role[],
+  ): number => {
+    const fillable = championAssignableRoles(championId).filter((role) => openRoles.includes(role));
+    const roles = fillable.length > 0 ? fillable : openRoles;
+    let best = 25;
+    roles.forEach((role) => {
+      best = Math.max(best, resolveRolePlayerMastery(side, ROLE_ORDER.indexOf(role), championId));
     });
     return best;
   };
@@ -1521,7 +1538,7 @@ export default function ChampionDraft({
         let bestScore = Number.NEGATIVE_INFINITY;
 
         scoringPool.forEach((champion) => {
-          const mastery = resolveTeamChampionMastery(aiSide, champion.id);
+          const mastery = resolveOpenRoleMastery(aiSide, champion.id, missingRoles);
           const meta = metaScoreForChampion(champion);
           const roleNeedBonus =
             missingRoles.length > 0 && champion.roleHints.some((role) => missingRoles.includes(role)) ? 12 : 0;
