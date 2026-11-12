@@ -252,7 +252,7 @@ pub(super) fn batch_size(default: usize) -> usize {
 /// minutes, measured with every role income weight set to 1.0 (no role
 /// weighting, everything else as shipped). [PLACEHOLDER] regenerate it with
 /// the same setup if the base economy changes.
-const NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN: f64 = 15_880.1;
+const NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN: f64 = 15_564.0;
 
 /// The role income weights only redistribute gold between roles; they must not
 /// inflate the team total. Measured against the unweighted baseline above the

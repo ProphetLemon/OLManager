@@ -600,7 +600,7 @@ const TOWER_SHOT_MAX_HP_SHARE: f64 = 0.01;
 const TOWER_SHOT_RAMP_PER_SHOT: f64 = 0.4;
 const TOWER_SHOT_RAMP_MAX_STEPS: u32 = 3;
 const TOWER_SHOT_RAMP_WINDOW_SEC: f64 = 3.0;
-const TOWER_SHOT_DAMAGE_TO_MINION: f64 = 26.0;
+const TOWER_SHOT_DAMAGE_TO_MINION: f64 = 30.0;
 const TOWER_ATTACK_RANGE: f64 = 0.08;
 const TOWER_ATTACK_CADENCE_SEC: f64 = 1.0;
 // Long enough for four shots at the cadence a tower really fires at (one per
@@ -1992,10 +1992,10 @@ fn stat_delta(score: f64) -> f64 {
 }
 
 /// Exponent per point of power difference in `champion_strength_damage_multiplier`.
-/// [PLACEHOLDER] 0.45: at 95 vs 40 visible stats the stronger side deals about
-/// 2.3x the damage it takes and wins about 95% of matches; at 80 vs 60 about
-/// 1.35x and 60%+. Tune with the ignored sweep in `strength_tests`.
-const STRENGTH_DAMAGE_EXPONENT: f64 = 0.38;
+/// [PLACEHOLDER] 0.42, fitted with the plan of the team ahead in numbers (real champions, 300
+/// matches): 0.38 gave 94.0% for the stronger team at 95 vs 40, 0.42 gives 95.7%, and 80 vs 60
+/// stays inside 66% to 80% (74.3% then, 78.7% now). Even matches do not depend on it.
+const STRENGTH_DAMAGE_EXPONENT: f64 = 0.42;
 
 /// Weight of the role edge (+-4) in a champion's power, in stat-delta units.
 /// [PLACEHOLDER] 0.28: +4 against -4 is a damage ratio of about 1.25.

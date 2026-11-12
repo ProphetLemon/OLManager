@@ -98,18 +98,26 @@ fn a_team_against_an_empty_enemy_plays_the_plan_even_alone() {
 }
 
 #[test]
-fn the_plan_ends_when_the_enemy_champions_are_back() {
+fn a_team_even_in_numbers_does_not_start_the_plan() {
+    let mut runtime = world(5, 5);
+
+    assert!(!blue_plan(&mut runtime).active, "five against five started the plan");
+}
+
+#[test]
+fn the_plan_goes_on_when_the_enemy_champions_are_back_and_ends_when_the_team_is_behind() {
     let mut runtime = world(5, 3);
-    runtime.champions[8].respawn_at = NOW + 10.0;
-    runtime.champions[9].respawn_at = NOW + 30.0;
+    assert!(blue_plan(&mut runtime).active);
 
-    let plan = blue_plan(&mut runtime);
-    assert_eq!(plan.window_ends_at, NOW + 10.0, "the edge falls to one with the first return");
-
-    // The first one is back: four against four, no plan.
+    // Both dead enemies are back: five against five, the plan goes on.
     runtime.champions[8].alive = true;
     runtime.champions[9].alive = true;
-    assert!(!blue_plan(&mut runtime).active);
+    assert!(blue_plan(&mut runtime).active, "the plan ended at the first respawn, before the tower fell");
+
+    // One of ours dies: four against five.
+    runtime.champions[0].alive = false;
+    runtime.champions[0].respawn_at = NOW + 40.0;
+    assert!(!blue_plan(&mut runtime).active, "a team behind in numbers kept the plan");
 }
 
 #[test]

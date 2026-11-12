@@ -1,7 +1,7 @@
 //! The plan of a team that is ahead in numbers: take structures while the advantage lasts.
 //!
 //! A team with at least two more champions alive than its opponent (or against an enemy with
-//! nobody alive) plays one plan: every champion who is not about to die walks to one enemy
+//! nobody alive) plays one plan, and goes on with it while it is not behind in numbers: every champion who is not about to die walks to one enemy
 //! structure chosen for the team and hits it. The farming, recall for items, jungle and base
 //! defence routines do not pull them away while the plan holds, except when an enemy champion
 //! is hitting a structure of their base. A team that holds the Baron or Elder buff and is not
@@ -17,8 +17,13 @@ use super::{
     normalized_team, team_buffs_for_runtime,
 };
 
-/// Champions alive that a team needs over its opponent to play the plan.
+/// Champions alive that a team needs over its opponent to start the plan.
 pub(super) const PUSH_MIN_EDGE: usize = 2;
+/// Champions alive that a team needs over its opponent to go on with a plan it started: it
+/// plays on while it is not behind. A 5 against 3 lasts 20 to 40 seconds, less than the walk to
+/// a tower and its fall, and ending the plan at the first respawn took half a structure per run;
+/// with 1 the stronger team at 80 vs 60 wins 74.0% (68.7% with 2), with 0 it wins 75.0%.
+pub(super) const PUSH_KEEP_EDGE: usize = 0;
 /// Health share under which a champion leaves the plan: he is about to die or recall.
 pub(super) const PUSH_MIN_HP_RATIO: f64 = 0.40;
 /// A champion within this distance of a structure of his base, with an enemy champion hitting
@@ -85,7 +90,8 @@ fn team_index(team: &str) -> usize {
     usize::from(normalized_team(team) != "blue")
 }
 
-/// Time at which the numbers advantage of `team` ends because dead enemy champions respawn.
+/// Time at which `team` stops being ahead because dead enemy champions respawn; a minute from
+/// now when the dead enemies alone cannot end it.
 fn advantage_ends_at(runtime: &RuntimeState, team: &str, ours: usize, theirs: usize) -> f64 {
     let mut returns: Vec<f64> = runtime
         .champions
@@ -95,7 +101,7 @@ fn advantage_ends_at(runtime: &RuntimeState, team: &str, ours: usize, theirs: us
         .collect();
     returns.sort_by(|a, b| a.total_cmp(b));
     // The edge falls under the minimum when this many of them are back.
-    let needed = (ours + 1).saturating_sub(theirs + PUSH_MIN_EDGE).max(1);
+    let needed = (ours + 1).saturating_sub(theirs + PUSH_KEEP_EDGE).max(1);
     returns
         .get(needed - 1)
         .copied()
@@ -118,7 +124,9 @@ fn evaluate(runtime: &RuntimeState, team: &str, previous: &TeamPush) -> TeamPush
 
     let buffs = team_buffs_for_runtime(runtime.extra.get("teamBuffs"), team);
     let buff_ends_at = buffs.baron_until.max(buffs.elder_until);
-    let numbers_edge = ours >= theirs + PUSH_MIN_EDGE || (theirs == 0 && ours >= 1);
+    let numbers_edge = ours >= theirs + PUSH_MIN_EDGE
+        || (theirs == 0 && ours >= 1)
+        || (previous.active && previous.dive && ours >= theirs + PUSH_KEEP_EDGE);
     let holds_buff = buff_ends_at > now && ours >= 3 && ours >= theirs;
     if !numbers_edge && !holds_buff {
         return keep_totals(previous);

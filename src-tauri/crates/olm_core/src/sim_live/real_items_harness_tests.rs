@@ -202,6 +202,9 @@ fn measure_real_lineups() {
         decided.iter().filter(|(winner, loser)| loser - winner >= 20).count(),
         decided.len()
     );
+    for p in played.iter().filter(|p| p.winner_loser_kills.is_none()) {
+        println!("undecided seed {} minutes {:.1}", p.seed, p.minutes);
+    }
     for p in &played {
         if let Some((winner, loser)) = p.winner_loser_kills
             && loser - winner >= 20
@@ -669,6 +672,10 @@ fn probe_combat_gates() {
         let timers = decode_neutral_timers_state(&state.neutral_timers)
             .unwrap_or_else(neutral_timers_default_runtime_state);
         println!("t={:.0} winner {:?}", state.time_sec, state.winner);
+        for s in state.structures.iter().filter(|s| s.kind != "tower" || s.id.contains("nexus") || s.id.contains("inhib")) {
+            let near_enemy_minions = state.minions.iter().filter(|m| m.alive && m.team != s.team && dist(m.pos, s.pos) <= 0.13).count();
+            println!("  {} alive {} hp {:.0}/{:.0} enemy minions near {}", s.id, s.alive, s.hp, s.max_hp, near_enemy_minions);
+        }
         for (idx, c) in state.champions.iter().enumerate() {
             if !c.alive {
                 println!("{}{} dead", &c.team[..1], c.role);
