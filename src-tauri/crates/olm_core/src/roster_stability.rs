@@ -124,6 +124,22 @@ pub fn evaluate_team(
     team_id: &str,
     reason: RosterStabilityReason,
 ) -> Result<RosterEvaluation, RosterStabilityError> {
+    evaluate_team_with(
+        game,
+        team_id,
+        reason,
+        is_schedulable_ai_main_team(game, team_id),
+    )
+}
+
+/// [`evaluate_team`] with a caller-supplied `schedulable` flag, so a repair that
+/// already knows the answer does not rescan every league's standings and fixtures.
+fn evaluate_team_with(
+    game: &Game,
+    team_id: &str,
+    reason: RosterStabilityReason,
+    schedulable: bool,
+) -> Result<RosterEvaluation, RosterStabilityError> {
     let team = game
         .teams
         .iter()
@@ -137,8 +153,34 @@ pub fn evaluate_team(
             stale_lineup_ids: Vec::new(),
         })?;
 
-    let current_date = current_date(game);
-    let eligible_players = eligible_team_players(game, team_id, current_date);
+    let team_players = game
+        .players
+        .iter()
+        .filter(|player| player.team_id.as_deref() == Some(team_id))
+        .collect::<Vec<_>>();
+    Ok(evaluate_from_players(
+        team_id,
+        &team.active_lineup_ids,
+        &team_players,
+        current_date(game),
+        schedulable,
+    ))
+}
+
+/// Evaluates one team from its own players (`team_players` holds every player whose
+/// `team_id` is `team_id`, in game order) and a lineup, without touching the game.
+fn evaluate_from_players(
+    team_id: &str,
+    lineup: &[String],
+    team_players: &[&Player],
+    current_date: NaiveDate,
+    schedulable: bool,
+) -> RosterEvaluation {
+    let eligible_players = team_players
+        .iter()
+        .copied()
+        .filter(|player| has_current_contract(player, current_date))
+        .collect::<Vec<_>>();
     let eligible_ids = eligible_players
         .iter()
         .map(|player| player.id.as_str())
@@ -147,28 +189,26 @@ pub fn evaluate_team(
         .iter()
         .map(|player| (player.id.as_str(), player.natural_position))
         .collect::<HashMap<_, _>>();
-    let stale_lineup_ids = lineup_issues(&team.active_lineup_ids, &eligible_ids);
-    let lineup_is_valid = active_lineup_is_valid(&team.active_lineup_ids, &eligible_roles_by_id);
+    let stale_lineup_ids = lineup_issues(lineup, &eligible_ids);
+    let lineup_is_valid = active_lineup_is_valid(lineup, &eligible_roles_by_id);
     let missing_roles = missing_roles(&eligible_players);
-    let expired_player_ids = game
-        .players
+    let expired_player_ids = team_players
         .iter()
-        .filter(|player| player.team_id.as_deref() == Some(team_id))
         .filter(|player| !has_current_contract(player, current_date))
         .map(|player| player.id.clone())
         .collect::<Vec<_>>();
     let match_eligible =
         eligible_players.len() >= MIN_MATCH_PLAYERS && missing_roles.is_empty() && lineup_is_valid;
 
-    Ok(RosterEvaluation {
+    RosterEvaluation {
         team_id: team_id.to_string(),
         match_eligible,
-        schedulable: is_schedulable_ai_main_team(game, team_id),
+        schedulable,
         eligible_player_count: eligible_players.len(),
         missing_roles,
         stale_lineup_ids,
         expired_player_ids,
-    })
+    }
 }
 
 /// Ensure a team has a match-eligible roster by repairing any gaps.
@@ -177,53 +217,51 @@ pub fn evaluate_team(
 /// the agent misses (mass departures, initial setup, corrupted saves, etc.).
 /// The AI agent system (`ai_team_agent`, `ai_player_agent`) should prevent most
 /// roster issues; this function catches whatever slips through.
+///
+/// On `Err` the game is left exactly as it was passed in.
 pub fn repair_team(
     game: &mut Game,
     team_id: &str,
     reason: RosterStabilityReason,
 ) -> Result<RosterStabilityReport, RosterStabilityError> {
-    let before = evaluate_team(game, team_id, reason)?;
-    let mut actions = Vec::new();
-    let mut policy_exceptions = Vec::new();
+    let schedulable = is_schedulable_ai_main_team(game, team_id);
+    let before = evaluate_team_with(game, team_id, reason, schedulable)?;
 
     if !before.schedulable {
         return Ok(RosterStabilityReport {
             team_id: team_id.to_string(),
             reason,
-            actions,
-            policy_exceptions,
+            actions: Vec::new(),
+            policy_exceptions: Vec::new(),
             after: before.clone(),
             before,
         });
     }
 
+    if roster_needs_no_change(&before) {
+        // Only the lineup can change: plan it against the untouched game, then write
+        // it. An error is returned before anything is written.
+        let current_date = current_date(game);
+        let team_players = game
+            .players
+            .iter()
+            .filter(|player| player.team_id.as_deref() == Some(team_id))
+            .collect::<Vec<_>>();
+        let plan =
+            plan_lineup_only_repair(game, team_id, &team_players, before, reason, current_date)?;
+        let LineupOnlyPlan { report, new_lineup } = plan;
+        if let Some(lineup) = new_lineup {
+            set_active_lineup(game, team_id, lineup);
+        }
+        return Ok(report);
+    }
+
+    // The roster itself changes (renewals, signings, generated players, transfer
+    // records): work on a copy so a failure discards it and leaves `game` untouched.
     let mut repaired_game = game.clone();
-
-    renew_needed_current_players(&mut repaired_game, team_id, &mut actions);
-    fill_missing_roles(&mut repaired_game, team_id, reason, &mut actions)?;
-    reconcile_lineup(&mut repaired_game, team_id, &mut actions);
-
-    let after = evaluate_team(&repaired_game, team_id, reason)?;
-    if !after.match_eligible {
-        return Err(error_from_evaluation(reason, &after));
-    }
-
-    if game.season_context.transfer_window.status == TransferWindowStatus::Closed
-        && actions_require_transfer_window_exception(&actions)
-    {
-        policy_exceptions.push(POLICY_EXCEPTION_TRANSFER_WINDOW_CLOSED.to_string());
-    }
-
+    let report = repair_in_place(&mut repaired_game, team_id, reason, before)?;
     *game = repaired_game;
-
-    Ok(RosterStabilityReport {
-        team_id: team_id.to_string(),
-        reason,
-        actions,
-        policy_exceptions,
-        before,
-        after,
-    })
+    Ok(report)
 }
 
 /// Ensure ALL AI teams are match-eligible by repairing roster gaps across the league.
@@ -231,26 +269,246 @@ pub fn repair_team(
 /// Agent sits ABOVE this — `roster_stability` is the safety net for edge cases
 /// the agent misses. Called before background league simulation to guarantee
 /// every AI team has a valid lineup.
+///
+/// All-or-nothing: on `Err` the game is left exactly as it was passed in.
+///
+/// The common day only reconciles lineups, so every team is planned against the
+/// untouched game first and the lineups are written once all plans succeeded
+/// (validate first, then mutate, no copy of the game). When any team needs its
+/// roster changed, the whole call falls back to repairing one copy of the game
+/// and keeping it only if every team succeeded.
 pub fn repair_league(
     game: &mut Game,
     reason: RosterStabilityReason,
 ) -> Result<Vec<RosterStabilityReport>, RosterStabilityError> {
-    let mut team_ids = game
-        .teams
-        .iter()
-        .filter(|team| is_schedulable_ai_main_team(game, &team.id))
-        .map(|team| team.id.clone())
-        .collect::<Vec<_>>();
-    team_ids.sort();
+    let team_ids = schedulable_ai_main_team_ids(game);
+
+    if let Some(plan) = plan_lineup_only_league(game, &team_ids, reason)? {
+        for (team_index, lineup) in plan.lineups {
+            game.teams[team_index].active_lineup_ids = lineup;
+        }
+        return Ok(plan.reports);
+    }
 
     let mut repaired_game = game.clone();
-    let mut reports = Vec::new();
+    let mut reports = Vec::with_capacity(team_ids.len());
     for team_id in team_ids {
-        reports.push(repair_team(&mut repaired_game, &team_id, reason)?);
+        let before = evaluate_team_with(&repaired_game, &team_id, reason, true)?;
+        reports.push(repair_in_place(
+            &mut repaired_game,
+            &team_id,
+            reason,
+            before,
+        )?);
     }
 
     *game = repaired_game;
     Ok(reports)
+}
+
+/// Ids of the AI-managed Main teams that are in a Main league's standings or have a
+/// scheduled fixture there, sorted. One pass over the leagues, not one per team.
+fn schedulable_ai_main_team_ids(game: &Game) -> Vec<String> {
+    let mut in_main_league = HashSet::new();
+    for league in &game.leagues {
+        if league.league_kind != crate::domain::league::LeagueKind::Main {
+            continue;
+        }
+        in_main_league.extend(league.standings.iter().map(|entry| entry.team_id.as_str()));
+        for fixture in &league.fixtures {
+            if fixture.status == crate::domain::league::FixtureStatus::Scheduled {
+                in_main_league.insert(fixture.home_team_id.as_str());
+                in_main_league.insert(fixture.away_team_id.as_str());
+            }
+        }
+    }
+
+    let mut team_ids = game
+        .teams
+        .iter()
+        .filter(|team| team.team_kind == TeamKind::Main && team.manager_id.is_none())
+        .filter(|team| in_main_league.contains(team.id.as_str()))
+        .map(|team| team.id.clone())
+        .collect::<Vec<_>>();
+    team_ids.sort();
+    team_ids
+}
+
+/// A team whose eligible players already cover every required role: renewals and
+/// signings would do nothing, so only its lineup can need repair.
+fn roster_needs_no_change(evaluation: &RosterEvaluation) -> bool {
+    evaluation.eligible_player_count >= MIN_MATCH_PLAYERS && evaluation.missing_roles.is_empty()
+}
+
+struct LineupOnlyPlan {
+    report: RosterStabilityReport,
+    /// `Some` when the lineup has to be written.
+    new_lineup: Option<Vec<String>>,
+}
+
+struct LeagueLineupPlan {
+    reports: Vec<RosterStabilityReport>,
+    /// `(index into game.teams, new lineup)`.
+    lineups: Vec<(usize, Vec<String>)>,
+}
+
+/// Plans a lineup-only repair of every team in `team_ids` (sorted) against the
+/// untouched game. `Ok(None)` when some team needs its roster changed; `Err` is
+/// the first team, in order, whose repaired lineup would still not be eligible.
+fn plan_lineup_only_league(
+    game: &Game,
+    team_ids: &[String],
+    reason: RosterStabilityReason,
+) -> Result<Option<LeagueLineupPlan>, RosterStabilityError> {
+    let current_date = current_date(game);
+    let mut players_by_team: HashMap<&str, Vec<&Player>> = team_ids
+        .iter()
+        .map(|team_id| (team_id.as_str(), Vec::new()))
+        .collect();
+    for player in &game.players {
+        if let Some(team_players) = player
+            .team_id
+            .as_deref()
+            .and_then(|team_id| players_by_team.get_mut(team_id))
+        {
+            team_players.push(player);
+        }
+    }
+    let team_index_by_id = game
+        .teams
+        .iter()
+        .enumerate()
+        .map(|(index, team)| (team.id.as_str(), index))
+        .collect::<HashMap<_, _>>();
+
+    let mut plan = LeagueLineupPlan {
+        reports: Vec::with_capacity(team_ids.len()),
+        lineups: Vec::new(),
+    };
+    for team_id in team_ids {
+        let team_players = &players_by_team[team_id.as_str()];
+        let team_index = team_index_by_id[team_id.as_str()];
+        let before = evaluate_from_players(
+            team_id,
+            &game.teams[team_index].active_lineup_ids,
+            team_players,
+            current_date,
+            true,
+        );
+        if !roster_needs_no_change(&before) {
+            return Ok(None);
+        }
+        let LineupOnlyPlan { report, new_lineup } =
+            plan_lineup_only_repair(game, team_id, team_players, before, reason, current_date)?;
+        if let Some(lineup) = new_lineup {
+            plan.lineups.push((team_index, lineup));
+        }
+        plan.reports.push(report);
+    }
+    Ok(Some(plan))
+}
+
+/// Read-only plan for a schedulable team whose roster needs no change: the lineup
+/// [`reconcile_lineup`] would write, and the report [`repair_in_place`] would return.
+fn plan_lineup_only_repair(
+    game: &Game,
+    team_id: &str,
+    team_players: &[&Player],
+    before: RosterEvaluation,
+    reason: RosterStabilityReason,
+    current_date: NaiveDate,
+) -> Result<LineupOnlyPlan, RosterStabilityError> {
+    let previous = game
+        .teams
+        .iter()
+        .find(|team| team.id == team_id)
+        .map(|team| team.active_lineup_ids.as_slice())
+        .unwrap_or_default();
+    let eligible = team_players
+        .iter()
+        .copied()
+        .filter(|player| has_current_contract(player, current_date))
+        .collect::<Vec<_>>();
+
+    let mut actions = Vec::new();
+    let new_lineup = reconciled_lineup(game, team_id, previous, &eligible).map(|change| {
+        let lineup = change.lineup_ids.clone();
+        actions.push(RepairAction::ReconciledLineup {
+            removed_ids: change.removed_ids,
+            lineup_ids: change.lineup_ids,
+        });
+        lineup
+    });
+
+    let after = evaluate_from_players(
+        team_id,
+        new_lineup.as_deref().unwrap_or(previous),
+        team_players,
+        current_date,
+        before.schedulable,
+    );
+    if !after.match_eligible {
+        return Err(error_from_evaluation(reason, &after));
+    }
+
+    Ok(LineupOnlyPlan {
+        report: finish_report(game, team_id, reason, actions, before, after),
+        new_lineup,
+    })
+}
+
+fn set_active_lineup(game: &mut Game, team_id: &str, lineup: Vec<String>) {
+    if let Some(team) = game.teams.iter_mut().find(|team| team.id == team_id) {
+        team.active_lineup_ids = lineup;
+    }
+}
+
+/// Repairs `team_id` on `game` itself.
+///
+/// On `Err` the game may be partly changed; callers pass a copy they discard.
+fn repair_in_place(
+    game: &mut Game,
+    team_id: &str,
+    reason: RosterStabilityReason,
+    before: RosterEvaluation,
+) -> Result<RosterStabilityReport, RosterStabilityError> {
+    let mut actions = Vec::new();
+
+    renew_needed_current_players(game, team_id, &mut actions);
+    fill_missing_roles(game, team_id, reason, &mut actions)?;
+    reconcile_lineup(game, team_id, &mut actions);
+
+    let after = evaluate_team_with(game, team_id, reason, before.schedulable)?;
+    if !after.match_eligible {
+        return Err(error_from_evaluation(reason, &after));
+    }
+
+    Ok(finish_report(game, team_id, reason, actions, before, after))
+}
+
+fn finish_report(
+    game: &Game,
+    team_id: &str,
+    reason: RosterStabilityReason,
+    actions: Vec<RepairAction>,
+    before: RosterEvaluation,
+    after: RosterEvaluation,
+) -> RosterStabilityReport {
+    let mut policy_exceptions = Vec::new();
+    if game.season_context.transfer_window.status == TransferWindowStatus::Closed
+        && actions_require_transfer_window_exception(&actions)
+    {
+        policy_exceptions.push(POLICY_EXCEPTION_TRANSFER_WINDOW_CLOSED.to_string());
+    }
+
+    RosterStabilityReport {
+        team_id: team_id.to_string(),
+        reason,
+        actions,
+        policy_exceptions,
+        before,
+        after,
+    }
 }
 
 /// One roster slot filled by [`fill_new_game_rosters`].
@@ -447,7 +705,8 @@ fn fill_missing_roles(
     actions: &mut Vec<RepairAction>,
 ) -> Result<(), RosterStabilityError> {
     for _ in 0..MAX_REPAIR_ITERATIONS {
-        let evaluation = evaluate_team(game, team_id, reason).expect("team already evaluated");
+        let evaluation =
+            evaluate_team_with(game, team_id, reason, true).expect("team already evaluated");
         if evaluation.eligible_player_count >= MIN_MATCH_PLAYERS
             && evaluation.missing_roles.is_empty()
         {
@@ -603,38 +862,57 @@ fn reconcile_lineup(game: &mut Game, team_id: &str, actions: &mut Vec<RepairActi
         .find(|team| team.id == team_id)
         .map(|team| team.active_lineup_ids.clone())
         .unwrap_or_default();
-    let lineup = select_lineup(game, team_id, current_date);
+    let eligible = eligible_team_players(game, team_id, current_date);
+    let Some(change) = reconciled_lineup(game, team_id, &previous, &eligible) else {
+        return;
+    };
+
+    set_active_lineup(game, team_id, change.lineup_ids.clone());
+    actions.push(RepairAction::ReconciledLineup {
+        removed_ids: change.removed_ids,
+        lineup_ids: change.lineup_ids,
+    });
+}
+
+struct LineupChange {
+    removed_ids: Vec<String>,
+    lineup_ids: Vec<String>,
+}
+
+/// The lineup `team_id` should field given its `eligible` players (current contract),
+/// or `None` when `previous` already is that lineup.
+fn reconciled_lineup(
+    game: &Game,
+    team_id: &str,
+    previous: &[String],
+    eligible: &[&Player],
+) -> Option<LineupChange> {
+    let lineup = select_lineup(eligible);
     // Only players with a current contract may replace an import.
-    let eligible: Vec<Player> = eligible_team_players(game, team_id, current_date)
-        .into_iter()
-        .cloned()
-        .collect();
+    let eligible_owned: Vec<Player> = eligible.iter().map(|player| (*player).clone()).collect();
     let lineup = crate::residency::limit_lineup_ids_for(
         crate::residency::region_of_team_id(game, team_id),
-        &eligible,
+        &eligible_owned,
         team_id,
         lineup,
     );
+    if previous == lineup.as_slice() {
+        return None;
+    }
+
     let lineup_set = lineup.iter().map(String::as_str).collect::<HashSet<_>>();
     let removed_ids = previous
         .iter()
         .filter(|id| !lineup_set.contains(id.as_str()))
         .cloned()
         .collect::<Vec<_>>();
-
-    if previous != lineup {
-        if let Some(team) = game.teams.iter_mut().find(|team| team.id == team_id) {
-            team.active_lineup_ids = lineup.clone();
-        }
-        actions.push(RepairAction::ReconciledLineup {
-            removed_ids,
-            lineup_ids: lineup,
-        });
-    }
+    Some(LineupChange {
+        removed_ids,
+        lineup_ids: lineup,
+    })
 }
 
-fn select_lineup(game: &Game, team_id: &str, current_date: NaiveDate) -> Vec<String> {
-    let eligible = eligible_team_players(game, team_id, current_date);
+fn select_lineup(eligible: &[&Player]) -> Vec<String> {
     REQUIRED_ROLES
         .iter()
         .filter_map(|role| {
@@ -892,3 +1170,6 @@ fn role_slug(role: LolRole) -> &'static str {
         LolRole::Unknown => "unknown",
     }
 }
+
+#[cfg(test)]
+mod tests;
