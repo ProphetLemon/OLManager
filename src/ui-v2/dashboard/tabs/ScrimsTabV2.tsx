@@ -263,6 +263,8 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   };
 
   const result = lastResult && lastResult.date === dateKey(gameState.clock.current_date) ? lastResult.value : null;
+  // The line only speaks for a decision that is still on screen or a step that is still open.
+  const liveText = result || showCancelFollowups ? statusText : "";
 
   // ── The wide column ──
   const panelTitle = panel === "decision"
@@ -354,7 +356,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
               />
             ) : null}
           </ScrimDeskPanel>
-          <ScrimDecisionResult result={result} statusText={statusText} />
+          <ScrimDecisionResult result={result} statusText={liveText} />
           {panel !== "setup" ? (
             <ScrimSetupRecap
               key={panel}

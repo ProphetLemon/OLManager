@@ -320,6 +320,23 @@ describe("the confirmation", () => {
   });
 });
 
+describe("the confirmation after the day moves on", () => {
+  it("is dropped, line included, once the date is no longer the day of the decision", async () => {
+    chooseDailyScrimActionMock.mockResolvedValue(game({ scrim_reports: [report({ post_decision: "PushThrough", quality: 77 })] }));
+    useScrimContextWithFallbackMock.mockReturnValue(decisionContext(report()));
+    const { rerender } = render(<ScrimsTabV2 gameState={game()} onGameUpdate={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "scrims.decision.pushThrough" }));
+    await screen.findByLabelText("scrims.whatChanged");
+
+    const nextDay = { ...game(), clock: { current_date: "2026-03-12" } } as unknown as GameStateData;
+    rerender(<ScrimsTabV2 gameState={nextDay} onGameUpdate={vi.fn()} />);
+
+    expect(screen.queryByLabelText("scrims.whatChanged")).toBeNull();
+    expect(document.querySelector("[aria-live]")).toBeEmptyDOMElement();
+  });
+});
+
 describe("the loss streak", () => {
   it("shows from a streak of 1 and not at 0", () => {
     show(report(), 1);
