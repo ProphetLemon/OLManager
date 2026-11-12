@@ -553,6 +553,10 @@ struct Played {
     /// Of those, deaths with no minion of the victim's team in the tower's reach: a dive
     /// without a wave to take the shots.
     tower_deaths_bare: u32,
+    /// Of the bare ones, deaths of a champion with a push order, and of a champion with
+    /// three or more allied champions near the tower.
+    bare_pushing: u32,
+    bare_grouped: u32,
 }
 
 impl Played {
@@ -597,6 +601,7 @@ fn play(n: usize, template: &SimLiveInitRequest, dt_sec: f64, speed: f64, exact:
     let mut cleared_at: [Option<f64>; 2] = [None, None];
     let mut observer = ContactObserver::new();
     let (mut tower_deaths, mut tower_deaths_bare) = (0_u32, 0_u32);
+    let (mut bare_pushing, mut bare_grouped) = (0_u32, 0_u32);
     loop {
         tick(
             &store,
@@ -625,6 +630,23 @@ fn play(n: usize, template: &SimLiveInitRequest, dt_sec: f64, speed: f64, exact:
                 });
                 if !covered {
                     tower_deaths_bare += 1;
+                    let victim = &state.champions[victim];
+                    if victim.push.is_some() {
+                        bare_pushing += 1;
+                    }
+                    let near = state
+                        .champions
+                        .iter()
+                        .filter(|ally| {
+                            ally.alive
+                                && ally.id != victim.id
+                                && normalized_team(&ally.team) == team
+                                && dist(ally.pos, origin) <= TOWER_ATTACK_RANGE + 0.06
+                        })
+                        .count();
+                    if near >= 3 {
+                        bare_grouped += 1;
+                    }
                 }
             }
         }
@@ -668,6 +690,8 @@ fn play(n: usize, template: &SimLiveInitRequest, dt_sec: f64, speed: f64, exact:
         deaths: state.champions.iter().map(|c| c.deaths).sum(),
         tower_deaths,
         tower_deaths_bare,
+        bare_pushing,
+        bare_grouped,
     }
 }
 
@@ -893,6 +917,11 @@ fn replay_captured_start() {
     println!(
         "deaths to towers {tower_deaths} of {deaths} ({:.1}%), of them without an allied minion in the tower's reach {tower_deaths_bare}",
         100.0 * f64::from(tower_deaths) / deaths.max(1) as f64
+    );
+    println!(
+        "bare tower deaths: with a push order {}, with three or more allied champions near {}",
+        played.iter().map(|p| p.bare_pushing).sum::<u32>(),
+        played.iter().map(|p| p.bare_grouped).sum::<u32>()
     );
 
     let mut levels: BTreeMap<(String, String), Vec<f64>> = BTreeMap::new();
