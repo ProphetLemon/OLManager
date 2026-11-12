@@ -1200,7 +1200,8 @@
       "selectOpponent": "Scegli l'avversario",
       "autofill": "Compila auto"
     },
-    "daysPerWeek": "days/week",
+    "daysPerWeek_one": "{{count}} giorno/settimana",
+    "daysPerWeek_other": "{{count}} giorni/settimana",
     "emptyRoster": "Empty roster",
     "tab": {
       "training": "Allenamento",
@@ -4140,9 +4141,11 @@
     "damage": "Danni",
     "deaths": "Morti",
     "duration": "Durata",
+    "gamesShort": "{{count}} part.",
     "gold": "Oro",
     "kda": "KDA",
     "kills": "Kill",
+    "minutesShort": "{{count}} min",
     "noData": "Nessun dato disponibile",
     "noHistory": "Nessuna cronologia partite",
     "noRoles": "Nessun ruolo giocato",

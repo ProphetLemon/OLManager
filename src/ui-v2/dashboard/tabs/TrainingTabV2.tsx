@@ -581,10 +581,7 @@ export function TrainingTabV2({
                         {t(`training.schedules.${scheduleId}.label`)}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {dayCount}{" "}
-                        {t("training.daysPerWeek", {
-                          defaultValue: "days/week",
-                        })}
+                        {t("training.daysPerWeek", { count: dayCount })}
                       </p>
                       {/* Day indicator dots */}
                       <div className="flex gap-1">

@@ -1364,7 +1364,8 @@
       "selectOpponent": "Gegner wählen",
       "autofill": "Automatisch füllen"
     },
-    "daysPerWeek": "days/week",
+    "daysPerWeek_one": "{{count}} Tag/Woche",
+    "daysPerWeek_other": "{{count}} Tage/Woche",
     "emptyRoster": "Empty roster",
     "tab": {
       "training": "Training",
@@ -4141,9 +4142,11 @@
     "damage": "Schaden",
     "deaths": "Tode",
     "duration": "Dauer",
+    "gamesShort": "{{count}} Sp.",
     "gold": "Gold",
     "kda": "KDA",
     "kills": "Kills",
+    "minutesShort": "{{count}} Min.",
     "noData": "Keine Daten verfügbar",
     "noHistory": "Kein Spielverlauf",
     "noRoles": "Keine Rollen gespielt",

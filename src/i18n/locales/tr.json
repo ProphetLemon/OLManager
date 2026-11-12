@@ -1364,7 +1364,8 @@
       "selectOpponent": "Rakip seç",
       "autofill": "Otomatik doldur"
     },
-    "daysPerWeek": "days/week",
+    "daysPerWeek_one": "{{count}} gün/hafta",
+    "daysPerWeek_other": "{{count}} gün/hafta",
     "emptyRoster": "Empty roster",
     "tab": {
       "training": "Antrenman",
@@ -4141,9 +4142,11 @@
     "damage": "Hasar",
     "deaths": "Ölümler",
     "duration": "Süre",
+    "gamesShort": "{{count}} maç",
     "gold": "Altın",
     "kda": "KDA",
     "kills": "Öldürmeler",
+    "minutesShort": "{{count}} dk",
     "noData": "Veri yok",
     "noHistory": "Maç geçmişi yok",
     "noRoles": "Oynanmış rol yok",

@@ -1532,7 +1532,8 @@
       "selectOpponent": "Select Opponent",
       "autofill": "Autofill"
     },
-    "daysPerWeek": "days/week",
+    "daysPerWeek_one": "{{count}} day/week",
+    "daysPerWeek_other": "{{count}} days/week",
     "emptyRoster": "Empty roster",
     "tab": {
       "training": "Training",
@@ -4175,9 +4176,11 @@
     "damage": "Damage",
     "deaths": "Deaths",
     "duration": "Duration",
+    "gamesShort": "{{count}}g",
     "gold": "Gold",
     "kda": "KDA",
     "kills": "Kills",
+    "minutesShort": "{{count}}m",
     "noData": "No data available",
     "noHistory": "No match history",
     "noRoles": "No roles played",
