@@ -553,7 +553,9 @@ export default function DashboardV2() {
     : profileNavigation.activeTab;
 
   const dashboardAlerts = gameState
-    ? getDashboardAlerts(gameState, hasMatchToday, t)
+    ? getDashboardAlerts(gameState, hasMatchToday, t, {
+        assistantResolvesScrims: settings.scrim_review_mode === "assistant",
+      })
     : [];
   // The scrim result notice carries the Assistant Coach note itself.
   if (autoDelegationNotice && !scrimResultNotice) {

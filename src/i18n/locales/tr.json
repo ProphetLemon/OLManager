@@ -280,6 +280,7 @@
       "exhausted": "{{count}} oyuncunun durumu kritik (<%25)",
       "incompleteStartingXi": "İlk 5 eksik — kadronuzu belirleyin",
       "urgentUnread": "{{count}} acil okunmamış mesaj",
+      "scrimWeekOpen": "Bu haftanın scrim'leri henüz planlanmadı. İlk scrim gününden önce planla.",
       "matchTodayStartingXi": "Bugün maç var! İlk 5'ini belirle",
       "financeCrisis": "Finanslar kritik — bakiye {{balance}}, {{weeks}} haftalık nakit",
       "financeRunway": "Nakit süresi {{count}} haftaya düştü",
@@ -3397,6 +3398,11 @@
       "potentialReport": {
         "subject": "Potansiyel raporu tamamlandı",
         "body": "Gözlem ekibi {{player}}'ı değerlendirmeyi bitirdi. Yeni potansiyel tahmini: {{potential}}."
+      },
+      "scrimWeekOpen": {
+        "subject": "Bu haftanın scrim'leri planlanabilir",
+        "body": "Bu haftanın scrim planlaması açıldı. İlk scrim gününden önce hedefi ve rakipleri seç.",
+        "action": "Scrim planla"
       },
       "scrimWeekly": {
         "subject": "Haftalık Scrim Personel Raporu",
