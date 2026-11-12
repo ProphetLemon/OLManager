@@ -234,12 +234,15 @@ fn replay_captured_start() {
             let clear = |slot: usize| {
                 p.cleared_at[slot].map_or("-".to_string(), |s| format!("{:.1}", s / 60.0))
             };
+            let (winner_kills, loser_kills) = p.winner_loser_kills.unwrap_or((0, 0));
             println!(
-                "seed {} winner {} minutes {:.1} kills {} towers left blue {} red {} all-towers blue {} red {}",
+                "seed {} winner {} minutes {:.1} kills {} (winner {} loser {}) towers left blue {} red {} all-towers blue {} red {}",
                 p.seed,
                 p.winner.as_deref().unwrap_or("none"),
                 p.minutes,
                 p.kills,
+                winner_kills,
+                loser_kills,
                 p.towers_standing[0],
                 p.towers_standing[1],
                 clear(0),
@@ -268,11 +271,13 @@ fn replay_captured_start() {
     );
     let decided: Vec<(i64, i64)> = played.iter().filter_map(|p| p.winner_loser_kills).collect();
     println!("undecided at the step limit {}", played.len() - decided.len());
-    println!(
-        "lost with a lead of 20 or more kills {} of {} decided",
-        decided.iter().filter(|(winner, loser)| loser - winner >= 20).count(),
-        decided.len()
-    );
+    for lead in [10, 15, 20] {
+        println!(
+            "lost with a lead of {lead} or more kills {} of {} decided",
+            decided.iter().filter(|(winner, loser)| loser - winner >= lead).count(),
+            decided.len()
+        );
+    }
     let blue_wins = played.iter().filter(|p| p.winner.as_deref() == Some("blue")).count();
     println!(
         "blue wins {} of {} ({:.1}%)",
