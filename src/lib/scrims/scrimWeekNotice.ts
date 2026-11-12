@@ -48,18 +48,21 @@ function userClubRestsThisWeek(gameState: GameStateData, teamId: string): boolea
 
 /**
  * Whether the week's scrims can still be planned from scratch and nothing is
- * planned yet: from the Monday the planning reopens up to the first scrim day's
- * morning. Same emptiness test as the `scrim_setup_required` advance blocker
- * (no objective, no plan, setup not confirmed) and the same rest-week rule.
+ * planned yet: some slot is still ahead (a later weekday, or today before its
+ * block starts), so the week is open and editable, as the scrim context reports
+ * it for an empty week. That covers the Monday the planning reopens and a
+ * career that starts mid-week. Same emptiness test as the `scrim_setup_required`
+ * advance blocker (no objective, no plan, setup not confirmed) and the same
+ * rest-week rule.
  */
 export function isScrimWeekAwaitingSetup(gameState: GameStateData): boolean {
   const team = gameState.teams.find((candidate) => candidate.id === gameState.manager.team_id);
   if (!team) return false;
 
-  const firstScrimWeekday = Math.min(...scrimSlotWeekdays(effectiveWeeklyScrimSlots(team)));
+  const slotWeekdays = scrimSlotWeekdays(effectiveWeeklyScrimSlots(team));
   const weekday = weekdayMondayBased(gameState.clock.current_date);
   const morning = (gameState.day_phase ?? "Morning") === "Morning";
-  if (weekday > firstScrimWeekday || (weekday === firstScrimWeekday && !morning)) return false;
+  if (!slotWeekdays.some((slotWeekday) => slotWeekday > weekday || (slotWeekday === weekday && morning))) return false;
 
   if (team.scrim_setup_locked_week_key === isoWeekKey(gameState.clock.current_date)) return false;
   if (team.scrim_weekly_objective) return false;

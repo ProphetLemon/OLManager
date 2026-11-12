@@ -56,9 +56,21 @@ describe("scrim week notice", () => {
     expect(isScrimWeekAwaitingSetup(game("2026-01-07"))).toBe(true);
   });
 
-  it("stops once the first scrim day is under way or past", () => {
-    expect(isScrimWeekAwaitingSetup(game("2026-01-07", {}, { day_phase: "ScrimBlock" }))).toBe(false);
-    expect(isScrimWeekAwaitingSetup(game("2026-01-08"))).toBe(false);
+  it("keeps telling the player while a later slot of the week is still open", () => {
+    expect(isScrimWeekAwaitingSetup(game("2026-01-07", {}, { day_phase: "ScrimBlock" }))).toBe(true);
+    expect(isScrimWeekAwaitingSetup(game("2026-01-08"))).toBe(true);
+  });
+
+  it("stops once the last scrim day is under way or past", () => {
+    expect(isScrimWeekAwaitingSetup(game("2026-01-08", {}, { day_phase: "ScrimBlock" }))).toBe(false);
+    expect(isScrimWeekAwaitingSetup(game("2026-01-09"))).toBe(false);
+  });
+
+  it("tells a career that starts on the Friday of a six-slot week while the Friday blocks are open", () => {
+    const sixSlots = { scrim_weekly_slots: 6 };
+    expect(isScrimWeekAwaitingSetup(game("2026-01-09", sixSlots))).toBe(true);
+    expect(isScrimWeekAwaitingSetup(game("2026-01-09", sixSlots, { day_phase: "ScrimBlock" }))).toBe(false);
+    expect(isScrimWeekAwaitingSetup(game("2026-01-10", sixSlots))).toBe(false);
   });
 
   it("goes away once the week has a plan, an objective or a confirmed setup", () => {
