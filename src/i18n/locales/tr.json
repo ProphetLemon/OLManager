@@ -4449,10 +4449,12 @@
   },
   "community": {
     "title": "Topluluk",
-    "blurb": "Open League Manager, topluluk tarafından ve topluluk için yapılan ücretsiz, açık kaynaklı bir projedir. Katıl, fikir öner veya kod katkısında bulun: her yardım değerlidir.",
+    "blurb": "Open League Manager · Limón Edition, Open League Manager’ın ücretsiz ve açık kaynaklı bir fork’udur. Bir sorun mu buldun? Oyunu seninle paylaşan kişiye haber ver ve “{{bugButton}}” düğmesinin kaydettiği ZIP dosyasını ekle.",
     "mentionsTitle": "Anmalar",
     "mentionsSubtitle": "Projeyi en çok destekleyenlere teşekkürler",
-    "mentionsEmpty": "Burada yer almak ister misin? Discord’a katıl ve katkıda bulun."
+    "links": {
+      "downloads": "İndirmeler"
+    }
   },
   "patchNotes": {
     "empty": "Henüz sürüm notu yok."
