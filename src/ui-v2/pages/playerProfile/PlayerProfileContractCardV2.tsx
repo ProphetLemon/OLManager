@@ -3,7 +3,6 @@ import { Activity, Briefcase, Calendar, DollarSign, Heart, TrendingUp } from "lu
 import { formatDate, getContractYearsRemaining } from "@/lib/common/helpers";
 import { formatPlayerMarketValue, formatPlayerWage } from "@/lib/playerProfile/helpers";
 import { Badge } from "@/ui-v2/components/ui/badge";
-import { Button } from "@/ui-v2/components/ui/button";
 import { cn } from "@/ui-v2/lib/utils";
 import { MeterBar, PlayerProfileSectionV2 } from "./PlayerProfileSectionV2";
 
@@ -26,12 +25,6 @@ interface PlayerProfileContractCardV2Props {
   contractRiskLabel: string;
   /** False for free agents: contract rows and the current wage are hidden. Defaults to true. */
   hasTeam?: boolean;
-  isOwnClub: boolean;
-  isTransferWindowOpen: boolean;
-  transferActionSubmitting: boolean;
-  onOpenRenewal: () => void;
-  onReleaseContract: () => void;
-  onOpenTransferBid: () => void;
   t: TranslateFn;
 }
 
@@ -65,12 +58,6 @@ export default function PlayerProfileContractCardV2({
   contractRiskLevel,
   contractRiskLabel,
   hasTeam = true,
-  isOwnClub,
-  isTransferWindowOpen,
-  transferActionSubmitting,
-  onOpenRenewal,
-  onReleaseContract,
-  onOpenTransferBid,
   t,
 }: PlayerProfileContractCardV2Props) {
   const risk = RISK_BADGE[contractRiskLevel];
@@ -139,35 +126,6 @@ export default function PlayerProfileContractCardV2({
           value={<MeterBar value={morale} label={t("common.morale")} />}
         />
       </div>
-
-      {isOwnClub ? (
-        <div className="flex flex-wrap gap-2 pt-3">
-          <Button size="sm" variant="outline" onClick={onOpenRenewal}>
-            {t("common.renewContract")}
-          </Button>
-          {isTransferWindowOpen ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onReleaseContract}
-              disabled={transferActionSubmitting}
-            >
-              {t("playerProfile.releaseContract")}
-            </Button>
-          ) : null}
-        </div>
-      ) : isTransferWindowOpen ? (
-        <div className="pt-3">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onOpenTransferBid}
-            disabled={transferActionSubmitting}
-          >
-            {t("playerProfile.makeTransferOffer")}
-          </Button>
-        </div>
-      ) : null}
     </PlayerProfileSectionV2>
   );
 }

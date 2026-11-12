@@ -69,6 +69,7 @@ export const tauriAdapter: ApiClient = {
     getSoloQStatuses: () => invoke("get_soloq_statuses"),
     getSoloQDecaySettings: () => invoke("get_soloq_decay_settings"),
     setSoloQDecayMode: (args) => invoke("set_soloq_decay_mode", args),
+    getSoloQHistory: (args) => invoke("get_soloq_history", args),
   },
 
   staff: {
