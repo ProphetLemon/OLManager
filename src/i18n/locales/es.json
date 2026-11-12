@@ -911,7 +911,7 @@
         "none": "Sin sorteos restantes",
         "noneReason": "Has usado los {{max}} sorteos de este club.",
         "confirmLabel": "Confirmar nuevo sorteo",
-        "confirmText": "Un nuevo sorteo genera otra plantilla y descarta tus ediciones.",
+        "confirmText": "Un nuevo sorteo genera otra plantilla y descarta tus ediciones y fotos.",
         "confirm": "Sortear de todos modos",
         "keep": "Mantener esta plantilla",
         "ready_one": "Nueva plantilla lista. Queda {{count}} sorteo.",

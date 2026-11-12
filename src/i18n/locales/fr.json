@@ -743,7 +743,7 @@
         "none": "Plus aucun tirage",
         "noneReason": "Tu as utilisé les {{max}} tirages de ce club.",
         "confirmLabel": "Confirmer le nouveau tirage",
-        "confirmText": "Un nouveau tirage génère un autre effectif et annule tes modifications.",
+        "confirmText": "Un nouveau tirage génère un autre effectif et annule tes modifications et tes photos.",
         "confirm": "Relancer quand même",
         "keep": "Garder cet effectif",
         "ready_one": "Nouvel effectif prêt. {{count}} tirage restant.",

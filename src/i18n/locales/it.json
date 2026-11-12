@@ -579,7 +579,7 @@
         "none": "Nessun rilancio rimasto",
         "noneReason": "Hai usato tutti i {{max}} rilanci per questo club.",
         "confirmLabel": "Conferma il rilancio",
-        "confirmText": "Un rilancio genera un'altra rosa e annulla le tue modifiche.",
+        "confirmText": "Un rilancio genera un'altra rosa e annulla le tue modifiche e le foto.",
         "confirm": "Rilancia comunque",
         "keep": "Mantieni questa rosa",
         "ready_one": "Nuova rosa pronta. {{count}} rilancio rimasto.",

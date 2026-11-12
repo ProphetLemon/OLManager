@@ -743,7 +743,7 @@
         "none": "Keine Würfe mehr übrig",
         "noneReason": "Du hast alle {{max}} Würfe für diesen Verein verbraucht.",
         "confirmLabel": "Neuen Wurf bestätigen",
-        "confirmText": "Ein neuer Wurf erzeugt einen anderen Kader und verwirft deine Änderungen.",
+        "confirmText": "Ein neuer Wurf erzeugt einen anderen Kader und verwirft deine Änderungen und Fotos.",
         "confirm": "Trotzdem auswürfeln",
         "keep": "Diesen Kader behalten",
         "ready_one": "Neuer Kader bereit. Noch {{count}} Wurf übrig.",

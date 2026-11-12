@@ -911,7 +911,7 @@
         "none": "No rerolls left",
         "noneReason": "You have used all {{max}} rerolls for this club.",
         "confirmLabel": "Confirm reroll",
-        "confirmText": "Rerolling draws a new squad and discards your edits.",
+        "confirmText": "Rerolling draws a new squad and discards your edits and photos.",
         "confirm": "Reroll anyway",
         "keep": "Keep this squad",
         "ready_one": "New squad ready. {{count}} reroll left.",
