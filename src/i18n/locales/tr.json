@@ -4063,7 +4063,8 @@
       "locked": "Kilitli",
       "played": "Oynandı",
       "reviewed": "İncelendi",
-      "cancelled": "İptal edildi"
+      "cancelled": "İptal edildi",
+      "notPlayed": "Oynanmadı"
     },
     "planCleared": "Plan temizlendi",
     "notPlanned": "Planlanmadı",
@@ -4073,6 +4074,7 @@
     "noOpponentSet": "Rakip seçilmedi",
     "finalizeHint": "Onayladığında bu haftanın kurulumu kilitlenir. Gelecek pazartesi yeniden açılır.",
     "nothingToDecide": "Şu an karar verilecek bir şey yok. Devam ettiğinde {{slot}}, {{opponent}} ile oynanır.",
+    "nothingToDecideNoRival": "Şu an karar verilecek bir şey yok. {{slot}} için planlanmış rakip yok.",
     "recapSummary": "{{objective}}, {{count}} blok",
     "impactLabel": "Etki",
     "weekGauges": "Hafta göstergeleri",

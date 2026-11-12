@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ScrimReportData } from "@/store/gameStore";
 import type { TodayScrimContext, WeeklyScrimContext, WeeklyScrimSlotContext } from "./scrimContext";
-import { chipRival, deskPanel, isPlanClearedToday, riskLevel, slotsByDay } from "./scrimDesk";
+import { chipRival, deskPanel, displaySlotStatus, isPlanClearedToday, riskLevel, slotsByDay, todayBarOpponentId } from "./scrimDesk";
 
 function report(overrides: Partial<ScrimReportData> = {}): ScrimReportData {
   return {
@@ -208,5 +208,56 @@ describe("chipRival and slotsByDay", () => {
       [2, [0, 1]],
       [3, [2, 3]],
     ]);
+  });
+});
+
+describe("displaySlotStatus", () => {
+  const decided = (post_decision: ScrimReportData["post_decision"]) =>
+    slot({ slotIndex: 0, status: "Reviewed", plan: ["northglass"], resultWon: false, report: report({ post_decision }) });
+
+  it("reads an Open slot as Locked once the week's setup is confirmed, and leaves it Open before", () => {
+    const open = slot({ slotIndex: 0, plan: ["northglass"] });
+    expect(displaySlotStatus(open, week([open], true))).toBe("Locked");
+    expect(displaySlotStatus(open, week([open], false))).toBe("Open");
+  });
+
+  it("keeps the statuses the game reports for a slot that has moved on", () => {
+    const reviewed = decided("PushThrough");
+    const played = slot({ slotIndex: 1, status: "Played", report: report({ slot_index: 1 }) });
+    const locked = slot({ slotIndex: 2, status: "Locked", plan: ["ember"] });
+    const all = week([reviewed, played, locked], true);
+    expect(displaySlotStatus(reviewed, all)).toBe("Reviewed");
+    expect(displaySlotStatus(played, all)).toBe("Played");
+    expect(displaySlotStatus(locked, all)).toBe("Locked");
+  });
+
+  it("reads a past slot with no plan as not played, since nobody cancelled it", () => {
+    const past = slot({ slotIndex: 2, weekday: 3, status: "Cancelled" });
+    expect(displaySlotStatus(past, week([decided("PushThrough"), past], true))).toBe("NotPlayed");
+    expect(displaySlotStatus(past, week([past], false))).toBe("NotPlayed");
+  });
+
+  it("keeps Cancelled for a block that an earlier block of its day cancelled", () => {
+    const blockB = slot({ slotIndex: 1, status: "Cancelled" });
+    expect(displaySlotStatus(blockB, week([decided("DayOff"), blockB], true))).toBe("Cancelled");
+  });
+});
+
+describe("todayBarOpponentId", () => {
+  it("names the rival while the day is open", () => {
+    expect(todayBarOpponentId(today({ state: "Planned", opponentTeamId: "northglass" }))).toBe("northglass");
+    expect(
+      todayBarOpponentId(today({ state: "PlayedNeedsReview", opponentTeamId: "northglass", resolvedOpponentTeamId: "cinder" })),
+    ).toBe("cinder");
+  });
+
+  it("names nobody once the day is closed, because the game points back at block A", () => {
+    const closed = { opponentTeamId: "northglass", resolvedOpponentTeamId: "northglass" };
+    expect(todayBarOpponentId(today({ state: "Reviewed", ...closed }))).toBeNull();
+    expect(todayBarOpponentId(today({ state: "Cancelled", ...closed }))).toBeNull();
+  });
+
+  it("names nobody for a slot with no rival", () => {
+    expect(todayBarOpponentId(today({ state: "Planned" }))).toBeNull();
   });
 });

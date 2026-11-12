@@ -4071,7 +4071,8 @@
       "locked": "Bloqueado",
       "played": "Jogado",
       "reviewed": "Revisto",
-      "cancelled": "Cancelado"
+      "cancelled": "Cancelado",
+      "notPlayed": "Não jogado"
     },
     "planCleared": "Plano limpo",
     "notPlanned": "Sem planeamento",
@@ -4081,6 +4082,7 @@
     "noOpponentSet": "Sem adversário definido",
     "finalizeHint": "Ao confirmar, a configuração da semana fica bloqueada. Reabre na próxima segunda-feira.",
     "nothingToDecide": "Não há nada para decidir agora. {{slot}} joga contra {{opponent}} quando continuares.",
+    "nothingToDecideNoRival": "Não há nada para decidir agora. {{slot}} não tem adversário planeado.",
     "recapSummary": "{{objective}}, {{count}} blocos",
     "impactLabel": "Impacto",
     "weekGauges": "Indicadores da semana",

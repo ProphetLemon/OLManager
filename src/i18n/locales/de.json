@@ -4072,7 +4072,8 @@
       "locked": "Gesperrt",
       "played": "Gespielt",
       "reviewed": "Ausgewertet",
-      "cancelled": "Abgesagt"
+      "cancelled": "Abgesagt",
+      "notPlayed": "Nicht gespielt"
     },
     "planCleared": "Plan geleert",
     "notPlanned": "Nicht geplant",
@@ -4082,6 +4083,7 @@
     "noOpponentSet": "Kein Gegner festgelegt",
     "finalizeHint": "Mit dem Abschluss ist die Planung dieser Woche gesperrt. Sie öffnet am nächsten Montag wieder.",
     "nothingToDecide": "Gerade gibt es nichts zu entscheiden. {{slot}} läuft gegen {{opponent}}, sobald du weitermachst.",
+    "nothingToDecideNoRival": "Gerade gibt es nichts zu entscheiden. {{slot}} hat keinen geplanten Gegner.",
     "recapSummary": "{{objective}}, {{count}} Blöcke",
     "impactLabel": "Wirkung",
     "weekGauges": "Wochenwerte",

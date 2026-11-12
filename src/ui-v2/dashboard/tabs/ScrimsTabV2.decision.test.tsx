@@ -310,6 +310,23 @@ describe("the confirmation", () => {
     expect(live.querySelector("button, ul, dl")).toBeNull();
   });
 
+  it("places the confirmation right under the heading, before the cards of the next decision", async () => {
+    chooseDailyScrimActionMock.mockResolvedValue(game({ scrim_reports: [report({ post_decision: "PushThrough", quality: 77 })] }));
+    show(report());
+
+    fireEvent.click(screen.getByRole("button", { name: "scrims.decision.pushThrough" }));
+
+    const changes = await screen.findByLabelText("scrims.whatChanged");
+    const panel = document.querySelector("[data-slot='scrim-desk-panel']") as HTMLElement;
+    const heading = within(panel).getByRole("heading", { level: 2 });
+    const firstCard = within(panel).getAllByRole("button")[0];
+    // It lives in the same panel as the heading, after it and ahead of every decision card.
+    expect(panel).toContainElement(changes);
+    expect(heading.compareDocumentPosition(changes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(changes.compareDocumentPosition(firstCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(document.querySelectorAll("[aria-live]")).toHaveLength(1);
+  });
+
   it("moves the focus to the heading when Cancel scrims opens the follow-ups, and announces the prompt", () => {
     show(report());
 

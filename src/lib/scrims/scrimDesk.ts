@@ -45,6 +45,17 @@ const CANCELLING_DECISIONS = new Set<NonNullable<ScrimReportData["post_decision"
   "TargetedDrills",
 ]);
 
+/** True when an earlier block of the same weekday was decided with a choice that cancels the next block. */
+function earlierBlockCancelledNext(slot: WeeklyScrimSlotContext, week: WeeklyScrimContext): boolean {
+  return week.slots.some(
+    (other) =>
+      other.weekday === slot.weekday
+      && other.slotIndex < slot.slotIndex
+      && other.report?.post_decision != null
+      && CANCELLING_DECISIONS.has(other.report.post_decision),
+  );
+}
+
 /**
  * A second block whose plan was cleared today. The game keeps such a slot `Open` until its weekday
  * is past (`Cancelled` needs both an empty plan and a past weekday), so the UI cannot read the
@@ -53,13 +64,34 @@ const CANCELLING_DECISIONS = new Set<NonNullable<ScrimReportData["post_decision"
  */
 export function isPlanClearedToday(slot: WeeklyScrimSlotContext, week: WeeklyScrimContext): boolean {
   if (slot.status !== "Open" || slot.plan.length > 0 || slot.report || slot.resultWon != null) return false;
-  return week.slots.some(
-    (other) =>
-      other.weekday === slot.weekday
-      && other.slotIndex < slot.slotIndex
-      && other.report?.post_decision != null
-      && CANCELLING_DECISIONS.has(other.report.post_decision),
-  );
+  return earlierBlockCancelledNext(slot, week);
+}
+
+/** The status a chip words: the game's five, plus a past slot that never had a plan. */
+export type DisplaySlotStatus = WeeklyScrimSlotContext["status"] | "NotPlayed";
+
+/**
+ * The status as the manager should read it. This is only a wording over what the game reports:
+ * - once the week's setup is confirmed, an `Open` slot cannot be edited, so it reads `Locked`
+ *   (the game's own `Locked` covers just past slots that had a plan);
+ * - the game calls a past slot with an empty plan `Cancelled`, but nobody cancelled it unless an
+ *   earlier block of the day was decided with a cancelling choice. Without that it simply was not
+ *   played, and the Cancellations count (the game's) does not include it.
+ */
+export function displaySlotStatus(slot: WeeklyScrimSlotContext, week: WeeklyScrimContext): DisplaySlotStatus {
+  if (slot.status === "Open" && week.setupLocked) return "Locked";
+  if (slot.status === "Cancelled" && !earlierBlockCancelledNext(slot, week)) return "NotPlayed";
+  return slot.status;
+}
+
+/**
+ * The rival "today's opponent" may name. Once the day is closed (reviewed or cancelled) the game
+ * keeps pointing at block A's rival, which is wrong after block B, so the bar goes away and the
+ * week strip's chips (one rival per block, with its result) tell what was played.
+ */
+export function todayBarOpponentId(today: TodayScrimContext): string | null {
+  if (today.state === "Reviewed" || today.state === "Cancelled") return null;
+  return today.resolvedOpponentTeamId ?? today.opponentTeamId ?? null;
 }
 
 export type ChipRival =

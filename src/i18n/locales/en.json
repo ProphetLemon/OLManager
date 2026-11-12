@@ -722,7 +722,8 @@
       "locked": "Locked",
       "played": "Played",
       "reviewed": "Reviewed",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "notPlayed": "Not played"
     },
     "planCleared": "Plan cleared",
     "notPlanned": "Not planned",
@@ -732,6 +733,7 @@
     "noOpponentSet": "No opponent set",
     "finalizeHint": "Finalizing locks this week's setup. It reopens next Monday.",
     "nothingToDecide": "Nothing to decide right now. {{slot}} plays against {{opponent}} when you continue.",
+    "nothingToDecideNoRival": "Nothing to decide right now. {{slot}} has no rival planned.",
     "recapSummary": "{{objective}}, {{count}} blocks",
     "impactLabel": "Impact",
     "weekGauges": "Week gauges",

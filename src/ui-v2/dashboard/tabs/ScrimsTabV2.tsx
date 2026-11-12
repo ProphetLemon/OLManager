@@ -25,7 +25,7 @@ import { dailyScrimDecisionActions } from "@/lib/scrims/dailyDecisionActions";
 import { decisionEffectLines, NEXT_BLOCK_CANCELLATION, type DecisionEffectContext } from "@/lib/scrims/decisionEffects";
 import { buildDecisionResult, type DecisionResult } from "@/lib/scrims/decisionResult";
 import { buildRivalRows } from "@/lib/scrims/rivalOdds";
-import { deskPanel, riskLevel, type RiskLevel } from "@/lib/scrims/scrimDesk";
+import { deskPanel, riskLevel, todayBarOpponentId, type RiskLevel } from "@/lib/scrims/scrimDesk";
 import { nextPlanningMonday, scrimSetupBlockedKey } from "@/lib/scrims/setupLock";
 import { formatDate } from "@/lib/formatting/dateFormatting";
 import { useScrimContextWithFallback } from "@/hooks/useScrimContextWithFallback";
@@ -138,7 +138,8 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   );
 
   // ── Today ──
-  const todayOpponentId = todayContext.resolvedOpponentTeamId ?? todayContext.opponentTeamId;
+  // The bar only names a rival while the day is open: after it closes the game points back at block A.
+  const todayOpponentId = todayBarOpponentId(todayContext);
   const todayOpponentName = todayOpponentId ? teamNameById.get(todayOpponentId) ?? todayOpponentId : null;
   const todayOpponentTeam = todayOpponentId ? gameState.teams.find((team) => team.id === todayOpponentId) : undefined;
   let todayRisk: RiskLevel | null = null;
@@ -276,7 +277,10 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   const todayMessage = (() => {
     switch (todayContext.state) {
       case "Planned":
-        return t("scrims.nothingToDecide", { slot: slotLabelOf(todaySlot), opponent: todayOpponentName ?? "" });
+        // A planned day can still hold a block with no rival: never print the sentence with an empty name.
+        return todayOpponentName
+          ? t("scrims.nothingToDecide", { slot: slotLabelOf(todaySlot), opponent: todayOpponentName })
+          : t("scrims.nothingToDecideNoRival", { slot: slotLabelOf(todaySlot) });
       case "Reviewed": return t("scrims.todayReviewed");
       case "Cancelled": return t("scrims.todayCancelled");
       case "PlayedNeedsReview": return t("scrims.todayNeedsReview");
@@ -327,7 +331,13 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
 
       <div className="flex flex-wrap items-start gap-5">
         <main className="flex min-w-0 flex-[999_1_35rem] flex-col gap-5">
-          <ScrimDeskPanel ref={headingRef} id={headingId} title={panelTitle} badge={t(todayStateKey(todayContext.state))}>
+          <ScrimDeskPanel
+            ref={headingRef}
+            id={headingId}
+            title={panelTitle}
+            badge={t(todayStateKey(todayContext.state))}
+            status={<ScrimDecisionResult result={result} statusText={liveText} />}
+          >
             {panel === "setup" ? (
               <ScrimSetupPanel
                 gameState={gameState}
@@ -356,7 +366,6 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
               />
             ) : null}
           </ScrimDeskPanel>
-          <ScrimDecisionResult result={result} statusText={liveText} />
           {panel !== "setup" ? (
             <ScrimSetupRecap
               key={panel}

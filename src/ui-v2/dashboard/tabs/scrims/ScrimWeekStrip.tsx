@@ -2,7 +2,7 @@ import { useId } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { WeeklyScrimContext, WeeklyScrimSlotContext } from "@/lib/scrims/scrimContext";
-import { chipRival, isPlanClearedToday, slotsByDay, type RiskLevel } from "@/lib/scrims/scrimDesk";
+import { chipRival, displaySlotStatus, isPlanClearedToday, slotsByDay, type RiskLevel } from "@/lib/scrims/scrimDesk";
 import { ResultLetter } from "@/ui-v2/components/ResultLetter";
 import { cn } from "@/ui-v2/lib/utils";
 import { RiskMarker } from "./RiskMarker";
@@ -32,7 +32,8 @@ function SlotChip({
   const { t } = useTranslation();
   const rival = chipRival(slot, isPlanClearedToday(slot, week));
   const label = `${weekdayLabels[slot.labelDay] ?? ""}${slot.labelSuffix ? ` ${slot.labelSuffix}` : ""}`.trim();
-  const StatusIcon = SLOT_STATUS_ICON[slot.status];
+  const status = displaySlotStatus(slot, week);
+  const StatusIcon = SLOT_STATUS_ICON[status];
   const hasResult = slot.resultWon != null;
   const quality = slot.report?.quality ?? null;
 
@@ -40,7 +41,7 @@ function SlotChip({
     <li className="@container">
       <div
         data-slot="scrim-slot-chip"
-        data-status={slot.status}
+        data-status={status}
         className="grid min-h-11 grid-cols-[1.75rem_auto_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-0.5 rounded-lg border border-line bg-muted py-1.5 pe-3 ps-2 @[24rem]:grid-cols-[1.75rem_3.25rem_minmax(0,1fr)_auto_auto]"
       >
         <span
@@ -71,7 +72,7 @@ function SlotChip({
         </span>
         <span className="col-span-3 col-start-2 inline-flex items-center gap-1.5 whitespace-nowrap text-caption text-muted-foreground @[24rem]:col-span-1 @[24rem]:col-start-auto">
           <StatusIcon aria-hidden="true" className="size-4 shrink-0" />
-          {t(SLOT_STATUS_KEY[slot.status])}
+          {t(SLOT_STATUS_KEY[status])}
         </span>
       </div>
     </li>

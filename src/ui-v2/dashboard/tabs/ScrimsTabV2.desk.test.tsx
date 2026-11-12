@@ -210,6 +210,18 @@ describe("which body owns the wide column", () => {
   });
 });
 
+describe("today's block with no rival", () => {
+  it("says there is no rival planned instead of printing the sentence with an empty name", () => {
+    show({
+      today: today({ state: "Planned", slotIndex: 0 }),
+      week: week([slot(0), slot(1, { plan: ["ember"] }), slot(2), slot(3)], { setupLocked: true, setupLockedReason: "week_started" }),
+    });
+
+    expect(screen.getByText("scrims.nothingToDecideNoRival")).toBeInTheDocument();
+    expect(screen.queryByText("scrims.nothingToDecide")).not.toBeInTheDocument();
+  });
+});
+
 describe("the week strip", () => {
   it("names the day, block, rival, quality, status and result of every slot, and keeps a slot cleared today Open", () => {
     const blockA = report({ post_decision: "TargetedDrills", quality: 75 });
@@ -236,18 +248,27 @@ describe("the week strip", () => {
     expect(wedA).toHaveTextContent("scrims.slotStatus.reviewed");
     expect(wedA).toHaveTextContent("Loss");
 
-    // The game keeps this slot Open until its weekday is past; the plan was cleared by the decision.
-    expect(wedB).toHaveAttribute("data-status", "Open");
+    // The game keeps this slot Open until its weekday is past, and the confirmed week cannot be edited.
+    expect(wedB).toHaveAttribute("data-status", "Locked");
     expect(wedB).toHaveTextContent("scrims.planCleared");
-    expect(wedB).toHaveTextContent("scrims.slotStatus.open");
+    expect(wedB).toHaveTextContent("scrims.slotStatus.locked");
 
     expect(thuA).toHaveTextContent("Falcon Ridge");
-    expect(thuA).toHaveTextContent("scrims.slotStatus.open");
+    expect(thuA).toHaveTextContent("scrims.slotStatus.locked");
+    // A past slot that never had a plan was not played; nobody cancelled it.
     expect(thuB).toHaveTextContent("scrims.notPlanned");
-    expect(thuB).toHaveTextContent("scrims.slotStatus.cancelled");
+    expect(thuB).toHaveTextContent("scrims.slotStatus.notPlayed");
+    expect(thuB).not.toHaveTextContent("scrims.slotStatus.cancelled");
   });
 
-  it("lists the five statuses of the game as a key", () => {
+  it("keeps an Open slot Open while the week's setup is not confirmed", () => {
+    show({ today: today(), week: week([0, 1, 2, 3].map((index) => slot(index, { plan: index === 0 ? ["northglass"] : [] }))) });
+    const [first] = Array.from(document.querySelectorAll<HTMLElement>("[data-slot='scrim-slot-chip']"));
+    expect(first).toHaveAttribute("data-status", "Open");
+    expect(first).toHaveTextContent("scrims.slotStatus.open");
+  });
+
+  it("lists every status a chip can word as a key", () => {
     show({ today: today(), week: OPEN_WEEK });
     const key = screen.getByRole("list", { name: "scrims.slotStatusKey" });
     expect(within(key).getAllByRole("listitem").map((item) => item.textContent)).toEqual([
@@ -256,6 +277,7 @@ describe("the week strip", () => {
       "scrims.slotStatus.played",
       "scrims.slotStatus.reviewed",
       "scrims.slotStatus.cancelled",
+      "scrims.slotStatus.notPlayed",
     ]);
   });
 
@@ -270,6 +292,30 @@ describe("the week strip", () => {
     expect(bar).toHaveTextContent("Northglass");
     expect(bar).toHaveTextContent("scrims.todayRisk");
     expect(bar.querySelector("[data-risk]")).not.toBeNull();
+  });
+
+  it("drops the bar once the day is closed, so block A's rival is not shown after block B", () => {
+    const blockA = report({ post_decision: "PushThrough" });
+    const blockB = report({ slot_index: 1, opponent_team_id: "ember", post_decision: "DayOff" });
+    show({
+      // The game points back at block A (Northglass) after the day closes.
+      today: today({ state: "Reviewed", slotIndex: 0, opponentTeamId: "northglass", resolvedOpponentTeamId: "northglass", report: blockA }),
+      week: week(
+        [
+          slot(0, { status: "Reviewed", resolvedOpponentTeamId: "northglass", resultWon: false, report: blockA, canEdit: false }),
+          slot(1, { status: "Reviewed", resolvedOpponentTeamId: "ember", resultWon: true, report: blockB, canEdit: false }),
+          slot(2),
+          slot(3),
+        ],
+        { setupLocked: true, setupLockedReason: "week_started" },
+      ),
+    });
+
+    expect(document.querySelector("[data-slot='scrim-day-bar']")).toBeNull();
+    // The chips still tell each block's own rival.
+    const [wedA, wedB] = Array.from(document.querySelectorAll<HTMLElement>("[data-slot='scrim-slot-chip']"));
+    expect(wedA).toHaveTextContent("Northglass");
+    expect(wedB).toHaveTextContent("Ember Five");
   });
 
   it("drops the risk once the block has been played", () => {
