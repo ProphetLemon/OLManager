@@ -687,6 +687,8 @@ function GameSegmented({
       {options.map((opt) => (
         <button
           key={opt.value}
+          type="button"
+          aria-pressed={value === opt.value}
           onClick={() => onChange(opt.value)}
           className={`flex min-h-[var(--target-min)] min-w-[var(--target-min)] items-center justify-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-heading font-bold uppercase tracking-wider transition-all ${
             value === opt.value
