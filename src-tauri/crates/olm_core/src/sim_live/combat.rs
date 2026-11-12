@@ -484,6 +484,13 @@ fn base_wave_minion_idx(runtime: &RuntimeState, champion_idx: usize) -> Option<u
         // An enemy champion at the tower is dealt with by the ordinary rules.
         return None;
     }
+    nearest_base_wave_minion_idx(runtime, champion_idx)
+}
+
+/// The nearest enemy minion inside the threat radius of a nexus tower of the champion's own
+/// base that he stands near, whoever else is around.
+fn nearest_base_wave_minion_idx(runtime: &RuntimeState, champion_idx: usize) -> Option<usize> {
+    let champion = &runtime.champions[champion_idx];
     runtime
         .structures
         .iter()
@@ -1268,6 +1275,46 @@ pub(super) fn combat_order(count: usize, time_sec: f64) -> Vec<usize> {
     }
 }
 
+/// A champion's last hit or poke at a minion: damage, kill credit and the attack cooldown.
+fn attack_minion(runtime: &mut RuntimeState, idx: usize, minion_idx: usize, now: f64) {
+    let lane_mult = champion_lane_damage_multiplier(&runtime.champions[idx]);
+    let defender_empowered = minion_is_baron_empowered(runtime, &runtime.minions[minion_idx]);
+    let baron_defense_mult = if defender_empowered { 0.42 } else { 1.0 };
+    let baron_siege_clear_mult = if team_has_active_baron_buff(runtime, &runtime.champions[idx].team)
+        && normalized_team(&runtime.minions[minion_idx].team)
+            != normalized_team(&runtime.champions[idx].team)
+    {
+        BARON_SIEGE_CHAMPION_MINION_DAMAGE_MULTIPLIER
+    } else {
+        1.0
+    };
+    let damage = runtime.champions[idx].attack_damage
+        * CHAMPION_DAMAGE_TO_MINION_MULTIPLIER
+        * lane_mult
+        * baron_defense_mult
+        * baron_siege_clear_mult;
+    runtime.minions[minion_idx].hp -= damage;
+    runtime.minions[minion_idx].last_hit_by_champion_id = Some(runtime.champions[idx].id.clone());
+    runtime.champions[idx].attack_cd_until = now + 0.75;
+    if runtime.minions[minion_idx].hp <= 0.0 {
+        register_minion_death(runtime, minion_idx, MinionKiller::Champion);
+    }
+}
+
+/// A champion who will not trade with the enemy champion he picked backs away from him, unless
+/// minions are at the nexus tower he defends and one is in his reach: then he clears them
+/// instead. Backing away with a wave at the tower left five champions with 200 minions
+/// piled at it, and the wave won the match for a team that was 20 kills behind.
+pub(super) fn decline_trade(runtime: &mut RuntimeState, idx: usize, threat_pos: Vec2, now: f64) {
+    let reach = runtime.champions[idx].attack_range.max(0.04);
+    let wave_minion = nearest_base_wave_minion_idx(runtime, idx)
+        .filter(|minion_idx| dist(runtime.champions[idx].pos, runtime.minions[*minion_idx].pos) <= reach);
+    match wave_minion {
+        Some(minion_idx) => attack_minion(runtime, idx, minion_idx, now),
+        None => issue_lane_disengage(runtime, idx, threat_pos),
+    }
+}
+
 pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
     let now = runtime.time_sec;
     let mut neutral_timers = decode_neutral_timers_state(&runtime.neutral_timers)
@@ -1474,7 +1521,7 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                         &runtime.minions,
                     )
                 {
-                    issue_lane_disengage(runtime, idx, target_snapshot.pos);
+                    decline_trade(runtime, idx, target_snapshot.pos, now);
                     continue;
                 }
 
@@ -1501,7 +1548,7 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                         );
                     }
                     if !open_eval.decision {
-                        issue_lane_disengage(runtime, idx, target_snapshot.pos);
+                        decline_trade(runtime, idx, target_snapshot.pos, now);
                         continue;
                     }
                 }
@@ -1528,7 +1575,7 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                         );
                     }
                     if disengage_eval.decision {
-                        issue_lane_disengage(runtime, idx, target_snapshot.pos);
+                        decline_trade(runtime, idx, target_snapshot.pos, now);
                         continue;
                     }
                 }
@@ -1537,7 +1584,7 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                     && !should_engage_enemy_champion(runtime, idx, champion_idx)
                 {
                     if attacker_snapshot.role != "JGL" {
-                        issue_lane_disengage(runtime, idx, target_snapshot.pos);
+                        decline_trade(runtime, idx, target_snapshot.pos, now);
                     }
                     continue;
                 }
@@ -1594,31 +1641,7 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                 if minion_idx >= runtime.minions.len() || !runtime.minions[minion_idx].alive {
                     continue;
                 }
-                let lane_mult = champion_lane_damage_multiplier(&runtime.champions[idx]);
-                let defender_empowered =
-                    minion_is_baron_empowered(runtime, &runtime.minions[minion_idx]);
-                let baron_defense_mult = if defender_empowered { 0.42 } else { 1.0 };
-                let baron_siege_clear_mult =
-                    if team_has_active_baron_buff(runtime, &runtime.champions[idx].team)
-                        && normalized_team(&runtime.minions[minion_idx].team)
-                            != normalized_team(&runtime.champions[idx].team)
-                    {
-                        BARON_SIEGE_CHAMPION_MINION_DAMAGE_MULTIPLIER
-                    } else {
-                        1.0
-                    };
-                let damage = runtime.champions[idx].attack_damage
-                    * CHAMPION_DAMAGE_TO_MINION_MULTIPLIER
-                    * lane_mult
-                    * baron_defense_mult
-                    * baron_siege_clear_mult;
-                runtime.minions[minion_idx].hp -= damage;
-                runtime.minions[minion_idx].last_hit_by_champion_id =
-                    Some(runtime.champions[idx].id.clone());
-                runtime.champions[idx].attack_cd_until = now + 0.75;
-                if runtime.minions[minion_idx].hp <= 0.0 {
-                    register_minion_death(runtime, minion_idx, MinionKiller::Champion);
-                }
+                attack_minion(runtime, idx, minion_idx, now);
                 continue;
             }
             CombatTarget::Structure(structure_idx) => {

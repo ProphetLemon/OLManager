@@ -200,3 +200,55 @@ fn a_defender_does_not_turn_to_the_wave_while_an_enemy_champion_is_in_reach() {
 
     assert!(!matches!(target, Some(CombatTarget::Minion(0))));
 }
+
+/// A defender who will not trade with the enemy champion he picked used to back away and
+/// do nothing else: five champions stood on their nexus tower for seven minutes with 195
+/// enemy minions piled at it (seed 1120 of the real-lineups harness, 3 kills won against 23).
+#[test]
+fn a_defender_who_declines_a_trade_clears_the_wave_at_his_tower() {
+    let tower = tower_pos();
+    let mut mid = test_champion(
+        "blue-MID",
+        "blue",
+        "MID",
+        "mid",
+        Vec2 {
+            x: tower.x + 0.03,
+            y: tower.y + 0.03,
+        },
+    );
+    mid.state = "lane".to_string();
+    let mut runtime = test_runtime(
+        vec![mid, red_champion_at(Vec2 { x: tower.x + 0.05, y: tower.y + 0.03 })],
+        vec![red_minion_at_the_tower()],
+        vec![nexus_tower()],
+        empty_neutral(),
+    );
+    let before = runtime.minions[0].hp;
+    let enemy_pos = runtime.champions[1].pos;
+
+    let now = runtime.time_sec;
+    combat::decline_trade(&mut runtime, 0, enemy_pos, now);
+
+    assert!(runtime.minions[0].hp < before, "the defender did not hit the wave");
+}
+
+#[test]
+fn a_laner_who_declines_a_trade_away_from_his_base_backs_away() {
+    let mut mid = test_champion("blue-MID", "blue", "MID", "mid", Vec2 { x: 0.5, y: 0.5 });
+    mid.state = "lane".to_string();
+    let enemy = red_champion_at(Vec2 { x: 0.52, y: 0.5 });
+    let mut runtime = test_runtime(
+        vec![mid, enemy],
+        vec![test_minion("red-mid-1", "red", "mid", Vec2 { x: 0.51, y: 0.5 })],
+        vec![nexus_tower()],
+        empty_neutral(),
+    );
+    let before = runtime.minions[0].hp;
+    let enemy_pos = runtime.champions[1].pos;
+
+    let now = runtime.time_sec;
+    combat::decline_trade(&mut runtime, 0, enemy_pos, now);
+
+    assert_eq!(runtime.minions[0].hp, before, "a laner far from his base hit a minion instead of backing away");
+}
