@@ -97,11 +97,19 @@ struct ContactStats {
     base_ignores: u32,
     /// Seconds spent in those episodes, from the moment each one reached the limit.
     base_ignore_secs: f64,
+    /// The base ignores in which, besides, nobody on the intruder's team took damage for
+    /// `IDLE_LIMIT_SEC`: the defenders did nothing to anyone, not only nothing to him.
+    quiet_base_ignores: u32,
     /// The idle contacts by what the two champions were doing and how close they stood, when
     /// the episode reached the limit.
     idle_kinds: BTreeMap<String, u32>,
     /// The idle contacts by game minute of ten.
     idle_by_decade: [u32; 8],
+    /// The base ignores by who faced the intruder (champion, tower, both), whether he stood in
+    /// the zone the engine defends (0.13 from the nexus or a nexus tower) and what he was doing.
+    base_kinds: BTreeMap<String, u32>,
+    /// The free recalls by what the nearest reaching enemy was doing and how far he stood.
+    recall_kinds: BTreeMap<String, u32>,
 }
 
 /// A champion as the previous step left it.
@@ -122,9 +130,11 @@ struct ContactObserver {
     /// Cumulative champion-on-champion damage of each pair, to see new damage.
     pair_damage: HashMap<(usize, usize), f64>,
     /// Per recaller: whether an enemy that could reach him has been in sight during this channel.
-    recall_watch: Vec<Option<bool>>,
+    recall_watch: Vec<Option<(bool, String)>>,
     /// Per intruder: seconds at a base without damage, and whether the episode was counted.
     base_idle: Vec<(f64, bool)>,
+    /// Set when, in the last step, an enemy first became able to stop a recall in progress.
+    just_free: bool,
     stats: ContactStats,
 }
 
@@ -137,6 +147,7 @@ impl ContactObserver {
             pair_damage: HashMap::new(),
             recall_watch: Vec::new(),
             base_idle: Vec::new(),
+            just_free: false,
             stats: ContactStats::default(),
         }
     }
@@ -167,6 +178,7 @@ impl ContactObserver {
         let now = state.time_sec;
         let dt = (now - self.previous_time).max(0.0);
         let count = state.champions.len();
+        self.just_free = false;
         if self.previous.is_empty() {
             self.recall_watch = vec![None; count];
             self.base_idle = vec![(0.0, false); count];
@@ -236,29 +248,46 @@ impl ContactObserver {
                 && !Self::in_fountain(champion);
             if channeling {
                 let remaining = champion.recall_channel_until - now;
-                let free = state.champions.iter().any(|enemy| {
-                    enemy.alive
-                        && !champion_is_banished(enemy)
-                        && enemy.state != "recall"
-                        && normalized_team(&enemy.team) != normalized_team(&champion.team)
-                        && dist(enemy.pos, champion.pos) <= CHAMPION_VISION_RADIUS
-                        && (dist(enemy.pos, champion.pos) - Self::reach(enemy)).max(0.0)
-                            / enemy.move_speed.max(0.01)
-                            <= remaining
-                });
-                let watch = self.recall_watch[i].get_or_insert(false);
-                *watch |= free;
+                let timers = decode_neutral_timers_state(&state.neutral_timers)
+                    .unwrap_or_else(neutral_timers_default_runtime_state);
+                let reaching = state
+                    .champions
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, enemy)| {
+                        enemy.alive
+                            && !champion_is_banished(enemy)
+                            && enemy.state != "recall"
+                            && normalized_team(&enemy.team) != normalized_team(&champion.team)
+                            && dist(enemy.pos, champion.pos) <= CHAMPION_VISION_RADIUS
+                            && (dist(enemy.pos, champion.pos) - Self::reach(enemy)).max(0.0)
+                                / enemy.move_speed.max(0.01)
+                                <= remaining
+                    })
+                    .min_by(|(_, a), (_, b)| dist(a.pos, champion.pos).total_cmp(&dist(b.pos, champion.pos)));
+                let watch = self.recall_watch[i].get_or_insert((false, String::new()));
+                if let (Some((enemy_idx, enemy)), false) = (reaching, watch.0) {
+                    self.just_free = true;
+                    let d = dist(enemy.pos, champion.pos);
+                    let band = if d <= Self::reach(enemy) { "in-range" } else if d <= 0.1 { "d<=0.1" } else { "d<=0.145" };
+                    let rule = if combat::recall_interrupt_idx(state, enemy_idx, &timers) == Some(i) { "rule-yes" } else { "rule-no" };
+                    let enemy_hp = if enemy.hp / enemy.max_hp < 0.4 { "enemy<40" } else { "enemy>=40" };
+                    *watch = (true, format!("{rule} {} {band} {enemy_hp}", enemy.state));
+                }
                 continue;
             }
             // The channel ended: a teleport to the base is a completed recall, anything else
             // (damage, death, a new order) an interrupted one.
-            if let (Some(free), Some(before)) = (self.recall_watch[i].take(), self.previous.get(i)) {
+            if let (Some((free, kind)), Some(before)) = (self.recall_watch[i].take(), self.previous.get(i)) {
                 let teleported = champion.alive
                     && dist(champion.pos, base_position_for(&champion.team)) < 0.02
                     && dist(before.pos, base_position_for(&champion.team)) > 0.05;
                 if teleported {
                     self.stats.recalls_completed += 1;
                     self.stats.free_recalls += u32::from(free);
+                    if free {
+                        *self.stats.recall_kinds.entry(kind).or_default() += 1;
+                    }
                 }
             }
         }
@@ -277,22 +306,24 @@ impl ContactObserver {
                 intruder.hp < before.hp - 0.5 || intruder.last_damaged_at > before.last_damaged_at
             });
             let defender_team = normalized_team(&nexus.team);
+            let champion_faces = state.champions.iter().any(|c| {
+                c.alive
+                    && !champion_is_banished(c)
+                    && c.state != "recall"
+                    && normalized_team(&c.team) == defender_team
+                    && dist(c.pos, intruder.pos) <= Self::reach(c)
+            });
+            let tower_faces = state.structures.iter().any(|s| {
+                s.alive
+                    && s.kind == "tower"
+                    && normalized_team(&s.team) == defender_team
+                    && dist(s.pos, nexus.pos) <= BASE_AREA_RADIUS
+                    && dist(s.pos, intruder.pos) <= TOWER_ATTACK_RANGE
+            });
             let facing = intruder.alive
                 && !champion_is_banished(intruder)
                 && dist(intruder.pos, nexus.pos) <= BASE_AREA_RADIUS
-                && (state.champions.iter().any(|c| {
-                    c.alive
-                        && !champion_is_banished(c)
-                        && c.state != "recall"
-                        && normalized_team(&c.team) == defender_team
-                        && dist(c.pos, intruder.pos) <= Self::reach(c)
-                }) || state.structures.iter().any(|s| {
-                    s.alive
-                        && s.kind == "tower"
-                        && normalized_team(&s.team) == defender_team
-                        && dist(s.pos, nexus.pos) <= BASE_AREA_RADIUS
-                        && dist(s.pos, intruder.pos) <= TOWER_ATTACK_RANGE
-                }));
+                && (champion_faces || tower_faces);
             if !facing || damaged {
                 self.base_idle[i] = (0.0, false);
                 continue;
@@ -306,6 +337,56 @@ impl ContactObserver {
                     entry.1 = true;
                     self.stats.base_ignores += 1;
                     self.stats.base_ignore_secs += entry.0;
+                    let quiet = state.champions.iter().all(|c| {
+                        normalized_team(&c.team) != normalized_team(&intruder.team)
+                            || state.time_sec - c.last_damaged_at >= IDLE_LIMIT_SEC
+                    });
+                    self.stats.quiet_base_ignores += u32::from(quiet);
+                    let timers = decode_neutral_timers_state(&state.neutral_timers)
+                        .unwrap_or_else(neutral_timers_default_runtime_state);
+                    // What the first defender in reach picks as target and whether he can swing.
+                    let defender_view = state
+                        .champions
+                        .iter()
+                        .enumerate()
+                        .find(|(_, c)| {
+                            c.alive
+                                && !champion_is_banished(c)
+                                && c.state != "recall"
+                                && normalized_team(&c.team) == defender_team
+                                && dist(c.pos, intruder.pos) <= Self::reach(c)
+                        })
+                        .map(|(idx, c)| {
+                            let target = match combat::pick_combat_target(state, idx, state.time_sec, &timers) {
+                                Some(CombatTarget::Champion(e)) if e == i => "intruder",
+                                Some(CombatTarget::Champion(_)) => "other-champion",
+                                Some(CombatTarget::Minion(_)) => "minion",
+                                Some(CombatTarget::Structure(_)) => "structure",
+                                Some(CombatTarget::Neutral(_)) => "neutral",
+                                None => "none",
+                            };
+                            format!("{} {target} {}", c.state, if c.attack_cd_until <= state.time_sec { "ready" } else { "cooling" })
+                        })
+                        .unwrap_or_default();
+                    let who = match (champion_faces, tower_faces) {
+                        (true, true) => "champion+tower",
+                        (true, false) => "champion",
+                        _ => "tower",
+                    };
+                    let engine_zone = state.structures.iter().any(|s| {
+                        s.alive
+                            && normalized_team(&s.team) == defender_team
+                            && (s.kind == "nexus" || (s.kind == "tower" && s.id.contains("nexus")))
+                            && dist(s.pos, intruder.pos) <= NEXUS_DEFENSE_THREAT_RADIUS
+                    });
+                    *self
+                        .stats
+                        .base_kinds
+                        .entry(format!(
+                            "{who} {} [{defender_view}]",
+                            if engine_zone { "engine-zone" } else { "outer" },
+                        ))
+                        .or_default() += 1;
                 }
             }
         }
@@ -587,6 +668,19 @@ fn replay_captured_start() {
         "idle contacts by kind: {}",
         kinds.iter().take(10).map(|(k, n)| format!("{k} {n}")).collect::<Vec<_>>().join("; ")
     );
+    let tally = |pick: &dyn Fn(&ContactStats) -> &BTreeMap<String, u32>| {
+        let mut kinds: BTreeMap<&str, u32> = BTreeMap::new();
+        for p in &played {
+            for (kind, n) in pick(&p.contact) {
+                *kinds.entry(kind.as_str()).or_default() += n;
+            }
+        }
+        let mut kinds: Vec<(&str, u32)> = kinds.into_iter().collect();
+        kinds.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
+        kinds.iter().take(10).map(|(k, n)| format!("{k} {n}")).collect::<Vec<_>>().join("; ")
+    };
+    println!("base ignores by kind: {}", tally(&|c| &c.base_kinds));
+    println!("free recalls by kind: {}", tally(&|c| &c.recall_kinds));
     println!(
         "idle contacts by ten minutes: {:?}",
         (0..8).map(|d| played.iter().map(|p| p.contact.idle_by_decade[d]).sum::<u32>()).collect::<Vec<_>>()
@@ -598,10 +692,11 @@ fn replay_captured_start() {
         total(&|c| f64::from(c.free_recalls)) / matches,
     );
     println!(
-        "base ignores {} ({:.2} per match), base ignore seconds {:.0}",
+        "base ignores {} ({:.2} per match), base ignore seconds {:.0}, of which quiet {}",
         total(&|c| f64::from(c.base_ignores)),
         total(&|c| f64::from(c.base_ignores)) / matches,
         total(&|c| c.base_ignore_secs),
+        total(&|c| f64::from(c.quiet_base_ignores)),
     );
 
     let mut levels: BTreeMap<(String, String), Vec<f64>> = BTreeMap::new();
@@ -802,6 +897,8 @@ fn trace_captured_contacts() {
     let n: usize = env_or("CAPTURED_TRACE_SEED", 0);
     let kind: String = env_or("CAPTURED_TRACE_KIND", "idle".to_string());
     let max_lines: usize = env_or("CAPTURED_TRACE_MAX", 40);
+    // Only episodes whose kind contains this text (the kinds the replay prints).
+    let filter: String = env_or("CAPTURED_TRACE_FILTER", String::new());
     let mut request = template.clone();
     request.session_id = format!("captured-replay-{n}");
     request.seed = format!("{}-{n}", template.seed);
@@ -810,7 +907,10 @@ fn trace_captured_contacts() {
     init(&store, request).expect("init");
     let mut observer = ContactObserver::new();
     let mut printed = 0;
-    let (mut idle, mut recalls, mut bases) = (0, 0, 0);
+    let matching = |kinds: &BTreeMap<String, u32>| -> u32 {
+        kinds.iter().filter(|(k, _)| k.contains(filter.as_str())).map(|(_, n)| *n).sum()
+    };
+    let (mut idle_match, mut base_match) = (0, 0);
     loop {
         tick(
             &store,
@@ -827,11 +927,11 @@ fn trace_captured_contacts() {
         observer.observe(state);
         let stats = &observer.stats;
         let fresh = match kind.as_str() {
-            "recall" => stats.free_recalls != recalls,
-            "base" => stats.base_ignores != bases,
-            _ => stats.idle_contacts != idle,
+            "recall" => observer.just_free,
+            "base" => matching(&stats.base_kinds) != base_match,
+            _ => matching(&stats.idle_kinds) != idle_match,
         };
-        (idle, recalls, bases) = (stats.idle_contacts, stats.free_recalls, stats.base_ignores);
+        (idle_match, base_match) = (matching(&stats.idle_kinds), matching(&stats.base_kinds));
         if fresh && printed < max_lines {
             printed += 1;
             let timers = decode_neutral_timers_state(&state.neutral_timers)
@@ -870,6 +970,72 @@ fn trace_captured_contacts() {
         }
         if state.winner.is_some() || state.time_sec >= GAME_LIMIT_SEC || printed >= max_lines {
             break;
+        }
+    }
+}
+
+/// Plays one seed of a captured start and prints, every step between `CAPTURED_FOLLOW_FROM` and
+/// `CAPTURED_FOLLOW_TO` game seconds, where the champions named in `CAPTURED_FOLLOW` (for example
+/// `rSUP,bSUP`) are, what they do, the end of their path and the combat target the engine picks.
+#[test]
+#[ignore = "measurement: follows named champions of one captured-start match step by step"]
+fn follow_captured_champions() {
+    let path = std::env::var("CAPTURED_INIT").expect("CAPTURED_INIT");
+    let template = load_captured_request(&path).unwrap_or_else(|e| panic!("{e}"));
+    let n: usize = env_or("CAPTURED_TRACE_SEED", 0);
+    let from: f64 = env_or("CAPTURED_FOLLOW_FROM", 0.0);
+    let to: f64 = env_or("CAPTURED_FOLLOW_TO", 60.0);
+    let names: String = env_or("CAPTURED_FOLLOW", "bTOP".to_string());
+    let mut request = template.clone();
+    request.session_id = format!("captured-replay-{n}");
+    request.seed = format!("{}-{n}", template.seed);
+    let session_id = request.session_id.clone();
+    let store = SimLiveStoreState::default();
+    init(&store, request).expect("init");
+    loop {
+        tick(
+            &store,
+            SimLiveTickRequest {
+                session_id: session_id.clone(),
+                dt_sec: DEFAULT_TICK_DT_SEC,
+                running: true,
+                speed: DEFAULT_TICK_SPEED,
+            },
+        )
+        .expect("tick");
+        let sessions = store.sessions.lock().expect("lock");
+        let state = &sessions[&session_id].state;
+        let now = state.time_sec;
+        if now < from {
+            continue;
+        }
+        if now > to || state.winner.is_some() {
+            break;
+        }
+        let timers = decode_neutral_timers_state(&state.neutral_timers)
+            .unwrap_or_else(neutral_timers_default_runtime_state);
+        for (idx, c) in state.champions.iter().enumerate() {
+            if !names.split(',').any(|name| name == format!("{}{}", &c.team[..1], c.role)) {
+                continue;
+            }
+            let target = combat::pick_combat_target(state, idx, now, &timers);
+            let what = match &target {
+                Some(CombatTarget::Champion(e)) => {
+                    let enemy = &state.champions[*e];
+                    format!("champion {}{} d{:.3} ({})", &enemy.team[..1], enemy.role, dist(c.pos, enemy.pos), enemy.state)
+                }
+                Some(CombatTarget::Minion(m)) => format!("minion d{:.3}", dist(c.pos, state.minions[*m].pos)),
+                Some(CombatTarget::Structure(s)) => format!("structure {}", state.structures[*s].id),
+                Some(CombatTarget::Neutral(k)) => format!("neutral {k}"),
+                None => "none".to_string(),
+            };
+            let end = c.target_path.last().map_or("-".to_string(), |p| format!("{:.3},{:.3}", p.x, p.y));
+            println!(
+                "t={now:.1} {}{} {} {} {:.0}% @{:.3},{:.3} path->{end} cd {:.1} chan {:.1} -> {what}",
+                &c.team[..1], c.role, if c.alive { "alive" } else { "dead" }, c.state,
+                c.hp / c.max_hp.max(1.0) * 100.0, c.pos.x, c.pos.y,
+                c.attack_cd_until - now, c.recall_channel_until - now,
+            );
         }
     }
 }
