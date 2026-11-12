@@ -52,6 +52,7 @@ pub use session::*;
 use state_init::{build_neutral_timers_state, create_initial_state, ensure_runtime_state_defaults};
 use structures::{
     apply_damage_to_structure, create_structures, is_structure_targetable, resolve_structure_combat,
+    wave_alone_cannot_break,
 };
 pub use types::*;
 use tower_ledger::{TowerLedger, TowerShot, TowerVictim};
@@ -580,11 +581,6 @@ const TOWER_NEXUS_HP: f64 = 4590.0;
 const INHIBITOR_HP: f64 = 4000.0;
 const NEXUS_HP: f64 = 5500.0;
 const EARLY_TOWER_FORTIFICATION_END_AT: f64 = 14.0 * 60.0;
-const TOWER_FORTIFICATION_REDUCTION_AT_14: f64 = 0.50;
-const TOWER_FORTIFICATION_REDUCTION_AT_20: f64 = 0.20;
-const TOWER_FORTIFICATION_REDUCTION_AT_25: f64 = 0.00;
-const TOWER_FORTIFICATION_REDUCTION_AT_30: f64 = 0.00;
-const TOWER_FORTIFICATION_REDUCTION_AT_35: f64 = 0.00;
 const CHAMPION_ATTACK_CADENCE_SEC: f64 = 1.0;
 // A tower shot at a champion: flat part + growth per game minute + a share of
 // the target's maximum health, times a ramp while it keeps shooting the same
@@ -597,7 +593,7 @@ const TOWER_SHOT_MAX_HP_SHARE: f64 = 0.01;
 const TOWER_SHOT_RAMP_PER_SHOT: f64 = 0.4;
 const TOWER_SHOT_RAMP_MAX_STEPS: u32 = 3;
 const TOWER_SHOT_RAMP_WINDOW_SEC: f64 = 3.0;
-const TOWER_SHOT_DAMAGE_TO_MINION: f64 = 36.0;
+const TOWER_SHOT_DAMAGE_TO_MINION: f64 = 26.0;
 const TOWER_ATTACK_RANGE: f64 = 0.08;
 const TOWER_ATTACK_CADENCE_SEC: f64 = 1.0;
 // Long enough for four shots at the cadence a tower really fires at (one per
@@ -5805,26 +5801,6 @@ fn add_dragon_stack_for_kind(team_buffs: &mut RuntimeTeamBuffState, kind: &str) 
         _ => {}
     }
     team_buffs.dragon_stacks += 1;
-}
-
-fn tower_damage_multiplier(at_time_sec: f64, structure: &StructureRuntime) -> f64 {
-    if structure.kind != "tower" {
-        return 1.0;
-    }
-
-    let reduction = if at_time_sec < 20.0 * 60.0 {
-        TOWER_FORTIFICATION_REDUCTION_AT_14
-    } else if at_time_sec < 25.0 * 60.0 {
-        TOWER_FORTIFICATION_REDUCTION_AT_20
-    } else if at_time_sec < 30.0 * 60.0 {
-        TOWER_FORTIFICATION_REDUCTION_AT_25
-    } else if at_time_sec < 35.0 * 60.0 {
-        TOWER_FORTIFICATION_REDUCTION_AT_30
-    } else {
-        TOWER_FORTIFICATION_REDUCTION_AT_35
-    };
-
-    1.0 - reduction
 }
 
 fn add_gold_xp_to_champion(

@@ -247,13 +247,20 @@ pub(super) fn resolve_minion_combat(runtime: &mut RuntimeState) {
             }
 
             let attacker_team = runtime.minions[i].team.clone();
-            let damage = runtime.minions[i].attack_damage
+            let mut damage = runtime.minions[i].attack_damage
                 * if attacker_empowered {
                     BARON_MINION_DAMAGE_MULTIPLIER
                 } else {
                     1.0
                 }
                 * MINION_DAMAGE_TO_STRUCTURE_MULTIPLIER;
+            if wave_alone_cannot_break(
+                &runtime.champions,
+                &runtime.structures[structure_idx],
+                &attacker_team,
+            ) {
+                damage = 0.0;
+            }
             apply_damage_to_structure(runtime, structure_idx, damage, &attacker_team);
             runtime.minions[i].attack_cd_until = now + cadence;
             continue;

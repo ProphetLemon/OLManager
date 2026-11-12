@@ -75,6 +75,28 @@ fn structure_base_hp(seed: &StructureSeed) -> f64 {
     }
 }
 
+/// How near to a structure of the enemy base an allied champion must be for the minions to
+/// hurt it.
+const BASE_BREAK_CHAMPION_RADIUS: f64 = 0.2;
+
+/// Whether a wave on its own cannot hurt `structure`: the inhibitors, the nexus and the towers
+/// that guard them fall to minions only when an allied champion is at them. A team 25 kills
+/// behind took such a base with its waves while the champions that had killed its team were
+/// somewhere else; with this rule a base is broken by whoever has champions alive.
+pub(super) fn wave_alone_cannot_break(
+    champions: &[ChampionRuntime],
+    structure: &StructureRuntime,
+    attacker_team: &str,
+) -> bool {
+    let guards_base = structure.id.contains("inhib") || structure.id.contains("nexus");
+    guards_base
+        && !champions.iter().any(|champion| {
+            champion.alive
+                && normalized_team(&champion.team) == normalized_team(attacker_team)
+                && dist(champion.pos, structure.pos) <= BASE_BREAK_CHAMPION_RADIUS
+        })
+}
+
 pub(super) fn is_structure_targetable(
     structures: &[StructureRuntime],
     attacker_team: &str,
@@ -391,9 +413,7 @@ pub(super) fn apply_damage_to_structure(
         return;
     }
 
-    let multiplier =
-        super::tower_damage_multiplier(runtime.time_sec, &runtime.structures[structure_idx]);
-    let mut damage = raw_damage.max(0.0) * multiplier;
+    let mut damage = raw_damage.max(0.0);
     if runtime.structures[structure_idx].kind == "tower"
         && runtime.time_sec >= super::EARLY_TOWER_FORTIFICATION_END_AT
     {

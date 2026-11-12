@@ -35,7 +35,9 @@ fn minion_can_target_inhib_after_inhib_tower_is_down() {
     red_inhib.kind = "inhib".to_string();
     red_inhib.hp = 200.0;
 
-    let mut runtime = test_runtime(vec![], vec![blue], vec![red_inhib], empty_neutral());
+    // An allied champion stands at the inhibitor: a wave alone cannot break a base.
+    let carry = test_champion("blue-TOP", "blue", "TOP", "mid", Vec2 { x: 0.77, y: 0.23 });
+    let mut runtime = test_runtime(vec![carry], vec![blue], vec![red_inhib], empty_neutral());
     let hp_before = runtime.structures[0].hp;
     resolve_minion_combat(&mut runtime);
     assert!(runtime.structures[0].hp < hp_before);
@@ -95,8 +97,10 @@ fn minion_can_target_nexus_tower_after_lane_inhib_is_down() {
     );
     red_nexus_top_tower.hp = 200.0;
 
+    // An allied champion stands at the tower: a wave alone cannot break a base.
+    let carry = test_champion("blue-TOP", "blue", "TOP", "top", Vec2 { x: 0.83, y: 0.15 });
     let mut runtime = test_runtime(
-        vec![],
+        vec![carry],
         vec![blue],
         vec![red_nexus_top_tower],
         empty_neutral(),
@@ -367,19 +371,19 @@ fn the_tower_goes_back_to_minions_when_the_lock_has_expired() {
         .all(|s| s.victim == TowerVictim::Minion));
 }
 
-/// Towers fell far too slowly (a match went on for 45 to 60 minutes): the fortification took
-/// 90% of the damage before minute 20 and 35% after minute 35. It now ends at minute 25.
+/// Towers fell far too slowly (a match went on for 45 to 60 minutes): a fortification took
+/// 90% of the damage before minute 20 and 35% after minute 35, then half of it until minute 25.
+/// Measured with real champions, taking it off shortens a 70 vs 70 match by 2 to 3 minutes, so a
+/// tower now takes all the damage it is dealt at any minute.
 #[test]
-fn a_tower_takes_more_damage_as_the_match_goes_on_and_all_of_it_from_minute_25() {
-    let tower = test_structure("blue-test-tower", "blue", "mid", Vec2 { x: 0.4, y: 0.4 });
-    let mut previous = 0.0;
-    for minute in 0..60 {
-        let multiplier = tower_damage_multiplier(f64::from(minute) * 60.0, &tower);
-        assert!(multiplier >= previous, "minute {minute}: {multiplier} after {previous}");
-        previous = multiplier;
+fn a_tower_takes_all_the_damage_it_is_dealt_at_any_minute() {
+    for minute in [1, 5, 15, 30, 50] {
+        let tower = test_structure("red-test-tower", "red", "mid", Vec2 { x: 0.6, y: 0.4 });
+        let mut runtime = test_runtime(vec![], vec![], vec![tower], empty_neutral());
+        runtime.time_sec = f64::from(minute) * 60.0;
+        apply_damage_to_structure(&mut runtime, 0, 100.0, "blue");
+        assert_eq!(runtime.structures[0].hp, 900.0, "minute {minute}");
     }
-    assert_eq!(tower_damage_multiplier(25.0 * 60.0, &tower), 1.0);
-    assert!(tower_damage_multiplier(10.0 * 60.0, &tower) <= 0.5, "early towers fell too easily");
 }
 
 #[test]
@@ -404,4 +408,31 @@ fn every_red_structure_stands_at_the_mirror_image_of_its_blue_counterpart() {
             "{id} is at ({rx:.4}, {ry:.4}), its blue counterpart at ({bx:.4}, {by:.4})"
         );
     }
+}
+
+fn base_structure(id: &str) -> StructureRuntime {
+    test_structure(id, "red", "base", Vec2 { x: 0.85, y: 0.13 })
+}
+
+#[test]
+fn a_wave_alone_cannot_break_an_inhibitor_the_nexus_or_the_towers_that_guard_them() {
+    for id in ["red-inhib-top", "red-top-inhib-tower", "red-nexus", "red-nexus-top-tower"] {
+        assert!(wave_alone_cannot_break(&[], &base_structure(id), "blue"), "{id}");
+    }
+}
+
+#[test]
+fn a_wave_breaks_the_other_towers_alone() {
+    for id in ["red-top-outer", "red-top-inner"] {
+        assert!(!wave_alone_cannot_break(&[], &base_structure(id), "blue"), "{id}");
+    }
+}
+
+#[test]
+fn a_wave_breaks_the_base_when_one_of_its_champions_is_at_it() {
+    let champion = test_champion("blue-TOP", "blue", "TOP", "top", Vec2 { x: 0.8, y: 0.16 });
+    assert!(!wave_alone_cannot_break(std::slice::from_ref(&champion), &base_structure("red-nexus"), "blue"));
+    let mut dead = champion;
+    dead.alive = false;
+    assert!(wave_alone_cannot_break(&[dead], &base_structure("red-nexus"), "blue"));
 }
