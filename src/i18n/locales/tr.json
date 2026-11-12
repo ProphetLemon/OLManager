@@ -4479,5 +4479,41 @@
   },
   "patchNotes": {
     "empty": "Henüz sürüm notu yok."
+  },
+  "soloqDecay": {
+    "title": "SoloQ hareketsizlik LP kaybı",
+    "description": "SoloQ oynamayı bırakan oyuncular LP kaybeder, ancak Master 0 LP'nin altına inmez. Bu kayıttaki her oyuncu için geçerlidir.",
+    "stateOn": "Açık",
+    "stateOff": "Kapalı",
+    "intensity": "Şiddet",
+    "modes": {
+      "off": "Kapalı",
+      "soft": "Hafif",
+      "real": "Gerçekçi",
+      "harsh": "Sert"
+    },
+    "lossPerIdleDay": "Boş gün başına kayıp",
+    "gracePeriod": "Tolerans süresi",
+    "winBackPerDay": "SoloQ günü başına geri kazanım",
+    "lossValue": "−{{value}} LP",
+    "daysValue_one": "{{count}} gün",
+    "daysValue_other": "{{count}} gün",
+    "winBackValue": "+{{value}} LP",
+    "noSave": "Yüklü bir kayıt yok, bu yüzden şimdilik değiştirilemez. Yeni kariyerler Gerçekçi ile başlar.",
+    "loadFailed": "Bu kayıttan ayar okunamadı.",
+    "saveFailed": "Ayar kaydedilemedi. Tekrar dene.",
+    "previewTitle": "SoloQ oynamayan bir oyuncuya etkisi",
+    "previewOffHeadline": "Kayıp kapalı",
+    "previewOffDetail": "LP her gün antrenman planını izler, şimdiki gibi. Boştaki oyuncular LP'lerini korur.",
+    "previewHeadline_one": "{{count}} gün tolerans, sonra günde −{{rate}} LP",
+    "previewHeadline_other": "{{count}} gün tolerans, sonra günde −{{rate}} LP",
+    "previewFloorDetail": "{{start}} LP'li bir Grandmaster {{day}}. günde Master 0 LP'ye iner ve orada kalır. Bir SoloQ günü kaybı durdurur, sonra günde +{{rec}} LP geri kazandırır.",
+    "previewLossDetail": "{{days}} günün sonunda {{start}} LP'li bir Grandmaster {{lost}} LP kaybeder ve {{lp}} LP'de durur. Bir SoloQ günü kaybı durdurur, sonra günde +{{rec}} LP geri kazandırır.",
+    "previewLegend": "Kesikli çizgi: Grandmaster, 800 LP'den itibaren. Altında oyuncu Master olur.",
+    "previewAxisDay": "{{day}}. gün",
+    "previewChartOff": "SoloQ oynamayan {{start}} LP'li bir oyuncu {{days}} gün boyunca {{start}} LP'de kalır.",
+    "previewChartFloor": "SoloQ oynamayan {{start}} LP'li bir oyuncu {{count}} gün dayanır, sonra günde {{rate}} LP düşer ve {{day}}. günde 0 LP'ye ulaşır.",
+    "previewChartLoss": "SoloQ oynamayan {{start}} LP'li bir oyuncu {{count}} gün dayanır, sonra günde {{rate}} LP düşer ve {{days}}. günde {{lp}} LP'ye iner.",
+    "footnote": "Zihinsel Sıfırlanma odağındaki oyuncular dışında her antrenman günü bir SoloQ günü sayılır. Boşta olmak, takımının olmaması ya da Zihinsel Sıfırlanma'da olmak demektir (dinlenme gününde bile); boş günler önce tolerans süresini harcar, sonra LP'ye mal olur. Maç günleri ve sıradan dinlenme günleri hiçbir şeyi değiştirmez. Açıldığında herkese tam tolerans süresi verilir."
   }
 }

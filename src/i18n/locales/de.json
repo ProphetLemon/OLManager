@@ -4479,5 +4479,41 @@
   },
   "patchNotes": {
     "empty": "Noch keine Versionshinweise."
+  },
+  "soloqDecay": {
+    "title": "SoloQ-LP-Verlust bei Inaktivität",
+    "description": "Spieler, die kein SoloQ mehr spielen, verlieren LP, aber nie unter Master 0 LP. Gilt für jeden Spieler in diesem Spielstand.",
+    "stateOn": "An",
+    "stateOff": "Aus",
+    "intensity": "Intensität",
+    "modes": {
+      "off": "Aus",
+      "soft": "Mild",
+      "real": "Real",
+      "harsh": "Hart"
+    },
+    "lossPerIdleDay": "Verlust pro inaktivem Tag",
+    "gracePeriod": "Schonfrist",
+    "winBackPerDay": "Zurückgewinn pro SoloQ-Tag",
+    "lossValue": "−{{value}} LP",
+    "daysValue_one": "{{count}} Tag",
+    "daysValue_other": "{{count}} Tage",
+    "winBackValue": "+{{value}} LP",
+    "noSave": "Es ist kein Spielstand geladen, daher lässt sich noch nichts ändern. Neue Karrieren starten auf Real.",
+    "loadFailed": "Die Einstellung konnte aus diesem Spielstand nicht gelesen werden.",
+    "saveFailed": "Die Einstellung konnte nicht gespeichert werden. Versuche es erneut.",
+    "previewTitle": "Wirkung auf einen Spieler ohne SoloQ",
+    "previewOffHeadline": "Verlust ist aus",
+    "previewOffDetail": "Die LP folgen jeden Tag dem Trainingsplan, wie bisher. Inaktive Spieler behalten ihre LP.",
+    "previewHeadline_one": "{{count}} Tag Schonfrist, danach −{{rate}} LP pro Tag",
+    "previewHeadline_other": "{{count}} Tage Schonfrist, danach −{{rate}} LP pro Tag",
+    "previewFloorDetail": "Ein Grandmaster mit {{start}} LP erreicht Master 0 LP an Tag {{day}} und bleibt dort. Ein SoloQ-Tag stoppt den Verlust und bringt danach +{{rec}} LP pro Tag zurück.",
+    "previewLossDetail": "Nach {{days}} Tagen hat ein Grandmaster mit {{start}} LP {{lost}} LP verloren und steht bei {{lp}} LP. Ein SoloQ-Tag stoppt den Verlust und bringt danach +{{rec}} LP pro Tag zurück.",
+    "previewLegend": "Gestrichelte Linie: Grandmaster ab 800 LP. Darunter ist ein Spieler Master.",
+    "previewAxisDay": "Tag {{day}}",
+    "previewChartOff": "Ein Spieler mit {{start}} LP ohne SoloQ behält {{start}} LP über {{days}} Tage.",
+    "previewChartFloor": "Ein Spieler mit {{start}} LP ohne SoloQ hält {{count}} Tage, fällt dann {{rate}} LP pro Tag und erreicht 0 LP an Tag {{day}}.",
+    "previewChartLoss": "Ein Spieler mit {{start}} LP ohne SoloQ hält {{count}} Tage, fällt dann {{rate}} LP pro Tag auf {{lp}} LP an Tag {{days}}.",
+    "footnote": "Als SoloQ-Tag zählt jeder Trainingstag, außer der Spieler hat den Fokus Mental Reset. Inaktiv heißt kein Team oder Mental Reset, auch an einem Ruhetag; inaktive Tage verbrauchen zuerst die Schonfrist und kosten danach LP. Spieltage und gewöhnliche Ruhetage ändern nichts. Beim Einschalten bekommt jeder eine volle Schonfrist."
   }
 }

@@ -67,6 +67,8 @@ export const tauriAdapter: ApiClient = {
     setChampionTrainingTarget: (args) => invoke("set_player_champion_training_target", args),
     delegateChampionTraining: () => invoke("delegate_champion_training"),
     getSoloQStatuses: () => invoke("get_soloq_statuses"),
+    getSoloQDecaySettings: () => invoke("get_soloq_decay_settings"),
+    setSoloQDecayMode: (args) => invoke("set_soloq_decay_mode", args),
   },
 
   staff: {

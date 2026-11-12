@@ -4478,5 +4478,41 @@
   },
   "patchNotes": {
     "empty": "Ancora nessuna nota di rilascio."
+  },
+  "soloqDecay": {
+    "title": "Perdita di LP per inattività in SoloQ",
+    "description": "I giocatori che smettono di giocare in SoloQ perdono LP, mai sotto Master 0 LP. Vale per ogni giocatore di questo salvataggio.",
+    "stateOn": "Attiva",
+    "stateOff": "Disattiva",
+    "intensity": "Intensità",
+    "modes": {
+      "off": "Disattiva",
+      "soft": "Lieve",
+      "real": "Reale",
+      "harsh": "Dura"
+    },
+    "lossPerIdleDay": "Perdita per giorno di inattività",
+    "gracePeriod": "Periodo di tolleranza",
+    "winBackPerDay": "Recupero per giorno di SoloQ",
+    "lossValue": "−{{value}} LP",
+    "daysValue_one": "{{count}} giorno",
+    "daysValue_other": "{{count}} giorni",
+    "winBackValue": "+{{value}} LP",
+    "noSave": "Nessun salvataggio è caricato, quindi per ora non si può cambiare. Le nuove carriere partono da Reale.",
+    "loadFailed": "Impossibile leggere l'impostazione da questo salvataggio.",
+    "saveFailed": "Impossibile salvare l'impostazione. Riprova.",
+    "previewTitle": "Effetto su un giocatore senza SoloQ",
+    "previewOffHeadline": "La perdita è disattivata",
+    "previewOffDetail": "I LP seguono ogni giorno il piano di allenamento, come adesso. I giocatori inattivi tengono i loro LP.",
+    "previewHeadline_one": "{{count}} giorno di tolleranza, poi −{{rate}} LP al giorno",
+    "previewHeadline_other": "{{count}} giorni di tolleranza, poi −{{rate}} LP al giorno",
+    "previewFloorDetail": "Un Grandmaster da {{start}} LP arriva a Master 0 LP al giorno {{day}} e ci resta. Un giorno di SoloQ ferma la perdita, poi recupera +{{rec}} LP al giorno.",
+    "previewLossDetail": "Dopo {{days}} giorni un Grandmaster da {{start}} LP ha perso {{lost}} LP e si trova a {{lp}} LP. Un giorno di SoloQ ferma la perdita, poi recupera +{{rec}} LP al giorno.",
+    "previewLegend": "Linea tratteggiata: Grandmaster, da 800 LP. Sotto, il giocatore è Master.",
+    "previewAxisDay": "Giorno {{day}}",
+    "previewChartOff": "Un giocatore da {{start}} LP senza SoloQ mantiene {{start}} LP per {{days}} giorni.",
+    "previewChartFloor": "Un giocatore da {{start}} LP senza SoloQ regge {{count}} giorni, poi scende di {{rate}} LP al giorno e arriva a 0 LP al giorno {{day}}.",
+    "previewChartLoss": "Un giocatore da {{start}} LP senza SoloQ regge {{count}} giorni, poi scende di {{rate}} LP al giorno fino a {{lp}} LP al giorno {{days}}.",
+    "footnote": "Conta come giorno di SoloQ ogni giorno di allenamento, a meno che il giocatore non abbia il focus Reset mentale. Inattivo vuol dire senza squadra o in Reset mentale, anche in un giorno di riposo; i giorni inattivi consumano prima il periodo di tolleranza, poi costano LP. I giorni di partita e i normali giorni di riposo non cambiano nulla. Attivandola, tutti ricevono un periodo di tolleranza completo."
   }
 }

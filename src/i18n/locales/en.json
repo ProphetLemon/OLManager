@@ -4513,5 +4513,41 @@
   },
   "patchNotes": {
     "empty": "No release notes yet."
+  },
+  "soloqDecay": {
+    "title": "SoloQ inactivity decay",
+    "description": "Players who stop playing SoloQ lose LP, never below Master 0 LP. Applies to every player in this save.",
+    "stateOn": "On",
+    "stateOff": "Off",
+    "intensity": "Intensity",
+    "modes": {
+      "off": "Off",
+      "soft": "Soft",
+      "real": "Real",
+      "harsh": "Harsh"
+    },
+    "lossPerIdleDay": "Loss per idle day",
+    "gracePeriod": "Grace period",
+    "winBackPerDay": "Win back per SoloQ day",
+    "lossValue": "−{{value}} LP",
+    "daysValue_one": "{{count}} day",
+    "daysValue_other": "{{count}} days",
+    "winBackValue": "+{{value}} LP",
+    "noSave": "No save is loaded, so this cannot change yet. New careers start on Real.",
+    "loadFailed": "The decay setting could not be read from this save.",
+    "saveFailed": "The decay setting could not be saved. Try again.",
+    "previewTitle": "Effect on a player with no SoloQ",
+    "previewOffHeadline": "Decay is off",
+    "previewOffDetail": "LP follows the training plan every day, as it does today. Idle players keep their LP.",
+    "previewHeadline_one": "Grace for {{count}} day, then −{{rate}} LP a day",
+    "previewHeadline_other": "Grace for {{count}} days, then −{{rate}} LP a day",
+    "previewFloorDetail": "A {{start}} LP Grandmaster reaches Master 0 LP on day {{day}} and stays there. One SoloQ day stops the loss, then wins back +{{rec}} LP a day.",
+    "previewLossDetail": "After {{days}} days a {{start}} LP Grandmaster has lost {{lost}} LP and sits at {{lp}} LP. One SoloQ day stops the loss, then wins back +{{rec}} LP a day.",
+    "previewLegend": "Dashed line: Grandmaster, from 800 LP. Below it a player is Master.",
+    "previewAxisDay": "Day {{day}}",
+    "previewChartOff": "A {{start}} LP player with no SoloQ keeps {{start}} LP for {{days}} days.",
+    "previewChartFloor": "A {{start}} LP player with no SoloQ holds for {{count}} days, then falls {{rate}} LP a day and reaches 0 LP on day {{day}}.",
+    "previewChartLoss": "A {{start}} LP player with no SoloQ holds for {{count}} days, then falls {{rate}} LP a day to {{lp}} LP on day {{days}}.",
+    "footnote": "Counts as a SoloQ day: any training day, unless the player is on the Mental Reset focus. Idle means no team, or Mental Reset, even on a rest day; idle days use the grace period first, then cost LP. Match days and ordinary rest days change nothing. Turning this on gives everyone a full grace period."
   }
 }

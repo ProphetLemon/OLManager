@@ -1,5 +1,5 @@
 import { getApiClientSync } from "../api/client";
-import type { SoloQStatus } from "../api/types";
+import type { SoloQDecayMode, SoloQDecaySettings, SoloQStatus } from "../api/types";
 import type { GameStateData } from "../store/gameStore";
 
 export async function startPotentialResearch(
@@ -28,4 +28,12 @@ export async function getSoloQStatuses(): Promise<SoloQStatus[]> {
   return getApiClientSync().players.getSoloQStatuses();
 }
 
-export type { SoloQStatus };
+export async function getSoloQDecaySettings(): Promise<SoloQDecaySettings> {
+  return getApiClientSync().players.getSoloQDecaySettings();
+}
+
+export async function setSoloQDecayMode(mode: SoloQDecayMode): Promise<SoloQDecaySettings> {
+  return getApiClientSync().players.setSoloQDecayMode({ mode });
+}
+
+export type { SoloQDecayMode, SoloQDecaySettings, SoloQStatus };

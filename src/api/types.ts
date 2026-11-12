@@ -108,11 +108,28 @@ export interface SoloQStatus {
   multiplier: number
 }
 
+/** Per-save SoloQ inactivity decay (contract with `set_soloq_decay_mode`). */
+export type SoloQDecayMode = "Off" | "Soft" | "Real" | "Harsh"
+
+export interface SoloQDecayPreset {
+  mode: SoloQDecayMode
+  decay_per_idle_day: number
+  bank_days: number
+  recovery_per_played_day: number
+}
+
+export interface SoloQDecaySettings {
+  mode: SoloQDecayMode
+  presets: SoloQDecayPreset[]
+}
+
 export interface PlayerRepository {
   startPotentialResearch(args: { playerId: string }): Promise<GameStateData>
   setChampionTrainingTarget(args: { playerId: string; priorityIndex: number; championId: string }): Promise<GameStateData>
   delegateChampionTraining(): Promise<GameStateData>
   getSoloQStatuses(): Promise<SoloQStatus[]>
+  getSoloQDecaySettings(): Promise<SoloQDecaySettings>
+  setSoloQDecayMode(args: { mode: SoloQDecayMode }): Promise<SoloQDecaySettings>
 }
 
 export interface StaffRepository {

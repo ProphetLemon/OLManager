@@ -4479,5 +4479,41 @@
   },
   "patchNotes": {
     "empty": "Pas encore de notes de version."
+  },
+  "soloqDecay": {
+    "title": "Perte de LP par inactivité en SoloQ",
+    "description": "Les joueurs qui arrêtent de jouer en SoloQ perdent des LP, jamais en dessous de Master 0 LP. S'applique à tous les joueurs de cette sauvegarde.",
+    "stateOn": "Activée",
+    "stateOff": "Désactivée",
+    "intensity": "Intensité",
+    "modes": {
+      "off": "Désactivée",
+      "soft": "Douce",
+      "real": "Réelle",
+      "harsh": "Sévère"
+    },
+    "lossPerIdleDay": "Perte par jour d'inactivité",
+    "gracePeriod": "Période de grâce",
+    "winBackPerDay": "Récupération par jour de SoloQ",
+    "lossValue": "−{{value}} LP",
+    "daysValue_one": "{{count}} jour",
+    "daysValue_other": "{{count}} jours",
+    "winBackValue": "+{{value}} LP",
+    "noSave": "Aucune sauvegarde n'est chargée, donc rien ne peut changer pour l'instant. Les nouvelles carrières démarrent sur Réelle.",
+    "loadFailed": "Impossible de lire ce réglage dans cette sauvegarde.",
+    "saveFailed": "Impossible d'enregistrer le réglage. Réessaie.",
+    "previewTitle": "Effet sur un joueur sans SoloQ",
+    "previewOffHeadline": "La perte est désactivée",
+    "previewOffDetail": "Les LP suivent le plan d'entraînement chaque jour, comme aujourd'hui. Les joueurs inactifs gardent leurs LP.",
+    "previewHeadline_one": "Grâce de {{count}} jour, puis −{{rate}} LP par jour",
+    "previewHeadline_other": "Grâce de {{count}} jours, puis −{{rate}} LP par jour",
+    "previewFloorDetail": "Un Grandmaster à {{start}} LP atteint Master 0 LP au jour {{day}} et y reste. Un jour de SoloQ arrête la perte, puis récupère +{{rec}} LP par jour.",
+    "previewLossDetail": "Après {{days}} jours, un Grandmaster à {{start}} LP a perdu {{lost}} LP et se retrouve à {{lp}} LP. Un jour de SoloQ arrête la perte, puis récupère +{{rec}} LP par jour.",
+    "previewLegend": "Ligne pointillée : Grandmaster, à partir de 800 LP. En dessous, le joueur est Master.",
+    "previewAxisDay": "Jour {{day}}",
+    "previewChartOff": "Un joueur à {{start}} LP sans SoloQ garde {{start}} LP pendant {{days}} jours.",
+    "previewChartFloor": "Un joueur à {{start}} LP sans SoloQ tient {{count}} jours, puis perd {{rate}} LP par jour et atteint 0 LP au jour {{day}}.",
+    "previewChartLoss": "Un joueur à {{start}} LP sans SoloQ tient {{count}} jours, puis perd {{rate}} LP par jour jusqu'à {{lp}} LP au jour {{days}}.",
+    "footnote": "Compte comme jour de SoloQ tout jour d'entraînement, sauf si le joueur suit le focus Reset mental. Inactif signifie sans équipe ou en Reset mental, même un jour de repos ; les jours d'inactivité consomment d'abord la période de grâce, puis coûtent des LP. Les jours de match et les jours de repos ordinaires ne changent rien. L'activer donne à tout le monde une période de grâce complète."
   }
 }
