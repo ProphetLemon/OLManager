@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -122,12 +122,22 @@ function literalKeys(file: string): string[] {
   return [...source.matchAll(/\bt\(\s*["`]([A-Za-z0-9_.]+)["`]/g)].map((match) => match[1]);
 }
 
+/** Every component file of the Scrims desk, so a new one is covered without being listed. */
+function scrimDeskFiles(): string[] {
+  return readdirSync(resolve(__dirname, "../../ui-v2/dashboard/tabs/scrims"))
+    .filter((name) => name.endsWith(".tsx") && !name.endsWith(".test.tsx"))
+    .map((name) => `scrims/${name}`);
+}
+
 describe("Scrims tab keys", () => {
   // Words that are the same in these languages (cognates and loanwords), not a missed translation.
   const sameAsEnglishOk: Record<string, readonly string[]> = {
     "scrims.delegation": ["de"],
     "scrims.manualControl": ["es", "pt", "pt-BR"],
     "scrims.manualLabel": ["es", "pt", "pt-BR"],
+    "scrims.block": ["de"],
+    "scrims.impactLabel": ["fr"],
+    "scrims.reportFocus": ["it"],
     "scrims.tags.fatigueMinus": ["fr"],
     "scrims.tags.fatiguePlus": ["fr"],
     "scrims.tags.mentalMinus": ["de", "es", "fr", "pt", "pt-BR"],
@@ -148,10 +158,19 @@ describe("Scrims tab keys", () => {
       .flat()
       .map((tag) => `scrims.tags.${tag}`);
     const keys = [
-      ...new Set([...literalKeys("ScrimsTabV2.tsx"), ...literalKeys("ScrimPlanningCardV2.tsx"), ...tagKeys]),
-    ].filter((key) => lookup(LOCALES.en, key) !== undefined);
-    expect(keys.length).toBeGreaterThan(60);
+      ...new Set([
+        ...["ScrimsTabV2.tsx", "ScrimPlanningCardV2.tsx", ...scrimDeskFiles()].flatMap(literalKeys),
+        ...tagKeys,
+      ]),
+    ];
+    // A key a component asks for must exist: the lookup below would otherwise skip it silently.
+    expect(keys.filter((key) => lookup(LOCALES.en, key) === undefined)).toEqual([]);
+    expect(keys.length).toBeGreaterThan(90);
     expectTranslated(keys, sameAsEnglishOk);
+  });
+
+  it("translates the slot statuses the strip and the plans table build from the game's status", () => {
+    expectTranslated(["open", "locked", "played", "reviewed", "cancelled"].map((status) => `scrims.slotStatus.${status}`));
   });
 
   it("translates the risk levels, the focus impact texts and the other keys the tab builds or added", () => {

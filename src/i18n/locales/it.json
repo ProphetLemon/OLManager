@@ -3863,7 +3863,34 @@
     "weeklyFailureIssue": "Problema ricorrente: {{issue}}",
     "weeklyGainExecution": "Guadagno: esecuzione migliore",
     "weeklyGainExposure": "Guadagno: esposizione a stili diversi",
-    "weeklyGainSolid": "Guadagno: qualità solida degli scrim"
+    "weeklyGainSolid": "Guadagno: qualità solida degli scrim",
+    "thisWeek": "Questa settimana",
+    "slotStatusKey": "Legenda degli stati degli slot",
+    "slotStatus": {
+      "open": "Aperto",
+      "locked": "Bloccato",
+      "played": "Giocato",
+      "reviewed": "Rivisto",
+      "cancelled": "Annullato"
+    },
+    "planCleared": "Piano cancellato",
+    "notPlanned": "Non pianificato",
+    "dayBlocks": "Blocchi: {{day}}",
+    "opponentPlans": "Piani avversari",
+    "opponentPlansBySlot": "Piani avversari per slot",
+    "noOpponentSet": "Nessun avversario scelto",
+    "finalizeHint": "Confermando, l'impostazione della settimana viene bloccata. Si riapre lunedì prossimo.",
+    "nothingToDecide": "Per ora non c'è nulla da decidere. {{slot}} si gioca contro {{opponent}} quando prosegui.",
+    "recapSummary": "{{objective}}, {{count}} blocchi",
+    "impactLabel": "Impatto",
+    "weekGauges": "Indicatori della settimana",
+    "noBlocksYet": "Nessun blocco giocato finora",
+    "repNote": "Ogni blocco annullato costa 5.",
+    "tagBenefit": "vantaggio",
+    "tagCost": "costo",
+    "block": "Blocco",
+    "blockOfTwo": "{{label}} su 2",
+    "weekContext": "Contesto della settimana"
   },
   "content": {
     "lol": {
