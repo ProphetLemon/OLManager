@@ -132,3 +132,21 @@ blocks a new game; a cache without a valid signature is ignored in favour of the
 (URL or local path) goes through the same verification against the embedded key, so a local override needs a `.sig` too.
 The crypto is `ed25519-dalek` 2.x (BSD-3-Clause, RustCrypto/dalek-cryptography, the de-facto Rust Ed25519 crate; verification
 uses `verify_strict`, default features off).
+
+## Measuring the active-pros pool (`pool-scope.mjs`)
+
+Read-only maintainer script that sizes the pool of non-retired people with a roster entry in a league tournament in the
+last three years, before any overlay change. It logs in with the bot (`scripts/world/lib/bot-credentials.mjs`), caches every
+response in `scripts/world/.cache/pool-scope/` and writes `scripts/world/out/pool-scope/report.{md,json}` (both ignored by git).
+
+```bash
+node scripts/world/pool-scope.mjs --data-dir <path to data/> [--since 2023-11-12] [--offline] [--probe Send0o]
+```
+
+Three nested tournament filters (pure predicate and Cargo clauses in `lib/pool-scope.mjs`), all excluding showmatches and
+cup-qualifier level tournaments, and all limited to leagues (`Tournaments.League`) with at least three tournaments in the window:
+`strict` (official: `Tournaments.IsOfficial`, or a `Leagues` row that is an official Primary/Secondary league), `recommended`
+(strict plus the non-qualifier tournaments of seasonal leagues, which are the unflagged second divisions) and `loose` (every
+non-qualifier tournament of such a league). People already in the game are matched with `lib/match.mjs` and the reviewed
+`id-map.json`; people whose current team is in `team-map.json` are left to the roster overlay. Tests: `src/lib/world/pool-scope.test.ts`
+with recorded rows in `scripts/world/fixtures/pool-scope/`.
