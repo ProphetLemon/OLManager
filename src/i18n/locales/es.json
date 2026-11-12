@@ -4448,10 +4448,12 @@
   },
   "community": {
     "title": "Comunidad",
-    "blurb": "Open League Manager es un proyecto open source y gratuito, hecho por y para la comunidad. Únete, propón ideas o contribuye con código: cualquier ayuda suma.",
+    "blurb": "Open League Manager · Limón Edition es un fork gratuito y de código abierto de Open League Manager. ¿Has encontrado un problema? Díselo a la persona que te pasó el juego y adjunta el ZIP que guarda el botón «{{bugButton}}».",
     "mentionsTitle": "Menciones",
     "mentionsSubtitle": "Gracias a quienes más han apoyado el proyecto",
-    "mentionsEmpty": "¿Quieres aparecer aquí? Únete al Discord y contribuye."
+    "links": {
+      "downloads": "Descargas"
+    }
   },
   "patchNotes": {
     "empty": "Todavía no hay notas de versión."
