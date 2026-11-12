@@ -348,13 +348,20 @@ pub(super) fn advance_soloq_day(game: &mut Game) {
         player.soloq_lp = shown;
 
         if followed.contains(player.id.as_str()) {
-            let focus = player.team_id.as_deref().and_then(|team_id| {
-                player.training_focus.clone().or_else(|| {
-                    teams_by_id
-                        .get(team_id)
-                        .map(|team| team.training_focus.clone())
-                })
-            });
+            let focus =
+                player
+                    .team_id
+                    .as_deref()
+                    .and_then(|team_id| match teams_by_id.get(team_id) {
+                        Some(team) => Some(
+                            team.effective_training_focus(
+                                &player.id,
+                                player.training_focus.as_ref(),
+                            )
+                            .clone(),
+                        ),
+                        None => player.training_focus.clone(),
+                    });
             soloq_history
                 .players
                 .entry(player.id.clone())

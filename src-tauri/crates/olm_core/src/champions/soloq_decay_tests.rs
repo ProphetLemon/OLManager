@@ -327,6 +327,47 @@ fn match_days_and_rest_days_should_leave_the_bank_untouched() {
     assert_eq!(find(&game, STARTER).soloq_bank_spent, 0);
 }
 
+fn put_in_group(game: &mut Game, id: &str, focus: TrainingFocus) {
+    game.teams[0].training_groups = vec![crate::domain::team::TrainingGroup {
+        id: "g1".to_string(),
+        name: "Group".to_string(),
+        focus,
+        player_ids: vec![id.to_string()],
+    }];
+}
+
+#[test]
+fn a_player_in_a_mental_reset_group_should_be_idle_and_spend_the_bank() {
+    let mut game = game(SoloQDecayMode::Real);
+    put_in_group(&mut game, STARTER, TrainingFocus::MentalResetRecovery);
+
+    run_days(&mut game, 3); // Mon-Wed, all training days.
+
+    assert_eq!(find(&game, STARTER).soloq_bank_spent, 3);
+}
+
+#[test]
+fn a_personal_focus_should_beat_the_group_focus_for_soloq() {
+    let mut game = game(SoloQDecayMode::Real);
+    put_in_group(&mut game, STARTER, TrainingFocus::MentalResetRecovery);
+    set_focus(&mut game, STARTER, Some(TrainingFocus::Scrims));
+
+    run_days(&mut game, 3);
+
+    assert_eq!(find(&game, STARTER).soloq_bank_spent, 0);
+}
+
+#[test]
+fn the_history_should_record_the_group_focus_of_a_grouped_player() {
+    let mut game = game(SoloQDecayMode::Real);
+    put_in_group(&mut game, STARTER, TrainingFocus::MentalResetRecovery);
+    run_days(&mut game, 1);
+
+    let day = history_of(&game, STARTER).days.back().unwrap().clone();
+
+    assert_eq!(day.focus, Some(TrainingFocus::MentalResetRecovery));
+}
+
 #[test]
 fn a_free_agent_should_be_idle_and_decay_after_the_bank() {
     let mut game = game(SoloQDecayMode::Real);

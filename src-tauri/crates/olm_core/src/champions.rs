@@ -309,10 +309,13 @@ fn soloq_grind_quality_with_team(
     player: &crate::domain::player::Player,
     team: Option<&crate::domain::team::Team>,
 ) -> f64 {
-    let focus = player
-        .training_focus
-        .clone()
-        .or_else(|| team.map(|team| team.training_focus.clone()));
+    let focus = match team {
+        Some(team) => Some(
+            team.effective_training_focus(&player.id, player.training_focus.as_ref())
+                .clone(),
+        ),
+        None => player.training_focus.clone(),
+    };
     let intensity = team
         .map(|team| team.training_intensity.clone())
         .unwrap_or_default();

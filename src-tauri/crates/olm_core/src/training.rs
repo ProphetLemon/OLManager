@@ -43,6 +43,7 @@ fn compute_coaching_bonus(game: &Game, team_id: &str, _focus: &TrainingFocus) ->
 struct TeamTrainingPlan {
     team_id: String,
     default_focus: TrainingFocus,
+    training_groups: Vec<crate::domain::team::TrainingGroup>,
     intensity: TrainingIntensity,
     schedule: TrainingSchedule,
     bonus: TeamCoachingBonus,
@@ -888,6 +889,7 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
             TeamTrainingPlan {
                 team_id: t.id.clone(),
                 default_focus: t.training_focus.clone(),
+                training_groups: t.training_groups.clone(),
                 intensity: t.training_intensity.clone(),
                 schedule: t.training_schedule.clone(),
                 bonus,
@@ -952,11 +954,13 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
                     || player.condition >= crate::ai_rotation::TRAINING_REST_BELOW);
 
             // Determine this player's effective focus:
-            // player override > team default
-            let player_focus = player
-                .training_focus
-                .as_ref()
-                .unwrap_or(&plan.default_focus);
+            // player override > training group > team default
+            let player_focus = crate::domain::team::resolve_training_focus(
+                player.training_focus.as_ref(),
+                &plan.training_groups,
+                &plan.default_focus,
+                &player.id,
+            );
 
             // SoloQ decay reads how the plan settled this day: a recovery plan keeps the
             // player off the ladder, a rest day is neutral, any other plan is play.
