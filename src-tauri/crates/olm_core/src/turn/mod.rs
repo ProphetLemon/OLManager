@@ -134,6 +134,7 @@ where
     crate::ai_rotation::rotate_ai_lineups(game);
     game.clock.advance_days(1);
     game.day_phase = crate::game::DayPhase::Morning;
+    crate::scrim_week_notice::push_scrim_week_open_message(game);
     crate::season_context::refresh_game_context(game);
     crate::residency::refresh_import_flags(game);
 }
@@ -182,6 +183,7 @@ pub fn finish_live_match_day(game: &mut Game) {
     crate::ai_rotation::rotate_ai_lineups(game);
     game.clock.advance_days(1);
     game.day_phase = crate::game::DayPhase::Morning;
+    crate::scrim_week_notice::push_scrim_week_open_message(game);
     crate::season_context::refresh_game_context(game);
     crate::residency::refresh_import_flags(game);
 }

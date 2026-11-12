@@ -284,6 +284,7 @@
       "exhausted": "{{count}} jogador(es) em condição crítica (<25%)",
       "incompleteStartingXi": "A equipa titular está incompleta — define a tua equipa",
       "urgentUnread": "{{count}} mensagem(ns) urgente(s) por ler",
+      "scrimWeekOpen": "Os scrims desta semana ainda não estão planeados. Prepara-os antes do primeiro dia de scrims.",
       "matchTodayStartingXi": "Jogo hoje! Define a tua equipa titular",
       "financeCrisis": "Finanças críticas — saldo {{balance}}, margem de {{weeks}} semana(s)",
       "financeRunway": "A margem de caixa desce para {{count}} semana(s)",
@@ -3396,6 +3397,11 @@
       "potentialReport": {
         "subject": "Relatório de potencial concluído",
         "body": "A equipe de scouting concluiu a avaliação de {{player}}. Nova estimativa de potencial: {{potential}}."
+      },
+      "scrimWeekOpen": {
+        "subject": "Já podes planear os scrims da semana",
+        "body": "O planeamento dos scrims desta semana está aberto. Escolhe o objetivo e os adversários antes do primeiro dia de scrims.",
+        "action": "Planear scrims"
       },
       "scrimWeekly": {
         "subject": "Relatório semanal de scrims",

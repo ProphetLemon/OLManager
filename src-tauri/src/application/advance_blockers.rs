@@ -5,7 +5,8 @@
 //! would not raise (or miss one it would).
 
 use chrono::Datelike;
-use olm_core::domain::league::{Fixture, FixtureStatus, MatchType};
+use olm_core::domain::league::FixtureStatus;
+use olm_core::scrim_week_notice::user_club_rests_this_week;
 use olm_core::domain::team::{Team, TrainingSchedule};
 use olm_core::game::{DayPhase, Game};
 
@@ -115,50 +116,6 @@ fn first_scrim_weekday_for_team(team: &Team) -> u8 {
         _ => vec![2_u8, 2_u8, 3_u8, 3_u8, 4_u8, 4_u8],
     };
     all.into_iter().min().unwrap_or(2)
-}
-
-/// Whether the user's club rests this week: the league plays a regular-season
-/// matchday this week that the club does not play at all, and the club has no
-/// fixture of its own dated this week (Monday to Sunday, any type or status).
-///
-/// An odd-sized league gives each club one bye per split. In that week the
-/// rest of the league plays and the club has no match to prepare, so the
-/// setup stop is skipped. Pre-season, the gaps between splits and a playoff
-/// exit are not byes: the stop still applies there, as it did before
-/// odd-sized leagues existed, because scrims also drive training gains.
-fn user_club_rests_this_week(game: &Game) -> bool {
-    let (Some(user_team_id), Some(league)) = (game.manager.team_id.as_ref(), game.active_league())
-    else {
-        return false;
-    };
-    let today = game.clock.current_date.date_naive();
-    let week_start =
-        today - chrono::Duration::days(i64::from(today.weekday().num_days_from_monday()));
-    let week_end = week_start + chrono::Duration::days(6);
-    let in_this_week = |fixture: &Fixture| {
-        chrono::NaiveDate::parse_from_str(&fixture.date, "%Y-%m-%d")
-            .is_ok_and(|date| date >= week_start && date <= week_end)
-    };
-    let involves_user = |fixture: &Fixture| {
-        fixture.home_team_id == *user_team_id || fixture.away_team_id == *user_team_id
-    };
-
-    if league
-        .fixtures
-        .iter()
-        .any(|fixture| in_this_week(fixture) && involves_user(fixture))
-    {
-        return false;
-    }
-    league.fixtures.iter().any(|fixture| {
-        fixture.match_type == MatchType::League
-            && in_this_week(fixture)
-            && !league.fixtures.iter().any(|other| {
-                other.match_type == MatchType::League
-                    && other.matchday == fixture.matchday
-                    && involves_user(other)
-            })
-    })
 }
 
 fn has_no_weekly_scrim_setup(game: &Game) -> bool {

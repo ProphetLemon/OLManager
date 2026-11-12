@@ -315,6 +315,7 @@
       "exhausted": "{{count}} player(s) in critical condition (<25%)",
       "incompleteStartingXi": "Starting Five incomplete — set your lineup",
       "urgentUnread": "{{count}} urgent message(s) unread",
+      "scrimWeekOpen": "This week's scrims are not planned yet. Set them up before the first scrim day.",
       "matchTodayStartingXi": "Match today! Set your starting five",
       "financeCrisis": "Finances critical — balance {{balance}}, runway {{weeks}} week(s)",
       "financeRunway": "Cash runway down to {{count}} week(s)",
@@ -3615,6 +3616,11 @@
       "potentialReport": {
         "subject": "Potential report completed",
         "body": "Scouting finished evaluating {{player}}. New potential estimate: {{potential}}."
+      },
+      "scrimWeekOpen": {
+        "subject": "Scrims can be planned this week",
+        "body": "Planning for this week's scrims is open. Pick the objective and the opponents before the first scrim day.",
+        "action": "Plan scrims"
       },
       "scrimWeekly": {
         "subject": "Weekly Scrim Staff Report",

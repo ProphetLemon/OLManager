@@ -121,6 +121,7 @@
       "exhausted": "{{count}} giocatore/i in condizioni critiche (<25%)",
       "incompleteStartingXi": "Cinque titolare incompleto — imposta la tua formazione",
       "urgentUnread": "{{count}} messaggio/i urgente/i non letto/i",
+      "scrimWeekOpen": "Gli scrim di questa settimana non sono ancora pianificati. Preparali prima del primo giorno di scrim.",
       "matchTodayStartingXi": "C'è partita oggi! Imposta il tuo Cinque titolare",
       "financeCrisis": "Finanze critiche — saldo {{balance}}, autonomia di {{weeks}} settimana/e",
       "financeRunway": "L’autonomia di cassa scende a {{count}} settimana/e",
@@ -3447,6 +3448,11 @@
       "potentialReport": {
         "subject": "Potential report completed",
         "body": "Scouting finished evaluating {{player}}. New potential estimate: {{potential}}."
+      },
+      "scrimWeekOpen": {
+        "subject": "Gli scrim della settimana si possono pianificare",
+        "body": "La pianificazione degli scrim di questa settimana è aperta. Scegli l'obiettivo e gli avversari prima del primo giorno di scrim.",
+        "action": "Pianifica gli scrim"
       },
       "scrimWeekly": {
         "subject": "Report settimanale dello staff scrim",
