@@ -75,6 +75,8 @@ struct Played {
     team_gold_per_min: f64,
     role_share: Vec<(String, f64)>,
     items_per_champion: f64,
+    /// Kills of the winner and of the loser; `None` when the match reached the step limit.
+    winner_loser_kills: Option<(i64, i64)>,
 }
 
 fn play(n: usize, team_a: Side, team_b: Side, ids: &[String]) -> Played {
@@ -118,7 +120,14 @@ fn play(n: usize, team_a: Side, team_b: Side, ids: &[String]) -> Played {
     let (blue_total, red_total) = (team_total("blue"), team_total("red"));
     let minutes = state.time_sec / 60.0;
     let a_team = if a_is_blue { "blue" } else { "red" };
+    let (blue_kills, red_kills) = (state.stats.blue.kills as i64, state.stats.red.kills as i64);
+    let winner_loser_kills = match state.winner.as_deref() {
+        Some("blue") => Some((blue_kills, red_kills)),
+        Some("red") => Some((red_kills, blue_kills)),
+        _ => None,
+    };
     Played {
+        winner_loser_kills,
         a_won: state.winner.as_deref() == Some(a_team),
         minutes,
         kills: (state.stats.blue.kills + state.stats.red.kills) as f64,
@@ -170,6 +179,21 @@ fn measure_real_lineups() {
     println!("real lineups, {} matches, pair {pair}, first seed {first}", played.len());
     println!("minutes {:.2}", mean(&|p| p.minutes));
     println!("kills {:.2}", mean(&|p| p.kills));
+    let mut lengths: Vec<f64> = played.iter().map(|p| p.minutes).collect();
+    lengths.sort_by(f64::total_cmp);
+    let pick = |q: f64| lengths[((lengths.len() - 1) as f64 * q).round() as usize];
+    println!("minutes p10 {:.1} p50 {:.1} p90 {:.1}", pick(0.1), pick(0.5), pick(0.9));
+    println!(
+        "matches of 50 minutes or more {}",
+        lengths.iter().filter(|minutes| **minutes >= 50.0).count()
+    );
+    let decided: Vec<(i64, i64)> = played.iter().filter_map(|p| p.winner_loser_kills).collect();
+    println!("undecided at the step limit {}", played.len() - decided.len());
+    println!(
+        "lost with a lead of 20 or more kills {} of {} decided",
+        decided.iter().filter(|(winner, loser)| loser - winner >= 20).count(),
+        decided.len()
+    );
     println!("team gold per minute {:.1}", mean(&|p| p.team_gold_per_min));
     println!("items per champion at the end {:.2}", mean(&|p| p.items_per_champion));
     println!(
