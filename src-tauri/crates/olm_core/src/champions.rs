@@ -407,13 +407,24 @@ fn refresh_soloq_lp(game: &mut Game) {
     }
 }
 
-fn soloq_points_for_player(game: &Game, player: &crate::domain::player::Player) -> f64 {
-    let day_index = days_between(game.clock.start_date, game.clock.current_date);
-    soloq_points_at(game, player, day_index)
+fn soloq_lp_for_player(game: &Game, player: &crate::domain::player::Player) -> f64 {
+    soloq_lp_with_mastery_signal(game, player, mastery_signal_for_player(game, &player.id))
 }
 
-fn soloq_lp_for_player(game: &Game, player: &crate::domain::player::Player) -> f64 {
-    let formula_lp = (soloq_points_for_player(game, player) - SOLOQ_POINTS_BASELINE).max(0.0);
+/// [`soloq_lp_for_player`] with the player's mastery signal already resolved.
+fn soloq_lp_with_mastery_signal(
+    game: &Game,
+    player: &crate::domain::player::Player,
+    mastery_signal: f64,
+) -> f64 {
+    let day_index = days_between(game.clock.start_date, game.clock.current_date);
+    let points = soloq_points_from(
+        player,
+        mastery_signal,
+        soloq_grind_quality(game, player),
+        day_index,
+    );
+    let formula_lp = (points - SOLOQ_POINTS_BASELINE).max(0.0);
     soloq_decay::displayed_lp(game.soloq_decay_mode, player, formula_lp)
 }
 
@@ -732,6 +743,92 @@ fn upsert_mastery(game: &mut Game, player_id: &str, champion_id: &str, value: u8
     });
 }
 
+/// Where each `(player, champion)` mastery sits in `game.champion_masteries`, so a bulk
+/// seed can upsert in O(1) instead of scanning the table per entry.
+///
+/// Keys use the same comparison as [`upsert_mastery`] (player id as is, champion id
+/// through [`normalize_key`]). When the table already holds a key twice the first entry
+/// wins, as it does for `Iterator::find`.
+struct MasteryIndex {
+    today: String,
+    positions: HashMap<(String, String), usize>,
+    /// Table positions of each player's entries.
+    by_player: HashMap<String, Vec<usize>>,
+}
+
+impl MasteryIndex {
+    fn new(game: &Game) -> Self {
+        let mut positions = HashMap::with_capacity(game.champion_masteries.len());
+        let mut by_player: HashMap<String, Vec<usize>> = HashMap::new();
+        for (position, entry) in game.champion_masteries.iter().enumerate() {
+            positions
+                .entry((entry.player_id.clone(), normalize_key(&entry.champion_id)))
+                .or_insert(position);
+            match by_player.get_mut(&entry.player_id) {
+                Some(rows) => rows.push(position),
+                None => {
+                    by_player.insert(entry.player_id.clone(), vec![position]);
+                }
+            }
+        }
+        Self {
+            today: today_str(game),
+            positions,
+            by_player,
+        }
+    }
+
+    /// Same value as [`mastery_for_player_champion`] on the table this index was built
+    /// from, provided every later change to the table goes through [`Self::upsert`].
+    fn current(&self, game: &Game, player_id: &str, champion_id: &str) -> u8 {
+        self.positions
+            .get(&(player_id.to_string(), normalize_key(champion_id)))
+            .map_or(MIN_MASTERY, |&position| {
+                game.champion_masteries[position].mastery
+            })
+    }
+
+    /// Same value as `mastery_signal_for_player` on the table this index was built from,
+    /// provided every later change to the table goes through [`Self::upsert`].
+    fn mastery_signal(&self, game: &Game, player_id: &str) -> f64 {
+        let mut values: Vec<u8> = self.by_player.get(player_id).map_or_else(Vec::new, |rows| {
+            rows.iter()
+                .map(|&position| game.champion_masteries[position].mastery)
+                .collect()
+        });
+        values.sort_by_key(|value| std::cmp::Reverse(*value));
+        mastery_signal_from_top(&values[..values.len().min(3)])
+    }
+
+    /// Same effect as [`upsert_mastery`] on the table this index was built from, provided
+    /// every later change to the table goes through this method.
+    fn upsert(&mut self, game: &mut Game, player_id: &str, champion_id: &str, value: u8) {
+        let value = value.clamp(MIN_MASTERY, MASTERY_CAP);
+        let key = (player_id.to_string(), normalize_key(champion_id));
+        if let Some(&position) = self.positions.get(&key) {
+            let existing = &mut game.champion_masteries[position];
+            existing.mastery = value;
+            existing.last_active_on = self.today.clone();
+            return;
+        }
+
+        let position = game.champion_masteries.len();
+        self.positions.insert(key, position);
+        match self.by_player.get_mut(player_id) {
+            Some(rows) => rows.push(position),
+            None => {
+                self.by_player.insert(player_id.to_string(), vec![position]);
+            }
+        }
+        game.champion_masteries.push(ChampionMasteryEntry {
+            player_id: player_id.to_string(),
+            champion_id: champion_id.to_string(),
+            mastery: value,
+            last_active_on: self.today.clone(),
+        });
+    }
+}
+
 pub fn bootstrap_seed_masteries(game: &mut Game) {
     // Preserve existing masteries from saves (Flow C).
     if !game.champion_masteries.is_empty() {
@@ -767,6 +864,7 @@ pub fn bootstrap_seed_masteries(game: &mut Game) {
         })
         .collect();
 
+    let mut index = MasteryIndex::new(game);
     for (player_id, role_str) in &player_roles {
         let Some(champions) = by_role.get(role_str.as_str()) else {
             continue;
@@ -792,7 +890,7 @@ pub fn bootstrap_seed_masteries(game: &mut Game) {
         for champion_id in sorted.iter().take(count) {
             let mastery_seed = format!("{}_{}_mastery", player_id, champion_id);
             let mastery = 40 + (hash_text(&mastery_seed) as u8 % 41); // 40..80
-            upsert_mastery(game, player_id, champion_id, mastery);
+            index.upsert(game, player_id, champion_id, mastery);
         }
     }
 }
@@ -1083,35 +1181,83 @@ pub fn training_targets_for_player(player: &crate::domain::player::Player) -> Ve
 }
 
 pub fn ensure_training_targets_from_mastery(game: &mut Game, player_id: &str) {
-    let has_existing_targets = game
-        .players
-        .iter()
-        .find(|candidate| candidate.id == player_id)
-        .is_some_and(|player| !training_targets_for_player(player).is_empty());
-    if has_existing_targets {
+    ensure_training_targets_for_players(game, &[player_id.to_string()]);
+}
+
+/// [`ensure_training_targets_from_mastery`] for many players, with the player and mastery
+/// lookups built once instead of one scan of each table per player.
+///
+/// The picks only read the champion patch, the mastery table and the player's own
+/// targets, and the only thing written is that player's targets, so choosing every
+/// target first and writing afterwards gives what calling the single-player form in
+/// order gave.
+pub fn ensure_training_targets_for_players(game: &mut Game, player_ids: &[String]) {
+    if player_ids.is_empty() {
         return;
     }
 
-    let role = game
-        .players
-        .iter()
-        .find(|candidate| candidate.id == player_id)
-        .map(|player| match player.natural_position {
-            crate::domain::player::LolRole::Top => "Top",
-            crate::domain::player::LolRole::Jungle => "Jungle",
-            crate::domain::player::LolRole::Mid => "Mid",
-            crate::domain::player::LolRole::Adc => "ADC",
-            crate::domain::player::LolRole::Support => "Support",
-            crate::domain::player::LolRole::Unknown => "Unknown",
-        })
-        .unwrap_or("Unknown");
+    let updates: Vec<(usize, Vec<String>)> = {
+        let mut player_at: HashMap<&str, usize> = HashMap::with_capacity(game.players.len());
+        for (position, player) in game.players.iter().enumerate() {
+            player_at.entry(player.id.as_str()).or_insert(position);
+        }
+        let mut masteries_of: HashMap<&str, Vec<&ChampionMasteryEntry>> = HashMap::new();
+        for entry in &game.champion_masteries {
+            masteries_of
+                .entry(entry.player_id.as_str())
+                .or_default()
+                .push(entry);
+        }
+        let discovered: HashSet<String> = game
+            .champion_patch
+            .discovered_champion_ids
+            .iter()
+            .map(|id| normalize_key(id))
+            .collect();
 
-    let discovered: HashSet<String> = game
-        .champion_patch
-        .discovered_champion_ids
-        .iter()
-        .map(|id| normalize_key(id))
-        .collect();
+        player_ids
+            .iter()
+            .filter_map(|player_id| {
+                let position = *player_at.get(player_id.as_str())?;
+                let player = &game.players[position];
+                if !training_targets_for_player(player).is_empty() {
+                    return None;
+                }
+                let masteries = masteries_of
+                    .get(player_id.as_str())
+                    .map_or(&[][..], Vec::as_slice);
+                let selected = pick_training_targets(game, player, &discovered, masteries);
+                (!selected.is_empty()).then_some((position, selected))
+            })
+            .collect()
+    };
+
+    for (position, selected) in updates {
+        let targets = &mut game.players[position].champion_training_targets;
+        targets.clear();
+        targets.extend(selected);
+        targets.truncate(3);
+        targets.resize(3, String::new());
+    }
+}
+
+/// Up to three training targets for `player`: the champions of the current meta in the
+/// player's role that need the most mastery, then the player's best masteries.
+/// `masteries` are the player's own entries, in table order.
+fn pick_training_targets(
+    game: &Game,
+    player: &crate::domain::player::Player,
+    discovered: &HashSet<String>,
+    masteries: &[&ChampionMasteryEntry],
+) -> Vec<String> {
+    let role = match player.natural_position {
+        crate::domain::player::LolRole::Top => "Top",
+        crate::domain::player::LolRole::Jungle => "Jungle",
+        crate::domain::player::LolRole::Mid => "Mid",
+        crate::domain::player::LolRole::Adc => "ADC",
+        crate::domain::player::LolRole::Support => "Support",
+        crate::domain::player::LolRole::Unknown => "Unknown",
+    };
 
     let tier_score = |tier: &str| -> i32 {
         match tier.to_uppercase().as_str() {
@@ -1124,10 +1270,8 @@ pub fn ensure_training_targets_from_mastery(game: &mut Game, player_id: &str) {
         }
     };
 
-    let mastery_map: HashMap<String, u8> = game
-        .champion_masteries
+    let mastery_map: HashMap<String, u8> = masteries
         .iter()
-        .filter(|entry| entry.player_id == player_id)
         .map(|entry| (normalize_key(&entry.champion_id), entry.mastery))
         .collect();
 
@@ -1170,10 +1314,8 @@ pub fn ensure_training_targets_from_mastery(game: &mut Game, player_id: &str) {
     }
 
     if selected.len() < 3 {
-        let mut ranked_masteries: Vec<(String, u8)> = game
-            .champion_masteries
+        let mut ranked_masteries: Vec<(String, u8)> = masteries
             .iter()
-            .filter(|entry| entry.player_id == player_id)
             .map(|entry| (entry.champion_id.clone(), entry.mastery))
             .collect();
         ranked_masteries.sort_by_key(|entry| std::cmp::Reverse(entry.1));
@@ -1190,20 +1332,7 @@ pub fn ensure_training_targets_from_mastery(game: &mut Game, player_id: &str) {
         }
     }
 
-    if selected.is_empty() {
-        return;
-    }
-
-    if let Some(player) = game
-        .players
-        .iter_mut()
-        .find(|candidate| candidate.id == player_id)
-    {
-        player.champion_training_targets.clear();
-        player.champion_training_targets.extend(selected);
-        player.champion_training_targets.truncate(3);
-        player.champion_training_targets.resize(3, String::new());
-    }
+    selected
 }
 
 pub fn delegate_champion_training_to_coach(game: &mut Game) -> Result<usize, String> {
@@ -1397,6 +1526,20 @@ pub fn apply_training_mastery_progress(
         return;
     };
 
+    let Some(next) = training_mastery_roll(player, current, gain_factor, rng) else {
+        return;
+    };
+    upsert_mastery(game, player_id, champion_id, next);
+}
+
+/// One training attempt on a champion: the mastery after it, or `None` when the roll
+/// misses. Consumes exactly one random number.
+fn training_mastery_roll(
+    player: &crate::domain::player::Player,
+    current: u8,
+    gain_factor: f64,
+    rng: &mut impl Rng,
+) -> Option<u8> {
     let mechanics = f64::from(player.attributes.mechanics.min(100)) / 100.0;
     let champion_pool = f64::from(player.attributes.champion_pool.min(100)) / 100.0;
     let stat_push = (mechanics * 0.6) + (champion_pool * 0.6);
@@ -1405,7 +1548,7 @@ pub fn apply_training_mastery_progress(
     let chance = (0.16 + gain_factor * 0.26 + headroom * 0.2 + stat_push * 0.18).clamp(0.14, 0.88);
     let roll: f64 = rng.random_range(0.0..1.0);
     if roll > chance {
-        return;
+        return None;
     }
 
     let stat_bonus = if mechanics >= 0.85 && champion_pool >= 0.85 {
@@ -1423,8 +1566,49 @@ pub fn apply_training_mastery_progress(
     } else {
         4 + stat_bonus
     };
-    let next = current.saturating_add(gain).min(MASTERY_CAP);
-    upsert_mastery(game, player_id, champion_id, next);
+    Some(current.saturating_add(gain).min(MASTERY_CAP))
+}
+
+/// Runs a day's mastery training ticks, `(player, champion, gain factor, attempts)`, in
+/// order: what calling [`mastery_gain_multiplier_for_player`] once per tick and
+/// [`apply_training_mastery_progress`] once per attempt gave, with the player and mastery
+/// lookups built once instead of one table scan per attempt.
+///
+/// The random numbers are drawn in the same order, and the SoloQ multiplier is still read
+/// at the start of each tick from the masteries as the earlier ticks left them.
+pub fn apply_training_mastery_ticks(
+    game: &mut Game,
+    ticks: &[(String, String, f64, u8)],
+    rng: &mut impl Rng,
+) {
+    if ticks.is_empty() {
+        return;
+    }
+    let mut player_at: HashMap<String, usize> = HashMap::with_capacity(game.players.len());
+    for (position, player) in game.players.iter().enumerate() {
+        player_at.entry(player.id.clone()).or_insert(position);
+    }
+    let mut index = MasteryIndex::new(game);
+
+    for (player_id, champion_id, gain, attempts) in ticks {
+        let Some(&position) = player_at.get(player_id) else {
+            continue;
+        };
+        let effective_gain = {
+            let player = &game.players[position];
+            let lp =
+                soloq_lp_with_mastery_signal(game, player, index.mastery_signal(game, player_id));
+            gain * soloq_multiplier_for_tier(soloq_tier_from_lp(lp))
+        };
+        for _ in 0..*attempts {
+            let current = index.current(game, player_id, champion_id);
+            if let Some(next) =
+                training_mastery_roll(&game.players[position], current, effective_gain, rng)
+            {
+                index.upsert(game, player_id, champion_id, next);
+            }
+        }
+    }
 }
 
 pub fn apply_scrim_mastery_progress(
@@ -2480,6 +2664,8 @@ mod tests {
     }
 }
 
+#[cfg(test)]
+mod pool_equivalence_tests;
 #[cfg(test)]
 mod soloq_decay_tests;
 #[cfg(test)]

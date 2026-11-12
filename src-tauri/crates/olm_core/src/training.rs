@@ -873,9 +873,7 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
         })
         .map(|player| player.id.clone())
         .collect();
-    for player_id in rival_player_ids {
-        crate::champions::ensure_training_targets_from_mastery(game, &player_id);
-    }
+    crate::champions::ensure_training_targets_for_players(game, &rival_player_ids);
 
     let current_year = u32::try_from(game.clock.current_date.year()).unwrap_or(0);
 
@@ -1117,19 +1115,11 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
         game.champion_patch.rng_seed,
         &week_seed,
     ));
-    for (player_id, champion_id, gain, attempts) in mastery_training_ticks {
-        let soloq_mult = crate::champions::mastery_gain_multiplier_for_player(game, &player_id);
-        let effective_gain = gain * soloq_mult;
-        for _ in 0..attempts {
-            crate::champions::apply_training_mastery_progress(
-                game,
-                &player_id,
-                &champion_id,
-                effective_gain,
-                &mut mastery_rng,
-            );
-        }
-    }
+    crate::champions::apply_training_mastery_ticks(
+        game,
+        &mastery_training_ticks,
+        &mut mastery_rng,
+    );
 
     if weekday_num == 6
         && let Some(manager_team_id) = game.manager.team_id.clone()
