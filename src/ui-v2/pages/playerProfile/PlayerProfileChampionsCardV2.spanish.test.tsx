@@ -21,7 +21,7 @@ const champion = (championId: string, games: number) => ({
   championId,
   championName: championId,
   mastery: 80,
-  rank: 1,
+  rank: 1 as const,
   wr: 50,
   games,
 });
