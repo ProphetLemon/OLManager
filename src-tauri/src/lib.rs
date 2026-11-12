@@ -277,6 +277,7 @@ pub fn run() {
             delegate_scrim_decision,
             set_player_training_focus,
             rename_player,
+            set_player_photo,
             set_player_champion_training_target,
             delegate_champion_training,
             get_soloq_statuses,

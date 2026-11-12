@@ -1898,6 +1898,41 @@ pub(crate) fn rename_player_in_session(
     Ok(crate::client_game::game_for_client(&game))
 }
 
+/// Sets or removes (`photo` is `None`) the profile photo of a founder of the
+/// user's custom club.
+///
+/// The same founders as [`rename_player`] can change it; any other player is
+/// rejected. The photo is validated and re-encoded like the one chosen in the
+/// club wizard. Like the other squad commands it updates the session game and
+/// returns it; the change reaches the save with the next save. Errors are the
+/// JSON of a `FounderError` (see `olm_core::founder_identity`). The photo is
+/// never logged.
+#[tauri::command]
+pub fn set_player_photo(
+    state: State<'_, StateManager>,
+    player_id: String,
+    photo: Option<String>,
+) -> Result<Game, String> {
+    info!("[cmd] set_player_photo: player={}", player_id);
+    set_player_photo_in_session(&state, &player_id, photo.as_deref())
+}
+
+/// [`set_player_photo`] on a session: the game is only replaced when the photo
+/// is valid and the player is eligible.
+pub(crate) fn set_player_photo_in_session(
+    state: &StateManager,
+    player_id: &str,
+    photo: Option<&str>,
+) -> Result<Game, String> {
+    let mut game = state
+        .get_game(|g| g.clone())
+        .ok_or("No active game session".to_string())?;
+    olm_core::founder_identity::set_founder_photo(&mut game, player_id, photo)
+        .map_err(|error| error.to_wire())?;
+    state.set_game(game.clone());
+    Ok(crate::client_game::game_for_client(&game))
+}
+
 #[tauri::command]
 pub fn set_player_champion_training_target(
     state: State<'_, StateManager>,

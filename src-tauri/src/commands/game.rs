@@ -5786,6 +5786,80 @@ mod tests {
             assert_eq!((wire["kind"].as_str(), wire["reason"].as_str()), (Some("invalid_field"), Some("taken")));
         }
 
+        /// A photo set in a running game reaches the session, the projection the UI receives
+        /// and, once the game is saved, the save; removing it clears all three.
+        #[test]
+        fn a_founder_photo_changed_in_game_survives_a_save_round_trip_and_can_be_removed() {
+            let (state, id) = session_with_custom_club(11);
+            let founder = state
+                .get_game(|g| founders(g, &id).first().map(|p| p.id.clone()))
+                .flatten()
+                .expect("founder");
+            let expected = olm_core::custom_logo::normalize_portrait(RED_STRIP_PNG).expect("photo");
+
+            let returned =
+                crate::commands::squad::set_player_photo_in_session(&state, &founder, Some(RED_STRIP_PNG))
+                    .expect("set photo");
+            let projected = returned.players.iter().find(|p| p.id == founder).expect("founder");
+            assert_eq!(projected.profile_image_url.as_deref(), Some(expected.as_str()));
+            assert_eq!(state_player(&state, &founder).profile_image_url, Some(expected.clone()));
+
+            let dir = tempfile::tempdir().expect("temp dir");
+            let mut saves = olm_core::db::save_manager::SaveManager::init(dir.path()).expect("saves");
+            let game = state.get_game(|g| g.clone()).expect("game");
+            let save_id = saves.create_save(&game, "Photo").expect("create save");
+            let loaded = saves.load_game(&save_id).expect("load");
+            let saved = loaded.players.iter().find(|p| p.id == founder).expect("saved founder");
+            assert_eq!(saved.profile_image_url, Some(expected));
+
+            crate::commands::squad::set_player_photo_in_session(&state, &founder, None).expect("remove");
+            assert_eq!(state_player(&state, &founder).profile_image_url, None);
+        }
+
+        #[test]
+        fn a_photo_for_a_player_who_is_not_a_founder_is_rejected_and_changes_nothing() {
+            let (state, id) = session_with_custom_club(11);
+            let other = state
+                .get_game(|g| {
+                    g.players
+                        .iter()
+                        .find(|p| {
+                            p.team_id.as_deref().is_some_and(|team| team != id && team.starts_with("les-"))
+                        })
+                        .map(|p| p.id.clone())
+                })
+                .flatten()
+                .expect("another club's player");
+            let before = state_player(&state, &other).profile_image_url;
+            let error = crate::commands::squad::set_player_photo_in_session(&state, &other, Some(RED_STRIP_PNG))
+                .expect_err("rejected");
+            assert_eq!(wire_error(&error)["kind"], "not_a_founder");
+            assert_eq!(state_player(&state, &other).profile_image_url, before);
+        }
+
+        #[test]
+        fn a_photo_that_is_not_an_image_is_rejected_in_game_and_the_session_keeps_the_old_one() {
+            let (state, id) = session_with_custom_club(11);
+            let founder = state
+                .get_game(|g| founders(g, &id).first().map(|p| p.id.clone()))
+                .flatten()
+                .expect("founder");
+            crate::commands::squad::set_player_photo_in_session(&state, &founder, Some(RED_STRIP_PNG))
+                .expect("set photo");
+            let before = state_player(&state, &founder).profile_image_url;
+
+            let error = crate::commands::squad::set_player_photo_in_session(
+                &state,
+                &founder,
+                Some("data:image/svg+xml;base64,PHN2Zy8+"),
+            )
+            .expect_err("rejected");
+
+            let wire = wire_error(&error);
+            assert_eq!((wire["kind"].as_str(), wire["reason"].as_str()), (Some("invalid_photo"), Some("not_png")));
+            assert_eq!(state_player(&state, &founder).profile_image_url, before);
+        }
+
         /// Without a seed the app picks one, and the squad is still generated.
         #[test]
         fn an_unseeded_custom_club_still_gets_a_generated_squad() {
