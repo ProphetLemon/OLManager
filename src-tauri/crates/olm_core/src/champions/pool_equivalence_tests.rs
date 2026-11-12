@@ -323,7 +323,7 @@ fn player(index: usize) -> Player {
         },
     );
     // Two players in three are rostered, the rest are free agents.
-    player.team_id = (index % 3 != 0).then(|| "t1".to_string());
+    player.team_id = (!index.is_multiple_of(3)).then(|| "t1".to_string());
     player
 }
 
