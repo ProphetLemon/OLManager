@@ -174,7 +174,7 @@ const FIRST = Date.UTC(2026, 6, 1);
 const iso = (index: number) => new Date(FIRST + index * 86_400_000).toISOString().slice(0, 10);
 
 function day(index: number, over: Partial<SoloQHistoryDay> = {}): SoloQHistoryDay {
-  return { date: iso(index), lp: 900, formula_lp: 900, focus: "Scrims", kind: "Played", bank: 14, ...over };
+  return { date: iso(index), lp: 900, formula_lp: 900, focus: "Scrims", kind: "Played", bank: 14, bank_max: 14, ...over };
 }
 
 /** 30 days that end 10 days into a stretch without a team: grace used up, floor reached. */

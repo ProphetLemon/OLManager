@@ -121,7 +121,7 @@
       "exhausted": "{{count}} giocatore/i in condizioni critiche (<25%)",
       "incompleteStartingXi": "Cinque titolare incompleto — imposta la tua formazione",
       "urgentUnread": "{{count}} messaggio/i urgente/i non letto/i",
-      "scrimWeekOpen": "Gli scrim di questa settimana non sono ancora pianificati. Preparali prima del primo giorno di scrim.",
+      "scrimWeekOpen": "Gli scrim di questa settimana non sono ancora pianificati. Pianifica i giorni di scrim che restano.",
       "matchTodayStartingXi": "C'è partita oggi! Imposta il tuo Cinque titolare",
       "financeCrisis": "Finanze critiche — saldo {{balance}}, autonomia di {{weeks}} settimana/e",
       "financeRunway": "L’autonomia di cassa scende a {{count}} settimana/e",
@@ -809,7 +809,7 @@
     "fitness": "Fitness",
     "action": "Action",
     "backToMenu": "Back to Menu",
-    "create": "Create",
+    "create": "Crea",
     "loanListed": "CD",
     "nextPage": "Next",
     "previousPage": "Previous",
@@ -1153,8 +1153,8 @@
         "3": "Lab macro",
         "4": "Blocco reset"
       },
-      "groupNamePlaceholder": "Group name...",
-      "newGroup": "New Group"
+      "groupNamePlaceholder": "Nome del gruppo...",
+      "newGroup": "Nuovo gruppo"
     },
     "scrims": {
       "title": "Scrim settimanali",

@@ -50,7 +50,7 @@ function ninety(): SoloQHistoryDay[] {
         kind = "Decay";
       }
     }
-    days.push({ date: iso(i), lp: Math.max(0, formula - offset), formula_lp: formula, focus, kind, bank });
+    days.push({ date: iso(i), lp: Math.max(0, formula - offset), formula_lp: formula, focus, kind, bank, bank_max: 14 });
   }
   return days;
 }

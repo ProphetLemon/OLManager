@@ -285,7 +285,7 @@
       "exhausted": "{{count}} joueur(s) en condition critique (<25%)",
       "incompleteStartingXi": "L'équipe titulaire est incomplète — définissez votre composition",
       "urgentUnread": "{{count}} message(s) urgent(s) non lu(s)",
-      "scrimWeekOpen": "Les scrims de cette semaine ne sont pas encore planifiés. Préparez-les avant le premier jour de scrims.",
+      "scrimWeekOpen": "Les scrims de cette semaine ne sont pas encore planifiés. Planifiez les jours de scrims qui restent.",
       "matchTodayStartingXi": "Match aujourd'hui ! Définissez votre équipe titulaire",
       "financeCrisis": "Finances critiques — solde {{balance}}, marge de {{weeks}} semaine(s)",
       "financeRunway": "La trésorerie ne couvre plus que {{count}} semaine(s)",
@@ -973,7 +973,7 @@
     "fitness": "Fitness",
     "action": "Action",
     "backToMenu": "Back to Menu",
-    "create": "Create",
+    "create": "Créer",
     "loanListed": "CD",
     "nextPage": "Next",
     "previousPage": "Previous",
@@ -1317,8 +1317,8 @@
         "3": "Lab macro",
         "4": "Bloc reset"
       },
-      "groupNamePlaceholder": "Group name...",
-      "newGroup": "New Group"
+      "groupNamePlaceholder": "Nom du groupe...",
+      "newGroup": "Nouveau groupe"
     },
     "scrims": {
       "title": "Scrims hebdomadaires",

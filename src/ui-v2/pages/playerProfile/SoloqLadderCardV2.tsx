@@ -200,7 +200,7 @@ function LadderBody({ days, decayOn, bankMax, modeLabel, preset, language, match
     [days, start, sel, decayOn, language, story.headline, t],
   );
 
-  const status = selectedDayStatus(day, previous, { decayOn, bankMax, language }, t);
+  const status = selectedDayStatus(day, previous, { decayOn, language }, t);
   const held = offsetOf(day);
   const diff = day.lp - day.formula_lp;
   const tier = tierFromLp(day.lp);
@@ -416,7 +416,6 @@ function LadderBody({ days, decayOn, bankMax, modeLabel, preset, language, match
               start={start}
               selected={sel}
               decayOn={decayOn}
-              bankMax={bankMax}
               language={language}
               t={t}
             />

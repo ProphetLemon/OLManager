@@ -39,9 +39,9 @@ pub fn set_training_groups(game: &mut Game, team_id: &str, groups: &[serde_json:
     }
 }
 
-pub fn set_player_training_focus(game: &mut Game, player_id: &str, _focus: Option<&str>) {
-    if let Some(_player) = game.players.iter_mut().find(|p| p.id == player_id) {
-        // player.training_focus would be set here
+pub fn set_player_training_focus(game: &mut Game, player_id: &str, focus: Option<&str>) {
+    if let Some(player) = game.players.iter_mut().find(|p| p.id == player_id) {
+        player.training_focus = focus.and_then(TrainingFocus::from_id);
     }
 }
 
@@ -410,5 +410,19 @@ mod tests {
         release_staff(&mut game, "owner", "lec-a");
 
         assert_eq!(game.staff[0].team_id.as_deref(), Some("lec-a"));
+    }
+
+    #[test]
+    fn set_player_training_focus_should_set_and_clear_the_personal_override() {
+        let mut game = roster(["ES"; 5]);
+
+        set_player_training_focus(&mut game, "p0", Some("MentalResetRecovery"));
+        assert_eq!(
+            game.players[0].training_focus,
+            Some(TrainingFocus::MentalResetRecovery)
+        );
+
+        set_player_training_focus(&mut game, "p0", None);
+        assert_eq!(game.players[0].training_focus, None);
     }
 }

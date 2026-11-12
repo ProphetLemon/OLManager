@@ -59,19 +59,19 @@ export default function SoloqGracePanelV2({ days, selected, decayOn, bankMax, mo
             <div className="flex flex-wrap items-baseline gap-2">
               <span className="font-heading text-ovr leading-none tabular-nums">{day.bank}</span>
               <span className="text-muted-foreground">
-                {t("soloqHistory.grace.ofDays", { cap: bankMax, date: formatShortDate(day.date, language) })}
+                {t("soloqHistory.grace.ofDays", { cap: day.bank_max, date: formatShortDate(day.date, language) })}
               </span>
             </div>
             <div
               role="meter"
               aria-label={t("soloqHistory.grace.title")}
               aria-valuemin={0}
-              aria-valuemax={bankMax}
+              aria-valuemax={day.bank_max}
               aria-valuenow={day.bank}
               className="grid gap-[3px]"
-              style={{ gridTemplateColumns: `repeat(${Math.max(1, bankMax)}, minmax(0, 1fr))` }}
+              style={{ gridTemplateColumns: `repeat(${Math.max(1, day.bank_max)}, minmax(0, 1fr))` }}
             >
-              {Array.from({ length: bankMax }, (_, k) => (
+              {Array.from({ length: day.bank_max }, (_, k) => (
                 <span key={k} className={cn("h-4 rounded-[3px]", k < day.bank ? "bg-club" : "ring-[1.5px] ring-inset ring-dim")} />
               ))}
             </div>

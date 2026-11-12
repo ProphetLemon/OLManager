@@ -28,26 +28,32 @@ export function normalizeHistory(raw: unknown): SoloQHistory | null {
   const mode: SoloQDecayMode = MODES.includes(source.decay_mode as SoloQDecayMode)
     ? (source.decay_mode as SoloQDecayMode)
     : "Off";
+  const currentBankMax = finite(source.bank_max);
   const days = source.days
     .filter(
       (day): day is SoloQHistoryDay =>
         Boolean(day) && typeof day.date === "string" && KINDS.includes(day.kind) && typeof day.lp === "number",
     )
-    .map((day) => ({
-      date: day.date,
-      lp: finite(day.lp),
-      formula_lp: finite(day.formula_lp, finite(day.lp)),
-      focus: typeof day.focus === "string" && day.focus !== "" ? day.focus : null,
-      kind: day.kind,
-      bank: finite(day.bank),
-    }))
+    .map((day) => {
+      // A day recorded before the maximum was kept reads against today's, and never above it.
+      const bankMax = finite(day.bank_max) > 0 ? finite(day.bank_max) : currentBankMax;
+      return {
+        date: day.date,
+        lp: finite(day.lp),
+        formula_lp: finite(day.formula_lp, finite(day.lp)),
+        focus: typeof day.focus === "string" && day.focus !== "" ? day.focus : null,
+        kind: day.kind,
+        bank: Math.min(finite(day.bank), bankMax),
+        bank_max: bankMax,
+      };
+    })
     .slice(-HISTORY_MAX_DAYS);
   return {
     player_id: source.player_id,
     followed: Boolean(source.followed),
     decay_mode: mode,
     bank_days: finite(source.bank_days),
-    bank_max: finite(source.bank_max),
+    bank_max: currentBankMax,
     offset_lp: finite(source.offset_lp),
     days,
   };
@@ -349,7 +355,7 @@ export function buildStory({ days, start, decayOn, preset, bankMax, language }: 
   }
   return {
     headline: t("soloqHistory.story.graceHeld", { count: summary.idleDays, cause: phrase, cap: bankMax }),
-    sub: t("soloqHistory.story.graceSub", { bank: last.bank, cap: bankMax }),
+    sub: t("soloqHistory.story.graceSub", { bank: last.bank, cap: last.bank_max }),
   };
 }
 
@@ -508,18 +514,18 @@ export function buildChips(input: ChipInput, t: Translate): Chip[] {
 export function selectedDayStatus(
   day: SoloQHistoryDay,
   previous: SoloQHistoryDay | null,
-  ctx: { decayOn: boolean; bankMax: number; language: string },
+  ctx: { decayOn: boolean; language: string },
   t: Translate,
 ): string {
-  const { decayOn, bankMax, language } = ctx;
+  const { decayOn, language } = ctx;
   const cause = causeInline(idleCause(day), t);
   const held = offsetOf(day);
   switch (day.kind) {
     case "Played":
       if (!decayOn) return t("soloqHistory.status.played");
       return held > 0
-        ? t("soloqHistory.status.playedHeld", { bank: day.bank, cap: bankMax, offset: formatNumber(held, language) })
-        : t("soloqHistory.status.playedDecay", { bank: day.bank, cap: bankMax });
+        ? t("soloqHistory.status.playedHeld", { bank: day.bank, cap: day.bank_max, offset: formatNumber(held, language) })
+        : t("soloqHistory.status.playedDecay", { bank: day.bank, cap: day.bank_max });
     case "Match":
       return t(decayOn ? "soloqHistory.status.matchDecay" : "soloqHistory.status.match");
     case "Rest":

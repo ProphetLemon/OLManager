@@ -28,7 +28,7 @@ const FIRST = Date.UTC(2026, 1, 1);
 const iso = (index: number) => new Date(FIRST + index * 86_400_000).toISOString().slice(0, 10);
 
 function day(index: number, over: Partial<SoloQHistoryDay> = {}): SoloQHistoryDay {
-  return { date: iso(index), lp: 1000, formula_lp: 1000, focus: "Scrims", kind: "Played", bank: 14, ...over };
+  return { date: iso(index), lp: 1000, formula_lp: 1000, focus: "Scrims", kind: "Played", bank: 14, bank_max: 14, ...over };
 }
 
 function series(length: number, make: (index: number) => Partial<SoloQHistoryDay> = () => ({})): SoloQHistoryDay[] {
@@ -63,6 +63,19 @@ describe("normalizeHistory", () => {
     expect(history?.days).toHaveLength(90);
     expect(history?.days[history.days.length - 1].focus).toBeNull();
     expect(history?.days.every((entry) => entry.kind !== ("Nap" as SoloQDayKind))).toBe(true);
+  });
+
+  it("keeps each day's own bank maximum after the mode changed", () => {
+    const days = [day(0, { bank: 14, bank_max: 14 }), day(1, { bank: 7, bank_max: 7 })];
+    const history = normalizeHistory(raw({ bank_max: 7, days }));
+    expect(history?.days.map((entry) => entry.bank_max)).toEqual([14, 7]);
+    expect(history?.days.map((entry) => entry.bank)).toEqual([14, 7]);
+  });
+
+  it("clamps a day recorded without a maximum to the current one", () => {
+    const old = { ...day(0, { bank: 14 }), bank_max: undefined };
+    const history = normalizeHistory(raw({ bank_max: 7, days: [old] }));
+    expect(history?.days[0]).toMatchObject({ bank: 7, bank_max: 7 });
   });
 
   it("reads an unknown decay mode as Off", () => {
@@ -247,7 +260,7 @@ describe("story sentence", () => {
 });
 
 describe("selected day status", () => {
-  const ctx = { decayOn: true, bankMax: 14, language: "en" };
+  const ctx = { decayOn: true, language: "en" };
 
   it("says what the day did, with the cause of the idleness", () => {
     expect(selectedDayStatus(day(3, { kind: "Idle", focus: null, bank: 5 }), null, ctx, t)).toBe(
@@ -267,6 +280,11 @@ describe("selected day status", () => {
     expect(selectedDayStatus(floor, floorBefore, ctx, t)).toBe(
       "Idle (mental reset), grace period used up. LP is at the floor, Master 0 LP.",
     );
+  });
+
+  it("reads a played day's bank against that day's own maximum", () => {
+    const harsh = day(3, { bank: 7, bank_max: 7 });
+    expect(selectedDayStatus(harsh, null, ctx, t)).toBe("SoloQ day. Grace period 7 of 7 days.");
   });
 
   it("keeps match and rest days neutral", () => {

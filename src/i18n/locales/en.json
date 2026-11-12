@@ -315,7 +315,7 @@
       "exhausted": "{{count}} player(s) in critical condition (<25%)",
       "incompleteStartingXi": "Starting Five incomplete — set your lineup",
       "urgentUnread": "{{count}} urgent message(s) unread",
-      "scrimWeekOpen": "This week's scrims are not planned yet. Set them up before the first scrim day.",
+      "scrimWeekOpen": "This week's scrims are not planned yet. Plan the scrim days still ahead.",
       "matchTodayStartingXi": "Match today! Set your starting five",
       "financeCrisis": "Finances critical — balance {{balance}}, runway {{weeks}} week(s)",
       "financeRunway": "Cash runway down to {{count}} week(s)",
