@@ -15,6 +15,12 @@
 //!
 //! SVG is never accepted: only the exact `data:image/png;base64,` prefix passes.
 //!
+//! The same pipeline also prepares a founder's profile photo
+//! ([`normalize_portrait`]): the image is first cropped to a centred square, then
+//! fitted to [`MAX_PORTRAIT_SIDE`] with a tighter byte budget, because up to five
+//! portraits ride in every `Game` and save next to the logo. The logo keeps its
+//! own limits and output byte for byte.
+//!
 //! The module is pure and never panics on hostile input: decoded data is only
 //! read through checked arithmetic and iterators.
 
@@ -42,6 +48,17 @@ pub const MAX_OUTPUT_PNG_BYTES: usize = 400_000;
 pub const TARGET_OUTPUT_PNG_BYTES: usize = 100_000;
 /// Boxes tried in order, largest first; the first whose PNG fits the target wins.
 const LOGO_SIDE_STEPS: [u32; 5] = [MAX_LOGO_SIDE, 192, 128, 96, 64];
+/// Side of a stored founder photo, in pixels. The largest avatar in the app is
+/// the 96 px profile card, so 192 px covers it on a 2x display.
+pub const MAX_PORTRAIT_SIDE: u32 = 192;
+/// Upper bound for a stored portrait PNG, in bytes (defensive, like
+/// [`MAX_OUTPUT_PNG_BYTES`]).
+pub const MAX_PORTRAIT_PNG_BYTES: usize = 120_000;
+/// Size a stored portrait should stay under: five of them ride in every `Game`,
+/// so a noisy photo is shrunk through [`PORTRAIT_SIDE_STEPS`] until it fits.
+pub const TARGET_PORTRAIT_PNG_BYTES: usize = 64_000;
+/// Square sides tried in order, largest first, for a portrait.
+const PORTRAIT_SIDE_STEPS: [u32; 5] = [MAX_PORTRAIT_SIDE, 160, 128, 96, 64];
 /// Secondary cap handed to the PNG decoder for its intermediate buffers. It does
 /// not bound the pixel buffer: that is bounded by the [`MAX_INPUT_SIDE`] header
 /// check, which runs before the frame buffer is allocated, and by the input cap.
@@ -86,11 +103,57 @@ impl LogoError {
     pub fn to_wire(self) -> String {
         format!(r#"{{"kind":"invalid_logo","reason":"{}"}}"#, self.reason())
     }
+
+    /// JSON wire form `{"kind":"invalid_portrait","reason":"..."}`, for a
+    /// founder photo.
+    pub fn to_portrait_wire(self) -> String {
+        format!(
+            r#"{{"kind":"invalid_portrait","reason":"{}"}}"#,
+            self.reason()
+        )
+    }
 }
+
+/// What differs between the images this module prepares.
+struct ImageProfile {
+    /// Crop to a centred square before fitting.
+    square: bool,
+    /// Boxes tried in order, largest first.
+    side_steps: &'static [u32],
+    /// Size the encoded PNG should stay under.
+    target_bytes: usize,
+    /// Size the encoded PNG must never exceed.
+    max_bytes: usize,
+}
+
+const LOGO_PROFILE: ImageProfile = ImageProfile {
+    square: false,
+    side_steps: &LOGO_SIDE_STEPS,
+    target_bytes: TARGET_OUTPUT_PNG_BYTES,
+    max_bytes: MAX_OUTPUT_PNG_BYTES,
+};
+
+const PORTRAIT_PROFILE: ImageProfile = ImageProfile {
+    square: true,
+    side_steps: &PORTRAIT_SIDE_STEPS,
+    target_bytes: TARGET_PORTRAIT_PNG_BYTES,
+    max_bytes: MAX_PORTRAIT_PNG_BYTES,
+};
 
 /// Validates `input` and returns the normalized `data:image/png;base64,...`
 /// URI. Deterministic: the same pixels always produce the same string.
 pub fn normalize_logo(input: &str) -> Result<String, LogoError> {
+    normalize_with(input, &LOGO_PROFILE)
+}
+
+/// Validates a founder's photo like [`normalize_logo`] validates a badge, then
+/// returns a square `data:image/png;base64,...` URI of at most
+/// [`MAX_PORTRAIT_SIDE`] pixels per side: the centre of the image is kept.
+pub fn normalize_portrait(input: &str) -> Result<String, LogoError> {
+    normalize_with(input, &PORTRAIT_PROFILE)
+}
+
+fn normalize_with(input: &str, profile: &ImageProfile) -> Result<String, LogoError> {
     let input = input.trim();
     if input.is_empty() {
         return Err(LogoError::Empty);
@@ -103,9 +166,14 @@ pub fn normalize_logo(input: &str) -> Result<String, LogoError> {
     }
     let bytes = STANDARD.decode(payload).map_err(|_| LogoError::Malformed)?;
 
-    let image = decode_rgba(&bytes)?;
-    let png = encode_within_budget(&image)?;
-    if png.len() > MAX_OUTPUT_PNG_BYTES {
+    let decoded = decode_rgba(&bytes)?;
+    let image = if profile.square {
+        crop_center_square(&decoded)?
+    } else {
+        decoded
+    };
+    let png = encode_within_budget(&image, profile)?;
+    if png.len() > profile.max_bytes {
         return Err(LogoError::TooLarge);
     }
     Ok(format!("{PNG_DATA_URI_PREFIX}{}", STANDARD.encode(png)))
@@ -192,6 +260,43 @@ fn decode_rgba(bytes: &[u8]) -> Result<Rgba8, LogoError> {
     })
 }
 
+/// The largest centred square of `image`; the image itself when already square.
+fn crop_center_square(image: &Rgba8) -> Result<Rgba8, LogoError> {
+    let side = image.width.min(image.height);
+    if image.width == image.height {
+        return Ok(Rgba8 {
+            width: image.width,
+            height: image.height,
+            pixels: image.pixels.clone(),
+        });
+    }
+    let to_usize = |value: u32| usize::try_from(value).map_err(|_| LogoError::Malformed);
+    let stride = to_usize(image.width)?.saturating_mul(CHANNELS);
+    let left = to_usize((image.width - side) / 2)?.saturating_mul(CHANNELS);
+    let row_bytes = to_usize(side)?.saturating_mul(CHANNELS);
+    let top = to_usize((image.height - side) / 2)?;
+    let mut pixels = Vec::with_capacity(row_bytes.saturating_mul(to_usize(side)?));
+    for row in image
+        .pixels
+        .chunks_exact(stride)
+        .skip(top)
+        .take(to_usize(side)?)
+    {
+        pixels.extend_from_slice(
+            row.get(left..left + row_bytes)
+                .ok_or(LogoError::Malformed)?,
+        );
+    }
+    if pixels.len() != row_bytes.saturating_mul(to_usize(side)?) {
+        return Err(LogoError::Malformed);
+    }
+    Ok(Rgba8 {
+        width: side,
+        height: side,
+        pixels,
+    })
+}
+
 /// Size that fits `width` x `height` inside `limit` x `limit` keeping the
 /// aspect ratio; never zero and never larger than the input.
 fn fitted_size(width: u32, height: u32, limit: u32) -> (u32, u32) {
@@ -207,14 +312,14 @@ fn fitted_size(width: u32, height: u32, limit: u32) -> (u32, u32) {
     (scale(width), scale(height))
 }
 
-/// Encodes `image` fitted into the largest box of [`LOGO_SIDE_STEPS`] whose PNG
-/// stays within [`TARGET_OUTPUT_PNG_BYTES`]. Each box is resampled from the
-/// original pixels, so quality does not compound. Deterministic.
-fn encode_within_budget(image: &Rgba8) -> Result<Vec<u8>, LogoError> {
+/// Encodes `image` fitted into the largest box of the profile's steps whose PNG
+/// stays within its target size. Each box is resampled from the original
+/// pixels, so quality does not compound. Deterministic.
+fn encode_within_budget(image: &Rgba8, profile: &ImageProfile) -> Result<Vec<u8>, LogoError> {
     let mut last = None;
-    for limit in LOGO_SIDE_STEPS {
+    for &limit in profile.side_steps {
         let png = encode_rgba(&fit_within(image, limit))?;
-        if png.len() <= TARGET_OUTPUT_PNG_BYTES {
+        if png.len() <= profile.target_bytes {
             return Ok(png);
         }
         last = Some(png);
