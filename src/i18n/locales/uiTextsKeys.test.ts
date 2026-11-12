@@ -191,6 +191,11 @@ describe("Scrims tab keys", () => {
     );
   });
 
+  it("words every decision the desk offers, with its description, in every locale", () => {
+    const decisions = ["continueBlock2", "offerRest", "pushThrough", "cancelScrims", "vodReview", "mentalReset", "targetedDrills", "dayOff"];
+    expectTranslated(decisions.flatMap((decision) => [`scrims.decision.${decision}`, `scrims.decision.${decision}Desc`]));
+  });
+
   it("names every issue a scrim report can detect in every locale", () => {
     expect(Object.keys(SCRIM_ISSUE_KEYS)).toHaveLength(6);
     expectTranslated(Object.values(SCRIM_ISSUE_KEYS), {
