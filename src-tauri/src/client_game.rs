@@ -9,6 +9,8 @@ use olm_core::game::Game;
 pub fn game_for_client(game: &Game) -> Game {
     let mut projected = game.clone();
     olm_core::residency::refresh_import_flags(&mut projected);
+    // The SoloQ story is large and only the profile page reads it, by command.
+    projected.soloq_history = Default::default();
     let discovered: HashSet<String> = projected
         .champion_patch
         .discovered_champion_ids
@@ -61,6 +63,19 @@ mod tests {
             },
         ];
         game
+    }
+
+    #[test]
+    fn projection_leaves_out_the_soloq_history_without_mutating_save_state() {
+        let mut game = game_with_secret_meta();
+        game.soloq_history.note_scouted("p1", "2026-08-02");
+        let saved_before = serde_json::to_string(&game).unwrap();
+
+        let projected = game_for_client(&game);
+
+        assert!(projected.soloq_history.scouted.is_empty());
+        assert_eq!(serde_json::to_string(&game).unwrap(), saved_before);
+        assert_eq!(game.soloq_history.scouted.len(), 1);
     }
 
     #[test]

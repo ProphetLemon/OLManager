@@ -2026,6 +2026,65 @@ pub fn get_soloq_statuses(
     Ok(statuses)
 }
 
+/// One player's SoloQ story: the last 90 days when the player is followed (the user's
+/// roster and academy, scouted players), plus the decay state behind it.
+#[tauri::command]
+pub fn get_soloq_history(
+    state: State<'_, StateManager>,
+    player_id: String,
+) -> Result<champions::SoloQHistoryView, String> {
+    get_soloq_history_internal(&state, &player_id)
+}
+
+fn get_soloq_history_internal(
+    state: &StateManager,
+    player_id: &str,
+) -> Result<champions::SoloQHistoryView, String> {
+    state
+        .get_game(|game| champions::soloq_history_for_player(game, player_id))
+        .ok_or("No active game session".to_string())?
+}
+
+/// The loaded save's SoloQ decay mode and the numbers of every mode.
+#[tauri::command]
+pub fn get_soloq_decay_settings(
+    state: State<'_, StateManager>,
+) -> Result<champions::SoloQDecaySettings, String> {
+    get_soloq_decay_settings_internal(&state)
+}
+
+fn get_soloq_decay_settings_internal(
+    state: &StateManager,
+) -> Result<champions::SoloQDecaySettings, String> {
+    state
+        .get_game(champions::soloq_decay_settings)
+        .ok_or("No active game session".to_string())
+}
+
+/// Sets the loaded save's SoloQ decay mode.
+#[tauri::command]
+pub fn set_soloq_decay_mode(
+    state: State<'_, StateManager>,
+    mode: champions::SoloQDecayMode,
+) -> Result<champions::SoloQDecaySettings, String> {
+    set_soloq_decay_mode_internal(&state, mode)
+}
+
+fn set_soloq_decay_mode_internal(
+    state: &StateManager,
+    mode: champions::SoloQDecayMode,
+) -> Result<champions::SoloQDecaySettings, String> {
+    info!("[cmd] set_soloq_decay_mode: mode={:?}", mode);
+    let mut game = state
+        .get_game(|g| g.clone())
+        .ok_or("No active game session".to_string())?;
+
+    let settings = champions::set_soloq_decay_mode(&mut game, mode);
+
+    state.set_game(game);
+    Ok(settings)
+}
+
 #[tauri::command]
 pub fn start_potential_research(
     state: State<'_, StateManager>,
@@ -2546,5 +2605,156 @@ mod tests {
 
             assert_eq!(editable_slots(&state), vec![false; 6]);
         }
+    }
+}
+
+#[cfg(test)]
+mod soloq_command_tests {
+    use super::{
+        get_soloq_decay_settings_internal, get_soloq_history_internal,
+        set_soloq_decay_mode_internal,
+    };
+    use chrono::{TimeZone, Utc};
+    use olm_core::champions::{self, SoloQDecayMode};
+    use olm_core::clock::GameClock;
+    use olm_core::domain::manager::Manager;
+    use olm_core::domain::player::{LolRole, Player, PlayerAttributes};
+    use olm_core::domain::team::Team;
+    use olm_core::game::Game;
+    use olm_core::state::StateManager;
+
+    fn state_with_game() -> StateManager {
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 8, 3, 12, 0, 0).unwrap());
+        let mut manager = Manager::new(
+            "mgr-1".to_string(),
+            "Alex".to_string(),
+            "Coach".to_string(),
+            "1980-01-01".to_string(),
+            "GB".to_string(),
+        );
+        manager.hire("team-1".to_string());
+        let team = Team::new(
+            "team-1".to_string(),
+            "Team One".to_string(),
+            "T1".to_string(),
+            "GB".to_string(),
+            "London".to_string(),
+            "Arena".to_string(),
+            10_000,
+        );
+        let attrs = PlayerAttributes {
+            mechanics: 80,
+            laning: 80,
+            teamfighting: 80,
+            macro_play: 80,
+            consistency: 80,
+            shotcalling: 80,
+            champion_pool: 80,
+            discipline: 80,
+            mental_resilience: 80,
+        };
+        let mut starter = Player::new(
+            "p1".to_string(),
+            "p1".to_string(),
+            "Player One".to_string(),
+            "2002-01-01".to_string(),
+            "GB".to_string(),
+            LolRole::Mid,
+            attrs.clone(),
+        );
+        starter.team_id = Some("team-1".to_string());
+        let stranger = Player::new(
+            "p2".to_string(),
+            "p2".to_string(),
+            "Player Two".to_string(),
+            "2002-01-01".to_string(),
+            "GB".to_string(),
+            LolRole::Top,
+            attrs,
+        );
+        let mut game = Game::new(
+            clock,
+            manager,
+            vec![team],
+            vec![starter, stranger],
+            vec![],
+            vec![],
+        );
+        for _ in 0..3 {
+            champions::process_daily_champion_system(&mut game);
+            game.clock.advance_days(1);
+        }
+        let state = StateManager::new();
+        state.set_game(game);
+        state
+    }
+
+    #[test]
+    fn get_soloq_history_should_return_the_contract_shape_for_a_followed_player() {
+        let state = state_with_game();
+
+        let view = get_soloq_history_internal(&state, "p1").unwrap();
+        let value = serde_json::to_value(view).unwrap();
+
+        assert_eq!(value["player_id"], "p1");
+        assert_eq!(value["followed"], true);
+        assert_eq!(value["decay_mode"], "Real");
+        assert_eq!(value["bank_max"], 14);
+        assert_eq!(value["days"].as_array().unwrap().len(), 3);
+        let first = &value["days"][0];
+        assert_eq!(first["date"], "2026-08-03");
+        assert_eq!(first["focus"], "Scrims");
+        assert!(first["kind"].is_string() && first["lp"].is_number());
+    }
+
+    #[test]
+    fn get_soloq_history_should_say_not_followed_for_a_stranger() {
+        let state = state_with_game();
+
+        let view = get_soloq_history_internal(&state, "p2").unwrap();
+
+        assert!(!view.followed);
+        assert!(view.days.is_empty());
+    }
+
+    #[test]
+    fn the_soloq_commands_should_fail_without_a_game_or_for_an_unknown_player() {
+        let empty = StateManager::new();
+        assert!(get_soloq_history_internal(&empty, "p1").is_err());
+        assert!(get_soloq_decay_settings_internal(&empty).is_err());
+        assert!(set_soloq_decay_mode_internal(&empty, SoloQDecayMode::Soft).is_err());
+
+        let state = state_with_game();
+        assert!(get_soloq_history_internal(&state, "nobody").is_err());
+    }
+
+    #[test]
+    fn set_soloq_decay_mode_should_change_the_loaded_save() {
+        let state = state_with_game();
+
+        let settings = set_soloq_decay_mode_internal(&state, SoloQDecayMode::Harsh).unwrap();
+
+        assert_eq!(settings.mode, SoloQDecayMode::Harsh);
+        assert_eq!(
+            state.get_game(|g| g.soloq_decay_mode),
+            Some(SoloQDecayMode::Harsh)
+        );
+        let read_back = get_soloq_decay_settings_internal(&state).unwrap();
+        assert_eq!(read_back, settings);
+        assert_eq!(read_back.presets.len(), 4);
+    }
+
+    #[test]
+    fn the_settings_should_serialize_with_snake_case_preset_fields() {
+        let state = state_with_game();
+
+        let value =
+            serde_json::to_value(get_soloq_decay_settings_internal(&state).unwrap()).unwrap();
+
+        assert_eq!(value["mode"], "Real");
+        assert_eq!(value["presets"][1]["mode"], "Soft");
+        assert_eq!(value["presets"][1]["decay_per_idle_day"], 25);
+        assert_eq!(value["presets"][1]["bank_days"], 21);
+        assert_eq!(value["presets"][1]["recovery_per_played_day"], 50);
     }
 }

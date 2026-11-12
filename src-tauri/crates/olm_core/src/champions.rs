@@ -14,6 +14,14 @@ use std::sync::OnceLock;
 #[cfg(feature = "typescript")]
 use ts_rs::TS;
 
+mod soloq_decay;
+pub use soloq_decay::{
+    PlayerSoloQHistory, SOLOQ_HISTORY_DAYS, SoloQDayKind, SoloQDayMarks, SoloQDayRecord,
+    SoloQDecayMode, SoloQDecayPreset, SoloQDecaySettings, SoloQHistory, SoloQHistoryDay,
+    SoloQHistoryView, followed_player_ids, set_soloq_decay_mode, soloq_decay_settings,
+    soloq_history_for_player,
+};
+
 fn params(pairs: &[(&str, &str)]) -> HashMap<String, String> {
     pairs
         .iter()
@@ -352,10 +360,10 @@ fn soloq_points_from(
     (skill_base + training_mod + drift).clamp(skill_floor, SOLOQ_POINTS_MAX)
 }
 
-/// Recomputes every player's cached `soloq_lp` for the current day. One pass over the
-/// mastery table and a team index replace a per-player table scan, team scan and
-/// player lookup, so the cost is linear in players.
-fn refresh_soloq_lp(game: &mut Game) {
+/// Every player's formula LP (before any decay) for the current day, in `game.players`
+/// order. One pass over the mastery table and a team index replace a per-player table
+/// scan, team scan and player lookup, so the cost is linear in players.
+fn formula_lps(game: &Game) -> Vec<f64> {
     let day_index = days_between(game.clock.start_date, game.clock.current_date);
     let top_masteries = top_masteries_by_player(game);
     let mut teams_by_id: HashMap<&str, &crate::domain::team::Team> =
@@ -365,8 +373,7 @@ fn refresh_soloq_lp(game: &mut Game) {
         teams_by_id.entry(team.id.as_str()).or_insert(team);
     }
 
-    let lps: Vec<f64> = game
-        .players
+    game.players
         .iter()
         .map(|player| {
             let mastery_signal = top_masteries
@@ -384,9 +391,16 @@ fn refresh_soloq_lp(game: &mut Game) {
             );
             (points - SOLOQ_POINTS_BASELINE).max(0.0)
         })
-        .collect();
+        .collect()
+}
+
+/// Recomputes every player's cached `soloq_lp` for the current day, with the decay
+/// offset the save is in (none while decay is off).
+fn refresh_soloq_lp(game: &mut Game) {
+    let lps = formula_lps(game);
+    let mode = game.soloq_decay_mode;
     for (player, lp) in game.players.iter_mut().zip(lps) {
-        player.soloq_lp = lp;
+        player.soloq_lp = soloq_decay::displayed_lp(mode, player, lp);
     }
 }
 
@@ -396,7 +410,8 @@ fn soloq_points_for_player(game: &Game, player: &crate::domain::player::Player) 
 }
 
 fn soloq_lp_for_player(game: &Game, player: &crate::domain::player::Player) -> f64 {
-    (soloq_points_for_player(game, player) - SOLOQ_POINTS_BASELINE).max(0.0)
+    let formula_lp = (soloq_points_for_player(game, player) - SOLOQ_POINTS_BASELINE).max(0.0);
+    soloq_decay::displayed_lp(game.soloq_decay_mode, player, formula_lp)
 }
 
 fn soloq_tier_from_lp(lp: f64) -> SoloQTier {
@@ -445,12 +460,18 @@ pub struct SoloQStatus {
 
 pub fn soloq_status_for_player(game: &Game, player: &crate::domain::player::Player) -> SoloQStatus {
     let day_index = days_between(game.clock.start_date, game.clock.current_date);
-    let lp = (soloq_points_at(game, player, day_index) - SOLOQ_POINTS_BASELINE).max(0.0);
+    let mode = game.soloq_decay_mode;
+    // Decay only moves in the daily step, so both days are shown with the offset in force.
+    let shown = |day_index: i64| {
+        let formula_lp =
+            (soloq_points_at(game, player, day_index) - SOLOQ_POINTS_BASELINE).max(0.0);
+        soloq_decay::displayed_lp(mode, player, formula_lp)
+    };
+    let lp = shown(day_index);
     let tier = soloq_tier_from_lp(lp);
 
     let delta = if day_index > 0 {
-        let lp_yesterday =
-            (soloq_points_at(game, player, day_index - 1) - SOLOQ_POINTS_BASELINE).max(0.0);
+        let lp_yesterday = shown(day_index - 1);
         (lp - lp_yesterday).round() as i32
     } else {
         0
@@ -1808,9 +1829,9 @@ pub fn process_daily_champion_system(game: &mut Game) {
     seed_champion_state(game);
     apply_mastery_decay(game);
 
-    // Cache SoloQ LP in each player so the frontend can read it synchronously
-    // from gameState.players instead of issuing a separate IPC invoke.
-    refresh_soloq_lp(game);
+    // Settle the day's SoloQ decay and cache the LP in each player so the frontend can
+    // read it synchronously from gameState.players instead of issuing a separate IPC invoke.
+    soloq_decay::advance_soloq_day(game);
 
     if should_roll_patch(game, &game.champion_patch) {
         apply_patch(game);
@@ -2456,5 +2477,7 @@ mod tests {
     }
 }
 
+#[cfg(test)]
+mod soloq_decay_tests;
 #[cfg(test)]
 mod soloq_equivalence_tests;

@@ -108,11 +108,58 @@ export interface SoloQStatus {
   multiplier: number
 }
 
+/** Per-save SoloQ inactivity decay (contract with `set_soloq_decay_mode`). */
+export type SoloQDecayMode = "Off" | "Soft" | "Real" | "Harsh"
+
+export interface SoloQDecayPreset {
+  mode: SoloQDecayMode
+  decay_per_idle_day: number
+  bank_days: number
+  recovery_per_played_day: number
+}
+
+export interface SoloQDecaySettings {
+  mode: SoloQDecayMode
+  presets: SoloQDecayPreset[]
+}
+
+export type SoloQDayKind = "Played" | "Idle" | "Decay" | "Match" | "Rest"
+
+/** One day of a followed player's SoloQ record (contract with `get_soloq_history`). */
+export interface SoloQHistoryDay {
+  /** YYYY-MM-DD */
+  date: string
+  /** Displayed LP. */
+  lp: number
+  /** LP before decay. */
+  formula_lp: number
+  /** The effective TrainingFocus (same ids as `PlayerData.training_focus`), or null when the player had no team. */
+  focus: string | null
+  kind: SoloQDayKind
+  /** Grace days left after this day. */
+  bank: number
+}
+
+export interface SoloQHistory {
+  player_id: string
+  /** False when no history is kept for this player. */
+  followed: boolean
+  decay_mode: SoloQDecayMode
+  bank_days: number
+  bank_max: number
+  offset_lp: number
+  /** Oldest first, at most 90. */
+  days: SoloQHistoryDay[]
+}
+
 export interface PlayerRepository {
   startPotentialResearch(args: { playerId: string }): Promise<GameStateData>
   setChampionTrainingTarget(args: { playerId: string; priorityIndex: number; championId: string }): Promise<GameStateData>
   delegateChampionTraining(): Promise<GameStateData>
   getSoloQStatuses(): Promise<SoloQStatus[]>
+  getSoloQDecaySettings(): Promise<SoloQDecaySettings>
+  setSoloQDecayMode(args: { mode: SoloQDecayMode }): Promise<SoloQDecaySettings>
+  getSoloQHistory(args: { playerId: string }): Promise<SoloQHistory>
 }
 
 export interface StaffRepository {

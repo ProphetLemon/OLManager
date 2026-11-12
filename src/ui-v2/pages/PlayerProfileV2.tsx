@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { getContractRiskLevel } from "@/lib/common/helpers";
@@ -31,6 +31,7 @@ import WageNegotiationDialog from "@/ui-v2/dashboard/tabs/transfers/WageNegotiat
 import PlayerProfileAttributesCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileAttributesCardV2";
 import PlayerProfileCareerCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileCareerCardV2";
 import PlayerProfileChampionsCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileChampionsCardV2";
+import PlayerProfileContractActionsV2 from "@/ui-v2/pages/playerProfile/PlayerProfileContractActionsV2";
 import PlayerProfileContractCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileContractCardV2";
 import PlayerProfileHeroCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileHeroCardV2";
 import PlayerProfileMatchHistoryCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileMatchHistoryCardV2";
@@ -38,11 +39,15 @@ import PlayerProfileReleaseModalV2 from "@/ui-v2/pages/playerProfile/PlayerProfi
 import PlayerProfileRenameModalV2 from "@/ui-v2/pages/playerProfile/PlayerProfileRenameModalV2";
 import PlayerProfileRenewalModalV2 from "@/ui-v2/pages/playerProfile/PlayerProfileRenewalModalV2";
 import PlayerProfilePhotoControlV2 from "@/ui-v2/pages/playerProfile/PlayerProfilePhotoControlV2";
+import PlayerProfileScoutActionV2 from "@/ui-v2/pages/playerProfile/PlayerProfileScoutActionV2";
 import PlayerProfileStatsCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileStatsCardV2";
 import PlayerProfileTraitsCardV2 from "@/ui-v2/pages/playerProfile/PlayerProfileTraitsCardV2";
 import PlayerProfileTransferOfferModalV2 from "@/ui-v2/pages/playerProfile/PlayerProfileTransferOfferModalV2";
+import SoloqHeroPanelV2 from "@/ui-v2/pages/playerProfile/SoloqHeroPanelV2";
+import SoloqLadderCardV2, { type SoloqMatchNote } from "@/ui-v2/pages/playerProfile/SoloqLadderCardV2";
 import { usePlayerRenewal } from "@/ui-v2/pages/playerProfile/usePlayerRenewal";
 import { usePlayerTransfer } from "@/ui-v2/pages/playerProfile/usePlayerTransfer";
+import { useSoloqHistory } from "@/ui-v2/pages/playerProfile/useSoloqHistory";
 
 interface PlayerProfileV2Props {
   gameState: GameStateData;
@@ -214,6 +219,19 @@ function PlayerProfileContent({
     t,
   });
 
+  const soloq = useSoloqHistory(player.id, gameState.clock.current_date);
+  const matchesByDate = useMemo(() => {
+    const byDate = new Map<string, SoloqMatchNote>();
+    for (const entry of playerHistory) {
+      byDate.set(entry.date.slice(0, 10), {
+        opponent: entry.opponentName,
+        won: entry.result === "Win",
+        kda: `${entry.kills}/${entry.deaths}/${entry.assists}`,
+      });
+    }
+    return byDate;
+  }, [playerHistory]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -356,7 +374,36 @@ function PlayerProfileContent({
         photoControl={
           canRename ? <PlayerProfilePhotoControlV2 player={player} onChanged={(updated) => onGameUpdate?.(updated)} /> : null
         }
+        contractActions={
+          <PlayerProfileContractActionsV2
+            isOwnClub={isOwnClub}
+            isTransferWindowOpen={isTransferWindowOpen}
+            transferActionSubmitting={transfer.transferActionSubmitting}
+            onOpenRenewal={renewal.openRenewalModal}
+            onReleaseContract={transfer.handleRequestReleaseContract}
+            onOpenTransferBid={transfer.handleOpenTransferOfferModal}
+            t={t}
+          />
+        }
+        soloqPanel={
+          <SoloqHeroPanelV2 state={soloq} fallbackLp={player.soloq_lp} language={i18n.language} t={t} />
+        }
         t={t}
+      />
+
+      <SoloqLadderCardV2
+        state={soloq}
+        language={i18n.language}
+        t={t}
+        matchesByDate={matchesByDate}
+        scoutAction={
+          <PlayerProfileScoutActionV2
+            availability={scoutAvailability}
+            scoutStatus={scoutStatus}
+            scoutError={scoutError}
+            onScout={() => void handleScout()}
+          />
+        }
       />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -374,12 +421,6 @@ function PlayerProfileContent({
           contractRiskLevel={contractRiskLevel}
           contractRiskLabel={contractRiskLabel}
           hasTeam={player.team_id != null}
-          isOwnClub={isOwnClub}
-          isTransferWindowOpen={isTransferWindowOpen}
-          transferActionSubmitting={transfer.transferActionSubmitting}
-          onOpenRenewal={renewal.openRenewalModal}
-          onReleaseContract={transfer.handleRequestReleaseContract}
-          onOpenTransferBid={transfer.handleOpenTransferOfferModal}
           t={t}
         />
 

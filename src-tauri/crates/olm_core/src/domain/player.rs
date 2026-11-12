@@ -125,6 +125,13 @@ pub struct Player {
     /// instead of issuing a separate IPC invoke for the global ranking.
     #[serde(default)]
     pub soloq_lp: f64,
+    /// Days of the SoloQ inactivity grace bank already spent (0 = full bank).
+    /// Meaningful only while the save's decay mode is not Off.
+    #[serde(default)]
+    pub soloq_bank_spent: u8,
+    /// LP currently subtracted from the formula LP by inactivity decay.
+    #[serde(default)]
+    pub soloq_decay_offset: f64,
 }
 
 /// Footedness is deprecated - LoL roles are lane-agnostic
@@ -700,6 +707,8 @@ impl Player {
             resident_region: None,
             is_import: false,
             soloq_lp: 0.0,
+            soloq_bank_spent: 0,
+            soloq_decay_offset: 0.0,
         }
     }
 }

@@ -858,6 +858,7 @@ pub fn process_scrim_block(game: &mut Game, weekday_num: u32) -> bool {
 /// Scrims focus can gain extra efficiency from stronger weekly scrim opponents.
 /// `weekday_num` is 0=Mon .. 6=Sun (chrono Weekday::num_days_from_monday()).
 pub fn process_training(game: &mut Game, weekday_num: u32) {
+    game.soloq_day_marks.begin_training();
     let manager_team_id = game.manager.team_id.clone();
     let rival_player_ids: Vec<String> = game
         .players
@@ -956,6 +957,17 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
                 .training_focus
                 .as_ref()
                 .unwrap_or(&plan.default_focus);
+
+            // SoloQ decay reads how the plan settled this day: a recovery plan keeps the
+            // player off the ladder, a rest day is neutral, any other plan is play.
+            let soloq_day = if player_focus.is_recovery_plan() {
+                crate::champions::SoloQDayKind::Idle
+            } else if is_training_day {
+                crate::champions::SoloQDayKind::Played
+            } else {
+                crate::champions::SoloQDayKind::Rest
+            };
+            game.soloq_day_marks.mark_training(&player.id, soloq_day);
 
             // On rest days or recovery-focused plans: no training cost
             let condition_cost: u8 = if !is_training_day {

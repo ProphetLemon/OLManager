@@ -148,6 +148,8 @@ pub fn process_scouting(game: &mut Game) {
     // Generate reports for completed assignments
     let user_team_id = game.manager.team_id.clone();
     for assignment in &completed {
+        game.soloq_history
+            .note_scouted(&assignment.player_id, &today);
         let scout = game.staff.iter().find(|s| s.id == assignment.scout_id);
         let player = game.players.iter().find(|p| p.id == assignment.player_id);
 

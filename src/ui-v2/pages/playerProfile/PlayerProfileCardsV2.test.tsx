@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { CareerEntry, GameStateData, PlayerMatchHistoryEntryData } from "@/store/gameStore";
 import PlayerProfileCareerCardV2 from "./PlayerProfileCareerCardV2";
 import PlayerProfileChampionsCardV2 from "./PlayerProfileChampionsCardV2";
+import PlayerProfileContractActionsV2 from "./PlayerProfileContractActionsV2";
 import PlayerProfileContractCardV2 from "./PlayerProfileContractCardV2";
 import PlayerProfileMatchHistoryCardV2 from "./PlayerProfileMatchHistoryCardV2";
 import PlayerProfileScoutActionV2 from "./PlayerProfileScoutActionV2";
@@ -177,25 +178,14 @@ describe("PlayerProfileContractCardV2", () => {
     language: "en",
     contractRiskLevel: "critical" as const,
     contractRiskLabel: "Critical",
-    isOwnClub: true,
-    isTransferWindowOpen: true,
-    transferActionSubmitting: false,
-    onOpenRenewal: vi.fn(),
-    onReleaseContract: vi.fn(),
-    onOpenTransferBid: vi.fn(),
     t,
   };
 
-  it("offers renewal and release for the own club during the window", () => {
-    const onOpenRenewal = vi.fn();
-    const onReleaseContract = vi.fn();
-    render(<PlayerProfileContractCardV2 {...base} onOpenRenewal={onOpenRenewal} onReleaseContract={onReleaseContract} />);
+  it("shows the contract facts and leaves the actions to the hero", () => {
+    render(<PlayerProfileContractCardV2 {...base} />);
     expect(screen.getByText("Critical")).toBeInTheDocument();
     expect(screen.getByRole("meter", { name: "common.condition" })).toHaveAttribute("aria-valuenow", "80");
-    fireEvent.click(screen.getByRole("button", { name: "common.renewContract" }));
-    fireEvent.click(screen.getByRole("button", { name: "playerProfile.releaseContract" }));
-    expect(onOpenRenewal).toHaveBeenCalled();
-    expect(onReleaseContract).toHaveBeenCalled();
+    expect(screen.queryByRole("button")).toBeNull();
   });
 
   it("hides years remaining, risk badge and wage for a player without contract", () => {
@@ -212,20 +202,43 @@ describe("PlayerProfileContractCardV2", () => {
     expect(screen.queryByText("playerProfile.yearsRemaining")).toBeNull();
     expect(screen.queryByText("playerProfile.annualWage")).toBeNull();
   });
+});
+
+describe("PlayerProfileContractActionsV2", () => {
+  const base = {
+    isOwnClub: true,
+    isTransferWindowOpen: true,
+    transferActionSubmitting: false,
+    onOpenRenewal: vi.fn(),
+    onReleaseContract: vi.fn(),
+    onOpenTransferBid: vi.fn(),
+    t,
+  };
+
+  it("offers renewal and release for the own club during the window", () => {
+    const onOpenRenewal = vi.fn();
+    const onReleaseContract = vi.fn();
+    render(<PlayerProfileContractActionsV2 {...base} onOpenRenewal={onOpenRenewal} onReleaseContract={onReleaseContract} />);
+    fireEvent.click(screen.getByRole("button", { name: "common.renewContract" }));
+    fireEvent.click(screen.getByRole("button", { name: "playerProfile.releaseContract" }));
+    expect(onOpenRenewal).toHaveBeenCalled();
+    expect(onReleaseContract).toHaveBeenCalled();
+  });
 
   it("hides release outside the transfer window", () => {
-    render(<PlayerProfileContractCardV2 {...base} isTransferWindowOpen={false} />);
+    render(<PlayerProfileContractActionsV2 {...base} isTransferWindowOpen={false} />);
+    expect(screen.getByRole("button", { name: "common.renewContract" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "playerProfile.releaseContract" })).toBeNull();
   });
 
   it("offers a transfer bid for other clubs only while the window is open", () => {
     const onOpenTransferBid = vi.fn();
     const { rerender } = render(
-      <PlayerProfileContractCardV2 {...base} isOwnClub={false} onOpenTransferBid={onOpenTransferBid} />,
+      <PlayerProfileContractActionsV2 {...base} isOwnClub={false} onOpenTransferBid={onOpenTransferBid} />,
     );
     fireEvent.click(screen.getByRole("button", { name: "playerProfile.makeTransferOffer" }));
     expect(onOpenTransferBid).toHaveBeenCalled();
-    rerender(<PlayerProfileContractCardV2 {...base} isOwnClub={false} isTransferWindowOpen={false} />);
+    rerender(<PlayerProfileContractActionsV2 {...base} isOwnClub={false} isTransferWindowOpen={false} />);
     expect(screen.queryByRole("button", { name: "playerProfile.makeTransferOffer" })).toBeNull();
   });
 });
