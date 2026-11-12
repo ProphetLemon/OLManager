@@ -559,8 +559,8 @@ pub(super) fn base_intruder_idx(runtime: &RuntimeState, champion_idx: usize) -> 
         })
         .map(|(idx, _)| idx)
         .filter(|&intruder| {
-            // He fights where his side is not outnumbered: champions who come back one at a
-            // time from the fountain against a group that is destroying the nexus only die.
+            // He fights only where his side outnumbers the intruder's: champions who come back
+            // one at a time from the fountain against a group destroying the nexus only die.
             let at = runtime.champions[intruder].pos;
             let near = |team_is_mine: bool| {
                 runtime
