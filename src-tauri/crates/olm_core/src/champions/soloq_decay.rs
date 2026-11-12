@@ -148,6 +148,9 @@ pub struct SoloQDayRecord {
     pub kind: SoloQDayKind,
     /// Grace-bank days left after the day.
     pub bank: u8,
+    /// The bank maximum in force that day; 0 in saves from before it was recorded.
+    #[serde(default)]
+    pub bank_max: u8,
 }
 
 /// The last [`SOLOQ_HISTORY_DAYS`] days of one player, oldest first and contiguous: the
@@ -336,13 +339,17 @@ pub(super) fn advance_soloq_day(game: &mut Game) {
 
     for (player, formula_lp) in players.iter_mut().zip(formula_lps) {
         let raw = soloq_day_marks.kind_for(&player.id);
-        let (kind, bank) = match &preset {
+        let (kind, bank, bank_max) = match &preset {
             Some(preset) => {
                 let kind = settle_day(player, raw, formula_lp, preset);
                 let bank_max = u8::try_from(preset.bank_days).unwrap_or(u8::MAX);
-                (kind, bank_max.saturating_sub(player.soloq_bank_spent))
+                (
+                    kind,
+                    bank_max.saturating_sub(player.soloq_bank_spent),
+                    bank_max,
+                )
             }
-            None => (raw, 0),
+            None => (raw, 0, 0),
         };
         let shown = displayed_lp(mode, player, formula_lp);
         player.soloq_lp = shown;
@@ -374,6 +381,7 @@ pub(super) fn advance_soloq_day(game: &mut Game) {
                         focus,
                         kind,
                         bank,
+                        bank_max,
                     },
                 );
         }
@@ -411,6 +419,8 @@ pub struct SoloQHistoryDay {
     pub focus: Option<crate::domain::team::TrainingFocus>,
     pub kind: SoloQDayKind,
     pub bank: u32,
+    /// The bank maximum in force that day; 0 when the day was recorded before it was kept.
+    pub bank_max: u32,
 }
 
 /// One player's SoloQ story plus the decay state behind it.
@@ -474,6 +484,7 @@ pub fn soloq_history_for_player(game: &Game, player_id: &str) -> Result<SoloQHis
                         focus: record.focus.clone(),
                         kind: record.kind,
                         bank: u32::from(record.bank),
+                        bank_max: u32::from(record.bank_max),
                     })
                 })
                 .collect()

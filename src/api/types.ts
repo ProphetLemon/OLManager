@@ -138,6 +138,8 @@ export interface SoloQHistoryDay {
   kind: SoloQDayKind
   /** Grace days left after this day. */
   bank: number
+  /** The grace-bank maximum in force that day; 0 when the day was recorded before it was kept. */
+  bank_max: number
 }
 
 export interface SoloQHistory {

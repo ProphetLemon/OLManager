@@ -787,6 +787,31 @@ fn history_should_survive_a_save_round_trip() {
     assert_eq!(loaded.soloq_decay_mode, SoloQDecayMode::Real);
 }
 
+#[test]
+fn a_record_should_keep_the_bank_maximum_of_its_own_day_across_a_mode_change() {
+    let mut game = game(SoloQDecayMode::Real);
+    run_days(&mut game, 2);
+    set_soloq_decay_mode(&mut game, SoloQDecayMode::Harsh);
+    run_days(&mut game, 1);
+
+    let maxima: Vec<u8> = history_of(&game, RESETTER)
+        .days
+        .iter()
+        .map(|day| day.bank_max)
+        .collect();
+
+    assert_eq!(maxima, [14, 14, 7]);
+}
+
+#[test]
+fn a_record_saved_before_the_bank_maximum_was_kept_should_load_with_zero() {
+    let json = r#"{"lp":120,"formula_lp":120,"focus":null,"kind":"Played","bank":14}"#;
+
+    let record: SoloQDayRecord = serde_json::from_str(json).unwrap();
+
+    assert_eq!(record.bank_max, 0);
+}
+
 // ---------------------------------------------------------------------------
 // What the commands return
 // ---------------------------------------------------------------------------
@@ -824,7 +849,7 @@ fn the_history_view_should_serialize_to_the_contract_shape() {
     let last = value["days"].as_array().unwrap().last().unwrap();
     assert_eq!(
         keys(last),
-        ["bank", "date", "focus", "formula_lp", "kind", "lp"]
+        ["bank", "bank_max", "date", "focus", "formula_lp", "kind", "lp"]
     );
     assert_eq!(last["date"], "2026-08-18");
     assert_eq!(last["focus"], "MentalResetRecovery");

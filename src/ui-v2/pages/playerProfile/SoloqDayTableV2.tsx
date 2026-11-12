@@ -17,13 +17,12 @@ interface SoloqDayTableV2Props {
   start: number;
   selected: number;
   decayOn: boolean;
-  bankMax: number;
   language: string;
   t: Translate;
 }
 
 /** The same record as the chart, as text: newest day first, with the focus and the hidden offset. */
-export default function SoloqDayTableV2({ id, days, start, selected, decayOn, bankMax, language, t }: SoloqDayTableV2Props) {
+export default function SoloqDayTableV2({ id, days, start, selected, decayOn, language, t }: SoloqDayTableV2Props) {
   const notApplicable = t("soloqHistory.table.na");
   const rows: number[] = [];
   for (let i = days.length - 1; i >= start; i -= 1) rows.push(i);
@@ -57,7 +56,7 @@ export default function SoloqDayTableV2({ id, days, start, selected, decayOn, ba
               <div role="cell">{formatShortDate(day.date, language)}</div>
               <div role="cell">{focusLabel(day.focus, t)}</div>
               <div role="cell">{dayKindWord(day, decayOn, t)}</div>
-              <div role="cell">{decayOn ? t("soloqHistory.table.graceOf", { bank: day.bank, cap: bankMax }) : notApplicable}</div>
+              <div role="cell">{decayOn ? t("soloqHistory.table.graceOf", { bank: day.bank, cap: day.bank_max }) : notApplicable}</div>
               <div role="cell">{decayOn ? (offset > 0 ? formatNumber(-offset, language) : "0") : notApplicable}</div>
               <div role="cell" className="text-muted-foreground">{formatNumber(day.formula_lp, language)}</div>
               <div role="cell" className="font-semibold">{formatNumber(day.lp, language)}</div>
