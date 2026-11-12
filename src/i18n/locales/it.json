@@ -1200,7 +1200,8 @@
       "selectOpponent": "Scegli l'avversario",
       "autofill": "Compila auto"
     },
-    "daysPerWeek": "days/week",
+    "daysPerWeek_one": "{{count}} giorno/settimana",
+    "daysPerWeek_other": "{{count}} giorni/settimana",
     "emptyRoster": "Empty roster",
     "tab": {
       "training": "Allenamento",

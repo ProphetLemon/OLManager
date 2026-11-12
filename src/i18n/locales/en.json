@@ -1532,7 +1532,8 @@
       "selectOpponent": "Select Opponent",
       "autofill": "Autofill"
     },
-    "daysPerWeek": "days/week",
+    "daysPerWeek_one": "{{count}} day/week",
+    "daysPerWeek_other": "{{count}} days/week",
     "emptyRoster": "Empty roster",
     "tab": {
       "training": "Training",
