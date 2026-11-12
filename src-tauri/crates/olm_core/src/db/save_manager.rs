@@ -478,6 +478,8 @@ mod tests {
             residency_initialized: false,
             removed_team_ids: Default::default(),
             ladder: Default::default(),
+            soloq_decay_mode: Default::default(),
+            soloq_day_marks: Default::default(),
         }
     }
 
