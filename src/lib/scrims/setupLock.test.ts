@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { WeeklyScrimContext } from "@/lib/scrims/scrimContext";
-import { scrimSetupBlockedKey } from "./setupLock";
+import { nextPlanningMonday, scrimSetupBlockedKey } from "./setupLock";
 
 function week(overrides: Partial<WeeklyScrimContext> = {}): WeeklyScrimContext {
   return {
@@ -25,6 +25,7 @@ describe("scrimSetupBlockedKey", () => {
     ["manual", "scrims.setupLockedManual"],
     ["week_started", "scrims.setupLockedWeekStarted"],
     ["first_scrim_window", "scrims.setupLockedFirstWindow"],
+    ["career_started_late", "scrims.setupLockedCareerStart"],
   ])("has its own text for the %s lock", (reason, key) => {
     expect(scrimSetupBlockedKey(week({ setupLocked: true, setupLockedReason: reason }), false)).toBe(key);
   });
@@ -54,5 +55,16 @@ describe("scrimSetupBlockedKey", () => {
     expect(scrimSetupBlockedKey({ ...partial, setupLocked: true, setupLockedReason: "manual" }, false)).toBe(
       "scrims.setupLockedManual",
     );
+  });
+});
+
+describe("nextPlanningMonday", () => {
+  it.each([
+    ["2027-01-01", "2027-01-04"], // Friday of a new career's first week
+    ["2027-01-03", "2027-01-04"], // Sunday
+    ["2027-01-04", "2027-01-11"], // a Monday opens the week, the next opening is a week later
+    ["2027-12-30T12:00:00Z", "2028-01-03"], // across the year boundary
+  ])("after %s the planning reopens on %s", (current, monday) => {
+    expect(nextPlanningMonday(current)).toBe(monday);
   });
 });

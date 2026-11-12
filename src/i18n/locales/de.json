@@ -3997,6 +3997,7 @@
     "reviewed": "Ausgewertet",
     "setupAllSlotsPassed": "Alle Scrim-Tage dieser Woche sind vorbei, es gibt nichts mehr zu planen. Die Planung öffnet am nächsten Montag wieder.",
     "setupLocked": "Die Planung ist ab Blockbeginn gesperrt",
+    "setupLockedCareerStart": "Deine Karriere beginnt nach den Scrim-Tagen dieser Woche. Die Planung öffnet am {{date}}.",
     "setupLockedFirstWindow": "Der erste Scrim-Tag dieser Woche hat bereits begonnen, deshalb ist die Planung gesperrt. Sie öffnet am nächsten Montag wieder.",
     "setupLockedManual": "Du hast die Planung dieser Woche bestätigt, deshalb ist sie gesperrt. Sie öffnet am nächsten Montag wieder.",
     "setupLockedWeekStarted": "In dieser Woche wurde bereits ein Scrim-Block gespielt, deshalb ist die Planung gesperrt. Sie öffnet am nächsten Montag wieder.",

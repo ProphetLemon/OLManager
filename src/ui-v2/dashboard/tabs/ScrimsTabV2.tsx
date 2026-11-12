@@ -29,7 +29,8 @@ import {
   type DailyScrimAction,
 } from "@/services/trainingService";
 import { dailyScrimDecisionActions } from "@/lib/scrims/dailyDecisionActions";
-import { scrimSetupBlockedKey } from "@/lib/scrims/setupLock";
+import { nextPlanningMonday, scrimSetupBlockedKey } from "@/lib/scrims/setupLock";
+import { formatDate } from "@/lib/formatting/dateFormatting";
 import { SCRIM_FOCUS_IMPACT_KEYS, SCRIM_FOCUS_OBJECTIVE_KEYS } from "@/lib/scrims/scrimFocusKeys";
 import { useScrimContextWithFallback } from "@/hooks/useScrimContextWithFallback";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -116,7 +117,7 @@ const DECISION_META: Record<DailyScrimAction, { icon: LucideIcon; color: string 
 };
 
 export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { settings, updateSettings } = useSettingsStore();
   const [isSaving, setIsSaving] = useState(false);
   const [decisionSaving, setDecisionSaving] = useState<string | null>(null);
@@ -164,6 +165,15 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   const setupLocked = weeklyContext.setupLocked;
   const assistantControls = settings.scrim_review_mode === "assistant";
   const setupBlockedKey = scrimSetupBlockedKey(weeklyContext, assistantControls);
+  const setupBlockedText = setupBlockedKey
+    ? t(setupBlockedKey, {
+        date: formatDate(nextPlanningMonday(gameState.clock.current_date), i18n.language, {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+        }),
+      })
+    : null;
   const dailyBlockMeta = todayContext.report ? deriveDailyScrimBlockMeta(effectiveWeeklyScrimSlots(myTeam), gameState.clock.current_date, todayContext.report.slot_index) : null;
   const isFirstBlock = dailyBlockMeta?.blockNumber === 1;
   const staffSuggestions = buildStaffSuggestions(
@@ -244,7 +254,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
         <div className="flex flex-col gap-4">
           {setupBlockedKey ? (
             <p role="status" className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              {t(setupBlockedKey)}
+              {setupBlockedText}
             </p>
           ) : null}
           <ScrimPlanningCardV2
@@ -390,7 +400,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
               </div>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
                 <p className="text-xs text-muted-foreground">
-                  {setupBlockedKey ? t(setupBlockedKey) : t("scrims.setupUnlockWindow")}
+                  {setupBlockedText ?? t("scrims.setupUnlockWindow")}
                 </p>
                 <button
                   type="button"

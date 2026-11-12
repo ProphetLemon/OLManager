@@ -3988,6 +3988,7 @@
     "reviewed": "İncelendi",
     "setupAllSlotsPassed": "Bu haftanın tüm scrim günleri geçti, planlanacak bir şey kalmadı. Planlama gelecek pazartesi yeniden açılır.",
     "setupLocked": "Blok başladığında kurulum kilitlenir",
+    "setupLockedCareerStart": "Kariyerin bu haftanın scrim günlerinden sonra başlıyor. Planlama {{date}} günü açılır.",
     "setupLockedFirstWindow": "Bu haftanın ilk scrim günü başladı, bu yüzden kurulum kilitli. Gelecek pazartesi yeniden açılır.",
     "setupLockedManual": "Bu haftanın kurulumunu onayladın, bu yüzden kilitli. Gelecek pazartesi yeniden açılır.",
     "setupLockedWeekStarted": "Bu hafta bir scrim bloğu zaten oynandı, bu yüzden kurulum kilitli. Gelecek pazartesi yeniden açılır.",

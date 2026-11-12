@@ -647,6 +647,7 @@
     "reviewed": "Reviewed",
     "setupAllSlotsPassed": "Every scrim day of this week has already passed, so there is nothing left to plan. Planning reopens next Monday.",
     "setupLocked": "Setup locked once block starts",
+    "setupLockedCareerStart": "Your career starts after this week's scrim days. Planning opens on {{date}}.",
     "setupLockedFirstWindow": "This week's first scrim day has already started, so the setup is locked. It reopens next Monday.",
     "setupLockedManual": "You confirmed this week's setup, so it is locked. It reopens next Monday.",
     "setupLockedWeekStarted": "A scrim block of this week has already been played, so the setup is locked. It reopens next Monday.",
