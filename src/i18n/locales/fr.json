@@ -3931,7 +3931,7 @@
     "reviewBlockTitle": "Bilan du bloc",
     "reviewWin": "Victoire",
     "reviewLoss": "Défaite",
-    "reportFocus": "Axe",
+    "reportFocus": "Axe du rapport",
     "detectedIssue": "Problème détecté",
     "freeDayOff": "Donner le reste de la journée de repos",
     "decision": {
@@ -4030,7 +4030,8 @@
     "weeklyReportInline": "Rapport hebdomadaire",
     "weeklyVolume": "Volume hebdomadaire",
     "cancelFollowupPrompt": "Scrims annulés. Choisis la suite.",
-    "lossStreak": "Série de {{count}} défaites",
+    "lossStreak_one": "Série de {{count}} défaite",
+    "lossStreak_other": "Série de {{count}} défaites",
     "risk": {
       "high": "Élevé",
       "medium": "Moyen",
@@ -4072,7 +4073,8 @@
       "locked": "Verrouillé",
       "played": "Joué",
       "reviewed": "Bilan fait",
-      "cancelled": "Annulé"
+      "cancelled": "Annulé",
+      "notPlayed": "Non joué"
     },
     "planCleared": "Plan effacé",
     "notPlanned": "Non planifié",
@@ -4082,6 +4084,7 @@
     "noOpponentSet": "Aucun adversaire défini",
     "finalizeHint": "En validant, la configuration de la semaine est verrouillée. Elle rouvre lundi prochain.",
     "nothingToDecide": "Rien à décider pour l'instant. {{slot}} se joue contre {{opponent}} quand vous continuez.",
+    "nothingToDecideNoRival": "Rien à décider pour l'instant. {{slot}} n'a pas d'adversaire prévu.",
     "recapSummary": "{{objective}}, {{count}} blocs",
     "impactLabel": "Impact",
     "weekGauges": "Indicateurs de la semaine",

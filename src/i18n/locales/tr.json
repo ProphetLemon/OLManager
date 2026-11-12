@@ -3922,7 +3922,7 @@
     "reviewBlockTitle": "Blok değerlendirmesi",
     "reviewWin": "Galibiyet",
     "reviewLoss": "Mağlubiyet",
-    "reportFocus": "Odak",
+    "reportFocus": "Rapor odağı",
     "detectedIssue": "Tespit edilen sorun",
     "freeDayOff": "Günün geri kalanını izin ver",
     "decision": {
@@ -4021,7 +4021,8 @@
     "weeklyReportInline": "Haftalık rapor",
     "weeklyVolume": "Haftalık hacim",
     "cancelFollowupPrompt": "Scrim'ler iptal edildi. Bir devam seçeneği belirle.",
-    "lossStreak": "{{count}} mağlubiyet serisi",
+    "lossStreak_one": "{{count}} mağlubiyet serisi",
+    "lossStreak_other": "{{count}} mağlubiyet serisi",
     "risk": {
       "high": "Yüksek",
       "medium": "Orta",
@@ -4063,7 +4064,8 @@
       "locked": "Kilitli",
       "played": "Oynandı",
       "reviewed": "İncelendi",
-      "cancelled": "İptal edildi"
+      "cancelled": "İptal edildi",
+      "notPlayed": "Oynanmadı"
     },
     "planCleared": "Plan temizlendi",
     "notPlanned": "Planlanmadı",
@@ -4073,6 +4075,7 @@
     "noOpponentSet": "Rakip seçilmedi",
     "finalizeHint": "Onayladığında bu haftanın kurulumu kilitlenir. Gelecek pazartesi yeniden açılır.",
     "nothingToDecide": "Şu an karar verilecek bir şey yok. Devam ettiğinde {{slot}}, {{opponent}} ile oynanır.",
+    "nothingToDecideNoRival": "Şu an karar verilecek bir şey yok. {{slot}} için planlanmış rakip yok.",
     "recapSummary": "{{objective}}, {{count}} blok",
     "impactLabel": "Etki",
     "weekGauges": "Hafta göstergeleri",

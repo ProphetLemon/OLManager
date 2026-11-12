@@ -3931,7 +3931,7 @@
     "reviewBlockTitle": "Revisão do bloco",
     "reviewWin": "Vitória",
     "reviewLoss": "Derrota",
-    "reportFocus": "Foco",
+    "reportFocus": "Foco do relatório",
     "detectedIssue": "Problema detetado",
     "freeDayOff": "Dar o resto do dia de folga",
     "decision": {
@@ -4029,7 +4029,8 @@
     "weeklyReportInline": "Relatório semanal",
     "weeklyVolume": "Volume semanal",
     "cancelFollowupPrompt": "Scrims cancelados. Escolhe o seguimento.",
-    "lossStreak": "Sequência de {{count}} derrotas",
+    "lossStreak_one": "Sequência de {{count}} derrota",
+    "lossStreak_other": "Sequência de {{count}} derrotas",
     "risk": {
       "high": "Alto",
       "medium": "Médio",
@@ -4071,7 +4072,8 @@
       "locked": "Bloqueado",
       "played": "Jogado",
       "reviewed": "Revisto",
-      "cancelled": "Cancelado"
+      "cancelled": "Cancelado",
+      "notPlayed": "Não jogado"
     },
     "planCleared": "Plano limpo",
     "notPlanned": "Sem planeamento",
@@ -4081,6 +4083,7 @@
     "noOpponentSet": "Sem adversário definido",
     "finalizeHint": "Ao confirmar, a configuração da semana fica bloqueada. Reabre na próxima segunda-feira.",
     "nothingToDecide": "Não há nada para decidir agora. {{slot}} joga contra {{opponent}} quando continuares.",
+    "nothingToDecideNoRival": "Não há nada para decidir agora. {{slot}} não tem adversário planeado.",
     "recapSummary": "{{objective}}, {{count}} blocos",
     "impactLabel": "Impacto",
     "weekGauges": "Indicadores da semana",

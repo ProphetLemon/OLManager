@@ -6,7 +6,7 @@ import {
   buildTeamLolOvrMap,
   type WeeklyScrimContext,
 } from "@/lib/scrims/scrimContext";
-import { isPlanClearedToday } from "@/lib/scrims/scrimDesk";
+import { displaySlotStatus, isPlanClearedToday } from "@/lib/scrims/scrimDesk";
 import { setWeeklyScrimPlans } from "@/services/trainingService";
 import type { GameStateData } from "@/store/gameStore";
 import { Button } from "@/ui-v2/components/ui/button";
@@ -140,7 +140,7 @@ export default function ScrimPlanningCardV2({
           const labelDay = slotContext?.labelDay ?? 0;
           const labelSuffix = slotContext?.labelSuffix ? ` ${slotContext.labelSuffix}` : "";
           const slotLabel = `${weekdayLabels[labelDay] ?? weekdayLabels[0]}${labelSuffix}`;
-          const status = slotContext?.status ?? "Open";
+          const status = slotContext ? displaySlotStatus(slotContext, weeklyContext) : "Open";
           const StatusIcon = SLOT_STATUS_ICON[status];
           const isLocked = isSaving || readOnly || !slotContext?.canEdit;
           const cleared = slotContext ? isPlanClearedToday(slotContext, weeklyContext) : false;

@@ -40,7 +40,7 @@ function rowLabel(row: ResultRow, t: (key: string, options?: Record<string, unkn
 }
 
 /**
- * What a decision changed, under the wide column. The status line is the only live region: it
+ * What a decision changed, right under the heading of the wide column and before the next card. The status line is the only live region: it
  * announces the decision once, and the rows are read on demand instead of being announced whole.
  */
 export function ScrimDecisionResult({ result, statusText }: ScrimDecisionResultProps) {
@@ -49,7 +49,7 @@ export function ScrimDecisionResult({ result, statusText }: ScrimDecisionResultP
   return (
     <div
       data-slot="scrim-decision-result"
-      className={cn(result && "flex flex-col gap-3 rounded-xl border border-line bg-card p-4 sm:p-5")}
+      className={cn(result && "flex flex-col gap-3 border-b border-line p-4 sm:p-5")}
     >
       <p
         aria-live="polite"
@@ -58,7 +58,7 @@ export function ScrimDecisionResult({ result, statusText }: ScrimDecisionResultP
           statusText
             ? result
               ? "font-heading text-section font-bold uppercase leading-tight tracking-wide"
-              : "rounded-lg border border-line bg-card px-3.5 py-2.5 text-sm font-medium"
+              : "border-b border-line px-4 py-2.5 text-sm font-medium sm:px-5"
             : "sr-only",
         )}
       >

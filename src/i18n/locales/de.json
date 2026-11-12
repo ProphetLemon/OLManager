@@ -3931,7 +3931,7 @@
     "reviewBlockTitle": "Blockauswertung",
     "reviewWin": "Sieg",
     "reviewLoss": "Niederlage",
-    "reportFocus": "Fokus",
+    "reportFocus": "Berichtsfokus",
     "detectedIssue": "Erkanntes Problem",
     "freeDayOff": "Den Rest des Tages freigeben",
     "decision": {
@@ -4030,7 +4030,8 @@
     "weeklyReportInline": "Wochenbericht",
     "weeklyVolume": "Wochenumfang",
     "cancelFollowupPrompt": "Scrims abgesagt. Wähle eine Folgeaktion.",
-    "lossStreak": "{{count}} Niederlagen in Folge",
+    "lossStreak_one": "{{count}} Niederlage in Folge",
+    "lossStreak_other": "{{count}} Niederlagen in Folge",
     "risk": {
       "high": "Hoch",
       "medium": "Mittel",
@@ -4072,7 +4073,8 @@
       "locked": "Gesperrt",
       "played": "Gespielt",
       "reviewed": "Ausgewertet",
-      "cancelled": "Abgesagt"
+      "cancelled": "Abgesagt",
+      "notPlayed": "Nicht gespielt"
     },
     "planCleared": "Plan geleert",
     "notPlanned": "Nicht geplant",
@@ -4082,6 +4084,7 @@
     "noOpponentSet": "Kein Gegner festgelegt",
     "finalizeHint": "Mit dem Abschluss ist die Planung dieser Woche gesperrt. Sie öffnet am nächsten Montag wieder.",
     "nothingToDecide": "Gerade gibt es nichts zu entscheiden. {{slot}} läuft gegen {{opponent}}, sobald du weitermachst.",
+    "nothingToDecideNoRival": "Gerade gibt es nichts zu entscheiden. {{slot}} hat keinen geplanten Gegner.",
     "recapSummary": "{{objective}}, {{count}} Blöcke",
     "impactLabel": "Wirkung",
     "weekGauges": "Wochenwerte",

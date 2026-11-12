@@ -581,7 +581,7 @@
     "reviewBlockTitle": "Block review",
     "reviewWin": "Win",
     "reviewLoss": "Loss",
-    "reportFocus": "Focus",
+    "reportFocus": "Report focus",
     "detectedIssue": "Detected issue",
     "freeDayOff": "Give the rest of the day off",
     "decision": {
@@ -680,7 +680,8 @@
     "weeklyReportInline": "Weekly Report",
     "weeklyVolume": "Weekly Volume",
     "cancelFollowupPrompt": "Scrims cancelled. Pick a follow-up.",
-    "lossStreak": "{{count}}L streak",
+    "lossStreak_one": "{{count}}L streak",
+    "lossStreak_other": "{{count}}L streak",
     "risk": {
       "high": "High",
       "medium": "Medium",
@@ -722,7 +723,8 @@
       "locked": "Locked",
       "played": "Played",
       "reviewed": "Reviewed",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "notPlayed": "Not played"
     },
     "planCleared": "Plan cleared",
     "notPlanned": "Not planned",
@@ -732,6 +734,7 @@
     "noOpponentSet": "No opponent set",
     "finalizeHint": "Finalizing locks this week's setup. It reopens next Monday.",
     "nothingToDecide": "Nothing to decide right now. {{slot}} plays against {{opponent}} when you continue.",
+    "nothingToDecideNoRival": "Nothing to decide right now. {{slot}} has no rival planned.",
     "recapSummary": "{{objective}}, {{count}} blocks",
     "impactLabel": "Impact",
     "weekGauges": "Week gauges",

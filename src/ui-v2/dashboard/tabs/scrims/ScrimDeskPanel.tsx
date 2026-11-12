@@ -8,6 +8,8 @@ interface ScrimDeskPanelProps {
   title: string;
   /** The state of the day, shown at the end of the plate. */
   badge?: string;
+  /** Shown right under the title plate, before the body: what the last decision changed. */
+  status?: ReactNode;
   children: ReactNode;
   className?: string;
 }
@@ -18,7 +20,7 @@ interface ScrimDeskPanelProps {
  * focus the tab moves to it after a decision.
  */
 export const ScrimDeskPanel = forwardRef<HTMLHeadingElement, ScrimDeskPanelProps>(function ScrimDeskPanel(
-  { id, title, badge, children, className },
+  { id, title, badge, status, children, className },
   ref,
 ) {
   return (
@@ -39,6 +41,7 @@ export const ScrimDeskPanel = forwardRef<HTMLHeadingElement, ScrimDeskPanelProps
         </h2>
         {badge ? <TagBlock tone="neutral">{badge}</TagBlock> : null}
       </div>
+      {status}
       {children}
     </section>
   );
