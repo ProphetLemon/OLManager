@@ -1,7 +1,8 @@
 use std::cmp::Ordering;
 
+use super::team_push;
 use super::{
-    BASE_DEFENSE_RECALL_DISTANCE, ChampionRuntime, FIRST_WAVE_CONTEST_UNTIL,
+    AvoidedTarget, BASE_DEFENSE_RECALL_DISTANCE, ChampionRuntime, FIRST_WAVE_CONTEST_UNTIL,
     JUNGLE_CAMP_WAIT_FOR_SPAWN_SEC, JUNGLE_STICKY_CAMP_RADIUS, LANE_COMBAT_UNLOCK_AT,
     LANE_HEALTHY_RETREAT_HP_RATIO, LANE_LOCAL_PRESSURE_RADIUS,
     LANE_STRONG_UNFAVORABLE_PRESSURE_DELTA, LANE_STRUCTURE_PRESSURE_RADIUS,
@@ -15,12 +16,116 @@ use super::{
     lane_fallback_pos_from_tower, lane_farm_anchor_pos_v2, lane_path_for, lane_pre_wave_hold_pos,
     lane_pressure_at, lane_role_profile, lane_wave_front_pos, normalize, normalized_lane,
     normalized_team, set_champion_direct_path, set_champion_direct_path_hysteresis, start_recall,
-    stat_delta,
+    stat_delta, symmetric_structure_pos,
 };
 
 const FORCED_LANE_RECALL_COOLDOWN_SEC: f64 = 55.0;
 const FORCED_LANE_RECALL_MAX_HP_RATIO: f64 = 0.58;
 const WALK_TO_BASE_HEAL_DISTANCE: f64 = 0.17;
+
+/// Champions of a team that must be at the pit to start or keep hitting Baron
+/// or Elder, or only `MAJOR_OBJECTIVE_SHORT_GROUP` once the enemy has at most
+/// `MAJOR_OBJECTIVE_SHORT_ENEMIES_ALIVE` champions alive.
+/// Champions of a team within `MAJOR_OBJECTIVE_GROUP_RADIUS` of the pit count as
+/// being at it.
+const MAJOR_OBJECTIVE_GROUP_RADIUS: f64 = 0.36;
+/// Of those, this many must be within `MAJOR_OBJECTIVE_CLOSE_RADIUS`: laners trading
+/// 0.25 to 0.3 from the pit counted as present, and the jungler hit Baron alone for
+/// minutes while they hovered there.
+const MAJOR_OBJECTIVE_CLOSE_RADIUS: f64 = 0.16;
+const MAJOR_OBJECTIVE_CLOSE_COUNT: usize = 2;
+const MAJOR_OBJECTIVE_MIN_GROUP: usize = 3;
+const MAJOR_OBJECTIVE_SHORT_GROUP: usize = 2;
+const MAJOR_OBJECTIVE_SHORT_ENEMIES_ALIVE: usize = 2;
+/// Health a jungler needs to commit to Baron or Elder. The smaller objectives
+/// only need the enemy-count check: he recalls on his own below
+/// `RECALL_TRIGGER_HP_RATIO`, and demanding more cut early jungle income.
+const MAJOR_OBJECTIVE_COMMIT_MIN_HP_RATIO: f64 = 0.52;
+/// How long a jungler waits at a pit for the group before he gives it up.
+const MAJOR_OBJECTIVE_RALLY_WAIT_SEC: f64 = 30.0;
+/// How long he leaves that pit alone after the wait ran out.
+const MAJOR_OBJECTIVE_RALLY_GIVE_UP_COOLDOWN_SEC: f64 = 90.0;
+/// How long a jungler leaves an objective alone after he chose not to fight
+/// for it or its group fell apart.
+pub(super) const OBJECTIVE_AVOID_COOLDOWN_SEC: f64 = 45.0;
+/// How long a target the champion could not reach is left alone.
+pub(super) const UNREACHABLE_TARGET_AVOID_SEC: f64 = 45.0;
+/// Two targets closer than this are the same target.
+const AVOID_TARGET_MATCH_RADIUS: f64 = 0.03;
+
+pub(super) fn is_major_objective_key(key: &str) -> bool {
+    key == "baron" || key == "elder"
+}
+
+pub(super) fn champion_avoids(champion: &ChampionRuntime, pos: Vec2, now: f64) -> bool {
+    champion
+        .avoid_targets
+        .iter()
+        .any(|avoided| avoided.until > now && dist(avoided.pos, pos) <= AVOID_TARGET_MATCH_RADIUS)
+}
+
+pub(super) fn avoid_target(champion: &mut ChampionRuntime, pos: Vec2, now: f64, for_sec: f64) {
+    champion.avoid_targets.retain(|avoided| {
+        avoided.until > now && dist(avoided.pos, pos) > AVOID_TARGET_MATCH_RADIUS
+    });
+    champion.avoid_targets.push(AvoidedTarget {
+        pos,
+        until: now + for_sec,
+    });
+}
+
+fn major_group_required(champions: &[ChampionRuntime], team: &str) -> usize {
+    let enemies_alive = champions
+        .iter()
+        .filter(|enemy| enemy.alive && normalized_team(&enemy.team) != normalized_team(team))
+        .count();
+    if enemies_alive <= MAJOR_OBJECTIVE_SHORT_ENEMIES_ALIVE {
+        MAJOR_OBJECTIVE_SHORT_GROUP
+    } else {
+        MAJOR_OBJECTIVE_MIN_GROUP
+    }
+}
+
+/// Whether enough champions of `team` stand at the pit at `pos` to hit Baron
+/// or Elder.
+pub(super) fn major_objective_group_ready(
+    champions: &[ChampionRuntime],
+    team: &str,
+    pos: Vec2,
+) -> bool {
+    let within = |radius: f64| {
+        champions
+            .iter()
+            .filter(|ally| {
+                ally.alive
+                    && normalized_team(&ally.team) == normalized_team(team)
+                    && dist(ally.pos, pos) <= radius
+            })
+            .count()
+    };
+    let required = major_group_required(champions, team);
+    within(MAJOR_OBJECTIVE_GROUP_RADIUS) >= required
+        && within(MAJOR_OBJECTIVE_CLOSE_RADIUS) >= MAJOR_OBJECTIVE_CLOSE_COUNT.min(required)
+}
+
+/// Whether enough of the jungler's team is close enough to rotate to the pit
+/// at `pos` for a group to form there.
+fn major_group_can_form(
+    champion: &ChampionRuntime,
+    pos: Vec2,
+    champions: &[ChampionRuntime],
+) -> bool {
+    let reachable = champions
+        .iter()
+        .filter(|ally| {
+            ally.alive
+                && ally.id != champion.id
+                && normalized_team(&ally.team) == normalized_team(&champion.team)
+                && dist(ally.pos, pos) <= MAJOR_OBJECTIVE_TEAM_ASSIST_RADIUS
+        })
+        .count();
+    reachable + 1 >= major_group_required(champions, &champion.team)
+}
 
 pub(super) fn nearest_enemy_champion_snapshot<'a>(
     champion: &ChampionRuntime,
@@ -281,7 +386,9 @@ pub(super) fn pick_allied_lane_fallback_tower(
                 && normalized_team(&s.team) == normalized_team(&champion.team)
                 && normalized_lane(&s.lane) == normalized_lane(&champion.lane)
         })
-        .map(|(idx, tower)| (idx, closest_lane_path_index(tower.pos, lane_path)))
+        .map(|(idx, tower)| {
+            (idx, closest_lane_path_index(symmetric_structure_pos(tower), lane_path))
+        })
         .collect();
 
     towers.sort_by(|(idx_a, path_a), (idx_b, path_b)| {
@@ -426,7 +533,8 @@ pub(super) fn lane_retreat_anchor_pos(
     };
     let tower = &structures[tower_idx];
 
-    let tower_fallback = lane_fallback_pos_from_tower(champion, tower.pos, emergency);
+    let tower_fallback =
+        lane_fallback_pos_from_tower(champion, symmetric_structure_pos(tower), emergency);
     if champion.state == "recall" {
         return tower_fallback;
     }
@@ -454,16 +562,18 @@ pub(super) fn decide_champion_state(
         return;
     }
 
-    if champion_can_afford_next_item(champion) {
-        start_recall(champion, now, champions, minions, structures);
-        return;
-    }
-
     let hp_ratio = if champion.max_hp <= 0.0 {
         1.0
     } else {
         champion.hp / champion.max_hp
     };
+    // A team ahead in numbers takes structures instead of shopping, farming or defending.
+    let pushing = team_push::plays_plan(champion);
+
+    if champion_can_afford_next_item(champion) && !pushing {
+        start_recall(champion, now, champions, minions, structures);
+        return;
+    }
     if hp_ratio <= RECALL_TRIGGER_HP_RATIO {
         let base = base_position_for(&champion.team);
         if dist(champion.pos, base) <= WALK_TO_BASE_HEAL_DISTANCE {
@@ -475,9 +585,21 @@ pub(super) fn decide_champion_state(
         return;
     }
 
+    if pushing
+        && !team_push::base_is_hit(champion, champions, structures)
+        && let Some(order) = champion.push.clone()
+    {
+        champion.state = "objective".to_string();
+        let stand = team_push::stand_position(&order, &champion.team);
+        set_champion_direct_path_hysteresis(champion, stand, OBJECTIVE_PATH_MIN_TARGET_DELTA);
+        return;
+    }
+
     if champion.role == "JGL"
         && let Some(timers) = neutral_timers {
-            if let Some(objective_pos) = pick_live_neutral_objective_pos(champion, timers) {
+            if let Some(objective_pos) =
+                jungler_objective_target(champion, champions, timers, now)
+            {
                 champion.state = "objective".to_string();
                 set_champion_direct_path_hysteresis(
                     champion,
@@ -721,7 +843,9 @@ pub(super) fn decide_champion_state(
     if champion.role == "JGL" {
         champion.state = "jungle".to_string();
         if let Some(timers) = neutral_timers {
-            if let Some(objective_pos) = pick_live_neutral_objective_pos(champion, timers) {
+            if let Some(objective_pos) =
+                jungler_objective_target(champion, champions, timers, now)
+            {
                 champion.state = "objective".to_string();
                 set_champion_direct_path_hysteresis(
                     champion,
@@ -745,9 +869,6 @@ pub(super) fn decide_champion_state(
                 return;
             }
 
-            if neutral_objective_alive(timers) {
-                return;
-            }
         }
 
         if let Some(gank_pos) = pick_jungler_gank_pos(champion, champions, structures) {
@@ -758,6 +879,13 @@ pub(super) fn decide_champion_state(
             );
             return;
         }
+        // Nothing to farm, take or gank: join the nearest living ally so the
+        // jungler is never left without a path.
+        set_champion_direct_path_hysteresis(
+            champion,
+            jungler_fallback_pos(champion, champions),
+            OBJECTIVE_PATH_MIN_TARGET_DELTA,
+        );
         return;
     }
 
@@ -997,6 +1125,7 @@ fn pick_sticky_or_next_jungle_camp_pos(
                 && timer.unlocked
                 && is_own_jungle_camp_key_for_team(&timer.key, &champion.team)
                 && dist(champion.pos, timer.pos) <= JUNGLE_STICKY_CAMP_RADIUS
+                && !champion_avoids(champion, timer.pos, now)
         })
         .min_by(|a, b| {
             dist(champion.pos, a.pos)
@@ -1019,7 +1148,10 @@ fn pick_sticky_or_next_jungle_camp_pos(
             .next_spawn_at
             .map(|spawn_at| spawn_at >= now && spawn_at - now <= JUNGLE_CAMP_WAIT_FOR_SPAWN_SEC)
             .unwrap_or(false);
-        if camp.unlocked && (camp.alive || spawning_soon) {
+        if camp.unlocked
+            && (camp.alive || spawning_soon)
+            && !champion_avoids(champion, camp.pos, now)
+        {
             return Some(camp.pos);
         }
     }
@@ -1027,21 +1159,77 @@ fn pick_sticky_or_next_jungle_camp_pos(
     None
 }
 
-fn neutral_objective_alive(neutral_timers: &NeutralTimersRuntime) -> bool {
-    neutral_timers
+/// The alive objective the jungler walks to now, or `None`. At the pit of a
+/// Baron or Elder without a group he waits for one up to
+/// `MAJOR_OBJECTIVE_RALLY_WAIT_SEC`, then leaves it alone for
+/// `MAJOR_OBJECTIVE_RALLY_GIVE_UP_COOLDOWN_SEC`.
+fn jungler_objective_target(
+    champion: &mut ChampionRuntime,
+    champions: &[ChampionRuntime],
+    neutral_timers: &NeutralTimersRuntime,
+    now: f64,
+) -> Option<Vec2> {
+    let timer = neutral_timers
         .entities
         .values()
-        .any(|timer| timer.alive && timer.unlocked && is_objective_neutral_key(&timer.key))
+        .filter(|timer| timer.alive && timer.unlocked && is_objective_neutral_key(&timer.key))
+        .filter(|timer| jungler_may_take_neutral(champion, timer, champions, now))
+        .min_by(|a, b| {
+            dist(champion.pos, a.pos)
+                .partial_cmp(&dist(champion.pos, b.pos))
+                .unwrap_or(Ordering::Equal)
+                .then_with(|| a.key.cmp(&b.key))
+        })?;
+    let waiting_for_group = is_major_objective_key(&timer.key)
+        && !major_objective_group_ready(champions, &champion.team, timer.pos)
+        && dist(champion.pos, timer.pos) <= OBJECTIVE_ASSIST_RADIUS;
+    if !waiting_for_group {
+        champion.objective_wait_since = 0.0;
+    } else if champion.objective_wait_since <= 0.0 {
+        champion.objective_wait_since = now;
+    } else if now - champion.objective_wait_since > MAJOR_OBJECTIVE_RALLY_WAIT_SEC {
+        champion.objective_wait_since = 0.0;
+        avoid_target(
+            champion,
+            timer.pos,
+            now,
+            MAJOR_OBJECTIVE_RALLY_GIVE_UP_COOLDOWN_SEC,
+        );
+        return None;
+    }
+    Some(timer.pos)
 }
 
-fn pick_live_neutral_objective_pos(
+/// Nearest living allied laner, or the own base when none is alive.
+fn jungler_fallback_pos(champion: &ChampionRuntime, champions: &[ChampionRuntime]) -> Vec2 {
+    champions
+        .iter()
+        .filter(|ally| {
+            ally.alive
+                && ally.id != champion.id
+                && ally.role != "JGL"
+                && normalized_team(&ally.team) == normalized_team(&champion.team)
+        })
+        .min_by(|a, b| {
+            dist(champion.pos, a.pos)
+                .partial_cmp(&dist(champion.pos, b.pos))
+                .unwrap_or(Ordering::Equal)
+                .then_with(|| a.id.cmp(&b.id))
+        })
+        .map_or_else(|| base_position_for(&champion.team), |ally| ally.pos)
+}
+
+/// Nearest alive objective within `radius` of the champion.
+pub(super) fn nearest_alive_objective_pos(
     champion: &ChampionRuntime,
     neutral_timers: &NeutralTimersRuntime,
+    radius: f64,
 ) -> Option<Vec2> {
     neutral_timers
         .entities
         .values()
-        .filter(|timer| timer.alive && timer.unlocked && is_objective_neutral_key(&timer.key))
+        .filter(|timer| timer.alive && is_objective_neutral_key(&timer.key))
+        .filter(|timer| dist(champion.pos, timer.pos) <= radius)
         .min_by(|a, b| {
             dist(champion.pos, a.pos)
                 .partial_cmp(&dist(champion.pos, b.pos))
@@ -1200,11 +1388,15 @@ pub(super) fn active_objective_attempt_for_team<'a>(
                 .filter(|timer| timer.alive && is_objective_neutral_key(&timer.key))
                 .filter(|timer| dist(allied_jungler.pos, timer.pos) <= OBJECTIVE_ASSIST_RADIUS)
                 .filter(|timer| {
-                    champions.iter().any(|enemy| {
-                        enemy.alive
-                            && normalized_team(&enemy.team) == enemy_team
-                            && dist(enemy.pos, timer.pos) <= MAJOR_OBJECTIVE_TEAM_ASSIST_RADIUS
-                    })
+                    // A jungler waiting at the pit of Baron or Elder is rallying
+                    // the group, so the laners rotate without an enemy there.
+                    is_major_objective_key(&timer.key)
+                        || champions.iter().any(|enemy| {
+                            enemy.alive
+                                && normalized_team(&enemy.team) == enemy_team
+                                && dist(enemy.pos, timer.pos)
+                                    <= MAJOR_OBJECTIVE_TEAM_ASSIST_RADIUS
+                        })
                 })
                 .min_by(|a, b| {
                     dist(allied_jungler.pos, a.pos)
@@ -1325,13 +1517,13 @@ fn can_rotate_without_suicide(
     ally_nearby + 1 + sync_bonus >= enemy_nearby
 }
 
-fn should_jungler_commit_major_objective(
+fn should_jungler_commit_objective(
     champion: &ChampionRuntime,
     objective: &NeutralTimerRuntime,
     champions: &[ChampionRuntime],
 ) -> bool {
     let hp_ratio = super::ratio_or_zero(champion.hp, champion.max_hp);
-    if hp_ratio < 0.52 {
+    if is_major_objective_key(&objective.key) && hp_ratio < MAJOR_OBJECTIVE_COMMIT_MIN_HP_RATIO {
         return false;
     }
     let ally_nearby = champions
@@ -1353,13 +1545,60 @@ fn should_jungler_commit_major_objective(
     ally_nearby + 1 >= enemy_nearby
 }
 
+/// Whether the jungler may go for `timer`. Every objective needs enough health
+/// and no outnumbering enemies at it; Baron and Elder also need a group that
+/// can form; a target the jungler recently gave up or could not reach is left
+/// alone.
+pub(super) fn jungler_may_take_neutral(
+    champion: &ChampionRuntime,
+    timer: &NeutralTimerRuntime,
+    champions: &[ChampionRuntime],
+    now: f64,
+) -> bool {
+    if champion_avoids(champion, timer.pos, now) {
+        return false;
+    }
+    if !is_objective_neutral_key(&timer.key) {
+        return true;
+    }
+    if !should_jungler_commit_objective(champion, timer, champions) {
+        return false;
+    }
+    !is_major_objective_key(&timer.key) || major_group_can_form(champion, timer.pos, champions)
+}
+
+/// Champions that defend a base tower against a wave with no enemy champion at it.
+const WAVE_DEFENDERS: usize = 2;
+
+/// Whether `champion` is one of the `WAVE_DEFENDERS` living allies nearest to
+/// `pos` (ties broken by id, so every ally computes the same set).
+fn is_nearest_to_defend(
+    champion: &ChampionRuntime,
+    champions: &[ChampionRuntime],
+    pos: Vec2,
+) -> bool {
+    let nearer = champions
+        .iter()
+        .filter(|ally| {
+            ally.alive
+                && ally.id != champion.id
+                && normalized_team(&ally.team) == normalized_team(&champion.team)
+        })
+        .filter(|ally| {
+            let (d_ally, d_self) = (dist(ally.pos, pos), dist(champion.pos, pos));
+            d_ally < d_self || (d_ally == d_self && ally.id < champion.id)
+        })
+        .count();
+    nearer < WAVE_DEFENDERS
+}
+
 fn allied_nexus_under_threat_pos(
     champion: &ChampionRuntime,
     champions: &[ChampionRuntime],
     minions: &[MinionRuntime],
     structures: &[StructureRuntime],
 ) -> Option<Vec2> {
-    let allied_nexus_towers: Vec<&StructureRuntime> = structures
+    let mut allied_nexus_towers: Vec<&StructureRuntime> = structures
         .iter()
         .filter(|structure| {
             structure.alive
@@ -1368,6 +1607,19 @@ fn allied_nexus_under_threat_pos(
                 && normalized_team(&structure.team) == normalized_team(&champion.team)
         })
         .collect();
+    if allied_nexus_towers.is_empty() {
+        // With both towers down the nexus itself is what the enemy is after: a match was lost
+        // by a team with 34 kills to 3 whose champions stood 0.2 from a nexus that four
+        // enemy champions were hitting, because nothing called them home.
+        allied_nexus_towers = structures
+            .iter()
+            .filter(|structure| {
+                structure.alive
+                    && structure.kind == "nexus"
+                    && normalized_team(&structure.team) == normalized_team(&champion.team)
+            })
+            .collect();
+    }
     if allied_nexus_towers.is_empty() {
         return None;
     }
@@ -1382,7 +1634,11 @@ fn allied_nexus_under_threat_pos(
                 && normalized_team(&enemy.team) != normalized_team(&champion.team)
                 && dist(enemy.pos, tower.pos) <= NEXUS_DEFENSE_THREAT_RADIUS
         });
-        if champion_threat || minion_threat {
+        // An enemy champion at the base calls the whole team home. A wave alone
+        // only needs the nearest champions: the rest of the team keeps playing.
+        if champion_threat
+            || (minion_threat && is_nearest_to_defend(champion, champions, tower.pos))
+        {
             return Some(tower.pos);
         }
     }
@@ -1408,13 +1664,10 @@ pub(super) fn pick_macro_objective_pos(
         let Some(timer) = neutral_timers.entities.get(key) else {
             continue;
         };
-        if !timer.unlocked {
+        if !timer.unlocked || !jungler_may_take_neutral(champion, timer, champions, now) {
             continue;
         }
         if timer.alive {
-            if !should_jungler_commit_major_objective(champion, timer, champions) {
-                continue;
-            }
             return Some(timer.pos);
         }
         if let Some(next_spawn_at) = timer.next_spawn_at
@@ -1457,7 +1710,7 @@ pub(super) fn pick_macro_objective_pos(
             let Some(timer) = neutral_timers.entities.get(key) else {
                 continue;
             };
-            if !timer.unlocked {
+            if !timer.unlocked || !jungler_may_take_neutral(champion, timer, champions, now) {
                 continue;
             }
             if timer.alive {
@@ -1473,7 +1726,7 @@ pub(super) fn pick_macro_objective_pos(
         let Some(timer) = neutral_timers.entities.get(key) else {
             continue;
         };
-        if !timer.unlocked {
+        if !timer.unlocked || !jungler_may_take_neutral(champion, timer, champions, now) {
             continue;
         }
         if timer.alive {
@@ -1492,7 +1745,7 @@ pub(super) fn pick_macro_objective_pos(
         let Some(timer) = neutral_timers.entities.get(key) else {
             continue;
         };
-        if !timer.unlocked {
+        if !timer.unlocked || !jungler_may_take_neutral(champion, timer, champions, now) {
             continue;
         }
         if timer.alive {

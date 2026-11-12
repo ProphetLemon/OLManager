@@ -20,6 +20,16 @@ pub(super) enum MinionKiller {
     Minion,
 }
 
+/// What took health from a champion.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(super) enum DamageSource {
+    Champion,
+    Minion,
+    Tower,
+    /// Summoner spells and anything else.
+    Other,
+}
+
 /// One kind of minion death: whose minion, in which lane, killed by what, and
 /// which champion had hit it last (the champion who is paid, for a champion kill).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -60,6 +70,11 @@ pub(super) struct DeathTally {
 #[derive(Debug, Clone, Default)]
 pub(super) struct FarmLedger {
     deaths: HashMap<DeathKey, DeathTally>,
+    /// Health taken from each champion, by what dealt it (nominal damage, not
+    /// clipped to the health left).
+    damage: HashMap<(String, DamageSource), f64>,
+    /// Health taken from each champion by another champion, by the attacker's role.
+    damage_by_attacker_role: HashMap<(String, String), f64>,
 }
 
 impl FarmLedger {
@@ -80,6 +95,30 @@ impl FarmLedger {
         let tally = self.deaths.entry(key).or_default();
         tally.count += 1;
         tally.arc_sum += arc_fraction(pos, lane_path_blue(lane));
+    }
+
+    pub(super) fn record_damage(&mut self, champion_id: &str, source: DamageSource, amount: f64) {
+        *self
+            .damage
+            .entry((champion_id.to_string(), source))
+            .or_default() += amount;
+    }
+
+    pub(super) fn record_champion_hit(&mut self, defender_id: &str, attacker_role: &str, amount: f64) {
+        *self
+            .damage_by_attacker_role
+            .entry((defender_id.to_string(), attacker_role.to_string()))
+            .or_default() += amount;
+    }
+
+    #[cfg(test)]
+    pub(super) fn damage_by_attacker_role(&self) -> &HashMap<(String, String), f64> {
+        &self.damage_by_attacker_role
+    }
+
+    #[cfg(test)]
+    pub(super) fn damage(&self) -> &HashMap<(String, DamageSource), f64> {
+        &self.damage
     }
 
     #[cfg(test)]

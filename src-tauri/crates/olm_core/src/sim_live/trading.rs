@@ -405,6 +405,36 @@ pub(super) fn enemy_overextended_in_lane(
     enemy_idx <= overextended_max_idx
 }
 
+/// A laner's trade is over once his health is below this share and he is not the one winning it.
+/// [PLACEHOLDER] pending playtest: it decides how many exchanges a lane has before a recall.
+pub(super) const TRADE_FLOOR_HP_RATIO: f64 = 0.70;
+/// Health lead over the enemy at which a laner below the floor is still the one winning.
+const TRADE_FLOOR_ENEMY_MARGIN: f64 = 0.05;
+
+/// Whether a laner has taken what a trade is worth and should back off: his health is under
+/// `TRADE_FLOOR_HP_RATIO`, the enemy is not clearly lower, and nothing makes the fight a sure
+/// win (more allies than enemies there, or an enemy about to die). Without it any hit
+/// started a fight that both laners kept up until one of them was low enough to recall.
+pub(super) fn trade_floor_reached(
+    champion: &ChampionRuntime,
+    enemy: &ChampionRuntime,
+    champions: &[ChampionRuntime],
+    minions: &[MinionRuntime],
+) -> bool {
+    if champion.role == "JGL" || champion.max_hp <= 0.0 {
+        return false;
+    }
+    let self_hp = champion.hp / champion.max_hp;
+    let enemy_hp = if enemy.max_hp <= 0.0 {
+        1.0
+    } else {
+        enemy.hp / enemy.max_hp
+    };
+    self_hp < TRADE_FLOOR_HP_RATIO
+        && self_hp <= enemy_hp + TRADE_FLOOR_ENEMY_MARGIN
+        && !should_commit_all_in_trade(champion, enemy, champions, minions)
+}
+
 pub(super) fn should_commit_all_in_trade(
     champion: &ChampionRuntime,
     enemy: &ChampionRuntime,

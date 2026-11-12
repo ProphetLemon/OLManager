@@ -83,6 +83,9 @@ pub(super) fn test_champion(
         path_stuck_for_sec: 0.0,
         forced_lane_recall_cd_until: 0.0,
         debug_ai_decision: String::new(),
+        avoid_targets: Vec::new(),
+        objective_wait_since: 0.0,
+        push: None,
     }
 }
 
@@ -122,6 +125,9 @@ pub(super) fn test_structure(id: &str, team: &str, lane: &str, pos: Vec2) -> Str
         attack_cd_until: 0.0,
         forced_target_champion_id: None,
         forced_target_until: 0.0,
+        ramp_target_id: None,
+        ramp_shots: 0,
+        ramp_last_shot_at: 0.0,
     }
 }
 
@@ -165,6 +171,8 @@ pub(super) fn test_runtime(
         lane_combat_state_by_champion: HashMap::new(),
         gold_ledger: GoldLedger::default(),
         farm_ledger: FarmLedger::default(),
+        tower_ledger: TowerLedger::default(),
+        team_push: Default::default(),
         extra: HashMap::new(),
     }
 }
@@ -187,6 +195,7 @@ pub(super) fn test_neutral_timer(key: &str, pos: Vec2, alive: bool) -> NeutralTi
         last_taken_at: None,
         times_spawned: 1,
         times_taken: 0,
+        last_hit_at: None,
         pos,
         extra: HashMap::new(),
     }

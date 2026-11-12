@@ -21,6 +21,9 @@ mod runtime;
 mod session;
 mod state_init;
 mod structures;
+mod team_push;
+mod tower_ledger;
+mod tower_safety;
 mod trading;
 mod types;
 mod util;
@@ -30,10 +33,10 @@ mod waves;
 pub use api::*;
 use economy::{
     BARON_TEAM_GOLD, champion_kill_rewards, jungle_camp_cs_reward, jungle_camp_reward,
-    role_adjusted_income, tower_team_gold,
+    passive_payment, passive_payments_due, role_adjusted_income, tower_team_gold,
 };
 use events::{log_event, push_event};
-use farm_ledger::{FarmLedger, MinionKiller};
+use farm_ledger::{DamageSource, FarmLedger, MinionKiller};
 use gold_ledger::{GoldLedger, GoldSource};
 use layout::{
     BASE_POSITION_BLUE, BASE_POSITION_RED, LANE_PATH_BOT_BLUE, LANE_PATH_MID_BLUE,
@@ -50,8 +53,10 @@ pub use session::*;
 use state_init::{build_neutral_timers_state, create_initial_state, ensure_runtime_state_defaults};
 use structures::{
     apply_damage_to_structure, create_structures, is_structure_targetable, resolve_structure_combat,
+    wave_alone_cannot_break,
 };
 pub use types::*;
+use tower_ledger::{TowerLedger, TowerShot, TowerVictim};
 use types::{
     RuntimeEvent, RuntimeStats, RuntimeSummonerSpellSlot, RuntimeTeamStats, RuntimeUltimateSlot,
     Vec2, WardRuntime,
@@ -131,6 +136,12 @@ pub(crate) struct RuntimeState {
     /// How lane minions died, for the farming measurements; never read by the simulation.
     #[serde(default, skip)]
     farm_ledger: FarmLedger,
+    /// Tower shots of the current tick, for the tower measurements; never read by the simulation.
+    #[serde(default, skip)]
+    tower_ledger: TowerLedger,
+    /// The plan of each team that is ahead in numbers: blue first, red second.
+    #[serde(default)]
+    team_push: [team_push::TeamPush; 2],
     #[serde(default)]
     #[serde(flatten)]
     extra: HashMap<String, Value>,
@@ -228,6 +239,23 @@ struct ChampionRuntime {
     forced_lane_recall_cd_until: f64,
     #[serde(default)]
     debug_ai_decision: String,
+    /// Targets the champion must not pick again until the time shown.
+    #[serde(default)]
+    avoid_targets: Vec<AvoidedTarget>,
+    /// When the champion started waiting at a Baron or Elder pit for a group
+    /// to form; 0 while it is not waiting.
+    #[serde(default)]
+    objective_wait_since: f64,
+    /// What the champion is told to do while his team plays the numbers-advantage plan.
+    #[serde(default)]
+    push: Option<team_push::PushOrder>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AvoidedTarget {
+    pos: Vec2,
+    until: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -272,6 +300,14 @@ struct StructureRuntime {
     forced_target_champion_id: Option<String>,
     #[serde(default)]
     forced_target_until: f64,
+    /// Champion the tower has been shooting in a row, for the damage ramp.
+    #[serde(default)]
+    ramp_target_id: Option<String>,
+    /// Shots in a row at `ramp_target_id` before the last one.
+    #[serde(default)]
+    ramp_shots: u32,
+    #[serde(default)]
+    ramp_last_shot_at: f64,
 }
 
 #[derive(Clone, Copy)]
@@ -448,6 +484,10 @@ struct NeutralTimerRuntime {
     times_spawned: i64,
     #[serde(default)]
     times_taken: i64,
+    /// Last time a champion damaged it; Baron and Elder heal back to full when
+    /// nobody has hit them for a while.
+    #[serde(default)]
+    last_hit_at: Option<f64>,
     pos: Vec2,
     #[serde(default)]
     #[serde(flatten)]
@@ -518,12 +558,15 @@ const TRADE_SCORE_WEIGHT_TOWER_DISTANCE: f64 = 0.56;
 const TRADE_SCORE_WEIGHT_ENEMY_OVEREXTENDED: f64 = 0.74;
 const TRADE_SCORE_WEIGHT_FIRST_WAVE: f64 = -0.22;
 const ASSIST_RADIUS: f64 = 0.11;
-const CHAMPION_KILL_GOLD: i64 = 220;
-const CHAMPION_ASSIST_GOLD_TOTAL: i64 = 110;
+const CHAMPION_KILL_GOLD: i64 = 300;
+const CHAMPION_ASSIST_GOLD_TOTAL: i64 = 150;
+/// Gold of a lane minion's last hit, before the role weight. [PLACEHOLDER] pending playtest.
+const LANE_MINION_MELEE_GOLD: i64 = 31;
+const LANE_MINION_RANGED_GOLD: i64 = 23;
 const CHAMPION_KILL_XP: i64 = 180;
 const CHAMPION_LAST_DAMAGE_KILL_CREDIT_SEC: f64 = 60.0;
-const CHAMPION_KILL_GOLD_MIN: i64 = 150;
-const CHAMPION_KILL_GOLD_MAX: i64 = 450;
+const CHAMPION_KILL_GOLD_MIN: i64 = 200;
+const CHAMPION_KILL_GOLD_MAX: i64 = 600;
 const CHAMPION_KILL_XP_MIN: i64 = 150;
 const CHAMPION_KILL_XP_MAX: i64 = 360;
 const CHAMPION_RESPAWN_BASE_SEC: f64 = 18.0;
@@ -545,17 +588,24 @@ const TOWER_NEXUS_HP: f64 = 4590.0;
 const INHIBITOR_HP: f64 = 4000.0;
 const NEXUS_HP: f64 = 5500.0;
 const EARLY_TOWER_FORTIFICATION_END_AT: f64 = 14.0 * 60.0;
-const TOWER_FORTIFICATION_REDUCTION_AT_14: f64 = 0.90;
-const TOWER_FORTIFICATION_REDUCTION_AT_20: f64 = 0.80;
-const TOWER_FORTIFICATION_REDUCTION_AT_25: f64 = 0.70;
-const TOWER_FORTIFICATION_REDUCTION_AT_30: f64 = 0.60;
-const TOWER_FORTIFICATION_REDUCTION_AT_35: f64 = 0.35;
 const CHAMPION_ATTACK_CADENCE_SEC: f64 = 1.0;
+// A tower shot at a champion: flat part + growth per game minute + a share of
+// the target's maximum health, times a ramp while it keeps shooting the same
+// champion. [PLACEHOLDER] tuned so a lone tower kills a non-tank champion in
+// at most 8 shots and a tank in at most 14 at minutes 15, 25 and 35.
 const TOWER_SHOT_DAMAGE: f64 = 40.0;
-const TOWER_SHOT_DAMAGE_TO_MINION: f64 = 24.0;
+const TOWER_SHOT_DAMAGE_PER_MINUTE: f64 = 3.0;
+const TOWER_SHOT_GROWTH_END_MINUTE: f64 = 40.0;
+const TOWER_SHOT_MAX_HP_SHARE: f64 = 0.01;
+const TOWER_SHOT_RAMP_PER_SHOT: f64 = 0.4;
+const TOWER_SHOT_RAMP_MAX_STEPS: u32 = 3;
+const TOWER_SHOT_RAMP_WINDOW_SEC: f64 = 3.0;
+const TOWER_SHOT_DAMAGE_TO_MINION: f64 = 30.0;
 const TOWER_ATTACK_RANGE: f64 = 0.08;
 const TOWER_ATTACK_CADENCE_SEC: f64 = 1.0;
-const TOWER_AGGRO_LOCK_SEC: f64 = 2.6;
+// Long enough for four shots at the cadence a tower really fires at (one per
+// two coarse ticks); every further attack on a defender renews it.
+const TOWER_AGGRO_LOCK_SEC: f64 = 4.0;
 const TOWER_AGGRO_VICTIM_RADIUS: f64 = 0.09;
 const TOWER_AGGRO_ATTACKER_RADIUS: f64 = 0.10;
 const EVENT_CAP: usize = 200;
@@ -583,6 +633,8 @@ const JUNGLE_CAMP_WAIT_FOR_SPAWN_SEC: f64 = 35.0;
 const OBJECTIVE_ATTEMPT_RADIUS: f64 = 0.12;
 const OBJECTIVE_ASSIST_RADIUS: f64 = 0.24;
 const MAJOR_OBJECTIVE_TEAM_ASSIST_RADIUS: f64 = 0.52;
+/// Baron and Elder heal back to full health when nobody hit them for this long.
+const MAJOR_OBJECTIVE_RESET_AFTER_SEC: f64 = 20.0;
 const BASE_DEFENSE_RECALL_DISTANCE: f64 = 0.34;
 const NEXUS_DEFENSE_THREAT_RADIUS: f64 = 0.13;
 const ALLY_HELP_RADIUS: f64 = 0.205;
@@ -1601,8 +1653,8 @@ fn neutral_timer_templates() -> Vec<NeutralTimerTemplate> {
             combat_grace_until: None,
             unlocked: true,
             pos: Vec2 {
-                x: 0.2584635416666667,
-                y: 0.56640625,
+                x: 0.3528645833333333,
+                y: 0.525390625,
             },
         },
         NeutralTimerTemplate {
@@ -1631,8 +1683,8 @@ fn neutral_timer_templates() -> Vec<NeutralTimerTemplate> {
             combat_grace_until: None,
             unlocked: true,
             pos: Vec2 {
-                x: 0.4759114583333333,
-                y: 0.6432291666666666,
+                x: 0.458,
+                y: 0.691,
             },
         },
         NeutralTimerTemplate {
@@ -1646,8 +1698,8 @@ fn neutral_timer_templates() -> Vec<NeutralTimerTemplate> {
             combat_grace_until: None,
             unlocked: true,
             pos: Vec2 {
-                x: 0.748046875,
-                y: 0.4361979166666667,
+                x: 0.691,
+                y: 0.458,
             },
         },
         NeutralTimerTemplate {
@@ -1940,10 +1992,10 @@ fn stat_delta(score: f64) -> f64 {
 }
 
 /// Exponent per point of power difference in `champion_strength_damage_multiplier`.
-/// [PLACEHOLDER] 0.45: at 95 vs 40 visible stats the stronger side deals about
-/// 2.3x the damage it takes and wins about 95% of matches; at 80 vs 60 about
-/// 1.35x and 60%+. Tune with the ignored sweep in `strength_tests`.
-const STRENGTH_DAMAGE_EXPONENT: f64 = 0.45;
+/// [PLACEHOLDER] 0.42, fitted with the plan of the team ahead in numbers (real champions, 300
+/// matches): 0.38 gave 94.0% for the stronger team at 95 vs 40, 0.42 gives 95.7%, and 80 vs 60
+/// stays inside 66% to 80% (74.3% then, 78.7% now). Even matches do not depend on it.
+const STRENGTH_DAMAGE_EXPONENT: f64 = 0.42;
 
 /// Weight of the role edge (+-4) in a champion's power, in stat-delta units.
 /// [PLACEHOLDER] 0.28: +4 against -4 is a damage ratio of about 1.25.
@@ -3081,7 +3133,28 @@ fn should_disengage_champion_trade(
     .decision
 }
 
+/// Where a laner stands to farm. A wave pushed to the enemy tower leaves the spot between
+/// the two fronts inside the tower's reach, with none of his minions left to take the
+/// shots there; he stands just outside it instead.
 fn lane_farm_anchor_pos_v2(
+    champion: &ChampionRuntime,
+    now: f64,
+    champions: &[ChampionRuntime],
+    minions: &[MinionRuntime],
+    structures: &[StructureRuntime],
+) -> Vec2 {
+    let anchor = lane_farm_anchor_toward_wave(champion, now, champions, minions, structures);
+    let around = tower_safety::Surroundings {
+        now,
+        step_sec: 0.0,
+        champions,
+        minions,
+        structures,
+    };
+    tower_safety::outside_bare_tower_reach(champion, anchor, &around)
+}
+
+fn lane_farm_anchor_toward_wave(
     champion: &ChampionRuntime,
     now: f64,
     champions: &[ChampionRuntime],
@@ -3143,8 +3216,8 @@ fn lane_farm_anchor_pos_v2(
         }
     }
 
-    // After lane start, MID should play tightly around wave instead of static lane anchor.
-    if champion.role == "MID" && now > FIRST_WAVE_CONTEST_UNTIL {
+    // After lane start, every solo laner plays tightly around the wave instead of a static lane anchor.
+    if matches!(champion.role.as_str(), "MID" | "TOP" | "ADC") && now > FIRST_WAVE_CONTEST_UNTIL {
         return Vec2 {
             x: clamp(wave_front.x, 0.01, 0.99),
             y: clamp(wave_front.y, 0.01, 0.99),
@@ -3168,30 +3241,31 @@ fn lane_farm_anchor_pos_v2(
                 && normalized_lane(&s.lane) == normalized_lane(&champion.lane)
         })
         .min_by(|a, b| {
-            dist(champion.pos, a.pos)
-                .partial_cmp(&dist(champion.pos, b.pos))
+            dist(champion.pos, symmetric_structure_pos(a))
+                .partial_cmp(&dist(champion.pos, symmetric_structure_pos(b)))
                 .unwrap_or(Ordering::Equal)
                 .then_with(|| a.id.cmp(&b.id))
         });
     let wave_at_own_tower = allied_lane_tower
-        .map(|tower| dist(wave_front, tower.pos) <= 0.11)
+        .map(|tower| dist(wave_front, symmetric_structure_pos(tower)) <= 0.11)
         .unwrap_or(false);
 
     if wave_at_own_tower && champion.role != "SUP"
         && let Some(tower) = allied_lane_tower {
+            let tower_pos = symmetric_structure_pos(tower);
             let to_wave_from_tower = normalize(Vec2 {
-                x: wave_front.x - tower.pos.x,
-                y: wave_front.y - tower.pos.y,
+                x: wave_front.x - tower_pos.x,
+                y: wave_front.y - tower_pos.y,
             });
             let front_offset = clamp(champion.attack_range * 0.7, 0.02, 0.034);
             return Vec2 {
                 x: clamp(
-                    tower.pos.x + to_wave_from_tower.x * front_offset,
+                    tower_pos.x + to_wave_from_tower.x * front_offset,
                     0.01,
                     0.99,
                 ),
                 y: clamp(
-                    tower.pos.y + to_wave_from_tower.y * front_offset,
+                    tower_pos.y + to_wave_from_tower.y * front_offset,
                     0.01,
                     0.99,
                 ),
@@ -3283,9 +3357,30 @@ fn issue_lane_disengage(runtime: &mut RuntimeState, champion_idx: usize, threat_
         )
     };
 
+    // A jungler who will not fight for an objective leaves it alone for a while
+    // instead of walking back to it on his next decision.
+    let contested_objective = (champion_snapshot.role == "JGL")
+        .then(|| decode_neutral_timers_state(&runtime.neutral_timers))
+        .flatten()
+        .and_then(|timers| {
+            macro_ai::nearest_alive_objective_pos(
+                &champion_snapshot,
+                &timers,
+                OBJECTIVE_ASSIST_RADIUS,
+            )
+        });
+
     let champion = &mut runtime.champions[champion_idx];
     if champion.role != "JGL" {
         mark_lane_disengage(champion, now, &mut runtime.lane_combat_state_by_champion);
+    }
+    if let Some(objective_pos) = contested_objective {
+        macro_ai::avoid_target(
+            champion,
+            objective_pos,
+            now,
+            macro_ai::OBJECTIVE_AVOID_COOLDOWN_SEC,
+        );
     }
     champion.state = "lane".to_string();
     set_champion_direct_path(champion, fallback);
@@ -4255,6 +4350,11 @@ fn tick_ignite_dot_effects(runtime: &mut RuntimeState, now: f64) {
         }
 
         runtime.champions[idx].hp -= SUMMONER_IGNITE_DPS * 0.2;
+        runtime.farm_ledger.record_damage(
+            &runtime.champions[idx].id,
+            DamageSource::Other,
+            SUMMONER_IGNITE_DPS * 0.2,
+        );
         runtime.champions[idx].last_damaged_at = now;
 
         if runtime.champions[idx].hp > 0.0 {
@@ -4998,6 +5098,25 @@ fn attack_neutral_if_in_range(
         return false;
     }
 
+    let is_major = macro_ai::is_major_objective_key(key);
+    if is_major
+        && !macro_ai::major_objective_group_ready(
+            &runtime.champions,
+            &runtime.champions[champion_idx].team,
+            timer.pos,
+        )
+    {
+        // The group fell apart (or never formed): leave the pit alone for a while.
+        let now = runtime.time_sec;
+        macro_ai::avoid_target(
+            &mut runtime.champions[champion_idx],
+            timer.pos,
+            now,
+            macro_ai::OBJECTIVE_AVOID_COOLDOWN_SEC,
+        );
+        return false;
+    }
+
     let distance = dist(runtime.champions[champion_idx].pos, timer.pos);
     let is_objective = is_objective_neutral_key(key);
     let max_range = if is_objective {
@@ -5020,6 +5139,7 @@ fn attack_neutral_if_in_range(
     if let Some(timer_mut) = neutral_timers.entities.get_mut(key) {
         let prev_hp = timer_mut.hp;
         timer_mut.hp -= damage;
+        timer_mut.last_hit_at = Some(runtime.time_sec);
         killed = timer_mut.hp <= 0.0;
 
         if key == "voidgrubs" {
@@ -5205,8 +5325,8 @@ fn should_engage_enemy_champion(
         structure.alive
             && structure.kind == "tower"
             && normalized_team(&structure.team) == normalized_team(&target.team)
-            && dist(structure.pos, target.pos) <= TOWER_AGGRO_VICTIM_RADIUS
-            && dist(structure.pos, attacker.pos) <= TOWER_AGGRO_ATTACKER_RADIUS
+            && dist(symmetric_structure_pos(structure), target.pos) <= TOWER_AGGRO_VICTIM_RADIUS
+            && dist(symmetric_structure_pos(structure), attacker.pos) <= TOWER_AGGRO_ATTACKER_RADIUS
     });
 
     if target_under_defending_tower && fight_plan != "Dive" {
@@ -5276,8 +5396,8 @@ fn can_champion_tower_dive(
         structure.alive
             && structure.kind == "tower"
             && normalized_team(&structure.team) == normalized_team(&target.team)
-            && dist(structure.pos, target.pos) <= TOWER_AGGRO_VICTIM_RADIUS
-            && dist(structure.pos, attacker.pos) <= TOWER_AGGRO_ATTACKER_RADIUS
+            && dist(symmetric_structure_pos(structure), target.pos) <= TOWER_AGGRO_VICTIM_RADIUS
+            && dist(symmetric_structure_pos(structure), attacker.pos) <= TOWER_AGGRO_ATTACKER_RADIUS
     });
 
     let Some(tower) = defending_tower else {
@@ -5419,6 +5539,12 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
             * attack_damage_multiplier
             * strength_mult;
         defender.hp -= outgoing;
+        runtime
+            .farm_ledger
+            .record_damage(&defender.id, DamageSource::Champion, outgoing);
+        runtime
+            .farm_ledger
+            .record_champion_hit(&defender.id, &attacker.role, outgoing);
         defender.last_damaged_by_champion_id = Some(attacker.id.clone());
         defender.last_damaged_by_champion_at = now;
         defender.last_damaged_at = now;
@@ -5456,6 +5582,12 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
             * attack_damage_multiplier
             * strength_mult;
         defender.hp -= outgoing;
+        runtime
+            .farm_ledger
+            .record_damage(&defender.id, DamageSource::Champion, outgoing);
+        runtime
+            .farm_ledger
+            .record_champion_hit(&defender.id, &attacker.role, outgoing);
         defender.last_damaged_by_champion_id = Some(attacker.id.clone());
         defender.last_damaged_by_champion_at = now;
         defender.last_damaged_at = now;
@@ -5560,12 +5692,17 @@ fn mark_tower_aggro_on_champion_attack(
         if dist(tower.pos, victim.pos) > TOWER_AGGRO_VICTIM_RADIUS {
             continue;
         }
-        if dist(tower.pos, attacker.pos) > TOWER_AGGRO_ATTACKER_RADIUS {
+        // A tower cannot shoot beyond its range: a lock on an attacker outside
+        // it would only replace a lock the tower can use. The decision code
+        // still reads `TOWER_AGGRO_ATTACKER_RADIUS`.
+        if dist(tower.pos, attacker.pos) > TOWER_ATTACK_RANGE {
+            runtime.tower_ledger.record_lock(false);
             continue;
         }
 
         tower.forced_target_champion_id = Some(attacker.id.clone());
         tower.forced_target_until = now + TOWER_AGGRO_LOCK_SEC;
+        runtime.tower_ledger.record_lock(true);
     }
 }
 
@@ -5673,26 +5810,6 @@ fn add_dragon_stack_for_kind(team_buffs: &mut RuntimeTeamBuffState, kind: &str) 
     team_buffs.dragon_stacks += 1;
 }
 
-fn tower_damage_multiplier(at_time_sec: f64, structure: &StructureRuntime) -> f64 {
-    if structure.kind != "tower" {
-        return 1.0;
-    }
-
-    let reduction = if at_time_sec < 20.0 * 60.0 {
-        TOWER_FORTIFICATION_REDUCTION_AT_14
-    } else if at_time_sec < 25.0 * 60.0 {
-        TOWER_FORTIFICATION_REDUCTION_AT_20
-    } else if at_time_sec < 30.0 * 60.0 {
-        TOWER_FORTIFICATION_REDUCTION_AT_25
-    } else if at_time_sec < 35.0 * 60.0 {
-        TOWER_FORTIFICATION_REDUCTION_AT_30
-    } else {
-        TOWER_FORTIFICATION_REDUCTION_AT_35
-    };
-
-    1.0 - reduction
-}
-
 fn add_gold_xp_to_champion(
     runtime: &mut RuntimeState,
     champion_id: &str,
@@ -5705,7 +5822,13 @@ fn add_gold_xp_to_champion(
         .iter_mut()
         .find(|champion| champion.id == champion_id)
     {
-        let gold = role_adjusted_income(&champion.role, gold);
+        // The role weight shapes the farm (camps here, lane minions at their last hit); kills,
+        // assists and objectives pay the same whoever gets them.
+        let gold = if source == GoldSource::JungleCamp {
+            role_adjusted_income(&champion.role, gold)
+        } else {
+            gold
+        };
         champion.gold += gold;
         champion.xp += xp;
         apply_level_scaling(champion);
@@ -5736,6 +5859,32 @@ fn award_team_gold(
         runtime.gold_ledger.record(&champion.id, source, gold);
     }
     team_stats_mut(&mut runtime.stats, team).gold += paid;
+}
+
+/// Key of `RuntimeState::extra` that counts the passive payments already made.
+const PASSIVE_PAYMENTS_EXTRA_KEY: &str = "passiveGoldPayments";
+
+/// Pays every player the passive gold that fell due since the last step, living or dead.
+fn pay_passive_gold(runtime: &mut RuntimeState) {
+    let due = passive_payments_due(runtime.time_sec);
+    let paid = runtime
+        .extra
+        .get(PASSIVE_PAYMENTS_EXTRA_KEY)
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
+    if due <= paid {
+        return;
+    }
+    let payments = due - paid;
+    for champion in &mut runtime.champions {
+        let gold = payments * passive_payment(&champion.role);
+        champion.gold += gold;
+        runtime.gold_ledger.record(&champion.id, GoldSource::Passive, gold);
+        team_stats_mut(&mut runtime.stats, &champion.team).gold += gold;
+    }
+    runtime
+        .extra
+        .insert(PASSIVE_PAYMENTS_EXTRA_KEY.to_string(), json!(due));
 }
 
 fn add_cs_to_champion(runtime: &mut RuntimeState, champion_id: &str, cs: i64) {
@@ -5775,9 +5924,9 @@ fn register_minion_death(runtime: &mut RuntimeState, minion_idx: usize, killer: 
     );
     let minion_pos = runtime.minions[minion_idx].pos;
     let gold = if runtime.minions[minion_idx].kind == "ranged" {
-        44
+        LANE_MINION_RANGED_GOLD
     } else {
-        60
+        LANE_MINION_MELEE_GOLD
     };
     let xp = if runtime.minions[minion_idx].kind == "ranged" {
         40
@@ -5931,6 +6080,28 @@ fn nearest_enemy_minion_index(
         .map(|(idx, _)| idx)
 }
 
+/// Where the lane play treats `structure` as standing: minions walking to a
+/// turret, laners keeping to their own turret, a turret's reach. The two sides
+/// of the map are mirror images, but the structure coordinates are not exact
+/// mirrors of each other (the top outer turrets differ by 0.009, the bottom
+/// ones by 0.017), and minions walk toward any turret within 0.24, so a gap
+/// that small decided which wave reached the other side's turret first. Red's
+/// structures are taken at the mirror of blue's. The structures themselves,
+/// and what the frontend draws, do not move.
+fn symmetric_structure_pos(structure: &StructureRuntime) -> Vec2 {
+    if normalized_team(&structure.team) != "red" {
+        return structure.pos;
+    }
+    let blue_id = structure.id.replacen("red-", "blue-", 1);
+    STRUCTURE_LAYOUT
+        .iter()
+        .find(|seed| seed.id == blue_id)
+        .map_or(structure.pos, |seed| Vec2 {
+            x: seed.pos.y,
+            y: seed.pos.x,
+        })
+}
+
 fn nearest_enemy_structure_index(
     structures: &[StructureRuntime],
     team: &str,
@@ -5947,11 +6118,11 @@ fn nearest_enemy_structure_index(
                 && (normalized_lane(&structure.lane) == normalized_lane(lane)
                     || structure.lane == "base")
                 && is_structure_targetable(structures, team, structure)
-                && dist(structure.pos, from) <= range
+                && dist(symmetric_structure_pos(structure), from) <= range
         })
         .min_by(|(idx_a, a), (idx_b, b)| {
-            dist(a.pos, from)
-                .partial_cmp(&dist(b.pos, from))
+            dist(symmetric_structure_pos(a), from)
+                .partial_cmp(&dist(symmetric_structure_pos(b), from))
                 .unwrap_or(Ordering::Equal)
                 .then_with(|| idx_a.cmp(idx_b))
         })
@@ -5972,13 +6143,13 @@ fn nearest_enemy_structure_blocker_index(
                 && structure.kind != "nexus"
                 && normalized_team(&structure.team) != normalized_team(team)
                 && is_structure_targetable(structures, team, structure)
-                && dist(structure.pos, from) <= range
+                && dist(symmetric_structure_pos(structure), from) <= range
         })
         .min_by(|(idx_a, a), (idx_b, b)| {
             let priority_a = if a.kind == "tower" { 0.0 } else { 0.035 };
             let priority_b = if b.kind == "tower" { 0.0 } else { 0.035 };
-            (dist(a.pos, from) + priority_a)
-                .partial_cmp(&(dist(b.pos, from) + priority_b))
+            (dist(symmetric_structure_pos(a), from) + priority_a)
+                .partial_cmp(&(dist(symmetric_structure_pos(b), from) + priority_b))
                 .unwrap_or(Ordering::Equal)
                 .then_with(|| idx_a.cmp(idx_b))
         })
@@ -6441,6 +6612,7 @@ fn cleanup_tick(runtime: &mut RuntimeState) {
         .wards
         .retain(|ward| ward.expires_at > runtime.time_sec);
 
+    pay_passive_gold(runtime);
     try_auto_buy_items(runtime);
 
     if runtime.events.len() > EVENT_CAP {
@@ -6487,6 +6659,21 @@ mod economy_tests;
 mod strength_tests;
 
 #[cfg(test)]
+mod objectives_detector_tests;
+
+#[cfg(test)]
+mod objective_rules_tests;
+
+#[cfg(test)]
+mod lead_detector_tests;
+
+#[cfg(test)]
+mod base_defense_tests;
+
+#[cfg(test)]
+mod team_push_tests;
+
+#[cfg(test)]
 mod champion_fit_tests;
 
 #[cfg(test)]
@@ -6503,6 +6690,33 @@ mod economy_harness_tests;
 
 #[cfg(test)]
 mod farm_harness_tests;
+
+#[cfg(test)]
+mod symmetry_tests;
+
+#[cfg(test)]
+mod lane_play_tests;
+
+#[cfg(test)]
+mod tower_harness_tests;
+
+#[cfg(test)]
+mod scorecard_tests;
+
+#[cfg(test)]
+mod tower_safety_tests;
+
+#[cfg(test)]
+mod trade_floor_tests;
+
+#[cfg(test)]
+mod combat_order_tests;
+
+#[cfg(test)]
+mod income_tests;
+
+#[cfg(test)]
+mod camp_symmetry_tests;
 
 #[cfg(test)]
 mod item_catalogue_tests;

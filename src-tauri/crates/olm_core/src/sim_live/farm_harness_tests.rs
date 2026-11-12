@@ -21,7 +21,7 @@
 use std::collections::HashMap;
 
 use super::economy_tests::{snapshot_with, Side};
-use super::farm_ledger::{arc_fraction, MinionKiller};
+use super::farm_ledger::{arc_fraction, DamageSource, MinionKiller};
 use super::*;
 
 /// Minutes at which every laner is snapshotted.
@@ -32,6 +32,9 @@ const TICK_SEC: f64 = 0.6;
 
 /// Ticks per sampling chunk: `skip_to_end` decides macro actions every third tick.
 const CHUNK_TICKS: u64 = 3;
+
+/// Seconds at which a laner's distance from its own base is sampled.
+const ARC_SAMPLE_SECONDS: [f64; 4] = [30.0, 45.0, 60.0, 90.0];
 
 const LANES: [(&str, &str); 3] = [("TOP", "top"), ("MID", "mid"), ("ADC", "bot")];
 
@@ -58,6 +61,14 @@ struct Laner {
     /// Recalls begun: because the next item was affordable, because of low
     /// health, for another reason.
     recalls: [u32; 3],
+    /// Health taken by champions, minions, turrets and anything else.
+    damage: [f64; 4],
+    /// Health taken from champions, by the attacker's role (TOP, JGL, MID, ADC, SUP).
+    damage_by_role: [f64; 5],
+    /// Recall episodes that ended with the laner back in reach of the wave and
+    /// the seconds they took from the start of the recall.
+    away_episodes: u32,
+    away_sec: f64,
 }
 
 #[derive(Clone, Default)]
@@ -107,6 +118,11 @@ struct FarmTrace {
     seed: usize,
     death_arcs: [DeathArcs; 3],
     waves: [[WaveSum; 4]; 3],
+    /// Seconds at which each laner first had an enemy lane minion in reach, `[lane][side]`.
+    first_reach: [[Option<f64>; 2]; 3],
+    /// Distance walked from its own base (arc fraction, mirrored for red) at each
+    /// of `ARC_SAMPLE_SECONDS`, `[lane][side][sample]`.
+    arc_at: [[[Option<f64>; 4]; 2]; 3],
     /// Indexed `[checkpoint][lane]`.
     snaps: Vec<Vec<LaneSnap>>,
 }
@@ -132,6 +148,23 @@ fn activity(runtime: &RuntimeState, idx: usize) -> Activity {
     } else {
         Activity::Elsewhere
     }
+}
+
+fn damage_taken(runtime: &RuntimeState, champion_id: &str) -> [f64; 4] {
+    let taken = |source| {
+        runtime
+            .farm_ledger
+            .damage()
+            .get(&(champion_id.to_string(), source))
+            .copied()
+            .unwrap_or(0.0)
+    };
+    [
+        taken(DamageSource::Champion),
+        taken(DamageSource::Minion),
+        taken(DamageSource::Tower),
+        taken(DamageSource::Other),
+    ]
 }
 
 fn laner_of(runtime: &RuntimeState, role: &str, blue: bool) -> usize {
@@ -164,7 +197,7 @@ fn deaths_of(runtime: &RuntimeState, laner_id: &str, lane: &str, laner_is_blue: 
     counts
 }
 
-fn take_snapshot(runtime: &RuntimeState, chunks: &[[[u32; 4]; 2]; 3], recalls: &[[[u32; 3]; 2]; 3]) -> Vec<LaneSnap> {
+fn take_snapshot(runtime: &RuntimeState, chunks: &[[[u32; 4]; 2]; 3], recalls: &[[[u32; 3]; 2]; 3], away: &[[(Option<f64>, u32, f64); 2]; 3]) -> Vec<LaneSnap> {
     LANES
         .iter()
         .enumerate()
@@ -181,6 +214,17 @@ fn take_snapshot(runtime: &RuntimeState, chunks: &[[[u32; 4]; 2]; 3], recalls: &
                         deaths: c.deaths,
                         chunks: chunks[lane_slot][usize::from(!blue)],
                         recalls: recalls[lane_slot][usize::from(!blue)],
+                        damage: damage_taken(runtime, &c.id),
+                        damage_by_role: ["TOP", "JGL", "MID", "ADC", "SUP"].map(|role| {
+                            runtime
+                                .farm_ledger
+                                .damage_by_attacker_role()
+                                .get(&(c.id.clone(), role.to_string()))
+                                .copied()
+                                .unwrap_or(0.0)
+                        }),
+                        away_episodes: away[lane_slot][usize::from(!blue)].1,
+                        away_sec: away[lane_slot][usize::from(!blue)].2,
                     },
                     deaths_of(runtime, &c.id, lane, blue),
                 )
@@ -224,6 +268,10 @@ fn run_farm_trace(seed: usize, blue: Side, red: Side, last_minute: u32) -> FarmT
     let mut waves = [[WaveSum::default(); 4]; 3];
     let mut recalls = [[[0u32; 3]; 2]; 3];
     let mut was_recalling = [[false; 2]; 3];
+    let mut first_reach = [[None::<f64>; 2]; 3];
+    // Per laner: when the open recall began, finished episodes, their seconds.
+    let mut away = [[(None::<f64>, 0u32, 0.0f64); 2]; 3];
+    let mut arc_at = [[[None::<f64>; 4]; 2]; 3];
     let mut snaps = Vec::new();
     let mut done = 0u64;
     while done < last_tick && snaps.len() < CHECKPOINT_MINUTES.len() {
@@ -256,9 +304,34 @@ fn run_farm_trace(seed: usize, blue: Side, red: Side, last_minute: u32) -> FarmT
         for (lane_slot, (role, _)) in LANES.iter().enumerate() {
             for (side_slot, blue) in [true, false].into_iter().enumerate() {
                 let idx = laner_of(runtime, role, blue);
-                chunks[lane_slot][side_slot][activity(runtime, idx) as usize] += 1;
+                let act = activity(runtime, idx);
+                chunks[lane_slot][side_slot][act as usize] += 1;
+                if act == Activity::InReach && first_reach[lane_slot][side_slot].is_none() {
+                    first_reach[lane_slot][side_slot] = Some(runtime.time_sec);
+                }
+                let walked = {
+                    let a = arc_fraction(runtime.champions[idx].pos, lane_path_blue(LANES[lane_slot].1));
+                    if blue { a } else { 1.0 - a }
+                };
+                for (slot, at) in ARC_SAMPLE_SECONDS.iter().enumerate() {
+                    if runtime.time_sec >= *at && arc_at[lane_slot][side_slot][slot].is_none() {
+                        arc_at[lane_slot][side_slot][slot] = Some(walked);
+                    }
+                }
                 let c = &runtime.champions[idx];
                 let recalling = c.alive && c.state == "recall";
+                if recalling && away[lane_slot][side_slot].0.is_none() {
+                    away[lane_slot][side_slot].0 = Some(runtime.time_sec);
+                }
+                if let Some(began) = away[lane_slot][side_slot].0
+                    && !recalling
+                    && act == Activity::InReach
+                {
+                    let cell = &mut away[lane_slot][side_slot];
+                    cell.0 = None;
+                    cell.1 += 1;
+                    cell.2 += runtime.time_sec - began;
+                }
                 if recalling && !was_recalling[lane_slot][side_slot] {
                     let kind = if champion_can_afford_next_item(c) {
                         0
@@ -318,7 +391,7 @@ fn run_farm_trace(seed: usize, blue: Side, red: Side, last_minute: u32) -> FarmT
             }
         }
         if checkpoint_ticks.get(snaps.len()) == Some(&done) {
-            snaps.push(take_snapshot(runtime, &chunks, &recalls));
+            snaps.push(take_snapshot(runtime, &chunks, &recalls, &away));
         }
     }
     let death_arcs = {
@@ -338,7 +411,7 @@ fn run_farm_trace(seed: usize, blue: Side, red: Side, last_minute: u32) -> FarmT
         }
         arcs
     };
-    FarmTrace { seed, death_arcs, waves, snaps }
+    FarmTrace { seed, death_arcs, waves, first_reach, arc_at, snaps }
 }
 
 fn run_farm_traces(first_seed: usize, count: usize, blue: Side, red: Side, last_minute: u32) -> Vec<FarmTrace> {
@@ -403,7 +476,7 @@ fn reached(traces: &[FarmTrace], checkpoint: usize) -> Vec<&FarmTrace> {
 /// Creep-score gap (blue minus red) per lane and checkpoint.
 fn table_cs_gap(traces: &[FarmTrace]) {
     println!("\n== F1 creep-score gap of the two laners of a lane (n = matches reaching the minute) ==");
-    println!("{:<5}{:>4}{:>6}{:>9}{:>8}{:>8}{:>8}{:>8}{:>9}", "lane", "min", "n", "mean cs", "|gap|50", "|gap|75", "|gap|90", "mean gap", "blue>red");
+    println!("{:<5}{:>4}{:>6}{:>9}{:>8}{:>8}{:>8}{:>8}{:>9}{:>9}", "lane", "min", "n", "mean cs", "|gap|50", "|gap|75", "|gap|90", "mean gap", "+-95%", "blue>red");
     for (lane_slot, (role, _)) in LANES.iter().enumerate() {
         for (cp, minute) in CHECKPOINT_MINUTES.iter().enumerate() {
             let rows = reached(traces, cp);
@@ -417,14 +490,16 @@ fn table_cs_gap(traces: &[FarmTrace]) {
                 .collect();
             let abs = sorted_abs(gaps.iter().copied());
             let blue_ahead = gaps.iter().filter(|g| **g > 0.0).count() as f64 / gaps.len().max(1) as f64;
+            let spread = (gaps.iter().map(|g| (g - mean(&gaps)).powi(2)).sum::<f64>() / gaps.len().max(2) as f64).sqrt();
             println!(
-                "{role:<5}{minute:>4}{:>6}{:>9.1}{:>8.0}{:>8.0}{:>8.0}{:>8.1}{:>8.0}%",
+                "{role:<5}{minute:>4}{:>6}{:>9.1}{:>8.0}{:>8.0}{:>8.0}{:>8.1}{:>9.1}{:>8.0}%",
                 rows.len(),
                 mean(&cs),
                 percentile(&abs, 0.5),
                 percentile(&abs, 0.75),
                 percentile(&abs, 0.9),
                 mean(&gaps),
+                1.96 * spread / (gaps.len().max(1) as f64).sqrt(),
                 100.0 * blue_ahead
             );
         }
@@ -475,6 +550,55 @@ fn table_mechanism(traces: &[FarmTrace], checkpoint: usize) {
         }
     }
     println!("(stolen* = minions the laner hit last that a turret or an allied minion then killed)");
+}
+
+/// Where a laner's health went, and what a recall cost it.
+fn table_health_and_recalls(traces: &[FarmTrace], checkpoint: usize) {
+    let rows = reached(traces, checkpoint);
+    println!(
+        "\n== F8 at minute {}: health taken per laner (mean) and what a recall costs, n={} ==",
+        CHECKPOINT_MINUTES[checkpoint],
+        rows.len()
+    );
+    println!(
+        "{:<5}{:<5}{:>10}{:>9}{:>8}{:>8}{:>10}{:>11}{:>12}{:>13}",
+        "lane", "side", "champion", "minion", "tower", "other", "recalls", "episodes", "away s/rc", "away % time"
+    );
+    println!("      (champion damage by attacker role TOP/JGL/MID/ADC/SUP on the next line of each row)");
+    for (lane_slot, (role, _)) in LANES.iter().enumerate() {
+        for blue in [true, false] {
+            let data: Vec<Laner> = rows
+                .iter()
+                .map(|t| {
+                    let s = &t.snaps[checkpoint][lane_slot];
+                    if blue { s.blue.clone() } else { s.red.clone() }
+                })
+                .collect();
+            let avg = |f: &dyn Fn(&Laner) -> f64| mean(&data.iter().map(f).collect::<Vec<_>>());
+            let episodes = avg(&|l| f64::from(l.away_episodes));
+            let away_total = avg(&|l| l.away_sec);
+            println!(
+                "{role:<5}{:<5}{:>10.0}{:>9.0}{:>8.0}{:>8.0}{:>10.2}{:>11.2}{:>12.1}{:>12.1}%",
+                if blue { "blue" } else { "red" },
+                avg(&|l| l.damage[0]),
+                avg(&|l| l.damage[1]),
+                avg(&|l| l.damage[2]),
+                avg(&|l| l.damage[3]),
+                avg(&|l| f64::from(l.recalls.iter().sum::<u32>())),
+                episodes,
+                away_total / episodes.max(1e-9),
+                100.0 * away_total / (f64::from(CHECKPOINT_MINUTES[checkpoint]) * 60.0),
+            );
+            println!(
+                "            by attacker {:>6.0}{:>6.0}{:>6.0}{:>6.0}{:>6.0}",
+                avg(&|l| l.damage_by_role[0]),
+                avg(&|l| l.damage_by_role[1]),
+                avg(&|l| l.damage_by_role[2]),
+                avg(&|l| l.damage_by_role[3]),
+                avg(&|l| l.damage_by_role[4]),
+            );
+        }
+    }
 }
 
 /// Where the minions of each lane stood (0 blue base, 1 red base) and where the
@@ -624,6 +748,41 @@ fn table_gap_mediators(traces: &[FarmTrace]) {
     }
 }
 
+/// When each laner first had an enemy lane minion in reach, per lane and side:
+/// the first-contact race. Blue and red should reach the first wave together.
+fn table_first_contact(traces: &[FarmTrace]) {
+    println!("\n== F7 first contact: second at which the laner first has an enemy lane minion in reach ==");
+    println!("{:<5}{:>10}{:>10}{:>12}{:>12}{:>14}", "lane", "blue mean", "red mean", "blue first", "red first", "blue earlier");
+    for (lane_slot, (role, _)) in LANES.iter().enumerate() {
+        let pairs: Vec<(f64, f64)> = traces
+            .iter()
+            .filter_map(|t| Some((t.first_reach[lane_slot][0]?, t.first_reach[lane_slot][1]?)))
+            .collect();
+        let blue_first = pairs.iter().filter(|(b, r)| b < r).count();
+        let red_first = pairs.iter().filter(|(b, r)| r < b).count();
+        println!(
+            "{role:<5}{:>10.1}{:>10.1}{:>11.0}%{:>11.0}%{:>14.1}",
+            mean(&pairs.iter().map(|p| p.0).collect::<Vec<_>>()),
+            mean(&pairs.iter().map(|p| p.1).collect::<Vec<_>>()),
+            100.0 * blue_first as f64 / pairs.len().max(1) as f64,
+            100.0 * red_first as f64 / pairs.len().max(1) as f64,
+            mean(&pairs.iter().map(|p| p.1 - p.0).collect::<Vec<_>>()),
+        );
+    }
+    println!("\n  distance walked from its own base (fraction of the path) at 30 / 45 / 60 / 90 s, mean over matches");
+    for (lane_slot, (role, _)) in LANES.iter().enumerate() {
+        for (side_slot, side) in ["blue", "red"].iter().enumerate() {
+            let cells: Vec<String> = (0..ARC_SAMPLE_SECONDS.len())
+                .map(|slot| {
+                    let v: Vec<f64> = traces.iter().filter_map(|t| t.arc_at[lane_slot][side_slot][slot]).collect();
+                    format!("{:.3}", mean(&v))
+                })
+                .collect();
+            println!("  {role:<5}{side:<5}{}", cells.join(" / "));
+        }
+    }
+}
+
 #[test]
 #[ignore = "measurement: run with --ignored --nocapture, see the module docs"]
 fn measure_lane_farming() {
@@ -644,6 +803,8 @@ fn measure_lane_farming() {
     table_wave_position(&traces);
     table_death_positions(&traces);
     table_gap_mediators(&traces);
+    table_first_contact(&traces);
+    table_health_and_recalls(&traces, CHECKPOINT_MINUTES.len() - 1);
 }
 
 #[test]
@@ -664,7 +825,16 @@ fn debug_trace_mid() {
     let path = lane_path_blue(lane);
     loop {
         skip_to_end(&store, SimLiveSkipToEndRequest { session_id: id.clone(), dt_sec: 0.2, speed: 12.0, max_ticks: CHUNK_TICKS }).expect("skip");
-        let sessions = store.sessions.lock().expect("lock");
+        let mut sessions = store.sessions.lock().expect("lock");
+        if let Ok(only) = std::env::var("FARM_ONLY") {
+            for c in &mut sessions.get_mut(&id).expect("session").state.champions {
+                if !only.split(',').any(|r| r == c.role) {
+                    c.alive = false;
+                    c.hp = 0.0;
+                    c.respawn_at = 1.0e9;
+                }
+            }
+        }
         let rt = &sessions[&id].state;
         let minute = rt.time_sec / 60.0;
         if minute > to { break; }
@@ -872,5 +1042,65 @@ fn mid_lane_node_k_is_equally_far_from_both_bases() {
     let (blue, red) = node_distances_from_own_base("mid");
     for (k, (b, r)) in blue.iter().zip(&red).enumerate() {
         assert!((b - r).abs() < 0.01, "mid node {k}: {b:.3} from the blue base but {r:.3} from the red base");
+    }
+}
+
+/// Same rule for the L-shaped lanes. Their nodes are not evenly spaced (the
+/// blue path has five nodes up the first leg), so the red path, which is the
+/// blue one reversed, put its node 1 at 25% of the way from the red base
+/// against 8% from the blue base in the top lane.
+#[test]
+fn top_lane_node_k_is_equally_far_from_both_bases() {
+    let (blue, red) = node_distances_from_own_base("top");
+    for (k, (b, r)) in blue.iter().zip(&red).enumerate() {
+        assert!((b - r).abs() < 0.01, "top node {k}: {b:.3} from the blue base but {r:.3} from the red base");
+    }
+}
+
+#[test]
+fn bot_lane_node_k_is_equally_far_from_both_bases() {
+    let (blue, red) = node_distances_from_own_base("bot");
+    for (k, (b, r)) in blue.iter().zip(&red).enumerate() {
+        assert!((b - r).abs() < 0.01, "bot node {k}: {b:.3} from the blue base but {r:.3} from the red base");
+    }
+}
+
+#[test]
+#[ignore = "debug: where the two waves of a lane meet when no champion plays"]
+fn debug_wave_meeting_without_champions() {
+    let seed: usize = std::env::var("FARM_SEED").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+    let lane = std::env::var("FARM_LANE").unwrap_or_else(|_| "top".to_string());
+    let to: f64 = std::env::var("FARM_TO").ok().and_then(|v| v.parse().ok()).unwrap_or(120.0);
+    let store = SimLiveStoreState::default();
+    let id = "meet".to_string();
+    init(&store, SimLiveInitRequest {
+        session_id: id.clone(), seed: format!("farm-seed-{seed}"), snapshot: snapshot_with(Side::EVEN, Side::EVEN),
+        champion_by_player_id: HashMap::new(), champion_profiles_by_id: HashMap::new(), champion_ultimates_by_id: HashMap::new(),
+        initial_state: None, ai_mode: SimulatorAiMode::default(), policy: SimulatorPolicyConfig::default(),
+    }).expect("init");
+    let path = lane_path_blue(&lane);
+    loop {
+        {
+            let mut sessions = store.sessions.lock().expect("lock");
+            let rt = &mut sessions.get_mut(&id).expect("session").state;
+            for c in &mut rt.champions {
+                c.alive = false;
+                c.hp = 0.0;
+                c.respawn_at = 1.0e9;
+            }
+            if rt.time_sec > to {
+                break;
+            }
+            let wave = |blue: bool| {
+                let v: Vec<&MinionRuntime> = rt.minions.iter().filter(|m| m.alive && m.kind != "summon" && normalized_lane(&m.lane) == lane && (normalized_team(&m.team) == "blue") == blue).collect();
+                let hp: f64 = v.iter().map(|m| m.hp).sum();
+                let a = v.iter().map(|m| arc_fraction(m.pos, path)).sum::<f64>() / v.len().max(1) as f64;
+                (v.len(), hp, a)
+            };
+            let (bn, bh, ba) = wave(true);
+            let (rn, rh, ra) = wave(false);
+            println!("{:6.1}s  blue {bn:2} minions {bh:5.0}hp @{ba:.3}   red {rn:2} minions {rh:5.0}hp @{ra:.3}", rt.time_sec);
+        }
+        skip_to_end(&store, SimLiveSkipToEndRequest { session_id: id.clone(), dt_sec: 0.2, speed: 12.0, max_ticks: CHUNK_TICKS }).expect("skip");
     }
 }

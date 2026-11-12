@@ -4,7 +4,7 @@ use super::{
     ChampionRuntime, FIRST_WAVE_CONTEST_UNTIL, LANE_EMPTY_ANCHOR_PROGRESS_MAX_INDEX, LanePressure,
     LaneRoleProfile, MINION_FIRST_WAVE_AT, MinionRuntime, RuntimeState, StructureRuntime, Vec2,
     base_position_for, clamp, closest_lane_path_index, dist, lane_path_for, normalize,
-    normalized_lane, normalized_team,
+    normalized_lane, normalized_team, symmetric_structure_pos,
 };
 
 pub(super) fn lane_role_profile(champion: &ChampionRuntime) -> Option<LaneRoleProfile> {
@@ -166,13 +166,13 @@ pub(super) fn lane_pre_wave_hold_pos(
                 && normalized_lane(&s.lane) == normalized_lane(&champion.lane)
         })
         .max_by(|a, b| {
-            let idx_a = closest_lane_path_index(a.pos, &lane_path);
-            let idx_b = closest_lane_path_index(b.pos, &lane_path);
+            let idx_a = closest_lane_path_index(symmetric_structure_pos(a), &lane_path);
+            let idx_b = closest_lane_path_index(symmetric_structure_pos(b), &lane_path);
             idx_a.cmp(&idx_b)
         });
 
     if let Some(tower) = allied_lane_tower {
-        return lane_fallback_pos_from_tower(champion, tower.pos, false);
+        return lane_fallback_pos_from_tower(champion, symmetric_structure_pos(tower), false);
     }
 
     lane_path
@@ -298,8 +298,11 @@ pub(super) fn move_champions(runtime: &mut RuntimeState, dt: f64) {
     let neutral_timers_snapshot = super::decode_neutral_timers_state(&runtime.neutral_timers);
     let team_tactics_snapshot = runtime.extra.get("teamTactics").cloned();
     let team_buffs_snapshot = runtime.extra.get("teamBuffs").cloned();
+    super::team_push::update_team_pushes(runtime);
+    let push_orders = super::team_push::orders(runtime);
 
     for champion in &mut runtime.champions {
+        champion.push = push_orders[super::team_push::order_slot(&champion.team)].clone();
         if champion.realm_banished_until > 0.0 {
             if now >= champion.realm_banished_until {
                 champion.realm_banished_until = 0.0;
@@ -394,6 +397,17 @@ pub(super) fn move_champions(runtime: &mut RuntimeState, dt: f64) {
             champion.target_path_index = champion.target_path.len().saturating_sub(1);
         }
 
+        super::tower_safety::keep_out_of_bare_tower_reach(
+            champion,
+            &super::tower_safety::Surroundings {
+                now,
+                step_sec: dt,
+                champions: &champion_snapshot,
+                minions: &runtime.minions,
+                structures: &runtime.structures,
+            },
+        );
+
         if let Some(target) = champion
             .target_path
             .get(champion.target_path_index)
@@ -424,6 +438,18 @@ pub(super) fn move_champions(runtime: &mut RuntimeState, dt: f64) {
             }
 
             if champion.path_stuck_for_sec >= super::CHAMPION_STUCK_TRIGGER_SEC {
+                #[cfg(test)]
+                super::objectives_detector_tests::record_stuck(now, champion, Some(target));
+                // Do not pick the same target again at once: the next decision
+                // chooses another one.
+                if let Some(unreachable) = champion.target_path.last().copied() {
+                    super::macro_ai::avoid_target(
+                        champion,
+                        unreachable,
+                        now,
+                        super::macro_ai::UNREACHABLE_TARGET_AVOID_SEC,
+                    );
+                }
                 champion.path_stuck_for_sec = 0.0;
                 champion.next_decision_at = now;
                 if champion.role == "JGL" {

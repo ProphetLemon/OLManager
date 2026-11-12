@@ -1,8 +1,9 @@
 use serde_json::Value;
 
 use super::{
-    NeutralTimerRuntime, NeutralTimersRuntime, OBJECTIVE_NEXT_SPAWN_FALLBACK, RuntimeState,
-    add_dragon_stack_for_kind, decode_neutral_timers_state, log_event,
+    MAJOR_OBJECTIVE_RESET_AFTER_SEC, NeutralTimerRuntime, NeutralTimersRuntime,
+    OBJECTIVE_NEXT_SPAWN_FALLBACK, RuntimeState, add_dragon_stack_for_kind,
+    decode_neutral_timers_state, log_event,
     neutral_timers_default_runtime_state, runtime_buffs_from_extra, set_runtime_buffs,
     team_buffs_mut, team_buffs_ref,
 };
@@ -225,6 +226,17 @@ pub(super) fn tick_neutral_entity_timer(
             timer.last_spawn_at = timer.next_spawn_at;
             timer.times_spawned += 1;
             spawn_text = Some(format!("{} spawned", timer.label));
+        }
+
+        if timer.alive
+            && super::macro_ai::is_major_objective_key(key)
+            && timer.hp < timer.max_hp
+            && timer
+                .last_hit_at
+                .is_some_and(|hit_at| now - hit_at > MAJOR_OBJECTIVE_RESET_AFTER_SEC)
+        {
+            timer.hp = timer.max_hp;
+            timer.last_hit_at = None;
         }
 
         if timer.alive

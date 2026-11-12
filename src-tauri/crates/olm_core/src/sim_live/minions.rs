@@ -44,7 +44,26 @@ fn minion_has_lane_combat_target(
 }
 
 pub(super) fn move_minions(runtime: &mut RuntimeState, dt: f64) {
-    for i in 0..runtime.minions.len() {
+    // Whether a minion holds to fight is decided on the positions at the start
+    // of the tick. Deciding it as the loop goes lets a minion that moves first
+    // step into reach and stops every enemy behind it in the list for free,
+    // which always favoured blue and put the first contact of a wave on red's
+    // side of the lane.
+    let engaged: Vec<bool> = runtime
+        .minions
+        .iter()
+        .map(|minion| {
+            minion.alive
+                && minion.kind != "summon"
+                && minion_has_lane_combat_target(
+                    minion,
+                    &runtime.minions,
+                    &runtime.champions,
+                    &runtime.structures,
+                )
+        })
+        .collect();
+    for (i, holds_to_fight) in engaged.iter().copied().enumerate() {
         if !runtime.minions[i].alive {
             continue;
         }
@@ -91,13 +110,7 @@ pub(super) fn move_minions(runtime: &mut RuntimeState, dt: f64) {
             }
         }
 
-        let snapshot = runtime.minions[i].clone();
-        if minion_has_lane_combat_target(
-            &snapshot,
-            &runtime.minions,
-            &runtime.champions,
-            &runtime.structures,
-        ) {
+        if holds_to_fight {
             continue;
         }
 
@@ -107,7 +120,7 @@ pub(super) fn move_minions(runtime: &mut RuntimeState, dt: f64) {
             runtime.minions[i].pos,
             MINION_STRUCTURE_BLOCKER_APPROACH_RANGE,
         ) {
-            let target = runtime.structures[structure_idx].pos;
+            let target = symmetric_structure_pos(&runtime.structures[structure_idx]);
             let attack_range = runtime.minions[i]
                 .attack_range
                 .max(MINION_STRUCTURE_BLOCKER_ATTACK_RANGE);
@@ -234,13 +247,20 @@ pub(super) fn resolve_minion_combat(runtime: &mut RuntimeState) {
             }
 
             let attacker_team = runtime.minions[i].team.clone();
-            let damage = runtime.minions[i].attack_damage
+            let mut damage = runtime.minions[i].attack_damage
                 * if attacker_empowered {
                     BARON_MINION_DAMAGE_MULTIPLIER
                 } else {
                     1.0
                 }
                 * MINION_DAMAGE_TO_STRUCTURE_MULTIPLIER;
+            if wave_alone_cannot_break(
+                &runtime.champions,
+                &runtime.structures[structure_idx],
+                &attacker_team,
+            ) {
+                damage = 0.0;
+            }
             apply_damage_to_structure(runtime, structure_idx, damage, &attacker_team);
             runtime.minions[i].attack_cd_until = now + cadence;
             continue;
@@ -271,8 +291,13 @@ pub(super) fn resolve_minion_combat(runtime: &mut RuntimeState) {
         if let Some(champion_idx) = enemy_champion {
             let defender_mult =
                 team_damage_reduction_multiplier(runtime, &runtime.champions[champion_idx].team);
-            runtime.champions[champion_idx].hp -=
-                attacker_damage * MINION_DAMAGE_TO_CHAMPION_MULTIPLIER * defender_mult;
+            let minion_damage = attacker_damage * MINION_DAMAGE_TO_CHAMPION_MULTIPLIER * defender_mult;
+            runtime.champions[champion_idx].hp -= minion_damage;
+            runtime.farm_ledger.record_damage(
+                &runtime.champions[champion_idx].id,
+                DamageSource::Minion,
+                minion_damage,
+            );
             runtime.champions[champion_idx].last_damaged_at = now;
             cancel_recall(
                 &mut runtime.champions[champion_idx],
