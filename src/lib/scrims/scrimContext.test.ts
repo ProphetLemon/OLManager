@@ -98,15 +98,15 @@ describe("scrimContext", () => {
     expect(context.primaryAction).toBe("Review");
   });
 
-  it("offers the review in ReviewBlock and not before the scrim is played", () => {
+  it("offers the review in the scrim phase and not in the morning, before the scrim is played", () => {
     const myTeam = team({ scrim_reports: [report()] });
-    expect(deriveTodayScrimContext(gameState(myTeam, { day_phase: "ReviewBlock" }), myTeam).canReview).toBe(true);
-    expect(deriveTodayScrimContext(gameState(myTeam, { day_phase: "TrainingBlock" }), myTeam).canReview).toBe(false);
+    expect(deriveTodayScrimContext(gameState(myTeam, { day_phase: "ScrimBlock" }), myTeam).canReview).toBe(true);
+    expect(deriveTodayScrimContext(gameState(myTeam, { day_phase: "Morning" }), myTeam).canReview).toBe(false);
   });
 
   it("returns Reviewed after post decision", () => {
     const myTeam = team({ scrim_reports: [report({ post_decision: "VodReview" })] });
-    const context = deriveTodayScrimContext(gameState(myTeam, { day_phase: "TrainingBlock" }), myTeam);
+    const context = deriveTodayScrimContext(gameState(myTeam, { day_phase: "ScrimBlock" }), myTeam);
     expect(context.state).toBe("Reviewed");
     expect(context.canReview).toBe(false);
   });

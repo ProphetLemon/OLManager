@@ -157,9 +157,17 @@ describe("DashboardHeaderV2", () => {
   it("routes each day phase through onAir.bar.phase keys with English defaults", () => {
     setup({ dayPhase: "ScrimBlock" });
     expect(screen.getByRole("group", { name: "Game date and phase" })).toHaveTextContent("Scrims");
-    for (const k of ["morning", "scrimBlock", "reviewBlock", "trainingBlock", "evening"]) {
+    for (const k of ["morning", "scrimBlock"]) {
       expect(requestedKeys).toContain(`onAir.bar.phase.${k}`);
     }
+    for (const k of ["reviewBlock", "trainingBlock", "evening"]) {
+      expect(requestedKeys).not.toContain(`onAir.bar.phase.${k}`);
+    }
+  });
+
+  it("labels the morning phase", () => {
+    setup({ dayPhase: "Morning" });
+    expect(screen.getByRole("group", { name: "Game date and phase" })).toHaveTextContent("Morning");
   });
 
   it("draws a 2px club rule under the bar and gives the chip a dot", () => {
