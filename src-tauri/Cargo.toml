@@ -1,6 +1,6 @@
 [package]
 name = "openleaguemanager"
-version = "2026.1111.4"
+version = "2026.1112.2"
 description = "Open League Manager"
 authors = ["KOI Noboris Development Team <noboriskoi@gmail.com>"]
 repository = "https://github.com/OpenLeagueManager/OLManager"
