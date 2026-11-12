@@ -16,8 +16,10 @@ use ts_rs::TS;
 
 mod soloq_decay;
 pub use soloq_decay::{
-    SoloQDayKind, SoloQDayMarks, SoloQDecayMode, SoloQDecayPreset, SoloQDecaySettings,
-    set_soloq_decay_mode, soloq_decay_settings,
+    PlayerSoloQHistory, SOLOQ_HISTORY_DAYS, SoloQDayKind, SoloQDayMarks, SoloQDayRecord,
+    SoloQDecayMode, SoloQDecayPreset, SoloQDecaySettings, SoloQHistory, SoloQHistoryDay,
+    SoloQHistoryView, followed_player_ids, set_soloq_decay_mode, soloq_decay_settings,
+    soloq_history_for_player,
 };
 
 fn params(pairs: &[(&str, &str)]) -> HashMap<String, String> {

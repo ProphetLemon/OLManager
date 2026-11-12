@@ -1,4 +1,6 @@
-use crate::champions::{ChampionMasteryEntry, ChampionPatchState, SoloQDayMarks, SoloQDecayMode};
+use crate::champions::{
+    ChampionMasteryEntry, ChampionPatchState, SoloQDayMarks, SoloQDecayMode, SoloQHistory,
+};
 use crate::clock::GameClock;
 use crate::contract_wage_policy::AiTransferCapState;
 use crate::domain::league::League;
@@ -176,6 +178,12 @@ pub struct Game {
     /// load as `Off`; new games start on `Real` (see [`Game::new`]).
     #[serde(default)]
     pub soloq_decay_mode: SoloQDecayMode,
+    /// Per-day SoloQ record of the followed players (the user's roster and scouted
+    /// players). Kept off `Player`, and left out of what clients receive: the profile
+    /// asks for one player's series by command.
+    #[serde(default)]
+    #[cfg_attr(feature = "typescript", ts(skip))]
+    pub soloq_history: SoloQHistory,
     /// What the day's training pass told the SoloQ step. Transient, never saved.
     #[serde(skip)]
     #[cfg_attr(feature = "typescript", ts(skip))]
@@ -247,6 +255,7 @@ impl Game {
             removed_team_ids: vec![],
             ladder: crate::ladder::LadderState::default(),
             soloq_decay_mode: SoloQDecayMode::Real,
+            soloq_history: SoloQHistory::default(),
             soloq_day_marks: SoloQDayMarks::default(),
         };
         crate::identity_upgrade::upgrade_game_football_identities(&mut game);

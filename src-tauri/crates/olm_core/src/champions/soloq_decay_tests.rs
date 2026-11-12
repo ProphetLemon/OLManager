@@ -1,4 +1,4 @@
-//! SoloQ inactivity decay: the bank, the offset, the day kinds and the
+//! SoloQ inactivity decay: the bank, the offset, the day kinds, the history and the
 //! settings, driven through the real training pass and daily step.
 
 use super::soloq_decay::settle_day;
@@ -15,6 +15,7 @@ const RESETTER: &str = "resetter";
 const FREE_AGENT: &str = "free-agent";
 const RIVAL: &str = "rival";
 const ACADEMY: &str = "academy-kid";
+const SCOUTED: &str = "scouted";
 
 fn player(id: &str, team_id: Option<&str>) -> Player {
     let mut player = Player::new(
@@ -82,6 +83,7 @@ fn game(mode: SoloQDecayMode) -> Game {
         player(FREE_AGENT, None),
         player(RIVAL, Some("t2")),
         player(ACADEMY, Some("t1-academy")),
+        player(SCOUTED, Some("t2")),
     ];
     let mut game = Game::new(clock, manager, teams, players, vec![], vec![]);
     game.soloq_decay_mode = mode;
@@ -127,6 +129,10 @@ fn last_formula_lp(game: &Game, id: &str) -> f64 {
     formula_lps(&earlier)[index]
 }
 
+fn history_of<'a>(game: &'a Game, id: &str) -> &'a PlayerSoloQHistory {
+    game.soloq_history.players.get(id).unwrap()
+}
+
 // ---------------------------------------------------------------------------
 // Modes and saves
 // ---------------------------------------------------------------------------
@@ -150,10 +156,11 @@ fn new_games_should_start_on_real() {
 }
 
 #[test]
-fn old_saves_should_load_as_off_with_a_full_bank_and_no_offset() {
+fn old_saves_should_load_as_off_with_empty_histories() {
     let mut value = serde_json::to_value(game(SoloQDecayMode::Real)).unwrap();
     let root = value.as_object_mut().unwrap();
     root.remove("soloq_decay_mode");
+    root.remove("soloq_history");
     for player in root["players"].as_array_mut().unwrap() {
         let player = player.as_object_mut().unwrap();
         player.remove("soloq_bank_spent");
@@ -163,6 +170,7 @@ fn old_saves_should_load_as_off_with_a_full_bank_and_no_offset() {
     let loaded: Game = serde_json::from_value(value).unwrap();
 
     assert_eq!(loaded.soloq_decay_mode, SoloQDecayMode::Off);
+    assert!(loaded.soloq_history.players.is_empty() && loaded.soloq_history.scouted.is_empty());
     assert!(
         loaded
             .players
@@ -298,12 +306,24 @@ fn match_days_and_rest_days_should_leave_the_bank_untouched() {
         run_day(&mut game, true);
     }
     assert_eq!(find(&game, RESETTER).soloq_bank_spent, 3);
+    let kinds: Vec<SoloQDayKind> = history_of(&game, RESETTER)
+        .days
+        .iter()
+        .rev()
+        .take(4)
+        .map(|day| day.kind)
+        .collect();
+    assert_eq!(kinds, vec![SoloQDayKind::Match; 4]);
 
     // Run to a Sunday (a rest day): the starter's day is a neutral Rest.
     while game.clock.current_date.weekday().num_days_from_monday() != 6 {
         run_day(&mut game, false);
     }
     run_day(&mut game, false);
+    assert_eq!(
+        history_of(&game, STARTER).days.back().unwrap().kind,
+        SoloQDayKind::Rest
+    );
     assert_eq!(find(&game, STARTER).soloq_bank_spent, 0);
 }
 
@@ -439,17 +459,19 @@ fn the_decay_should_be_deterministic() {
     let (first, second) = (run(), run());
 
     let snapshot = |game: &Game| {
-        (game
-            .players
-            .iter()
-            .map(|p| {
-                (
-                    p.soloq_lp.to_bits(),
-                    p.soloq_bank_spent,
-                    p.soloq_decay_offset.to_bits(),
-                )
-            })
-            .collect::<Vec<_>>(),)
+        (
+            serde_json::to_string(&game.soloq_history).unwrap(),
+            game.players
+                .iter()
+                .map(|p| {
+                    (
+                        p.soloq_lp.to_bits(),
+                        p.soloq_bank_spent,
+                        p.soloq_decay_offset.to_bits(),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        )
     };
     assert_eq!(snapshot(&first), snapshot(&second));
     assert!(
@@ -512,9 +534,261 @@ fn moving_between_active_modes_should_keep_each_players_state() {
 // History
 // ---------------------------------------------------------------------------
 
+#[test]
+fn history_should_roll_a_window_of_ninety_contiguous_days() {
+    let mut game = game(SoloQDecayMode::Real);
+    run_days(&mut game, 100);
+
+    let view = soloq_history_for_player(&game, STARTER).unwrap();
+
+    assert_eq!(view.days.len(), SOLOQ_HISTORY_DAYS);
+    // Day 1 is 2026-08-03; 100 days end on 2026-11-10; the window starts 89 days earlier.
+    assert_eq!(view.days.last().unwrap().date, "2026-11-10");
+    assert_eq!(view.days.first().unwrap().date, "2026-08-13");
+    let dates: Vec<NaiveDate> = view
+        .days
+        .iter()
+        .map(|day| NaiveDate::parse_from_str(&day.date, "%Y-%m-%d").unwrap())
+        .collect();
+    assert!(
+        dates
+            .windows(2)
+            .all(|pair| pair[1] - pair[0] == chrono::Duration::days(1))
+    );
+}
+
+#[test]
+fn a_record_should_hold_the_displayed_lp_the_formula_lp_the_focus_the_kind_and_the_bank() {
+    let mut game = game(SoloQDecayMode::Real);
+    run_days(&mut game, 16);
+
+    let day = history_of(&game, RESETTER).days.back().unwrap().clone();
+
+    assert_eq!(day.kind, SoloQDayKind::Decay);
+    assert_eq!(day.focus, Some(TrainingFocus::MentalResetRecovery));
+    assert_eq!(day.bank, 0);
+    assert_eq!(day.formula_lp - day.lp, 100);
+    let starter = history_of(&game, STARTER).days.back().unwrap().clone();
+    assert_eq!(starter.kind, SoloQDayKind::Played);
+    assert_eq!(
+        starter.focus,
+        Some(TrainingFocus::Scrims),
+        "the team's plan"
+    );
+    assert_eq!(starter.bank, 14);
+}
+
+#[test]
+fn history_should_be_kept_for_the_roster_the_academy_and_scouted_players_only() {
+    let mut game = game(SoloQDecayMode::Real);
+    run_days(&mut game, 3);
+
+    let followed: Vec<&str> = game
+        .soloq_history
+        .players
+        .keys()
+        .map(String::as_str)
+        .collect();
+    assert_eq!(followed, vec![ACADEMY, RESETTER, STARTER]);
+    assert!(!soloq_history_for_player(&game, RIVAL).unwrap().followed);
+    assert!(
+        soloq_history_for_player(&game, RIVAL)
+            .unwrap()
+            .days
+            .is_empty()
+    );
+}
+
+#[test]
+fn a_scouted_player_should_be_followed_from_the_report_for_ninety_days() {
+    let mut game = game(SoloQDecayMode::Real);
+    run_days(&mut game, 2);
+    game.soloq_history.note_scouted(SCOUTED, "2026-08-05");
+
+    run_days(&mut game, 1);
+    assert!(soloq_history_for_player(&game, SCOUTED).unwrap().followed);
+    assert_eq!(
+        soloq_history_for_player(&game, SCOUTED).unwrap().days.len(),
+        1
+    );
+
+    run_days(&mut game, 100);
+    let view = soloq_history_for_player(&game, SCOUTED).unwrap();
+    assert!(!view.followed);
+    assert!(
+        view.days.is_empty(),
+        "the history goes when the player is no longer followed"
+    );
+    assert!(game.soloq_history.scouted.is_empty());
+}
+
+#[test]
+fn a_scouting_assignment_under_way_should_make_the_player_followed() {
+    let mut game = game(SoloQDecayMode::Real);
+    game.scouting_assignments
+        .push(crate::game::ScoutingAssignment {
+            id: "a1".to_string(),
+            scout_id: "scout".to_string(),
+            player_id: RIVAL.to_string(),
+            days_remaining: 5,
+        });
+
+    run_days(&mut game, 1);
+
+    assert!(soloq_history_for_player(&game, RIVAL).unwrap().followed);
+    assert_eq!(history_of(&game, RIVAL).days.len(), 1);
+}
+
+#[test]
+fn completing_a_scouting_report_should_note_the_player() {
+    let mut game = game(SoloQDecayMode::Real);
+    let mut scout = crate::domain::staff::Staff::new(
+        "scout".to_string(),
+        "Sam".to_string(),
+        "Scout".to_string(),
+        "1985-01-01".to_string(),
+        crate::domain::staff::StaffRole::Scout,
+        crate::domain::staff::StaffAttributes {
+            coaching: 30,
+            judging_ability: 60,
+            judging_potential: 60,
+            physiotherapy: 20,
+        },
+    );
+    scout.team_id = Some("t1".to_string());
+    game.staff.push(scout);
+    game.scouting_assignments
+        .push(crate::game::ScoutingAssignment {
+            id: "a1".to_string(),
+            scout_id: "scout".to_string(),
+            player_id: RIVAL.to_string(),
+            days_remaining: 1,
+        });
+
+    crate::scouting::process_scouting(&mut game);
+
+    assert!(game.scouting_assignments.is_empty());
+    assert_eq!(
+        game.soloq_history.scouted.get(RIVAL).map(String::as_str),
+        Some("2026-08-03")
+    );
+}
+
+#[test]
+fn a_followed_free_agent_should_have_no_focus_in_the_history() {
+    let mut game = game(SoloQDecayMode::Real);
+    game.soloq_history.note_scouted(FREE_AGENT, "2026-08-03");
+
+    run_days(&mut game, 2);
+
+    let day = history_of(&game, FREE_AGENT).days.back().unwrap().clone();
+    assert_eq!((day.focus, day.kind), (None, SoloQDayKind::Idle));
+}
+
+#[test]
+fn history_should_keep_being_recorded_with_decay_off() {
+    let mut game = game(SoloQDecayMode::Off);
+    run_days(&mut game, 20);
+
+    let view = soloq_history_for_player(&game, RESETTER).unwrap();
+
+    assert_eq!(view.days.len(), 20);
+    assert!(
+        view.days
+            .iter()
+            .all(|day| day.lp == day.formula_lp && day.bank == 0)
+    );
+    assert_eq!((view.bank_days, view.bank_max, view.offset_lp), (0, 0, 0));
+}
+
+#[test]
+fn a_save_without_history_should_start_the_record_on_the_first_day() {
+    let mut value = serde_json::to_value(game(SoloQDecayMode::Real)).unwrap();
+    value.as_object_mut().unwrap().remove("soloq_history");
+    let mut loaded: Game = serde_json::from_value(value).unwrap();
+
+    let empty = soloq_history_for_player(&loaded, STARTER).unwrap();
+    assert!(
+        empty.followed && empty.days.is_empty(),
+        "followed, but nothing recorded yet"
+    );
+
+    run_days(&mut loaded, 1);
+    assert_eq!(
+        soloq_history_for_player(&loaded, STARTER)
+            .unwrap()
+            .days
+            .len(),
+        1
+    );
+}
+
+#[test]
+fn a_gap_in_the_days_should_restart_the_record_instead_of_inventing_days() {
+    let mut game = game(SoloQDecayMode::Real);
+    run_days(&mut game, 5);
+    game.clock.advance_days(3);
+
+    run_days(&mut game, 1);
+
+    assert_eq!(history_of(&game, STARTER).days.len(), 1);
+}
+
+#[test]
+fn history_should_survive_a_save_round_trip() {
+    let mut game = game(SoloQDecayMode::Real);
+    run_days(&mut game, 10);
+
+    let json = serde_json::to_string(&game).unwrap();
+    let loaded: Game = serde_json::from_str(&json).unwrap();
+
+    assert_eq!(loaded.soloq_history, game.soloq_history);
+    assert_eq!(loaded.soloq_decay_mode, SoloQDecayMode::Real);
+}
+
 // ---------------------------------------------------------------------------
 // What the commands return
 // ---------------------------------------------------------------------------
+
+#[test]
+fn the_history_view_should_serialize_to_the_contract_shape() {
+    let mut game = game(SoloQDecayMode::Real);
+    run_days(&mut game, 16);
+
+    let value = serde_json::to_value(soloq_history_for_player(&game, RESETTER).unwrap()).unwrap();
+
+    let keys = |v: &serde_json::Value| {
+        let mut keys: Vec<String> = v.as_object().unwrap().keys().cloned().collect();
+        keys.sort();
+        keys
+    };
+    assert_eq!(
+        keys(&value),
+        [
+            "bank_days",
+            "bank_max",
+            "days",
+            "decay_mode",
+            "followed",
+            "offset_lp",
+            "player_id"
+        ]
+    );
+    assert_eq!(value["player_id"], RESETTER);
+    assert_eq!(value["followed"], true);
+    assert_eq!(value["decay_mode"], "Real");
+    assert_eq!(value["bank_days"], 0);
+    assert_eq!(value["bank_max"], 14);
+    assert_eq!(value["offset_lp"], 100);
+    let last = value["days"].as_array().unwrap().last().unwrap();
+    assert_eq!(
+        keys(last),
+        ["bank", "date", "focus", "formula_lp", "kind", "lp"]
+    );
+    assert_eq!(last["date"], "2026-08-18");
+    assert_eq!(last["focus"], "MentalResetRecovery");
+    assert_eq!(last["kind"], "Decay");
+}
 
 #[test]
 fn the_settings_should_list_the_mode_and_all_four_presets() {
@@ -534,4 +808,11 @@ fn the_settings_should_list_the_mode_and_all_four_presets() {
             "recovery_per_played_day": 100,
         })
     );
+}
+
+#[test]
+fn an_unknown_player_should_be_an_error() {
+    let game = game(SoloQDecayMode::Real);
+
+    assert!(soloq_history_for_player(&game, "nobody").is_err());
 }

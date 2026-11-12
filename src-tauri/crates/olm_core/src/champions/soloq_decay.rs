@@ -8,6 +8,10 @@
 //! alone gives.
 
 use super::*;
+use std::collections::{BTreeMap, VecDeque};
+
+/// Days of per-day history kept for each followed player.
+pub const SOLOQ_HISTORY_DAYS: usize = 90;
 
 /// How strongly inactivity costs LP. Chosen per save; new games start on `Real` and saves
 /// from before the setting load as `Off`.
@@ -132,6 +136,121 @@ impl SoloQDayMarks {
     }
 }
 
+/// One day of a followed player's SoloQ story.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SoloQDayRecord {
+    /// Displayed LP.
+    pub lp: u16,
+    /// LP before decay.
+    pub formula_lp: u16,
+    /// The training focus in force, `None` for a player without a team.
+    pub focus: Option<crate::domain::team::TrainingFocus>,
+    pub kind: SoloQDayKind,
+    /// Grace-bank days left after the day.
+    pub bank: u8,
+}
+
+/// The last [`SOLOQ_HISTORY_DAYS`] days of one player, oldest first and contiguous: the
+/// last record is `last_date`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PlayerSoloQHistory {
+    pub last_date: String,
+    pub days: VecDeque<SoloQDayRecord>,
+}
+
+impl PlayerSoloQHistory {
+    fn push(&mut self, date: NaiveDate, record: SoloQDayRecord) {
+        let last = NaiveDate::parse_from_str(&self.last_date, "%Y-%m-%d").ok();
+        match last {
+            Some(last) if date == last && !self.days.is_empty() => {
+                if let Some(back) = self.days.back_mut() {
+                    *back = record;
+                }
+            }
+            Some(last) if date == last + chrono::Duration::days(1) => self.days.push_back(record),
+            // A gap (or an unreadable date): the missing days are not invented.
+            _ => {
+                self.days.clear();
+                self.days.push_back(record);
+            }
+        }
+        self.last_date = date.format("%Y-%m-%d").to_string();
+        while self.days.len() > SOLOQ_HISTORY_DAYS {
+            self.days.pop_front();
+        }
+    }
+
+    /// The calendar date of the record at `index`.
+    fn date_at(&self, index: usize) -> Option<NaiveDate> {
+        let last = NaiveDate::parse_from_str(&self.last_date, "%Y-%m-%d").ok()?;
+        let back = i64::try_from(self.days.len().checked_sub(index + 1)?).ok()?;
+        Some(last - chrono::Duration::days(back))
+    }
+}
+
+/// Everything the save keeps for the SoloQ story. Ordered maps keep saves reproducible.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SoloQHistory {
+    /// Players the user's scouts have reported on, with the date of the last report.
+    #[serde(default)]
+    pub scouted: BTreeMap<String, String>,
+    #[serde(default)]
+    pub players: BTreeMap<String, PlayerSoloQHistory>,
+}
+
+impl SoloQHistory {
+    /// A scouting report was delivered: the player is followed for the next
+    /// [`SOLOQ_HISTORY_DAYS`] days.
+    pub fn note_scouted(&mut self, player_id: &str, date: &str) {
+        self.scouted.insert(player_id.to_string(), date.to_string());
+    }
+}
+
+fn parse_date(value: &str) -> Option<NaiveDate> {
+    NaiveDate::parse_from_str(value, "%Y-%m-%d").ok()
+}
+
+/// The ids of the players whose history is kept today: the user's roster (academy
+/// included), players with a scouting assignment under way, and players a scouting
+/// report covered in the last [`SOLOQ_HISTORY_DAYS`] days. The game has no shortlist.
+pub fn followed_player_ids(game: &Game, today: NaiveDate) -> HashSet<String> {
+    let mut ids: HashSet<String> = HashSet::new();
+    if let Some(user_team) = game.manager.team_id.as_deref() {
+        let mut team_ids: HashSet<&str> = HashSet::from([user_team]);
+        for team in &game.teams {
+            if team.team_kind == crate::domain::team::TeamKind::Academy
+                && team.parent_team_id.as_deref() == Some(user_team)
+            {
+                team_ids.insert(team.id.as_str());
+            }
+        }
+        ids.extend(
+            game.players
+                .iter()
+                .filter(|player| {
+                    player
+                        .team_id
+                        .as_deref()
+                        .is_some_and(|team_id| team_ids.contains(team_id))
+                })
+                .map(|player| player.id.clone()),
+        );
+    }
+    ids.extend(
+        game.scouting_assignments
+            .iter()
+            .map(|assignment| assignment.player_id.clone()),
+    );
+    for (player_id, reported_on) in &game.soloq_history.scouted {
+        let recent = parse_date(reported_on)
+            .is_some_and(|date| (today - date).num_days() < SOLOQ_HISTORY_DAYS as i64);
+        if recent {
+            ids.insert(player_id.clone());
+        }
+    }
+    ids
+}
+
 /// Displayed LP: the formula LP minus the offset, never below Master 0 LP.
 fn apply_offset(formula_lp: f64, offset: f64) -> f64 {
     if offset > 0.0 {
@@ -191,31 +310,120 @@ pub(super) fn settle_day(
     }
 }
 
-/// The daily SoloQ step: settles every player's day against the bank and offset and
-/// refreshes the `soloq_lp` cache. One pass over the players.
+/// The daily SoloQ step: settles every player's day, refreshes the `soloq_lp` cache and
+/// appends the day to the followed players' history. One pass over the players, with
+/// the lookups it needs built once.
 pub(super) fn advance_soloq_day(game: &mut Game) {
     let formula_lps = formula_lps(game);
+    let today = game.clock.current_date.date_naive();
+    let followed = followed_player_ids(game, today);
     let mode = game.soloq_decay_mode;
     let preset = mode.active();
 
     let Game {
         players,
+        teams,
+        soloq_history,
         soloq_day_marks,
         ..
     } = game;
-    for (player, formula_lp) in players.iter_mut().zip(formula_lps) {
-        if let Some(preset) = &preset {
-            let raw = soloq_day_marks.kind_for(&player.id);
-            settle_day(player, raw, formula_lp, preset);
-        }
-        player.soloq_lp = displayed_lp(mode, player, formula_lp);
+    let mut teams_by_id: HashMap<&str, &crate::domain::team::Team> =
+        HashMap::with_capacity(teams.len());
+    for team in teams.iter() {
+        // `find` semantics: the first team with an id wins.
+        teams_by_id.entry(team.id.as_str()).or_insert(team);
     }
+
+    for (player, formula_lp) in players.iter_mut().zip(formula_lps) {
+        let raw = soloq_day_marks.kind_for(&player.id);
+        let (kind, bank) = match &preset {
+            Some(preset) => {
+                let kind = settle_day(player, raw, formula_lp, preset);
+                let bank_max = u8::try_from(preset.bank_days).unwrap_or(u8::MAX);
+                (kind, bank_max.saturating_sub(player.soloq_bank_spent))
+            }
+            None => (raw, 0),
+        };
+        let shown = displayed_lp(mode, player, formula_lp);
+        player.soloq_lp = shown;
+
+        if followed.contains(player.id.as_str()) {
+            let focus = player.team_id.as_deref().and_then(|team_id| {
+                player.training_focus.clone().or_else(|| {
+                    teams_by_id
+                        .get(team_id)
+                        .map(|team| team.training_focus.clone())
+                })
+            });
+            soloq_history
+                .players
+                .entry(player.id.clone())
+                .or_default()
+                .push(
+                    today,
+                    SoloQDayRecord {
+                        lp: lp_to_u16(shown),
+                        formula_lp: lp_to_u16(formula_lp),
+                        focus,
+                        kind,
+                        bank,
+                    },
+                );
+        }
+    }
+
     soloq_day_marks.reset();
+    soloq_history
+        .players
+        .retain(|player_id, _| followed.contains(player_id));
+    soloq_history.scouted.retain(|_, reported_on| {
+        parse_date(reported_on)
+            .is_some_and(|date| (today - date).num_days() < SOLOQ_HISTORY_DAYS as i64)
+    });
+}
+
+fn lp_to_u16(lp: f64) -> u16 {
+    lp.round().clamp(0.0, f64::from(u16::MAX)) as u16
 }
 
 // ---------------------------------------------------------------------------
-// The setting
+// Commands' view of the state
 // ---------------------------------------------------------------------------
+
+/// One day of the history, as the profile page reads it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "typescript", derive(TS))]
+#[cfg_attr(feature = "typescript", ts(export))]
+pub struct SoloQHistoryDay {
+    /// `YYYY-MM-DD`.
+    pub date: String,
+    /// Displayed LP.
+    pub lp: u32,
+    /// LP before decay.
+    pub formula_lp: u32,
+    pub focus: Option<crate::domain::team::TrainingFocus>,
+    pub kind: SoloQDayKind,
+    pub bank: u32,
+}
+
+/// One player's SoloQ story plus the decay state behind it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "typescript", derive(TS))]
+#[cfg_attr(feature = "typescript", ts(export))]
+pub struct SoloQHistoryView {
+    pub player_id: String,
+    /// Whether history is kept for this player.
+    pub followed: bool,
+    pub decay_mode: SoloQDecayMode,
+    /// Grace-bank days left; 0 while decay is off.
+    pub bank_days: u32,
+    /// Full size of the grace bank; 0 while decay is off.
+    pub bank_max: u32,
+    /// The LP decay currently takes off the formula LP.
+    pub offset_lp: u32,
+    /// Oldest first, at most [`SOLOQ_HISTORY_DAYS`].
+    pub days: Vec<SoloQHistoryDay>,
+}
 
 /// The decay setting and the numbers of every mode.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -224,6 +432,56 @@ pub(super) fn advance_soloq_day(game: &mut Game) {
 pub struct SoloQDecaySettings {
     pub mode: SoloQDecayMode,
     pub presets: Vec<SoloQDecayPreset>,
+}
+
+pub fn soloq_history_for_player(game: &Game, player_id: &str) -> Result<SoloQHistoryView, String> {
+    let player = game
+        .players
+        .iter()
+        .find(|player| player.id == player_id)
+        .ok_or_else(|| "Player not found".to_string())?;
+    let mode = game.soloq_decay_mode;
+    let bank_max = mode.preset().bank_days;
+    let bank_days = if mode == SoloQDecayMode::Off {
+        0
+    } else {
+        bank_max.saturating_sub(u32::from(player.soloq_bank_spent))
+    };
+    let followed =
+        followed_player_ids(game, game.clock.current_date.date_naive()).contains(player_id);
+    let days = game
+        .soloq_history
+        .players
+        .get(player_id)
+        .filter(|_| followed)
+        .map(|history| {
+            history
+                .days
+                .iter()
+                .enumerate()
+                .filter_map(|(index, record)| {
+                    Some(SoloQHistoryDay {
+                        date: history.date_at(index)?.format("%Y-%m-%d").to_string(),
+                        lp: u32::from(record.lp),
+                        formula_lp: u32::from(record.formula_lp),
+                        focus: record.focus.clone(),
+                        kind: record.kind,
+                        bank: u32::from(record.bank),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
+    Ok(SoloQHistoryView {
+        player_id: player_id.to_string(),
+        followed,
+        decay_mode: mode,
+        bank_days,
+        bank_max,
+        offset_lp: offset_for(mode, player).round() as u32,
+        days,
+    })
 }
 
 pub fn soloq_decay_settings(game: &Game) -> SoloQDecaySettings {
