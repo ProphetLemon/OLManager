@@ -69,6 +69,7 @@ fn real_lineup(seed: u64, prefix: &str, ids: &[String]) -> HashMap<String, Strin
 }
 
 struct Played {
+    seed: usize,
     a_won: bool,
     minutes: f64,
     kills: f64,
@@ -127,6 +128,7 @@ fn play(n: usize, team_a: Side, team_b: Side, ids: &[String]) -> Played {
         _ => None,
     };
     Played {
+        seed: n,
         winner_loser_kills,
         a_won: state.winner.as_deref() == Some(a_team),
         minutes,
@@ -194,6 +196,13 @@ fn measure_real_lineups() {
         decided.iter().filter(|(winner, loser)| loser - winner >= 20).count(),
         decided.len()
     );
+    for p in &played {
+        if let Some((winner, loser)) = p.winner_loser_kills
+            && loser - winner >= 20
+        {
+            println!("lost lead seed {} winner kills {winner} loser kills {loser} minutes {:.1}", p.seed, p.minutes);
+        }
+    }
     println!("team gold per minute {:.1}", mean(&|p| p.team_gold_per_min));
     println!("items per champion at the end {:.2}", mean(&|p| p.items_per_champion));
     println!(
@@ -236,4 +245,131 @@ fn dump_purchase_sequences() {
         }
     }
     std::fs::write(std::env::var("DUMP_PATH").expect("DUMP_PATH"), out).expect("write");
+}
+
+fn champion_line(c: &ChampionRuntime) -> String {
+    if c.alive {
+        format!(
+            "{}@{:.2},{:.2} {} {:.0}%",
+            c.role,
+            c.pos.x,
+            c.pos.y,
+            c.state,
+            c.hp / c.max_hp.max(1.0) * 100.0
+        )
+    } else {
+        format!("{}:dead(back {:.0}s)", c.role, c.respawn_at)
+    }
+}
+
+/// Plays one match of the harness minute by minute and prints kills, structures, gold, where
+/// the champions are and the enemy minions standing at each living structure.
+///
+/// ```text
+/// REAL_ITEMS_TRACE_SEED=1042 REAL_ITEMS_PAIR=70,70 cargo test --release -p olm_core --lib \
+///   sim_live::real_items_harness_tests::trace_real_match -- --ignored --nocapture
+/// ```
+#[test]
+#[ignore = "measurement: traces one match with real champions"]
+fn trace_real_match() {
+    let n: usize = env_or("REAL_ITEMS_TRACE_SEED", 1000);
+    let pair = std::env::var("REAL_ITEMS_PAIR").unwrap_or_else(|_| "70,70".to_string());
+    let (a, b) = pair.split_once(',').expect("REAL_ITEMS_PAIR=a,b");
+    let (team_a, team_b) = (
+        Side::stat(a.parse().expect("stat a")),
+        Side::stat(b.parse().expect("stat b")),
+    );
+    let ids = catalogue_ids();
+    let a_is_blue = n.is_multiple_of(2);
+    let (blue, red) = if a_is_blue { (team_a, team_b) } else { (team_b, team_a) };
+    println!("seed {n}: team A (stat {a}) is {}", if a_is_blue { "blue" } else { "red" });
+    let mut champions = real_lineup(n as u64, "h", &ids);
+    champions.extend(real_lineup(n as u64, "a", &ids));
+    let store = SimLiveStoreState::default();
+    let session_id = format!("real-items-{n}");
+    init(
+        &store,
+        SimLiveInitRequest {
+            session_id: session_id.clone(),
+            seed: format!("real-items-seed-{n}"),
+            snapshot: snapshot_with(blue, red),
+            champion_by_player_id: champions,
+            champion_profiles_by_id: HashMap::new(),
+            champion_ultimates_by_id: HashMap::new(),
+            initial_state: None,
+            ai_mode: SimulatorAiMode::default(),
+            policy: SimulatorPolicyConfig::default(),
+        },
+    )
+    .expect("init");
+    let mut alive_before: Vec<String> = Vec::new();
+    let mut last_minute = -1_i64;
+    for _ in 0..(FULL_MATCH_TICKS / 10) {
+        skip_to_end(
+            &store,
+            SimLiveSkipToEndRequest {
+                session_id: session_id.clone(),
+                dt_sec: 0.2,
+                speed: 12.0,
+                max_ticks: 10,
+            },
+        )
+        .expect("skip");
+        let sessions = store.sessions.lock().expect("lock");
+        let state = &sessions[&session_id].state;
+        let alive_now: Vec<String> = state
+            .structures
+            .iter()
+            .filter(|s| s.alive && s.kind != "nexus")
+            .map(|s| s.id.clone())
+            .collect();
+        for id in alive_before.iter().filter(|id| !alive_now.contains(id)) {
+            println!(
+                "  t={:.0}s {id} falls | kills {}-{} | blue [{}] | red [{}]",
+                state.time_sec,
+                state.stats.blue.kills,
+                state.stats.red.kills,
+                state.champions.iter().filter(|c| c.team == "blue").map(champion_line).collect::<Vec<_>>().join("; "),
+                state.champions.iter().filter(|c| c.team == "red").map(champion_line).collect::<Vec<_>>().join("; "),
+            );
+        }
+        alive_before = alive_now;
+        let minute = (state.time_sec / 60.0) as i64;
+        if minute != last_minute {
+            last_minute = minute;
+            let gold = |team: &str| -> i64 {
+                state.champions.iter().filter(|c| c.team == team).map(|c| c.gold + c.spent_gold).sum()
+            };
+            let alive = |team: &str| state.champions.iter().filter(|c| c.team == team && c.alive).count();
+            let piles: Vec<String> = state
+                .structures
+                .iter()
+                .filter(|s| s.alive && s.kind == "tower")
+                .filter_map(|s| {
+                    let count = state
+                        .minions
+                        .iter()
+                        .filter(|m| m.alive && m.team != s.team && dist(m.pos, s.pos) <= 0.09)
+                        .count();
+                    (count >= 4).then(|| format!("{}:{count}", s.id))
+                })
+                .collect();
+            println!(
+                "m{minute:02} kills {}-{} towers {}-{} gold {}-{} alive {}-{} piles [{}]",
+                state.stats.blue.kills,
+                state.stats.red.kills,
+                state.stats.blue.towers,
+                state.stats.red.towers,
+                gold("blue"),
+                gold("red"),
+                alive("blue"),
+                alive("red"),
+                piles.join(" ")
+            );
+        }
+        if state.winner.is_some() {
+            println!("winner {:?} at {:.1} min", state.winner, state.time_sec / 60.0);
+            break;
+        }
+    }
 }
