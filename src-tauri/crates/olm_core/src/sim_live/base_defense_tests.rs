@@ -304,7 +304,16 @@ fn nexus_siege(attacker_role: &str) -> RuntimeState {
     defender.state = "lane".to_string();
     let mut intruder = red_champion_at(Vec2 { x: tower.x + 0.04, y: tower.y + 0.03 });
     intruder.hp = intruder.max_hp * 0.46;
-    test_runtime(vec![defender, intruder], vec![], vec![nexus_tower()], empty_neutral())
+    // A second defender: they fight where they outnumber the intruder.
+    let mut partner = test_champion(
+        "blue-MID",
+        "blue",
+        "MID",
+        "mid",
+        Vec2 { x: tower.x + 0.025, y: tower.y + 0.03 },
+    );
+    partner.state = "lane".to_string();
+    test_runtime(vec![defender, intruder, partner], vec![], vec![nexus_tower()], empty_neutral())
 }
 
 #[test]
@@ -334,4 +343,22 @@ fn a_defender_hits_the_intruder_instead_of_backing_off_the_laning_rules() {
     resolve_champion_combat(&mut runtime);
 
     assert!(runtime.champions[1].hp < before, "the defender declined to fight at his own nexus");
+}
+
+/// A group destroying the nexus is not fought by the champions who come back one at a time
+/// from the fountain: with the intruders as many as the defenders, or more, nobody goes.
+#[test]
+fn a_defender_does_not_go_for_an_intruder_who_has_as_many_champions_as_his_side() {
+    let mut runtime = nexus_siege("TOP");
+    // The partner is gone: one defender, one intruder.
+    runtime.champions.pop();
+
+    assert_eq!(combat::base_intruder_idx(&runtime, 0), None);
+}
+
+#[test]
+fn defenders_who_outnumber_the_intruders_go_for_them() {
+    let runtime = nexus_siege("TOP");
+
+    assert_eq!(combat::base_intruder_idx(&runtime, 0), Some(1));
 }

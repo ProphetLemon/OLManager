@@ -518,6 +518,8 @@ fn nearest_base_wave_minion_idx(runtime: &RuntimeState, champion_idx: usize) -> 
         .map(|(idx, _)| idx)
 }
 
+/// Radius around an intruder inside which champions count for the numbers of the fight.
+const BASE_FIGHT_RADIUS: f64 = 0.13;
 /// Health share under which a champion no longer goes out of his way to fight at his base.
 const BASE_DEFENDER_MIN_HP_RATIO: f64 = 0.30;
 
@@ -556,6 +558,23 @@ pub(super) fn base_intruder_idx(runtime: &RuntimeState, champion_idx: usize) -> 
                 .then(idx_a.cmp(idx_b))
         })
         .map(|(idx, _)| idx)
+        .filter(|&intruder| {
+            // He fights where his side is not outnumbered: champions who come back one at a
+            // time from the fountain against a group that is destroying the nexus only die.
+            let at = runtime.champions[intruder].pos;
+            let near = |team_is_mine: bool| {
+                runtime
+                    .champions
+                    .iter()
+                    .filter(|c| {
+                        c.alive
+                            && (normalized_team(&c.team) == team) == team_is_mine
+                            && dist(c.pos, at) <= BASE_FIGHT_RADIUS
+                    })
+                    .count()
+            };
+            near(true) > near(false)
+        })
 }
 
 pub(super) fn pick_combat_target(
