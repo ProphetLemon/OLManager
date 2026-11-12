@@ -35,13 +35,11 @@ Already implemented:
 - Scrim reputation and weekly cancellation counters.
 - `cancel_todays_scrims` command with reputation cost.
 - Home card showing today's activity and current day phase.
-- Persisted `day_phase` with phases:
+- Persisted `day_phase` with two phases:
   - `Morning`
   - `ScrimBlock`
-  - `ReviewBlock`
-  - `TrainingBlock`
-  - `Evening`
-- Non-match days advance by phase before the full day is processed.
+- A day takes one press of Continue, or two on a scrim day: `Morning` -> the scrims are played -> `ScrimBlock`, where an unresolved scrim review blocks the advance until the manager decides -> the next press ends the day. Training is processed when the day ends.
+- `ReviewBlock`, `TrainingBlock` and `Evening` were folded into `ScrimBlock` in 2026-11. Saves stored in any of them load as `ScrimBlock`.
 - Recent played scrim reports feed `ChampionDraft` score bonuses for comfort, preparation, and synergy.
 - Recent played scrim reports feed live match runtime through a conservative `lol_scrim_prep` payload.
 - Weekly scrim staff report summarizes record, quality, focus, recurring issue, practiced champion, and recommendation.
@@ -50,7 +48,7 @@ Already implemented:
 Current limitation:
 
 - Scrims are still mostly resolved inside daily training processing.
-- Phase advancement is partially visual: `ScrimBlock`, `ReviewBlock`, and `TrainingBlock` do not yet independently apply all gameplay consequences.
+- Phase advancement is partially visual: `ScrimBlock` does not yet independently apply all gameplay consequences. (This line named `ReviewBlock` and `TrainingBlock` before they were folded into `ScrimBlock` in 2026-11.)
 - Legacy scrim result data remains thin: opponent, slot, week, win/loss.
 - Enriched scrim reports now exist, but they are still generated from the current daily training flow until `ScrimBlock` is split out.
 - Player profiles now prefer persisted `champion_masteries`, with seed data as fallback.
@@ -72,7 +70,7 @@ The rework goal is simple:
 Current code often asks questions like:
 
 - Is there a scrim slot today?
-- Is the day phase `ReviewBlock`?
+- Is the day phase `ReviewBlock`? (Now `ScrimBlock`; `ReviewBlock` was folded into it in 2026-11.)
 - Does a report exist?
 - Does the plan have an opponent?
 - Is there a legacy `scrim_slot_result`?
@@ -183,7 +181,7 @@ Home must not show:
 
 - Scrim reputation when there is no scrim action available.
 - `Cancel Today` after a scrim has resolved.
-- Generic `Scrims` navigation during `ReviewBlock`.
+- Generic `Scrims` navigation while the `ScrimBlock` review is unresolved.
 - Plan A/B/C details; that belongs in the Scrims page.
 
 #### Scrims Page: Weekly Prep Room
@@ -645,7 +643,7 @@ Next E7 slices:
 
 1. Add i18n keys for new setting label/options and auto-delegation notice in locale bundles.
 2. Consider exposing an audit trail entry in Inbox when assistant auto-resolves review decisions.
-3. Evaluate whether auto-delegation should be restricted to specific phases (e.g., ReviewBlock only) for stricter UX control.
+3. Evaluate whether auto-delegation should be restricted to specific phases (e.g., ReviewBlock only; `ReviewBlock` was folded into `ScrimBlock` in 2026-11) for stricter UX control.
 
 ### E8 — ScrimBlock Decision Loop (New)
 
@@ -809,9 +807,13 @@ Effects:
 - Practiced champion picks can gain mastery.
 - Issues are detected for review.
 
-### ReviewBlock
+### Review decision (inside `ScrimBlock`)
+
+Formerly the `ReviewBlock` phase; folded into `ScrimBlock` in 2026-11.
 
 Manager answers: how do we respond to what we learned?
+
+While today's report has no `post_decision`, the advance is blocked (`blocked_scrim_decision`).
 
 Decision options:
 
@@ -823,11 +825,13 @@ Decision options:
 Effects:
 
 - Stores a post-scrim decision for the day.
-- Modifies later TrainingBlock and live/draft preparation signals.
+- Modifies the training processed when the day ends and live/draft preparation signals.
 
-### TrainingBlock
+### Day end (training and digest)
 
-Manager answers: how does practice shape player development?
+Formerly the `TrainingBlock` and `Evening` phases; folded into `ScrimBlock` in 2026-11. There is no separate phase: the press of Continue that ends the day (the second press on a scrim day, the only one otherwise) does all of this.
+
+Manager answers: how does practice shape player development, and what did the day leave behind?
 
 Effects:
 
@@ -835,13 +839,6 @@ Effects:
 - Applies post-scrim modifiers.
 - Updates LoL-facing player attributes conservatively.
 - Applies champion mastery progress for practiced champions.
-
-### Evening
-
-Manager answers: what did the day leave behind?
-
-Effects:
-
 - Advances date.
 - Resets phase to `Morning`.
 - Generates digest/report messages.
@@ -1055,13 +1052,13 @@ Goal:
 Acceptance:
 
 - Advancing into/through `ScrimBlock` generates reports for today's slots.
-- The game waits for `ReviewBlock` before applying the manager response.
+- The game waits in `ScrimBlock` for the manager's review decision before the day ends.
 
 Status:
 
 - Partially implemented: entering `ScrimBlock` now resolves today's scrims and creates enriched reports.
-- Scrim resolution is idempotent, so `TrainingBlock`/Evening processing does not duplicate reports or weekly counters.
-- Implemented: `ReviewBlock` now exposes explicit manager response choices for unresolved reports.
+- Scrim resolution is idempotent, so day-end processing (the former `TrainingBlock`/Evening phases) does not duplicate reports or weekly counters.
+- Implemented: the review decision (then the `ReviewBlock` phase, now part of `ScrimBlock`) exposes explicit manager response choices for unresolved reports.
 
 ### Stage 4: Post-Scrim Decisions
 
@@ -1071,8 +1068,8 @@ Goal:
 
 Acceptance:
 
-- Home shows the latest unresolved scrim report in `ReviewBlock`.
-- Decision is stored and affects TrainingBlock.
+- Home shows the latest unresolved scrim report in `ScrimBlock`.
+- Decision is stored and affects the training processed when the day ends.
 
 Status:
 
