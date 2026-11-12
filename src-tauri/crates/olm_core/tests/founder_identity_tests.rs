@@ -8,7 +8,7 @@ use olm_core::founder_identity::{
     FounderEditError, FounderEditReason as Reason, FounderError, FounderField as Field,
     FounderIdentityOverride, FounderOverrides, FounderPhotos, apply_founder_photos,
     birth_date_bounds, fold_key, normalize_full_name, normalize_nick, rename_founder,
-    validate_birth_date, validate_nationality,
+    set_founder_photo, validate_birth_date, validate_nationality,
 };
 use olm_core::founding_squad::{
     FoundingSquadError, install_founding_squad, install_founding_squad_with, plan_founding_squad,
@@ -1525,4 +1525,141 @@ fn photos_only_reach_the_given_players() {
     apply_founder_photos(&mut game, &[], &photos).expect("nothing to give");
 
     assert_eq!(photo_of(&game, LolRole::Top), None);
+}
+
+// ---------------------------------------------------------------------------
+// Changing a founder's photo in a running game
+// ---------------------------------------------------------------------------
+
+fn stored_photo(game: &Game, id: &str) -> Option<String> {
+    game.players
+        .iter()
+        .find(|p| p.id == id)
+        .and_then(|p| p.profile_image_url.clone())
+}
+
+#[test]
+fn a_founder_gets_a_normalized_photo_after_the_game_exists() {
+    let mut game = game_with_founders();
+    let id = founder_id(&game, LolRole::Mid);
+    let uri = photo_uri(400, 200, [9, 8, 7, 255]);
+
+    set_founder_photo(&mut game, &id, Some(&uri)).expect("photo");
+
+    assert_eq!(
+        stored_photo(&game, &id),
+        Some(olm_core::custom_logo::normalize_portrait(&uri).unwrap())
+    );
+}
+
+#[test]
+fn a_new_photo_replaces_the_previous_one() {
+    let mut game = game_with_founders();
+    let id = founder_id(&game, LolRole::Top);
+    let first = photo_uri(50, 50, [1, 1, 1, 255]);
+    let second = photo_uri(60, 60, [200, 100, 50, 255]);
+    set_founder_photo(&mut game, &id, Some(&first)).expect("first");
+
+    set_founder_photo(&mut game, &id, Some(&second)).expect("second");
+
+    assert_eq!(
+        stored_photo(&game, &id),
+        Some(olm_core::custom_logo::normalize_portrait(&second).unwrap())
+    );
+}
+
+#[test]
+fn removing_the_photo_returns_the_founder_to_the_default_avatar() {
+    let mut game = game_with_founders();
+    let id = founder_id(&game, LolRole::Adc);
+    set_founder_photo(&mut game, &id, Some(&photo_uri(50, 50, [1, 1, 1, 255]))).expect("photo");
+
+    set_founder_photo(&mut game, &id, None).expect("remove");
+
+    assert_eq!(stored_photo(&game, &id), None);
+}
+
+#[test]
+fn a_photo_change_touches_nothing_but_the_photo() {
+    let mut game = game_with_founders();
+    let id = founder_id(&game, LolRole::Mid);
+    let mut expected = game.players.clone();
+
+    set_founder_photo(&mut game, &id, Some(&photo_uri(50, 50, [1, 1, 1, 255]))).expect("photo");
+
+    let photo = stored_photo(&game, &id);
+    expected
+        .iter_mut()
+        .find(|p| p.id == id)
+        .expect("founder")
+        .profile_image_url = photo;
+    assert_eq!(
+        serde_json::to_value(&game.players).unwrap(),
+        serde_json::to_value(&expected).unwrap()
+    );
+}
+
+#[test]
+fn a_photo_for_a_player_of_another_club_is_refused_and_changes_nothing() {
+    let mut game = game_with_founders();
+
+    let error = set_founder_photo(&mut game, "les-t1-p0", Some(&photo_uri(50, 50, [1, 1, 1, 255])))
+        .expect_err("real player");
+
+    assert_eq!(
+        error,
+        FounderError::NotAFounder {
+            player_id: "les-t1-p0".to_string()
+        }
+    );
+    assert_eq!(stored_photo(&game, "les-t1-p0"), None);
+}
+
+#[test]
+fn a_released_founder_cannot_get_a_photo() {
+    let mut game = game_with_founders();
+    let id = founder_id(&game, LolRole::Support);
+    game.players
+        .iter_mut()
+        .find(|p| p.id == id)
+        .expect("p")
+        .team_id = None;
+
+    assert!(matches!(
+        set_founder_photo(&mut game, &id, Some(&photo_uri(50, 50, [1, 1, 1, 255]))),
+        Err(FounderError::NotAFounder { .. })
+    ));
+    assert_eq!(stored_photo(&game, &id), None);
+}
+
+#[test]
+fn a_photo_for_an_unknown_player_is_refused() {
+    let mut game = game_with_founders();
+
+    assert_eq!(
+        set_founder_photo(&mut game, "nope", None),
+        Err(FounderError::PlayerNotFound {
+            player_id: "nope".to_string()
+        })
+    );
+}
+
+#[test]
+fn a_photo_that_is_not_an_image_is_refused_and_the_previous_one_stays() {
+    let mut game = game_with_founders();
+    let id = founder_id(&game, LolRole::Support);
+    set_founder_photo(&mut game, &id, Some(&photo_uri(50, 50, [1, 1, 1, 255]))).expect("photo");
+    let before = stored_photo(&game, &id);
+
+    let error = set_founder_photo(&mut game, &id, Some("data:image/svg+xml;base64,PHN2Zy8+"))
+        .expect_err("rejected");
+
+    assert_eq!(
+        error,
+        FounderError::InvalidPhoto(olm_core::founder_identity::FounderPhotoError {
+            role: LolRole::Support,
+            reason: olm_core::custom_logo::LogoError::NotPng,
+        })
+    );
+    assert_eq!(stored_photo(&game, &id), before);
 }

@@ -106,6 +106,9 @@ describe("the portrait pipeline", () => {
 
   it("understands both wire kinds and still treats anything else as a failure", () => {
     expect(parseLogoError('{"kind":"invalid_portrait","reason":"malformed"}')).toBe("invalid");
+    // The in-game command answers with the founder error kind.
+    expect(parseLogoError('{"kind":"invalid_photo","role":"MID","reason":"too_large"}')).toBe("tooBig");
+    expect(parseLogoError('{"kind":"invalid_photo","role":"MID","reason":"not_png"}')).toBe("invalid");
     expect(parseLogoError('{"kind":"invalid_logo","reason":"malformed"}')).toBe("invalid");
     expect(parseLogoError('{"kind":"something_else","reason":"malformed"}')).toBe("failed");
   });

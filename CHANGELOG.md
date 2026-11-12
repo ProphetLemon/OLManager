@@ -4,6 +4,43 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1113.1] - 2026-11-13
+
+### Changed
+
+- A day advances about twice as fast. Measured on a Europe league save over 60 days, the median day went from about 2.0 s to about 1.0 s, and a quiet day from about 0.9 s to about 25 ms, because the game no longer copies the whole world for every team each day or searches the full player list for every player.
+- Starting a new season and the daily training are faster when the game holds many players. With about 10,000 extra free agents, setting up a season went from about 5.8 s to about 0.5 s, and a quiet day from about 1.6 s to about 0.5 s. With the players the game ships today, setting up a season went from about 0.3 s to about 0.15 s and a quiet day from about 1.1 s to about 70 ms.
+- When the draft is skipped, the champions now depend on the teams: each pick weighs the masteries of that team's players, the meta, the counters and the roles still needed, with the same score the AI uses in a manual draft. Before, every match of a patch gave the same ten champions to the same sides.
+- A player's training group now counts: a player in a group follows the group's plan in training and in SoloQ, after his own plan and before the team's. Before, the Training page showed the group's plan but the game used the team's.
+- The scrim texts say what is true: the fatigue tags point in the right direction, the first week of a new career explains why it is locked, and the weekly notice speaks only about the days still ahead.
+- The community panel in the main menu points to the Limón Edition.
+- The README starts with how to download and play the Limón Edition, and explains the bug report file and where the game data comes from.
+- Every language was reviewed for English left by mistake. Spanish was checked key by key; German, French, Italian, Portuguese, Brazilian Portuguese and Turkish had their leftovers translated, and a test now stops new ones.
+
+### Added
+
+- A player's profile shows a graph of his SoloQ LP over the last 90 days, with the tier, what he did each day and, when decay is on, the days of grace he has left. History is kept for the players you follow: your roster, your academy and the players you scout or shortlist.
+- SoloQ decay, an option in Settings, Gameplay: a player who stops playing SoloQ for a while loses LP and wins it back when he returns, as in real life. There are four modes: Off, Soft, Real and Harsh. New careers start on Real; a saved game from an older version opens on Off until you turn it on. Players on a normal plan never lose anything.
+- The Scrims tab is laid out as a decision desk. The week is a compact strip; the wide column shows the setup on planning days and the decision on the days after a scrim. Each decision card says what it costs and what it changes, a press confirms it and a line tells you what changed, and today's opponent and risk sit in the day header.
+- The odds of the rival teams are shown in the Scrims tab.
+- A Home notice says when the week's scrims are still unplanned, and an inbox message tells you when they can be planned.
+- In the game, the photo of a player you created in a new club can be changed or removed from his profile.
+
+### Fixed
+
+- The SoloQ history of a day is read against the grace bank of that day, not against today's setting. After a change of mode, old rows no longer read "14 of 7".
+- The Training page no longer shows the add-group form in English in other languages, and the Spanish text for energy has its accent.
+- The Home notice that the week's scrims are open appears while any day of the week can still be planned, and the line about a scrim decision goes away once the day moves on.
+- The "games" and "minutes" units on a champion page, and the days per week in the training schedule, are translated.
+- Rerolling the founders of a new club now says that it also discards their photos.
+- Spanish scrim review and loss-streak texts are correct, and the plural of the streak reads right.
+
+### Known issues
+
+- In a watched match, enemy champions who meet sometimes do nothing, and a recall that starts next to an enemy is not stopped. This is being fixed.
+- Champions who push after a won fight still die to towers more often than they should.
+- Once every tower of a team is down, the match takes about a minute to end.
+
 ## [2026.1112.2] - 2026-11-12
 
 ### Changed

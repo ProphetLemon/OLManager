@@ -382,7 +382,8 @@ function playerLolOvr(player: PlayerData): number {
   return calculateLolOvr(player);
 }
 
-export function teamLolOvr(gameState: GameStateData, teamId: string): number {
+/** The team's strength as the scrim engine reads it: the mean OVR of the five starters, not yet rounded. */
+export function teamLolStrength(gameState: GameStateData, teamId: string): number {
   const team = gameState.teams.find((candidate) => candidate.id === teamId);
   const starters = (team?.active_lineup_ids ?? team?.starting_xi_ids ?? [])
     .map((playerId) => gameState.players.find((player) => player.id === playerId))
@@ -396,7 +397,11 @@ export function teamLolOvr(gameState: GameStateData, teamId: string): number {
 
   if (sample.length === 0) return 74;
 
-  return Math.round(sample.reduce((sum, player) => sum + playerLolOvr(player), 0) / sample.length);
+  return sample.reduce((sum, player) => sum + playerLolOvr(player), 0) / sample.length;
+}
+
+export function teamLolOvr(gameState: GameStateData, teamId: string): number {
+  return Math.round(teamLolStrength(gameState, teamId));
 }
 
 export function buildTeamLolOvrMap(gameState: GameStateData): Map<string, number> {

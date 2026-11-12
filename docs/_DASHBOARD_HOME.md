@@ -42,7 +42,7 @@ The layout uses a 4-column CSS grid (`lg:grid-cols-4`) with `grid-flow-dense` fo
 
 | Component | Lines | Purpose |
 |---|---|---|
-| `TodayPhaseCard` | 926-1003 | Current game phase (Morning/Scrim/Review/Training/Evening) or match-day banner |
+| `TodayPhaseCard` | 926-1003 | Current game phase (Morning/ScrimBlock) or match-day banner (component not found in `src/ui-v2`, see below) |
 | `NextOpponentCard` | 155-376 | Next fixture: opponent, lineup comparison, strength bar, recent form |
 | `FullStandingsCard` | 418-534 | League standings table (always 8 rows) |
 | `RosterLineupV2` | External | 5 role cards with player photo, champion splash, OVR, energy, morale |
@@ -53,7 +53,11 @@ The layout uses a 4-column CSS grid (`lg:grid-cols-4`) with `grid-flow-dense` fo
 
 ### TodayPhaseCard
 
-Shows the current `gameState.day_phase` (Morning, ScrimBlock, ReviewBlock, TrainingBlock, Evening) with an icon, title, description, and call-to-action button. If there's a fixture today, it shows a "Día de partido" card instead.
+Shows the current `gameState.day_phase` with an icon, title, description, and call-to-action button. If there's a fixture today, it shows a "Día de partido" card instead.
+
+The day has two phases: `Morning` and `ScrimBlock`. `ReviewBlock`, `TrainingBlock` and `Evening` were folded into `ScrimBlock` in 2026-11, and saves stored in them load as `ScrimBlock`. A day takes one press of Continue, or two on a scrim day (the scrims are played, `ScrimBlock` waits for the review decision, the next press ends the day).
+
+> **Status of this component**: no `TodayPhaseCard` or `PHASE_META` exists in `src/ui-v2` any more, and this document does not describe what replaced it on Home. The day phase is still shown in the dashboard header: `DashboardHeaderV2` passes `gameState.day_phase` to `ClockPlate` as a chip labelled "Morning" or "Scrims" (keys `onAir.bar.phase.morning` and `onAir.bar.phase.scrimBlock`). The description below is the original v1 design.
 
 The phase metadata is in `PHASE_META` constant, mapping each phase to:
 - `icon` — Lucide icon component

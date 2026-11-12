@@ -235,3 +235,29 @@ describe("buildCallItems", () => {
     expect(input).toEqual(snapshot);
   });
 });
+
+describe("buildCallItems scrim week notice", () => {
+  const notice = (): DashboardAlert => ({
+    id: "scrim_week_open",
+    text: "This week's scrims are not planned yet.",
+    tab: "Scrims",
+    severity: "info",
+  });
+
+  it("lists the notice as a non-blocking row that opens the Scrims page", () => {
+    const result = build({ alerts: [notice()] });
+    expect(result.decisions).toBe(0);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({
+      id: "alert:scrim_week_open",
+      severity: "info",
+      actionLabelKey: "onAir.calls.actions.openScrims",
+      target: { tab: "Scrims" },
+    });
+  });
+
+  it("gives way to the hard setup blocker on the first scrim day", () => {
+    const result = build({ alerts: [notice()], blockers: [blocker("scrim_setup_required", { tab: "Scrims" })] });
+    expect(result.items.map((item) => item.id)).toEqual(["blocker:scrim_setup_required"]);
+  });
+});

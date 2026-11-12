@@ -241,6 +241,54 @@ fn recovery_focus_no_condition_cost() {
 }
 
 #[test]
+fn a_mental_reset_group_stops_its_player_paying_the_training_condition_cost() {
+    let mut ungrouped = make_game();
+    ungrouped.teams[0].training_focus = TrainingFocus::Scrims;
+    let mut grouped = ungrouped.clone();
+    grouped.teams[0].training_groups = vec![olm_core::domain::team::TrainingGroup {
+        id: "g1".to_string(),
+        name: "Rest".to_string(),
+        focus: TrainingFocus::MentalResetRecovery,
+        player_ids: vec!["p1".to_string()],
+    }];
+    for g in [&mut ungrouped, &mut grouped] {
+        for p in g.players.iter_mut() {
+            p.condition = 60;
+        }
+    }
+
+    training::process_training(&mut ungrouped, 0);
+    training::process_training(&mut grouped, 0);
+
+    assert!(grouped.players[0].condition > ungrouped.players[0].condition);
+    assert_eq!(grouped.players[1].condition, ungrouped.players[1].condition);
+}
+
+#[test]
+fn a_personal_focus_beats_the_group_focus_in_training() {
+    let mut game = make_game();
+    game.teams[0].training_focus = TrainingFocus::Scrims;
+    game.players[0].training_focus = Some(TrainingFocus::Scrims);
+    let mut grouped = game.clone();
+    grouped.teams[0].training_groups = vec![olm_core::domain::team::TrainingGroup {
+        id: "g1".to_string(),
+        name: "Rest".to_string(),
+        focus: TrainingFocus::MentalResetRecovery,
+        player_ids: vec!["p1".to_string()],
+    }];
+    for g in [&mut game, &mut grouped] {
+        for p in g.players.iter_mut() {
+            p.condition = 60;
+        }
+    }
+
+    training::process_training(&mut game, 0);
+    training::process_training(&mut grouped, 0);
+
+    assert_eq!(game.players[0].condition, grouped.players[0].condition);
+}
+
+#[test]
 fn high_intensity_costs_more_condition() {
     let mut game = make_game();
     game.teams[0].training_intensity = TrainingIntensity::High;

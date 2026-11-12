@@ -15,6 +15,7 @@ import {
   previewFoundingSquad,
   reasonKey,
   renamePlayer,
+  setPlayerPhoto,
   roleKey,
   withRoleOverride,
   withRolePhoto,
@@ -157,6 +158,17 @@ describe("adapters", () => {
       nick: "Ray",
       fullName: null,
     });
+  });
+
+  it("sends the prepared photo, or null to remove it, for one player", async () => {
+    invoke.mockResolvedValue({ ok: true });
+    await setPlayerPhoto("gen-ray-mid-1", "data:image/png;base64,AAAA");
+    await setPlayerPhoto("gen-ray-mid-1", null);
+    expect(invoke).toHaveBeenNthCalledWith(1, "set_player_photo", {
+      playerId: "gen-ray-mid-1",
+      photo: "data:image/png;base64,AAAA",
+    });
+    expect(invoke).toHaveBeenNthCalledWith(2, "set_player_photo", { playerId: "gen-ray-mid-1", photo: null });
   });
 
   it("draws a u32 seed", () => {

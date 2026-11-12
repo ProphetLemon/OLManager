@@ -515,7 +515,7 @@ describe("CustomTeamWizardV2 founding squad step", () => {
     const editedSeed = lastSeed();
 
     fireEvent.click(screen.getByRole("button", { name: /^Reroll squad/ }));
-    expect(screen.getByText("Rerolling draws a new squad and discards your edits.")).toBeInTheDocument();
+    expect(screen.getByText("Rerolling draws a new squad and discards your edits and photos.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Keep this squad" }));
     expect(lastSeed()).toBe(editedSeed);
     expect(screen.getByRole("button", { name: "Reroll squad (3 left)" })).toBeEnabled();

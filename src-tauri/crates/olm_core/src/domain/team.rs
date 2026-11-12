@@ -577,6 +577,24 @@ pub struct TrainingGroup {
     pub player_ids: Vec<String>,
 }
 
+/// Personal override > the group holding the player (the last one) > team default.
+pub fn resolve_training_focus<'a>(
+    personal: Option<&'a TrainingFocus>,
+    groups: &'a [TrainingGroup],
+    team_default: &'a TrainingFocus,
+    player_id: &str,
+) -> &'a TrainingFocus {
+    personal
+        .or_else(|| {
+            groups
+                .iter()
+                .rev()
+                .find(|group| group.player_ids.iter().any(|id| id == player_id))
+                .map(|group| &group.focus)
+        })
+        .unwrap_or(team_default)
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "typescript", derive(TS))]
 #[cfg_attr(feature = "typescript", ts(export))]
@@ -1312,6 +1330,22 @@ mod facility_compatibility_tests {
 }
 
 impl Team {
+    /// The focus a player trains with: their personal override, then the training
+    /// group holding them (the last one, as the Training page resolves it), then the
+    /// team default.
+    pub fn effective_training_focus<'a>(
+        &'a self,
+        player_id: &str,
+        personal: Option<&'a TrainingFocus>,
+    ) -> &'a TrainingFocus {
+        resolve_training_focus(
+            personal,
+            &self.training_groups,
+            &self.training_focus,
+            player_id,
+        )
+    }
+
     pub fn is_main(&self) -> bool {
         self.team_kind == TeamKind::Main
     }

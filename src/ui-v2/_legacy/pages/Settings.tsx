@@ -38,6 +38,7 @@ import { APP_VERSION } from "@/lib/common/appInfo";
 import { APP_NAME } from "@/lib/common/appInfo";
 import { useGameStore } from "@/store/gameStore";
 import type { GameStateData } from "@/store/gameStore";
+import SoloqDecaySettingV2 from "@/ui-v2/pages/settings/SoloqDecaySettingV2";
 
 const CURRENCY_OPTIONS = [
   { value: "EUR", label: "Euro (€)", symbol: "€" },
@@ -365,6 +366,8 @@ export default function Settings() {
                 onChange={(v) => handleUpdate({ confirm_advance: v })}
               />
             </GameRow>
+
+            <SoloqDecaySettingV2 />
 
             <GameRow
               label={t("settings.debugTools", "Debug tools")}

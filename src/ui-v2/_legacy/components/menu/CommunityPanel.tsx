@@ -1,11 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Heart, ExternalLink } from "lucide-react";
+import { X, Heart, ExternalLink, Download } from "lucide-react";
 import { useRovingFocus } from "@/hooks/useRovingFocus";
 
-const DISCORD_URL = "https://discord.gg/aFSDrebA";
-const GITHUB_URL = "https://github.com/OpenLeagueManager";
-const TWITTER_URL = "https://x.com/OpenLeagueMngr";
+const GITHUB_URL = "https://github.com/ProphetLemon/OLManager";
+const DOWNLOADS_URL = "https://github.com/ProphetLemon/OLManager/releases/latest";
 
 const SUPPORTERS: Array<{ name: string; note?: string }> = [];
 
@@ -21,14 +20,6 @@ function openExternal(url: string): void {
   }
 }
 
-function DiscordIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
-      <path d="M20.317 4.369A19.79 19.79 0 0 0 16.558 3.2a.074.074 0 0 0-.079.037c-.34.607-.719 1.4-.984 2.022a18.27 18.27 0 0 0-5.487 0 12.6 12.6 0 0 0-.997-2.022.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C1.533 7.55.642 10.65.992 13.71a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.371-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.099.245.198.372.292a.077.077 0 0 1-.006.127c-.598.349-1.22.644-1.873.892a.076.076 0 0 0-.04.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.056c.5-3.547-.838-6.624-3.549-9.314a.06.06 0 0 0-.031-.028ZM8.02 11.85c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418Zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418Z" />
-    </svg>
-  );
-}
-
 function GithubIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
@@ -37,22 +28,32 @@ function GithubIcon({ className }: { className?: string }) {
   );
 }
 
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
-    </svg>
-  );
-}
-
-const LINK_ITEMS = [
-  { label: "Discord", url: DISCORD_URL, icon: <DiscordIcon className="w-5 h-5 text-accent-400 shrink-0" /> },
-  { label: "GitHub", url: GITHUB_URL, icon: <GithubIcon className="w-5 h-5 text-gray-300 shrink-0 group-hover:text-white transition-colors" /> },
-  { label: "Twitter", url: TWITTER_URL, icon: <XIcon className="w-5 h-5 text-gray-300 shrink-0 group-hover:text-white transition-colors" /> },
+const LINK_ITEMS: Array<{
+  key: string;
+  label: string;
+  labelKey?: string;
+  url: string;
+  icon: ReactNode;
+}> = [
+  {
+    key: "github",
+    label: "GitHub",
+    url: GITHUB_URL,
+    icon: <GithubIcon className="w-5 h-5 text-gray-300 shrink-0 group-hover:text-white transition-colors" />,
+  },
+  {
+    key: "downloads",
+    labelKey: "community.links.downloads",
+    label: "Descargas",
+    url: DOWNLOADS_URL,
+    icon: <Download className="w-5 h-5 text-gray-300 shrink-0 group-hover:text-white transition-colors" aria-hidden="true" />,
+  },
 ];
 
 export default function CommunityPanel({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
+  const linkLabel = (item: (typeof LINK_ITEMS)[number]): string =>
+    item.labelKey ? t(item.labelKey, item.label) : item.label;
 
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { activeIndex, handleKeyDown, getTabIndex } = useRovingFocus({
@@ -60,7 +61,7 @@ export default function CommunityPanel({ onClose }: { onClose: () => void }) {
     columns: 1,
     loop: false,
     onSelect: (i) => openExternal(LINK_ITEMS[i]?.url),
-    getItemLabel: (i) => LINK_ITEMS[i]?.label ?? "",
+    getItemLabel: (i) => (LINK_ITEMS[i] ? linkLabel(LINK_ITEMS[i]) : ""),
   });
 
   useEffect(() => {
@@ -81,13 +82,17 @@ export default function CommunityPanel({ onClose }: { onClose: () => void }) {
       </div>
 
       <p className="text-sm text-gray-300 leading-relaxed border-t border-white/10 py-4">
-        {t("community.blurb", "Open League Manager es un proyecto open source y gratuito, hecho por y para la comunidad. Únete, propón ideas o contribuye con código: cualquier ayuda suma.")}
+        {t("community.blurb", {
+          defaultValue:
+            "Open League Manager · Limón Edition es un fork gratuito y de código abierto de Open League Manager. ¿Has encontrado un problema? Díselo a la persona que te pasó el juego y adjunta el ZIP que guarda el botón «{{bugButton}}».",
+          bugButton: t("onAir.nav.bug", "Reportar bug"),
+        })}
       </p>
 
       <div className="flex flex-col border-t border-white/10">
         {LINK_ITEMS.map((item, i) => (
           <button
-            key={item.label}
+            key={item.key}
             ref={(el) => { itemRefs.current[i] = el; }}
             tabIndex={getTabIndex(i)}
             type="button"
@@ -96,13 +101,14 @@ export default function CommunityPanel({ onClose }: { onClose: () => void }) {
           >
             <span className="flex items-center gap-3 min-w-0">
               {item.icon}
-              <span className="font-heading font-bold uppercase tracking-wider">{item.label}</span>
+              <span className="font-heading font-bold uppercase tracking-wider">{linkLabel(item)}</span>
             </span>
             <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-accent-400 transition-colors" />
           </button>
         ))}
       </div>
 
+      {SUPPORTERS.length > 0 && (
       <div className="border-t border-white/10 py-4">
         <div className="flex items-center gap-2 mb-1">
           <Heart className="w-4 h-4 text-accent-400" />
@@ -113,12 +119,7 @@ export default function CommunityPanel({ onClose }: { onClose: () => void }) {
         <p className="text-xs text-gray-400 mb-3">
           {t("community.mentionsSubtitle", "Gracias a quienes más han apoyado el proyecto")}
         </p>
-        {SUPPORTERS.length === 0 ? (
-          <p className="text-xs text-gray-500 italic">
-            {t("community.mentionsEmpty", "¿Quieres aparecer aquí? Únete al Discord y contribuye.")}
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-2">
             {SUPPORTERS.map((s) => (
               <li key={s.name} className="flex items-center gap-3">
                 <span className="flex items-center justify-center w-8 h-8 rounded-full bg-accent-400/15 text-accent-400 font-heading font-bold text-sm shrink-0">
@@ -131,8 +132,8 @@ export default function CommunityPanel({ onClose }: { onClose: () => void }) {
               </li>
             ))}
           </ul>
-        )}
       </div>
+      )}
     </div>
   );
 }

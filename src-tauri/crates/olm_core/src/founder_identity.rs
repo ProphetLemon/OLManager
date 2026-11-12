@@ -787,6 +787,40 @@ pub fn rename_founder(
     Ok(())
 }
 
+/// Sets, replaces or (with `None`) removes the profile photo of a founder of the
+/// manager's custom club, after the game exists.
+///
+/// The eligibility rule is [`is_user_club_founder`], the same one the rename
+/// uses. A photo goes through [`custom_logo::normalize_portrait`], like the one
+/// chosen in the club wizard, and the stored string is the normalized one. The
+/// player is checked and the photo validated before anything is written, so an
+/// error leaves the game untouched; no other field changes.
+pub fn set_founder_photo(
+    game: &mut Game,
+    player_id: &str,
+    photo: Option<&str>,
+) -> Result<(), FounderError> {
+    let index = game
+        .players
+        .iter()
+        .position(|player| player.id == player_id)
+        .ok_or_else(|| FounderError::PlayerNotFound {
+            player_id: player_id.to_string(),
+        })?;
+    if !is_user_club_founder(game, &game.players[index]) {
+        return Err(FounderError::NotAFounder {
+            player_id: player_id.to_string(),
+        });
+    }
+    let role = game.players[index].natural_position;
+    let normalized = photo
+        .map(custom_logo::normalize_portrait)
+        .transpose()
+        .map_err(|reason| FounderError::InvalidPhoto(FounderPhotoError { role, reason }))?;
+    game.players[index].profile_image_url = normalized;
+    Ok(())
+}
+
 /// Precomposed Latin-1 and Latin Extended-A letters as `(letter, base, mark)`,
 /// one canonical decomposition step each.
 const LATIN_DECOMPOSITIONS: &[(char, char, char)] = &[

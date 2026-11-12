@@ -124,6 +124,15 @@ export function renamePlayer<TGame>(
   });
 }
 
+/**
+ * Set (a prepared `data:image/png` from `buildPortraitFromFile`) or remove
+ * (`null`) the photo of one of the manager's own founders; resolves with the
+ * projected game. The backend validates the photo again.
+ */
+export function setPlayerPhoto<TGame>(playerId: string, photo: string | null): Promise<TGame> {
+  return invoke<TGame>("set_player_photo", { playerId, photo });
+}
+
 // ---------------------------------------------------------------- errors
 
 export type FounderFieldReason =

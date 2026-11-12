@@ -87,6 +87,7 @@ where
 
     if has_match_today {
         info!("[turn] process_day {}: matchday", today);
+        game.soloq_day_marks.begin_match_day();
         simulate_matchday_with_capture(game, &today, on_capture);
         maybe_schedule_playoffs(game);
         // A matchday still gives part of a rest day's recovery.
@@ -134,6 +135,7 @@ where
     crate::ai_rotation::rotate_ai_lineups(game);
     game.clock.advance_days(1);
     game.day_phase = crate::game::DayPhase::Morning;
+    crate::scrim_week_notice::push_scrim_week_open_message(game);
     crate::season_context::refresh_game_context(game);
     crate::residency::refresh_import_flags(game);
 }
@@ -144,6 +146,7 @@ pub fn finish_live_match_day(game: &mut Game) {
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
     ai_transfer_cap_reset_if_new_day(game);
     info!("[turn] finish_live_match_day: {}", today);
+    game.soloq_day_marks.begin_match_day();
     generate_matchday_news(game, &today);
     maybe_schedule_playoffs(game);
     // The live-match day recovers like any other matchday.
@@ -182,6 +185,7 @@ pub fn finish_live_match_day(game: &mut Game) {
     crate::ai_rotation::rotate_ai_lineups(game);
     game.clock.advance_days(1);
     game.day_phase = crate::game::DayPhase::Morning;
+    crate::scrim_week_notice::push_scrim_week_open_message(game);
     crate::season_context::refresh_game_context(game);
     crate::residency::refresh_import_flags(game);
 }

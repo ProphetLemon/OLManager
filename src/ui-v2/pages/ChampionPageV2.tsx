@@ -83,7 +83,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
                 <h1 className="font-heading text-3xl font-black uppercase tracking-wide text-white drop-shadow-lg md:text-4xl">
                   {displayName}
                 </h1>
-                {s && <Badge className="bg-white/20 text-white backdrop-blur">{s.total_games}g</Badge>}
+                {s && <Badge className="bg-white/20 text-white backdrop-blur">{t("championPage.gamesShort", { count: s.total_games })}</Badge>}
               </div>
               <p className="mt-1 flex items-center gap-2 text-sm text-white/70">
                 <span className="font-heading text-xs uppercase tracking-widest">{t("championPage.champion")}</span>
@@ -155,7 +155,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
                       <div key={r.role} className="flex items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2.5 transition-colors hover:bg-muted/30">
                         <Icon className={cn("size-4 shrink-0", meta.color)} />
                         <span className="min-w-14 font-heading text-xs font-bold uppercase tracking-wider text-foreground">{t(meta.labelKey)}</span>
-                        <span className="text-xs tabular-nums text-muted-foreground/60">{r.games}g</span>
+                        <span className="text-xs tabular-nums text-muted-foreground/60">{t("championPage.gamesShort", { count: r.games })}</span>
                         <div className="flex-1">
                           <div className="h-2 overflow-hidden rounded-full bg-muted">
                             <div className={cn("h-full rounded-full transition-all duration-700", meta.color.replace("text-", "bg-"))}
@@ -223,7 +223,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
               </div>
               <div className="rounded-xl border border-border bg-card p-4 text-center">
                 <p className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">{t("championPage.duration")}</p>
-                <p className="font-heading text-2xl font-black tabular-nums text-foreground">{Math.round(s.avg_duration / 60)}m</p>
+                <p className="font-heading text-2xl font-black tabular-nums text-foreground">{t("championPage.minutesShort", { count: Math.round(s.avg_duration / 60) })}</p>
               </div>
             </div>
           )}
@@ -238,7 +238,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
                     <div key={w.week_label} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/20">
                       <span className="w-20 font-heading text-xs font-bold text-foreground">{w.week_label}</span>
                       <div className="flex flex-1 items-center gap-2">
-                        <span className="text-xs tabular-nums text-muted-foreground">{w.games}g</span>
+                        <span className="text-xs tabular-nums text-muted-foreground">{t("championPage.gamesShort", { count: w.games })}</span>
                         <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
                           <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${w.win_rate}%` }} />
                         </div>
@@ -285,7 +285,7 @@ function MatchupBlock({ title, items, type }: {
                     <span className="truncate text-sm font-medium text-foreground">{championDisplayName(item.vs_champion_key, item.vs_champion_name)}</span>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-xs tabular-nums text-muted-foreground/60">{item.games}g</span>
+                    <span className="text-xs tabular-nums text-muted-foreground/60">{t("championPage.gamesShort", { count: item.games })}</span>
                     <div className="h-1.5 w-12 overflow-hidden rounded-full bg-muted">
                       <div className="h-full rounded-full transition-all" style={{ width: `${item.win_rate}%`, backgroundColor: wrColor }} />
                     </div>

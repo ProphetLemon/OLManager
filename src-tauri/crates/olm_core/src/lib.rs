@@ -51,6 +51,7 @@ pub mod roster_stability;
 pub mod schedule;
 pub mod scouting;
 pub mod scrim_flow;
+pub mod scrim_week_notice;
 pub mod season_awards;
 pub mod season_context;
 pub mod season_rollover;

@@ -43,6 +43,7 @@ fn compute_coaching_bonus(game: &Game, team_id: &str, _focus: &TrainingFocus) ->
 struct TeamTrainingPlan {
     team_id: String,
     default_focus: TrainingFocus,
+    training_groups: Vec<crate::domain::team::TrainingGroup>,
     intensity: TrainingIntensity,
     schedule: TrainingSchedule,
     bonus: TeamCoachingBonus,
@@ -858,6 +859,7 @@ pub fn process_scrim_block(game: &mut Game, weekday_num: u32) -> bool {
 /// Scrims focus can gain extra efficiency from stronger weekly scrim opponents.
 /// `weekday_num` is 0=Mon .. 6=Sun (chrono Weekday::num_days_from_monday()).
 pub fn process_training(game: &mut Game, weekday_num: u32) {
+    game.soloq_day_marks.begin_training();
     let manager_team_id = game.manager.team_id.clone();
     let rival_player_ids: Vec<String> = game
         .players
@@ -871,9 +873,7 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
         })
         .map(|player| player.id.clone())
         .collect();
-    for player_id in rival_player_ids {
-        crate::champions::ensure_training_targets_from_mastery(game, &player_id);
-    }
+    crate::champions::ensure_training_targets_for_players(game, &rival_player_ids);
 
     let current_year = u32::try_from(game.clock.current_date.year()).unwrap_or(0);
 
@@ -887,6 +887,7 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
             TeamTrainingPlan {
                 team_id: t.id.clone(),
                 default_focus: t.training_focus.clone(),
+                training_groups: t.training_groups.clone(),
                 intensity: t.training_intensity.clone(),
                 schedule: t.training_schedule.clone(),
                 bonus,
@@ -951,11 +952,24 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
                     || player.condition >= crate::ai_rotation::TRAINING_REST_BELOW);
 
             // Determine this player's effective focus:
-            // player override > team default
-            let player_focus = player
-                .training_focus
-                .as_ref()
-                .unwrap_or(&plan.default_focus);
+            // player override > training group > team default
+            let player_focus = crate::domain::team::resolve_training_focus(
+                player.training_focus.as_ref(),
+                &plan.training_groups,
+                &plan.default_focus,
+                &player.id,
+            );
+
+            // SoloQ decay reads how the plan settled this day: a recovery plan keeps the
+            // player off the ladder, a rest day is neutral, any other plan is play.
+            let soloq_day = if player_focus.is_recovery_plan() {
+                crate::champions::SoloQDayKind::Idle
+            } else if is_training_day {
+                crate::champions::SoloQDayKind::Played
+            } else {
+                crate::champions::SoloQDayKind::Rest
+            };
+            game.soloq_day_marks.mark_training(&player.id, soloq_day);
 
             // On rest days or recovery-focused plans: no training cost
             let condition_cost: u8 = if !is_training_day {
@@ -1101,19 +1115,11 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
         game.champion_patch.rng_seed,
         &week_seed,
     ));
-    for (player_id, champion_id, gain, attempts) in mastery_training_ticks {
-        let soloq_mult = crate::champions::mastery_gain_multiplier_for_player(game, &player_id);
-        let effective_gain = gain * soloq_mult;
-        for _ in 0..attempts {
-            crate::champions::apply_training_mastery_progress(
-                game,
-                &player_id,
-                &champion_id,
-                effective_gain,
-                &mut mastery_rng,
-            );
-        }
-    }
+    crate::champions::apply_training_mastery_ticks(
+        game,
+        &mastery_training_ticks,
+        &mut mastery_rng,
+    );
 
     if weekday_num == 6
         && let Some(manager_team_id) = game.manager.team_id.clone()

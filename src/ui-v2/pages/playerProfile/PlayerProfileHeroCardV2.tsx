@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { EyeOff, Pencil, Shield, User } from "lucide-react";
 import type { PlayerData } from "@/store/gameStore";
 import { formatPlayerMarketValue, formatPlayerWage } from "@/lib/playerProfile/helpers";
@@ -42,6 +43,12 @@ interface PlayerProfileHeroCardV2Props {
   onToggleLoanList?: () => void;
   /** Offered only for the manager's own generated founders. */
   onRename?: () => void;
+  /** Change or remove photo; offered only for the manager's own generated founders. */
+  photoControl?: ReactNode;
+  /** Renew, release or make an offer: the contract actions live in the hero, next to the scout action. */
+  contractActions?: ReactNode;
+  /** SoloQ tier, LP and what happens next. */
+  soloqPanel?: ReactNode;
   t: (key: string, options?: Record<string, string | number>) => string;
   teamLogoUrl?: string | null;
   soloqTier?: SoloQTier;
@@ -72,6 +79,9 @@ export default function PlayerProfileHeroCardV2({
   onToggleTransferList,
   onToggleLoanList,
   onRename,
+  photoControl = null,
+  contractActions = null,
+  soloqPanel = null,
   t,
   language = "en",
   teamLogoUrl,
@@ -141,6 +151,7 @@ export default function PlayerProfileHeroCardV2({
                 {academyActionLoading ? "..." : academyActionLabel}
               </button>
             )}
+            {photoControl}
           </div>
 
           {/* Center: name + details */}
@@ -216,7 +227,7 @@ export default function PlayerProfileHeroCardV2({
                   return logoUrl ? <img src={logoUrl} alt="" className="size-4 object-contain" /> : <Shield className="size-4" />;
                 })()}
                 {player.team_id ? (
-                  <button onClick={() => onSelectTeam?.(player.team_id!)} className="hover:text-club-text transition-colors underline underline-offset-2">{teamName}</button>
+                  <button onClick={() => onSelectTeam?.(player.team_id!)} className="inline-flex min-h-6 items-center hover:text-club-text transition-colors underline underline-offset-2">{teamName}</button>
                 ) : (
                   <span>{teamName}</span>
                 )}
@@ -258,19 +269,25 @@ export default function PlayerProfileHeroCardV2({
               </div>
             )}
 
-            <PlayerProfileScoutActionV2 availability={scoutAvailability} scoutStatus={scoutStatus} scoutError={scoutError} onScout={onScout} />
+            <div className="flex flex-wrap items-center gap-2">
+              {contractActions}
+              <PlayerProfileScoutActionV2 availability={scoutAvailability} scoutStatus={scoutStatus} scoutError={scoutError} onScout={onScout} />
+            </div>
           </div>
 
-          {/* Right: quick stats */}
-          <div className="hidden md:block">
-            <div className="grid grid-cols-2 gap-2">
-              <QuickStatV2 label={t("common.ovr")} value={String(ovr)} color="text-club-text" />
-              <QuickStatV2 label={t("common.condition")} value={`${player.condition}%`} color={player.condition >= 70 ? "text-positive" : "text-negative"} />
-              <QuickStatV2 label={t("common.fitness")} value={`${player.fitness ?? 75}%`} color={player.fitness != null && player.fitness >= 70 ? "text-positive" : "text-negative"} />
-              <QuickStatV2 label={t("common.morale")} value={`${player.morale}%`} color={player.morale >= 70 ? "text-club-text" : "text-negative"} />
-              <QuickStatV2 label={t("common.potential")} value={potentialValueLabel} color="text-foreground/90" icon={potentialRevealed === null ? <EyeOff className="size-4" /> : undefined} />
-              <QuickStatV2 label={t("common.value")} value={formatPlayerMarketValue(player.market_value)} color="text-foreground" />
-              <QuickStatV2 label={t("common.wage")} value={formatPlayerWage(player.wage, annualSuffix)} color="text-foreground" />
+          {/* Right: SoloQ and quick stats */}
+          <div className="flex shrink-0 flex-col gap-3 lg:flex-row">
+            {soloqPanel}
+            <div className="hidden md:block">
+              <div className="grid grid-cols-2 gap-2">
+                <QuickStatV2 label={t("common.ovr")} value={String(ovr)} color="text-club-text" />
+                <QuickStatV2 label={t("common.condition")} value={`${player.condition}%`} color={player.condition >= 70 ? "text-positive" : "text-negative"} />
+                <QuickStatV2 label={t("common.fitness")} value={`${player.fitness ?? 75}%`} color={player.fitness != null && player.fitness >= 70 ? "text-positive" : "text-negative"} />
+                <QuickStatV2 label={t("common.morale")} value={`${player.morale}%`} color={player.morale >= 70 ? "text-club-text" : "text-negative"} />
+                <QuickStatV2 label={t("common.potential")} value={potentialValueLabel} color="text-foreground/90" icon={potentialRevealed === null ? <EyeOff className="size-4" /> : undefined} />
+                <QuickStatV2 label={t("common.value")} value={formatPlayerMarketValue(player.market_value)} color="text-foreground" />
+                <QuickStatV2 label={t("common.wage")} value={formatPlayerWage(player.wage, annualSuffix)} color="text-foreground" />
+              </div>
             </div>
           </div>
         </CardContent>

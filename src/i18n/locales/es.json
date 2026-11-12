@@ -229,7 +229,7 @@
     "chooseWorld": "Elegir Mundo",
     "placeholderFirst": "ej. Lee",
     "placeholderLast": "ej. Sang-hyeok",
-    "nickname": "Nickname",
+    "nickname": "Nick",
     "placeholderNickname": "ej. Faker"
   },
   "validation": {
@@ -315,6 +315,7 @@
       "exhausted": "{{count}} jugador(es) en condición crítica (<25%)",
       "incompleteStartingXi": "El alineación titular está incompleto — ajusta tu alineación",
       "urgentUnread": "{{count}} mensaje(s) urgente(s) sin leer",
+      "scrimWeekOpen": "Los scrims de esta semana aún no están planificados. Planifica los días de scrims que aún quedan.",
       "matchTodayStartingXi": "¡Hay partido hoy! Ajusta tu alineación titular",
       "financeCrisis": "Finanzas críticas: saldo {{balance}}, margen de {{weeks}} semana(s)",
       "financeRunway": "El margen de caja baja a {{count}} semana(s)",
@@ -325,11 +326,11 @@
     "brandSubtitle": "Manager",
     "brandTitle": "Open League",
     "competitions": "Competiciones",
-    "noActiveGame": "No active game",
-    "noActiveGameDesc": "Start or load a game to continue.",
-    "save": "Save",
+    "noActiveGame": "Sin partida activa",
+    "noActiveGameDesc": "Inicia o carga una partida para continuar.",
+    "save": "Guardar",
     "phaseLabels": {
-      "morning": "Morning",
+      "morning": "Mañana",
       "scrimBlock": "Scrims"
     }
   },
@@ -344,7 +345,7 @@
     "skipToMatchDayDesc": "Avanzar hasta tu próximo partido y jugarlo automáticamente",
     "matchDayTitle": "Día de Partido",
     "delegateWarning": "Tu asistente gestionará el partido. No podrás intervenir.",
-    "skipToNextDay": "Skip to Next Day",
+    "skipToNextDay": "Saltar al día siguiente",
     "skipToNextDayDesc": "Avanzar hasta el próximo día"
   },
   "champions": {
@@ -354,7 +355,7 @@
     "patchLastDate": "Último parche: {{date}}",
     "patchPending": "Aún no hay parches aplicados.",
     "metaHiddenHint": "Tu staff todavía está descifrando el meta de este parche. Mejores scouts revelan más rápido.",
-    "tierScore": "Tier score: {{value}}",
+    "tierScore": "Puntuación de tier: {{value}}",
     "masteryTrainingTitle": "Entrenamiento de maestrías",
     "noTarget": "Sin objetivo",
     "currentMastery": "Maestría: {{value}}",
@@ -376,7 +377,7 @@
     "allChampions": "Todos los Campeones",
     "worldDescription": "Explora todos los campeones de League of Legends",
     "totalChampions": "Total",
-    "searchPlaceholder": "Search champions...",
+    "searchPlaceholder": "Buscar campeones...",
     "mastery": "Maestría",
     "name": "Campeón",
     "of": "de",
@@ -468,10 +469,10 @@
     "standings": {
       "title": "Clasificación",
       "hash": "#",
-      "losses": "L",
-      "preseason": "Preseason — no standings yet",
-      "team": "Team",
-      "wins": "W"
+      "losses": "D",
+      "preseason": "Pretemporada — aún no hay clasificación",
+      "team": "Equipo",
+      "wins": "V"
     },
     "noLeague": "Sin datos de liga todavía.",
     "unavailablePlayers": "Jugadores no disponibles",
@@ -489,8 +490,8 @@
     "expenses": "Gastos",
     "noUpcomingPlayoffMatch": "No hay próximo partido de playoff.",
     "fullRoster": "Plantilla completa",
-    "todayScrimReviewVs": "Review vs {{team}}",
-    "todayScrimReview": "Review post-scrim",
+    "todayScrimReviewVs": "Revisión vs {{team}}",
+    "todayScrimReview": "Revisión post-scrim",
     "todayScrimReviewDetail": "Elige cómo convertir el scrim de hoy en aprendizaje.",
     "todayMatch": "Partido de hoy",
     "today": "Hoy",
@@ -540,48 +541,48 @@
     "todayScrimDetail": "Define cómo usar el bloque de scrim de hoy.",
     "todayTraining": "Foco de entrenamiento",
     "todayTrainingDetail": "Sin scrim bloqueado: aprovecha para entrenar y recuperar.",
-    "awayVenue": "Away",
+    "awayVenue": "Visitante",
     "finances": {
       "balance": "Balance",
-      "detail": "Financial Overview",
-      "seasonNet": "Season Net",
-      "title": "Finances",
+      "detail": "Resumen financiero",
+      "seasonNet": "Neto de la temporada",
+      "title": "Finanzas",
       "wageBudget": "Presupuesto salarial",
       "annualWageBudget": "Presupuesto salarial anual"
     },
-    "homeVenue": "Home",
-    "matchDay": "Match Day",
+    "homeVenue": "Local",
+    "matchDay": "Día de partido",
     "messages": {
-      "inbox": "Inbox",
-      "title": "Messages"
+      "inbox": "Bandeja de entrada",
+      "title": "Mensajes"
     },
     "news": {
-      "title": "News",
-      "viewAll": "View All"
+      "title": "Noticias",
+      "viewAll": "Ver todo"
     },
     "phase": {
       "morning": {
-        "title": "Morning",
-        "description": "Morning block",
-        "actionLabel": "View Details"
+        "title": "Mañana",
+        "description": "Bloque de mañana",
+        "actionLabel": "Ver detalles"
       },
       "scrimBlock": {
         "title": "Scrims",
-        "description": "Scrim block",
-        "actionLabel": "Start Scrims"
+        "description": "Bloque de scrims",
+        "actionLabel": "Iniciar Scrims"
       }
     },
-    "view": "View",
-    "viewCompetitions": "View Competitions",
-    "yourTeam": "Your Team"
+    "view": "Ver",
+    "viewCompetitions": "Ver competiciones",
+    "yourTeam": "Tu equipo"
   },
   "scrims": {
     "reputation": "Rep scrims",
-    "reviewBlockTitle": "Review del bloque",
+    "reviewBlockTitle": "Revisión del bloque",
     "reviewWin": "Victoria",
     "reviewLoss": "Derrota",
-    "reportFocus": "Enfoque",
-    "detectedIssue": "Issue detectado",
+    "reportFocus": "Enfoque del informe",
+    "detectedIssue": "Problema detectado",
     "freeDayOff": "Dar resto del día libre",
     "decision": {
       "cancelScrims": "Cancelar scrims",
@@ -591,7 +592,7 @@
       "targetedDrills": "Ejercicios dirigidos",
       "offerRest": "Ofrecer descanso",
       "dayOff": "Dar resto del día libre",
-      "pushThrough": "Push Through",
+      "pushThrough": "Forzar el bloque",
       "cancelScrimsDesc": "Cancela el siguiente bloque y pasa a trabajo correctivo.",
       "continueBlock2Desc": "Mantén el plan y juega el segundo bloque.",
       "dayOffDesc": "Da el resto del día libre y recupera.",
@@ -646,6 +647,7 @@
     "reviewed": "Revisado",
     "setupAllSlotsPassed": "Ya han pasado todos los días de scrims de esta semana y no queda nada por planificar. La planificación se reabre el próximo lunes.",
     "setupLocked": "La configuración se bloquea al empezar el bloque",
+    "setupLockedCareerStart": "Tu carrera empieza después de los días de scrim de esta semana. La planificación se abre el {{date}}.",
     "setupLockedFirstWindow": "El primer día de scrims de esta semana ya ha empezado, así que la configuración está bloqueada. Se reabre el próximo lunes.",
     "setupLockedManual": "Has confirmado la configuración de esta semana, así que está bloqueada. Se reabre el próximo lunes.",
     "setupLockedWeekStarted": "Ya se ha jugado un bloque de scrims esta semana, así que la configuración está bloqueada. Se reabre el próximo lunes.",
@@ -678,7 +680,8 @@
     "weeklyReportInline": "Informe semanal",
     "weeklyVolume": "Volumen semanal",
     "cancelFollowupPrompt": "Scrims cancelados. Elige qué hacer después.",
-    "lossStreak": "Racha de {{count}} derrotas",
+    "lossStreak_one": "Racha de {{count}} derrota",
+    "lossStreak_other": "Racha de {{count}} derrotas",
     "risk": {
       "high": "Alto",
       "medium": "Medio",
@@ -712,7 +715,70 @@
     "weeklyFailureIssue": "Problema recurrente: {{issue}}",
     "weeklyGainExecution": "Mejora: mejor ejecución",
     "weeklyGainExposure": "Mejora: experiencia con estilos distintos",
-    "weeklyGainSolid": "Mejora: calidad de scrim sólida"
+    "weeklyGainSolid": "Mejora: calidad de scrim sólida",
+    "thisWeek": "Esta semana",
+    "slotStatusKey": "Leyenda de estados de los bloques",
+    "slotStatus": {
+      "open": "Abierto",
+      "locked": "Bloqueado",
+      "played": "Jugado",
+      "reviewed": "Revisado",
+      "cancelled": "Cancelado",
+      "notPlayed": "No jugado"
+    },
+    "planCleared": "Plan borrado",
+    "notPlanned": "Sin planificar",
+    "dayBlocks": "Bloques: {{day}}",
+    "opponentPlans": "Planes de rival",
+    "opponentPlansBySlot": "Planes de rival por bloque",
+    "noOpponentSet": "Sin rival definido",
+    "finalizeHint": "Al confirmar, la configuración de la semana queda bloqueada. Se reabre el próximo lunes.",
+    "nothingToDecide": "No hay nada que decidir ahora. {{slot}} se juega contra {{opponent}} cuando continúes.",
+    "nothingToDecideNoRival": "No hay nada que decidir ahora. {{slot}} no tiene rival planificado.",
+    "recapSummary": "{{objective}}, {{count}} bloques",
+    "impactLabel": "Impacto",
+    "weekGauges": "Indicadores de la semana",
+    "noBlocksYet": "Todavía no se ha jugado ningún bloque",
+    "repNote": "Cada bloque cancelado cuesta 5.",
+    "tagBenefit": "ventaja",
+    "tagCost": "coste",
+    "block": "Bloque",
+    "blockOfTwo": "{{label}} de 2",
+    "weekContext": "Contexto de la semana",
+    "effect": {
+      "morale": "Moral {{delta}}",
+      "condition": "Energía {{delta}}",
+      "quality": "Calidad del informe {{delta}}",
+      "severity": "Gravedad {{delta}}",
+      "severityLabel": "Gravedad",
+      "players": "Jugadores elegidos: {{changes}}",
+      "playersLabel": "Jugadores elegidos",
+      "severeLoss": "Una derrota grave cuesta más a los jugadores.",
+      "cancelsNext": "Cancela el bloque {{label}}. Rep scrims {{rep}}, cancelaciones +{{count}}.",
+      "cancelStep": "Todavía no aplica nada. Cualquier seguimiento cancela el bloque {{label}}: rep scrims {{rep}}, cancelaciones +{{count}}.",
+      "playsNext": "El bloque {{label}} se juega ahora. Su informe espera tu decisión.",
+      "closesDay": "El día se cierra tras esta decisión."
+    },
+    "result": {
+      "blockTwoPlayed": "Se jugó el bloque 2. Su informe espera tu decisión.",
+      "nextReportLater": "El informe del siguiente bloque llega con el siguiente avance.",
+      "blockCancelled": "Se canceló el bloque B. Continuar avanza el día.",
+      "dayClosed": "El día está cerrado. Continuar avanza el día.",
+      "cancelled": "Cancelado",
+      "playedWaiting": "Jugado, informe pendiente",
+      "blockLabel": "Bloque {{label}}"
+    },
+    "backToBlockDecision": "Volver a la decisión del bloque",
+    "whatChanged": "Qué ha cambiado",
+    "costMark": "Coste",
+    "repGhostNote": "Marca discontinua: {{value}} tras cualquier seguimiento.",
+    "rivalsTitle": "Rivales de tu competición",
+    "rivalsTable": "Rivales por valoración general",
+    "rivalTeam": "Equipo",
+    "rivalRep": "Rep",
+    "rivalWin": "Victoria",
+    "rivalAccepts": "Acepta",
+    "rivalsNote": "Victoria es tu probabilidad de ganar el scrim. Acepta es la probabilidad de que este rival tome un bloque con dos o más planes. Un bloque con un solo plan siempre juega ese plan, y el Plan A se juega si todos los planes lo rechazan."
   },
   "season": {
     "preseasonStatus": "Estado de la pretemporada",
@@ -758,8 +824,8 @@
     "repStrong": "Fuerte",
     "repAverage": "Medio",
     "repDeveloping": "En Desarrollo",
-    "confirm": "Confirm",
-    "noLeaguesDesc": "No leagues found for this region",
+    "confirm": "Confirmar",
+    "noLeaguesDesc": "No se encontraron ligas para esta región",
     "selectLeague": "Seleccionar liga",
     "selectLeagueSubtitle": "Elige la liga que quieres dirigir",
     "selectTeam": "Seleccionar equipo",
@@ -911,7 +977,7 @@
         "none": "Sin sorteos restantes",
         "noneReason": "Has usado los {{max}} sorteos de este club.",
         "confirmLabel": "Confirmar nuevo sorteo",
-        "confirmText": "Un nuevo sorteo genera otra plantilla y descarta tus ediciones.",
+        "confirmText": "Un nuevo sorteo genera otra plantilla y descarta tus ediciones y fotos.",
         "confirm": "Sortear de todos modos",
         "keep": "Mantener esta plantilla",
         "ready_one": "Nueva plantilla lista. Queda {{count}} sorteo.",
@@ -964,7 +1030,7 @@
     "potential": "Potencial",
     "growth": "Crecimiento",
     "traits": "Rasgos",
-    "condition": "Energia",
+    "condition": "Energía",
     "potWorldClass": "Clase Mundial",
     "potExcellent": "Excelente",
     "potPromising": "Prometedor",
@@ -987,11 +1053,11 @@
     "promote": "Subir",
     "academyPlayers": "jugadores de academia",
     "academyPlayersStartingMayus": "Jugadores de academia",
-    "hidden": "Hidden",
-    "highPotentialBadge": "High Potential",
-    "noStaffMatch": "No staff match your search",
-    "potentialHiddenHint": "Potential is hidden until scouted",
-    "searchPlaceholder": "Search academy players...",
+    "hidden": "Oculto",
+    "highPotentialBadge": "Alto Potencial",
+    "noStaffMatch": "Ningún miembro del staff coincide con tu búsqueda",
+    "potentialHiddenHint": "El potencial permanece oculto hasta que lo ojea un scout",
+    "searchPlaceholder": "Buscar jugadores de la academia...",
     "promoteTitle": "Promocionar al primer equipo"
   },
   "common": {
@@ -1035,7 +1101,7 @@
     "ovr": "OVR",
     "year": "Año",
     "per_year_with_slash": "/año",
-    "condition": "Energia",
+    "condition": "Energía",
     "fitness": "Estado Físico",
     "morale": "Moral",
     "potential": "Potencial",
@@ -1138,12 +1204,12 @@
       "moderate": "Moderada",
       "low": "Baja"
     },
-    "action": "Action",
-    "backToMenu": "Back to Menu",
-    "create": "Create",
+    "action": "Acción",
+    "backToMenu": "Volver al menú",
+    "create": "Crear",
     "loanListed": "CD",
-    "nextPage": "Next",
-    "previousPage": "Previous",
+    "nextPage": "Siguiente",
+    "previousPage": "Anterior",
     "saving": "Guardando...",
     "transferListed": "TR",
     "appearances": "PJ",
@@ -1194,15 +1260,15 @@
     "noBenchMatches": "Ningún jugador del banquillo coincide con los filtros actuales.",
     "noLineupMatches": "Ningún titular coincide con los filtros actuales.",
     "playStyleImpactTitle": "Qué cambia esto",
-    "dropPlayerHere": "Drop player here",
-    "activeLineup": "Active Lineup",
+    "dropPlayerHere": "Suelta aquí al jugador",
+    "activeLineup": "Alineación activa",
     "importBadge": "Importado",
     "importTooltip": "Importado: no es residente de la región de esta liga. Un equipo titular admite como máximo {{max}} importados.",
     "tooManyImports": "Un equipo titular admite como máximo {{max}} importados. Este tendría {{count}}.",
     "importsInLineup": "Importados entre los titulares: {{count}} / {{max}}",
-    "allStarting": "All players in the starting lineup",
-    "benchSubstitutes": "Bench / Substitutes",
-    "noRoleAvailable": "No player available",
+    "allStarting": "Todos los jugadores están en la alineación titular",
+    "benchSubstitutes": "Banquillo / Suplentes",
+    "noRoleAvailable": "Ningún jugador disponible",
     "activeLineupHint": "Alineación base de cinco jugadores de League of Legends.",
     "missingRoleCoverage": "Faltan roles por cubrir"
   },
@@ -1339,13 +1405,13 @@
         "fightPlanVsExecution": "Plan de pelea vs ejecucion",
         "supportRoamVsStrongSide": "Roaming de support vs lado fuerte"
       },
-      "score": "Score",
+      "score": "Puntuación",
       "roleImpact": "Impacto por rol",
       "variance": "varianza",
       "tip": "Tip: si el score de coherencia es bajo, intenta alinear lado fuerte + ruta de jungla + timing.",
       "autoSave": "Los cambios se guardan automáticamente"
     },
-    "draftStrategy": "Draft Strategy"
+    "draftStrategy": "Estrategia de draft"
   },
   "training": {
     "weeklySchedule": "Calendario Semanal",
@@ -1484,8 +1550,8 @@
         "3": "Laboratorio macro",
         "4": "Bloque reset"
       },
-      "groupNamePlaceholder": "Group name...",
-      "newGroup": "New Group"
+      "groupNamePlaceholder": "Nombre del grupo...",
+      "newGroup": "Nuevo grupo"
     },
     "scrims": {
       "title": "Scrims semanales",
@@ -1531,8 +1597,9 @@
       "selectOpponent": "Elegir rival",
       "autofill": "Rellenar"
     },
-    "daysPerWeek": "days/week",
-    "emptyRoster": "Empty roster",
+    "daysPerWeek_one": "{{count}} día/semana",
+    "daysPerWeek_other": "{{count}} días/semana",
+    "emptyRoster": "Plantilla vacía",
     "tab": {
       "training": "Entrenamiento",
       "soloq": "SoloQ"
@@ -1689,8 +1756,8 @@
     "contractExpiresOn": "Vence {{date}}",
     "atRiskWages": "{{amount}}/año en riesgo",
     "noContractRisks": "No hay riesgos contractuales inmediatos",
-    "esportsSponsor": "Esports Sponsor",
-    "mainHub": "Main Hub",
+    "esportsSponsor": "Patrocinador de esports",
+    "mainHub": "Hub principal",
     "playerWages": "Salarios de jugadores",
     "staffWages": "Salarios del staff",
     "standardSponsor": "Patrocinador estándar",
@@ -1772,7 +1839,7 @@
       "JobOffer": "Ofertas de empleo"
     },
     "all": "Todos ({{count}})",
-    "close": "Close"
+    "close": "Cerrar"
   },
   "manager": {
     "managerOf": "Head Coach del {{team}}",
@@ -1957,10 +2024,10 @@
     "round": "Ronda {{number}}",
     "season": "Temporada {{number}}",
     "lastResult": "Último resultado",
-    "match": "Match",
-    "matchesForDate": "Matches for {{date}}",
-    "noFixtures": "No fixtures available",
-    "noMatchesOnDay": "No matches on this day",
+    "match": "Partido",
+    "matchesForDate": "Partidos del {{date}}",
+    "noFixtures": "No hay partidos disponibles",
+    "noMatchesOnDay": "No hay partidos este día",
     "thisWeek": "Esta semana",
     "scrimVs": "Scrim vs {{team}}"
   },
@@ -2084,6 +2151,17 @@
     "posting": "Publicando..."
   },
   "playerProfile": {
+    "photo": {
+      "add": "Añadir foto",
+      "change": "Cambiar foto",
+      "remove": "Quitar foto",
+      "addAria": "Añadir una foto para {{nick}}",
+      "changeAria": "Cambiar la foto de {{nick}}",
+      "removeAria": "Quitar la foto de {{nick}}",
+      "processing": "Preparando la foto...",
+      "saveFailed": "No se pudo guardar la foto. Inténtalo de nuevo.",
+      "notAFounder": "Solo pueden cambiar la foto los jugadores con los que empezó tu club."
+    },
     "rename": {
       "action": "Renombrar",
       "actionAria": "Renombrar a {{nick}}",
@@ -2357,7 +2435,7 @@
     "swapHint": "Selecciona un suplente para el cambio",
     "startMatch": "Iniciar Draft",
     "captain": "Capitán",
-    "fit": "FIT",
+    "fit": "ENCAJE",
     "keyStats": "Estadísticas Clave"
   },
   "scouting": {
@@ -2389,7 +2467,7 @@
     "scoutingPlayer": "Ojeando: <strong>{{name}}</strong> — {{days}}d restantes",
     "showingRange": "Mostrando {{from}}–{{to}} de {{total}}",
     "viewPlayer": "Ver",
-    "condition": "Energia",
+    "condition": "Energía",
     "morale": "Moral",
     "estimatedAttributes": "Atributos estimados",
     "undiscovered": "No descubierto",
@@ -2411,7 +2489,7 @@
     "hireScoutCta": "Contratar ojeador",
     "noScoutsDescription": "No tienes ojeadores en tu staff. Contrata al menos uno desde la página de Staff para empezar a evaluar jugadores y descubrir talento oculto.",
     "noScoutsTitle": "Sin equipo de ojeadores",
-    "scoutingBadge": "Scouted"
+    "scoutingBadge": "Ojeado"
   },
   "match": {
     "live": "En Vivo",
@@ -2493,7 +2571,7 @@
       "tip3": "Evita composiciones sin front-to-back ni engage claro.",
       "enemyComfortTitle": "Maestría rival",
       "enemyComfortSubtitle": "Referencia de comfort picks (placeholder)",
-      "counterIntelTitle": "Counter intel · {{champion}}",
+      "counterIntelTitle": "Información de counters · {{champion}}",
       "counterIntelScale": "Lectura de meta: top {{count}} por lado",
       "counterIntelScaleFull": "Consulta aplicada: vista completa de counters",
       "counterIntelConsult": "Consulta al staff",
@@ -3581,6 +3659,11 @@
         "subject": "Informe de potencial completado",
         "body": "Scouting terminó de evaluar a {{player}}. Nueva estimación de potencial: {{potential}}."
       },
+      "scrimWeekOpen": {
+        "subject": "Ya puedes planificar los scrims de la semana",
+        "body": "Ya está abierta la planificación de los scrims de esta semana. Elige el objetivo y los rivales antes del primer día de scrims.",
+        "action": "Planificar scrims"
+      },
       "scrimWeekly": {
         "subject": "Informe semanal de scrims",
         "body": "Informe semanal de scrims:\n\nJugados: {{played}}\nGanados: {{wins}}\nPerdidos: {{losses}}\nCancelaciones: {{cancellations}}\nCalidad promedio: {{avgQuality}}\nRacha actual de derrotas: {{lossStreak}}\n\nFoco principal: {{topFocus}}\nProblema recurrente: {{recurringIssue}}\nCampeón más practicado: {{topChampion}}\n\nRecomendación: {{recommendation}}",
@@ -4123,9 +4206,11 @@
     "damage": "Daño",
     "deaths": "Muertes",
     "duration": "Duración",
+    "gamesShort": "{{count}} part.",
     "gold": "Oro",
     "kda": "KDA",
     "kills": "Asesinatos",
+    "minutesShort": "{{count}} min",
     "noData": "Sin datos disponibles",
     "noHistory": "Sin historial de partidas",
     "noRoles": "Sin roles jugados",
@@ -4178,19 +4263,19 @@
     "viewTeams": "Equipos"
   },
   "errorBoundary": {
-    "reload": "Reload",
-    "somethingWentWrong": "Something went wrong",
-    "unexpectedError": "An unexpected error occurred"
+    "reload": "Recargar",
+    "somethingWentWrong": "Algo salió mal",
+    "unexpectedError": "Ocurrió un error inesperado"
   },
   "leaguePicker": {
-    "asiaPacific": "Asia Pacific",
+    "asiaPacific": "Asia-Pacífico",
     "china": "China",
-    "clickRegion": "Click a region to explore",
-    "europe": "Europe",
-    "korea": "Korea",
-    "mapError": "Failed to load world map",
-    "northAmerica": "North America",
-    "southAmerica": "South America"
+    "clickRegion": "Haz clic en una región para explorarla",
+    "europe": "Europa",
+    "korea": "Corea",
+    "mapError": "No se pudo cargar el mapamundi",
+    "northAmerica": "Norteamérica",
+    "southAmerica": "Sudamérica"
   },
   "meta": {
     "complete": "{{pct}}% completado",
@@ -4211,20 +4296,20 @@
     "updated": "Actualizado el {{date}}"
   },
   "placeholder": {
-    "pendingDesign": "Pending design — coming soon"
+    "pendingDesign": "Diseño pendiente — próximamente"
   },
   "sidebar": {
-    "accountSettings": "Account Settings",
-    "backToTeam": "Back to {{teamName}}",
-    "betting": "Betting",
+    "accountSettings": "Ajustes de la cuenta",
+    "backToTeam": "Volver a {{teamName}}",
+    "betting": "Apuestas",
     "bundesliga": "Bundesliga",
     "leaguesInsider": "Leagues Insider",
     "ligue1": "Ligue 1",
-    "liveMatches": "Live Matches",
-    "liveTransmissionSettings": "Live Transmission Settings",
-    "logout": "Logout",
-    "matchesHistory": "Match History",
-    "playersDatabase": "Players Database",
+    "liveMatches": "Partidos en directo",
+    "liveTransmissionSettings": "Ajustes de la transmisión en directo",
+    "logout": "Cerrar sesión",
+    "matchesHistory": "Historial de partidos",
+    "playersDatabase": "Base de datos de jugadores",
     "premier": "Premier League",
     "serieA": "Serie A",
     "usernamePlaceholder": "{{username}}"
@@ -4241,7 +4326,7 @@
     "error": "No se pudo generar el informe"
   },
   "titleBar": {
-    "appLogoAlt": "App logo",
+    "appLogoAlt": "Logotipo de la aplicación",
     "appName": "OL Manager",
     "close": "Cerrar",
     "minimize": "Minimizar",
@@ -4448,12 +4533,267 @@
   },
   "community": {
     "title": "Comunidad",
-    "blurb": "Open League Manager es un proyecto open source y gratuito, hecho por y para la comunidad. Únete, propón ideas o contribuye con código: cualquier ayuda suma.",
+    "blurb": "Open League Manager · Limón Edition es un fork gratuito y de código abierto de Open League Manager. ¿Has encontrado un problema? Díselo a la persona que te pasó el juego y adjunta el ZIP que guarda el botón «{{bugButton}}».",
     "mentionsTitle": "Menciones",
     "mentionsSubtitle": "Gracias a quienes más han apoyado el proyecto",
-    "mentionsEmpty": "¿Quieres aparecer aquí? Únete al Discord y contribuye."
+    "links": {
+      "downloads": "Descargas"
+    }
   },
   "patchNotes": {
     "empty": "Todavía no hay notas de versión."
+  },
+  "soloqDecay": {
+    "title": "Pérdida de LP por inactividad en SoloQ",
+    "description": "Los jugadores que dejan de jugar SoloQ pierden LP, nunca por debajo de Master 0 LP. Se aplica a todos los jugadores de esta partida.",
+    "stateOn": "Activada",
+    "stateOff": "Desactivada",
+    "intensity": "Intensidad",
+    "modes": {
+      "off": "Desactivada",
+      "soft": "Suave",
+      "real": "Real",
+      "harsh": "Dura"
+    },
+    "lossPerIdleDay": "Pérdida por día inactivo",
+    "gracePeriod": "Periodo de gracia",
+    "winBackPerDay": "Recuperación por día de SoloQ",
+    "lossValue": "−{{value}} LP",
+    "daysValue_one": "{{count}} día",
+    "daysValue_other": "{{count}} días",
+    "winBackValue": "+{{value}} LP",
+    "noSave": "No hay ninguna partida cargada, así que todavía no se puede cambiar. Las carreras nuevas empiezan en Real.",
+    "loadFailed": "No se pudo leer el ajuste de pérdida de esta partida.",
+    "saveFailed": "No se pudo guardar el ajuste. Inténtalo de nuevo.",
+    "previewTitle": "Efecto en un jugador sin SoloQ",
+    "previewOffHeadline": "La pérdida está desactivada",
+    "previewOffDetail": "Los LP siguen el plan de entrenamiento cada día, como hasta ahora. Los jugadores inactivos conservan sus LP.",
+    "previewHeadline_one": "Gracia de {{count}} día y luego −{{rate}} LP al día",
+    "previewHeadline_other": "Gracia de {{count}} días y luego −{{rate}} LP al día",
+    "previewFloorDetail": "Un Grandmaster con {{start}} LP llega a Master 0 LP el día {{day}} y se queda ahí. Un día de SoloQ detiene la pérdida y luego recupera +{{rec}} LP al día.",
+    "previewLossDetail": "Tras {{days}} días, un Grandmaster con {{start}} LP ha perdido {{lost}} LP y está en {{lp}} LP. Un día de SoloQ detiene la pérdida y luego recupera +{{rec}} LP al día.",
+    "previewLegend": "Línea discontinua: Grandmaster, desde 800 LP. Por debajo, el jugador es Master.",
+    "previewAxisDay": "Día {{day}}",
+    "previewChartOff": "Un jugador de {{start}} LP sin SoloQ mantiene {{start}} LP durante {{days}} días.",
+    "previewChartFloor": "Un jugador de {{start}} LP sin SoloQ resiste {{count}} días, luego cae {{rate}} LP al día y llega a 0 LP el día {{day}}.",
+    "previewChartLoss": "Un jugador de {{start}} LP sin SoloQ resiste {{count}} días, luego cae {{rate}} LP al día hasta {{lp}} LP el día {{days}}.",
+    "footnote": "Cuenta como día de SoloQ cualquier día de entrenamiento, salvo que el jugador esté en el foco Reset mental. Inactivo significa sin equipo o con Reset mental, incluso en día de descanso; los días inactivos gastan primero el periodo de gracia y después cuestan LP. Los días de partido y los días de descanso normales no cambian nada. Al activarlo, todos empiezan con el periodo de gracia completo."
+  },
+  "soloqHistory": {
+    "title": "Ladder de SoloQ",
+    "decayStatus": "Pérdida por inactividad: {{mode}}. Se cambia en Ajustes y se aplica a todos los jugadores de esta partida.",
+    "changeInSettings": "Cambiarla en Ajustes",
+    "scope": "El historial se guarda para tu plantilla y los jugadores que ojeas, durante los últimos 90 días.",
+    "lpValue": "{{value}} LP",
+    "floorTier": "Master 0 LP",
+    "tierNote": "El rango marca la rapidez con la que un jugador gana maestría de campeón: Challenger ×1,2, Grandmaster ×1,0, Master ×0,8. Un registro por día. La línea de fórmula se mueve con el foco de entrenamiento: Reset mental la baja hasta 180 LP.",
+    "range": {
+      "label": "Intervalo de tiempo",
+      "option_one": "{{count}} día",
+      "option_other": "{{count}} días"
+    },
+    "empty": {
+      "title": "Aún no hay historial de LP",
+      "text": "El historial empieza cuando el jugador entra en tu club o lo ojeas. Hasta entonces solo ves los LP de hoy, el rango y el periodo de gracia.",
+      "startedTitle": "El historial ha empezado",
+      "startedText": "El primer punto aparece tras el próximo día. Desde entonces se guardan 90 días de LP diarios, LP de fórmula, foco, tipo de día y periodo de gracia.",
+      "graceTitle": "Periodo de gracia ahora",
+      "grace": "Periodo de gracia: {{bank}} de {{cap}} días.",
+      "held": "{{offset}} LP retenidos por la pérdida.",
+      "noneHeld": "Ningún LP retenido por la pérdida.",
+      "graceOff": "La pérdida está desactivada, así que no hay periodo de gracia."
+    },
+    "cause": {
+      "reset": "Reset mental",
+      "noTeam": "Sin equipo",
+      "none": "Sin SoloQ"
+    },
+    "causeInline": {
+      "reset": "reset mental",
+      "noTeam": "sin equipo",
+      "none": "sin SoloQ"
+    },
+    "causePhrase": {
+      "reset": "con Reset mental",
+      "noTeam": "sin equipo",
+      "both": "con Reset mental o sin equipo"
+    },
+    "kinds": {
+      "played": "Día de SoloQ",
+      "grace": "Inactivo, día de gracia",
+      "idle": "Día inactivo",
+      "decay": "Día de pérdida",
+      "match": "Día de partido",
+      "rest": "Día de descanso",
+      "decayCause": "Día de pérdida ({{cause}})",
+      "graceCause": "Inactivo, día de gracia ({{cause}})",
+      "idleCause": "Día inactivo ({{cause}})"
+    },
+    "legend": {
+      "label": "Leyenda del gráfico",
+      "decaying": "LP durante la pérdida",
+      "match": "Día de partido, sin cambios",
+      "rest": "Día de descanso, sin cambios"
+    },
+    "story": {
+      "noIdle_one": "Ningún día inactivo en el último día, así que la pérdida nunca empezó.",
+      "noIdle_other": "Ningún día inactivo en los últimos {{count}} días, así que la pérdida nunca empezó.",
+      "noIdleOff_one": "Ningún día inactivo en el último día.",
+      "noIdleOff_other": "Ningún día inactivo en los últimos {{count}} días.",
+      "noIdleSub": "Los LP variaron {{change}} LP en el periodo, solo por la fórmula.",
+      "idleOff_one": "La pérdida está desactivada. {{count}} día inactivo {{cause}} no costó LP extra.",
+      "idleOff_other": "La pérdida está desactivada. {{count}} días inactivos {{cause}} no costaron LP extra.",
+      "idleOffSub": "Los LP siguen la fórmula, que a su vez cambia con el foco de entrenamiento. Activa la pérdida en Ajustes para ver cuánto costarían esos mismos días.",
+      "decayed_one": "{{count}} día inactivo {{cause}} costó hasta {{peak}} LP.",
+      "decayed_other": "{{count}} días inactivos {{cause}} costaron hasta {{peak}} LP.",
+      "decayedHeld_one": "Aún hay {{offset}} LP retenidos. Cada día de SoloQ recupera {{rec}} LP: unos {{count}} día para limpiarlos.",
+      "decayedHeld_other": "Aún hay {{offset}} LP retenidos. Cada día de SoloQ recupera {{rec}} LP: unos {{count}} días para limpiarlos.",
+      "decayedHeldNoRate": "Aún hay {{offset}} LP retenidos.",
+      "decayedClear": "Se ha recuperado todo.",
+      "graceHeld_one": "{{count}} día inactivo {{cause}}, y el periodo de gracia de {{cap}} días aguantó. No se perdieron LP.",
+      "graceHeld_other": "{{count}} días inactivos {{cause}}, y el periodo de gracia de {{cap}} días aguantó. No se perdieron LP.",
+      "graceSub": "Periodo de gracia ahora: {{bank}} de {{cap}} días."
+    },
+    "kpi": {
+      "now": "Ahora",
+      "peak_one": "Máximo, último día",
+      "peak_other": "Máximo, últimos {{count}} días",
+      "peakSub": "{{date}}, {{tier}}",
+      "change30": "Cambio en 30 días",
+      "changeShort_one": "Cambio en {{count}} día",
+      "changeShort_other": "Cambio en {{count}} días",
+      "changeSince": "Desde el {{date}}",
+      "changeSinceStart": "Desde el {{date}}, cuando empezó el historial",
+      "played_one": "Día de SoloQ, último {{count}}",
+      "played_other": "Días de SoloQ, últimos {{count}}",
+      "playedValue": "{{played}} de {{total}}",
+      "playedSub": "Los días de descanso y de partido no cuentan",
+      "held": "Retenido por la pérdida",
+      "heldSub_one": "{{count}} día de pérdida en el periodo, {{lost}} LP perdidos",
+      "heldSub_other": "{{count}} días de pérdida en el periodo, {{lost}} LP perdidos",
+      "decay": "Pérdida",
+      "decayOffSub": "Los LP siguen la fórmula"
+    },
+    "chip": {
+      "decayOff": "La pérdida está desactivada",
+      "idleFormula": "Inactivo ({{cause}}), los LP siguen la fórmula",
+      "formulaDaily": "Los LP siguen la fórmula cada día",
+      "idle": "Inactivo ({{cause}})",
+      "onLadder": "Hoy está en la ladder",
+      "matchDay": "Día de partido, nada cambia",
+      "restDay": "Día de descanso, nada cambia",
+      "graceUsed": "Periodo de gracia agotado",
+      "graceLow_one": "Periodo de gracia bajo, queda {{count}} día",
+      "graceLow_other": "Periodo de gracia bajo, quedan {{count}} días",
+      "graceOk": "Periodo de gracia: {{bank}} de {{cap}} días",
+      "atFloor": "En el suelo: Master 0 LP",
+      "floorIn_one": "Llegará al suelo en unos {{count}} día inactivo",
+      "floorIn_other": "Llegará al suelo en unos {{count}} días inactivos",
+      "lossStarts_one": "La pérdida empieza tras {{count}} día inactivo más",
+      "lossStarts_other": "La pérdida empieza tras {{count}} días inactivos más",
+      "heldBack_one": "{{offset}} LP retenidos, se recuperan en unos {{count}} día de SoloQ",
+      "heldBack_other": "{{offset}} LP retenidos, se recuperan en unos {{count}} días de SoloQ",
+      "noLoss": "Sin LP perdidos por inactividad"
+    },
+    "status": {
+      "played": "Día de SoloQ.",
+      "playedDecay": "Día de SoloQ. Periodo de gracia: {{bank}} de {{cap}} días.",
+      "playedHeld": "Día de SoloQ. Periodo de gracia: {{bank}} de {{cap}} días. Aún hay {{offset}} LP retenidos.",
+      "match": "Día de partido.",
+      "matchDecay": "Día de partido. El periodo de gracia y el desfase oculto se quedan como estaban.",
+      "rest": "Día de descanso.",
+      "restDecay": "Día de descanso. El periodo de gracia y el desfase oculto se quedan como estaban.",
+      "graceDay_one": "Inactivo ({{cause}}), día de gracia: queda {{count}} día. Aún no se pierden LP.",
+      "graceDay_other": "Inactivo ({{cause}}), día de gracia: quedan {{count}} días. Aún no se pierden LP.",
+      "idleOff": "Inactivo ({{cause}}). Los LP siguen la fórmula.",
+      "decayLost": "Inactivo ({{cause}}), periodo de gracia agotado. Pierde {{lost}} LP.",
+      "decayFloor": "Inactivo ({{cause}}), periodo de gracia agotado. Los LP están en el suelo, Master 0 LP."
+    },
+    "readout": {
+      "group": "Día seleccionado",
+      "withDecay": "Con pérdida",
+      "formula": "LP de fórmula, sin pérdida",
+      "sameLp": "Mismos LP",
+      "diffWithDecay": "{{diff}} LP con pérdida",
+      "offset": "Desfase oculto",
+      "offsetHeld": "LP de fórmula menos LP",
+      "offsetFloor": "Limitado por el suelo",
+      "offsetNone": "Los LP igualan la fórmula",
+      "decay": "Pérdida",
+      "decayOff": "Desactivada. Los LP siguen la fórmula cada día.",
+      "focusMatch": "Foco y partido",
+      "noMatch": "Sin partido",
+      "matchWon": "Victoria vs {{opponent}}, {{kda}}",
+      "matchLost": "Derrota vs {{opponent}}, {{kda}}"
+    },
+    "ctl": {
+      "prev": "Día anterior",
+      "next": "Día siguiente",
+      "day": "Día",
+      "today": "Hoy",
+      "hint": "Día {{index}} de {{total}}",
+      "hintToday": "Día {{index}} de {{total}}, hoy",
+      "slider": "Inspecciona un día. Las flechas mueven un día cada vez."
+    },
+    "chart": {
+      "region": "Gráfico del historial de LP. Se desplaza hacia los lados en pantallas estrechas.",
+      "label": "Historial de LP del {{from}} al {{to}}. Ahora {{now}}. {{story}} Líneas de rango en 800 LP, Grandmaster, y 1.300 LP, Challenger. Usa el control de días, los botones de día o la tabla para leer los valores exactos.",
+      "nowTier": "{{lp}} LP, {{tier}}",
+      "tierFrom": "{{tier}} desde {{lp}} LP",
+      "floor": "Suelo: Master 0 LP",
+      "axisNote": "El eje empieza en {{lp}} LP",
+      "formulaLabel": "LP de fórmula",
+      "decayLabel": "Con pérdida",
+      "spanIdleFull_one": "{{cause}}, {{count}} día",
+      "spanIdleFull_other": "{{cause}}, {{count}} días",
+      "spanIdleShort": "{{count}} d inactivo",
+      "spanDecayFull": "Pérdida −{{lost}} LP",
+      "spanDecayShort": "Pérdida {{count}} d",
+      "spanDays": "{{count}} d"
+    },
+    "grace": {
+      "title": "Periodo de gracia",
+      "ofDays": "de {{cap}} días restantes tras el {{date}}",
+      "off": "La pérdida está desactivada, así que no hay periodo de gracia. Con ella activada, muestra cuántos días inactivos puede aguantar el jugador antes de perder LP.",
+      "usedDecay": "Agotado. Cada día inactivo cuesta {{rate}} LP hasta que el jugador vuelva a jugar SoloQ.",
+      "usedNext": "Agotado. El próximo día inactivo empieza la pérdida.",
+      "cover_one": "{{count}} día de cobertura. La pérdida empezaría el día inactivo {{next}}.",
+      "cover_other": "{{count}} días de cobertura. La pérdida empezaría el día inactivo {{next}}.",
+      "held": "{{offset}} LP retenidos; cada día de SoloQ recupera {{rec}}.",
+      "activity_one": "Último día",
+      "activity_other": "Últimos {{count}} días"
+    },
+    "rules": {
+      "title": "Cómo funciona la pérdida",
+      "played": "Un día de SoloQ es un día de entrenamiento con cualquier foco salvo Reset mental. Suma 1 día al periodo de gracia, hasta {{cap}}, y recupera {{rec}} LP de pérdida.",
+      "idle": "Un día inactivo gasta 1 día de gracia. Inactivo significa sin equipo o con el foco Reset mental, incluso en día de descanso.",
+      "loss": "Con el periodo de gracia agotado, cada día inactivo cuesta {{rate}} LP. Los LP nunca bajan de Master 0 LP.",
+      "neutral": "Los días de descanso y de partido no cambian nada, así que un titular habitual nunca pierde LP.",
+      "noteOn": "Se muestra en {{mode}}: {{rate}} LP perdidos por día inactivo, periodo de gracia de {{cap}} días, {{rec}} LP recuperados por día de SoloQ. La variación diaria de LP de la fórmula continúa.",
+      "noteOff": "La pérdida está desactivada. Con ella activada, estas reglas se aplican a todos los jugadores de la partida."
+    },
+    "table": {
+      "show": "Mostrar como tabla",
+      "hide": "Ocultar tabla",
+      "region": "Tabla de datos de LP, el día más reciente primero",
+      "name": "LP diarios",
+      "na": "n/d",
+      "graceOf": "{{bank}} de {{cap}}",
+      "date": "Fecha",
+      "focus": "Foco",
+      "day": "Día",
+      "grace": "Gracia",
+      "offset": "Desfase",
+      "formula": "LP de fórmula",
+      "lpDecay": "Con pérdida",
+      "lp": "LP"
+    },
+    "hero": {
+      "label": "SoloQ",
+      "noChange": "Sin cambios desde ayer",
+      "change": "{{change}} LP desde ayer",
+      "seeLadder": "Ver la ladder de SoloQ",
+      "statusLabel": "Estado de SoloQ"
+    }
   }
 }

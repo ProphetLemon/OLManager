@@ -184,6 +184,22 @@ fn scrim_setup_window_closed(
         || (current_weekday == first_scrim_weekday && *day_phase != DayPhase::Morning)
 }
 
+/// Whether the career began in the current ISO week after every scrim day of
+/// that week had passed, so the setup lock comes from the career start and not
+/// from anything the player did. With slots on Friday a Friday start is not
+/// "late": those slots are still ahead.
+fn career_started_after_scrim_days(
+    start_date: chrono::DateTime<chrono::Utc>,
+    current_date: chrono::DateTime<chrono::Utc>,
+    slot_days: &[u8],
+) -> bool {
+    let Some(last_slot_day) = slot_days.iter().copied().max() else {
+        return false;
+    };
+    start_date.iso_week() == current_date.iso_week()
+        && start_date.weekday().num_days_from_monday() as u8 > last_slot_day
+}
+
 /// Value kept in `scrim_setup_locked_week_key` while a week planned after its
 /// setup window closed is still being set up. It differs from the plain week
 /// key (the finalize lock), so a new week or an old save ignores it.
@@ -1659,8 +1675,20 @@ pub(crate) fn get_scrim_context_internal(
         }
     };
 
-    let (setup_locked, setup_locked_reason) =
+    let (setup_locked, mut setup_locked_reason) =
         weekly_scrim_setup_lock_state(team, &week_key, current_weekday, game.day_phase.clone());
+    if setup_locked_reason.as_deref() == Some("first_scrim_window")
+        && career_started_after_scrim_days(
+            game.clock.start_date,
+            game.clock.current_date,
+            &scrim_slot_weekdays(effective_scrim_slots(
+                team.scrim_weekly_slots,
+                &team.training_schedule,
+            )),
+        )
+    {
+        setup_locked_reason = Some("career_started_late".to_string());
+    }
 
     let slots: Vec<WeeklyScrimSlotContextResponse> = (0..capacity as usize)
         .map(|index| {
@@ -1898,6 +1926,41 @@ pub(crate) fn rename_player_in_session(
     Ok(crate::client_game::game_for_client(&game))
 }
 
+/// Sets or removes (`photo` is `None`) the profile photo of a founder of the
+/// user's custom club.
+///
+/// The same founders as [`rename_player`] can change it; any other player is
+/// rejected. The photo is validated and re-encoded like the one chosen in the
+/// club wizard. Like the other squad commands it updates the session game and
+/// returns it; the change reaches the save with the next save. Errors are the
+/// JSON of a `FounderError` (see `olm_core::founder_identity`). The photo is
+/// never logged.
+#[tauri::command]
+pub fn set_player_photo(
+    state: State<'_, StateManager>,
+    player_id: String,
+    photo: Option<String>,
+) -> Result<Game, String> {
+    info!("[cmd] set_player_photo: player={}", player_id);
+    set_player_photo_in_session(&state, &player_id, photo.as_deref())
+}
+
+/// [`set_player_photo`] on a session: the game is only replaced when the photo
+/// is valid and the player is eligible.
+pub(crate) fn set_player_photo_in_session(
+    state: &StateManager,
+    player_id: &str,
+    photo: Option<&str>,
+) -> Result<Game, String> {
+    let mut game = state
+        .get_game(|g| g.clone())
+        .ok_or("No active game session".to_string())?;
+    olm_core::founder_identity::set_founder_photo(&mut game, player_id, photo)
+        .map_err(|error| error.to_wire())?;
+    state.set_game(game.clone());
+    Ok(crate::client_game::game_for_client(&game))
+}
+
 #[tauri::command]
 pub fn set_player_champion_training_target(
     state: State<'_, StateManager>,
@@ -1961,6 +2024,65 @@ pub fn get_soloq_statuses(
         .collect();
 
     Ok(statuses)
+}
+
+/// One player's SoloQ story: the last 90 days when the player is followed (the user's
+/// roster and academy, scouted players), plus the decay state behind it.
+#[tauri::command]
+pub fn get_soloq_history(
+    state: State<'_, StateManager>,
+    player_id: String,
+) -> Result<champions::SoloQHistoryView, String> {
+    get_soloq_history_internal(&state, &player_id)
+}
+
+fn get_soloq_history_internal(
+    state: &StateManager,
+    player_id: &str,
+) -> Result<champions::SoloQHistoryView, String> {
+    state
+        .get_game(|game| champions::soloq_history_for_player(game, player_id))
+        .ok_or("No active game session".to_string())?
+}
+
+/// The loaded save's SoloQ decay mode and the numbers of every mode.
+#[tauri::command]
+pub fn get_soloq_decay_settings(
+    state: State<'_, StateManager>,
+) -> Result<champions::SoloQDecaySettings, String> {
+    get_soloq_decay_settings_internal(&state)
+}
+
+fn get_soloq_decay_settings_internal(
+    state: &StateManager,
+) -> Result<champions::SoloQDecaySettings, String> {
+    state
+        .get_game(champions::soloq_decay_settings)
+        .ok_or("No active game session".to_string())
+}
+
+/// Sets the loaded save's SoloQ decay mode.
+#[tauri::command]
+pub fn set_soloq_decay_mode(
+    state: State<'_, StateManager>,
+    mode: champions::SoloQDecayMode,
+) -> Result<champions::SoloQDecaySettings, String> {
+    set_soloq_decay_mode_internal(&state, mode)
+}
+
+fn set_soloq_decay_mode_internal(
+    state: &StateManager,
+    mode: champions::SoloQDecayMode,
+) -> Result<champions::SoloQDecaySettings, String> {
+    info!("[cmd] set_soloq_decay_mode: mode={:?}", mode);
+    let mut game = state
+        .get_game(|g| g.clone())
+        .ok_or("No active game session".to_string())?;
+
+    let settings = champions::set_soloq_decay_mode(&mut game, mode);
+
+    state.set_game(game);
+    Ok(settings)
 }
 
 #[tauri::command]
@@ -2420,6 +2542,54 @@ mod tests {
             .is_err());
         }
 
+        /// A career that began on Friday 2025-01-03 with a plan already filled in,
+        /// viewed on `day` of January with `slots` weekly scrim slots.
+        fn lock_reason_for_friday_start(slots: u8, day: u32) -> Option<String> {
+            let state = setup_state(3, DayPhase::Morning);
+            let mut game = state.get_game(|g| g.clone()).unwrap();
+            game.teams[0].scrim_weekly_slots = slots;
+            game.teams[0].weekly_scrim_plan_team_ids = plans_for(&[(0, &["team-2"])]);
+            game.clock.start_date = Utc.with_ymd_and_hms(2025, 1, 3, 12, 0, 0).unwrap();
+            game.clock.current_date = Utc.with_ymd_and_hms(2025, 1, day, 12, 0, 0).unwrap();
+            state.set_game(game);
+            super::super::get_scrim_context_internal(&state)
+                .unwrap()
+                .week
+                .setup_locked_reason
+        }
+
+        #[test]
+        fn a_career_started_after_the_scrim_days_says_so() {
+            // Balanced: Wednesday and Thursday slots are over by Friday.
+            assert_eq!(
+                lock_reason_for_friday_start(4, 3).as_deref(),
+                Some("career_started_late")
+            );
+            // Still the same ISO week on Sunday.
+            assert_eq!(
+                lock_reason_for_friday_start(4, 5).as_deref(),
+                Some("career_started_late")
+            );
+        }
+
+        #[test]
+        fn a_friday_start_with_friday_slots_keeps_the_regular_lock() {
+            // Intense: Friday slots are still ahead, so the lock is not about the career start.
+            assert_eq!(
+                lock_reason_for_friday_start(6, 3).as_deref(),
+                Some("first_scrim_window")
+            );
+        }
+
+        #[test]
+        fn the_week_after_the_career_start_keeps_the_regular_lock() {
+            // Thursday 2025-01-09 is in the next ISO week.
+            assert_eq!(
+                lock_reason_for_friday_start(4, 9).as_deref(),
+                Some("first_scrim_window")
+            );
+        }
+
         #[test]
         fn a_late_setup_does_not_keep_the_next_week_open() {
             let state = setup_state(2, DayPhase::Morning);
@@ -2435,5 +2605,156 @@ mod tests {
 
             assert_eq!(editable_slots(&state), vec![false; 6]);
         }
+    }
+}
+
+#[cfg(test)]
+mod soloq_command_tests {
+    use super::{
+        get_soloq_decay_settings_internal, get_soloq_history_internal,
+        set_soloq_decay_mode_internal,
+    };
+    use chrono::{TimeZone, Utc};
+    use olm_core::champions::{self, SoloQDecayMode};
+    use olm_core::clock::GameClock;
+    use olm_core::domain::manager::Manager;
+    use olm_core::domain::player::{LolRole, Player, PlayerAttributes};
+    use olm_core::domain::team::Team;
+    use olm_core::game::Game;
+    use olm_core::state::StateManager;
+
+    fn state_with_game() -> StateManager {
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 8, 3, 12, 0, 0).unwrap());
+        let mut manager = Manager::new(
+            "mgr-1".to_string(),
+            "Alex".to_string(),
+            "Coach".to_string(),
+            "1980-01-01".to_string(),
+            "GB".to_string(),
+        );
+        manager.hire("team-1".to_string());
+        let team = Team::new(
+            "team-1".to_string(),
+            "Team One".to_string(),
+            "T1".to_string(),
+            "GB".to_string(),
+            "London".to_string(),
+            "Arena".to_string(),
+            10_000,
+        );
+        let attrs = PlayerAttributes {
+            mechanics: 80,
+            laning: 80,
+            teamfighting: 80,
+            macro_play: 80,
+            consistency: 80,
+            shotcalling: 80,
+            champion_pool: 80,
+            discipline: 80,
+            mental_resilience: 80,
+        };
+        let mut starter = Player::new(
+            "p1".to_string(),
+            "p1".to_string(),
+            "Player One".to_string(),
+            "2002-01-01".to_string(),
+            "GB".to_string(),
+            LolRole::Mid,
+            attrs.clone(),
+        );
+        starter.team_id = Some("team-1".to_string());
+        let stranger = Player::new(
+            "p2".to_string(),
+            "p2".to_string(),
+            "Player Two".to_string(),
+            "2002-01-01".to_string(),
+            "GB".to_string(),
+            LolRole::Top,
+            attrs,
+        );
+        let mut game = Game::new(
+            clock,
+            manager,
+            vec![team],
+            vec![starter, stranger],
+            vec![],
+            vec![],
+        );
+        for _ in 0..3 {
+            champions::process_daily_champion_system(&mut game);
+            game.clock.advance_days(1);
+        }
+        let state = StateManager::new();
+        state.set_game(game);
+        state
+    }
+
+    #[test]
+    fn get_soloq_history_should_return_the_contract_shape_for_a_followed_player() {
+        let state = state_with_game();
+
+        let view = get_soloq_history_internal(&state, "p1").unwrap();
+        let value = serde_json::to_value(view).unwrap();
+
+        assert_eq!(value["player_id"], "p1");
+        assert_eq!(value["followed"], true);
+        assert_eq!(value["decay_mode"], "Real");
+        assert_eq!(value["bank_max"], 14);
+        assert_eq!(value["days"].as_array().unwrap().len(), 3);
+        let first = &value["days"][0];
+        assert_eq!(first["date"], "2026-08-03");
+        assert_eq!(first["focus"], "Scrims");
+        assert!(first["kind"].is_string() && first["lp"].is_number());
+    }
+
+    #[test]
+    fn get_soloq_history_should_say_not_followed_for_a_stranger() {
+        let state = state_with_game();
+
+        let view = get_soloq_history_internal(&state, "p2").unwrap();
+
+        assert!(!view.followed);
+        assert!(view.days.is_empty());
+    }
+
+    #[test]
+    fn the_soloq_commands_should_fail_without_a_game_or_for_an_unknown_player() {
+        let empty = StateManager::new();
+        assert!(get_soloq_history_internal(&empty, "p1").is_err());
+        assert!(get_soloq_decay_settings_internal(&empty).is_err());
+        assert!(set_soloq_decay_mode_internal(&empty, SoloQDecayMode::Soft).is_err());
+
+        let state = state_with_game();
+        assert!(get_soloq_history_internal(&state, "nobody").is_err());
+    }
+
+    #[test]
+    fn set_soloq_decay_mode_should_change_the_loaded_save() {
+        let state = state_with_game();
+
+        let settings = set_soloq_decay_mode_internal(&state, SoloQDecayMode::Harsh).unwrap();
+
+        assert_eq!(settings.mode, SoloQDecayMode::Harsh);
+        assert_eq!(
+            state.get_game(|g| g.soloq_decay_mode),
+            Some(SoloQDecayMode::Harsh)
+        );
+        let read_back = get_soloq_decay_settings_internal(&state).unwrap();
+        assert_eq!(read_back, settings);
+        assert_eq!(read_back.presets.len(), 4);
+    }
+
+    #[test]
+    fn the_settings_should_serialize_with_snake_case_preset_fields() {
+        let state = state_with_game();
+
+        let value =
+            serde_json::to_value(get_soloq_decay_settings_internal(&state).unwrap()).unwrap();
+
+        assert_eq!(value["mode"], "Real");
+        assert_eq!(value["presets"][1]["mode"], "Soft");
+        assert_eq!(value["presets"][1]["decay_per_idle_day"], 25);
+        assert_eq!(value["presets"][1]["bank_days"], 21);
+        assert_eq!(value["presets"][1]["recovery_per_played_day"], 50);
     }
 }

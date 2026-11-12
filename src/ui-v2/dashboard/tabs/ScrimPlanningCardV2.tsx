@@ -1,18 +1,17 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { CalendarDays, ChevronRight, Swords, WandSparkles, type LucideIcon } from "lucide-react";
+import { WandSparkles } from "lucide-react";
 
 import {
   buildTeamLolOvrMap,
   type WeeklyScrimContext,
 } from "@/lib/scrims/scrimContext";
+import { displaySlotStatus, isPlanClearedToday } from "@/lib/scrims/scrimDesk";
 import { setWeeklyScrimPlans } from "@/services/trainingService";
 import type { GameStateData } from "@/store/gameStore";
-import { resolveTeamLogo } from "@/lib/teams/teamLogos";
-import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
-import { Badge } from "@/ui-v2/components/ui/badge";
+import { Button } from "@/ui-v2/components/ui/button";
 import { cn } from "@/ui-v2/lib/utils";
-import { ResultLetter } from "@/ui-v2/components/ResultLetter";
+import { SLOT_STATUS_ICON, SLOT_STATUS_KEY } from "./scrims/slotStatus";
 
 interface ScrimPlanningCardV2Props {
   gameState: GameStateData;
@@ -21,15 +20,13 @@ interface ScrimPlanningCardV2Props {
   isSaving: boolean;
   setIsSaving: (value: boolean) => void;
   readOnly?: boolean;
+  /** `recap` shows the locked plans as text, the way they stay readable after the week starts. */
+  variant?: "edit" | "recap";
 }
 
-function teamLogo(teams: GameStateData["teams"], teamId: string): string | null {
-  const team = teams.find((t) => t.id === teamId);
-  if (!team) return null;
-  return resolveTeamLogo(team.short_name ?? team.name, team.logo_url) ??
-    resolveTeamLogo(team.name, team.logo_url);
-}
+const ROW_GRID = "md:grid-cols-[minmax(10.5rem,1.1fr)_repeat(3,minmax(0,1fr))]";
 
+/** The opponent plans of the week: Plan A, B and C for each slot. It lives inside the setup panel. */
 export default function ScrimPlanningCardV2({
   gameState,
   weeklyContext,
@@ -37,14 +34,27 @@ export default function ScrimPlanningCardV2({
   isSaving,
   setIsSaving,
   readOnly = false,
+  variant = "edit",
 }: ScrimPlanningCardV2Props) {
   const { t } = useTranslation();
   const weekdayLabels = [
     t("training.days.mon"), t("training.days.tue"), t("training.days.wed"),
     t("training.days.thu"), t("training.days.fri"), t("training.days.sat"), t("training.days.sun"),
   ];
+  const planLabels = [t("training.scrims.planA"), t("training.scrims.planB"), t("training.scrims.planC")];
 
   const myTeam = gameState.teams.find((team) => team.id === gameState.manager.team_id);
+  const teamOvrById = useMemo(() => buildTeamLolOvrMap(gameState), [gameState]);
+
+  const options = useMemo(
+    () => (myTeam
+      ? gameState.teams
+        .filter((team) => team.id !== myTeam.id)
+        .filter((team) => team.competition_id === myTeam.competition_id)
+        .sort((a, b) => (teamOvrById.get(b.id) ?? 0) - (teamOvrById.get(a.id) ?? 0) || a.name.localeCompare(b.name))
+      : []),
+    [gameState.teams, myTeam, teamOvrById],
+  );
   if (!myTeam) return null;
 
   const slots = weeklyContext.capacity;
@@ -52,17 +62,7 @@ export default function ScrimPlanningCardV2({
     const merged = weeklyContext.slots[slotIndex]?.plan ?? [];
     return Array.from({ length: 3 }, (_, priorityIndex) => merged[priorityIndex] ?? "");
   });
-  const selected = plans.map((plan) => plan[0] ?? "");
-
-  const teamOvrById = useMemo(() => buildTeamLolOvrMap(gameState), [gameState]);
-
-  const options = useMemo(
-    () => gameState.teams
-      .filter((team) => team.id !== myTeam.id)
-      .filter((team) => team.competition_id === myTeam.competition_id)
-      .sort((a, b) => (teamOvrById.get(b.id) ?? 0) - (teamOvrById.get(a.id) ?? 0) || a.name.localeCompare(b.name)),
-    [gameState.teams, myTeam.id, myTeam.competition_id, teamOvrById],
-  );
+  const teamNameById = new Map(gameState.teams.map((team) => [team.id, team.name]));
 
   const saveWeeklyScrimPlans = async (next: string[][]) => {
     setIsSaving(true);
@@ -81,8 +81,6 @@ export default function ScrimPlanningCardV2({
     next[slotIndex][priorityIndex] = teamId;
     void saveWeeklyScrimPlans(next);
   };
-
-  const streak = myTeam.scrim_loss_streak ?? 0;
 
   const autofillPlansFromObjective = () => {
     const objective = weeklyContext.objective;
@@ -108,133 +106,107 @@ export default function ScrimPlanningCardV2({
   };
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
-        <CardTitle className="font-heading text-sm uppercase tracking-wide text-muted-foreground">
-          <Swords className="mr-1.5 inline size-4 text-amber-400" />
-          {t("training.scrims.title")}
-        </CardTitle>
-        <div className="flex items-center gap-2">
-          <span className="rounded-md border border-border px-2 py-0.5 font-heading text-2xs tabular-nums text-muted-foreground">
-            {t("training.scrims.weekCapacity")}: {slots}
-          </span>
-          {streak > 0 && (
-            <span className="rounded-md border border-negative/30 bg-negative/10 px-2 py-0.5 font-heading text-2xs font-bold tabular-nums text-negative">
-              {streak}L
-            </span>
-          )}
-          <button
+    <section aria-labelledby="scrim-plans-heading" className="flex flex-col gap-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h3 id="scrim-plans-heading" className="font-heading text-lg font-semibold uppercase leading-tight tracking-wide">
+          {t("scrims.opponentPlans")}
+        </h3>
+        {variant === "edit" ? (
+          <Button
             type="button"
+            variant="outline"
+            size="touch"
             disabled={isSaving || readOnly || !weeklyContext.slots.every((slot) => slot.canEdit)}
             onClick={autofillPlansFromObjective}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 font-heading text-2xs text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
           >
-            <WandSparkles className="size-3" />
+            <WandSparkles aria-hidden="true" />
             {t("training.scrims.autofill")}
-          </button>
+          </Button>
+        ) : null}
+      </div>
+
+      <div role="table" aria-label={t("scrims.opponentPlansBySlot")} className="flex flex-col">
+        <div
+          role="row"
+          className={cn("hidden gap-3 pb-1 font-heading text-base font-semibold uppercase tracking-wide text-muted-foreground md:grid", ROW_GRID)}
+        >
+          <div role="columnheader">{t("training.scrims.slot")}</div>
+          {planLabels.map((label) => (
+            <div key={label} role="columnheader">{label}</div>
+          ))}
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {Array.from({ length: slots }).map((_, index) => {
-            const slotContext = weeklyContext.slots[index];
-            const labelDay = slotContext?.labelDay ?? 0;
-            const labelSuffix = slotContext?.labelSuffix ? ` ${slotContext.labelSuffix}` : "";
-            const slotLabel = `${weekdayLabels[labelDay] ?? weekdayLabels[0]}${labelSuffix}`;
-            const hasResult = slotContext?.resultWon != null;
-            const primaryOpponentId = selected[index] || slotContext?.resolvedOpponentTeamId || "";
-            const isLocked = isSaving || readOnly || !slotContext?.canEdit;
-            const primaryLogo = primaryOpponentId ? teamLogo(gameState.teams, primaryOpponentId) : null;
+        {Array.from({ length: slots }).map((_, index) => {
+          const slotContext = weeklyContext.slots[index];
+          const labelDay = slotContext?.labelDay ?? 0;
+          const labelSuffix = slotContext?.labelSuffix ? ` ${slotContext.labelSuffix}` : "";
+          const slotLabel = `${weekdayLabels[labelDay] ?? weekdayLabels[0]}${labelSuffix}`;
+          const status = slotContext ? displaySlotStatus(slotContext, weeklyContext) : "Open";
+          const StatusIcon = SLOT_STATUS_ICON[status];
+          const isLocked = isSaving || readOnly || !slotContext?.canEdit;
+          const cleared = slotContext ? isPlanClearedToday(slotContext, weeklyContext) : false;
+          const resolvedId = slotContext?.resolvedOpponentTeamId ?? null;
 
-            return (
-              <div
-                key={`scrim-slot-${index}`}
-                className={cn(
-                  "rounded-xl border p-4 transition-colors",
-                  hasResult && slotContext?.resultWon
-                    ? "border-positive/20 bg-positive/5"
-                    : hasResult
-                      ? "border-negative/20 bg-negative/5"
-                      : "border-border bg-muted/20",
-                )}
-              >
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <CalendarDays className="size-4 text-club-text" />
-                    </div>
-                    <div>
-                      <p className="font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">
-                        {t("training.scrims.slot")} {index + 1}
-                      </p>
-                      <p className="font-heading text-sm font-bold uppercase tracking-wide text-foreground">
-                        {slotLabel}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {primaryLogo && (
-                      <img src={primaryLogo} alt="" className="size-8 rounded-lg object-contain" />
-                    )}
-                    {hasResult ? (
-                      <Badge className={slotContext?.resultWon ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative"}>
-                        <ResultLetter kind={slotContext?.resultWon ? "win" : "loss"} />
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-muted-foreground">
-                        {t("training.scrims.pending")}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  {Array.from({ length: 3 }).map((_, priorityIndex) => {
-                    const label = priorityIndex === 0
-                      ? t("training.scrims.planA")
-                      : priorityIndex === 1
-                        ? t("training.scrims.planB")
-                        : t("training.scrims.planC");
-                    const Icon: LucideIcon = priorityIndex === 0 ? Swords : ChevronRight;
-
-                    return (
-                      <div key={`scrim-slot-${index}-plan-${priorityIndex}`}>
-                        <label className="mb-1 flex items-center gap-1 font-heading text-2xs font-bold uppercase tracking-wide text-muted-foreground">
-                          <Icon className="size-3" />
-                          {label}
-                        </label>
-                        <select
-                          value={plans[index]?.[priorityIndex] ?? ""}
-                          onChange={(e) => setSlotPlan(index, priorityIndex, e.target.value)}
-                          disabled={isLocked}
-                          className={cn(
-                            "w-full rounded-md border px-2.5 py-1.5 text-xs text-foreground transition-colors",
-                            priorityIndex === 0
-                              ? "border-primary/40 bg-primary/5"
-                              : "border-border bg-muted/30",
-                            isLocked && "opacity-50",
-                          )}
-                        >
-                          <option value="">
-                            {priorityIndex === 0
-                              ? t("training.scrims.selectOpponent")
-                              : t("training.scrims.noFallback")}
-                          </option>
-                          {options.map((team) => (
-                            <option key={team.id} value={team.id}>
-                              {team.name} · OVR {teamOvrById.get(team.id) ?? 74}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    );
-                  })}
-                </div>
+          return (
+            <div
+              key={`scrim-slot-${index}`}
+              role="row"
+              className={cn("grid gap-2 border-t border-line py-2 md:items-center md:gap-3", ROW_GRID)}
+            >
+              <div role="cell" className="flex items-center gap-2.5">
+                <span className="font-heading text-lg font-semibold uppercase leading-none tracking-wide">{slotLabel}</span>
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-caption text-muted-foreground">
+                  <StatusIcon aria-hidden="true" className="size-4 shrink-0" />
+                  {t(SLOT_STATUS_KEY[status])}
+                </span>
               </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+              {planLabels.map((planLabel, priorityIndex) => {
+                const value = plans[index]?.[priorityIndex] ?? "";
+                return (
+                  <div key={`scrim-slot-${index}-plan-${priorityIndex}`} role="cell" className="flex flex-col gap-1">
+                    <span className="text-caption font-medium text-muted-foreground md:hidden">{planLabel}</span>
+                    {variant === "edit" ? (
+                      <select
+                        aria-label={`${slotLabel}, ${planLabel}`}
+                        value={value}
+                        onChange={(e) => setSlotPlan(index, priorityIndex, e.target.value)}
+                        disabled={isLocked}
+                        className="min-h-11 w-full rounded-lg border border-dim bg-background px-2.5 text-sm text-foreground transition-colors hover:border-foreground disabled:opacity-60 disabled:hover:border-dim"
+                      >
+                        <option value="">
+                          {priorityIndex === 0 ? t("training.scrims.selectOpponent") : t("training.scrims.noFallback")}
+                        </option>
+                        {options.map((team) => (
+                          <option key={team.id} value={team.id}>
+                            {team.name} · OVR {teamOvrById.get(team.id) ?? 74}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span
+                        className={cn(
+                          "flex min-h-11 flex-wrap items-center gap-2 text-sm",
+                          value ? "text-foreground" : "text-muted-foreground",
+                        )}
+                      >
+                        {value
+                          ? teamNameById.get(value) ?? value
+                          : cleared
+                            ? priorityIndex === 0 ? t("scrims.planCleared") : "-"
+                            : priorityIndex === 0 ? t("scrims.noOpponentSet") : t("training.scrims.noFallback")}
+                        {value && resolvedId === value ? (
+                          <span className="rounded border border-positive px-1.5 py-px text-caption text-positive">
+                            {t("scrims.played")}
+                          </span>
+                        ) : null}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }

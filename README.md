@@ -1,11 +1,11 @@
-<h1 align="center">Open League Manager</h1>
+<h1 align="center">Open League Manager · Limón Edition 🍋</h1>
 
 <p align="center">
   <a href="https://v2.tauri.app/">
     <img src="https://img.shields.io/badge/Tauri-v2-%23FFC131?logo=tauri" />
   </a>
   <a href="https://www.rust-lang.org/">
-    <img src="https://img.shields.io/badge/Rust-1.80+-orange?logo=rust" />
+    <img src="https://img.shields.io/badge/Rust-1.85+-orange?logo=rust" />
   </a>
   <a href="https://react.dev/">
     <img src="https://img.shields.io/badge/React-19+-blue?logo=react" />
@@ -23,113 +23,47 @@
 
 ---
 
-> **Current Status:** Pre-alpha — expect incomplete gameplay systems, evolving save formats, and frequent documentation updates.  
-> **Last Updated:** 22-MAY-2026
+> **Current Status:** Pre-alpha. Expect incomplete gameplay systems and evolving save formats.
+> **Last Updated:** 2026-11-12
 
 ---
 
-## 1. What is Open League Manager?
+## What is this?
 
-**Open League Manager (OLManager)** is a public, GPL-3.0 desktop management game built with **Tauri v2**, **Rust**, **React**, and **TypeScript**. The project continues the OpenFootManager lineage while focusing on transparent community contribution, maintainable releases, and careful data provenance.
+**Open League Manager** is a League of Legends esports team-management game for the desktop: you run a pro team, scout and sign players, set the tactics, play scrims and watch your matches.
 
-- **Cross-platform desktop** — native performance via Tauri v2, runs on Windows, macOS, and Linux
-- **Rust-powered backend** — type-safe, zero-cost abstractions for game simulation and data processing
-- **React + TypeScript frontend** — modern reactive UI with full type coverage
-- **Community-first** — public, transparent development with an issue-first contribution model
-- **Data provenance** — careful tracking of external data and asset sources
+This repository is the **Limón Edition**, a fork of the original [OpenLeagueManager/OLManager](https://github.com/OpenLeagueManager/OLManager) project. It is built with Tauri v2, Rust, React and TypeScript, and it is licensed under GPL-3.0.
 
-**Architecture:** Hybrid Tauri v2 (Rust backend / React-TypeScript frontend), Hexagonal architecture in Rust with domain-driven design.
+## Download and play
 
----
+Get the latest version from the **[releases page](https://github.com/ProphetLemon/OLManager/releases/latest)**. Under "Assets", pick the file for your system.
 
-## 2. Architecture
+| System | File | How to install |
+|--------|------|----------------|
+| Windows (64-bit) | `Open.League.Manager_<version>_x64-setup.exe` | Run it. It installs for your user only. |
+| Linux (64-bit) | `Open.League.Manager_<version>_amd64.AppImage` | Make it executable (`chmod +x`), then run it. |
 
-```
-┌────────────────────────────────────────────────────────────────────────────┐
-│                        APPLICATION ARCHITECTURE                            │
-│                                                                            │
-│   ┌─────────────────────────────────────────────────────────────────┐      │
-│   │  FRONTEND (React + TypeScript)                                  │      │
-│   │                                                                 │      │
-│   │  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌──────────────┐  │      │
-│   │  │  Pages    │  │Components │  │  Stores   │  │  Lib/Utils   │  │      │
-│   │  └─────┬─────┘  └─────┬─────┘  └─────┬─────┘  └──────┬───────┘  │      │
-│   │        └──────────────┴──────────────┴───────────────┘          │      │
-│   │                          │ Tauri IPC                            │      │
-│   └──────────────────────────┼──────────────────────────────────────┘      │
-│                              │                                             │
-│   ┌──────────────────────────┼──────────────────────────────────────┐      │
-│   │  BACKEND (Rust)          │                                      │      │
-│   │                          ▼                                      │      │
-│   │  ┌──────────────────────────────────────────────────────────┐   │      │
-│   │  │  Tauri Commands ───► Domain Logic ───► Persistence       │   │      │
-│   │  │  (IPC handlers)      (crates/)         (SQLite/FS)       │   │      │
-│   │  └──────────────────────────────────────────────────────────┘   │      │
-│   └─────────────────────────────────────────────────────────────────┘      │
-└────────────────────────────────────────────────────────────────────────────┘
-```
+There is no macOS build.
 
-The full system overview is documented at [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — including the React/Tauri boundary, Rust crate map, persistence layer, testing strategy, and feature-extension rules.
+### Windows: "Windows protected your PC"
 
----
+The installer is not signed with a Windows code-signing certificate, so SmartScreen may block it the first time. To continue, click **More info**, then **Run anyway**.
 
-## 3. Technical Requirements
+### Linux: which distributions work
 
-| Technology    | Version      | Notes                                        |
-|---------------|-------------|----------------------------------------------|
-| Rust          | **1.80+**   | Edition 2021, required for Tauri v2 builds   |
-| Node.js       | **20+**     | Required for frontend tooling                |
-| npm           | **10+**     | Package manager for frontend dependencies    |
-| Tauri CLI     | **2.x**     | `cargo install tauri-cli --version "^2"`     |
+The AppImage is built on a rolling-release Arch-based system, and it uses your system's glibc. It needs glibc 2.44 or newer and a CPU with AVX2, so it runs on up-to-date rolling distributions such as Arch and CachyOS. On Ubuntu, Debian or Mint it may not start. Launch the AppImage file itself, from a folder you can write to, so the game can update it in place.
 
-### Core Dependencies
+### Updates
 
-```bash
-# Rust crates (Cargo.toml)
-tauri = "2"
-serde = "1"       # Serialization
-rusqlite = "0.32.1" # SQLite persistence
+The game looks for a new release when it starts and offers a one-click update: download, install, relaunch. You can also check by hand in Settings, under "Check for updates". Your saves are kept. This works for builds from `2026.1108.1` on; older builds (for example the portable zip) must be reinstalled once from the latest release.
 
-# Frontend (package.json)
-react = "^19"
-typescript = "^6.0"
-@tauri-apps/api = "^2.11"
-```
+### What's new
 
----
+[`CHANGELOG.md`](CHANGELOG.md) lists every release. The same notes are in the game's patch-notes panel.
 
-## 4. Quick Installation
+### Something went wrong?
 
-```bash
-# 1. Install frontend dependencies
-npm ci
-
-# 2. Run stable non-production checks
-cargo fmt --manifest-path src-tauri/Cargo.toml --check
-cargo check --manifest-path src-tauri/Cargo.toml
-```
-
-Broader non-production checks are also available, currently tracked as pre-existing runtime/test debt and exposed through manual experimental CI jobs:
-
-```bash
-npm test
-npm run build:types
-cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
-cargo test --manifest-path src-tauri/Cargo.toml --workspace
-```
-
-> Do not run production Tauri bundle builds as part of normal PR validation. Packaging belongs to the release process.
-
-### macOS: "app is damaged" warning
-
-macOS builds are ad-hoc signed but not notarized (no Apple Developer account), so Gatekeeper may report the downloaded app as "damaged". To open it:
-
-- System Settings → Privacy & Security → scroll to the blocked app message → **Open Anyway**, or
-- Remove the quarantine flag from a terminal:
-
-```bash
-xattr -dr com.apple.quarantine "/Applications/Open League Manager.app"
-```
+The bug button in the game saves a ZIP file with your description of the problem and your save game, then opens the folder where it is. Send that file along when you report the problem: with the save, the problem can be reproduced.
 
 ### Linux: blank or flickering window
 
@@ -144,76 +78,130 @@ WEBKIT_DISABLE_DMABUF_RENDERER=0 <command that starts the game>   # accelerated 
 
 ---
 
-## 5. Project Structure
+# For contributors
+
+## Requirements
+
+| Technology | Version | Notes |
+|------------|---------|-------|
+| Rust | **1.85+** | The workspace root uses edition 2021; `olm_core` uses edition 2024, which needs 1.85 |
+| Node.js | **22** | The version CI uses (`package.json` sets no `engines`) |
+| Tauri CLI | **2.x** | Comes from npm (`@tauri-apps/cli`), so there is nothing to install separately |
+
+You also need the system libraries Tauri requires on your OS: see the [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/).
+
+## Run the game in development
+
+```bash
+git clone --recurse-submodules https://github.com/ProphetLemon/OLManager.git
+cd OLManager
+npm ci
+npm run tauri dev
+```
+
+The game data in `data/` is a git submodule (the original project's `olmanager-data` repository). In a clone made without `--recurse-submodules`, run `git submodule update --init` once.
+
+## Checks
+
+Run these before opening a change:
+
+```bash
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cargo check --manifest-path src-tauri/Cargo.toml
+npm test
+npm run build:types
+```
+
+Heavier checks, which the project still tracks as known debt:
+
+```bash
+cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml --workspace
+```
+
+> Do not run production Tauri bundle builds as part of normal validation. Packaging belongs to the release process: [`docs/RELEASING-FORK.md`](docs/RELEASING-FORK.md).
+
+## Project structure
 
 ```
 OLManager/
-├── src/                                        # Frontend (React + TypeScript)
-│   ├── App.tsx                                 # Root application component
-│   ├── main.tsx                                # Entry point
-│   ├── components/                             # UI components
-│   ├── pages/                                  # Route pages
-│   ├── store/                                  # State management
-│   └── lib/                                    # Utilities and helpers
+├── src/                      # Frontend (React + TypeScript)
+│   ├── main.tsx              # Entry point, renders AppV2
+│   ├── ui-v2/                # The only UI: shell, dashboard tabs, pages, primitives
+│   │   └── _legacy/          # Old v1 code that the v2 wrappers still use
+│   ├── lib/                  # Pure helpers
+│   ├── store/                # State (Zustand)
+│   ├── services/ api/        # Calls to the Rust backend
+│   ├── hooks/ context/       # Shared hooks and React context
+│   ├── i18n/                 # Translations (8 locales)
+│   └── themes/               # Design tokens
 │
-├── src-tauri/                                  # Backend (Rust)
-│   ├── Cargo.toml                              # Rust dependencies
-│   ├── src/                                    # Tauri commands and setup
-│   └── crates/                                 # Domain crates
-│       ├── domain/                             # Domain models and enums
-│       ├── ofm_core/                           # Core game logic
-│       └── ...                                 # Additional crates
+├── src-tauri/                # Backend (Rust)
+│   ├── src/                  # Tauri commands and setup
+│   ├── crates/olm_core/      # Core game logic
+│   ├── databases/            # World data
+│   └── tauri.conf.json       # Tauri and updater config
 │
-├── docs/                                       # Documentation
-│   ├── ARCHITECTURE.md                         # System architecture
-│   ├── GOVERNANCE.md                           # Branch model and review gates
-│   ├── RELEASE_PROCESS.md                      # Release workflow
-│   ├── DATA_PROVENANCE.md                      # External data sources
-│   └── INHERITED_DOCS_AUDIT.md                 # Documentation audit
-│
-├── README.md                                   # This file
-├── CONTRIBUTING.md                             # Contribution guidelines
-├── SECURITY.md                                 # Vulnerability reporting
-└── LICENSE                                     # GPL-3.0 license
+├── assets/                   # Simulation data, draft data, updater public key
+├── data/                     # Game data (pinned separately)
+├── scripts/                  # Data and release scripts
+├── docs/                     # Documentation
+├── CHANGELOG.md
+└── LICENSE
 ```
 
----
+## Code conventions
 
-## 6. Code Conventions
+### Rust
 
-### Rust Conventions
+- **Crates:** lowercase with underscores (for example `olm_core`)
+- **Types:** PascalCase. **Functions:** snake_case. **Enum variants:** PascalCase (`LolRole::Support`)
+- **Errors:** custom error types with `thiserror`
 
-- **Crates:** Lowercase with underscores (e.g., `ofm_core`, `player_rating`)
-- **Types:** PascalCase (e.g., `Player`, `TeamComposition`)
-- **Functions/Methods:** snake_case (e.g., `calculate_rating()`)
-- **Enums:** PascalCase variants (e.g., `LolRole::Support`)
-- **Error handling:** Custom error types with `thiserror`
+### TypeScript / React
 
-### TypeScript / React Conventions
-
-- **Components:** PascalCase (e.g., `PlayerCard`, `SquadView`)
-- **Hooks:** camelCase with `use` prefix (e.g., `usePlayerData`)
+- **Components:** PascalCase (`PlayerCard`). **Hooks:** `use` prefix (`usePlayerData`)
 - **Files:** PascalCase for components, camelCase for utilities
-- **Types:** PascalCase interfaces and type aliases
+- **Design:** use theme tokens, never raw colours. The rules are in [`AGENTS.md`](AGENTS.md).
 
 ### Commits
 
-Format: `<type>(<scope>): <description>`
+Conventional Commits: `<type>(<scope>): <description>`.
 
 ```bash
 feat(player): add LolRole assignment
 fix(scouting): correct rating calculation
-refactor(team): replace formation with TeamComposition
-docs(readme): update architecture diagram
+docs(readme): update the project structure
 ```
+
+## Branches and contributing
+
+The fork uses gitflow: `main` holds tagged releases and `develop` holds the next release.
+
+1. Branch from `develop` as `<type>/<topic>`, for example `fix/match-nexus-defence`.
+2. Commit with Conventional Commits.
+3. Merge into `develop` with `--no-ff`.
+
+The full branch table and the release steps are in [`docs/RELEASING-FORK.md`](docs/RELEASING-FORK.md).
+
+## Documentation
+
+- [`docs/README.md`](docs/README.md): documentation index
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): React/Tauri boundary, Rust crates, persistence, testing
+- [`docs/RELEASING-FORK.md`](docs/RELEASING-FORK.md): branches, versions, building and publishing a release
+- [`docs/UPDATER_SETUP.md`](docs/UPDATER_SETUP.md): how the auto-updater is set up
+- [`docs/SCRIMS.md`](docs/SCRIMS.md): how scrims work
+- [`docs/STAT_RATINGS.md`](docs/STAT_RATINGS.md): how player ratings are derived
+- [`AGENTS.md`](AGENTS.md): UI v2 layout and design rules
+- [`SECURITY.md`](SECURITY.md): vulnerability reporting
 
 ---
 
-## 7. License and Lineage
+## License and Lineage
 
 This repository is licensed under the **GNU General Public License v3.0**. See [`LICENSE`](LICENSE).
 
-Code and assets inherited from OpenFootManager are treated as GPL-3.0-compatible unless a later audit documents otherwise. Third-party datasets, generated caches, and source-derived content such as Leaguepedia data are **not** automatically GPL by inheritance; they require separate provenance, attribution, and redistribution review. See [`docs/DATA_PROVENANCE.md`](docs/DATA_PROVENANCE.md).
+Code and assets inherited from OpenFootManager are treated as GPL-3.0-compatible unless a later audit documents otherwise. Third-party datasets, generated caches, and source-derived content such as Leaguepedia data are **not** automatically GPL by inheritance; they require separate provenance, attribution, and redistribution review. See [`docs/DATA_PROVENANCE.md`](https://github.com/ProphetLemon/OLManager/blob/c63d7e9f/docs/DATA_PROVENANCE.md) (removed from the tree by the original project in June 2026; the link is its last version).
 
 ### Riot Games
 
@@ -227,35 +215,13 @@ The item catalogue and champion kits under `assets/simulation/` (`items.v1.json`
 
 ---
 
-## 8. Contributing
+## Resources
 
-Contributions are **issue-first**:
-
-1. **Open a template-based issue** or join **Discussions** for questions.
-2. **Wait for maintainer approval** via `status:approved`.
-3. **Branch from `development`** using `type/lowercase-slug`, for example `fix/ci-labels`.
-4. **Open the PR against `development`** unless it is a maintainer release or hotfix promotion.
-
-Start with [`CONTRIBUTING.md`](CONTRIBUTING.md), then review:
-
-- [`docs/STATUS.md`](docs/STATUS.md) — project health overview: what's broken, technical debt (53 football remnants), risks, and roadmap.
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system overview, React/Tauri boundary, Rust crates, persistence, testing, and feature-extension rules.
-- [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md) — branch model, labels, review gates, and repository settings.
-- [`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md) — release PRs, version sync, tags, artifacts, and unsigned status rules.
-- [`docs/INHERITED_DOCS_AUDIT.md`](docs/INHERITED_DOCS_AUDIT.md) — required audit follow-up for inherited documentation before public OSS release.
-- [`docs/DATA_PROVENANCE.md`](docs/DATA_PROVENANCE.md) — external data and asset provenance requirements.
-- [`SECURITY.md`](SECURITY.md) — private vulnerability reporting guidance.
-
----
-
-## 9. Resources
-
----
-- **Repository:** [github.com/OpenLeagueManager/OLManager](https://github.com/OpenLeagueManager/OLManager)
-- **Documentation index:** [`docs/README.md`](docs/README.md)
-- **Tauri v2 Docs:** [https://v2.tauri.app/](https://v2.tauri.app/)
-- **Rust Docs:** [https://doc.rust-lang.org/](https://doc.rust-lang.org/)
-- **React Docs:** [https://react.dev/](https://react.dev/)
+- **This fork:** [github.com/ProphetLemon/OLManager](https://github.com/ProphetLemon/OLManager)
+- **Original project:** [github.com/OpenLeagueManager/OLManager](https://github.com/OpenLeagueManager/OLManager)
+- **Tauri v2 docs:** [v2.tauri.app](https://v2.tauri.app/)
+- **Rust docs:** [doc.rust-lang.org](https://doc.rust-lang.org/)
+- **React docs:** [react.dev](https://react.dev/)
 
 ---
 
