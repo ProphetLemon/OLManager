@@ -4118,7 +4118,14 @@
     "backToBlockDecision": "Retour à la décision du bloc",
     "whatChanged": "Ce qui a changé",
     "costMark": "Coût",
-    "repGhostNote": "Repère pointillé : {{value}} après toute suite."
+    "repGhostNote": "Repère pointillé : {{value}} après toute suite.",
+    "rivalsTitle": "Adversaires de votre compétition",
+    "rivalsTable": "Adversaires par note globale",
+    "rivalTeam": "Équipe",
+    "rivalRep": "Rép.",
+    "rivalWin": "Victoire",
+    "rivalAccepts": "Accepte",
+    "rivalsNote": "Victoire est votre chance de gagner le scrim. Accepte est la chance que cet adversaire prenne un créneau avec deux plans ou plus. Un créneau avec un seul plan le joue toujours, et le plan A est joué si tous les plans refusent."
   },
   "market": {
     "title": "Marché des Transferts",

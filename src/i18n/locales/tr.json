@@ -4109,7 +4109,14 @@
     "backToBlockDecision": "Blok kararına dön",
     "whatChanged": "Neler değişti",
     "costMark": "Maliyet",
-    "repGhostNote": "Kesik çizgili işaret: her devam adımından sonra {{value}}."
+    "repGhostNote": "Kesik çizgili işaret: her devam adımından sonra {{value}}.",
+    "rivalsTitle": "Ligindeki rakipler",
+    "rivalsTable": "Rakipler genel puana göre",
+    "rivalTeam": "Takım",
+    "rivalRep": "İtibar",
+    "rivalWin": "Galibiyet",
+    "rivalAccepts": "Kabul",
+    "rivalsNote": "Galibiyet, scrimi kazanma şansındır. Kabul, bu rakibin iki veya daha fazla planı olan bir slotu alma şansıdır. Tek planlı bir slot her zaman o planı oynar; tüm planlar reddederse Plan A oynanır."
   },
   "updater": {
     "title": "Update Available",

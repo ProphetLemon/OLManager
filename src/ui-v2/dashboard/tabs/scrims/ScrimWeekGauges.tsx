@@ -64,7 +64,7 @@ export function ScrimWeekGauges({ week, ghostReputation = null }: ScrimWeekGauge
               key={index}
               className={cn(
                 "h-2.5 max-w-11 flex-1 basis-6 rounded-sm border",
-                index < week.planned ? "border-foreground bg-foreground" : "border-dim bg-transparent",
+                index < week.planned ? "border-club bg-club" : "border-dim bg-transparent",
               )}
             />
           ))}

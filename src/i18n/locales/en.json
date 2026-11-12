@@ -768,7 +768,14 @@
     "backToBlockDecision": "Back to block decision",
     "whatChanged": "What changed",
     "costMark": "Cost",
-    "repGhostNote": "Dashed mark: {{value}} after any follow-up."
+    "repGhostNote": "Dashed mark: {{value}} after any follow-up.",
+    "rivalsTitle": "Rivals in your competition",
+    "rivalsTable": "Rivals by overall rating",
+    "rivalTeam": "Team",
+    "rivalRep": "Rep",
+    "rivalWin": "Win",
+    "rivalAccepts": "Accepts",
+    "rivalsNote": "Win is your chance to win the scrim. Accepts is the chance this rival takes a slot with two or more plans. A slot with one plan always plays it, and Plan A plays if every plan declines."
   },
   "season": {
     "preseasonStatus": "Preseason Status",

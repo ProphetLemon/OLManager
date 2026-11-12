@@ -4118,7 +4118,14 @@
     "backToBlockDecision": "Zurück zur Blockentscheidung",
     "whatChanged": "Was sich geändert hat",
     "costMark": "Kosten",
-    "repGhostNote": "Gestrichelte Markierung: {{value}} nach jeder Folgemaßnahme."
+    "repGhostNote": "Gestrichelte Markierung: {{value}} nach jeder Folgemaßnahme.",
+    "rivalsTitle": "Gegner in deinem Wettbewerb",
+    "rivalsTable": "Gegner nach Gesamtwertung",
+    "rivalTeam": "Team",
+    "rivalRep": "Ruf",
+    "rivalWin": "Sieg",
+    "rivalAccepts": "Nimmt an",
+    "rivalsNote": "Sieg ist deine Chance, den Scrim zu gewinnen. „Nimmt an“ ist die Chance, dass dieser Gegner einen Slot mit zwei oder mehr Plänen übernimmt. Ein Slot mit nur einem Plan spielt ihn immer, und Plan A wird gespielt, wenn alle Pläne ablehnen."
   },
   "market": {
     "title": "Transfermarkt",

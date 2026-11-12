@@ -3917,7 +3917,14 @@
     "backToBlockDecision": "Torna alla decisione del blocco",
     "whatChanged": "Cosa è cambiato",
     "costMark": "Costo",
-    "repGhostNote": "Segno tratteggiato: {{value}} dopo qualsiasi seguito."
+    "repGhostNote": "Segno tratteggiato: {{value}} dopo qualsiasi seguito.",
+    "rivalsTitle": "Avversari della tua competizione",
+    "rivalsTable": "Avversari per valutazione complessiva",
+    "rivalTeam": "Squadra",
+    "rivalRep": "Rep.",
+    "rivalWin": "Vittoria",
+    "rivalAccepts": "Accetta",
+    "rivalsNote": "Vittoria è la tua probabilità di vincere lo scrim. Accetta è la probabilità che questo avversario prenda uno slot con due o più piani. Uno slot con un solo piano lo gioca sempre, e il Piano A si gioca se tutti i piani rifiutano."
   },
   "content": {
     "lol": {

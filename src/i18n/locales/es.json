@@ -768,7 +768,14 @@
     "backToBlockDecision": "Volver a la decisión del bloque",
     "whatChanged": "Qué ha cambiado",
     "costMark": "Coste",
-    "repGhostNote": "Marca discontinua: {{value}} tras cualquier seguimiento."
+    "repGhostNote": "Marca discontinua: {{value}} tras cualquier seguimiento.",
+    "rivalsTitle": "Rivales de tu competición",
+    "rivalsTable": "Rivales por valoración general",
+    "rivalTeam": "Equipo",
+    "rivalRep": "Rep",
+    "rivalWin": "Victoria",
+    "rivalAccepts": "Acepta",
+    "rivalsNote": "Victoria es tu probabilidad de ganar el scrim. Acepta es la probabilidad de que este rival tome un bloque con dos o más planes. Un bloque con un solo plan siempre juega ese plan, y el Plan A se juega si todos los planes lo rechazan."
   },
   "season": {
     "preseasonStatus": "Estado de la pretemporada",

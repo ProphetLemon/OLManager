@@ -24,6 +24,7 @@ import {
 import { dailyScrimDecisionActions } from "@/lib/scrims/dailyDecisionActions";
 import { decisionEffectLines, NEXT_BLOCK_CANCELLATION, type DecisionEffectContext } from "@/lib/scrims/decisionEffects";
 import { buildDecisionResult, type DecisionResult } from "@/lib/scrims/decisionResult";
+import { buildRivalRows } from "@/lib/scrims/rivalOdds";
 import { deskPanel, riskLevel, type RiskLevel } from "@/lib/scrims/scrimDesk";
 import { nextPlanningMonday, scrimSetupBlockedKey } from "@/lib/scrims/setupLock";
 import { formatDate } from "@/lib/formatting/dateFormatting";
@@ -33,6 +34,7 @@ import { Button } from "@/ui-v2/components/ui/button";
 import { ScrimDeskPanel } from "./scrims/ScrimDeskPanel";
 import { ScrimDecisionPanel } from "./scrims/ScrimDecisionPanel";
 import { ScrimDecisionResult } from "./scrims/ScrimDecisionResult";
+import { ScrimRivalsPanel } from "./scrims/ScrimRivalsPanel";
 import { ScrimSetupPanel } from "./scrims/ScrimSetupPanel";
 import { ScrimSetupRecap } from "./scrims/ScrimSetupRecap";
 import { ScrimStaffSuggestions } from "./scrims/ScrimStaffSuggestions";
@@ -370,6 +372,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
             ghostReputation={panel === "decision" && showCancelFollowups ? Math.max(0, weeklyContext.reputation + NEXT_BLOCK_CANCELLATION.reputation) : null}
           />
           <ScrimStaffSuggestions suggestions={staffSuggestions} />
+          {panel === "setup" ? <ScrimRivalsPanel rows={buildRivalRows(gameState, myTeam, weeklyContext.reputation)} /> : null}
         </aside>
       </div>
 

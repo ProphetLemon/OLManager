@@ -4118,7 +4118,14 @@
     "backToBlockDecision": "Voltar para a decisão do bloco",
     "whatChanged": "O que mudou",
     "costMark": "Custo",
-    "repGhostNote": "Marca tracejada: {{value}} depois de qualquer sequência."
+    "repGhostNote": "Marca tracejada: {{value}} depois de qualquer sequência.",
+    "rivalsTitle": "Adversários da sua competição",
+    "rivalsTable": "Adversários por avaliação geral",
+    "rivalTeam": "Time",
+    "rivalRep": "Rep.",
+    "rivalWin": "Vitória",
+    "rivalAccepts": "Aceita",
+    "rivalsNote": "Vitória é a sua chance de vencer o scrim. Aceita é a chance de este adversário assumir um bloco com dois ou mais planos. Um bloco com um só plano sempre joga esse plano, e o Plano A é jogado se todos os planos recusarem."
   },
   "market": {
     "title": "Mercado de Transferências",

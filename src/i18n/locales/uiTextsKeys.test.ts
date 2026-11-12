@@ -142,6 +142,8 @@ describe("Scrims tab keys", () => {
     "scrims.effect.condition": ["fr"],
     "scrims.effect.morale": ["it"],
     "scrims.result.blockLabel": ["de"],
+    "scrims.rivalTeam": ["de"],
+    "scrims.rivalRep": ["es"],
     "scrims.tags.fatigueMinus": ["fr"],
     "scrims.tags.fatiguePlus": ["fr"],
     "scrims.tags.mentalMinus": ["de", "es", "fr", "pt", "pt-BR"],
