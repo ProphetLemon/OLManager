@@ -460,6 +460,66 @@ describe("useAdvanceTime", function (): void {
     expect(screen.getByTestId("auto-delegation-notice")).toHaveTextContent("Assistant Coach resolved");
   });
 
+  it("ends the day with a single advance when the backend answers that the day was processed", async function (): Promise<void> {
+    const seen: string[] = [];
+    mockedInvoke
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce({
+        action: "advanced",
+        game: { clock: { current_date: "2026-07-02", start_date: "2026-07-01" } },
+      })
+      .mockResolvedValueOnce({
+        action: "advanced",
+        game: { clock: { current_date: "2026-07-03", start_date: "2026-07-01" } },
+      });
+
+    render(
+      <HookHarness
+        hasMatchToday={false}
+        defaultMatchMode="live"
+        onGameState={(state) => seen.push(String(state.clock.current_date))}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(function (): void {
+      expect(seen).toContain("2026-07-02");
+    });
+    const advances = mockedInvoke.mock.calls.filter((call) => call[0] === "advance_time_with_mode");
+    expect(advances).toHaveLength(1);
+    expect(seen).not.toContain("2026-07-03");
+  });
+
+  it("skipping to the next day stops at the advance that ended the day", async function (): Promise<void> {
+    const seen: string[] = [];
+    mockedInvoke.mockImplementation(async (command: string) => {
+      if (command !== "advance_time_with_mode") return [];
+      const advances = mockedInvoke.mock.calls.filter((call) => call[0] === "advance_time_with_mode").length;
+      return {
+        action: "advanced",
+        game: { clock: { current_date: advances === 1 ? "2026-07-02" : "2026-07-03", start_date: "2026-07-01" } },
+      };
+    });
+
+    render(
+      <HookHarness
+        hasMatchToday={false}
+        defaultMatchMode="live"
+        onGameState={(state) => seen.push(String(state.clock.current_date))}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Skip day" }));
+
+    await waitFor(function (): void {
+      expect(seen).toContain("2026-07-02");
+    });
+    const advances = mockedInvoke.mock.calls.filter((call) => call[0] === "advance_time_with_mode");
+    expect(advances).toHaveLength(1);
+    expect(seen).not.toContain("2026-07-03");
+  });
+
   it("assistant continue advances exactly one day when there are no scrims", async function (): Promise<void> {
     mockedInvoke
       .mockResolvedValueOnce([])

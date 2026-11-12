@@ -153,15 +153,17 @@ export function useAdvanceTime(
     setIsAdvancing(true);
     resetTransientUi();
     try {
-      const applyAdvancedResult = async (initial: GameStateData): Promise<void> => {
+      // "advanced" means the backend processed the day. Only a phase change leaves the game on
+      // the same day, so only then is there a rest of the day to fast-forward through.
+      const applyAdvancedResult = async (initial: GameStateData, dayEnded: boolean): Promise<void> => {
         let nextGame = initial;
-        const startDate = String(nextGame.clock.current_date);
-        if (shouldFastForwardDay(nextGame)) {
+        if (!dayEnded && shouldFastForwardDay(nextGame)) {
+          const startDate = String(nextGame.clock.current_date);
           for (let i = 0; i < 5; i += 1) {
-            if (String(nextGame.clock.current_date) !== startDate) break;
             const step = await advanceTimeWithMode(effectiveMode);
             if (!step || !(step.action === "advanced" || step.action === "phase_advanced") || !step.game) break;
             nextGame = step.game as GameStateData;
+            if (step.action === "advanced" || String(nextGame.clock.current_date) !== startDate) break;
           }
         }
         setGameState(nextGame);
@@ -293,7 +295,7 @@ export function useAdvanceTime(
                 },
               });
             } else if ((retry.action === "advanced" || retry.action === "phase_advanced") && retry.game) {
-              await applyAdvancedResult(retry.game as GameStateData);
+              await applyAdvancedResult(retry.game as GameStateData, retry.action === "advanced");
             } else if (retry.action === "blocked_scrim_decision") {
               setBlockerModal({
                 blockers: [{
@@ -328,7 +330,7 @@ export function useAdvanceTime(
             setAutoDelegationNotice(noticeAssistantConfiguredSetup());
             const retry = await advanceTimeWithMode(effectiveMode);
             if ((retry.action === "advanced" || retry.action === "phase_advanced") && retry.game) {
-              await applyAdvancedResult(retry.game as GameStateData);
+              await applyAdvancedResult(retry.game as GameStateData, retry.action === "advanced");
               return;
             }
           } catch (error) {
@@ -344,7 +346,7 @@ export function useAdvanceTime(
           }],
         });
       } else if ((result.action === "advanced" || result.action === "phase_advanced") && result.game) {
-        await applyAdvancedResult(result.game as GameStateData);
+        await applyAdvancedResult(result.game as GameStateData, result.action === "advanced");
       }
     } catch (err) {
       console.error("Failed to advance time:", err);
@@ -458,7 +460,9 @@ export function useAdvanceTime(
           if (!baselineDate) {
             baselineDate = String(game.clock.current_date);
           }
-          if (String(game.clock.current_date) !== baselineDate) {
+          // "advanced" means the day was processed: the skip is done. A phase change stays on
+          // the same day and needs another advance.
+          if (result.action === "advanced" || String(game.clock.current_date) !== baselineDate) {
             return;
           }
           continue;
