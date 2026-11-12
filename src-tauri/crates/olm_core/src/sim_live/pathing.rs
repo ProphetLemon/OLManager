@@ -298,8 +298,11 @@ pub(super) fn move_champions(runtime: &mut RuntimeState, dt: f64) {
     let neutral_timers_snapshot = super::decode_neutral_timers_state(&runtime.neutral_timers);
     let team_tactics_snapshot = runtime.extra.get("teamTactics").cloned();
     let team_buffs_snapshot = runtime.extra.get("teamBuffs").cloned();
+    super::team_push::update_team_pushes(runtime);
+    let push_orders = super::team_push::orders(runtime);
 
     for champion in &mut runtime.champions {
+        champion.push = push_orders[super::team_push::order_slot(&champion.team)].clone();
         if champion.realm_banished_until > 0.0 {
             if now >= champion.realm_banished_until {
                 champion.realm_banished_until = 0.0;

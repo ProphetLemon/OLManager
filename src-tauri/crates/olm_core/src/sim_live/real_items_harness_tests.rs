@@ -78,6 +78,9 @@ struct Played {
     items_per_champion: f64,
     /// Kills of the winner and of the loser; `None` when the match reached the step limit.
     winner_loser_kills: Option<(i64, i64)>,
+    /// Seconds team A and team B played the numbers-advantage plan, and how many times each entered it.
+    push_sec: (f64, f64),
+    push_entered: (u32, u32),
 }
 
 fn play(n: usize, team_a: Side, team_b: Side, ids: &[String]) -> Played {
@@ -127,9 +130,12 @@ fn play(n: usize, team_a: Side, team_b: Side, ids: &[String]) -> Played {
         Some("red") => Some((red_kills, blue_kills)),
         _ => None,
     };
+    let (a_slot, b_slot) = if a_is_blue { (0, 1) } else { (1, 0) };
     Played {
         seed: n,
         winner_loser_kills,
+        push_sec: (state.team_push[a_slot].active_sec, state.team_push[b_slot].active_sec),
+        push_entered: (state.team_push[a_slot].entered, state.team_push[b_slot].entered),
         a_won: state.winner.as_deref() == Some(a_team),
         minutes,
         kills: (state.stats.blue.kills + state.stats.red.kills) as f64,
@@ -203,6 +209,13 @@ fn measure_real_lineups() {
             println!("lost lead seed {} winner kills {winner} loser kills {loser} minutes {:.1}", p.seed, p.minutes);
         }
     }
+    println!(
+        "numbers plan, seconds per match: team A {:.0} team B {:.0}; entered per match: team A {:.1} team B {:.1}",
+        mean(&|p| p.push_sec.0),
+        mean(&|p| p.push_sec.1),
+        mean(&|p| f64::from(p.push_entered.0)),
+        mean(&|p| f64::from(p.push_entered.1)),
+    );
     println!("team gold per minute {:.1}", mean(&|p| p.team_gold_per_min));
     println!("items per champion at the end {:.2}", mean(&|p| p.items_per_champion));
     println!(
@@ -372,4 +385,176 @@ fn trace_real_match() {
             break;
         }
     }
+}
+
+/// What one run of the numbers-advantage plan of a team did.
+#[derive(Default)]
+struct PlanEpisode {
+    team: String,
+    start: f64,
+    alive_at_start: (usize, usize),
+    deaths_of_pushers: usize,
+    tower_damage_to_pushers: f64,
+    structures_taken: Vec<String>,
+    target_at_end: String,
+    length: f64,
+}
+
+/// Plays one match step by step and reports every run of the numbers-advantage plan: when it
+/// started, the champions alive on both sides, how far the team got, the damage the towers did
+/// to the pushers, the structures it took and why it ended.
+///
+/// ```text
+/// REAL_ITEMS_TRACE_SEED=1042 REAL_ITEMS_PAIR=80,60 cargo test --release -p olm_core --lib \
+///   sim_live::real_items_harness_tests::trace_numbers_plan -- --ignored --nocapture
+/// ```
+#[test]
+#[ignore = "measurement: traces the numbers-advantage plan of one match"]
+fn trace_numbers_plan() {
+    let n: usize = env_or("REAL_ITEMS_TRACE_SEED", 1000);
+    let pair = std::env::var("REAL_ITEMS_PAIR").unwrap_or_else(|_| "70,70".to_string());
+    let (a, b) = pair.split_once(',').expect("REAL_ITEMS_PAIR=a,b");
+    let (team_a, team_b) = (
+        Side::stat(a.parse().expect("stat a")),
+        Side::stat(b.parse().expect("stat b")),
+    );
+    let ids = catalogue_ids();
+    let a_is_blue = n.is_multiple_of(2);
+    let (blue, red) = if a_is_blue { (team_a, team_b) } else { (team_b, team_a) };
+    println!("seed {n}: team A (stat {a}) is {}", if a_is_blue { "blue" } else { "red" });
+    let mut champions = real_lineup(n as u64, "h", &ids);
+    champions.extend(real_lineup(n as u64, "a", &ids));
+    let store = SimLiveStoreState::default();
+    let session_id = format!("real-items-{n}");
+    init(
+        &store,
+        SimLiveInitRequest {
+            session_id: session_id.clone(),
+            seed: format!("real-items-seed-{n}"),
+            snapshot: snapshot_with(blue, red),
+            champion_by_player_id: champions,
+            champion_profiles_by_id: HashMap::new(),
+            champion_ultimates_by_id: HashMap::new(),
+            initial_state: None,
+            ai_mode: SimulatorAiMode::default(),
+            policy: SimulatorPolicyConfig::default(),
+        },
+    )
+    .expect("init");
+
+    let mut open: [Option<PlanEpisode>; 2] = [None, None];
+    let mut done: Vec<PlanEpisode> = Vec::new();
+    let mut structures_alive: Vec<String> = Vec::new();
+    let mut first_tower_at: Option<f64> = None;
+    let mut deaths_before: [i64; 10] = [0; 10];
+    for _ in 0..FULL_MATCH_TICKS {
+        skip_to_end(
+            &store,
+            SimLiveSkipToEndRequest {
+                session_id: session_id.clone(),
+                dt_sec: 0.2,
+                speed: 12.0,
+                max_ticks: 1,
+            },
+        )
+        .expect("skip");
+        let sessions = store.sessions.lock().expect("lock");
+        let state = &sessions[&session_id].state;
+        let now = state.time_sec;
+        let alive_of = |team: &str| state.champions.iter().filter(|c| c.team == team && c.alive).count();
+        let now_alive: Vec<String> = state
+            .structures
+            .iter()
+            .filter(|s| s.alive)
+            .map(|s| s.id.clone())
+            .collect();
+        let fallen: Vec<String> = structures_alive.iter().filter(|id| !now_alive.contains(id)).cloned().collect();
+        for id in &fallen {
+            if first_tower_at.is_none() && id.contains("tower") {
+                first_tower_at = Some(now);
+            }
+            let team_of_id = if id.starts_with("blue") { "red" } else { "blue" };
+            let slot = usize::from(team_of_id == "red");
+            if let Some(episode) = open[slot].as_mut() {
+                episode.structures_taken.push(format!("{id}@{:.0}", now));
+            }
+        }
+        structures_alive = now_alive;
+        for shot in state.tower_ledger.shots() {
+            if let TowerVictim::Champion(idx) = shot.victim {
+                let champion = &state.champions[idx];
+                let slot = usize::from(champion.team == "red");
+                if champion.push.is_some()
+                    && let Some(episode) = open[slot].as_mut()
+                {
+                    episode.tower_damage_to_pushers += shot.damage;
+                }
+            }
+        }
+        for (idx, champion) in state.champions.iter().enumerate() {
+            let slot = usize::from(champion.team == "red");
+            if champion.deaths > deaths_before[idx]
+                && let Some(episode) = open[slot].as_mut()
+            {
+                episode.deaths_of_pushers += 1;
+            }
+            deaths_before[idx] = champion.deaths;
+        }
+        for (slot, team) in ["blue", "red"].into_iter().enumerate() {
+            let push = &state.team_push[slot];
+            if push.active && open[slot].is_none() {
+                let enemy = if team == "blue" { "red" } else { "blue" };
+                open[slot] = Some(PlanEpisode {
+                    team: team.to_string(),
+                    start: now,
+                    alive_at_start: (alive_of(team), alive_of(enemy)),
+                    ..PlanEpisode::default()
+                });
+            }
+            if let Some(episode) = open[slot].as_mut() {
+                episode.target_at_end = push.target_id.clone().unwrap_or_default();
+            }
+            if !push.active
+                && let Some(episode) = open[slot].take()
+            {
+                let enemy = if team == "blue" { "red" } else { "blue" };
+                println!(
+                    "{} plan {:.0}s to {:.0}s ({:.0}s) at {:.1} min alive {}-{} at start, {}-{} at end: took [{}], pushers died {}, tower damage to pushers {:.0}, last target {}",
+                    episode.team,
+                    episode.start,
+                    now,
+                    now - episode.start,
+                    episode.start / 60.0,
+                    episode.alive_at_start.0,
+                    episode.alive_at_start.1,
+                    alive_of(team),
+                    alive_of(enemy),
+                    episode.structures_taken.join(" "),
+                    episode.deaths_of_pushers,
+                    episode.tower_damage_to_pushers,
+                    episode.target_at_end,
+                );
+                done.push(PlanEpisode { length: now - episode.start, ..episode });
+            }
+        }
+        if state.winner.is_some() {
+            println!(
+                "winner {:?} at {:.1} min, kills {}-{}, first tower at {:?}",
+                state.winner,
+                now / 60.0,
+                state.stats.blue.kills,
+                state.stats.red.kills,
+                first_tower_at.map(|t| (t / 60.0 * 10.0).round() / 10.0)
+            );
+            break;
+        }
+    }
+    println!(
+        "{} plan runs, mean {:.0}s, structures taken per run {:.2}, tower damage to pushers per run {:.0}, pushers died per run {:.2}",
+        done.len(),
+        done.iter().map(|e| e.length).sum::<f64>() / done.len().max(1) as f64,
+        done.iter().map(|e| e.structures_taken.len() as f64).sum::<f64>() / done.len().max(1) as f64,
+        done.iter().map(|e| e.tower_damage_to_pushers).sum::<f64>() / done.len().max(1) as f64,
+        done.iter().map(|e| e.deaths_of_pushers as f64).sum::<f64>() / done.len().max(1) as f64,
+    );
 }

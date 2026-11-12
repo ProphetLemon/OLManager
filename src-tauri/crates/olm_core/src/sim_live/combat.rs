@@ -547,6 +547,19 @@ pub(super) fn pick_combat_target(
         return Some(CombatTarget::Champion(enemy_idx));
     }
 
+    // A team ahead in numbers hits the structure it walked to, unless a kill is within reach.
+    if let Some(structure_idx) = team_push::structure_in_reach(runtime, champion_idx) {
+        let kill_in_reach = runtime.champions.iter().enumerate().any(|(idx, enemy)| {
+            idx != champion_idx
+                && is_visible_enemy_champion(runtime, champion_team, enemy_team, enemy)
+                && dist(champion.pos, enemy.pos) <= LANE_CHAMPION_TRADE_RADIUS
+                && has_credible_kill_chance(runtime, champion_idx, idx, now)
+        });
+        if !kill_in_reach {
+            return Some(CombatTarget::Structure(structure_idx));
+        }
+    }
+
     // Junglers finish their current/next camp route before considering ganks.
     if champion.role == "JGL" {
         // An alive objective only takes priority while the jungler is at it and

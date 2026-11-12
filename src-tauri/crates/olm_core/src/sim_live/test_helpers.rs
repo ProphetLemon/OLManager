@@ -85,6 +85,7 @@ pub(super) fn test_champion(
         debug_ai_decision: String::new(),
         avoid_targets: Vec::new(),
         objective_wait_since: 0.0,
+        push: None,
     }
 }
 
@@ -171,6 +172,7 @@ pub(super) fn test_runtime(
         gold_ledger: GoldLedger::default(),
         farm_ledger: FarmLedger::default(),
         tower_ledger: TowerLedger::default(),
+        team_push: Default::default(),
         extra: HashMap::new(),
     }
 }

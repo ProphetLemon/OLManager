@@ -21,6 +21,7 @@ mod runtime;
 mod session;
 mod state_init;
 mod structures;
+mod team_push;
 mod tower_ledger;
 mod tower_safety;
 mod trading;
@@ -138,6 +139,9 @@ pub(crate) struct RuntimeState {
     /// Tower shots of the current tick, for the tower measurements; never read by the simulation.
     #[serde(default, skip)]
     tower_ledger: TowerLedger,
+    /// The plan of each team that is ahead in numbers: blue first, red second.
+    #[serde(default)]
+    team_push: [team_push::TeamPush; 2],
     #[serde(default)]
     #[serde(flatten)]
     extra: HashMap<String, Value>,
@@ -242,6 +246,9 @@ struct ChampionRuntime {
     /// to form; 0 while it is not waiting.
     #[serde(default)]
     objective_wait_since: f64,
+    /// What the champion is told to do while his team plays the numbers-advantage plan.
+    #[serde(default)]
+    push: Option<team_push::PushOrder>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -6662,6 +6669,9 @@ mod lead_detector_tests;
 
 #[cfg(test)]
 mod base_defense_tests;
+
+#[cfg(test)]
+mod team_push_tests;
 
 #[cfg(test)]
 mod champion_fit_tests;

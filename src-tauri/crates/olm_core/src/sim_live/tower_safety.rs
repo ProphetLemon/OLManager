@@ -8,6 +8,7 @@
 //! take: step back out of the reach, unless the team is pushing the tower
 //! together or the kill under it is about to be won.
 
+use super::team_push;
 use super::{
     ChampionRuntime, MinionRuntime, StructureRuntime, TOWER_ATTACK_RANGE, Vec2, base_position_for,
     clamp, dist, normalize, normalized_team, symmetric_structure_pos,
@@ -97,6 +98,10 @@ fn dive_is_worth_it(champion: &ChampionRuntime, origin: Vec2, around: &Surroundi
         })
         .count();
     if allies_near >= TOWER_GROUP_MIN_CHAMPIONS {
+        return true;
+    }
+    // A team ahead in numbers takes a tower nobody defends, wave or no wave.
+    if team_push::may_dive(champion, origin, around.champions, TOWER_GROUP_RADIUS) {
         return true;
     }
     hp_ratio(champion) >= SECURE_KILL_SELF_HP_RATIO

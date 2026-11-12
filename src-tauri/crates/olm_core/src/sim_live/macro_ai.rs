@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 
+use super::team_push;
 use super::{
     AvoidedTarget, BASE_DEFENSE_RECALL_DISTANCE, ChampionRuntime, FIRST_WAVE_CONTEST_UNTIL,
     JUNGLE_CAMP_WAIT_FOR_SPAWN_SEC, JUNGLE_STICKY_CAMP_RADIUS, LANE_COMBAT_UNLOCK_AT,
@@ -561,16 +562,18 @@ pub(super) fn decide_champion_state(
         return;
     }
 
-    if champion_can_afford_next_item(champion) {
-        start_recall(champion, now, champions, minions, structures);
-        return;
-    }
-
     let hp_ratio = if champion.max_hp <= 0.0 {
         1.0
     } else {
         champion.hp / champion.max_hp
     };
+    // A team ahead in numbers takes structures instead of shopping, farming or defending.
+    let pushing = team_push::plays_plan(champion);
+
+    if champion_can_afford_next_item(champion) && !pushing {
+        start_recall(champion, now, champions, minions, structures);
+        return;
+    }
     if hp_ratio <= RECALL_TRIGGER_HP_RATIO {
         let base = base_position_for(&champion.team);
         if dist(champion.pos, base) <= WALK_TO_BASE_HEAL_DISTANCE {
@@ -579,6 +582,16 @@ pub(super) fn decide_champion_state(
             return;
         }
         start_recall(champion, now, champions, minions, structures);
+        return;
+    }
+
+    if pushing
+        && !team_push::base_is_hit(champion, champions, structures)
+        && let Some(order) = champion.push.clone()
+    {
+        champion.state = "objective".to_string();
+        let stand = team_push::stand_position(&order, &champion.team);
+        set_champion_direct_path_hysteresis(champion, stand, OBJECTIVE_PATH_MIN_TARGET_DELTA);
         return;
     }
 
