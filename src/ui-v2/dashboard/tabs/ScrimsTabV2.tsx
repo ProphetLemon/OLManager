@@ -29,6 +29,7 @@ import {
   type DailyScrimAction,
 } from "@/services/trainingService";
 import { dailyScrimDecisionActions } from "@/lib/scrims/dailyDecisionActions";
+import { DECISION_IMPACT_TAGS, isScrimTagBenefit } from "@/lib/scrims/decisionTags";
 import { nextPlanningMonday, scrimSetupBlockedKey } from "@/lib/scrims/setupLock";
 import { formatDate } from "@/lib/formatting/dateFormatting";
 import { SCRIM_FOCUS_IMPACT_KEYS, SCRIM_FOCUS_OBJECTIVE_KEYS } from "@/lib/scrims/scrimFocusKeys";
@@ -192,17 +193,6 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
         description: t(`scrims.decision.${DECISION_TEXT_KEY[id]}Desc`),
       }))
     : [];
-
-  const decisionImpactTags: Record<DailyScrimAction, string[]> = {
-    ContinueToBlock2: [t("scrims.tags.momentumPlus"), t("scrims.tags.fatigueMinus"), t("scrims.tags.volumePlus")],
-    OfferRest: [t("scrims.tags.recoveryPlus"), t("scrims.tags.fatiguePlus"), t("scrims.tags.volumeMinus")],
-    PushThrough: [t("scrims.tags.volumePlus"), t("scrims.tags.learningPlus"), t("scrims.tags.mentalMinus")],
-    CancelScrims: [t("scrims.tags.recoveryPlus"), t("scrims.tags.riskMinus"), t("scrims.tags.volumeMinus")],
-    VodReview: [t("scrims.tags.analysisPlus"), t("scrims.tags.qualityPlus"), t("scrims.tags.recoveryMinus")],
-    MentalReset: [t("scrims.tags.mentalPlus"), t("scrims.tags.recoveryPlus"), t("scrims.tags.techniqueMinus")],
-    TargetedDrills: [t("scrims.tags.issuePlus"), t("scrims.tags.mechanicsPlus"), t("scrims.tags.fatigueMinus")],
-    DayOff: [t("scrims.tags.recoveryPlus"), t("scrims.tags.mentalPlus"), t("scrims.tags.volumeMinus")],
-  };
 
   const handleSetWeeklyCapacity = async (slots: number) => {
     if (setupLocked || assistantControls) return;
@@ -492,16 +482,18 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                               </p>
                               <p className="mt-0.5 text-xs text-muted-foreground">{opt.description}</p>
                               <div className="mt-2 flex flex-wrap gap-1.5">
-                                {decisionImpactTags[opt.id].map((tag) => (
+                                {DECISION_IMPACT_TAGS[opt.id].map((tag) => (
                                   <Badge
                                     key={tag}
                                     variant="outline"
                                     className={cn(
                                       "text-2xs",
-                                      tag.includes("+") ? "border-positive/20 text-positive" : "border-negative/20 text-negative",
+                                      isScrimTagBenefit(tag)
+                                        ? "border-positive/20 text-positive"
+                                        : "border-negative/20 text-negative",
                                     )}
                                   >
-                                    {tag}
+                                    {t(`scrims.tags.${tag}`)}
                                   </Badge>
                                 ))}
                               </div>
