@@ -70,6 +70,7 @@ fn order(dive: bool) -> PushOrder {
         structure_id: TOWER_ID.to_string(),
         structure_pos: TOWER_AT,
         dive,
+        rally: None,
     }
 }
 
@@ -301,4 +302,65 @@ fn a_team_pushing_for_its_buff_keeps_out_of_a_bare_tower() {
     let mut runtime = dive_world(false, 2, false);
 
     assert!(leaves_the_tower(&mut runtime), "the buff holders dived without a wave");
+}
+
+/// The world of the ending: the red nexus is open (no nexus tower is left) and nothing else stands.
+fn open_nexus_world(blue_alive: usize, red_alive: usize) -> RuntimeState {
+    let mut runtime = world(blue_alive, red_alive);
+    let mut nexus = test_structure("red-nexus", "red", "base", Vec2 { x: 0.85, y: 0.15 });
+    nexus.kind = "nexus".to_string();
+    nexus.hp = 5500.0;
+    nexus.max_hp = 5500.0;
+    runtime.structures = vec![nexus];
+    runtime
+}
+
+#[test]
+fn a_team_that_is_not_ahead_goes_for_the_enemy_nexus_when_it_is_open() {
+    let mut runtime = open_nexus_world(5, 5);
+
+    let plan = blue_plan(&mut runtime);
+
+    assert!(plan.active && plan.ending, "five against five left an open nexus alone");
+    assert_eq!(plan.target_id.as_deref(), Some("red-nexus"));
+}
+
+#[test]
+fn a_team_one_champion_short_still_goes_for_the_open_nexus() {
+    let mut runtime = open_nexus_world(4, 5);
+
+    assert!(blue_plan(&mut runtime).ending, "four against five did not try the open nexus");
+}
+
+#[test]
+fn a_team_outnumbered_by_two_does_not_go_for_the_open_nexus() {
+    let mut runtime = open_nexus_world(3, 5);
+
+    assert!(!blue_plan(&mut runtime).ending);
+}
+
+#[test]
+fn the_nexus_is_not_the_plan_while_a_nexus_tower_stands() {
+    let mut runtime = open_nexus_world(5, 5);
+    runtime.structures.push(test_structure("red-nexus-top-tower", "red", "base", Vec2 { x: 0.82, y: 0.18 }));
+
+    assert!(!blue_plan(&mut runtime).ending, "the team went for a nexus that cannot be hit");
+}
+
+#[test]
+fn the_team_gathers_at_the_rally_point_before_it_goes_in() {
+    let mut runtime = open_nexus_world(5, 5);
+    team_push::update_team_pushes(&mut runtime);
+    let order = team_push::orders(&runtime)[0].clone().expect("an order");
+
+    let rally = order.rally.expect("the team goes to the rally point first");
+    assert!(dist(rally, order.structure_pos) > 0.2, "the rally point is at the nexus");
+
+    // Four of them are there: the team goes in.
+    for champion in runtime.champions.iter_mut().take(4) {
+        champion.pos = rally;
+    }
+    team_push::update_team_pushes(&mut runtime);
+    let order = team_push::orders(&runtime)[0].clone().expect("an order");
+    assert!(order.rally.is_none(), "the team stayed at the rally point with four there");
 }
