@@ -4091,7 +4091,34 @@
     "tagCost": "custo",
     "block": "Bloco",
     "blockOfTwo": "{{label}} de 2",
-    "weekContext": "Contexto da semana"
+    "weekContext": "Contexto da semana",
+    "effect": {
+      "morale": "Moral {{delta}}",
+      "condition": "Condição {{delta}}",
+      "quality": "Qualidade do relatório {{delta}}",
+      "severity": "Gravidade {{delta}}",
+      "severityLabel": "Gravidade",
+      "players": "Jogadores escolhidos: {{changes}}",
+      "playersLabel": "Jogadores escolhidos",
+      "severeLoss": "Uma derrota grave custa mais aos jogadores.",
+      "cancelsNext": "Cancela o bloco {{label}}. Rep. de scrims {{rep}}, cancelamentos +{{count}}.",
+      "cancelStep": "Ainda não aplica nada. Qualquer sequência cancela o bloco {{label}}: rep. de scrims {{rep}}, cancelamentos +{{count}}.",
+      "playsNext": "O bloco {{label}} é jogado agora. O relatório aguarda sua decisão.",
+      "closesDay": "O dia fecha depois desta decisão."
+    },
+    "result": {
+      "blockTwoPlayed": "O bloco 2 foi jogado. O relatório aguarda sua decisão.",
+      "nextReportLater": "O relatório do próximo bloco chega no próximo avanço.",
+      "blockCancelled": "O bloco B foi cancelado. Continuar avança o dia.",
+      "dayClosed": "O dia está encerrado. Continuar avança o dia.",
+      "cancelled": "Cancelado",
+      "playedWaiting": "Jogado, relatório pendente",
+      "blockLabel": "Bloco {{label}}"
+    },
+    "backToBlockDecision": "Voltar para a decisão do bloco",
+    "whatChanged": "O que mudou",
+    "costMark": "Custo",
+    "repGhostNote": "Marca tracejada: {{value}} depois de qualquer sequência."
   },
   "market": {
     "title": "Mercado de Transferências",

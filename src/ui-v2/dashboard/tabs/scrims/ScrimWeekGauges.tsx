@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { WeeklyScrimContext } from "@/lib/scrims/scrimContext";
@@ -7,6 +7,11 @@ import { cn } from "@/ui-v2/lib/utils";
 
 interface ScrimWeekGaugesProps {
   week: WeeklyScrimContext;
+  /**
+   * The reputation the club will have once a step the manager has already taken is applied (the
+   * follow-up of Cancel scrims). It is marked on the track; nothing is marked before that choice.
+   */
+  ghostReputation?: number | null;
 }
 
 function GaugeRow({ title, value, children }: { title: string; value: ReactNode; children: ReactNode }) {
@@ -22,10 +27,13 @@ function GaugeRow({ title, value, children }: { title: string; value: ReactNode;
 }
 
 /** The week at a glance: slots planned, the record with its results, and the scrim reputation. */
-export function ScrimWeekGauges({ week }: ScrimWeekGaugesProps) {
+export function ScrimWeekGauges({ week, ghostReputation = null }: ScrimWeekGaugesProps) {
   const { t } = useTranslation();
+  const noteId = useId();
   const results = [...week.latestReports].reverse();
   const repPercent = Math.min(100, Math.max(0, week.reputation));
+  const ghost = ghostReputation != null && ghostReputation !== week.reputation ? ghostReputation : null;
+  const ghostPercent = ghost != null ? Math.min(100, Math.max(0, ghost)) : 0;
 
   return (
     <section
@@ -91,11 +99,22 @@ export function ScrimWeekGauges({ week }: ScrimWeekGaugesProps) {
           aria-valuemax={100}
           aria-valuenow={repPercent}
           aria-valuetext={String(week.reputation)}
+          aria-describedby={noteId}
           className="relative h-2.5 rounded-[5px] border border-dim bg-muted"
         >
           <div className="absolute inset-y-0 start-0 rounded-s-[4px] bg-foreground" style={{ width: `${repPercent}%` }} />
+          {ghost != null ? (
+            <div
+              data-slot="scrim-rep-ghost"
+              aria-hidden="true"
+              className="absolute -inset-y-1 w-0 border-s-2 border-dashed border-warning"
+              style={{ insetInlineStart: `${ghostPercent}%` }}
+            />
+          ) : null}
         </div>
-        <p className="text-caption text-muted-foreground">{t("scrims.repNote")}</p>
+        <p id={noteId} className="text-caption text-muted-foreground">
+          {ghost != null ? t("scrims.repGhostNote", { value: ghost }) : t("scrims.repNote")}
+        </p>
       </GaugeRow>
 
       <dl className="grid grid-cols-2 gap-3 border-t border-line pt-3.5">
@@ -113,7 +132,7 @@ export function ScrimWeekGauges({ week }: ScrimWeekGaugesProps) {
             <dd className="font-semibold tabular-nums">Q: {week.avgQuality}</dd>
           </div>
         ) : null}
-        {week.lossStreak > 1 ? (
+        {week.lossStreak > 0 ? (
           <div className="flex flex-col gap-0.5">
             <dt className="text-caption text-muted-foreground">{t("scrims.streaks")}</dt>
             <dd>

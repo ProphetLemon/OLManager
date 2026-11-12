@@ -741,7 +741,34 @@
     "tagCost": "cost",
     "block": "Block",
     "blockOfTwo": "{{label}} of 2",
-    "weekContext": "Week context"
+    "weekContext": "Week context",
+    "effect": {
+      "morale": "Morale {{delta}}",
+      "condition": "Condition {{delta}}",
+      "quality": "Report quality {{delta}}",
+      "severity": "Severity {{delta}}",
+      "severityLabel": "Severity",
+      "players": "Picked players: {{changes}}",
+      "playersLabel": "Picked players",
+      "severeLoss": "A severe loss costs the players more.",
+      "cancelsNext": "Cancels block {{label}}. Scrim rep {{rep}}, cancellations +{{count}}.",
+      "cancelStep": "Applies nothing yet. Any follow-up cancels block {{label}}: scrim rep {{rep}}, cancellations +{{count}}.",
+      "playsNext": "Block {{label}} plays now. Its report waits for your decision.",
+      "closesDay": "The day closes after this decision."
+    },
+    "result": {
+      "blockTwoPlayed": "Block 2 was played. Its report is waiting for your decision.",
+      "nextReportLater": "The report of the next block comes with the next advance.",
+      "blockCancelled": "Block B was cancelled. Continue advances the day.",
+      "dayClosed": "The day is closed. Continue advances the day.",
+      "cancelled": "Cancelled",
+      "playedWaiting": "Played, report waiting",
+      "blockLabel": "Block {{label}}"
+    },
+    "backToBlockDecision": "Back to block decision",
+    "whatChanged": "What changed",
+    "costMark": "Cost",
+    "repGhostNote": "Dashed mark: {{value}} after any follow-up."
   },
   "season": {
     "preseasonStatus": "Preseason Status",

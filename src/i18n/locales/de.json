@@ -4091,7 +4091,34 @@
     "tagCost": "Kosten",
     "block": "Block",
     "blockOfTwo": "{{label}} von 2",
-    "weekContext": "Wochenübersicht"
+    "weekContext": "Wochenübersicht",
+    "effect": {
+      "morale": "Moral {{delta}}",
+      "condition": "Kondition {{delta}}",
+      "quality": "Berichtsqualität {{delta}}",
+      "severity": "Schwere {{delta}}",
+      "severityLabel": "Schwere",
+      "players": "Eingesetzte Spieler: {{changes}}",
+      "playersLabel": "Eingesetzte Spieler",
+      "severeLoss": "Eine schwere Niederlage kostet die Spieler mehr.",
+      "cancelsNext": "Sagt Block {{label}} ab. Scrim-Ruf {{rep}}, Absagen +{{count}}.",
+      "cancelStep": "Wirkt noch nicht. Jede Folgemaßnahme sagt Block {{label}} ab: Scrim-Ruf {{rep}}, Absagen +{{count}}.",
+      "playsNext": "Block {{label}} wird jetzt gespielt. Sein Bericht wartet auf deine Entscheidung.",
+      "closesDay": "Der Tag endet nach dieser Entscheidung."
+    },
+    "result": {
+      "blockTwoPlayed": "Block 2 wurde gespielt. Sein Bericht wartet auf deine Entscheidung.",
+      "nextReportLater": "Der Bericht des nächsten Blocks kommt beim nächsten Vorrücken.",
+      "blockCancelled": "Block B wurde abgesagt. „Weiter“ rückt den Tag vor.",
+      "dayClosed": "Der Tag ist abgeschlossen. „Weiter“ rückt den Tag vor.",
+      "cancelled": "Abgesagt",
+      "playedWaiting": "Gespielt, Bericht wartet",
+      "blockLabel": "Block {{label}}"
+    },
+    "backToBlockDecision": "Zurück zur Blockentscheidung",
+    "whatChanged": "Was sich geändert hat",
+    "costMark": "Kosten",
+    "repGhostNote": "Gestrichelte Markierung: {{value}} nach jeder Folgemaßnahme."
   },
   "market": {
     "title": "Transfermarkt",

@@ -4082,7 +4082,34 @@
     "tagCost": "maliyet",
     "block": "Blok",
     "blockOfTwo": "{{label}} / 2",
-    "weekContext": "Hafta bağlamı"
+    "weekContext": "Hafta bağlamı",
+    "effect": {
+      "morale": "Moral {{delta}}",
+      "condition": "Kondisyon {{delta}}",
+      "quality": "Rapor kalitesi {{delta}}",
+      "severity": "Şiddet {{delta}}",
+      "severityLabel": "Şiddet",
+      "players": "Seçilen oyuncular: {{changes}}",
+      "playersLabel": "Seçilen oyuncular",
+      "severeLoss": "Ağır bir yenilgi oyunculara daha pahalıya mal olur.",
+      "cancelsNext": "{{label}} bloğunu iptal eder. Scrim itibarı {{rep}}, iptaller +{{count}}.",
+      "cancelStep": "Henüz bir şey uygulamaz. Her devam adımı {{label}} bloğunu iptal eder: scrim itibarı {{rep}}, iptaller +{{count}}.",
+      "playsNext": "{{label}} bloğu şimdi oynanır. Raporu kararını bekler.",
+      "closesDay": "Bu karardan sonra gün kapanır."
+    },
+    "result": {
+      "blockTwoPlayed": "2. blok oynandı. Raporu kararını bekliyor.",
+      "nextReportLater": "Sonraki bloğun raporu bir sonraki ilerlemeyle gelir.",
+      "blockCancelled": "B bloğu iptal edildi. Devam, günü ilerletir.",
+      "dayClosed": "Gün kapandı. Devam, günü ilerletir.",
+      "cancelled": "İptal edildi",
+      "playedWaiting": "Oynandı, rapor bekliyor",
+      "blockLabel": "{{label}} bloğu"
+    },
+    "backToBlockDecision": "Blok kararına dön",
+    "whatChanged": "Neler değişti",
+    "costMark": "Maliyet",
+    "repGhostNote": "Kesik çizgili işaret: her devam adımından sonra {{value}}."
   },
   "updater": {
     "title": "Update Available",

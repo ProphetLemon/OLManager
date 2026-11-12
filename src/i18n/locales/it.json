@@ -3890,7 +3890,34 @@
     "tagCost": "costo",
     "block": "Blocco",
     "blockOfTwo": "{{label}} su 2",
-    "weekContext": "Contesto della settimana"
+    "weekContext": "Contesto della settimana",
+    "effect": {
+      "morale": "Morale {{delta}}",
+      "condition": "Condizione {{delta}}",
+      "quality": "Qualità del report {{delta}}",
+      "severity": "Gravità {{delta}}",
+      "severityLabel": "Gravità",
+      "players": "Giocatori schierati: {{changes}}",
+      "playersLabel": "Giocatori schierati",
+      "severeLoss": "Una sconfitta grave costa di più ai giocatori.",
+      "cancelsNext": "Annulla il blocco {{label}}. Rep. scrim {{rep}}, annullamenti +{{count}}.",
+      "cancelStep": "Per ora non applica nulla. Qualsiasi seguito annulla il blocco {{label}}: rep. scrim {{rep}}, annullamenti +{{count}}.",
+      "playsNext": "Il blocco {{label}} si gioca ora. Il suo report attende la tua decisione.",
+      "closesDay": "La giornata si chiude dopo questa decisione."
+    },
+    "result": {
+      "blockTwoPlayed": "Il blocco 2 è stato giocato. Il suo report attende la tua decisione.",
+      "nextReportLater": "Il report del blocco successivo arriva con il prossimo avanzamento.",
+      "blockCancelled": "Il blocco B è stato annullato. Continua fa avanzare la giornata.",
+      "dayClosed": "La giornata è chiusa. Continua fa avanzare la giornata.",
+      "cancelled": "Annullato",
+      "playedWaiting": "Giocato, report in attesa",
+      "blockLabel": "Blocco {{label}}"
+    },
+    "backToBlockDecision": "Torna alla decisione del blocco",
+    "whatChanged": "Cosa è cambiato",
+    "costMark": "Costo",
+    "repGhostNote": "Segno tratteggiato: {{value}} dopo qualsiasi seguito."
   },
   "content": {
     "lol": {

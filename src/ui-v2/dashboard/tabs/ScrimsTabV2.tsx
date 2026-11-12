@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
 
@@ -8,6 +8,7 @@ import {
   buildScrimPlanSignals as deriveScrimPlanSignals,
   deriveDailyScrimBlockMeta,
   deriveTodayScrimContext,
+  dateKey,
   deriveWeeklyScrimContext,
   effectiveWeeklyScrimSlots,
   teamLolOvr,
@@ -21,6 +22,8 @@ import {
   type DailyScrimAction,
 } from "@/services/trainingService";
 import { dailyScrimDecisionActions } from "@/lib/scrims/dailyDecisionActions";
+import { decisionEffectLines, NEXT_BLOCK_CANCELLATION, type DecisionEffectContext } from "@/lib/scrims/decisionEffects";
+import { buildDecisionResult, type DecisionResult } from "@/lib/scrims/decisionResult";
 import { deskPanel, riskLevel, type RiskLevel } from "@/lib/scrims/scrimDesk";
 import { nextPlanningMonday, scrimSetupBlockedKey } from "@/lib/scrims/setupLock";
 import { formatDate } from "@/lib/formatting/dateFormatting";
@@ -29,6 +32,7 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { Button } from "@/ui-v2/components/ui/button";
 import { ScrimDeskPanel } from "./scrims/ScrimDeskPanel";
 import { ScrimDecisionPanel } from "./scrims/ScrimDecisionPanel";
+import { ScrimDecisionResult } from "./scrims/ScrimDecisionResult";
 import { ScrimSetupPanel } from "./scrims/ScrimSetupPanel";
 import { ScrimSetupRecap } from "./scrims/ScrimSetupRecap";
 import { ScrimStaffSuggestions } from "./scrims/ScrimStaffSuggestions";
@@ -70,12 +74,20 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   const { settings, updateSettings } = useSettingsStore();
   const [isSaving, setIsSaving] = useState(false);
   const [decisionSaving, setDecisionSaving] = useState<DailyScrimAction | null>(null);
-  const [decisionFeedback, setDecisionFeedback] = useState<string | null>(null);
+  const [statusText, setStatusText] = useState("");
+  const [lastResult, setLastResult] = useState<{ date: string; value: DecisionResult } | null>(null);
+  const [focusTick, setFocusTick] = useState(0);
   const [showCancelFollowups, setShowCancelFollowups] = useState(false);
   const remoteScrimContext = useScrimContextWithFallback(gameState);
   const headingId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const myTeam = gameState.teams.find((team) => team.id === gameState.manager.team_id);
+
+  // After a decision lands the focus goes to the heading of the wide column, which survives the
+  // change of body: the card that had it is gone.
+  useEffect(() => {
+    if (focusTick > 0) headingRef.current?.focus();
+  }, [focusTick]);
 
   if (!myTeam) {
     return (
@@ -142,15 +154,27 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   const isFirstBlock = dailyBlockMeta?.blockNumber === 1;
   const panel = deskPanel(todayContext, weeklyContext);
 
-  const decisionOptions = todayContext.report
+  const decisionReport = todayContext.report;
+  const decisionContext: DecisionEffectContext | null = decisionReport
+    ? {
+        isFirstBlock,
+        report: decisionReport,
+        lossStreak: weeklyContext.lossStreak,
+        ownReputation: weeklyContext.reputation,
+        opponentReputation: gameState.teams.find((team) => team.id === decisionReport.opponent_team_id)?.scrim_reputation ?? 50,
+        nextBlockLabel: isFirstBlock ? "B" : null,
+      }
+    : null;
+  const decisionOptions = decisionReport && decisionContext
     ? dailyScrimDecisionActions({
         isFirstBlock,
-        won: Boolean(todayContext.report.won),
+        won: Boolean(decisionReport.won),
         showCancelFollowups,
       }).map((id) => ({
         id,
         label: t(`scrims.decision.${DECISION_TEXT_KEY[id]}`),
         description: t(`scrims.decision.${DECISION_TEXT_KEY[id]}Desc`),
+        effects: decisionEffectLines(id, decisionContext),
       }))
     : [];
 
@@ -179,18 +203,64 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   };
 
   const handleReviewDecision = async (decision: DailyScrimAction) => {
-    if (!todayContext.report) return;
-    if (decision === "CancelScrims") { setShowCancelFollowups(true); setDecisionFeedback(t("scrims.cancelFollowupPrompt")); return; }
+    if (!decisionReport || !decisionContext) return;
+    if (decision === "CancelScrims") {
+      setShowCancelFollowups(true);
+      setLastResult(null);
+      setStatusText(t("scrims.cancelFollowupPrompt"));
+      setFocusTick((tick) => tick + 1);
+      return;
+    }
+    const effectLines = decisionEffectLines(decision, decisionContext);
+    const before = {
+      quality: decisionReport.quality,
+      severity: decisionReport.severity,
+      reputation: weeklyContext.reputation,
+      cancellations: weeklyContext.cancellations,
+    };
     setDecisionSaving(decision);
-    setDecisionFeedback(null);
+    setStatusText("");
     try {
-      const updated = await chooseDailyScrimAction(todayContext.report.slot_index, decision);
+      const updated = await chooseDailyScrimAction(decisionReport.slot_index, decision);
+      const updatedTeam = updated.teams?.find((team) => team.id === myTeam.id);
+      const updatedReport = updatedTeam?.scrim_reports?.find(
+        (entry) => entry.date === decisionReport.date && entry.slot_index === decisionReport.slot_index,
+      );
+      const playerLine = effectLines.find((line) => line.kind === "players");
+      const value = buildDecisionResult({
+        action: decision,
+        isFirstBlock,
+        before,
+        after: {
+          quality: updatedReport?.quality ?? before.quality,
+          severity: updatedReport?.severity ?? before.severity,
+          reputation: updatedTeam?.scrim_reputation ?? before.reputation,
+          cancellations: updatedTeam?.scrim_weekly_cancellations ?? before.cancellations,
+        },
+        players: playerLine?.kind === "players" ? playerLine : { morale: 0, condition: 0 },
+        nextBlockLabel: decisionContext.nextBlockLabel,
+        nextReportWaiting: Boolean(
+          updatedTeam?.scrim_reports?.some(
+            (entry) => entry.date === decisionReport.date && entry.slot_index === decisionReport.slot_index + 1 && entry.post_decision == null,
+          ),
+        ),
+      });
       onGameUpdate(updated);
-      setDecisionFeedback(t("scrims.reviewDecisionApplied"));
+      setLastResult({ date: dateKey(gameState.clock.current_date), value });
+      setStatusText(`${t("scrims.reviewDecisionApplied")}: ${t(`scrims.decision.${DECISION_TEXT_KEY[decision]}`)}`);
       setShowCancelFollowups(false);
+      setFocusTick((tick) => tick + 1);
     } catch (e) { console.error(e); }
     finally { setDecisionSaving(null); }
   };
+
+  const handleBackToBlockDecision = () => {
+    setShowCancelFollowups(false);
+    setStatusText("");
+    setFocusTick((tick) => tick + 1);
+  };
+
+  const result = lastResult && lastResult.date === dateKey(gameState.clock.current_date) ? lastResult.value : null;
 
   // ── The wide column ──
   const panelTitle = panel === "decision"
@@ -275,16 +345,14 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
                 report={todayContext.report}
                 slotLabel={slotLabelOf(weeklyContext.slots[todayContext.report.slot_index])}
                 blockLabel={dailyBlockMeta?.blockLabel ?? null}
-                prompt={showCancelFollowups ? t("scrims.cancelFollowupPrompt") : null}
                 options={decisionOptions}
                 savingId={decisionSaving}
                 onDecide={handleReviewDecision}
+                onBack={showCancelFollowups ? handleBackToBlockDecision : null}
               />
             ) : null}
           </ScrimDeskPanel>
-          {decisionFeedback ? (
-            <p aria-live="polite" className="rounded-lg border border-line bg-card px-3.5 py-2.5 text-sm font-medium">{decisionFeedback}</p>
-          ) : null}
+          <ScrimDecisionResult result={result} statusText={statusText} />
           {panel !== "setup" ? (
             <ScrimSetupRecap
               key={panel}
@@ -297,7 +365,10 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
         </main>
 
         <aside aria-label={t("scrims.weekContext")} className="flex min-w-0 max-w-[26.25rem] flex-[1_1_21.25rem] flex-col gap-5">
-          <ScrimWeekGauges week={weeklyContext} />
+          <ScrimWeekGauges
+            week={weeklyContext}
+            ghostReputation={panel === "decision" && showCancelFollowups ? Math.max(0, weeklyContext.reputation + NEXT_BLOCK_CANCELLATION.reputation) : null}
+          />
           <ScrimStaffSuggestions suggestions={staffSuggestions} />
         </aside>
       </div>

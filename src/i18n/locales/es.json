@@ -741,7 +741,34 @@
     "tagCost": "coste",
     "block": "Bloque",
     "blockOfTwo": "{{label}} de 2",
-    "weekContext": "Contexto de la semana"
+    "weekContext": "Contexto de la semana",
+    "effect": {
+      "morale": "Moral {{delta}}",
+      "condition": "Energía {{delta}}",
+      "quality": "Calidad del informe {{delta}}",
+      "severity": "Gravedad {{delta}}",
+      "severityLabel": "Gravedad",
+      "players": "Jugadores elegidos: {{changes}}",
+      "playersLabel": "Jugadores elegidos",
+      "severeLoss": "Una derrota grave cuesta más a los jugadores.",
+      "cancelsNext": "Cancela el bloque {{label}}. Rep scrims {{rep}}, cancelaciones +{{count}}.",
+      "cancelStep": "Todavía no aplica nada. Cualquier seguimiento cancela el bloque {{label}}: rep scrims {{rep}}, cancelaciones +{{count}}.",
+      "playsNext": "El bloque {{label}} se juega ahora. Su informe espera tu decisión.",
+      "closesDay": "El día se cierra tras esta decisión."
+    },
+    "result": {
+      "blockTwoPlayed": "Se jugó el bloque 2. Su informe espera tu decisión.",
+      "nextReportLater": "El informe del siguiente bloque llega con el siguiente avance.",
+      "blockCancelled": "Se canceló el bloque B. Continuar avanza el día.",
+      "dayClosed": "El día está cerrado. Continuar avanza el día.",
+      "cancelled": "Cancelado",
+      "playedWaiting": "Jugado, informe pendiente",
+      "blockLabel": "Bloque {{label}}"
+    },
+    "backToBlockDecision": "Volver a la decisión del bloque",
+    "whatChanged": "Qué ha cambiado",
+    "costMark": "Coste",
+    "repGhostNote": "Marca discontinua: {{value}} tras cualquier seguimiento."
   },
   "season": {
     "preseasonStatus": "Estado de la pretemporada",

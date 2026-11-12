@@ -4091,7 +4091,34 @@
     "tagCost": "coût",
     "block": "Bloc",
     "blockOfTwo": "{{label}} sur 2",
-    "weekContext": "Contexte de la semaine"
+    "weekContext": "Contexte de la semaine",
+    "effect": {
+      "morale": "Moral {{delta}}",
+      "condition": "Condition {{delta}}",
+      "quality": "Qualité du rapport {{delta}}",
+      "severity": "Gravité {{delta}}",
+      "severityLabel": "Gravité",
+      "players": "Joueurs alignés : {{changes}}",
+      "playersLabel": "Joueurs alignés",
+      "severeLoss": "Une défaite sévère coûte davantage aux joueurs.",
+      "cancelsNext": "Annule le bloc {{label}}. Rép. scrims {{rep}}, annulations +{{count}}.",
+      "cancelStep": "N'applique rien pour l'instant. Toute suite annule le bloc {{label}} : rép. scrims {{rep}}, annulations +{{count}}.",
+      "playsNext": "Le bloc {{label}} se joue maintenant. Son rapport attend votre décision.",
+      "closesDay": "La journée se termine après cette décision."
+    },
+    "result": {
+      "blockTwoPlayed": "Le bloc 2 a été joué. Son rapport attend votre décision.",
+      "nextReportLater": "Le rapport du bloc suivant arrive à la prochaine avancée.",
+      "blockCancelled": "Le bloc B a été annulé. Continuer fait avancer la journée.",
+      "dayClosed": "La journée est terminée. Continuer fait avancer la journée.",
+      "cancelled": "Annulé",
+      "playedWaiting": "Joué, rapport en attente",
+      "blockLabel": "Bloc {{label}}"
+    },
+    "backToBlockDecision": "Retour à la décision du bloc",
+    "whatChanged": "Ce qui a changé",
+    "costMark": "Coût",
+    "repGhostNote": "Repère pointillé : {{value}} après toute suite."
   },
   "market": {
     "title": "Marché des Transferts",

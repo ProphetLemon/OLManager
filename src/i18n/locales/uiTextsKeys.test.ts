@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { DECISION_IMPACT_TAGS } from "../../lib/scrims/decisionTags";
+import { SCRIM_ISSUE_KEYS } from "../../lib/scrims/scrimFocusKeys";
 import de from "./de.json";
 import en from "./en.json";
 import es from "./es.json";
@@ -138,6 +139,9 @@ describe("Scrims tab keys", () => {
     "scrims.block": ["de"],
     "scrims.impactLabel": ["fr"],
     "scrims.reportFocus": ["it"],
+    "scrims.effect.condition": ["fr"],
+    "scrims.effect.morale": ["it"],
+    "scrims.result.blockLabel": ["de"],
     "scrims.tags.fatigueMinus": ["fr"],
     "scrims.tags.fatiguePlus": ["fr"],
     "scrims.tags.mentalMinus": ["de", "es", "fr", "pt", "pt-BR"],
@@ -171,6 +175,25 @@ describe("Scrims tab keys", () => {
 
   it("translates the slot statuses the strip and the plans table build from the game's status", () => {
     expectTranslated(["open", "locked", "played", "reviewed", "cancelled"].map((status) => `scrims.slotStatus.${status}`));
+  });
+
+  it("translates what a decision changed and the sentence that closes the confirmation", () => {
+    expectTranslated(
+      [
+        ...["blockTwoPlayed", "nextReportLater", "blockCancelled", "dayClosed", "cancelled", "playedWaiting", "blockLabel"].map(
+          (key) => `scrims.result.${key}`,
+        ),
+        "scrims.effect.severityLabel",
+      ],
+      { "scrims.result.blockLabel": ["de"] },
+    );
+  });
+
+  it("names every issue a scrim report can detect in every locale", () => {
+    expect(Object.keys(SCRIM_ISSUE_KEYS)).toHaveLength(6);
+    expectTranslated(Object.values(SCRIM_ISSUE_KEYS), {
+      "be.msg.scrimWeekly.issues.tilt": ["de", "es", "fr", "it", "pt", "pt-BR", "tr"],
+    });
   });
 
   it("translates the risk levels, the focus impact texts and the other keys the tab builds or added", () => {

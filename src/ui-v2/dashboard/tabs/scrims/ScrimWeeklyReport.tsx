@@ -39,7 +39,7 @@ export function ScrimWeeklyReport({ week, teamNameById }: ScrimWeeklyReportProps
                 <dd className="font-medium tabular-nums">Q: {week.avgQuality}</dd>
               </div>
             ) : null}
-            {week.lossStreak > 1 ? (
+            {week.lossStreak > 0 ? (
               <div className="flex flex-col gap-0.5">
                 <dt className="text-caption text-muted-foreground">{t("scrims.streaks")}</dt>
                 <dd className="font-medium">{t("scrims.lossStreak", { count: week.lossStreak })}</dd>
