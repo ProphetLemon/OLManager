@@ -60,6 +60,10 @@ function ItemSlot({ itemKey, name }: { itemKey: string; name: string }) {
  * pressing it follows this player on the map. The cards are the keyboard and screen-reader way
  * into the map, so the accessible name is short and everything else sits in a description
  * the button points at. No mana bar: the engine has no mana.
+ *
+ * Its height never depends on what the player owns: the six item slots and the cooldown strip
+ * are always there (empty ones are dashed boxes), each row has a fixed height and nothing wraps,
+ * so a purchase or a cooldown that starts cannot make the five cards outgrow their column.
  */
 export const LivePlayerCard = memo(function LivePlayerCard({
   champion,
@@ -197,6 +201,9 @@ export const LivePlayerCard = memo(function LivePlayerCard({
             {gapText}
           </span>
         ) : null}
+        <span className="arena-card-state" data-testid="card-state">
+          {stateText}
+        </span>
       </span>
       <span className="arena-card-gear">
         <span className="arena-card-items">
@@ -221,9 +228,6 @@ export const LivePlayerCard = memo(function LivePlayerCard({
               {chip.seconds > 0 ? `${chip.letter} ${chip.seconds}` : chip.letter}
             </span>
           ))}
-        </span>
-        <span className="arena-card-state" data-testid="card-state">
-          {stateText}
         </span>
       </span>
     </button>

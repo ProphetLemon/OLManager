@@ -1007,8 +1007,12 @@
 }
 
 /* ── Player cards ────────────────────────────────────────────────────────
-   One native button per player: three rows (who, health and gold gap, gear and state), mirrored
-   for red. Items and cooldowns share a wrapping row so a card stays three rows at 336 px.
+   One native button per player: three rows (who; health, gold gap and state; items and
+   cooldowns), mirrored for red. Every row has a fixed height and nothing wraps, so a card is
+   as tall on minute 0 as on minute 40: the six item slots and the cooldown strip are there from
+   the start, and buying an item or starting a cooldown changes what is inside a slot, never the
+   height of the card. When the column is too narrow for items and cooldowns on one line, the
+   cooldowns take a line of their own in every card (a width rule, never a content one).
    The followed player is told by a thicker ring and a bar on the outer edge, not only by hue;
    a dead player has a dashed outline and its respawn seconds on the portrait. */
 
@@ -1016,12 +1020,12 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 4px;
+  gap: 3px;
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
   min-height: 0;
-  padding: 6px 10px;
+  padding: 4px 10px;
   border: 1px solid var(--line);
   border-radius: 0.5rem;
   background: var(--card);
@@ -1178,11 +1182,16 @@
   white-space: nowrap;
 }
 
+.arena-card-vitals {
+  flex: none;
+  block-size: 1.125rem;
+}
+
 .arena-card-hp {
   position: relative;
   flex: 1;
   height: 0.5rem;
-  min-width: 2rem;
+  min-width: 1rem;
   border: 1px solid var(--line);
   background: var(--rail);
 }
@@ -1198,19 +1207,23 @@
 }
 
 .arena-card-hptext {
+  flex: none;
   font-size: var(--text-caption);
   font-variant-numeric: tabular-nums;
+  line-height: 1.25;
   white-space: nowrap;
 }
 
 /* The gap carries its sign in text: +, − or the word for even. */
 .arena-card-gap {
+  flex: none;
   padding: 0 0.375rem;
   border: 1px solid var(--line);
   border-radius: 3px;
   font-size: var(--text-caption);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+  line-height: 1.25;
   white-space: nowrap;
 }
 
@@ -1222,24 +1235,40 @@
   border-style: dashed;
 }
 
+/* Items on the near side, cooldowns on what is left. No wrap, a fixed height, and a strip that
+   clips before it ever grows the card. */
 .arena-card-gear {
-  flex-wrap: wrap;
-  row-gap: 4px;
+  flex: none;
+  flex-wrap: nowrap;
+  block-size: 1.375rem;
 }
 
-.arena-card-items,
-.arena-card-cds {
+.arena-card-items {
   display: inline-flex;
+  flex: none;
   gap: 2px;
+}
+
+.arena-card-cds {
+  display: flex;
+  flex: 1 1 0;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.arena-card[data-team="red"] .arena-card-cds {
+  justify-content: flex-end;
 }
 
 .arena-item {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.375rem;
+  height: 1.375rem;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 3px;
@@ -1262,7 +1291,8 @@
 
 /* Ready: solid, the letter alone. Cooling down: dashed, the letter and the seconds. */
 .arena-cd {
-  padding: 0 0.375rem;
+  flex: none;
+  padding: 0 0.25rem;
   border: 1px dashed var(--dim);
   border-radius: 3px;
   color: var(--dim);
@@ -1270,7 +1300,7 @@
   font-size: var(--text-caption);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 1.25;
   white-space: nowrap;
 }
 
@@ -1280,14 +1310,18 @@
   color: var(--foreground);
 }
 
+/* The state sits on the health row, so the gear row never has to share its width with it. */
 .arena-card-state {
-  margin-inline-start: auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
   padding: 0 0.5rem;
   border: 1px solid var(--foreground);
   border-radius: 3px;
   font-size: var(--text-caption);
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 1.25;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1300,9 +1334,24 @@
   border-width: 3px;
 }
 
-.arena-card[data-team="red"] .arena-card-state {
-  margin-inline-start: 0;
-  margin-inline-end: auto;
+/* Too narrow for items and cooldowns side by side: two fixed lines, the same in every card. */
+@container side (max-width: 21rem) {
+  .arena-card[data-team] .arena-card-gear {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    block-size: calc(1.375rem + 3px + 1.0625rem);
+  }
+
+  .arena-card[data-team="red"] .arena-card-gear {
+    align-items: flex-end;
+  }
+
+  .arena-card-cds {
+    flex: none;
+    align-self: stretch;
+    block-size: 1.0625rem;
+  }
 }
 
 /* ── Event ticker ────────────────────────────────────────────────────────
@@ -1796,7 +1845,13 @@
    have fixed heights (--live-bar, --live-dock, --live-ctl), which is what --live-rows adds up.
    The cap on the map's height applies at every width. The source order is the reading order:
    bar, map, feed and caption, controls, then the blue and the red cards; the areas only move
-   them. No script decides the layout. */
+   them. No script decides the layout.
+
+   Where the three columns fit, the shell is exactly as tall as the room the app leaves (never
+   less than the rows plus the smallest map), and the row of the map is a bounded `1fr`, so the
+   height of a row comes from the window and never from what is inside the card columns. A column
+   that needs more than that scrolls inside itself; the page does not. Below 1240px the cards
+   are under the map and the one scroll root does the scrolling. */
 
 .live-match {
   --live-bar: 3.5rem;
@@ -1822,13 +1877,14 @@
   --map-side: min(41.25rem, max(20rem, calc(100cqh - var(--live-rows))));
   box-sizing: border-box;
   display: grid;
-  min-height: 100%;
+  height: 100%;
+  min-height: calc(var(--live-rows) + 20rem);
   max-width: 90rem;
   margin-inline: auto;
   padding: var(--live-pad) 1.25rem;
   gap: var(--live-gap) 0.75rem;
   grid-template-columns: minmax(0, 1fr) var(--map-side) minmax(0, 1fr);
-  grid-template-rows: var(--live-bar) minmax(min-content, 1fr) var(--live-dock) minmax(var(--live-ctl), auto);
+  grid-template-rows: var(--live-bar) minmax(0, 1fr) var(--live-dock) minmax(var(--live-ctl), auto);
   grid-template-areas:
     "bar bar bar"
     "blue map red"
@@ -1908,20 +1964,31 @@
   grid-area: red;
 }
 
+/* A card column is as tall as the map. Five cards share that height and none is squeezed below
+   what it needs; when the window leaves less, the column scrolls in place (the browser scrolls
+   it to a card that takes focus, and its scrollbar is the visible hint). The padding and the
+   matching negative margin keep the follow ring and the focus ring from being clipped. */
 .live-area-blue,
 .live-area-red {
   display: grid;
+  grid-template-rows: minmax(min-content, 1fr);
   min-width: 0;
   min-height: 0;
+  margin: -0.25rem;
+  padding: 0.25rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 0.25rem;
 }
 
-/* Five cards share the height of the map; none is squeezed below what it needs. */
 .live-side {
   display: grid;
   grid-template-rows: repeat(5, minmax(min-content, 1fr));
   gap: 0.375rem;
   min-width: 0;
   min-height: 0;
+  container-type: inline-size;
+  container-name: side;
 }
 
 .live-notice {
@@ -1968,6 +2035,8 @@
 @container live (max-width: 1239px) {
   .live-shell {
     --map-side: min(calc(100cqw - 2.5rem), 41.25rem, max(20rem, calc(100cqh - var(--live-rows))));
+    height: auto;
+    min-height: 100%;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: var(--live-bar) var(--map-side) var(--live-dock) minmax(var(--live-ctl), auto) auto;
     grid-template-areas:
@@ -1984,7 +2053,11 @@
 
   .live-area-blue,
   .live-area-red {
+    grid-template-rows: none;
     align-content: start;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
   }
 }
 

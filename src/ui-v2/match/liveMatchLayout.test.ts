@@ -36,7 +36,7 @@ describe("the screen has no script-decided layout", () => {
 describe("reading order", () => {
   it("writes the areas in the order a person reads them: bar, map, feed, controls, blue cards, red cards", () => {
     const order = ["live-area-bar", "live-area-map", "live-area-dock", "live-area-ctl", "live-area-blue", "live-area-red"].map((name) =>
-      screen.indexOf(`"${name}"`),
+      screen.indexOf(`"${name}`),
     );
     expect(order.every((at) => at > 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);

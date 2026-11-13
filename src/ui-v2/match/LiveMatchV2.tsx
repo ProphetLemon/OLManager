@@ -87,6 +87,8 @@ const EMPTY_STATE: LolSimV1RuntimeState = {
  *
  * The layout is plain CSS (see liveMatch.css). The map comes first in the source, then the
  * feed, the controls and the two teams' cards, so a phone reads in the order a person would.
+ * Where the cards sit beside the map the page never scrolls: a card column that needs more room
+ * than the window leaves scrolls on its own.
  * At the end the result waits behind a Continue button; only then does the match move on.
  */
 export default function LiveMatchV2({
@@ -306,8 +308,8 @@ export default function LiveMatchV2({
             ) : null}
           </div>
 
-          <div className="live-area-blue">{renderCards("blue", blue)}</div>
-          <div className="live-area-red">{renderCards("red", red)}</div>
+          <div className="live-area-blue scrollbar-v2">{renderCards("blue", blue)}</div>
+          <div className="live-area-red scrollbar-v2">{renderCards("red", red)}</div>
         </div>
       </div>
 
