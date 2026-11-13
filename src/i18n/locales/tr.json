@@ -2110,6 +2110,7 @@
     "exportWorldDesc": "Mevcut dünya verilerini paylaşılabilir bir JSON dosyası olarak kaydet",
     "export": "Dışa Aktar",
     "exportedTo": "Dışa aktarıldı: {{path}}",
+    "exportFailed": "Dünya dışa aktarılamadı: {{error}}",
     "clearSaves": "Tüm Kayıtları Temizle",
     "clearSavesDesc": "Tüm kayıtlı oyunları kalıcı olarak sil",
     "clear": "Temizle",

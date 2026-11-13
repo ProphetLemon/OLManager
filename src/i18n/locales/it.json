@@ -1946,6 +1946,7 @@
     "exportWorldDesc": "Salva i dati del mondo attuale come file JSON condivisibile",
     "export": "Esporta",
     "exportedTo": "Esportato in: {{path}}",
+    "exportFailed": "Impossibile esportare il mondo: {{error}}",
     "clearSaves": "Cancella tutti i salvataggi",
     "clearSavesDesc": "Elimina definitivamente tutte le partite salvate",
     "clear": "Cancella",

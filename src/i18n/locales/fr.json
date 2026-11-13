@@ -2110,6 +2110,7 @@
     "exportWorldDesc": "Sauvegarder les données du monde en fichier JSON partageable",
     "export": "Exporter",
     "exportedTo": "Exporté vers : {{path}}",
+    "exportFailed": "Impossible d'exporter le monde : {{error}}",
     "clearSaves": "Supprimer Toutes les Sauvegardes",
     "clearSavesDesc": "Supprimer définitivement toutes les parties sauvegardées",
     "clear": "Supprimer",

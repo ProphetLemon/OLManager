@@ -2358,6 +2358,7 @@
     "exportWorldDesc": "Guardar los datos del mundo como archivo JSON compartible",
     "export": "Exportar",
     "exportedTo": "Exportado a: {{path}}",
+    "exportFailed": "No se pudo exportar el mundo: {{error}}",
     "clearSaves": "Borrar Todos los Guardados",
     "clearSavesDesc": "Eliminar permanentemente todas las partidas guardadas",
     "clear": "Borrar",

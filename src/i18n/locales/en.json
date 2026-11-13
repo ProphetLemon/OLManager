@@ -2369,6 +2369,7 @@
     "exportWorldDesc": "Save the current world data as a shareable JSON file",
     "export": "Export",
     "exportedTo": "Exported to: {{path}}",
+    "exportFailed": "Could not export the world: {{error}}",
     "clearSaves": "Clear All Saves",
     "clearSavesDesc": "Permanently delete all saved games",
     "clear": "Clear",

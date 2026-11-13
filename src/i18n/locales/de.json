@@ -2110,6 +2110,7 @@
     "exportWorldDesc": "Aktuelle Weltdaten als teilbare JSON-Datei speichern",
     "export": "Exportieren",
     "exportedTo": "Exportiert nach: {{path}}",
+    "exportFailed": "Die Welt konnte nicht exportiert werden: {{error}}",
     "clearSaves": "Alle Speicherstände löschen",
     "clearSavesDesc": "Alle gespeicherten Spiele dauerhaft löschen",
     "clear": "Löschen",

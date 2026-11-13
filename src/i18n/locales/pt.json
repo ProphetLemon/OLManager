@@ -2109,6 +2109,7 @@
     "exportWorldDesc": "Guardar os dados do mundo como ficheiro JSON partilhável",
     "export": "Exportar",
     "exportedTo": "Exportado para: {{path}}",
+    "exportFailed": "Não foi possível exportar o mundo: {{error}}",
     "clearSaves": "Apagar Todos os Saves",
     "clearSavesDesc": "Eliminar permanentemente todos os jogos guardados",
     "clear": "Apagar",
