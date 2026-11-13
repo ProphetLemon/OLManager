@@ -44,6 +44,13 @@ export interface DraftResultSeriesGame {
 const TEAM_SEEDS: TeamSeed[] = [];
 const GOLD_CHART_CENTER_Y = 36;
 const GOLD_CHART_HALF_HEIGHT = 28;
+const GOLD_CHART_VIEWBOX_HEIGHT = 72;
+/** Where the three axis values sit on the chart: the top line, the zero line and the bottom line. */
+const GOLD_CHART_AXIS_ROWS = [
+  { key: "top", sign: "+", y: GOLD_CHART_CENTER_Y - GOLD_CHART_HALF_HEIGHT },
+  { key: "mid", sign: "", y: GOLD_CHART_CENTER_Y },
+  { key: "bottom", sign: "-", y: GOLD_CHART_CENTER_Y + GOLD_CHART_HALF_HEIGHT },
+] as const;
 
 type GoldDiffPoint = { minute: number; diff: number };
 
@@ -289,6 +296,10 @@ export default function DraftResultScreenV2({
   const damageText = (damage: number | undefined): string =>
     typeof damage === "number" && Number.isFinite(damage) ? compactGold(damage, i18n.language) : "-";
 
+  // Gold earned, as the live card writes it. Results stored before `spentGold` existed show their `gold`.
+  const goldText = (row: { gold: number; spentGold?: number }): string =>
+    compactGold(totalGold(row), i18n.language);
+
   const renderTimeline = () => {
     const sorted = [...selectedResult.timelineEvents].sort((a, b) => a.minute - b.minute);
     const rows: Array<{ minute: number; blue: typeof sorted; red: typeof sorted }> = [];
@@ -296,10 +307,6 @@ export default function DraftResultScreenV2({
       const last = rows[rows.length - 1];
       if (last && last.minute === event.minute) {
         if (event.side === "blue") last.blue.push(event);
-  // Gold earned, as the live card writes it. Results stored before `spentGold` existed show their `gold`.
-  const goldText = (row: { gold: number; spentGold?: number }): string =>
-    compactGold(totalGold(row), i18n.language);
-
         else last.red.push(event);
       } else {
         rows.push({ minute: event.minute, blue: event.side === "blue" ? [event] : [], red: event.side === "red" ? [event] : [] });
@@ -497,7 +504,20 @@ export default function DraftResultScreenV2({
                   <span className="text-muted-foreground">{blueTri}</span>
                   <span className="text-muted-foreground">+{formatGoldDiff(maxAbsGold)}</span>
                 </div>
-                <svg viewBox="0 0 100 72" className="h-40 w-full overflow-visible" role="img" aria-label={goldAxisLabel}>
+                {/* The axis values are HTML, not SVG text: SVG text scales with the viewBox (about 9 px here), HTML keeps the token size. */}
+                <div className="flex gap-1">
+                  <div className="relative h-40 w-12 shrink-0 text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground" aria-hidden="true" data-testid="gold-axis">
+                    {GOLD_CHART_AXIS_ROWS.map((row) => (
+                      <span
+                        key={row.key}
+                        className="absolute left-0 -translate-y-1/2 whitespace-nowrap leading-none"
+                        style={{ top: `${(row.y / GOLD_CHART_VIEWBOX_HEIGHT) * 100}%` }}
+                      >
+                        {row.sign}{row.key === "mid" ? "0" : formatGoldDiff(maxAbsGold)}
+                      </span>
+                    ))}
+                  </div>
+                <svg viewBox={`0 0 100 ${GOLD_CHART_VIEWBOX_HEIGHT}`} className="h-40 min-w-0 flex-1 overflow-visible" role="img" aria-label={goldAxisLabel}>
                   <defs>
                     <linearGradient id={`gold-line-${chartIdSuffix}`} x1="0" x2="0" y1="0" y2="1">
                       <stop offset="0%" stopColor="#67e8f9" />
@@ -514,7 +534,7 @@ export default function DraftResultScreenV2({
                       <rect x="0" y="0" width="100" height={GOLD_CHART_CENTER_Y} />
                     </clipPath>
                     <clipPath id={`gold-red-clip-${chartIdSuffix}`}>
-                      <rect x="0" y={GOLD_CHART_CENTER_Y} width="100" height={72 - GOLD_CHART_CENTER_Y} />
+                      <rect x="0" y={GOLD_CHART_CENTER_Y} width="100" height={GOLD_CHART_VIEWBOX_HEIGHT - GOLD_CHART_CENTER_Y} />
                     </clipPath>
                     <filter id={`gold-glow-${chartIdSuffix}`} x="-20%" y="-30%" width="140%" height="160%">
                       <feGaussianBlur stdDeviation="1.7" result="blur" />
@@ -530,9 +550,6 @@ export default function DraftResultScreenV2({
                     <line key={`gold-grid-${y}`} x1="6" y1={y} x2="94" y2={y} stroke="rgba(255,255,255,0.08)" strokeDasharray={y === 36 ? "0" : "2 3"} />
                   ))}
                   <line x1="6" y1="36" x2="94" y2="36" stroke="rgba(255,255,255,0.32)" strokeWidth="0.7" />
-                  <text x="2" y="11" fill="rgba(255,255,255,0.45)" fontSize="4">+{formatGoldDiff(maxAbsGold)}</text>
-                  <text x="2" y="37.5" fill="rgba(255,255,255,0.45)" fontSize="4">0</text>
-                  <text x="2" y="65" fill="rgba(255,255,255,0.45)" fontSize="4">-{formatGoldDiff(maxAbsGold)}</text>
 
                   {areaPath ? <path d={areaPath} fill={`url(#gold-area-${chartIdSuffix})`} /> : null}
                   {points ? (
@@ -570,6 +587,7 @@ export default function DraftResultScreenV2({
                     />
                   ) : null}
                 </svg>
+                </div>
                 <div className="mt-1 flex items-center justify-between text-2xs font-heading font-bold uppercase tracking-wider">
                   <span className="text-muted-foreground">0m</span>
                   <span className="text-muted-foreground">-{formatGoldDiff(maxAbsGold)}</span>
@@ -636,6 +654,16 @@ export default function DraftResultScreenV2({
               <CardContent className="py-4">
                 <p className="text-xs font-heading font-bold uppercase tracking-wider text-muted-foreground mb-3">{blueTri}</p>
                 <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 gap-y-1 items-center">
+                  <div
+                    className="col-span-5 grid grid-cols-subgrid items-center gap-3 border border-transparent px-3 text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground"
+                    data-testid="row-columns"
+                  >
+                    <span aria-hidden="true" />
+                    <span aria-hidden="true" />
+                    <span>{t("match.draftResult.columns.gold")}</span>
+                    <span>{t("match.draftResult.columns.damage")}</span>
+                    <span>{t("match.draftResult.columns.rating")}</span>
+                  </div>
                   {blueRows.map((row) => {
                     const playerData = playerById.get(row.playerId);
                     const icon = resolvePlayerPhoto(row.playerId, row.playerName, playerData?.profileImageUrl);
@@ -661,16 +689,6 @@ export default function DraftResultScreenV2({
                         >
                           {goldText(row)}
                         </span>
-                  <div
-                    className="col-span-5 grid grid-cols-subgrid items-center gap-3 border border-transparent px-3 text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground"
-                    data-testid="row-columns"
-                  >
-                    <span aria-hidden="true" />
-                    <span aria-hidden="true" />
-                    <span>{t("match.draftResult.columns.gold")}</span>
-                    <span>{t("match.draftResult.columns.damage")}</span>
-                    <span>{t("match.draftResult.columns.rating")}</span>
-                  </div>
                         <span
                           className="text-sm text-muted-foreground/50"
                           title={t("match.damageDealt")}
@@ -697,6 +715,16 @@ export default function DraftResultScreenV2({
               <CardContent className="py-4">
                 <p className="text-xs font-heading font-bold uppercase tracking-wider text-muted-foreground mb-3">{redTri}</p>
                 <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 gap-y-1 items-center">
+                  <div
+                    className="col-span-5 grid grid-cols-subgrid items-center gap-3 border border-transparent px-3 text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground"
+                    data-testid="row-columns"
+                  >
+                    <span aria-hidden="true" />
+                    <span aria-hidden="true" />
+                    <span>{t("match.draftResult.columns.gold")}</span>
+                    <span>{t("match.draftResult.columns.damage")}</span>
+                    <span>{t("match.draftResult.columns.rating")}</span>
+                  </div>
                   {redRows.map((row) => {
                     const playerData = playerById.get(row.playerId);
                     const icon = resolvePlayerPhoto(row.playerId, row.playerName, playerData?.profileImageUrl);
@@ -722,16 +750,6 @@ export default function DraftResultScreenV2({
                         >
                           {goldText(row)}
                         </span>
-                  <div
-                    className="col-span-5 grid grid-cols-subgrid items-center gap-3 border border-transparent px-3 text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground"
-                    data-testid="row-columns"
-                  >
-                    <span aria-hidden="true" />
-                    <span aria-hidden="true" />
-                    <span>{t("match.draftResult.columns.gold")}</span>
-                    <span>{t("match.draftResult.columns.damage")}</span>
-                    <span>{t("match.draftResult.columns.rating")}</span>
-                  </div>
                         <span
                           className="text-sm text-muted-foreground/50"
                           title={t("match.damageDealt")}
