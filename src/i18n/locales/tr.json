@@ -4536,6 +4536,24 @@
         "fighting": "{{a}} ve {{b}} çatışıyor",
         "towerShot_one": "Kule {{target}} hedefine ateş ediyor: {{count}} atış",
         "towerShot_other": "Kule {{target}} hedefine ateş ediyor: {{count}} atış"
+      },
+      "team": {
+        "blue": "Mavi",
+        "red": "Kırmızı"
+      },
+      "pit": {
+        "voidgrubs": "Boşluk Larvaları",
+        "dragonInfernal": "Cehennem Ejderhası",
+        "dragonOcean": "Okyanus Ejderhası",
+        "dragonMountain": "Dağ Ejderhası",
+        "dragonCloud": "Bulut Ejderhası",
+        "dragonHextech": "Hextech Ejderhası",
+        "dragonChemtech": "Chemtech Ejderhası",
+        "up": "Aktif %{{percent}}",
+        "upNoPercent": "Aktif",
+        "soulClaimed": "Ruh: {{team}}",
+        "soulOpen": "Ruh alınabilir",
+        "heraldCarrier": "{{who}} Haberci'yi taşıyor"
       }
     }
   },

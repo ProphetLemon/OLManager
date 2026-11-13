@@ -591,6 +591,128 @@
   white-space: nowrap;
 }
 
+/* ── Minions and objective pits ──────────────────────────────────────────
+   Minions are one canvas, redrawn by the frame path. A pit is a hexagon glyph with a label
+   under it: a solid outline and a percent while something is up, a dashed outline and a
+   countdown while it is not. */
+
+.arena-minions {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.arena-pits {
+  position: absolute;
+  inset: 0;
+}
+
+.arena-pit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 4;
+  width: 0;
+  height: 0;
+  --pit-glyph: clamp(26px, 5.4cqw, 50px);
+}
+
+.arena-pit-glyph,
+.arena-pit-glyph-in {
+  clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%);
+}
+
+.arena-pit-glyph {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--pit-glyph);
+  height: var(--pit-glyph);
+  background: var(--foreground);
+  transform: translate(-50%, -50%);
+}
+
+.arena-pit-glyph-in {
+  position: absolute;
+  inset: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background);
+}
+
+.arena-pit-glyph-in img {
+  width: 62%;
+  height: 62%;
+  object-fit: contain;
+}
+
+.arena-pit:not([data-status="alive"]) .arena-pit-glyph {
+  background: var(--dim);
+}
+
+.arena-pit:not([data-status="alive"]) .arena-pit-glyph-in img {
+  opacity: 0.55;
+}
+
+.arena-pit-label {
+  position: absolute;
+  left: 0;
+  top: calc(var(--pit-glyph) / 2 + 3px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  padding: 2px 6px;
+  border: 1px solid var(--foreground);
+  border-radius: 3px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  line-height: 1.05;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.arena-pit:not([data-status="alive"]) .arena-pit-label {
+  border-style: dashed;
+  border-color: var(--dim);
+  color: var(--dim);
+}
+
+.arena-pit-name {
+  font-size: var(--text-map);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.arena-pit-value {
+  font-size: calc(var(--text-map) * 1.25);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.arena-pit-note {
+  font-size: var(--text-map);
+  font-weight: 600;
+}
+
+.arena-pit-hp {
+  align-self: stretch;
+  height: 4px;
+  background: var(--line);
+}
+
+.arena-pit-hp i {
+  display: block;
+  height: 100%;
+  background: var(--foreground);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .arena-champ {
     transition: none;

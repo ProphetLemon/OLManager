@@ -4535,6 +4535,24 @@
         "fighting": "{{a}} e {{b}} estão a lutar",
         "towerShot_one": "Fogo da torre em {{target}}: {{count}} tiro",
         "towerShot_other": "Fogo da torre em {{target}}: {{count}} tiros"
+      },
+      "team": {
+        "blue": "Azul",
+        "red": "Vermelho"
+      },
+      "pit": {
+        "voidgrubs": "Larvas do Vazio",
+        "dragonInfernal": "Dragão Infernal",
+        "dragonOcean": "Dragão Oceânico",
+        "dragonMountain": "Dragão da Montanha",
+        "dragonCloud": "Dragão das Nuvens",
+        "dragonHextech": "Dragão Hextech",
+        "dragonChemtech": "Dragão Quimtech",
+        "up": "Vivo {{percent}}%",
+        "upNoPercent": "Vivo",
+        "soulClaimed": "Alma: {{team}}",
+        "soulOpen": "Alma disponível",
+        "heraldCarrier": "{{who}} leva o Arauto"
       }
     }
   },

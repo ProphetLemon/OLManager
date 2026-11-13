@@ -4570,6 +4570,24 @@
         "fighting": "{{a}} and {{b}} are fighting",
         "towerShot_one": "Tower fire on {{target}}: {{count}} hit",
         "towerShot_other": "Tower fire on {{target}}: {{count}} hits"
+      },
+      "team": {
+        "blue": "Blue",
+        "red": "Red"
+      },
+      "pit": {
+        "voidgrubs": "Voidgrubs",
+        "dragonInfernal": "Infernal Dragon",
+        "dragonOcean": "Ocean Dragon",
+        "dragonMountain": "Mountain Dragon",
+        "dragonCloud": "Cloud Dragon",
+        "dragonHextech": "Hextech Dragon",
+        "dragonChemtech": "Chemtech Dragon",
+        "up": "Up {{percent}}%",
+        "upNoPercent": "Up",
+        "soulClaimed": "Soul: {{team}}",
+        "soulOpen": "Soul up for grabs",
+        "heraldCarrier": "{{who}} carries the Herald"
       }
     }
   },

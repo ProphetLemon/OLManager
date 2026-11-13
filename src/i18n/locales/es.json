@@ -4535,6 +4535,24 @@
         "fighting": "{{a}} y {{b}} están peleando",
         "towerShot_one": "La torre dispara a {{target}}: {{count}} disparo",
         "towerShot_other": "La torre dispara a {{target}}: {{count}} disparos"
+      },
+      "team": {
+        "blue": "Azul",
+        "red": "Rojo"
+      },
+      "pit": {
+        "voidgrubs": "Larvas del Vacío",
+        "dragonInfernal": "Dragón infernal",
+        "dragonOcean": "Dragón oceánico",
+        "dragonMountain": "Dragón de montaña",
+        "dragonCloud": "Dragón de las nubes",
+        "dragonHextech": "Dragón hextech",
+        "dragonChemtech": "Dragón quimtech",
+        "up": "Vivo {{percent}}%",
+        "upNoPercent": "Vivo",
+        "soulClaimed": "Alma: {{team}}",
+        "soulOpen": "Alma en juego",
+        "heraldCarrier": "{{who}} lleva al Heraldo"
       }
     }
   },

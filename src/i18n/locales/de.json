@@ -4536,6 +4536,24 @@
         "fighting": "{{a}} und {{b}} kämpfen",
         "towerShot_one": "Turmfeuer auf {{target}}: {{count}} Schuss",
         "towerShot_other": "Turmfeuer auf {{target}}: {{count}} Schüsse"
+      },
+      "team": {
+        "blue": "Blau",
+        "red": "Rot"
+      },
+      "pit": {
+        "voidgrubs": "Leerenlarven",
+        "dragonInfernal": "Infernodrache",
+        "dragonOcean": "Ozeandrache",
+        "dragonMountain": "Bergdrache",
+        "dragonCloud": "Wolkendrache",
+        "dragonHextech": "Hextech-Drache",
+        "dragonChemtech": "Chemtech-Drache",
+        "up": "Aktiv {{percent}}%",
+        "upNoPercent": "Aktiv",
+        "soulClaimed": "Drachenseele: {{team}}",
+        "soulOpen": "Drachenseele frei",
+        "heraldCarrier": "{{who}} trägt den Herold"
       }
     }
   },

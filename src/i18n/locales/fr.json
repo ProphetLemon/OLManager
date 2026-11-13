@@ -4536,6 +4536,24 @@
         "fighting": "{{a}} et {{b}} se battent",
         "towerShot_one": "Tir de tourelle sur {{target}} : {{count}} tir",
         "towerShot_other": "Tir de tourelle sur {{target}} : {{count}} tirs"
+      },
+      "team": {
+        "blue": "Bleu",
+        "red": "Rouge"
+      },
+      "pit": {
+        "voidgrubs": "Larves du Néant",
+        "dragonInfernal": "Dragon infernal",
+        "dragonOcean": "Dragon des océans",
+        "dragonMountain": "Dragon des montagnes",
+        "dragonCloud": "Dragon des nuages",
+        "dragonHextech": "Dragon hextech",
+        "dragonChemtech": "Dragon chimtech",
+        "up": "En vie {{percent}}%",
+        "upNoPercent": "En vie",
+        "soulClaimed": "Âme : {{team}}",
+        "soulOpen": "Âme à prendre",
+        "heraldCarrier": "{{who}} porte le Héraut"
       }
     }
   },
