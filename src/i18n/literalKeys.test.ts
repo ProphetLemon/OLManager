@@ -15,15 +15,9 @@ const SOURCES = import.meta.glob(
 
 /**
  * Files nothing imports from `src/main.tsx` (checked by following the import
- * graph): football leftovers of the v1 match screens. Their keys never render.
+ * graph), whose keys never render. Empty since the v1 match screens were removed.
  */
-const DEAD_FILES = new Map<string, string>([
-  ["/src/ui-v2/_legacy/components/match/PostMatchScreen.tsx", "imported by no non-test file"],
-  ["/src/ui-v2/_legacy/components/match/PostMatchHelpers.tsx", "only used by PostMatchScreen"],
-  ["/src/ui-v2/_legacy/components/match/MatchPanels.tsx", "only used by the v1 match screens"],
-  ["/src/ui-v2/_legacy/components/match/HalfTimeBreak.tsx", "only used by the v1 match screens"],
-  ["/src/ui-v2/_legacy/components/match/MatchLive.tsx", "only used by the v1 match screens"],
-]);
+const DEAD_FILES = new Map<string, string>();
 
 function keysOf(node: unknown, path = "", out = new Set<string>()): Set<string> {
   if (typeof node === "string") {

@@ -25,6 +25,7 @@ import {
 import type { PlayerData } from "@/store/gameStore";
 import { resolveActiveLineupIds } from "@/store/types";
 import type { ShellBadges } from "@/ui-v2/shell/shellTypes";
+import { resolveNavTab } from "@/ui-v2/shell/navModel";
 
 import {
   formatDateFull,
@@ -50,7 +51,7 @@ import {
   getPendingIncomingOffersCount,
   getUnreadMessagesCount,
 } from "@/lib/dashboard/helpers";
-import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboard/DashboardHeader";
+import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
@@ -492,7 +493,7 @@ export default function DashboardV2() {
 
   const handleNavigate = (tab: string, context?: DashboardNavigateContext) => {
     setViewingChampionKey(null);
-    setProfileNavigation((s) => navigateDashboardProfiles(s, tab, context));
+    setProfileNavigation((s) => navigateDashboardProfiles(s, resolveNavTab(tab), context));
   };
 
   const handleBack = () => setProfileNavigation((s) => goBackDashboardProfile(s));
@@ -1026,15 +1027,9 @@ export default function DashboardV2() {
         ) : (
           <DashboardWorkspaceContent
             dashboardAlerts={[]}
-            gameState={gameState}
-            profileNavigation={profileNavigation}
             dashboardTabContentModel={dashboardTabContentModel}
-            onBack={handleBack}
             onNavigate={handleNavigate}
-            onSelectTeam={selectTeam}
-            onGameUpdate={setGameState}
             isUnemployed={isUnemployed ?? false}
-            onViewChampion={(k) => setViewingChampionKey(k)}
           />
         )}
         </Suspense>

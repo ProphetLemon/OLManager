@@ -1,8 +1,5 @@
-import type { GameStateData } from "@/store/gameStore";
-import PlayerProfileV2 from "@/ui-v2/pages/PlayerProfileV2";
 import DashboardAlerts from "@/ui-v2/_legacy/components/dashboard/DashboardAlerts";
 import type { DashboardAlert } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
-import type { DashboardProfileNavigationState } from "@/ui-v2/_legacy/components/dashboard/dashboardProfileNavigation";
 import DashboardTabContent from "@/ui-v2/_legacy/components/dashboard/DashboardTabContent";
 import type { DashboardTabContentModel } from "@/ui-v2/_legacy/components/dashboard/dashboardTabContentModel";
 import { ShieldX } from "lucide-react";
@@ -10,46 +7,18 @@ import { useTranslation } from "react-i18next";
 
 interface DashboardWorkspaceContentProps {
   dashboardAlerts: DashboardAlert[];
-  gameState: GameStateData;
-  profileNavigation: DashboardProfileNavigationState;
   dashboardTabContentModel: DashboardTabContentModel;
-  onBack: () => void;
   onNavigate: (tab: string) => void;
-  onSelectTeam: (id: string) => void;
-  onGameUpdate: (state: GameStateData) => void;
   isUnemployed: boolean;
-  onViewChampion?: (championKey: string) => void;
 }
 
 export default function DashboardWorkspaceContent({
   dashboardAlerts,
-  gameState,
-  profileNavigation,
   dashboardTabContentModel,
-  onBack,
   onNavigate,
-  onSelectTeam,
-  onGameUpdate,
   isUnemployed,
-  onViewChampion = () => undefined,
 }: DashboardWorkspaceContentProps) {
   const { t } = useTranslation();
-
-  // When viewing a champion from a player/team profile, close the profile first
-  const handleViewChampion = (championKey: string) => {
-    onBack(); // Close player/team profile
-    onViewChampion(championKey); // Open champion page
-  };
-
-  const selectedPlayer = profileNavigation.selectedPlayerId
-    ? gameState.players.find(
-      (player) => player.id === profileNavigation.selectedPlayerId,
-    ) ?? null
-    : null;
-  const selectedTeam = profileNavigation.selectedTeamId
-    ? gameState.teams.find((team) => team.id === profileNavigation.selectedTeamId) ??
-      null
-    : null;
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-6 bg-gray-100 dark:bg-navy-900">
@@ -62,53 +31,10 @@ export default function DashboardWorkspaceContent({
         </div>
       )}
 
-      {selectedPlayer && !selectedTeam ? (
-        <PlayerProfileV2
-          playerId={selectedPlayer.id}
-          gameState={gameState}
-          startWithRenewalModal={
-            profileNavigation.selectedPlayerOptions?.openRenewal === true
-          }
-          onClose={onBack}
-          onSelectTeam={onSelectTeam}
-          onGameUpdate={onGameUpdate}
-          onViewChampion={handleViewChampion}
-        />
-      ) : (
-        <>
-          <DashboardAlerts alerts={dashboardAlerts} onNavigate={onNavigate} />
-          <div className="flex flex-col gap-4">
-            <DashboardTabContent viewModel={dashboardTabContentModel} />
-            {dashboardTabContentModel.activeTab &&
-            ![
-              "Home",
-              "Squad",
-              "Tactics",
-              "Training",
-              "Meta",
-              "Scrims",
-              "Schedule",
-              "Finances",
-              "Transfers",
-              "Players",
-              "Teams",
-              "WorldStaff",
-              "Tournaments",
-              "Competitions",
-              "ChampionsWorld",
-              "Market",
-              "Staff",
-              "Scouting",
-              "Youth",
-              "YouthAcademy",
-              "Inbox",
-              "Manager",
-              "News",
-              "Social",
-            ].includes(dashboardTabContentModel.activeTab) && <></>}
-          </div>
-        </>
-      )}
+      <DashboardAlerts alerts={dashboardAlerts} onNavigate={onNavigate} />
+      <div className="flex flex-col gap-4">
+        <DashboardTabContent viewModel={dashboardTabContentModel} />
+      </div>
     </div>
   );
 }
