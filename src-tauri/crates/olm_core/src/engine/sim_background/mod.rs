@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod economy_tests;
 mod lol_map;
+#[cfg(test)]
+mod outcome_fingerprint_tests;
 mod simulation;
 mod snapshot;
 
