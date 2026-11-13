@@ -146,16 +146,6 @@ function eventPillClass(event: DraftTimelineEvent): string {
   return sideBase;
 }
 
-function formatGoldDiff(value: number): string {
-  const absValue = Math.abs(Math.round(value));
-  if (absValue >= 1000) {
-    const thousands = absValue / 1000;
-    return `${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)}k`;
-  }
-
-  return absValue.toString();
-}
-
 export default function DraftResultScreenV2({
   snapshot,
   controlledSide,
@@ -494,7 +484,7 @@ export default function DraftResultScreenV2({
                     "font-heading text-lg font-black",
                     leadingSide === "red" ? "text-orange-400" : leadingSide === "blue" ? "text-muted-foreground" : "text-gray-200",
                   )}>
-                    {leadingTri ? `${leadingTri} +${formatGoldDiff(finalGoldDiff)}` : t("match.draftResult.evenGold")}
+                    {leadingTri ? `${leadingTri} +${compactGold(finalGoldDiff, i18n.language)}` : t("match.draftResult.evenGold")}
                   </p>
                 </div>
               </div>
@@ -502,7 +492,7 @@ export default function DraftResultScreenV2({
               <div className="mt-4 rounded-xl border border-white/10 bg-muted/20 p-3 shadow-inner shadow-black/30">
                 <div className="mb-2 flex items-center justify-between text-2xs font-heading font-bold uppercase tracking-wider">
                   <span className="text-muted-foreground">{blueTri}</span>
-                  <span className="text-muted-foreground">+{formatGoldDiff(maxAbsGold)}</span>
+                  <span className="text-muted-foreground">+{compactGold(maxAbsGold, i18n.language)}</span>
                 </div>
                 {/* The axis values are HTML, not SVG text: SVG text scales with the viewBox (about 9 px here), HTML keeps the token size. */}
                 <div className="flex gap-1">
@@ -513,7 +503,7 @@ export default function DraftResultScreenV2({
                         className="absolute left-0 -translate-y-1/2 whitespace-nowrap leading-none"
                         style={{ top: `${(row.y / GOLD_CHART_VIEWBOX_HEIGHT) * 100}%` }}
                       >
-                        {row.sign}{row.key === "mid" ? "0" : formatGoldDiff(maxAbsGold)}
+                        {row.sign}{row.key === "mid" ? "0" : compactGold(maxAbsGold, i18n.language)}
                       </span>
                     ))}
                   </div>
@@ -590,7 +580,7 @@ export default function DraftResultScreenV2({
                 </div>
                 <div className="mt-1 flex items-center justify-between text-2xs font-heading font-bold uppercase tracking-wider">
                   <span className="text-muted-foreground">0m</span>
-                  <span className="text-muted-foreground">-{formatGoldDiff(maxAbsGold)}</span>
+                  <span className="text-muted-foreground">-{compactGold(maxAbsGold, i18n.language)}</span>
                   <span className="text-orange-400">{redTri}</span>
                 </div>
               </div>
@@ -599,12 +589,12 @@ export default function DraftResultScreenV2({
                 <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
                   <p className="text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground">{t("match.draftResult.peakGold")}</p>
                   <p className={cn("mt-1 font-bold", peakGoldDiff.diff < 0 ? "text-orange-400" : "text-muted-foreground")}>
-                    {(peakGoldDiff.diff < 0 ? redTri : blueTri)} +{formatGoldDiff(peakGoldDiff.diff)} · {peakGoldDiff.minute}m
+                    {(peakGoldDiff.diff < 0 ? redTri : blueTri)} +{compactGold(peakGoldDiff.diff, i18n.language)} · {peakGoldDiff.minute}m
                   </p>
                 </div>
                 <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
                   <p className="text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground">{t("match.draftResult.goldScale")}</p>
-                  <p className="mt-1 font-bold text-gray-200">±{formatGoldDiff(maxAbsGold)}</p>
+                  <p className="mt-1 font-bold text-gray-200">±{compactGold(maxAbsGold, i18n.language)}</p>
                 </div>
               </div>
             </CardContent>

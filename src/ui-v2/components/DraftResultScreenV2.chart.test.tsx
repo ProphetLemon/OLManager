@@ -78,7 +78,13 @@ describe("gold advantage chart axis labels", () => {
 
     const axis = screen.getByTestId("gold-axis");
     expect(svg!.contains(axis)).toBe(false);
-    expect(Array.from(axis.querySelectorAll("span")).map((node) => node.textContent)).toEqual(["+5.2k", "0", "-5.2k"]);
+    expect(axis.querySelectorAll("span")).toHaveLength(3);
+  });
+
+  it("writes the axis values in the game's number format, like the gold in the rows", () => {
+    renderChart();
+    const axis = screen.getByTestId("gold-axis");
+    expect(Array.from(axis.querySelectorAll("span")).map((node) => node.textContent)).toEqual(["+5,2k", "0", "-5,2k"]);
   });
 
   it("sizes the labels with the 0.75rem token and colors them with a token, no raw color", () => {
