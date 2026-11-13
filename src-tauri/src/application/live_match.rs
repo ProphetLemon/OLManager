@@ -107,6 +107,9 @@ pub struct LolSimMatchReportChampionInput {
     pub cs: u16,
     pub gold: u32,
     pub spent_gold: u32,
+    /// Damage dealt to enemy champions. Reports from older frontends omit it and read as 0.
+    #[serde(default)]
+    pub damage_dealt: f64,
 }
 
 fn map_sim_team_to_side(team: &str) -> Side {
@@ -170,7 +173,23 @@ fn infer_event_side(
     Side::Home
 }
 
+fn damage_to_u32(damage: f64) -> u32 {
+    if damage.is_finite() {
+        damage.round().clamp(0.0, f64::from(u32::MAX)) as u32
+    } else {
+        0
+    }
+}
+
 fn build_match_report_from_lol_sim(input: LolSimMatchReportInput) -> MatchReport {
+    let mut team_damage = [0_u32; 2];
+    for champion in &input.champions {
+        let slot = match map_sim_team_to_side(&champion.team) {
+            Side::Home => 0,
+            Side::Away => 1,
+        };
+        team_damage[slot] = team_damage[slot].saturating_add(damage_to_u32(champion.damage_dealt));
+    }
     let mut champion_name_to_side: HashMap<String, Side> = HashMap::new();
     let mut champion_name_to_id: HashMap<String, String> = HashMap::new();
     for champion in &input.champions {
@@ -232,7 +251,7 @@ fn build_match_report_from_lol_sim(input: LolSimMatchReportInput) -> MatchReport
                 assists: champion.assists,
                 creep_score: champion.cs,
                 gold_earned: champion.gold.saturating_add(champion.spent_gold),
-                damage_dealt: 0,
+                damage_dealt: damage_to_u32(champion.damage_dealt),
                 vision_score: 0,
                 wards_placed: 0,
                 ..Default::default()
@@ -264,7 +283,7 @@ fn build_match_report_from_lol_sim(input: LolSimMatchReportInput) -> MatchReport
             kills: input.stats.blue.kills,
             deaths: input.stats.blue.deaths,
             gold_earned: input.stats.blue.gold,
-            damage_dealt: 0,
+            damage_dealt: team_damage[0],
             objectives: input
                 .stats
                 .blue
@@ -278,7 +297,7 @@ fn build_match_report_from_lol_sim(input: LolSimMatchReportInput) -> MatchReport
             kills: input.stats.red.kills,
             deaths: input.stats.red.deaths,
             gold_earned: input.stats.red.gold,
-            damage_dealt: 0,
+            damage_dealt: team_damage[1],
             objectives: input
                 .stats
                 .red
@@ -497,4 +516,85 @@ pub fn get_match_snapshot(state: &StateManager) -> Result<olm_core::engine::Matc
     );
 
     Ok(snapshot)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn champion(id: &str, team: &str, damage_dealt: f64) -> LolSimMatchReportChampionInput {
+        LolSimMatchReportChampionInput {
+            id: id.to_string(),
+            name: id.to_uppercase(),
+            team: team.to_string(),
+            role: "MID".to_string(),
+            kills: 0,
+            deaths: 0,
+            assists: 0,
+            cs: 0,
+            gold: 0,
+            spent_gold: 0,
+            damage_dealt,
+        }
+    }
+
+    fn team_stats() -> LolSimMatchReportTeamStatsInput {
+        LolSimMatchReportTeamStatsInput {
+            kills: 0,
+            deaths: 0,
+            gold: 0,
+            towers: 0,
+            dragons: 0,
+            barons: 0,
+        }
+    }
+
+    fn input(champions: Vec<LolSimMatchReportChampionInput>) -> LolSimMatchReportInput {
+        LolSimMatchReportInput {
+            winner: Some("blue".to_string()),
+            time_sec: 1800.0,
+            events: Vec::new(),
+            stats: LolSimMatchReportStatsInput {
+                blue: team_stats(),
+                red: team_stats(),
+            },
+            champions,
+        }
+    }
+
+    #[test]
+    fn report_carries_each_champions_damage_instead_of_zero() {
+        let report = build_match_report_from_lol_sim(input(vec![
+            champion("b1", "blue", 12_345.4),
+            champion("r1", "red", 9_000.6),
+        ]));
+        assert_eq!(report.player_stats["b1"].damage_dealt, 12_345);
+        assert_eq!(report.player_stats["r1"].damage_dealt, 9_001);
+    }
+
+    #[test]
+    fn report_sums_damage_per_team() {
+        let report = build_match_report_from_lol_sim(input(vec![
+            champion("b1", "blue", 1_000.0),
+            champion("b2", "blue", 2_500.0),
+            champion("r1", "red", 4_000.0),
+        ]));
+        assert_eq!(report.home_stats.damage_dealt, 3_500);
+        assert_eq!(report.away_stats.damage_dealt, 4_000);
+    }
+
+    #[test]
+    fn report_reads_missing_or_invalid_damage_as_zero() {
+        let json = r#"{"id":"b1","name":"B1","team":"blue","role":"MID","kills":0,"deaths":0,
+            "assists":0,"cs":0,"gold":0,"spentGold":0}"#;
+        let old: LolSimMatchReportChampionInput = serde_json::from_str(json).expect("old shape");
+        assert_eq!(old.damage_dealt, 0.0);
+        let report = build_match_report_from_lol_sim(input(vec![
+            champion("b1", "blue", f64::NAN),
+            champion("b2", "blue", -50.0),
+        ]));
+        assert_eq!(report.player_stats["b1"].damage_dealt, 0);
+        assert_eq!(report.player_stats["b2"].damage_dealt, 0);
+        assert_eq!(report.home_stats.damage_dealt, 0);
+    }
 }

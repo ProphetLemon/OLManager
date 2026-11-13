@@ -177,3 +177,51 @@ describe("DraftResultScreenV2 in the Spanish UI", () => {
     expect(screen.getByText("Stored label")).toBeInTheDocument();
   });
 });
+
+describe("DraftResultScreenV2 damage column", () => {
+  const row = (side: "blue" | "red", playerId: string, damageDealt?: number) => ({
+    side,
+    playerId,
+    playerName: playerId,
+    role: "MID" as const,
+    championId: null,
+    kills: 1,
+    deaths: 1,
+    assists: 1,
+    gold: 9000,
+    rating: 6,
+    ...(damageDealt === undefined ? {} : { damageDealt }),
+  });
+
+  function renderWith(playerResults: DraftMatchResult["playerResults"]) {
+    const result = createResult({ playerResults });
+    render(
+      <DraftResultScreenV2
+        snapshot={snapshot}
+        controlledSide="blue"
+        result={result}
+        seriesGames={[{ gameIndex: 1, result, winnerSide: result.winnerSide }]}
+        seriesLength={1}
+        seriesGameIndex={1}
+        userSeriesWins={1}
+        opponentSeriesWins={0}
+        onContinue={vi.fn()}
+      />,
+    );
+  }
+
+  it("shows each player's damage dealt", () => {
+    renderWith([row("blue", "b-mid", 23456), row("red", "r-mid", 18100)]);
+    expect(screen.getAllByTestId("row-damage").map((cell) => cell.textContent)).toEqual(["23,5k", "18,1k"]);
+  });
+
+  it("names the column in Spanish for assistive technology", () => {
+    renderWith([row("blue", "b-mid", 23456)]);
+    expect(screen.getByTestId("row-damage")).toHaveAttribute("aria-label", "Daño infligido: 23,5k");
+  });
+
+  it("shows a dash for a result stored before damage was counted", () => {
+    renderWith([row("blue", "b-mid")]);
+    expect(screen.getByTestId("row-damage")).toHaveTextContent("-");
+  });
+});

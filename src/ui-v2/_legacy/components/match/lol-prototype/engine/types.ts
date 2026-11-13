@@ -43,6 +43,8 @@ export interface ChampionState {
   assists: number;
   gold: number;
   spentGold: number;
+  /** Damage dealt to enemy champions. Sent by the Rust engine only. */
+  damageDealt?: number;
   xp: number;
   level: number;
   cs: number;

@@ -2464,6 +2464,7 @@
     "postMatchTeamTalk": "Maç Sonu Takım Konuşması",
     "addressPlayers": "Maçtan sonra oyuncularınıza hitap edin.",
     "matchOver": "Maç Bitti",
+    "damageDealt": "Verilen hasar",
     "tacticsBeforeLive": "Stratejinizi ayarlayın ve hazır olduğunuzda maça başlıyoruz.",
     "simulate": "Simüle Et",
     "simulating": "Simüle ediliyor...",

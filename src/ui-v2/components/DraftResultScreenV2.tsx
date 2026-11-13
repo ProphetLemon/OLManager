@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { compactGold } from "@/lib/match/live/formatNumbers";
 import { buildLolScrimPrepInsight } from "@/lib/scrims/lolScrimPrep";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
@@ -161,7 +162,7 @@ export default function DraftResultScreenV2({
   onContinue,
   teams,
 }: DraftResultScreenV2Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const playerById = useMemo(() => {
     const map = new Map<string, { name: string; profileImageUrl?: string | null }>();
@@ -282,6 +283,10 @@ export default function DraftResultScreenV2({
     const key = TIMELINE_EVENT_KEYS[event.type];
     return key ? t(key, { defaultValue: event.label }) : event.label;
   };
+
+  // A result stored before the engine counted damage has none: a dash, not a made-up zero.
+  const damageText = (damage: number | undefined): string =>
+    typeof damage === "number" && Number.isFinite(damage) ? compactGold(damage, i18n.language) : "-";
 
   const renderTimeline = () => {
     const sorted = [...selectedResult.timelineEvents].sort((a, b) => a.minute - b.minute);
@@ -625,7 +630,7 @@ export default function DraftResultScreenV2({
             <Card size="sm" className="self-start">
               <CardContent className="py-4">
                 <p className="text-xs font-heading font-bold uppercase tracking-wider text-muted-foreground mb-3">{blueTri}</p>
-                <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 gap-y-1 items-center">
+                <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 gap-y-1 items-center">
                   {blueRows.map((row) => {
                     const playerData = playerById.get(row.playerId);
                     const icon = resolvePlayerPhoto(row.playerId, row.playerName, playerData?.profileImageUrl);
@@ -634,7 +639,7 @@ export default function DraftResultScreenV2({
                       <div
                         key={`blue-${row.playerId}-${row.role}`}
                         className={cn(
-                          "col-span-4 grid grid-cols-subgrid items-center gap-3 rounded-md border px-3 py-2",
+                          "col-span-5 grid grid-cols-subgrid items-center gap-3 rounded-md border px-3 py-2",
                           isMvp ? "border-yellow-400/50 bg-yellow-500/10" : "border-white/10 bg-muted/30",
                         )}
                       >
@@ -644,6 +649,14 @@ export default function DraftResultScreenV2({
                         </div>
                         <span className="text-sm text-muted-foreground/50">{row.kills}/{row.deaths}/{row.assists}</span>
                         <span className="text-sm text-muted-foreground/50">{row.gold}</span>
+                        <span
+                          className="text-sm text-muted-foreground/50"
+                          title={t("match.damageDealt")}
+                          aria-label={`${t("match.damageDealt")}: ${damageText(row.damageDealt)}`}
+                          data-testid="row-damage"
+                        >
+                          {damageText(row.damageDealt)}
+                        </span>
                         <span className="text-sm font-bold text-club-text">{row.rating.toFixed(1)}</span>
                       </div>
                     );
@@ -654,7 +667,7 @@ export default function DraftResultScreenV2({
             <Card size="sm" className="self-start">
               <CardContent className="py-4">
                 <p className="text-xs font-heading font-bold uppercase tracking-wider text-muted-foreground mb-3">{redTri}</p>
-                <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 gap-y-1 items-center">
+                <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 gap-y-1 items-center">
                   {redRows.map((row) => {
                     const playerData = playerById.get(row.playerId);
                     const icon = resolvePlayerPhoto(row.playerId, row.playerName, playerData?.profileImageUrl);
@@ -663,7 +676,7 @@ export default function DraftResultScreenV2({
                       <div
                         key={`red-${row.playerId}-${row.role}`}
                         className={cn(
-                          "col-span-4 grid grid-cols-subgrid items-center gap-3 rounded-md border px-3 py-2",
+                          "col-span-5 grid grid-cols-subgrid items-center gap-3 rounded-md border px-3 py-2",
                           isMvp ? "border-yellow-400/50 bg-yellow-500/10" : "border-white/10 bg-muted/30",
                         )}
                       >
@@ -673,6 +686,14 @@ export default function DraftResultScreenV2({
                         </div>
                         <span className="text-sm text-muted-foreground/50">{row.kills}/{row.deaths}/{row.assists}</span>
                         <span className="text-sm text-muted-foreground/50">{row.gold}</span>
+                        <span
+                          className="text-sm text-muted-foreground/50"
+                          title={t("match.damageDealt")}
+                          aria-label={`${t("match.damageDealt")}: ${damageText(row.damageDealt)}`}
+                          data-testid="row-damage"
+                        >
+                          {damageText(row.damageDealt)}
+                        </span>
                         <span className="text-sm font-bold text-orange-400">{row.rating.toFixed(1)}</span>
                       </div>
                     );

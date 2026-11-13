@@ -2464,6 +2464,7 @@
     "postMatchTeamTalk": "Ansprache nach dem Spiel",
     "addressPlayers": "Sprich nach dem Spiel zu deinen Spielern.",
     "matchOver": "Spiel beendet",
+    "damageDealt": "Verursachter Schaden",
     "tacticsBeforeLive": "Passe deine Strategie an, und sobald du bereit bist, starten wir das Spiel.",
     "simulate": "Simulieren",
     "simulating": "Simulation läuft...",

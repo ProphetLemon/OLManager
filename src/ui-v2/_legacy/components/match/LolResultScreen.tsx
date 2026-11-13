@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { compactGold } from "@/lib/match/live/formatNumbers";
 import { buildLolScrimPrepInsight } from "@/lib/scrims/lolScrimPrep";
 import type { FixtureData, GameStateData } from "@/store/gameStore";
 import type { MatchEvent, MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
@@ -26,6 +27,11 @@ function sideFromRuntimeEvent(text: string): Side | "-" {
   if (upper.includes("BLUE")) return "Home";
   if (upper.includes("RED")) return "Away";
   return "-";
+}
+
+/** A state from before the engine counted damage has none: a dash, not a made-up zero. */
+function damageText(damage: number | undefined, locale: string): string {
+  return typeof damage === "number" && Number.isFinite(damage) ? compactGold(damage, locale) : "-";
 }
 
 function clamp01(n: number) {
@@ -105,7 +111,7 @@ export default function LolResultScreen({
   onPressConference,
   onFinish,
 }: LolResultScreenProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const runtime = finalRuntimeState ?? null;
 
@@ -314,7 +320,7 @@ export default function LolResultScreen({
                   return (
                     <div key={champion.id} className={`grid grid-cols-[1fr_auto] gap-2 py-1.5 border-b border-border text-sm ${isMvp ? "text-amber-400" : "text-foreground"}`}>
                       <span className="truncate">{isMvp ? "★ " : ""}{champion.name}</span>
-                      <span>{champion.kills}/{champion.deaths}/{champion.assists} · {champion.cs} · {champion.gold}</span>
+                      <span>{champion.kills}/{champion.deaths}/{champion.assists} · {champion.cs} · {champion.gold} · <span title={t("match.damageDealt")} aria-label={`${t("match.damageDealt")}: ${damageText(champion.damageDealt, i18n.language)}`} data-testid="row-damage">{damageText(champion.damageDealt, i18n.language)}</span></span>
                     </div>
                   );
                 })}
@@ -326,7 +332,7 @@ export default function LolResultScreen({
                   return (
                     <div key={champion.id} className={`grid grid-cols-[1fr_auto] gap-2 py-1.5 border-b border-border text-sm ${isMvp ? "text-amber-400" : "text-foreground"}`}>
                       <span className="truncate">{isMvp ? "★ " : ""}{champion.name}</span>
-                      <span>{champion.kills}/{champion.deaths}/{champion.assists} · {champion.cs} · {champion.gold}</span>
+                      <span>{champion.kills}/{champion.deaths}/{champion.assists} · {champion.cs} · {champion.gold} · <span title={t("match.damageDealt")} aria-label={`${t("match.damageDealt")}: ${damageText(champion.damageDealt, i18n.language)}`} data-testid="row-damage">{damageText(champion.damageDealt, i18n.language)}</span></span>
                     </div>
                   );
                 })}

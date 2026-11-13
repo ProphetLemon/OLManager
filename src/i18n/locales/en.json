@@ -2725,6 +2725,7 @@
     "postMatchTeamTalk": "Post-Match Team Talk",
     "addressPlayers": "Address your players after the match.",
     "matchOver": "Match Over",
+    "damageDealt": "Damage dealt",
     "tacticsBeforeLive": "Adjust your strategy and, when ready, we start the match.",
     "simulate": "Simulate",
     "simulating": "Simulating...",

@@ -44,6 +44,8 @@ export interface DraftPlayerResult {
   deaths: number;
   assists: number;
   gold: number;
+  /** Damage dealt to enemy champions; absent on results stored before the engine counted it. */
+  damageDealt?: number;
   rating: number;
 }
 

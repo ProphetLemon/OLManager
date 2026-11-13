@@ -36,6 +36,7 @@ pub(super) fn test_champion(
         assists: 0,
         gold: 0,
         spent_gold: 0,
+        damage_dealt: 0.0,
         xp: 0,
         level: 1,
         cs: 0,

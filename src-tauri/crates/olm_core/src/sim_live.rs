@@ -192,6 +192,11 @@ struct ChampionRuntime {
     gold: i64,
     #[serde(default)]
     spent_gold: i64,
+    /// Damage this champion has dealt to enemy champions (overkill excluded). Write-only: the
+    /// simulation never reads it, it exists so the end screen and the stats can report it. Older
+    /// saves have no such field and load with 0.0.
+    #[serde(default)]
+    damage_dealt: f64,
     xp: i64,
     level: i64,
     #[serde(default)]
@@ -1540,6 +1545,7 @@ fn seed_team(
         champion_obj.insert("assists".to_string(), Value::from(0));
         champion_obj.insert("gold".to_string(), Value::from(500));
         champion_obj.insert("spentGold".to_string(), Value::from(0));
+        champion_obj.insert("damageDealt".to_string(), Value::from(0.0));
         champion_obj.insert("xp".to_string(), Value::from(0));
         champion_obj.insert("level".to_string(), Value::from(1));
         champion_obj.insert("cs".to_string(), Value::from(0));
@@ -4453,6 +4459,16 @@ fn tick_ignite_dot_effects(runtime: &mut RuntimeState, now: f64) {
             continue;
         }
 
+        let burn = SUMMONER_IGNITE_DPS * 0.2;
+        let burned = burn.min(runtime.champions[idx].hp.max(0.0));
+        if let Some(source_id) = runtime.champions[idx].ignite_source_id.clone()
+            && let Some(source) = runtime
+                .champions
+                .iter_mut()
+                .find(|champion| champion.id == source_id)
+        {
+            source.damage_dealt += burned;
+        }
         runtime.champions[idx].hp -= SUMMONER_IGNITE_DPS * 0.2;
         runtime.farm_ledger.record_damage(
             &runtime.champions[idx].id,
@@ -5642,6 +5658,7 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
             * CHAMPION_DAMAGE_TO_CHAMPION_MULTIPLIER
             * attack_damage_multiplier
             * strength_mult;
+        attacker.damage_dealt += outgoing.min(defender.hp.max(0.0));
         defender.hp -= outgoing;
         runtime
             .farm_ledger
@@ -5685,6 +5702,7 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
             * CHAMPION_DAMAGE_TO_CHAMPION_MULTIPLIER
             * attack_damage_multiplier
             * strength_mult;
+        attacker.damage_dealt += outgoing.min(defender.hp.max(0.0));
         defender.hp -= outgoing;
         runtime
             .farm_ledger
@@ -6809,6 +6827,9 @@ mod tower_harness_tests;
 
 #[cfg(test)]
 mod scorecard_tests;
+
+#[cfg(test)]
+mod damage_dealt_tests;
 
 #[cfg(test)]
 mod tower_safety_tests;

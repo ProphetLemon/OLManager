@@ -2713,6 +2713,7 @@
     "postMatchTeamTalk": "Charla Post-Partido",
     "addressPlayers": "Dirígete a tus jugadores después del partido.",
     "matchOver": "Partido Terminado",
+    "damageDealt": "Daño infligido",
     "tacticsBeforeLive": "Ajusta la estrategia y, cuando estés listo, arrancamos la partida",
     "simulate": "Simular",
     "simulating": "Simulando...",

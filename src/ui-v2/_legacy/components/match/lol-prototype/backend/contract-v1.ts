@@ -176,6 +176,8 @@ export interface LolSimV1MatchReportChampionInput {
   cs: number;
   gold: number;
   spentGold: number;
+  /** Damage dealt to enemy champions; the engine counts it, an older one sends none. */
+  damageDealt?: number;
 }
 
 export interface LolSimV1MatchReportInput {

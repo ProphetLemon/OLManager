@@ -2464,6 +2464,7 @@
     "postMatchTeamTalk": "Causerie d'Après-Match",
     "addressPlayers": "Adressez-vous à vos joueurs après le match.",
     "matchOver": "Match Terminé",
+    "damageDealt": "Dégâts infligés",
     "tacticsBeforeLive": "Ajustez la stratégie et, quand vous êtes prêt, lançons la partie.",
     "simulate": "Simuler",
     "simulating": "Simulation...",
