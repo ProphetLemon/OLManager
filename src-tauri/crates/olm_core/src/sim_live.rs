@@ -35,7 +35,7 @@ use economy::{
     BARON_TEAM_GOLD, champion_kill_rewards, jungle_camp_cs_reward, jungle_camp_reward,
     passive_payment, passive_payments_due, role_adjusted_income, tower_team_gold,
 };
-use events::{log_event, push_event};
+use events::{log_coded_event, log_event, push_coded_event};
 use farm_ledger::{DamageSource, FarmLedger, MinionKiller};
 use gold_ledger::{GoldLedger, GoldSource};
 use layout::{
@@ -58,7 +58,7 @@ use structures::{
 pub use types::*;
 use tower_ledger::{TowerLedger, TowerShot, TowerVictim};
 use types::{
-    RuntimeEvent, RuntimeStats, RuntimeSummonerSpellSlot, RuntimeTeamStats, RuntimeUltimateSlot,
+    EventCode, EventData, RuntimeEvent, RuntimeStats, RuntimeSummonerSpellSlot, RuntimeTeamStats, RuntimeUltimateSlot,
     Vec2, WardRuntime,
 };
 use util::{as_mut_object, clamp, dist, normalize, ratio_or_zero, read_time_sec, read_winner};
@@ -3621,11 +3621,13 @@ fn cancel_recall(champion: &mut ChampionRuntime, now: f64, events: &mut Vec<Runt
     champion.recall_channel_until = 0.0;
 
     if was_channeling {
-        push_event(
+        push_coded_event(
             events,
             now,
             &format!("{} recall interrupted", champion.name),
             "recall",
+            EventCode::RecallInterrupted,
+            EventData::default().actor(&champion.name, &champion.id),
         );
     }
 }
@@ -3652,11 +3654,13 @@ fn tick_recall(
         champion.target_path.clear();
         champion.target_path_index = 0;
         champion.next_decision_at = now;
-        push_event(
+        push_coded_event(
             events,
             now,
             &format!("{} recalled", champion.name),
             "recall",
+            EventCode::RecallCompleted,
+            EventData::default().actor(&champion.name, &champion.id),
         );
         return false;
     }
@@ -3702,11 +3706,13 @@ fn tick_recall(
     champion.recall_blocked_since = 0.0;
     champion.target_path.clear();
     champion.target_path_index = 0;
-    push_event(
+    push_coded_event(
         events,
         now,
         &format!("{} started recall", champion.name),
         "recall",
+        EventCode::RecallStarted,
+        EventData::default().actor(&champion.name, &champion.id),
     );
     true
 }
@@ -4183,13 +4189,15 @@ fn maybe_deploy_rift_herald_charge(runtime: &mut RuntimeState) {
     };
 
     runtime.minions.push(summon);
-    log_event(
+    log_coded_event(
         runtime,
         &format!(
             "{} deployed rift herald",
             normalized_team(&carrier.team).to_uppercase()
         ),
         "info",
+        EventCode::HeraldDeployed,
+        EventData::default().team(normalized_team(&carrier.team)),
     );
     clear_rift_herald_charge(runtime);
 }
@@ -4239,10 +4247,12 @@ fn try_cast_special_ultimate(
         };
 
         runtime.minions.push(summon);
-        log_event(
+        log_coded_event(
             runtime,
             &format!("{} summoned {}", champion.name, summon_kind),
             "info",
+            EventCode::UnitSummoned,
+            EventData::default().actor(&champion.name, &champion.id),
         );
         return Some(true);
     }
@@ -4288,10 +4298,14 @@ fn try_cast_special_ultimate(
         runtime.champions[champion_idx].target_path.clear();
         runtime.champions[champion_idx].target_path_index = 0;
         runtime.champions[champion_idx].next_decision_at = now;
-        log_event(
+        log_coded_event(
             runtime,
             &format!("{} cast Stand United", champion.name),
             "info",
+            EventCode::SpellCast,
+            EventData::default()
+                .actor(&champion.name, &champion.id)
+                .spell("ultimate"),
         );
         return Some(true);
     }
@@ -4319,10 +4333,14 @@ fn try_cast_special_ultimate(
         runtime.champions[champion_idx].target_path_index = 0;
         runtime.champions[target_idx].target_path_index = 0;
 
-        log_event(
+        log_coded_event(
             runtime,
             &format!("{} cast Realm of Death", champion.name),
             "info",
+            EventCode::SpellCast,
+            EventData::default()
+                .actor(&champion.name, &champion.id)
+                .spell("ultimate"),
         );
         return Some(true);
     }
@@ -4437,10 +4455,14 @@ fn try_cast_ultimate(runtime: &mut RuntimeState, champion_idx: usize, now: f64) 
         now,
         ULTIMATE_BASE_CD_SEC,
     ) {
-        log_event(
+        log_coded_event(
             runtime,
             &format!("{} cast Ultimate ({})", champion_snapshot.name, archetype),
             "info",
+            EventCode::SpellCast,
+            EventData::default()
+                .actor(&champion_snapshot.name, &champion_snapshot.id)
+                .spell("ultimate"),
         );
         return true;
     }
@@ -4488,6 +4510,7 @@ fn tick_ignite_dot_effects(runtime: &mut RuntimeState, now: f64) {
             now + champion_respawn_seconds(runtime.champions[idx].level, now);
 
         let victim_name = runtime.champions[idx].name.clone();
+        let victim_id = runtime.champions[idx].id.clone();
         let killer_id = runtime.champions[idx].ignite_source_id.clone();
         runtime.champions[idx].ignite_dot_until = 0.0;
         runtime.champions[idx].ignite_source_id = None;
@@ -4508,13 +4531,21 @@ fn tick_ignite_dot_effects(runtime: &mut RuntimeState, now: f64) {
                         CHAMPION_KILL_XP,
                         GoldSource::Kill,
                     );
-                    log_event(
+                    let data = EventData::default()
+                        .actor(
+                            &runtime.champions[killer_idx].name,
+                            &runtime.champions[killer_idx].id,
+                        )
+                        .target(&victim_name, &victim_id);
+                    log_coded_event(
                         runtime,
                         &format!(
                             "{} ignited {}",
                             runtime.champions[killer_idx].name, victim_name
                         ),
                         "kill",
+                        EventCode::IgniteKill,
+                        data,
                     );
                     continue;
                 }
@@ -4664,10 +4695,14 @@ fn try_cast_heal(runtime: &mut RuntimeState, champion_idx: usize, now: f64) -> b
         now,
         SUMMONER_HEAL_CD_SEC,
     ) {
-        log_event(
+        log_coded_event(
             runtime,
             &format!("{} cast Heal", champion_snapshot.name),
             "info",
+            EventCode::SpellCast,
+            EventData::default()
+                .actor(&champion_snapshot.name, &champion_snapshot.id)
+                .spell("heal"),
         );
         return true;
     }
@@ -4736,10 +4771,14 @@ fn try_cast_flash(runtime: &mut RuntimeState, champion_idx: usize, now: f64) -> 
         now,
         SUMMONER_FLASH_CD_SEC,
     ) {
-        log_event(
+        log_coded_event(
             runtime,
             &format!("{} flashed", champion_snapshot.name),
             "info",
+            EventCode::SpellCast,
+            EventData::default()
+                .actor(&champion_snapshot.name, &champion_snapshot.id)
+                .spell("flash"),
         );
         return true;
     }
@@ -4791,10 +4830,15 @@ fn try_cast_ignite(runtime: &mut RuntimeState, champion_idx: usize, now: f64) ->
         now,
         SUMMONER_IGNITE_CD_SEC,
     ) {
-        log_event(
+        let target_id = runtime.champions[target_idx].id.clone();
+        log_coded_event(
             runtime,
             &format!("{} ignited {}", champion_snapshot.name, target_name),
             "info",
+            EventCode::IgniteCast,
+            EventData::default()
+                .actor(&champion_snapshot.name, &champion_snapshot.id)
+                .target(&target_name, &target_id),
         );
         return true;
     }
@@ -4845,10 +4889,14 @@ fn try_cast_smite(
         now,
         SUMMONER_SMITE_CD_SEC,
     ) {
-        log_event(
+        log_coded_event(
             runtime,
             &format!("{} cast Smite", champion_snapshot.name),
             "info",
+            EventCode::SpellCast,
+            EventData::default()
+                .actor(&champion_snapshot.name, &champion_snapshot.id)
+                .spell("smite"),
         );
         return true;
     }
@@ -4898,10 +4946,14 @@ fn try_cast_teleport(runtime: &mut RuntimeState, champion_idx: usize, now: f64) 
         now,
         SUMMONER_TP_CD_SEC,
     ) {
-        log_event(
+        log_coded_event(
             runtime,
             &format!("{} cast Teleport", champion_snapshot.name),
             "recall",
+            EventCode::SpellCast,
+            EventData::default()
+                .actor(&champion_snapshot.name, &champion_snapshot.id)
+                .spell("teleport"),
         );
         return true;
     }
@@ -5029,10 +5081,14 @@ fn mark_neutral_taken(
 
     if is_jungle_camp_key(key) {
         if killer_role == "SUP" && runtime.time_sec >= SUPPORT_OPEN_ROAM_AT_SEC {
-            log_event(
+            log_coded_event(
                 runtime,
                 &format!("{} skipped {}", killer_name, timer_label),
                 "info",
+                EventCode::CampSkipped,
+                EventData::default()
+                    .actor(&killer_name, &killer_id)
+                    .objective(key),
             );
             return;
         }
@@ -5065,10 +5121,14 @@ fn mark_neutral_taken(
             .max(1);
             add_cs_to_champion(runtime, &killer_id, award_cs);
         }
-        log_event(
+        log_coded_event(
             runtime,
             &format!("{} cleared {}", killer_name, timer_label),
             "info",
+            EventCode::CampCleared,
+            EventData::default()
+                .actor(&killer_name, &killer_id)
+                .objective(key),
         );
         return;
     }
@@ -5085,7 +5145,7 @@ fn mark_neutral_taken(
                     GoldSource::Dragon,
                 );
                 let dragon_kind = process_dragon_capture(runtime, neutral_timers, &killer_team);
-                log_event(
+                log_coded_event(
                     runtime,
                     &format!(
                         "{} secured {} dragon",
@@ -5093,6 +5153,11 @@ fn mark_neutral_taken(
                         dragon_kind.to_uppercase()
                     ),
                     decision.event_type,
+                    EventCode::DragonSecured,
+                    EventData::default()
+                        .actor(&killer_name, &killer_id)
+                        .team(normalized_team(&killer_team))
+                        .dragon_kind(&dragon_kind.to_lowercase()),
                 );
             }
             NeutralCaptureKind::Baron => {
@@ -5109,13 +5174,17 @@ fn mark_neutral_taken(
                 team_buffs_mut(&mut buffs, &killer_team).baron_until =
                     runtime.time_sec + BARON_BUFF_DURATION_SEC;
                 set_runtime_buffs(runtime, &buffs);
-                log_event(
+                log_coded_event(
                     runtime,
                     &format!(
                         "{} secured baron",
                         normalized_team(&killer_team).to_uppercase()
                     ),
                     decision.event_type,
+                    EventCode::BaronSecured,
+                    EventData::default()
+                        .actor(&killer_name, &killer_id)
+                        .team(normalized_team(&killer_team)),
                 );
             }
             NeutralCaptureKind::Elder => {
@@ -5130,13 +5199,17 @@ fn mark_neutral_taken(
                 team_buffs_mut(&mut buffs, &killer_team).elder_until =
                     runtime.time_sec + ELDER_BUFF_DURATION_SEC;
                 set_runtime_buffs(runtime, &buffs);
-                log_event(
+                log_coded_event(
                     runtime,
                     &format!(
                         "{} secured elder",
                         normalized_team(&killer_team).to_uppercase()
                     ),
                     decision.event_type,
+                    EventCode::ElderSecured,
+                    EventData::default()
+                        .actor(&killer_name, &killer_id)
+                        .team(normalized_team(&killer_team)),
                 );
             }
             NeutralCaptureKind::Herald => {
@@ -5148,13 +5221,17 @@ fn mark_neutral_taken(
                     GoldSource::Herald,
                 );
                 set_rift_herald_charge(runtime, &killer_team, &killer_id);
-                log_event(
+                log_coded_event(
                     runtime,
                     &format!(
                         "{} secured rift herald",
                         normalized_team(&killer_team).to_uppercase()
                     ),
                     decision.event_type,
+                    EventCode::HeraldSecured,
+                    EventData::default()
+                        .actor(&killer_name, &killer_id)
+                        .team(normalized_team(&killer_team)),
                 );
             }
             NeutralCaptureKind::Voidgrubs => {
@@ -5165,13 +5242,17 @@ fn mark_neutral_taken(
                     OBJECTIVE_SECURE_XP,
                     GoldSource::Voidgrub,
                 );
-                log_event(
+                log_coded_event(
                     runtime,
                     &format!(
                         "{} cleared voidgrub camp",
                         normalized_team(&killer_team).to_uppercase()
                     ),
                     decision.event_type,
+                    EventCode::VoidgrubCampCleared,
+                    EventData::default()
+                        .actor(&killer_name, &killer_id)
+                        .team(normalized_team(&killer_team)),
                 );
             }
             NeutralCaptureKind::OtherObjective => {
@@ -5182,7 +5263,7 @@ fn mark_neutral_taken(
                     OBJECTIVE_SECURE_XP,
                     GoldSource::OtherObjective,
                 );
-                log_event(
+                log_coded_event(
                     runtime,
                     &format!(
                         "{} secured {}",
@@ -5190,6 +5271,11 @@ fn mark_neutral_taken(
                         timer_label
                     ),
                     decision.event_type,
+                    EventCode::ObjectiveSecured,
+                    EventData::default()
+                        .actor(&killer_name, &killer_id)
+                        .team(normalized_team(&killer_team))
+                        .objective(key),
                 );
             }
         }
@@ -5291,13 +5377,15 @@ fn attack_neutral_if_in_range(
         );
 
         for _ in 0..voidgrub_segments_gained {
-            log_event(
+            log_coded_event(
                 runtime,
                 &format!(
                     "{} secured voidgrub",
                     normalized_team(&killer_team).to_uppercase()
                 ),
                 "info",
+                EventCode::VoidgrubSecured,
+                EventData::default().team(normalized_team(&killer_team)),
             );
         }
     }
@@ -5791,10 +5879,14 @@ fn attack_enemy_champion(runtime: &mut RuntimeState, attacker_idx: usize, target
         }
     }
 
-    log_event(
+    log_coded_event(
         runtime,
         &format!("{} killed {}", killer_name, victim_name),
         "kill",
+        EventCode::ChampionKilled,
+        EventData::default()
+            .actor(&killer_name, &killer_id)
+            .target(&victim_name, &target_snapshot.id),
     );
 }
 
@@ -5870,13 +5962,18 @@ fn award_recent_champion_kill_credit(
     team_stats_mut(&mut runtime.stats, &killer_team).kills += 1;
     add_gold_xp_to_champion(runtime, &killer_id, kill_gold, kill_xp, GoldSource::Kill);
 
-    log_event(
+    log_coded_event(
         runtime,
         &format!(
             "{} killed {} ({})",
             killer_snapshot.name, victim_snapshot.name, cause
         ),
         "kill",
+        EventCode::ChampionKilled,
+        EventData::default()
+            .actor(&killer_snapshot.name, &killer_snapshot.id)
+            .target(&victim_snapshot.name, &victim_snapshot.id)
+            .cause(&cause.to_lowercase()),
     );
 }
 
@@ -6134,14 +6231,19 @@ fn destroy_structure(runtime: &mut RuntimeState, structure_idx: usize, attacker_
         "tower"
     };
 
-    log_event(
+    let structure_id = runtime.structures[structure_idx].id.clone();
+    log_coded_event(
         runtime,
         &format!(
             "{} destroyed {}",
             normalized_team(attacker_team).to_uppercase(),
-            runtime.structures[structure_idx].id
+            structure_id
         ),
         event_type,
+        EventCode::StructureDestroyed,
+        EventData::default()
+            .team(normalized_team(attacker_team))
+            .structure(&structure_id),
     );
 }
 
@@ -6654,10 +6756,15 @@ fn try_auto_buy_items(runtime: &mut RuntimeState) {
             champion.hp = (champion.hp + next_item.max_hp).min(champion.max_hp);
         }
 
-        log_event(
+        let buyer_id = runtime.champions[idx].id.clone();
+        log_coded_event(
             runtime,
             &format!("{} bought {}", name, next_item.key),
             "info",
+            EventCode::ItemBought,
+            EventData::default()
+                .actor(&name, &buyer_id)
+                .item(next_item.key),
         );
     }
 }
@@ -6830,6 +6937,9 @@ mod scorecard_tests;
 
 #[cfg(test)]
 mod damage_dealt_tests;
+
+#[cfg(test)]
+mod event_code_tests;
 
 #[cfg(test)]
 mod tower_safety_tests;

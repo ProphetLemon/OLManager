@@ -27,7 +27,13 @@ pub(super) fn spawn_wave(runtime: &mut RuntimeState, session: &mut SimLiveSessio
         }
     }
 
-    log_event(runtime, "Minion wave spawned", "spawn");
+    log_coded_event(
+        runtime,
+        "Minion wave spawned",
+        "spawn",
+        EventCode::WaveSpawned,
+        EventData::default(),
+    );
 }
 
 pub(super) fn build_minion(

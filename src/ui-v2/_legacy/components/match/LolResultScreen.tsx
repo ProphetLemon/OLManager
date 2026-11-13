@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { compactGold } from "@/lib/match/live/formatNumbers";
+import { eventSentence } from "@/ui-v2/match/live/eventSentence";
 import { buildLolScrimPrepInsight } from "@/lib/scrims/lolScrimPrep";
 import type { FixtureData, GameStateData } from "@/store/gameStore";
 import type { MatchEvent, MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
@@ -184,7 +185,7 @@ export default function LolResultScreen({
     ? [...(runtimeTimelineSource ?? [])].slice(-20).reverse().map((event, idx) => ({
       key: `${event.t}-${event.type}-${idx}`,
       minute: Math.max(0, Math.floor((event.t ?? 0) / 60)),
-      label: event.text,
+      label: eventSentence(event, t),
       side: sideFromRuntimeEvent(event.text),
     }))
     : importantEvents.slice(-20).reverse().map((evt, idx) => ({
