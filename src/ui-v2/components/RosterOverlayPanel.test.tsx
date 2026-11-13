@@ -204,4 +204,36 @@ describe("RosterOverlayPanel", () => {
     expect(screen.queryByText(/Couldn't check/)).not.toBeInTheDocument();
     expect(screen.queryByText("Rosters already up to date")).not.toBeInTheDocument();
   });
+
+  it("renders hosted actions after the update button", () => {
+    render(
+      <RosterOverlayPanel
+        info={makeInfo()}
+        status="idle"
+        error={null}
+        onUpdate={() => {}}
+        actions={<button type="button">Report a bug</button>}
+      />,
+    );
+
+    const update = screen.getByRole("button", { name: "Update rosters" });
+    const bug = screen.getByRole("button", { name: "Report a bug" });
+    expect(update.compareDocumentPosition(bug) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(update.parentElement).toBe(bug.parentElement);
+  });
+
+  it("keeps hosted actions reachable while the snapshot is unknown", () => {
+    render(
+      <RosterOverlayPanel
+        info={null}
+        status="idle"
+        error={null}
+        onUpdate={() => {}}
+        actions={<button type="button">Report a bug</button>}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Report a bug" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Update rosters" })).not.toBeInTheDocument();
+  });
 });

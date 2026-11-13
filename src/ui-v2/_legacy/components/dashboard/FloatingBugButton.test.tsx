@@ -56,7 +56,7 @@ describe("FloatingBugButton", () => {
     });
   });
 
-  it("keeps the floating button mounted and returns focus to it when the modal closes", async () => {
+  it("keeps the button mounted and returns focus to it when the modal closes", async () => {
     render(<FloatingBugButton />);
 
     const button = screen.getByRole("button", { name: "Reportar Bug" });
@@ -72,7 +72,7 @@ describe("FloatingBugButton", () => {
     await waitFor(() => expect(button).toHaveFocus());
   });
 
-  it("keeps the floating button mounted after opening the report modal", () => {
+  it("keeps the button mounted after opening the report modal", () => {
     useBugReportStore.setState({
       currentRoute: "/match",
       currentDashboardTab: "",
@@ -131,8 +131,8 @@ describe("FloatingBugButton", () => {
     expect(exportedContext.activeTab).not.toBe("Finances");
   });
 
-  it("renders a 44px accessible icon button in the rail placement", () => {
-    render(<FloatingBugButton placement="rail" />);
+  it("renders a 44px accessible icon button that is not fixed to the viewport", () => {
+    render(<FloatingBugButton />);
 
     const button = screen.getByRole("button", { name: "Reportar Bug" });
     expect(button).toHaveAttribute("title", "Reportar Bug");
@@ -141,11 +141,6 @@ describe("FloatingBugButton", () => {
 
     fireEvent.click(button);
     expect(screen.getByText("Report bug / suggest improvement")).toBeInTheDocument();
-  });
-
-  it("keeps the floating placement fixed by default", () => {
-    render(<FloatingBugButton />);
-    expect(screen.getByTitle("Reportar Bug").className).toContain("fixed");
   });
 
   describe("without a game (new-career setup)", () => {
@@ -157,11 +152,6 @@ describe("FloatingBugButton", () => {
     it("still renders the button", () => {
       render(<FloatingBugButton />);
       expect(screen.getByTitle("Reportar Bug")).toBeInTheDocument();
-    });
-
-    it("renders in the rail placement too", () => {
-      render(<FloatingBugButton placement="rail" />);
-      expect(screen.getByRole("button", { name: "Reportar Bug" })).toBeInTheDocument();
     });
 
     it("sends the report with no save and marks the game context as unavailable", async () => {

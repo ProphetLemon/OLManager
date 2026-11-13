@@ -59,29 +59,9 @@ vi.mock("@/ui-v2/pages/SettingsV2", () => ({
 
 // ─── Tests ───────────────────────────────────────────────────────────────
 
-describe("AppContent floating bug button", () => {
-  it("renders on /select-team", () => {
-    render(
-      <MemoryRouter initialEntries={["/select-team"]}>
-        <AppContent />
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByTestId("floating-bug-button")).toBeInTheDocument();
-  });
-
-  it("does not float over the live match: its controls row hosts the button", () => {
-    render(
-      <MemoryRouter initialEntries={["/match"]}>
-        <AppContent />
-      </MemoryRouter>,
-    );
-
-    expect(screen.queryByTestId("floating-bug-button")).toBeNull();
-  });
-
-  it.each(["/dashboard", "/finanzas", "/competitions", "/settings", "/"])(
-    "is left to the rail on %s",
+describe("AppContent bug button", () => {
+  it.each(["/select-team", "/match", "/dashboard", "/finanzas", "/competitions", "/settings", "/"])(
+    "never floats over %s: each screen hosts its own button",
     (route) => {
       render(
         <MemoryRouter initialEntries={[route]}>

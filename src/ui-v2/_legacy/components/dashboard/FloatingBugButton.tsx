@@ -9,13 +9,8 @@ import { useBugReportStore } from "@/store/bugReportStore";
 import { APP_VERSION } from "@/lib/common/appInfo";
 import { getManagerTeamName } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 
-interface FloatingBugButtonProps {
-  placement?: "floating" | "rail";
-}
-
-export default function FloatingBugButton({
-  placement = "floating",
-}: FloatingBugButtonProps = {}): JSX.Element | null {
+/** Icon button that opens the bug report. Hosted by the host screen's own controls row. */
+export default function FloatingBugButton(): JSX.Element {
   const { t } = useTranslation();
   const gameState = useGameStore((s) => s.gameState);
   const { currentRoute, currentDashboardTab } = useBugReportStore();
@@ -25,29 +20,15 @@ export default function FloatingBugButton({
 
   return (
     <>
-      {placement === "rail" && (
-        <button
-          type="button"
-          onClick={() => setShow(true)}
-          className="inline-flex size-[var(--hit)] items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
-          aria-label={label}
-          title={label}
-        >
-          <Bug className="size-5" aria-hidden="true" />
-        </button>
-      )}
-
-      {placement === "floating" && (
-        <button
-          type="button"
-          onClick={() => setShow(true)}
-          aria-label={label}
-          className="fixed bottom-6 right-6 z-[9999] flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-orange-500 text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl active:scale-95"
-          title={label}
-        >
-          <Bug className="h-5 w-5" />
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => setShow(true)}
+        className="inline-flex size-[var(--hit)] items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+        aria-label={label}
+        title={label}
+      >
+        <Bug className="size-5" aria-hidden="true" />
+      </button>
 
       {show && (
         <ReportBugModal

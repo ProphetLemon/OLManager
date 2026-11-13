@@ -1,4 +1,5 @@
 import { Loader2, RefreshCw } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { RosterOverlayStatus } from "@/hooks/useRosterOverlay";
@@ -11,6 +12,8 @@ interface RosterOverlayPanelProps {
   status: RosterOverlayStatus;
   error: string | null;
   onUpdate: () => void;
+  /** Extra controls hosted after the update button (e.g. the bug report button). */
+  actions?: ReactNode;
 }
 
 /**
@@ -32,12 +35,29 @@ function openExternal(url: string): void {
 }
 
 /** Presentational: shows the roster snapshot date, its licence and the update action. */
-export function RosterOverlayPanel({ info, status, error, onUpdate }: RosterOverlayPanelProps) {
+export function RosterOverlayPanel({
+  info,
+  status,
+  error,
+  onUpdate,
+  actions,
+}: RosterOverlayPanelProps) {
   const { t, i18n } = useTranslation();
   const updating = status === "updating";
   const checking = status === "checking";
 
-  if (!info) return null;
+  if (!info) {
+    // The hosted actions must stay reachable while the snapshot is unknown.
+    if (!actions) return null;
+    return (
+      <div
+        className="flex shrink-0 items-center justify-end gap-3 border-t border-border bg-card/40 px-6 py-2"
+        data-testid="roster-overlay-actions"
+      >
+        {actions}
+      </div>
+    );
+  }
 
   const asOf = formatDate(info.as_of, i18n.language);
   const { source } = info;
@@ -102,6 +122,7 @@ export function RosterOverlayPanel({ info, status, error, onUpdate }: RosterOver
             ? t("rosterOverlay.updating", "Updating...")
             : t("rosterOverlay.update", "Update rosters")}
         </Button>
+        {actions}
       </div>
 
       {status === "error" && error && (
