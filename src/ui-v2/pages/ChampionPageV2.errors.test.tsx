@@ -116,4 +116,17 @@ describe("ChampionPageV2 load states", () => {
     expect(screen.getByText("3,0%")).toBeInTheDocument();
     expect(screen.queryByText("66.7%")).toBeNull();
   });
+
+  it("lists the five most recent weeks, since the history arrives oldest first", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const weeks = [1, 2, 3, 4, 5, 6, 7].map((n) => ({ week_label: `2026-W0${n}`, games: n, win_rate: 50, avg_kda: 3 }));
+    vi.mocked(invoke).mockResolvedValue({ ...PLAYED, weekly_history: weeks });
+    await renderSpanish();
+
+    await waitFor(() => expect(screen.getByText("2026-W07")).toBeInTheDocument());
+
+    expect(["2026-W03", "2026-W04", "2026-W05", "2026-W06"].every((label) => screen.queryByText(label))).toBe(true);
+    expect(screen.queryByText("2026-W01")).toBeNull();
+    expect(screen.queryByText("2026-W02")).toBeNull();
+  });
 });

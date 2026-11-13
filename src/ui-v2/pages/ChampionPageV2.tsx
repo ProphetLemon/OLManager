@@ -262,7 +262,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
             <CardContent className="p-0">
               {s?.weekly_history && s.weekly_history.length > 0 ? (
                 <div className="divide-y divide-border/30">
-                  {s.weekly_history.slice(0, 5).map((w) => (
+                  {s.weekly_history.slice(-5).map((w) => (
                     <div key={w.week_label} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/20">
                       <span className="w-20 font-heading text-xs font-bold text-foreground">{w.week_label}</span>
                       <div className="flex flex-1 items-center gap-2">
