@@ -4,6 +4,69 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1113.2] - 2026-11-13
+
+### Changed
+
+- The watched match has a new screen. The map is sized from the window, and the page no longer scrolls at 1440x900, 1366x768 or 1280x800, so the map, the five player cards per side and the controls stay in view. Before, the map was 450 px, the kill feed was hidden at 1440x900, and the page scrolled once players had items.
+- Watched matches have a few more kills and last about as long as before: about 24 kills per match (about 21 before) and about 37 minutes. Measured on 1,600 replays of match starts captured from the game. The extra kills come from champions now stopping recalls they can reach.
+- Numbers with decimals use the decimal mark of the game language: ratings, KDA and per-match averages, win rates, multipliers, money in millions, contract years left and social counts. In Spanish a rating reads "6,1" and not "6.1". Only the mark changes, not the value or the rounding.
+- A delegated match of yours is now simulated like the day's other matches. It gets a draft, so its champions and bans count on the champion page and in the stats. Your players gain champion mastery from it, and the draft affects the result. A delegated best-of-three or best-of-five now plays the full series. Before, a single game decided it.
+- The post-match screen writes the events of the match in the game language. Before, the engine's English lines were shown.
+- A split's trophy now goes to its playoff champion, as in the rest of the game. A split without a decided playoff final still gives it to the team first in the table. Trophies already counted in saves are not recomputed.
+- Jungler Heralds go to the lane whose enemy tower has the least health, with the nearest lane as tie-break. Before, a Herald taken by a jungler always pushed the bottom lane. In 1,600 replayed matches, jungler Heralds went top, mid and bottom 238, 672 and 204 times (0, 0 and 794 before), and a Herald was put to use in 1,464 matches instead of 1,143.
+
+### Added
+
+- Watched match, on the map:
+  - blue champions are circles and red champions are rounded squares, with level, health, a recall ring that drains and the seconds left to respawn for a dead champion;
+  - a champion with a state (recalling, fighting, on an objective) has a tag, and tags no longer cover each other or the map labels (0 overlaps in 546 late-game frames at 1440x900 at x4; before, tags overlapped in about 5% of frames);
+  - two fighting champions are joined by a line with a dot on the attacker;
+  - a tower shot is a beam with an arrowhead and an "x" count of the shots in the last 3 seconds;
+  - the lanes, towers, inhibitors, nexuses, jungle camps, wards and minions are drawn, and the dragon and top pits show their health or their respawn countdown.
+- Watched match, around the map:
+  - the score bar shows towers, gold, dragons, Voidgrubs, Barons, the Baron and Elder buffs and the soul for each team, with the kills and the clock;
+  - each player card shows level, health, KDA, farm, gold, the gold gap against the opposing laner, item names and cooldowns with the seconds left; there is no mana bar, because the game has none;
+  - a ticker lists the latest eight kills and objectives, and a caption sums up the main fight in one sentence;
+  - the Fight board gives the same information as text, and the map key explains the shapes; both are closed until you open them;
+  - the cards can be reached with the keyboard, and a screen reader hears only the newest event.
+- Watched match controls: Pause, speeds from x1 to x12, and a Match options menu with Skip and Reset. Each asks before it acts. Skip now plays out the rest of the same match instead of simulating it again from minute 0. The result waits for Continue; before, it moved on by itself after about 0.4 s.
+- The bug report button shows during new-career setup, in the footer of the team list so it covers nothing. A report sent without a game leaves the save out, instead of carrying an empty save file.
+- The post-match screen has a header row naming the gold, damage and rating columns, and each team's damage is real. Before, it showed a dash.
+
+### Fixed
+
+- Match stats were lost when you loaded a saved game. Loading emptied the player, team and champion stats in memory, and the next save then wrote that empty history over the file. Loading now keeps the history, and every save writes the current one. History already lost in older saves cannot be brought back, because it is no longer in the file.
+- The champion page showed a dash for every stat. It now shows real numbers, such as win rate, KDA and averages, from the matches played, and it still shows a dash with a note for a champion nobody has played. If the stats cannot be loaded, the page says so instead of staying silent. The weekly list shows the five most recent weeks of the ten kept; it showed the five oldest.
+- "Export world database" in Settings did nothing. It now writes the file to the "exports" folder of the game data folder and shows where it is, or shows the error.
+- Champions who met no longer stand on top of each other doing nothing. In 1,600 replayed matches, enemy champions standing within one bubble of each other for 3 seconds or more without a hit went from about 168 per match to about 21 (-88%). Laners now keep a gap while they farm.
+- Champions now stop a recall they can reach, and do not dive a tower to do it. A recall that finishes next to an enemy who could have reached it went from about 9.8 per match to about 6.0 (-39%).
+- Champions no longer stay "recalling" for minutes without recalling. Such stuck recalls went from about 2.3 to about 0.2 per match. A recaller kept from channeling by an enemy nearby now channels after 10 seconds.
+- Pushers no longer freeze near their own base chasing a minion they cannot hit while their team goes for the enemy nexus. Such freezes went from about 0.17 to under 0.01 per match, and the longest went from 163 s to 49 s.
+- A team that has taken every tower and sees an enemy nexus a few hits from falling, with no enemy champion at it, now goes straight to it. The final push also waits for teammates who are recalling, instead of going in with fewer players. Matches that stayed open for more than 5 minutes after the last tower went from 11 to 3 in 1,600.
+- Unclaimed Voidgrubs no longer go to blue on a tie. In the replays no match reached this case, so it changes nothing measurable.
+- Trades now take enemy towers into account. A check compared the structure kind with the wrong text, so the tower never counted. The effect is small: trades started within an enemy tower's reach went from 17.22% to 17.17% of all trades.
+- Skip no longer freezes the window for 3 to 4 seconds. While the rest of the match is played, the screen says "Calculating the result" and the controls stay off. If the match cannot be played out, you get an alert with a "Try again" button.
+- The saved starting five is seated in the right lanes when the lineup was saved out of lane order. Before, a match built from such a lineup could play a champion in the wrong lane.
+- Map tags no longer hide behind a fading copy of another tag, no longer sit under a firing tower's ring, beam or counter, and are sized as drawn, so two nearby tags do not touch. The speed buttons and the Fight board and map key summaries meet the minimum touch size on Android.
+- The controls row stays on one line, and the map keeps its height, at 1280x800 and 1366x768. At 1366x768 the map went from 394 px to 442 px and all five player cards per side fit.
+- On the post-match screen, a player's gold is the gold earned, not the unspent purse. A player at 11.6k on the live card read 1225 here. The gold chart's labels are 12 px (about 11 before), and the chart uses the same number format as the rows, with the lower-case "k". The MVP score uses earned gold. The German gold column reads "Goldertrag".
+- On the post-match screen, kills now show their team in the timeline and count in the momentum chart. Before, the side was read from English text, so kills showed a dash and were not counted.
+- The manager's career counts every split. Before, trophies and best finish looked only at the last split of a season, so a title in split 1 followed by a worse split 2 showed neither. Each split is counted once.
+- A save made in the middle of a season keeps the career totals it has, and later splits are counted once. Splits finished by a save from before version 2026.1111.2 stay missing from the totals, and the trophies and best finish of splits closed before this version cannot be recovered, because the save does not hold them.
+- The profile's champion pool reads "1 partida" for one game and the plural for more, in all languages.
+- The profile's contract block writes the expiry date in the game language's format, and the years left with its decimal mark.
+- Spanish uses one term for a player's physical condition, "Estado físico", in the Squad column and on the player card.
+- The Settings back arrow has a name for screen readers.
+
+### Known issues
+
+- In a watched match, a recall that starts next to an enemy who can reach it still finishes about 6 times per match. The one rule that cut this by 70% broke the balance of gold and player attributes, so it is not included. A few stuck recalls remain, about 0.2 per match: a champion whose route starts behind the champion, and a jungler who flees along the edge of the map.
+- Champions who push after a won fight still die to towers more often than they should. When last measured, about 24 deaths in 100 were to towers. This version changes little here.
+- Once every tower of a team is down, the match can still take about a minute to end. It no longer drags on for more than 5 minutes in most cases, but the average has not been measured again.
+- Vision score and wards are recorded as 0 for every player in every match, so the vision figure on the champion page is always 0. Matches you do not watch (the AI's matches, and now your delegated matches too) also record 0 assists and 0 CS for every player, because they only track kills, deaths, gold and damage. KDA and CS built from those matches are lower than they should be. Watched matches record assists and CS.
+- The file written by "Export world database" cannot be imported anywhere in the game yet.
+
 ## [2026.1113.1] - 2026-11-13
 
 ### Changed
