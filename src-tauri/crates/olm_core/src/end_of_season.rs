@@ -514,7 +514,8 @@ fn add_standing_to_career(
 }
 
 /// Add the user's row of the running split to the manager's career: the matches, and the
-/// trophy and best finish when the club topped the table or beat its best finish. Every
+/// trophy when the club won the playoff (or topped the table of a split without one) and
+/// the best finish, both read from the playoff-aware final position. Every
 /// split counts, so a title in the first split survives a worse second split. Call it at
 /// each split end, before the next split replaces the league; the season end calls it for
 /// the final split. A split already in the totals is skipped, which keeps a retried or
@@ -539,10 +540,17 @@ pub fn record_split_in_career(game: &mut Game) {
     let Some(position) = table.iter().position(|s| s.team_id == user_team_id) else {
         return;
     };
-    let finish = (position + 1) as u32;
+    let table_rank = (position + 1) as u32;
+    let finish = effective_final_position(league, &user_team_id);
     let standing = table[position].clone();
 
-    if finish == 1 {
+    // The playoff champion takes the trophy; a split without a decided final falls back
+    // to first in the table.
+    let won_trophy = match playoff_champion_id(league) {
+        Some(champion) => champion == user_team_id,
+        None => table_rank == 1,
+    };
+    if won_trophy {
         game.manager.career_stats.trophies += 1;
     }
     let best = game.manager.career_stats.best_finish;

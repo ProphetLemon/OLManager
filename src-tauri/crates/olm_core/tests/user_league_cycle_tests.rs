@@ -743,3 +743,94 @@ fn an_unmarked_mid_season_save_keeps_its_totals_and_counts_later_splits_once() {
         "totals after the next split end"
     );
 }
+
+/// Sets the points of the `lec` table in the order given, so the first id tops it.
+fn set_lec_table_order(game: &mut Game, order: &[&str]) {
+    let lec = game
+        .leagues
+        .iter_mut()
+        .find(|l| l.id == "lec")
+        .expect("lec league");
+    for row in &mut lec.standings {
+        let rank = order
+            .iter()
+            .position(|id| *id == row.team_id)
+            .expect("team in order");
+        row.points = (order.len() - rank) as u32 * 3;
+    }
+}
+
+/// Adds a decided playoff final to the `lec` league, won by `winner` over `loser`.
+fn add_playoff_final(game: &mut Game, winner: &str, loser: &str) {
+    let lec = game
+        .leagues
+        .iter_mut()
+        .find(|l| l.id == "lec")
+        .expect("lec league");
+    lec.fixtures.push(Fixture {
+        id: "lec-final".to_string(),
+        matchday: 99,
+        date: "2025-06-10".to_string(),
+        home_team_id: winner.to_string(),
+        away_team_id: loser.to_string(),
+        match_type: MatchType::Playoffs,
+        best_of: 3,
+        status: FixtureStatus::Completed,
+        result: Some(MatchResult {
+            home_wins: 2,
+            away_wins: 1,
+            ..MatchResult::default()
+        }),
+    });
+}
+
+#[test]
+fn topping_the_table_but_losing_the_playoff_final_gives_no_trophy_and_a_second_place() {
+    let mut game = two_split_game();
+    play_split(&mut game, 6, 1);
+    set_lec_table_order(&mut game, &["lec1", "lec2", "lec3", "lec4"]);
+    add_playoff_final(&mut game, "lec2", "lec1");
+
+    advance_season(&mut game);
+    play_split(&mut game, 3, 4);
+    set_lec_table_order(&mut game, &["lec2", "lec3", "lec4", "lec1"]);
+    advance_season(&mut game);
+
+    let career = &game.manager.career_stats;
+    assert_eq!(career.trophies, 0, "trophies of the season");
+    assert_eq!(career.best_finish, Some(2), "best finish of the season");
+}
+
+#[test]
+fn winning_the_playoff_from_third_in_the_table_gives_a_trophy_and_a_first_place() {
+    let mut game = two_split_game();
+    play_split(&mut game, 3, 4);
+    set_lec_table_order(&mut game, &["lec2", "lec3", "lec1", "lec4"]);
+    add_playoff_final(&mut game, "lec1", "lec2");
+
+    advance_season(&mut game);
+    play_split(&mut game, 3, 4);
+    set_lec_table_order(&mut game, &["lec2", "lec3", "lec4", "lec1"]);
+    advance_season(&mut game);
+
+    let career = &game.manager.career_stats;
+    assert_eq!(career.trophies, 1, "trophies of the season");
+    assert_eq!(career.best_finish, Some(1), "best finish of the season");
+    assert_eq!(
+        game.manager.career_history[0].best_league_position, Some(1),
+        "best position of the club entry"
+    );
+}
+
+#[test]
+fn a_split_without_playoffs_gives_the_trophy_to_first_in_the_table() {
+    let mut game = two_split_game();
+    play_split(&mut game, 6, 1);
+    set_lec_table_order(&mut game, &["lec1", "lec2", "lec3", "lec4"]);
+
+    advance_season(&mut game);
+
+    let career = &game.manager.career_stats;
+    assert_eq!(career.trophies, 1, "trophies of the split");
+    assert_eq!(career.best_finish, Some(1), "best finish of the split");
+}
