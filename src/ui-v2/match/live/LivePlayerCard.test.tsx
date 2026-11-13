@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { useState } from "react";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import i18n from "@/i18n";
 import type { ChampionState } from "@/ui-v2/_legacy/components/match/lol-prototype/engine/types";
@@ -161,7 +161,6 @@ describe("what the card shows", () => {
     const slots = card().querySelectorAll(".arena-item");
     expect(slots).toHaveLength(6);
     expect([...slots].map((slot) => slot.hasAttribute("data-empty"))).toEqual([false, false, true, true, true, true]);
-    expect(slots[0]).toHaveAttribute("title", "Abyssal Mask");
     expect(slots[0].querySelector("img")).toHaveAttribute("src", "/lol-item-icons/abyssal_mask.png");
   });
 
@@ -170,8 +169,6 @@ describe("what the card shows", () => {
     const chips = screen.getAllByTestId("card-cd");
     expect(chips.map((chip) => chip.textContent)).toEqual(["R 13", "F", "I 60"]);
     expect(chips.map((chip) => chip.hasAttribute("data-ready"))).toEqual([false, true, false]);
-    expect(chips[1]).toHaveAttribute("title", "Flash ready");
-    expect(chips[2]).toHaveAttribute("title", "Ignite ready in 60 seconds");
   });
 
   it("shows the state as text: lane, fighting, recall or dead", () => {
@@ -272,5 +269,71 @@ describe("LivePlayerCard in the Spanish UI", () => {
     expect(text).toContain("Objetos: Abyssal Mask, Statikk Shiv, 4 huecos vacíos");
     expect(text).toContain("Definitiva listo en 13 segundos");
     expect(container.textContent).not.toMatch(/onAir\.|championPage\./);
+  });
+});
+
+describe("the tips on the icons", () => {
+  afterEach(() => vi.useRealTimers());
+  const tip = () => screen.queryByRole("tooltip");
+  const advance = (ms: number) => act(() => void vi.advanceTimersByTime(ms));
+
+  it("keeps no native title on any slot or cooldown chip", () => {
+    render(<LivePlayerCard {...props()} />);
+    const icons = [...card().querySelectorAll(".arena-item, .arena-cd")];
+    expect(icons).toHaveLength(9);
+    expect(icons.filter((icon) => icon.hasAttribute("title"))).toEqual([]);
+  });
+
+  it("shows an item name, the empty slot text and a cooldown sentence on hover", () => {
+    vi.useFakeTimers();
+    render(<LivePlayerCard {...props()} />);
+    const hover = (el: Element) => {
+      fireEvent.pointerEnter(el, { pointerType: "mouse" });
+      advance(400);
+    };
+    hover(screen.getAllByTestId("card-item")[0]);
+    expect(tip()).toHaveTextContent("Abyssal Mask");
+    fireEvent.pointerLeave(screen.getAllByTestId("card-item")[0], { pointerType: "mouse" });
+    expect(tip()).toBeNull();
+
+    hover(card().querySelector(".arena-item[data-empty]") as Element);
+    expect(tip()).toHaveTextContent(i18n.t("onAir.match.card.itemEmpty"));
+    fireEvent.pointerLeave(card().querySelector(".arena-item[data-empty]") as Element, { pointerType: "mouse" });
+
+    hover(screen.getAllByTestId("card-cd")[2]);
+    expect(tip()).toHaveTextContent("Ignite ready in 60 seconds");
+  });
+
+  it("shows the name on a long press without following the player", () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    render(<LivePlayerCard {...props({ onSelect })} />);
+    const item = screen.getAllByTestId("card-item")[1];
+    fireEvent.pointerDown(item, { pointerType: "touch" });
+    advance(500);
+    fireEvent.pointerUp(item, { pointerType: "touch" });
+    fireEvent.click(item);
+    expect(tip()).toHaveTextContent("Statikk Shiv");
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("still follows the player on a plain tap on an icon", () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    render(<LivePlayerCard {...props({ onSelect })} />);
+    const item = screen.getAllByTestId("card-item")[0];
+    fireEvent.pointerDown(item, { pointerType: "touch" });
+    advance(120);
+    fireEvent.pointerUp(item, { pointerType: "touch" });
+    fireEvent.click(item);
+    expect(tip()).toBeNull();
+    expect(onSelect).toHaveBeenCalledWith("korvan");
+  });
+
+  it("gives screen readers the item names and the spell sentences through the description", () => {
+    render(<LivePlayerCard {...props()} />);
+    expect(description()).toContain("Abyssal Mask, Statikk Shiv");
+    expect(description()).toContain("Flash ready");
+    expect(description()).toContain("Ignite ready in 60 seconds");
   });
 });
