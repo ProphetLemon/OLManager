@@ -2491,6 +2491,12 @@
       "gameTimeline": "Oyun zaman çizelgesi",
       "blueNext": "Sonraki Mavi",
       "redNext": "Sonraki Kırmızı",
+      "columns": {
+        "gold": "Altın",
+        "damage": "Hasar",
+        "rating": "Puan",
+        "goldEarned": "Kazanılan altın"
+      },
       "timelineEvents": {
         "firstBlood": "İlk Kan",
         "voidgrubs": "Boşluk Larvaları x3",

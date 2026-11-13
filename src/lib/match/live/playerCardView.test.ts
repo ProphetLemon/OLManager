@@ -77,6 +77,11 @@ describe("the gold gap", () => {
     expect(totalGold(champ())).toBe(3000);
   });
 
+  it("falls back to the gold in hand for a record that never kept the gold spent", () => {
+    expect(totalGold({ gold: 1225 })).toBe(1225);
+    expect(totalGold({ gold: 1225, spentGold: undefined })).toBe(1225);
+  });
+
   it("is ahead, behind or even against the opposing laner", () => {
     expect(goldGap(champ(), opponent)).toEqual({ direction: "ahead", amount: 900 });
     expect(goldGap(opponent, champ())).toEqual({ direction: "behind", amount: 900 });

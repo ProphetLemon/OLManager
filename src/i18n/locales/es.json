@@ -2758,6 +2758,12 @@
       "gameTimeline": "Cronología de la partida",
       "blueNext": "Azul siguiente",
       "redNext": "Rojo siguiente",
+      "columns": {
+        "gold": "Oro",
+        "damage": "Daño",
+        "rating": "Nota",
+        "goldEarned": "Oro obtenido"
+      },
       "timelineEvents": {
         "firstBlood": "Primera sangre",
         "voidgrubs": "Larvas del Vacío x3",

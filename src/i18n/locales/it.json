@@ -2391,6 +2391,12 @@
       "gameTimeline": "Cronologia della partita",
       "blueNext": "Blu per prossimo",
       "redNext": "Rosso per prossimo",
+      "columns": {
+        "gold": "Oro",
+        "damage": "Danni",
+        "rating": "Voto",
+        "goldEarned": "Oro guadagnato"
+      },
       "timelineEvents": {
         "firstBlood": "Primo sangue",
         "voidgrubs": "Larve del Vuoto x3",

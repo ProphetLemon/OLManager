@@ -2770,6 +2770,12 @@
       "gameTimeline": "Game timeline",
       "blueNext": "Blue next",
       "redNext": "Red next",
+      "columns": {
+        "gold": "Gold",
+        "damage": "Damage",
+        "rating": "Rating",
+        "goldEarned": "Gold earned"
+      },
       "timelineEvents": {
         "firstBlood": "First Blood",
         "voidgrubs": "Voidgrubs x3",

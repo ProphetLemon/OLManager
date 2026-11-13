@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { compactGold } from "@/lib/match/live/formatNumbers";
+import { totalGold } from "@/lib/match/live/playerCardView";
 import { buildLolScrimPrepInsight } from "@/lib/scrims/lolScrimPrep";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
@@ -295,6 +296,10 @@ export default function DraftResultScreenV2({
       const last = rows[rows.length - 1];
       if (last && last.minute === event.minute) {
         if (event.side === "blue") last.blue.push(event);
+  // Gold earned, as the live card writes it. Results stored before `spentGold` existed show their `gold`.
+  const goldText = (row: { gold: number; spentGold?: number }): string =>
+    compactGold(totalGold(row), i18n.language);
+
         else last.red.push(event);
       } else {
         rows.push({ minute: event.minute, blue: event.side === "blue" ? [event] : [], red: event.side === "red" ? [event] : [] });
@@ -648,7 +653,24 @@ export default function DraftResultScreenV2({
                           <span className="truncate">{row.playerName}</span>
                         </div>
                         <span className="text-sm text-muted-foreground/50">{row.kills}/{row.deaths}/{row.assists}</span>
-                        <span className="text-sm text-muted-foreground/50">{row.gold}</span>
+                        <span
+                          className="text-sm text-muted-foreground/50"
+                          title={t("match.draftResult.columns.goldEarned")}
+                          aria-label={`${t("match.draftResult.columns.goldEarned")}: ${goldText(row)}`}
+                          data-testid="row-gold"
+                        >
+                          {goldText(row)}
+                        </span>
+                  <div
+                    className="col-span-5 grid grid-cols-subgrid items-center gap-3 border border-transparent px-3 text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground"
+                    data-testid="row-columns"
+                  >
+                    <span aria-hidden="true" />
+                    <span aria-hidden="true" />
+                    <span>{t("match.draftResult.columns.gold")}</span>
+                    <span>{t("match.draftResult.columns.damage")}</span>
+                    <span>{t("match.draftResult.columns.rating")}</span>
+                  </div>
                         <span
                           className="text-sm text-muted-foreground/50"
                           title={t("match.damageDealt")}
@@ -657,7 +679,14 @@ export default function DraftResultScreenV2({
                         >
                           {damageText(row.damageDealt)}
                         </span>
-                        <span className="text-sm font-bold text-club-text">{row.rating.toFixed(1)}</span>
+                        <span
+                          className="text-sm font-bold text-club-text"
+                          title={t("match.draftResult.columns.rating")}
+                          aria-label={`${t("match.draftResult.columns.rating")}: ${row.rating.toFixed(1)}`}
+                          data-testid="row-rating"
+                        >
+                          {row.rating.toFixed(1)}
+                        </span>
                       </div>
                     );
                   })}
@@ -685,7 +714,24 @@ export default function DraftResultScreenV2({
                           <span className="truncate">{row.playerName}</span>
                         </div>
                         <span className="text-sm text-muted-foreground/50">{row.kills}/{row.deaths}/{row.assists}</span>
-                        <span className="text-sm text-muted-foreground/50">{row.gold}</span>
+                        <span
+                          className="text-sm text-muted-foreground/50"
+                          title={t("match.draftResult.columns.goldEarned")}
+                          aria-label={`${t("match.draftResult.columns.goldEarned")}: ${goldText(row)}`}
+                          data-testid="row-gold"
+                        >
+                          {goldText(row)}
+                        </span>
+                  <div
+                    className="col-span-5 grid grid-cols-subgrid items-center gap-3 border border-transparent px-3 text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground"
+                    data-testid="row-columns"
+                  >
+                    <span aria-hidden="true" />
+                    <span aria-hidden="true" />
+                    <span>{t("match.draftResult.columns.gold")}</span>
+                    <span>{t("match.draftResult.columns.damage")}</span>
+                    <span>{t("match.draftResult.columns.rating")}</span>
+                  </div>
                         <span
                           className="text-sm text-muted-foreground/50"
                           title={t("match.damageDealt")}
@@ -694,7 +740,14 @@ export default function DraftResultScreenV2({
                         >
                           {damageText(row.damageDealt)}
                         </span>
-                        <span className="text-sm font-bold text-orange-400">{row.rating.toFixed(1)}</span>
+                        <span
+                          className="text-sm font-bold text-orange-400"
+                          title={t("match.draftResult.columns.rating")}
+                          aria-label={`${t("match.draftResult.columns.rating")}: ${row.rating.toFixed(1)}`}
+                          data-testid="row-rating"
+                        >
+                          {row.rating.toFixed(1)}
+                        </span>
                       </div>
                     );
                   })}

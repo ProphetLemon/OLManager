@@ -448,6 +448,7 @@ export function buildDraftResultFromRuntime(params: {
     deaths: champion.deaths ?? 0,
     assists: champion.assists ?? 0,
     gold: champion.gold ?? 0,
+    spentGold: champion.spentGold ?? 0,
     damageDealt: champion.damageDealt ?? 0,
     rating: Number(
       Math.max(
