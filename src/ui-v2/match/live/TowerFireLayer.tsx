@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react"
 import { useTranslation } from "react-i18next";
 
 import type { TowerBeam } from "@/lib/match/live/contacts";
+import { FIRE_RING_GAP_PX } from "@/lib/match/live/fireObstacles";
 import { beamGeometry, linkOpacity } from "@/lib/match/live/linkGeometry";
 import { MAP_UNITS, anchorTransform, bubbleDiameterPx, structureDiameterPx } from "@/lib/match/live/mapGeometry";
 import type { LolSimV1RuntimeState } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
@@ -10,9 +11,6 @@ import { useArenaBus, useMapSize } from "./arenaMapContext";
 import { DOT_RADIUS_PX } from "./ContactLayer";
 import { keyOf, useElementRegistry, writeDot, writeLine } from "./layerDom";
 import { RING_CLASSES } from "./ringClasses";
-
-/** Clear space between a firing tower and its dashed ring, in pixels. */
-const FIRE_RING_GAP_PX = 5;
 
 export interface TowerFireLayerProps {
   /** The state of the last engine answer. Positions between answers come from the frame bus. */

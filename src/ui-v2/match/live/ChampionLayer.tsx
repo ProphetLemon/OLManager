@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { markerState } from "@/lib/match/live/championMarker";
-import type { ContactResult } from "@/lib/match/live/contacts";
+import type { ContactResult, TowerBeam } from "@/lib/match/live/contacts";
+import { fireObstacles } from "@/lib/match/live/fireObstacles";
 import { MAP_UNITS } from "@/lib/match/live/mapGeometry";
 import { pitViews } from "@/lib/match/live/objectivesView";
 import { pitObstacle, placeTags, type TagPlacements } from "@/lib/match/live/tagPlacement";
@@ -21,7 +22,11 @@ export interface ChampionLayerProps {
   contacts: Pick<ContactResult, "fightingIds">;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** Towers that are shooting: their ring, beam and chip are drawn above the tags, so the tags keep clear of them. */
+  beams?: readonly TowerBeam[];
 }
+
+const NO_BEAMS: readonly TowerBeam[] = [];
 
 /**
  * All ten markers. On every committed answer it works out each champion's state, measures the
@@ -34,7 +39,7 @@ export interface ChampionLayerProps {
  * the map all count. They are read in a layout effect after the commit, and a change of size
  * renders once more before the screen is painted.
  */
-export function ChampionLayer({ state, championByPlayerId, contacts, selectedId, onSelect }: ChampionLayerProps) {
+export function ChampionLayer({ state, championByPlayerId, contacts, selectedId, onSelect, beams = NO_BEAMS }: ChampionLayerProps) {
   const textsFor = useMarkerTexts();
   const previous = useRef<TagPlacements | undefined>(undefined);
   const sizePx = useMapSize();
@@ -57,17 +62,20 @@ export function ChampionLayer({ state, championByPlayerId, contacts, selectedId,
     });
   }, [state.champions, contacts.fightingIds, nowSec, textsFor]);
 
-  // The labels of the objective pits are drawn under the champions' tags: tags keep clear of them.
+  // Tags keep clear of the labels of the objective pits, and of the ring, the beam and the chip of
+  // a tower that is shooting: those are drawn above them and would hide them.
   const obstacles = useMemo(
-    () =>
-      pitViews(state).map((pit) =>
+    () => [
+      ...pitViews(state).map((pit) =>
         pitObstacle(
           { x: pit.pos.x / MAP_UNITS, y: pit.pos.y / MAP_UNITS },
           Number(Boolean(pit.soul)) + Number(Boolean(pit.heraldCarrier)),
           sizePx || undefined,
         ),
       ),
-    [state, sizePx],
+      ...fireObstacles(beams, state.structures, state.champions, sizePx),
+    ],
+    [state, sizePx, beams],
   );
 
   const placements = useMemo(

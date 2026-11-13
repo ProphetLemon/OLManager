@@ -280,6 +280,7 @@ export default function LiveMatchV2({
                     contacts={contacts}
                     selectedId={selectedId}
                     onSelect={toggleSelected}
+                    beams={beams}
                   />
                 ),
                 callouts: <TowerFireLayer state={state} beams={beams} />,

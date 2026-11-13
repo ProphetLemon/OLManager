@@ -7,7 +7,7 @@ import { MAP_UNITS } from "@/lib/match/live/mapGeometry";
 import { pitViews } from "@/lib/match/live/objectivesView";
 
 import { ArenaHarness } from "./arenaHarness.testing";
-import { createTestBus, makeChampion, makeState } from "./arenaFixtures.testing";
+import { createTestBus, makeChampion, makeState, makeStructure } from "./arenaFixtures.testing";
 import { ChampionLayer } from "./ChampionLayer";
 
 /** Ten champions piled on one spot, nine of them with a state: there are not enough free slots for every tag. */
@@ -237,5 +237,42 @@ describe("ChampionLayer measures the tags it places", () => {
       </ArenaHarness>,
     );
     expect(slots()[1]).not.toBe("below");
+  });
+});
+
+describe("ChampionLayer next to a firing tower", () => {
+  /** A tower in the middle of the map shooting the champion just above it. */
+  const standoff = () =>
+    makeState({
+      champions: [makeChampion("solo", "blue", 0.5, 0.5 - 24 / 540, { name: "ROOSTER" })],
+      structures: [makeStructure("tower-red", "red", "tower", 0.5, 0.5)],
+    });
+  const beam = { structureId: "tower-red", targetId: "solo", shots: 2, ageSec: 0.4 };
+
+  function mount(beams: Array<typeof beam>) {
+    const state = standoff();
+    const { bus } = createTestBus();
+    return render(
+      <ArenaHarness bus={bus}>
+        <ChampionLayer
+          state={state}
+          championByPlayerId={{}}
+          contacts={detectContacts(state.champions, state.timeSec)}
+          selectedId={null}
+          onSelect={() => {}}
+          beams={beams}
+        />
+      </ArenaHarness>,
+    );
+  }
+
+  it("puts the tag below the champion when no tower is shooting", () => {
+    mount([]);
+    expect(screen.getByTestId("tag")).toHaveAttribute("data-slot", "below");
+  });
+
+  it("keeps the tag off the ring and the beam of the tower that is shooting", () => {
+    mount([beam]);
+    expect(screen.getByTestId("tag")).not.toHaveAttribute("data-slot", "below");
   });
 });
