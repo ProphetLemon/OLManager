@@ -78,46 +78,67 @@ fn app_snapshot(home: f64, away: f64) -> Value {
 }
 
 fn home_wins_of(home: f64, away: f64, seeds: usize) -> usize {
-    (0..seeds)
-        .filter(|n| {
-            let store = SimLiveStoreState::default();
-            let session_id = format!("attributes-{n}");
-            init(
-                &store,
-                SimLiveInitRequest {
-                    session_id: session_id.clone(),
-                    seed: format!("attributes-seed-{n}"),
-                    snapshot: app_snapshot(home, away),
-                    champion_by_player_id: HashMap::new(),
-                    champion_profiles_by_id: HashMap::new(),
-                    champion_ultimates_by_id: HashMap::new(),
-                    initial_state: None,
-                    ai_mode: SimulatorAiMode::default(),
-                    policy: SimulatorPolicyConfig::default(),
-                },
-            )
-            .expect("init");
-            skip_to_end(
-                &store,
-                SimLiveSkipToEndRequest {
-                    session_id: session_id.clone(),
-                    dt_sec: 0.2,
-                    speed: 12.0,
-                    max_ticks: FULL_MATCH_TICKS,
-                },
-            )
-            .expect("skip");
-            let sessions = store.sessions.lock().expect("lock");
-            sessions[&session_id].state.winner.as_deref() == Some("blue")
-        })
-        .count()
+    let workers = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4).min(seeds.max(1));
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = (0..workers)
+            .map(|worker| {
+                scope.spawn(move || {
+                    (worker..seeds)
+                        .step_by(workers)
+                        .filter(|n| home_wins_seed(home, away, *n))
+                        .count()
+                })
+            })
+            .collect();
+        handles.into_iter().map(|handle| handle.join().expect("match worker")).sum()
+    })
 }
+
+fn home_wins_seed(home: f64, away: f64, n: usize) -> bool {
+    let store = SimLiveStoreState::default();
+    let session_id = format!("attributes-{n}");
+    init(
+        &store,
+        SimLiveInitRequest {
+            session_id: session_id.clone(),
+            seed: format!("attributes-seed-{n}"),
+            snapshot: app_snapshot(home, away),
+            champion_by_player_id: HashMap::new(),
+            champion_profiles_by_id: HashMap::new(),
+            champion_ultimates_by_id: HashMap::new(),
+            initial_state: None,
+            ai_mode: SimulatorAiMode::default(),
+            policy: SimulatorPolicyConfig::default(),
+        },
+    )
+    .expect("init");
+    skip_to_end(
+        &store,
+        SimLiveSkipToEndRequest {
+            session_id: session_id.clone(),
+            dt_sec: 0.2,
+            speed: 12.0,
+            max_ticks: FULL_MATCH_TICKS,
+        },
+    )
+    .expect("skip");
+    let sessions = store.sessions.lock().expect("lock");
+    sessions[&session_id].state.winner.as_deref() == Some("blue")
+}
+
+/// Seeds of the strength check. The win rate of the team of 90s is 88 to 90% (85 and 86 of 96 on
+/// the engine before and after SIM-16), so the old 7 of 8 (87.5%) was a coin flip on 8 seeds, and
+/// the same share on 96 seeds would still sit within one match of the measured rate.
+/// The check asks for 80% (77 of 96): about 2.5 standard deviations under the measured rate, so
+/// only a real loss of strength fails it, while a team of 70s against 60s (65 of 96) still does.
+/// The cores play the first 96 seeds at once.
+const STRENGTH_SEEDS: usize = 96;
+const STRENGTH_MIN_WINS: usize = 77;
 
 #[test]
 fn a_team_of_90s_beats_a_team_of_60s_in_a_snapshot_with_the_apps_names() {
-    let seeds = 8;
-    let won = home_wins_of(90.0, 60.0, seeds);
-    assert!(won >= 7, "the team of 90s won only {won} of {seeds} against 60s");
+    let won = home_wins_of(90.0, 60.0, STRENGTH_SEEDS);
+    assert!(won >= STRENGTH_MIN_WINS, "the team of 90s won only {won} of {STRENGTH_SEEDS} against 60s");
 }
 
 #[test]
@@ -125,4 +146,13 @@ fn the_same_two_teams_swapped_give_the_opposite_result() {
     let seeds = 8;
     let won = home_wins_of(60.0, 90.0, seeds);
     assert!(won <= 1, "the team of 60s won {won} of {seeds} against 90s");
+}
+
+/// Prints how often the team of 90s wins against the team of 60s over `ECON_N` seeds (default 72).
+#[test]
+#[ignore = "measurement report; run with --ignored --nocapture (ECON_N sets the match count)"]
+fn print_strength_win_rate() {
+    let seeds = super::economy_tests::batch_size(72);
+    let won = home_wins_of(90.0, 60.0, seeds);
+    println!("the team of 90s won {won} of {seeds} against 60s ({:.1}%)", won as f64 / seeds as f64 * 100.0);
 }

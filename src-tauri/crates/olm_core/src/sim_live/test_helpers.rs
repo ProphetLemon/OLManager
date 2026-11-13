@@ -70,6 +70,7 @@ pub(super) fn test_champion(
         state: "lane".to_string(),
         recall_anchor: None,
         recall_channel_until: 0.0,
+        recall_blocked_since: 0.0,
         realm_banished_until: 0.0,
         realm_return_pos: None,
         ward_cd_until: 0.0,

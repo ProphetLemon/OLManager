@@ -229,6 +229,9 @@ struct ChampionRuntime {
     state: String,
     recall_anchor: Option<Vec2>,
     recall_channel_until: f64,
+    /// When the recall found an enemy too near to channel at the anchor; `0.0` when it did not.
+    #[serde(default)]
+    recall_blocked_since: f64,
     #[serde(default)]
     realm_banished_until: f64,
     #[serde(default)]
@@ -676,6 +679,19 @@ const NAV_GRID_SIZE: usize = 196;
 const NAV_PATH_MIN_DIRECT_DIST: f64 = 0.012;
 const NAV_PATH_TRIVIAL_NODE_EPSILON: f64 = 0.0095;
 const CHAMPION_REPATH_MIN_TARGET_DELTA: f64 = 0.018;
+/// Distance from its anchor at which a recaller has arrived and starts to channel. A recall
+/// anchor is recomputed every step and may drift from where the walk was aimed; a new walk
+/// within `CHAMPION_REPATH_MIN_TARGET_DELTA` of the old one is not started, so an arrival
+/// radius under that delta leaves a recaller that stopped a little short of the anchor with no
+/// walk and no channel for good (the replay found 2 stuck recalls per match, up to 2353 s).
+/// [PLACEHOLDER]
+const RECALL_ARRIVAL_RADIUS: f64 = CHAMPION_REPATH_MIN_TARGET_DELTA;
+/// Seconds a recaller walks away from an enemy too near to channel before he channels anyway.
+/// An enemy that stands near without hitting (a laner who declines the trade) kept the recaller
+/// walking and waiting in the recall state for minutes (4 of 5 remaining stuck recalls in the
+/// replay had an enemy within 0.085). The channel is still open to the enemy's interrupt rule.
+/// [PLACEHOLDER]
+const RECALL_BLOCKED_PATIENCE_SEC: f64 = 10.0;
 const CHAMPION_STUCK_PROGRESS_EPSILON: f64 = 0.00045;
 const CHAMPION_STUCK_TRIGGER_SEC: f64 = 7.0;
 const ITEM_COST_MULTIPLIER: f64 = 1.0;
@@ -3546,6 +3562,7 @@ fn start_recall(
 
     champion.state = "recall".to_string();
     champion.recall_channel_until = 0.0;
+    champion.recall_blocked_since = 0.0;
     champion.target_path.clear();
     champion.target_path_index = 0;
     champion.recall_anchor = if should_recall_in_place(champion, champions) {
@@ -3648,12 +3665,16 @@ fn tick_recall(
         structures,
     );
     champion.recall_anchor = Some(anchor);
-    if dist(champion.pos, anchor) > 0.012 {
+    if dist(champion.pos, anchor) > RECALL_ARRIVAL_RADIUS {
         set_champion_direct_path(champion, anchor);
         return true;
     }
 
-    if !should_recall_in_place(champion, champions) {
+    let blocked = !should_recall_in_place(champion, champions);
+    if blocked && champion.recall_blocked_since <= 0.0 {
+        champion.recall_blocked_since = now;
+    }
+    if blocked && now - champion.recall_blocked_since < RECALL_BLOCKED_PATIENCE_SEC {
         let threat = nearest_enemy_champion_snapshot(champion, champions, RECALL_SAFE_ENEMY_RADIUS)
             .or_else(|| nearest_enemy_champion_snapshot(champion, champions, f64::INFINITY));
         let fallback_anchor = if champion.role == "JGL" {
@@ -3672,6 +3693,7 @@ fn tick_recall(
     }
 
     champion.recall_channel_until = now + RECALL_CHANNEL_SEC;
+    champion.recall_blocked_since = 0.0;
     champion.target_path.clear();
     champion.target_path_index = 0;
     push_event(
@@ -6814,3 +6836,6 @@ mod captured_replay_harness_tests;
 
 #[cfg(test)]
 mod recall_interrupt_tests;
+
+#[cfg(test)]
+mod stuck_states_tests;

@@ -82,6 +82,14 @@ const FOUNTAIN_RADIUS: f64 = 0.08;
 const BASE_AREA_RADIUS: f64 = 0.2;
 /// The smallest reach the engine gives an attack (`attack_range.max(0.04)`).
 const MIN_ATTACK_REACH: f64 = 0.04;
+/// Seconds a champion may stay in the recall state with no channel in progress, or stand about
+/// one spot in his own base while his team plays the plan, before the observer counts a stuck
+/// state.
+const STUCK_LIMIT_SEC: f64 = 30.0;
+/// How far a champion may drift from where a base freeze began and still count as standing there.
+const FREEZE_DRIFT: f64 = 0.05;
+/// Stuck-state examples each match keeps.
+const STUCK_EXAMPLES_PER_MATCH: usize = 3;
 
 /// What the observer counted in one match.
 #[derive(Debug, Clone, Default)]
@@ -115,6 +123,25 @@ struct ContactStats {
     base_kinds: BTreeMap<String, u32>,
     /// The free recalls by what the nearest reaching enemy was doing and how far he stood.
     recall_kinds: BTreeMap<String, u32>,
+    /// Episodes of a champion in the recall state for `STUCK_LIMIT_SEC` or more with no channel
+    /// in progress (a recall walks to its anchor first; a long walk without a channel is stuck).
+    stuck_recalls: u32,
+    /// The longest such episode, in seconds.
+    longest_stuck_recall: f64,
+    /// The stuck recalls in which the champion also stayed within `FREEZE_DRIFT` of one spot for
+    /// `STUCK_LIMIT_SEC` (standing still, not walking away from a threat).
+    still_recalls: u32,
+    /// Episodes of a champion within `BASE_AREA_RADIUS` of his own nexus, outside the fountain,
+    /// alive and not recalling, within `FREEZE_DRIFT` of one spot for `STUCK_LIMIT_SEC` or more
+    /// while his team's plan is active.
+    base_freezes: u32,
+    /// The longest such episode, in seconds.
+    longest_base_freeze: f64,
+    /// The stuck recalls by how near the closest living enemy stood when the episode reached the
+    /// limit and whether the recaller stood still.
+    stuck_recall_kinds: BTreeMap<String, u32>,
+    /// The first few stuck-state episodes of the match, for the examples.
+    stuck_examples: Vec<String>,
 }
 
 /// A champion as the previous step left it.
@@ -123,6 +150,17 @@ struct PreviousChampion {
     pos: Vec2,
     hp: f64,
     last_damaged_at: f64,
+}
+
+/// One champion's stretch in the recall state with no channel in progress.
+#[derive(Clone, Copy)]
+struct RecallStuck {
+    secs: f64,
+    counted: bool,
+    /// Where the champion last started standing, seconds there, and whether it was counted.
+    spot: Vec2,
+    still_secs: f64,
+    still_counted: bool,
 }
 
 /// Reads the public state after every step and counts the moments in which the action should
@@ -138,6 +176,10 @@ struct ContactObserver {
     recall_watch: Vec<Option<(bool, String)>>,
     /// Per intruder: seconds at a base without damage, and whether the episode was counted.
     base_idle: Vec<(f64, bool)>,
+    /// Per champion: seconds in the recall state with no channel, and whether it was counted.
+    recall_stuck: Vec<RecallStuck>,
+    /// Per champion: where the base freeze began, seconds there, and whether it was counted.
+    base_freeze: Vec<(Vec2, f64, bool)>,
     /// Set when, in the last step, an enemy first became able to stop a recall in progress.
     just_free: bool,
     stats: ContactStats,
@@ -152,6 +194,8 @@ impl ContactObserver {
             pair_damage: HashMap::new(),
             recall_watch: Vec::new(),
             base_idle: Vec::new(),
+            recall_stuck: Vec::new(),
+            base_freeze: Vec::new(),
             just_free: false,
             stats: ContactStats::default(),
         }
@@ -187,16 +231,103 @@ impl ContactObserver {
         if self.previous.is_empty() {
             self.recall_watch = vec![None; count];
             self.base_idle = vec![(0.0, false); count];
+            self.recall_stuck = state
+                .champions
+                .iter()
+                .map(|c| RecallStuck { secs: 0.0, counted: false, spot: c.pos, still_secs: 0.0, still_counted: false })
+                .collect();
+            self.base_freeze = state.champions.iter().map(|c| (c.pos, 0.0, false)).collect();
         }
         self.observe_contacts(state, dt);
         self.observe_recalls(state, now);
         self.observe_bases(state, dt);
+        self.observe_stuck(state, dt);
         self.previous = state
             .champions
             .iter()
             .map(|c| PreviousChampion { pos: c.pos, hp: c.hp, last_damaged_at: c.last_damaged_at })
             .collect();
         self.previous_time = now;
+    }
+
+    /// Counts the two stuck states: a long recall with no channel, and a long stand in the own
+    /// base while the team plays the plan.
+    fn observe_stuck(&mut self, state: &RuntimeState, dt: f64) {
+        let now = state.time_sec;
+        for (i, champion) in state.champions.iter().enumerate() {
+            let name = format!("{}{}", &champion.team[..1], champion.role);
+            let recalling_idle = champion.alive
+                && champion.state == "recall"
+                && champion.recall_channel_until <= now
+                && !Self::in_fountain(champion);
+            let entry = &mut self.recall_stuck[i];
+            if recalling_idle {
+                entry.secs += dt;
+                if dist(champion.pos, entry.spot) > FREEZE_DRIFT {
+                    entry.spot = champion.pos;
+                    entry.still_secs = 0.0;
+                    entry.still_counted = false;
+                } else {
+                    entry.still_secs += dt;
+                }
+                if entry.secs >= STUCK_LIMIT_SEC {
+                    self.stats.longest_stuck_recall = self.stats.longest_stuck_recall.max(entry.secs);
+                    if !entry.counted {
+                        entry.counted = true;
+                        self.stats.stuck_recalls += 1;
+                        let nearest = state
+                            .champions
+                            .iter()
+                            .filter(|e| e.alive && normalized_team(&e.team) != normalized_team(&champion.team))
+                            .map(|e| dist(e.pos, champion.pos))
+                            .fold(f64::INFINITY, f64::min);
+                        let band = if nearest <= 0.085 { "enemy<=0.085" } else if nearest <= 0.2 { "enemy<=0.2" } else { "no enemy near" };
+                        let moving = if entry.still_secs >= STUCK_LIMIT_SEC { "still" } else { "walking" };
+                        *self.stats.stuck_recall_kinds.entry(format!("{band} {moving}")).or_default() += 1;
+                        if self.stats.stuck_examples.len() < STUCK_EXAMPLES_PER_MATCH {
+                            self.stats.stuck_examples.push(format!(
+                                "stuck recall {name} from t={:.0} at {:.2},{:.2}",
+                                now - entry.secs, champion.pos.x, champion.pos.y
+                            ));
+                        }
+                    }
+                }
+                if entry.still_secs >= STUCK_LIMIT_SEC && !entry.still_counted {
+                    entry.still_counted = true;
+                    self.stats.still_recalls += 1;
+                }
+            } else {
+                *entry = RecallStuck { secs: 0.0, counted: false, spot: champion.pos, still_secs: 0.0, still_counted: false };
+            }
+
+            let own_base = base_position_for(&champion.team);
+            let plan_active = state.team_push[usize::from(normalized_team(&champion.team) != "blue")].active;
+            let at_base = champion.alive
+                && !champion_is_banished(champion)
+                && champion.state != "recall"
+                && plan_active
+                && dist(champion.pos, own_base) <= BASE_AREA_RADIUS
+                && !Self::in_fountain(champion);
+            let freeze = &mut self.base_freeze[i];
+            if !at_base || dist(champion.pos, freeze.0) > FREEZE_DRIFT {
+                *freeze = (champion.pos, 0.0, false);
+                continue;
+            }
+            freeze.1 += dt;
+            if freeze.1 >= STUCK_LIMIT_SEC {
+                self.stats.longest_base_freeze = self.stats.longest_base_freeze.max(freeze.1);
+                if !freeze.2 {
+                    freeze.2 = true;
+                    self.stats.base_freezes += 1;
+                    if self.stats.stuck_examples.len() < STUCK_EXAMPLES_PER_MATCH {
+                        self.stats.stuck_examples.push(format!(
+                            "base freeze {name} {} from t={:.0} at {:.2},{:.2}",
+                            champion.state, now - freeze.1, champion.pos.x, champion.pos.y
+                        ));
+                    }
+                }
+            }
+        }
     }
 
     fn observe_contacts(&mut self, state: &RuntimeState, dt: f64) {
@@ -710,6 +841,24 @@ fn replay_captured_start() {
         total(&|c| f64::from(c.quiet_base_ignores)),
     );
 
+    println!(
+        "stuck recalls {} ({:.3} per match), standing still {}, longest {:.0} s",
+        total(&|c| f64::from(c.stuck_recalls)),
+        total(&|c| f64::from(c.stuck_recalls)) / matches,
+        total(&|c| f64::from(c.still_recalls)),
+        played.iter().map(|p| p.contact.longest_stuck_recall).fold(0.0, f64::max),
+    );
+    println!(
+        "base freezes {} ({:.3} per match), longest {:.0} s",
+        total(&|c| f64::from(c.base_freezes)),
+        total(&|c| f64::from(c.base_freezes)) / matches,
+        played.iter().map(|p| p.contact.longest_base_freeze).fold(0.0, f64::max),
+    );
+    println!("stuck recalls by kind: {}", tally(&|c| &c.stuck_recall_kinds));
+    for p in played.iter().filter(|p| !p.contact.stuck_examples.is_empty()).take(6) {
+        println!("stuck examples seed {}: {}", p.seed, p.contact.stuck_examples.join("; "));
+    }
+
     let mut levels: BTreeMap<(String, String), Vec<f64>> = BTreeMap::new();
     for p in &played {
         for (team, role, level) in &p.levels {
@@ -1040,12 +1189,18 @@ fn follow_captured_champions() {
                 Some(CombatTarget::Neutral(k)) => format!("neutral {k}"),
                 None => "none".to_string(),
             };
-            let end = c.target_path.last().map_or("-".to_string(), |p| format!("{:.3},{:.3}", p.x, p.y));
+            let end = c.target_path.iter().map(|p| format!("{:.3},{:.3}", p.x, p.y)).collect::<Vec<_>>().join(">")
+                + &format!("#{}", c.target_path_index);
+            let order = c.push.as_ref().map_or("-".to_string(), |o| {
+                format!("{}@{:.3},{:.3}{}", o.structure_id, o.structure_pos.x, o.structure_pos.y,
+                    o.rally.map_or(String::new(), |r| format!(" rally {:.3},{:.3}", r.x, r.y)))
+            });
+            let anchor = c.recall_anchor.map_or("-".to_string(), |a| format!("{:.4},{:.4} d{:.4}", a.x, a.y, dist(c.pos, a)));
             println!(
-                "t={now:.1} {}{} {} {} {:.0}% @{:.3},{:.3} path->{end} cd {:.1} chan {:.1} -> {what}",
+                "t={now:.1} {}{} {} {} {:.0}% @{:.4},{:.4} path->{end} cd {:.1} chan {:.1} anchor {anchor} stuck {:.1} order {order} -> {what}",
                 &c.team[..1], c.role, if c.alive { "alive" } else { "dead" }, c.state,
                 c.hp / c.max_hp.max(1.0) * 100.0, c.pos.x, c.pos.y,
-                c.attack_cd_until - now, c.recall_channel_until - now,
+                c.attack_cd_until - now, c.recall_channel_until - now, c.path_stuck_for_sec,
             );
         }
     }
