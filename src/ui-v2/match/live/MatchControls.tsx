@@ -1,6 +1,6 @@
 import { Menu } from "@base-ui/react/menu";
 import { MoreHorizontal, Pause, Play, RotateCcw, SkipForward } from "lucide-react";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button, buttonVariants } from "@/ui-v2/components/ui/button";
@@ -69,7 +69,11 @@ export function MatchControls({
   const [menuOpen, setMenuOpen] = useState(false);
   const optionsRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const noteId = useId();
   const active = SPEEDS.find((entry) => entry.value === speed);
+  const speedNote = active
+    ? t("onAir.match.controls.speedNote", { count: active.value, label: active.id })
+    : undefined;
   const confirmKeys = pending ? CONFIRM_KEYS[pending] : null;
 
   const confirm = () => {
@@ -96,13 +100,16 @@ export function MatchControls({
       <SegmentedControl
         ariaLabel={t("match.simSpeed")}
         className="arena-speed"
+        describedBy={speedNote ? noteId : undefined}
+        title={speedNote}
         value={String(speed)}
         onValueChange={(value) => onSpeedChange(Number(value))}
         options={SPEEDS.map((entry) => ({ value: String(entry.value), label: entry.id, disabled }))}
       />
-      {active ? (
-        <span className="arena-speed-note">
-          {t("onAir.match.controls.speedNote", { count: active.value, label: active.id })}
+      {/* Hidden by the stylesheet where the row is too narrow; it stays the speed group's description. */}
+      {speedNote ? (
+        <span id={noteId} className="arena-speed-note">
+          {speedNote}
         </span>
       ) : null}
 

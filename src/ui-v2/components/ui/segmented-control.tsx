@@ -16,6 +16,10 @@ export interface SegmentedControlProps {
   ariaLabel: string
   size?: "sm" | "md"
   className?: string
+  /** Id of an element that describes the whole group (read after its name by assistive tech). */
+  describedBy?: string
+  /** Tooltip for the whole group. */
+  title?: string
 }
 
 export function SegmentedControl({
@@ -25,6 +29,8 @@ export function SegmentedControl({
   ariaLabel,
   size = "md",
   className,
+  describedBy,
+  title,
 }: SegmentedControlProps) {
   const refs = useRef<(HTMLButtonElement | null)[]>([])
   const enabled = options.map((o, i) => (o.disabled ? -1 : i)).filter((i) => i >= 0)
@@ -58,6 +64,8 @@ export function SegmentedControl({
     <div
       role="radiogroup"
       aria-label={ariaLabel}
+      aria-describedby={describedBy}
+      title={title}
       data-slot="segmented-control"
       data-size={size}
       className={cn("inline-flex items-stretch gap-1 rounded-lg bg-muted p-1", className)}

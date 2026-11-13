@@ -2114,6 +2114,28 @@
   padding-top: 0.5rem;
 }
 
+/* The row needs about 1296px with the speed note and 1036px without it. Where it has less than the
+   former, the note leaves the screen; it stays in the DOM as the speed group's description and
+   tooltip (see MatchControls), so nothing is lost for assistive technology or the pointer. */
+@container live (max-width: 1335px) {
+  .arena-speed-note {
+    display: none;
+  }
+}
+
+/* Under about 1080px the five pieces no longer fit one line: Pause, speeds and Options keep the
+   first line to themselves, and the board, key and bug button take the next. The row counts its
+   two lines in --live-ctl so the map is sized from the room that is really left. */
+@container live (min-width: 720px) and (max-width: 1079px) {
+  .live-shell {
+    --live-ctl: 7rem;
+  }
+
+  .live-area-ctl .arena-controls {
+    flex-basis: 100%;
+  }
+}
+
 /* Below this width the cards no longer fit beside the map: map first, then feed and controls, then two card columns. */
 @container live (max-width: 1239px) {
   .live-shell {
