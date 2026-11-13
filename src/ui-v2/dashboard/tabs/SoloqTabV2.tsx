@@ -19,6 +19,7 @@ import { resolveChampionTile } from "@/lib/champions/championImages";
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 interface SoloqTabV2Props {
   gameState: GameStateData;
@@ -139,7 +140,7 @@ const SOLOQ_EMBLEM_URLS: Record<string, string> = {
 };
 
 export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTabV2Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [submittingKey, setSubmittingKey] = useState<string | null>(null);
   const [delegating, setDelegating] = useState(false);
 
@@ -450,7 +451,7 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
                         {soloQ.delta >= 0 ? `+${soloQ.delta}` : soloQ.delta}
                       </span>
                     </p>
-                    <p className="text-2xs text-muted-foreground">x{soloQMult.toFixed(1)}</p>
+                    <p className="text-2xs text-muted-foreground">x{formatDecimal(soloQMult, 1, i18n.language)}</p>
                   </div>
                   <img
                     src={SOLOQ_EMBLEM_URLS[soloQ.tier]}
@@ -491,7 +492,7 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
                           </p>
                         </div>
                         <Badge variant="outline" className="text-2xs text-muted-foreground">
-                          x{gainHint.baseMult.toFixed(2)}
+                          x{formatDecimal(gainHint.baseMult, 2, i18n.language)}
                         </Badge>
                       </div>
                       <p className="mb-2 text-2xs text-muted-foreground">{slotDescs[slotIndex]}</p>
@@ -529,7 +530,7 @@ export function SoloqTabV2({ gameState, onGameUpdate, onSelectPlayer }: SoloqTab
 
                       <div className="mt-1 flex gap-2 text-2xs text-muted-foreground">
                         <span className="tabular-nums">M{masteryValue}</span>
-                        <span className="tabular-nums">{t("common.soloq")} ×{soloQMult.toFixed(1)}</span>
+                        <span className="tabular-nums">{t("common.soloq")} ×{formatDecimal(soloQMult, 1, i18n.language)}</span>
                       </div>
                     </div>
                     </div>

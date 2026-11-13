@@ -1,9 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import i18n from "@/i18n";
 
 import en from "@/i18n/locales/en.json";
 import es from "@/i18n/locales/es.json";
 import {
+  formatFinance,
   getReputationLabel,
   joinLeagueWithCustomTeam,
   loadLeagueSelectionData,
@@ -113,5 +116,20 @@ describe("teamSelection.helpers", () => {
     expect(Object.keys(mockedInvoke.mock.calls[0][1] as object)).not.toContain("teamId");
     await joinLeagueWithCustomTeam("les", undefined, spec);
     expect(mockedInvoke).toHaveBeenLastCalledWith("select_team", expect.objectContaining({ lang: "en" }));
+  });
+});
+
+describe("formatFinance in the game language", () => {
+  afterEach(async () => {
+    await i18n.changeLanguage("en");
+  });
+
+  it.each([
+    ["es", "€1,5M"],
+    ["en", "€1.5M"],
+  ])("writes millions in %s", async (language, expected) => {
+    await i18n.changeLanguage(language);
+    expect(formatFinance(1_500_000)).toBe(expected);
+    expect(formatFinance(250_000)).toBe("€250K");
   });
 });

@@ -13,6 +13,10 @@
      stays legible. The smaller names remain as hooks for later tuning. */
   --text-2xs: 0.75rem;
   --text-caption: 0.75rem;
+  /* On-map labels of the match arena only: the one exception to "rem only".
+     Android runs a 9 px root, where 0.75rem would be 6.75 px, so the floor is
+     physical. Never use it outside src/ui-v2/match. */
+  --text-map: max(0.75rem, 10px);
 
   /* P1 type scale (rem only) */
   --text-section: 1.375rem;
@@ -129,6 +133,8 @@
   --color-warning: var(--warning);
   --color-info-foreground: var(--info-foreground);
   --color-info: var(--info);
+  --color-team-blue: var(--team-blue);
+  --color-team-red: var(--team-red);
   --color-rail: var(--rail);
   --color-dim: var(--dim);
   --color-line: var(--line);
@@ -173,6 +179,15 @@
 
   /* P1 structural tokens (theme independent) */
   --surface-clamp: #2a3347;
+  /* Match simulator terrain. Theme independent on purpose: the arena is always
+     a dark schematic, like --surface-clamp. Team colours tint the bases at draw
+     time (fill opacity), so these never need a dark variant. */
+  --terrain-ground: #0d131d;
+  --terrain-river: #10304a;
+  --terrain-lane-edge: #2a3347;
+  --terrain-lane: #182131;
+  --terrain-pit: #0a0d13;
+  --terrain-pit-edge: #3a465c;
   --club-wash: color-mix(in srgb, var(--club) 36%, transparent);
   --hit: max(2.75rem, 24px);
   /* WCAG 2.2 target size minimum (2.5.8): floor for every control, at any root font size */
@@ -210,6 +225,11 @@
   --warning-foreground: #ffffff;
   --info: #1d4ed8;
   --info-foreground: #ffffff;
+  /* Match simulator teams. Non-text colour: at least 3:1 on --card and
+     --background, and on --terrain-ground (checked in tokens.parity.test.ts).
+     Names stay in --foreground; the team colour is a border or a fill. */
+  --team-blue: #1d78d4;
+  --team-red: #d63a52;
   --focus-ring-width: 2px;
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
@@ -254,6 +274,8 @@
   --warning-foreground: #09090b;
   --info: #60a5fa;
   --info-foreground: #09090b;
+  --team-blue: #5fc4ff;
+  --team-red: #f0455f;
   --sidebar: #0f131b;
   --sidebar-foreground: #eef1f7;
   --sidebar-primary: var(--club);
@@ -280,6 +302,8 @@
   --input: oklch(0.45 0 0);
   --line: oklch(0.45 0 0);
   --sidebar-border: oklch(0.45 0 0);
+  --team-blue: #1a68bc;
+  --team-red: #c42a44;
   --focus-ring-width: 3px;
 }
 
@@ -295,5 +319,7 @@
   --input: color-mix(in srgb, white 60%, transparent);
   --line: color-mix(in srgb, white 60%, transparent);
   --sidebar-border: color-mix(in srgb, white 60%, transparent);
+  --team-blue: #8fd8ff;
+  --team-red: #ff8a9b;
   --focus-ring-width: 3px;
 }

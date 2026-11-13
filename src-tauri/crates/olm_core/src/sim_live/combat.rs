@@ -577,6 +577,86 @@ pub(super) fn base_intruder_idx(runtime: &RuntimeState, champion_idx: usize) -> 
         })
 }
 
+/// The smallest reach the engine gives a champion's attack.
+const MIN_ATTACK_REACH: f64 = 0.04;
+
+/// Health share under which a champion no longer leaves what he does to stop a recall.
+const RECALL_INTERRUPT_MIN_HP_RATIO: f64 = 0.40;
+/// Radius around the recaller inside which champions count for the numbers of the interruption.
+const RECALL_INTERRUPT_FIGHT_RADIUS: f64 = 0.12;
+/// How far beyond a tower's reach a recaller must be for the chase not to be a tower dive.
+const RECALL_INTERRUPT_TOWER_MARGIN: f64 = 0.02;
+/// Time left in the channel that the interrupter needs to land the hit after he arrives.
+const RECALL_INTERRUPT_HIT_MARGIN_SEC: f64 = 0.6;
+
+/// The enemy champion channeling a recall that `champion_idx` can reach and hit before the
+/// channel ends. Damage cancels a recall, so a champion who sees one and has nothing bigger at
+/// hand (an objective, a fight he is losing, his own low health) goes and hits it: a recall that
+/// nobody stops is a free trip to the fountain.
+pub(super) fn recall_interrupt_idx(
+    runtime: &RuntimeState,
+    champion_idx: usize,
+    neutral_timers: &NeutralTimersRuntime,
+) -> Option<usize> {
+    let champion = &runtime.champions[champion_idx];
+    let hp_ratio = champion.hp / champion.max_hp.max(1.0);
+    if !champion.alive
+        || champion_is_banished(champion)
+        || champion.state == "recall"
+        || hp_ratio < RECALL_INTERRUPT_MIN_HP_RATIO
+        || (champion.state == "objective"
+            && nearby_neutral_objective_key(champion, neutral_timers).is_some())
+    {
+        return None;
+    }
+    let now = runtime.time_sec;
+    let team = normalized_team(&champion.team);
+    let reach = champion.attack_range.max(MIN_ATTACK_REACH);
+    runtime
+        .champions
+        .iter()
+        .enumerate()
+        .filter(|(_, recaller)| {
+            let d = dist(champion.pos, recaller.pos);
+            recaller.alive
+                && recaller.state == "recall"
+                && recaller.recall_channel_until > now
+                && normalized_team(&recaller.team) != team
+                && d <= LOCAL_COMBAT_ENGAGE_RADIUS
+                && team_has_vision_at(runtime, &champion.team, recaller.pos)
+                && !runtime.structures.iter().any(|s| {
+                    s.alive
+                        && s.kind == "tower"
+                        && normalized_team(&s.team) == normalized_team(&recaller.team)
+                        && dist(symmetric_structure_pos(s), recaller.pos)
+                            <= TOWER_ATTACK_RANGE + RECALL_INTERRUPT_TOWER_MARGIN
+                })
+                && (d <= reach
+                    || (d - reach) / champion.move_speed.max(0.01) + RECALL_INTERRUPT_HIT_MARGIN_SEC
+                        <= recaller.recall_channel_until - now)
+        })
+        .filter(|(_, recaller)| {
+            // He does not walk into a group: the recaller's side near him must not outnumber his.
+            let near = |mine: bool| {
+                runtime
+                    .champions
+                    .iter()
+                    .filter(|c| {
+                        c.alive
+                            && c.state != "recall"
+                            && (normalized_team(&c.team) == team) == mine
+                            && dist(c.pos, recaller.pos) <= RECALL_INTERRUPT_FIGHT_RADIUS
+                    })
+                    .count()
+            };
+            near(true) >= near(false)
+        })
+        .min_by(|(idx_a, a), (idx_b, b)| {
+            compare_by_distance_stable(champion.pos, *idx_a, a.pos, *idx_b, b.pos)
+        })
+        .map(|(idx, _)| idx)
+}
+
 pub(super) fn pick_combat_target(
     runtime: &RuntimeState,
     champion_idx: usize,
@@ -608,6 +688,11 @@ pub(super) fn pick_combat_target(
 
     // An enemy champion at the nexus comes before anything else.
     if let Some(enemy_idx) = base_intruder_idx(runtime, champion_idx) {
+        return Some(CombatTarget::Champion(enemy_idx));
+    }
+
+    // A recall that can still be stopped is stopped.
+    if let Some(enemy_idx) = recall_interrupt_idx(runtime, champion_idx, neutral_timers) {
         return Some(CombatTarget::Champion(enemy_idx));
     }
 
@@ -1392,6 +1477,9 @@ pub(super) fn decline_trade(runtime: &mut RuntimeState, idx: usize, threat_pos: 
     }
 }
 
+/// Share of his attack range at which a laner stands from the minion he walks to. [PLACEHOLDER]
+const LANE_REACH_STAND_SHARE: f64 = 0.85;
+
 pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
     let now = runtime.time_sec;
     let mut neutral_timers = decode_neutral_timers_state(&runtime.neutral_timers)
@@ -1412,6 +1500,14 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
         }
 
         if try_cast_summoner_spells(runtime, &mut neutral_timers, idx, now) {
+            continue;
+        }
+
+        // A recaller in reach is hit first, whatever the plan: one hit cancels the recall.
+        if let Some(recaller) = recall_interrupt_idx(runtime, idx, &neutral_timers)
+            && dist(runtime.champions[idx].pos, runtime.champions[recaller].pos) <= attack_range
+        {
+            attack_enemy_champion(runtime, idx, recaller);
             continue;
         }
 
@@ -1528,10 +1624,21 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
         };
 
         if dist(attacker_snapshot.pos, target_pos) > attack_range {
+            // A pusher walking his plan does not turn after a minion he cannot hit: the chase
+            // and the plan took the path in turns every step, and a wall between them left him
+            // shuffling near his own base (the replay found freezes of 60 to 160 seconds).
+            if matches!(target, CombatTarget::Minion(_))
+                && attacker_snapshot.state == "objective"
+                && team_push::plays_plan(&attacker_snapshot)
+            {
+                continue;
+            }
             if let CombatTarget::Champion(enemy_idx) = &target {
                 let target_snapshot = runtime.champions[*enemy_idx].clone();
-                let defending_base = base_intruder_idx(runtime, idx) == Some(*enemy_idx);
-                if attacker_snapshot.role != "JGL" && !defending_base {
+                // Defending the base and stopping a recall are not laning: the trade rules do not apply.
+                let committed = base_intruder_idx(runtime, idx) == Some(*enemy_idx)
+                    || recall_interrupt_idx(runtime, idx, &neutral_timers) == Some(*enemy_idx);
+                if attacker_snapshot.role != "JGL" && !committed {
                     if trading::trade_floor_reached(
                         &attacker_snapshot,
                         &target_snapshot,
@@ -1569,6 +1676,11 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                 }
             }
 
+            if recall_interrupt_idx(runtime, idx, &neutral_timers).is_some() {
+                // The chase is not undone by the next decision.
+                runtime.champions[idx].next_decision_at =
+                    runtime.champions[idx].next_decision_at.max(now + CHAMPION_DECISION_CADENCE_SEC);
+            }
             if runtime.champions[idx].state == "objective" {
                 set_champion_direct_path_hysteresis(
                     &mut runtime.champions[idx],
@@ -1576,7 +1688,23 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                     OBJECTIVE_PATH_MIN_TARGET_DELTA,
                 );
             } else {
-                set_champion_direct_path(&mut runtime.champions[idx], target_pos);
+                // A laner walks to the edge of his reach from his own side, not onto the
+                // minion: two laners after the same minion would end on the same spot.
+                let goal = match target {
+                    CombatTarget::Minion(_) if attacker_snapshot.role != "JGL" => {
+                        let from_target = normalize(Vec2 {
+                            x: attacker_snapshot.pos.x - target_pos.x,
+                            y: attacker_snapshot.pos.y - target_pos.y,
+                        });
+                        let stand = Vec2 {
+                            x: target_pos.x + from_target.x * attack_range * LANE_REACH_STAND_SHARE,
+                            y: target_pos.y + from_target.y * attack_range * LANE_REACH_STAND_SHARE,
+                        };
+                        keep_apart_from_enemy_champions(&attacker_snapshot, stand, &runtime.champions)
+                    }
+                    _ => target_pos,
+                };
+                set_champion_direct_path(&mut runtime.champions[idx], goal);
             }
             continue;
         }
@@ -1584,8 +1712,9 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
         match target {
             CombatTarget::Champion(champion_idx) => {
                 let target_snapshot = runtime.champions[champion_idx].clone();
-                let defending_base = base_intruder_idx(runtime, idx) == Some(champion_idx);
-                let retaliating_recent_attacker = defending_base
+                let committed = base_intruder_idx(runtime, idx) == Some(champion_idx)
+                    || recall_interrupt_idx(runtime, idx, &neutral_timers) == Some(champion_idx);
+                let retaliating_recent_attacker = committed
                     || recent_attacker_target_idx(
                         runtime,
                         idx,
@@ -1594,7 +1723,7 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                     ) == Some(champion_idx);
 
                 if attacker_snapshot.role != "JGL"
-                    && !defending_base
+                    && !committed
                     && trading::trade_floor_reached(
                         &attacker_snapshot,
                         &target_snapshot,
@@ -1692,7 +1821,7 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                     })
                     .count();
                 if attacker_after.role != "JGL"
-                    && !defending_base
+                    && !committed
                     && champion_idx < runtime.champions.len()
                     && runtime.champions[champion_idx].alive
                     && !(attacker_after.state == "objective"
@@ -1758,4 +1887,7 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
         runtime.neutral_timers = value;
     }
     sync_objectives_from_neutral_timers(runtime, &neutral_timers);
+
+    // Dashes, flashes and chases ended inside an enemy: the bubbles slide apart.
+    super::pathing::separate_enemy_champions(runtime);
 }

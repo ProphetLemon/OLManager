@@ -1,3 +1,4 @@
+import type { EventDataLike } from "@/ui-v2/match/live/eventSentence";
 export type TeamId = "blue" | "red";
 export type RoleId = "TOP" | "JGL" | "MID" | "ADC" | "SUP";
 export type LaneId = "top" | "mid" | "bot";
@@ -43,6 +44,8 @@ export interface ChampionState {
   assists: number;
   gold: number;
   spentGold: number;
+  /** Damage dealt to enemy champions. Sent by the Rust engine only. */
+  damageDealt?: number;
   xp: number;
   level: number;
   cs: number;
@@ -55,6 +58,8 @@ export interface ChampionState {
   ultimate?: UltimateState | null;
   lastDamagedByChampionId: string | null;
   lastDamagedAt: number;
+  /** Game second of the last hit by an enemy champion (not towers, minions or ignite). Sent by the Rust engine only. */
+  lastDamagedByChampionAt?: number;
   state: "lane" | "fight" | "objective" | "recall";
   recallAnchor: Vec2 | null;
   recallChannelUntil: number;
@@ -97,6 +102,12 @@ export interface StructureState {
   maxHp: number;
   alive: boolean;
   attackCdUntil: number;
+  /** Tower shot ramp, sent by the Rust engine only: the id it last shot (can be a minion). */
+  rampTargetId?: string | null;
+  /** Consecutive shots on `rampTargetId` before the latest one. */
+  rampShots?: number;
+  /** Game second of the latest shot. */
+  rampLastShotAt?: number;
 }
 
 export interface ObjectiveState {
@@ -190,6 +201,10 @@ export interface SimEvent {
     | "spawn"
     | "recall"
     | "info";
+  /** What happened, as a stable identifier. Sent by the Rust engine only; old states have none. */
+  code?: string;
+  /** The facts of the event (who, to whom, which structure). Sent with `code`. */
+  data?: EventDataLike;
 }
 
 export interface MatchState {

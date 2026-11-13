@@ -7,7 +7,7 @@ import {
   STRUCTURES_LAYOUT,
   STRUCTURE_ICON_PATH,
 } from "@/lib/match/lolMapLayout";
-import type { ChampionSelectionByPlayer } from "@/ui-v2/_legacy/components/match/LolMatchLive";
+import type { ChampionSelectionByPlayer } from "@/ui-v2/match/live/useChampionProfiles";
 import { useTranslation } from "react-i18next";
 
 interface LolLiveMapProps {

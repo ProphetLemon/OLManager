@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { shortRoleKey } from "@/lib/squad/cards";
 import type { LolRole } from "@/lib/home/scoreboard";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 const LOL_ROLES: readonly string[] = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"];
 
@@ -58,7 +59,7 @@ export default function OpponentIntelCard({ intel }: { intel: OpponentIntelSnaps
               {intel.suggestedBans.map((ban) => (
                 <li key={`ban-${ban.championId}`} className="flex justify-between text-sm text-foreground">
                   <span>{ban.championName}</span>
-                  <span className="text-xs text-muted-foreground">{t("match.opponentIntel.threat", "Threat")} {ban.threatScore.toFixed(1)}</span>
+                  <span className="text-xs text-muted-foreground">{t("match.opponentIntel.threat", "Threat")} {formatDecimal(ban.threatScore, 1, i18n.language)}</span>
                 </li>
               ))}
             </ul>

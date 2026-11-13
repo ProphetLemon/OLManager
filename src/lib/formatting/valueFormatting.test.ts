@@ -105,3 +105,20 @@ describe("number grouping follows the app language", () => {
     expect(formatNumber(1_234_567)).toBe("1,234,567");
   });
 });
+
+describe("formatVal millions follow the game language's decimal mark", () => {
+  afterEach(async () => {
+    await i18n.changeLanguage("en");
+  });
+
+  it.each([
+    ["es", "€1,5M", "-€2,0M"],
+    ["de", "€1,5M", "-€2,0M"],
+    ["en", "€1.5M", "-€2.0M"],
+  ])("writes millions in %s", async (language, positive, negative) => {
+    await i18n.changeLanguage(language);
+    expect(formatVal(1_500_000, "EUR")).toBe(positive);
+    expect(formatVal(-2_000_000, "EUR")).toBe(negative);
+    expect(formatVal(250_000, "EUR")).toBe("€250K");
+  });
+});

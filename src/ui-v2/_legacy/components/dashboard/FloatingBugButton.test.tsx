@@ -56,7 +56,7 @@ describe("FloatingBugButton", () => {
     });
   });
 
-  it("keeps the floating button mounted and returns focus to it when the modal closes", async () => {
+  it("keeps the button mounted and returns focus to it when the modal closes", async () => {
     render(<FloatingBugButton />);
 
     const button = screen.getByRole("button", { name: "Reportar Bug" });
@@ -72,7 +72,7 @@ describe("FloatingBugButton", () => {
     await waitFor(() => expect(button).toHaveFocus());
   });
 
-  it("keeps the floating button mounted after opening the report modal", () => {
+  it("keeps the button mounted after opening the report modal", () => {
     useBugReportStore.setState({
       currentRoute: "/match",
       currentDashboardTab: "",
@@ -131,8 +131,8 @@ describe("FloatingBugButton", () => {
     expect(exportedContext.activeTab).not.toBe("Finances");
   });
 
-  it("renders a 44px accessible icon button in the rail placement", () => {
-    render(<FloatingBugButton placement="rail" />);
+  it("renders a 44px accessible icon button that is not fixed to the viewport", () => {
+    render(<FloatingBugButton />);
 
     const button = screen.getByRole("button", { name: "Reportar Bug" });
     expect(button).toHaveAttribute("title", "Reportar Bug");
@@ -143,8 +143,55 @@ describe("FloatingBugButton", () => {
     expect(screen.getByText("Report bug / suggest improvement")).toBeInTheDocument();
   });
 
-  it("keeps the floating placement fixed by default", () => {
+  describe("without a game (new-career setup)", () => {
+    beforeEach(() => {
+      useGameStore.setState({ hasActiveGame: false, gameState: null });
+      useBugReportStore.setState({ currentRoute: "/select-team", currentDashboardTab: "" });
+    });
+
+    it("still renders the button", () => {
+      render(<FloatingBugButton />);
+      expect(screen.getByTitle("Reportar Bug")).toBeInTheDocument();
+    });
+
+    it("sends the report with no save and marks the game context as unavailable", async () => {
+      const { exportBugReport } = await import("@/services/bugReportService");
+      (exportBugReport as ReturnType<typeof vi.fn>).mockClear();
+
+      render(<FloatingBugButton />);
+      fireEvent.click(screen.getByTitle("Reportar Bug"));
+      fireEvent.change(
+        screen.getByPlaceholderText("Describe what happened, what you expected, and how to reproduce it..."),
+        { target: { value: "Cannot pick a team" } },
+      );
+      fireEvent.click(screen.getByText("Generate report"));
+
+      await waitFor(() => expect(exportBugReport).toHaveBeenCalledTimes(1));
+      const [contextJson, saveJson] = (exportBugReport as ReturnType<typeof vi.fn>).mock.calls[0];
+      const context = JSON.parse(contextJson);
+      expect(saveJson).toBe("");
+      expect(context.gameContext).toBe("unavailable");
+      expect(context.route).toBe("/select-team");
+      expect(context.description).toBe("Cannot pick a team");
+      expect(context.teamName).toBe("Unavailable");
+    });
+  });
+
+  it("marks the game context as available and sends the save when there is a game", async () => {
+    const { exportBugReport } = await import("@/services/bugReportService");
+    (exportBugReport as ReturnType<typeof vi.fn>).mockClear();
+
     render(<FloatingBugButton />);
-    expect(screen.getByTitle("Reportar Bug").className).toContain("fixed");
+    fireEvent.click(screen.getByTitle("Reportar Bug"));
+    fireEvent.change(
+      screen.getByPlaceholderText("Describe what happened, what you expected, and how to reproduce it..."),
+      { target: { value: "x" } },
+    );
+    fireEvent.click(screen.getByText("Generate report"));
+
+    await waitFor(() => expect(exportBugReport).toHaveBeenCalledTimes(1));
+    const [contextJson, saveJson] = (exportBugReport as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(JSON.parse(contextJson).gameContext).toBe("available");
+    expect(JSON.parse(saveJson).manager.team_id).toBe("team-1");
   });
 });

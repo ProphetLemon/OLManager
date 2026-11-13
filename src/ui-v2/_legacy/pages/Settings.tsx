@@ -39,6 +39,7 @@ import { APP_NAME } from "@/lib/common/appInfo";
 import { useGameStore } from "@/store/gameStore";
 import type { GameStateData } from "@/store/gameStore";
 import SoloqDecaySettingV2 from "@/ui-v2/pages/settings/SoloqDecaySettingV2";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 const CURRENCY_OPTIONS = [
   { value: "EUR", label: "Euro (€)", symbol: "€" },
@@ -65,6 +66,7 @@ export default function Settings() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearSuccess, setClearSuccess] = useState(false);
   const [exportPath, setExportPath] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(
     !!document.fullscreenElement,
   );
@@ -139,15 +141,17 @@ export default function Settings() {
   };
 
   const handleExportWorld = async () => {
+    setExportPath(null);
+    setExportError(null);
     try {
-      // Simple export to app data dir
+      // A bare file name: the backend writes it under the app data dir and returns the full path.
       const path = await invoke<string>("export_world_database", {
         exportPath: "exported_world.json",
       });
       setExportPath(path);
-      setTimeout(() => setExportPath(null), 5000);
     } catch (err) {
       console.error("Failed to export world:", err);
+      setExportError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -413,8 +417,13 @@ export default function Settings() {
               </GameButton>
             </GameRow>
             {exportPath && (
-              <p className="text-xs text-accent-400 py-2 ml-1">
+              <p role="status" className="text-xs text-accent-400 py-2 ml-1 break-all">
                 {t("settings.exportedTo", { path: exportPath })}
+              </p>
+            )}
+            {exportError && (
+              <p role="alert" className="text-xs text-negative py-2 ml-1 break-words">
+                {t("settings.exportFailed", { error: exportError })}
               </p>
             )}
 
@@ -553,6 +562,7 @@ export default function Settings() {
           <div className="flex items-center gap-3 mb-8">
             <button
               onClick={() => navigate(returnTo)}
+              aria-label={t("common.back")}
               className="p-2 rounded-lg text-foreground/80 hover:text-foreground hover:bg-muted/50 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -779,7 +789,7 @@ function GameButton({
 // ── Datos: OLMDBManager auto-import (Tauri-native) ──
 
 function ImportDataSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const hasActiveGame = useGameStore((s) => s.hasActiveGame);
   const setGameState = useGameStore((s) => s.setGameState);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
@@ -900,7 +910,7 @@ function ImportDataSection() {
         "Descargando y descomprimiendo datos desde OLMDBManager...",
     });
   const cacheSizeText = cacheInfo?.exists
-    ? `${(cacheInfo.size_bytes / 1_048_576).toFixed(1)} MB`
+    ? `${formatDecimal(cacheInfo.size_bytes / 1_048_576, 1, i18n.language)} MB`
     : null;
 
   return (

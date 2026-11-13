@@ -41,7 +41,7 @@ export interface LolSimV1TeamStats {
 }
 
 /**
- * Runtime state subset currently consumed by LolMatchLive + render/panels.
+ * Runtime state subset consumed by the live match screen (ui-v2/match).
  * NOTE: Keep aligned with fields actually read by UI, not full engine internals.
  */
 export type LolSimV1RuntimeState = Pick<
@@ -176,6 +176,8 @@ export interface LolSimV1MatchReportChampionInput {
   cs: number;
   gold: number;
   spentGold: number;
+  /** Damage dealt to enemy champions; the engine counts it, an older one sends none. */
+  damageDealt?: number;
 }
 
 export interface LolSimV1MatchReportInput {

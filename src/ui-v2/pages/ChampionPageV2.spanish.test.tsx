@@ -96,4 +96,15 @@ describe("ChampionPageV2 in the Spanish UI", () => {
     expect(screen.queryByText("DrMundo")).toBeNull();
     expect(screen.queryByText("MonkeyKing")).toBeNull();
   });
+
+  it("writes the KDA and the per-match averages with a decimal comma", async () => {
+    invokeMock.mockResolvedValue(statsFor("Ahri", "Ahri", { avg_kda: 3.5, avg_kills: 4.2, avg_deaths: 2.1, avg_assists: 6.8 }));
+    const ChampionPageV2 = (await import("./ChampionPageV2")).default;
+    render(<ChampionPageV2 championKey="Ahri" onClose={() => {}} />);
+    await waitFor(() => expect(screen.getByText("10 part.")).toBeInTheDocument());
+    for (const value of ["3,5", "4,2", "2,1", "6,8"]) {
+      expect(screen.getByText(value), value).toBeInTheDocument();
+    }
+    expect(screen.queryByText("3.5")).toBeNull();
+  });
 });

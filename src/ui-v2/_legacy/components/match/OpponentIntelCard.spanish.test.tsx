@@ -8,10 +8,10 @@ import es from "@/i18n/locales/es.json";
 import OpponentIntelCard from "./OpponentIntelCard";
 import type { OpponentIntelSnapshot } from "./opponentIntelService";
 
-async function renderCard(quality: "low" | "medium" | "high", roles: string[]) {
+async function renderCard(quality: "low" | "medium" | "high", roles: string[], suggestedBans: OpponentIntelSnapshot["suggestedBans"] = [], lng = "es") {
   const instance = i18next.createInstance();
   await instance.use(initReactI18next).init({
-    lng: "es",
+    lng,
     fallbackLng: "en",
     resources: { en: { translation: en }, es: { translation: es } },
     interpolation: { escapeValue: false },
@@ -19,7 +19,7 @@ async function renderCard(quality: "low" | "medium" | "high", roles: string[]) {
   const intel: OpponentIntelSnapshot = {
     playerPools: roles.map((role, index) => ({ playerName: `Rival ${index}`, role, champions: [] })),
     masteryHighlights: [],
-    suggestedBans: [],
+    suggestedBans,
     metaThreats: [],
     confidence: { mappedPlayers: 0, totalPlayers: 5, poolCoveragePct: 100, qualityLabel: quality },
   };
@@ -46,5 +46,13 @@ describe("OpponentIntelCard in the Spanish UI", () => {
     expect(screen.getByText("(Desconocido)")).toBeInTheDocument();
     expect(screen.getByText("(Jungla)")).toBeInTheDocument();
     expect(screen.queryByText(/Unknown|JUNGLE/)).toBeNull();
+  });
+
+  it.each([
+    ["es", "7,3"],
+    ["en", "7.3"],
+  ])("writes the ban threat score with the %s decimal mark", async (lng, expected) => {
+    await renderCard("high", [], [{ championId: "Ahri", championName: "Ahri", threatScore: 7.25 } as never], lng);
+    expect(screen.getByText(new RegExp(expected.replace(".", "\\.")))).toBeInTheDocument();
   });
 });

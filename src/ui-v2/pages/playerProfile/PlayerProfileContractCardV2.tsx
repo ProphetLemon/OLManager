@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Activity, Briefcase, Calendar, DollarSign, Heart, TrendingUp } from "lucide-react";
 import { formatDate, getContractYearsRemaining } from "@/lib/common/helpers";
+import { getLocale } from "@/lib/formatting/dateFormatting";
 import { formatPlayerMarketValue, formatPlayerWage } from "@/lib/playerProfile/helpers";
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { cn } from "@/ui-v2/lib/utils";
@@ -33,6 +34,16 @@ const RISK_BADGE: Record<ContractRiskLevel, { variant: "destructive" | "outline"
   warning: { variant: "outline", className: "border-warning/40 text-warning" },
   stable: { variant: "outline", className: "border-positive/40 text-positive" },
 };
+
+/** Years left on the contract with one decimal, using the active locale's decimal separator. */
+function formatYearsRemaining(contractEnd: string, currentDate: string, language: string): string {
+  const years = Number.parseFloat(getContractYearsRemaining(contractEnd, currentDate));
+  if (Number.isNaN(years)) return "—";
+  return new Intl.NumberFormat(getLocale(language), {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(years);
+}
 
 function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {
   return (
@@ -76,7 +87,7 @@ export default function PlayerProfileContractCardV2({
           label={t("common.contract")}
           value={
             isContracted
-              ? t("finances.contractExpiresOn", { date: contractEnd })
+              ? t("finances.contractExpiresOn", { date: formatDate(contractEnd, language) })
               : t("playerProfile.noContract")
           }
         />
@@ -85,7 +96,7 @@ export default function PlayerProfileContractCardV2({
             <InfoRow
               icon={<Calendar className="size-4" />}
               label={t("playerProfile.yearsRemaining")}
-              value={getContractYearsRemaining(contractEnd, currentDate)}
+              value={formatYearsRemaining(contractEnd, currentDate, language)}
             />
             <InfoRow
               icon={<Briefcase className="size-4" />}

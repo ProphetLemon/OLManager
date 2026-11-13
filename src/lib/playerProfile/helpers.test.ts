@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+
+import i18n from "@/i18n";
 
 import type { PlayerData, TeamData } from "@/store/gameStore";
 import {
@@ -150,4 +152,18 @@ describe("playerProfile helpers", function (): void {
         expect(getAttributeColorClass(20)).toContain("text-red-500");
     });
 
+});
+
+describe("formatPlayerMarketValue in the game language", () => {
+    afterEach(async () => {
+        await i18n.changeLanguage("en");
+    });
+
+    it.each([
+        ["es", "€1,5M"],
+        ["en", "€1.5M"],
+    ])("writes millions in %s", async (language, expected) => {
+        await i18n.changeLanguage(language);
+        expect(formatPlayerMarketValue(1_500_000)).toBe(expected);
+    });
 });

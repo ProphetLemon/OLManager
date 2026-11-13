@@ -144,3 +144,15 @@ describe("Settings graphics mode", () => {
     expect(updateSettings).toHaveBeenCalledWith({ linux_render_mode: "compatibility" });
   });
 });
+
+describe("Settings back button", () => {
+  it("has an accessible name", () => {
+    useSettingsStore.setState({ loaded: true });
+    render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: /^back$/i })).toBeInTheDocument();
+  });
+});

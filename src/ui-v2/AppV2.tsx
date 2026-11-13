@@ -9,7 +9,6 @@ import UpdateModal from "@/ui-v2/_legacy/components/updater/UpdateModal";
 import { LazyFallback } from "./components/LazyFallback";
 import { TitleBarV2 } from "./components/TitleBarV2";
 import ErrorBoundary from "./components/ErrorBoundary";
-import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import i18n from "@/i18n";
 import { isAndroidUserAgent, rootFontSizeFor } from "@/ui-v2/uiScale";
 
@@ -44,8 +43,6 @@ const DASHBOARD_TAB_ROUTES = [
 
 const DASHBOARD_ROUTES = ["/dashboard", ...DASHBOARD_TAB_ROUTES];
 
-const FLOATING_BUG_ROUTES = ["/match", "/select-team"];
-
 // Only in-game screens take the club colours. Every other screen (main menu,
 // team selection, settings) keeps the theme colours, whatever the store holds.
 const CLUB_THEMED_ROUTES = [...DASHBOARD_ROUTES, "/match"];
@@ -55,9 +52,6 @@ export function AppContent() {
   useClubTheme(CLUB_THEMED_ROUTES.includes(location.pathname));
   const setCurrentRoute = useBugReportStore((s) => s.setCurrentRoute);
   const setCurrentDashboardTab = useBugReportStore((s) => s.setCurrentDashboardTab);
-  // The dashboard rail hosts its own bug button, so the floating one only
-  // appears on the screens without a rail.
-  const showBugButton = FLOATING_BUG_ROUTES.includes(location.pathname);
 
   // Keep bug-report context in sync with the current route.
   // Dashboard tabs are only meaningful while on a dashboard route; clear the
@@ -81,22 +75,19 @@ export function AppContent() {
   }, [location.pathname]);
 
   return (
-    <>
-      <Suspense fallback={<LazyFallback />}>
-        <Routes>
-          <Route path="/" element={<MainMenu />} />
-          <Route path="/select-team" element={<TeamSelectionV2 />} />
-          <Route path="/dashboard" element={<DashboardV2 />} />
-          <Route path="/finanzas" element={<DashboardV2 />} />
-          <Route path="/finances" element={<DashboardV2 />} />
-          <Route path="/competiciones" element={<DashboardV2 />} />
-          <Route path="/competitions" element={<DashboardV2 />} />
-          <Route path="/match" element={<MatchSimulation />} />
-          <Route path="/settings" element={<SettingsV2 />} />
-        </Routes>
-      </Suspense>
-      {showBugButton && <FloatingBugButton />}
-    </>
+    <Suspense fallback={<LazyFallback />}>
+      <Routes>
+        <Route path="/" element={<MainMenu />} />
+        <Route path="/select-team" element={<TeamSelectionV2 />} />
+        <Route path="/dashboard" element={<DashboardV2 />} />
+        <Route path="/finanzas" element={<DashboardV2 />} />
+        <Route path="/finances" element={<DashboardV2 />} />
+        <Route path="/competiciones" element={<DashboardV2 />} />
+        <Route path="/competitions" element={<DashboardV2 />} />
+        <Route path="/match" element={<MatchSimulation />} />
+        <Route path="/settings" element={<SettingsV2 />} />
+      </Routes>
+    </Suspense>
   );
 }
 

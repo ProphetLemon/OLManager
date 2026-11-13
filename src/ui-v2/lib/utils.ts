@@ -5,7 +5,7 @@ import { extendTailwindMerge } from "tailwind-merge"
 // registering them, tailwind-merge reads e.g. `text-caption` as a text colour and
 // drops it when a colour class such as `text-muted-foreground` is also present.
 // Keep in sync with the --text-<name> tokens (a test enforces it).
-export const CUSTOM_FONT_SIZES = ["2xs", "caption", "section", "title", "ovr", "scoreboard"] as const
+export const CUSTOM_FONT_SIZES = ["2xs", "caption", "map", "section", "title", "ovr", "scoreboard"] as const
 
 const twMerge = extendTailwindMerge({
   extend: {

@@ -52,6 +52,27 @@ pub struct ManagerCareerStats {
     pub losses: u32,
     pub trophies: u32,
     pub best_finish: Option<u32>,
+    /// How far into a season the totals above already reach. `None` for a career that has
+    /// not closed a split yet, and for saves written before splits were tracked.
+    #[serde(default)]
+    pub counted_through: Option<CareerSplitMark>,
+}
+
+/// The first `splits` splits of `season` are in the manager's career totals. A split is
+/// added only when it lies beyond the mark, so no split is counted twice.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "typescript", derive(TS))]
+#[cfg_attr(feature = "typescript", ts(export))]
+pub struct CareerSplitMark {
+    pub season: u32,
+    pub splits: u32,
+}
+
+impl CareerSplitMark {
+    /// Whether the split at `split_index` of `season` is already in the totals.
+    pub fn covers(&self, season: u32, split_index: usize) -> bool {
+        self.season > season || (self.season == season && self.splits as usize > split_index)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

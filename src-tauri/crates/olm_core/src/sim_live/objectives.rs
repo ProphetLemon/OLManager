@@ -3,7 +3,7 @@ use serde_json::Value;
 use super::{
     MAJOR_OBJECTIVE_RESET_AFTER_SEC, NeutralTimerRuntime, NeutralTimersRuntime,
     OBJECTIVE_NEXT_SPAWN_FALLBACK, RuntimeState, add_dragon_stack_for_kind,
-    decode_neutral_timers_state, log_event,
+    decode_neutral_timers_state, log_coded_event, EventCode, EventData,
     neutral_timers_default_runtime_state, runtime_buffs_from_extra, set_runtime_buffs,
     team_buffs_mut, team_buffs_ref,
 };
@@ -72,10 +72,12 @@ pub(super) fn resolve_voidgrub_expiration_effect(
         return None;
     }
 
-    let winner_team = if stacks.red_stacks > stacks.blue_stacks {
-        "red"
-    } else {
-        "blue"
+    // The side that already took more grubs keeps the rest. A tie, 0 to 0 included, favours
+    // nobody: the grubs simply expire.
+    let winner_team = match stacks.red_stacks.cmp(&stacks.blue_stacks) {
+        std::cmp::Ordering::Greater => "red",
+        std::cmp::Ordering::Less => "blue",
+        std::cmp::Ordering::Equal => return None,
     };
 
     Some(VoidgrubExpirationEffect {
@@ -294,10 +296,22 @@ pub(super) fn tick_neutral_timers(runtime: &mut RuntimeState) {
         }
 
         if let Some(text) = timer_tick.spawn_text {
-            log_event(runtime, &text, "spawn");
+            log_coded_event(
+                runtime,
+                &text,
+                "spawn",
+                EventCode::NeutralSpawned,
+                EventData::default().objective(&key),
+            );
         }
         if let Some(text) = timer_tick.despawn_text {
-            log_event(runtime, &text, "info");
+            log_coded_event(
+                runtime,
+                &text,
+                "info",
+                EventCode::NeutralDespawned,
+                EventData::default().objective(&key),
+            );
         }
     }
 

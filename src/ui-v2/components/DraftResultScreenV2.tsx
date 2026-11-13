@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { compactGold } from "@/lib/match/live/formatNumbers";
+import { totalGold } from "@/lib/match/live/playerCardView";
 import { buildLolScrimPrepInsight } from "@/lib/scrims/lolScrimPrep";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
@@ -8,6 +10,7 @@ import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import type { DraftMatchResult, DraftTimelineEvent } from "@/ui-v2/_legacy/components/match/draftResultSimulator";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { Button } from "@/ui-v2/components/ui/button";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 import { cn } from "@/ui-v2/lib/utils";
 
 type Side = "blue" | "red";
@@ -42,6 +45,13 @@ export interface DraftResultSeriesGame {
 const TEAM_SEEDS: TeamSeed[] = [];
 const GOLD_CHART_CENTER_Y = 36;
 const GOLD_CHART_HALF_HEIGHT = 28;
+const GOLD_CHART_VIEWBOX_HEIGHT = 72;
+/** Where the three axis values sit on the chart: the top line, the zero line and the bottom line. */
+const GOLD_CHART_AXIS_ROWS = [
+  { key: "top", sign: "+", y: GOLD_CHART_CENTER_Y - GOLD_CHART_HALF_HEIGHT },
+  { key: "mid", sign: "", y: GOLD_CHART_CENTER_Y },
+  { key: "bottom", sign: "-", y: GOLD_CHART_CENTER_Y + GOLD_CHART_HALF_HEIGHT },
+] as const;
 
 type GoldDiffPoint = { minute: number; diff: number };
 
@@ -137,16 +147,6 @@ function eventPillClass(event: DraftTimelineEvent): string {
   return sideBase;
 }
 
-function formatGoldDiff(value: number): string {
-  const absValue = Math.abs(Math.round(value));
-  if (absValue >= 1000) {
-    const thousands = absValue / 1000;
-    return `${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)}k`;
-  }
-
-  return absValue.toString();
-}
-
 export default function DraftResultScreenV2({
   snapshot,
   controlledSide,
@@ -161,7 +161,7 @@ export default function DraftResultScreenV2({
   onContinue,
   teams,
 }: DraftResultScreenV2Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const playerById = useMemo(() => {
     const map = new Map<string, { name: string; profileImageUrl?: string | null }>();
@@ -282,6 +282,14 @@ export default function DraftResultScreenV2({
     const key = TIMELINE_EVENT_KEYS[event.type];
     return key ? t(key, { defaultValue: event.label }) : event.label;
   };
+
+  // A result stored before the engine counted damage has none: a dash, not a made-up zero.
+  const damageText = (damage: number | undefined): string =>
+    typeof damage === "number" && Number.isFinite(damage) ? compactGold(damage, i18n.language) : "-";
+
+  // Gold earned, as the live card writes it. Results stored before `spentGold` existed show their `gold`.
+  const goldText = (row: { gold: number; spentGold?: number }): string =>
+    compactGold(totalGold(row), i18n.language);
 
   const renderTimeline = () => {
     const sorted = [...selectedResult.timelineEvents].sort((a, b) => a.minute - b.minute);
@@ -477,7 +485,7 @@ export default function DraftResultScreenV2({
                     "font-heading text-lg font-black",
                     leadingSide === "red" ? "text-orange-400" : leadingSide === "blue" ? "text-muted-foreground" : "text-gray-200",
                   )}>
-                    {leadingTri ? `${leadingTri} +${formatGoldDiff(finalGoldDiff)}` : t("match.draftResult.evenGold")}
+                    {leadingTri ? `${leadingTri} +${compactGold(finalGoldDiff, i18n.language)}` : t("match.draftResult.evenGold")}
                   </p>
                 </div>
               </div>
@@ -485,9 +493,22 @@ export default function DraftResultScreenV2({
               <div className="mt-4 rounded-xl border border-white/10 bg-muted/20 p-3 shadow-inner shadow-black/30">
                 <div className="mb-2 flex items-center justify-between text-2xs font-heading font-bold uppercase tracking-wider">
                   <span className="text-muted-foreground">{blueTri}</span>
-                  <span className="text-muted-foreground">+{formatGoldDiff(maxAbsGold)}</span>
+                  <span className="normal-case text-muted-foreground">+{compactGold(maxAbsGold, i18n.language)}</span>
                 </div>
-                <svg viewBox="0 0 100 72" className="h-40 w-full overflow-visible" role="img" aria-label={goldAxisLabel}>
+                {/* The axis values are HTML, not SVG text: SVG text scales with the viewBox (about 9 px here), HTML keeps the token size. */}
+                <div className="flex gap-1">
+                  <div className="relative h-40 w-12 shrink-0 text-2xs font-heading font-bold tracking-wide text-muted-foreground" aria-hidden="true" data-testid="gold-axis">
+                    {GOLD_CHART_AXIS_ROWS.map((row) => (
+                      <span
+                        key={row.key}
+                        className="absolute left-0 -translate-y-1/2 whitespace-nowrap leading-none"
+                        style={{ top: `${(row.y / GOLD_CHART_VIEWBOX_HEIGHT) * 100}%` }}
+                      >
+                        {row.sign}{row.key === "mid" ? "0" : compactGold(maxAbsGold, i18n.language)}
+                      </span>
+                    ))}
+                  </div>
+                <svg viewBox={`0 0 100 ${GOLD_CHART_VIEWBOX_HEIGHT}`} className="h-40 min-w-0 flex-1 overflow-visible" role="img" aria-label={goldAxisLabel}>
                   <defs>
                     <linearGradient id={`gold-line-${chartIdSuffix}`} x1="0" x2="0" y1="0" y2="1">
                       <stop offset="0%" stopColor="#67e8f9" />
@@ -504,7 +525,7 @@ export default function DraftResultScreenV2({
                       <rect x="0" y="0" width="100" height={GOLD_CHART_CENTER_Y} />
                     </clipPath>
                     <clipPath id={`gold-red-clip-${chartIdSuffix}`}>
-                      <rect x="0" y={GOLD_CHART_CENTER_Y} width="100" height={72 - GOLD_CHART_CENTER_Y} />
+                      <rect x="0" y={GOLD_CHART_CENTER_Y} width="100" height={GOLD_CHART_VIEWBOX_HEIGHT - GOLD_CHART_CENTER_Y} />
                     </clipPath>
                     <filter id={`gold-glow-${chartIdSuffix}`} x="-20%" y="-30%" width="140%" height="160%">
                       <feGaussianBlur stdDeviation="1.7" result="blur" />
@@ -520,9 +541,6 @@ export default function DraftResultScreenV2({
                     <line key={`gold-grid-${y}`} x1="6" y1={y} x2="94" y2={y} stroke="rgba(255,255,255,0.08)" strokeDasharray={y === 36 ? "0" : "2 3"} />
                   ))}
                   <line x1="6" y1="36" x2="94" y2="36" stroke="rgba(255,255,255,0.32)" strokeWidth="0.7" />
-                  <text x="2" y="11" fill="rgba(255,255,255,0.45)" fontSize="4">+{formatGoldDiff(maxAbsGold)}</text>
-                  <text x="2" y="37.5" fill="rgba(255,255,255,0.45)" fontSize="4">0</text>
-                  <text x="2" y="65" fill="rgba(255,255,255,0.45)" fontSize="4">-{formatGoldDiff(maxAbsGold)}</text>
 
                   {areaPath ? <path d={areaPath} fill={`url(#gold-area-${chartIdSuffix})`} /> : null}
                   {points ? (
@@ -560,9 +578,10 @@ export default function DraftResultScreenV2({
                     />
                   ) : null}
                 </svg>
+                </div>
                 <div className="mt-1 flex items-center justify-between text-2xs font-heading font-bold uppercase tracking-wider">
-                  <span className="text-muted-foreground">0m</span>
-                  <span className="text-muted-foreground">-{formatGoldDiff(maxAbsGold)}</span>
+                  <span className="normal-case text-muted-foreground" data-testid="gold-chart-start">0m</span>
+                  <span className="normal-case text-muted-foreground">-{compactGold(maxAbsGold, i18n.language)}</span>
                   <span className="text-orange-400">{redTri}</span>
                 </div>
               </div>
@@ -571,12 +590,12 @@ export default function DraftResultScreenV2({
                 <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
                   <p className="text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground">{t("match.draftResult.peakGold")}</p>
                   <p className={cn("mt-1 font-bold", peakGoldDiff.diff < 0 ? "text-orange-400" : "text-muted-foreground")}>
-                    {(peakGoldDiff.diff < 0 ? redTri : blueTri)} +{formatGoldDiff(peakGoldDiff.diff)} · {peakGoldDiff.minute}m
+                    {(peakGoldDiff.diff < 0 ? redTri : blueTri)} +{compactGold(peakGoldDiff.diff, i18n.language)} · {peakGoldDiff.minute}m
                   </p>
                 </div>
                 <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
                   <p className="text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground">{t("match.draftResult.goldScale")}</p>
-                  <p className="mt-1 font-bold text-gray-200">±{formatGoldDiff(maxAbsGold)}</p>
+                  <p className="mt-1 font-bold text-gray-200">±{compactGold(maxAbsGold, i18n.language)}</p>
                 </div>
               </div>
             </CardContent>
@@ -625,7 +644,17 @@ export default function DraftResultScreenV2({
             <Card size="sm" className="self-start">
               <CardContent className="py-4">
                 <p className="text-xs font-heading font-bold uppercase tracking-wider text-muted-foreground mb-3">{blueTri}</p>
-                <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 gap-y-1 items-center">
+                <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 gap-y-1 items-center">
+                  <div
+                    className="col-span-5 grid grid-cols-subgrid items-center gap-3 border border-transparent px-3 text-2xs font-heading font-bold uppercase tracking-wide text-muted-foreground"
+                    data-testid="row-columns"
+                  >
+                    <span aria-hidden="true" />
+                    <span aria-hidden="true" />
+                    <span>{t("match.draftResult.columns.gold")}</span>
+                    <span>{t("match.draftResult.columns.damage")}</span>
+                    <span>{t("match.draftResult.columns.rating")}</span>
+                  </div>
                   {blueRows.map((row) => {
                     const playerData = playerById.get(row.playerId);
                     const icon = resolvePlayerPhoto(row.playerId, row.playerName, playerData?.profileImageUrl);
@@ -634,7 +663,7 @@ export default function DraftResultScreenV2({
                       <div
                         key={`blue-${row.playerId}-${row.role}`}
                         className={cn(
-                          "col-span-4 grid grid-cols-subgrid items-center gap-3 rounded-md border px-3 py-2",
+                          "col-span-5 grid grid-cols-subgrid items-center gap-3 rounded-md border px-3 py-2",
                           isMvp ? "border-yellow-400/50 bg-yellow-500/10" : "border-white/10 bg-muted/30",
                         )}
                       >
@@ -643,8 +672,30 @@ export default function DraftResultScreenV2({
                           <span className="truncate">{row.playerName}</span>
                         </div>
                         <span className="text-sm text-muted-foreground/50">{row.kills}/{row.deaths}/{row.assists}</span>
-                        <span className="text-sm text-muted-foreground/50">{row.gold}</span>
-                        <span className="text-sm font-bold text-club-text">{row.rating.toFixed(1)}</span>
+                        <span
+                          className="text-sm text-muted-foreground/50"
+                          title={t("match.draftResult.columns.goldEarned")}
+                          aria-label={`${t("match.draftResult.columns.goldEarned")}: ${goldText(row)}`}
+                          data-testid="row-gold"
+                        >
+                          {goldText(row)}
+                        </span>
+                        <span
+                          className="text-sm text-muted-foreground/50"
+                          title={t("match.damageDealt")}
+                          aria-label={`${t("match.damageDealt")}: ${damageText(row.damageDealt)}`}
+                          data-testid="row-damage"
+                        >
+                          {damageText(row.damageDealt)}
+                        </span>
+                        <span
+                          className="text-sm font-bold text-club-text"
+                          title={t("match.draftResult.columns.rating")}
+                          aria-label={`${t("match.draftResult.columns.rating")}: ${formatDecimal(row.rating, 1, i18n.language)}`}
+                          data-testid="row-rating"
+                        >
+                          {formatDecimal(row.rating, 1, i18n.language)}
+                        </span>
                       </div>
                     );
                   })}
@@ -654,7 +705,17 @@ export default function DraftResultScreenV2({
             <Card size="sm" className="self-start">
               <CardContent className="py-4">
                 <p className="text-xs font-heading font-bold uppercase tracking-wider text-muted-foreground mb-3">{redTri}</p>
-                <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 gap-y-1 items-center">
+                <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 gap-y-1 items-center">
+                  <div
+                    className="col-span-5 grid grid-cols-subgrid items-center gap-3 border border-transparent px-3 text-2xs font-heading font-bold uppercase tracking-wide text-muted-foreground"
+                    data-testid="row-columns"
+                  >
+                    <span aria-hidden="true" />
+                    <span aria-hidden="true" />
+                    <span>{t("match.draftResult.columns.gold")}</span>
+                    <span>{t("match.draftResult.columns.damage")}</span>
+                    <span>{t("match.draftResult.columns.rating")}</span>
+                  </div>
                   {redRows.map((row) => {
                     const playerData = playerById.get(row.playerId);
                     const icon = resolvePlayerPhoto(row.playerId, row.playerName, playerData?.profileImageUrl);
@@ -663,7 +724,7 @@ export default function DraftResultScreenV2({
                       <div
                         key={`red-${row.playerId}-${row.role}`}
                         className={cn(
-                          "col-span-4 grid grid-cols-subgrid items-center gap-3 rounded-md border px-3 py-2",
+                          "col-span-5 grid grid-cols-subgrid items-center gap-3 rounded-md border px-3 py-2",
                           isMvp ? "border-yellow-400/50 bg-yellow-500/10" : "border-white/10 bg-muted/30",
                         )}
                       >
@@ -672,8 +733,30 @@ export default function DraftResultScreenV2({
                           <span className="truncate">{row.playerName}</span>
                         </div>
                         <span className="text-sm text-muted-foreground/50">{row.kills}/{row.deaths}/{row.assists}</span>
-                        <span className="text-sm text-muted-foreground/50">{row.gold}</span>
-                        <span className="text-sm font-bold text-orange-400">{row.rating.toFixed(1)}</span>
+                        <span
+                          className="text-sm text-muted-foreground/50"
+                          title={t("match.draftResult.columns.goldEarned")}
+                          aria-label={`${t("match.draftResult.columns.goldEarned")}: ${goldText(row)}`}
+                          data-testid="row-gold"
+                        >
+                          {goldText(row)}
+                        </span>
+                        <span
+                          className="text-sm text-muted-foreground/50"
+                          title={t("match.damageDealt")}
+                          aria-label={`${t("match.damageDealt")}: ${damageText(row.damageDealt)}`}
+                          data-testid="row-damage"
+                        >
+                          {damageText(row.damageDealt)}
+                        </span>
+                        <span
+                          className="text-sm font-bold text-orange-400"
+                          title={t("match.draftResult.columns.rating")}
+                          aria-label={`${t("match.draftResult.columns.rating")}: ${formatDecimal(row.rating, 1, i18n.language)}`}
+                          data-testid="row-rating"
+                        >
+                          {formatDecimal(row.rating, 1, i18n.language)}
+                        </span>
                       </div>
                     );
                   })}

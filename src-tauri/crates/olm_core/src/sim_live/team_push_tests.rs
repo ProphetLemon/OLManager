@@ -364,3 +364,88 @@ fn the_team_gathers_at_the_rally_point_before_it_goes_in() {
     let order = team_push::orders(&runtime)[0].clone().expect("an order");
     assert!(order.rally.is_none(), "the team stayed at the rally point with four there");
 }
+
+/// The red nexus is open and down to `nexus_hp`; one blue champion is alive against five red
+/// ones who stand far from it.
+fn lone_champion_at_a_nexus(nexus_hp: f64) -> RuntimeState {
+    let mut runtime = open_nexus_world(1, 5);
+    for champion in runtime.champions.iter_mut().filter(|c| c.team == "red") {
+        champion.pos = Vec2 { x: 0.50, y: 0.50 };
+    }
+    runtime.structures[0].hp = nexus_hp;
+    runtime
+}
+
+#[test]
+fn a_lone_champion_finishes_an_unguarded_nexus_that_is_nearly_down() {
+    let mut runtime = lone_champion_at_a_nexus(150.0);
+
+    let plan = blue_plan(&mut runtime);
+
+    assert!(plan.active && plan.ending, "a nexus with 150 health left was left alone");
+}
+
+#[test]
+fn a_finishing_team_goes_straight_to_the_nexus_without_gathering() {
+    let mut runtime = lone_champion_at_a_nexus(150.0);
+    team_push::update_team_pushes(&mut runtime);
+
+    let order = team_push::orders(&runtime)[0].clone().expect("an order");
+
+    assert!(order.rally.is_none(), "the finishing team went to the rally point");
+}
+
+#[test]
+fn a_lone_champion_does_not_go_for_a_nexus_with_most_of_its_health() {
+    let mut runtime = lone_champion_at_a_nexus(5500.0);
+
+    assert!(!blue_plan(&mut runtime).active);
+}
+
+#[test]
+fn a_lone_champion_does_not_finish_a_nexus_an_enemy_champion_stands_at() {
+    let mut runtime = lone_champion_at_a_nexus(150.0);
+    runtime.champions[5].pos = Vec2 { x: 0.85, y: 0.15 };
+
+    assert!(!blue_plan(&mut runtime).active, "the champion walked into the defender");
+}
+
+/// Five alive champions, two of them recalling hurt; the three healthy ones stand at the rally point.
+fn three_at_the_rally_two_recalling() -> RuntimeState {
+    let mut runtime = open_nexus_world(5, 5);
+    team_push::update_team_pushes(&mut runtime);
+    let rally = team_push::orders(&runtime)[0]
+        .as_ref()
+        .and_then(|order| order.rally)
+        .expect("the team starts at the rally point");
+    for (idx, champion) in runtime.champions.iter_mut().take(5).enumerate() {
+        if idx < 3 {
+            champion.pos = rally;
+        } else {
+            champion.state = "recall".to_string();
+            champion.hp = champion.max_hp * 0.2;
+        }
+    }
+    runtime
+}
+
+#[test]
+fn the_team_waits_at_the_rally_point_for_the_teammates_who_are_recalling() {
+    let mut runtime = three_at_the_rally_two_recalling();
+
+    team_push::update_team_pushes(&mut runtime);
+
+    let order = team_push::orders(&runtime)[0].clone().expect("an order");
+    assert!(order.rally.is_some(), "three went in at once while two were on their way back");
+}
+
+#[test]
+fn the_team_goes_in_with_three_when_the_wait_for_the_recalling_ones_runs_out() {
+    let mut runtime = three_at_the_rally_two_recalling();
+    runtime.time_sec += 45.0;
+
+    team_push::update_team_pushes(&mut runtime);
+
+    let order = team_push::orders(&runtime)[0].clone().expect("an order");
+    assert!(order.rally.is_none(), "the team waited for ever for the recalling ones");
+}

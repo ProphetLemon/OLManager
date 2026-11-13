@@ -288,11 +288,16 @@ pub(super) const EARLY_ROLE_SHARE_RANGE: [(&str, f64, f64); 5] = [
     ("SUP", 0.13, 0.19),
 ];
 
-/// Cheap default guard for the role shares: 4 seeded matches cut at 12
-/// minutes (about 8 s in a debug build) instead of 12 full ones (about 70 s).
+/// Seeds of the early share guard. The mean TOP share of 4 matches has a spread of 0.6 points
+/// around 23.6%, next to the 24% limit, so 4 matches fail a quarter of the time whatever the
+/// engine does; the first 24 (chosen before looking at the result) spread 0.35.
+const EARLY_SHARE_SEEDS: usize = 24;
+
+/// Cheap default guard for the role shares: seeded matches cut at 12 minutes instead of 12
+/// full ones (about 70 s).
 #[test]
 fn early_game_role_gold_shares_stay_in_band() {
-    let summary = summarize(&run_batch(0, 4, 0.0, 0.0, SHORT_RUN_TICKS));
+    let summary = summarize(&run_batch(0, EARLY_SHARE_SEEDS, 0.0, 0.0, SHORT_RUN_TICKS));
     for (role, min, max) in EARLY_ROLE_SHARE_RANGE {
         let share = summary.role_share[role];
         assert!(
@@ -377,5 +382,28 @@ fn print_early_economy_report() {
     let summary = summarize(&outcomes);
     for role in ROLES {
         println!("share {role}: {:.1}%", summary.role_share[role] * 100.0);
+    }
+}
+
+/// Prints each role's share of team gold after 12 minutes over `ECON_N` seeds (default 24) with
+/// its standard deviation between champions, and the share of TOP the guard checks.
+#[test]
+#[ignore = "measurement report; run with --ignored --nocapture (ECON_N sets the match count)"]
+fn print_early_role_share_spread() {
+    let outcomes = run_batch(0, batch_size(24), 0.0, 0.0, SHORT_RUN_TICKS);
+    for role in ROLES {
+        let shares: Vec<f64> = outcomes
+            .iter()
+            .flat_map(|o| o.role_share.iter().filter(|(r, _)| r == role).map(|(_, s)| *s))
+            .collect();
+        let mean = shares.iter().sum::<f64>() / shares.len() as f64;
+        let var = shares.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / shares.len() as f64;
+        println!(
+            "share {role}: {:.1}% sd {:.1} over {} matches (mean of 4 matches has sd {:.1})",
+            mean * 100.0,
+            var.sqrt() * 100.0,
+            outcomes.len(),
+            var.sqrt() * 100.0 / (2.0 * 4f64).sqrt()
+        );
     }
 }

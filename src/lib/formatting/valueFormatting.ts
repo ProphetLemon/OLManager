@@ -1,5 +1,6 @@
 import i18n from "i18next";
 import { getLocale } from "./dateFormatting";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 export function calcAge(dob: string, asOfDate: string): number {
     const birthDate = new Date(dob);
@@ -53,7 +54,7 @@ export function formatVal(value: number, currency: string = activeCurrency): str
     const sign = value < 0 ? "-" : "";
     const magnitude = Math.abs(value);
     if (magnitude >= 1_000_000) {
-        return `${sign}${symbol}${(magnitude / 1_000_000).toFixed(1)}M`;
+        return `${sign}${symbol}${formatDecimal(magnitude / 1_000_000, 1)}M`;
     }
     if (magnitude >= 1_000) {
         return `${sign}${symbol}${(magnitude / 1_000).toFixed(0)}K`;

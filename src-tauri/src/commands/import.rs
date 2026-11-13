@@ -1238,15 +1238,14 @@ fn rehydrate_active_game(
         return Ok(added);
     }
 
-    let save_id = state.get_save_id();
-    state.set_game(game.clone());
+    state.set_game(game);
 
-    if let Some(save_id) = save_id {
+    if state.get_save_id().is_some() {
         let mut sm = sm_state
             .0
             .lock()
             .map_err(|e| format!("save manager lock: {e}"))?;
-        sm.save_game(&game, &save_id)?;
+        state.save_active_game(&mut sm)?;
     }
 
     info!(

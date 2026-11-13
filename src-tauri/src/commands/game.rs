@@ -1620,9 +1620,7 @@ pub async fn load_game(
 
     info!("[cmd] load_game: setting state");
     let mgr_name = game.manager.display_name();
-    state.set_save_id(save_id);
-    state.set_game(game);
-    state.set_stats_state(StatsState::default());
+    state.install_loaded_game(save_id, game);
     info!("[cmd] load_game: state set, returning manager name");
 
     Ok(mgr_name)
@@ -1762,25 +1760,11 @@ pub async fn save_game(
     sm_state: State<'_, SaveManagerState>,
 ) -> Result<(), String> {
     info!("[cmd] save_game");
-    let mut game = state
-        .get_game(|g: &Game| g.clone())
-        .ok_or("No active game session".to_string())?;
-
-    let save_id = state
-        .get_save_id()
-        .ok_or("No active save session".to_string())?;
-
-    // Sync stats_state from session back into game before saving
-    let stats_state = state
-        .get_stats_state(|stats| stats.clone())
-        .unwrap_or_default();
-    game.stats_state = stats_state;
-
     let mut sm = sm_state
         .0
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
-    sm.save_game(&game, &save_id)
+    state.save_active_game(&mut sm)
 }
 
 /// Save the current game and clear the active session so the player returns to the main menu.
@@ -1790,23 +1774,17 @@ pub async fn exit_to_menu(
     sm_state: State<'_, SaveManagerState>,
 ) -> Result<(), String> {
     info!("[cmd] exit_to_menu");
-    let game = state
-        .get_game(|g: &Game| g.clone())
-        .ok_or("No active game session")?;
+    if state.get_game(|_| ()).is_none() {
+        return Err("No active game session".to_string());
+    }
 
     // Auto-save
-    if let Some(save_id) = state.get_save_id() {
-        let mut game = game;
-        let stats_state = state
-            .get_stats_state(|stats| stats.clone())
-            .unwrap_or_default();
-        game.stats_state = stats_state;
-
+    if state.get_save_id().is_some() {
         let mut sm = sm_state
             .0
             .lock()
             .map_err(|e| format!("Lock error: {}", e))?;
-        sm.save_game(&game, &save_id)?;
+        state.save_active_game(&mut sm)?;
     }
 
     // Clear the in-memory game state

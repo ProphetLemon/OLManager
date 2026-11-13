@@ -494,6 +494,67 @@ pub(super) fn move_champions(runtime: &mut RuntimeState, dt: f64) {
     }
 }
 
+/// Centre distance under which two enemy champions overlap: about one bubble on the map.
+pub(super) const ENEMY_BUBBLE_DISTANCE: f64 = 0.031;
+/// The most one champion is pushed in one step, so a separation is a slide and not a jump.
+/// Passes of the separation in one step.
+const BUBBLE_PASSES: usize = 2;
+const BUBBLE_PUSH_MAX_STEP: f64 = 0.006;
+
+/// Enemy champions do not stand inside each other: two that overlap slide apart, each by half
+/// of the overlap. A champion channeling a recall does not move; the other one slides the whole
+/// way. Allies pass through each other.
+pub(super) fn separate_enemy_champions(runtime: &mut RuntimeState) {
+    // A push that frees one pair can crowd another (a team fight): a few passes settle it.
+    for _ in 0..BUBBLE_PASSES {
+        separate_enemy_champions_once(runtime);
+    }
+}
+
+fn separate_enemy_champions_once(runtime: &mut RuntimeState) {
+    let now = runtime.time_sec;
+    let count = runtime.champions.len();
+    for a in 0..count {
+        for b in (a + 1)..count {
+            let (ca, cb) = (&runtime.champions[a], &runtime.champions[b]);
+            let apart = ca.alive
+                && cb.alive
+                && ca.realm_banished_until <= 0.0
+                && cb.realm_banished_until <= 0.0
+                && normalized_team(&ca.team) != normalized_team(&cb.team);
+            let gap = dist(ca.pos, cb.pos);
+            if !apart || gap >= ENEMY_BUBBLE_DISTANCE {
+                continue;
+            }
+            let channeling = |c: &ChampionRuntime| c.state == "recall" && c.recall_channel_until > now;
+            let (a_moves, b_moves) = (!channeling(ca), !channeling(cb));
+            if !a_moves && !b_moves {
+                continue;
+            }
+            // On the very same spot each goes toward his own base.
+            let (dir_a, dir_b) = if gap < 1e-6 {
+                let toward = |c: &ChampionRuntime| {
+                    let base = base_position_for(&c.team);
+                    normalize(Vec2 { x: base.x - c.pos.x, y: base.y - c.pos.y })
+                };
+                (toward(ca), toward(cb))
+            } else {
+                let away = normalize(Vec2 { x: ca.pos.x - cb.pos.x, y: ca.pos.y - cb.pos.y });
+                (away, Vec2 { x: -away.x, y: -away.y })
+            };
+            let share = if a_moves && b_moves { 0.5 } else { 1.0 };
+            let step = ((ENEMY_BUBBLE_DISTANCE - gap) * share).min(BUBBLE_PUSH_MAX_STEP);
+            for (idx, moves, dir) in [(a, a_moves, dir_a), (b, b_moves, dir_b)] {
+                if moves {
+                    let champion = &mut runtime.champions[idx];
+                    champion.pos.x = clamp(champion.pos.x + dir.x * step, 0.01, 0.99);
+                    champion.pos.y = clamp(champion.pos.y + dir.y * step, 0.01, 0.99);
+                }
+            }
+        }
+    }
+}
+
 pub(super) fn lane_minion_context_distance(
     champion: &ChampionRuntime,
     pos: super::Vec2,

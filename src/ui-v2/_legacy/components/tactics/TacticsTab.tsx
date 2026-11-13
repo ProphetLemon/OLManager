@@ -34,6 +34,7 @@ import { Card, CardBody, CardHeader } from "@/ui-v2/_legacy/components/ui";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { cn } from "@/ui-v2/lib/utils";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 interface TacticsTabProps {
   gameState: GameStateData;
@@ -607,6 +608,7 @@ function CoherenceSummary({
   gameState: GameStateData;
   t: TFunction;
 }) {
+  const { i18n } = useTranslation();
   const size = 64;
   const strokeWidth = 6;
   const radius = (size - strokeWidth) / 2;
@@ -639,7 +641,7 @@ function CoherenceSummary({
             </p>
             <p className="text-lg font-heading font-bold text-foreground">{label}</p>
             <p className="text-xs text-muted-foreground">
-              {t("tactics.lol.score")}: {coherenceScore > 0 ? "+" : ""}{coherenceScore.toFixed(2)}
+              {t("tactics.lol.score")}: {coherenceScore > 0 ? "+" : ""}{formatDecimal(coherenceScore, 2, i18n.language)}
             </p>
           </div>
         </div>
@@ -656,7 +658,7 @@ function CoherenceSummary({
               )}
             >
               {item.delta > 0 ? "+" : ""}
-              {item.delta.toFixed(2)}
+              {formatDecimal(item.delta, 2, i18n.language)}
             </span>
           </div>
         ))}
@@ -731,11 +733,11 @@ function CoherenceSummary({
                       )}
                     >
                       {row.modifier >= 0 ? "+" : ""}
-                      {row.modifier.toFixed(1)}
+                      {formatDecimal(row.modifier, 1, i18n.language)}
                     </p>
                   </div>
                   <p className="text-2xs text-muted-foreground">
-                    ±{row.variance.toFixed(1)} {t("tactics.lol.variance")}
+                    ±{formatDecimal(row.variance, 1, i18n.language)} {t("tactics.lol.variance")}
                   </p>
                 </div>
               </div>

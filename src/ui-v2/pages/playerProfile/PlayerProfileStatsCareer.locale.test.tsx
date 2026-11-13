@@ -59,6 +59,17 @@ describe("player profile stats and career cards take their text from the locale"
   });
 
   it.each([
+    ["es", "7,2"],
+    ["de", "7,2"],
+    ["en", "7.2"],
+  ])("writes the career rating with the %s decimal mark", async (language, expected) => {
+    await i18n.changeLanguage(language);
+    const career = render(<PlayerProfileCareerCardV2 career={CAREER} gameState={GAME} t={t} />);
+    const cells = [...career.container.querySelectorAll("td")].map((cell) => cell.textContent);
+    expect(cells).toContain(expected);
+  });
+
+  it.each([
     ["en", "Season"],
     ["es", "Temporada"],
     ["tr", "Sezon"],
@@ -76,5 +87,14 @@ describe("player profile stats and career cards take their text from the locale"
     expect(text).toContain("Career history");
     expect(text).toContain("Show more (2)");
     expect(text).not.toContain("Historial");
+  });
+
+  it.each([
+    ["es", "10,0"],
+    ["en", "10.0"],
+  ])("writes the season KDA with the %s decimal mark", async (language, expected) => {
+    await i18n.changeLanguage(language);
+    const full = render(<PlayerProfileStatsCardV2 stats={STATS} t={t} />);
+    expect(full.container.textContent).toContain(expected);
   });
 });

@@ -1,16 +1,20 @@
+mod champion;
 mod dto;
 mod player;
 mod shared;
 mod team;
 
 #[cfg(test)]
+mod champion_tests;
+#[cfg(test)]
 mod tests;
 
 use olm_core::state::StateManager;
 use tauri::State;
 
+use self::champion::get_champion_stats_internal;
 use self::dto::{
-    PlayerMatchHistoryEntryDto, PlayerStatsOverviewDto, TeamMatchHistoryEntryDto,
+    ChampionStatsDto, PlayerMatchHistoryEntryDto, PlayerStatsOverviewDto, TeamMatchHistoryEntryDto,
     TeamStatsOverviewDto,
 };
 use self::player::{get_player_match_history_internal, get_player_stats_overview_internal};
@@ -48,4 +52,12 @@ pub fn get_team_match_history(
     limit: Option<usize>,
 ) -> Result<Vec<TeamMatchHistoryEntryDto>, String> {
     get_team_match_history_internal(&state, &team_id, limit)
+}
+
+#[tauri::command]
+pub fn get_champion_stats(
+    state: State<'_, StateManager>,
+    champion_key: String,
+) -> Result<ChampionStatsDto, String> {
+    get_champion_stats_internal(&state, &champion_key)
 }

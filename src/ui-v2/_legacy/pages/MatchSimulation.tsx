@@ -17,8 +17,8 @@ import ChampionDraft, {
 } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import type { ChampionDraftResultPayload } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import { finalizeLiveMatch, type FinishLiveMatchResponse } from "@/ui-v2/_legacy/pages/MatchSimulation.finalize";
-import LolMatchLive from "@/ui-v2/_legacy/components/match/LolMatchLive";
-import type { ChampionSelectionByPlayer } from "@/ui-v2/_legacy/components/match/LolMatchLive";
+import LiveMatchV2 from "@/ui-v2/match/LiveMatchV2";
+import type { ChampionSelectionByPlayer } from "@/ui-v2/match/live/useChampionProfiles";
 import MatchTacticsStage from "@/ui-v2/_legacy/components/match/MatchTacticsStage";
 import LolResultScreen from "@/ui-v2/_legacy/components/match/LolResultScreen";
 import DraftResultScreenV2 from "@/ui-v2/components/DraftResultScreenV2";
@@ -159,7 +159,7 @@ function attachLolTacticsToSnapshot(
   } as MatchSnapshot;
 }
 
-function buildLolMatchReport(runtime: LolSimV1RuntimeState): LolSimV1MatchReportInput {
+export function buildLolMatchReport(runtime: LolSimV1RuntimeState): LolSimV1MatchReportInput {
   const safeStats = {
     blue: {
       kills: runtime.stats?.blue?.kills ?? 0,
@@ -214,6 +214,7 @@ function buildLolMatchReport(runtime: LolSimV1RuntimeState): LolSimV1MatchReport
       cs: champion.cs,
       gold: champion.gold,
       spentGold: champion.spentGold,
+      damageDealt: champion.damageDealt ?? 0,
     })),
   };
 }
@@ -421,7 +422,7 @@ function runtimeRoleToDraftRole(role: string | undefined): DraftPlayerResult["ro
   }
 }
 
-function buildDraftResultFromRuntime(params: {
+export function buildDraftResultFromRuntime(params: {
   runtime: LolSimV1RuntimeState;
   snapshot: MatchSnapshot;
   championSelections: ChampionSelectionByPlayer | null;
@@ -447,6 +448,8 @@ function buildDraftResultFromRuntime(params: {
     deaths: champion.deaths ?? 0,
     assists: champion.assists ?? 0,
     gold: champion.gold ?? 0,
+    spentGold: champion.spentGold ?? 0,
+    damageDealt: champion.damageDealt ?? 0,
     rating: Number(
       Math.max(
         1,
@@ -2016,7 +2019,7 @@ export default function MatchSimulation() {
 
     case "first_half":
       return (
-        <LolMatchLive
+        <LiveMatchV2
           key={stage}
           gameState={gameState}
           snapshot={renderSnapshotWithTactics ?? snapshot}

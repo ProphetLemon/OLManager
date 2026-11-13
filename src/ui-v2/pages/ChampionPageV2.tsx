@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { cn } from "@/ui-v2/lib/utils";
 import { formatNumber } from "@/lib/formatting/valueFormatting";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 interface Props { championKey: string; onClose: () => void; }
 
@@ -33,17 +34,33 @@ const ROLE_META: Record<string, { icon: typeof Shield; color: string; labelKey: 
 };
 
 export default function ChampionPageV2({ championKey, onClose }: Props) {
-  const { t } = useTranslation();
-  const [s, setS] = useState<Stats | null>(null);
+  const { t, i18n } = useTranslation();
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [failed, setFailed] = useState(false);
+  // A champion nobody has played has nothing to average: the page keeps its dashes for it.
+  const s = stats && stats.total_games > 0 ? stats : null;
+  const neverPlayed = stats !== null && stats.total_games === 0;
+  const pct = (value: number) => `${formatDecimal(value, 1, i18n.language)}%`;
   const splash = resolveChampionSplash(championKey);
   const tile = resolveChampionTile(championKey);
   const heroRef = useRef<HTMLDivElement>(null);
   const displayName = championDisplayName(championKey, s?.champion_name);
 
   useEffect(() => {
+    let current = true;
+    setStats(null);
+    setFailed(false);
     invoke<Stats>("get_champion_stats", { championKey })
-      .then(setS)
-      .catch(() => {});
+      .then((result) => {
+        if (current) setStats(result);
+      })
+      .catch((error: unknown) => {
+        console.error("[ChampionPageV2] get_champion_stats failed", error);
+        if (current) setFailed(true);
+      });
+    return () => {
+      current = false;
+    };
   }, [championKey]);
 
   return (
@@ -94,10 +111,10 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
           {/* Hero stats — glass cards */}
           <div className="grid grid-cols-4 gap-3">
             {[
-              { label: t("championPage.wr"), val: s ? `${s.win_rate}%` : "—", acc: s && s.win_rate >= 50 ? "text-positive" : "text-negative" },
-              { label: t("championPage.pr"), val: s ? `${s.pick_rate}%` : "—", acc: "text-club-text" },
-              { label: t("championPage.br"), val: s ? `${s.ban_rate}%` : "—", acc: "text-amber-400" },
-              { label: t("championPage.kda"), val: s ? s.avg_kda.toFixed(1) : "—", acc: s ? "text-white" : "text-white/40" },
+              { label: t("championPage.wr"), val: s ? pct(s.win_rate) : "—", acc: s && s.win_rate >= 50 ? "text-positive" : "text-negative" },
+              { label: t("championPage.pr"), val: s ? pct(s.pick_rate) : "—", acc: "text-club-text" },
+              { label: t("championPage.br"), val: s ? pct(s.ban_rate) : "—", acc: "text-amber-400" },
+              { label: t("championPage.kda"), val: s ? formatDecimal(s.avg_kda, 1, i18n.language) : "—", acc: s ? "text-white" : "text-white/40" },
             ].map((st) => (
               <div key={st.label}
                 className="rounded-xl border border-white/15 bg-black/50 px-3 py-2.5 text-center backdrop-blur-md transition-all hover:border-primary/40 hover:bg-black/60">
@@ -109,6 +126,17 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
         </div>
       </div>
 
+      {failed && (
+        <p role="alert" className="mx-6 mt-5 rounded-lg border border-negative/40 bg-negative/10 px-4 py-3 text-sm font-medium text-negative">
+          {t("championPage.loadError")}
+        </p>
+      )}
+      {neverPlayed && (
+        <p role="status" className="mx-6 mt-5 rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          {t("championPage.neverPlayed")}
+        </p>
+      )}
+
       {/* ─── CONTENT ─── */}
       <div className="grid grid-cols-1 gap-5 p-6 pt-5 lg:grid-cols-[1fr_360px]">
         {/* LEFT COLUMN */}
@@ -116,9 +144,9 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
           {/* Performance grid */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {[
-              { label: t("championPage.kills"), val: s ? s.avg_kills.toFixed(1) : "—", icon: Swords, c: "text-red-400" },
-              { label: t("championPage.deaths"), val: s ? s.avg_deaths.toFixed(1) : "—", icon: Activity, c: "text-amber-400" },
-              { label: t("championPage.assists"), val: s ? s.avg_assists.toFixed(1) : "—", icon: TrendingUp, c: "text-emerald-400" },
+              { label: t("championPage.kills"), val: s ? formatDecimal(s.avg_kills, 1, i18n.language) : "—", icon: Swords, c: "text-red-400" },
+              { label: t("championPage.deaths"), val: s ? formatDecimal(s.avg_deaths, 1, i18n.language) : "—", icon: Activity, c: "text-amber-400" },
+              { label: t("championPage.assists"), val: s ? formatDecimal(s.avg_assists, 1, i18n.language) : "—", icon: TrendingUp, c: "text-emerald-400" },
               { label: t("championPage.gold"), val: s ? formatNumber(s.avg_gold) : "—", icon: Crown, c: "text-yellow-400" },
               { label: t("championPage.damage"), val: s ? formatNumber(s.avg_damage) : "—", icon: Swords, c: "text-orange-400" },
               { label: t("championPage.cs"), val: s ? s.avg_cs.toFixed(0) : "—", icon: TrendingUp, c: "text-blue-400" },
@@ -162,7 +190,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
                               style={{ width: `${r.percentage}%` }} />
                           </div>
                         </div>
-                        <span className="min-w-10 text-right font-heading text-xs font-bold tabular-nums text-foreground">{r.percentage}%</span>
+                        <span className="min-w-10 text-right font-heading text-xs font-bold tabular-nums text-foreground">{pct(r.percentage)}</span>
                       </div>
                     );
                   })}
@@ -175,8 +203,8 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
 
           {/* Matchups */}
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <MatchupBlock title={t("championPage.bestAgainst")} items={s?.best_against} type="best" />
-            <MatchupBlock title={t("championPage.worstAgainst")} items={s?.worst_against} type="worst" />
+            <MatchupBlock title={t("championPage.bestAgainst")} items={s?.best_against} type="best" pct={pct} />
+            <MatchupBlock title={t("championPage.worstAgainst")} items={s?.worst_against} type="worst" pct={pct} />
           </div>
         </div>
 
@@ -203,7 +231,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
                         <p className="truncate text-xs text-muted-foreground">{p.team_name}</p>
                       </div>
                       <span className="font-heading text-sm font-bold tabular-nums" style={{ color: p.win_rate >= 50 ? "#34d399" : "#f87171" }}>
-                        {p.win_rate}%
+                        {pct(p.win_rate)}
                       </span>
                     </div>
                   ))}
@@ -234,7 +262,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
             <CardContent className="p-0">
               {s?.weekly_history && s.weekly_history.length > 0 ? (
                 <div className="divide-y divide-border/30">
-                  {s.weekly_history.slice(0, 5).map((w) => (
+                  {s.weekly_history.slice(-5).map((w) => (
                     <div key={w.week_label} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/20">
                       <span className="w-20 font-heading text-xs font-bold text-foreground">{w.week_label}</span>
                       <div className="flex flex-1 items-center gap-2">
@@ -244,7 +272,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
                         </div>
                       </div>
                       <span className="font-heading text-xs font-bold tabular-nums" style={{ color: w.win_rate >= 50 ? "#34d399" : "#f87171" }}>
-                        {w.win_rate}%
+                        {pct(w.win_rate)}
                       </span>
                     </div>
                   ))}
@@ -260,8 +288,8 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
   );
 }
 
-function MatchupBlock({ title, items, type }: {
-  title: string; items?: { vs_champion_key: string; vs_champion_name: string; games: number; wins: number; win_rate: number }[]; type: "best" | "worst";
+function MatchupBlock({ title, items, type, pct }: {
+  title: string; pct: (value: number) => string; items?: { vs_champion_key: string; vs_champion_name: string; games: number; wins: number; win_rate: number }[]; type: "best" | "worst";
 }) {
   const { t } = useTranslation();
   return (
@@ -289,7 +317,7 @@ function MatchupBlock({ title, items, type }: {
                     <div className="h-1.5 w-12 overflow-hidden rounded-full bg-muted">
                       <div className="h-full rounded-full transition-all" style={{ width: `${item.win_rate}%`, backgroundColor: wrColor }} />
                     </div>
-                    <span className="w-10 text-right font-heading text-sm font-bold tabular-nums" style={{ color: wrColor }}>{item.win_rate}%</span>
+                    <span className="w-12 text-right font-heading text-sm font-bold tabular-nums" style={{ color: wrColor }}>{pct(item.win_rate)}</span>
                   </div>
                 </div>
               );

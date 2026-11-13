@@ -130,29 +130,13 @@ pub fn advance_time_with_mode(
                 "[cmd] advance_time_with_mode: delegate fixture_idx={}, date={}",
                 index, today
             );
-            let mut session =
-                live_match_manager::create_live_match(&game, index, MatchMode::Instant, false)?;
-            session.user_side = None;
-            session.run_to_completion();
-
-            let home_team_id = session.home_team_id.clone();
-            let away_team_id = session.away_team_id.clone();
-            let report = session.match_state.into_report();
-
+            // The delegated fixture is simulated exactly like every other fixture of the
+            // day (auto draft, mastery, series for best_of > 1), so it is not skipped.
             let mut captures = Vec::new();
             olm_core::turn::simulate_other_matches_with_capture(
                 &mut game,
                 &today,
-                Some(index),
-                &mut |capture| captures.push(capture),
-            );
-
-            olm_core::turn::apply_match_report_with_capture(
-                &mut game,
-                index,
-                &home_team_id,
-                &away_team_id,
-                &report,
+                None,
                 &mut |capture| captures.push(capture),
             );
 

@@ -16,11 +16,14 @@ interface ContextData {
   teamName: string;
   leagueName: string;
   lolPatch: string;
+  /** "unavailable" when the report is sent without a game (for example during new-career setup). */
+  gameContext?: "available" | "unavailable";
 }
 
 interface ReportBugModalProps {
   context: ContextData;
-  saveJson: string;
+  /** The serialized save, or null when there is no game: the report then carries no save. */
+  saveJson: string | null;
   onClose: () => void;
 }
 
@@ -47,7 +50,7 @@ export default function ReportBugModal({
       };
       const path = await exportBugReport(
         JSON.stringify(fullContext, null, 2),
-        saveJson,
+        saveJson ?? "",
       );
       setZipPath(path);
       setStatus("done");
