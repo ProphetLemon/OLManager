@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import i18n from "@/i18n";
-import LolResultScreen from "@/ui-v2/_legacy/components/match/LolResultScreen";
+import LolResultScreen, { sideFromEvent } from "@/ui-v2/_legacy/components/match/LolResultScreen";
 import type { LolSimV1RuntimeState } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
 import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import type { GameStateData } from "@/store/gameStore";
@@ -103,5 +103,58 @@ describe("LolResultScreen in the Spanish UI", () => {
     });
     renderScreen(old);
     expect(screen.getByText("BLUE secured baron 7")).toBeInTheDocument();
+  });
+});
+
+describe("the side of an event on LolResultScreen", () => {
+  const champions = [
+    { id: "b-mid", team: "blue" },
+    { id: "r-mid", team: "red" },
+  ];
+  const rowOf = (label: string) => screen.getByText(label).parentElement as HTMLElement;
+  const barHeights = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLElement>("div.rounded-sm")].map((bar) => bar.style.height);
+  const killWith = (data?: Record<string, string>) => ({
+    t: 600,
+    text: "Zed killed Ahri",
+    type: "kill",
+    code: "champion_killed",
+    ...(data ? { data } : {}),
+  });
+  const withEvents = (extra: unknown[]) =>
+    runtime({
+      events: [
+        ...Array.from({ length: 8 }, (_, i) => ({ t: 60 * (i + 1), text: "Minion wave spawned", type: "spawn", code: "wave_spawned" })),
+        ...extra,
+      ],
+    });
+
+  it("takes the side of a kill from the team of the champion in its data", () => {
+    renderScreen(withEvents([killWith({ actor: "Zed", actorId: "b-mid", target: "Ahri" })]));
+    expect(within(rowOf("Zed eliminó a Ahri")).getByText(i18n.t("match.home"))).toBeInTheDocument();
+  });
+
+  it("takes the side from the team in the data before looking at the actor", () => {
+    expect(sideFromEvent({ data: { team: "red", actorId: "b-mid" } }, champions)).toBe("Away");
+    expect(sideFromEvent({ data: { actorId: "r-mid" } }, champions)).toBe("Away");
+  });
+
+  it("counts a kill with data in the momentum series", () => {
+    const withData = renderScreen(withEvents([killWith({ actor: "Zed", actorId: "b-mid", target: "Ahri" })]));
+    const counted = barHeights(withData.container);
+    withData.unmount();
+    const without = renderScreen(withEvents([killWith()]));
+    expect(barHeights(without.container)).not.toEqual(counted);
+  });
+
+  it("still reads the side of an old event from its English text", () => {
+    expect(sideFromEvent({ text: "RED secured baron" }, champions)).toBe("Away");
+    expect(sideFromEvent({ text: "BLUE destroyed red-nexus", data: null }, champions)).toBe("Home");
+  });
+
+  it("shows a dash for an event with neither data nor a side in its text", () => {
+    expect(sideFromEvent({ text: "Zed killed Ahri" }, champions)).toBe("-");
+    renderScreen(withEvents([killWith()]));
+    expect(within(rowOf("Zed killed Ahri")).getAllByText("-").length).toBeGreaterThan(0);
   });
 });
