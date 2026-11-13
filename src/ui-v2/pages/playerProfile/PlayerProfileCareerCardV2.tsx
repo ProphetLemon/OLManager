@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 import type { CareerEntry, GameStateData } from "@/store/gameStore";
 import { Button } from "@/ui-v2/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
@@ -22,6 +24,7 @@ interface Props {
 const COLLAPSED_ROWS = 3;
 
 export default function PlayerProfileCareerCardV2({ career, gameState, t }: Props) {
+  const { i18n } = useTranslation();
   const [collapsed, setCollapsed] = useState(true);
 
   const sorted = useMemo(
@@ -75,7 +78,7 @@ export default function PlayerProfileCareerCardV2({ career, gameState, t }: Prop
                   <TableCell className="text-center tabular-nums">{entry.kills}</TableCell>
                   <TableCell className="text-center tabular-nums">{entry.assists}</TableCell>
                   <TableCell className="text-center tabular-nums">
-                    <span className="font-heading font-bold">{entry.avg_rating.toFixed(1)}</span>
+                    <span className="font-heading font-bold">{formatDecimal(entry.avg_rating, 1, i18n.language)}</span>
                   </TableCell>
                 </TableRow>
               );

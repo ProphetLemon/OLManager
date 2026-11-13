@@ -25,6 +25,7 @@ Object.defineProperty(window, "matchMedia", {
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
+    i18n: { language: "en" },
     t: (key: string, params?: Record<string, string | number>) => {
       if (key === "schedule.matchday") {
         return `Matchday ${params?.number}`;

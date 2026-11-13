@@ -10,6 +10,7 @@ import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import type { DraftMatchResult, DraftTimelineEvent } from "@/ui-v2/_legacy/components/match/draftResultSimulator";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { Button } from "@/ui-v2/components/ui/button";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 import { cn } from "@/ui-v2/lib/utils";
 
 type Side = "blue" | "red";
@@ -690,10 +691,10 @@ export default function DraftResultScreenV2({
                         <span
                           className="text-sm font-bold text-club-text"
                           title={t("match.draftResult.columns.rating")}
-                          aria-label={`${t("match.draftResult.columns.rating")}: ${row.rating.toFixed(1)}`}
+                          aria-label={`${t("match.draftResult.columns.rating")}: ${formatDecimal(row.rating, 1, i18n.language)}`}
                           data-testid="row-rating"
                         >
-                          {row.rating.toFixed(1)}
+                          {formatDecimal(row.rating, 1, i18n.language)}
                         </span>
                       </div>
                     );
@@ -751,10 +752,10 @@ export default function DraftResultScreenV2({
                         <span
                           className="text-sm font-bold text-orange-400"
                           title={t("match.draftResult.columns.rating")}
-                          aria-label={`${t("match.draftResult.columns.rating")}: ${row.rating.toFixed(1)}`}
+                          aria-label={`${t("match.draftResult.columns.rating")}: ${formatDecimal(row.rating, 1, i18n.language)}`}
                           data-testid="row-rating"
                         >
-                          {row.rating.toFixed(1)}
+                          {formatDecimal(row.rating, 1, i18n.language)}
                         </span>
                       </div>
                     );

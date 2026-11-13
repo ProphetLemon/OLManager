@@ -6,12 +6,13 @@ import type { GameStateData } from "@/store/gameStore";
 import type { EndOfSeasonSummaryData } from "@/store/types";
 
 const invokeMock = vi.hoisted(() => vi.fn());
+const gameLanguage = vi.hoisted(() => ({ current: "en" }));
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: invokeMock }));
 vi.mock("react-i18next", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-i18next")>();
   const { translateFromEnglish } = await import("@/test-i18n");
-  return { ...actual, useTranslation: () => ({ t: translateFromEnglish }) };
+  return { ...actual, useTranslation: () => ({ t: translateFromEnglish, get i18n() { return { language: gameLanguage.current }; } }) };
 });
 vi.mock("@/ui-v2/_legacy/components/playoffs/PlayoffBracketBoard", () => ({
   default: () => <div data-testid="bracket" />,
@@ -43,7 +44,7 @@ function game(season: number): GameStateData {
   } as unknown as GameStateData;
 }
 
-function summary(withLadder: boolean): EndOfSeasonSummaryData {
+function summary(withLadder: boolean, poty?: { player: string; rating: number }): EndOfSeasonSummaryData {
   return {
     season: 1,
     league_name: "LES",
@@ -57,8 +58,8 @@ function summary(withLadder: boolean): EndOfSeasonSummaryData {
     user_maps_lost: 5,
     golden_boot_player: "",
     golden_boot_goals: 0,
-    poty_player: "",
-    poty_rating: 0,
+    poty_player: poty?.player ?? "",
+    poty_rating: poty?.rating ?? 0,
     total_teams: 2,
     ladder_movements: withLadder
       ? [
@@ -104,6 +105,7 @@ function Harness({ tab }: { tab: string }) {
 
 describe("end-of-season summary survives the season wrap", () => {
   beforeEach(() => {
+    gameLanguage.current = "en";
     invokeMock.mockReset();
     useGameStore.getState().clearGame();
     useGameStore.getState().setGameState(game(1));
@@ -121,6 +123,18 @@ describe("end-of-season summary survives the season wrap", () => {
     expect(await screen.findByTestId("ladder-user-result")).toBeInTheDocument();
     expect(screen.getByText("Promoted")).toBeInTheDocument();
     expect(useGameStore.getState().gameState?.leagues[0].season).toBe(2);
+  });
+
+  it.each([
+    ["es", "7,25"],
+    ["en", "7.25"],
+  ])("writes the player of the year rating with the %s decimal mark", async (language, expected) => {
+    gameLanguage.current = language;
+    invokeMock.mockResolvedValue({ game: game(2), summary: summary(false, { player: "Ana Gómez", rating: 7.25 }) });
+    render(<Harness tab="Home" />);
+    fireEvent.click(screen.getByRole("button", { name: /start next season/i }));
+    expect(await screen.findByText("Ana Gómez")).toBeInTheDocument();
+    expect(screen.getByText(`Avg rating: ${expected}`)).toBeInTheDocument();
   });
 
   it("announces the new season when the rollover wraps the season", async () => {

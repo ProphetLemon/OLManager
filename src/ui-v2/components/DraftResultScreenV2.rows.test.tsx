@@ -101,7 +101,8 @@ describe("player rows on the post-match screen", () => {
   it("names the gold and the rating of a row for assistive tech, like the damage", () => {
     renderRows([row()]);
     expect(screen.getByTestId("row-gold")).toHaveAttribute("aria-label", "Oro obtenido: 11,6k");
-    expect(screen.getByTestId("row-rating")).toHaveAttribute("aria-label", "Nota: 8.4");
+    expect(screen.getByTestId("row-rating")).toHaveAttribute("aria-label", "Nota: 8,4");
+    expect(screen.getByTestId("row-rating")).toHaveTextContent("8,4");
     expect(screen.getByTestId("row-damage")).toHaveAttribute("aria-label", "Daño infligido: 23,5k");
   });
 });

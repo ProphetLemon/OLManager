@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 import { MatchSnapshot, MatchEvent } from "@/ui-v2/_legacy/components/match/types";
 import { getPlayerName } from "@/ui-v2/_legacy/components/match/helpers";
 import { Badge } from "@/ui-v2/_legacy/components/ui";
@@ -110,7 +111,7 @@ export function PlayerRatingsPanel({
   teamColor: string;
   userSide: "Home" | "Away" | null;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const team = side === "Home" ? snapshot.home_team : snapshot.away_team;
   const ratings: Record<string, number> = {};
   team.players.forEach((p) => {
@@ -180,7 +181,7 @@ export function PlayerRatingsPanel({
         <div className="flex items-center gap-3 mb-3 p-2 bg-accent-50 dark:bg-accent-500/10 rounded-lg border border-accent-200 dark:border-accent-500/20 transition-colors duration-300">
           <div className="w-8 h-8 rounded-lg bg-accent-100 dark:bg-accent-500/20 flex items-center justify-center transition-colors duration-300">
             <span className="text-sm font-heading font-bold text-accent-700 dark:text-accent-400">
-              {motm.rating.toFixed(1)}
+              {formatDecimal(motm.rating, 1, i18n.language)}
             </span>
           </div>
           <div>
@@ -210,7 +211,7 @@ export function PlayerRatingsPanel({
                         : "text-red-400"
               }`}
             >
-              {p.rating.toFixed(1)}
+              {formatDecimal(p.rating, 1, i18n.language)}
             </span>
             <span className="text-gray-600 dark:text-gray-400 truncate flex-1">{p.name}</span>
             <span className="text-gray-600 dark:text-gray-500 text-2xs font-heading uppercase">
