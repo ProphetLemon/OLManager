@@ -2,7 +2,7 @@
 //! without its fix: the Voidgrub tie, the tower term of the trade score, and the Herald lane.
 
 use super::objectives::{VoidgrubExpirationInput, resolve_voidgrub_expiration_effect};
-use super::test_helpers::{empty_neutral, test_runtime};
+use super::test_helpers::{empty_neutral, test_champion, test_runtime, test_structure};
 use super::*;
 
 // D1: unclaimed Voidgrubs never favour a side on a tie.
@@ -50,4 +50,15 @@ fn a_zero_to_zero_expiry_in_the_running_engine_leaves_both_sides_without_stacks(
 
     let buffs = runtime_buffs_from_extra(runtime.extra.get("teamBuffs"));
     assert_eq!((buffs.blue.voidgrub_stacks, buffs.red.voidgrub_stacks), (0, 0));
+}
+
+// D2: the enemy tower term of the trade score applies.
+
+#[test]
+fn the_nearest_enemy_lane_tower_is_found_by_its_real_kind() {
+    let blue = test_champion("b", "blue", "MID", "mid", Vec2 { x: 0.50, y: 0.50 });
+    let tower = test_structure("red-mid-outer", "red", "mid", Vec2 { x: 0.60, y: 0.50 });
+    let distance =
+        trading::nearest_enemy_lane_tower_distance(&blue, Vec2 { x: 0.52, y: 0.50 }, &[tower]);
+    assert!((distance - 0.08).abs() < 1e-9, "distance {distance}");
 }

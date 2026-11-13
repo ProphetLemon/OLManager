@@ -384,7 +384,7 @@ pub(super) fn nearest_enemy_lane_tower_distance(
         .filter(|tower| {
             tower.alive
                 && normalized_team(&tower.team) != normalized_team(&champion.team)
-                && tower.kind == "TOWER"
+                && tower.kind == "tower"
                 && normalized_lane(&tower.lane) == normalized_lane(&champion.lane)
         })
         .map(|tower| dist(tower.pos, target_pos))
@@ -607,4 +607,28 @@ pub(super) fn in_lane_trade_context(
         return false;
     }
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::test_helpers::{test_champion, test_structure};
+    use super::*;
+
+    fn trade_score_with_tower_at(tower_x: Option<f64>) -> f64 {
+        let blue = test_champion("b", "blue", "MID", "mid", Vec2 { x: 0.50, y: 0.50 });
+        let red = test_champion("r", "red", "MID", "mid", Vec2 { x: 0.52, y: 0.50 });
+        let structures: Vec<StructureRuntime> = tower_x
+            .map(|x| vec![test_structure("red-mid-outer", "red", "mid", Vec2 { x, y: 0.50 })])
+            .unwrap_or_default();
+        let champions = [blue.clone(), red.clone()];
+        let features = trade_confidence_features(&blue, &red, 0.0, &champions, &[], &structures);
+        trade_confidence_score(features)
+    }
+
+    #[test]
+    fn an_enemy_tower_near_the_target_lowers_the_trade_score() {
+        let without = trade_score_with_tower_at(None);
+        let near = trade_score_with_tower_at(Some(0.60));
+        assert!(near < without, "near {near} without {without}");
+    }
 }
