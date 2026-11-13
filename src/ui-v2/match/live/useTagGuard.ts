@@ -35,19 +35,27 @@ interface Live {
 
 type Champions = ReadonlyArray<{ id: string; pos: MapPoint }>;
 
+/** The attribute the guard sets on a tag it hides; `liveMatch.css` turns it into `opacity: 0` with no transition. */
+export const GUARD_ATTRIBUTE = "data-guard";
+export const GUARD_HIDDEN = "hidden";
+
 function write(live: Live, index: number) {
-  const element = live.input.elements.current.get(live.ids[index]) as HTMLElement | undefined;
-  if (element) element.style.opacity = live.state.shown[index] ? "" : "0";
+  const element = live.input.elements.current.get(live.ids[index]);
+  if (element) {
+    if (live.state.shown[index]) element.removeAttribute(GUARD_ATTRIBUTE);
+    else element.setAttribute(GUARD_ATTRIBUTE, GUARD_HIDDEN);
+  }
   live.written[index] = live.state.shown[index];
 }
 
 /**
  * Keeps the name tags from sitting on each other or on a label between two solves. On every frame
  * it reads where the markers are drawn (from the frame the bus publishes, so no layout is read),
- * works out which tags the guard lets show and writes `opacity` on the ones that changed, through
+ * works out which tags the guard lets show and flips `data-guard` on the ones that changed, through
  * their refs. Nothing renders per frame. The size of every tag is the one measured for the solve,
- * so a frame costs a few dozen comparisons. A short opacity transition in the stylesheet (none for
- * reduced motion) softens the switch.
+ * so a frame costs a few dozen comparisons. The stylesheet hides at once (`opacity: 0`, no
+ * transition: a tag that is on another one must not stay visible while it fades) and fades a tag
+ * back in over a short opacity transition (none for reduced motion).
  */
 export function useTagGuard(input: TagGuardInput): void {
   const bus = useArenaBus();
