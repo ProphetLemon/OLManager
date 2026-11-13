@@ -4517,7 +4517,8 @@
         "skipConfirm": "Sonucu göster",
         "resetTitle": "Bu maç baştan başlasın mı?",
         "resetBody": "Maç 0. dakikaya döner ve farklı geçebilir. Şimdiye kadar izledikleriniz kaybolur.",
-        "resetConfirm": "Baştan başla"
+        "resetConfirm": "Baştan başla",
+        "skipFailed": "Maçın geri kalanı bir seferde oynanamadı. Maç devam ediyor."
       },
       "spotlight": {
         "label": "Odak",
@@ -4714,7 +4715,14 @@
       },
       "team": {
         "blue": "Mavi",
-        "red": "Kırmızı"
+        "red": "Kırmızı",
+        "players": "{{team}} oyuncuları"
+      },
+      "end": {
+        "label": "Maç sonucu",
+        "winner": "{{team}} kazandı",
+        "lead": "{{team}} {{amount}} altın farkla önde bitirdi",
+        "leadEven": "Altın eşit bitti"
       },
       "pit": {
         "voidgrubs": "Boşluk Larvaları",

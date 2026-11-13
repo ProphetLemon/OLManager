@@ -4551,7 +4551,8 @@
         "skipConfirm": "Show the result",
         "resetTitle": "Start this match again?",
         "resetBody": "The match goes back to minute 0 and may play out differently. What you have watched so far is lost.",
-        "resetConfirm": "Start again"
+        "resetConfirm": "Start again",
+        "skipFailed": "The rest of the match could not be played at once. It keeps running."
       },
       "spotlight": {
         "label": "Spotlight",
@@ -4748,7 +4749,14 @@
       },
       "team": {
         "blue": "Blue",
-        "red": "Red"
+        "red": "Red",
+        "players": "{{team}} players"
+      },
+      "end": {
+        "label": "Match result",
+        "winner": "{{team}} wins",
+        "lead": "{{team}} finished {{amount}} ahead in gold",
+        "leadEven": "Gold finished even"
       },
       "pit": {
         "voidgrubs": "Voidgrubs",
