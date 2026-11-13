@@ -98,3 +98,64 @@ pub struct TeamStatsOverviewDto {
     pub losses: u32,
     pub metrics: TeamStatsOverviewMetricsDto,
 }
+
+/// Champion page payload. The keys are the page's `Stats` interface in
+/// `src/ui-v2/pages/ChampionPageV2.tsx`, so they stay snake_case.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChampionStatsDto {
+    pub champion_key: String,
+    pub champion_name: String,
+    pub total_games: u32,
+    pub total_wins: u32,
+    pub win_rate: f64,
+    pub pick_rate: f64,
+    pub ban_rate: f64,
+    pub avg_kills: f64,
+    pub avg_deaths: f64,
+    pub avg_assists: f64,
+    pub avg_kda: f64,
+    pub avg_gold: f64,
+    pub avg_damage: f64,
+    pub avg_cs: f64,
+    pub avg_vision: f64,
+    pub avg_duration: f64,
+    pub role_distribution: Vec<ChampionRoleShareDto>,
+    pub best_against: Vec<ChampionMatchupDto>,
+    pub worst_against: Vec<ChampionMatchupDto>,
+    pub top_players: Vec<ChampionTopPlayerDto>,
+    pub weekly_history: Vec<ChampionWeekDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChampionRoleShareDto {
+    pub role: String,
+    pub games: u32,
+    pub percentage: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChampionMatchupDto {
+    pub vs_champion_key: String,
+    pub vs_champion_name: String,
+    pub games: u32,
+    pub wins: u32,
+    pub win_rate: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChampionTopPlayerDto {
+    pub player_id: String,
+    pub player_name: String,
+    pub team_name: String,
+    pub games: u32,
+    pub win_rate: f64,
+    pub avg_kda: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChampionWeekDto {
+    pub week_label: String,
+    pub games: u32,
+    pub win_rate: f64,
+    pub avg_kda: f64,
+}

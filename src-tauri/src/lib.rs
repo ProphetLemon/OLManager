@@ -315,6 +315,7 @@ pub fn run() {
             get_player_stats_overview,
             get_team_match_history,
             get_team_stats_overview,
+            get_champion_stats,
             step_live_match,
             apply_match_command,
             get_match_snapshot,
