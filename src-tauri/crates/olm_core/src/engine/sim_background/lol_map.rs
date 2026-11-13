@@ -172,6 +172,10 @@ pub struct LolUnitState {
     pub gold_spent: f64,
     #[serde(default)]
     pub damage_dealt: f64,
+    /// Kills this unit helped with: a living ally of the killer within
+    /// `ASSIST_RADIUS` of the victim. Counter only, it pays no gold or XP.
+    #[serde(default)]
+    pub assists: u16,
     #[serde(default)]
     pub item_tier: u8,
     /// Short-term energy (0-100). Affects damage dealt and received in fights.
@@ -366,6 +370,7 @@ impl LolMapState {
                 gold: 500.0,
                 gold_spent: 0.0,
                 damage_dealt: 0.0,
+                assists: 0,
                 item_tier: 0,
                 condition: player.condition,
                 fight_skill: fight_skill(player),
@@ -398,6 +403,7 @@ impl LolMapState {
                 gold: 500.0,
                 gold_spent: 0.0,
                 damage_dealt: 0.0,
+                assists: 0,
                 item_tier: 0,
                 condition: player.condition,
                 fight_skill: fight_skill(player),
@@ -715,6 +721,11 @@ impl LiveMatchState {
         for (killer_idx, victim_idx) in kills {
             if killer_idx >= self.lol_map.units.len() || victim_idx >= self.lol_map.units.len() {
                 continue;
+            }
+            for ally in assisting_allies(&snapshot, killer_idx, victim_idx) {
+                if let Some(unit) = self.lol_map.units.get_mut(ally) {
+                    unit.assists = unit.assists.saturating_add(1);
+                }
             }
             let (killer_side, killer_id) = {
                 let k = &mut self.lol_map.units[killer_idx];
@@ -1174,6 +1185,39 @@ fn lane_presence(units: &[LolUnitState], side: Side, lane: LaneKey, anchor: (f64
             role_weight * (1.0 - dist / 0.22)
         })
         .sum()
+}
+
+/// Distance from the victim within which a living ally of the killer shares
+/// the kill. Same value and rule as `ASSIST_RADIUS` in `sim_live.rs` (that
+/// constant is private to the watched-match engine), so unwatched matches record
+/// what a watched one would.
+const ASSIST_RADIUS: f64 = 0.11;
+
+/// Indices of the units that get an assist for `killer` killing `victim`: every
+/// ally of the killer, other than the killer, alive in the fight snapshot and
+/// within `ASSIST_RADIUS` of the victim's snapshot position.
+fn assisting_allies(
+    snapshot: &[(Side, bool, f64, f64, LolRole, u8, u8)],
+    killer: usize,
+    victim: usize,
+) -> Vec<usize> {
+    let (Some(&(killer_side, ..)), Some(&(_, _, vx, vy, ..))) =
+        (snapshot.get(killer), snapshot.get(victim))
+    else {
+        return Vec::new();
+    };
+    snapshot
+        .iter()
+        .enumerate()
+        .filter(|&(i, &(side, alive, x, y, ..))| {
+            i != killer
+                && i != victim
+                && alive
+                && side == killer_side
+                && distance((x, y), (vx, vy)) <= ASSIST_RADIUS
+        })
+        .map(|(i, _)| i)
+        .collect()
 }
 
 fn distribute_wave_income(
@@ -1733,6 +1777,8 @@ fn distance(a: (f64, f64), b: (f64, f64)) -> f64 {
     (dx * dx + dy * dy).sqrt()
 }
 
+#[cfg(test)]
+mod assist_tests;
 #[cfg(test)]
 mod economy_unit_tests;
 
