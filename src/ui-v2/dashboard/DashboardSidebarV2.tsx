@@ -237,7 +237,7 @@ export function DashboardSidebarV2({
           className="flex shrink-0 flex-col items-stretch border-t border-line py-1"
         >
           <div className="flex justify-center">
-            <FloatingBugButton placement="rail" />
+            <FloatingBugButton />
           </div>
           <RailItem
             icon={Settings}

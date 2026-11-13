@@ -222,3 +222,22 @@ describe("in the Spanish UI", () => {
     expect(`${container.textContent}${dialog.textContent}`).not.toMatch(/onAir\.match\./);
   });
 });
+
+describe("MatchControls speed note", () => {
+  it("is the description and tooltip of the speed group, so it survives being hidden", () => {
+    setup({ speed: 32 });
+    const group = screen.getByRole("radiogroup", { name: "Simulation Speed" });
+    const note = document.getElementById(group.getAttribute("aria-describedby") ?? "");
+    expect(note).not.toBeNull();
+    expect(note).toHaveTextContent("x8 = 32 match seconds per second");
+    expect(group).toHaveAccessibleDescription("x8 = 32 match seconds per second");
+    expect(group).toHaveAttribute("title", "x8 = 32 match seconds per second");
+  });
+
+  it("describes nothing when the speed is not one of the listed ones", () => {
+    setup({ speed: 5 });
+    const group = screen.getByRole("radiogroup", { name: "Simulation Speed" });
+    expect(group).not.toHaveAttribute("aria-describedby");
+    expect(group).not.toHaveAttribute("title");
+  });
+});

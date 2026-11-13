@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -63,6 +63,10 @@ vi.mock("@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers", () => 
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: mocks.invoke,
+}));
+
+vi.mock("@/ui-v2/_legacy/components/dashboard/FloatingBugButton", () => ({
+  default: () => <button type="button">Report a bug</button>,
 }));
 
 vi.mock("@/lib/players/lolIdentity", () => ({
@@ -178,6 +182,33 @@ describe("TeamSelectionV2", () => {
         },
       ],
     });
+  });
+
+  it("hosts the bug report button in the roster footer on every step", async () => {
+    const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
+    render(
+      <MemoryRouter>
+        <TeamSelectionV2 />
+      </MemoryRouter>,
+    );
+
+    const inFooter = () =>
+      within(screen.getByTestId("roster-overlay-actions")).getByRole("button", { name: "Report a bug" });
+
+    // League list.
+    await screen.findByRole("button", { name: /LES/i });
+    expect(inFooter()).toBeInTheDocument();
+
+    // Team list.
+    fireEvent.click(screen.getByRole("button", { name: /LES/i }));
+    await screen.findByRole("button", { name: /Create your team/i });
+    expect(inFooter()).toBeInTheDocument();
+
+    // Custom team.
+    fireEvent.click(screen.getByRole("button", { name: /Create your team/i }));
+    await screen.findByLabelText("Club name");
+    expect(inFooter()).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Report a bug" })).toHaveLength(1);
   });
 
   it("shows the backend error when team confirmation fails", async () => {

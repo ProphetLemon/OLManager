@@ -16,6 +16,7 @@ import {
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { useRosterOverlay } from "@/hooks/useRosterOverlay";
+import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import { RosterOverlayPanel } from "@/ui-v2/components/RosterOverlayPanel";
 import CustomTeamWizardV2 from "@/ui-v2/pages/customTeam/CustomTeamWizardV2";
 import type { CustomTeamSpec } from "@/store/types";
@@ -277,6 +278,7 @@ export default function TeamSelectionV2() {
         status={rosterOverlay.status}
         error={rosterOverlay.error}
         onUpdate={rosterOverlay.update}
+        actions={<FloatingBugButton />}
       />
     </div>
   );

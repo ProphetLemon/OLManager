@@ -62,13 +62,14 @@ src/
 | HomeTabV2 | `_legacy/components/NextMatchDisplay` |
 | SquadTabV2, PlayersTabV2 | PlayerAvatar, ContextMenu desde _legacy |
 | CompetitionsTabV2 | ScheduleCalendarView desde _legacy |
-| AppV2 | FloatingBugButton (solo en /select-team; /match lo aloja `LiveMatchV2`), MainMenu, MatchSimulation, SettingsV2 |
-| DashboardSidebarV2 | FloatingBugButton con `placement="rail"` (el rail lo aloja en las rutas del dashboard) |
-| LiveMatchV2 | FloatingBugButton con `placement="rail"` en la fila de controles de /match (no flota: no tapa el mapa ni las tarjetas) |
+| AppV2 | MainMenu, MatchSimulation, SettingsV2 (ya no hay botón de bug flotante: cada pantalla aloja el suyo) |
+| TeamSelectionV2 | FloatingBugButton en el pie de `RosterOverlayPanel` (prop `actions`), en todos los pasos de /select-team |
+| DashboardSidebarV2 | FloatingBugButton (el rail lo aloja en las rutas del dashboard) |
+| LiveMatchV2 | FloatingBugButton en la fila de controles de /match (no flota: no tapa el mapa ni las tarjetas) |
 
 El partido en directo ya no es un wrapper: `_legacy/pages/MatchSimulation` monta la pantalla nativa `ui-v2/match/LiveMatchV2` en la etapa `first_half`. Se retiraron `LolMatchLive`, `lol-prototype/ui/render.ts` y `lol-prototype/ui/panels.tsx` (y sus dos tests); un guard (`ui-v2/match/liveMatchCutover.guard.test.ts`) impide que vuelvan a importarse. Lo que sigue en `_legacy/` para esa pantalla es el motor (`lol-prototype/engine`, `backend`, `ui/stepInterpolation.ts`), `championProfiles`, `itemNames` y `matchRuntimeEvents`.
 
-Tocado en _legacy por On Air: `FloatingBugButton` (prop `placement`) y el cambio `text-primary` → `text-club-text` en los ficheros que lo usaban.
+Tocado en _legacy por On Air: `FloatingBugButton` (ya sólo en línea, sin variante flotante) y el cambio `text-primary` → `text-club-text` en los ficheros que lo usaban.
 
 ---
 

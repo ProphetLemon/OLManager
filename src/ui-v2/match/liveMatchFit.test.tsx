@@ -110,13 +110,13 @@ describe("the rows of a card are fixed and never wrap", () => {
   it("keeps the gear row on one line at a fixed height", () => {
     const gear = ruleBody(".arena-card-gear");
     expect(gear).toMatch(/flex-wrap:\s*nowrap/);
-    expect(gear).toMatch(/block-size:\s*1\.375rem/);
+    expect(gear).toMatch(/block-size:\s*var\(--arena-slot,\s*1\.375rem\)/);
     expect(css).not.toMatch(/\.arena-card-gear\s*\{[^}]*flex-wrap:\s*wrap\b/);
   });
 
   it("gives an item slot a fixed size that cannot shrink, and lets the cooldown strip clip instead of grow", () => {
     expect(ruleBody(".arena-item")).toMatch(/flex:\s*none/);
-    expect(ruleBody(".arena-item")).toMatch(/width:\s*1\.375rem/);
+    expect(ruleBody(".arena-item")).toMatch(/width:\s*var\(--arena-slot,\s*1\.375rem\)/);
     const strip = ruleBody(".arena-card-cds");
     expect(strip).toMatch(/min-width:\s*0/);
     expect(strip).toMatch(/overflow:\s*hidden/);

@@ -335,7 +335,7 @@ export default function LiveMatchV2({
             <FightBoard rows={board} />
             <MapLegend />
             {/* In the row, not floating: a fixed button would sit over the map or a card. */}
-            <FloatingBugButton placement="rail" />
+            <FloatingBugButton />
             {skipPhase === "failed" ? (
               <div className="live-notice" role="alert">
                 <p>{t("onAir.match.controls.skipFailed")}</p>
