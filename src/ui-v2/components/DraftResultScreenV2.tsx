@@ -506,7 +506,7 @@ export default function DraftResultScreenV2({
                 </div>
                 {/* The axis values are HTML, not SVG text: SVG text scales with the viewBox (about 9 px here), HTML keeps the token size. */}
                 <div className="flex gap-1">
-                  <div className="relative h-40 w-12 shrink-0 text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground" aria-hidden="true" data-testid="gold-axis">
+                  <div className="relative h-40 w-12 shrink-0 text-2xs font-heading font-bold uppercase tracking-wide text-muted-foreground" aria-hidden="true" data-testid="gold-axis">
                     {GOLD_CHART_AXIS_ROWS.map((row) => (
                       <span
                         key={row.key}
@@ -655,7 +655,7 @@ export default function DraftResultScreenV2({
                 <p className="text-xs font-heading font-bold uppercase tracking-wider text-muted-foreground mb-3">{blueTri}</p>
                 <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 gap-y-1 items-center">
                   <div
-                    className="col-span-5 grid grid-cols-subgrid items-center gap-3 border border-transparent px-3 text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground"
+                    className="col-span-5 grid grid-cols-subgrid items-center gap-3 border border-transparent px-3 text-2xs font-heading font-bold uppercase tracking-wide text-muted-foreground"
                     data-testid="row-columns"
                   >
                     <span aria-hidden="true" />
@@ -716,7 +716,7 @@ export default function DraftResultScreenV2({
                 <p className="text-xs font-heading font-bold uppercase tracking-wider text-muted-foreground mb-3">{redTri}</p>
                 <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 gap-y-1 items-center">
                   <div
-                    className="col-span-5 grid grid-cols-subgrid items-center gap-3 border border-transparent px-3 text-2xs font-heading font-bold uppercase tracking-wider text-muted-foreground"
+                    className="col-span-5 grid grid-cols-subgrid items-center gap-3 border border-transparent px-3 text-2xs font-heading font-bold uppercase tracking-wide text-muted-foreground"
                     data-testid="row-columns"
                   >
                     <span aria-hidden="true" />
