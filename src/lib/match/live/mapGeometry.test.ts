@@ -16,6 +16,7 @@ import {
   isInBase,
   isOnLane,
   pointInPolygon,
+  structureDiameterPx,
   toPx,
   toUnits,
 } from "@/lib/match/live/mapGeometry";
@@ -146,5 +147,24 @@ describe("bubbleDiameterPx", () => {
     expect(bubbleDiameterPx(660)).toBeCloseTo(31.68, 2);
     expect(BUBBLE_MAX_PX).toBe(38);
     expect(bubbleDiameterPx(1000)).toBe(38);
+  });
+});
+
+describe("structureDiameterPx", () => {
+  it("keeps each kind between its floor and its ceiling", () => {
+    expect(structureDiameterPx("tower", 320)).toBe(11);
+    expect(structureDiameterPx("tower", 1000)).toBe(22);
+    expect(structureDiameterPx("inhib", 320)).toBe(15);
+    expect(structureDiameterPx("inhib", 1000)).toBe(30);
+    expect(structureDiameterPx("nexus", 320)).toBe(24);
+    expect(structureDiameterPx("nexus", 1000)).toBe(48);
+  });
+
+  it("grows with the map in between and keeps the kinds in order", () => {
+    expect(structureDiameterPx("tower", 660)).toBeCloseTo(15.18, 2);
+    for (const size of [320, 540, 660, 1000]) {
+      expect(structureDiameterPx("tower", size)).toBeLessThan(structureDiameterPx("inhib", size));
+      expect(structureDiameterPx("inhib", size)).toBeLessThan(structureDiameterPx("nexus", size));
+    }
   });
 });

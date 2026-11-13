@@ -74,6 +74,11 @@ describe("onAir i18n keys", () => {
       "onAir.match.badge.fighting",
       "onAir.match.legend.ringRecall",
       "onAir.match.legend.ringDead",
+      "onAir.match.contact.fighting",
+      "onAir.match.contact.towerShot_one",
+      "onAir.match.contact.towerShot_other",
+      "onAir.match.legend.dot",
+      "onAir.match.legend.shots",
       "dashboard.sectionMarket",
     ]) {
       expect(REQUIRED.has(key), key).toBe(true);

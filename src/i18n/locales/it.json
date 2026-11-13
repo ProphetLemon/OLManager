@@ -4521,7 +4521,17 @@
       },
       "legend": {
         "ringRecall": "Anello che si svuota: richiamo, con i secondi rimasti",
-        "ringDead": "Contorno tratteggiato con un numero: morto, secondi alla rinascita"
+        "ringDead": "Contorno tratteggiato con un numero: morto, secondi alla rinascita",
+        "dot": "Punto sul collegamento: chi colpisce",
+        "shots": "xN: colpi di fila di una torre",
+        "beam": "Linea tratteggiata da una torre: colpo negli ultimi 3 secondi",
+        "ringFighting": "Doppio anello: in scontro",
+        "ringFire": "Anello tratteggiato: torre che spara"
+      },
+      "contact": {
+        "fighting": "{{a}} e {{b}} stanno combattendo",
+        "towerShot_one": "Fuoco della torre su {{target}}: {{count}} colpo",
+        "towerShot_other": "Fuoco della torre su {{target}}: {{count}} colpi"
       }
     }
   },

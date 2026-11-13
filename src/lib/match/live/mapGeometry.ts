@@ -165,6 +165,21 @@ export function bubbleDiameterPx(sizePx: number): number {
   return Math.min(BUBBLE_MAX_PX, Math.max(BUBBLE_MIN_PX, sizePx * BUBBLE_MAP_FRACTION));
 }
 
+// ── Structure markers ───────────────────────────────────────────────────
+
+/** Share of the map and the floor and ceiling in pixels of each kind of structure marker. */
+const STRUCTURE_PX: Record<StructureKind, { fraction: number; min: number; max: number }> = {
+  tower: { fraction: 0.023, min: 11, max: 22 },
+  inhib: { fraction: 0.032, min: 15, max: 30 },
+  nexus: { fraction: 0.052, min: 24, max: 48 },
+};
+
+/** Side of a structure marker in pixels for a map `sizePx` wide. */
+export function structureDiameterPx(kind: StructureKind, sizePx: number): number {
+  const { fraction, min, max } = STRUCTURE_PX[kind];
+  return Math.min(max, Math.max(min, sizePx * fraction));
+}
+
 // ── Hit tests ───────────────────────────────────────────────────────────
 
 function distanceToSegment(p: MapPoint, a: MapPoint, b: MapPoint): number {

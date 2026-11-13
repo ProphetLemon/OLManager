@@ -296,6 +296,117 @@
   }
 }
 
+/* ── Contacts ────────────────────────────────────────────────────────────
+   One overlay for the lines. Strokes keep their pixel width on every map size. The link
+   runs between the outer edges of two bubbles and carries a dot on the end of the one that
+   is hitting; a tower beam is dashed in the tower's team colour; a firing tower also gets a
+   dashed ring in the fight colour. */
+
+.arena-links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.arena-links [data-team="blue"] {
+  --team-color: var(--team-blue);
+}
+
+.arena-links [data-team="red"] {
+  --team-color: var(--team-red);
+}
+
+.arena-link-halo,
+.arena-link,
+.arena-beam,
+.arena-link-dot,
+.ring-fire {
+  vector-effect: non-scaling-stroke;
+}
+
+.arena-link-halo {
+  stroke: var(--terrain-ground);
+  stroke-width: 6px;
+  stroke-linecap: round;
+}
+
+.arena-link {
+  stroke: var(--warning);
+  stroke-width: 3px;
+  stroke-linecap: round;
+}
+
+.arena-link-dot {
+  fill: var(--warning);
+  stroke: var(--terrain-ground);
+  stroke-width: 1.5px;
+}
+
+.arena-beam {
+  stroke: var(--team-color);
+  stroke-width: 3px;
+  stroke-dasharray: 8 6;
+}
+
+.ring-fire {
+  fill: none;
+  stroke: var(--warning);
+  stroke-width: 2px;
+  stroke-dasharray: 4 3;
+}
+
+.arena-chips {
+  position: absolute;
+  inset: 0;
+}
+
+.arena-chip-anchor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+
+.arena-chip {
+  position: absolute;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border: 2px solid var(--warning);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--warning);
+  font-family: var(--font-heading);
+  font-size: var(--text-map);
+  font-weight: 700;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.arena-chip[data-kind="tower"] {
+  border-style: dashed;
+  border-color: var(--team-color);
+  color: var(--foreground);
+}
+
+.arena-chip[data-team="blue"] {
+  --team-color: var(--team-blue);
+}
+
+.arena-chip[data-team="red"] {
+  --team-color: var(--team-red);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .arena-champ {
     transition: none;

@@ -4522,7 +4522,17 @@
       },
       "legend": {
         "ringRecall": "Schrumpfender Ring: Rückruf, mit den verbleibenden Sekunden",
-        "ringDead": "Gestrichelte Kontur mit Zahl: tot, Sekunden bis zur Wiederbelebung"
+        "ringDead": "Gestrichelte Kontur mit Zahl: tot, Sekunden bis zur Wiederbelebung",
+        "dot": "Punkt am Link: wer zuschlägt",
+        "shots": "xN: Schüsse eines Turms in Folge",
+        "beam": "Gestrichelte Linie von einem Turm: Schuss in den letzten 3 Sekunden",
+        "ringFighting": "Doppelter Ring: im Kampf",
+        "ringFire": "Gestrichelter Ring: Turm feuert"
+      },
+      "contact": {
+        "fighting": "{{a}} und {{b}} kämpfen",
+        "towerShot_one": "Turmfeuer auf {{target}}: {{count}} Schuss",
+        "towerShot_other": "Turmfeuer auf {{target}}: {{count}} Schüsse"
       }
     }
   },

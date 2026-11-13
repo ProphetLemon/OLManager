@@ -4522,7 +4522,17 @@
       },
       "legend": {
         "ringRecall": "Anel que esvazia: retorno à base, com os segundos restantes",
-        "ringDead": "Contorno tracejado com um número: morto, segundos até reaparecer"
+        "ringDead": "Contorno tracejado com um número: morto, segundos até reaparecer",
+        "dot": "Ponto na ligação: quem está batendo",
+        "shots": "xN: tiros seguidos de uma torre",
+        "beam": "Linha tracejada de uma torre: tiro nos últimos 3 segundos",
+        "ringFighting": "Anel duplo: lutando",
+        "ringFire": "Anel tracejado: torre disparando"
+      },
+      "contact": {
+        "fighting": "{{a}} e {{b}} estão lutando",
+        "towerShot_one": "Fogo da torre em {{target}}: {{count}} tiro",
+        "towerShot_other": "Fogo da torre em {{target}}: {{count}} tiros"
       }
     }
   },

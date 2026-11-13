@@ -4556,7 +4556,17 @@
       },
       "legend": {
         "ringRecall": "Ring that drains: recall, with the seconds left",
-        "ringDead": "Dashed outline with a number: dead, seconds until respawn"
+        "ringDead": "Dashed outline with a number: dead, seconds until respawn",
+        "dot": "Dot on a link: who is hitting",
+        "shots": "xN: hits in a row from a tower",
+        "beam": "Dashed line from a tower: it fired in the last 3 seconds",
+        "ringFighting": "Double ring: fighting",
+        "ringFire": "Dashed ring: tower firing"
+      },
+      "contact": {
+        "fighting": "{{a}} and {{b}} are fighting",
+        "towerShot_one": "Tower fire on {{target}}: {{count}} hit",
+        "towerShot_other": "Tower fire on {{target}}: {{count}} hits"
       }
     }
   },

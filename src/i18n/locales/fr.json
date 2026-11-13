@@ -4522,7 +4522,17 @@
       },
       "legend": {
         "ringRecall": "Anneau qui se vide : rappel, avec les secondes restantes",
-        "ringDead": "Contour en pointillés avec un nombre : mort, secondes avant la réapparition"
+        "ringDead": "Contour en pointillés avec un nombre : mort, secondes avant la réapparition",
+        "dot": "Point sur le lien : qui frappe",
+        "shots": "xN : tirs d'affilée d'une tourelle",
+        "beam": "Ligne en pointillés depuis une tourelle : tir des 3 dernières secondes",
+        "ringFighting": "Double anneau : au combat",
+        "ringFire": "Anneau en pointillés : tourelle qui tire"
+      },
+      "contact": {
+        "fighting": "{{a}} et {{b}} se battent",
+        "towerShot_one": "Tir de tourelle sur {{target}} : {{count}} tir",
+        "towerShot_other": "Tir de tourelle sur {{target}} : {{count}} tirs"
       }
     }
   },

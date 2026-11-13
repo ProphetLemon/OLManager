@@ -4522,7 +4522,17 @@
       },
       "legend": {
         "ringRecall": "Boşalan halka: geri dönüş, kalan saniyeyle birlikte",
-        "ringDead": "Noktalı çerçeve ve bir sayı: ölü, yeniden doğmaya kalan saniye"
+        "ringDead": "Noktalı çerçeve ve bir sayı: ölü, yeniden doğmaya kalan saniye",
+        "dot": "Bağlantıdaki nokta: kimin vurduğu",
+        "shots": "xN: bir kulenin art arda atışları",
+        "beam": "Kuleden gelen kesikli çizgi: son 3 saniyedeki atış",
+        "ringFighting": "Çift halka: çatışmada",
+        "ringFire": "Kesikli halka: kule ateş ediyor"
+      },
+      "contact": {
+        "fighting": "{{a}} ve {{b}} çatışıyor",
+        "towerShot_one": "Kule {{target}} hedefine ateş ediyor: {{count}} atış",
+        "towerShot_other": "Kule {{target}} hedefine ateş ediyor: {{count}} atış"
       }
     }
   },
