@@ -72,10 +72,12 @@ pub(super) fn resolve_voidgrub_expiration_effect(
         return None;
     }
 
-    let winner_team = if stacks.red_stacks > stacks.blue_stacks {
-        "red"
-    } else {
-        "blue"
+    // The side that already took more grubs keeps the rest. A tie, 0 to 0 included, favours
+    // nobody: the grubs simply expire.
+    let winner_team = match stacks.red_stacks.cmp(&stacks.blue_stacks) {
+        std::cmp::Ordering::Greater => "red",
+        std::cmp::Ordering::Less => "blue",
+        std::cmp::Ordering::Equal => return None,
     };
 
     Some(VoidgrubExpirationEffect {

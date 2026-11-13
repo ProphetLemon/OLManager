@@ -6939,6 +6939,9 @@ mod scorecard_tests;
 mod damage_dealt_tests;
 
 #[cfg(test)]
+mod sim_audit_tests;
+
+#[cfg(test)]
 mod event_code_tests;
 
 #[cfg(test)]
