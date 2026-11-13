@@ -54,6 +54,11 @@ vi.mock("@/ui-v2/_legacy/components/match/lol-prototype/backend/tauri-client", (
   },
 }));
 
+// The real button reads the game store and opens a report dialog; here it only has to be in the right place.
+vi.mock("@/ui-v2/_legacy/components/dashboard/FloatingBugButton", () => ({
+  default: ({ placement }: { placement?: string }) => <button type="button" data-testid="bug-button" data-placement={placement} />,
+}));
+
 // The map measures itself, and layers mount only once it has a size.
 const clientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientWidth");
 beforeAll(() => {
@@ -161,6 +166,17 @@ describe("the screen", () => {
     expect(screen.getByTestId("fight-board")).toBeInTheDocument();
     expect(screen.getByTestId("match-controls")).toBeInTheDocument();
     expect(screen.getByTestId("map-legend")).toBeInTheDocument();
+  });
+
+  it("hosts the bug button in the controls row, in the flow and not floating", async () => {
+    mount();
+    await screen.findByTestId("champion-b-TOP");
+    const button = screen.getByTestId("bug-button");
+    expect(button).toHaveAttribute("data-placement", "rail");
+    const row = button.parentElement as HTMLElement;
+    expect(row).toHaveClass("live-area-ctl");
+    expect(row).toContainElement(screen.getByTestId("match-controls"));
+    expect(row).toContainElement(screen.getByTestId("map-legend"));
   });
 
   it("points the map at the Fight board, which is in the page", async () => {

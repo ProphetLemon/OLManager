@@ -1956,6 +1956,11 @@
   flex: 1 1 24rem;
 }
 
+/* The bug button keeps its square at the end of the row. */
+.live-area-ctl > button {
+  flex: none;
+}
+
 .live-area-blue {
   grid-area: blue;
 }

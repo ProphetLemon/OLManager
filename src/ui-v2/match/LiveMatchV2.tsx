@@ -12,6 +12,7 @@ import type { TeamSide } from "@/lib/match/live/mapGeometry";
 import type { GameStateData } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { mapRuntimeEventsToMatchEvents, mergeMatchEvents } from "@/ui-v2/_legacy/components/match/matchRuntimeEvents";
+import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import { useItemNames } from "@/ui-v2/_legacy/components/match/itemNames";
 import {
   createDefaultObjectivesState,
@@ -301,6 +302,8 @@ export default function LiveMatchV2({
             />
             <FightBoard rows={board} />
             <MapLegend />
+            {/* In the row, not floating: a fixed button would sit over the map or a card. */}
+            <FloatingBugButton placement="rail" />
             {skipFailed ? (
               <p className="live-notice" role="status">
                 {t("onAir.match.controls.skipFailed")}
