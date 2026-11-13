@@ -127,10 +127,13 @@ fn home_wins_seed(home: f64, away: f64, n: usize) -> bool {
 }
 
 /// Seeds of the strength check. The win rate of the team of 90s is 88 to 90% (85 and 86 of 96 on
-/// the engine before and after SIM-16), so the old 7 of 8 (87.5%) was a coin flip on 8 seeds.
-/// The check keeps the same share (84 of 96) on the first 96 seeds, which the cores play at once.
+/// the engine before and after SIM-16), so the old 7 of 8 (87.5%) was a coin flip on 8 seeds, and
+/// the same share on 96 seeds would still sit within one match of the measured rate.
+/// The check asks for 80% (77 of 96): about 2.5 standard deviations under the measured rate, so
+/// only a real loss of strength fails it, while a team of 70s against 60s (65 of 96) still does.
+/// The cores play the first 96 seeds at once.
 const STRENGTH_SEEDS: usize = 96;
-const STRENGTH_MIN_WINS: usize = 84;
+const STRENGTH_MIN_WINS: usize = 77;
 
 #[test]
 fn a_team_of_90s_beats_a_team_of_60s_in_a_snapshot_with_the_apps_names() {
