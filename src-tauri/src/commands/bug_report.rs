@@ -1,5 +1,5 @@
 use log::info;
-use std::io::{Read, Write};
+use std::io::{Read, Seek, Write};
 use std::path::PathBuf;
 use tauri::Manager as TauriManager;
 use zip::write::FileOptions;
@@ -76,31 +76,7 @@ pub fn export_bug_report(
     let file =
         std::fs::File::create(&zip_path).map_err(|e| format!("Failed to create zip: {}", e))?;
     let mut zip = ZipWriter::new(file);
-
-    let options = FileOptions::<()>::default()
-        .compression_method(zip::CompressionMethod::Deflated)
-        .unix_permissions(0o644);
-
-    // context.json
-    zip.start_file("context.json", options)
-        .map_err(|e| format!("Failed to write context.json: {}", e))?;
-    zip.write_all(context_json.as_bytes())
-        .map_err(|e| format!("Failed to write context data: {}", e))?;
-
-    // save.json
-    zip.start_file("save.json", options)
-        .map_err(|e| format!("Failed to write save.json: {}", e))?;
-    zip.write_all(save_json.as_bytes())
-        .map_err(|e| format!("Failed to write save data: {}", e))?;
-
-    // logs.txt (if available)
-    if !log_contents.is_empty() {
-        zip.start_file("logs.txt", options)
-            .map_err(|e| format!("Failed to write logs.txt: {}", e))?;
-        zip.write_all(log_contents.as_bytes())
-            .map_err(|e| format!("Failed to write logs: {}", e))?;
-    }
-
+    write_report_entries(&mut zip, &context_json, &save_json, &log_contents)?;
     zip.finish()
         .map_err(|e| format!("Failed to finalize zip: {}", e))?;
 
@@ -109,9 +85,59 @@ pub fn export_bug_report(
     Ok(zip_path.to_string_lossy().to_string())
 }
 
+/// Write the report's entries: `context.json`, then `save.json` and `logs.txt` when each has
+/// content. An empty `save_json` means no game was loaded (a report sent during new-career
+/// setup), so the archive carries no save rather than an empty one.
+fn write_report_entries<W: Write + Seek>(
+    zip: &mut ZipWriter<W>,
+    context_json: &str,
+    save_json: &str,
+    log_contents: &str,
+) -> Result<(), String> {
+    let options = FileOptions::<()>::default()
+        .compression_method(zip::CompressionMethod::Deflated)
+        .unix_permissions(0o644);
+    let optional = [("save.json", save_json), ("logs.txt", log_contents)];
+    let present = optional
+        .into_iter()
+        .filter(|(_, content)| !content.is_empty());
+    for (name, content) in std::iter::once(("context.json", context_json)).chain(present) {
+        zip.start_file(name, options)
+            .map_err(|e| format!("Failed to write {}: {}", name, e))?;
+        zip.write_all(content.as_bytes())
+            .map_err(|e| format!("Failed to write {} data: {}", name, e))?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::safe_tail;
+    use super::{safe_tail, write_report_entries};
+    use std::io::Cursor;
+    use zip::{ZipArchive, ZipWriter};
+
+    fn entry_names(save_json: &str, log_contents: &str) -> Vec<String> {
+        let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
+        write_report_entries(&mut zip, "{}", save_json, log_contents).expect("entries");
+        let bytes = zip.finish().expect("finish").into_inner();
+        let archive = ZipArchive::new(Cursor::new(bytes)).expect("archive");
+        archive.file_names().map(str::to_owned).collect()
+    }
+
+    #[test]
+    fn a_report_with_a_game_carries_the_save() {
+        assert!(entry_names("{\"clock\":{}}", "").contains(&"save.json".to_owned()));
+    }
+
+    #[test]
+    fn a_report_without_a_game_carries_no_save() {
+        assert!(!entry_names("", "").contains(&"save.json".to_owned()));
+    }
+
+    #[test]
+    fn a_report_always_carries_its_context() {
+        assert!(entry_names("", "").contains(&"context.json".to_owned()));
+    }
 
     #[test]
     fn safe_tail_returns_full_string_when_below_max() {
