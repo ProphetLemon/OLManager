@@ -1,4 +1,4 @@
-import { bubbleDiameterPx, type MapPoint } from "@/lib/match/live/mapGeometry";
+import { bubbleDiameterPx, structureDiameterPx, type MapPoint } from "@/lib/match/live/mapGeometry";
 
 /**
  * Where each champion's name tag goes, so tags do not sit on bubbles or on each
@@ -24,6 +24,12 @@ import { bubbleDiameterPx, type MapPoint } from "@/lib/match/live/mapGeometry";
  * wider than an "e"). The caller therefore measures the rendered box of each form once per commit
  * and passes it as `sizes`; the character count is only the fallback for a form with no
  * measurement. Placed tags also keep `TAG_GAP_PX` apart, so a pixel of rounding never makes two touch.
+ *
+ * Markers keep moving after a solve, and a tag moves with its marker, so a champion may carry a
+ * `to`: where it will be at the next solve. Two tags, or a tag and a bubble, then clash when the
+ * boxes touch at any moment of that stretch (only their relative motion counts), and a tag clashes
+ * with whatever stands still when its whole sweep touches it. The solve is exact for markers that
+ * walk straight, which is all the next solve is told about.
  */
 
 /** The map size the solver assumes when it is not told one; smaller maps switch to the compact form in CSS. */
@@ -70,8 +76,15 @@ const EDGE_TRIGGER = 0.005;
 
 export interface TagChampion {
   id: string;
-  /** Engine position, 0..1. */
+  /** Where the marker is drawn when the solve is made, 0..1. */
   pos: MapPoint;
+  /**
+   * Where the marker will be drawn by the time of the next solve, when it moves. The marker, and
+   * the tag that is its child, travel in a straight line from `pos` to `to` in between, so the
+   * solver keeps the whole stretch clear and not only the spot it starts from. Left out, the
+   * champion stands still.
+   */
+  to?: MapPoint;
   /** Name shown in the full form. */
   name: string;
   /** State line of the full form ("Recall 3.9s", "Dead 12s", "Fighting"); empty when the champion has no state. */
@@ -145,14 +158,48 @@ function inflate(box: TagBox, by: number): TagBox {
   return { x0: box.x0 - by, y0: box.y0 - by, x1: box.x1 + by, y1: box.y1 + by };
 }
 
-function intersects(a: TagBox, b: TagBox): boolean {
-  return !(a.x1 < b.x0 || b.x1 < a.x0 || a.y1 < b.y0 || b.y1 < a.y0);
-}
-
 function insideMap(box: TagBox): boolean {
   return (
     box.x0 >= MAP_MARGIN && box.x1 <= 1 - MAP_MARGIN && box.y0 >= MAP_MARGIN && box.y1 <= 1 - MAP_MARGIN
   );
+}
+
+interface Travel {
+  dx: number;
+  dy: number;
+}
+
+const STILL: Travel = { dx: 0, dy: 0 };
+
+const travelOf = (champion: TagChampion): Travel =>
+  champion.to ? { dx: champion.to.x - champion.pos.x, dy: champion.to.y - champion.pos.y } : STILL;
+
+const shifted = (box: TagBox, travel: Travel, t: number): TagBox => ({
+  x0: box.x0 + travel.dx * t,
+  y0: box.y0 + travel.dy * t,
+  x1: box.x1 + travel.dx * t,
+  y1: box.y1 + travel.dy * t,
+});
+
+/** The span of t in [0, 1] in which one axis of a box, moving at `speed`, touches a still interval; null when it never does. */
+function axisSpan(a0: number, a1: number, b0: number, b1: number, speed: number): [number, number] | null {
+  if (speed === 0) return a1 >= b0 && a0 <= b1 ? [0, 1] : null;
+  const first = (b0 - a1) / speed;
+  const last = (b1 - a0) / speed;
+  const lo = Math.max(0, Math.min(first, last));
+  const hi = Math.min(1, Math.max(first, last));
+  return lo <= hi ? [lo, hi] : null;
+}
+
+/**
+ * Whether two boxes that each travel in a straight line over t in [0, 1] touch at any moment of
+ * it. Only the relative motion matters, so two markers walking the same way never clash, and two
+ * walking into each other do, wherever along the way they meet.
+ */
+function sweptTouch(a: TagBox, travelA: Travel, b: TagBox, travelB: Travel): boolean {
+  const x = axisSpan(a.x0, a.x1, b.x0, b.x1, travelA.dx - travelB.dx);
+  const y = axisSpan(a.y0, a.y1, b.y0, b.y1, travelA.dy - travelB.dy);
+  return Boolean(x && y && Math.max(x[0], y[0]) <= Math.min(x[1], y[1]));
 }
 
 function bubbleBox(m: Metrics, pos: MapPoint): TagBox {
@@ -224,6 +271,18 @@ export interface PlaceTagsOptions {
   obstacles?: readonly TagBox[];
 }
 
+/** Pixels of the label of a nexus (see `.arena-struct-under`): the marker, then a health bar when damaged, then the word. */
+const NEXUS_LABEL_HALF_WIDTH_PX = 28;
+const NEXUS_LABEL_UNDER_PX = 3 + 7 + 20;
+
+/** The box of a nexus and the name under it, for the tags to keep clear of. */
+export function nexusLabelObstacle(pos: MapPoint, sizePx = NOMINAL_MAP_PX): TagBox {
+  const u = (px: number) => px / sizePx;
+  const radius = structureDiameterPx("nexus", sizePx) / 2;
+  const half = u(Math.max(radius, NEXUS_LABEL_HALF_WIDTH_PX));
+  return { x0: pos.x - half, y0: pos.y - u(radius), x1: pos.x + half, y1: pos.y + u(radius + NEXUS_LABEL_UNDER_PX) };
+}
+
 /** Pixels of the label of an objective pit, drawn under its glyph (see `.arena-pit-label`). */
 const PIT_HALF_WIDTH_PX = 66;
 const PIT_ABOVE_PX = 14;
@@ -257,8 +316,9 @@ export function placeTags(
   const { sizePx = NOMINAL_MAP_PX, obstacles: fixed = [] } = options;
   const m = metricsFor(sizePx);
   const gap = m.u(TAG_GAP_PX);
-  const bubbles = champions.map((champion) => ({ id: champion.id, box: bubbleBox(m, champion.pos) }));
-  const placed: TagBox[] = [];
+  const travels = new Map(champions.map((champion) => [champion.id, travelOf(champion)]));
+  const bubbles = champions.map((champion) => ({ id: champion.id, box: bubbleBox(m, champion.pos), travel: travelOf(champion) }));
+  const placed: Array<{ box: TagBox; travel: Travel }> = [];
   const result: TagPlacements = {};
 
   // Champions with a state line choose first so their timers keep a slot.
@@ -268,11 +328,16 @@ export function placeTags(
   );
 
   for (const champion of order) {
-    const obstacles = [...bubbles.filter((bubble) => bubble.id !== champion.id).map((bubble) => bubble.box), ...fixed];
+    const travel = travels.get(champion.id) ?? STILL;
+    const others = bubbles.filter((bubble) => bubble.id !== champion.id);
+    // A tag moves with its champion. It must stay on the map, off the objects that stand still, and
+    // off every bubble and tag at every moment of the way to the next solve.
     const clashes = (box: TagBox) =>
       !insideMap(box) ||
-      obstacles.some((other) => intersects(box, other)) ||
-      placed.some((other) => intersects(box, inflate(other, gap)));
+      !insideMap(shifted(box, travel, 1)) ||
+      fixed.some((other) => sweptTouch(box, travel, other, STILL)) ||
+      others.some((other) => sweptTouch(box, travel, other.box, other.travel)) ||
+      placed.some((other) => sweptTouch(box, travel, inflate(other.box, gap), other.travel));
     const forms = formsOf(champion);
     let choice: TagPlacement | null = null;
 
@@ -298,7 +363,7 @@ export function placeTags(
       }
     }
 
-    if (choice && "box" in choice) placed.push(choice.box);
+    if (choice && "box" in choice) placed.push({ box: choice.box, travel });
     result[champion.id] = choice ?? (hasState(champion) ? { form: "badge" } : { form: "none" });
   }
   return result;

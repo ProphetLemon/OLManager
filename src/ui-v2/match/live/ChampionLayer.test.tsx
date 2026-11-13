@@ -7,7 +7,7 @@ import { MAP_UNITS } from "@/lib/match/live/mapGeometry";
 import { pitViews } from "@/lib/match/live/objectivesView";
 
 import { ArenaHarness } from "./arenaHarness.testing";
-import { createTestBus, makeChampion, makeState, makeStructure } from "./arenaFixtures.testing";
+import { createTestBus, makeChampion, makeFrame, makeState, makeStructure } from "./arenaFixtures.testing";
 import { ChampionLayer } from "./ChampionLayer";
 
 /** Ten champions piled on one spot, nine of them with a state: there are not enough free slots for every tag. */
@@ -274,5 +274,81 @@ describe("ChampionLayer next to a firing tower", () => {
   it("keeps the tag off the ring and the beam of the tower that is shooting", () => {
     mount([beam]);
     expect(screen.getByTestId("tag")).not.toHaveAttribute("data-slot", "below");
+  });
+});
+
+/**
+ * The markers are moved by the frame bus between commits, so at the moment of a solve the marker
+ * is drawn somewhere the engine's last answer is not, and it keeps moving until the next solve.
+ * The solve has to use the first and plan for the second.
+ */
+describe("ChampionLayer next to champions on the move", () => {
+  const tagOf = (id: string) => within(screen.getByTestId(`champion-${id}`)).queryByTestId("tag");
+
+  function mount(first: ReturnType<typeof makeState>) {
+    const test = createTestBus();
+    const draw = (state: ReturnType<typeof makeState>) => (
+      <ArenaHarness bus={test.bus}>
+        <ChampionLayer
+          state={state}
+          championByPlayerId={{}}
+          contacts={detectContacts(state.champions, state.timeSec)}
+          selectedId={null}
+          onSelect={() => {}}
+        />
+      </ArenaHarness>
+    );
+    const view = render(draw(first));
+    return { ...test, view, commit: (state: ReturnType<typeof makeState>) => view.rerender(draw(state)) };
+  }
+
+  const pairAt = (timeSec: number, bY: number) =>
+    makeState({
+      timeSec,
+      champions: [makeChampion("a", "blue", 0.5, 0.5, { name: "AB" }), makeChampion("b", "red", 0.5, bY, { name: "CD" })],
+    });
+
+  it("puts the tag below a lone champion while nobody is near", () => {
+    const { commit, publish } = mount(pairAt(100, 0.8));
+    publish(makeFrame(pairAt(100, 0.8)));
+    commit(pairAt(100.25, 0.8));
+    expect(tagOf("a")).toHaveAttribute("data-slot", "below");
+  });
+
+  it("solves for where a marker is drawn, not for where the last answer puts it", () => {
+    const { commit, publish } = mount(pairAt(100, 0.8));
+    // The answer says B is far off, but the frame still draws it right under A, where the tag would go.
+    publish(makeFrame(pairAt(100, 0.55)));
+    commit(pairAt(100.25, 0.8));
+    expect(tagOf("a")).not.toHaveAttribute("data-slot", "below");
+  });
+
+  it("keeps a tag out of the way of a champion whose walk leads through it", () => {
+    const { commit, publish } = mount(pairAt(100, 0.85));
+    publish(makeFrame(pairAt(100, 0.85)));
+    // B was at 0.85 a quarter of a second ago, is at 0.75 now, and keeps walking towards A.
+    commit(pairAt(100.25, 0.75));
+    expect(tagOf("a")).not.toHaveAttribute("data-slot", "below");
+  });
+
+  it("leaves the tag where it is when the other champion stands at the same place the walk ended", () => {
+    const { commit, publish } = mount(pairAt(100, 0.75));
+    publish(makeFrame(pairAt(100, 0.75)));
+    commit(pairAt(100.25, 0.75));
+    expect(tagOf("a")).toHaveAttribute("data-slot", "below");
+  });
+});
+
+describe("ChampionLayer next to a nexus", () => {
+  it("keeps the tag of a champion off the name under the nexus", () => {
+    const nexus = makeStructure("blue-nexus", "blue", "nexus", 0.1, 0.88);
+    // Just above the nexus, where a tag below the bubble would sit on its name.
+    renderLayer(makeState({ champions: [makeChampion("solo", "blue", 0.1, 0.8, { name: "KORVAN" })], structures: [nexus] }));
+    expect(screen.getByTestId("tag")).not.toHaveAttribute("data-slot", "below");
+  });
+
+  it("puts the same champion's tag below when no nexus is there", () => {
+    renderLayer(makeState({ champions: [makeChampion("solo", "blue", 0.1, 0.8, { name: "KORVAN" })] }));
+    expect(screen.getByTestId("tag")).toHaveAttribute("data-slot", "below");
   });
 });

@@ -5,13 +5,16 @@ import type { ContactResult, TowerBeam } from "@/lib/match/live/contacts";
 import { fireObstacles } from "@/lib/match/live/fireObstacles";
 import { MAP_UNITS } from "@/lib/match/live/mapGeometry";
 import { pitViews } from "@/lib/match/live/objectivesView";
-import { pitObstacle, placeTags, type TagPlacements } from "@/lib/match/live/tagPlacement";
+import { nexusLabelObstacle, pitObstacle, placeTags, type TagPlacements } from "@/lib/match/live/tagPlacement";
 import type { LolSimV1RuntimeState } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
+import type { ChampionState } from "@/ui-v2/_legacy/components/match/lol-prototype/engine/types";
 
-import { useMapSize } from "./arenaMapContext";
+import { useArenaBus, useMapSize } from "./arenaMapContext";
 import { ChampionMarker } from "./ChampionMarker";
 import { NO_TAG_SIZES, readTagSizes, sameTagSizes, type TagSizesById } from "./tagSizes";
+import { projectTravel } from "./tagMotion";
 import { TagContent } from "./TagContent";
+import { COMMIT_INTERVAL_MS } from "./useLiveSession";
 import { useMarkerTexts } from "./useMarkerTexts";
 
 export interface ChampionLayerProps {
@@ -28,11 +31,16 @@ export interface ChampionLayerProps {
 
 const NO_BEAMS: readonly TowerBeam[] = [];
 
+/** One animation frame on top of the commit interval: the longest a marker goes without a new solve. */
+const SOLVE_WINDOW_SEC = COMMIT_INTERVAL_MS / 1000 + 1 / 60;
+
 /**
  * All ten markers. On every committed answer it works out each champion's state, measures the
  * real size of every tag, solves the tag placement once for the whole map (keeping the slots that
  * still fit, so tags do not flicker) and hands each marker its result. Between answers the markers
- * move on their own.
+ * move on their own, so the solve is given the stretch each one will cover until the next solve:
+ * it starts at the position the marker is drawn at (the last frame, not the engine's answer) and
+ * ends where its walk leads, and a tag is only placed where it stays clear along all of it.
  *
  * The size of a tag comes from probes: for each champion, one hidden box per form, built from the
  * same markup and styled by the same rules as the tag, so the font, the padding and the width of
@@ -43,7 +51,21 @@ export function ChampionLayer({ state, championByPlayerId, contacts, selectedId,
   const textsFor = useMarkerTexts();
   const previous = useRef<TagPlacements | undefined>(undefined);
   const sizePx = useMapSize();
+  const bus = useArenaBus();
   const nowSec = state.timeSec;
+  // Where the markers are drawn: the last frame of the bus. Keeping the array is all a frame does here.
+  const drawn = useRef<readonly ChampionState[] | null>(null);
+  useEffect(
+    () =>
+      bus.subscribe((frame) => {
+        drawn.current = frame.state.champions;
+      }),
+    [bus],
+  );
+  // The commit before this one, to tell how fast each champion is walking. Kept as state derived
+  // from `state`, so every pass over the same commit sees the same one.
+  const [trail, setTrail] = useState<{ now: LolSimV1RuntimeState; before: LolSimV1RuntimeState | null }>({ now: state, before: null });
+  if (trail.now !== state) setTrail({ now: state, before: trail.now });
   const probesRef = useRef<HTMLDivElement>(null);
   const [sizes, setSizes] = useState<TagSizesById>(NO_TAG_SIZES);
 
@@ -74,26 +96,40 @@ export function ChampionLayer({ state, championByPlayerId, contacts, selectedId,
         ),
       ),
       ...fireObstacles(beams, state.structures, state.champions, sizePx),
+      // The name under each nexus.
+      ...state.structures.filter((structure) => structure.kind === "nexus").map((nexus) => nexusLabelObstacle(nexus.pos, sizePx || undefined)),
     ],
     [state, sizePx, beams],
   );
 
-  const placements = useMemo(
-    () =>
-      placeTags(
-        rows.map(({ champion, texts }) => ({
+  const placements = useMemo(() => {
+    const before = new Map((trail.before?.champions ?? []).map((champion) => [champion.id, champion]));
+    const onScreen = new Map((drawn.current ?? []).map((champion) => [champion.id, champion.pos]));
+    const elapsedGameSec = trail.before ? state.timeSec - trail.before.timeSec : 0;
+    const aheadGameSec = SOLVE_WINDOW_SEC * (Number.isFinite(state.speed) && state.speed > 0 ? state.speed : 0);
+    return placeTags(
+      rows.map(({ champion, texts }) => {
+        const { from, to } = projectTravel({
+          before: before.get(champion.id),
+          after: champion,
+          elapsedGameSec,
+          aheadGameSec,
+          rendered: onScreen.get(champion.id),
+        });
+        return {
           id: champion.id,
-          pos: champion.pos,
+          pos: from,
+          to,
           name: champion.name,
           sub: texts.sub,
           subCompact: texts.subCompact,
           sizes: sizes[champion.id],
-        })),
-        previous.current,
-        { sizePx: sizePx || undefined, obstacles },
-      ),
-    [rows, sizePx, obstacles, sizes],
-  );
+        };
+      }),
+      previous.current,
+      { sizePx: sizePx || undefined, obstacles },
+    );
+  }, [rows, sizePx, obstacles, sizes, trail, state.timeSec, state.speed]);
 
   // Remembered after the commit, so that rendering stays free of side effects.
   useEffect(() => {

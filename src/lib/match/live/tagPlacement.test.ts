@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { bubbleDiameterPx } from "@/lib/match/live/mapGeometry";
 import {
+  nexusLabelObstacle,
   pitObstacle,
   placeTags,
   TAG_GAP_PX,
@@ -338,5 +339,123 @@ describe("placeTags with the measured size of the tags", () => {
     for (const entry of cluster) {
       if (!("slot" in result[entry.id])) expect(["badge", "none"]).toContain(result[entry.id].form);
     }
+  });
+});
+
+/** The box of a placed tag when its champion is `t` of the way from `pos` to `to`. */
+function boxAt(champion: TagChampion, placement: TagPlacement | undefined, t: number): TagBox {
+  const box = boxOf(placement);
+  const dx = ((champion.to?.x ?? champion.pos.x) - champion.pos.x) * t;
+  const dy = ((champion.to?.y ?? champion.pos.y) - champion.pos.y) * t;
+  return { x0: box.x0 + dx, y0: box.y0 + dy, x1: box.x1 + dx, y1: box.y1 + dy };
+}
+
+const SAMPLES = [0, 0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 0.9, 1];
+
+/** Ten champions in a clump, each walking half way to the middle of it: the worst moment of a team fight. */
+function movingCluster(): TagChampion[] {
+  const centre = { x: 0.5, y: 0.47 };
+  return Array.from({ length: 10 }, (_, index) => {
+    const pos = { x: 0.43 + (index % 5) * 0.035, y: 0.43 + Math.floor(index / 5) * 0.08 };
+    return champ(`m${index}`, pos.x, pos.y, {
+      sub: index % 2 === 0 ? "Fighting" : undefined,
+      to: { x: pos.x + (centre.x - pos.x) * 0.5, y: pos.y + (centre.y - pos.y) * 0.5 },
+      sizes: { full: { w: 62, h: 30 }, compact: { w: 36, h: 18 } },
+    });
+  });
+}
+
+describe("tags of champions on the move", () => {
+  it("never lets two tags intersect at any moment between one solve and the next, in a moving clump", () => {
+    const cluster = movingCluster();
+    const result = placeTags(cluster, undefined, { sizePx: 574 });
+    const placed = cluster.filter((entry) => "box" in result[entry.id]);
+    // A clump that dense still shows some names; the test is void if the solver gave all of them up.
+    expect(placed.length).toBeGreaterThan(2);
+    for (const t of SAMPLES) {
+      for (let i = 0; i < placed.length; i += 1) {
+        for (let j = i + 1; j < placed.length; j += 1) {
+          const a = boxAt(placed[i], result[placed[i].id], t);
+          const b = boxAt(placed[j], result[placed[j].id], t);
+          expect(overlap(a, b), `${placed[i].id} and ${placed[j].id} at t=${t}`).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("keeps a tag off every other bubble at every moment of the way", () => {
+    const cluster = movingCluster();
+    const result = placeTags(cluster, undefined, { sizePx: 574 });
+    const reach = bubbleDiameterPx(574) / 2 / 574;
+    for (const champion of cluster.filter((entry) => "box" in result[entry.id])) {
+      for (const other of cluster.filter((entry) => entry.id !== champion.id)) {
+        for (const t of SAMPLES) {
+          const x = other.pos.x + ((other.to?.x ?? other.pos.x) - other.pos.x) * t;
+          const y = other.pos.y + ((other.to?.y ?? other.pos.y) - other.pos.y) * t;
+          const bubble = { x0: x - reach, y0: y - reach, x1: x + reach, y1: y + reach };
+          expect(overlap(boxAt(champion, result[champion.id], t), bubble), `${champion.id} over ${other.id} at t=${t}`).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("gives two champions who walk the same way each a tag: only their relative motion counts", () => {
+    const sizes = { full: { w: 62, h: 30 }, compact: { w: 36, h: 18 } };
+    const together = [
+      champ("a", 0.4, 0.5, { sizes, to: { x: 0.6, y: 0.5 } }),
+      champ("b", 0.4, 0.66, { sizes, to: { x: 0.6, y: 0.66 } }),
+    ];
+    const result = placeTags(together, undefined, { sizePx: 574 });
+    expect(result.a.form).toBe("full");
+    expect(result.b.form).toBe("full");
+    const alone = placeTags([champ("a", 0.4, 0.5, { sizes })], undefined, { sizePx: 574 });
+    expect(result.a).toEqual(alone.a);
+  });
+
+  it("moves a tag out of the path of a champion who is walking into it", () => {
+    const sizes = { full: { w: 62, h: 30 }, compact: { w: 36, h: 18 } };
+    const still = [champ("a", 0.5, 0.5, { sizes }), champ("b", 0.5, 0.66, { sizes })];
+    const meeting = [champ("a", 0.5, 0.5, { sizes }), champ("b", 0.5, 0.66, { sizes, to: { x: 0.5, y: 0.52 } })];
+    const calm = placeTags(still, undefined, { sizePx: 574 });
+    const walked = placeTags(meeting, undefined, { sizePx: 574 });
+    expect(calm.a).toMatchObject({ slot: "below" });
+    expect(walked.a).not.toEqual(calm.a);
+    for (const t of SAMPLES) {
+      if ("box" in walked.a && "box" in walked.b) {
+        expect(overlap(boxAt(meeting[0], walked.a, t), boxAt(meeting[1], walked.b, t)), `at t=${t}`).toBe(false);
+      }
+    }
+  });
+
+  it("keeps a tag inside the map at the end of the way too", () => {
+    const result = placeTags([champ("a", 0.5, 0.5, { to: { x: 0.5, y: 0.97 } })], undefined, { sizePx: 574 });
+    const placement = result.a;
+    if ("box" in placement) {
+      expect(boxAt(champ("a", 0.5, 0.5, { to: { x: 0.5, y: 0.97 } }), placement, 1).y1).toBeLessThanOrEqual(0.997);
+    }
+    expect(placement).toMatchObject({ slot: "above" });
+  });
+});
+
+describe("the nexus label", () => {
+  const nexus = { x: 0.1, y: 0.88 };
+
+  it("covers the marker, the health bar and the word under it", () => {
+    const box = nexusLabelObstacle(nexus, 574);
+    const radius = (574 * 0.052 > 48 ? 48 : Math.max(24, 574 * 0.052)) / 2;
+    expect(box.x0).toBeLessThan(nexus.x - 28 / 574 + 1e-9);
+    expect(box.x1).toBeGreaterThan(nexus.x + 28 / 574 - 1e-9);
+    expect(box.y0).toBeCloseTo(nexus.y - radius / 574, 6);
+    expect(box.y1 - nexus.y).toBeGreaterThanOrEqual((radius + 30) / 574 - 1e-9);
+  });
+
+  it("keeps a tag off it", () => {
+    const champion = champ("a", 0.1, 0.8, { sizes: { full: { w: 62, h: 30 }, compact: { w: 36, h: 18 } } });
+    const free = placeTags([champion], undefined, { sizePx: 574 });
+    expect(free.a).toMatchObject({ slot: "below" });
+    const obstacle = nexusLabelObstacle(nexus, 574);
+    const placed = placeTags([champion], undefined, { sizePx: 574, obstacles: [obstacle] });
+    expect(placed.a).not.toMatchObject({ slot: "below" });
+    if ("box" in placed.a) expect(overlap(placed.a.box, obstacle)).toBe(false);
   });
 });
