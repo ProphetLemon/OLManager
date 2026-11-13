@@ -124,6 +124,14 @@ describe("the list", () => {
     expect(within(items()[0]).getByText("33:10")).toBeInTheDocument();
   });
 
+  it("keeps one live region and one hidden sentence per shown kill, however long the log is", () => {
+    const log = Array.from({ length: 200 }, (_, index) => ev(index * 10, "KORVAN killed RUVIA", "kill"));
+    const { container } = renderTicker(log);
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(container.querySelectorAll(".arena-tk-list .sr-only")).toHaveLength(FEED_LIMIT);
+    expect(container.querySelectorAll(".arena-ticker > .sr-only")).toHaveLength(1);
+  });
+
   it("keeps an entry's element when later events arrive, so nothing remounts", () => {
     const first = [ev(100, "KORVAN killed RUVIA", "kill")];
     const { rerenderWith } = renderTicker(first);

@@ -1398,6 +1398,8 @@
    The newest entry fades in with opacity alone, which the reduced-motion rule below removes. */
 
 .arena-ticker {
+  /* A containing block for the hidden sentences inside it (see .arena-tk-list). */
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -1425,6 +1427,11 @@
 }
 
 .arena-tk-list {
+  /* The list clips its rows, but a visually hidden sentence in a row is absolutely positioned. With
+     no positioned ancestor nearer than the scroll root, a sentence in a row below the clip still
+     counted as overflow of that root and made the page scroll. Being the containing block keeps
+     it, and the root's scrollable area, inside the list. */
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1933,6 +1940,7 @@
 
 .live-area-bar {
   grid-area: bar;
+  position: relative;
   min-width: 0;
 }
 
@@ -1956,6 +1964,7 @@
 
 .live-area-dock {
   grid-area: dock;
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: var(--live-gap) 0.75rem;
@@ -2015,6 +2024,9 @@
    matching negative margin keep the follow ring and the focus ring from being clipped. */
 .live-area-blue,
 .live-area-red {
+  /* Also the containing block of the cards' hidden text, so a card scrolled out of view cannot
+     widen the page. */
+  position: relative;
   display: grid;
   grid-template-rows: minmax(min-content, 1fr);
   min-width: 0;

@@ -89,3 +89,21 @@ describe("the end panel", () => {
     expect(ruleBody(".live-end")).toMatch(/margin-block:\s*auto/);
   });
 });
+
+describe("nothing hidden can widen the page", () => {
+  // A visually hidden sentence is absolutely positioned. When no positioned ancestor sits between
+  // it and the scroll root, one in a feed row below the list's clip, or in a card scrolled out of
+  // its column, counted as overflow of the whole root: the page scrolled 35 px at 1440x900 once the
+  // feed had items. Each of these boxes clips or scrolls its content, so each is the containing block.
+  it.each([".arena-ticker", ".arena-tk-list", ".live-area-dock", ".live-area-blue,\n.live-area-red"])(
+    "%j is positioned, so what it clips cannot reach the scroll root",
+    (selector) => {
+      expect(ruleBody(selector)).toMatch(/position:\s*(?:relative|absolute)/);
+    },
+  );
+
+  it("keeps the feed list and both card columns clipping what they hold", () => {
+    expect(ruleBody(".arena-tk-list")).toMatch(/overflow-y:\s*auto/);
+    expect(ruleBody(".live-area-blue,\n.live-area-red")).toMatch(/overflow-y:\s*auto/);
+  });
+});
