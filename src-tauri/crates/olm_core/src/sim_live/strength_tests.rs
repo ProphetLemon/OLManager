@@ -228,12 +228,11 @@ fn stronger_team_wins_at_least() {
 /// (1000 in all): if the true rate is 50% the standard error is 1.6 points, so
 /// the +-5 point band is 3.2 standard errors wide and a healthy engine fails
 /// it about 0.2% of the time. Matches use fixed seeds, so the run is
-/// repeatable. KNOWN FAILING: the shipped engine measures blue 555 of 1000
-/// (55.5%, 95% interval 52.4-58.6%), above the band; the causes found so far
-/// are in the commit message of the change that restored this band.
+/// repeatable. It failed before the SIM-7 rebalance (blue 555 of 1000); on
+/// 2026-11-13 it measured blue 482 of 1000 (48.2%, 95% interval 45.1-51.3%).
 /// `cargo test -p olm_core --lib sim_live::strength_tests::even_teams_have_no_side_bias -- --ignored --nocapture`
 #[test]
-#[ignore = "slow: 1000 full matches (about 20-30 min on 6 cores); known failing until the blue-side edge is fixed"]
+#[ignore = "slow: 1000 full matches (about 20-30 min on 6 cores)"]
 fn even_teams_have_no_side_bias() {
     let n = batch_size(500);
     let first = run_batch_sides(1000, n, Side::EVEN, Side::EVEN, FULL_MATCH_TICKS);
