@@ -82,8 +82,6 @@ export const tauriAdapter: ApiClient = {
     acquire: (args) => invoke("acquire_academy_team", args),
     promotePlayer: (args) => invoke("promote_academy_player", args),
     demotePlayer: (args) => invoke("demote_main_player_to_academy", args),
-    getCreationOptions: (args) => invoke("get_academy_creation_options", args),
-    create: (args) => invoke("create_academy", args),
   },
 
   scouting: {

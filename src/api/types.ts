@@ -174,8 +174,6 @@ export interface AcademyRepository {
   acquire(args: { request: unknown }): Promise<GameStateData>
   promotePlayer(args: { playerId: string }): Promise<GameStateData>
   demotePlayer(args: { playerId: string }): Promise<GameStateData>
-  getCreationOptions(args: { parentTeamId: string }): Promise<AcademyAcquisitionOptionsResponseData>
-  create(args: { parentTeamId: string; sourceTeamId: string }): Promise<GameStateData>
 }
 
 export interface ScoutingRepository {
