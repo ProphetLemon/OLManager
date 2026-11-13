@@ -37,6 +37,7 @@ import {
 } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -351,7 +352,7 @@ interface TacticsTabV2Props {
 // ─── Main Component ───────────────────────────────────────────────────
 
 export function TacticsTabV2({ gameState, onGameUpdate }: TacticsTabV2Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const myTeam = gameState.teams.find(
     (team) => team.id === gameState.manager.team_id,
   );
@@ -633,7 +634,7 @@ export function TacticsTabV2({ gameState, onGameUpdate }: TacticsTabV2Props) {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {t("tactics.lol.score")}: {coherenceScore > 0 ? "+" : ""}
-                      {coherenceScore.toFixed(2)}
+                      {formatDecimal(coherenceScore, 2, i18n.language)}
                     </p>
                   </div>
                 </div>
@@ -658,7 +659,7 @@ export function TacticsTabV2({ gameState, onGameUpdate }: TacticsTabV2Props) {
                       )}
                     >
                       {item.delta > 0 ? "+" : ""}
-                      {item.delta.toFixed(2)}
+                      {formatDecimal(item.delta, 2, i18n.language)}
                     </span>
                   </div>
                 ))}
@@ -746,11 +747,11 @@ export function TacticsTabV2({ gameState, onGameUpdate }: TacticsTabV2Props) {
                               )}
                             >
                               {row.modifier >= 0 ? "+" : ""}
-                              {row.modifier.toFixed(1)}
+                              {formatDecimal(row.modifier, 1, i18n.language)}
                             </p>
                           </div>
                           <p className="text-2xs text-muted-foreground">
-                            ±{row.variance.toFixed(1)}{" "}
+                            ±{formatDecimal(row.variance, 1, i18n.language)}{" "}
                             {t("tactics.lol.variance")}
                           </p>
                         </div>

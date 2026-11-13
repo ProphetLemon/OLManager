@@ -39,6 +39,7 @@ import { APP_NAME } from "@/lib/common/appInfo";
 import { useGameStore } from "@/store/gameStore";
 import type { GameStateData } from "@/store/gameStore";
 import SoloqDecaySettingV2 from "@/ui-v2/pages/settings/SoloqDecaySettingV2";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 const CURRENCY_OPTIONS = [
   { value: "EUR", label: "Euro (€)", symbol: "€" },
@@ -780,7 +781,7 @@ function GameButton({
 // ── Datos: OLMDBManager auto-import (Tauri-native) ──
 
 function ImportDataSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const hasActiveGame = useGameStore((s) => s.hasActiveGame);
   const setGameState = useGameStore((s) => s.setGameState);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
@@ -901,7 +902,7 @@ function ImportDataSection() {
         "Descargando y descomprimiendo datos desde OLMDBManager...",
     });
   const cacheSizeText = cacheInfo?.exists
-    ? `${(cacheInfo.size_bytes / 1_048_576).toFixed(1)} MB`
+    ? `${formatDecimal(cacheInfo.size_bytes / 1_048_576, 1, i18n.language)} MB`
     : null;
 
   return (

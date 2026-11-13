@@ -81,6 +81,19 @@ describe("gold advantage chart axis labels", () => {
     expect(axis.querySelectorAll("span")).toHaveLength(3);
   });
 
+  it("keeps the chart's gold figures and its minute mark in lower case, like the rows", () => {
+    renderChart();
+    const axis = screen.getByTestId("gold-axis");
+    expect(axis.className).not.toContain("uppercase");
+    expect(screen.getByTestId("gold-chart-start").className).toContain("normal-case");
+    const figures = screen.getAllByText(/^[+-]5,2k$/);
+    expect(figures.length).toBeGreaterThanOrEqual(4);
+    for (const figure of figures) {
+      const inAxis = axis.contains(figure);
+      expect(inAxis || figure.className.includes("normal-case"), figure.textContent ?? "").toBe(true);
+    }
+  });
+
   it("writes the axis values in the game's number format, like the gold in the rows", () => {
     renderChart();
     const axis = screen.getByTestId("gold-axis");

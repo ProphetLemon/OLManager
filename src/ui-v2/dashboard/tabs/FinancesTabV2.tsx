@@ -59,6 +59,7 @@ import {
 } from "@/ui-v2/components/ui/table";
 import { cn } from "@/ui-v2/lib/utils";
 import { activeCurrencySymbol, formatCurrencyAmount, formatNumber } from "@/lib/formatting/valueFormatting";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 interface FinancesTabV2Props {
   gameState: GameStateData;
@@ -116,7 +117,7 @@ const FACILITY_ICONS: Record<string, React.ReactNode> = {
 };
 
 export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: FinancesTabV2Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const annualSuffix = t("finances.perYearSuffix", "/yr");
   const monthlySuffix = t("finances.perMonthSuffix", "/mo");
   const ledgerKindLabel = (kind: FinancialTransactionKind): string =>
@@ -645,7 +646,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                               style={{ width: `${Math.min(100, (yearsRemaining / 5) * 100)}%` }}
                             />
                           </div>
-                          <span className="font-heading text-2xs tabular-nums text-muted-foreground">{yearsRemaining.toFixed(1)}y</span>
+                          <span className="font-heading text-2xs tabular-nums text-muted-foreground">{formatDecimal(yearsRemaining, 1, i18n.language)}y</span>
                         </div>
                       </div>
                       <Badge variant={riskLevel === "critical" ? "destructive" : "secondary"} className="text-2xs">

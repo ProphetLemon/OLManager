@@ -2,6 +2,7 @@ import { resolveUserLeague } from "@/lib/userLeague";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 import { compareStandingsByLolScore, GameStateData } from "@/store/gameStore";
 import { useGameStore } from "@/store/gameStore";
 import type { EndOfSeasonSummaryData } from "@/store/types";
@@ -37,7 +38,7 @@ function resolvePlayoffChampionTeamId(gameState: GameStateData): string | null {
 }
 
 export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeasonScreenProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const setShowFiredModal = useGameStore((s) => s.setShowFiredModal);
   const [loading, setLoading] = useState(false);
   // The summary lives in the store so it survives the game update (which makes the
@@ -257,7 +258,7 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
                       <span className="text-xs font-heading font-bold uppercase tracking-wider text-gray-400">{t('endOfSeason.playerOfYear')}</span>
                     </div>
                     <p className="text-sm font-heading font-bold text-gray-800 dark:text-gray-200">{summary.poty_player}</p>
-                    <p className="text-xs text-gray-500">{t('endOfSeason.avgRating', { rating: summary.poty_rating.toFixed(2) })}</p>
+                    <p className="text-xs text-gray-500">{t('endOfSeason.avgRating', { rating: formatDecimal(summary.poty_rating, 2, i18n.language) })}</p>
                   </CardBody>
                 </Card>
               )}

@@ -4,6 +4,7 @@ import { resolveChampionTile } from "@/lib/champions/championImages";
 import type { TopChampionMastery } from "@/lib/playerProfile/champions";
 import { cn } from "@/ui-v2/lib/utils";
 import { PlayerProfileSectionV2 } from "./PlayerProfileSectionV2";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 interface PlayerProfileChampionsCardV2Props {
   champions: TopChampionMastery[];
@@ -20,7 +21,7 @@ export default function PlayerProfileChampionsCardV2({
   champions,
   onViewChampion,
 }: PlayerProfileChampionsCardV2Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <PlayerProfileSectionV2 title={t("playerProfile.championPoolTitle")} className="min-h-[304px]">
@@ -55,7 +56,7 @@ export default function PlayerProfileChampionsCardV2({
                   {item.games > 0 ? (
                     <div className="flex flex-col items-end gap-0.5">
                       <span className={cn("font-heading text-lg font-black tabular-nums", tone.text)}>
-                        {item.wr.toFixed(1)}% {t("playerProfile.championWinRateShort")}
+                        {formatDecimal(item.wr, 1, i18n.language)}% {t("playerProfile.championWinRateShort")}
                       </span>
                       <div className="h-1 w-14 overflow-hidden rounded-full bg-white/15">
                         <div

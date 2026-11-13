@@ -12,7 +12,7 @@ import PlayerProfileTraitsCardV2 from "./PlayerProfileTraitsCardV2";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({ t: (key: string) => key, i18n: { language: "en" } }),
 }));
 
 const t = (key: string, options?: Record<string, string | number>) =>

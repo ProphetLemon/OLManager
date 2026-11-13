@@ -10,6 +10,7 @@ import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import type { DraftMatchResult, DraftTimelineEvent } from "@/ui-v2/_legacy/components/match/draftResultSimulator";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { Button } from "@/ui-v2/components/ui/button";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 import { cn } from "@/ui-v2/lib/utils";
 
 type Side = "blue" | "red";
@@ -492,11 +493,11 @@ export default function DraftResultScreenV2({
               <div className="mt-4 rounded-xl border border-white/10 bg-muted/20 p-3 shadow-inner shadow-black/30">
                 <div className="mb-2 flex items-center justify-between text-2xs font-heading font-bold uppercase tracking-wider">
                   <span className="text-muted-foreground">{blueTri}</span>
-                  <span className="text-muted-foreground">+{compactGold(maxAbsGold, i18n.language)}</span>
+                  <span className="normal-case text-muted-foreground">+{compactGold(maxAbsGold, i18n.language)}</span>
                 </div>
                 {/* The axis values are HTML, not SVG text: SVG text scales with the viewBox (about 9 px here), HTML keeps the token size. */}
                 <div className="flex gap-1">
-                  <div className="relative h-40 w-12 shrink-0 text-2xs font-heading font-bold uppercase tracking-wide text-muted-foreground" aria-hidden="true" data-testid="gold-axis">
+                  <div className="relative h-40 w-12 shrink-0 text-2xs font-heading font-bold tracking-wide text-muted-foreground" aria-hidden="true" data-testid="gold-axis">
                     {GOLD_CHART_AXIS_ROWS.map((row) => (
                       <span
                         key={row.key}
@@ -579,8 +580,8 @@ export default function DraftResultScreenV2({
                 </svg>
                 </div>
                 <div className="mt-1 flex items-center justify-between text-2xs font-heading font-bold uppercase tracking-wider">
-                  <span className="text-muted-foreground">0m</span>
-                  <span className="text-muted-foreground">-{compactGold(maxAbsGold, i18n.language)}</span>
+                  <span className="normal-case text-muted-foreground" data-testid="gold-chart-start">0m</span>
+                  <span className="normal-case text-muted-foreground">-{compactGold(maxAbsGold, i18n.language)}</span>
                   <span className="text-orange-400">{redTri}</span>
                 </div>
               </div>
@@ -690,10 +691,10 @@ export default function DraftResultScreenV2({
                         <span
                           className="text-sm font-bold text-club-text"
                           title={t("match.draftResult.columns.rating")}
-                          aria-label={`${t("match.draftResult.columns.rating")}: ${row.rating.toFixed(1)}`}
+                          aria-label={`${t("match.draftResult.columns.rating")}: ${formatDecimal(row.rating, 1, i18n.language)}`}
                           data-testid="row-rating"
                         >
-                          {row.rating.toFixed(1)}
+                          {formatDecimal(row.rating, 1, i18n.language)}
                         </span>
                       </div>
                     );
@@ -751,10 +752,10 @@ export default function DraftResultScreenV2({
                         <span
                           className="text-sm font-bold text-orange-400"
                           title={t("match.draftResult.columns.rating")}
-                          aria-label={`${t("match.draftResult.columns.rating")}: ${row.rating.toFixed(1)}`}
+                          aria-label={`${t("match.draftResult.columns.rating")}: ${formatDecimal(row.rating, 1, i18n.language)}`}
                           data-testid="row-rating"
                         >
-                          {row.rating.toFixed(1)}
+                          {formatDecimal(row.rating, 1, i18n.language)}
                         </span>
                       </div>
                     );

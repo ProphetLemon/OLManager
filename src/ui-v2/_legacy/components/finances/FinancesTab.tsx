@@ -29,6 +29,7 @@ import { getLolRoleForPlayer } from "@/ui-v2/_legacy/components/squad/SquadTab.h
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolveMessage } from "@/lib/i18n/backendI18n";
 import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 function getFacilityUpgradeCost(level: number): number {
   return level * 250_000;
@@ -89,7 +90,7 @@ export default function FinancesTab({
   onGameUpdate,
   onSelectPlayer,
 }: FinancesTabProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const annualSuffix = t("finances.perYearSuffix", "/yr");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [delegatedRenewalsSummary, setDelegatedRenewalsSummary] = useState<
@@ -555,9 +556,11 @@ export default function FinancesTab({
                           </p>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
                             {t("playerProfile.yearsRemaining")}:{" "}
-                            {getContractYearsRemaining(
-                              player.contract_end,
-                              gameState.clock.current_date,
+                            {formatDecimal(
+                              Number.parseFloat(getContractYearsRemaining(player.contract_end, gameState.clock.current_date)),
+                              1,
+                              i18n.language,
+                              "—",
                             )}
                           </p>
                           <div className="w-20 h-1 rounded-full bg-gray-200 dark:bg-navy-600 overflow-hidden mt-1">
