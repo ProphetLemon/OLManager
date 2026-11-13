@@ -498,8 +498,8 @@ pub(super) fn move_champions(runtime: &mut RuntimeState, dt: f64) {
 pub(super) const ENEMY_BUBBLE_DISTANCE: f64 = 0.031;
 /// The most one champion is pushed in one step, so a separation is a slide and not a jump.
 /// Passes of the separation in one step.
-const BUBBLE_PASSES: usize = 4;
-const BUBBLE_PUSH_MAX_STEP: f64 = 0.003;
+const BUBBLE_PASSES: usize = 2;
+const BUBBLE_PUSH_MAX_STEP: f64 = 0.006;
 
 /// Enemy champions do not stand inside each other: two that overlap slide apart, each by half
 /// of the overlap. A champion channeling a recall does not move; the other one slides the whole
