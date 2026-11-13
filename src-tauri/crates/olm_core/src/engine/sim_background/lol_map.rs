@@ -176,6 +176,11 @@ pub struct LolUnitState {
     /// `ASSIST_RADIUS` of the victim. Counter only, it pays no gold or XP.
     #[serde(default)]
     pub assists: u16,
+    /// Creep score, fractional while it accumulates (reported rounded). Fed by the
+    /// unit's share of the lane wave and, for a jungler, by camp clearing. Gold
+    /// never turns into CS and CS pays nothing.
+    #[serde(default)]
+    pub cs: f64,
     #[serde(default)]
     pub item_tier: u8,
     /// Short-term energy (0-100). Affects damage dealt and received in fights.
@@ -371,6 +376,7 @@ impl LolMapState {
                 gold_spent: 0.0,
                 damage_dealt: 0.0,
                 assists: 0,
+                cs: 0.0,
                 item_tier: 0,
                 condition: player.condition,
                 fight_skill: fight_skill(player),
@@ -404,6 +410,7 @@ impl LolMapState {
                 gold_spent: 0.0,
                 damage_dealt: 0.0,
                 assists: 0,
+                cs: 0.0,
                 item_tier: 0,
                 condition: player.condition,
                 fight_skill: fight_skill(player),
@@ -427,6 +434,7 @@ impl LiveMatchState {
 
         self.spawn_and_respawn(minute, rng, minute_events);
         self.tick_lane_waves(minute);
+        self.tick_jungle_farming(minute);
         self.tick_progression(minute);
         self.tick_movement(minute, rng);
         self.resolve_fights(minute, rng, minute_events);
@@ -581,8 +589,8 @@ impl LiveMatchState {
         }
     }
 
-    fn tick_movement<R: Rng>(&mut self, minute: u8, _rng: &mut R) {
-        let view = MapView {
+    fn map_view(&self) -> MapView {
+        MapView {
             dragon_alive: self.lol_map.objectives.dragon.alive,
             herald_alive: self.lol_map.objectives.herald.alive,
             baron_alive: self.lol_map.objectives.baron.alive,
@@ -592,7 +600,25 @@ impl LiveMatchState {
                 self.lol_map.blue.mid.front,
                 self.lol_map.blue.bot.front,
             ],
-        };
+        }
+    }
+
+    /// Junglers clear camps in the minutes they are not heading for an objective
+    /// pit. Counter only: no gold, XP, RNG or movement change.
+    fn tick_jungle_farming(&mut self, minute: u8) {
+        let view = self.map_view();
+        if jungle_objective(minute, &view).is_some() {
+            return;
+        }
+        for unit in &mut self.lol_map.units {
+            if unit.alive && unit.role == LolRole::Jungle && unit.task != LolTask::Recall {
+                unit.cs += JUNGLE_CLEAR_CS_PER_MINUTE;
+            }
+        }
+    }
+
+    fn tick_movement<R: Rng>(&mut self, minute: u8, _rng: &mut R) {
+        let view = self.map_view();
 
         for _ in 0..MOVE_SUBSTEPS {
             for unit in &mut self.lol_map.units {
@@ -1043,6 +1069,22 @@ fn lane_slot(lane: LaneKey) -> usize {
     }
 }
 
+/// The objective pit the jungler heads for this minute, if any; otherwise he farms
+/// camps and rotates between lanes.
+fn jungle_objective(minute: u8, view: &MapView) -> Option<&'static str> {
+    if minute >= 20 && view.baron_alive {
+        Some("baron")
+    } else if minute >= 14 && view.herald_alive {
+        Some("herald")
+    } else if view.grubs_alive {
+        Some("grubs")
+    } else if view.dragon_alive {
+        Some("dragon")
+    } else {
+        None
+    }
+}
+
 /// Where a unit wants to be this minute. Laners stand on their lane front;
 /// the jungler farms, then takes objectives, then rotates between lanes; the
 /// support stays with the bot lane until it rotates to an objective.
@@ -1062,14 +1104,8 @@ fn role_target(side: Side, role: LolRole, minute: u8, view: &MapView) -> (f64, f
             }
         }
         LolRole::Jungle => {
-            if minute >= 20 && view.baron_alive {
-                objective_anchor("baron")
-            } else if minute >= 14 && view.herald_alive {
-                objective_anchor("herald")
-            } else if view.grubs_alive {
-                objective_anchor("grubs")
-            } else if view.dragon_alive {
-                objective_anchor("dragon")
+            if let Some(objective) = jungle_objective(minute, view) {
+                objective_anchor(objective)
             } else if minute < 3 {
                 jungle_camp(side)
             } else {
@@ -1187,11 +1223,15 @@ fn lane_presence(units: &[LolUnitState], side: Side, lane: LaneKey, anchor: (f64
         .sum()
 }
 
-/// Distance from the victim within which a living ally of the killer shares
-/// the kill. Same value and rule as `ASSIST_RADIUS` in `sim_live.rs` (that
-/// constant is private to the watched-match engine), so unwatched matches record
-/// what a watched one would.
-const ASSIST_RADIUS: f64 = 0.11;
+/// Distance from the victim within which a living ally of the killer shares the
+/// kill. The rule is the one `sim_live.rs` uses (its `ASSIST_RADIUS` is 0.11 and
+/// private to that engine), but the radius is not: this engine resolves a whole
+/// minute at once, in which a unit walks about 0.3 map units and the lanes are
+/// 0.3-0.6 apart. At 0.11 only 0.31 assists are credited per kill (live: 1.08),
+/// because the allies who fought alongside have already drifted off by the time
+/// positions are sampled; 0.40 gives about 1.1 per kill, the live ratio.
+/// Fitted, not derived. [PLACEHOLDER]
+const ASSIST_RADIUS: f64 = 0.40;
 
 /// Indices of the units that get an assist for `killer` killing `victim`: every
 /// ally of the killer, other than the killer, alive in the fight snapshot and
@@ -1218,6 +1258,28 @@ fn assisting_allies(
         })
         .map(|(i, _)| i)
         .collect()
+}
+
+/// Wave gold that equals one creep in this model. The wave pool is a compressed
+/// stand-in for a lane (about 6-12 gold per minute per side), so this is a fitted
+/// constant, not a minion price (live: 23-31 gold). Fitted to the live CS/min.
+/// [PLACEHOLDER]
+const WAVE_GOLD_PER_CS: f64 = 1.38;
+
+/// Creeps a jungler clears per minute while he is farming rather than heading
+/// for an objective. Fitted to the live jungle CS/min. [PLACEHOLDER]
+const JUNGLE_CLEAR_CS_PER_MINUTE: f64 = 6.0;
+
+/// Role factor on the CS taken from a lane wave. The support leaves last hits to
+/// the carry (live: 0.39 CS/min). Fitted to the live figures. [PLACEHOLDER]
+fn lane_cs_factor(role: LolRole) -> f64 {
+    match role {
+        LolRole::Top => 1.0,
+        LolRole::Jungle => 1.25,
+        LolRole::Mid => 0.92,
+        LolRole::Adc => 1.06,
+        LolRole::Support => 0.08,
+    }
 }
 
 fn distribute_wave_income(
@@ -1254,6 +1316,7 @@ fn distribute_wave_income(
     let per_unit = gold_pool / idxs.len() as f64;
     for idx in idxs {
         let unit = &mut units[idx];
+        unit.cs += per_unit / WAVE_GOLD_PER_CS * lane_cs_factor(unit.role);
         credit_gold(unit, per_unit);
         unit.xp += per_unit * 0.9;
         sync_progress(unit);
@@ -1779,6 +1842,8 @@ fn distance(a: (f64, f64), b: (f64, f64)) -> f64 {
 
 #[cfg(test)]
 mod assist_tests;
+#[cfg(test)]
+mod cs_tests;
 #[cfg(test)]
 mod economy_unit_tests;
 

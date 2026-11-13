@@ -159,16 +159,34 @@ fn print_engine_economy_report() {
     );
 }
 
-/// Per-role averages of the minute-level engine, the table to set beside the live
-/// engine's (`sim_live::role_reference_tests`): creep score and assists are zero
-/// today because the engine does not record them.
-#[test]
-#[ignore = "measurement report; run with --ignored --nocapture"]
-fn print_background_role_reference() {
-    const MATCHES: u64 = 800;
+/// Live engine per-role averages over 420 full watched matches (T1,
+/// `sim_live::role_reference_tests`): CS per minute and assists per player, and
+/// assists per team kill.
+const LIVE_CS_PER_MIN: [(LolRole, f64); 5] = [
+    (LolRole::Top, 5.55),
+    (LolRole::Jungle, 5.55),
+    (LolRole::Mid, 5.97),
+    (LolRole::Adc, 4.07),
+    (LolRole::Support, 0.39),
+];
+const LIVE_ASSISTS_PER_KILL: f64 = 1.08;
+
+/// Same-seed batch used by the band test and the printed table: even 70 v 70.
+const REFERENCE_MATCHES: u64 = 800;
+
+struct RoleReference {
+    minutes: Vec<f64>,
+    kills: f64,
+    /// Per role: `[cs/min, assists, kills, deaths, cs/match]`, averaged over both teams.
+    per_role: HashMap<LolRole, [f64; 5]>,
+    /// Assists credited per kill, over both teams.
+    assists_per_kill: f64,
+}
+
+fn run_role_reference(matches: u64) -> RoleReference {
     let mut totals: HashMap<LolRole, [f64; 5]> = HashMap::new();
-    let (mut minutes, mut kills) = (Vec::new(), 0.0);
-    for seed in 0..MATCHES {
+    let (mut minutes, mut kills, mut assists) = (Vec::new(), 0.0, 0.0);
+    for seed in 0..matches {
         let mut rng = StdRng::seed_from_u64(0x0EC0 + seed);
         let state = LiveMatchState::new(
             team("home", 70),
@@ -191,31 +209,79 @@ fn print_background_role_reference() {
                 entry[2] += f64::from(stats.kills);
                 entry[3] += f64::from(stats.deaths);
                 entry[4] += f64::from(stats.creep_score);
+                assists += f64::from(stats.assists);
             }
         }
     }
-    minutes.sort_by(f64::total_cmp);
-    let n = MATCHES as f64;
+    let per = 2.0 * matches as f64;
+    for values in totals.values_mut() {
+        values.iter_mut().for_each(|v| *v /= per);
+    }
+    RoleReference {
+        minutes,
+        kills: kills / matches as f64,
+        per_role: totals,
+        assists_per_kill: assists / kills.max(1.0),
+    }
+}
+
+/// Per-role averages of the minute-level engine, the table to set beside the live
+/// engine's (`sim_live::role_reference_tests`).
+#[test]
+#[ignore = "measurement report; run with --ignored --nocapture"]
+fn print_background_role_reference() {
+    let mut reference = run_role_reference(REFERENCE_MATCHES);
+    reference.minutes.sort_by(f64::total_cmp);
+    let minutes = &reference.minutes;
     println!(
-        "== background engine, even 70 v 70: {MATCHES} matches, duration mean {:.2} min (p10 {:.1} p50 {:.1} p90 {:.1}), kills per match {:.2}",
-        minutes.iter().sum::<f64>() / n,
+        "== background engine, even 70 v 70: {REFERENCE_MATCHES} matches, duration mean {:.2} min (p10 {:.1} p50 {:.1} p90 {:.1}), kills per match {:.2}, assists per kill {:.2}",
+        minutes.iter().sum::<f64>() / minutes.len() as f64,
         minutes[(minutes.len() - 1) / 10],
         minutes[(minutes.len() - 1) / 2],
         minutes[(minutes.len() - 1) * 9 / 10],
-        kills / n
+        reference.kills,
+        reference.assists_per_kill
     );
     println!("role   cs/min  cs/match  assists  kills  deaths");
     for role in ROLES {
-        let t = totals[&role];
-        let per = 2.0 * n;
+        let t = reference.per_role[&role];
         println!(
             "{:<8} {:>5.2} {:>9.1} {:>8.2} {:>6.2} {:>7.2}",
             format!("{role:?}"),
-            t[0] / per,
-            t[4] / per,
-            t[1] / per,
-            t[2] / per,
-            t[3] / per
+            t[0],
+            t[4],
+            t[1],
+            t[2],
+            t[3]
         );
     }
+}
+
+/// CS band (owner-delegated): each role within 10% of the live CS/min or 0.3,
+/// whichever is larger; the support within 0.15. Team assists per kill between
+/// 0.8 and 1.4 (live 1.08). Per-role assists are reported, not gated.
+fn cs_band(role: LolRole, live: f64) -> f64 {
+    if role == LolRole::Support {
+        0.15
+    } else {
+        (live * 0.10).max(0.3)
+    }
+}
+
+#[test]
+fn background_cs_and_assists_stay_within_the_live_bands() {
+    let reference = run_role_reference(REFERENCE_MATCHES);
+    for (role, live) in LIVE_CS_PER_MIN {
+        let cs = reference.per_role[&role][0];
+        let band = cs_band(role, live);
+        assert!(
+            (cs - live).abs() <= band,
+            "{role:?} CS/min {cs:.2} is outside live {live:.2} +/- {band:.2}"
+        );
+    }
+    assert!(
+        (0.8..=1.4).contains(&reference.assists_per_kill),
+        "assists per kill {:.2} is outside 0.8..1.4 (live {LIVE_ASSISTS_PER_KILL})",
+        reference.assists_per_kill
+    );
 }

@@ -6,6 +6,7 @@
 //! five-player roster plus two same-role substitutes (a Top and a Mid).
 
 use chrono::{Duration, TimeZone, Utc};
+use olm_core::ai_rotation::REST_BELOW;
 use olm_core::clock::GameClock;
 use olm_core::domain::league::{Fixture, FixtureStatus, League};
 use olm_core::domain::manager::Manager;
@@ -233,9 +234,13 @@ fn rivals_with_a_deep_bench_stay_fresh_and_keep_valid_lineups() {
         outcome.overall,
         outcome.final_week
     );
+    // Starters are only rested below `REST_BELOW`. Real assists and CS (background
+    // matches record them) keep mental resilience from decaying, so starters may
+    // never get that tired: require the rest only when somebody did.
     assert!(
-        outcome.substitute_starts > 0,
-        "tired starters should have been rested for their substitutes"
+        outcome.substitute_starts > 0 || outcome.lowest >= REST_BELOW,
+        "starters fell to {} condition but no substitute was started",
+        outcome.lowest
     );
     assert_valid_lineups(&outcome.game);
 }
