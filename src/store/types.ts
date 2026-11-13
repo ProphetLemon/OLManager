@@ -622,6 +622,8 @@ export interface MessageData {
   losses: number;
   trophies: number;
   best_finish: number | null;
+  /** Splits of a season already in the totals above; the backend uses it to count each split once. */
+  counted_through?: { season: number; splits: number } | null;
 }
 
 export interface ManagerCareerEntry {

@@ -643,3 +643,61 @@ fn career_totals_keep_every_split_of_a_three_split_season() {
         "career history entry of the club after the season wrap"
     );
 }
+
+/// Sets the user's club on top of the running `lec` table, or last in it.
+fn set_user_table_position(game: &mut Game, first: bool) {
+    let lec = game
+        .leagues
+        .iter_mut()
+        .find(|l| l.id == "lec")
+        .expect("lec league");
+    for row in &mut lec.standings {
+        row.points = match (row.team_id == "lec1", first) {
+            (true, true) => 9,
+            (true, false) => 0,
+            (false, true) => 0,
+            (false, false) => 3,
+        };
+    }
+}
+
+fn two_split_game() -> Game {
+    let mut game = two_league_game(4, 4, "lec");
+    game.competition_configs = ["lec", "reg"]
+        .into_iter()
+        .map(|id| (id.to_string(), manifest(id, &["Winter", "Spring"], None)))
+        .collect();
+    game
+}
+
+#[test]
+fn a_title_in_the_first_split_counts_when_the_second_split_ends_lower() {
+    let mut game = two_split_game();
+
+    play_split(&mut game, 5, 2);
+    set_user_table_position(&mut game, true);
+    advance_season(&mut game);
+    play_split(&mut game, 1, 6);
+    set_user_table_position(&mut game, false);
+    advance_season(&mut game);
+
+    let career = &game.manager.career_stats;
+    assert_eq!(career.trophies, 1, "trophies of the season");
+    assert_eq!(career.best_finish, Some(1), "best finish of the season");
+}
+
+#[test]
+fn a_title_in_the_last_split_counts_after_a_lower_first_split() {
+    let mut game = two_split_game();
+
+    play_split(&mut game, 3, 4);
+    set_user_table_position(&mut game, false);
+    advance_season(&mut game);
+    play_split(&mut game, 4, 3);
+    set_user_table_position(&mut game, true);
+    advance_season(&mut game);
+
+    let career = &game.manager.career_stats;
+    assert_eq!(career.trophies, 1);
+    assert_eq!(career.best_finish, Some(1));
+}
