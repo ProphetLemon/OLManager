@@ -137,6 +137,9 @@ struct ContactStats {
     base_freezes: u32,
     /// The longest such episode, in seconds.
     longest_base_freeze: f64,
+    /// The stuck recalls by how near the closest living enemy stood when the episode reached the
+    /// limit and whether the recaller stood still.
+    stuck_recall_kinds: BTreeMap<String, u32>,
     /// The first few stuck-state episodes of the match, for the examples.
     stuck_examples: Vec<String>,
 }
@@ -272,6 +275,15 @@ impl ContactObserver {
                     if !entry.counted {
                         entry.counted = true;
                         self.stats.stuck_recalls += 1;
+                        let nearest = state
+                            .champions
+                            .iter()
+                            .filter(|e| e.alive && normalized_team(&e.team) != normalized_team(&champion.team))
+                            .map(|e| dist(e.pos, champion.pos))
+                            .fold(f64::INFINITY, f64::min);
+                        let band = if nearest <= 0.085 { "enemy<=0.085" } else if nearest <= 0.2 { "enemy<=0.2" } else { "no enemy near" };
+                        let moving = if entry.still_secs >= STUCK_LIMIT_SEC { "still" } else { "walking" };
+                        *self.stats.stuck_recall_kinds.entry(format!("{band} {moving}")).or_default() += 1;
                         if self.stats.stuck_examples.len() < STUCK_EXAMPLES_PER_MATCH {
                             self.stats.stuck_examples.push(format!(
                                 "stuck recall {name} from t={:.0} at {:.2},{:.2}",
@@ -842,6 +854,7 @@ fn replay_captured_start() {
         total(&|c| f64::from(c.base_freezes)) / matches,
         played.iter().map(|p| p.contact.longest_base_freeze).fold(0.0, f64::max),
     );
+    println!("stuck recalls by kind: {}", tally(&|c| &c.stuck_recall_kinds));
     for p in played.iter().filter(|p| !p.contact.stuck_examples.is_empty()).take(6) {
         println!("stuck examples seed {}: {}", p.seed, p.contact.stuck_examples.join("; "));
     }
