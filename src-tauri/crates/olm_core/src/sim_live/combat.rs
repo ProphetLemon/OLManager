@@ -1624,6 +1624,15 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
         };
 
         if dist(attacker_snapshot.pos, target_pos) > attack_range {
+            // A pusher walking his plan does not turn after a minion he cannot hit: the chase
+            // and the plan took the path in turns every step, and a wall between them left him
+            // shuffling near his own base (the replay found freezes of 60 to 160 seconds).
+            if matches!(target, CombatTarget::Minion(_))
+                && attacker_snapshot.state == "objective"
+                && team_push::plays_plan(&attacker_snapshot)
+            {
+                continue;
+            }
             if let CombatTarget::Champion(enemy_idx) = &target {
                 let target_snapshot = runtime.champions[*enemy_idx].clone();
                 // Defending the base and stopping a recall are not laning: the trade rules do not apply.

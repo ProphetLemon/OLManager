@@ -1,6 +1,9 @@
-//! The stuck states the replay found: a recaller that never channels.
+//! The two stuck states the replay found: a recaller that never channels, and a pusher that
+//! shuffles near his own base because an enemy minion out of reach keeps redirecting his walk.
 
-use super::test_helpers::test_champion;
+use super::combat::{pick_combat_target, resolve_champion_combat};
+use super::team_push::PushOrder;
+use super::test_helpers::{empty_neutral, test_champion, test_minion, test_runtime, test_structure};
 use super::*;
 
 const NOW: f64 = LANE_COMBAT_UNLOCK_AT + 900.0;
@@ -23,4 +26,54 @@ fn a_recaller_that_stopped_short_of_a_drifted_anchor_starts_to_channel() {
         jungler.recall_channel_until > NOW,
         "the recaller stood 0.015 from the anchor with no walk and no channel"
     );
+}
+
+/// A blue pusher at `at`, walking to `stand` on the plan of the team, with a red minion `gap`
+/// away to the east that he can see but not reach.
+fn pusher_with_minion_out_of_reach(gap: f64) -> (RuntimeState, Vec2) {
+    let at = Vec2 { x: 0.30, y: 0.62 };
+    let stand = Vec2 { x: 0.20, y: 0.75 };
+    let mut pusher = test_champion("blue-TOP", "blue", "TOP", "top", at);
+    pusher.state = "objective".to_string();
+    pusher.has_left_base_once = true;
+    pusher.push = Some(PushOrder {
+        structure_id: "red-test-tower".to_string(),
+        structure_pos: Vec2 { x: 0.80, y: 0.20 },
+        dive: false,
+        rally: None,
+    });
+    pusher.target_path = vec![stand];
+    let minion = test_minion("red-minion", "red", "top", Vec2 { x: at.x + gap, y: at.y });
+    let tower = test_structure("red-test-tower", "red", "top", Vec2 { x: 0.80, y: 0.20 });
+    let mut runtime = test_runtime(vec![pusher], vec![minion], vec![tower], empty_neutral());
+    runtime.time_sec = NOW;
+    (runtime, stand)
+}
+
+#[test]
+fn a_pusher_does_not_walk_off_his_plan_after_a_minion_out_of_reach() {
+    let (mut runtime, stand) = pusher_with_minion_out_of_reach(0.09);
+    let neutral = empty_neutral();
+    assert!(
+        matches!(pick_combat_target(&runtime, 0, NOW, &neutral), Some(CombatTarget::Minion(_))),
+        "the scenario needs the minion to be his combat target"
+    );
+
+    resolve_champion_combat(&mut runtime);
+
+    let path = &runtime.champions[0].target_path;
+    assert!(
+        path.len() == 1 && dist(path[0], stand) < 1e-9,
+        "the minion out of reach redirected the pusher's walk to {path:?}"
+    );
+}
+
+#[test]
+fn a_pusher_still_hits_a_minion_in_reach() {
+    let (mut runtime, _) = pusher_with_minion_out_of_reach(0.03);
+    let hp_before = runtime.minions[0].hp;
+
+    resolve_champion_combat(&mut runtime);
+
+    assert!(runtime.minions[0].hp < hp_before, "the pusher did not hit the minion in reach");
 }
