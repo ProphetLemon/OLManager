@@ -26,6 +26,11 @@ const ENDING_OUTNUMBERED_BY: usize = 1;
 const ENDING_GROUP: usize = 4;
 /// Distance from the enemy nexus of the rally point.
 const ENDING_RALLY_DISTANCE: f64 = 0.30;
+/// Seconds of the pushers' damage on an open nexus under which they finish it whatever the
+/// numbers: a nexus a few hits from falling is not left alone because the team is short or the
+/// group is not together. [PLACEHOLDER] The replay found matches lost with an enemy nexus at
+/// 388 and 565 health for a minute and a half while the defenders were away.
+const FINISH_WITHIN_SEC: f64 = 20.0;
 /// Radius around the rally point that counts as gathered.
 const ENDING_RALLY_RADIUS: f64 = 0.12;
 /// A champion this near the nexus is already in; he counts as gathered.
@@ -168,10 +173,6 @@ fn evaluate(runtime: &RuntimeState, team: &str, previous: &TeamPush) -> TeamPush
     let ending = open_nexus.is_some()
         && ours >= ENDING_MIN_CHAMPIONS
         && ours + ENDING_OUTNUMBERED_BY >= theirs;
-    if !numbers_edge && !holds_buff && !ending {
-        return keep_totals(previous);
-    }
-
     let pushers: Vec<&ChampionRuntime> = runtime
         .champions
         .iter()
@@ -182,12 +183,18 @@ fn evaluate(runtime: &RuntimeState, team: &str, previous: &TeamPush) -> TeamPush
                 && health_ratio(c) >= PUSH_MIN_HP_RATIO
         })
         .collect();
+    let finishing = open_nexus.is_some_and(|nexus| can_finish_nexus(runtime, nexus, &pushers));
+    if !numbers_edge && !holds_buff && !ending && !finishing {
+        return keep_totals(previous);
+    }
     if pushers.is_empty() {
         return keep_totals(previous);
     }
 
-    if let Some(nexus) = open_nexus.filter(|_| ending && pushers.len() >= ENDING_MIN_CHAMPIONS) {
-        return ending_plan(runtime, team, &pushers, previous, nexus, numbers_edge);
+    if let Some(nexus) =
+        open_nexus.filter(|_| finishing || (ending && pushers.len() >= ENDING_MIN_CHAMPIONS))
+    {
+        return ending_plan(runtime, team, &pushers, previous, nexus, numbers_edge, finishing);
     }
 
     let window_ends_at = if numbers_edge {
@@ -212,6 +219,29 @@ fn evaluate(runtime: &RuntimeState, team: &str, previous: &TeamPush) -> TeamPush
     }
 }
 
+/// Structure damage per second of `pushers`, at least 1 so that a division by it is safe.
+fn structure_damage_per_sec(pushers: &[&ChampionRuntime]) -> f64 {
+    pushers
+        .iter()
+        .map(|c| c.attack_damage * champion_structure_focus_multiplier(c) / STRUCTURE_ATTACK_CADENCE_SEC)
+        .sum::<f64>()
+        .max(1.0)
+}
+
+/// Whether `pushers` can bring the open `nexus` down within `FINISH_WITHIN_SEC` and no enemy
+/// champion stands at it to stop them.
+fn can_finish_nexus(runtime: &RuntimeState, nexus: &StructureRuntime, pushers: &[&ChampionRuntime]) -> bool {
+    if pushers.is_empty() {
+        return false;
+    }
+    let guarded = runtime.champions.iter().any(|enemy| {
+        enemy.alive
+            && normalized_team(&enemy.team) == normalized_team(&nexus.team)
+            && dist(enemy.pos, nexus.pos) <= ENDING_ENGAGED_RADIUS
+    });
+    !guarded && nexus.hp.max(0.0) / structure_damage_per_sec(pushers) <= FINISH_WITHIN_SEC
+}
+
 /// Where the team gathers before it goes in: on the line to its own base, out of reach of
 /// whoever defends the enemy fountain.
 fn rally_point(nexus: &StructureRuntime, team: &str) -> Vec2 {
@@ -224,7 +254,8 @@ fn rally_point(nexus: &StructureRuntime, team: &str) -> Vec2 {
 }
 
 /// The ending: the enemy nexus is the target. The champions gather at the rally point first,
-/// so that the defenders of the fountain meet the team and not one champion at a time.
+/// so that the defenders of the fountain meet the team and not one champion at a time. A team
+/// that is `finishing` a nexus nobody guards does not gather: it goes straight to it.
 fn ending_plan(
     runtime: &RuntimeState,
     team: &str,
@@ -232,6 +263,7 @@ fn ending_plan(
     previous: &TeamPush,
     nexus: &StructureRuntime,
     numbers_edge: bool,
+    finishing: bool,
 ) -> TeamPush {
     let now = runtime.time_sec;
     let rally = rally_point(nexus, team);
@@ -239,9 +271,17 @@ fn ending_plan(
         .iter()
         .filter(|c| dist(c.pos, rally) <= ENDING_RALLY_RADIUS || dist(c.pos, nexus.pos) <= ENDING_ENGAGED_RADIUS)
         .count();
-    let need = ENDING_GROUP.min(pushers.len());
+    // Teammates who are alive but recalling or hurt are on their way back: the group waits for
+    // them (up to `ENDING_GATHER_SEC`) instead of going in with the healthy ones alone.
+    let alive = runtime
+        .champions
+        .iter()
+        .filter(|c| c.alive && normalized_team(&c.team) == normalized_team(team))
+        .count();
+    let need = ENDING_GROUP.min(alive);
     let rally_since = if previous.ending { previous.rally_since } else { now };
-    let assembled = (previous.ending && previous.assembled)
+    let assembled = finishing
+        || (previous.ending && previous.assembled)
         || near >= need
         || (near >= ENDING_MIN_CHAMPIONS && now - rally_since > ENDING_GATHER_SEC);
     TeamPush {
@@ -281,11 +321,7 @@ fn pick_target(
         y: pushers.iter().map(|c| c.pos.y).sum::<f64>() / count,
     };
     let speed = (pushers.iter().map(|c| c.move_speed).sum::<f64>() / count).max(0.01);
-    let damage_per_sec = pushers
-        .iter()
-        .map(|c| c.attack_damage * champion_structure_focus_multiplier(c) / STRUCTURE_ATTACK_CADENCE_SEC)
-        .sum::<f64>()
-        .max(1.0);
+    let damage_per_sec = structure_damage_per_sec(pushers);
 
     runtime
         .structures
