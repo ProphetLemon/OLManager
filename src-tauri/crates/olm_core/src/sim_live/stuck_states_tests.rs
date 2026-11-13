@@ -77,3 +77,52 @@ fn a_pusher_still_hits_a_minion_in_reach() {
 
     assert!(runtime.minions[0].hp < hp_before, "the pusher did not hit the minion in reach");
 }
+
+/// The champions of a recall in which a red champion stands `gap` east of the blue recaller: near
+/// enough to stop the channel (0.085) and not hitting.
+fn with_enemy_near(recaller: &ChampionRuntime, gap: f64) -> Vec<ChampionRuntime> {
+    let enemy = test_champion(
+        "red-ADC",
+        "red",
+        "ADC",
+        "bot",
+        Vec2 { x: recaller.pos.x + gap, y: recaller.pos.y },
+    );
+    vec![recaller.clone(), enemy]
+}
+
+fn recaller_at_his_anchor() -> ChampionRuntime {
+    let spot = Vec2 { x: 0.30, y: 0.62 };
+    let mut recaller = test_champion("blue-ADC", "blue", "ADC", "bot", spot);
+    recaller.state = "recall".to_string();
+    recaller.recall_anchor = Some(spot);
+    recaller
+}
+
+#[test]
+fn a_recaller_with_an_enemy_too_near_waits_before_he_channels() {
+    let mut recaller = recaller_at_his_anchor();
+    let team = with_enemy_near(&recaller, 0.05);
+
+    tick_recall(&mut recaller, NOW, &team, &[], &[], &mut Vec::new());
+
+    assert!(recaller.recall_channel_until <= NOW, "he channelled with the enemy at 0.05");
+}
+
+#[test]
+fn a_recaller_with_an_enemy_too_near_channels_after_the_patience() {
+    let mut recaller = recaller_at_his_anchor();
+    let team = with_enemy_near(&recaller, 0.05);
+    tick_recall(&mut recaller, NOW, &team, &[], &[], &mut Vec::new());
+    // He walked to the fallback anchor and the enemy stayed beside him.
+    let later = NOW + RECALL_BLOCKED_PATIENCE_SEC + 0.6;
+    recaller.pos = recaller.recall_anchor.expect("the walk has an anchor");
+    let team = with_enemy_near(&recaller, 0.05);
+
+    tick_recall(&mut recaller, later, &team, &[], &[], &mut Vec::new());
+
+    assert!(
+        recaller.recall_channel_until > later,
+        "the recaller stayed in the recall state with no channel after the patience"
+    );
+}
