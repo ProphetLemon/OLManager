@@ -310,6 +310,10 @@
 .arena-tag-probe {
   top: 0;
   left: 0;
+  /* The border of a tag takes its colour from --team-color, which only a marker defines. Outside
+     one the whole `border` shorthand is invalid and the probe loses its 1px border: 2px narrower
+     and shorter than the tag it stands for, so the solver and the guard sized every tag short. */
+  --team-color: transparent;
 }
 
 .arena-tag-probe [data-text]::before {
