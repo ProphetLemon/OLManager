@@ -51,6 +51,9 @@ const GAME_LIMIT_SEC: f64 = 75.0 * 60.0;
 /// Display order of the roles; roles the engine reports that are not listed come last.
 const ROLE_ORDER: [&str; 5] = ["TOP", "JGL", "MID", "ADC", "SUP"];
 
+/// Centre distance under which two champions count as overlapped.
+const OVERLAP_DISTANCE: f64 = 0.03;
+
 fn env_or<T: std::str::FromStr>(name: &str, default: T) -> T {
     std::env::var(name)
         .ok()
@@ -86,6 +89,8 @@ struct ContactStats {
     /// Episodes of two enemy champions alive within attack range of each other for
     /// `IDLE_LIMIT_SEC` or more with no damage between them, outside the fountain.
     idle_contacts: u32,
+    /// The idle contacts whose centres were within `OVERLAP_DISTANCE`: about one bubble.
+    overlapped_idle_contacts: u32,
     /// Seconds spent in those episodes, from the moment each one reached the limit.
     idle_secs: f64,
     /// Recalls that completed.
@@ -224,6 +229,7 @@ impl ContactObserver {
                         self.stats.idle_contacts += 1;
                         self.stats.idle_secs += entry.0;
                         let d = dist(ca.pos, cb.pos);
+                        self.stats.overlapped_idle_contacts += u32::from(d <= OVERLAP_DISTANCE);
                         let bucket = if d <= 0.02 { "d<=0.02" } else if d <= 0.04 { "d<=0.04" } else { "d>0.04" };
                         let mut states = [ca.state.as_str(), cb.state.as_str()];
                         states.sort_unstable();
@@ -655,6 +661,11 @@ fn replay_captured_start() {
         total(&|c| f64::from(c.idle_contacts)),
         total(&|c| f64::from(c.idle_contacts)) / matches,
         total(&|c| c.idle_secs),
+    );
+    println!(
+        "overlapped idle contacts {} ({:.2} per match)",
+        total(&|c| f64::from(c.overlapped_idle_contacts)),
+        total(&|c| f64::from(c.overlapped_idle_contacts)) / matches,
     );
     let mut kinds: BTreeMap<&str, u32> = BTreeMap::new();
     for p in &played {
