@@ -4508,6 +4508,21 @@
     "match": {
       "map": {
         "label": "Carte de la partie. Base bleue en bas à gauche, base rouge en haut à droite."
+      },
+      "state": {
+        "dead": "Mort {{seconds}}s",
+        "recall": "Rappel {{seconds}}s",
+        "fighting": "Au combat",
+        "objective": "Objectif"
+      },
+      "badge": {
+        "recall": "Rap {{seconds}}",
+        "fighting": "Duel",
+        "objective": "Obj."
+      },
+      "legend": {
+        "ringRecall": "Anneau qui se vide : rappel, avec les secondes restantes",
+        "ringDead": "Contour en pointillés avec un nombre : mort, secondes avant la réapparition"
       }
     }
   },

@@ -4542,6 +4542,21 @@
     "match": {
       "map": {
         "label": "Match map. Blue base at the bottom left, red base at the top right."
+      },
+      "state": {
+        "dead": "Dead {{seconds}}s",
+        "recall": "Recall {{seconds}}s",
+        "fighting": "Fighting",
+        "objective": "Objective"
+      },
+      "badge": {
+        "recall": "R {{seconds}}",
+        "fighting": "Fight",
+        "objective": "Obj"
+      },
+      "legend": {
+        "ringRecall": "Ring that drains: recall, with the seconds left",
+        "ringDead": "Dashed outline with a number: dead, seconds until respawn"
       }
     }
   },

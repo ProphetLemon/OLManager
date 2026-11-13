@@ -4507,6 +4507,21 @@
     "match": {
       "map": {
         "label": "Mapa da partida. Base azul em baixo à esquerda, base vermelha em cima à direita."
+      },
+      "state": {
+        "dead": "Morto {{seconds}}s",
+        "recall": "Regresso {{seconds}}s",
+        "fighting": "A lutar",
+        "objective": "Objetivo"
+      },
+      "badge": {
+        "recall": "Reg {{seconds}}",
+        "fighting": "Luta",
+        "objective": "Obj."
+      },
+      "legend": {
+        "ringRecall": "Anel que se esvazia: regresso à base, com os segundos que faltam",
+        "ringDead": "Contorno tracejado com um número: morto, segundos até renascer"
       }
     }
   },

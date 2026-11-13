@@ -4508,6 +4508,21 @@
     "match": {
       "map": {
         "label": "Maç haritası. Mavi üs sol altta, kırmızı üs sağ üstte."
+      },
+      "state": {
+        "dead": "Ölü {{seconds}}sn",
+        "recall": "Geri dönüş {{seconds}}sn",
+        "fighting": "Çatışıyor",
+        "objective": "Hedef"
+      },
+      "badge": {
+        "recall": "GD {{seconds}}",
+        "fighting": "Savaş",
+        "objective": "Hdf"
+      },
+      "legend": {
+        "ringRecall": "Boşalan halka: geri dönüş, kalan saniyeyle birlikte",
+        "ringDead": "Noktalı çerçeve ve bir sayı: ölü, yeniden doğmaya kalan saniye"
       }
     }
   },

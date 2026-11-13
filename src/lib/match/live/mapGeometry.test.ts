@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  BUBBLE_MAX_PX,
+  BUBBLE_MIN_PX,
   CAMP_POINTS,
   LANES,
   LANE_HALF_WIDTH_UNITS,
@@ -8,6 +10,7 @@ import {
   STRUCTURE_SHAPE,
   TEAM_MARKER_SHAPE,
   anchorTransform,
+  bubbleDiameterPx,
   distanceToPolyline,
   fromPx,
   isInBase,
@@ -128,5 +131,20 @@ describe("marker shapes", () => {
   it("grows from tower to inhibitor to nexus", () => {
     expect(STRUCTURE_SHAPE.tower.blue.sizeUnits).toBeLessThan(STRUCTURE_SHAPE.inhib.blue.sizeUnits);
     expect(STRUCTURE_SHAPE.inhib.blue.sizeUnits).toBeLessThan(STRUCTURE_SHAPE.nexus.blue.sizeUnits);
+  });
+});
+
+describe("bubbleDiameterPx", () => {
+  it("never drops below the 24 px touch target, even on the smallest map", () => {
+    expect(BUBBLE_MIN_PX).toBe(24);
+    expect(bubbleDiameterPx(320)).toBe(24);
+    expect(bubbleDiameterPx(0)).toBe(24);
+  });
+
+  it("grows with the map in between and stops at 38 px", () => {
+    expect(bubbleDiameterPx(540)).toBeCloseTo(25.92, 2);
+    expect(bubbleDiameterPx(660)).toBeCloseTo(31.68, 2);
+    expect(BUBBLE_MAX_PX).toBe(38);
+    expect(bubbleDiameterPx(1000)).toBe(38);
   });
 });

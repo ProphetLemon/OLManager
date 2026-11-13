@@ -68,6 +68,12 @@ describe("onAir i18n keys", () => {
       "onAir.calls.consequence.generic",
       "onAir.squad.importLimit",
       "onAir.match.map.label",
+      "onAir.match.state.dead",
+      "onAir.match.state.recall",
+      "onAir.match.badge.recall",
+      "onAir.match.badge.fighting",
+      "onAir.match.legend.ringRecall",
+      "onAir.match.legend.ringDead",
       "dashboard.sectionMarket",
     ]) {
       expect(REQUIRED.has(key), key).toBe(true);

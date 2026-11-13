@@ -4507,6 +4507,21 @@
     "match": {
       "map": {
         "label": "Mapa de la partida. Base azul abajo a la izquierda, base roja arriba a la derecha."
+      },
+      "state": {
+        "dead": "Caído {{seconds}}s",
+        "recall": "Regreso {{seconds}}s",
+        "fighting": "Peleando",
+        "objective": "Objetivo"
+      },
+      "badge": {
+        "recall": "Reg {{seconds}}",
+        "fighting": "Pelea",
+        "objective": "Obj."
+      },
+      "legend": {
+        "ringRecall": "Anillo que se vacía: regreso a base, con los segundos que faltan",
+        "ringDead": "Contorno discontinuo con un número: caído, segundos para reaparecer"
       }
     }
   },

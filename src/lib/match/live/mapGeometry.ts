@@ -153,6 +153,18 @@ export function anchorTransform(pos: MapPoint, sizePx: number): string {
   return `translate(${x}px, ${y}px)`;
 }
 
+// ── Champion bubble ─────────────────────────────────────────────────────
+
+/** The bubble is this share of the map, never below 24 px (WCAG 2.5.8 target size) or above 38 px. */
+export const BUBBLE_MAP_FRACTION = 0.048;
+export const BUBBLE_MIN_PX = 24;
+export const BUBBLE_MAX_PX = 38;
+
+/** Side of a champion bubble in pixels for a map `sizePx` wide. One answer for the CSS box and the link maths. */
+export function bubbleDiameterPx(sizePx: number): number {
+  return Math.min(BUBBLE_MAX_PX, Math.max(BUBBLE_MIN_PX, sizePx * BUBBLE_MAP_FRACTION));
+}
+
 // ── Hit tests ───────────────────────────────────────────────────────────
 
 function distanceToSegment(p: MapPoint, a: MapPoint, b: MapPoint): number {

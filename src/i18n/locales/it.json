@@ -4507,6 +4507,21 @@
     "match": {
       "map": {
         "label": "Mappa della partita. Base blu in basso a sinistra, base rossa in alto a destra."
+      },
+      "state": {
+        "dead": "Morto {{seconds}}s",
+        "recall": "Richiamo {{seconds}}s",
+        "fighting": "In scontro",
+        "objective": "Obiettivo"
+      },
+      "badge": {
+        "recall": "Ric {{seconds}}",
+        "fighting": "Scontro",
+        "objective": "Obiett."
+      },
+      "legend": {
+        "ringRecall": "Anello che si svuota: richiamo, con i secondi rimasti",
+        "ringDead": "Contorno tratteggiato con un numero: morto, secondi alla rinascita"
       }
     }
   },
