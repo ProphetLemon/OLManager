@@ -7,3 +7,12 @@ export function formatCountdown(seconds: number): string {
   const minutes = Math.floor(whole / 60);
   return `${minutes}:${String(whole % 60).padStart(2, "0")}`;
 }
+
+/**
+ * "m:ss" of the game clock, rounded down: the clock never runs ahead of the game, and a
+ * negative or non-finite value reads as 0:00. Minutes are not capped, so a long game keeps counting.
+ */
+export function formatClock(seconds: number): string {
+  const whole = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+}

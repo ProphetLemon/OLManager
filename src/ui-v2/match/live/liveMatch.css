@@ -718,3 +718,1047 @@
     transition: none;
   }
 }
+
+/* ── Score bar ───────────────────────────────────────────────────────────
+   Static markup around one moving part, the clock, which a script rewrites about ten times
+   a second. Blue is round and red is a rounded square, as on the map; the status chip
+   differs by glyph, outline and text. The buff slot always takes its space, so a buff
+   starting or ending never reflows the bar. */
+
+.arena-bar {
+  container-type: inline-size;
+  container-name: bar;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  min-height: 3.5rem;
+  padding: 0.25rem 0.875rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--rail);
+  color: var(--foreground);
+}
+
+.arena-bar-side {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.arena-bar-side[data-team="red"] {
+  flex-direction: row-reverse;
+}
+
+.arena-bar-side[data-team="blue"] {
+  --team-color: var(--team-blue);
+}
+
+.arena-bar-side[data-team="red"] {
+  --team-color: var(--team-red);
+}
+
+.arena-bar-mono {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 2px solid var(--team-color);
+  border-radius: 50%;
+  background: var(--card);
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arena-bar-side[data-team="red"] .arena-bar-mono {
+  border-radius: 32%;
+}
+
+.arena-bar-id {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.arena-bar-side[data-team="red"] .arena-bar-id {
+  align-items: flex-end;
+}
+
+.arena-bar-tag {
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arena-bar-name {
+  overflow: hidden;
+  max-width: 7rem;
+  color: var(--dim);
+  font-size: var(--text-caption);
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arena-bar-stat {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.arena-bar-icon {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--dim);
+  object-fit: contain;
+}
+
+.arena-bar-num {
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.arena-bar-pips {
+  display: inline-flex;
+  flex: none;
+  gap: 3px;
+}
+
+.arena-pip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 1.375rem;
+  height: 1.375rem;
+  border: 1.5px solid var(--team-color);
+  border-radius: 4px;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arena-pip[data-kind="empty"] {
+  border-style: dashed;
+  border-color: var(--line);
+}
+
+.arena-pip img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.arena-bar-buffs {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 7.5rem;
+}
+
+.arena-bar-side[data-team="red"] .arena-bar-buffs {
+  align-items: flex-end;
+}
+
+.arena-buff {
+  padding: 0 0.375rem;
+  border: 1px solid var(--warning);
+  border-radius: 3px;
+  color: var(--warning);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.arena-bar-centre {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+}
+
+.arena-bar-kills {
+  min-width: 2ch;
+  font-family: var(--font-heading);
+  font-size: var(--text-title);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arena-bar-kills[data-team="blue"] {
+  text-align: right;
+}
+
+.arena-bar-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 5.25rem;
+}
+
+.arena-bar-time {
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.arena-bar-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 1px 0.5rem;
+  border: 1px solid var(--foreground);
+  border-radius: 3px;
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* Live: a dot. Paused: two bars and a dashed outline. Ended: a square and a filled chip. */
+.arena-bar-status::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.arena-bar-status[data-status="paused"] {
+  border-style: dashed;
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.arena-bar-status[data-status="paused"]::before {
+  box-sizing: border-box;
+  border-radius: 0;
+  border-inline: 3px solid currentColor;
+  background: none;
+}
+
+.arena-bar-status[data-status="final"] {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.arena-bar-status[data-status="final"]::before {
+  border-radius: 1px;
+}
+
+@container bar (max-width: 1180px) {
+  .arena-bar-name {
+    display: none;
+  }
+}
+
+@container bar (max-width: 900px) {
+  .arena-bar-side {
+    flex-wrap: wrap;
+    row-gap: 0.25rem;
+  }
+}
+
+/* ── Player cards ────────────────────────────────────────────────────────
+   One native button per player: three rows (who, health and gold gap, gear and state), mirrored
+   for red. Items and cooldowns share a wrapping row so a card stays three rows at 336 px.
+   The followed player is told by a thicker ring and a bar on the outer edge, not only by hue;
+   a dead player has a dashed outline and its respawn seconds on the portrait. */
+
+.arena-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.arena-card[data-team="blue"] {
+  --team-color: var(--team-blue);
+}
+
+.arena-card[data-team="red"] {
+  --team-color: var(--team-red);
+  text-align: end;
+}
+
+.arena-card:hover {
+  border-color: var(--dim);
+}
+
+.arena-card:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 2px;
+}
+
+.arena-card[aria-pressed="true"] {
+  border-color: var(--club);
+  box-shadow:
+    0 0 0 2px var(--club),
+    inset 0.25rem 0 0 var(--club);
+}
+
+.arena-card[data-team="red"][aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--club),
+    inset -0.25rem 0 0 var(--club);
+}
+
+.arena-card[data-dead] {
+  border-style: dashed;
+}
+
+.arena-card-head,
+.arena-card-vitals,
+.arena-card-gear {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.arena-card[data-team="red"] .arena-card-head,
+.arena-card[data-team="red"] .arena-card-vitals,
+.arena-card[data-team="red"] .arena-card-gear {
+  flex-direction: row-reverse;
+}
+
+.arena-card-face {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 2.25rem;
+  height: 2.25rem;
+  overflow: hidden;
+  border: 2px solid var(--team-color);
+  border-radius: 50%;
+  background: var(--rail);
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arena-card[data-team="red"] .arena-card-face {
+  border-radius: 32%;
+}
+
+.arena-card[data-dead] .arena-card-face {
+  border-style: dashed;
+}
+
+.arena-card-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.arena-card-who {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.arena-card[data-team="red"] .arena-card-who {
+  align-items: flex-end;
+}
+
+.arena-card-name {
+  overflow: hidden;
+  max-width: 100%;
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-weight: 700;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arena-card-meta {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.arena-chip-text {
+  padding: 0 0.375rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--dim);
+  font-size: var(--text-caption);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.arena-card-score {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.arena-card[data-team="red"] .arena-card-score {
+  align-items: flex-start;
+}
+
+.arena-card-kda {
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arena-card-farm {
+  color: var(--dim);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.arena-card-hp {
+  position: relative;
+  flex: 1;
+  height: 0.5rem;
+  min-width: 2rem;
+  border: 1px solid var(--line);
+  background: var(--rail);
+}
+
+.arena-card-hp i {
+  display: block;
+  height: 100%;
+  background: var(--foreground);
+}
+
+.arena-card[data-team="red"] .arena-card-hp i {
+  margin-inline-start: auto;
+}
+
+.arena-card-hptext {
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The gap carries its sign in text: +, − or the word for even. */
+.arena-card-gap {
+  padding: 0 0.375rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.arena-card-gap[data-direction="ahead"] {
+  border-color: var(--foreground);
+}
+
+.arena-card-gap[data-direction="behind"] {
+  border-style: dashed;
+}
+
+.arena-card-gear {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.arena-card-items,
+.arena-card-cds {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.arena-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--rail);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arena-item[data-empty] {
+  border-style: dashed;
+  background: none;
+}
+
+.arena-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Ready: solid, the letter alone. Cooling down: dashed, the letter and the seconds. */
+.arena-cd {
+  padding: 0 0.375rem;
+  border: 1px dashed var(--dim);
+  border-radius: 3px;
+  color: var(--dim);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.arena-cd[data-ready] {
+  border-style: solid;
+  border-color: var(--foreground);
+  color: var(--foreground);
+}
+
+.arena-card-state {
+  margin-inline-start: auto;
+  padding: 0 0.5rem;
+  border: 1px solid var(--foreground);
+  border-radius: 3px;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.arena-card[data-state="dead"] .arena-card-state {
+  border-style: dashed;
+}
+
+.arena-card[data-state="fighting"] .arena-card-state {
+  border-style: double;
+  border-width: 3px;
+}
+
+.arena-card[data-team="red"] .arena-card-state {
+  margin-inline-start: 0;
+  margin-inline-end: auto;
+}
+
+/* ── Event ticker ────────────────────────────────────────────────────────
+   A focusable, scrollable list: the browser scrolls it with the arrow keys once it has focus.
+   The newest entry fades in with opacity alone, which the reduced-motion rule below removes. */
+
+.arena-ticker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 0;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--rail);
+  color: var(--foreground);
+}
+
+.arena-ticker-heading {
+  color: var(--dim);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.arena-tk-empty {
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--text-caption);
+}
+
+.arena-tk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.arena-tk-list:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 2px;
+}
+
+.arena-tk {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-caption);
+}
+
+.arena-tk[data-new] {
+  font-weight: 700;
+  animation: arena-tk-in 240ms ease-out;
+}
+
+@keyframes arena-tk-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.arena-tk-time {
+  flex: none;
+  min-width: 3.5ch;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.arena-tk-kill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.arena-tk-ini,
+.arena-tk-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 1.375rem;
+  height: 1.375rem;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--card);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Blue is round and red a rounded square, as on the map. */
+.arena-tk-ini[data-team="blue"],
+.arena-tk-icon[data-team="blue"] {
+  border-color: var(--team-blue);
+}
+
+.arena-tk-ini[data-team="red"],
+.arena-tk-icon[data-team="red"] {
+  border-color: var(--team-red);
+  border-radius: 32%;
+}
+
+.arena-tk-icon img,
+.arena-tk-icon svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.arena-tk-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arena-tk-swords {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--warning);
+}
+
+.arena-tk-cause {
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-tk[data-new] {
+    animation: none;
+  }
+}
+
+/* ── Spotlight caption and Fight board ───────────────────────────────────
+   The caption is one sentence with the kind as a bordered word; the other engagements are chips
+   with the same kind word, so nothing rests on colour. The board is a native <details>. */
+
+.arena-spotlight {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--rail);
+  color: var(--foreground);
+}
+
+.arena-sp-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
+.arena-sp-kind,
+.arena-sp-chip-kind,
+.arena-board-kind {
+  flex: none;
+  padding: 0 0.5rem;
+  border: 1px solid var(--foreground);
+  border-radius: 0.25rem;
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.arena-sp-line {
+  flex: 1 1 16rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.arena-sp-detail {
+  color: var(--dim);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.arena-sp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arena-sp-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: var(--card);
+  font-size: var(--text-caption);
+}
+
+.arena-sp-chip-kind {
+  padding: 0 0.375rem;
+  border-color: var(--dim);
+  color: var(--dim);
+}
+
+.arena-sp-release {
+  align-self: flex-start;
+}
+
+.arena-board {
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--rail);
+  color: var(--foreground);
+}
+
+.arena-board-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  min-height: var(--target-min);
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+}
+
+.arena-board-summary:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: -2px;
+}
+
+.arena-board-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.arena-board-count {
+  color: var(--dim);
+  font-size: var(--text-caption);
+}
+
+/* The open marker is a shape, not a colour: a triangle that points down once it is open. */
+.arena-board-summary::marker {
+  color: var(--foreground);
+}
+
+.arena-board-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0 0.75rem 0.5rem;
+  list-style: none;
+}
+
+.arena-board-row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 2px 0;
+  border-top: 1px solid var(--line);
+  font-size: var(--text-caption);
+}
+
+.arena-board-kind {
+  justify-self: start;
+  border-color: var(--dim);
+  color: var(--dim);
+}
+
+.arena-board-row[data-kind="contact"] .arena-board-kind {
+  border-width: 2px;
+  border-color: var(--warning);
+  color: var(--foreground);
+}
+
+/* ── Match controls and map key ──────────────────────────────────────────
+   Pause and speed sit in the open; Skip and Reset live in the options menu. The active speed is
+   bold, has the bar under it (from the primitive) and is underlined: it never rests on colour. */
+
+.arena-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+.arena-play {
+  min-width: 7.5rem;
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.arena-speed [role="radio"] {
+  font-family: var(--font-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.arena-speed [role="radio"][aria-checked="true"] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
+}
+
+.arena-speed-note {
+  color: var(--dim);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.arena-options {
+  margin-inline-start: auto;
+}
+
+.arena-legend {
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--rail);
+  color: var(--foreground);
+}
+
+.arena-legend-summary {
+  min-height: var(--target-min);
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.arena-legend-summary:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: -2px;
+}
+
+.arena-legend-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1.25rem;
+  margin: 0;
+  padding: 0 0.75rem 0.625rem;
+  list-style: none;
+}
+
+.arena-lg-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--text-caption);
+}
+
+.arena-lg-glyph {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 1.625rem;
+}
+
+.arena-lg-line {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 3;
+}
+
+.arena-lg-line[data-tone="warm"],
+.arena-lg-dot {
+  stroke: var(--warning);
+}
+
+.arena-lg-dot {
+  fill: var(--warning);
+}
+
+.arena-lg-line[data-dashed] {
+  stroke-dasharray: 4 3;
+}
+
+.arena-lg-chip {
+  padding: 0 0.375rem;
+  border: 2px solid var(--foreground);
+  border-radius: 0.25rem;
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+/* The rings are the same shapes the map draws: double for a fight, dashed for fire and the dead,
+   a part of a circle for a recall. */
+.arena-lg-ring {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--foreground);
+  border-radius: 50%;
+}
+
+.arena-lg-ring[data-ring="fighting"] {
+  border: 3px double var(--warning);
+}
+
+.arena-lg-ring[data-ring="fire"] {
+  border: 2px dashed var(--foreground);
+}
+
+.arena-lg-ring[data-ring="dead"] {
+  border: 2px dashed var(--dim);
+}
+
+.arena-lg-ring[data-ring="recall"] {
+  border-color: var(--foreground) var(--foreground) transparent transparent;
+}
+
+/* Blue is round and red a diamond (rounded square for a champion), as on the map. */
+.arena-lg-shape {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.arena-lg-shape[data-team="blue"] {
+  border: 3px solid var(--team-blue);
+  border-radius: 50%;
+}
+
+.arena-lg-shape[data-team="red"] {
+  border: 3px solid var(--team-red);
+  transform: rotate(45deg);
+}
+
+.arena-lg-shape[data-shape="champion"][data-team="red"] {
+  border-radius: 32%;
+  transform: none;
+}
+
+.arena-lg-shape[data-shape="structure"][data-team="red"] {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.arena-lg-camp {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--dim);
+  transform: rotate(45deg);
+}
+
+.arena-lg-icon {
+  width: 1rem;
+  height: 1rem;
+}

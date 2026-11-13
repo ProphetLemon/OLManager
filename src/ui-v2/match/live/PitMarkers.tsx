@@ -3,13 +3,13 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { formatCountdown } from "@/lib/match/live/clock";
-import type { DragonKind } from "@/lib/match/live/liveEvents";
-import { MAP_UNITS, anchorTransform, type TeamSide } from "@/lib/match/live/mapGeometry";
+import { MAP_UNITS, anchorTransform } from "@/lib/match/live/mapGeometry";
 import { pitViews, type PitEntity, type PitView, type SoulView } from "@/lib/match/live/objectivesView";
 import { NEUTRAL_OBJECTIVE_ICON_PATH } from "@/lib/match/lolMapLayout";
 import type { LolSimV1RuntimeState } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
 
 import { useMapSize } from "./arenaMapContext";
+import { DRAGON_NAME_KEYS, DRAGON_PLAIN_KEY, TEAM_KEYS } from "./liveNames";
 
 /** Names that already exist for the match screens are reused; the rest live under onAir.match.pit. */
 const ENTITY_NAME_KEYS: Readonly<Record<Exclude<PitEntity, "dragon">, string>> = {
@@ -17,21 +17,6 @@ const ENTITY_NAME_KEYS: Readonly<Record<Exclude<PitEntity, "dragon">, string>> =
   voidgrubs: "onAir.match.pit.voidgrubs",
   herald: "match.draftResult.timelineEvents.herald",
   baron: "match.draftResult.timelineEvents.baron",
-};
-
-const DRAGON_NAME_KEYS: Readonly<Record<DragonKind, string>> = {
-  infernal: "onAir.match.pit.dragonInfernal",
-  ocean: "onAir.match.pit.dragonOcean",
-  mountain: "onAir.match.pit.dragonMountain",
-  cloud: "onAir.match.pit.dragonCloud",
-  hextech: "onAir.match.pit.dragonHextech",
-  chemtech: "onAir.match.pit.dragonChemtech",
-};
-const DRAGON_PLAIN_KEY = "match.draftResult.timelineEvents.dragon";
-
-const TEAM_KEYS: Readonly<Record<TeamSide, string>> = {
-  blue: "onAir.match.team.blue",
-  red: "onAir.match.team.red",
 };
 
 const ICON: Readonly<Record<Exclude<PitEntity, "dragon">, string>> = {
