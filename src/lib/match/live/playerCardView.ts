@@ -80,7 +80,8 @@ export function cooldownChips(champion: CardChampion, nowSec: number): CooldownC
 
 // ── Gold ────────────────────────────────────────────────────────────────
 
-export const totalGold = (champion: Pick<CardChampion, "gold" | "spentGold">): number =>
+/** Gold earned: the purse plus what was spent. A record with no `spentGold` (older stored results) falls back to `gold`. */
+export const totalGold = (champion: { gold?: number; spentGold?: number }): number =>
   (isTime(champion.gold) ? champion.gold : 0) + (isTime(champion.spentGold) ? champion.spentGold : 0);
 
 export interface GoldGap {

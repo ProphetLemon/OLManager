@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { compactGold } from "@/lib/match/live/formatNumbers";
+import { totalGold } from "@/lib/match/live/playerCardView";
 import { eventSentence } from "@/ui-v2/match/live/eventSentence";
 import { buildLolScrimPrepInsight } from "@/lib/scrims/lolScrimPrep";
 import type { FixtureData, GameStateData } from "@/store/gameStore";
@@ -176,8 +177,8 @@ export default function LolResultScreen({
   const durationMin = runtime ? Math.floor((runtime.timeSec ?? 0) / 60) : snapshot.current_minute;
   const homeChampions = runtime?.champions?.filter((champion) => champion.team === "blue") ?? [];
   const awayChampions = runtime?.champions?.filter((champion) => champion.team === "red") ?? [];
-  const homeGold = runtime ? runtime.stats.blue.gold : homeChampions.reduce((acc, champion) => acc + (champion.gold ?? 0), 0);
-  const awayGold = runtime ? runtime.stats.red.gold : awayChampions.reduce((acc, champion) => acc + (champion.gold ?? 0), 0);
+  const homeGold = runtime ? runtime.stats.blue.gold : homeChampions.reduce((acc, champion) => acc + totalGold(champion), 0);
+  const awayGold = runtime ? runtime.stats.red.gold : awayChampions.reduce((acc, champion) => acc + totalGold(champion), 0);
   const dragonObjective = runtime?.objectives?.dragon;
   const dragonSummary = runtime
     ? t("match.lolResult.dragonSummary", {
@@ -219,7 +220,7 @@ export default function LolResultScreen({
         champion.assists * 1.6 -
         champion.deaths * 1.25 +
         (champion.cs ?? 0) * 0.02 +
-        (champion.gold ?? 0) * 0.001;
+        totalGold(champion) * 0.001;
       return { champion, score };
     })
     .sort((left, right) => right.score - left.score)[0]?.champion ?? null;
@@ -337,7 +338,7 @@ export default function LolResultScreen({
                   return (
                     <div key={champion.id} className={`grid grid-cols-[1fr_auto] gap-2 py-1.5 border-b border-border text-sm ${isMvp ? "text-amber-400" : "text-foreground"}`}>
                       <span className="truncate">{isMvp ? "★ " : ""}{champion.name}</span>
-                      <span>{champion.kills}/{champion.deaths}/{champion.assists} · {champion.cs} · {champion.gold} · <span title={t("match.damageDealt")} aria-label={`${t("match.damageDealt")}: ${damageText(champion.damageDealt, i18n.language)}`} data-testid="row-damage">{damageText(champion.damageDealt, i18n.language)}</span></span>
+                      <span>{champion.kills}/{champion.deaths}/{champion.assists} · {champion.cs} · <span data-testid="row-gold">{compactGold(totalGold(champion), i18n.language)}</span> · <span title={t("match.damageDealt")} aria-label={`${t("match.damageDealt")}: ${damageText(champion.damageDealt, i18n.language)}`} data-testid="row-damage">{damageText(champion.damageDealt, i18n.language)}</span></span>
                     </div>
                   );
                 })}
@@ -349,7 +350,7 @@ export default function LolResultScreen({
                   return (
                     <div key={champion.id} className={`grid grid-cols-[1fr_auto] gap-2 py-1.5 border-b border-border text-sm ${isMvp ? "text-amber-400" : "text-foreground"}`}>
                       <span className="truncate">{isMvp ? "★ " : ""}{champion.name}</span>
-                      <span>{champion.kills}/{champion.deaths}/{champion.assists} · {champion.cs} · {champion.gold} · <span title={t("match.damageDealt")} aria-label={`${t("match.damageDealt")}: ${damageText(champion.damageDealt, i18n.language)}`} data-testid="row-damage">{damageText(champion.damageDealt, i18n.language)}</span></span>
+                      <span>{champion.kills}/{champion.deaths}/{champion.assists} · {champion.cs} · <span data-testid="row-gold">{compactGold(totalGold(champion), i18n.language)}</span> · <span title={t("match.damageDealt")} aria-label={`${t("match.damageDealt")}: ${damageText(champion.damageDealt, i18n.language)}`} data-testid="row-damage">{damageText(champion.damageDealt, i18n.language)}</span></span>
                     </div>
                   );
                 })}

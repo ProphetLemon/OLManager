@@ -2509,6 +2509,12 @@
       "gameTimeline": "Spiel-Timeline",
       "blueNext": "Blau als Nächstes",
       "redNext": "Rot als Nächstes",
+      "columns": {
+        "gold": "Goldertrag",
+        "damage": "Schaden",
+        "rating": "Wertung",
+        "goldEarned": "Verdientes Gold"
+      },
       "timelineEvents": {
         "firstBlood": "Erstes Blut",
         "voidgrubs": "Leerenlarven x3",

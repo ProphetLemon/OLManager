@@ -90,6 +90,18 @@ describe("LolResultScreen in the Spanish UI", () => {
     expect(damage).toEqual(["23.5k", "18.1k"].map((value) => value.replace(".", ",")));
   });
 
+  it("shows the gold each champion earned (gold in hand plus gold spent), compact", () => {
+    renderScreen(runtime());
+    const gold = screen.getAllByTestId("row-gold").map((node) => node.textContent);
+    expect(gold).toEqual(["8,9k", "8,9k"]);
+  });
+
+  it("shows the gold in hand for a champion whose state has no gold spent", () => {
+    const { spentGold: _spent, ...old } = champion("b-mid", "blue", "Zed");
+    renderScreen(runtime({ champions: [old] }));
+    expect(screen.getByTestId("row-gold")).toHaveTextContent("900");
+  });
+
   it("shows a dash, not a zero, for damage the state did not record", () => {
     renderScreen(runtime({ champions: [champion("b-mid", "blue", "Zed")] }));
     const [cell] = screen.getAllByTestId("row-damage");

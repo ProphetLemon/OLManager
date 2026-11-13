@@ -43,7 +43,10 @@ export interface DraftPlayerResult {
   kills: number;
   deaths: number;
   assists: number;
+  /** Unspent gold at the end of the match. Gold earned is `gold + spentGold`. */
   gold: number;
+  /** Gold spent on items; absent on results stored before it was kept, which fall back to `gold`. */
+  spentGold?: number;
   /** Damage dealt to enemy champions; absent on results stored before the engine counted it. */
   damageDealt?: number;
   rating: number;

@@ -2509,6 +2509,12 @@
       "gameTimeline": "Chronologie de la partie",
       "blueNext": "Bleu au suivant",
       "redNext": "Rouge au suivant",
+      "columns": {
+        "gold": "Or",
+        "damage": "Dégâts",
+        "rating": "Note",
+        "goldEarned": "Or gagné"
+      },
       "timelineEvents": {
         "firstBlood": "Premier sang",
         "voidgrubs": "Larves du Néant x3",
