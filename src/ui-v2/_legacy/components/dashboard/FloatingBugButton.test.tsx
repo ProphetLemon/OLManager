@@ -147,4 +147,61 @@ describe("FloatingBugButton", () => {
     render(<FloatingBugButton />);
     expect(screen.getByTitle("Reportar Bug").className).toContain("fixed");
   });
+
+  describe("without a game (new-career setup)", () => {
+    beforeEach(() => {
+      useGameStore.setState({ hasActiveGame: false, gameState: null });
+      useBugReportStore.setState({ currentRoute: "/select-team", currentDashboardTab: "" });
+    });
+
+    it("still renders the button", () => {
+      render(<FloatingBugButton />);
+      expect(screen.getByTitle("Reportar Bug")).toBeInTheDocument();
+    });
+
+    it("renders in the rail placement too", () => {
+      render(<FloatingBugButton placement="rail" />);
+      expect(screen.getByRole("button", { name: "Reportar Bug" })).toBeInTheDocument();
+    });
+
+    it("sends the report with no save and marks the game context as unavailable", async () => {
+      const { exportBugReport } = await import("@/services/bugReportService");
+      (exportBugReport as ReturnType<typeof vi.fn>).mockClear();
+
+      render(<FloatingBugButton />);
+      fireEvent.click(screen.getByTitle("Reportar Bug"));
+      fireEvent.change(
+        screen.getByPlaceholderText("Describe what happened, what you expected, and how to reproduce it..."),
+        { target: { value: "Cannot pick a team" } },
+      );
+      fireEvent.click(screen.getByText("Generate report"));
+
+      await waitFor(() => expect(exportBugReport).toHaveBeenCalledTimes(1));
+      const [contextJson, saveJson] = (exportBugReport as ReturnType<typeof vi.fn>).mock.calls[0];
+      const context = JSON.parse(contextJson);
+      expect(saveJson).toBe("");
+      expect(context.gameContext).toBe("unavailable");
+      expect(context.route).toBe("/select-team");
+      expect(context.description).toBe("Cannot pick a team");
+      expect(context.teamName).toBe("Unavailable");
+    });
+  });
+
+  it("marks the game context as available and sends the save when there is a game", async () => {
+    const { exportBugReport } = await import("@/services/bugReportService");
+    (exportBugReport as ReturnType<typeof vi.fn>).mockClear();
+
+    render(<FloatingBugButton />);
+    fireEvent.click(screen.getByTitle("Reportar Bug"));
+    fireEvent.change(
+      screen.getByPlaceholderText("Describe what happened, what you expected, and how to reproduce it..."),
+      { target: { value: "x" } },
+    );
+    fireEvent.click(screen.getByText("Generate report"));
+
+    await waitFor(() => expect(exportBugReport).toHaveBeenCalledTimes(1));
+    const [contextJson, saveJson] = (exportBugReport as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(JSON.parse(contextJson).gameContext).toBe("available");
+    expect(JSON.parse(saveJson).manager.team_id).toBe("team-1");
+  });
 });

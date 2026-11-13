@@ -21,8 +21,6 @@ export default function FloatingBugButton({
   const { currentRoute, currentDashboardTab } = useBugReportStore();
   const [show, setShow] = useState(false);
 
-  if (!gameState) return null;
-
   const label = t("onAir.nav.bug", { defaultValue: "Reportar Bug" });
 
   return (
@@ -53,17 +51,33 @@ export default function FloatingBugButton({
 
       {show && (
         <ReportBugModal
-          context={{
-            appVersion: APP_VERSION,
-            route: currentRoute,
-            activeTab: currentDashboardTab,
-            currentDate: gameState.clock.current_date,
-            dayPhase: gameState.day_phase ?? "Unknown",
-            teamName: getManagerTeamName(gameState) ?? "Unknown",
-            leagueName: resolveUserLeague(gameState)?.name ?? "Unknown",
-            lolPatch: gameState.champion_patch?.current_patch_label ?? "Unknown",
-          }}
-          saveJson={JSON.stringify(gameState, null, 2)}
+          context={
+            gameState
+              ? {
+                  appVersion: APP_VERSION,
+                  route: currentRoute,
+                  activeTab: currentDashboardTab,
+                  currentDate: gameState.clock.current_date,
+                  dayPhase: gameState.day_phase ?? "Unknown",
+                  teamName: getManagerTeamName(gameState) ?? "Unknown",
+                  leagueName: resolveUserLeague(gameState)?.name ?? "Unknown",
+                  lolPatch: gameState.champion_patch?.current_patch_label ?? "Unknown",
+                  gameContext: "available",
+                }
+              : {
+                  // No game yet (new-career setup): say so instead of inventing a context.
+                  appVersion: APP_VERSION,
+                  route: currentRoute,
+                  activeTab: currentDashboardTab,
+                  currentDate: "Unavailable",
+                  dayPhase: "Unavailable",
+                  teamName: "Unavailable",
+                  leagueName: "Unavailable",
+                  lolPatch: "Unavailable",
+                  gameContext: "unavailable",
+                }
+          }
+          saveJson={gameState ? JSON.stringify(gameState, null, 2) : null}
           onClose={() => setShow(false)}
         />
       )}
