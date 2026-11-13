@@ -3,6 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import i18n from "@/i18n";
 import { detectContacts } from "@/lib/match/live/contacts";
+import { MAP_UNITS } from "@/lib/match/live/mapGeometry";
+import { pitViews } from "@/lib/match/live/objectivesView";
 
 import { ArenaHarness } from "./arenaHarness.testing";
 import { createTestBus, makeChampion, makeState } from "./arenaFixtures.testing";
@@ -136,5 +138,21 @@ describe("ChampionLayer in the Spanish UI", () => {
     expect(screen.getByTestId("champion-solo").textContent).toContain("Regreso 3,9s");
     expect(screen.getByTestId("champion-dead").textContent).toContain("Caído 11s");
     expect(document.body.textContent).not.toContain("onAir.match");
+  });
+});
+
+describe("ChampionLayer next to an objective pit", () => {
+  it("keeps the tag of a champion off the label of the pit", () => {
+    const [pit] = pitViews(makeState());
+    const at = { x: pit.pos.x / MAP_UNITS, y: pit.pos.y / MAP_UNITS };
+    // Standing on the pit, where a tag below the bubble would sit on the label.
+    const state = makeState({ champions: [makeChampion("solo", "blue", at.x, at.y, { name: "KORVAN" })] });
+    renderLayer(state);
+    expect(screen.getByTestId("tag")).not.toHaveAttribute("data-slot", "below");
+  });
+
+  it("puts the same champion's tag below, where no pit is", () => {
+    renderLayer(makeState({ champions: [makeChampion("solo", "blue", 0.5, 0.2, { name: "KORVAN" })] }));
+    expect(screen.getByTestId("tag")).toHaveAttribute("data-slot", "below");
   });
 });

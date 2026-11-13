@@ -285,8 +285,9 @@
   display: inline;
 }
 
-/* A small map shows the short form everywhere, state included. */
-@container arena (max-width: 519px) {
+/* A map of 520px or less shows the short form everywhere, state included. The map element itself
+   is the query container (see .arena-map), so the rule reaches the tags inside it. */
+@container arena (max-width: 520px) {
   .arena-tag-long {
     display: none;
   }

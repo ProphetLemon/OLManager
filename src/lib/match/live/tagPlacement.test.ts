@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  pitObstacle,
   placeTags,
   type TagBox,
   type TagChampion,
@@ -153,5 +154,73 @@ describe("placeTags", () => {
     for (let i = 0; i < runs; i += 1) placeTags(FIGHT);
     const perSolve = (performance.now() - started) / runs;
     expect(perSolve).toBeLessThan(2);
+  });
+});
+
+describe("placeTags around the label of an objective pit", () => {
+  const pit = pitObstacle({ x: 0.5, y: 0.5 });
+
+  it("builds the box of a pit from its glyph down to the end of its label", () => {
+    expect(pit.x0).toBeCloseTo(0.5 - 66 / 520, 8);
+    expect(pit.x1).toBeCloseTo(0.5 + 66 / 520, 8);
+    expect(pit.y0).toBeLessThan(0.5);
+    expect(pit.y1).toBeCloseTo(0.5 + (17 + 44) / 520, 8);
+    expect(pitObstacle({ x: 0.5, y: 0.5 }, 2).y1).toBeGreaterThan(pit.y1);
+  });
+
+  it("puts a tag under a champion when nothing is there, and not on the pit label when something is", () => {
+    const standing = [champ("a", 0.5, 0.5)];
+    expect(placeTags(standing).a).toMatchObject({ slot: "below" });
+
+    const result = placeTags(standing, undefined, { obstacles: [pit] });
+    expect(result.a).not.toMatchObject({ slot: "below" });
+    expect(result.a.form).not.toBe("none");
+    expect(overlap(boxOf(result.a), pit)).toBe(false);
+  });
+
+  it("keeps every tag off the box, whatever slot it takes", () => {
+    const result = placeTags(
+      [champ("a", 0.5, 0.56), champ("b", 0.44, 0.5, { sub: "Fighting" }), champ("c", 0.56, 0.5)],
+      undefined,
+      { obstacles: [pit] },
+    );
+    for (const [id, box] of placedBoxes(result)) expect(overlap(box, pit), id).toBe(false);
+  });
+
+  it("lets go of a slot that the label now covers, even when it was the previous one", () => {
+    const standing = [champ("a", 0.5, 0.5)];
+    const before = placeTags(standing);
+    const after = placeTags(standing, before, { obstacles: [pit] });
+    expect(after.a).not.toMatchObject({ slot: "below" });
+  });
+
+  it("falls back to a badge for a champion with a state when the label leaves no slot", () => {
+    const wall: TagBox = { x0: 0, y0: 0, x1: 1, y1: 1 };
+    expect(placeTags([champ("a", 0.5, 0.5, { sub: "Fighting" })], undefined, { obstacles: [wall] }).a).toEqual({ form: "badge" });
+    expect(placeTags([champ("a", 0.5, 0.5)], undefined, { obstacles: [wall] }).a).toEqual({ form: "none" });
+  });
+});
+
+describe("placeTags for the real size of the map", () => {
+  const width = (placement: TagPlacement) => {
+    const box = boxOf(placement);
+    return box.x1 - box.x0;
+  };
+
+  it("gives a tag a bigger share of a smaller map, because its size is in pixels", () => {
+    const at = (sizePx: number) => width(placeTags([champ("a", 0.5, 0.5)], undefined, { sizePx }).a);
+    expect(at(368)).toBeGreaterThan(at(520));
+    expect(at(520)).toBeGreaterThan(at(660));
+    expect(at(520)).toBeCloseTo(width(placeTags([champ("a", 0.5, 0.5)]).a), 8);
+  });
+
+  it("keeps tags apart on a 474 px map, where a nominal solve would let them touch", () => {
+    // Two champions whose tags sit side by side below them: 0.1 of the map is 52 px at 520 and 47 px at 474.
+    const pair = [champ("a", 0.45, 0.5, { name: "KORVANX" }), champ("b", 0.55, 0.5, { name: "DELLANX" })];
+    for (const sizePx of [368, 474, 520, 660]) {
+      const boxes = placedBoxes(placeTags(pair, undefined, { sizePx }));
+      expect(boxes).toHaveLength(2);
+      expect(overlap(boxes[0][1], boxes[1][1]), `at ${sizePx}`).toBe(false);
+    }
   });
 });

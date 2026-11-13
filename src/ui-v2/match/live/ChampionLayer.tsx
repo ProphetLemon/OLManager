@@ -2,9 +2,12 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { markerState } from "@/lib/match/live/championMarker";
 import type { ContactResult } from "@/lib/match/live/contacts";
-import { placeTags, type TagPlacements } from "@/lib/match/live/tagPlacement";
+import { MAP_UNITS } from "@/lib/match/live/mapGeometry";
+import { pitViews } from "@/lib/match/live/objectivesView";
+import { pitObstacle, placeTags, type TagPlacements } from "@/lib/match/live/tagPlacement";
 import type { LolSimV1RuntimeState } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
 
+import { useMapSize } from "./arenaMapContext";
 import { ChampionMarker } from "./ChampionMarker";
 import { useMarkerTexts } from "./useMarkerTexts";
 
@@ -26,6 +29,7 @@ export interface ChampionLayerProps {
 export function ChampionLayer({ state, championByPlayerId, contacts, selectedId, onSelect }: ChampionLayerProps) {
   const textsFor = useMarkerTexts();
   const previous = useRef<TagPlacements | undefined>(undefined);
+  const sizePx = useMapSize();
   const nowSec = state.timeSec;
 
   const rows = useMemo(() => {
@@ -35,6 +39,19 @@ export function ChampionLayer({ state, championByPlayerId, contacts, selectedId,
       return { champion, marker, texts: textsFor(marker), fighting: fighting.has(champion.id) };
     });
   }, [state.champions, contacts.fightingIds, nowSec, textsFor]);
+
+  // The labels of the objective pits are drawn under the champions' tags: tags keep clear of them.
+  const obstacles = useMemo(
+    () =>
+      pitViews(state).map((pit) =>
+        pitObstacle(
+          { x: pit.pos.x / MAP_UNITS, y: pit.pos.y / MAP_UNITS },
+          Number(Boolean(pit.soul)) + Number(Boolean(pit.heraldCarrier)),
+          sizePx || undefined,
+        ),
+      ),
+    [state, sizePx],
+  );
 
   const placements = useMemo(
     () =>
@@ -47,8 +64,9 @@ export function ChampionLayer({ state, championByPlayerId, contacts, selectedId,
           subCompact: texts.subCompact,
         })),
         previous.current,
+        { sizePx: sizePx || undefined, obstacles },
       ),
-    [rows],
+    [rows, sizePx, obstacles],
   );
 
   // Remembered after the commit, so that rendering stays free of side effects.
