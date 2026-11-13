@@ -676,6 +676,13 @@ const NAV_GRID_SIZE: usize = 196;
 const NAV_PATH_MIN_DIRECT_DIST: f64 = 0.012;
 const NAV_PATH_TRIVIAL_NODE_EPSILON: f64 = 0.0095;
 const CHAMPION_REPATH_MIN_TARGET_DELTA: f64 = 0.018;
+/// Distance from its anchor at which a recaller has arrived and starts to channel. A recall
+/// anchor is recomputed every step and may drift from where the walk was aimed; a new walk
+/// within `CHAMPION_REPATH_MIN_TARGET_DELTA` of the old one is not started, so an arrival
+/// radius under that delta leaves a recaller that stopped a little short of the anchor with no
+/// walk and no channel for good (the replay found 2 stuck recalls per match, up to 2353 s).
+/// [PLACEHOLDER]
+const RECALL_ARRIVAL_RADIUS: f64 = CHAMPION_REPATH_MIN_TARGET_DELTA;
 const CHAMPION_STUCK_PROGRESS_EPSILON: f64 = 0.00045;
 const CHAMPION_STUCK_TRIGGER_SEC: f64 = 7.0;
 const ITEM_COST_MULTIPLIER: f64 = 1.0;
@@ -3648,7 +3655,7 @@ fn tick_recall(
         structures,
     );
     champion.recall_anchor = Some(anchor);
-    if dist(champion.pos, anchor) > 0.012 {
+    if dist(champion.pos, anchor) > RECALL_ARRIVAL_RADIUS {
         set_champion_direct_path(champion, anchor);
         return true;
     }
@@ -6814,3 +6821,6 @@ mod captured_replay_harness_tests;
 
 #[cfg(test)]
 mod recall_interrupt_tests;
+
+#[cfg(test)]
+mod stuck_states_tests;
