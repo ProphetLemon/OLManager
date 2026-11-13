@@ -154,7 +154,7 @@ fn select_reconciled_lol_starters<'a>(
 /// (the match engine derives the lane from the slot index). Players without a
 /// matching free slot fill the remaining slots, so a missing role never shifts
 /// other players into the wrong lane.
-fn arrange_starters_by_lane<'a>(
+pub(crate) fn arrange_starters_by_lane<'a>(
     mut starters: Vec<&'a crate::domain::player::Player>,
 ) -> Vec<&'a crate::domain::player::Player> {
     starters.sort_by(|left, right| {

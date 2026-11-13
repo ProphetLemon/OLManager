@@ -1,5 +1,6 @@
 mod team_builder;
 pub use team_builder::auto_select_team_roles;
+pub(crate) use team_builder::arrange_starters_by_lane;
 use team_builder::build_team_with_bench;
 
 use log::info;

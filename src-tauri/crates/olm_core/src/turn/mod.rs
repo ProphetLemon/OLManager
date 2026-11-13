@@ -257,10 +257,16 @@ fn build_engine_team_from(
         lineup_ids.into_iter().take(5).collect(),
     );
     let region = team.and_then(crate::residency::team_region);
-    let engine_players: Vec<crate::engine::PlayerData> = lineup_ids
+    let starters: Vec<&Player> = lineup_ids
         .into_iter()
         .take(5)
         .filter_map(|player_id| players.iter().find(|player| player.id == player_id))
+        .collect();
+    // The engine derives the lane from the slot index, so the saved five is seated by
+    // lane exactly like the live match does (same players, only the slots can move).
+    let starters = crate::live_match_manager::arrange_starters_by_lane(starters);
+    let engine_players: Vec<crate::engine::PlayerData> = starters
+        .into_iter()
         .map(|p| crate::engine::PlayerData {
             id: p.id.clone(),
             name: p.match_name.clone(),
@@ -1995,6 +2001,57 @@ mod tests {
         }
 
         (game, today.to_string())
+    }
+
+    fn lineup_probe_game(saved: &[usize]) -> Game {
+        let (mut game, _) = bg_test_game("2025-06-15");
+        let roles = [
+            LolRole::Top,
+            LolRole::Jungle,
+            LolRole::Mid,
+            LolRole::Adc,
+            LolRole::Support,
+            LolRole::Top,
+        ];
+        game.players.retain(|p| p.team_id.as_deref() != Some("team1"));
+        for (i, role) in roles.iter().enumerate() {
+            let mut p = make_player(&format!("team1-p{i}"), "team1", 70);
+            p.natural_position = *role;
+            p.position = *role;
+            game.players.push(p);
+        }
+        game.teams[0].active_lineup_ids = saved.iter().map(|i| format!("team1-p{i}")).collect();
+        game
+    }
+
+    fn engine_team_ids(game: &Game) -> Vec<String> {
+        build_engine_team(game, "team1")
+            .players
+            .iter()
+            .map(|p| p.id.clone())
+            .collect()
+    }
+
+    #[test]
+    fn engine_team_seats_a_saved_lineup_by_lane() {
+        // Saved bottom-up (Support, Adc, Mid, Jungle, Top): the engine reads lanes from slots.
+        let game = lineup_probe_game(&[4, 3, 2, 1, 0]);
+
+        assert_eq!(
+            engine_team_ids(&game),
+            ["team1-p0", "team1-p1", "team1-p2", "team1-p3", "team1-p4"]
+        );
+    }
+
+    #[test]
+    fn engine_team_plays_the_saved_five_over_a_better_role_fit() {
+        // The saved five has no Support; the user's choice still plays, not the bench Support.
+        let game = lineup_probe_game(&[0, 1, 2, 3, 5]);
+
+        assert_eq!(
+            engine_team_ids(&game),
+            ["team1-p0", "team1-p1", "team1-p2", "team1-p3", "team1-p5"]
+        );
     }
 
     #[test]
