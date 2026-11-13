@@ -4,7 +4,7 @@
 //! ordinary laning rules never open a trade.
 
 use super::combat::{pick_combat_target, recall_interrupt_idx};
-use super::test_helpers::{empty_neutral, test_champion, test_runtime};
+use super::test_helpers::{empty_neutral, test_champion, test_runtime, test_structure};
 use super::*;
 
 fn champion(id: &str, team: &str, role: &str, pos: Vec2) -> ChampionRuntime {
@@ -87,4 +87,13 @@ fn a_champion_does_not_walk_into_the_group_that_guards_a_recaller() {
     runtime.champions[1] = recaller_at(at(0.55), runtime.time_sec, 5.0);
 
     assert!(!picks_the_recaller(&runtime));
+}
+
+#[test]
+fn a_champion_does_not_dive_a_tower_to_stop_a_recall() {
+    let mut runtime = world(vec![champion("blue-mid", "blue", "MID", at(0.5)), champion("x", "red", "MID", at(0.9))]);
+    runtime.champions[1] = recaller_at(at(0.56), runtime.time_sec, 5.0);
+    runtime.structures.push(test_structure("red-mid-outer", "red", "mid", at(0.6)));
+
+    assert!(recall_interrupt_idx(&runtime, 0, &empty_neutral()).is_none());
 }

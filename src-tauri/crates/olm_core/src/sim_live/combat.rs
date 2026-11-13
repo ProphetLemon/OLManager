@@ -584,6 +584,8 @@ const MIN_ATTACK_REACH: f64 = 0.04;
 const RECALL_INTERRUPT_MIN_HP_RATIO: f64 = 0.40;
 /// Radius around the recaller inside which champions count for the numbers of the interruption.
 const RECALL_INTERRUPT_FIGHT_RADIUS: f64 = 0.12;
+/// How far beyond a tower's reach a recaller must be for the chase not to be a tower dive.
+const RECALL_INTERRUPT_TOWER_MARGIN: f64 = 0.02;
 /// Time left in the channel that the interrupter needs to land the hit after he arrives.
 const RECALL_INTERRUPT_HIT_MARGIN_SEC: f64 = 0.6;
 
@@ -622,6 +624,13 @@ pub(super) fn recall_interrupt_idx(
                 && normalized_team(&recaller.team) != team
                 && d <= LOCAL_COMBAT_ENGAGE_RADIUS
                 && team_has_vision_at(runtime, &champion.team, recaller.pos)
+                && !runtime.structures.iter().any(|s| {
+                    s.alive
+                        && s.kind == "tower"
+                        && normalized_team(&s.team) == normalized_team(&recaller.team)
+                        && dist(symmetric_structure_pos(s), recaller.pos)
+                            <= TOWER_ATTACK_RANGE + RECALL_INTERRUPT_TOWER_MARGIN
+                })
                 && (d <= reach
                     || (d - reach) / champion.move_speed.max(0.01) + RECALL_INTERRUPT_HIT_MARGIN_SEC
                         <= recaller.recall_channel_until - now)
