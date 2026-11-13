@@ -22,6 +22,8 @@ pub mod time;
 pub mod transfers;
 pub mod world_export;
 pub mod world_overlay;
+#[cfg(test)]
+mod world_progression_measure;
 pub use academy::*;
 pub use bug_report::*;
 pub use club::*;
