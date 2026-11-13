@@ -2260,6 +2260,65 @@ mod tests {
         assert!(!captured_stats.contains("modifier"));
     }
 
+    #[test]
+    fn an_unwatched_match_stores_assists_and_cs_for_all_ten_players() {
+        let (mut game, today) = bg_test_game("2025-06-15");
+        let mut capture = StatsState::default();
+        simulate_other_matches_with_capture(&mut game, &today, None, &mut |stats| capture = stats);
+
+        let records = &capture.player_matches;
+        assert_eq!(records.len(), 10);
+        let record_assists: u32 = records.iter().map(|r| u32::from(r.assists)).sum();
+        let record_cs: u32 = records.iter().map(|r| u32::from(r.creep_score)).sum();
+        assert!(record_assists > 0, "an unwatched match must store assists");
+        assert!(
+            records
+                .iter()
+                .all(|r| r.creep_score > 0 || r.role == LolRole::Support),
+            "every non-support stores CS"
+        );
+        // 200 CS per laner over a 35-minute game: an order-of-magnitude floor, not a fit.
+        assert!(record_cs > 400, "total CS {record_cs} is implausibly low");
+
+        // The player totals were built from the same report as the records.
+        let player_assists: u32 = game.players.iter().map(|p| p.stats.assists).sum();
+        assert_eq!(player_assists, record_assists);
+        let kills: u32 = records.iter().map(|r| u32::from(r.kills)).sum();
+        assert!(
+            record_assists <= kills * 4,
+            "a kill has at most four assisters on a five-player team"
+        );
+    }
+
+    #[test]
+    fn a_best_of_three_sums_assists_and_cs_over_its_games() {
+        let (mut game, today) = bg_test_game("2025-06-15");
+        let single = {
+            let mut capture = StatsState::default();
+            let (mut one, one_day) = bg_test_game("2025-06-15");
+            simulate_other_matches_with_capture(&mut one, &one_day, None, &mut |s| capture = s);
+            capture
+                .player_matches
+                .iter()
+                .map(|r| u32::from(r.creep_score))
+                .sum::<u32>()
+        };
+        if let Some(league) = game.active_league_mut() {
+            league.fixtures[0].best_of = 3;
+        }
+        let mut capture = StatsState::default();
+        simulate_other_matches_with_capture(&mut game, &today, None, &mut |stats| capture = stats);
+
+        let records = &capture.player_matches;
+        assert_eq!(records.len(), 10);
+        let series_cs: u32 = records.iter().map(|r| u32::from(r.creep_score)).sum();
+        assert!(
+            series_cs > single,
+            "a series of at least two games stores more CS ({series_cs}) than one game ({single})"
+        );
+        assert!(records.iter().any(|r| r.assists > 0));
+    }
+
     // -----------------------------------------------------------------------
     // T9: simulate_background_league tests
     // -----------------------------------------------------------------------
