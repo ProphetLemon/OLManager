@@ -186,7 +186,13 @@ pub(super) fn process_sweepers(runtime: &mut RuntimeState) {
     }
 
     for name in activated_by {
-        log_event(runtime, &format!("{} activated Sweeper", name), "info");
+        log_coded_event(
+            runtime,
+            &format!("{} activated Sweeper", name),
+            "info",
+            EventCode::SweeperActivated,
+            EventData::default().actor_name(&name),
+        );
     }
 
     let mut should_clear = Vec::new();

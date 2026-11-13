@@ -159,7 +159,7 @@ function attachLolTacticsToSnapshot(
   } as MatchSnapshot;
 }
 
-function buildLolMatchReport(runtime: LolSimV1RuntimeState): LolSimV1MatchReportInput {
+export function buildLolMatchReport(runtime: LolSimV1RuntimeState): LolSimV1MatchReportInput {
   const safeStats = {
     blue: {
       kills: runtime.stats?.blue?.kills ?? 0,
@@ -214,6 +214,7 @@ function buildLolMatchReport(runtime: LolSimV1RuntimeState): LolSimV1MatchReport
       cs: champion.cs,
       gold: champion.gold,
       spentGold: champion.spentGold,
+      damageDealt: champion.damageDealt ?? 0,
     })),
   };
 }
@@ -421,7 +422,7 @@ function runtimeRoleToDraftRole(role: string | undefined): DraftPlayerResult["ro
   }
 }
 
-function buildDraftResultFromRuntime(params: {
+export function buildDraftResultFromRuntime(params: {
   runtime: LolSimV1RuntimeState;
   snapshot: MatchSnapshot;
   championSelections: ChampionSelectionByPlayer | null;
@@ -447,6 +448,7 @@ function buildDraftResultFromRuntime(params: {
     deaths: champion.deaths ?? 0,
     assists: champion.assists ?? 0,
     gold: champion.gold ?? 0,
+    damageDealt: champion.damageDealt ?? 0,
     rating: Number(
       Math.max(
         1,

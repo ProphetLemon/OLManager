@@ -1,3 +1,4 @@
+import type { EventDataLike } from "@/ui-v2/match/live/eventSentence";
 export type TeamId = "blue" | "red";
 export type RoleId = "TOP" | "JGL" | "MID" | "ADC" | "SUP";
 export type LaneId = "top" | "mid" | "bot";
@@ -43,6 +44,8 @@ export interface ChampionState {
   assists: number;
   gold: number;
   spentGold: number;
+  /** Damage dealt to enemy champions. Sent by the Rust engine only. */
+  damageDealt?: number;
   xp: number;
   level: number;
   cs: number;
@@ -198,6 +201,10 @@ export interface SimEvent {
     | "spawn"
     | "recall"
     | "info";
+  /** What happened, as a stable identifier. Sent by the Rust engine only; old states have none. */
+  code?: string;
+  /** The facts of the event (who, to whom, which structure). Sent with `code`. */
+  data?: EventDataLike;
 }
 
 export interface MatchState {
