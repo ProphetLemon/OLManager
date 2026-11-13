@@ -19,6 +19,18 @@ describe("resolvePlayerPhoto", () => {
   });
 });
 
+describe("the default silhouette", () => {
+  it("is used when neither the id nor the name matches a photo", () => {
+    expect(resolvePlayerPhoto("unknown-id", "Nobody")).toContain("defaultplayer");
+  });
+});
+
+describe("the default silhouette", () => {
+  it("is used when neither the id nor the name matches a photo", () => {
+    expect(resolvePlayerPhoto("unknown-id", "Nobody")).toContain("defaultplayer");
+  });
+});
+
 describe("a photo stored inside the save", () => {
   // The form `prepare_custom_portrait` produces and a founder keeps in `profile_image_url`.
   const STORED = "data:image/png;base64,iVBORw0KGgo=";

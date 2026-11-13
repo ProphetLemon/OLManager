@@ -45,10 +45,6 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("../TraitBadge", () => ({
-  TraitList: () => <span>Traits</span>,
-}));
-
 beforeEach(() => {
   promoteAcademyPlayer.mockReset();
   getAcademyAcquisitionOptions.mockReset();
