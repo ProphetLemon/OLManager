@@ -85,3 +85,72 @@ export function chipPosition(a: MapPoint, b: MapPoint): MapPoint {
 export function linkOpacity(ageSec: number): number {
   return ageSec < 1.5 ? 1 : ageSec < 3 ? 0.78 : 0.55;
 }
+
+/** A tower beam is never shorter than this, so a target standing next to the tower still gets a mark. */
+export const MIN_BEAM_PX = 16;
+/** Length of each arm of the arrowhead on the target's end. */
+const BEAM_HEAD_PX = 7;
+/** Clear space between the tower's ring and the xN chip that sits behind it. */
+const BEAM_CHIP_GAP_PX = 18;
+
+export interface BeamGeometry {
+  /** Start, on the tower's ring (overlay SVG units). */
+  x1: number;
+  y1: number;
+  /** End, on the target's near edge, or `MIN_BEAM_PX` from the start when that is shorter. */
+  x2: number;
+  y2: number;
+  /** The three points of the arrowhead (tip last but one), as an SVG `points` value. */
+  head: string;
+  /** Where the xN chip sits: behind the tower, away from the target (map units 0..1). */
+  chip: MapPoint;
+  /** True when the target's bubble reaches the tower and the beam was stretched to stay visible. */
+  stretched: boolean;
+}
+
+/**
+ * Where a tower's shot is drawn. It starts at the ring of the tower and ends at the near edge of
+ * the target's bubble; when the target stands so close that this is under `MIN_BEAM_PX`, the beam
+ * keeps that length and runs over the bubble's edge (the layer is drawn above the champions), and
+ * the arrowhead says where it lands. The chip goes on the other side of the tower, so it never
+ * sits under the target.
+ */
+export function beamGeometry(
+  tower: MapPoint,
+  target: MapPoint,
+  ringRadiusPx: number,
+  targetRadiusPx: number,
+  sizePx: number,
+  gapPx = 1.5,
+): BeamGeometry {
+  const unitsPerPx = sizePx > 0 ? MAP_UNITS / sizePx : 0;
+  const ax = tower.x * MAP_UNITS;
+  const ay = tower.y * MAP_UNITS;
+  const dx = target.x * MAP_UNITS - ax;
+  const dy = target.y * MAP_UNITS - ay;
+  const centres = Math.hypot(dx, dy);
+  // Straight down when the two share a point: any direction will do, it only has to be stable.
+  const ux = centres === 0 ? 0 : dx / centres;
+  const uy = centres === 0 ? 1 : dy / centres;
+
+  const startPx = ringRadiusPx;
+  const naturalEndPx = centres / (unitsPerPx || 1) - targetRadiusPx - gapPx;
+  const stretched = naturalEndPx - startPx < MIN_BEAM_PX;
+  const endPx = stretched ? startPx + MIN_BEAM_PX : naturalEndPx;
+
+  const x1 = ax + ux * startPx * unitsPerPx;
+  const y1 = ay + uy * startPx * unitsPerPx;
+  const x2 = ax + ux * endPx * unitsPerPx;
+  const y2 = ay + uy * endPx * unitsPerPx;
+
+  const arm = BEAM_HEAD_PX * unitsPerPx;
+  const backX = x2 - ux * arm;
+  const backY = y2 - uy * arm;
+  const sideX = -uy * arm * 0.6;
+  const sideY = ux * arm * 0.6;
+  const point = (x: number, y: number) => `${x.toFixed(1)},${y.toFixed(1)}`;
+  const head = `${point(backX + sideX, backY + sideY)} ${point(x2, y2)} ${point(backX - sideX, backY - sideY)}`;
+
+  const behindPx = sizePx > 0 ? (ringRadiusPx + BEAM_CHIP_GAP_PX) / sizePx : 0;
+  return { x1, y1, x2, y2, head, chip: { x: tower.x - ux * behindPx, y: tower.y - uy * behindPx }, stretched };
+}

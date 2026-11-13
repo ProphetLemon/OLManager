@@ -44,7 +44,7 @@ const DASHBOARD_TAB_ROUTES = [
 
 const DASHBOARD_ROUTES = ["/dashboard", ...DASHBOARD_TAB_ROUTES];
 
-const FLOATING_BUG_ROUTES = ["/match", "/select-team"];
+const FLOATING_BUG_ROUTES = ["/select-team"];
 
 // Only in-game screens take the club colours. Every other screen (main menu,
 // team selection, settings) keeps the theme colours, whatever the store holds.
@@ -55,8 +55,8 @@ export function AppContent() {
   useClubTheme(CLUB_THEMED_ROUTES.includes(location.pathname));
   const setCurrentRoute = useBugReportStore((s) => s.setCurrentRoute);
   const setCurrentDashboardTab = useBugReportStore((s) => s.setCurrentDashboardTab);
-  // The dashboard rail hosts its own bug button, so the floating one only
-  // appears on the screens without a rail.
+  // The dashboard rail and the match controls row host their own bug button, so
+  // the floating one only appears on the screens without either.
   const showBugButton = FLOATING_BUG_ROUTES.includes(location.pathname);
 
   // Keep bug-report context in sync with the current route.

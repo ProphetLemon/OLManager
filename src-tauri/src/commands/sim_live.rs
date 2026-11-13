@@ -47,8 +47,10 @@ pub async fn sim_live_run_to_completion(
     run_to_completion(&state, request)
 }
 
+/// Async so that Tauri runs it on its async runtime instead of the main thread: simulating the
+/// rest of a match takes seconds in a debug build and would freeze the window meanwhile.
 #[tauri::command]
-pub fn sim_live_skip_to_end(
+pub async fn sim_live_skip_to_end(
     state: State<'_, SimLiveStoreState>,
     request: SimLiveSkipToEndRequest,
 ) -> Result<SimLiveSkipToEndResponse, String> {

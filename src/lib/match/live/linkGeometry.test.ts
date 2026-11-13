@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chipPosition, linkDots, linkEndpoints, linkOpacity } from "@/lib/match/live/linkGeometry";
+import { MIN_BEAM_PX, beamGeometry, chipPosition, linkDots, linkEndpoints, linkOpacity } from "@/lib/match/live/linkGeometry";
 import type { ContactPair } from "@/lib/match/live/contacts";
 
 /** Bubble radius as the marker CSS sizes it: clamp(24px, 4.8cqw, 38px) across. */
@@ -88,5 +88,54 @@ describe("chipPosition and linkOpacity", () => {
     expect(linkOpacity(1.5)).toBe(0.78);
     expect(linkOpacity(2.9)).toBe(0.78);
     expect(linkOpacity(3)).toBe(0.55);
+  });
+});
+
+describe("beamGeometry", () => {
+  const tower = { x: 0.2, y: 0.6 };
+  const RING = 15;
+  const BUBBLE = 12.5;
+  const length = (g: { x1: number; y1: number; x2: number; y2: number }, size: number) =>
+    toPx(Math.hypot(g.x2 - g.x1, g.y2 - g.y1), size);
+
+  it("runs from the tower's ring to the target's near edge when there is room", () => {
+    const g = beamGeometry(tower, { x: 0.4, y: 0.6 }, RING, BUBBLE, 540);
+    expect(g.stretched).toBe(false);
+    expect(toPx(g.x1 - 200, 540)).toBeCloseTo(RING, 5);
+    expect(toPx(400 - g.x2, 540)).toBeCloseTo(BUBBLE + 1.5, 5);
+  });
+
+  it("keeps the minimum length when the target stands next to the tower", () => {
+    const g = beamGeometry(tower, { x: 0.23, y: 0.6 }, RING, BUBBLE, 540);
+    expect(g.stretched).toBe(true);
+    expect(length(g, 540)).toBeCloseTo(MIN_BEAM_PX, 5);
+  });
+
+  it("keeps the minimum length when the target stands on the tower", () => {
+    const g = beamGeometry(tower, tower, RING, BUBBLE, 540);
+    expect(length(g, 540)).toBeCloseTo(MIN_BEAM_PX, 5);
+  });
+
+  it("puts the chip behind the tower, on the side away from the target, clear of the ring", () => {
+    const right = beamGeometry(tower, { x: 0.23, y: 0.6 }, RING, BUBBLE, 540);
+    expect(right.chip.x).toBeLessThan(tower.x - RING / 540);
+    expect(right.chip.y).toBeCloseTo(tower.y, 8);
+    const below = beamGeometry(tower, { x: 0.2, y: 0.8 }, RING, BUBBLE, 540);
+    expect(below.chip.y).toBeLessThan(tower.y);
+    expect(below.chip.x).toBeCloseTo(tower.x, 8);
+  });
+
+  it("ends the arrowhead on the end of the beam, with arms behind it", () => {
+    const g = beamGeometry(tower, { x: 0.4, y: 0.6 }, RING, BUBBLE, 540);
+    const [armA, tip, armB] = g.head.split(" ").map((pair) => pair.split(",").map(Number));
+    expect(tip).toEqual([Number(g.x2.toFixed(1)), Number(g.y2.toFixed(1))]);
+    expect(armA[0]).toBeLessThan(tip[0]);
+    expect(armB[0]).toBeLessThan(tip[0]);
+    expect(armA[1]).not.toBe(armB[1]);
+  });
+
+  it("draws nothing for a map without a size", () => {
+    const g = beamGeometry(tower, { x: 0.3, y: 0.6 }, RING, BUBBLE, 0);
+    expect(Number.isFinite(g.x2)).toBe(true);
   });
 });

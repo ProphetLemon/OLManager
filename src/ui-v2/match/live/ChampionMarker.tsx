@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 
-import { hpShare, initialsOf, shortName, type MarkerState } from "@/lib/match/live/championMarker";
+import { hpShare, initialsOf, type MarkerState } from "@/lib/match/live/championMarker";
 import { recallProgress } from "@/lib/match/live/contacts";
 import { anchorTransform, bubbleDiameterPx, type MapPoint } from "@/lib/match/live/mapGeometry";
 import type { TagPlacement } from "@/lib/match/live/tagPlacement";
@@ -9,6 +9,7 @@ import { cn } from "@/ui-v2/lib/utils";
 
 import { useArenaBus, useMapSize } from "./arenaMapContext";
 import { RING_CLASSES } from "./ringClasses";
+import { TagContent } from "./TagContent";
 import type { MarkerTexts } from "./useMarkerTexts";
 
 /** The recall ring is drawn in a 100 unit box; the arc is a circle of this radius. */
@@ -42,6 +43,8 @@ export interface ChampionMarkerProps {
   state: MarkerState | null;
   texts: MarkerTexts;
   tag: TagPlacement | undefined;
+  /** Hands the element of the tag to the guard that shows and hides it on the frame path. */
+  tagRef?: (element: Element | null) => void;
   fighting: boolean;
   selected: boolean;
   /** Another player is followed: this one steps back. */
@@ -82,6 +85,7 @@ export const ChampionMarker = memo(function ChampionMarker({
   state,
   texts,
   tag,
+  tagRef,
   fighting,
   selected,
   dimmed,
@@ -195,6 +199,7 @@ export const ChampionMarker = memo(function ChampionMarker({
       </div>
       {tag && (tag.form === "full" || tag.form === "compact") ? (
         <div
+          ref={tagRef}
           className="arena-tag"
           style={tagStyle(tag, radius)}
           data-slot={tag.slot}
@@ -202,12 +207,7 @@ export const ChampionMarker = memo(function ChampionMarker({
           data-form={tag.form}
           data-testid="tag"
         >
-          <b>
-            <span className="arena-tag-long">{champion.name}</span>
-            <span className="arena-tag-short">{shortName(champion.name)}</span>
-          </b>
-          {texts.sub ? <span className="arena-tag-sub arena-tag-long">{texts.sub}</span> : null}
-          {texts.subCompact ? <span className="arena-tag-sub arena-tag-short">{texts.subCompact}</span> : null}
+          <TagContent name={champion.name} texts={texts} />
         </div>
       ) : null}
     </div>

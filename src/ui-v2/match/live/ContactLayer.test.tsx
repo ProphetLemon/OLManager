@@ -14,20 +14,18 @@ import {
   makeChampion,
   makeFrame,
   makeState,
-  makeStructure,
   type TestBus,
 } from "./arenaFixtures.testing";
 import { CONTACT_LEGEND_KEYS, ContactLayer } from "./ContactLayer";
-import { RING_CLASSES } from "./ringClasses";
 import { useContactView } from "./useContactView";
 
 const SIZE = 540;
 
 function Scene({ state, test, size = SIZE }: { state: LolSimV1RuntimeState; test: TestBus; size?: number }) {
-  const { contacts, beams } = useContactView(state);
+  const { contacts } = useContactView(state);
   return (
     <ArenaHarness bus={test.bus} sizePx={size}>
-      <ContactLayer state={state} contacts={contacts} beams={beams} />
+      <ContactLayer state={state} contacts={contacts} />
     </ArenaHarness>
   );
 }
@@ -41,20 +39,6 @@ function duel(over: { korvan?: object; dellan?: object; dx?: number } = {}, time
     champions: [
       makeChampion("c1", "blue", 0.3, 0.5, { name: "Korvan", ...over.korvan }),
       makeChampion("c2", "red", 0.3 + dx, 0.5, { name: "Dellan", ...over.dellan }),
-    ],
-  });
-}
-
-function towerShot(over: { lastShotAt?: number; shots?: number; targetAlive?: boolean } = {}) {
-  return makeState({
-    timeSec: 100,
-    champions: [makeChampion("dellan", "red", 0.3, 0.6, { name: "Dellan", alive: over.targetAlive ?? true })],
-    structures: [
-      makeStructure("blue-mid-outer", "blue", "tower", 0.2, 0.6, {
-        rampTargetId: "dellan",
-        rampShots: over.shots ?? 2,
-        rampLastShotAt: over.lastShotAt ?? 97.5,
-      }),
     ],
   });
 }
@@ -173,57 +157,6 @@ describe("chip on a fight", () => {
   });
 });
 
-describe("tower beams", () => {
-  it("show while the last shot is under 3 seconds old and go after", () => {
-    const test = createTestBus();
-    const { rerender } = render(<Scene state={towerShot({ lastShotAt: 97.1 })} test={test} />);
-    expect(document.querySelector(".arena-beam")).not.toBeNull();
-    rerender(<Scene state={towerShot({ lastShotAt: 96.9 })} test={test} />);
-    expect(document.querySelector(".arena-beam")).toBeNull();
-    expect(screen.queryByTestId("shots-chip")).toBeNull();
-  });
-
-  it("count the shots as rampShots plus one", () => {
-    const test = createTestBus();
-    render(<Scene state={towerShot({ shots: 2 })} test={test} />);
-    expect(screen.getByTestId("shots-chip")).toHaveTextContent("x3");
-  });
-
-  it("start outside the firing tower's ring and end outside the target's bubble", () => {
-    const test = createTestBus();
-    const state = towerShot();
-    render(<Scene state={state} test={test} />);
-    test.publish(makeFrame(state));
-    const beam = document.querySelector(".arena-beam");
-    const toPx = (units: number) => (units * SIZE) / MAP_UNITS;
-    expect(toPx(attr(beam, "x1") - 200)).toBeGreaterThan(5);
-    expect(toPx(300 - attr(beam, "x2"))).toBeGreaterThanOrEqual(bubbleDiameterPx(SIZE) / 2);
-    expect(attr(part("beam-dot"), "cx")).toBe(attr(beam, "x1"));
-  });
-
-  it("draw nothing for a dead target", () => {
-    const test = createTestBus();
-    render(<Scene state={towerShot({ targetAlive: false })} test={test} />);
-    expect(document.querySelector(".arena-beam")).toBeNull();
-  });
-
-  it("ring the firing tower with a dashed ring, apart from the fight and follow rings", () => {
-    const test = createTestBus();
-    render(<Scene state={towerShot()} test={test} />);
-    expect(document.querySelectorAll(`.${RING_CLASSES.fire}`)).toHaveLength(1);
-    expect(RING_CLASSES.fire).not.toBe(RING_CLASSES.fighting);
-    expect(RING_CLASSES.fire).not.toBe(RING_CLASSES.selected);
-  });
-
-  it("say how many hits in the chip's title, with the right plural", () => {
-    const test = createTestBus();
-    const { rerender } = render(<Scene state={towerShot({ shots: 0 })} test={test} />);
-    expect(screen.getByTestId("shots-chip")).toHaveAttribute("title", "Tower fire on Dellan: 1 hit");
-    rerender(<Scene state={towerShot({ shots: 2 })} test={test} />);
-    expect(screen.getByTestId("shots-chip")).toHaveAttribute("title", "Tower fire on Dellan: 3 hits");
-  });
-});
-
 describe("for assistive technology and the legend", () => {
   it("hides the lines and the chips", () => {
     const test = createTestBus();
@@ -252,13 +185,9 @@ describe("ContactLayer in the Spanish UI", () => {
     await i18n.changeLanguage("en");
   });
 
-  it("names the fight and the shots in Spanish", () => {
+  it("names the fight in Spanish", () => {
     const test = createTestBus();
-    const { rerender } = render(<Scene state={duel({ dellan: hitBy("c1", 99.5) })} test={test} />);
+    render(<Scene state={duel({ dellan: hitBy("c1", 99.5) })} test={test} />);
     expect(screen.getByTestId("contact-chip")).toHaveAttribute("title", "Korvan y Dellan están peleando");
-    rerender(<Scene state={towerShot({ shots: 0 })} test={test} />);
-    expect(screen.getByTestId("shots-chip")).toHaveAttribute("title", "La torre dispara a Dellan: 1 disparo");
-    rerender(<Scene state={towerShot({ shots: 2 })} test={test} />);
-    expect(screen.getByTestId("shots-chip")).toHaveAttribute("title", "La torre dispara a Dellan: 3 disparos");
   });
 });

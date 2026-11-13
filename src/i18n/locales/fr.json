@@ -4517,7 +4517,10 @@
         "skipConfirm": "Afficher le résultat",
         "resetTitle": "Recommencer ce match ?",
         "resetBody": "Le match repart de la minute 0 et peut se dérouler autrement. Ce que vous avez déjà vu est perdu.",
-        "resetConfirm": "Recommencer"
+        "resetConfirm": "Recommencer",
+        "skipFailed": "Le reste du match n'a pas pu être joué d'un coup. Il continue.",
+        "skipBusy": "Calcul du résultat…",
+        "skipRetry": "Réessayer"
       },
       "spotlight": {
         "label": "À l'honneur",
@@ -4714,7 +4717,14 @@
       },
       "team": {
         "blue": "Bleu",
-        "red": "Rouge"
+        "red": "Rouge",
+        "players": "Joueurs de {{team}}"
+      },
+      "end": {
+        "label": "Résultat du match",
+        "winner": "{{team}} gagne",
+        "lead": "{{team}} termine avec {{amount}} d'or d'avance",
+        "leadEven": "L'or est resté à égalité"
       },
       "pit": {
         "voidgrubs": "Larves du Néant",

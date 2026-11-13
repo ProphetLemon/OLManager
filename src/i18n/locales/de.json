@@ -4517,7 +4517,10 @@
         "skipConfirm": "Ergebnis zeigen",
         "resetTitle": "Dieses Spiel neu starten?",
         "resetBody": "Das Spiel beginnt wieder bei Minute 0 und kann anders verlaufen. Was du bisher gesehen hast, geht verloren.",
-        "resetConfirm": "Neu starten"
+        "resetConfirm": "Neu starten",
+        "skipFailed": "Der Rest des Spiels konnte nicht sofort gespielt werden. Es läuft weiter.",
+        "skipBusy": "Ergebnis wird berechnet …",
+        "skipRetry": "Erneut versuchen"
       },
       "spotlight": {
         "label": "Im Fokus",
@@ -4714,7 +4717,14 @@
       },
       "team": {
         "blue": "Blau",
-        "red": "Rot"
+        "red": "Rot",
+        "players": "Spieler von {{team}}"
+      },
+      "end": {
+        "label": "Spielergebnis",
+        "winner": "{{team}} gewinnt",
+        "lead": "{{team}} lag am Ende mit {{amount}} Gold vorn",
+        "leadEven": "Das Gold war am Ende ausgeglichen"
       },
       "pit": {
         "voidgrubs": "Leerenlarven",

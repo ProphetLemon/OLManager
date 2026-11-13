@@ -18,6 +18,7 @@ import {
   type TestBus,
 } from "./arenaFixtures.testing";
 import { ContactLayer } from "./ContactLayer";
+import { TowerFireLayer } from "./TowerFireLayer";
 import { RING_CLASSES } from "./ringClasses";
 import { PUSH_KEYS, StructureLayer } from "./StructureLayer";
 import { useContactView } from "./useContactView";
@@ -158,7 +159,8 @@ describe("tower fire", () => {
     return (
       <ArenaHarness bus={test.bus} sizePx={SIZE}>
         <StructureLayer state={state} beams={beams} />
-        <ContactLayer state={state} contacts={contacts} beams={beams} />
+        <ContactLayer state={state} contacts={contacts} />
+        <TowerFireLayer state={state} beams={beams} />
       </ArenaHarness>
     );
   }
@@ -169,7 +171,7 @@ describe("tower fire", () => {
     expect(document.querySelectorAll(".arena-struct[data-firing]")).toHaveLength(1);
   });
 
-  it("rings it once, with the dashed ring the contact layer owns", () => {
+  it("rings it once, with the dashed ring the tower fire layer owns", () => {
     render(<Both state={firing()} test={createTestBus()} />);
     expect(document.querySelectorAll(`.${RING_CLASSES.fire}`)).toHaveLength(1);
     expect(document.querySelectorAll(`.arena-struct .${RING_CLASSES.fire}`)).toHaveLength(0);

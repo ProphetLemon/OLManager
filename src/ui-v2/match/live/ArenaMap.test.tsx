@@ -9,7 +9,7 @@ import { createFrameBus } from "./frameBus";
 import { createFakeScheduler } from "./frameScheduler.testing";
 import type { LiveFrame } from "./useLiveSession";
 
-type ObserverCallback = (entries: Array<{ contentRect: { width: number } }>) => void;
+type ObserverCallback = (entries: Array<{ contentRect: { width: number; height: number } }>) => void;
 
 const observers: StubObserver[] = [];
 
@@ -23,8 +23,8 @@ class StubObserver {
   disconnect() {
     this.disconnected = true;
   }
-  resize(width: number) {
-    this.callback([{ contentRect: { width } }]);
+  resize(width: number, height: number) {
+    this.callback([{ contentRect: { width, height } }]);
   }
 }
 
@@ -39,9 +39,10 @@ afterEach(() => {
   globalThis.ResizeObserver = originalObserver;
 });
 
-function resizeTo(width: number) {
+/** The grid cell of the map takes this size; a square cell when no height is given. */
+function resizeTo(width: number, height = width) {
   act(() => {
-    observers[observers.length - 1].resize(width);
+    observers[observers.length - 1].resize(width, height);
   });
 }
 
@@ -65,6 +66,37 @@ describe("ArenaMap", () => {
     expect(screen.getByTestId("probe")).toHaveTextContent("540");
     resizeTo(320);
     expect(screen.getByTestId("probe")).toHaveTextContent("320");
+  });
+
+  it.each([
+    { cell: "600x474", width: 600, height: 474, side: 474 },
+    { cell: "400x600", width: 400, height: 600, side: 400 },
+    { cell: "474x474", width: 474, height: 474, side: 474 },
+    { cell: "640.9x500.9", width: 640.9, height: 500.9, side: 500 },
+  ])("is the square that fits a $cell cell: $side px, never beyond either side", ({ width, height, side }) => {
+    render(<ArenaMap bus={bus()} layers={{ champions: <SizeProbe /> }} />);
+    resizeTo(width, height);
+    const map = screen.getByTestId("arena-map");
+    expect(screen.getByTestId("probe")).toHaveTextContent(String(side));
+    expect(map).toHaveAttribute("data-size", String(side));
+    expect(map).toHaveStyle({ width: `${side}px`, height: `${side}px` });
+    expect(side).toBeLessThanOrEqual(Math.min(width, height));
+  });
+
+  it("measures the cell around the map, not the map, and keeps the map out of the cell's size", () => {
+    render(<ArenaMap bus={bus()} />);
+    const cell = screen.getByTestId("arena-cell");
+    expect(cell).toHaveClass("arena-cell");
+    expect(cell.children).toHaveLength(1);
+    expect(cell.firstElementChild).toBe(screen.getByTestId("arena-map"));
+  });
+
+  it("follows a row that gets shorter than the column while the window stays as wide", () => {
+    render(<ArenaMap bus={bus()} layers={{ champions: <SizeProbe /> }} />);
+    resizeTo(474, 474);
+    expect(screen.getByTestId("probe")).toHaveTextContent("474");
+    resizeTo(474, 436);
+    expect(screen.getByTestId("probe")).toHaveTextContent("436");
   });
 
   it("watches the size with one observer and lets go of it on unmount", () => {

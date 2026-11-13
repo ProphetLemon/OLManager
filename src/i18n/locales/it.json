@@ -4516,7 +4516,10 @@
         "skipConfirm": "Mostra il risultato",
         "resetTitle": "Ricominciare questa partita?",
         "resetBody": "La partita torna al minuto 0 e può andare diversamente. Quello che hai visto finora va perso.",
-        "resetConfirm": "Ricomincia"
+        "resetConfirm": "Ricomincia",
+        "skipFailed": "Non è stato possibile giocare subito il resto della partita. Continua a scorrere.",
+        "skipBusy": "Calcolo del risultato…",
+        "skipRetry": "Riprova"
       },
       "spotlight": {
         "label": "In primo piano",
@@ -4713,7 +4716,14 @@
       },
       "team": {
         "blue": "Blu",
-        "red": "Rosso"
+        "red": "Rosso",
+        "players": "Giocatori di {{team}}"
+      },
+      "end": {
+        "label": "Risultato della partita",
+        "winner": "Vince {{team}}",
+        "lead": "{{team}} ha chiuso con {{amount}} d'oro di vantaggio",
+        "leadEven": "L'oro è finito in parità"
       },
       "pit": {
         "voidgrubs": "Larve del Vuoto",

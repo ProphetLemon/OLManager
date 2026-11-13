@@ -17,8 +17,8 @@ import ChampionDraft, {
 } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import type { ChampionDraftResultPayload } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import { finalizeLiveMatch, type FinishLiveMatchResponse } from "@/ui-v2/_legacy/pages/MatchSimulation.finalize";
-import LolMatchLive from "@/ui-v2/_legacy/components/match/LolMatchLive";
-import type { ChampionSelectionByPlayer } from "@/ui-v2/_legacy/components/match/LolMatchLive";
+import LiveMatchV2 from "@/ui-v2/match/LiveMatchV2";
+import type { ChampionSelectionByPlayer } from "@/ui-v2/match/live/useChampionProfiles";
 import MatchTacticsStage from "@/ui-v2/_legacy/components/match/MatchTacticsStage";
 import LolResultScreen from "@/ui-v2/_legacy/components/match/LolResultScreen";
 import DraftResultScreenV2 from "@/ui-v2/components/DraftResultScreenV2";
@@ -2016,7 +2016,7 @@ export default function MatchSimulation() {
 
     case "first_half":
       return (
-        <LolMatchLive
+        <LiveMatchV2
           key={stage}
           gameState={gameState}
           snapshot={renderSnapshotWithTactics ?? snapshot}

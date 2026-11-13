@@ -50,7 +50,6 @@ const BASELINE: Record<string, number> = {
   "ui-v2/_legacy/components/match/PreMatchSetup.tsx": 3,
   "ui-v2/_legacy/components/match/PressConference.tsx": 3,
   "ui-v2/_legacy/components/match/SubPanel.tsx": 10,
-  "ui-v2/_legacy/components/match/lol-prototype/ui/panels.tsx": 2,
   "ui-v2/_legacy/components/menu/CommunityPanel.tsx": 3,
   "ui-v2/_legacy/components/menu/PatchNotesPanel.tsx": 3,
   "ui-v2/_legacy/components/menu/SavesList.tsx": 4,

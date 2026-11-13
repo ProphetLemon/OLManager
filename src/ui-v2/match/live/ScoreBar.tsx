@@ -109,43 +109,45 @@ function BarSide({ side, identity, view }: { side: TeamSide; identity: TeamIdent
         <span className="arena-bar-tag">{identity.tag}</span>
         <span className="arena-bar-name">{identity.name}</span>
       </span>
-      <Stat
-        label={t(STAT_KEYS.tower)}
-        value={String(view.towers)}
-        icon={<Castle className="arena-bar-icon" aria-hidden="true" focusable="false" />}
-      />
-      <Stat
-        label={t(STAT_KEYS.gold)}
-        value={compactGold(view.gold, i18n.language)}
-        icon={<Coins className="arena-bar-icon" aria-hidden="true" focusable="false" />}
-      />
-      <span className="arena-bar-pips" role="group" aria-label={t(STAT_KEYS.dragon)}>
-        {view.dragonPips.map((pip, index) => (
-          <Pip key={index} pip={pip} name={dragonName} />
-        ))}
-      </span>
-      <Stat
-        label={t(STAT_KEYS.voidgrub)}
-        value={String(view.grubs)}
-        icon={<img className="arena-bar-icon" src={NEUTRAL_OBJECTIVE_ICON_PATH.grub} alt="" draggable={false} />}
-      />
-      <Stat
-        label={t(STAT_KEYS.baron)}
-        value={String(view.barons)}
-        icon={<img className="arena-bar-icon" src={NEUTRAL_OBJECTIVE_ICON_PATH.baron} alt="" draggable={false} />}
-      />
-      {/* Always rendered: its space is reserved, so a buff starting or ending never reflows the bar. */}
-      <span
-        className="arena-bar-buffs"
-        data-active={chips.length > 0 || undefined}
-        role={chips.length > 0 ? "group" : undefined}
-        aria-label={chips.length > 0 ? t("onAir.match.bar.buffs") : undefined}
-      >
-        {chips.map((chip) => (
-          <span key={chip.id} className="arena-buff" data-kind={chip.id}>
-            {chip.text}
-          </span>
-        ))}
+      <span className="arena-bar-stats">
+        <Stat
+          label={t(STAT_KEYS.tower)}
+          value={String(view.towers)}
+          icon={<Castle className="arena-bar-icon" aria-hidden="true" focusable="false" />}
+        />
+        <Stat
+          label={t(STAT_KEYS.gold)}
+          value={compactGold(view.gold, i18n.language)}
+          icon={<Coins className="arena-bar-icon" aria-hidden="true" focusable="false" />}
+        />
+        <span className="arena-bar-pips" role="group" aria-label={t(STAT_KEYS.dragon)}>
+          {view.dragonPips.map((pip, index) => (
+            <Pip key={index} pip={pip} name={dragonName} />
+          ))}
+        </span>
+        <Stat
+          label={t(STAT_KEYS.voidgrub)}
+          value={String(view.grubs)}
+          icon={<img className="arena-bar-icon" src={NEUTRAL_OBJECTIVE_ICON_PATH.grub} alt="" draggable={false} />}
+        />
+        <Stat
+          label={t(STAT_KEYS.baron)}
+          value={String(view.barons)}
+          icon={<img className="arena-bar-icon" src={NEUTRAL_OBJECTIVE_ICON_PATH.baron} alt="" draggable={false} />}
+        />
+        {/* Always rendered: its space is reserved, so a buff starting or ending never reflows the bar. */}
+        <span
+          className="arena-bar-buffs"
+          data-active={chips.length > 0 || undefined}
+          role={chips.length > 0 ? "group" : undefined}
+          aria-label={chips.length > 0 ? t("onAir.match.bar.buffs") : undefined}
+        >
+          {chips.map((chip) => (
+            <span key={chip.id} className="arena-buff" data-kind={chip.id}>
+              {chip.text}
+            </span>
+          ))}
+        </span>
       </span>
     </div>
   );
