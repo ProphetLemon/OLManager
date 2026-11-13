@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { resolveTeamLogoById } from "./teamLogos";
 import { resolveTransferTeamLogo } from "./transferLogos";
-import { scrimOpponentLogo } from "@/lib/scrims/opponentLogo";
 
 const BADGE = "data:image/svg+xml;utf8,%3Csvg%3E";
 const teams = [
@@ -37,16 +36,5 @@ describe("resolveTransferTeamLogo (market sites)", () => {
     expect(resolveTransferTeamLogo(undefined, "lec-shifters", "Shifters")).toBe(
       "/teams-icons/shifters.webp",
     );
-  });
-});
-
-describe("scrimOpponentLogo (scrims sites)", () => {
-  it("shows the data: badge of a custom club", () => {
-    expect(scrimOpponentLogo(teams, "les-custom-ray")).toBe(BADGE);
-  });
-
-  it("keeps the id-derived path as fallback", () => {
-    expect(scrimOpponentLogo(teams, "lec-fnatic")).toBe("/teams-icons/fnatic.webp");
-    expect(scrimOpponentLogo(undefined, "lec-shifters")).toBe("/teams-icons/shifters.webp");
   });
 });

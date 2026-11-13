@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { resolveUserLeague } from "@/lib/userLeague";
 import type {
   FixtureData,
@@ -13,6 +14,14 @@ import {
   buildActiveLineupIds,
   LOL_ACTIVE_ROLES,
 } from "@/ui-v2/_legacy/components/squad/SquadTab.helpers";
+
+export interface DashboardMatchModeMeta {
+  buttonColorClass: string;
+  desc: string;
+  dropdownColorClass: string;
+  icon: ReactNode;
+  label: string;
+}
 
 export interface DashboardAlert {
   id: string;

@@ -6,7 +6,7 @@ import DashboardBlockerModal from "@/ui-v2/_legacy/components/dashboard/Dashboar
 import DashboardCloseConfirmModal from "@/ui-v2/_legacy/components/dashboard/DashboardCloseConfirmModal";
 import DashboardExitConfirmModal from "@/ui-v2/_legacy/components/dashboard/DashboardExitConfirmModal";
 import DashboardExitSavingModal from "@/ui-v2/_legacy/components/dashboard/DashboardExitSavingModal";
-import { type DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboard/DashboardHeader";
+import { type DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 import DashboardMatchConfirmModal from "@/ui-v2/_legacy/components/dashboard/DashboardMatchConfirmModal";
 
 interface DashboardOverlaysProps {
