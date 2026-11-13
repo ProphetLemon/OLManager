@@ -97,6 +97,9 @@ describe("team tokens", () => {
       "--terrain-lane",
       "--terrain-pit",
       "--terrain-pit-edge",
+      "--terrain-wall",
+      "--terrain-path",
+      "--terrain-base",
     ]) {
       expect(BLOCKS.light).toContain(`${name}:`);
     }

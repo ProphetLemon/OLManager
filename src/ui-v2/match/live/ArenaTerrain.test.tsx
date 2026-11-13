@@ -2,81 +2,103 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ArenaTerrain } from "@/ui-v2/match/live/ArenaTerrain";
 import {
-  BASE_ZONES,
-  LANES,
-  LANE_HALF_WIDTH_UNITS,
-  LANE_KEYS,
-  PITS,
-  distanceToPolyline,
-  isInBase,
-  type MapPoint,
-} from "@/lib/match/live/mapGeometry";
-import { STRUCTURES_LAYOUT } from "@/lib/match/lolMapLayout";
+  RIFT_IMAGE_SRC,
+  TERRAIN_DIRECTION,
+  TERRAIN_DIRECTIONS,
+  type TerrainDirection,
+} from "@/ui-v2/match/live/terrainDirection";
+import { MAP_UNITS } from "@/lib/match/live/mapGeometry";
 
-function parsePoints(value: string | null): MapPoint[] {
-  return (value ?? "")
-    .trim()
-    .split(/\s+/)
-    .map((pair) => {
-      const [x, y] = pair.split(",").map(Number);
-      return { x, y };
-    });
-}
+const draw = (direction?: TerrainDirection) => {
+  const { container } = render(<ArenaTerrain direction={direction} />);
+  return container;
+};
 
 describe("ArenaTerrain", () => {
   it("is hidden from assistive technology and not focusable", () => {
-    const { container } = render(<ArenaTerrain />);
-    const svg = container.querySelector("svg")!;
+    const svg = draw().querySelector("svg")!;
     expect(svg).toHaveAttribute("aria-hidden", "true");
     expect(svg).toHaveAttribute("focusable", "false");
-    expect(svg).toHaveAttribute("viewBox", "0 0 1000 1000");
+    expect(svg).toHaveAttribute("viewBox", `0 0 ${MAP_UNITS} ${MAP_UNITS}`);
   });
 
-  it("draws the three lanes from the geometry", () => {
-    const { container } = render(<ArenaTerrain />);
-    for (const lane of LANE_KEYS) {
-      const drawn = container.querySelectorAll(`polyline[data-lane="${lane}"]`);
-      expect(drawn).toHaveLength(2);
-      expect(parsePoints(drawn[0].getAttribute("points"))).toEqual(LANES[lane]);
-    }
+  it.each(TERRAIN_DIRECTIONS)("draws the Rift image across the whole map in the %s direction", (direction) => {
+    const image = draw(direction).querySelector("image")!;
+    expect(image).toHaveAttribute("href", RIFT_IMAGE_SRC);
+    expect(RIFT_IMAGE_SRC).toBe("/map.webp");
+    expect(image).toHaveAttribute("x", "0");
+    expect(image).toHaveAttribute("y", "0");
+    expect(image).toHaveAttribute("width", String(MAP_UNITS));
+    expect(image).toHaveAttribute("height", String(MAP_UNITS));
   });
 
-  it("puts every engine structure on a lane that is actually drawn, or in a drawn base", () => {
-    const { container } = render(<ArenaTerrain />);
-    const drawnLanes = Object.fromEntries(
-      LANE_KEYS.map((lane) => [
-        lane,
-        parsePoints(container.querySelector(`polyline[data-lane="${lane}"][data-part="edge"]`)!.getAttribute("points")),
+  it("uses the direction constant when none is given", () => {
+    expect(TERRAIN_DIRECTIONS).toContain(TERRAIN_DIRECTION);
+    expect(draw().querySelector("svg")).toHaveAttribute("data-direction", TERRAIN_DIRECTION);
+  });
+
+  it("original: shows the image as it is, with no filter", () => {
+    const container = draw("original");
+    expect(container.querySelector("svg")).toHaveAttribute("data-direction", "original");
+    expect(container.querySelector("image")).not.toHaveAttribute("filter");
+    expect(container.querySelector("filter")).toBeNull();
+  });
+
+  it("night: dims and desaturates the image over the terrain ground", () => {
+    const container = draw("night");
+    const image = container.querySelector("image")!;
+    const id = /^url\(#(.+)\)$/.exec(image.getAttribute("filter") ?? "")?.[1];
+    expect(id).toBeTruthy();
+    const filter = container.querySelector(`filter[id="${id}"]`)!;
+    expect(filter.querySelector('feColorMatrix[type="saturate"]')).not.toBeNull();
+    expect(Number(image.getAttribute("opacity"))).toBeGreaterThan(0);
+    expect(Number(image.getAttribute("opacity"))).toBeLessThan(1);
+    expect(container.querySelector("rect")).toHaveStyle({ fill: "var(--terrain-ground)" });
+  });
+
+  it("tokens: recolours walls, paths, bases and river from the terrain tokens", () => {
+    const container = draw("tokens");
+    const image = container.querySelector("image")!;
+    const id = /^url\(#(.+)\)$/.exec(image.getAttribute("filter") ?? "")?.[1];
+    expect(id).toBeTruthy();
+    const filter = container.querySelector(`filter[id="${id}"]`)!;
+    const floods = Array.from(filter.querySelectorAll("feFlood")).map((flood) => (flood as SVGElement).style.getPropertyValue("flood-color"));
+    expect(floods).toEqual(
+      expect.arrayContaining([
+        "var(--terrain-wall)",
+        "var(--terrain-base)",
+        "var(--terrain-path)",
+        "var(--terrain-river)",
+        "var(--team-blue)",
+        "var(--team-red)",
       ]),
     );
-    expect(container.querySelector('path[data-base="blue"]')).toHaveAttribute("d", BASE_ZONES.blue.path);
-    expect(container.querySelector('path[data-base="red"]')).toHaveAttribute("d", BASE_ZONES.red.path);
-
-    const offenders = STRUCTURES_LAYOUT.filter((s) => {
-      const p = { x: s.x * 1000, y: s.y * 1000 };
-      return s.lane === "base"
-        ? !isInBase(p, s.side)
-        : distanceToPolyline(p, drawnLanes[s.lane]) > LANE_HALF_WIDTH_UNITS;
-    }).map((s) => s.id);
-    expect(offenders).toEqual([]);
+    // The masks read the picture: one for walkable ground, one for the pale paths, one for the water.
+    expect(filter.querySelectorAll("feColorMatrix[type='matrix']").length).toBeGreaterThanOrEqual(3);
   });
 
-  it("centres the two pits where the engine puts them", () => {
-    const { container } = render(<ArenaTerrain />);
-    const top = container.querySelector('circle[data-pit="top"]')!;
-    const dragon = container.querySelector('circle[data-pit="dragon"]')!;
-    expect(Number(top.getAttribute("cx"))).toBeCloseTo(PITS.top.x, 6);
-    expect(Number(top.getAttribute("cy"))).toBeCloseTo(PITS.top.y, 6);
-    expect(Number(dragon.getAttribute("cx"))).toBeCloseTo(PITS.dragon.x, 6);
-    expect(Number(dragon.getAttribute("cy"))).toBeCloseTo(PITS.dragon.y, 6);
+  it("tokens: tints each base with its team, in its own corner", () => {
+    const filter = draw("tokens").querySelector("filter")!;
+    const flood = (token: string) =>
+      Array.from(filter.querySelectorAll("feFlood")).find(
+        (node) => (node as SVGElement).style.getPropertyValue("flood-color") === token,
+      )!;
+    // Blue base: bottom left quarter. Red base: top right quarter.
+    expect([flood("var(--team-blue)").getAttribute("x"), flood("var(--team-blue)").getAttribute("y")]).toEqual(["0", String(MAP_UNITS / 2)]);
+    expect([flood("var(--team-red)").getAttribute("x"), flood("var(--team-red)").getAttribute("y")]).toEqual([String(MAP_UNITS / 2), "0"]);
   });
 
-  it("paints with tokens only", () => {
-    const { container } = render(<ArenaTerrain />);
-    const html = container.innerHTML;
-    expect(html).toContain("var(--terrain-ground)");
-    expect(html).toContain("var(--team-blue)");
-    expect(html).toContain("var(--team-red)");
+  it.each(TERRAIN_DIRECTIONS)("no longer draws the vector schematic in the %s direction", (direction) => {
+    const container = draw(direction);
+    expect(container.querySelector("polyline")).toBeNull();
+    expect(container.querySelector("[data-lane]")).toBeNull();
+    expect(container.querySelector("[data-pit]")).toBeNull();
+    expect(container.querySelector("[data-base]")).toBeNull();
+    expect(container.querySelector("path")).toBeNull();
+  });
+
+  it.each(TERRAIN_DIRECTIONS)("paints with tokens only in the %s direction", (direction) => {
+    const html = draw(direction).innerHTML;
     expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(/);
   });
 });

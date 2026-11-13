@@ -1,29 +1,27 @@
 import { memo } from "react";
+import { MAP_UNITS } from "@/lib/match/live/mapGeometry";
+import { NIGHT_FILTER_ID, NightFilter, TOKENS_FILTER_ID, TokensFilter } from "./ArenaTerrainFilters";
 import {
-  BASE_ZONES,
-  LANES,
-  LANE_INNER_STROKE_UNITS,
-  LANE_KEYS,
-  LANE_STROKE_UNITS,
-  MAP_UNITS,
-  PIT_RADIUS_UNITS,
-  PITS,
-  RIVER,
-  RIVER_STROKE_UNITS,
-  type MapPoint,
-} from "@/lib/match/live/mapGeometry";
-
-const toPoints = (line: readonly MapPoint[]) => line.map((p) => `${p.x},${p.y}`).join(" ");
-
-const ROUND = { strokeLinecap: "round", strokeLinejoin: "round" } as const;
+  NIGHT_IMAGE_OPACITY,
+  RIFT_IMAGE_SRC,
+  TERRAIN_DIRECTION,
+  type TerrainDirection,
+} from "./terrainDirection";
 
 /**
- * Static schematic of the arena: ground, bases, river, three lanes and the two
- * pits. It never changes while a match runs, so it costs nothing per frame, and
- * it is decoration only (the Fight board is the text twin). Colours come from
- * the `--terrain-*` tokens and the team tokens.
+ * Static terrain of the arena: the Summoner's Rift picture over the terrain ground. It never
+ * changes while a match runs, so it costs nothing per frame, and it is decoration only (the Fight
+ * board is the text twin). The picture lines up 1:1 with the engine coordinates, so the layers
+ * above need no offset. The direction (see terrainDirection.ts) only changes how it is filtered.
  */
-export const ArenaTerrain = memo(function ArenaTerrain({ className }: { className?: string }) {
+export const ArenaTerrain = memo(function ArenaTerrain({
+  className,
+  direction = TERRAIN_DIRECTION,
+}: {
+  className?: string;
+  direction?: TerrainDirection;
+}) {
+  const filterId = direction === "night" ? NIGHT_FILTER_ID : direction === "tokens" ? TOKENS_FILTER_ID : null;
   return (
     <svg
       className={className}
@@ -32,51 +30,21 @@ export const ArenaTerrain = memo(function ArenaTerrain({ className }: { classNam
       aria-hidden="true"
       focusable="false"
       data-testid="arena-terrain"
+      data-direction={direction}
     >
+      {direction === "night" ? <NightFilter /> : null}
+      {direction === "tokens" ? <TokensFilter /> : null}
       <rect width={MAP_UNITS} height={MAP_UNITS} style={{ fill: "var(--terrain-ground)" }} />
-      <path d={BASE_ZONES.blue.path} data-base="blue" fillOpacity={0.18} style={{ fill: "var(--team-blue)" }} />
-      <path d={BASE_ZONES.red.path} data-base="red" fillOpacity={0.18} style={{ fill: "var(--team-red)" }} />
-      <polyline
-        points={toPoints(RIVER)}
-        data-part="river"
-        fill="none"
-        strokeWidth={RIVER_STROKE_UNITS}
-        style={{ stroke: "var(--terrain-river)" }}
-        {...ROUND}
+      <image
+        href={RIFT_IMAGE_SRC}
+        x={0}
+        y={0}
+        width={MAP_UNITS}
+        height={MAP_UNITS}
+        preserveAspectRatio="xMidYMid meet"
+        opacity={direction === "night" ? NIGHT_IMAGE_OPACITY : undefined}
+        filter={filterId ? `url(#${filterId})` : undefined}
       />
-      <g fill="none" {...ROUND}>
-        {LANE_KEYS.map((lane) => (
-          <polyline
-            key={`${lane}-edge`}
-            points={toPoints(LANES[lane])}
-            data-lane={lane}
-            data-part="edge"
-            strokeWidth={LANE_STROKE_UNITS}
-            style={{ stroke: "var(--terrain-lane-edge)" }}
-          />
-        ))}
-        {LANE_KEYS.map((lane) => (
-          <polyline
-            key={`${lane}-fill`}
-            points={toPoints(LANES[lane])}
-            data-lane={lane}
-            data-part="fill"
-            strokeWidth={LANE_INNER_STROKE_UNITS}
-            style={{ stroke: "var(--terrain-lane)" }}
-          />
-        ))}
-      </g>
-      {(["top", "dragon"] as const).map((key) => (
-        <circle
-          key={key}
-          cx={PITS[key].x}
-          cy={PITS[key].y}
-          r={PIT_RADIUS_UNITS}
-          data-pit={key}
-          strokeWidth={4}
-          style={{ fill: "var(--terrain-pit)", stroke: "var(--terrain-pit-edge)" }}
-        />
-      ))}
     </svg>
   );
 });

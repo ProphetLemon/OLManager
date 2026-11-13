@@ -188,6 +188,12 @@
   --terrain-lane: #182131;
   --terrain-pit: #0a0d13;
   --terrain-pit-edge: #3a465c;
+  /* Rift picture recoloured by ArenaTerrain (tokens direction): wall is the jungle
+     and the outside, path is every lane and jungle path, base is the grey floor
+     of both bases (each gets its team wash on top). */
+  --terrain-wall: var(--terrain-ground);
+  --terrain-path: #2a3347;
+  --terrain-base: #182131;
   --club-wash: color-mix(in srgb, var(--club) 36%, transparent);
   --hit: max(2.75rem, 24px);
   /* WCAG 2.2 target size minimum (2.5.8): floor for every control, at any root font size */
@@ -305,6 +311,8 @@
   --team-blue: #1a68bc;
   --team-red: #c42a44;
   --focus-ring-width: 3px;
+  /* Tokens direction of the arena: a deeper wall separates the paths without lightening them. */
+  --terrain-wall: #05080d;
 }
 
 .dark[data-contrast="high"],
@@ -322,4 +330,6 @@
   --team-blue: #8fd8ff;
   --team-red: #ff8a9b;
   --focus-ring-width: 3px;
+  /* Tokens direction of the arena: a deeper wall separates the paths without lightening them. */
+  --terrain-wall: #05080d;
 }
