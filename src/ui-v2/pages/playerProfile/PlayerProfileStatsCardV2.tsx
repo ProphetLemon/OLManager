@@ -1,9 +1,11 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Swords, Skull, Handshake, Star, Pickaxe, TrendingUp, Eye, Crosshair } from "lucide-react";
 import type { PlayerSeasonStats } from "@/store/gameStore";
 import type { SeasonTotals } from "@/lib/playerProfile/seasonTotals";
 import { cn } from "@/ui-v2/lib/utils";
 import { PlayerProfileSectionV2 } from "./PlayerProfileSectionV2";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 interface Props {
   stats: PlayerSeasonStats;
@@ -16,6 +18,7 @@ const num = (value: unknown): number | null =>
   typeof value === "number" && Number.isFinite(value) ? value : null;
 
 export default function PlayerProfileStatsCardV2({ stats, totals, t }: Props) {
+  const { i18n } = useTranslation();
   // The backend records `appearances`, `kills` and `assists` per season; the other numbers
   // (wins, losses, deaths, CS, vision) are only kept per match, so they come from `totals`
   // (summed from the match records) and are left out when neither source has them instead of
@@ -31,8 +34,8 @@ export default function PlayerProfileStatsCardV2({ stats, totals, t }: Props) {
   const vision = num(stats.vision_score) ?? totals?.vision ?? null;
   const kda = useMemo(() => {
     if (games === 0 || kills === null || assists === null || deaths === null) return null;
-    return ((kills + assists) / (deaths || 1)).toFixed(1);
-  }, [games, kills, assists, deaths]);
+    return formatDecimal((kills + assists) / (deaths || 1), 1, i18n.language);
+  }, [games, kills, assists, deaths, i18n.language]);
 
   const items = [
     { icon: Swords, label: t("common.games"), value: String(games) },

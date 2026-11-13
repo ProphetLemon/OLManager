@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { cn } from "@/ui-v2/lib/utils";
 import { formatNumber } from "@/lib/formatting/valueFormatting";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 interface Props { championKey: string; onClose: () => void; }
 
@@ -33,7 +34,7 @@ const ROLE_META: Record<string, { icon: typeof Shield; color: string; labelKey: 
 };
 
 export default function ChampionPageV2({ championKey, onClose }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [s, setS] = useState<Stats | null>(null);
   const splash = resolveChampionSplash(championKey);
   const tile = resolveChampionTile(championKey);
@@ -97,7 +98,7 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
               { label: t("championPage.wr"), val: s ? `${s.win_rate}%` : "—", acc: s && s.win_rate >= 50 ? "text-positive" : "text-negative" },
               { label: t("championPage.pr"), val: s ? `${s.pick_rate}%` : "—", acc: "text-club-text" },
               { label: t("championPage.br"), val: s ? `${s.ban_rate}%` : "—", acc: "text-amber-400" },
-              { label: t("championPage.kda"), val: s ? s.avg_kda.toFixed(1) : "—", acc: s ? "text-white" : "text-white/40" },
+              { label: t("championPage.kda"), val: s ? formatDecimal(s.avg_kda, 1, i18n.language) : "—", acc: s ? "text-white" : "text-white/40" },
             ].map((st) => (
               <div key={st.label}
                 className="rounded-xl border border-white/15 bg-black/50 px-3 py-2.5 text-center backdrop-blur-md transition-all hover:border-primary/40 hover:bg-black/60">
@@ -116,9 +117,9 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
           {/* Performance grid */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {[
-              { label: t("championPage.kills"), val: s ? s.avg_kills.toFixed(1) : "—", icon: Swords, c: "text-red-400" },
-              { label: t("championPage.deaths"), val: s ? s.avg_deaths.toFixed(1) : "—", icon: Activity, c: "text-amber-400" },
-              { label: t("championPage.assists"), val: s ? s.avg_assists.toFixed(1) : "—", icon: TrendingUp, c: "text-emerald-400" },
+              { label: t("championPage.kills"), val: s ? formatDecimal(s.avg_kills, 1, i18n.language) : "—", icon: Swords, c: "text-red-400" },
+              { label: t("championPage.deaths"), val: s ? formatDecimal(s.avg_deaths, 1, i18n.language) : "—", icon: Activity, c: "text-amber-400" },
+              { label: t("championPage.assists"), val: s ? formatDecimal(s.avg_assists, 1, i18n.language) : "—", icon: TrendingUp, c: "text-emerald-400" },
               { label: t("championPage.gold"), val: s ? formatNumber(s.avg_gold) : "—", icon: Crown, c: "text-yellow-400" },
               { label: t("championPage.damage"), val: s ? formatNumber(s.avg_damage) : "—", icon: Swords, c: "text-orange-400" },
               { label: t("championPage.cs"), val: s ? s.avg_cs.toFixed(0) : "—", icon: TrendingUp, c: "text-blue-400" },

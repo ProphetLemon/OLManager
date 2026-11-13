@@ -8,6 +8,7 @@ import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import type { DraftMatchResult, DraftTimelineEvent } from "@/ui-v2/_legacy/components/match/draftResultSimulator";
 import { cn } from "@/ui-v2/lib/utils";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 type Side = "blue" | "red";
 
@@ -149,8 +150,8 @@ function getScore(c: { kills: number; deaths: number; assists: number; gold?: nu
   return (c.kills * 3 + c.assists * 2 - c.deaths) + (c.gold ?? 0) / 1000;
 }
 
-function formatGold(val: number): string {
-  if (val >= 1000) return `${(val / 1000).toFixed(1)}k`;
+function formatGold(val: number, language: string): string {
+  if (val >= 1000) return `${formatDecimal(val / 1000, 1, language)}k`;
   return String(val);
 }
 
@@ -168,7 +169,7 @@ export default function DraftResultScreen({
   onContinue,
   teams,
 }: DraftResultScreenProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const userSide = controlledSide === "blue" ? "Home" : "Away";
   const userWon = (result as any).winner === userSide;
@@ -208,12 +209,12 @@ export default function DraftResultScreen({
   const statRows = useMemo(() => {
     const rows: Array<{ label: string; home: string; away: string }> = [];
     rows.push({ label: t("match.statKills"), home: String(blueKills), away: String(redKills) });
-    rows.push({ label: t("match.statGold"), home: formatGold(blueGold), away: formatGold(redGold) });
+    rows.push({ label: t("match.statGold"), home: formatGold(blueGold, i18n.language), away: formatGold(redGold, i18n.language) });
     rows.push({ label: t("match.statTowers"), home: String(selectedResult.blueTowers ?? 0), away: String(selectedResult.redTowers ?? 0) });
     rows.push({ label: t("match.statDragons"), home: String(selectedResult.blueDragons ?? 0), away: String(selectedResult.redDragons ?? 0) });
     rows.push({ label: t("match.statBarons"), home: String(selectedResult.blueBarons ?? 0), away: String(selectedResult.redBarons ?? 0) });
     return rows;
-  }, [t, blueKills, redKills, blueGold, redGold, selectedResult]);
+  }, [t, i18n.language, blueKills, redKills, blueGold, redGold, selectedResult]);
 
   const homePlayers = useMemo(
     () => (result.players ?? []).filter((p) => p.team_id === snapshot.home_team.id),
@@ -309,7 +310,7 @@ export default function DraftResultScreen({
                         <span className="text-sm text-muted-foreground/50">{champion.kills}/{champion.deaths}/{champion.assists}</span>
                         <span className="text-sm text-muted-foreground/50">{champion.gold ?? champion.cs}</span>
                         <span className={`text-sm font-bold ${kdaColor}`}>
-                          {((champion.kills + champion.assists) / Math.max(1, champion.deaths)).toFixed(1)}
+                          {formatDecimal((champion.kills + champion.assists) / Math.max(1, champion.deaths), 1, i18n.language)}
                         </span>
                       </div>
                     );
@@ -342,7 +343,7 @@ export default function DraftResultScreen({
                         <span className="text-sm text-muted-foreground/50">{champion.kills}/{champion.deaths}/{champion.assists}</span>
                         <span className="text-sm text-muted-foreground/50">{champion.gold ?? champion.cs}</span>
                         <span className={`text-sm font-bold ${kdaColor}`}>
-                          {((champion.kills + champion.assists) / Math.max(1, champion.deaths)).toFixed(1)}
+                          {formatDecimal((champion.kills + champion.assists) / Math.max(1, champion.deaths), 1, i18n.language)}
                         </span>
                       </div>
                     );

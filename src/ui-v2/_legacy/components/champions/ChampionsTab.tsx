@@ -12,6 +12,7 @@ import { t } from "i18next";
 import { resolvePlayerCurrentLolRole } from "@/lib/players/lolIdentity";
 import { normalizeChampionKey } from "@/lib/champions/championIds";
 import { resolveChampionTile } from "@/lib/champions/championImages";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 interface ChampionsTabProps {
   gameState: GameStateData;
@@ -230,7 +231,7 @@ const TIER_ORDER: Array<"S" | "A" | "B" | "C" | "D"> = ["S", "A", "B", "C", "D"]
 const TIER_SORT_WEIGHT: Record<string, number> = { S: 0, A: 1, B: 2, C: 3, D: 4 };
 
 export default function ChampionsTab({ gameState, onGameUpdate, onViewChampion }: ChampionsTabProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [submittingKey, setSubmittingKey] = useState<string | null>(null);
   const [metaRoleFilter, setMetaRoleFilter] = useState<"ALL" | UiRole>("ALL");
   const [delegating, setDelegating] = useState(false);
@@ -610,7 +611,7 @@ export default function ChampionsTab({ gameState, onGameUpdate, onViewChampion }
                           {soloQ.delta >= 0 ? `+${soloQ.delta}` : soloQ.delta}
                         </span>
                       </p>
-                      <p className="text-2xs text-gray-300">x{soloQMult.toFixed(1)} mastery</p>
+                      <p className="text-2xs text-gray-300">x{formatDecimal(soloQMult, 1, i18n.language)} mastery</p>
                     </div>
                     <img
                       src={soloQEmblemUrl(soloQ.tier)}
@@ -690,10 +691,10 @@ export default function ChampionsTab({ gameState, onGameUpdate, onViewChampion }
                             {t("champions.mastery")} {masteryValue}
                           </span>
                           <span className="text-2xs font-heading uppercase tracking-wider text-gray-400">
-                            {t("training.effectiveFocus")} x{gainHint.baseMult.toFixed(2)}
+                            {t("training.effectiveFocus")} x{formatDecimal(gainHint.baseMult, 2, i18n.language)}
                           </span>
                           <span className="text-2xs font-heading uppercase tracking-wider text-gray-400">
-                            SoloQ x{soloQMult.toFixed(1)}
+                            SoloQ x{formatDecimal(soloQMult, 1, i18n.language)}
                           </span>
                         </div>
                       </div>

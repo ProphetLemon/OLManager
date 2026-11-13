@@ -15,6 +15,7 @@ import {
 } from "@/lib/common/helpers";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 type DraftRole = "TOP" | "JUNGLE" | "MID" | "ADC" | "SUPPORT";
 
@@ -72,7 +73,7 @@ export default function NextMatchDisplay({
 }: {
   gameState: GameStateData;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const userTeamId = gameState.manager.team_id;
   const playerLeague = resolveUserLeague(gameState);
 
@@ -137,12 +138,12 @@ export default function NextMatchDisplay({
       </div>
 
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-xs">
-        <span className="font-heading font-bold text-primary-500">{homeOvr.toFixed(1)}</span>
+        <span className="font-heading font-bold text-primary-500">{formatDecimal(homeOvr, 1, i18n.language)}</span>
         <div className="h-1.5 rounded-full bg-navy-700 overflow-hidden flex">
           <div className="h-full bg-primary-500" style={{ width: `${homePct}%` }} />
           <div className="h-full bg-red-500/80" style={{ width: `${awayPct}%` }} />
         </div>
-        <span className="font-heading font-bold text-red-400">{awayOvr.toFixed(1)}</span>
+        <span className="font-heading font-bold text-red-400">{formatDecimal(awayOvr, 1, i18n.language)}</span>
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] gap-y-1.5 text-xs">

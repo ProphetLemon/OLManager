@@ -88,4 +88,13 @@ describe("player profile stats and career cards take their text from the locale"
     expect(text).toContain("Show more (2)");
     expect(text).not.toContain("Historial");
   });
+
+  it.each([
+    ["es", "10,0"],
+    ["en", "10.0"],
+  ])("writes the season KDA with the %s decimal mark", async (language, expected) => {
+    await i18n.changeLanguage(language);
+    const full = render(<PlayerProfileStatsCardV2 stats={STATS} t={t} />);
+    expect(full.container.textContent).toContain(expected);
+  });
 });
