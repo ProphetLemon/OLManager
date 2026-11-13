@@ -1,3 +1,4 @@
+use crate::db::save_manager::SaveManager;
 use crate::domain::stats::StatsState;
 use crate::game::Game;
 use crate::live_match_manager::LiveMatchSession;
@@ -84,6 +85,41 @@ impl StateManager {
         lock.stats = StatsState::default();
     }
 
+    /// Install a game that was just read from disk as the active session.
+    ///
+    /// The match history stored in `game.stats_state` moves into the session
+    /// stats, which are the single source of truth while playing. The copy left
+    /// inside the stored game is emptied: it would be a stale second copy, and
+    /// every save path re-syncs it from the session via `game_for_persistence`.
+    pub fn install_loaded_game(&self, save_id: String, mut game: Game) {
+        let stats = std::mem::take(&mut game.stats_state);
+        let mut lock = self.session.lock().unwrap();
+        lock.save_id = Some(save_id);
+        lock.game = Some(game);
+        lock.stats = stats;
+    }
+
+    /// Clone of the active game with the current session stats written into
+    /// it, ready to be persisted. Every path that writes the active game to
+    /// disk must build its `Game` here rather than cloning the game directly.
+    pub fn game_for_persistence(&self) -> Option<Game> {
+        let lock = self.session.lock().unwrap();
+        let mut game = lock.game.clone()?;
+        game.stats_state = lock.stats.clone();
+        Some(game)
+    }
+
+    /// Persist the active game, with the session stats, into its save slot.
+    pub fn save_active_game(&self, saves: &mut SaveManager) -> Result<(), String> {
+        let game = self
+            .game_for_persistence()
+            .ok_or_else(|| "No active game session".to_string())?;
+        let save_id = self
+            .get_save_id()
+            .ok_or_else(|| "No active save session".to_string())?;
+        saves.save_game(&game, &save_id)
+    }
+
     // ── Stats ───────────────────────────────────────────────
 
     pub fn set_stats_state(&self, stats: StatsState) {
@@ -158,6 +194,8 @@ impl StateManager {
 #[cfg(test)]
 mod tests {
     use super::StateManager;
+    use crate::db::save_manager::SaveManager;
+    use crate::domain::stats::{PlayerMatchStatsRecord, StatsState};
     use crate::clock::GameClock;
     use crate::domain::league::{Fixture, FixtureStatus, League, MatchType, StandingEntry};
     use crate::domain::manager::Manager;
@@ -367,5 +405,167 @@ mod tests {
             state.with_session(|s| (s.game.as_ref().map(|g| g.teams.len()), s.save_id.clone()));
         assert_eq!(game_len, Some(2));
         assert_eq!(save_id, Some("save-99".to_string()));
+    }
+
+    // ── Stats survive save and load ─────────────────────────
+
+    fn stats_with(fixture_ids: &[&str]) -> StatsState {
+        StatsState {
+            player_matches: fixture_ids
+                .iter()
+                .map(|id| PlayerMatchStatsRecord {
+                    fixture_id: (*id).to_string(),
+                    player_id: "p1".to_string(),
+                    ..Default::default()
+                })
+                .collect(),
+            team_matches: Vec::new(),
+        }
+    }
+
+    fn session_fixtures(state: &StateManager) -> Vec<String> {
+        state
+            .get_stats_state(|stats| {
+                stats
+                    .player_matches
+                    .iter()
+                    .map(|record| record.fixture_id.clone())
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    /// A new career saved to a fresh slot, with the state ready to play.
+    fn new_career(saves: &mut SaveManager) -> (StateManager, String) {
+        let game = make_game_with_fixture();
+        let save_id = saves.create_save(&game, "Career").unwrap();
+        let state = StateManager::new();
+        state.install_loaded_game(save_id.clone(), game);
+        (state, save_id)
+    }
+
+    /// The same steps `load_game` runs: read from disk, install into a state.
+    fn load_into_new_state(saves: &mut SaveManager, save_id: &str) -> StateManager {
+        let game = saves.load_game(save_id).unwrap();
+        let state = StateManager::new();
+        state.install_loaded_game(save_id.to_string(), game);
+        state
+    }
+
+    #[test]
+    fn loading_a_save_restores_the_saved_match_history() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut saves = SaveManager::init(dir.path()).unwrap();
+        let (state, save_id) = new_career(&mut saves);
+        state.set_stats_state(stats_with(&["m1", "m2"]));
+        state.save_active_game(&mut saves).unwrap();
+
+        let reloaded = load_into_new_state(&mut saves, &save_id);
+
+        assert_eq!(session_fixtures(&reloaded), vec!["m1", "m2"]);
+    }
+
+    #[test]
+    fn saving_right_after_a_load_keeps_the_loaded_history() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut saves = SaveManager::init(dir.path()).unwrap();
+        let (state, save_id) = new_career(&mut saves);
+        state.set_stats_state(stats_with(&["m1", "m2"]));
+        state.save_active_game(&mut saves).unwrap();
+
+        let reloaded = load_into_new_state(&mut saves, &save_id);
+        reloaded.save_active_game(&mut saves).unwrap();
+
+        let again = load_into_new_state(&mut saves, &save_id);
+        assert_eq!(session_fixtures(&again), vec!["m1", "m2"]);
+    }
+
+    #[test]
+    fn a_match_played_after_a_load_is_kept_by_the_next_save() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut saves = SaveManager::init(dir.path()).unwrap();
+        let (state, save_id) = new_career(&mut saves);
+        state.append_stats_state(stats_with(&["m1"]));
+        state.save_active_game(&mut saves).unwrap();
+
+        let reloaded = load_into_new_state(&mut saves, &save_id);
+        reloaded.append_stats_state(stats_with(&["m2"]));
+        reloaded.save_active_game(&mut saves).unwrap();
+
+        let again = load_into_new_state(&mut saves, &save_id);
+        assert_eq!(session_fixtures(&again), vec!["m1", "m2"]);
+    }
+
+    #[test]
+    fn a_save_taken_after_an_in_session_game_swap_keeps_the_session_stats() {
+        // Mirrors `rehydrate_active_game`: the game is replaced with a clone
+        // read earlier (empty stats copy), then the active game is saved.
+        let dir = tempfile::tempdir().unwrap();
+        let mut saves = SaveManager::init(dir.path()).unwrap();
+        let (state, save_id) = new_career(&mut saves);
+        state.save_active_game(&mut saves).unwrap();
+        let reloaded = load_into_new_state(&mut saves, &save_id);
+        let mut game = reloaded.get_game(|game| game.clone()).unwrap();
+        reloaded.append_stats_state(stats_with(&["played-after-load"]));
+
+        game.manager.reputation = 77;
+        reloaded.set_game(game);
+        reloaded.save_active_game(&mut saves).unwrap();
+
+        let again = load_into_new_state(&mut saves, &save_id);
+        assert_eq!(session_fixtures(&again), vec!["played-after-load"]);
+        assert_eq!(again.get_game(|game| game.manager.reputation), Some(77));
+    }
+
+    #[test]
+    fn installing_a_loaded_game_leaves_no_stale_copy_inside_the_game() {
+        let state = StateManager::new();
+        let mut game = make_game_with_fixture();
+        game.stats_state = stats_with(&["m1"]);
+
+        state.install_loaded_game("save-1".to_string(), game);
+
+        assert_eq!(
+            state.get_game(|game| game.stats_state.player_matches.len()),
+            Some(0)
+        );
+        assert_eq!(session_fixtures(&state), vec!["m1"]);
+        assert_eq!(state.get_save_id(), Some("save-1".to_string()));
+    }
+
+    #[test]
+    fn a_save_written_without_stats_state_loads_with_empty_stats() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut saves = SaveManager::init(dir.path()).unwrap();
+        let mut value = serde_json::to_value(make_game_with_fixture()).unwrap();
+        let removed = value.as_object_mut().unwrap().remove("stats_state");
+        assert!(removed.is_some(), "the field must exist to be removed");
+        let old_game: Game = serde_json::from_value(value).unwrap();
+        let save_id = saves.create_save(&old_game, "Old").unwrap();
+
+        let state = load_into_new_state(&mut saves, &save_id);
+
+        assert!(session_fixtures(&state).is_empty());
+    }
+
+    #[test]
+    fn saving_without_an_active_game_or_save_slot_is_an_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut saves = SaveManager::init(dir.path()).unwrap();
+        let state = StateManager::new();
+        assert!(state.save_active_game(&mut saves).is_err());
+
+        state.set_game(make_game_with_fixture());
+        assert!(state.save_active_game(&mut saves).is_err());
+    }
+
+    #[test]
+    fn a_new_game_session_starts_with_empty_stats() {
+        let state = StateManager::new();
+        state.set_game(make_game_with_fixture());
+
+        assert!(session_fixtures(&state).is_empty());
+        let game = state.game_for_persistence().unwrap();
+        assert!(game.stats_state.player_matches.is_empty());
     }
 }
