@@ -1724,7 +1724,10 @@
    Pause and speed sit in the open; Skip and Reset live in the options menu. The active speed is
    bold, has the bar under it (from the primitive) and is underlined: it never rests on colour. */
 
+/* The group is an inline-size container: the speed note decides from the room the group really
+   got (what the board, the key and the bug button leave it), not from the window. */
 .arena-controls {
+  container: controls / inline-size;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1759,6 +1762,11 @@
   color: var(--dim);
   font-size: var(--text-caption);
   font-variant-numeric: tabular-nums;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .arena-options {
@@ -2100,6 +2108,24 @@
   }
 }
 
+/* Laptop windows (1366x768). The compact step above fits five cards from a 749px scroll root up;
+   below that the row of the map is shorter than the column. With the controls on one line the
+   row at 1366x768 is the 732px root minus 290px of rows around it, 442px, and five compact cards
+   with four gaps measure 5 x 89 + 4 x 4 = 461px. A second step takes spacing only: 1px of
+   padding above and below, 1px between a card's rows, 2px between cards. A card is then 85px and
+   the column 433px. The 17px health row stays (its gap chip is 15px of text and a border), the
+   20px slot stays, and every text keeps its size. At 749px and up, the first step is enough. */
+@container live (min-width: 1240px) and (max-height: 748px) {
+  .live-side {
+    gap: 0.125rem;
+  }
+
+  .live-side .arena-card {
+    gap: 1px;
+    padding-block: 1px;
+  }
+}
+
 .live-notice {
   flex: 1 0 100%;
   display: flex;
@@ -2142,19 +2168,45 @@
   padding-top: 0.5rem;
 }
 
-/* The row needs about 1296px with the speed note and 1036px without it. Where it has less than the
-   former, the note leaves the screen; it stays in the DOM as the speed group's description and
-   tooltip (see MatchControls), so nothing is lost for assistive technology or the pointer. */
-@container live (max-width: 1335px) {
+/* One line. Measured with the real stylesheet and fonts, Pause, speeds and Options need 532 to
+   588px (8 locales) and the board, key and bug button 345 to 553px, so the row needs up to 1153px
+   with the shell's 40px of padding. From 1180px it never wraps: the group stays on one line and
+   its pieces keep their size; only the speed note can give way. */
+@container live (min-width: 1180px) {
+  .live-area-ctl .arena-controls {
+    flex-wrap: nowrap;
+  }
+
+  .arena-play,
+  .arena-speed,
+  .arena-options {
+    flex: none;
+  }
+}
+
+/* The note (229px in Spanish, 170 to 229 in the others) joins the group's 588px and one 12px gap:
+   it shows only where the group has 832px or more, so the whole sentence fits. Whatever
+   the board's count says, the group's width does not depend on the note, so it cannot flicker
+   itself. It stays in the DOM as the speed group's description and tooltip (see MatchControls),
+   so nothing is lost for assistive technology or the pointer. Where the group is narrower, or the
+   row is stacked (under 1180px), the note leaves the screen. */
+@container controls (max-width: 831px) {
   .arena-speed-note {
     display: none;
   }
 }
 
-/* Under about 1080px the five pieces no longer fit one line: Pause, speeds and Options keep the
-   first line to themselves, and the board, key and bug button take the next. The row counts its
-   two lines in --live-ctl so the map is sized from the room that is really left. */
-@container live (min-width: 720px) and (max-width: 1079px) {
+@container live (max-width: 1179px) {
+  .arena-speed-note {
+    display: none;
+  }
+}
+
+/* Under 1180px the five pieces no longer fit one line (the widest locale needs 1153px): Pause,
+   speeds and Options keep the first line to themselves, and the board, key and bug button take
+   the next. The row counts its two lines in --live-ctl so the map is sized from the room that is
+   really left. */
+@container live (min-width: 720px) and (max-width: 1179px) {
   .live-shell {
     --live-ctl: 7rem;
   }
