@@ -4095,6 +4095,42 @@ fn clear_rift_herald_charge(runtime: &mut RuntimeState) {
     runtime.extra.remove("heraldCarrierId");
 }
 
+/// The enemy tower a carried Herald is aimed at: the outermost standing tower of one lane.
+///
+/// A laner's Herald keeps his own lane. A jungler's goes to the lane whose outermost standing
+/// enemy tower has the least health, since that is the tower it brings down soonest; a tie goes
+/// to the tower nearest the jungler, then to the earlier structure.
+fn herald_target_tower_index(
+    structures: &[StructureRuntime],
+    carrier: &ChampionRuntime,
+) -> Option<usize> {
+    structures
+        .iter()
+        .enumerate()
+        .filter(|(_, structure)| {
+            structure.alive
+                && structure.kind == "tower"
+                && (carrier.role == "JGL"
+                    || normalized_lane(&structure.lane) == normalized_lane(&carrier.lane))
+                && is_structure_targetable(structures, &carrier.team, structure)
+        })
+        .min_by(|(idx_a, a), (idx_b, b)| {
+            let health = if carrier.role == "JGL" {
+                a.hp.partial_cmp(&b.hp).unwrap_or(Ordering::Equal)
+            } else {
+                Ordering::Equal
+            };
+            health
+                .then_with(|| {
+                    dist(a.pos, carrier.pos)
+                        .partial_cmp(&dist(b.pos, carrier.pos))
+                        .unwrap_or(Ordering::Equal)
+                })
+                .then_with(|| idx_a.cmp(idx_b))
+        })
+        .map(|(idx, _)| idx)
+}
+
 fn maybe_deploy_rift_herald_charge(runtime: &mut RuntimeState) {
     let ready = runtime
         .extra
@@ -4136,28 +4172,16 @@ fn maybe_deploy_rift_herald_charge(runtime: &mut RuntimeState) {
     };
 
     let carrier = runtime.champions[carrier_idx].clone();
-    let enemy_tower_idx = runtime
-        .structures
-        .iter()
-        .enumerate()
-        .filter(|(_, structure)| {
-            structure.alive
-                && structure.kind == "tower"
-                && normalized_lane(&structure.lane) == normalized_lane(&carrier.lane)
-                && is_structure_targetable(&runtime.structures, &carrier.team, structure)
-        })
-        .min_by(|(idx_a, a), (idx_b, b)| {
-            dist(a.pos, carrier.pos)
-                .partial_cmp(&dist(b.pos, carrier.pos))
-                .unwrap_or(Ordering::Equal)
-                .then_with(|| idx_a.cmp(idx_b))
-        })
-        .map(|(idx, _)| idx);
+    let enemy_tower_idx = herald_target_tower_index(&runtime.structures, &carrier);
 
     let Some(enemy_tower_idx) = enemy_tower_idx else {
         clear_rift_herald_charge(runtime);
         return;
     };
+    // The Herald pushes the lane of the tower it was aimed at. A jungler has no lane of his
+    // own, so that lane comes from the state of the enemy towers (see
+    // `herald_target_tower_index`); a laner's Herald keeps his lane.
+    let herald_lane = normalized_lane(&runtime.structures[enemy_tower_idx].lane).to_string();
 
     let enemy_tower_pos = runtime.structures[enemy_tower_idx].pos;
     if dist(carrier.pos, enemy_tower_pos) > 0.12 {
@@ -4167,7 +4191,7 @@ fn maybe_deploy_rift_herald_charge(runtime: &mut RuntimeState) {
     let summon = MinionRuntime {
         id: format!("herald-{}", next_summon_id(runtime)),
         team: carrier.team.clone(),
-        lane: carrier.lane.clone(),
+        lane: herald_lane.clone(),
         pos: Vec2 {
             x: clamp(carrier.pos.x + 0.012, 0.01, 0.99),
             y: clamp(carrier.pos.y + 0.012, 0.01, 0.99),
@@ -4184,7 +4208,7 @@ fn maybe_deploy_rift_herald_charge(runtime: &mut RuntimeState) {
         move_speed: 0.058,
         attack_range: 0.065,
         attack_damage: 34.0,
-        path: lane_path_for(&carrier.team, &carrier.lane),
+        path: lane_path_for(&carrier.team, &herald_lane),
         path_index: 0,
     };
 
@@ -6937,6 +6961,9 @@ mod scorecard_tests;
 
 #[cfg(test)]
 mod damage_dealt_tests;
+
+#[cfg(test)]
+mod sim_audit_tests;
 
 #[cfg(test)]
 mod event_code_tests;
