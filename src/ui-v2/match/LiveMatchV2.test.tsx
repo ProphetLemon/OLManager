@@ -61,8 +61,11 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/FloatingBugButton", () => ({
 
 // The map measures itself, and layers mount only once it has a size.
 const clientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientWidth");
+const clientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientHeight");
 beforeAll(() => {
+  // The map's cell is 540 by 540, so the map is a square of 540.
   Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 540 });
+  Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, get: () => 540 });
   // jsdom has no canvas; the minions are drawn in their own tests.
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
 });
@@ -388,4 +391,5 @@ afterEach(async () => {
 // Restored so other files in the worker see the untouched prototype.
 afterAll(() => {
   if (clientWidth) Object.defineProperty(HTMLElement.prototype, "clientWidth", clientWidth);
+  if (clientHeight) Object.defineProperty(HTMLElement.prototype, "clientHeight", clientHeight);
 });

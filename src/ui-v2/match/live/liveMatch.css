@@ -4,10 +4,20 @@
  * frame path moves zero-size anchors with `transform` from script.
  */
 
-.arena-map {
+/* The cell is the grid area of the map and nothing in it takes room: the map is placed over it
+   and sized from it by script (the smaller side), so it can never be taller than its row. */
+.arena-cell {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.arena-map {
+  position: absolute;
+  inset: 0;
+  margin: auto;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 0.5rem;
@@ -1923,6 +1933,7 @@
 .live-area-map {
   grid-area: map;
   min-width: 0;
+  min-height: 0;
 }
 
 .live-area-dock {
@@ -2038,13 +2049,6 @@
   border-radius: 0.5rem;
   background: var(--rail);
   padding-top: 0.5rem;
-}
-
-/* The map is the square the grid column was sized for. */
-.live-area-map .arena-map {
-  width: var(--map-side);
-  max-width: 100%;
-  margin-inline: auto;
 }
 
 /* Below this width the cards no longer fit beside the map: map first, then feed and controls, then two card columns. */

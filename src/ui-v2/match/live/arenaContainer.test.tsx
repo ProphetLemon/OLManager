@@ -48,3 +48,33 @@ describe("the compact form of the tags follows the width of the map", () => {
     expect(css).not.toContain("@container arena (max-width: 519px)");
   });
 });
+
+/**
+ * jsdom has no layout, so this pins the CSS that keeps the map inside its row: the map is laid
+ * over an empty cell and sized by script from the cell, so nothing the map holds, and no estimate
+ * in the grid, can make it taller than the row that holds it.
+ */
+describe("the map stays inside its grid cell", () => {
+  it("fills the cell with a frame that takes no room from the map", () => {
+    const cell = body(".arena-cell");
+    expect(cell).toMatch(/width:\s*100%/);
+    expect(cell).toMatch(/height:\s*100%/);
+    expect(cell).toMatch(/min-height:\s*0/);
+  });
+
+  it("places the map over the cell, centred, with no size of its own in CSS", () => {
+    const map = body(".arena-map");
+    expect(map).toMatch(/position:\s*absolute/);
+    expect(map).toMatch(/inset:\s*0/);
+    expect(map).toMatch(/margin:\s*auto/);
+    expect(map).not.toMatch(/aspect-ratio|(?<!-)width:|(?<!-)height:/);
+  });
+
+  it("does not size the map from the grid column any more", () => {
+    expect(css).not.toMatch(/\.live-area-map\s+\.arena-map\s*\{/);
+  });
+
+  it("lets the map row shrink below the map's own size", () => {
+    expect(body(".live-area-map")).toMatch(/min-height:\s*0/);
+  });
+});
