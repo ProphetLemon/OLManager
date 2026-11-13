@@ -11,8 +11,9 @@ use olm_core::domain::player::{Player, PlayerAttributes};
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::{Team, TeamSeasonRecord};
 use olm_core::end_of_season::{
-    process_background_seasons, process_end_of_split, reconcile_career_with_ladder,
+    process_background_seasons, process_end_of_split, stamp_unmarked_career,
 };
+use olm_core::domain::manager::CareerSplitMark;
 use olm_core::game::Game;
 use olm_core::generator::definitions::{
     CompetitionManifest, PlayoffConfig, ScheduleConfig, SeasonStart, SplitConfig,
@@ -705,21 +706,32 @@ fn a_title_in_the_last_split_counts_after_a_lower_first_split() {
 }
 
 #[test]
-fn a_save_made_mid_season_counts_its_finished_splits_once() {
+fn an_unmarked_mid_season_save_keeps_its_totals_and_counts_later_splits_once() {
     let mut game = two_split_game();
     play_split(&mut game, 5, 2);
     advance_season(&mut game);
-    // A save written before splits reached the career totals: the ledger holds the
-    // finished split, the career does not.
-    game.manager.career_stats = Default::default();
-    game.manager.career_history.clear();
+    // A save written before splits were tracked: no mark, and the totals are whatever
+    // the save held, which the loader cannot tell apart from a counted career.
+    game.manager.career_stats.counted_through = None;
+    let before = (
+        game.manager.career_stats.matches_managed,
+        game.manager.career_stats.wins,
+        game.manager.career_stats.losses,
+    );
 
-    reconcile_career_with_ladder(&mut game);
-    reconcile_career_with_ladder(&mut game);
+    stamp_unmarked_career(&mut game);
+    stamp_unmarked_career(&mut game);
 
     let career = &game.manager.career_stats;
-    assert_eq!((career.matches_managed, career.wins, career.losses), (7, 5, 2));
-    assert_eq!(game.manager.career_history[0].matches, 7);
+    assert_eq!(
+        (career.matches_managed, career.wins, career.losses),
+        before,
+        "totals after loading"
+    );
+    assert_eq!(
+        career.counted_through,
+        Some(CareerSplitMark { season: 2025, splits: 1 })
+    );
 
     play_split(&mut game, 3, 4);
     advance_season(&mut game);
@@ -727,7 +739,7 @@ fn a_save_made_mid_season_counts_its_finished_splits_once() {
     let career = &game.manager.career_stats;
     assert_eq!(
         (career.matches_managed, career.wins, career.losses),
-        (14, 8, 6),
-        "totals after the season end"
+        (before.0 + 7, before.1 + 3, before.2 + 4),
+        "totals after the next split end"
     );
 }

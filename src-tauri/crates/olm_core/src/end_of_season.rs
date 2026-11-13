@@ -556,46 +556,22 @@ pub fn record_split_in_career(game: &mut Game) {
     });
 }
 
-/// Bring a save written before splits were tracked up to date: add the user's club row of
-/// the splits already finished this season, which the ladder tally holds, to the career
-/// totals. Runs once per career: a career that already has a mark, or a season without
-/// finished splits, is left alone, so calling it again changes nothing.
+/// Stamp the career mark on a save written before splits were tracked, adding nothing.
 ///
-/// Only the matches can be recovered. The tally keeps summed rows, not the position or
-/// the playoff result of each split, so trophies and best finish of splits that were
-/// closed before the save was upgraded stay as they were.
-pub fn reconcile_career_with_ladder(game: &mut Game) {
-    if game.manager.career_stats.counted_through.is_some() {
-        return;
+/// Such a save may or may not already hold the matches of the splits finished this season
+/// (releases between the matches fix and the mark do), and nothing in the save says which.
+/// Adding them risks counting them twice, so the totals stay as saved and the mark is set
+/// at the running split: from then on each split end and the season end count their split
+/// exactly once. A career that already has a mark is left alone, so a second load changes
+/// nothing.
+pub fn stamp_unmarked_career(game: &mut Game) {
+    if game.manager.career_stats.counted_through.is_none() {
+        start_career_at_running_split(game);
     }
-    let Some(user_team_id) = game.manager.team_id.clone() else {
-        return;
-    };
-    let Some(league) = game.active_league() else {
-        return;
-    };
-    let Some(competition_id) = league.competition_id.as_deref() else {
-        return;
-    };
-    let season = league.season;
-    let Some(tally) = game.ladder.tallies.get(competition_id) else {
-        return;
-    };
-    let (Some(last_split), Some(row)) = (
-        tally.last_split.filter(|_| tally.season == season),
-        tally.rows.get(&user_team_id).cloned(),
-    ) else {
-        return;
-    };
-    add_standing_to_career(game, &user_team_id, &row, None);
-    game.manager.career_stats.counted_through = Some(CareerSplitMark {
-        season,
-        splits: last_split as u32 + 1,
-    });
 }
 
-/// Mark the career as starting at the running split: the splits before it are not the
-/// manager's, so [`reconcile_career_with_ladder`] must not add them.
+/// Mark the career as reaching up to the running split: the splits before it are either
+/// already in the totals or not the manager's, so no later call adds them.
 pub fn start_career_at_running_split(game: &mut Game) {
     let Some(league) = game.active_league() else {
         return;
