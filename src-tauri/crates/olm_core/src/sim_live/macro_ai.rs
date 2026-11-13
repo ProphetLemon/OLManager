@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 
 use super::team_push;
 use super::{
+    keep_apart_from_enemy_champions,
     AvoidedTarget, BASE_DEFENSE_RECALL_DISTANCE, ChampionRuntime, FIRST_WAVE_CONTEST_UNTIL,
     JUNGLE_CAMP_WAIT_FOR_SPAWN_SEC, JUNGLE_STICKY_CAMP_RADIUS, LANE_COMBAT_UNLOCK_AT,
     LANE_HEALTHY_RETREAT_HP_RATIO, LANE_LOCAL_PRESSURE_RADIUS,
@@ -899,7 +900,8 @@ pub(super) fn decide_champion_state(
     let target = if now < LANE_COMBAT_UNLOCK_AT {
         lane_pre_wave_hold_pos(champion, structures)
     } else {
-        lane_farm_anchor_pos_v2(champion, now, champions, minions, structures)
+        let anchor = lane_farm_anchor_pos_v2(champion, now, champions, minions, structures);
+        keep_apart_from_enemy_champions(champion, anchor, champions)
     };
 
     let lane_pressure = lane_pressure_at(
