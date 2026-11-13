@@ -45,7 +45,8 @@ export function causeText(cause: string, t: TFunction): string {
   return key ? t(key) : cause;
 }
 
-function structureText(label: StructureLabel, t: TFunction): string {
+/** "The outer turret (top)": shared by the feed, the spotlight caption and the Fight board. */
+export function structureText(label: StructureLabel, t: TFunction): string {
   const part = t(PART_KEYS[label.part]);
   return label.lane ? t("onAir.match.feed.structure", { part, lane: t(LANE_KEYS[label.lane]) }) : part;
 }
