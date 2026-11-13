@@ -285,6 +285,10 @@ impl SaveManager {
                 }
         }
 
+        // Migration: stamp the career mark on saves from before splits were tracked, so
+        // each later split is counted once. The totals themselves are left as saved.
+        crate::end_of_season::stamp_unmarked_career(&mut game);
+
         // Migration: saves from before the import rule treat everyone on a team
         // as a resident of that team's league region (runs once per game).
         let grandfathered = crate::residency::grandfather_rostered_players(&mut game);
@@ -350,6 +354,8 @@ impl SaveManager {
         game.manager.fan_approval = 50;
         game.manager.career_stats = Default::default();
         game.manager.career_history.clear();
+        // The splits already played in the source save are not this career's.
+        crate::end_of_season::start_career_at_running_split(&mut game);
 
         // Reset team season data
         for team in &mut game.teams {

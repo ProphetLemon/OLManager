@@ -10,7 +10,10 @@ use olm_core::domain::manager::Manager;
 use olm_core::domain::player::{Player, PlayerAttributes};
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::{Team, TeamSeasonRecord};
-use olm_core::end_of_season::{process_background_seasons, process_end_of_split};
+use olm_core::end_of_season::{
+    process_background_seasons, process_end_of_split, stamp_unmarked_career,
+};
+use olm_core::domain::manager::CareerSplitMark;
 use olm_core::game::Game;
 use olm_core::generator::definitions::{
     CompetitionManifest, PlayoffConfig, ScheduleConfig, SeasonStart, SplitConfig,
@@ -641,5 +644,102 @@ fn career_totals_keep_every_split_of_a_three_split_season() {
         (stint.matches, stint.wins, stint.losses),
         (matches, wins, losses),
         "career history entry of the club after the season wrap"
+    );
+}
+
+/// Sets the user's club on top of the running `lec` table, or last in it.
+fn set_user_table_position(game: &mut Game, first: bool) {
+    let lec = game
+        .leagues
+        .iter_mut()
+        .find(|l| l.id == "lec")
+        .expect("lec league");
+    for row in &mut lec.standings {
+        row.points = match (row.team_id == "lec1", first) {
+            (true, true) => 9,
+            (true, false) => 0,
+            (false, true) => 0,
+            (false, false) => 3,
+        };
+    }
+}
+
+fn two_split_game() -> Game {
+    let mut game = two_league_game(4, 4, "lec");
+    game.competition_configs = ["lec", "reg"]
+        .into_iter()
+        .map(|id| (id.to_string(), manifest(id, &["Winter", "Spring"], None)))
+        .collect();
+    game
+}
+
+#[test]
+fn a_title_in_the_first_split_counts_when_the_second_split_ends_lower() {
+    let mut game = two_split_game();
+
+    play_split(&mut game, 5, 2);
+    set_user_table_position(&mut game, true);
+    advance_season(&mut game);
+    play_split(&mut game, 1, 6);
+    set_user_table_position(&mut game, false);
+    advance_season(&mut game);
+
+    let career = &game.manager.career_stats;
+    assert_eq!(career.trophies, 1, "trophies of the season");
+    assert_eq!(career.best_finish, Some(1), "best finish of the season");
+}
+
+#[test]
+fn a_title_in_the_last_split_counts_after_a_lower_first_split() {
+    let mut game = two_split_game();
+
+    play_split(&mut game, 3, 4);
+    set_user_table_position(&mut game, false);
+    advance_season(&mut game);
+    play_split(&mut game, 4, 3);
+    set_user_table_position(&mut game, true);
+    advance_season(&mut game);
+
+    let career = &game.manager.career_stats;
+    assert_eq!(career.trophies, 1);
+    assert_eq!(career.best_finish, Some(1));
+}
+
+#[test]
+fn an_unmarked_mid_season_save_keeps_its_totals_and_counts_later_splits_once() {
+    let mut game = two_split_game();
+    play_split(&mut game, 5, 2);
+    advance_season(&mut game);
+    // A save written before splits were tracked: no mark, and the totals are whatever
+    // the save held, which the loader cannot tell apart from a counted career.
+    game.manager.career_stats.counted_through = None;
+    let before = (
+        game.manager.career_stats.matches_managed,
+        game.manager.career_stats.wins,
+        game.manager.career_stats.losses,
+    );
+
+    stamp_unmarked_career(&mut game);
+    stamp_unmarked_career(&mut game);
+
+    let career = &game.manager.career_stats;
+    assert_eq!(
+        (career.matches_managed, career.wins, career.losses),
+        before,
+        "totals after loading"
+    );
+    assert_eq!(
+        career.counted_through,
+        Some(CareerSplitMark { season: 2025, splits: 1 })
+    );
+
+    play_split(&mut game, 3, 4);
+    advance_season(&mut game);
+
+    let career = &game.manager.career_stats;
+    assert_eq!(
+        (career.matches_managed, career.wins, career.losses),
+        (before.0 + 7, before.1 + 3, before.2 + 4),
+        "totals after the next split end"
     );
 }

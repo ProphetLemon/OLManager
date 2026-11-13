@@ -1,4 +1,5 @@
 use crate::domain::league::{FixtureStatus, League, MatchType, StandingEntry};
+use crate::domain::manager::CareerSplitMark;
 use crate::domain::message::*;
 use crate::domain::player::PlayerSeasonStats;
 use crate::domain::team::{FinancialTransactionKind, TeamSeasonRecord};
@@ -512,22 +513,74 @@ fn add_standing_to_career(
     }
 }
 
-/// Add the user's row of the finished split to the manager's career totals. Call it at a
-/// split end that does not close the season, before the next split replaces the league: the
-/// season end only sees the final split's table, so without this the earlier splits'
-/// matches never reach `career_stats`.
+/// Add the user's row of the running split to the manager's career: the matches, and the
+/// trophy and best finish when the club topped the table or beat its best finish. Every
+/// split counts, so a title in the first split survives a worse second split. Call it at
+/// each split end, before the next split replaces the league; the season end calls it for
+/// the final split. A split already in the totals is skipped, which keeps a retried or
+/// doubled call from counting it twice.
 pub fn record_split_in_career(game: &mut Game) {
     let Some(user_team_id) = game.manager.team_id.clone() else {
         return;
     };
-    let Some(standing) = game
-        .active_league()
-        .and_then(|league| league.standings.iter().find(|s| s.team_id == user_team_id))
-        .cloned()
-    else {
+    let Some(league) = game.active_league() else {
         return;
     };
-    add_standing_to_career(game, &user_team_id, &standing, None);
+    let (season, split_index) = (league.season, league.split_index);
+    if game
+        .manager
+        .career_stats
+        .counted_through
+        .is_some_and(|mark| mark.covers(season, split_index))
+    {
+        return;
+    }
+    let table = league.sorted_standings();
+    let Some(position) = table.iter().position(|s| s.team_id == user_team_id) else {
+        return;
+    };
+    let finish = (position + 1) as u32;
+    let standing = table[position].clone();
+
+    if finish == 1 {
+        game.manager.career_stats.trophies += 1;
+    }
+    let best = game.manager.career_stats.best_finish;
+    if best.is_none_or(|best| best > finish) {
+        game.manager.career_stats.best_finish = Some(finish);
+    }
+    add_standing_to_career(game, &user_team_id, &standing, Some(finish));
+    game.manager.career_stats.counted_through = Some(CareerSplitMark {
+        season,
+        splits: split_index as u32 + 1,
+    });
+}
+
+/// Stamp the career mark on a save written before splits were tracked, adding nothing.
+///
+/// Such a save may or may not already hold the matches of the splits finished this season
+/// (releases between the matches fix and the mark do), and nothing in the save says which.
+/// Adding them risks counting them twice, so the totals stay as saved and the mark is set
+/// at the running split: from then on each split end and the season end count their split
+/// exactly once. A career that already has a mark is left alone, so a second load changes
+/// nothing.
+pub fn stamp_unmarked_career(game: &mut Game) {
+    if game.manager.career_stats.counted_through.is_none() {
+        start_career_at_running_split(game);
+    }
+}
+
+/// Mark the career as reaching up to the running split: the splits before it are either
+/// already in the totals or not the manager's, so no later call adds them.
+pub fn start_career_at_running_split(game: &mut Game) {
+    let Some(league) = game.active_league() else {
+        return;
+    };
+    let mark = CareerSplitMark {
+        season: league.season,
+        splits: league.split_index as u32,
+    };
+    game.manager.career_stats.counted_through = Some(mark);
 }
 
 fn process_end_of_season_inner(
@@ -724,17 +777,9 @@ fn process_end_of_season_inner(
         player.stats = PlayerSeasonStats::default();
     }
 
-    // 6. Update manager career stats
-    if let Some(standing) = &user_standing {
-        if user_position == 1 {
-            game.manager.career_stats.trophies += 1;
-        }
-        let best = game.manager.career_stats.best_finish;
-        if best.is_none() || best.unwrap() > user_position {
-            game.manager.career_stats.best_finish = Some(user_position);
-        }
-        add_standing_to_career(game, &user_team_id, standing, Some(user_position));
-    }
+    // 6. Update manager career stats with the final split; the earlier splits of the
+    // season were added when each of them ended.
+    record_split_in_career(game);
 
     // 6b. Evaluate board objectives and adjust satisfaction
     let objective_result = crate::board_objectives::evaluate_objective_result(game);
