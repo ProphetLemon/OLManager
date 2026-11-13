@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -10,7 +13,7 @@ import { ChampionLayer } from "./ChampionLayer";
 
 /**
  * The guard looks at where the markers are drawn on every frame and hides the tag that has ended
- * up on another tag or on a label, through `opacity` alone. The solve below places both tags
+ * up on another tag or on a label, through `data-guard` alone. The solve below places both tags
  * clear of each other; the frames then move the markers the way a turn between two solves would.
  */
 
@@ -34,7 +37,8 @@ function mount(state: ReturnType<typeof makeState>, beams: Beam[] = []) {
 }
 
 const tagOf = (id: string) => within(screen.getByTestId(`champion-${id}`)).getByTestId("tag");
-const opacityOf = (id: string) => tagOf(id).style.opacity;
+/** "hidden" while the guard holds the tag back, "" once it shows. The stylesheet turns it into opacity 0. */
+const opacityOf = (id: string) => (tagOf(id).getAttribute("data-guard") === "hidden" ? "0" : "");
 
 /** Two champions far apart: `high` is above `low`, so it has the priority. */
 const apart = () =>
@@ -99,7 +103,7 @@ describe("the tag guard on the frame path", () => {
     expect(opacityOf("a")).toBe("0");
   });
 
-  it("writes opacity and nothing else on a tag, and reads no layout on a frame", () => {
+  it("writes the guard attribute and nothing else on a tag, and reads no layout on a frame", () => {
     const { publish } = mount(apart());
     const rect = vi.spyOn(Element.prototype, "getBoundingClientRect");
     const width = vi.spyOn(HTMLElement.prototype, "offsetWidth", "get");
@@ -108,8 +112,7 @@ describe("the tag guard on the frame path", () => {
       const { style } = tagOf(id);
       return Object.fromEntries(Array.from({ length: style.length }, (_, index) => [style[index], style.getPropertyValue(style[index])]));
     };
-    const without = (style: Record<string, string>) => Object.fromEntries(Object.entries(style).filter(([name]) => name !== "opacity"));
-    const before = without(styleOf("low"));
+    const before = styleOf("low");
 
     const seen = new Set<string>();
     for (let frame = 0; frame < 30; frame += 1) {
@@ -117,12 +120,38 @@ describe("the tag guard on the frame path", () => {
       seen.add(opacityOf("low"));
     }
 
-    // The tag really was hidden and shown, and the rest of its style is the one React gave it.
+    // The tag really was hidden and shown, and its inline style is the one React gave it: no opacity, no transition.
     expect([...seen].sort()).toEqual(["", "0"]);
-    expect(without(styleOf("low"))).toEqual(before);
+    expect(styleOf("low")).toEqual(before);
+    expect(tagOf("low").style.opacity).toBe("");
+    expect(tagOf("low").style.transition).toBe("");
     expect(rect).not.toHaveBeenCalled();
     expect(width).not.toHaveBeenCalled();
     expect(height).not.toHaveBeenCalled();
+  });
+
+  it("hides a tag with no transition, and brings it back with the 120 ms fade", () => {
+    // The real stylesheet: the guard only flips an attribute, so what the tag does depends on the CSS.
+    const style = document.createElement("style");
+    style.textContent = readFileSync(resolve(__dirname, "liveMatch.css"), "utf8");
+    document.head.append(style);
+    try {
+      const { publish } = mount(apart());
+      const computed = () => getComputedStyle(tagOf("low"));
+      expect(computed().transition).toBe("opacity 120ms linear");
+
+      publish(makeFrame(crossed(), { nowMs: 0 }));
+      // Hidden: opacity 0 takes effect at once, so it cannot stay drawn over the other tag while it fades.
+      expect(computed().opacity).toBe("0");
+      expect(computed().transition).toBe("none");
+
+      publish(makeFrame(apart(), { nowMs: 100 }));
+      publish(makeFrame(apart(), { nowMs: 100 + GUARD_HOLD_MS }));
+      expect(opacityOf("low")).toBe("");
+      expect(computed().transition).toBe("opacity 120ms linear");
+    } finally {
+      style.remove();
+    }
   });
 
   it("never shows a tag the solver did not place: a champion with no tag stays without one", () => {

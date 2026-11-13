@@ -258,8 +258,15 @@
   font-family: var(--font-heading);
   line-height: 1.05;
   white-space: nowrap;
-  /* The frame path hides a tag that has ended up on another one (see useTagGuard): opacity only, composite only. */
+  /* A tag comes back with a short fade: opacity only, composite only. */
   transition: opacity 120ms linear;
+}
+
+/* The frame path hides a tag that has ended up on another one (see useTagGuard). It hides at
+   once: a fade-out would leave it drawn over the other tag for the length of the transition. */
+.arena-tag[data-guard="hidden"] {
+  opacity: 0;
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -303,6 +310,10 @@
 .arena-tag-probe {
   top: 0;
   left: 0;
+  /* The border of a tag takes its colour from --team-color, which only a marker defines. Outside
+     one the whole `border` shorthand is invalid and the probe loses its 1px border: 2px narrower
+     and shorter than the tag it stands for, so the solver and the guard sized every tag short. */
+  --team-color: transparent;
 }
 
 .arena-tag-probe [data-text]::before {
