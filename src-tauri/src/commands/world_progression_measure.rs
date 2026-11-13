@@ -480,7 +480,7 @@ fn print_report(reps: &[Rep], days: u32) {
                 .join(" ")
         );
         println!("(cells: mean / pooled sd / sd of replicate means)");
-        for role in 0..5 {
+        for (role, role_name) in ROLE_NAMES.iter().enumerate() {
             let per_rep: Vec<Vec<&Row>> = reps
                 .iter()
                 .map(|r| {
@@ -517,12 +517,7 @@ fn print_report(reps: &[Rep], days: u32) {
                 })
                 .collect::<Vec<_>>()
                 .join(" ");
-            println!(
-                "{:<8} {:>5} {:>6.1} | {cells}",
-                ROLE_NAMES[role],
-                all.len(),
-                games
-            );
+            println!("{:<8} {:>5} {:>6.1} | {cells}", role_name, all.len(), games);
         }
         let untouched = [0usize, 4, 6];
         let line = untouched
