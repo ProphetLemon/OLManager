@@ -264,6 +264,15 @@ function formsOf(champion: TagChampion): Form[] {
 
 const hasState = (champion: TagChampion) => (champion.sub ?? "").length > 0;
 
+/**
+ * The order in which tags choose their slot, and so which tag wins when two end up on the same
+ * spot: champions with a state line first (their timers must stay readable), then top to bottom,
+ * then by id.
+ */
+export function compareTagPriority(p: TagChampion, q: TagChampion): number {
+  return Number(hasState(q)) - Number(hasState(p)) || p.pos.y - q.pos.y || (p.id < q.id ? -1 : p.id > q.id ? 1 : 0);
+}
+
 export interface PlaceTagsOptions {
   /** Side of the map in pixels; the nominal size when left out. */
   sizePx?: number;
@@ -322,10 +331,7 @@ export function placeTags(
   const result: TagPlacements = {};
 
   // Champions with a state line choose first so their timers keep a slot.
-  const order = [...champions].sort(
-    (p, q) =>
-      Number(hasState(q)) - Number(hasState(p)) || p.pos.y - q.pos.y || (p.id < q.id ? -1 : p.id > q.id ? 1 : 0),
-  );
+  const order = [...champions].sort(compareTagPriority);
 
   for (const champion of order) {
     const travel = travels.get(champion.id) ?? STILL;

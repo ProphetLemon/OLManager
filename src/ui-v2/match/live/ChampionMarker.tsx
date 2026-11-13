@@ -43,6 +43,8 @@ export interface ChampionMarkerProps {
   state: MarkerState | null;
   texts: MarkerTexts;
   tag: TagPlacement | undefined;
+  /** Hands the element of the tag to the guard that shows and hides it on the frame path. */
+  tagRef?: (element: Element | null) => void;
   fighting: boolean;
   selected: boolean;
   /** Another player is followed: this one steps back. */
@@ -83,6 +85,7 @@ export const ChampionMarker = memo(function ChampionMarker({
   state,
   texts,
   tag,
+  tagRef,
   fighting,
   selected,
   dimmed,
@@ -196,6 +199,7 @@ export const ChampionMarker = memo(function ChampionMarker({
       </div>
       {tag && (tag.form === "full" || tag.form === "compact") ? (
         <div
+          ref={tagRef}
           className="arena-tag"
           style={tagStyle(tag, radius)}
           data-slot={tag.slot}
