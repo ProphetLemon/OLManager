@@ -4518,7 +4518,9 @@
         "resetTitle": "Bu maç baştan başlasın mı?",
         "resetBody": "Maç 0. dakikaya döner ve farklı geçebilir. Şimdiye kadar izledikleriniz kaybolur.",
         "resetConfirm": "Baştan başla",
-        "skipFailed": "Maçın geri kalanı bir seferde oynanamadı. Maç devam ediyor."
+        "skipFailed": "Maçın geri kalanı bir seferde oynanamadı. Maç devam ediyor.",
+        "skipBusy": "Sonuç hesaplanıyor…",
+        "skipRetry": "Tekrar dene"
       },
       "spotlight": {
         "label": "Odak",

@@ -4517,7 +4517,9 @@
         "resetTitle": "Recomeçar esta partida?",
         "resetBody": "A partida volta ao minuto 0 e pode decorrer de forma diferente. O que você viu até agora perde-se.",
         "resetConfirm": "Recomeçar",
-        "skipFailed": "Não foi possível jogar o resto da partida de uma vez. Ela continua a correr."
+        "skipFailed": "Não foi possível jogar o resto da partida de uma vez. Ela continua a correr.",
+        "skipBusy": "A calcular o resultado…",
+        "skipRetry": "Tentar novamente"
       },
       "spotlight": {
         "label": "Em destaque",

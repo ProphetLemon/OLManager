@@ -4517,7 +4517,9 @@
         "resetTitle": "Ricominciare questa partita?",
         "resetBody": "La partita torna al minuto 0 e può andare diversamente. Quello che hai visto finora va perso.",
         "resetConfirm": "Ricomincia",
-        "skipFailed": "Non è stato possibile giocare subito il resto della partita. Continua a scorrere."
+        "skipFailed": "Non è stato possibile giocare subito il resto della partita. Continua a scorrere.",
+        "skipBusy": "Calcolo del risultato…",
+        "skipRetry": "Riprova"
       },
       "spotlight": {
         "label": "In primo piano",

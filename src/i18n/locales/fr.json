@@ -4518,7 +4518,9 @@
         "resetTitle": "Recommencer ce match ?",
         "resetBody": "Le match repart de la minute 0 et peut se dérouler autrement. Ce que vous avez déjà vu est perdu.",
         "resetConfirm": "Recommencer",
-        "skipFailed": "Le reste du match n'a pas pu être joué d'un coup. Il continue."
+        "skipFailed": "Le reste du match n'a pas pu être joué d'un coup. Il continue.",
+        "skipBusy": "Calcul du résultat…",
+        "skipRetry": "Réessayer"
       },
       "spotlight": {
         "label": "À l'honneur",

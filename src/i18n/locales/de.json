@@ -4518,7 +4518,9 @@
         "resetTitle": "Dieses Spiel neu starten?",
         "resetBody": "Das Spiel beginnt wieder bei Minute 0 und kann anders verlaufen. Was du bisher gesehen hast, geht verloren.",
         "resetConfirm": "Neu starten",
-        "skipFailed": "Der Rest des Spiels konnte nicht sofort gespielt werden. Es läuft weiter."
+        "skipFailed": "Der Rest des Spiels konnte nicht sofort gespielt werden. Es läuft weiter.",
+        "skipBusy": "Ergebnis wird berechnet …",
+        "skipRetry": "Erneut versuchen"
       },
       "spotlight": {
         "label": "Im Fokus",

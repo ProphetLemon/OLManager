@@ -318,14 +318,20 @@ describe("the finish", () => {
 describe("skipping", () => {
   it("plays the rest of the match on the engine, shows the same result, and hands it on as a live match", async () => {
     let finish: (value: unknown) => void = () => undefined;
-    engine.skipImpl = () => new Promise((resolve) => (finish = resolve));
+    let asked = false;
+    engine.skipImpl = () =>
+      new Promise((resolve) => {
+        finish = resolve;
+        asked = true;
+      });
     const { onFullTime, onSnapshotUpdate } = mount();
     await screen.findByTestId("champion-b-TOP");
 
     await skipFromTheMenu();
-    expect(await screen.findByText("Clearing battlefield...")).toBeInTheDocument();
+    expect(await screen.findByText("Calculating the result…")).toBeInTheDocument();
     expect(document.querySelector(".live-scroll")).toHaveAttribute("inert");
 
+    await waitFor(() => expect(asked).toBe(true));
     await act(async () => finish({ sessionId: "s", state: finishedState() }));
     const panel = await screen.findByTestId("end-panel");
     expect(onSnapshotUpdate).toHaveBeenCalledTimes(1);
@@ -343,10 +349,84 @@ describe("skipping", () => {
     await screen.findByTestId("champion-b-TOP");
 
     await skipFromTheMenu();
-    expect(await screen.findByText("The rest of the match could not be played at once. It keeps running.")).toBeInTheDocument();
+    const notice = await screen.findByRole("alert");
+    expect(notice).toHaveTextContent("The rest of the match could not be played at once. It keeps running.");
+    expect(within(notice).getByRole("button", { name: "Try again" })).toBeEnabled();
     expect(screen.queryByTestId("end-panel")).toBeNull();
     expect(onFullTime).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Pause" })).toBeEnabled();
+    expect(screen.getByTestId("live-match")).not.toHaveAttribute("aria-busy");
+  });
+
+  it("tries again from the notice, and the notice goes once the result is in", async () => {
+    engine.skipImpl = () => Promise.reject(new Error("engine gone"));
+    mount();
+    await screen.findByTestId("champion-b-TOP");
+    await skipFromTheMenu();
+    const retry = within(await screen.findByRole("alert")).getByRole("button", { name: "Try again" });
+
+    engine.skipImpl = () => Promise.resolve({ sessionId: "s", state: finishedState() });
+    fireEvent.click(retry);
+    expect(await screen.findByTestId("end-panel")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  describe("while the rest of the match is being calculated", () => {
+    it("says so politely, marks the area busy and switches off every control that would race it", async () => {
+      let finish: (value: unknown) => void = () => undefined;
+      let asked = false;
+      engine.skipImpl = () =>
+        new Promise((resolve) => {
+          finish = resolve;
+          asked = true;
+        });
+      mount();
+      await screen.findByTestId("champion-b-TOP");
+      await skipFromTheMenu();
+
+      const status = (await screen.findByText("Calculating the result…")).closest("[role='status']");
+      expect(status).not.toBeNull();
+      expect(screen.getByTestId("live-match")).toHaveAttribute("aria-busy", "true");
+      expect(screen.getByRole("button", { name: "Pause", hidden: true })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Match options", hidden: true })).toBeDisabled();
+      for (const radio of screen.getAllByRole("radio", { hidden: true })) expect(radio).toBeDisabled();
+
+      await waitFor(() => expect(asked).toBe(true));
+      await act(async () => finish({ sessionId: "s", state: finishedState() }));
+    });
+
+    it("clears the busy state when the result arrives", async () => {
+      let finish: (value: unknown) => void = () => undefined;
+      let asked = false;
+      engine.skipImpl = () =>
+        new Promise((resolve) => {
+          finish = resolve;
+          asked = true;
+        });
+      mount();
+      await screen.findByTestId("champion-b-TOP");
+      await skipFromTheMenu();
+      await screen.findByText("Calculating the result…");
+      await waitFor(() => expect(asked).toBe(true));
+
+      await act(async () => finish({ sessionId: "s", state: finishedState() }));
+      expect(await screen.findByTestId("end-panel")).toBeInTheDocument();
+      expect(screen.queryByText("Calculating the result…")).toBeNull();
+      expect(screen.getByTestId("live-match")).not.toHaveAttribute("aria-busy");
+    });
+
+    it("is on the screen before the engine is asked, so a call that holds the window cannot hide it", async () => {
+      let busyWhenAsked: string | null = null;
+      engine.skipImpl = () => {
+        busyWhenAsked = screen.getByTestId("live-match").getAttribute("aria-busy");
+        return Promise.resolve({ sessionId: "s", state: finishedState() });
+      };
+      mount();
+      await screen.findByTestId("champion-b-TOP");
+      await skipFromTheMenu();
+      await screen.findByTestId("end-panel");
+      expect(busyWhenAsked).toBe("true");
+    });
   });
 
   it("starts a new match from the options menu", async () => {

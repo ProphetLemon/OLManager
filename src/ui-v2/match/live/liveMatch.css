@@ -2058,12 +2058,21 @@
 
 .live-notice {
   flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   margin: 0;
   padding: 0.25rem 0.75rem;
   border: 1px dashed var(--warning);
   border-radius: 0.5rem;
   color: var(--warning);
   font-size: var(--text-caption);
+}
+
+.live-notice p {
+  margin: 0;
 }
 
 /* The Fight board and the key open upward over the map, so opening one never moves the layout. */

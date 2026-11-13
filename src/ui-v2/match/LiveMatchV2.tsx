@@ -30,6 +30,7 @@ import { EventTicker } from "./live/EventTicker";
 import { FightBoard, FIGHT_BOARD_ID } from "./live/FightBoard";
 import { LivePlayerCard } from "./live/LivePlayerCard";
 import { MapLegend } from "./live/MapLegend";
+import { Button } from "@/ui-v2/components/ui/button";
 import { MatchControls } from "./live/MatchControls";
 import { MinionCanvas } from "./live/MinionCanvas";
 import { PitMarkers } from "./live/PitMarkers";
@@ -41,6 +42,27 @@ import { useChampionProfiles, type ChampionSelectionByPlayer } from "./live/useC
 import { useContactView } from "./live/useContactView";
 import { useLiveSession } from "./live/useLiveSession";
 import "./live/liveMatch.css";
+
+/**
+ * Resolves once the browser has had the chance to paint what was just rendered, or after a short
+ * cap when it will not (a hidden window). The rest of the match is played in one call that can
+ * hold the window for seconds, so the busy state has to be on the screen before it starts.
+ */
+function afterPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    const cap = setTimeout(resolve, 100);
+    if (typeof requestAnimationFrame !== "function") return;
+    requestAnimationFrame(() =>
+      setTimeout(() => {
+        clearTimeout(cap);
+        resolve();
+      }, 0),
+    );
+  });
+}
+
+/** Where a skip is: nothing asked, played on the engine, or not possible. */
+type SkipPhase = "idle" | "pending" | "failed";
 
 export type { ChampionSelectionByPlayer } from "./live/useChampionProfiles";
 
@@ -130,7 +152,8 @@ export default function LiveMatchV2({
   const itemNames = useItemNames();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [skipFailed, setSkipFailed] = useState(false);
+  const [skipPhase, setSkipPhase] = useState<SkipPhase>("idle");
+  const busy = skipPhase === "pending" || view.skipping;
   const toggleSelected = useCallback((id: string) => setSelectedId((current) => (current === id ? null : id)), []);
 
   // ── Who is who ────────────────────────────────────────────────────────
@@ -187,13 +210,15 @@ export default function LiveMatchV2({
 
   // ── Controls ──────────────────────────────────────────────────────────
   const handleSkip = useCallback(async () => {
-    setSkipFailed(false);
+    if (skipPhase === "pending") return;
+    setSkipPhase("pending");
+    await afterPaint();
     // The rest of this same match is played on the engine. When it cannot be, the match goes on.
     const finished = await session.skip();
-    if (finished === null) setSkipFailed(true);
-  }, [session]);
+    setSkipPhase(finished === null ? "failed" : "idle");
+  }, [session, skipPhase]);
   const handleReset = useCallback(() => {
-    setSkipFailed(false);
+    setSkipPhase("idle");
     setSelectedId(null);
     session.reset();
   }, [session]);
@@ -256,8 +281,12 @@ export default function LiveMatchV2({
   );
 
   return (
-    <div className="live-match relative min-h-0 flex-1 bg-background text-foreground" data-testid="live-match">
-      <div className="live-scroll scrollbar-v2" inert={ended || view.skipping ? true : undefined}>
+    <div
+      className="live-match relative min-h-0 flex-1 bg-background text-foreground"
+      data-testid="live-match"
+      aria-busy={busy || undefined}
+    >
+      <div className="live-scroll scrollbar-v2" inert={ended || busy ? true : undefined}>
         <div className="live-shell">
           <div className="live-area-bar">
             <ScoreBar state={state} blue={blue} red={red} status={status} bus={bus} />
@@ -297,7 +326,7 @@ export default function LiveMatchV2({
             <MatchControls
               running={view.running}
               speed={view.speed}
-              disabled={Boolean(winner) || view.skipping}
+              disabled={Boolean(winner) || busy}
               onTogglePlay={() => session.setRunning(!view.running)}
               onSpeedChange={session.setSpeed}
               onSkip={handleSkip}
@@ -307,10 +336,13 @@ export default function LiveMatchV2({
             <MapLegend />
             {/* In the row, not floating: a fixed button would sit over the map or a card. */}
             <FloatingBugButton placement="rail" />
-            {skipFailed ? (
-              <p className="live-notice" role="status">
-                {t("onAir.match.controls.skipFailed")}
-              </p>
+            {skipPhase === "failed" ? (
+              <div className="live-notice" role="alert">
+                <p>{t("onAir.match.controls.skipFailed")}</p>
+                <Button type="button" variant="outline" size="touch" onClick={handleSkip}>
+                  {t("onAir.match.controls.skipRetry")}
+                </Button>
+              </div>
             ) : null}
           </div>
 
@@ -319,9 +351,9 @@ export default function LiveMatchV2({
         </div>
       </div>
 
-      {view.skipping ? (
+      {busy ? (
         <div className="live-scrim" role="status">
-          <span className="live-clearing">{t("match.clearingBattlefield")}</span>
+          <span className="live-clearing">{t("onAir.match.controls.skipBusy")}</span>
         </div>
       ) : null}
       {summary ? <EndPanel summary={summary} blue={blue} red={red} onContinue={handleContinue} /> : null}

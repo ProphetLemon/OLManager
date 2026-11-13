@@ -4552,7 +4552,9 @@
         "resetTitle": "Start this match again?",
         "resetBody": "The match goes back to minute 0 and may play out differently. What you have watched so far is lost.",
         "resetConfirm": "Start again",
-        "skipFailed": "The rest of the match could not be played at once. It keeps running."
+        "skipFailed": "The rest of the match could not be played at once. It keeps running.",
+        "skipBusy": "Calculating the result…",
+        "skipRetry": "Try again"
       },
       "spotlight": {
         "label": "Spotlight",
