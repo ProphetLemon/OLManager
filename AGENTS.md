@@ -28,6 +28,7 @@ src/
 │   ├── squad/helpers.ts       # antes en components/squad/SquadTab.helpers
 │   ├── home/helpers.ts
 │   ├── dashboard/helpers.ts
+│   ├── match/live/            # lógica pura del partido en directo (contactos, etiquetas, foco, tablero, vistas)
 │   └── ...
 ├── ui-v2/
 │   ├── AppV2.tsx              # router root + update checker + UI scale + Android immersive
@@ -38,6 +39,8 @@ src/
 │   ├── shell/                 # navModel.ts (rails, groups, strip tabs), RailItem, SectionStripV2, ClockPlate
 │   ├── lib/utils.ts           # cn()
 │   ├── pages/                 # v2 pages (SettingsV2, TeamSelectionV2)
+│   ├── match/                 # partido en directo (Arena): LiveMatchV2.tsx es la pantalla; MatchSimulation la monta
+│   │   └── live/              # mapa (ArenaMap + capas), barra, tarjetas, feed, controles, EndPanel, hooks de sesión
 │   └── dashboard/
 │       ├── DashboardV2.tsx    # state container + tab dispatcher
 │       ├── DashboardSidebarV2.tsx  # rail (4.75rem), built on navModel
@@ -61,6 +64,8 @@ src/
 | CompetitionsTabV2 | ScheduleCalendarView desde _legacy |
 | AppV2 | FloatingBugButton (solo en /match y /select-team), MainMenu, MatchSimulation, SettingsV2 |
 | DashboardSidebarV2 | FloatingBugButton con `placement="rail"` (el rail lo aloja en las rutas del dashboard) |
+
+El partido en directo ya no es un wrapper: `_legacy/pages/MatchSimulation` monta la pantalla nativa `ui-v2/match/LiveMatchV2` en la etapa `first_half`. Se retiraron `LolMatchLive`, `lol-prototype/ui/render.ts` y `lol-prototype/ui/panels.tsx` (y sus dos tests); un guard (`ui-v2/match/liveMatchCutover.guard.test.ts`) impide que vuelvan a importarse. Lo que sigue en `_legacy/` para esa pantalla es el motor (`lol-prototype/engine`, `backend`, `ui/stepInterpolation.ts`), `championProfiles`, `itemNames` y `matchRuntimeEvents`.
 
 Tocado en _legacy por On Air: `FloatingBugButton` (prop `placement`) y el cambio `text-primary` → `text-club-text` en los ficheros que lo usaban.
 
