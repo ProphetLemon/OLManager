@@ -4506,6 +4506,15 @@
       "importLimit": "Importlimit erreicht"
     },
     "match": {
+      "bar": {
+        "label": "Anzeigetafel",
+        "clock": "Spielzeit",
+        "final": "Beendet",
+        "kills": "{{team}} Kills: {{value}}",
+        "buff": "{{name}} {{time}}",
+        "soul": "Drachenseele: {{kind}}",
+        "buffs": "Aktive Buffs"
+      },
       "map": {
         "label": "Spielkarte. Blaue Basis unten links, rote Basis oben rechts.",
         "push": "Vorstoß {{time}}",

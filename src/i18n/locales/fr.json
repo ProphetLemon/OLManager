@@ -4506,6 +4506,15 @@
       "importLimit": "Limite d'import atteinte"
     },
     "match": {
+      "bar": {
+        "label": "Tableau des scores",
+        "clock": "Temps de jeu",
+        "final": "Terminé",
+        "kills": "Éliminations {{team}} : {{value}}",
+        "buff": "{{name}} {{time}}",
+        "soul": "Âme : {{kind}}",
+        "buffs": "Bonus actifs"
+      },
       "map": {
         "label": "Carte de la partie. Base bleue en bas à gauche, base rouge en haut à droite.",
         "push": "Poussée {{time}}",

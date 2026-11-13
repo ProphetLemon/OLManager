@@ -718,3 +718,263 @@
     transition: none;
   }
 }
+
+/* ── Score bar ───────────────────────────────────────────────────────────
+   Static markup around one moving part, the clock, which a script rewrites about ten times
+   a second. Blue is round and red is a rounded square, as on the map; the status chip
+   differs by glyph, outline and text. The buff slot always takes its space, so a buff
+   starting or ending never reflows the bar. */
+
+.arena-bar {
+  container-type: inline-size;
+  container-name: bar;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  min-height: 3.5rem;
+  padding: 0.25rem 0.875rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--rail);
+  color: var(--foreground);
+}
+
+.arena-bar-side {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.arena-bar-side[data-team="red"] {
+  flex-direction: row-reverse;
+}
+
+.arena-bar-side[data-team="blue"] {
+  --team-color: var(--team-blue);
+}
+
+.arena-bar-side[data-team="red"] {
+  --team-color: var(--team-red);
+}
+
+.arena-bar-mono {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 2px solid var(--team-color);
+  border-radius: 50%;
+  background: var(--card);
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arena-bar-side[data-team="red"] .arena-bar-mono {
+  border-radius: 32%;
+}
+
+.arena-bar-id {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.arena-bar-side[data-team="red"] .arena-bar-id {
+  align-items: flex-end;
+}
+
+.arena-bar-tag {
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arena-bar-name {
+  overflow: hidden;
+  max-width: 7rem;
+  color: var(--dim);
+  font-size: var(--text-caption);
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arena-bar-stat {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.arena-bar-icon {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--dim);
+  object-fit: contain;
+}
+
+.arena-bar-num {
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.arena-bar-pips {
+  display: inline-flex;
+  flex: none;
+  gap: 3px;
+}
+
+.arena-pip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 1.375rem;
+  height: 1.375rem;
+  border: 1.5px solid var(--team-color);
+  border-radius: 4px;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arena-pip[data-kind="empty"] {
+  border-style: dashed;
+  border-color: var(--line);
+}
+
+.arena-pip img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.arena-bar-buffs {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 7.5rem;
+}
+
+.arena-bar-side[data-team="red"] .arena-bar-buffs {
+  align-items: flex-end;
+}
+
+.arena-buff {
+  padding: 0 0.375rem;
+  border: 1px solid var(--warning);
+  border-radius: 3px;
+  color: var(--warning);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.arena-bar-centre {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+}
+
+.arena-bar-kills {
+  min-width: 2ch;
+  font-family: var(--font-heading);
+  font-size: var(--text-title);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arena-bar-kills[data-team="blue"] {
+  text-align: right;
+}
+
+.arena-bar-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 5.25rem;
+}
+
+.arena-bar-time {
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.arena-bar-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 1px 0.5rem;
+  border: 1px solid var(--foreground);
+  border-radius: 3px;
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* Live: a dot. Paused: two bars and a dashed outline. Ended: a square and a filled chip. */
+.arena-bar-status::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.arena-bar-status[data-status="paused"] {
+  border-style: dashed;
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.arena-bar-status[data-status="paused"]::before {
+  box-sizing: border-box;
+  border-radius: 0;
+  border-inline: 3px solid currentColor;
+  background: none;
+}
+
+.arena-bar-status[data-status="final"] {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.arena-bar-status[data-status="final"]::before {
+  border-radius: 1px;
+}
+
+@container bar (max-width: 1180px) {
+  .arena-bar-name {
+    display: none;
+  }
+}
+
+@container bar (max-width: 900px) {
+  .arena-bar-side {
+    flex-wrap: wrap;
+    row-gap: 0.25rem;
+  }
+}

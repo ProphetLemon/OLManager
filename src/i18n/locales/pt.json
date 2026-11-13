@@ -4505,6 +4505,15 @@
       "importLimit": "Limite de importados atingido"
     },
     "match": {
+      "bar": {
+        "label": "Placar",
+        "clock": "Tempo de jogo",
+        "final": "Terminado",
+        "kills": "Abates de {{team}}: {{value}}",
+        "buff": "{{name}} {{time}}",
+        "soul": "Alma: {{kind}}",
+        "buffs": "Bónus ativos"
+      },
       "map": {
         "label": "Mapa da partida. Base azul em baixo à esquerda, base vermelha em cima à direita.",
         "push": "Avanço {{time}}",

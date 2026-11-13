@@ -4505,6 +4505,15 @@
       "importLimit": "Límite de importados alcanzado"
     },
     "match": {
+      "bar": {
+        "label": "Marcador",
+        "clock": "Tiempo de partida",
+        "final": "Terminado",
+        "kills": "Asesinatos de {{team}}: {{value}}",
+        "buff": "{{name}} {{time}}",
+        "soul": "Alma: {{kind}}",
+        "buffs": "Mejoras activas"
+      },
       "map": {
         "label": "Mapa de la partida. Base azul abajo a la izquierda, base roja arriba a la derecha.",
         "push": "Empuje {{time}}",

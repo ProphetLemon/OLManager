@@ -4506,6 +4506,15 @@
       "importLimit": "İçe aktarma sınırına ulaşıldı"
     },
     "match": {
+      "bar": {
+        "label": "Skor tablosu",
+        "clock": "Maç süresi",
+        "final": "Bitti",
+        "kills": "{{team}} öldürmeleri: {{value}}",
+        "buff": "{{name}} {{time}}",
+        "soul": "Ruh: {{kind}}",
+        "buffs": "Etkin güçlendirmeler"
+      },
       "map": {
         "label": "Maç haritası. Mavi üs sol altta, kırmızı üs sağ üstte.",
         "push": "Baskı {{time}}",

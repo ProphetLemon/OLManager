@@ -4505,6 +4505,15 @@
       "importLimit": "Limite di importati raggiunto"
     },
     "match": {
+      "bar": {
+        "label": "Tabellone",
+        "clock": "Tempo di gioco",
+        "final": "Concluso",
+        "kills": "Uccisioni {{team}}: {{value}}",
+        "buff": "{{name}} {{time}}",
+        "soul": "Anima: {{kind}}",
+        "buffs": "Bonus attivi"
+      },
       "map": {
         "label": "Mappa della partita. Base blu in basso a sinistra, base rossa in alto a destra.",
         "push": "Spinta {{time}}",
