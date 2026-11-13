@@ -6948,6 +6948,9 @@ mod economy_harness_tests;
 mod farm_harness_tests;
 
 #[cfg(test)]
+mod role_reference_tests;
+
+#[cfg(test)]
 mod symmetry_tests;
 
 #[cfg(test)]

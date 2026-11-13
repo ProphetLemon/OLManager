@@ -158,3 +158,64 @@ fn print_engine_economy_report() {
         strong_home.matches + strong_away.matches
     );
 }
+
+/// Per-role averages of the minute-level engine, the table to set beside the live
+/// engine's (`sim_live::role_reference_tests`): creep score and assists are zero
+/// today because the engine does not record them.
+#[test]
+#[ignore = "measurement report; run with --ignored --nocapture"]
+fn print_background_role_reference() {
+    const MATCHES: u64 = 800;
+    let mut totals: HashMap<LolRole, [f64; 5]> = HashMap::new();
+    let (mut minutes, mut kills) = (Vec::new(), 0.0);
+    for seed in 0..MATCHES {
+        let mut rng = StdRng::seed_from_u64(0x0EC0 + seed);
+        let state = LiveMatchState::new(
+            team("home", 70),
+            team("away", 70),
+            MatchConfig::default(),
+            Vec::new(),
+            Vec::new(),
+            false,
+        );
+        let report = state.run_to_completion(&mut rng);
+        let length = f64::from(report.game_duration_seconds) / 60.0;
+        minutes.push(length);
+        kills += f64::from(report.home_stats.kills + report.away_stats.kills);
+        for prefix in ["home", "away"] {
+            for role in ROLES {
+                let stats = &report.player_stats[&format!("{prefix}-{role:?}")];
+                let entry = totals.entry(role).or_default();
+                entry[0] += f64::from(stats.creep_score) / length.max(1.0);
+                entry[1] += f64::from(stats.assists);
+                entry[2] += f64::from(stats.kills);
+                entry[3] += f64::from(stats.deaths);
+                entry[4] += f64::from(stats.creep_score);
+            }
+        }
+    }
+    minutes.sort_by(f64::total_cmp);
+    let n = MATCHES as f64;
+    println!(
+        "== background engine, even 70 v 70: {MATCHES} matches, duration mean {:.2} min (p10 {:.1} p50 {:.1} p90 {:.1}), kills per match {:.2}",
+        minutes.iter().sum::<f64>() / n,
+        minutes[(minutes.len() - 1) / 10],
+        minutes[(minutes.len() - 1) / 2],
+        minutes[(minutes.len() - 1) * 9 / 10],
+        kills / n
+    );
+    println!("role   cs/min  cs/match  assists  kills  deaths");
+    for role in ROLES {
+        let t = totals[&role];
+        let per = 2.0 * n;
+        println!(
+            "{:<8} {:>5.2} {:>9.1} {:>8.2} {:>6.2} {:>7.2}",
+            format!("{role:?}"),
+            t[0] / per,
+            t[4] / per,
+            t[1] / per,
+            t[2] / per,
+            t[3] / per
+        );
+    }
+}
