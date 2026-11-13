@@ -89,17 +89,6 @@ export async function acquireAcademyTeam(
   });
 }
 
-export async function getAcademyCreationOptions(parentTeamId: string) {
-  return getAcademyAcquisitionOptions(parentTeamId);
-}
-
-export async function createAcademy(parentTeamId: string, sourceTeamId: string) {
-  return acquireAcademyTeam({
-    parent_team_id: parentTeamId,
-    source_team_id: sourceTeamId,
-  });
-}
-
 export async function promoteAcademyPlayer(playerId: string): Promise<GameStateData> {
   return getApiClientSync().academy.promotePlayer({ playerId });
 }

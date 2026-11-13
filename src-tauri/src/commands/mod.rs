@@ -20,6 +20,7 @@ pub mod staff;
 pub mod stats;
 pub mod time;
 pub mod transfers;
+pub mod world_export;
 pub mod world_overlay;
 pub use academy::*;
 pub use bug_report::*;
@@ -42,6 +43,7 @@ pub use staff::*;
 pub use stats::*;
 pub use time::*;
 pub use transfers::*;
+pub use world_export::*;
 pub use world_overlay::*;
 
 #[tauri::command]

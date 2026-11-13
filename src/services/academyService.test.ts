@@ -3,9 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import {
   acquireAcademyTeam,
-  createAcademy,
   getAcademyAcquisitionOptions,
-  getAcademyCreationOptions,
 } from "./academyService";
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -135,34 +133,6 @@ describe("academyService", () => {
         customName: "Movistar KOI Fénix Academy",
         customShortName: "MKOI F",
         customLogoUrl: "https://cdn.example/custom-logo.webp",
-      },
-    });
-  });
-
-  it("keeps deprecated creation wrappers mapped to acquisition commands for compatibility", async () => {
-    const updatedGame = { teams: [{ id: "legacy-source" }] };
-    mockedInvoke.mockResolvedValueOnce(updatedGame);
-
-    await expect(getAcademyCreationOptions("team-legacy")).resolves.toMatchObject({
-      parent_team_id: undefined,
-      acquisition_allowed: false,
-      blocked_reason: null,
-      options: [],
-    });
-    expect(mockedInvoke).toHaveBeenCalledWith("get_academy_acquisition_options", {
-      parentTeamId: "team-legacy",
-    });
-
-    mockedInvoke.mockResolvedValueOnce(updatedGame);
-
-    await expect(createAcademy("team-legacy", "legacy-source")).resolves.toBe(updatedGame);
-    expect(mockedInvoke).toHaveBeenCalledWith("acquire_academy_team", {
-      request: {
-        parentTeamId: "team-legacy",
-        sourceTeamId: "legacy-source",
-        customName: undefined,
-        customShortName: undefined,
-        customLogoUrl: undefined,
       },
     });
   });
