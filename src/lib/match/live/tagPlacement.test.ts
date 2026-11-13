@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { bubbleDiameterPx } from "@/lib/match/live/mapGeometry";
 import {
   pitObstacle,
   placeTags,
+  TAG_GAP_PX,
   type TagBox,
+  type TagFormSizes,
   type TagChampion,
   type TagPlacement,
   type TagPlacements,
@@ -221,6 +224,119 @@ describe("placeTags for the real size of the map", () => {
       const boxes = placedBoxes(placeTags(pair, undefined, { sizePx }));
       expect(boxes).toHaveLength(2);
       expect(overlap(boxes[0][1], boxes[1][1]), `at ${sizePx}`).toBe(false);
+    }
+  });
+});
+
+/**
+ * Where the browser puts a tag, worked out from the marker's CSS and not from the solver: below the
+ * bubble 11 px past its edge, above and beside it 8 px, an anchored tag reaching 6 px past the edge.
+ * Pixels, with the origin at the top left of the map.
+ */
+function renderedBox(
+  pos: { x: number; y: number },
+  placement: TagPlacement,
+  sizePx: number,
+  size: { w: number; h: number },
+) {
+  if (!("slot" in placement)) throw new Error("expected a placed tag");
+  const r = bubbleDiameterPx(sizePx) / 2;
+  const cx = pos.x * sizePx;
+  const cy = pos.y * sizePx;
+  let x0 = cx - size.w / 2;
+  if (placement.slot === "below" || placement.slot === "above") {
+    if (placement.align === "start") x0 = cx - (r + 6);
+    if (placement.align === "end") x0 = cx + (r + 6) - size.w;
+    const y0 = placement.slot === "below" ? cy + r + 11 : cy - (r + 8) - size.h;
+    return { x0, y0, x1: x0 + size.w, y1: y0 + size.h };
+  }
+  const y0 = cy - size.h / 2;
+  x0 = placement.slot === "right" ? cx + r + 8 : cx - r - 8 - size.w;
+  return { x0, y0, x1: x0 + size.w, y1: y0 + size.h };
+}
+
+type Px = ReturnType<typeof renderedBox>;
+const touches = (a: Px, b: Px, by = 0) => !(a.x1 + by < b.x0 || b.x1 + by < a.x0 || a.y1 + by < b.y0 || b.y1 + by < a.y0);
+
+describe("placeTags with the measured size of the tags", () => {
+  const SIZE = 474;
+  const full = (w: number, h = 18): TagFormSizes => ({ full: { w, h }, compact: { w: Math.min(w, 34), h } });
+
+  it("builds the box of a form from its measured size, not from its letters", () => {
+    const wide = placeTags([champ("a", 0.5, 0.5, { sizes: { full: { w: 120, h: 30 } } })], undefined, { sizePx: SIZE }).a;
+    const box = boxOf(wide);
+    expect((box.x1 - box.x0) * SIZE).toBeCloseTo(120, 6);
+    expect((box.y1 - box.y0) * SIZE).toBeCloseTo(30, 6);
+  });
+
+  it("estimates the form that was not measured, and a form whose box has no size yet", () => {
+    const estimated = boxOf(placeTags([champ("a", 0.5, 0.5)], undefined, { sizePx: SIZE }).a);
+    const unmeasured = boxOf(
+      placeTags([champ("a", 0.5, 0.5, { sizes: { full: { w: 0, h: 0 } } })], undefined, { sizePx: SIZE }).a,
+    );
+    expect(unmeasured).toEqual(estimated);
+    const onlyCompact = boxOf(
+      placeTags([champ("a", 0.5, 0.5, { sizes: { compact: { w: 20, h: 18 } } })], undefined, { sizePx: SIZE }).a,
+    );
+    expect(onlyCompact).toEqual(estimated);
+  });
+
+  it("keeps two tags apart when the font is wider than a character count says", () => {
+    // Two-letter names: 27 px each by the estimate, 80 px in a wide face. They stand 47 px apart.
+    const pair = [
+      champ("a", 0.45, 0.5, { name: "AB", sizes: full(80) }),
+      champ("b", 0.55, 0.5, { name: "CD", sizes: full(80) }),
+    ];
+    const result = placeTags(pair, undefined, { sizePx: SIZE });
+    const [first, second] = pair.map((entry) => renderedBox(entry.pos, result[entry.id], SIZE, { w: 80, h: 18 }));
+    expect(touches(first, second)).toBe(false);
+    expect(result.a).toMatchObject({ slot: "below" });
+    expect(result.b).not.toMatchObject({ slot: "below" });
+  });
+
+  it("agrees with where the browser puts the tag: the solver's box is the rendered box", () => {
+    const sizes = new Map<string, number>(FIGHT.map((entry, index) => [entry.id, 40 + index * 6]));
+    const sized = FIGHT.map((entry) => ({ ...entry, sizes: full(sizes.get(entry.id) ?? 50, entry.sub ? 30 : 18) }));
+    const result = placeTags(sized, undefined, { sizePx: SIZE });
+    for (const entry of sized) {
+      const placement = result[entry.id];
+      if (!("box" in placement)) continue;
+      const size = entry.sizes[placement.form];
+      if (!size) throw new Error("test data");
+      const rendered = renderedBox(entry.pos, placement, SIZE, size);
+      expect(placement.box.x0 * SIZE, `${entry.id} x0`).toBeCloseTo(rendered.x0, 6);
+      expect(placement.box.y0 * SIZE, `${entry.id} y0`).toBeCloseTo(rendered.y0, 6);
+      expect(placement.box.x1 * SIZE, `${entry.id} x1`).toBeCloseTo(rendered.x1, 6);
+      expect(placement.box.y1 * SIZE, `${entry.id} y1`).toBeCloseTo(rendered.y1, 6);
+    }
+  });
+
+  it("places no two real-sized tags on each other in a five-champion cluster, with the gap between them", () => {
+    // Widths of the face in the page (Barlow Condensed, 12 px): "NUC" 32, "SUP" 31, "ROO" 31, "SHE" 30, "MYR" 33.
+    const cluster: TagChampion[] = [
+      champ("nuc", 0.4, 0.62, { name: "NUC", sub: "Regreso 2,3s", subCompact: "Reg 2,3", sizes: { full: { w: 70, h: 30 }, compact: { w: 50, h: 30 } } }),
+      champ("sup", 0.42, 0.64, { name: "SUP", sub: "Objetivo", subCompact: "Obj.", sizes: { full: { w: 62, h: 30 }, compact: { w: 34, h: 30 } } }),
+      champ("roo", 0.44, 0.61, { name: "ROO", sizes: { full: { w: 54, h: 18 }, compact: { w: 31, h: 18 } } }),
+      champ("she", 0.41, 0.59, { name: "SHE", sub: "Peleando", subCompact: "Pelea", sizes: { full: { w: 66, h: 30 }, compact: { w: 40, h: 30 } } }),
+      champ("myr", 0.43, 0.6, { name: "MYR", sub: "Peleando", subCompact: "Pelea", sizes: { full: { w: 66, h: 30 }, compact: { w: 40, h: 30 } } }),
+    ];
+    const result = placeTags(cluster, undefined, { sizePx: SIZE });
+    const placed = cluster.flatMap((entry) => {
+      const placement = result[entry.id];
+      if (!("slot" in placement)) return [];
+      const size = entry.sizes?.[placement.form];
+      if (!size) throw new Error("test data");
+      return [{ id: entry.id, box: renderedBox(entry.pos, placement, SIZE, size) }];
+    });
+    expect(placed.length).toBeGreaterThanOrEqual(3);
+    for (let i = 0; i < placed.length; i += 1) {
+      for (let j = i + 1; j < placed.length; j += 1) {
+        expect(touches(placed[i].box, placed[j].box, TAG_GAP_PX - 0.5), `${placed[i].id} touches ${placed[j].id}`).toBe(false);
+      }
+    }
+    // What found no room says so: a badge for a state, nothing for the rest. Never a tag on a tag.
+    for (const entry of cluster) {
+      if (!("slot" in result[entry.id])) expect(["badge", "none"]).toContain(result[entry.id].form);
     }
   });
 });

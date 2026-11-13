@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import i18n from "@/i18n";
 import { detectContacts } from "@/lib/match/live/contacts";
@@ -152,7 +152,90 @@ describe("ChampionLayer next to an objective pit", () => {
   });
 
   it("puts the same champion's tag below, where no pit is", () => {
-    renderLayer(makeState({ champions: [makeChampion("solo", "blue", 0.5, 0.2, { name: "KORVAN" })] }));
+    renderLayer(makeState({ champions: [makeChampion("solo", "blue", 0.6, 0.2, { name: "KORVAN" })] }));
     expect(screen.getByTestId("tag")).toHaveAttribute("data-slot", "below");
+  });
+});
+
+/**
+ * jsdom lays nothing out, so the width the page gives a tag is stubbed: every probe is `probeWidth`
+ * wide and 18 high, and nothing else has a box.
+ */
+describe("ChampionLayer measures the tags it places", () => {
+  let probeWidth = 80;
+  const spies: Array<ReturnType<typeof vi.spyOn>> = [];
+
+  beforeAll(() => {
+    const isProbe = (element: HTMLElement) => element.classList.contains("arena-tag-probe");
+    spies.push(
+      vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (this: HTMLElement) {
+        return isProbe(this) ? probeWidth : 0;
+      }),
+      vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (this: HTMLElement) {
+        return isProbe(this) ? 18 : 0;
+      }),
+    );
+  });
+  afterAll(() => spies.forEach((spy) => spy.mockRestore()));
+  afterEach(() => {
+    probeWidth = 80;
+  });
+
+  /** Two champions with two-letter names, 54 px apart on the 540 px test map: 27 px tags fit side by side, 80 px tags do not. */
+  const pair = (nowSec = 100) =>
+    makeState({
+      timeSec: nowSec,
+      champions: [makeChampion("a", "blue", 0.45, 0.5, { name: "AB" }), makeChampion("b", "red", 0.55, 0.5, { name: "CD" })],
+    });
+
+  const slots = () => ["a", "b"].map((id) => within(screen.getByTestId(`champion-${id}`)).getByTestId("tag").getAttribute("data-slot"));
+
+  it("gives a probe of each form to every champion, and the probes add no text to the page", () => {
+    renderLayer(pair());
+    const probes = document.querySelectorAll<HTMLElement>(".arena-tag-probe");
+    expect(probes).toHaveLength(4);
+    expect([...probes].map((probe) => `${probe.dataset.probe}:${probe.dataset.form}`).sort()).toEqual([
+      "a:compact",
+      "a:full",
+      "b:compact",
+      "b:full",
+    ]);
+    const holder = document.querySelector(".arena-tag-probes");
+    expect(holder).toHaveAttribute("aria-hidden", "true");
+    expect(holder?.textContent).toBe("");
+    for (const found of screen.getAllByText("AB")) expect(found.closest(".arena-tag-probes")).toBeNull();
+  });
+
+  it("solves with the size the page gave the tags: wide tags cannot share the row below two close bubbles", () => {
+    renderLayer(pair());
+    const [first, second] = slots();
+    expect(first).toBe("below");
+    expect(second).not.toBe("below");
+  });
+
+  it("keeps both below when the tags are as narrow as their letters say", () => {
+    probeWidth = 27;
+    renderLayer(pair());
+    expect(slots()).toEqual(["below", "below"]);
+  });
+
+  it("solves again when a commit changes the size of a tag, before anything is painted", () => {
+    probeWidth = 27;
+    const first = renderLayer(pair());
+    expect(slots()).toEqual(["below", "below"]);
+    probeWidth = 80;
+    const next = pair(100.25);
+    first.rerender(
+      <ArenaHarness bus={createTestBus().bus}>
+        <ChampionLayer
+          state={next}
+          championByPlayerId={{}}
+          contacts={detectContacts(next.champions, next.timeSec)}
+          selectedId={null}
+          onSelect={() => {}}
+        />
+      </ArenaHarness>,
+    );
+    expect(slots()[1]).not.toBe("below");
   });
 });

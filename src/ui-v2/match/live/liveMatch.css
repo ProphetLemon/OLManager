@@ -283,6 +283,24 @@
   letter-spacing: 0.02em;
 }
 
+/* A probe is a tag nobody sees, laid out like one so that its size can be measured. The words
+   come from data-text, so no text is added to the page. */
+.arena-tag-probes {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.arena-tag-probe {
+  top: 0;
+  left: 0;
+}
+
+.arena-tag-probe [data-text]::before {
+  content: attr(data-text);
+}
+
 .arena-tag-short {
   display: none;
 }

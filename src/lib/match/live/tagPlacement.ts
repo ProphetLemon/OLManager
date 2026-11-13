@@ -17,12 +17,23 @@ import { bubbleDiameterPx, type MapPoint } from "@/lib/match/live/mapGeometry";
  *
  * Tags and bubbles have a size in pixels, not in map units, so the solver is told the side of
  * the map it works for (`sizePx`) and converts: on a small map the same tag takes a bigger share
- * of it. Boxes that other things occupy (the labels of the objective pits) are passed as
- * `obstacles`, in map units; a tag never sits on one.
+ * of it. Boxes that other things occupy (the labels of the objective pits, the ring and the beam
+ * of a firing tower) are passed as `obstacles`, in map units; a tag never sits on one.
+ *
+ * The width of a tag depends on the font, which a character count cannot know (an "M" is a third
+ * wider than an "e"). The caller therefore measures the rendered box of each form once per commit
+ * and passes it as `sizes`; the character count is only the fallback for a form with no
+ * measurement. Placed tags also keep `TAG_GAP_PX` apart, so a pixel of rounding never makes two touch.
  */
 
 /** The map size the solver assumes when it is not told one; smaller maps switch to the compact form in CSS. */
 export const NOMINAL_MAP_PX = 520;
+
+/** Clear space the solver keeps between two placed tags, in pixels. */
+export const TAG_GAP_PX = 3;
+/** Pixels per character of a name and of a state line when a form has no measured size: the widest letters of the face, not the average. */
+const NAME_CHAR_PX = 7.6;
+const SUB_CHAR_PX = 6;
 
 /** Pixel gaps between a bubble's edge and the near edge of its tag. They match the marker's CSS. */
 const BELOW_GAP_PX = 11;
@@ -67,7 +78,17 @@ export interface TagChampion {
   sub?: string;
   /** Shorter state text of the compact form. Defaults to `sub`. */
   subCompact?: string;
+  /** Rendered size of the tag in each form, in pixels, as measured in the page. A form left out is estimated from its text. */
+  sizes?: TagFormSizes;
 }
+
+/** Width and height of one rendered tag, border and padding included. */
+export interface TagPxSize {
+  w: number;
+  h: number;
+}
+
+export type TagFormSizes = Partial<Record<"full" | "compact", TagPxSize>>;
 
 export type TagSlot = "below" | "above" | "right" | "left";
 /** Along the bubble: `start` puts the tag's left edge at the bubble, `end` its right edge. Only below and above use it. */
@@ -109,8 +130,19 @@ const CANDIDATES: readonly Candidate[] = [
 
 const COMPACT_NAME_CHARS = 3;
 
-function tagSize(m: Metrics, nameChars: number, subChars: number): { w: number; h: number } {
-  return { w: m.u(Math.max(nameChars * 6.6, subChars * 6) + 12), h: m.u(18 + (subChars > 0 ? 13 : 0)) };
+/** Size of a tag in map units: what was measured for the form, else an estimate from its characters. */
+function tagSize(m: Metrics, form: Form): { w: number; h: number } {
+  if (form.measured && form.measured.w > 0 && form.measured.h > 0) {
+    return { w: m.u(form.measured.w), h: m.u(form.measured.h) };
+  }
+  return {
+    w: m.u(Math.max(form.nameChars * NAME_CHAR_PX, form.subChars * SUB_CHAR_PX) + 12),
+    h: m.u(18 + (form.subChars > 0 ? 13 : 0)),
+  };
+}
+
+function inflate(box: TagBox, by: number): TagBox {
+  return { x0: box.x0 - by, y0: box.y0 - by, x1: box.x1 + by, y1: box.y1 + by };
 }
 
 function intersects(a: TagBox, b: TagBox): boolean {
@@ -166,14 +198,20 @@ interface Form {
   form: "full" | "compact";
   nameChars: number;
   subChars: number;
+  measured?: TagPxSize;
 }
 
 function formsOf(champion: TagChampion): Form[] {
   const sub = champion.sub ?? "";
   const subCompact = champion.subCompact ?? sub;
   return [
-    { form: "full", nameChars: champion.name.length, subChars: sub.length },
-    { form: "compact", nameChars: Math.min(COMPACT_NAME_CHARS, champion.name.length), subChars: subCompact.length },
+    { form: "full", nameChars: champion.name.length, subChars: sub.length, measured: champion.sizes?.full },
+    {
+      form: "compact",
+      nameChars: Math.min(COMPACT_NAME_CHARS, champion.name.length),
+      subChars: subCompact.length,
+      measured: champion.sizes?.compact,
+    },
   ];
 }
 
@@ -218,6 +256,7 @@ export function placeTags(
 ): TagPlacements {
   const { sizePx = NOMINAL_MAP_PX, obstacles: fixed = [] } = options;
   const m = metricsFor(sizePx);
+  const gap = m.u(TAG_GAP_PX);
   const bubbles = champions.map((champion) => ({ id: champion.id, box: bubbleBox(m, champion.pos) }));
   const placed: TagBox[] = [];
   const result: TagPlacements = {};
@@ -231,7 +270,9 @@ export function placeTags(
   for (const champion of order) {
     const obstacles = [...bubbles.filter((bubble) => bubble.id !== champion.id).map((bubble) => bubble.box), ...fixed];
     const clashes = (box: TagBox) =>
-      !insideMap(box) || obstacles.some((other) => intersects(box, other)) || placed.some((other) => intersects(box, other));
+      !insideMap(box) ||
+      obstacles.some((other) => intersects(box, other)) ||
+      placed.some((other) => intersects(box, inflate(other, gap)));
     const forms = formsOf(champion);
     let choice: TagPlacement | null = null;
 
@@ -241,14 +282,14 @@ export function placeTags(
       const form = forms.find((candidate) => candidate.form === before.form);
       if (form) {
         const force = before.align === "center" ? undefined : before.align;
-        const spot = candidateBox(m, champion.pos, { slot: before.slot, force }, tagSize(m, form.nameChars, form.subChars));
+        const spot = candidateBox(m, champion.pos, { slot: before.slot, force }, tagSize(m, form));
         if (!clashes(spot.box)) choice = { form: form.form, slot: before.slot, align: spot.align, box: spot.box };
       }
     }
 
     for (const form of forms) {
       if (choice) break;
-      const size = tagSize(m, form.nameChars, form.subChars);
+      const size = tagSize(m, form);
       for (const candidate of CANDIDATES) {
         const spot = candidateBox(m, champion.pos, candidate, size);
         if (clashes(spot.box)) continue;
