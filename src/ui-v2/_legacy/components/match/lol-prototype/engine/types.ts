@@ -55,6 +55,8 @@ export interface ChampionState {
   ultimate?: UltimateState | null;
   lastDamagedByChampionId: string | null;
   lastDamagedAt: number;
+  /** Game second of the last hit by an enemy champion (not towers, minions or ignite). Sent by the Rust engine only. */
+  lastDamagedByChampionAt?: number;
   state: "lane" | "fight" | "objective" | "recall";
   recallAnchor: Vec2 | null;
   recallChannelUntil: number;
@@ -97,6 +99,12 @@ export interface StructureState {
   maxHp: number;
   alive: boolean;
   attackCdUntil: number;
+  /** Tower shot ramp, sent by the Rust engine only: the id it last shot (can be a minion). */
+  rampTargetId?: string | null;
+  /** Consecutive shots on `rampTargetId` before the latest one. */
+  rampShots?: number;
+  /** Game second of the latest shot. */
+  rampLastShotAt?: number;
 }
 
 export interface ObjectiveState {
