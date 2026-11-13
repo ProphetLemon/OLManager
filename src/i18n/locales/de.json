@@ -4504,6 +4504,11 @@
       "sortAscending": "aufsteigend",
       "sortDescending": "absteigend",
       "importLimit": "Importlimit erreicht"
+    },
+    "match": {
+      "map": {
+        "label": "Spielkarte. Blaue Basis unten links, rote Basis oben rechts."
+      }
     }
   },
   "advance": {

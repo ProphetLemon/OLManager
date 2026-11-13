@@ -67,6 +67,7 @@ describe("onAir i18n keys", () => {
       "onAir.home.daysToMatch_other",
       "onAir.calls.consequence.generic",
       "onAir.squad.importLimit",
+      "onAir.match.map.label",
       "dashboard.sectionMarket",
     ]) {
       expect(REQUIRED.has(key), key).toBe(true);

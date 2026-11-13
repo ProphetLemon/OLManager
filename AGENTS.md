@@ -70,11 +70,11 @@ Tocado en _legacy por On Air: `FloatingBugButton` (prop `placement`) y el cambio
 
 **P1 On Air.** Tokens en `src/themes/default.css`; sólo tokens, nunca colores crudos.
 
-- Tipografía: **Barlow Condensed** (`--font-heading`), mayúsculas, números tabulares. Tamaños con `--text-*` (2xs, caption, section, title, ovr, scoreboard); mínimo 0.75rem y todo en rem.
+- Tipografía: **Barlow Condensed** (`--font-heading`), mayúsculas, números tabulares. Tamaños con `--text-*` (2xs, caption, section, title, ovr, scoreboard); mínimo 0.75rem y todo en rem. Única excepción: `--text-map: max(0.75rem, 10px)`, sólo para las etiquetas sobre el mapa del partido en vivo (`src/ui-v2/match/`); Android usa una raíz de 9 px y 0.75rem quedaría en 6.75 px.
 - Primary dirigido por el club: `--primary` = `--club` (`useClubTheme`). Texto sobre relleno de club: `--club-foreground`. Texto con el color del club: `--club-text` (`text-club-text`). `--club-wash` = tinte del club (desaparece en alto contraste).
 - Superficies: `--rail` (rail), `--line` (bordes), `--dim` (texto atenuado), `--surface-clamp` (superficie de referencia para el contraste del color del club).
 - Regla: `text-primary` desnudo está prohibido, usar `text-club-text`. Lo impone `src/ui-v2/tokens.guard.test.ts` (excluye `components/ui/`, `shell/` y `FloatingBugButton`).
-- `cn()` (`src/ui-v2/lib/utils.ts`) usa `extendTailwindMerge` y registra los tamaños `text-2xs/caption/section/title/ovr/scoreboard`; un test lo compara con los `--text-*` de `default.css`. Un tamaño nuevo se añade en los dos sitios.
+- `cn()` (`src/ui-v2/lib/utils.ts`) usa `extendTailwindMerge` y registra los tamaños `text-2xs/caption/map/section/title/ovr/scoreboard`; un test lo compara con los `--text-*` de `default.css`. Un tamaño nuevo se añade en los dos sitios.
 - Los estados activos nunca dependen sólo del color (barra, peso, `aria-current`).
 
 **Shell: rail + bar + strip.** `DashboardSidebarV2` es un rail de 4.75rem (escudo, paradas, ajustes/salir/avatar abajo) con foco por flechas (`useRovingFocus`). `DashboardHeaderV2` es la barra (título, chip de decisiones, reloj, Continuar) y, debajo, `SectionStripV2` con las pestañas del grupo activo. `shell/navModel.ts` es la fuente única de paradas, grupos y pestañas. Con la pantalla de fin de temporada ambos pasan a `compact`.

@@ -1,0 +1,50 @@
+/*
+ * Rules of the arena that need a container query or a data attribute. Everything is painted
+ * with theme tokens (team, terrain, warning, club). Nothing here is animated per frame: the
+ * frame path moves zero-size anchors with `transform` from script.
+ */
+
+.arena-map {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--terrain-ground);
+  container-type: inline-size;
+  container-name: arena;
+}
+
+.arena-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* One stacking context per layer: a marker's z-index never reaches over another layer. */
+.arena-layer {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+  pointer-events: none;
+}
+
+.arena-banner {
+  position: absolute;
+  top: 0.625rem;
+  left: 50%;
+  z-index: 10;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.75rem;
+  border: 2px dashed var(--warning);
+  background: var(--background);
+  color: var(--warning);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}

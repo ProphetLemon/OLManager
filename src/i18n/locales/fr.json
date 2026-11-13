@@ -4504,6 +4504,11 @@
       "sortAscending": "croissant",
       "sortDescending": "décroissant",
       "importLimit": "Limite d'import atteinte"
+    },
+    "match": {
+      "map": {
+        "label": "Carte de la partie. Base bleue en bas à gauche, base rouge en haut à droite."
+      }
     }
   },
   "advance": {

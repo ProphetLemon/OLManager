@@ -4504,6 +4504,11 @@
       "sortAscending": "artan",
       "sortDescending": "azalan",
       "importLimit": "İçe aktarma sınırına ulaşıldı"
+    },
+    "match": {
+      "map": {
+        "label": "Maç haritası. Mavi üs sol altta, kırmızı üs sağ üstte."
+      }
     }
   },
   "advance": {

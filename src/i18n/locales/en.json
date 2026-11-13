@@ -4538,6 +4538,11 @@
       "sortAscending": "ascending",
       "sortDescending": "descending",
       "importLimit": "Import limit reached"
+    },
+    "match": {
+      "map": {
+        "label": "Match map. Blue base at the bottom left, red base at the top right."
+      }
     }
   },
   "advance": {
