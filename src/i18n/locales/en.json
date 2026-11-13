@@ -4541,7 +4541,10 @@
     },
     "match": {
       "map": {
-        "label": "Match map. Blue base at the bottom left, red base at the top right."
+        "label": "Match map. Blue base at the bottom left, red base at the top right.",
+        "push": "Push {{time}}",
+        "pushOpen": "Push",
+        "pushEnding": "Final push"
       },
       "state": {
         "dead": "Dead {{seconds}}s",

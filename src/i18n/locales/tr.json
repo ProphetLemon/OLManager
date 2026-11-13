@@ -4507,7 +4507,10 @@
     },
     "match": {
       "map": {
-        "label": "Maç haritası. Mavi üs sol altta, kırmızı üs sağ üstte."
+        "label": "Maç haritası. Mavi üs sol altta, kırmızı üs sağ üstte.",
+        "push": "Baskı {{time}}",
+        "pushOpen": "Baskı",
+        "pushEnding": "Son baskı"
       },
       "state": {
         "dead": "Ölü {{seconds}}sn",

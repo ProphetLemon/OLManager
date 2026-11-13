@@ -4507,7 +4507,10 @@
     },
     "match": {
       "map": {
-        "label": "Carte de la partie. Base bleue en bas à gauche, base rouge en haut à droite."
+        "label": "Carte de la partie. Base bleue en bas à gauche, base rouge en haut à droite.",
+        "push": "Poussée {{time}}",
+        "pushOpen": "Poussée",
+        "pushEnding": "Poussée finale"
       },
       "state": {
         "dead": "Mort {{seconds}}s",

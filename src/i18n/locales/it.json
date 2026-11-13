@@ -4506,7 +4506,10 @@
     },
     "match": {
       "map": {
-        "label": "Mappa della partita. Base blu in basso a sinistra, base rossa in alto a destra."
+        "label": "Mappa della partita. Base blu in basso a sinistra, base rossa in alto a destra.",
+        "push": "Spinta {{time}}",
+        "pushOpen": "Spinta",
+        "pushEnding": "Spinta finale"
       },
       "state": {
         "dead": "Morto {{seconds}}s",

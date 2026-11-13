@@ -1,3 +1,4 @@
+import { STRUCTURES_LAYOUT } from "@/lib/match/lolMapLayout";
 import {
   createDefaultObjectivesState,
   createEmptyNeutralTimersState,
@@ -78,6 +79,18 @@ export function makeStructure(
     attackCdUntil: 0,
     ...over,
   };
+}
+
+/** The 30 structures of a full map, at the positions of the layout. `over` adjusts one by id. */
+export function makeStructureSet(over: (id: string) => Partial<StructureState> = () => ({})): StructureState[] {
+  return STRUCTURES_LAYOUT.map((point) => {
+    const kind: StructureState["kind"] = point.id.endsWith("-nexus")
+      ? "nexus"
+      : point.icon.startsWith("inhibitor")
+        ? "inhib"
+        : "tower";
+    return makeStructure(point.id, point.side, kind, point.x, point.y, over(point.id));
+  });
 }
 
 export function makeState(over: Partial<LolSimV1RuntimeState> = {}): LolSimV1RuntimeState {

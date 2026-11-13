@@ -4507,7 +4507,10 @@
     },
     "match": {
       "map": {
-        "label": "Spielkarte. Blaue Basis unten links, rote Basis oben rechts."
+        "label": "Spielkarte. Blaue Basis unten links, rote Basis oben rechts.",
+        "push": "Vorstoß {{time}}",
+        "pushOpen": "Vorstoß",
+        "pushEnding": "Letzter Vorstoß"
       },
       "state": {
         "dead": "Tot {{seconds}}s",

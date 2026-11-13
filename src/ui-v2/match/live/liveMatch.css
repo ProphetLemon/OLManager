@@ -407,6 +407,190 @@
   --team-color: var(--team-red);
 }
 
+/* ── Structures, camps, wards, push badge ────────────────────────────────
+   Nothing here moves between engine answers, so every anchor is placed once with `transform`
+   from the render. Blue is round and red is a diamond (the same rule as the champions), the
+   kind sets size and fill, and a destroyed structure is hatched instead of dimmed. */
+
+.arena-structures {
+  position: absolute;
+  inset: 0;
+}
+
+.arena-camp,
+.arena-ward,
+.arena-struct {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+
+.arena-camp {
+  z-index: 1;
+}
+
+.arena-ward {
+  z-index: 2;
+}
+
+.arena-struct {
+  z-index: 3;
+}
+
+.arena-ward[data-team="blue"],
+.arena-struct[data-team="blue"],
+.arena-push[data-team="blue"] {
+  --team-color: var(--team-blue);
+}
+
+.arena-ward[data-team="red"],
+.arena-struct[data-team="red"],
+.arena-push[data-team="red"] {
+  --team-color: var(--team-red);
+}
+
+/* A camp is a small diamond: solid while a monster stands there, a dashed outline once cleared. */
+.arena-camp-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: clamp(7px, 1.2cqw, 12px);
+  height: clamp(7px, 1.2cqw, 12px);
+  background: var(--dim);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.arena-camp[data-alive="false"] .arena-camp-dot {
+  border: 1.5px dashed var(--dim);
+  background: transparent;
+}
+
+/* A ward is a hollow marker in its team's shape: round for blue, a diamond for red. */
+.arena-ward-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: clamp(9px, 1.6cqw, 15px);
+  height: clamp(9px, 1.6cqw, 15px);
+  border: 2px solid var(--team-color);
+  background: var(--terrain-ground);
+  transform: translate(-50%, -50%);
+}
+
+.arena-ward[data-team="blue"] .arena-ward-dot {
+  border-radius: 50%;
+}
+
+.arena-ward[data-team="red"] .arena-ward-dot {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.arena-struct-body {
+  position: absolute;
+  box-sizing: border-box;
+  background: var(--team-color);
+}
+
+.arena-struct[data-team="blue"] .arena-struct-body,
+.arena-struct[data-team="blue"] .arena-struct-body::after {
+  border-radius: 50%;
+}
+
+.arena-struct[data-team="red"] .arena-struct-body,
+.arena-struct[data-team="red"] .arena-struct-body::after {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+/* Towers and the nexus are rings; inhibitors are solid. */
+.arena-struct-body::after {
+  content: "";
+  position: absolute;
+  inset: 28%;
+  background: var(--terrain-ground);
+}
+
+.arena-struct[data-kind="nexus"] .arena-struct-body::after {
+  inset: 34%;
+}
+
+.arena-struct[data-kind="inhib"] .arena-struct-body::after {
+  display: none;
+}
+
+.arena-struct[data-dead] .arena-struct-body {
+  background: repeating-linear-gradient(45deg, var(--dim) 0 3px, transparent 3px 6px);
+}
+
+.arena-struct[data-dead] .arena-struct-body::after {
+  display: none;
+}
+
+.arena-struct-under {
+  position: absolute;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transform: translateX(-50%);
+}
+
+.arena-struct-hp {
+  box-sizing: border-box;
+  width: clamp(18px, 3.4cqw, 34px);
+  height: 5px;
+  border: 1px solid var(--line);
+  background: var(--background);
+}
+
+.arena-struct-hp i {
+  display: block;
+  height: 100%;
+  background: var(--team-color);
+}
+
+.arena-struct-label {
+  padding: 0 5px;
+  border: 1px solid var(--team-color);
+  border-radius: 3px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: var(--text-map);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.arena-push {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 8;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 2px solid var(--team-color);
+  border-radius: 4px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: var(--text-map);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .arena-champ {
     transition: none;

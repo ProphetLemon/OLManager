@@ -4507,7 +4507,10 @@
     },
     "match": {
       "map": {
-        "label": "Mapa da partida. Base azul embaixo à esquerda, base vermelha em cima à direita."
+        "label": "Mapa da partida. Base azul embaixo à esquerda, base vermelha em cima à direita.",
+        "push": "Avanço {{time}}",
+        "pushOpen": "Avanço",
+        "pushEnding": "Avanço final"
       },
       "state": {
         "dead": "Morto {{seconds}}s",

@@ -4506,7 +4506,10 @@
     },
     "match": {
       "map": {
-        "label": "Mapa de la partida. Base azul abajo a la izquierda, base roja arriba a la derecha."
+        "label": "Mapa de la partida. Base azul abajo a la izquierda, base roja arriba a la derecha.",
+        "push": "Empuje {{time}}",
+        "pushOpen": "Empuje",
+        "pushEnding": "Empuje final"
       },
       "state": {
         "dead": "Caído {{seconds}}s",
