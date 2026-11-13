@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const css = readFileSync(resolve(__dirname, "liveMatch.css"), "utf8");
 
 const COMPACT = "@container live (min-width: 1240px) and (max-height: 806px) {";
+const TIGHT = "@container live (min-width: 1240px) and (max-height: 748px) {";
 const ROOT_PX = 16;
 /** Row of the map at 1280x800: the 764px scroll root minus 290px of rows and gaps around it. */
 const ROW_1280X800 = 474;
@@ -12,19 +13,21 @@ const ROW_1280X800 = 474;
 const HEAD_PX = 42.6;
 const BORDER_PX = 2;
 
-/** The text between the braces of the compact block, nested rules included. */
-function compactBlock(): string {
-  const start = css.indexOf(COMPACT);
-  expect(start, COMPACT).toBeGreaterThanOrEqual(0);
+/** The text between the braces of the block that opens with `head`, nested rules included. */
+function blockOf(head: string): string {
+  const start = css.indexOf(head);
+  expect(start, head).toBeGreaterThanOrEqual(0);
   let depth = 1;
-  let i = start + COMPACT.length;
+  let i = start + head.length;
   while (depth > 0 && i < css.length) {
     if (css[i] === "{") depth += 1;
     else if (css[i] === "}") depth -= 1;
     i += 1;
   }
-  return css.slice(start + COMPACT.length, i - 1);
+  return css.slice(start + head.length, i - 1);
 }
+
+const compactBlock = () => blockOf(COMPACT);
 
 /** The body of the first rule whose selector is exactly `selector` inside `text`. */
 function ruleIn(text: string, selector: string): string {
@@ -91,5 +94,50 @@ describe("player card columns on short windows", () => {
 
   it("keeps the narrow card's gear row on the same slot size", () => {
     expect(css).toMatch(/block-size:\s*calc\(var\(--arena-slot,\s*1\.375rem\)\s*\+\s*3px/);
+  });
+});
+
+describe("player card columns at 1366x768", () => {
+  // A 768px window leaves a 732px scroll root. Around the map row there are 290px: 24 of padding,
+  // the 76px bar, the 104px dock, the 56px controls row (one line) and three 10px gaps.
+  const ROOT_1366X768 = 732;
+  const ROW_1366X768 = ROOT_1366X768 - 290;
+  /** A compact card as the real stylesheet lays it out (89px, measured), not the 88.6px estimate. */
+  const COMPACT_CARD_PX = 89;
+  const block = blockOf(TIGHT);
+
+  it("opens below the root height where the compact step can fit, and only beside the map", () => {
+    expect(TIGHT).toContain("min-width: 1240px");
+    // 5 x 89 + 4 x 4 = 461px needs a 751px root; 1280x800 (764px) must keep the first step only.
+    expect(TIGHT).toContain("max-height: 748px");
+    expect(764).toBeGreaterThan(748);
+    expect(ROOT_1366X768).toBeLessThan(748);
+  });
+
+  it("trims spacing only", () => {
+    expect(block).not.toMatch(/font-size|font-family|display\s*:\s*none|visibility|overflow|block-size|--arena-slot/);
+    expect(declared(ruleIn(block, ".live-side .arena-card"), "padding-block")).toBe("1px");
+    expect(declared(ruleIn(block, ".live-side .arena-card"), "gap")).toBe("1px");
+    expect(declared(ruleIn(block, ".live-side"), "gap")).toBe("0.125rem");
+  });
+
+  it("fits five cards and four gaps in the 442px row, and the first step alone does not", () => {
+    const compact = compactBlock();
+    const paddingSaved = px(declared(ruleIn(compact, ".live-side .arena-card"), "padding-block")) - px(declared(ruleIn(block, ".live-side .arena-card"), "padding-block"));
+    const rowGapSaved = px(declared(ruleIn(compact, ".live-side .arena-card"), "gap")) - px(declared(ruleIn(block, ".live-side .arena-card"), "gap"));
+    // Padding is saved above and below; a card has two row gaps.
+    const card = COMPACT_CARD_PX - 2 * paddingSaved - 2 * rowGapSaved;
+    const column = 5 * card + 4 * px(declared(ruleIn(block, ".live-side"), "gap"));
+    const compactColumn = 5 * COMPACT_CARD_PX + 4 * px(declared(ruleIn(compact, ".live-side"), "gap"));
+
+    expect(card).toBe(85);
+    expect(column).toBeLessThanOrEqual(ROW_1366X768);
+    expect(compactColumn).toBeGreaterThan(ROW_1366X768);
+  });
+
+  it("keeps the compact step's values for what the tight step does not touch", () => {
+    const compact = compactBlock();
+    expect(declared(ruleIn(compact, ".live-side"), "--arena-slot")).toBe("1.25rem");
+    expect(declared(ruleIn(compact, ".live-side .arena-card-vitals"), "block-size")).toBe("1.0625rem");
   });
 });
