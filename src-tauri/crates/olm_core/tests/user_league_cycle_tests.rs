@@ -10,7 +10,9 @@ use olm_core::domain::manager::Manager;
 use olm_core::domain::player::{Player, PlayerAttributes};
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::{Team, TeamSeasonRecord};
-use olm_core::end_of_season::{process_background_seasons, process_end_of_split};
+use olm_core::end_of_season::{
+    process_background_seasons, process_end_of_split, reconcile_career_with_ladder,
+};
 use olm_core::game::Game;
 use olm_core::generator::definitions::{
     CompetitionManifest, PlayoffConfig, ScheduleConfig, SeasonStart, SplitConfig,
@@ -700,4 +702,32 @@ fn a_title_in_the_last_split_counts_after_a_lower_first_split() {
     let career = &game.manager.career_stats;
     assert_eq!(career.trophies, 1);
     assert_eq!(career.best_finish, Some(1));
+}
+
+#[test]
+fn a_save_made_mid_season_counts_its_finished_splits_once() {
+    let mut game = two_split_game();
+    play_split(&mut game, 5, 2);
+    advance_season(&mut game);
+    // A save written before splits reached the career totals: the ledger holds the
+    // finished split, the career does not.
+    game.manager.career_stats = Default::default();
+    game.manager.career_history.clear();
+
+    reconcile_career_with_ladder(&mut game);
+    reconcile_career_with_ladder(&mut game);
+
+    let career = &game.manager.career_stats;
+    assert_eq!((career.matches_managed, career.wins, career.losses), (7, 5, 2));
+    assert_eq!(game.manager.career_history[0].matches, 7);
+
+    play_split(&mut game, 3, 4);
+    advance_season(&mut game);
+
+    let career = &game.manager.career_stats;
+    assert_eq!(
+        (career.matches_managed, career.wins, career.losses),
+        (14, 8, 6),
+        "totals after the season end"
+    );
 }

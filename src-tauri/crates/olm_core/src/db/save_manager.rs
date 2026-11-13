@@ -285,6 +285,10 @@ impl SaveManager {
                 }
         }
 
+        // Migration: saves from before splits reached the career totals miss the
+        // matches of the splits already finished this season; the ladder holds them.
+        crate::end_of_season::reconcile_career_with_ladder(&mut game);
+
         // Migration: saves from before the import rule treat everyone on a team
         // as a resident of that team's league region (runs once per game).
         let grandfathered = crate::residency::grandfather_rostered_players(&mut game);
@@ -350,6 +354,8 @@ impl SaveManager {
         game.manager.fan_approval = 50;
         game.manager.career_stats = Default::default();
         game.manager.career_history.clear();
+        // The splits already played in the source save are not this career's.
+        crate::end_of_season::start_career_at_running_split(&mut game);
 
         // Reset team season data
         for team in &mut game.teams {

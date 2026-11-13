@@ -556,6 +556,57 @@ pub fn record_split_in_career(game: &mut Game) {
     });
 }
 
+/// Bring a save written before splits were tracked up to date: add the user's club row of
+/// the splits already finished this season, which the ladder tally holds, to the career
+/// totals. Runs once per career: a career that already has a mark, or a season without
+/// finished splits, is left alone, so calling it again changes nothing.
+///
+/// Only the matches can be recovered. The tally keeps summed rows, not the position or
+/// the playoff result of each split, so trophies and best finish of splits that were
+/// closed before the save was upgraded stay as they were.
+pub fn reconcile_career_with_ladder(game: &mut Game) {
+    if game.manager.career_stats.counted_through.is_some() {
+        return;
+    }
+    let Some(user_team_id) = game.manager.team_id.clone() else {
+        return;
+    };
+    let Some(league) = game.active_league() else {
+        return;
+    };
+    let Some(competition_id) = league.competition_id.as_deref() else {
+        return;
+    };
+    let season = league.season;
+    let Some(tally) = game.ladder.tallies.get(competition_id) else {
+        return;
+    };
+    let (Some(last_split), Some(row)) = (
+        tally.last_split.filter(|_| tally.season == season),
+        tally.rows.get(&user_team_id).cloned(),
+    ) else {
+        return;
+    };
+    add_standing_to_career(game, &user_team_id, &row, None);
+    game.manager.career_stats.counted_through = Some(CareerSplitMark {
+        season,
+        splits: last_split as u32 + 1,
+    });
+}
+
+/// Mark the career as starting at the running split: the splits before it are not the
+/// manager's, so [`reconcile_career_with_ladder`] must not add them.
+pub fn start_career_at_running_split(game: &mut Game) {
+    let Some(league) = game.active_league() else {
+        return;
+    };
+    let mark = CareerSplitMark {
+        season: league.season,
+        splits: league.split_index as u32,
+    };
+    game.manager.career_stats.counted_through = Some(mark);
+}
+
 fn process_end_of_season_inner(
     game: &mut Game,
     _manifest: Option<&CompetitionManifest>,
