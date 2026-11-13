@@ -62,3 +62,107 @@ fn the_nearest_enemy_lane_tower_is_found_by_its_real_kind() {
         trading::nearest_enemy_lane_tower_distance(&blue, Vec2 { x: 0.52, y: 0.50 }, &[tower]);
     assert!((distance - 0.08).abs() < 1e-9, "distance {distance}");
 }
+
+// D3: a jungler's Herald goes to a lane chosen by the state of the enemy towers.
+
+fn herald_ready_runtime(
+    carrier_lane: &str,
+    carrier_pos: Vec2,
+    towers: Vec<StructureRuntime>,
+) -> RuntimeState {
+    let mut carrier = test_champion("jgl", "blue", "JGL", carrier_lane, carrier_pos);
+    carrier.hp = 100.0;
+    let mut runtime = test_runtime(vec![carrier], vec![], towers, empty_neutral());
+    set_rift_herald_charge(&mut runtime, "blue", "jgl");
+    runtime
+}
+
+fn red_tower(id: &str, lane: &str, pos: Vec2, hp: f64) -> StructureRuntime {
+    let mut tower = test_structure(id, "red", lane, pos);
+    tower.hp = hp;
+    tower.max_hp = 1000.0;
+    tower
+}
+
+fn deployed_lane(runtime: &RuntimeState) -> Option<String> {
+    runtime
+        .minions
+        .iter()
+        .find(|minion| minion.summon_kind.as_deref() == Some("herald"))
+        .map(|minion| minion.lane.clone())
+}
+
+#[test]
+fn a_junglers_herald_goes_to_the_lane_whose_enemy_tower_has_the_least_health() {
+    let at = Vec2 { x: 0.50, y: 0.50 };
+    let mut runtime = herald_ready_runtime(
+        "bot",
+        at,
+        vec![
+            red_tower("red-top-outer", "top", Vec2 { x: 0.52, y: 0.50 }, 900.0),
+            red_tower("red-mid-outer", "mid", Vec2 { x: 0.50, y: 0.52 }, 300.0),
+            red_tower("red-bot-outer", "bot", Vec2 { x: 0.48, y: 0.50 }, 900.0),
+        ],
+    );
+
+    maybe_deploy_rift_herald_charge(&mut runtime);
+
+    assert_eq!(deployed_lane(&runtime).as_deref(), Some("mid"));
+}
+
+#[test]
+fn a_junglers_herald_breaks_a_health_tie_by_the_lane_nearest_to_him() {
+    let at = Vec2 { x: 0.50, y: 0.50 };
+    let mut runtime = herald_ready_runtime(
+        "bot",
+        at,
+        vec![
+            red_tower("red-top-outer", "top", Vec2 { x: 0.56, y: 0.50 }, 600.0),
+            red_tower("red-mid-outer", "mid", Vec2 { x: 0.50, y: 0.53 }, 600.0),
+            red_tower("red-bot-outer", "bot", Vec2 { x: 0.50, y: 0.58 }, 600.0),
+        ],
+    );
+
+    maybe_deploy_rift_herald_charge(&mut runtime);
+
+    assert_eq!(deployed_lane(&runtime).as_deref(), Some("mid"));
+}
+
+#[test]
+fn a_lanes_outermost_standing_tower_is_the_one_that_counts() {
+    let at = Vec2 { x: 0.50, y: 0.50 };
+    let mut outer = red_tower("red-top-outer", "top", Vec2 { x: 0.52, y: 0.50 }, 800.0);
+    outer.alive = true;
+    let inner = red_tower("red-top-inner", "top", Vec2 { x: 0.54, y: 0.50 }, 100.0);
+    let mut runtime = herald_ready_runtime(
+        "bot",
+        at,
+        vec![
+            outer,
+            inner,
+            red_tower("red-bot-outer", "bot", Vec2 { x: 0.48, y: 0.50 }, 500.0),
+        ],
+    );
+
+    maybe_deploy_rift_herald_charge(&mut runtime);
+
+    assert_eq!(deployed_lane(&runtime).as_deref(), Some("bot"));
+}
+
+#[test]
+fn a_laners_herald_keeps_his_own_lane() {
+    let at = Vec2 { x: 0.50, y: 0.50 };
+    let mut runtime = herald_ready_runtime(
+        "top",
+        at,
+        vec![
+            red_tower("red-top-outer", "top", Vec2 { x: 0.52, y: 0.50 }, 900.0),
+            red_tower("red-mid-outer", "mid", Vec2 { x: 0.50, y: 0.52 }, 300.0),
+        ],
+    );
+    runtime.champions[0].role = "TOP".to_string();
+
+    maybe_deploy_rift_herald_charge(&mut runtime);
+
+    assert_eq!(deployed_lane(&runtime).as_deref(), Some("top"));
+}
