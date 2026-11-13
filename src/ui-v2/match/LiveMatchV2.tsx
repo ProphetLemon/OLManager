@@ -36,6 +36,7 @@ import { PitMarkers } from "./live/PitMarkers";
 import { ScoreBar, type ScoreStatus } from "./live/ScoreBar";
 import { SpotlightCaption } from "./live/SpotlightCaption";
 import { StructureLayer } from "./live/StructureLayer";
+import { TowerFireLayer } from "./live/TowerFireLayer";
 import { useChampionProfiles, type ChampionSelectionByPlayer } from "./live/useChampionProfiles";
 import { useContactView } from "./live/useContactView";
 import { useLiveSession } from "./live/useLiveSession";
@@ -271,7 +272,7 @@ export default function LiveMatchV2({
                 structures: <StructureLayer state={state} beams={beams} />,
                 pits: <PitMarkers state={state} />,
                 minions: <MinionCanvas />,
-                contacts: <ContactLayer state={state} contacts={contacts} beams={beams} />,
+                contacts: <ContactLayer state={state} contacts={contacts} />,
                 champions: (
                   <ChampionLayer
                     state={state}
@@ -281,6 +282,7 @@ export default function LiveMatchV2({
                     onSelect={toggleSelected}
                   />
                 ),
+                callouts: <TowerFireLayer state={state} beams={beams} />,
               }}
             />
           </div>

@@ -9,8 +9,11 @@ import type { FrameBus } from "./frameBus";
 import type { LiveFrame } from "./useLiveSession";
 import "./liveMatch.css";
 
-/** The slots the layers fill, from the ground up. The order is the stacking order. */
-export const ARENA_LAYERS = ["structures", "pits", "minions", "contacts", "champions"] as const;
+/**
+ * The slots the layers fill, from the ground up. The order is the stacking order. `callouts` is
+ * above the champions: what must not be hidden by a bubble (a tower's beam and its xN chip) goes there.
+ */
+export const ARENA_LAYERS = ["structures", "pits", "minions", "contacts", "champions", "callouts"] as const;
 export type ArenaLayerName = (typeof ARENA_LAYERS)[number];
 
 export type ArenaLayers = Partial<Record<ArenaLayerName, ReactNode>>;

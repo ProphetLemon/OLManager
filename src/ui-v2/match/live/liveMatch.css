@@ -322,6 +322,7 @@
 .arena-link-halo,
 .arena-link,
 .arena-beam,
+.arena-beam-head,
 .arena-link-dot,
 .ring-fire {
   vector-effect: non-scaling-stroke;
@@ -349,6 +350,15 @@
   stroke: var(--team-color);
   stroke-width: 3px;
   stroke-dasharray: 8 6;
+}
+
+/* The arrowhead: two short arms meeting on the target's end of the beam, solid so it reads even when the dashes do not. */
+.arena-beam-head {
+  fill: none;
+  stroke: var(--team-color);
+  stroke-width: 3px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .ring-fire {
