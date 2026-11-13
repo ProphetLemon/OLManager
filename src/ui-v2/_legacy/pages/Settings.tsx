@@ -553,6 +553,7 @@ export default function Settings() {
           <div className="flex items-center gap-3 mb-8">
             <button
               onClick={() => navigate(returnTo)}
+              aria-label={t("common.back")}
               className="p-2 rounded-lg text-foreground/80 hover:text-foreground hover:bg-muted/50 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
