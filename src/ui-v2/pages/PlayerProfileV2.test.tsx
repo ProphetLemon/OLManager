@@ -325,7 +325,7 @@ describe("PlayerProfileV2 contract surfaces", () => {
     );
 
     expect(screen.getByText("Contract Info")).toBeInTheDocument();
-    expect(screen.getByText("Expires 2026-10-15")).toBeInTheDocument();
+    expect(screen.getByText("Expires October 15, 2026")).toBeInTheDocument();
     expect(screen.getByText("Years Remaining")).toBeInTheDocument();
     expect(screen.getByText("Contract Risk")).toBeInTheDocument();
     expect(screen.getByText("Critical")).toBeInTheDocument();
@@ -652,7 +652,7 @@ describe("PlayerProfileV2 contract surfaces", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Offer accepted")).toBeInTheDocument();
-      expect(screen.getByText("Expires 2029-08-01")).toBeInTheDocument();
+      expect(screen.getByText("Expires August 1, 2029")).toBeInTheDocument();
       expect(
         screen.getAllByText((_, element) =>
           hasAnnualWage(element?.textContent ?? "", 15000),
