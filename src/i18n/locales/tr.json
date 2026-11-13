@@ -4504,6 +4504,57 @@
       "sortAscending": "artan",
       "sortDescending": "azalan",
       "importLimit": "İçe aktarma sınırına ulaşıldı"
+    },
+    "match": {
+      "map": {
+        "label": "Maç haritası. Mavi üs sol altta, kırmızı üs sağ üstte.",
+        "push": "Baskı {{time}}",
+        "pushOpen": "Baskı",
+        "pushEnding": "Son baskı"
+      },
+      "state": {
+        "dead": "Ölü {{seconds}}sn",
+        "recall": "Geri dönüş {{seconds}}sn",
+        "fighting": "Çatışıyor",
+        "objective": "Hedef"
+      },
+      "badge": {
+        "recall": "GD {{seconds}}",
+        "fighting": "Savaş",
+        "objective": "Hdf"
+      },
+      "legend": {
+        "ringRecall": "Boşalan halka: geri dönüş, kalan saniyeyle birlikte",
+        "ringDead": "Noktalı çerçeve ve bir sayı: ölü, yeniden doğmaya kalan saniye",
+        "dot": "Bağlantıdaki nokta: kimin vurduğu",
+        "shots": "xN: bir kulenin art arda atışları",
+        "beam": "Kuleden gelen kesikli çizgi: son 3 saniyedeki atış",
+        "ringFighting": "Çift halka: çatışmada",
+        "ringFire": "Kesikli halka: kule ateş ediyor"
+      },
+      "contact": {
+        "fighting": "{{a}} ve {{b}} çatışıyor",
+        "towerShot_one": "Kule {{target}} hedefine ateş ediyor: {{count}} atış",
+        "towerShot_other": "Kule {{target}} hedefine ateş ediyor: {{count}} atış"
+      },
+      "team": {
+        "blue": "Mavi",
+        "red": "Kırmızı"
+      },
+      "pit": {
+        "voidgrubs": "Boşluk Larvaları",
+        "dragonInfernal": "Cehennem Ejderhası",
+        "dragonOcean": "Okyanus Ejderhası",
+        "dragonMountain": "Dağ Ejderhası",
+        "dragonCloud": "Bulut Ejderhası",
+        "dragonHextech": "Hextech Ejderhası",
+        "dragonChemtech": "Chemtech Ejderhası",
+        "up": "Aktif %{{percent}}",
+        "upNoPercent": "Aktif",
+        "soulClaimed": "Ruh: {{team}}",
+        "soulOpen": "Ruh alınabilir",
+        "heraldCarrier": "{{who}} Haberci'yi taşıyor"
+      }
     }
   },
   "advance": {

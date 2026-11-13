@@ -1,0 +1,720 @@
+/*
+ * Rules of the arena that need a container query or a data attribute. Everything is painted
+ * with theme tokens (team, terrain, warning, club). Nothing here is animated per frame: the
+ * frame path moves zero-size anchors with `transform` from script.
+ */
+
+.arena-map {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--terrain-ground);
+  container-type: inline-size;
+  container-name: arena;
+}
+
+.arena-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* One stacking context per layer: a marker's z-index never reaches over another layer. */
+.arena-layer {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+  pointer-events: none;
+}
+
+.arena-banner {
+  position: absolute;
+  top: 0.625rem;
+  left: 50%;
+  z-index: 10;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.75rem;
+  border: 2px dashed var(--warning);
+  background: var(--background);
+  color: var(--warning);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Champion markers ────────────────────────────────────────────────────
+   The anchor is a zero size box moved by `transform` from script (the frame path); the
+   bubble is a centred child. Blue is a circle and red a rounded square, so the team never
+   rests on colour alone. Selection, fight and tower fire are three different ring shapes. */
+
+.arena-champ {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 6;
+  transition: opacity 150ms ease;
+}
+
+.arena-champ[data-team="blue"] {
+  --team-color: var(--team-blue);
+}
+
+.arena-champ[data-team="red"] {
+  --team-color: var(--team-red);
+}
+
+.arena-champ[data-dead] {
+  z-index: 5;
+}
+
+.arena-champ[data-selected] {
+  z-index: 7;
+}
+
+.arena-champ[data-dim] {
+  opacity: 0.5;
+}
+
+.arena-bubble {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--team-color);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--card-foreground);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.arena-champ[data-team="red"] .arena-bubble,
+.arena-champ[data-team="red"] .arena-tile {
+  border-radius: 32%;
+}
+
+.arena-champ[data-dead] .arena-bubble {
+  border-style: dashed;
+  background: var(--background);
+}
+
+.arena-tile {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.arena-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.arena-initials {
+  font-family: var(--font-heading);
+  font-size: var(--text-map);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arena-champ[data-dead] .arena-initials {
+  font-size: calc(var(--text-map) * 1.35);
+}
+
+.arena-level {
+  position: absolute;
+  top: -8px;
+  right: -7px;
+  z-index: 2;
+  box-sizing: border-box;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 3px;
+  border: 1px solid var(--team-color);
+  border-radius: 9px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: var(--text-map);
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+
+.arena-hp {
+  position: absolute;
+  top: calc(100% + 3px);
+  right: 0;
+  left: 0;
+  box-sizing: border-box;
+  height: 5px;
+  border: 1px solid var(--line);
+  background: var(--background);
+}
+
+.arena-hp i {
+  display: block;
+  height: 100%;
+  background: var(--team-color);
+}
+
+/* Recall: a dashed track with an arc that drains as the channel runs out. */
+.arena-recall {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: calc(100% + 20px);
+  height: calc(100% + 20px);
+  overflow: visible;
+  pointer-events: none;
+}
+
+.arena-recall-track {
+  fill: none;
+  stroke: var(--team-color);
+  stroke-width: 6;
+  stroke-dasharray: 4 5;
+  opacity: 0.35;
+}
+
+.arena-recall-arc {
+  fill: none;
+  stroke: var(--team-color);
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+/* Rings: double = fighting, dashed = tower fire (ContactLayer), club colour = followed. */
+.ring-fighting {
+  box-shadow:
+    0 0 0 2px var(--terrain-ground),
+    0 0 0 4px var(--warning),
+    0 0 0 6px var(--terrain-ground),
+    0 0 0 8px var(--warning);
+}
+
+.ring-selected {
+  outline: 3px solid var(--club-text);
+  outline-offset: 3px;
+  transform: scale(1.2);
+}
+
+.arena-champ[data-fighting] .ring-selected {
+  outline-offset: 10px;
+}
+
+/* A state tag that found no free slot sits on the bubble itself. */
+.arena-badge {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  z-index: 2;
+  box-sizing: border-box;
+  padding: 0 4px;
+  border: 1px solid var(--team-color);
+  border-radius: 3px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: var(--text-map);
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.arena-tag {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1px 5px;
+  border: 1px solid var(--team-color);
+  border-radius: 3px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.arena-tag[data-slot="below"][data-align="center"],
+.arena-tag[data-slot="above"][data-align="center"] {
+  transform: translateX(-50%);
+}
+
+.arena-tag[data-slot="right"],
+.arena-tag[data-slot="left"] {
+  transform: translateY(-50%);
+}
+
+.arena-tag b {
+  font-size: calc(var(--text-map) * 1.08);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.arena-tag-sub {
+  font-size: var(--text-map);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.arena-tag-short {
+  display: none;
+}
+
+.arena-tag[data-form="compact"] .arena-tag-long {
+  display: none;
+}
+
+.arena-tag[data-form="compact"] .arena-tag-short {
+  display: inline;
+}
+
+/* A small map shows the short form everywhere, state included. */
+@container arena (max-width: 519px) {
+  .arena-tag-long {
+    display: none;
+  }
+
+  .arena-tag-short {
+    display: inline;
+  }
+}
+
+/* ── Contacts ────────────────────────────────────────────────────────────
+   One overlay for the lines. Strokes keep their pixel width on every map size. The link
+   runs between the outer edges of two bubbles and carries a dot on the end of the one that
+   is hitting; a tower beam is dashed in the tower's team colour; a firing tower also gets a
+   dashed ring in the fight colour. */
+
+.arena-links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.arena-links [data-team="blue"] {
+  --team-color: var(--team-blue);
+}
+
+.arena-links [data-team="red"] {
+  --team-color: var(--team-red);
+}
+
+.arena-link-halo,
+.arena-link,
+.arena-beam,
+.arena-link-dot,
+.ring-fire {
+  vector-effect: non-scaling-stroke;
+}
+
+.arena-link-halo {
+  stroke: var(--terrain-ground);
+  stroke-width: 6px;
+  stroke-linecap: round;
+}
+
+.arena-link {
+  stroke: var(--warning);
+  stroke-width: 3px;
+  stroke-linecap: round;
+}
+
+.arena-link-dot {
+  fill: var(--warning);
+  stroke: var(--terrain-ground);
+  stroke-width: 1.5px;
+}
+
+.arena-beam {
+  stroke: var(--team-color);
+  stroke-width: 3px;
+  stroke-dasharray: 8 6;
+}
+
+.ring-fire {
+  fill: none;
+  stroke: var(--warning);
+  stroke-width: 2px;
+  stroke-dasharray: 4 3;
+}
+
+.arena-chips {
+  position: absolute;
+  inset: 0;
+}
+
+.arena-chip-anchor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+
+.arena-chip {
+  position: absolute;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border: 2px solid var(--warning);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--warning);
+  font-family: var(--font-heading);
+  font-size: var(--text-map);
+  font-weight: 700;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.arena-chip[data-kind="tower"] {
+  border-style: dashed;
+  border-color: var(--team-color);
+  color: var(--foreground);
+}
+
+.arena-chip[data-team="blue"] {
+  --team-color: var(--team-blue);
+}
+
+.arena-chip[data-team="red"] {
+  --team-color: var(--team-red);
+}
+
+/* ── Structures, camps, wards, push badge ────────────────────────────────
+   Nothing here moves between engine answers, so every anchor is placed once with `transform`
+   from the render. Blue is round and red is a diamond (the same rule as the champions), the
+   kind sets size and fill, and a destroyed structure is hatched instead of dimmed. */
+
+.arena-structures {
+  position: absolute;
+  inset: 0;
+}
+
+.arena-camp,
+.arena-ward,
+.arena-struct {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+
+.arena-camp {
+  z-index: 1;
+}
+
+.arena-ward {
+  z-index: 2;
+}
+
+.arena-struct {
+  z-index: 3;
+}
+
+.arena-ward[data-team="blue"],
+.arena-struct[data-team="blue"],
+.arena-push[data-team="blue"] {
+  --team-color: var(--team-blue);
+}
+
+.arena-ward[data-team="red"],
+.arena-struct[data-team="red"],
+.arena-push[data-team="red"] {
+  --team-color: var(--team-red);
+}
+
+/* A camp is a small diamond: solid while a monster stands there, a dashed outline once cleared. */
+.arena-camp-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: clamp(7px, 1.2cqw, 12px);
+  height: clamp(7px, 1.2cqw, 12px);
+  background: var(--dim);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.arena-camp[data-alive="false"] .arena-camp-dot {
+  border: 1.5px dashed var(--dim);
+  background: transparent;
+}
+
+/* A ward is a hollow marker in its team's shape: round for blue, a diamond for red. */
+.arena-ward-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: clamp(9px, 1.6cqw, 15px);
+  height: clamp(9px, 1.6cqw, 15px);
+  border: 2px solid var(--team-color);
+  background: var(--terrain-ground);
+  transform: translate(-50%, -50%);
+}
+
+.arena-ward[data-team="blue"] .arena-ward-dot {
+  border-radius: 50%;
+}
+
+.arena-ward[data-team="red"] .arena-ward-dot {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.arena-struct-body {
+  position: absolute;
+  box-sizing: border-box;
+  background: var(--team-color);
+}
+
+.arena-struct[data-team="blue"] .arena-struct-body,
+.arena-struct[data-team="blue"] .arena-struct-body::after {
+  border-radius: 50%;
+}
+
+.arena-struct[data-team="red"] .arena-struct-body,
+.arena-struct[data-team="red"] .arena-struct-body::after {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+/* Towers and the nexus are rings; inhibitors are solid. */
+.arena-struct-body::after {
+  content: "";
+  position: absolute;
+  inset: 28%;
+  background: var(--terrain-ground);
+}
+
+.arena-struct[data-kind="nexus"] .arena-struct-body::after {
+  inset: 34%;
+}
+
+.arena-struct[data-kind="inhib"] .arena-struct-body::after {
+  display: none;
+}
+
+.arena-struct[data-dead] .arena-struct-body {
+  background: repeating-linear-gradient(45deg, var(--dim) 0 3px, transparent 3px 6px);
+}
+
+.arena-struct[data-dead] .arena-struct-body::after {
+  display: none;
+}
+
+.arena-struct-under {
+  position: absolute;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transform: translateX(-50%);
+}
+
+.arena-struct-hp {
+  box-sizing: border-box;
+  width: clamp(18px, 3.4cqw, 34px);
+  height: 5px;
+  border: 1px solid var(--line);
+  background: var(--background);
+}
+
+.arena-struct-hp i {
+  display: block;
+  height: 100%;
+  background: var(--team-color);
+}
+
+.arena-struct-label {
+  padding: 0 5px;
+  border: 1px solid var(--team-color);
+  border-radius: 3px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: var(--text-map);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.arena-push {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 8;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 2px solid var(--team-color);
+  border-radius: 4px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: var(--text-map);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Minions and objective pits ──────────────────────────────────────────
+   Minions are one canvas, redrawn by the frame path. A pit is a hexagon glyph with a label
+   under it: a solid outline and a percent while something is up, a dashed outline and a
+   countdown while it is not. */
+
+.arena-minions {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.arena-pits {
+  position: absolute;
+  inset: 0;
+}
+
+.arena-pit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 4;
+  width: 0;
+  height: 0;
+  --pit-glyph: clamp(26px, 5.4cqw, 50px);
+}
+
+.arena-pit-glyph,
+.arena-pit-glyph-in {
+  clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%);
+}
+
+.arena-pit-glyph {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--pit-glyph);
+  height: var(--pit-glyph);
+  background: var(--foreground);
+  transform: translate(-50%, -50%);
+}
+
+.arena-pit-glyph-in {
+  position: absolute;
+  inset: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background);
+}
+
+.arena-pit-glyph-in img {
+  width: 62%;
+  height: 62%;
+  object-fit: contain;
+}
+
+.arena-pit:not([data-status="alive"]) .arena-pit-glyph {
+  background: var(--dim);
+}
+
+.arena-pit:not([data-status="alive"]) .arena-pit-glyph-in img {
+  opacity: 0.55;
+}
+
+.arena-pit-label {
+  position: absolute;
+  left: 0;
+  top: calc(var(--pit-glyph) / 2 + 3px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  padding: 2px 6px;
+  border: 1px solid var(--foreground);
+  border-radius: 3px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  line-height: 1.05;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.arena-pit:not([data-status="alive"]) .arena-pit-label {
+  border-style: dashed;
+  border-color: var(--dim);
+  color: var(--dim);
+}
+
+.arena-pit-name {
+  font-size: var(--text-map);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.arena-pit-value {
+  font-size: calc(var(--text-map) * 1.25);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.arena-pit-note {
+  font-size: var(--text-map);
+  font-weight: 600;
+}
+
+.arena-pit-hp {
+  align-self: stretch;
+  height: 4px;
+  background: var(--line);
+}
+
+.arena-pit-hp i {
+  display: block;
+  height: 100%;
+  background: var(--foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-champ {
+    transition: none;
+  }
+}

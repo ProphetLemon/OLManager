@@ -13,6 +13,10 @@
      stays legible. The smaller names remain as hooks for later tuning. */
   --text-2xs: 0.75rem;
   --text-caption: 0.75rem;
+  /* On-map labels of the match arena only: the one exception to "rem only".
+     Android runs a 9 px root, where 0.75rem would be 6.75 px, so the floor is
+     physical. Never use it outside src/ui-v2/match. */
+  --text-map: max(0.75rem, 10px);
 
   /* P1 type scale (rem only) */
   --text-section: 1.375rem;

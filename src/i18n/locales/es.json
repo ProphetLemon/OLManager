@@ -4503,6 +4503,57 @@
       "sortAscending": "ascendente",
       "sortDescending": "descendente",
       "importLimit": "Límite de importados alcanzado"
+    },
+    "match": {
+      "map": {
+        "label": "Mapa de la partida. Base azul abajo a la izquierda, base roja arriba a la derecha.",
+        "push": "Empuje {{time}}",
+        "pushOpen": "Empuje",
+        "pushEnding": "Empuje final"
+      },
+      "state": {
+        "dead": "Caído {{seconds}}s",
+        "recall": "Regreso {{seconds}}s",
+        "fighting": "Peleando",
+        "objective": "Objetivo"
+      },
+      "badge": {
+        "recall": "Reg {{seconds}}",
+        "fighting": "Pelea",
+        "objective": "Obj."
+      },
+      "legend": {
+        "ringRecall": "Anillo que se vacía: regreso a base, con los segundos que faltan",
+        "ringDead": "Contorno discontinuo con un número: caído, segundos para reaparecer",
+        "dot": "Punto en el enlace: quién golpea",
+        "shots": "xN: disparos seguidos de una torre",
+        "beam": "Línea discontinua desde una torre: disparo de los últimos 3 segundos",
+        "ringFighting": "Anillo doble: peleando",
+        "ringFire": "Anillo discontinuo: torre disparando"
+      },
+      "contact": {
+        "fighting": "{{a}} y {{b}} están peleando",
+        "towerShot_one": "La torre dispara a {{target}}: {{count}} disparo",
+        "towerShot_other": "La torre dispara a {{target}}: {{count}} disparos"
+      },
+      "team": {
+        "blue": "Azul",
+        "red": "Rojo"
+      },
+      "pit": {
+        "voidgrubs": "Larvas del Vacío",
+        "dragonInfernal": "Dragón infernal",
+        "dragonOcean": "Dragón oceánico",
+        "dragonMountain": "Dragón de montaña",
+        "dragonCloud": "Dragón de las nubes",
+        "dragonHextech": "Dragón hextech",
+        "dragonChemtech": "Dragón quimtech",
+        "up": "Vivo {{percent}}%",
+        "upNoPercent": "Vivo",
+        "soulClaimed": "Alma: {{team}}",
+        "soulOpen": "Alma en juego",
+        "heraldCarrier": "{{who}} lleva al Heraldo"
+      }
     }
   },
   "advance": {

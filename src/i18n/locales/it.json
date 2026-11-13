@@ -4503,6 +4503,57 @@
       "sortAscending": "crescente",
       "sortDescending": "decrescente",
       "importLimit": "Limite di importati raggiunto"
+    },
+    "match": {
+      "map": {
+        "label": "Mappa della partita. Base blu in basso a sinistra, base rossa in alto a destra.",
+        "push": "Spinta {{time}}",
+        "pushOpen": "Spinta",
+        "pushEnding": "Spinta finale"
+      },
+      "state": {
+        "dead": "Morto {{seconds}}s",
+        "recall": "Richiamo {{seconds}}s",
+        "fighting": "In scontro",
+        "objective": "Obiettivo"
+      },
+      "badge": {
+        "recall": "Ric {{seconds}}",
+        "fighting": "Scontro",
+        "objective": "Obiett."
+      },
+      "legend": {
+        "ringRecall": "Anello che si svuota: richiamo, con i secondi rimasti",
+        "ringDead": "Contorno tratteggiato con un numero: morto, secondi alla rinascita",
+        "dot": "Punto sul collegamento: chi colpisce",
+        "shots": "xN: colpi di fila di una torre",
+        "beam": "Linea tratteggiata da una torre: colpo negli ultimi 3 secondi",
+        "ringFighting": "Doppio anello: in scontro",
+        "ringFire": "Anello tratteggiato: torre che spara"
+      },
+      "contact": {
+        "fighting": "{{a}} e {{b}} stanno combattendo",
+        "towerShot_one": "Fuoco della torre su {{target}}: {{count}} colpo",
+        "towerShot_other": "Fuoco della torre su {{target}}: {{count}} colpi"
+      },
+      "team": {
+        "blue": "Blu",
+        "red": "Rosso"
+      },
+      "pit": {
+        "voidgrubs": "Larve del Vuoto",
+        "dragonInfernal": "Drago infernale",
+        "dragonOcean": "Drago oceanico",
+        "dragonMountain": "Drago di montagna",
+        "dragonCloud": "Drago delle nuvole",
+        "dragonHextech": "Drago hextech",
+        "dragonChemtech": "Drago chimtech",
+        "up": "Vivo {{percent}}%",
+        "upNoPercent": "Vivo",
+        "soulClaimed": "Anima: {{team}}",
+        "soulOpen": "Anima disponibile",
+        "heraldCarrier": "{{who}} porta l'Araldo"
+      }
     }
   },
   "advance": {

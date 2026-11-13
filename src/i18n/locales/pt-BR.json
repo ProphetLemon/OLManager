@@ -4504,6 +4504,57 @@
       "sortAscending": "crescente",
       "sortDescending": "decrescente",
       "importLimit": "Limite de importados atingido"
+    },
+    "match": {
+      "map": {
+        "label": "Mapa da partida. Base azul embaixo à esquerda, base vermelha em cima à direita.",
+        "push": "Avanço {{time}}",
+        "pushOpen": "Avanço",
+        "pushEnding": "Avanço final"
+      },
+      "state": {
+        "dead": "Morto {{seconds}}s",
+        "recall": "Retorno {{seconds}}s",
+        "fighting": "Lutando",
+        "objective": "Objetivo"
+      },
+      "badge": {
+        "recall": "Ret {{seconds}}",
+        "fighting": "Luta",
+        "objective": "Obj."
+      },
+      "legend": {
+        "ringRecall": "Anel que esvazia: retorno à base, com os segundos restantes",
+        "ringDead": "Contorno tracejado com um número: morto, segundos até reaparecer",
+        "dot": "Ponto na ligação: quem está batendo",
+        "shots": "xN: tiros seguidos de uma torre",
+        "beam": "Linha tracejada de uma torre: tiro nos últimos 3 segundos",
+        "ringFighting": "Anel duplo: lutando",
+        "ringFire": "Anel tracejado: torre disparando"
+      },
+      "contact": {
+        "fighting": "{{a}} e {{b}} estão lutando",
+        "towerShot_one": "Fogo da torre em {{target}}: {{count}} tiro",
+        "towerShot_other": "Fogo da torre em {{target}}: {{count}} tiros"
+      },
+      "team": {
+        "blue": "Azul",
+        "red": "Vermelho"
+      },
+      "pit": {
+        "voidgrubs": "Vastilarvas",
+        "dragonInfernal": "Dragão Infernal",
+        "dragonOcean": "Dragão Oceânico",
+        "dragonMountain": "Dragão da Montanha",
+        "dragonCloud": "Dragão das Nuvens",
+        "dragonHextech": "Dragão Hextec",
+        "dragonChemtech": "Dragão Quimtec",
+        "up": "Vivo {{percent}}%",
+        "upNoPercent": "Vivo",
+        "soulClaimed": "Alma: {{team}}",
+        "soulOpen": "Alma disponível",
+        "heraldCarrier": "{{who}} carrega o Arauto"
+      }
     }
   },
   "advance": {

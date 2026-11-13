@@ -4538,6 +4538,57 @@
       "sortAscending": "ascending",
       "sortDescending": "descending",
       "importLimit": "Import limit reached"
+    },
+    "match": {
+      "map": {
+        "label": "Match map. Blue base at the bottom left, red base at the top right.",
+        "push": "Push {{time}}",
+        "pushOpen": "Push",
+        "pushEnding": "Final push"
+      },
+      "state": {
+        "dead": "Dead {{seconds}}s",
+        "recall": "Recall {{seconds}}s",
+        "fighting": "Fighting",
+        "objective": "Objective"
+      },
+      "badge": {
+        "recall": "R {{seconds}}",
+        "fighting": "Fight",
+        "objective": "Obj"
+      },
+      "legend": {
+        "ringRecall": "Ring that drains: recall, with the seconds left",
+        "ringDead": "Dashed outline with a number: dead, seconds until respawn",
+        "dot": "Dot on a link: who is hitting",
+        "shots": "xN: hits in a row from a tower",
+        "beam": "Dashed line from a tower: it fired in the last 3 seconds",
+        "ringFighting": "Double ring: fighting",
+        "ringFire": "Dashed ring: tower firing"
+      },
+      "contact": {
+        "fighting": "{{a}} and {{b}} are fighting",
+        "towerShot_one": "Tower fire on {{target}}: {{count}} hit",
+        "towerShot_other": "Tower fire on {{target}}: {{count}} hits"
+      },
+      "team": {
+        "blue": "Blue",
+        "red": "Red"
+      },
+      "pit": {
+        "voidgrubs": "Voidgrubs",
+        "dragonInfernal": "Infernal Dragon",
+        "dragonOcean": "Ocean Dragon",
+        "dragonMountain": "Mountain Dragon",
+        "dragonCloud": "Cloud Dragon",
+        "dragonHextech": "Hextech Dragon",
+        "dragonChemtech": "Chemtech Dragon",
+        "up": "Up {{percent}}%",
+        "upNoPercent": "Up",
+        "soulClaimed": "Soul: {{team}}",
+        "soulOpen": "Soul up for grabs",
+        "heraldCarrier": "{{who}} carries the Herald"
+      }
     }
   },
   "advance": {
