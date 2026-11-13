@@ -4506,6 +4506,43 @@
       "importLimit": "Limite d'import atteinte"
     },
     "match": {
+      "feed": {
+        "label": "Fil des événements, du plus récent au plus ancien. Utilisez les flèches pour défiler.",
+        "section": "Éliminations et objectifs",
+        "heading": "Événements",
+        "latest": "Dernier, {{time}} : {{text}}",
+        "killed": "{{killer}} a éliminé {{victim}}",
+        "killedCause": "{{killer}} a éliminé {{victim}} ({{cause}})",
+        "ignited": "{{killer}} a éliminé {{victim}} avec Embrasement",
+        "cause": {
+          "tower": "tourelle",
+          "minion": "sbire"
+        },
+        "destroyed": "{{team}} a détruit {{structure}}",
+        "structure": "{{part}} ({{lane}})",
+        "part": {
+          "outerTower": "la tourelle extérieure",
+          "innerTower": "la tourelle intérieure",
+          "inhibitorTower": "la tourelle de l'inhibiteur",
+          "nexusTower": "la tourelle du Nexus",
+          "inhibitor": "l'inhibiteur",
+          "nexus": "le Nexus",
+          "unknown": "une structure"
+        },
+        "lane": {
+          "top": "haut",
+          "mid": "milieu",
+          "bot": "bas"
+        },
+        "dragon": "{{team}} a sécurisé le {{dragon}}",
+        "elder": "{{team}} a sécurisé le Dragon ancien",
+        "baron": "{{team}} a sécurisé le Baron",
+        "voidgrub": "{{team}} a sécurisé une larve du Néant",
+        "voidgrubCamp": "{{team}} a nettoyé le camp des larves du Néant",
+        "herald": "{{team}} a sécurisé le Héraut",
+        "scuttle": "{{team}} a tué le crabe de la rivière",
+        "someone": "Une équipe"
+      },
       "card": {
         "label": "Suivre {{name}} sur la carte : {{champion}}, {{role}}",
         "labelNoChampion": "Suivre {{name}} sur la carte : {{role}}",

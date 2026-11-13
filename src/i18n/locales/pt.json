@@ -4505,6 +4505,43 @@
       "importLimit": "Limite de importados atingido"
     },
     "match": {
+      "feed": {
+        "label": "Registo de eventos, do mais recente para o mais antigo. Use as setas para percorrer.",
+        "section": "Abates e objetivos",
+        "heading": "Eventos",
+        "latest": "Último, {{time}}: {{text}}",
+        "killed": "{{killer}} abateu {{victim}}",
+        "killedCause": "{{killer}} abateu {{victim}} ({{cause}})",
+        "ignited": "{{killer}} abateu {{victim}} com Incendiar",
+        "cause": {
+          "tower": "torre",
+          "minion": "lacaio"
+        },
+        "destroyed": "{{team}} destruiu {{structure}}",
+        "structure": "{{part}} ({{lane}})",
+        "part": {
+          "outerTower": "a torre exterior",
+          "innerTower": "a torre interior",
+          "inhibitorTower": "a torre do inibidor",
+          "nexusTower": "a torre do Nexus",
+          "inhibitor": "o inibidor",
+          "nexus": "o Nexus",
+          "unknown": "uma estrutura"
+        },
+        "lane": {
+          "top": "superior",
+          "mid": "meio",
+          "bot": "inferior"
+        },
+        "dragon": "{{team}} garantiu o {{dragon}}",
+        "elder": "{{team}} garantiu o Dragão Ancião",
+        "baron": "{{team}} garantiu o Barão",
+        "voidgrub": "{{team}} garantiu uma larva do Vazio",
+        "voidgrubCamp": "{{team}} limpou o acampamento das larvas do Vazio",
+        "herald": "{{team}} garantiu o Arauto",
+        "scuttle": "{{team}} matou o caranguejo do rio",
+        "someone": "Uma equipa"
+      },
       "card": {
         "label": "Seguir {{name}} no mapa: {{champion}}, {{role}}",
         "labelNoChampion": "Seguir {{name}} no mapa: {{role}}",

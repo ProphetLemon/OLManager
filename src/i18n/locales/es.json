@@ -4505,6 +4505,43 @@
       "importLimit": "Límite de importados alcanzado"
     },
     "match": {
+      "feed": {
+        "label": "Registro de eventos, el más reciente primero. Usa las flechas para desplazarte.",
+        "section": "Asesinatos y objetivos",
+        "heading": "Eventos",
+        "latest": "Último, {{time}}: {{text}}",
+        "killed": "{{killer}} eliminó a {{victim}}",
+        "killedCause": "{{killer}} eliminó a {{victim}} ({{cause}})",
+        "ignited": "{{killer}} eliminó a {{victim}} con Ignición",
+        "cause": {
+          "tower": "torre",
+          "minion": "súbdito"
+        },
+        "destroyed": "{{team}} destruyó {{structure}}",
+        "structure": "{{part}} ({{lane}})",
+        "part": {
+          "outerTower": "la torre exterior",
+          "innerTower": "la torre interior",
+          "inhibitorTower": "la torre del inhibidor",
+          "nexusTower": "la torre del nexo",
+          "inhibitor": "el inhibidor",
+          "nexus": "el nexo",
+          "unknown": "una estructura"
+        },
+        "lane": {
+          "top": "superior",
+          "mid": "central",
+          "bot": "inferior"
+        },
+        "dragon": "{{team}} aseguró el {{dragon}}",
+        "elder": "{{team}} aseguró el Dragón Ancestral",
+        "baron": "{{team}} aseguró el Barón",
+        "voidgrub": "{{team}} aseguró una larva del Vacío",
+        "voidgrubCamp": "{{team}} limpió el campamento de larvas del Vacío",
+        "herald": "{{team}} aseguró el Heraldo de la Grieta",
+        "scuttle": "{{team}} mató al cangrejo de la grieta",
+        "someone": "Un equipo"
+      },
       "card": {
         "label": "Seguir a {{name}} en el mapa: {{champion}}, {{role}}",
         "labelNoChampion": "Seguir a {{name}} en el mapa: {{role}}",

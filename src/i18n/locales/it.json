@@ -4505,6 +4505,43 @@
       "importLimit": "Limite di importati raggiunto"
     },
     "match": {
+      "feed": {
+        "label": "Registro eventi, dal più recente. Usa le frecce per scorrere.",
+        "section": "Uccisioni e obiettivi",
+        "heading": "Eventi",
+        "latest": "Ultimo, {{time}}: {{text}}",
+        "killed": "{{killer}} ha eliminato {{victim}}",
+        "killedCause": "{{killer}} ha eliminato {{victim}} ({{cause}})",
+        "ignited": "{{killer}} ha incenerito {{victim}}",
+        "cause": {
+          "tower": "torre",
+          "minion": "servitore"
+        },
+        "destroyed": "{{team}} ha distrutto {{structure}}",
+        "structure": "{{part}} ({{lane}})",
+        "part": {
+          "outerTower": "la torre esterna",
+          "innerTower": "la torre interna",
+          "inhibitorTower": "la torre dell'inibitore",
+          "nexusTower": "la torre del Nexus",
+          "inhibitor": "l'inibitore",
+          "nexus": "il Nexus",
+          "unknown": "una struttura"
+        },
+        "lane": {
+          "top": "alta",
+          "mid": "centrale",
+          "bot": "bassa"
+        },
+        "dragon": "{{team}} ha preso il {{dragon}}",
+        "elder": "{{team}} ha preso il Drago Ancestrale",
+        "baron": "{{team}} ha preso il Barone",
+        "voidgrub": "{{team}} ha preso una larva del Vuoto",
+        "voidgrubCamp": "{{team}} ha ripulito il campo delle larve del Vuoto",
+        "herald": "{{team}} ha preso l'Araldo",
+        "scuttle": "{{team}} ha ucciso il granchio del fiume",
+        "someone": "Una squadra"
+      },
       "card": {
         "label": "Segui {{name}} sulla mappa: {{champion}}, {{role}}",
         "labelNoChampion": "Segui {{name}} sulla mappa: {{role}}",

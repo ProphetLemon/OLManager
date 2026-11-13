@@ -4506,6 +4506,43 @@
       "importLimit": "İçe aktarma sınırına ulaşıldı"
     },
     "match": {
+      "feed": {
+        "label": "Olay akışı, en yeniden eskiye. Kaydırmak için ok tuşlarını kullan.",
+        "section": "Öldürmeler ve hedefler",
+        "heading": "Olaylar",
+        "latest": "En son, {{time}}: {{text}}",
+        "killed": "{{killer}}, {{victim}} oyuncusunu öldürdü",
+        "killedCause": "{{killer}}, {{victim}} oyuncusunu öldürdü ({{cause}})",
+        "ignited": "{{killer}}, {{victim}} oyuncusunu Tutuştur ile öldürdü",
+        "cause": {
+          "tower": "kule",
+          "minion": "minyon"
+        },
+        "destroyed": "{{team}}, {{structure}} yok etti",
+        "structure": "{{part}} ({{lane}})",
+        "part": {
+          "outerTower": "dış kuleyi",
+          "innerTower": "iç kuleyi",
+          "inhibitorTower": "İnhibitör kulesini",
+          "nexusTower": "Nexus kulesini",
+          "inhibitor": "İnhibitörü",
+          "nexus": "Nexus'u",
+          "unknown": "bir yapıyı"
+        },
+        "lane": {
+          "top": "üst",
+          "mid": "orta",
+          "bot": "alt"
+        },
+        "dragon": "{{team}} aldı: {{dragon}}",
+        "elder": "{{team}} aldı: Kadim Ejderha",
+        "baron": "{{team}} aldı: Baron",
+        "voidgrub": "{{team}} aldı: Boşluk Larvası",
+        "voidgrubCamp": "{{team}} Boşluk Larvası kampını temizledi",
+        "herald": "{{team}} aldı: Haberci",
+        "scuttle": "{{team}} nehir yengecini öldürdü",
+        "someone": "Bir takım"
+      },
       "card": {
         "label": "{{name}} oyuncusunu haritada izle: {{champion}}, {{role}}",
         "labelNoChampion": "{{name}} oyuncusunu haritada izle: {{role}}",

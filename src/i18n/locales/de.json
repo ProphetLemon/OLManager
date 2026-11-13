@@ -4506,6 +4506,43 @@
       "importLimit": "Importlimit erreicht"
     },
     "match": {
+      "feed": {
+        "label": "Ereignisverlauf, neueste zuerst. Mit den Pfeiltasten scrollen.",
+        "section": "Kills und Ziele",
+        "heading": "Ereignisse",
+        "latest": "Neuestes, {{time}}: {{text}}",
+        "killed": "{{killer}} hat {{victim}} besiegt",
+        "killedCause": "{{killer}} hat {{victim}} besiegt ({{cause}})",
+        "ignited": "{{killer}} hat {{victim}} mit Entzünden erledigt",
+        "cause": {
+          "tower": "Turm",
+          "minion": "Vasall"
+        },
+        "destroyed": "{{team}} hat {{structure}} zerstört",
+        "structure": "{{part}} ({{lane}})",
+        "part": {
+          "outerTower": "den äußeren Turm",
+          "innerTower": "den inneren Turm",
+          "inhibitorTower": "den Inhibitor-Turm",
+          "nexusTower": "den Nexusturm",
+          "inhibitor": "den Inhibitor",
+          "nexus": "den Nexus",
+          "unknown": "ein Gebäude"
+        },
+        "lane": {
+          "top": "oben",
+          "mid": "Mitte",
+          "bot": "unten"
+        },
+        "dragon": "{{team}} sichert: {{dragon}}",
+        "elder": "{{team}} sichert: Ältester Drache",
+        "baron": "{{team}} sichert: Baron",
+        "voidgrub": "{{team}} sichert: Leerenlarve",
+        "voidgrubCamp": "{{team}} hat das Leerenlarven-Lager geräumt",
+        "herald": "{{team}} sichert: Herold",
+        "scuttle": "{{team}} hat die Flusskrabbe erledigt",
+        "someone": "Ein Team"
+      },
       "card": {
         "label": "{{name}} auf der Karte verfolgen: {{champion}}, {{role}}",
         "labelNoChampion": "{{name}} auf der Karte verfolgen: {{role}}",

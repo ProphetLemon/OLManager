@@ -4540,6 +4540,43 @@
       "importLimit": "Import limit reached"
     },
     "match": {
+      "feed": {
+        "label": "Event feed, newest first. Use the arrow keys to scroll.",
+        "section": "Kills and objectives",
+        "heading": "Events",
+        "latest": "Latest, {{time}}: {{text}}",
+        "killed": "{{killer}} eliminated {{victim}}",
+        "killedCause": "{{killer}} eliminated {{victim}} ({{cause}})",
+        "ignited": "{{killer}} ignited {{victim}}",
+        "cause": {
+          "tower": "tower",
+          "minion": "minion"
+        },
+        "destroyed": "{{team}} destroyed {{structure}}",
+        "structure": "{{part}} ({{lane}})",
+        "part": {
+          "outerTower": "the outer turret",
+          "innerTower": "the inner turret",
+          "inhibitorTower": "the inhibitor turret",
+          "nexusTower": "the nexus turret",
+          "inhibitor": "the inhibitor",
+          "nexus": "the nexus",
+          "unknown": "a structure"
+        },
+        "lane": {
+          "top": "top",
+          "mid": "mid",
+          "bot": "bottom"
+        },
+        "dragon": "{{team}} secured the {{dragon}}",
+        "elder": "{{team}} secured the Elder Dragon",
+        "baron": "{{team}} secured Baron",
+        "voidgrub": "{{team}} secured a voidgrub",
+        "voidgrubCamp": "{{team}} cleared the voidgrub camp",
+        "herald": "{{team}} secured the Rift Herald",
+        "scuttle": "{{team}} killed the Scuttle Crab",
+        "someone": "A team"
+      },
       "card": {
         "label": "Spotlight {{name}} on the map: {{champion}}, {{role}}",
         "labelNoChampion": "Spotlight {{name}} on the map: {{role}}",
