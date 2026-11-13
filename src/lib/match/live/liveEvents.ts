@@ -158,7 +158,7 @@ export function structureLabel(id: string): StructureLabel {
 
 const KILL_VERB = /\s+(?:killed|slain|eliminated|ignited)\s+/gi;
 const CAUSE_TAIL = /^(.*?)\s+\(([^()]+)\)\s*$/;
-const DRAGON_KINDS: readonly DragonKind[] = ["infernal", "ocean", "mountain", "cloud", "hextech", "chemtech"];
+export const DRAGON_KINDS: readonly DragonKind[] = ["infernal", "ocean", "mountain", "cloud", "hextech", "chemtech"];
 
 function actor(name: string, roster: readonly RosterEntry[]): FeedActor {
   const wanted = name.trim().toLowerCase();
