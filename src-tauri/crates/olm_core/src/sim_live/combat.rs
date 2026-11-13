@@ -1477,6 +1477,9 @@ pub(super) fn decline_trade(runtime: &mut RuntimeState, idx: usize, threat_pos: 
     }
 }
 
+/// Share of his attack range at which a laner stands from the minion he walks to. [PLACEHOLDER]
+const LANE_REACH_STAND_SHARE: f64 = 0.85;
+
 pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
     let now = runtime.time_sec;
     let mut neutral_timers = decode_neutral_timers_state(&runtime.neutral_timers)
@@ -1676,7 +1679,23 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
                     OBJECTIVE_PATH_MIN_TARGET_DELTA,
                 );
             } else {
-                set_champion_direct_path(&mut runtime.champions[idx], target_pos);
+                // A laner walks to the edge of his reach from his own side, not onto the
+                // minion: two laners after the same minion would end on the same spot.
+                let goal = match target {
+                    CombatTarget::Minion(_) if attacker_snapshot.role != "JGL" => {
+                        let from_target = normalize(Vec2 {
+                            x: attacker_snapshot.pos.x - target_pos.x,
+                            y: attacker_snapshot.pos.y - target_pos.y,
+                        });
+                        let stand = Vec2 {
+                            x: target_pos.x + from_target.x * attack_range * LANE_REACH_STAND_SHARE,
+                            y: target_pos.y + from_target.y * attack_range * LANE_REACH_STAND_SHARE,
+                        };
+                        keep_apart_from_enemy_champions(&attacker_snapshot, stand, &runtime.champions)
+                    }
+                    _ => target_pos,
+                };
+                set_champion_direct_path(&mut runtime.champions[idx], goal);
             }
             continue;
         }
@@ -1859,4 +1878,7 @@ pub(super) fn resolve_champion_combat(runtime: &mut RuntimeState) {
         runtime.neutral_timers = value;
     }
     sync_objectives_from_neutral_timers(runtime, &neutral_timers);
+
+    // Dashes, flashes and chases ended inside an enemy: the bubbles slide apart.
+    super::pathing::separate_enemy_champions(runtime);
 }

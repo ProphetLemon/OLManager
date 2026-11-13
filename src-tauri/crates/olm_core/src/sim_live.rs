@@ -3195,6 +3195,47 @@ fn lane_farm_anchor_pos_v2(
     tower_safety::outside_bare_tower_reach(champion, anchor, &around)
 }
 
+/// The closest an idle laner stands to an enemy champion: about one bubble. Two laners who
+/// both stand at the wave front would otherwise stand on the same spot and do nothing.
+const LANE_ENEMY_CHAMPION_SPACING: f64 = 0.032;
+
+/// `spot` moved, if an enemy champion stands closer than `LANE_ENEMY_CHAMPION_SPACING`, to the
+/// edge of that spacing on the champion's own side. A champion on the exact same spot goes
+/// toward his base.
+fn keep_apart_from_enemy_champions(
+    champion: &ChampionRuntime,
+    spot: Vec2,
+    champions: &[ChampionRuntime],
+) -> Vec2 {
+    let team = normalized_team(&champion.team);
+    let Some(enemy) = champions
+        .iter()
+        .filter(|enemy| {
+            enemy.alive
+                && !champion_is_banished(enemy)
+                && normalized_team(&enemy.team) != team
+                && dist(enemy.pos, spot) < LANE_ENEMY_CHAMPION_SPACING
+        })
+        .min_by(|a, b| {
+            dist(a.pos, spot)
+                .total_cmp(&dist(b.pos, spot))
+                .then_with(|| a.id.cmp(&b.id))
+        })
+    else {
+        return spot;
+    };
+    let base = base_position_for(&champion.team);
+    let direction = if dist(enemy.pos, spot) < 0.002 {
+        normalize(Vec2 { x: base.x - enemy.pos.x, y: base.y - enemy.pos.y })
+    } else {
+        normalize(Vec2 { x: spot.x - enemy.pos.x, y: spot.y - enemy.pos.y })
+    };
+    Vec2 {
+        x: clamp(enemy.pos.x + direction.x * LANE_ENEMY_CHAMPION_SPACING, 0.01, 0.99),
+        y: clamp(enemy.pos.y + direction.y * LANE_ENEMY_CHAMPION_SPACING, 0.01, 0.99),
+    }
+}
+
 fn lane_farm_anchor_toward_wave(
     champion: &ChampionRuntime,
     now: f64,
