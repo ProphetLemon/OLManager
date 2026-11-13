@@ -90,6 +90,8 @@ const STUCK_LIMIT_SEC: f64 = 30.0;
 const FREEZE_DRIFT: f64 = 0.05;
 /// Stuck-state examples each match keeps.
 const STUCK_EXAMPLES_PER_MATCH: usize = 3;
+/// Seconds without champion damage between a pair after which the next hit starts a new trade.
+const TRADE_GAP_SEC: f64 = 5.0;
 
 /// What the observer counted in one match.
 #[derive(Debug, Clone, Default)]
@@ -142,6 +144,24 @@ struct ContactStats {
     stuck_recall_kinds: BTreeMap<String, u32>,
     /// The first few stuck-state episodes of the match, for the examples.
     stuck_examples: Vec<String>,
+    /// Voidgrubs that expired with health left: (stacks before, stacks gained) for blue and red.
+    grub_expiries: Vec<GrubExpiry>,
+    /// Rift Heralds deployed: whether the carrier was the jungler, and the lane of the summon.
+    herald_deploys: Vec<(bool, String)>,
+    /// Rift Heralds secured, and seconds from each one secured to its deployment.
+    herald_secured: u32,
+    herald_waits: Vec<f64>,
+    /// Trades started (first champion damage between a pair after `TRADE_GAP_SEC` without any),
+    /// and those started with the attacker inside the reach of an enemy tower.
+    trade_starts: u32,
+    trade_starts_in_tower_reach: u32,
+}
+
+/// Stacks of both sides when the unclaimed Voidgrubs expired, and what each side gained.
+#[derive(Debug, Clone, Copy)]
+struct GrubExpiry {
+    before: [i64; 2],
+    gained: [i64; 2],
 }
 
 /// A champion as the previous step left it.
@@ -182,6 +202,13 @@ struct ContactObserver {
     base_freeze: Vec<(Vec2, f64, bool)>,
     /// Set when, in the last step, an enemy first became able to stop a recall in progress.
     just_free: bool,
+    /// Voidgrub stacks (blue, red) and the Herald's carrier id as the previous step left them.
+    previous_grub_stacks: [i64; 2],
+    previous_herald_carrier: Option<String>,
+    herald_secured_at: Option<f64>,
+    herald_minions_seen: usize,
+    /// Per pair of champions: damage each dealt the other so far, and when damage last passed.
+    trade_watch: HashMap<(usize, usize), ([f64; 2], f64)>,
     stats: ContactStats,
 }
 
@@ -197,6 +224,11 @@ impl ContactObserver {
             recall_stuck: Vec::new(),
             base_freeze: Vec::new(),
             just_free: false,
+            previous_grub_stacks: [0, 0],
+            previous_herald_carrier: None,
+            herald_secured_at: None,
+            herald_minions_seen: 0,
+            trade_watch: HashMap::new(),
             stats: ContactStats::default(),
         }
     }
@@ -242,12 +274,101 @@ impl ContactObserver {
         self.observe_recalls(state, now);
         self.observe_bases(state, dt);
         self.observe_stuck(state, dt);
+        self.observe_audit(state);
         self.previous = state
             .champions
             .iter()
             .map(|c| PreviousChampion { pos: c.pos, hp: c.hp, last_damaged_at: c.last_damaged_at })
             .collect();
         self.previous_time = now;
+    }
+
+    /// Counts the three things the sim audit fixes: the Voidgrub stacks handed out at expiry, the
+    /// lane and carrier of each Herald, and the trades started inside an enemy tower's reach.
+    fn observe_audit(&mut self, state: &RuntimeState) {
+        let now = state.time_sec;
+        let buffs = runtime_buffs_from_extra(state.extra.get("teamBuffs"));
+        let stacks = [buffs.blue.voidgrub_stacks, buffs.red.voidgrub_stacks];
+        let role_of = |id: &str| state.champions.iter().find(|c| c.id == id).map(|c| c.role.as_str());
+
+        for event in state.events.iter().rev().take_while(|event| event.t > self.previous_time) {
+            match event.code {
+                Some(EventCode::NeutralDespawned)
+                    if event.data.objective.as_deref() == Some("voidgrubs") =>
+                {
+                    self.stats.grub_expiries.push(GrubExpiry {
+                        before: self.previous_grub_stacks,
+                        gained: [
+                            stacks[0] - self.previous_grub_stacks[0],
+                            stacks[1] - self.previous_grub_stacks[1],
+                        ],
+                    });
+                }
+                Some(EventCode::HeraldSecured) => {
+                    self.stats.herald_secured += 1;
+                    self.herald_secured_at = Some(event.t);
+                }
+                Some(EventCode::HeraldDeployed) => {
+                    let jungler = self
+                        .previous_herald_carrier
+                        .as_deref()
+                        .and_then(role_of)
+                        .is_some_and(|role| role == "JGL");
+                    let lane = state
+                        .minions
+                        .iter()
+                        .filter(|m| m.id.starts_with("herald-"))
+                        .nth(self.herald_minions_seen)
+                        .map_or("?".to_string(), |m| m.lane.clone());
+                    self.stats.herald_deploys.push((jungler, lane));
+                    if let Some(at) = self.herald_secured_at.take() {
+                        self.stats.herald_waits.push(event.t - at);
+                    }
+                }
+                _ => {}
+            }
+        }
+        self.herald_minions_seen = state.minions.iter().filter(|m| m.id.starts_with("herald-")).count();
+        self.previous_grub_stacks = stacks;
+        self.previous_herald_carrier = state
+            .extra
+            .get("heraldCarrierId")
+            .and_then(Value::as_str)
+            .map(str::to_string);
+
+        let ledger = state.farm_ledger.damage_by_attacker_role();
+        for a in 0..state.champions.len() {
+            for b in (a + 1)..state.champions.len() {
+                let (ca, cb) = (&state.champions[a], &state.champions[b]);
+                if normalized_team(&ca.team) == normalized_team(&cb.team) {
+                    continue;
+                }
+                let totals = [
+                    ledger.get(&(ca.id.clone(), cb.role.clone())).copied().unwrap_or(0.0),
+                    ledger.get(&(cb.id.clone(), ca.role.clone())).copied().unwrap_or(0.0),
+                ];
+                let entry = self.trade_watch.entry((a, b)).or_insert((totals, f64::NEG_INFINITY));
+                let dealt = [totals[0] - entry.0[0], totals[1] - entry.0[1]];
+                entry.0 = totals;
+                if dealt[0] <= 1e-9 && dealt[1] <= 1e-9 {
+                    continue;
+                }
+                let started = now - entry.1 >= TRADE_GAP_SEC;
+                entry.1 = now;
+                if !started {
+                    continue;
+                }
+                let attacker = if dealt[0] >= dealt[1] { ca } else { cb };
+                let in_reach = state.structures.iter().any(|tower| {
+                    tower.alive
+                        && tower.kind == "tower"
+                        && normalized_team(&tower.team) != normalized_team(&attacker.team)
+                        && dist(tower.pos, attacker.pos) <= TOWER_ATTACK_RANGE
+                });
+                self.stats.trade_starts += 1;
+                self.stats.trade_starts_in_tower_reach += u32::from(in_reach);
+            }
+        }
     }
 
     /// Counts the two stuck states: a long recall with no channel, and a long stand in the own
@@ -922,6 +1043,47 @@ fn replay_captured_start() {
         "bare tower deaths: with a push order {}, with three or more allied champions near {}",
         played.iter().map(|p| p.bare_pushing).sum::<u32>(),
         played.iter().map(|p| p.bare_grouped).sum::<u32>()
+    );
+
+    let grubs: Vec<GrubExpiry> = played.iter().flat_map(|p| p.contact.grub_expiries.iter().copied()).collect();
+    let ties: Vec<&GrubExpiry> = grubs.iter().filter(|g| g.before[0] == g.before[1]).collect();
+    let sum = |list: &[&GrubExpiry], side: usize| list.iter().map(|g| g.gained[side]).sum::<i64>();
+    let led: Vec<&GrubExpiry> = grubs.iter().filter(|g| g.before[0] != g.before[1]).collect();
+    println!(
+        "voidgrub expiries {} ({:.2} per match): ties {} (0-0 {}), stacks gained in ties blue {} red {}; leader cases {}, stacks gained blue {} red {}",
+        grubs.len(),
+        grubs.len() as f64 / matches,
+        ties.len(),
+        ties.iter().filter(|g| g.before == [0, 0]).count(),
+        sum(&ties, 0),
+        sum(&ties, 1),
+        led.len(),
+        sum(&led, 0),
+        sum(&led, 1),
+    );
+    let deploys: Vec<&(bool, String)> = played.iter().flat_map(|p| p.contact.herald_deploys.iter()).collect();
+    let lane_count = |jungler: bool, lane: &str| deploys.iter().filter(|(j, l)| *j == jungler && l == lane).count();
+    println!(
+        "heralds secured {}, deployed {} ({:.2} per match); jungler deploys {} (top {} mid {} bot {}), laner deploys {} (top {} mid {} bot {}); mean secured-to-deployed {:.1} s",
+        played.iter().map(|p| p.contact.herald_secured).sum::<u32>(),
+        deploys.len(),
+        deploys.len() as f64 / matches,
+        deploys.iter().filter(|(j, _)| *j).count(),
+        lane_count(true, "top"),
+        lane_count(true, "mid"),
+        lane_count(true, "bot"),
+        deploys.iter().filter(|(j, _)| !*j).count(),
+        lane_count(false, "top"),
+        lane_count(false, "mid"),
+        lane_count(false, "bot"),
+        mean_of(&played.iter().flat_map(|p| p.contact.herald_waits.iter().copied()).collect::<Vec<_>>()),
+    );
+    println!(
+        "trades started {} ({:.2} per match), inside an enemy tower's reach {} ({:.1}%)",
+        total(&|c| f64::from(c.trade_starts)),
+        total(&|c| f64::from(c.trade_starts)) / matches,
+        total(&|c| f64::from(c.trade_starts_in_tower_reach)),
+        100.0 * total(&|c| f64::from(c.trade_starts_in_tower_reach)) / total(&|c| f64::from(c.trade_starts)).max(1.0),
     );
 
     let mut levels: BTreeMap<(String, String), Vec<f64>> = BTreeMap::new();
