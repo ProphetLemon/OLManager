@@ -25,6 +25,7 @@ import {
 import type { PlayerData } from "@/store/gameStore";
 import { resolveActiveLineupIds } from "@/store/types";
 import type { ShellBadges } from "@/ui-v2/shell/shellTypes";
+import { resolveNavTab } from "@/ui-v2/shell/navModel";
 
 import {
   formatDateFull,
@@ -492,7 +493,7 @@ export default function DashboardV2() {
 
   const handleNavigate = (tab: string, context?: DashboardNavigateContext) => {
     setViewingChampionKey(null);
-    setProfileNavigation((s) => navigateDashboardProfiles(s, tab, context));
+    setProfileNavigation((s) => navigateDashboardProfiles(s, resolveNavTab(tab), context));
   };
 
   const handleBack = () => setProfileNavigation((s) => goBackDashboardProfile(s));
