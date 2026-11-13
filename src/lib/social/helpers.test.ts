@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+
+import i18n from "@/i18n";
 
 import type { SocialPostData } from "@/store/gameStore";
 import { authorRing, formatCount, sentimentClasses, verifiedMeta, visibleSocialPosts } from "./helpers";
@@ -23,5 +25,20 @@ describe("social helpers", () => {
     expect(verifiedMeta("Fan")).toBeNull();
     expect(authorRing("Player")).toContain("emerald");
     expect(sentimentClasses("Unknown")).toBe(sentimentClasses("Calm"));
+  });
+});
+
+describe("formatCount in the game language", () => {
+  afterEach(async () => {
+    await i18n.changeLanguage("en");
+  });
+
+  it.each([
+    ["es", "1,5K", "2,0M"],
+    ["en", "1.5K", "2.0M"],
+  ])("writes compact counts in %s", async (language, thousands, millions) => {
+    await i18n.changeLanguage(language);
+    expect(formatCount(1500)).toBe(thousands);
+    expect(formatCount(2_000_000)).toBe(millions);
   });
 });

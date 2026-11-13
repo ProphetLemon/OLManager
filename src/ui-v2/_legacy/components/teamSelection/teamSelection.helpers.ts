@@ -2,9 +2,10 @@ import { invoke } from "@tauri-apps/api/core";
 import type { LeagueSelectionData, GameStateData } from "@/store/gameStore";
 import type { CustomTeamSpec } from "@/store/types";
 import { activeCurrencySymbol } from "@/lib/formatting/valueFormatting";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 export function formatFinance(val: number): string {
-  if (val >= 1_000_000) return `${activeCurrencySymbol()}${(val / 1_000_000).toFixed(1)}M`;
+  if (val >= 1_000_000) return `${activeCurrencySymbol()}${formatDecimal(val / 1_000_000, 1)}M`;
   if (val >= 1_000) return `${activeCurrencySymbol()}${(val / 1_000).toFixed(0)}K`;
   return `${activeCurrencySymbol()}${val}`;
 }

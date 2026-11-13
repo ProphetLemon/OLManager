@@ -1,4 +1,5 @@
 import type { SocialPostData } from "@/store/gameStore";
+import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
 export const SOCIAL_AUTHOR_LABELS: Record<string, string> = {
   Team: "Team",
@@ -24,8 +25,8 @@ export function sentimentClasses(sentiment: string): string {
 }
 
 export function formatCount(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  if (value >= 1_000_000) return `${formatDecimal(value / 1_000_000, 1)}M`;
+  if (value >= 1_000) return `${formatDecimal(value / 1_000, 1)}K`;
   return String(value);
 }
 

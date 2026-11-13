@@ -32,4 +32,12 @@ describe("formatDecimal", () => {
     expect(formatDecimal(Infinity, 1, "es")).toBe("-");
     expect(formatDecimal(null, 1, "es", "—")).toBe("—");
   });
+
+  it.each([1234.5, 6.35, 1.005, -0.04, 0])("matches toFixed in English for %s, with no grouping", (value) => {
+    for (const digits of [0, 1, 2, 3]) {
+      expect(formatDecimal(value, digits, "en")).toBe(value.toFixed(digits));
+    }
+    expect(formatDecimal(1234.5, 1, "en")).toBe("1234.5");
+    expect(formatDecimal(1234.5, 1, "es")).not.toMatch(/[ .\u00a0\u202f]/);
+  });
 });
