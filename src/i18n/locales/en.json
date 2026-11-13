@@ -4540,6 +4540,19 @@
       "importLimit": "Import limit reached"
     },
     "match": {
+      "controls": {
+        "options": "Match options",
+        "skip": "Skip match",
+        "reset": "Reset match",
+        "speedNote_one": "{{label}} = {{count}} match second per second",
+        "speedNote_other": "{{label}} = {{count}} match seconds per second",
+        "skipTitle": "Skip to the end?",
+        "skipBody": "The rest of this match is played at once and the result is shown. You will not see it play out.",
+        "skipConfirm": "Show the result",
+        "resetTitle": "Start this match again?",
+        "resetBody": "The match goes back to minute 0 and may play out differently. What you have watched so far is lost.",
+        "resetConfirm": "Start again"
+      },
       "spotlight": {
         "label": "Spotlight",
         "others": "Other things happening now",
@@ -4712,6 +4725,14 @@
         "objective": "Obj"
       },
       "legend": {
+        "heading": "Map key",
+        "champions": "Blue champions are round, red champions are rounded squares",
+        "structures": "Towers, inhibitors and nexus: blue is round, red is a diamond; a hatched shape is destroyed",
+        "camp": "Small grey diamond: a jungle camp, solid while its monsters are up, dashed outline once cleared",
+        "ward": "Hollow marker: a ward, round for blue and a diamond for red",
+        "push": "Badge by a structure: that team is pushing it, with the time left of its advantage",
+        "items": "Items on a card are icons; their full names are in the card's description",
+        "cooldowns": "Letters on a card: R ultimate, the first letter of a summoner spell, W ward trinket, O oracle lens; the number is seconds left",
         "ringRecall": "Ring that drains: recall, with the seconds left",
         "ringDead": "Dashed outline with a number: dead, seconds until respawn",
         "dot": "Dot on a link: who is hitting",

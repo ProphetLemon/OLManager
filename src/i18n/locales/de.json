@@ -4506,6 +4506,19 @@
       "importLimit": "Importlimit erreicht"
     },
     "match": {
+      "controls": {
+        "options": "Spieloptionen",
+        "skip": "Spiel überspringen",
+        "reset": "Spiel zurücksetzen",
+        "speedNote_one": "{{label}} = {{count}} Spielsekunde pro Sekunde",
+        "speedNote_other": "{{label}} = {{count}} Spielsekunden pro Sekunde",
+        "skipTitle": "Bis zum Ende überspringen?",
+        "skipBody": "Der Rest dieses Spiels wird sofort gespielt und das Ergebnis angezeigt. Du siehst es nicht mehr ablaufen.",
+        "skipConfirm": "Ergebnis zeigen",
+        "resetTitle": "Dieses Spiel neu starten?",
+        "resetBody": "Das Spiel beginnt wieder bei Minute 0 und kann anders verlaufen. Was du bisher gesehen hast, geht verloren.",
+        "resetConfirm": "Neu starten"
+      },
       "spotlight": {
         "label": "Im Fokus",
         "others": "Was sonst gerade passiert",
@@ -4678,6 +4691,14 @@
         "objective": "Ziel"
       },
       "legend": {
+        "heading": "Kartenlegende",
+        "champions": "Blaue Champions sind rund, rote sind Quadrate mit runden Ecken",
+        "structures": "Türme, Inhibitoren und Nexus: Blau ist rund, Rot ist eine Raute; eine schraffierte Form ist zerstört",
+        "camp": "Kleine graue Raute: ein Dschungelcamp, gefüllt solange die Monster da sind, gestrichelter Rand nach dem Räumen",
+        "ward": "Hohle Markierung: ein Ward, rund für Blau und eine Raute für Rot",
+        "push": "Abzeichen an einer Struktur: dieses Team drückt sie, mit der verbleibenden Zeit seines Vorteils",
+        "items": "Gegenstände auf einer Karte sind Symbole; ihre vollen Namen stehen in der Beschreibung der Karte",
+        "cooldowns": "Buchstaben auf einer Karte: R Ultimate, der erste Buchstabe eines Beschwörerzaubers, W Wächtertotem, O Orakellinse; die Zahl sind die verbleibenden Sekunden",
         "ringRecall": "Schrumpfender Ring: Rückruf, mit den verbleibenden Sekunden",
         "ringDead": "Gestrichelte Kontur mit Zahl: tot, Sekunden bis zur Wiederbelebung",
         "dot": "Punkt am Link: wer zuschlägt",

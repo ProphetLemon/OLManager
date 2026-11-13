@@ -4505,6 +4505,19 @@
       "importLimit": "Limite de importados atingido"
     },
     "match": {
+      "controls": {
+        "options": "Opções da partida",
+        "skip": "Saltar partida",
+        "reset": "Reiniciar partida",
+        "speedNote_one": "{{label}} = {{count}} segundo de partida por segundo",
+        "speedNote_other": "{{label}} = {{count}} segundos de partida por segundo",
+        "skipTitle": "Saltar até ao fim?",
+        "skipBody": "O resto desta partida é jogado de uma vez e o resultado é mostrado. Você não a verá decorrer.",
+        "skipConfirm": "Ver o resultado",
+        "resetTitle": "Recomeçar esta partida?",
+        "resetBody": "A partida volta ao minuto 0 e pode decorrer de forma diferente. O que você viu até agora perde-se.",
+        "resetConfirm": "Recomeçar"
+      },
       "spotlight": {
         "label": "Em destaque",
         "others": "Outros acontecimentos agora",
@@ -4677,6 +4690,14 @@
         "objective": "Obj."
       },
       "legend": {
+        "heading": "Legenda do mapa",
+        "champions": "Os campeões azuis são redondos e os vermelhos são quadrados arredondados",
+        "structures": "Torres, inibidores e nexus: o azul é redondo e o vermelho é um losango; uma forma riscada está destruída",
+        "camp": "Pequeno losango cinzento: um acampamento da selva, cheio enquanto os monstros lá estão, contorno tracejado depois de limpo",
+        "ward": "Marcador oco: uma sentinela, redonda para o azul e em losango para o vermelho",
+        "push": "Distintivo junto a uma estrutura: essa equipa está a empurrá-la, com o tempo que resta à sua vantagem",
+        "items": "Os itens de um cartão são ícones; os nomes completos estão na descrição do cartão",
+        "cooldowns": "Letras de um cartão: R ultimate, a primeira letra de um feitiço de invocador, W sentinela, O lente do oráculo; o número são os segundos que faltam",
         "ringRecall": "Anel que se esvazia: regresso à base, com os segundos que faltam",
         "ringDead": "Contorno tracejado com um número: morto, segundos até renascer",
         "dot": "Ponto na ligação: quem está a bater",

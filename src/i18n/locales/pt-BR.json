@@ -4506,6 +4506,19 @@
       "importLimit": "Limite de importados atingido"
     },
     "match": {
+      "controls": {
+        "options": "Opções da partida",
+        "skip": "Pular partida",
+        "reset": "Reiniciar partida",
+        "speedNote_one": "{{label}} = {{count}} segundo de partida por segundo",
+        "speedNote_other": "{{label}} = {{count}} segundos de partida por segundo",
+        "skipTitle": "Pular até o fim?",
+        "skipBody": "O resto desta partida é jogado de uma vez e o resultado é mostrado. Você não vai vê-la acontecer.",
+        "skipConfirm": "Ver o resultado",
+        "resetTitle": "Recomeçar esta partida?",
+        "resetBody": "A partida volta ao minuto 0 e pode acontecer de outro jeito. O que você viu até agora se perde.",
+        "resetConfirm": "Recomeçar"
+      },
       "spotlight": {
         "label": "Em destaque",
         "others": "Outras coisas acontecendo agora",
@@ -4678,6 +4691,14 @@
         "objective": "Obj."
       },
       "legend": {
+        "heading": "Legenda do mapa",
+        "champions": "Os campeões azuis são redondos e os vermelhos são quadrados arredondados",
+        "structures": "Torres, inibidores e nexus: o azul é redondo e o vermelho é um losango; uma forma riscada está destruída",
+        "camp": "Pequeno losango cinza: um acampamento da selva, cheio enquanto os monstros estão lá, contorno tracejado depois de limpo",
+        "ward": "Marcador vazado: um sentinela, redondo para o azul e em losango para o vermelho",
+        "push": "Distintivo junto a uma estrutura: esse time está empurrando ela, com o tempo restante da sua vantagem",
+        "items": "Os itens de um cartão são ícones; os nomes completos estão na descrição do cartão",
+        "cooldowns": "Letras de um cartão: R ultimate, a primeira letra de um feitiço de invocador, W sentinela, O lente do oráculo; o número são os segundos restantes",
         "ringRecall": "Anel que esvazia: retorno à base, com os segundos restantes",
         "ringDead": "Contorno tracejado com um número: morto, segundos até reaparecer",
         "dot": "Ponto na ligação: quem está batendo",

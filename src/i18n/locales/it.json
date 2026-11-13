@@ -4505,6 +4505,19 @@
       "importLimit": "Limite di importati raggiunto"
     },
     "match": {
+      "controls": {
+        "options": "Opzioni della partita",
+        "skip": "Salta la partita",
+        "reset": "Reimposta la partita",
+        "speedNote_one": "{{label}} = {{count}} secondo di partita al secondo",
+        "speedNote_other": "{{label}} = {{count}} secondi di partita al secondo",
+        "skipTitle": "Saltare fino alla fine?",
+        "skipBody": "Il resto della partita viene giocato tutto insieme e viene mostrato il risultato. Non la vedrai svolgersi.",
+        "skipConfirm": "Mostra il risultato",
+        "resetTitle": "Ricominciare questa partita?",
+        "resetBody": "La partita torna al minuto 0 e può andare diversamente. Quello che hai visto finora va perso.",
+        "resetConfirm": "Ricomincia"
+      },
       "spotlight": {
         "label": "In primo piano",
         "others": "Cos'altro sta succedendo",
@@ -4677,6 +4690,14 @@
         "objective": "Obiett."
       },
       "legend": {
+        "heading": "Legenda della mappa",
+        "champions": "I campioni blu sono rotondi, i campioni rossi sono quadrati arrotondati",
+        "structures": "Torri, inibitori e nexus: il blu è rotondo, il rosso è un rombo; una forma tratteggiata è distrutta",
+        "camp": "Piccolo rombo grigio: un accampamento della giungla, pieno finché i mostri ci sono, contorno tratteggiato una volta ripulito",
+        "ward": "Segnalino vuoto: una sentinella, rotonda per il blu e a rombo per il rosso",
+        "push": "Distintivo vicino a una struttura: quella squadra la sta spingendo, con il tempo che resta al suo vantaggio",
+        "items": "Gli oggetti di una scheda sono icone; i nomi completi sono nella descrizione della scheda",
+        "cooldowns": "Lettere di una scheda: R ultimate, la prima lettera di un incantesimo dell'evocatore, W sentinella, O lente dell'oracolo; il numero sono i secondi rimasti",
         "ringRecall": "Anello che si svuota: richiamo, con i secondi rimasti",
         "ringDead": "Contorno tratteggiato con un numero: morto, secondi alla rinascita",
         "dot": "Punto sul collegamento: chi colpisce",

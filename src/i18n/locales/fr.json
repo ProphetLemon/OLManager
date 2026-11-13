@@ -4506,6 +4506,19 @@
       "importLimit": "Limite d'import atteinte"
     },
     "match": {
+      "controls": {
+        "options": "Options du match",
+        "skip": "Passer le match",
+        "reset": "Réinitialiser le match",
+        "speedNote_one": "{{label}} = {{count}} seconde de match par seconde",
+        "speedNote_other": "{{label}} = {{count}} secondes de match par seconde",
+        "skipTitle": "Passer jusqu'à la fin ?",
+        "skipBody": "Le reste de ce match est joué d'un coup et le résultat s'affiche. Vous ne le verrez pas se dérouler.",
+        "skipConfirm": "Afficher le résultat",
+        "resetTitle": "Recommencer ce match ?",
+        "resetBody": "Le match repart de la minute 0 et peut se dérouler autrement. Ce que vous avez déjà vu est perdu.",
+        "resetConfirm": "Recommencer"
+      },
       "spotlight": {
         "label": "À l'honneur",
         "others": "Autres actions en cours",
@@ -4678,6 +4691,14 @@
         "objective": "Obj."
       },
       "legend": {
+        "heading": "Légende de la carte",
+        "champions": "Les champions bleus sont ronds, les champions rouges sont des carrés arrondis",
+        "structures": "Tours, inhibiteurs et nexus : le bleu est rond, le rouge est un losange ; une forme hachurée est détruite",
+        "camp": "Petit losange gris : un camp de la jungle, plein tant que ses monstres sont là, contour en pointillés une fois nettoyé",
+        "ward": "Marqueur creux : une balise, ronde pour le bleu et en losange pour le rouge",
+        "push": "Badge près d'une structure : cette équipe la pousse, avec le temps restant de son avantage",
+        "items": "Les objets d'une carte sont des icônes ; leurs noms complets figurent dans la description de la carte",
+        "cooldowns": "Lettres d'une carte : R ultime, la première lettre d'un sort d'invocateur, W balise, O lentille de l'oracle ; le nombre est le nombre de secondes restantes",
         "ringRecall": "Anneau qui se vide : rappel, avec les secondes restantes",
         "ringDead": "Contour en pointillés avec un nombre : mort, secondes avant la réapparition",
         "dot": "Point sur le lien : qui frappe",

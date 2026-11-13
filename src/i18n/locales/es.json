@@ -4505,6 +4505,19 @@
       "importLimit": "Límite de importados alcanzado"
     },
     "match": {
+      "controls": {
+        "options": "Opciones de la partida",
+        "skip": "Saltar partida",
+        "reset": "Reiniciar partida",
+        "speedNote_one": "{{label}} = {{count}} segundo de partida por segundo",
+        "speedNote_other": "{{label}} = {{count}} segundos de partida por segundo",
+        "skipTitle": "¿Saltar hasta el final?",
+        "skipBody": "El resto de esta partida se juega de una vez y verás el resultado. No podrás verla desarrollarse.",
+        "skipConfirm": "Ver el resultado",
+        "resetTitle": "¿Empezar esta partida de nuevo?",
+        "resetBody": "La partida vuelve al minuto 0 y puede desarrollarse de otra forma. Lo que has visto hasta ahora se pierde.",
+        "resetConfirm": "Empezar de nuevo"
+      },
       "spotlight": {
         "label": "Foco de la partida",
         "others": "Otras cosas que pasan ahora",
@@ -4677,6 +4690,14 @@
         "objective": "Obj."
       },
       "legend": {
+        "heading": "Leyenda del mapa",
+        "champions": "Los campeones azules son redondos y los rojos, cuadrados con esquinas redondeadas",
+        "structures": "Torres, inhibidores y nexo: el azul es redondo y el rojo es un rombo; una forma rayada está destruida",
+        "camp": "Rombo gris pequeño: un campamento de la jungla, relleno mientras sus monstruos siguen y con borde discontinuo cuando está limpio",
+        "ward": "Marcador hueco: un centinela, redondo el azul y en rombo el rojo",
+        "push": "Insignia junto a una estructura: ese equipo la está empujando, con el tiempo que le queda a su ventaja",
+        "items": "Los objetos de una tarjeta son iconos; sus nombres completos están en la descripción de la tarjeta",
+        "cooldowns": "Letras de una tarjeta: R definitiva, la primera letra de un hechizo de invocador, W centinela, O lente del oráculo; el número son los segundos que faltan",
         "ringRecall": "Anillo que se vacía: regreso a base, con los segundos que faltan",
         "ringDead": "Contorno discontinuo con un número: caído, segundos para reaparecer",
         "dot": "Punto en el enlace: quién golpea",

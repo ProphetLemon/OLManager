@@ -4506,6 +4506,19 @@
       "importLimit": "İçe aktarma sınırına ulaşıldı"
     },
     "match": {
+      "controls": {
+        "options": "Maç seçenekleri",
+        "skip": "Maçı atla",
+        "reset": "Maçı sıfırla",
+        "speedNote_one": "{{label}} = saniyede {{count}} maç saniyesi",
+        "speedNote_other": "{{label}} = saniyede {{count}} maç saniyesi",
+        "skipTitle": "Sona kadar atlansın mı?",
+        "skipBody": "Bu maçın geri kalanı bir seferde oynanır ve sonuç gösterilir. Maçın nasıl geçtiğini izleyemezsiniz.",
+        "skipConfirm": "Sonucu göster",
+        "resetTitle": "Bu maç baştan başlasın mı?",
+        "resetBody": "Maç 0. dakikaya döner ve farklı geçebilir. Şimdiye kadar izledikleriniz kaybolur.",
+        "resetConfirm": "Baştan başla"
+      },
       "spotlight": {
         "label": "Odak",
         "others": "Şu anda olan diğer olaylar",
@@ -4678,6 +4691,14 @@
         "objective": "Hdf"
       },
       "legend": {
+        "heading": "Harita anahtarı",
+        "champions": "Mavi şampiyonlar yuvarlak, kırmızı şampiyonlar köşeleri yuvarlatılmış karedir",
+        "structures": "Kuleler, inhibitörler ve nexus: mavi yuvarlak, kırmızı eşkenar dörtgendir; taralı bir şekil yıkılmış demektir",
+        "camp": "Küçük gri eşkenar dörtgen: bir orman kampı; canavarları durdukça dolu, temizlenince kesik çizgili kenarlıdır",
+        "ward": "İçi boş işaret: bir totem, mavi için yuvarlak, kırmızı için eşkenar dörtgendir",
+        "push": "Bir yapının yanındaki rozet: o takım yapıyı itiyor; avantajının kalan süresi gösterilir",
+        "items": "Kartlardaki eşyalar simgedir; tam adları kartın açıklamasındadır",
+        "cooldowns": "Kartlardaki harfler: R ultimate, bir büyücü büyüsünün ilk harfi, W totem, O kahin merceği; sayı kalan saniyedir",
         "ringRecall": "Boşalan halka: geri dönüş, kalan saniyeyle birlikte",
         "ringDead": "Noktalı çerçeve ve bir sayı: ölü, yeniden doğmaya kalan saniye",
         "dot": "Bağlantıdaki nokta: kimin vurduğu",

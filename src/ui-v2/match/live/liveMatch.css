@@ -1577,3 +1577,188 @@
   border-color: var(--warning);
   color: var(--foreground);
 }
+
+/* ── Match controls and map key ──────────────────────────────────────────
+   Pause and speed sit in the open; Skip and Reset live in the options menu. The active speed is
+   bold, has the bar under it (from the primitive) and is underlined: it never rests on colour. */
+
+.arena-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+.arena-play {
+  min-width: 7.5rem;
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.arena-speed [role="radio"] {
+  font-family: var(--font-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.arena-speed [role="radio"][aria-checked="true"] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
+}
+
+.arena-speed-note {
+  color: var(--dim);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.arena-options {
+  margin-inline-start: auto;
+}
+
+.arena-legend {
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--rail);
+  color: var(--foreground);
+}
+
+.arena-legend-summary {
+  min-height: var(--target-min);
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.arena-legend-summary:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: -2px;
+}
+
+.arena-legend-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1.25rem;
+  margin: 0;
+  padding: 0 0.75rem 0.625rem;
+  list-style: none;
+}
+
+.arena-lg-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--text-caption);
+}
+
+.arena-lg-glyph {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 1.625rem;
+}
+
+.arena-lg-line {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 3;
+}
+
+.arena-lg-line[data-tone="warm"],
+.arena-lg-dot {
+  stroke: var(--warning);
+}
+
+.arena-lg-dot {
+  fill: var(--warning);
+}
+
+.arena-lg-line[data-dashed] {
+  stroke-dasharray: 4 3;
+}
+
+.arena-lg-chip {
+  padding: 0 0.375rem;
+  border: 2px solid var(--foreground);
+  border-radius: 0.25rem;
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+/* The rings are the same shapes the map draws: double for a fight, dashed for fire and the dead,
+   a part of a circle for a recall. */
+.arena-lg-ring {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--foreground);
+  border-radius: 50%;
+}
+
+.arena-lg-ring[data-ring="fighting"] {
+  border: 3px double var(--warning);
+}
+
+.arena-lg-ring[data-ring="fire"] {
+  border: 2px dashed var(--foreground);
+}
+
+.arena-lg-ring[data-ring="dead"] {
+  border: 2px dashed var(--dim);
+}
+
+.arena-lg-ring[data-ring="recall"] {
+  border-color: var(--foreground) var(--foreground) transparent transparent;
+}
+
+/* Blue is round and red a diamond (rounded square for a champion), as on the map. */
+.arena-lg-shape {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.arena-lg-shape[data-team="blue"] {
+  border: 3px solid var(--team-blue);
+  border-radius: 50%;
+}
+
+.arena-lg-shape[data-team="red"] {
+  border: 3px solid var(--team-red);
+  transform: rotate(45deg);
+}
+
+.arena-lg-shape[data-shape="champion"][data-team="red"] {
+  border-radius: 32%;
+  transform: none;
+}
+
+.arena-lg-shape[data-shape="structure"][data-team="red"] {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.arena-lg-camp {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--dim);
+  transform: rotate(45deg);
+}
+
+.arena-lg-icon {
+  width: 1rem;
+  height: 1rem;
+}
