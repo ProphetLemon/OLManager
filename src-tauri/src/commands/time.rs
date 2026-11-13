@@ -1045,6 +1045,178 @@ mod tests {
         assert_eq!(round_summary.completed_results.len(), 2);
     }
 
+    /// Round-summary game with a champion pool, every team's lineup saved in lane order
+    /// (`<p>-def0` Top, `<p>-mid0` Jungle, `<p>-def1` Mid, `<p>-fwd0` Adc, `<p>-gk` Support)
+    /// and the user's fixture set to `best_of`.
+    fn make_delegated_draft_game(best_of: u8) -> Game {
+        let mut game = make_round_summary_game();
+        let lineup = [
+            ("def0", LolRole::Top),
+            ("mid0", LolRole::Jungle),
+            ("def1", LolRole::Mid),
+            ("fwd0", LolRole::Adc),
+            ("gk", LolRole::Support),
+        ];
+        for (team_id, prefix) in [
+            ("team1", "a"),
+            ("team2", "b"),
+            ("team3", "c"),
+            ("team4", "d"),
+        ] {
+            let ids: Vec<String> = lineup
+                .iter()
+                .map(|(suffix, role)| {
+                    let id = format!("{prefix}-{suffix}");
+                    if let Some(player) = game.players.iter_mut().find(|p| p.id == id) {
+                        player.natural_position = *role;
+                        player.position = *role;
+                    }
+                    id
+                })
+                .collect();
+            if let Some(team) = game.teams.iter_mut().find(|t| t.id == team_id) {
+                team.active_lineup_ids = ids;
+            }
+        }
+        game.champion_patch.hidden_meta = ["top", "jungle", "mid", "adc", "support"]
+            .iter()
+            .flat_map(|role| {
+                (0..4).map(move |index| olm_core::champions::ChampionMetaEntry {
+                    champion_id: format!("{role}-{index}"),
+                    role: (*role).to_string(),
+                    tier: if index == 0 { "S" } else { "A" }.to_string(),
+                })
+            })
+            .collect();
+        if let Some(league) = game.leagues.first_mut() {
+            league.fixtures[0].best_of = best_of;
+        }
+        game
+    }
+
+    fn user_fixture_records(state: &StateManager) -> Vec<olm_core::domain::stats::PlayerMatchStatsRecord> {
+        state
+            .get_stats_state(|stats| {
+                stats
+                    .player_matches
+                    .iter()
+                    .filter(|record| record.fixture_id == "fix1")
+                    .cloned()
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    #[test]
+    fn delegated_match_records_champions_and_bans_in_its_stats() {
+        let state = StateManager::new();
+        state.set_game(make_delegated_draft_game(1));
+
+        advance_time_with_mode_internal(&state, "delegate").expect("delegate advance response");
+
+        let records = user_fixture_records(&state);
+        assert_eq!(records.len(), 10);
+        assert!(records.iter().all(|record| record.champion.is_some()));
+        assert!(
+            records
+                .iter()
+                .all(|record| !record.bans_json.is_empty() && record.bans_json != "[]")
+        );
+    }
+
+    #[test]
+    fn delegated_match_grants_champion_mastery_to_the_users_players() {
+        let state = StateManager::new();
+        state.set_game(make_delegated_draft_game(1));
+
+        advance_time_with_mode_internal(&state, "delegate").expect("delegate advance response");
+
+        let user_players_with_mastery = state
+            .get_game(|game| {
+                game.champion_masteries
+                    .iter()
+                    .filter(|entry| entry.player_id.starts_with("a-"))
+                    .count()
+            })
+            .expect("game");
+        assert_eq!(user_players_with_mastery, 5);
+    }
+
+    #[test]
+    fn delegated_best_of_three_ends_with_the_winner_on_two_wins() {
+        let state = StateManager::new();
+        state.set_game(make_delegated_draft_game(3));
+
+        advance_time_with_mode_internal(&state, "delegate").expect("delegate advance response");
+
+        let (home_wins, away_wins) = state
+            .get_game(|game| {
+                let result = game.leagues[0].fixtures[0]
+                    .result
+                    .as_ref()
+                    .expect("user fixture result");
+                (result.home_wins, result.away_wins)
+            })
+            .expect("game");
+        assert_eq!(home_wins.max(away_wins), 2);
+    }
+
+    #[test]
+    fn delegated_match_is_applied_to_the_standings_once() {
+        let state = StateManager::new();
+        state.set_game(make_delegated_draft_game(1));
+
+        advance_time_with_mode_internal(&state, "delegate").expect("delegate advance response");
+
+        let played: Vec<u32> = state
+            .get_game(|game| {
+                ["team1", "team2"]
+                    .iter()
+                    .filter_map(|id| {
+                        game.leagues[0]
+                            .standings
+                            .iter()
+                            .find(|entry| entry.team_id == *id)
+                            .map(|entry| entry.played)
+                    })
+                    .collect()
+            })
+            .expect("game");
+        assert_eq!(played, [1, 1]);
+        assert_eq!(user_fixture_records(&state).len(), 10);
+    }
+
+    #[test]
+    fn delegated_match_plays_the_saved_lineup_not_the_stronger_bench() {
+        let state = StateManager::new();
+        let mut game = make_delegated_draft_game(1);
+        let saved = game.teams[0].active_lineup_ids.clone();
+        for player in game
+            .players
+            .iter_mut()
+            .filter(|player| player.team_id.as_deref() == Some("team1"))
+        {
+            let strong = !saved.contains(&player.id);
+            let value = if strong { 95 } else { 40 };
+            player.attributes.mechanics = value;
+            player.attributes.laning = value;
+            player.attributes.teamfighting = value;
+        }
+        state.set_game(game);
+
+        advance_time_with_mode_internal(&state, "delegate").expect("delegate advance response");
+
+        let mut played: Vec<String> = user_fixture_records(&state)
+            .into_iter()
+            .filter(|record| record.team_id == "team1")
+            .map(|record| record.player_id)
+            .collect();
+        played.sort();
+        let mut expected = saved;
+        expected.sort();
+        assert_eq!(played, expected);
+    }
+
     #[test]
     fn advance_time_with_mode_ends_a_day_without_scrims_in_one_advance() {
         let state = StateManager::new();
