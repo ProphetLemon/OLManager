@@ -242,13 +242,16 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
             </CardContent>
           </Card>
 
-          {/* Vision */}
+          {/* Vision + duration. No match engine models vision yet, so a zero means "not recorded":
+              the tile waits for a value above 0, like the player profile card. */}
           {s && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-border bg-card p-4 text-center">
-                <p className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">{t("championPage.vision")}</p>
-                <p className="font-heading text-2xl font-black tabular-nums text-purple-400">{s.avg_vision.toFixed(0)}</p>
-              </div>
+            <div className={cn("grid gap-3", s.avg_vision > 0 ? "grid-cols-2" : "grid-cols-1")}>
+              {s.avg_vision > 0 && (
+                <div className="rounded-xl border border-border bg-card p-4 text-center">
+                  <p className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">{t("championPage.vision")}</p>
+                  <p className="font-heading text-2xl font-black tabular-nums text-purple-400">{s.avg_vision.toFixed(0)}</p>
+                </div>
+              )}
               <div className="rounded-xl border border-border bg-card p-4 text-center">
                 <p className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">{t("championPage.duration")}</p>
                 <p className="font-heading text-2xl font-black tabular-nums text-foreground">{t("championPage.minutesShort", { count: Math.round(s.avg_duration / 60) })}</p>
