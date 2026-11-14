@@ -4116,6 +4116,7 @@
         "readout": "{{time}}: {{team}} ahead by {{amount}}",
         "readoutEven": "{{time}}: even",
         "ahead": "{{team}} ahead",
+        "aheadByGold": "{{team}} ahead by {{amount}} gold",
         "scrubLabel": "Gold difference, minute by minute",
         "goldTableLabel": "Gold difference by minute",
         "columnTime": "Time",

@@ -37,6 +37,17 @@ describe("PostGameScoreboard", () => {
     expect(within(tableOf("Movistar KOI players")).getAllByRole("row")).toHaveLength(7);
   });
 
+  it("gives both teams the same column widths, so the two tables line up", () => {
+    show();
+    const widths = (name: string) => [...tableOf(name).querySelectorAll("colgroup col")].map((col) => col.getAttribute("data-col"));
+    const blue = widths("Shifters players");
+    expect(blue.length).toBeGreaterThan(3);
+    expect(widths("Movistar KOI players")).toEqual(blue);
+    expect(blue[0]).toBe("player");
+    // One <col> for every header cell of the table.
+    expect(blue).toHaveLength(tableOf("Shifters players").querySelectorAll("thead th").length);
+  });
+
   it("gives each team a result badge and its logo and tag, in the side's shape", () => {
     show();
     const blue = tableOf("Shifters players");
@@ -104,5 +115,22 @@ describe("PostGameScoreboard", () => {
     expect(screen.queryByText("34.7k")).not.toBeInTheDocument();
     // The rest of the row is still there.
     expect(screen.getAllByText("7/2/8").length).toBeGreaterThan(0);
+  });
+
+  it("fills the table's width for a simulated result: no cell of any row falls outside the header's columns", () => {
+    show({
+      champions: champions({ level: undefined, cs: undefined, damageDealt: undefined, items: undefined, trinketKey: undefined, summonerSpells: [] }),
+    });
+    for (const name of ["Shifters players", "Movistar KOI players"]) {
+      const table = tableOf(name);
+      const columns = table.querySelectorAll("colgroup col").length;
+      expect(columns).toBe(table.querySelectorAll("thead th").length);
+      for (const row of table.querySelectorAll("tr")) {
+        const span = [...row.children].reduce((sum, cell) => sum + Number(cell.getAttribute("colspan") ?? 1), 0);
+        expect(span, row.className).toBe(columns);
+      }
+      // The objectives are still shown, on a row of their own.
+      expect(within(table).getAllByRole("img", { name: /^Towers: / })).toHaveLength(1);
+    }
   });
 });

@@ -104,7 +104,8 @@ describe("DraftResultStage after a simulated match", () => {
   it("shows the scoreboard from the simulation's result, without the columns it cannot fill", () => {
     show(simulatedProps);
     const table = screen.getByRole("table", { name: "Shifters players" });
-    expect(within(table).getAllByRole("row")).toHaveLength(4);
+    // Header, two players, the totals and, with no items column to hold them, the objectives row.
+    expect(within(table).getAllByRole("row")).toHaveLength(5);
     expect(within(table).getAllByText("4/1/6").length).toBeGreaterThan(0);
     expect(within(table).queryByRole("columnheader", { name: "Level" })).not.toBeInTheDocument();
     expect(within(table).queryByRole("columnheader", { name: "CS" })).not.toBeInTheDocument();

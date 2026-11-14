@@ -287,6 +287,19 @@
   white-space: nowrap;
 }
 
+/* A narrow window: the series strip drops under the tabs and the MVP chip, on a row of its own. */
+@media (max-width: 63.9375rem) {
+  .pg-tabs {
+    flex-wrap: wrap;
+    padding-block: 0.375rem;
+  }
+
+  .pg-series {
+    flex: 1 0 100%;
+    order: 3;
+  }
+}
+
 .pg-mvpchip {
   display: flex;
   align-items: center;
@@ -395,6 +408,7 @@
 
 .pg-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   border: 1px solid var(--line);
   background: var(--card);
@@ -407,6 +421,35 @@
   border-bottom: 1px solid var(--line);
   text-align: start;
   vertical-align: middle;
+}
+
+/* Fixed widths for every column but the player's, which takes what is left. */
+.pg-table col[data-col="level"] {
+  width: 3.75rem;
+}
+
+.pg-table col[data-col="kda"] {
+  width: 6rem;
+}
+
+.pg-table col[data-col="cs"] {
+  width: 4rem;
+}
+
+.pg-table col[data-col="gold"] {
+  width: 5rem;
+}
+
+.pg-table col[data-col="damage"] {
+  width: 6.25rem;
+}
+
+.pg-table col[data-col="gear"] {
+  width: 12.5rem;
+}
+
+.pg-table col[data-col="spells"] {
+  width: 4.5rem;
 }
 
 .pg-head th {
@@ -660,8 +703,11 @@
   background: var(--card);
 }
 
+/* The panel keeps the height its marker rail and time axis need: when the window is shorter the
+   graphs tab scrolls, the panel does not shrink and draw over the panels under it. */
 .pg-panel[data-kind="line"] {
-  flex: 1 1 15.625rem;
+  flex: 1 0 15.625rem;
+  min-height: min-content;
 }
 
 .pg-panel-head {
@@ -764,7 +810,7 @@
   grid-template-columns: 2.875rem minmax(0, 1fr);
   grid-template-rows: minmax(6.25rem, 1fr) auto auto;
   column-gap: 0.375rem;
-  min-height: 0;
+  min-height: min-content;
   padding-inline-end: 1rem;
 }
 

@@ -8,7 +8,6 @@ import {
   GraduationCap,
   Info,
   Loader2,
-  Search,
   Sparkles,
   Star,
   TrendingUp,
@@ -40,6 +39,7 @@ import {
   TableRow,
 } from "@/ui-v2/components/ui/table";
 import { cn } from "@/ui-v2/lib/utils";
+import { AcademySearchField } from "./youth/AcademySearchField";
 import { activeCurrencySymbol, formatNumber } from "@/lib/formatting/valueFormatting";
 
 interface YouthTabV2Props {
@@ -498,17 +498,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
             <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
               {academyTeam ? t("youthAcademy.academyRosterLinked") : t("youthAcademy.academyNotLinked")}
             </CardTitle>
-            {youthPlayers.length > 0 && (
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("youthAcademy.searchPlaceholder", "Buscar...")}
-                className="h-7 w-40 rounded-md border border-border bg-muted/30 pl-7 pr-2 text-xs text-foreground placeholder:text-muted-foreground/50"
-              />
-            </div>
-          )}
+            {youthPlayers.length > 0 && <AcademySearchField value={searchQuery} onChange={setSearchQuery} />}
         </CardHeader>
         <CardContent className="flex-1 p-0">
             <div className="overflow-x-auto">

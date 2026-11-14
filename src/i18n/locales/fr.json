@@ -4081,6 +4081,7 @@
         "readout": "{{time}} : {{team}} mène de {{amount}}",
         "readoutEven": "{{time}} : égalité",
         "ahead": "{{team}} devant",
+        "aheadByGold": "{{team}} devant de {{amount}} d'or",
         "scrubLabel": "Écart d'or, minute par minute",
         "goldTableLabel": "Écart d'or par minute",
         "columnTime": "Temps",

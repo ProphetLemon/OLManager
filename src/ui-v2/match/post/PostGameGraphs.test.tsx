@@ -92,6 +92,16 @@ describe("the team gold difference chart", () => {
     expect(within(table).getByRole("rowheader", { name: "31:48" })).toBeInTheDocument();
   });
 
+  it("says in the table that each lead is gold, so a bare 28 is not a mystery", () => {
+    show({ matchRecord: skipped() });
+    fireEvent.click(within(screen.getByTestId("gold-diff-chart")).getByRole("button", { name: "Table" }));
+    const table = screen.getByRole("table", { name: "Gold difference by minute" });
+    const cells = within(table).getAllByRole("cell").map((cell) => cell.textContent ?? "");
+    const leads = cells.filter((text) => /ahead/.test(text));
+    expect(leads.length).toBeGreaterThan(0);
+    for (const text of leads) expect(text, text).toMatch(/ahead by [\d.,]+k? gold$/);
+  });
+
   it("marks objectives and structures on the time axis, each with its time and sentence", () => {
     show();
     const rail = screen.getByRole("group", { name: "Objectives and structures, in time order" });

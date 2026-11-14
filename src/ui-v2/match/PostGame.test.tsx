@@ -171,7 +171,7 @@ describe("PostGame with a state saved before matches kept a record", () => {
     expect(within(rows[0]).getByText("Paduck eliminated Supa")).toBeInTheDocument();
     // An event with no code keeps the line it was stored with.
     expect(within(rows[1]).getByText("BLUE secured baron")).toBeInTheDocument();
-    expect(within(rows[2]).getByText("Blue destroyed the nexus")).toBeInTheDocument();
+    expect(within(rows[2]).getByText("SHI destroyed the nexus")).toBeInTheDocument();
     expect(rows).toHaveLength(3);
   });
 

@@ -210,7 +210,7 @@ export default function PostGame({ snapshot, gameState, userSide, finalRuntimeSt
         ) : view === "graphs" ? (
           <PostGameGraphs board={board} record={record} entries={entries} blue={blue} red={red} championByPlayerId={championByPlayerId} />
         ) : (
-          <PostGameTimeline entries={entries} championByPlayerId={championByPlayerId} partialFromSec={partialFromSec} />
+          <PostGameTimeline entries={entries} championByPlayerId={championByPlayerId} partialFromSec={partialFromSec} teams={{ blue: blue.tag, red: red.tag }} />
         )}
       </main>
 
