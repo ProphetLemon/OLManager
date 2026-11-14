@@ -8,6 +8,7 @@ use crate::domain::stats::{
 };
 use crate::game::Game;
 use crate::messages;
+use crate::potential::{calculate_lol_ovr, effective_potential_cap};
 use log::debug;
 
 fn compact_team_stats(
@@ -616,6 +617,10 @@ fn apply_lol_profile_progression(
         let mut d_leadership = scale_delta(shotcalling_delta, shot_num, 2) + discipline_delta;
         let mut d_passing = champion_pool_delta + scale_delta(macro_delta, macro_num, 3);
 
+        // Same gate as training: a player at or above the potential cap stops
+        // improving, while a bad match can still cost him attribute points.
+        let at_potential_cap = calculate_lol_ovr(player) >= effective_potential_cap(player);
+
         for delta in [
             &mut d_dribbling,
             &mut d_agility,
@@ -630,6 +635,9 @@ fn apply_lol_profile_progression(
             &mut d_passing,
         ] {
             *delta = (*delta).clamp(-2, 2);
+            if at_potential_cap {
+                *delta = (*delta).min(0);
+            }
         }
 
         player.attributes.mechanics =
@@ -1056,5 +1064,170 @@ mod vision_progression_tests {
             assert_eq!(base, outcome(role, 1, 0), "{role:?} low vision");
             assert_eq!(base, outcome(role, 90, 0), "{role:?} high vision");
         }
+    }
+}
+
+#[cfg(test)]
+mod progression_bound_tests {
+    use super::apply_lol_profile_progression;
+    use crate::clock::GameClock;
+    use crate::domain::manager::Manager;
+    use crate::domain::player::{LolRole as PlayerRole, Player, PlayerAttributes};
+    use crate::engine::sim_background::LolRole;
+    use crate::engine::{MatchReport, MatchReportEndReason, PlayerMatchStats, TeamStats};
+    use crate::game::Game;
+    use crate::potential::calculate_lol_ovr;
+    use chrono::{TimeZone, Utc};
+    use std::collections::HashMap;
+
+    const MINUTES: u32 = 30;
+
+    fn flat_attrs(level: u8) -> PlayerAttributes {
+        PlayerAttributes {
+            mechanics: level,
+            laning: level,
+            teamfighting: level,
+            macro_play: level,
+            consistency: level,
+            shotcalling: level,
+            champion_pool: level,
+            discipline: level,
+            mental_resilience: level,
+        }
+    }
+
+    fn game_with_player(level: u8, potential_base: u8, potential_revealed: Option<u8>) -> Game {
+        let mut player = Player::new(
+            "p1".to_string(),
+            "P1".to_string(),
+            "Player One".to_string(),
+            "1998-03-15".to_string(),
+            "England".to_string(),
+            PlayerRole::Mid,
+            flat_attrs(level),
+        );
+        player.team_id = Some("home".to_string());
+        player.potential_base = potential_base;
+        player.potential_revealed = potential_revealed;
+
+        let mut manager = Manager::new(
+            "m".to_string(),
+            "A".to_string(),
+            "B".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        manager.hire("home".to_string());
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2025, 8, 12, 12, 0, 0).unwrap());
+        Game::new(clock, manager, vec![], vec![player], vec![], vec![])
+    }
+
+    fn report_for(stats: PlayerMatchStats) -> MatchReport {
+        MatchReport {
+            home_wins: 1,
+            away_wins: 0,
+            home_stats: TeamStats::default(),
+            away_stats: TeamStats::default(),
+            events: vec![],
+            kill_feed: vec![],
+            player_stats: HashMap::from([("p1".to_string(), stats)]),
+            home_possession: 50.0,
+            total_minutes: MINUTES as u8,
+            game_duration_seconds: MINUTES * 60,
+            ended_by: MatchReportEndReason::TimeLimit,
+        }
+    }
+
+    /// A dominant game: every positive threshold of every role term is met.
+    fn strong_report() -> MatchReport {
+        report_for(PlayerMatchStats {
+            role: Some(LolRole::Mid),
+            duration_seconds: MINUTES * 60,
+            kills: 9,
+            deaths: 0,
+            assists: 12,
+            creep_score: 300,
+            damage_dealt: 30_000,
+            vision_score: 30,
+            wards_placed: 6,
+            ..Default::default()
+        })
+    }
+
+    /// A losing game: deaths and missing farm trip every negative threshold.
+    fn weak_report() -> MatchReport {
+        report_for(PlayerMatchStats {
+            role: Some(LolRole::Mid),
+            duration_seconds: MINUTES * 60,
+            kills: 0,
+            deaths: 12,
+            assists: 1,
+            creep_score: 90,
+            damage_dealt: 6_000,
+            vision_score: 2,
+            wards_placed: 0,
+            ..Default::default()
+        })
+    }
+
+    fn attribute_sum(game: &Game) -> u32 {
+        let a = &game.players[0].attributes;
+        [
+            a.mechanics,
+            a.laning,
+            a.teamfighting,
+            a.macro_play,
+            a.consistency,
+            a.shotcalling,
+            a.champion_pool,
+            a.discipline,
+            a.mental_resilience,
+        ]
+        .iter()
+        .map(|v| u32::from(*v))
+        .sum()
+    }
+
+    #[test]
+    fn player_far_below_potential_should_still_gain_from_a_strong_match() {
+        let mut game = game_with_player(60, 99, None);
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        assert!(attribute_sum(&game) > before);
+    }
+
+    #[test]
+    fn player_at_potential_should_not_gain_from_a_strong_match() {
+        let mut game = game_with_player(80, 80, None);
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        assert_eq!(attribute_sum(&game), before);
+    }
+
+    #[test]
+    fn player_at_revealed_potential_should_not_gain_when_base_potential_is_higher() {
+        let mut game = game_with_player(80, 99, Some(80));
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        assert_eq!(attribute_sum(&game), before);
+    }
+
+    #[test]
+    fn player_at_potential_should_still_lose_from_a_weak_match() {
+        let mut game = game_with_player(80, 80, None);
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &weak_report(), "home", "away");
+        assert!(attribute_sum(&game) < before);
+    }
+
+    #[test]
+    fn many_strong_matches_should_not_push_ovr_past_potential() {
+        let mut game = game_with_player(70, 85, None);
+        for appearance in 1..=400 {
+            game.players[0].stats.appearances = appearance;
+            apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        }
+        // The gate reads the OVR before each match, so the last match may overshoot by its own gain.
+        assert!(calculate_lol_ovr(&game.players[0]) <= 87);
     }
 }
