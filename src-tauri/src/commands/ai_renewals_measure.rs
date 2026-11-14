@@ -19,12 +19,13 @@ use chrono::NaiveDate;
 use olm_core::ai_team_agent::{renewal_score, retention_score};
 use olm_core::contract_wage_policy::renewal_wage_policy_allows;
 use olm_core::contracts::{contract_warning_stage, expected_wage, ContractWarningStage};
-use olm_core::domain::league::LeagueKind;
+use olm_core::domain::league::{FixtureStatus, LeagueKind};
 use olm_core::domain::player::{Player, RenewalSessionStatus};
 use olm_core::domain::team::{Team, TeamKind};
 use olm_core::game::Game;
 use olm_core::{end_of_season, season_rollover, turn};
 
+use super::ai_market_counters::{generated_starter_slots, MarketCounters};
 use super::ai_repair_counters::{generated_by_reason, RepairCounters};
 use super::world_progression_measure::build_start_world;
 
@@ -405,6 +406,46 @@ fn staffed_ai_teams(game: &Game) -> (usize, usize) {
     (staffed, teams.len())
 }
 
+/// AI main-league clubs with fewer than five players at the end: how many there are, how many
+/// play in a competition with a fixture still scheduled after `until`, and how many have any
+/// scheduled fixture left.
+fn understaffed_with_fixtures(game: &Game, until: NaiveDate) -> (u32, u32, u32) {
+    let user = game.manager.team_id.as_deref();
+    let until = until.format("%Y-%m-%d").to_string();
+    let (mut total, mut after_window, mut any) = (0, 0, 0);
+    for team in game.teams.iter().filter(|t| {
+        t.team_kind == TeamKind::Main
+            && t.manager_id.is_none()
+            && user != Some(t.id.as_str())
+            && in_main_league(game, &t.id)
+    }) {
+        let players = game
+            .players
+            .iter()
+            .filter(|p| p.team_id.as_deref() == Some(team.id.as_str()))
+            .count();
+        if players >= 5 {
+            continue;
+        }
+        total += 1;
+        let scheduled = |after: Option<&str>| {
+            game.leagues.iter().any(|league| {
+                league
+                    .standings
+                    .iter()
+                    .any(|entry| entry.team_id == team.id)
+                    && league.fixtures.iter().any(|f| {
+                        f.status == FixtureStatus::Scheduled
+                            && after.is_none_or(|date| f.date.as_str() > date)
+                    })
+            })
+        };
+        any += u32::from(scheduled(None));
+        after_window += u32::from(scheduled(Some(until.as_str())));
+    }
+    (total, after_window, any)
+}
+
 /// Everything one run prints.
 struct Measurement {
     starters: RenewalOutcomes,
@@ -413,6 +454,8 @@ struct Measurement {
     movement: Movement,
     /// Moves made by the contract-expiry step (release, then the repair's signings).
     repair_movement: Movement,
+    market: MarketCounters,
+    understaffed_with_fixtures: (u32, u32, u32),
     rollovers: u32,
     peak_open: usize,
     session_states: String,
@@ -450,6 +493,7 @@ fn measure(until: NaiveDate) -> Measurement {
     let mut rollovers = 0;
     let mut peak_open = 0;
     let mut repair = RepairCounters::default();
+    let mut market = MarketCounters::default();
     let generated_by_reason_at_start = generated_by_reason(&game);
     while game.clock.current_date.date_naive() < until {
         if end_of_season::is_season_complete(&game) {
@@ -464,10 +508,19 @@ fn measure(until: NaiveDate) -> Measurement {
             count_moves(&teams, &now, &mut repair_movement);
             teams = now;
         }
+        // The state the market acts on: after the expiry step, before the day's AI decisions.
+        let generated_slots = generated_starter_slots(&game);
+        market.maybe_sample(&game);
         turn::process_day(&mut game);
         peak_open = peak_open.max(open_ai_sessions(&game));
         let now = team_of_each_player(&game);
         count_moves(&teams, &now, &mut movement);
+        for (id, team) in &now {
+            if let (Some(None), Some(buyer)) = (teams.get(id), team) {
+                let player = game.players.iter().find(|p| &p.id == id);
+                market.record_signing(&generated_slots, buyer, player);
+            }
+        }
         teams = now;
     }
     Measurement {
@@ -476,6 +529,8 @@ fn measure(until: NaiveDate) -> Measurement {
         repaired_starters: classify(&game, &tracked, |t| t.starter && t.repaired_club),
         movement,
         repair_movement,
+        market,
+        understaffed_with_fixtures: understaffed_with_fixtures(&game, until),
         rollovers,
         peak_open,
         session_states: session_states(&game, &tracked),
@@ -689,6 +744,13 @@ fn ai_renewals_measure() {
     println!(
         "market (process_day): club-to-club moves {} | released {} | signed from free agency {}",
         run.movement.club_to_club, run.movement.released, run.movement.signed_from_free
+    );
+    run.market.print();
+    println!(
+        "AI main-league clubs with fewer than 5 players at the end: {} | in a competition with fixtures scheduled after the window end: {} | with any fixture still scheduled: {}",
+        run.understaffed_with_fixtures.0,
+        run.understaffed_with_fixtures.1,
+        run.understaffed_with_fixtures.2
     );
     println!(
         "contract-expiry step: released {} | re-signed by another club the same day {} | signed from free agency {}",
