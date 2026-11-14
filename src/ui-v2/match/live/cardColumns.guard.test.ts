@@ -187,3 +187,25 @@ describe("player card columns at 1366x768", () => {
     expect(declared(ruleIn(compact, ".live-side .arena-card-vitals"), "block-size")).toBe("1.0625rem");
   });
 });
+
+describe("the timer rail's tiles on short windows", () => {
+  const short = blockOf("@container live (max-height: 848px) and (min-width: 1240px) {");
+  const FRAME_PX = 2 * 2;
+  const LABEL_PX = 12;
+
+  it("shrinks the number to 1rem on one line height, and gives the feed's heading up, only where the module is 72px or 68px", () => {
+    expect(declared(ruleIn(short, ".arena-rail-value"), "font-size")).toBe("1rem");
+    expect(declared(ruleIn(short, ".arena-rail-value"), "line-height")).toBe("1");
+    expect(declared(ruleIn(short, ".arena-rail-text"), "line-height")).toBe("1");
+    expect(ruleIn(short, ".live-area-dock .arena-ticker-heading")).toMatch(/display:\s*none/);
+  });
+
+  it("fits the two lines of a tile with the heavy frame of a monster that is up, in the 68px module of 1366x768", () => {
+    const tight = px(declared(ruleIn(blockOf(TIGHT), ".live-shell"), "--live-low"));
+    // Two tiles and the 4px gap between them fill the module.
+    const tile = (tight - px(declared(ruleIn(css, ".arena-rail"), "gap"))) / 2;
+    const text = LABEL_PX + px(declared(ruleIn(short, ".arena-rail-value"), "font-size"));
+    expect(tile).toBe(32);
+    expect(text).toBeLessThanOrEqual(tile - FRAME_PX);
+  });
+});

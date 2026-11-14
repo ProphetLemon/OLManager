@@ -2723,6 +2723,18 @@
   padding: 0.25rem 0.5rem;
 }
 
+/* The sentence and "Stop following" share one line, so a followed player does not take the feed's room. */
+.live-area-dock .arena-spotlight {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.live-area-dock .arena-sp-head {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .live-area-dock .arena-sp-line {
   display: -webkit-box;
   flex-basis: 0;
@@ -2841,6 +2853,24 @@
   .live-side .arena-card {
     gap: 1px;
     padding-block: 1px;
+  }
+}
+
+/* On the short windows the low module is 72px or 68px (see the two steps above, which change spacing
+   only): a tile is 34px or 32px with its frame, so the two lines of 12px and 16px text fit, and the
+   feed's heading, hidden from assistive technology already, gives its line up to the rows. */
+@container live (max-height: 848px) and (min-width: 1240px) {
+  .arena-rail-text {
+    line-height: 1;
+  }
+
+  .arena-rail-value {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .live-area-dock .arena-ticker-heading {
+    display: none;
   }
 }
 
