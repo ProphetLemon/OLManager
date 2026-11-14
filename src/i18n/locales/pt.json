@@ -619,6 +619,9 @@
     "custom": {
       "create": "Cria a tua equipa",
       "createHint": "Junta o teu clube a esta liga ou substitui um.",
+      "disabledInvalid": "Preenche primeiro os dados do clube nos passos anteriores.",
+      "disabledLoading": "Aguarda até que o plantel fundador seja gerado.",
+      "disabledFailed": "Tenta primeiro de novo o plantel fundador: não foi possível gerá-lo.",
       "title": "Cria a tua equipa",
       "subtitle": "Junta o teu clube a esta liga ou substitui um dos seus clubes",
       "stepOf": "Passo {{current}} de {{total}}",
@@ -2117,6 +2120,7 @@
     "about": "Sobre",
     "statsCredit": "As avaliações dos jogadores em novos jogos derivam de estatísticas de partidas profissionais da Leaguepedia (lol.fandom.com), licenciadas sob CC BY-SA 3.0.",
     "riotNotice": "O Open League Manager não é apoiado nem patrocinado pela Riot Games e não reflete as opiniões da Riot Games nem de qualquer pessoa oficialmente envolvida na produção ou gestão das propriedades da Riot Games. League of Legends e Riot Games são marcas comerciais ou marcas registadas da Riot Games, Inc.",
+    "marksNotice": "Os nomes das equipas, os logótipos e as fotografias dos jogadores pertencem aos seus respetivos proprietários. O Open League Manager é um projeto de fãs não oficial e sem fins comerciais, não está afiliado a essas equipas, ligas ou jogadores nem é apoiado por eles.",
     "matchModes": {
       "live": "Ir para o Rift",
       "liveDesc": "Controlo total do jogo",

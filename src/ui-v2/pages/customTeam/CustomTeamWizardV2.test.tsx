@@ -417,6 +417,31 @@ describe("CustomTeamWizardV2 founding squad step", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Create club" })).toBeEnabled());
   });
 
+  it("tells assistive technology why Create club is disabled, and stops once it is enabled", async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const fake = previewInvoke(previewCalls);
+    mocks.invoke.mockImplementation(async (command: string, args?: unknown) => {
+      await gate;
+      return fake(command, args);
+    });
+    setup();
+    toReviewStep();
+    fireEvent.click(next());
+    const confirm = screen.getByRole("button", { name: "Create club" });
+    expect(confirm).toBeDisabled();
+    expect(confirm).toHaveAccessibleDescription("Wait until the founding squad has been generated.");
+
+    release();
+    await screen.findByTestId("founder-mid");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Create club" })).toBeEnabled());
+    const ready = screen.getByRole("button", { name: "Create club" });
+    expect(ready).not.toHaveAttribute("aria-describedby");
+    expect(ready).toHaveAccessibleDescription("");
+  });
+
   it("offers a retry when the preview fails", async () => {
     mocks.invoke.mockRejectedValueOnce("backend down");
     setup();

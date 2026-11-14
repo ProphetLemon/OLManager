@@ -188,6 +188,14 @@ export default function CustomTeamWizardV2({
   const validation = validateCustomTeam(draft, teams);
   const stepFields = (Object.keys(FIELD_STEP) as CustomTeamField[]).filter((f) => FIELD_STEP[f] === step);
   const stepValid = stepFields.every((field) => !validation.errors[field]);
+  // Why "Create club" is unavailable, for assistive technology; null when it can be used.
+  const confirmBlockedReason: string | null = isSubmitting
+    ? t("teamSelect.confirming")
+    : !validation.ok
+      ? t("teamSelect.custom.disabledInvalid")
+      : !squad.inSync
+        ? t(squad.status === "error" ? "teamSelect.custom.disabledFailed" : "teamSelect.custom.disabledLoading")
+        : null;
   // Fields of earlier steps that collide with a club which stays in the league. Joining keeps
   // every club, so switching the mode can turn a valid name or tag into a clash.
   const modeClashes = (Object.keys(validation.errors) as CustomTeamField[]).filter(
@@ -872,15 +880,23 @@ export default function CustomTeamWizardV2({
                 <ArrowRight className="size-4" aria-hidden="true" />
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={handleConfirm}
-                disabled={!validation.ok || isSubmitting || !squad.inSync}
-                className="flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-              >
-                {isSubmitting && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                {t("teamSelect.custom.actions.confirm")}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  disabled={confirmBlockedReason !== null}
+                  aria-describedby={confirmBlockedReason ? "custom-team-confirm-reason" : undefined}
+                  className="flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {isSubmitting && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+                  {t("teamSelect.custom.actions.confirm")}
+                </button>
+                {confirmBlockedReason && (
+                  <span id="custom-team-confirm-reason" className="sr-only">
+                    {confirmBlockedReason}
+                  </span>
+                )}
+              </>
             )}
           </div>
         </CardContent>

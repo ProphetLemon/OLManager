@@ -620,6 +620,9 @@
     "custom": {
       "create": "Crie seu time",
       "createHint": "Adicione seu clube a esta liga ou substitua um.",
+      "disabledInvalid": "Preencha primeiro os dados do clube nas etapas anteriores.",
+      "disabledLoading": "Aguarde até que o elenco fundador seja gerado.",
+      "disabledFailed": "Tente primeiro de novo o elenco fundador: não foi possível gerá-lo.",
       "title": "Crie seu time",
       "subtitle": "Adicione seu clube a esta liga ou substitua um dos clubes dela",
       "stepOf": "Etapa {{current}} de {{total}}",
@@ -2118,6 +2121,7 @@
     "about": "Sobre",
     "statsCredit": "As notas dos jogadores em novos jogos são derivadas de estatísticas de partidas profissionais da Leaguepedia (lol.fandom.com), licenciadas sob CC BY-SA 3.0.",
     "riotNotice": "O Open League Manager não é endossado nem patrocinado pela Riot Games e não reflete as opiniões da Riot Games nem de qualquer pessoa oficialmente envolvida na produção ou no gerenciamento das propriedades da Riot Games. League of Legends e Riot Games são marcas comerciais ou marcas registradas da Riot Games, Inc.",
+    "marksNotice": "Os nomes dos times, os logotipos e as fotos dos jogadores pertencem aos seus respectivos proprietários. O Open League Manager é um projeto de fãs não oficial e sem fins comerciais, não é afiliado a esses times, ligas ou jogadores nem é endossado por eles.",
     "matchModes": {
       "live": "Ir para o Rift",
       "liveDesc": "Controle total da partida",
