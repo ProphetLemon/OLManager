@@ -4113,7 +4113,7 @@
         "readout": "{{time}}: {{team}} lidera por {{amount}}",
         "readoutEven": "{{time}}: igualado",
         "ahead": "{{team}} por delante",
-        "aheadByGold": "{{team}} por delante por {{amount}} de oro",
+        "aheadByGold": "{{team}} lidera por {{amount}} de oro",
         "scrubLabel": "Diferencia de oro, minuto a minuto",
         "goldTableLabel": "Diferencia de oro por minuto",
         "columnTime": "Tiempo",

@@ -79,8 +79,10 @@ describe("no scroll at 1280x800", () => {
     const side = /--map-side:\s*max\(([^;]*)\);/.exec(ruleBody(".live-shell"))?.[1] ?? "";
     expect(side).toMatch(/100cqw[^,]*--live-col-min/);
     expect(ruleBody(".live-match")).toMatch(/--live-col-min:\s*21rem/);
-    // The `side` container turns the card's cooldowns into a second line below 21rem (336px).
-    expect(css).toContain("@container side (max-width: 21rem)");
+    // The `side` container turns the card's cooldowns into a second line, but only below 19rem (304px):
+    // the narrowest side-by-side column (21rem) keeps items and cooldowns on one line (see cardColumns.guard).
+    expect(css).toContain("@container side (max-width: 19rem)");
+    expect(css).not.toContain("@container side (max-width: 21rem)");
   });
 
   it("counts the taller bar of narrow windows in the room it takes off the map", () => {
@@ -97,6 +99,16 @@ describe("the score bar fits at 1280 and 1440", () => {
     expect(body).toMatch(/\.arena-bar-side\s*\{[^}]*flex-wrap:\s*wrap/);
     expect(body).toMatch(/\.arena-bar-stats\s*\{[^}]*flex:\s*1 0 100%/);
     expect(ruleBody(".arena-bar-stats")).toMatch(/display:\s*contents/);
+  });
+
+  it("draws the high-contrast underline of a side outside its box, in the bar's bottom padding, not over the stats row (T13 D3)", () => {
+    const hc = ruleBody(':root[data-contrast="high"] .arena-bar-side');
+    expect(hc).not.toMatch(/inset/);
+    const shadow = /box-shadow:\s*0\s+([\d.]+)rem\s+0\s+var\(--team-color\)/.exec(hc);
+    expect(shadow).not.toBeNull();
+    // The bar pads its content by 0.25rem below, which is all the line may use.
+    expect(ruleBody(".arena-bar")).toMatch(/padding:\s*0\.25rem\s/);
+    expect(Number(shadow![1])).toBeLessThanOrEqual(0.25);
   });
 });
 
@@ -164,5 +176,26 @@ describe("the stage: a band, the cards and a low module in each column, and the 
     const mid = css.slice(atRuleStart("@container live (max-width: 1239px)"));
     expect(ruleBody(".live-area-lanes", atRuleStart("@container live (max-width: 1239px)"))).toMatch(/inline-size:\s*var\(--map-side\)/);
     expect(mid).toContain("justify-self: center");
+  });
+});
+
+describe("the lane strip at the 960x640 minimum (T13 D4)", () => {
+  const start = atRuleStart("@container lanes (max-width: 26rem)");
+  const block = css.slice(start, css.indexOf("\n}\n", start));
+
+  it("stacks the name over a full-width track in a strip narrower than 26rem, so both ends of the track show", () => {
+    // 960px gives a 352px strip, 114px a cell: name (about 56px) + 62px track + gaps did not fit.
+    expect(352).toBeLessThan(26 * 16);
+    expect(block).toMatch(/\.arena-lane\s*\{[^}]*display:\s*grid/);
+    expect(block).toMatch(/\.arena-lane-track\s*\{[^}]*grid-column:\s*1 \/ -1[^}]*inline-size:\s*auto/);
+    expect(block).toMatch(/\.arena-lane-text\s*\{[^}]*display:\s*none/);
+    // The word of a fight shares the name's row instead of opening a third one.
+    expect(block).toMatch(/\.arena-lane-fight\s*\{[^}]*grid-area:\s*1 \/ 2/);
+  });
+
+  it("fits the 44px strip with the double frame of a fight: 16px name row, 22px track, 6px of frame", () => {
+    expect(block).toMatch(/\.arena-lane-name\s*\{[^}]*font-size:\s*1rem/);
+    expect(ruleBody(".arena-lane-track")).toMatch(/block-size:\s*1\.375rem/);
+    expect(16 + 22 + 2 * 3).toBeLessThanOrEqual(44);
   });
 });

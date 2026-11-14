@@ -42,6 +42,7 @@ function ruleIn(text: string, selector: string): string {
 
 /** A length in px or rem, as pixels. */
 function px(value: string): number {
+  if (value.trim() === "0") return 0;
   const match = value.trim().match(/^([\d.]+)(px|rem)$/);
   expect(match, value).not.toBeNull();
   return Number(match![1]) * (match![2] === "rem" ? ROOT_PX : 1);
@@ -51,6 +52,76 @@ function declared(body: string, property: string): string {
   const match = body.match(new RegExp(`(?:^|[\\s;])${property}\\s*:\\s*([^;]+);`));
   expect(match, property).not.toBeNull();
   return match![1];
+}
+
+
+/** Every rule body whose selector list holds `selector` inside `text`, in source order. */
+function rulesFor(text: string, selector: string): string[] {
+  const escaped = selector.replace(/[.[\]"=*+?^${}()|\\]/g, "\\$&");
+  const pattern = `(?:^|\\n)\\s*(?:[^{}]*,\\s*)?${escaped}\\s*(?:,[^{}]*)?\\{([^}]*)\\}`;
+  return [...text.matchAll(new RegExp(pattern, "g"))].map((match) => match[1]);
+}
+
+/**
+ * A property as the step blocks leave it: the last block that sets it wins, then the base rule, then
+ * `fallback` (the value the stylesheet uses where the base rule says nothing). `blocks` run from the
+ * first step to the last, as the stylesheet applies them.
+ */
+function cascade(selector: string, property: string, base: string, blocks: string[], fallback?: string): string {
+  const pick = (text: string, name: string) => {
+    for (const body of rulesFor(text, name).reverse()) {
+      const hit = body.match(new RegExp(`(?:^|[\\s;])${property}\\s*:\\s*([^;]+);`))?.[1];
+      if (hit) return hit;
+    }
+    return undefined;
+  };
+  for (const text of [...blocks].reverse()) {
+    const hit = pick(text, selector);
+    if (hit) return hit;
+  }
+  const hit = pick(css, base);
+  if (hit) return hit;
+  if (fallback === undefined) throw new Error(`${selector} ${property}`);
+  return fallback;
+}
+
+const SECTION_PX = 22; // --text-section, 1.375rem
+const CAPTION_PX = 12; // --text-caption, 0.75rem
+const FACE_PX = 36; // .arena-card-face, 2.25rem
+/** The gear row's wrap is decided by the width of the `side` container: its widest wrapping width. */
+const sideBreakPx = () => Number(css.match(/@container side \(max-width: ([\d.]+)rem\)/)![1]) * ROOT_PX;
+/** The narrowest card column beside the map: the map is capped so a column never gets less. */
+const colMinPx = () => px(declared(ruleIn(css, ".live-match"), "--live-col-min"));
+/** The 17px strip the cooldowns get on a line of their own, and the 3px between the lines. */
+const WRAPPED_STRIP_PX = 17;
+const WRAPPED_GAP_PX = 3;
+
+/** What a card is tall, from the cascade of `blocks` and a column `columnPx` wide (content box of the column). */
+function cardPx(blocks: string[], columnPx: number): number {
+  const card = ".live-side .arena-card";
+  const padding = px(cascade(card, "padding-block", ".arena-card", blocks, "4px"));
+  const rowGap = px(cascade(card, "gap", ".arena-card", blocks));
+  // The item slot is 1.375rem unless a step sets --arena-slot on the column.
+  const slot = px(cascade(".live-side", "--arena-slot", ".live-side", blocks, "1.375rem"));
+  const vitals = px(cascade(".live-side .arena-card-vitals", "block-size", ".arena-card-vitals", blocks));
+  // The head is the tallest of the portrait, the name over the chips, and the kills over the farm line.
+  const whoGap = px(cascade(".live-side .arena-card-who", "gap", ".arena-card-who", blocks));
+  const chipLine = Number(cascade(".live-side .arena-chip-text", "line-height", ".arena-chip-text", blocks));
+  const who = SECTION_PX + whoGap + CAPTION_PX * chipLine + BORDER_PX;
+  const scoreGap = px(cascade(".live-side .arena-card-score", "gap", ".arena-card-score", blocks));
+  // Where nothing sets it the farm line takes the page's 1.5.
+  const farmLine = Number(cascade(".live-side .arena-card-farm", "line-height", ".arena-card-farm", blocks, "1.5"));
+  const score = SECTION_PX + scoreGap + CAPTION_PX * farmLine;
+  const head = Math.max(FACE_PX, who, score);
+  // Under the `side` breakpoint the cooldowns take a line of their own, in every card.
+  const gear = columnPx <= sideBreakPx() ? slot + WRAPPED_GAP_PX + WRAPPED_STRIP_PX : slot;
+  return BORDER_PX + 2 * padding + head + vitals + gear + 2 * rowGap;
+}
+
+/** Five cards and four gaps, with the step blocks applied. */
+function columnPxOf(blocks: string[], columnPx: number): number {
+  const gap = px(cascade(".live-side", "gap", ".live-side", blocks));
+  return 5 * cardPx(blocks, columnPx) + 4 * gap;
 }
 
 /**
@@ -112,22 +183,39 @@ describe("player card columns on short windows", () => {
     expect(css).toMatch(/\.arena-item\s*\{[^}]*width:\s*var\(--arena-slot,\s*1\.375rem\)/);
   });
 
-  it("fits five cards and four gaps in the room a 1280x800 window leaves the column (464px)", () => {
-    const padding = px(declared(ruleIn(block, ".live-side .arena-card"), "padding-block"));
-    const rowGap = px(declared(ruleIn(block, ".live-side .arena-card"), "gap"));
-    const whoGap = px(declared(ruleIn(block, ".live-side .arena-card-who"), "gap"));
+  it("keeps the gear row on one line in the narrowest column beside the map, so a card is 83px", () => {
+    // The map is capped so a column never gets less than 21rem, which is where a 1280x800 window sits.
+    expect(colMinPx()).toBe(336);
+    // The wrap breakpoint is under that column, or every card grows by 20px (T13 D1: 109px cards, 569px for 472px).
+    expect(sideBreakPx()).toBeLessThan(colMinPx());
+    // Six slots, a gap and the widest four chips (two "F 300" summoner boxes, two icons): 264px of the 314 inside a card.
     const slot = px(declared(ruleIn(block, ".live-side"), "--arena-slot"));
-    const vitals = px(declared(ruleIn(block, ".live-side .arena-card-vitals"), "block-size"));
-    const cardGap = px(declared(ruleIn(block, ".live-side"), "gap"));
+    const need = 6 * slot + 5 * 2 + 8 + 2 * 40 + 2 * slot + 3 * 2;
+    expect(need).toBeLessThanOrEqual(colMinPx() - BORDER_PX - 20);
+    // 2 border, 4 padding, a 36px head, a 17px health row, a 20px gear row and two 2px gaps.
+    expect(cardPx([block], colMinPx())).toBe(83);
+  });
 
-    // The head is the name plus the role chips; its inner gap is the only part that shrinks.
-    const head = HEAD_PX - (px(declared(ruleIn(css, ".arena-card-who"), "gap")) - whoGap);
-    const card = BORDER_PX + 2 * padding + head + vitals + slot + 2 * rowGap;
-    const column = 5 * card + 4 * cardGap;
+  it("fits five cards and four gaps in the room a 1280x800 window leaves the column (464px), with a margin", () => {
+    const room = cardRoom(ROOT_1280X800, compactBlockSource());
+    expect(room).toBe(464);
+    expect(columnPxOf([block], colMinPx())).toBe(431);
+    expect(columnPxOf([block], colMinPx())).toBeLessThanOrEqual(room - 24);
+  });
 
-    expect(card).toBeCloseTo(88.6, 1);
-    expect(cardRoom(ROOT_1280X800, compactBlockSource())).toBe(464);
-    expect(column).toBeLessThanOrEqual(cardRoom(ROOT_1280X800, compactBlockSource()));
+  it("would not fit if the gear row still wrapped at that width (the 109px cards T13 measured)", () => {
+    // The same cascade with the old breakpoint: the wrap adds 3px and a 17px strip to each card.
+    const wrapped = cardPx([block], colMinPx()) + WRAPPED_GAP_PX + WRAPPED_STRIP_PX;
+    expect(wrapped).toBe(103);
+    expect(5 * wrapped + 4 * 4).toBeGreaterThan(cardRoom(ROOT_1280X800, compactBlockSource()));
+  });
+
+  it("makes the head as tall as the portrait: the name and kills lines have no gap and a line the size of the text", () => {
+    expect(declared(ruleIn(block, ".live-side .arena-card-who,\n  .live-side .arena-card-score"), "gap")).toBe("0");
+    expect(ruleIn(block, ".live-side .arena-chip-text,\n  .live-side .arena-card-farm")).toMatch(/line-height:\s*1;/);
+    // Name 22 + 14px chip; kills 22 + 12px farm line; the portrait 36px.
+    expect(SECTION_PX + CAPTION_PX + BORDER_PX).toBe(36);
+    expect(SECTION_PX + CAPTION_PX).toBe(34);
   });
 
   it("does not fit without the change", () => {
@@ -147,13 +235,15 @@ describe("player card columns at 1366x768", () => {
   // (536px), and the column gets that less the 24px band, the 68px module and two 4px gaps.
   const ROOT_1366X768 = 732;
   const ROW_1366X768 = cardRoom(ROOT_1366X768, blockOf(TIGHT));
-  /** A compact card as the real stylesheet lays it out (89px, measured), not the 88.6px estimate. */
-  const COMPACT_CARD_PX = 89;
+  /** The column a 1366-wide window gives the cards (the map takes the rest). */
+  const ROOT_COLUMN_PX = 391;
+  /** The room T13 measured in the real window at 1366x768: 432px of column, of which 8px are the scroll padding. */
+  const MEASURED_1366X768 = 432;
   const block = blockOf(TIGHT);
 
   it("opens below the root height where the compact step can fit, and only beside the map", () => {
     expect(TIGHT).toContain("min-width: 1240px");
-    // 5 x 89 + 4 x 4 = 461px with the 72px module needs a 759px root; 1280x800 (764px) must keep the first step only.
+    // 1280x800 (764px) must keep the first step only: the second step shortens the module the feed lives in.
     expect(TIGHT).toContain("max-height: 758px");
     expect(ROOT_1280X800).toBeGreaterThan(758);
     expect(ROOT_1366X768).toBeLessThan(758);
@@ -166,19 +256,21 @@ describe("player card columns at 1366x768", () => {
     expect(declared(ruleIn(block, ".live-side"), "gap")).toBe("0.125rem");
   });
 
-  it("fits five cards and four gaps in the 442px row, and the first step alone does not", () => {
+  it("fits five cards and four gaps in the 436px row, and in the 424px a real 1366x768 window left (T13)", () => {
     const compact = compactBlock();
-    const paddingSaved = px(declared(ruleIn(compact, ".live-side .arena-card"), "padding-block")) - px(declared(ruleIn(block, ".live-side .arena-card"), "padding-block"));
-    const rowGapSaved = px(declared(ruleIn(compact, ".live-side .arena-card"), "gap")) - px(declared(ruleIn(block, ".live-side .arena-card"), "gap"));
-    // Padding is saved above and below; a card has two row gaps.
-    const card = COMPACT_CARD_PX - 2 * paddingSaved - 2 * rowGapSaved;
-    const column = 5 * card + 4 * px(declared(ruleIn(block, ".live-side"), "gap"));
-    const compactColumn = 5 * COMPACT_CARD_PX + 4 * px(declared(ruleIn(compact, ".live-side"), "gap"));
+    const column = columnPxOf([compact, block], ROOT_COLUMN_PX);
+    const compactColumn = columnPxOf([compact], ROOT_COLUMN_PX);
 
-    expect(card).toBe(85);
+    // 2 border, 2 padding, a 36px head, a 17px health row, a 20px gear row and two 1px gaps.
+    expect(cardPx([compact, block], ROOT_COLUMN_PX)).toBe(79);
     expect(ROW_1366X768).toBe(436);
+    expect(column).toBe(403);
     expect(column).toBeLessThanOrEqual(ROW_1366X768);
-    expect(compactColumn).toBeGreaterThan(ROW_1366X768);
+    // T13 measured a 432px column (424 for the cards) there and 9px of overflow; the tight step keeps a margin on that.
+    expect(column).toBeLessThanOrEqual(MEASURED_1366X768 - 16);
+    // The first step alone is 431px: it fits the estimate but not what was measured, so the tight step stays.
+    expect(compactColumn).toBe(431);
+    expect(compactColumn).toBeGreaterThan(MEASURED_1366X768 - 16);
   });
 
   it("keeps the compact step's values for what the tight step does not touch", () => {
@@ -207,5 +299,34 @@ describe("the timer rail's tiles on short windows", () => {
     const text = LABEL_PX + px(declared(ruleIn(short, ".arena-rail-value"), "font-size"));
     expect(tile).toBe(32);
     expect(text).toBeLessThanOrEqual(tile - FRAME_PX);
+  });
+});
+
+describe("the feed on short windows keeps a readable row (T13 D2)", () => {
+  const short = blockOf("@container live (max-height: 848px) and (min-width: 1240px) {");
+  /** The caption's kind tag (12px text in a 1.5 line, framed) is taller than one sentence line. */
+  const KIND_TAG_PX = CAPTION_PX * 1.5 + BORDER_PX;
+  /** One feed row as the app lays it out at 1280x800 (measured): the 22px icons and the padding. */
+  const ROW_PX = 27;
+
+  it("clamps the caption's sentence to one line where the module is 72px or 68px", () => {
+    expect(ruleIn(short, ".live-area-dock .arena-sp-line")).toMatch(/-webkit-line-clamp:\s*1;/);
+    // Over 848px the module is 104px and the base rule keeps its two lines.
+    expect(rulesFor(css, ".live-area-dock .arena-sp-line").some((body) => /-webkit-line-clamp:\s*2;/.test(body))).toBe(true);
+  });
+
+  it("leaves the feed list a full row in both modules, which two caption lines did not", () => {
+    const gap = px(declared(ruleIn(css, ".live-match"), "--live-gap"));
+    const caption = (lines: number) => {
+      const sentence = 16 * 1.1 * lines;
+      return Math.max(KIND_TAG_PX, sentence) + 2 * 4 + BORDER_PX;
+    };
+    // Feed box: 2px of padding above and below and a 1px frame.
+    const list = (module: number, lines: number) => module - gap - caption(lines) - (2 * 2 + BORDER_PX);
+    for (const module of [px(declared(ruleIn(compactBlock(), ".live-shell"), "--live-low")), px(declared(ruleIn(blockOf(TIGHT), ".live-shell"), "--live-low"))]) {
+      expect(list(module, 1), `${module}px, one line`).toBeGreaterThanOrEqual(ROW_PX);
+      // Two lines took 12.6px to 16.6px in the real window: not a row.
+      expect(list(module, 2), `${module}px, two lines`).toBeLessThan(ROW_PX);
+    }
   });
 });

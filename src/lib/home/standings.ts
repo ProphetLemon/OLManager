@@ -32,12 +32,15 @@ export interface StandingsPanelData {
 const DEFAULT_LIMIT = 8;
 /** Leagues up to this size list every club instead of cutting at the limit. */
 const FULL_TABLE_MAX = 10;
+/** The longest a collapsed name gets (initials, or the prefix of one word). */
 const SHORT_NAME_MAX = 4;
+/** Codes up to this long are kept whole: league codes such as LCKCL or PRM are already their short name. */
+const SHORT_NAME_KEEP = 6;
 
 /** Names that already fit are kept; longer ones collapse to their initials (or a prefix for one word). */
 export function shortCompetitionName(name: string): string {
   const trimmed = name.trim();
-  if (Array.from(trimmed).length <= SHORT_NAME_MAX) return trimmed;
+  if (Array.from(trimmed).length <= SHORT_NAME_KEEP) return trimmed;
   const words = trimmed.split(/\s+/).filter((word) => /^[\p{L}\p{N}]/u.test(word));
   const initials = words.length > 1 ? words.map((word) => Array.from(word)[0]).join("").toUpperCase() : "";
   const source = initials.length >= 2 ? initials : trimmed.toUpperCase();
