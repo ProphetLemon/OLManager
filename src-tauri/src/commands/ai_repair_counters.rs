@@ -53,7 +53,7 @@ pub(super) struct RepairCounters {
 
 /// Free agents that could fill `role`, as the repair sees them, and how many more it skips
 /// because they were released by a club or the user.
-fn free_agents<'a>(game: &'a Game, role: LolRole) -> (Vec<&'a Player>, usize) {
+fn free_agents(game: &Game, role: LolRole) -> (Vec<&Player>, usize) {
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
     let mut usable = Vec::new();
     let mut skipped = 0;
