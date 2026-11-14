@@ -139,6 +139,11 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
   const regionLabel = regionKey ? t(regionKey) : null;
   const blockedMessage = academyBlockedMessage(acquisitionBlockedReason, regionLabel);
   const notTopLeague = blockedMessage?.key === "youthAcademy.blocked.notTopLeague";
+  // Real clubs keep their own name, short name and logo; only legacy copies can be rebranded.
+  const optionsAreRealClubs = acquisitionOptions.some((option) => option.real_club);
+  const introKey = optionsAreRealClubs
+    ? "youthAcademy.acquisitionIntroLinked"
+    : "youthAcademy.acquisitionIntroRegion";
 
   const youthPlayers = useMemo(
     () =>
@@ -379,7 +384,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                   ? t("youthAcademy.acquisitionLoading")
                   : acquisitionOptions.length > 0
                     ? regionLabel
-                      ? t("youthAcademy.acquisitionIntroRegion", { region: regionLabel })
+                      ? t(introKey, { region: regionLabel })
                       : t("youthAcademy.acquisitionIntro")
                     : acquisitionBlockedReason === "youthAcademy.loadOptionsError"
                       ? t("youthAcademy.loadOptionsError")
@@ -388,7 +393,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                         : acquisitionBlockedReason ?? t("youthAcademy.acquisitionNoOptions")}
               </p>
 
-              {acquisitionOptions.length > 0 && (
+              {acquisitionOptions.length > 0 && !optionsAreRealClubs && (
                 <div className="grid shrink-0 gap-2 md:grid-cols-3">
                   <input
                     value={academyCustomName}
@@ -451,9 +456,13 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                               const updated = await acquireAcademyTeam({
                                 parent_team_id: myTeam.id,
                                 source_team_id: option.source_team_id,
-                                custom_name: academyCustomName.trim() || undefined,
-                                custom_short_name: academyCustomShortName.trim() || undefined,
-                                custom_logo_url: academyCustomLogoUrl.trim() || undefined,
+                                custom_name: option.real_club ? undefined : academyCustomName.trim() || undefined,
+                                custom_short_name: option.real_club
+                                  ? undefined
+                                  : academyCustomShortName.trim() || undefined,
+                                custom_logo_url: option.real_club
+                                  ? undefined
+                                  : academyCustomLogoUrl.trim() || undefined,
                               });
                               onGameUpdate?.(updated);
                             } finally {

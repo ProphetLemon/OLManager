@@ -734,6 +734,7 @@
     "acquisitionLoading": "Loading academy acquisition options...",
     "acquisitionIntro": "You do not have a linked academy yet. Choose an ERL team to acquire it.",
     "acquisitionIntroRegion": "Choose a tier-2 team (region: {{region}}) to fund as your academy.",
+    "acquisitionIntroLinked": "Choose a tier-2 club (region: {{region}}) to link as your academy. It keeps its name, league and finances, and you decide which players it holds.",
     "blocked": {
       "notTopLeague": "Only clubs in a top-tier league can fund an academy.",
       "noRegionCandidates": "No free tier-2 teams are available for an academy (region: {{region}}).",
@@ -1625,6 +1626,7 @@
   },
   "teams": {
     "yourTeam": "Your Team",
+    "yourAcademy": "Your Academy",
     "hq": "HQ:",
     "squad": "Squad",
     "avgOvr": "Avg OVR",
@@ -1973,7 +1975,7 @@
     "academyPending": "Academy acquisition pending",
     "academyRosterCount": "{{count}} players in the acquired roster",
     "viewAcquisitionOptions": "View acquisition options",
-    "academyDescription": "Acquire an academy team to develop young talent and feed your first team with homegrown players.",
+    "academyDescription": "Link a tier-2 club as your academy to develop young talent and feed your first team with homegrown players.",
     "academyPendingTitle": "No Academy",
     "benefitCompare": "Compare",
     "benefitCompareDesc": "Compare stats and find the best option",

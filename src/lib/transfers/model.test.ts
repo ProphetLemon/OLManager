@@ -357,6 +357,41 @@ describe("transfers/model", () => {
     ]);
   });
 
+  it("treats the linked real club as the user's side: its listed players are not on the market", () => {
+    const linkedListed = createPlayer({
+      id: "linked-listed",
+      team_id: "les-alpha",
+      transfer_listed: true,
+      loan_listed: true,
+      full_name: "Kid Linked",
+      match_name: "Kid",
+    });
+    const rivalListed = createPlayer({
+      id: "rival-listed",
+      team_id: "team-2",
+      transfer_listed: true,
+      loan_listed: true,
+      full_name: "Rival Pro",
+      match_name: "Rival",
+    });
+    const gameState = createGameState([linkedListed, rivalListed]);
+    gameState.teams[0] = createTeam({ id: "team-1", academy_team_id: "les-alpha" });
+    gameState.teams.push(
+      createTeam({
+        id: "les-alpha",
+        name: "Alpha Esports",
+        team_kind: "Main",
+        parent_team_id: "team-1",
+        manager_id: null,
+      }),
+    );
+
+    const collections = deriveTransferCollections(gameState, "team-1");
+
+    expect(collections.marketPlayers.map((player) => player.id)).toEqual(["rival-listed"]);
+    expect(collections.loanPlayers.map((player) => player.id)).toEqual(["rival-listed"]);
+  });
+
   // Shaped like a free agent the active-pros pool adds: no team, an ISO-2 nationality, no contract.
   const poolFreeAgent = (overrides: Partial<PlayerData> = {}) =>
     createPlayer({

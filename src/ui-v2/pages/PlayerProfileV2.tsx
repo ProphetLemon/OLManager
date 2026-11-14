@@ -19,7 +19,7 @@ import { tierFromLp, type SoloQTier } from "@/lib/players/soloq";
 import { resolveSeasonContext } from "@/lib/season/seasonContext";
 import { demoteMainPlayerToAcademy, promoteAcademyPlayer } from "@/services/academyService";
 import { startPotentialResearch } from "@/services/playerService";
-import { findAcademyTeamForParent } from "@/store/academySelectors";
+import { findAcademyTeamForParent, getManagedTeamIds } from "@/store/academySelectors";
 import type {
   GameStateData,
   PlayerData,
@@ -69,22 +69,6 @@ function getLatestScoutReportForPlayer(
       .filter((message) => message.context?.scout_report?.player_id === playerId)
       .sort((left, right) => right.date.localeCompare(left.date))[0]?.context.scout_report ?? null
   );
-}
-
-function collectManagedTeamIds(gameState: GameStateData): Set<string> {
-  const managerTeamId = gameState.manager.team_id;
-  const managed = new Set<string>();
-  if (!managerTeamId) return managed;
-
-  managed.add(managerTeamId);
-  const parentAcademyId = gameState.teams.find((team) => team.id === managerTeamId)?.academy_team_id;
-  gameState.teams.forEach((team) => {
-    if (team.team_kind !== "Academy") return;
-    if (team.parent_team_id === managerTeamId || (parentAcademyId && team.id === parentAcademyId)) {
-      managed.add(team.id);
-    }
-  });
-  return managed;
 }
 
 export default function PlayerProfileV2({
@@ -156,7 +140,7 @@ function PlayerProfileContent({
   const managerTeamId = gameState.manager.team_id;
   const managerTeam = gameState.teams.find((team) => team.id === managerTeamId) ?? null;
   const managerAcademyTeam = findAcademyTeamForParent(gameState.teams, managerTeamId);
-  const managedTeamIds = collectManagedTeamIds(gameState);
+  const managedTeamIds = getManagedTeamIds(gameState.teams, managerTeamId);
 
   const isOwnMainPlayer = managerTeamId !== null && player.team_id === managerTeamId;
   const isOwnAcademyPlayer =

@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   findAcademyTeamForParent,
   getMainTeams,
+  getManagedTeamIds,
   getTeamAcademyRoster,
+  isAcademyTeam,
+  isLinkedAcademyClub,
+  isUserAcademyClub,
 } from "./academySelectors";
 import type { PlayerData, TeamData } from "./types";
 
@@ -110,5 +114,71 @@ describe("academySelectors", () => {
     expect(getTeamAcademyRoster([parent, academy], [academyPlayer, parentPlayer], "team-1")).toEqual([
       academyPlayer,
     ]);
+  });
+
+  describe("real club linked as an academy", () => {
+    const parent = () => team({ id: "team-1", team_kind: "Main", academy_team_id: "les-alpha" });
+    const club = () => team({ id: "les-alpha", team_kind: "Main", parent_team_id: "team-1" });
+
+    it("finds the linked Main club by the two ids", () => {
+      expect(findAcademyTeamForParent([parent(), club()], "team-1")?.id).toBe("les-alpha");
+    });
+
+    it("needs both ids: a one-sided pointer is not a link", () => {
+      const strayChild = team({ id: "les-alpha", team_kind: "Main", parent_team_id: "team-1" });
+      const strayParent = team({ id: "team-1", team_kind: "Main", academy_team_id: "les-alpha" });
+      const unrelated = team({ id: "les-alpha", team_kind: "Main", parent_team_id: null });
+
+      expect(findAcademyTeamForParent([team({ id: "team-1" }), strayChild], "team-1")).toBeNull();
+      expect(findAcademyTeamForParent([strayParent, unrelated], "team-1")).toBeNull();
+    });
+
+    it("returns the linked club roster", () => {
+      const linked = player({ id: "kid", team_id: "les-alpha" });
+      const own = player({ id: "pro", team_id: "team-1" });
+
+      expect(getTeamAcademyRoster([parent(), club()], [linked, own], "team-1")).toEqual([linked]);
+    });
+
+    it("keeps the linked club in the main teams: it is a normal club", () => {
+      expect(isAcademyTeam(club())).toBe(false);
+      expect(getMainTeams([parent(), club()]).map((entry) => entry.id)).toEqual([
+        "team-1",
+        "les-alpha",
+      ]);
+    });
+
+    it("tells a linked club apart from a plain one and from a copy", () => {
+      const teams = [parent(), club(), team({ id: "plain" })];
+
+      expect(isLinkedAcademyClub(teams, club())).toBe(true);
+      expect(isLinkedAcademyClub(teams, teams[2])).toBe(false);
+      expect(isLinkedAcademyClub(teams, parent())).toBe(false);
+    });
+
+    it("marks only the manager's own academy", () => {
+      const rival = team({ id: "rival", academy_team_id: "les-beta" });
+      const beta = team({ id: "les-beta", parent_team_id: "rival" });
+      const teams = [parent(), club(), rival, beta];
+
+      expect(isUserAcademyClub(teams, "team-1", "les-alpha")).toBe(true);
+      expect(isUserAcademyClub(teams, "team-1", "les-beta")).toBe(false);
+      expect(isUserAcademyClub(teams, null, "les-alpha")).toBe(false);
+    });
+
+    it("manages the club, the linked club and a legacy copy", () => {
+      const copy = team({ id: "academy-9", team_kind: "Academy", parent_team_id: "team-9" });
+      const legacyParent = team({ id: "team-9", academy_team_id: "academy-9" });
+
+      expect([...getManagedTeamIds([parent(), club()], "team-1")].sort()).toEqual([
+        "les-alpha",
+        "team-1",
+      ]);
+      expect([...getManagedTeamIds([legacyParent, copy], "team-9")].sort()).toEqual([
+        "academy-9",
+        "team-9",
+      ]);
+      expect(getManagedTeamIds([parent(), club()], null).size).toBe(0);
+    });
   });
 });

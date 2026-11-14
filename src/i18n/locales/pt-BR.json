@@ -562,6 +562,7 @@
     "acquisitionLoading": "Carregando opções para adquirir academy...",
     "acquisitionIntro": "Você ainda não tem academy vinculada. Escolha um time ERL para adquiri-lo.",
     "acquisitionIntroRegion": "Escolha um time de segundo nível (região: {{region}}) para financiar como academy.",
+    "acquisitionIntroLinked": "Escolha um clube de segundo nível (região: {{region}}) para vincular como sua academia. Ele mantém o nome, a liga e as finanças, e você decide quais jogadores ele tem.",
     "blocked": {
       "notTopLeague": "Somente clubes de uma liga de primeiro nível podem financiar uma academy.",
       "noRegionCandidates": "Não há times livres de segundo nível disponíveis para uma academy (região: {{region}}).",
@@ -1442,6 +1443,7 @@
   },
   "teams": {
     "yourTeam": "Seu Time",
+    "yourAcademy": "Sua Academia",
     "hq": "Sede:",
     "squad": "Elenco",
     "avgOvr": "OVR Médio",
@@ -2101,7 +2103,7 @@
     "academyPending": "Aquisição do academy pendente",
     "academyRosterCount": "{{count}} jogadores no elenco adquirido",
     "viewAcquisitionOptions": "Ver opções de aquisição",
-    "academyDescription": "Adquira um time de academia para desenvolver jovens talentos e abastecer o time principal com jogadores da base.",
+    "academyDescription": "Vincule um clube de segundo nível como sua academia para desenvolver jovens talentos e abastecer o time principal com jogadores da base.",
     "academyPendingTitle": "Sem academia",
     "benefitCompare": "Comparar",
     "benefitCompareDesc": "Compare estatísticas e encontre a melhor opção",

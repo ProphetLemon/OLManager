@@ -131,6 +131,8 @@ export interface AcademyAcquisitionOptionData {
   development_level: number;
   acquisition_cost: number;
   rebrand_allowed: boolean;
+  /** True when the option links a real club (own name, logo and league) instead of a legacy copy. */
+  real_club?: boolean;
   source_identity: AcademySourceIdentityData;
 }
 

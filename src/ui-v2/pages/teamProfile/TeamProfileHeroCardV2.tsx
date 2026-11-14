@@ -8,12 +8,15 @@ import { resolveTeamProfileLogo } from "@/lib/teamProfile/logo";
 import type { TeamProfileViewModel } from "@/lib/teamProfile/types";
 import type { TeamData } from "@/store/gameStore";
 import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
+import { Badge } from "@/ui-v2/components/ui/badge";
 import { Card } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
 
 interface TeamProfileHeroCardV2Props {
   team: TeamData;
   viewModel: TeamProfileViewModel;
+  /** True when this club is the real club the user has linked as their academy. */
+  isUserAcademy?: boolean;
 }
 
 function HeroStat({
@@ -51,7 +54,7 @@ function MobileStat({ label, value, accent }: { label: string; value: string; ac
   );
 }
 
-export default function TeamProfileHeroCardV2({ team, viewModel }: TeamProfileHeroCardV2Props) {
+export default function TeamProfileHeroCardV2({ team, viewModel, isUserAcademy = false }: TeamProfileHeroCardV2Props) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language;
   const fallbackLogoSrc = useMemo(() => defaultTeamLogoSrc(team.id), [team.id]);
@@ -103,6 +106,9 @@ export default function TeamProfileHeroCardV2({ team, viewModel }: TeamProfileHe
             <h2 className="font-heading text-3xl font-bold uppercase tracking-wide text-white drop-shadow">
               {team.name}
             </h2>
+            {isUserAcademy && (
+              <Badge className="mt-1 text-2xs">{t("teams.yourAcademy")}</Badge>
+            )}
             <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-white/80">
               <span className="inline-flex items-center gap-1.5">
                 <MapPin className="size-4" />

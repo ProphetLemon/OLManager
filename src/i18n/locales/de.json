@@ -562,6 +562,7 @@
     "acquisitionLoading": "Optionen zur Akademie-Übernahme werden geladen...",
     "acquisitionIntro": "Du hast noch keine verknüpfte Akademie. Wähle ein ERL-Team, um sie zu übernehmen.",
     "acquisitionIntroRegion": "Wähle ein Team der zweiten Ebene (Region: {{region}}), um es als Akademie zu finanzieren.",
+    "acquisitionIntroLinked": "Wähle einen Verein der zweiten Ebene (Region: {{region}}) als deine Akademie. Er behält seinen Namen, seine Liga und seine Finanzen, und du entscheidest, welche Spieler er hat.",
     "blocked": {
       "notTopLeague": "Nur Vereine einer erstklassigen Liga können eine Akademie finanzieren.",
       "noRegionCandidates": "Für eine Akademie sind keine freien Teams der zweiten Ebene verfügbar (Region: {{region}}).",
@@ -1442,6 +1443,7 @@
   },
   "teams": {
     "yourTeam": "Dein Team",
+    "yourAcademy": "Deine Akademie",
     "hq": "Hauptsitz:",
     "squad": "Kader",
     "avgOvr": "Durchschn. OVR",
@@ -1776,7 +1778,7 @@
     "academyPending": "Akademie-Übernahme ausstehend",
     "academyRosterCount": "{{count}} Spieler im übernommenen Kader",
     "viewAcquisitionOptions": "Übernahme-Optionen anzeigen",
-    "academyDescription": "Erwirb ein Akademie-Team, um junge Talente auszubilden und deine erste Mannschaft mit Eigengewächsen zu versorgen.",
+    "academyDescription": "Verknüpfe einen Verein der zweiten Ebene als Akademie, um junge Talente auszubilden und deine erste Mannschaft mit Eigengewächsen zu versorgen.",
     "academyPendingTitle": "Keine Akademie",
     "benefitCompare": "Vergleichen",
     "benefitCompareDesc": "Vergleiche Statistiken und finde die beste Option",
