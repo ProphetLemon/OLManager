@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 
 import { championDisplayName } from "@/lib/champions/championNames";
@@ -7,6 +7,7 @@ import { buildFightBoard } from "@/lib/match/live/fightBoard";
 import { pitViews } from "@/lib/match/live/objectivesView";
 import { opposingChampion, type CardChampion } from "@/lib/match/live/playerCardView";
 import { buildSpotlight, type SpotlightPit } from "@/lib/match/live/spotlight";
+import { resolveSideStyles, sideTokens } from "@/lib/match/live/sidePalette";
 import { teamIdentity } from "@/lib/match/live/teamIdentity";
 import type { TeamSide } from "@/lib/match/live/mapGeometry";
 import type { GameStateData } from "@/store/gameStore";
@@ -157,8 +158,20 @@ export default function LiveMatchV2({
   const toggleSelected = useCallback((id: string) => setSelectedId((current) => (current === id ? null : id)), []);
 
   // ── Who is who ────────────────────────────────────────────────────────
-  const blue = useMemo(() => teamIdentity(snapshot.home_team.name, gameState?.teams), [snapshot.home_team.name, gameState?.teams]);
-  const red = useMemo(() => teamIdentity(snapshot.away_team.name, gameState?.teams), [snapshot.away_team.name, gameState?.teams]);
+  // Home is the blue side and away the red one; each wears its club's logo and colours.
+  const highContrast = useSettingsStore((s) => s.settings.high_contrast);
+  const { blue, red } = useMemo(() => {
+    const homeRef = { id: snapshot.home_team.id, name: snapshot.home_team.name };
+    const awayRef = { id: snapshot.away_team.id, name: snapshot.away_team.name };
+    const sides = resolveSideStyles(gameState?.teams, homeRef, awayRef, { highContrast });
+    return {
+      blue: teamIdentity(homeRef.name, gameState?.teams, sides.blue),
+      red: teamIdentity(awayRef.name, gameState?.teams, sides.red),
+    };
+  }, [snapshot.home_team.id, snapshot.home_team.name, snapshot.away_team.id, snapshot.away_team.name, gameState?.teams, highContrast]);
+  // The two clubs' colours, published once on the screen root: every rule below reads them, and
+  // nothing recomputes them per frame (they change only with the clubs or the contrast setting).
+  const sideStyle = useMemo(() => sideTokens(blue.palette, red.palette) as CSSProperties, [blue.palette, red.palette]);
   const managerTeamId = gameState?.manager?.team_id ?? null;
   const userSide: TeamSide | null =
     managerTeamId === null ? null : managerTeamId === snapshot.home_team.id ? "blue" : managerTeamId === snapshot.away_team.id ? "red" : null;
@@ -284,6 +297,7 @@ export default function LiveMatchV2({
     <div
       className="live-match relative min-h-0 flex-1 bg-background text-foreground"
       data-testid="live-match"
+      style={sideStyle}
       aria-busy={busy || undefined}
     >
       <div className="live-scroll scrollbar-v2" inert={ended || busy ? true : undefined}>

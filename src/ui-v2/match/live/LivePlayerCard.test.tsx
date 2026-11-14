@@ -164,11 +164,89 @@ describe("what the card shows", () => {
     expect(slots[0].querySelector("img")).toHaveAttribute("src", "/lol-item-icons/abyssal_mask.png");
   });
 
-  it("lists the cooldowns with a letter, the seconds while cooling down and a solid outline when ready", () => {
+  it("lists the cooldowns: the ultimate and the spells with the seconds while cooling down, ready ones bare", () => {
     render(<LivePlayerCard {...props()} />);
     const chips = screen.getAllByTestId("card-cd");
-    expect(chips.map((chip) => chip.textContent)).toEqual(["R 13", "F", "I 60"]);
+    expect(chips.map((chip) => chip.textContent)).toEqual(["13", "F", "I 60"]);
+    expect(chips.map((chip) => chip.getAttribute("data-state"))).toEqual(["waiting", "ready", "waiting"]);
     expect(chips.map((chip) => chip.hasAttribute("data-ready"))).toEqual([false, true, false]);
+  });
+
+  it("shows the ultimate's own icon when the engine sends one, and an archetype glyph when it does not", () => {
+    const { rerender } = render(<LivePlayerCard {...props({ champion: champion({ ultimate: { archetype: "burst", icon: "/lol-ultimate-icons/AmbessaR.png", cdUntil: 0 } }) })} />);
+    const ult = () => screen.getAllByTestId("card-cd")[0];
+    expect(ult().querySelector("img")).toHaveAttribute("src", "/lol-ultimate-icons/AmbessaR.png");
+    expect(ult().querySelector("svg")).toBeNull();
+    fireEvent.error(ult().querySelector("img") as Element);
+    expect(ult().querySelector("img")).toBeNull();
+    expect(ult().querySelector(".arena-cd-glyph")).not.toBeNull();
+    rerender(<LivePlayerCard {...props({ champion: champion({ ultimate: { archetype: "engage", icon: "", cdUntil: 0 } }) })} />);
+    expect(ult().querySelector("img")).toBeNull();
+    expect(ult().querySelector(".arena-cd-glyph")).not.toBeNull();
+  });
+
+  it("tells ready, waiting and locked apart by frame, seconds and lock, not by colour", () => {
+    const ult = () => screen.getAllByTestId("card-cd")[0];
+    const { rerender } = render(<LivePlayerCard {...props({ champion: champion({ level: 8, ultimate: { archetype: "burst", icon: "", cdUntil: 0 } }) })} />);
+    expect(ult()).toHaveAttribute("data-state", "ready");
+    expect(ult().textContent).toBe("");
+    expect(ult().querySelector(".arena-cd-lock")).toBeNull();
+
+    rerender(<LivePlayerCard {...props({ champion: champion({ level: 8, ultimate: { archetype: "burst", icon: "", cdUntil: 113 } }) })} />);
+    expect(ult()).toHaveAttribute("data-state", "waiting");
+    expect(ult().querySelector(".arena-cd-secs")).toHaveTextContent("13");
+    expect(ult().querySelector(".arena-cd-lock")).toBeNull();
+
+    rerender(<LivePlayerCard {...props({ champion: champion({ level: 5, ultimate: { archetype: "burst", icon: "", cdUntil: 0 } }) })} />);
+    expect(ult()).toHaveAttribute("data-state", "locked");
+    expect(ult().hasAttribute("data-ready")).toBe(false);
+    expect(ult().querySelector(".arena-cd-secs")).toBeNull();
+    expect(ult().querySelector(".arena-cd-lock")).not.toBeNull();
+  });
+
+  it("names the ultimate in each state, on the tip and in the description a screen reader hears", () => {
+    vi.useFakeTimers();
+    const tip = () => screen.queryByRole("tooltip");
+    const { rerender } = render(<LivePlayerCard {...props({ champion: champion({ level: 4, ultimate: { archetype: "burst", icon: "", cdUntil: 0 } }) })} />);
+    const showTip = () => {
+      fireEvent.pointerEnter(screen.getAllByTestId("card-cd")[0], { pointerType: "mouse" });
+      act(() => void vi.advanceTimersByTime(400));
+    };
+    expect(description()).toContain("Ultimate unlocks at level 6");
+    showTip();
+    expect(tip()).toHaveTextContent("Ultimate unlocks at level 6");
+    fireEvent.pointerLeave(screen.getAllByTestId("card-cd")[0], { pointerType: "mouse" });
+
+    rerender(<LivePlayerCard {...props({ champion: champion({ level: 8, ultimate: { archetype: "burst", icon: "", cdUntil: 0 } }) })} />);
+    expect(description()).toContain("Ultimate ready,");
+    showTip();
+    expect(tip()).toHaveTextContent("Ultimate ready");
+    fireEvent.pointerLeave(screen.getAllByTestId("card-cd")[0], { pointerType: "mouse" });
+
+    rerender(<LivePlayerCard {...props({ champion: champion({ level: 8 }) })} />);
+    expect(description()).toContain("Ultimate ready in 13 seconds");
+    vi.useRealTimers();
+  });
+
+  it("shows the trinket as its icon, never as a W or an O, and names it", () => {
+    render(<LivePlayerCard {...props({ champion: champion({ trinketKey: "wardingtotem", wardCdUntil: 0 }) })} />);
+    const chips = screen.getAllByTestId("card-cd");
+    const trinket = chips[chips.length - 1];
+    expect(trinket.querySelector("img")).toHaveAttribute("src", "/lol-item-icons/stealth_ward.png");
+    expect(trinket.textContent).toBe("");
+    expect(trinket).toHaveAttribute("data-state", "ready");
+    expect(description()).toMatch(/Stealth Ward ready|stealth ward ready/i);
+  });
+
+  it("counts a trinket down on its icon and falls back to initials when the icon fails", () => {
+    render(<LivePlayerCard {...props({ champion: champion({ trinketKey: "oraclelens", sweeperActiveUntil: 108, sweeperCdUntil: 140 }) })} />);
+    const chips = screen.getAllByTestId("card-cd");
+    const trinket = chips[chips.length - 1];
+    expect(trinket).toHaveAttribute("data-state", "waiting");
+    expect(trinket.querySelector(".arena-cd-secs")).toHaveTextContent("8");
+    fireEvent.error(trinket.querySelector("img") as Element);
+    expect(trinket.querySelector("img")).toBeNull();
+    expect(trinket.textContent).toMatch(/^[A-Z]{1,2}8$/);
   });
 
   it("shows the state as text: lane, fighting, recall or dead", () => {

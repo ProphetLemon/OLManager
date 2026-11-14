@@ -96,6 +96,20 @@ describe("tower beams", () => {
     expect(head.split(" ")).toHaveLength(3);
   });
 
+  it("lay a casing under the arrowhead that follows it frame by frame", () => {
+    const test = createTestBus();
+    render(<Scene state={towerShot()} test={test} />);
+    const halo = () => part("beam-head-halo")?.getAttribute("points");
+    expect(halo()).toBeTruthy();
+    expect(halo()).toBe(part("beam-head")?.getAttribute("points"));
+    const before = halo();
+    test.publish(makeFrame(towerShot({ dx: 0.2 })));
+    expect(halo()).not.toBe(before);
+    expect(halo()).toBe(part("beam-head")?.getAttribute("points"));
+    const lines = Array.from(document.querySelectorAll("[data-beam] > *")).map((node) => node.getAttribute("data-part") ?? node.getAttribute("class"));
+    expect(lines.indexOf("beam-head-halo")).toBeLessThan(lines.indexOf("beam-head"));
+  });
+
   it("draw nothing for a dead target", () => {
     const test = createTestBus();
     render(<Scene state={towerShot({ targetAlive: false })} test={test} />);

@@ -75,11 +75,11 @@
 }
 
 .arena-champ[data-team="blue"] {
-  --team-color: var(--team-blue);
+  --team-color: var(--side-blue);
 }
 
 .arena-champ[data-team="red"] {
-  --team-color: var(--team-red);
+  --team-color: var(--side-red);
 }
 
 .arena-champ[data-dead] {
@@ -103,6 +103,8 @@
   color: var(--card-foreground);
   pointer-events: auto;
   cursor: pointer;
+  /* The pale lanes of the Rift picture would swallow a coloured ring: it wears a dark casing. */
+  box-shadow: 0 0 0 2px var(--map-casing);
 }
 
 .arena-champ[data-team="red"] .arena-bubble,
@@ -153,8 +155,8 @@
   padding: 0 3px;
   border: 1px solid var(--team-color);
   border-radius: 9px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-weight: 700;
@@ -169,8 +171,8 @@
   left: 0;
   box-sizing: border-box;
   height: 5px;
-  border: 1px solid var(--line);
-  background: var(--background);
+  border: 1px solid var(--map-casing);
+  background: var(--map-casing);
 }
 
 .arena-hp i {
@@ -208,10 +210,11 @@
 /* Rings: double = fighting, dashed = tower fire (ContactLayer), club colour = followed. */
 .ring-fighting {
   box-shadow:
-    0 0 0 2px var(--terrain-ground),
+    0 0 0 2px var(--map-casing),
     0 0 0 4px var(--warning),
-    0 0 0 6px var(--terrain-ground),
-    0 0 0 8px var(--warning);
+    0 0 0 6px var(--map-casing),
+    0 0 0 8px var(--warning),
+    0 0 0 10px var(--map-casing);
 }
 
 .ring-selected {
@@ -234,8 +237,8 @@
   padding: 0 4px;
   border: 1px solid var(--team-color);
   border-radius: 3px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-weight: 700;
@@ -253,8 +256,8 @@
   padding: 1px 5px;
   border: 1px solid var(--team-color);
   border-radius: 3px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   line-height: 1.05;
   white-space: nowrap;
@@ -360,25 +363,26 @@
 }
 
 .arena-links [data-team="blue"] {
-  --team-color: var(--team-blue);
+  --team-color: var(--side-blue);
 }
 
 .arena-links [data-team="red"] {
-  --team-color: var(--team-red);
+  --team-color: var(--side-red);
 }
 
 .arena-link-halo,
 .arena-link,
 .arena-beam,
 .arena-beam-head,
+.arena-beam-head-halo,
 .arena-link-dot,
 .ring-fire {
   vector-effect: non-scaling-stroke;
 }
 
 .arena-link-halo {
-  stroke: var(--terrain-ground);
-  stroke-width: 6px;
+  stroke: var(--map-casing);
+  stroke-width: 7px;
   stroke-linecap: round;
 }
 
@@ -390,14 +394,23 @@
 
 .arena-link-dot {
   fill: var(--warning);
-  stroke: var(--terrain-ground);
-  stroke-width: 1.5px;
+  stroke: var(--map-casing);
+  stroke-width: 2px;
 }
 
 .arena-beam {
   stroke: var(--team-color);
   stroke-width: 3px;
   stroke-dasharray: 8 6;
+}
+
+/* The dark casing under the arrowhead, as the link halo is under the beam. */
+.arena-beam-head-halo {
+  fill: none;
+  stroke: var(--map-casing);
+  stroke-width: 7px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* The arrowhead: two short arms meeting on the target's end of the beam, solid so it reads even when the dashes do not. */
@@ -441,8 +454,8 @@
   padding: 0 5px;
   border: 2px solid var(--warning);
   border-radius: 12px;
-  background: var(--background);
-  color: var(--warning);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-weight: 700;
@@ -454,15 +467,14 @@
 .arena-chip[data-kind="tower"] {
   border-style: dashed;
   border-color: var(--team-color);
-  color: var(--foreground);
 }
 
 .arena-chip[data-team="blue"] {
-  --team-color: var(--team-blue);
+  --team-color: var(--side-blue);
 }
 
 .arena-chip[data-team="red"] {
-  --team-color: var(--team-red);
+  --team-color: var(--side-red);
 }
 
 /* ── Structures, camps, wards, push badge ────────────────────────────────
@@ -497,13 +509,21 @@
   z-index: 3;
 }
 
-.arena-ward[data-team="blue"],
+/* Wards belong to a club and wear its colour. Structures, and the push badge that points at one,
+   keep the game's own blue and red: a tower is the side's, not the club's. */
+.arena-ward[data-team="blue"] {
+  --team-color: var(--side-blue);
+}
+
+.arena-ward[data-team="red"] {
+  --team-color: var(--side-red);
+}
+
 .arena-struct[data-team="blue"],
 .arena-push[data-team="blue"] {
   --team-color: var(--team-blue);
 }
 
-.arena-ward[data-team="red"],
 .arena-struct[data-team="red"],
 .arena-push[data-team="red"] {
   --team-color: var(--team-red);
@@ -518,6 +538,8 @@
   width: clamp(7px, 1.2cqw, 12px);
   height: clamp(7px, 1.2cqw, 12px);
   background: var(--dim);
+  /* A grey diamond would sink into a pale lane: it wears the dark casing. */
+  filter: drop-shadow(0 0 1px var(--map-casing)) drop-shadow(0 0 1px var(--map-casing));
   transform: translate(-50%, -50%) rotate(45deg);
 }
 
@@ -535,7 +557,8 @@
   width: clamp(9px, 1.6cqw, 15px);
   height: clamp(9px, 1.6cqw, 15px);
   border: 2px solid var(--team-color);
-  background: var(--terrain-ground);
+  background: var(--map-casing);
+  box-shadow: 0 0 0 1px var(--map-casing);
   transform: translate(-50%, -50%);
 }
 
@@ -601,8 +624,8 @@
   box-sizing: border-box;
   width: clamp(18px, 3.4cqw, 34px);
   height: 5px;
-  border: 1px solid var(--line);
-  background: var(--background);
+  border: 1px solid var(--map-casing);
+  background: var(--map-casing);
 }
 
 .arena-struct-hp i {
@@ -615,8 +638,8 @@
   padding: 0 5px;
   border: 1px solid var(--team-color);
   border-radius: 3px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-weight: 700;
@@ -637,8 +660,8 @@
   padding: 2px 7px;
   border: 2px solid var(--team-color);
   border-radius: 4px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-variant-numeric: tabular-nums;
@@ -687,7 +710,7 @@
   top: 0;
   width: var(--pit-glyph);
   height: var(--pit-glyph);
-  background: var(--foreground);
+  background: var(--map-ink);
   transform: translate(-50%, -50%);
 }
 
@@ -697,7 +720,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--background);
+  background: var(--map-casing);
 }
 
 .arena-pit-glyph-in img {
@@ -707,7 +730,8 @@
 }
 
 .arena-pit:not([data-status="alive"]) .arena-pit-glyph {
-  background: var(--dim);
+  background: var(--map-ink);
+  opacity: 0.55;
 }
 
 .arena-pit:not([data-status="alive"]) .arena-pit-glyph-in img {
@@ -724,10 +748,10 @@
   gap: 2px;
   box-sizing: border-box;
   padding: 2px 6px;
-  border: 1px solid var(--foreground);
+  border: 1px solid var(--map-ink);
   border-radius: 3px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   line-height: 1.05;
   white-space: nowrap;
@@ -736,8 +760,7 @@
 
 .arena-pit:not([data-status="alive"]) .arena-pit-label {
   border-style: dashed;
-  border-color: var(--dim);
-  color: var(--dim);
+  opacity: 0.8;
 }
 
 .arena-pit-name {
@@ -762,13 +785,13 @@
 .arena-pit-hp {
   align-self: stretch;
   height: 4px;
-  background: var(--line);
+  background: var(--map-casing);
 }
 
 .arena-pit-hp i {
   display: block;
   height: 100%;
-  background: var(--foreground);
+  background: var(--map-ink);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -784,6 +807,9 @@
    starting or ending never reflows the bar. */
 
 .arena-bar {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   container-type: inline-size;
   container-name: bar;
   display: grid;
@@ -798,6 +824,39 @@
   color: var(--foreground);
 }
 
+/* Each club's colour washes its half of the bar in a diagonal, as on the home screen's next-match
+   card: static wedges behind the content. High contrast drops the wash and underlines the side. */
+.arena-bar::before,
+.arena-bar::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  z-index: -1;
+  width: 58%;
+  pointer-events: none;
+}
+
+.arena-bar::before {
+  inset-inline-start: 0;
+  background: color-mix(in srgb, var(--side-blue-band) 36%, transparent);
+  clip-path: polygon(0 0, 100% 0, 62% 100%, 0 100%);
+}
+
+.arena-bar::after {
+  inset-inline-end: 0;
+  background: color-mix(in srgb, var(--side-red-band) 36%, transparent);
+  clip-path: polygon(38% 0, 100% 0, 100% 100%, 0 100%);
+}
+
+:root[data-contrast="high"] .arena-bar::before,
+:root[data-contrast="high"] .arena-bar::after {
+  display: none;
+}
+
+:root[data-contrast="high"] .arena-bar-side {
+  box-shadow: inset 0 -0.3125rem 0 var(--team-color);
+}
+
 .arena-bar-side {
   display: flex;
   align-items: center;
@@ -810,32 +869,102 @@
 }
 
 .arena-bar-side[data-team="blue"] {
-  --team-color: var(--team-blue);
+  --team-color: var(--side-blue);
 }
 
 .arena-bar-side[data-team="red"] {
-  --team-color: var(--team-red);
+  --team-color: var(--side-red);
 }
 
-.arena-bar-mono {
+/* The club's logo on a light plate (the logos are drawn for light grounds), ringed in the club's
+   colour: round for blue, a rounded square for red. Without a logo the plate is the club's fill. */
+.arena-crest {
   flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 2px solid var(--team-color);
+  width: var(--crest-size, 2.5rem);
+  height: var(--crest-size, 2.5rem);
+  padding: 0.25rem;
+  overflow: hidden;
+  border: 3px solid var(--team-color);
   border-radius: 50%;
-  background: var(--card);
+  background: var(--map-ink);
+  box-shadow: 0 0 0 2px var(--rail);
+}
+
+.arena-crest[data-team="red"] {
+  border-radius: 32%;
+}
+
+.arena-crest img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.arena-crest[data-fallback] {
+  padding: 0;
+  background: var(--team-color);
+  color: var(--crest-fg);
   font-family: var(--font-heading);
   font-size: var(--text-section);
   font-weight: 700;
   line-height: 1;
 }
 
-.arena-bar-side[data-team="red"] .arena-bar-mono {
-  border-radius: 32%;
+.arena-crest[data-team="blue"] {
+  --team-color: var(--side-blue);
+  --crest-fg: var(--side-blue-fg);
+}
+
+.arena-crest[data-team="red"] {
+  --team-color: var(--side-red);
+  --crest-fg: var(--side-red-fg);
+}
+
+/* "Blue side" / "Red side": the shape and the words say the side, whatever the club's colour is. */
+.arena-bar-side-tag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.3125rem;
+  margin-inline-start: auto;
+  padding: 0 0.4375rem 0 0.3125rem;
+  border: 1px solid var(--foreground);
+  border-radius: 3px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.arena-bar-side-tag[data-team="blue"] {
+  border-radius: 0.5625rem;
+}
+
+.arena-side-shape {
+  display: block;
+  flex: none;
+  box-sizing: border-box;
+  width: 0.6875rem;
+  height: 0.6875rem;
+  border: 1px solid var(--background);
+  background: var(--foreground);
+  box-shadow: 0 0 0 1px var(--foreground);
+}
+
+.arena-bar-side-tag[data-team="blue"] .arena-side-shape {
+  border-radius: 50%;
+}
+
+.arena-bar-side-tag[data-team="red"] .arena-side-shape {
+  border-radius: 2px;
 }
 
 .arena-bar-id {
@@ -961,6 +1090,25 @@
 
 .arena-bar-kills[data-team="blue"] {
   text-align: right;
+}
+
+/* A club's colour as text is clamped for a dark surface, so it only paints text where the surface
+   is dark; in a light theme the digits keep the text colour and the club's colour stays on the
+   crest, the wash and the underline. */
+.dark .arena-bar-kills[data-team="blue"] {
+  color: var(--side-blue-text);
+}
+
+.dark .arena-bar-kills[data-team="red"] {
+  color: var(--side-red-text);
+}
+
+.dark .arena-bar-side[data-team="blue"] .arena-bar-stat[data-stat="gold"] .arena-bar-num {
+  color: var(--side-blue-wash-text);
+}
+
+.dark .arena-bar-side[data-team="red"] .arena-bar-stat[data-stat="gold"] .arena-bar-num {
+  color: var(--side-red-wash-text);
 }
 
 .arena-bar-clock {
@@ -1094,12 +1242,22 @@
 }
 
 .arena-card[data-team="blue"] {
-  --team-color: var(--team-blue);
+  --team-color: var(--side-blue);
 }
 
 .arena-card[data-team="red"] {
-  --team-color: var(--team-red);
+  --team-color: var(--side-red);
   text-align: end;
+}
+
+/* The club's colour runs down the outer edge of its players' cards. It is a shadow, so it takes no
+   room; a followed card replaces it with the club-accent bar below. */
+.arena-card[data-team="blue"] {
+  box-shadow: inset 0.25rem 0 0 var(--team-color);
+}
+
+.arena-card[data-team="red"] {
+  box-shadow: inset -0.25rem 0 0 var(--team-color);
 }
 
 .arena-card:hover {
@@ -1116,6 +1274,14 @@
   box-shadow:
     0 0 0 2px var(--club),
     inset 0.25rem 0 0 var(--club);
+}
+
+.dark .arena-card[data-team="blue"] .arena-card-kda {
+  color: var(--side-blue-text);
+}
+
+.dark .arena-card[data-team="red"] .arena-card-kda {
+  color: var(--side-red-text);
 }
 
 .arena-card[data-team="red"][aria-pressed="true"] {
@@ -1368,6 +1534,94 @@
   color: var(--foreground);
 }
 
+/* The ultimate and the trinket are icons. The state shows in the frame and the face, not in colour:
+   ready is a double frame and the bare icon; waiting is a dashed frame, a dimmed icon and the
+   seconds on it; locked (the ultimate before its level) is a dotted frame, a greyed icon and a
+   lock. A summoner spell keeps its letter. The chip is a square of the slot's size, so the gear
+   row never grows. */
+.arena-cd-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--arena-slot, 1.375rem);
+  height: var(--arena-slot, 1.375rem);
+  padding: 0;
+  overflow: hidden;
+  background: var(--rail);
+}
+
+.arena-cd-trinket {
+  border-radius: 50%;
+}
+
+.arena-cd-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.arena-cd-glyph {
+  width: 70%;
+  height: 70%;
+}
+
+.arena-cd-icon[data-state="ready"] {
+  border: 3px double var(--foreground);
+}
+
+.arena-cd-icon[data-state="waiting"] {
+  border: 2px dashed var(--dim);
+}
+
+.arena-cd-icon[data-state="waiting"] > img,
+.arena-cd-icon[data-state="waiting"] > .arena-cd-glyph {
+  opacity: 0.32;
+}
+
+.arena-cd-icon[data-state="locked"] {
+  border: 2px dotted var(--dim);
+}
+
+.arena-cd-icon[data-state="locked"] > img,
+.arena-cd-icon[data-state="locked"] > .arena-cd-glyph {
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.55;
+}
+
+/* The seconds sit on the icon in the map's light ink with a dark casing, so they read on any face. */
+.arena-cd-secs {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--map-ink);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow:
+    0 0 2px var(--map-casing),
+    0 0 2px var(--map-casing),
+    0 0 3px var(--map-casing);
+}
+
+.arena-cd-lock {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-end: 0;
+  box-sizing: content-box;
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 1px;
+  border-start-start-radius: 3px;
+  background: var(--background);
+  color: var(--foreground);
+}
+
 /* The state sits on the health row, so the gear row never has to share its width with it. */
 .arena-card-state {
   flex: 0 1 auto;
@@ -1409,6 +1663,22 @@
     flex: none;
     align-self: stretch;
     block-size: 1.0625rem;
+  }
+
+  /* The strip is 17px tall here, so the icon chips shrink to it and the frames thin out; dashed,
+     dotted and solid still tell the states apart, and the seconds and the lock stay (the lock gets a little smaller). */
+  .arena-cd-icon {
+    width: 1.0625rem;
+    height: 1.0625rem;
+  }
+
+  .arena-cd-icon[data-state] {
+    border-width: 2px;
+  }
+
+  .arena-cd-lock {
+    width: 0.4375rem;
+    height: 0.4375rem;
   }
 }
 
@@ -1526,12 +1796,12 @@
 /* Blue is round and red a rounded square, as on the map. */
 .arena-tk-ini[data-team="blue"],
 .arena-tk-icon[data-team="blue"] {
-  border-color: var(--team-blue);
+  border-color: var(--side-blue);
 }
 
 .arena-tk-ini[data-team="red"],
 .arena-tk-icon[data-team="red"] {
-  border-color: var(--team-red);
+  border-color: var(--side-red);
   border-radius: 32%;
 }
 
@@ -1885,13 +2155,22 @@
 }
 
 .arena-lg-shape[data-team="blue"] {
-  border: 3px solid var(--team-blue);
+  border: 3px solid var(--side-blue);
   border-radius: 50%;
 }
 
 .arena-lg-shape[data-team="red"] {
-  border: 3px solid var(--team-red);
+  border: 3px solid var(--side-red);
   transform: rotate(45deg);
+}
+
+/* Structures keep the game's own colours, as on the map. */
+.arena-lg-shape[data-shape="structure"][data-team="blue"] {
+  border-color: var(--team-blue);
+}
+
+.arena-lg-shape[data-shape="structure"][data-team="red"] {
+  border-color: var(--team-red);
 }
 
 .arena-lg-shape[data-shape="champion"][data-team="red"] {
@@ -1932,6 +2211,20 @@
    are under the map and the one scroll root does the scrolling. */
 
 .live-match {
+  /* The clubs' colours. The screen publishes the real ones as an inline style once per match (see
+     sideTokens); these keep every rule painting, in the game's own blue and red, where it does not. */
+  --side-blue: var(--team-blue);
+  --side-blue-text: var(--team-blue);
+  --side-blue-fg: var(--background);
+  --side-blue-band: var(--team-blue);
+  --side-blue-band-fg: var(--background);
+  --side-blue-wash-text: var(--team-blue);
+  --side-red: var(--team-red);
+  --side-red-text: var(--team-red);
+  --side-red-fg: var(--background);
+  --side-red-band: var(--team-red);
+  --side-red-band-fg: var(--background);
+  --side-red-wash-text: var(--team-red);
   --live-bar: 3.5rem;
   --live-dock: 6.5rem;
   --live-ctl: 3.5rem;
@@ -2362,12 +2655,24 @@
 /* Team colour is a rule under the number, solid for blue and dashed for red; the digits stay in the text colour. */
 .live-end-score [data-team],
 .live-end-stats th[data-team] {
-  border-bottom: 3px solid var(--team-blue);
+  border-bottom: 3px solid var(--side-blue);
 }
 
 .live-end-score [data-team="red"],
 .live-end-stats th[data-team="red"] {
-  border-bottom: 3px dashed var(--team-red);
+  border-bottom: 3px dashed var(--side-red);
+}
+
+.live-end-winner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.live-end-colhead {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
 }
 
 .live-end-duration {

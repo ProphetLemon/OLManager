@@ -6,22 +6,18 @@ import { formatClock, formatCountdown } from "@/lib/match/live/clock";
 import { compactGold } from "@/lib/match/live/formatNumbers";
 import type { TeamSide } from "@/lib/match/live/mapGeometry";
 import { teamBarView, type DragonPip, type TeamBarSide } from "@/lib/match/live/objectivesView";
+import type { TeamIdentity } from "@/lib/match/live/teamIdentity";
 import { NEUTRAL_OBJECTIVE_ICON_PATH } from "@/lib/match/lolMapLayout";
 import type { LolSimV1RuntimeState } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
 
 import type { FrameBus } from "./frameBus";
 import { DRAGON_NAME_KEYS, DRAGON_PLAIN_KEY, TEAM_KEYS } from "./liveNames";
 import type { LiveFrame } from "./useLiveSession";
+import { SideCrest } from "./SideCrest";
 import "./liveMatch.css";
 
 /** The clock is written at most this often. The bus runs at the screen's rate; a person reads seconds. */
 export const CLOCK_INTERVAL_MS = 100;
-
-export interface TeamIdentity {
-  /** Short code, "EMB". */
-  tag: string;
-  name: string;
-}
 
 export type ScoreStatus = "live" | "paused" | "final";
 
@@ -39,15 +35,21 @@ const BUFF_NAME_KEYS = {
   elder: "match.draftResult.timelineEvents.elder",
 } as const;
 
+/** The words that say which side a club plays, beside the shape that says it too. */
+const SIDE_TAG_KEYS: Readonly<Record<TeamSide, string>> = {
+  blue: "onAir.match.bar.blueSide",
+  red: "onAir.match.bar.redSide",
+};
+
 const STATUS_KEYS: Readonly<Record<ScoreStatus, string>> = {
   live: "match.live",
   paused: "match.paused",
   final: "onAir.match.bar.final",
 };
 
-function Stat({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
+function Stat({ label, value, icon, kind }: { label: string; value: string; icon: ReactNode; kind?: "gold" }) {
   return (
-    <span className="arena-bar-stat">
+    <span className="arena-bar-stat" data-stat={kind}>
       {icon}
       <span className="sr-only">{label}</span> <span className="arena-bar-num">{value}</span>
     </span>
@@ -75,7 +77,6 @@ function Pip({ pip, name }: { pip: DragonPip; name: (kind: Exclude<DragonPip, "u
 function BarSide({ side, identity, view }: { side: TeamSide; identity: TeamIdentity; view: TeamBarSide }) {
   const { t, i18n } = useTranslation();
   const dragonName = (kind: Exclude<DragonPip, "unknown" | null>) => t(DRAGON_NAME_KEYS[kind]);
-  const mono = (identity.name.trim() || identity.tag.trim()).slice(0, 1).toUpperCase();
 
   const chips: Array<{ id: string; text: string }> = [];
   if (view.soulKind) {
@@ -102,12 +103,14 @@ function BarSide({ side, identity, view }: { side: TeamSide; identity: TeamIdent
 
   return (
     <div className="arena-bar-side" data-team={side} role="group" aria-label={identity.name}>
-      <span className="arena-bar-mono" aria-hidden="true">
-        {mono}
-      </span>
+      <SideCrest side={side} identity={identity} />
       <span className="arena-bar-id">
         <span className="arena-bar-tag">{identity.tag}</span>
         <span className="arena-bar-name">{identity.name}</span>
+      </span>
+      <span className="arena-bar-side-tag" data-team={side}>
+        <i className="arena-side-shape" aria-hidden="true" />
+        {t(SIDE_TAG_KEYS[side])}
       </span>
       <span className="arena-bar-stats">
         <Stat
@@ -118,6 +121,7 @@ function BarSide({ side, identity, view }: { side: TeamSide; identity: TeamIdent
         <Stat
           label={t(STAT_KEYS.gold)}
           value={compactGold(view.gold, i18n.language)}
+          kind="gold"
           icon={<Coins className="arena-bar-icon" aria-hidden="true" focusable="false" />}
         />
         <span className="arena-bar-pips" role="group" aria-label={t(STAT_KEYS.dragon)}>

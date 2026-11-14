@@ -171,6 +171,29 @@ describe("the screen", () => {
     expect(screen.getByTestId("map-legend")).toBeInTheDocument();
   });
 
+  it("publishes the two clubs' colours once, as an inline style on the screen root", async () => {
+    const teams = [
+      { id: "home", name: "Embers Esports", short_name: "EMB", logo_url: "/teams-icons/embers.webp", colors: { primary: "#e11d2e", secondary: "#f5f5f5" } },
+      { id: "away", name: "Tides", short_name: "TDE", logo_url: null, colors: { primary: "#16a34a", secondary: "#101010" } },
+    ];
+    mount({ gameState: { teams, manager: { team_id: "home" } } as unknown as Props["gameState"] });
+    await screen.findByTestId("champion-b-TOP");
+    const root = screen.getByTestId("live-match");
+    for (const side of ["blue", "red"]) {
+      for (const suffix of ["", "-text", "-fg", "-band", "-band-fg", "-wash-text"]) {
+        expect(root.style.getPropertyValue(`--side-${side}${suffix}`), `--side-${side}${suffix}`).toMatch(/^#[0-9a-f]{6}$/);
+      }
+    }
+    // The bar wears each club's own logo.
+    expect(screen.getByTestId("score-bar").querySelector("img[src='/teams-icons/embers.webp']")).not.toBeNull();
+  });
+
+  it("still publishes the tokens, from the generic palette, when the game has no team list", async () => {
+    mount();
+    await screen.findByTestId("champion-b-TOP");
+    expect(screen.getByTestId("live-match").style.getPropertyValue("--side-blue")).toMatch(/^#[0-9a-f]{6}$/);
+  });
+
   it("hosts the bug button in the controls row, in the flow and not floating", async () => {
     mount();
     await screen.findByTestId("champion-b-TOP");
