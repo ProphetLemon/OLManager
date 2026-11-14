@@ -212,12 +212,13 @@ describe("refresh with --pool", () => {
       expect(tops.length).toBeGreaterThan(1);
       const pages = [...tops, ...Array.from({ length: 15 }, (_, i) => `Filler ${i}`)];
       const rated = await run({ inputs, statsRows: rowsFor(pages, tops[0]) });
-      const op = (result: typeof plain, page: string) => result.overlay.players.find((o) => o.op === "add" && o.pool?.page === page)!;
+      const addsOf = (result: typeof plain) => result.overlay.players as Array<Record<string, any>>;
+      const op = (result: typeof plain, page: string) => addsOf(result).find((o) => o.op === "add" && o.pool?.page === page)!;
       expect(op(rated, tops[0]).pool).toMatchObject({ rating: "stats", rating_games: 12 });
       expect(op(rated, tops[0]).player.attributes).not.toEqual(op(plain, tops[0]).player.attributes);
       for (const page of tops) expect(op(rated, page).pool.rating).toBe("stats");
-      const rest = plain.overlay.players.filter((o) => o.op !== "add" || !tops.includes(o.pool?.page));
-      expect(rated.overlay.players.filter((o) => o.op !== "add" || !tops.includes(o.pool?.page))).toEqual(rest);
+      const rest = addsOf(plain).filter((o) => o.op !== "add" || !tops.includes(o.pool?.page));
+      expect(addsOf(rated).filter((o) => o.op !== "add" || !tops.includes(o.pool?.page))).toEqual(rest);
       expect(rated.overlay.staff).toEqual(plain.overlay.staff);
       expect(rated.gates.ok).toBe(true);
       expect(rated.report).toContain(`${tops.length} of 48 adds were rated from stats; ${48 - tops.length} took the tier default.`);
