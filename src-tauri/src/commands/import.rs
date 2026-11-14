@@ -829,7 +829,23 @@ fn restore_backup(data_dir: &Path, public_dir: &Path, backup_root: &Path) -> Res
     Ok(())
 }
 
+/// Ids of the competitions whose teams a new game does not build: stale duplicates and
+/// competitions no league schedules.
+fn teamless_competition_ids(manifests: &[CompetitionManifest]) -> HashSet<String> {
+    manifests
+        .iter()
+        .filter(|manifest| {
+            world_catalog::is_stale_duplicate_competition(&manifest.id)
+                || world_catalog::is_never_scheduled_competition(manifest)
+        })
+        .map(|manifest| manifest.id.clone())
+        .collect()
+}
+
 fn collect_staff_from_shards(app_handle: &tauri::AppHandle) -> Vec<Staff> {
+    let skipped_competitions = teamless_competition_ids(
+        &crate::commands::competitions::scan_competitions(app_handle),
+    );
     let Some(data_base) = crate::commands::competitions::resolve_data_base(app_handle) else {
         log::debug!("[import] data base unavailable during staff rehydrate");
         return Vec::new();
@@ -869,11 +885,16 @@ fn collect_staff_from_shards(app_handle: &tauri::AppHandle) -> Vec<Staff> {
 
         if let Some(cid) = competition_id {
             let prefix = format!("{cid}-");
+            let teamless = skipped_competitions.contains(cid);
             for member in &mut members {
                 if let Some(team_id) = member.team_id.clone() {
                     if team_id != "fa" && team_id != "freeagent" && !team_id.starts_with(&prefix) {
                         member.team_id = Some(format!("{prefix}{team_id}"));
                     }
+                }
+                // A new game keeps no team of this competition, so its staff are free agents.
+                if teamless {
+                    member.team_id = None;
                 }
             }
         }
@@ -898,12 +919,30 @@ fn collect_runtime_staff(app_handle: &tauri::AppHandle) -> Vec<Staff> {
         }),
     );
 
-    for manifest in crate::commands::competitions::scan_competitions(app_handle)
-        .iter()
-        .filter(|manifest| !manifest.legacy)
-    {
+    let manifests = crate::commands::competitions::scan_competitions(app_handle);
+    staff.extend(runtime_catalog_staff(&manifests, |manifest| {
+        crate::commands::competitions::load_competition_staff(app_handle, manifest)
+    }));
+
+    let mut seen = HashSet::new();
+    staff
+        .into_iter()
+        .filter(|member| seen.insert(member.id.clone()))
+        .collect()
+}
+
+/// Each non-legacy competition's staff, read through `load`, with their team ids
+/// namespaced like the new-game world assembly. Staff of a competition a new game builds
+/// no team for are free agents, as its players are.
+pub(crate) fn runtime_catalog_staff(
+    manifests: &[CompetitionManifest],
+    mut load: impl FnMut(&CompetitionManifest) -> Result<Vec<Staff>, String>,
+) -> Vec<Staff> {
+    let teamless = teamless_competition_ids(manifests);
+    let mut staff = Vec::new();
+    for manifest in manifests.iter().filter(|manifest| !manifest.legacy) {
         let prefix = format!("{}-", manifest.id);
-        match crate::commands::competitions::load_competition_staff(app_handle, manifest) {
+        match load(manifest) {
             Ok(comp_staff) => {
                 for mut member in comp_staff {
                     if let Some(team_id) = member.team_id.clone() {
@@ -913,6 +952,9 @@ fn collect_runtime_staff(app_handle: &tauri::AppHandle) -> Vec<Staff> {
                         {
                             member.team_id = Some(format!("{}-{team_id}", manifest.id));
                         }
+                    }
+                    if teamless.contains(&manifest.id) {
+                        member.team_id = None;
                     }
                     staff.push(member);
                 }
@@ -925,12 +967,7 @@ fn collect_runtime_staff(app_handle: &tauri::AppHandle) -> Vec<Staff> {
             }
         }
     }
-
-    let mut seen = HashSet::new();
     staff
-        .into_iter()
-        .filter(|member| seen.insert(member.id.clone()))
-        .collect()
 }
 
 /// Load every non-legacy competition's players and apply the SAME namespacing
@@ -956,7 +993,8 @@ pub(crate) fn runtime_catalog_players(
     for manifest in manifests.iter().filter(|manifest| !manifest.legacy) {
         let cid = &manifest.id;
         let prefix = format!("{}-", cid);
-        let stale = world_catalog::is_stale_duplicate_competition(cid);
+        let stale = world_catalog::is_stale_duplicate_competition(cid)
+            || world_catalog::is_never_scheduled_competition(manifest);
         match load(manifest) {
             Ok(comp_players) => {
                 for mut player in comp_players {
@@ -968,7 +1006,7 @@ pub(crate) fn runtime_catalog_players(
                             player.team_id = Some(format!("{}-{team_id}", cid));
                         }
                     }
-                    // A new game keeps no team of a stale duplicate, so its players that
+                    // A new game keeps no team of a stale duplicate or an unscheduled competition, so its players that
                     // have no live twin are free agents there; the catalog says the same.
                     if stale {
                         player.team_id = None;
@@ -1014,6 +1052,10 @@ pub(crate) fn runtime_catalog_teams(
         // Stale copies of a live competition keep no teams: a new game drops them, and
         // bringing them back on every load listed each club twice.
         if world_catalog::is_stale_duplicate_competition(cid) {
+            continue;
+        }
+        // The same for competitions no league schedules (the historical "-l" rosters).
+        if world_catalog::is_never_scheduled_competition(manifest) {
             continue;
         }
         let prefix = format!("{}-", cid);
@@ -2088,6 +2130,57 @@ mod tests {
                 )
             })
             .collect()
+    }
+
+    /// A player whose only record sits in a competition no league schedules is a free agent,
+    /// the way a stale duplicate's player is: the world build keeps no team for it.
+    #[test]
+    fn runtime_players_of_an_unscheduled_competition_become_free_agents() {
+        let data = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("data");
+        let manifests = olm_core::competitions::scan_competitions(&data.join("competitions"));
+        let unscheduled: Vec<CompetitionManifest> =
+            manifests.into_iter().filter(|m| m.id == "lck-l").collect();
+        assert_eq!(unscheduled.len(), 1, "lck-l manifest present");
+
+        let players = runtime_catalog_players(&unscheduled, |_| {
+            Ok(vec![rehydrate_test_player("only-lck-l", Some("some-team"))])
+        });
+
+        assert_eq!(players.len(), 1);
+        assert_eq!(players[0].team_id, None);
+    }
+
+    /// Staff of a competition a new game builds no team for (unscheduled or a stale
+    /// duplicate) come out of the runtime reader as free agents, not pointing at a missing team.
+    #[test]
+    fn runtime_staff_of_unscheduled_and_stale_competitions_have_no_team() {
+        let data = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("data");
+        let manifests: Vec<CompetitionManifest> =
+            olm_core::competitions::scan_competitions(&data.join("competitions"))
+                .into_iter()
+                .filter(|m| matches!(m.id.as_str(), "lck-l" | "lck-cl" | "lec"))
+                .collect();
+        assert_eq!(
+            manifests.len(),
+            3,
+            "lck-l, lck-cl and lec manifests present"
+        );
+
+        let staff = runtime_catalog_staff(&manifests, |m| {
+            Ok(vec![rehydrate_test_staff(
+                &format!("coach-{}", m.id),
+                Some("some-team"),
+            )])
+        });
+
+        let team_of = |id: &str| staff.iter().find(|s| s.id == id).unwrap().team_id.clone();
+        assert_eq!(team_of("coach-lck-l"), None);
+        assert_eq!(team_of("coach-lck-cl"), None);
+        assert_eq!(team_of("coach-lec").as_deref(), Some("lec-some-team"));
     }
 
     fn game_with_stale_team(in_league: bool) -> Game {

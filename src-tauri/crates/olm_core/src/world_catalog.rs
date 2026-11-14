@@ -9,6 +9,7 @@
 use crate::domain::player::Player;
 use crate::domain::team::Team;
 use crate::game::Game;
+use crate::generator::definitions::CompetitionManifest;
 use log::warn;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -23,6 +24,13 @@ pub fn is_stale_duplicate_competition(competition_id: &str) -> bool {
     STALE_DUPLICATE_COMPETITIONS
         .iter()
         .any(|(stale, _)| *stale == competition_id)
+}
+
+/// Whether no league ever schedules this competition: it is not legacy, not active and its
+/// manifest has no schedule splits. The bundled catalog ships twelve of these (the
+/// historical "-l" rosters); their clubs never play, so a new game builds none of them.
+pub fn is_never_scheduled_competition(manifest: &CompetitionManifest) -> bool {
+    !manifest.legacy && !manifest.active && manifest.schedule.splits.is_empty()
 }
 
 /// Remove the teams of stale duplicate competitions that no league plays, from a game that

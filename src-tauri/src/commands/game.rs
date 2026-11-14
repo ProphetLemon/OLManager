@@ -686,12 +686,14 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
                     }
                     team.competition_id = Some(cid.to_string());
                 }
-                // Stale copies of a live competition keep no teams: they get no league,
-                // so nothing would repair or simulate them. Their players follow the
-                // duplicate and orphan rules below.
-                if world_catalog::is_stale_duplicate_competition(cid) {
+                // Stale copies of a live competition, and competitions no league ever
+                // schedules, keep no teams: nothing would repair or simulate them. Their
+                // players follow the duplicate and orphan rules below.
+                if world_catalog::is_stale_duplicate_competition(cid)
+                    || world_catalog::is_never_scheduled_competition(manifest)
+                {
                     info!(
-                        "[game] dropped {} teams of stale competition '{}'",
+                        "[game] dropped {} teams of unscheduled or stale competition '{}'",
                         comp_teams.len(),
                         cid
                     );
@@ -738,11 +740,16 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
         match olm_core::competitions::load_staff(data_dir, manifest) {
             Ok(comp_staff) => {
                 eprintln!("[game] loaded {} staff for '{}'", comp_staff.len(), cid);
+                let unscheduled = world_catalog::is_never_scheduled_competition(manifest);
                 for mut s in comp_staff {
                     if let Some(ref tid) = s.team_id.clone() {
                         if !tid.starts_with(&prefix) {
                             s.team_id = Some(format!("{}-{}", cid, tid));
                         }
+                    }
+                    // No team is built for a competition no league schedules.
+                    if unscheduled {
+                        s.team_id = None;
                     }
                     staff.push(s);
                 }
@@ -2207,8 +2214,8 @@ mod tests {
         }
 
         /// Every main club a league schedules starts with a 12-month sponsor sized by its
-        /// tier, so day-1 projections include it; the historical-roster clubs no league
-        /// schedules and the academy sub-teams get none.
+        /// tier, so day-1 projections include it; the academy sub-teams get none (and no club
+        /// exists that no league schedules).
         #[test]
         fn a_new_game_gives_every_scheduled_main_club_its_tier_sponsor() {
             use olm_core::tier_sponsorship::{
@@ -2251,7 +2258,7 @@ mod tests {
             assert!(
                 game.teams
                     .iter()
-                    .any(|team| team.is_main() && !scheduled.contains_key(&team.id)),
+                    .all(|team| !team.is_main() || scheduled.contains_key(&team.id)),
                 "the world holds main clubs no league schedules"
             );
         }
@@ -2364,6 +2371,98 @@ mod tests {
                 game.teams.iter().any(|t| t.competition_id.as_deref() == Some("lckcl")),
                 "the live LCK CL keeps its teams"
             );
+        }
+
+        /// The historical rosters the bundled catalog ships for competitions no league plays.
+        const UNSCHEDULED_COMPETITIONS: [&str; 12] = [
+            "al-l", "cblol-l", "eu-lcs-l", "lck-l", "lfl-l", "ljl-l", "lla-l", "lms-l", "lpl-l",
+            "na-lcs-l", "nacl-l", "prm-l",
+        ];
+
+        /// The competitions no league schedules (not legacy, not active, no splits) are exactly
+        /// the twelve historical "-l" rosters; no active or scheduled competition matches.
+        #[test]
+        fn the_never_scheduled_predicate_matches_exactly_the_twelve_historical_competitions() {
+            let (manifests, _known) = known_ids_and_manifests();
+            let mut matched: Vec<&str> = manifests
+                .iter()
+                .filter(|m| olm_core::world_catalog::is_never_scheduled_competition(m))
+                .map(|m| m.id.as_str())
+                .collect();
+            matched.sort_unstable();
+            assert_eq!(matched, UNSCHEDULED_COMPETITIONS);
+        }
+
+        /// A new game builds no club for a competition no league schedules: it would never
+        /// play, yet draw wages and a generated roster. Every active competition keeps its teams.
+        #[test]
+        fn a_new_game_builds_no_team_for_competitions_no_league_schedules() {
+            let (game, _catalog_players, _overlay, _user_team) = new_game();
+            let (manifests, _known) = known_ids_and_manifests();
+
+            let unscheduled: Vec<&str> = game
+                .teams
+                .iter()
+                .filter(|t| {
+                    t.competition_id
+                        .as_deref()
+                        .is_some_and(|cid| UNSCHEDULED_COMPETITIONS.contains(&cid))
+                })
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(unscheduled.is_empty(), "unscheduled clubs built: {unscheduled:?}");
+
+            for manifest in manifests.iter().filter(|m| m.active && !m.legacy) {
+                if olm_core::world_catalog::is_stale_duplicate_competition(&manifest.id) {
+                    continue;
+                }
+                assert!(
+                    game.teams
+                        .iter()
+                        .any(|t| t.competition_id.as_deref() == Some(manifest.id.as_str())),
+                    "{} lost its teams",
+                    manifest.id
+                );
+            }
+        }
+
+        /// The runtime catalog reader skips the same competitions, so a load never re-adds
+        /// their clubs.
+        #[test]
+        fn the_runtime_catalog_reader_skips_competitions_no_league_schedules() {
+            let data = data_base();
+            let manifests = olm_core::competitions::scan_competitions(&data.join("competitions"));
+            let teams = crate::commands::import::runtime_catalog_teams(&manifests, |m| {
+                olm_core::competitions::load_teams(&data, m)
+            });
+            let unscheduled: Vec<&str> = teams
+                .iter()
+                .filter(|t| {
+                    t.competition_id
+                        .as_deref()
+                        .is_some_and(|cid| UNSCHEDULED_COMPETITIONS.contains(&cid))
+                })
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(unscheduled.is_empty(), "reader returned unscheduled clubs: {unscheduled:?}");
+            assert!(!teams.is_empty(), "the reader still returns the scheduled clubs");
+        }
+
+        /// A new game after the rehydration holds none of those clubs either.
+        #[test]
+        fn a_rehydrated_new_game_holds_no_team_no_league_schedules() {
+            let game = rehydrated_new_game("Kiwoom DRX", None);
+            let unscheduled: Vec<&str> = game
+                .teams
+                .iter()
+                .filter(|t| {
+                    t.competition_id
+                        .as_deref()
+                        .is_some_and(|cid| UNSCHEDULED_COMPETITIONS.contains(&cid))
+                })
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(unscheduled.is_empty(), "unscheduled clubs after rehydration: {unscheduled:?}");
         }
 
         /// A new game after the catalog rehydration `get_active_game` and `load_game` run on
@@ -2790,16 +2889,12 @@ mod tests {
             );
             let with = rating_snapshot(&with_game);
             let without = rating_snapshot(&without_game);
-            let free_agents: HashSet<&str> = without_game
-                .players
-                .iter()
-                .filter(|p| p.team_id.is_none())
-                .map(|p| p.id.as_str())
-                .collect();
 
             // Placeholder estimates take their league medians from the rated players
             // around them, so an unlisted rostered placeholder may drift a little when
-            // its league's ratings move. Nothing else about an unlisted player may change.
+            // its league's ratings move; so may the placeholder of a free agent (the new game
+            // no longer spends the best free agents on clubs no league plays, so more of
+            // them remain). Nothing else about an unlisted player may change.
             let mut drifted = 0;
             let mut max_drift = 0u8;
             for (id, row) in without.iter().filter(|(id, _)| bundled.entry(id).is_none()) {
@@ -2807,7 +2902,6 @@ mod tests {
                 if after != row {
                     drifted += 1;
                     max_drift = max_drift.max(after.1.abs_diff(row.1));
-                    assert!(!free_agents.contains(id.as_str()), "{id}: free agents never drift");
                 }
             }
             println!("unlisted players that drifted: {drifted}, max OVR drift {max_drift}");
