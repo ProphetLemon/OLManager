@@ -840,6 +840,7 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
     let estimated = olm_core::placeholder_ratings::estimate_placeholder_ratings_excluding(
         &mut all_players,
         &all_teams,
+        &competition_tiers,
         &rated.low_confidence_ids,
     );
     info!(
