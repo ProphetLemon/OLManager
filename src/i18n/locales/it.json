@@ -1957,6 +1957,7 @@
     "about": "Informazioni",
     "statsCredit": "Le valutazioni dei giocatori nelle nuove partite derivano dalle statistiche delle partite professionistiche di Leaguepedia (lol.fandom.com), con licenza CC BY-SA 3.0.",
     "riotNotice": "Open League Manager non è approvato né sponsorizzato da Riot Games e non riflette le opinioni di Riot Games né di chiunque sia ufficialmente coinvolto nella produzione o nella gestione delle proprietà di Riot Games. League of Legends e Riot Games sono marchi o marchi registrati di Riot Games, Inc.",
+    "marksNotice": "I nomi delle squadre, i loghi e le foto dei giocatori appartengono ai rispettivi proprietari. Open League Manager è un progetto di fan non ufficiale e non commerciale, non affiliato a queste squadre, leghe o giocatori e non approvato da essi.",
     "matchModes": {
       "live": "Vai sulla Rift",
       "liveDesc": "Controllo completo della partita",

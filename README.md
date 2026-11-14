@@ -207,6 +207,10 @@ Code and assets inherited from OpenFootManager are treated as GPL-3.0-compatible
 
 Open League Manager is not endorsed or sponsored by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc. This is a free, non-commercial fan project.
 
+### Team marks and player images
+
+Team names, team logos and player photos belong to their respective owners. Open League Manager is an unofficial, non-commercial fan project and is not affiliated with or endorsed by those teams, leagues or players.
+
 ### Third-party data credits
 
 Player ratings in new games are derived from pro match statistics from [Leaguepedia](https://lol.fandom.com), licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Method and refresh steps: [`docs/STAT_RATINGS.md`](docs/STAT_RATINGS.md). Whether ShareAlike applies to the derived rating asset is an open question for the owner.

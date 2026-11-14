@@ -2121,6 +2121,7 @@
     "about": "À propos",
     "statsCredit": "Les notes des joueurs dans les nouvelles parties sont dérivées des statistiques de matchs professionnels de Leaguepedia (lol.fandom.com), sous licence CC BY-SA 3.0.",
     "riotNotice": "Open League Manager n'est ni approuvé ni sponsorisé par Riot Games et ne reflète pas les opinions de Riot Games ni de toute personne officiellement impliquée dans la production ou la gestion des propriétés de Riot Games. League of Legends et Riot Games sont des marques commerciales ou des marques déposées de Riot Games, Inc.",
+    "marksNotice": "Les noms d'équipes, les logos et les photos de joueurs appartiennent à leurs propriétaires respectifs. Open League Manager est un projet de fans non officiel et non commercial, sans affiliation avec ces équipes, ligues ou joueurs et non approuvé par eux.",
     "matchModes": {
       "live": "Aller sur la Faille",
       "liveDesc": "Contrôle total du match",
