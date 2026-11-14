@@ -756,24 +756,6 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
     let filled = olm_core::team_overrides::bundled().apply_all(&mut all_teams);
     info!("[game] team overrides filled {} teams", filled);
 
-    // Teams still without reputation or money (most second-tier clubs) get defaults taken
-    // from reviewed teams of their tier; reviewed values are never touched.
-    let competition_tiers: HashMap<String, u8> = manifests
-        .iter()
-        .filter_map(|m| m.tier.map(|tier| (m.id.clone(), tier)))
-        .collect();
-    let derived = olm_core::team_metadata_defaults::derive_missing_team_metadata(
-        &mut all_teams,
-        &competition_tiers,
-    );
-    info!(
-        "[game] derived reputation or money for {} teams without reviewed values",
-        derived.len()
-    );
-    for team in &derived {
-        log::debug!("[game] derived {} for {}", team.fields.join(", "), team.team_id);
-    }
-
     // Resolve ids shipped twice (stale duplicate competitions), then fix known field errors.
     let (mut all_players, dropped_duplicates) = world_catalog::dedupe_players(tagged_players);
     for dup in &dropped_duplicates {
@@ -791,6 +773,12 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
         correction_report.applied,
         correction_report.skipped.len()
     );
+
+    // Competition tiers, for the placeholder ratings and the team metadata defaults.
+    let competition_tiers: HashMap<String, u8> = manifests
+        .iter()
+        .filter_map(|m| m.tier.map(|tier| (m.id.clone(), tier)))
+        .collect();
 
     // 2. Bootstrap academy seeds from ERL catalog (JSON or legacy .txt fallback)
     let academy_bootstrap_date = start_date.format("%Y-%m-%d").to_string();
@@ -887,6 +875,36 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
         "[game] completed {} staff without data ({} wages)",
         completed.attributes, completed.wages
     );
+
+    // Teams still without reputation or money (most second-tier clubs), and teams whose
+    // reviewed budget contradicts their own wage bill, get defaults taken from the
+    // coherent reviewed teams of their tier. Runs once the wages are final: duplicates
+    // dropped, catalog corrections applied and the staff wages completed.
+    let wage_bills = olm_core::team_metadata_defaults::committed_wage_bills(&all_players, &staff);
+    let derived = olm_core::team_metadata_defaults::derive_missing_team_metadata(
+        &mut all_teams,
+        &competition_tiers,
+        &wage_bills,
+    );
+    info!(
+        "[game] derived reputation or money for {} teams without coherent reviewed values",
+        derived.len()
+    );
+    for team in &derived {
+        let line = format!(
+            "[game] derived {} for {} ({:?})",
+            team.fields.join(", "),
+            team.team_id,
+            team.reason
+        );
+        // A gap in the data is routine (most second-tier clubs); a rejected reviewed
+        // budget is worth a line each.
+        if team.reason == olm_core::team_metadata_defaults::DerivationReason::Missing {
+            log::debug!("{line}");
+        } else {
+            info!("{line}");
+        }
+    }
 
     info!(
         "[game] assemble_world_from_modular_data: {} teams, {} players, {} staff",
@@ -2735,22 +2753,6 @@ mod tests {
                 .collect()
         }
 
-        /// The TCL ships reputation, finance and budgets for its eight clubs, so they are
-        /// "reviewed" and never replaced by a derived default, yet the numbers contradict
-        /// the same files: a wage budget of 15k to 40k against authored wages and staff of
-        /// 45k to 126k a year, and a 100k treasury that facility upkeep drains within a
-        /// season. These lists pin exactly which teams break the invariants below, so a
-        /// data fix (or a decision to treat the TCL as unreviewed) has to edit them.
-        const TCL_REVIEWED_BUDGET_BELOW_ITS_WAGES: [&str; 6] = [
-            "tcl-dark-passage",
-            "tcl-ozarox-esports",
-            "tcl-pcific-esports",
-            "tcl-su-esports",
-            "tcl-misa-esports",
-            "tcl-team-phoenix",
-        ];
-        const TCL_REVIEWED_FINANCE_BELOW_ITS_COSTS: [&str; 1] = ["tcl-team-phoenix"];
-
         #[test]
         fn every_league_team_has_reputation_and_budgets() {
             let (game, _, _, _) = new_game();
@@ -2781,8 +2783,7 @@ mod tests {
                     over_budget.push(format!("{} bill {bill} budget {}", team.id, team.wage_budget));
                 }
             }
-            let over_budget: Vec<&str> = over_budget.iter().map(|line| line.split(' ').next().unwrap_or("")).collect();
-            assert_eq!(over_budget, TCL_REVIEWED_BUDGET_BELOW_ITS_WAGES);
+            assert!(over_budget.is_empty(), "{over_budget:#?}");
         }
 
         #[test]
@@ -2802,7 +2803,7 @@ mod tests {
                 .filter(|t| t.finance < 0)
                 .map(|t| t.id.as_str())
                 .collect();
-            assert_eq!(insolvent, TCL_REVIEWED_FINANCE_BELOW_ITS_COSTS);
+            assert!(insolvent.is_empty(), "{insolvent:?}");
         }
 
         #[test]
