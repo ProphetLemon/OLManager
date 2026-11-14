@@ -141,7 +141,7 @@ struct JungleStats {
     recall_death_places: BTreeMap<&'static str, u32>,
     /// Pit deaths by the objective the pit belongs to.
     pit_deaths: BTreeMap<String, u32>,
-    /// Deaths by the jungler's state at the moment he died.
+    /// Deaths by the jungler's state in the last step he was alive (the engine resets it on death).
     death_states: BTreeMap<String, u32>,
     /// Deaths by what killed him: tower, minion, or the role of the enemy champion.
     death_killers: BTreeMap<String, u32>,
@@ -588,10 +588,9 @@ impl ContactObserver {
             if jungler.alive {
                 track.last_destination = destination;
             }
-            // A gank is a path that ends at an enemy laner (the junglers are left out: a chase of
-            // the enemy jungler is not a gank).
-            let contact = jungler.alive
-                && !jungler.target_path.is_empty()
+            // A gank is a path that ends at an enemy laner and not at a camp or a pit (the enemy
+            // junglers are left out: a chase of the enemy jungler is not a gank).
+            let contact = destination == "enemy_champion"
                 && state.champions.iter().any(|c| c.alive && c.role != "JGL" && normalized_team(&c.team) != team && toward(c.pos));
             if contact {
                 if !track.gank_active {
@@ -732,7 +731,7 @@ impl ContactObserver {
                     *stats.recall_deaths.entry(key).or_default() += 1;
                     *stats.recall_death_places.entry(place).or_default() += 1;
                 }
-                *stats.death_states.entry(jungler.state.clone()).or_default() += 1;
+                *stats.death_states.entry(track.last_state.clone()).or_default() += 1;
                 *stats.death_killers.entry(killer).or_default() += 1;
                 track.gank_active = false;
                 track.invading = false;
@@ -1549,7 +1548,7 @@ fn replay_captured_start() {
         .collect();
     gank_states.sort();
     gank_states.dedup();
-    println!("jungler gank episodes (path ends at an enemy laner), per jungler-match {:.2}", f64::from(gank_total(&|j| &j.gank_attempts, None, None)) / jungler_matches);
+    println!("jungler gank episodes (path ends at an enemy laner, not at a camp or a pit), per jungler-match {:.2}", f64::from(gank_total(&|j| &j.gank_attempts, None, None)) / jungler_matches);
     for state in &gank_states {
         for (label, phase) in [("all", None), ("before 10:00", Some(0)), ("10-20", Some(1)), ("after 20", Some(2))] {
             let (attempts, hits, deaths) = (
