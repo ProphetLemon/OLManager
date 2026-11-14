@@ -256,6 +256,37 @@
   outline-offset: -3px;
 }
 
+.pg-series {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.5rem;
+  min-width: 0;
+}
+
+.pg-series-score {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pg-series-game {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  min-height: 1.5rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .pg-mvpchip {
   display: flex;
   align-items: center;

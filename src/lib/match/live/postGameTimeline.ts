@@ -24,6 +24,8 @@ export interface TimelineEntry {
   structureOwner: Side | null;
   /** Champion that acted, when it can be found in the roster. */
   actorId: string | null;
+  /** Key of the entry's text when it comes from a simulated result, which carries no event data. */
+  labelKey: string | null;
   event: KeyEvent;
 }
 
@@ -104,6 +106,7 @@ export function buildTimeline(events: readonly KeyEvent[], options: { complete: 
         dragonKind,
         structureOwner: data.structure ? structureLabel(data.structure).owner : null,
         actorId: actor,
+        labelKey: null,
         event,
       });
     });

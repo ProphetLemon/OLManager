@@ -3,11 +3,14 @@ import { useTranslation } from "react-i18next";
 
 import { championDisplayName } from "@/lib/champions/championNames";
 import { formatClock } from "@/lib/match/live/clock";
+import { championKeysOf, hasPlayedOutState, postGameStateFromResult, timelineFromResult } from "@/lib/match/live/draftResultState";
 import { buildScoreboard, keyEventsOf, type PostGameState, type Side } from "@/lib/match/live/postGame";
 import { buildTimeline } from "@/lib/match/live/postGameTimeline";
+import type { SeriesStatus } from "@/lib/match/live/seriesStatus";
 import { buildLolScrimPrepInsight } from "@/lib/scrims/lolScrimPrep";
 import type { GameStateData } from "@/store/gameStore";
 import { useItemNames } from "@/ui-v2/_legacy/components/match/itemNames";
+import type { DraftMatchResult } from "@/ui-v2/_legacy/components/match/draftResultSimulator";
 import type { LolSimV1RuntimeState } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
 import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import { Button } from "@/ui-v2/components/ui/button";
@@ -37,6 +40,11 @@ export interface PostGameProps {
   finalRuntimeState: LolSimV1RuntimeState | null;
   /** What the draft picked, by player id: the portraits. */
   championSelections?: ChampionSelectionByPlayer | null;
+  /** The result of a match that was simulated, not played out: it stands in for a state with no champions. */
+  result?: DraftMatchResult | null;
+  /** Where a best-of series stands, when this game is one of several. */
+  series?: { length: 1 | 3 | 5; status: SeriesStatus };
+  /** Continue: the next game of an unfinished series, or the end of the match. */
   onFinish: () => void;
   /** Without it the press conference button is not shown. */
   onPressConference?: () => void;
@@ -48,29 +56,40 @@ export interface PostGameProps {
  * what the engine sent and what the live screen recorded; where the match was skipped or a stat is
  * missing it says so or leaves the stat out, and never fills the hole.
  */
-export default function PostGame({ snapshot, gameState, userSide, finalRuntimeState, championSelections, onFinish, onPressConference }: PostGameProps) {
+export default function PostGame({ snapshot, gameState, userSide, finalRuntimeState, championSelections, result, series, onFinish, onPressConference }: PostGameProps) {
   const { t } = useTranslation();
   const { blue, red, style } = useSideIdentities(snapshot, gameState);
   const itemNames = useItemNames();
   const [view, setView] = useState<View>("scoreboard");
 
   // The engine's JSON carries more than the contract types declare (event codes and data, damage).
-  const state = finalRuntimeState as unknown as PostGameState | null;
+  // A simulated match hands on an empty state; its result is then what the screen reads.
+  const fromResult = Boolean(result) && !hasPlayedOutState(finalRuntimeState);
+  const state = useMemo<PostGameState | null>(
+    () => (fromResult && result ? postGameStateFromResult(result) : (finalRuntimeState as unknown as PostGameState | null)),
+    [fromResult, result, finalRuntimeState],
+  );
   const board = useMemo(() => (state ? buildScoreboard(state) : null), [state]);
-  const championByPlayerId = useMemo<Record<string, string>>(() => ({ ...(championSelections?.home ?? {}), ...(championSelections?.away ?? {}) }), [championSelections]);
+  const championByPlayerId = useMemo<Record<string, string>>(
+    () => ({ ...(fromResult && result ? championKeysOf(result) : {}), ...(championSelections?.home ?? {}), ...(championSelections?.away ?? {}) }),
+    [championSelections, fromResult, result],
+  );
   const record = state?.matchRecord;
   const entries = useMemo(
     () =>
-      state && board
+      fromResult && result
+        ? timelineFromResult(result)
+        : state && board
         ? buildTimeline(keyEventsOf(state), {
             complete: record?.skippedAtSec === null,
             roster: [...board.rows.blue, ...board.rows.red].map((row) => ({ id: row.id, name: row.name, team: row.side })),
           })
         : [],
-    [state, board, record],
+    [state, board, record, fromResult, result],
   );
   // Whole for a match watched to its end; from the skip for a skipped one; unknown with no record at all.
-  const partialFromSec = record ? record.skippedAtSec : 0;
+  // A simulation knows every event it made.
+  const partialFromSec = fromResult ? null : record ? record.skippedAtSec : 0;
 
   const userBlue: Side | null = userSide === "Home" ? "blue" : userSide === "Away" ? "red" : null;
   const identity = { blue, red } as const;
@@ -136,6 +155,24 @@ export default function PostGame({ snapshot, gameState, userSide, finalRuntimeSt
         ) : (
           <span />
         )}
+        {series && series.length > 1 ? (
+          <div className="pg-series" role="group" aria-label={t("match.draftResult.series")} data-testid="post-game-series">
+            <span className="pg-series-score">
+              {t("match.draftResult.series")} ({series.length === 3 ? "Bo3" : "Bo5"}) · {series.status.userWins} - {series.status.opponentWins}
+            </span>
+            {series.status.games.map((game) => (
+              <span key={game.gameIndex} className="pg-series-game" data-team={game.winnerSide}>
+                {t("match.seriesGame", { game: game.gameIndex })}
+                {game.winnerSide ? (
+                  <>
+                    <i className="pg-shape" aria-hidden="true" />
+                    {identity[game.winnerSide].tag}
+                  </>
+                ) : null}
+              </span>
+            ))}
+          </div>
+        ) : null}
         {mvp ? (
           <div className="pg-mvpchip" role="group" aria-label={`${t("match.draftResult.mvp")}: ${mvp.name}`}>
             <Portrait side={mvp.side} championKey={championByPlayerId[mvp.id]} name={mvp.name} />
@@ -184,7 +221,7 @@ export default function PostGame({ snapshot, gameState, userSide, finalRuntimeSt
           </Button>
         ) : null}
         <Button type="button" variant="club" size="touch" onClick={onFinish}>
-          {t("match.continue")}
+          {series && series.length > 1 && !series.status.finished ? `${t("match.game")} ${series.status.nextGameLabel}` : t("match.continue")}
         </Button>
       </footer>
     </div>

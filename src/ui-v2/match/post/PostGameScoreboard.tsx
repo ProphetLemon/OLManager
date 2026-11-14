@@ -25,6 +25,15 @@ const ROLE_KEYS: Readonly<Record<string, string>> = {
   SUP: "onAir.roles.SUPPORT",
 };
 
+/** Which columns have anything to show: what the engine (or the simulation) did not send is left out. */
+interface Columns {
+  level: boolean;
+  cs: boolean;
+  damage: boolean;
+  gear: boolean;
+  spells: boolean;
+}
+
 export interface PostGameScoreboardProps {
   board: Scoreboard;
   blue: TeamIdentity;
@@ -45,9 +54,9 @@ function IconSlot({ src, name, shape }: { src: string | null; name: string; shap
   );
 }
 
-function PlayerLine({ row, hasDamage, maxDamage, championByPlayerId, itemNames }: {
+function PlayerLine({ row, columns, maxDamage, championByPlayerId, itemNames }: {
   row: PlayerRow;
-  hasDamage: boolean;
+  columns: Columns;
   maxDamage: number;
   championByPlayerId: Record<string, string>;
   itemNames: ItemNamesByKey | null;
@@ -56,7 +65,7 @@ function PlayerLine({ row, hasDamage, maxDamage, championByPlayerId, itemNames }
   const key = championByPlayerId[row.id];
   const champion = key ? championDisplayName(key) : null;
   const role = ROLE_KEYS[row.role] ? t(ROLE_KEYS[row.role]) : row.role;
-  const itemNamesList = row.items.map((item) => itemDisplayName(item, itemNames));
+  const itemNamesList = (row.items ?? []).map((item) => itemDisplayName(item, itemNames));
   const trinketName = row.trinket ? itemDisplayName(row.trinket, itemNames) : null;
   const itemsLabel = [itemNamesList.length > 0 ? t("onAir.match.card.descItems", { items: itemNamesList.join(", ") }) : t("onAir.match.card.descNoItems"), trinketName]
     .filter(Boolean)
@@ -78,11 +87,11 @@ function PlayerLine({ row, hasDamage, maxDamage, championByPlayerId, itemNames }
           ) : null}
         </span>
       </th>
-      <td className="pg-num">{row.level}</td>
+      {columns.level ? <td className="pg-num">{row.level ?? "-"}</td> : null}
       <td className="pg-num">{`${row.kills}/${row.deaths}/${row.assists}`}</td>
-      <td className="pg-num">{row.cs}</td>
+      {columns.cs ? <td className="pg-num">{row.cs ?? "-"}</td> : null}
       <td className="pg-num">{compactGold(row.gold, i18n.language)}</td>
-      {hasDamage ? (
+      {columns.damage ? (
         <td className="pg-dmg">
           <b>{compactGold(row.damage ?? 0, i18n.language)}</b>
           <span className="pg-bar" aria-hidden="true">
@@ -90,10 +99,11 @@ function PlayerLine({ row, hasDamage, maxDamage, championByPlayerId, itemNames }
           </span>
         </td>
       ) : null}
+      {columns.gear ? (
       <td>
         <span className="pg-items" role="group" aria-label={itemsLabel}>
           {Array.from({ length: 6 }, (_, slot) =>
-            row.items[slot] ? (
+            row.items?.[slot] ? (
               <IconSlot key={`${slot}-${row.items[slot]}`} src={itemIcon(row.items[slot])} name={itemNamesList[slot]} shape="item" />
             ) : (
               <span key={`empty-${slot}`} className="pg-icon" data-shape="item" aria-hidden="true" />
@@ -102,6 +112,8 @@ function PlayerLine({ row, hasDamage, maxDamage, championByPlayerId, itemNames }
           {row.trinket && trinketName ? <IconSlot src={itemIcon(row.trinket)} name={trinketName} shape="trinket" /> : null}
         </span>
       </td>
+      ) : null}
+      {columns.spells ? (
       <td>
         <span className="pg-spells" role="group" aria-label={row.spells.map(summonerSpellName).join(", ")}>
           {row.spells.map((spell) => (
@@ -109,6 +121,7 @@ function PlayerLine({ row, hasDamage, maxDamage, championByPlayerId, itemNames }
           ))}
         </span>
       </td>
+      ) : null}
     </tr>
   );
 }
@@ -135,11 +148,11 @@ function Objectives({ totals }: { totals: TeamTotals }) {
   );
 }
 
-function TeamTable({ side, identity, board, hasDamage, maxDamage, championByPlayerId, itemNames }: {
+function TeamTable({ side, identity, board, columns, maxDamage, championByPlayerId, itemNames }: {
   side: Side;
   identity: TeamIdentity;
   board: Scoreboard;
-  hasDamage: boolean;
+  columns: Columns;
   maxDamage: number;
   championByPlayerId: Record<string, string>;
   itemNames: ItemNamesByKey | null;
@@ -161,29 +174,29 @@ function TeamTable({ side, identity, board, hasDamage, maxDamage, championByPlay
               </span>
             ) : null}
           </th>
-          <th scope="col">{t("onAir.match.post.columnLevel")}</th>
+          {columns.level ? <th scope="col">{t("onAir.match.post.columnLevel")}</th> : null}
           <th scope="col">{t("championPage.kda")}</th>
-          <th scope="col">{t("championPage.cs")}</th>
+          {columns.cs ? <th scope="col">{t("championPage.cs")}</th> : null}
           <th scope="col">{t("match.statGold")}</th>
-          {hasDamage ? <th scope="col">{t("match.draftResult.columns.damage")}</th> : null}
-          <th scope="col">{t("onAir.match.post.columnItems")}</th>
-          <th scope="col">{t("onAir.match.post.columnSpells")}</th>
+          {columns.damage ? <th scope="col">{t("match.draftResult.columns.damage")}</th> : null}
+          {columns.gear ? <th scope="col">{t("onAir.match.post.columnItems")}</th> : null}
+          {columns.spells ? <th scope="col">{t("onAir.match.post.columnSpells")}</th> : null}
         </tr>
       </thead>
       <tbody>
         {rows.map((row) => (
-          <PlayerLine key={row.id} row={row} hasDamage={hasDamage} maxDamage={maxDamage} championByPlayerId={championByPlayerId} itemNames={itemNames} />
+          <PlayerLine key={row.id} row={row} columns={columns} maxDamage={maxDamage} championByPlayerId={championByPlayerId} itemNames={itemNames} />
         ))}
       </tbody>
       <tfoot>
         <tr className="pg-total">
           <th scope="row">{t("onAir.match.post.teamTotal")}</th>
-          <td />
+          {columns.level ? <td /> : null}
           <td className="pg-num">{`${totals.kills}/${totals.deaths}/${totals.assists}`}</td>
-          <td className="pg-num">{totals.cs}</td>
+          {columns.cs ? <td className="pg-num">{totals.cs ?? "-"}</td> : null}
           <td className="pg-num">{compactGold(totals.gold, i18n.language)}</td>
-          {hasDamage ? <td className="pg-num">{compactGold(totals.damage ?? 0, i18n.language)}</td> : null}
-          <td colSpan={2}>
+          {columns.damage ? <td className="pg-num">{compactGold(totals.damage ?? 0, i18n.language)}</td> : null}
+          <td colSpan={Number(columns.gear) + Number(columns.spells) || 1}>
             <Objectives totals={totals} />
           </td>
         </tr>
@@ -200,12 +213,18 @@ function TeamTable({ side, identity, board, hasDamage, maxDamage, championByPlay
  */
 export function PostGameScoreboard({ board, blue, red, championByPlayerId, itemNames }: PostGameScoreboardProps) {
   const everyone = [...board.rows.blue, ...board.rows.red];
-  const hasDamage = everyone.length > 0 && everyone.every((row) => row.damage !== null);
+  const columns: Columns = {
+    level: everyone.some((row) => row.level !== null),
+    cs: everyone.some((row) => row.cs !== null),
+    damage: everyone.length > 0 && everyone.every((row) => row.damage !== null),
+    gear: everyone.some((row) => row.items !== null),
+    spells: everyone.some((row) => row.spells.length > 0),
+  };
   const maxDamage = Math.max(1, ...everyone.map((row) => row.damage ?? 0));
   return (
     <div className="pg-scoreboard" data-testid="post-game-scoreboard">
-      <TeamTable side="blue" identity={blue} board={board} hasDamage={hasDamage} maxDamage={maxDamage} championByPlayerId={championByPlayerId} itemNames={itemNames} />
-      <TeamTable side="red" identity={red} board={board} hasDamage={hasDamage} maxDamage={maxDamage} championByPlayerId={championByPlayerId} itemNames={itemNames} />
+      <TeamTable side="blue" identity={blue} board={board} columns={columns} maxDamage={maxDamage} championByPlayerId={championByPlayerId} itemNames={itemNames} />
+      <TeamTable side="red" identity={red} board={board} columns={columns} maxDamage={maxDamage} championByPlayerId={championByPlayerId} itemNames={itemNames} />
     </div>
   );
 }

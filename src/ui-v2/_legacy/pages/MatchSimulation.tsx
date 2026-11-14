@@ -18,10 +18,10 @@ import ChampionDraft, {
 import type { ChampionDraftResultPayload } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import { finalizeLiveMatch, type FinishLiveMatchResponse } from "@/ui-v2/_legacy/pages/MatchSimulation.finalize";
 import LiveMatchV2 from "@/ui-v2/match/LiveMatchV2";
+import DraftResultStage from "@/ui-v2/match/DraftResultStage";
 import PostGame from "@/ui-v2/match/PostGame";
 import type { ChampionSelectionByPlayer } from "@/ui-v2/match/live/useChampionProfiles";
 import MatchTacticsStage from "@/ui-v2/_legacy/components/match/MatchTacticsStage";
-import DraftResultScreenV2 from "@/ui-v2/components/DraftResultScreenV2";
 import PressConference from "@/ui-v2/_legacy/components/match/PressConference";
 import {
   simulateDraftMatchResult,
@@ -1913,33 +1913,21 @@ export default function MatchSimulation() {
           : null;
         const draftScreenResult = draftResultSimulation ?? runtimeBasedResult;
 
-        if (draftScreenResult) {
-          return (
-            <DraftResultScreenV2
-              snapshot={renderSnapshotWithTactics ?? snapshot}
-              controlledSide={userSelectedSide}
-              result={draftScreenResult}
-              seriesGames={seriesGames}
-              seriesLength={seriesLength}
-              seriesGameIndex={Math.max(1, seriesGameIndex)}
-              userSeriesWins={userSeriesWins}
-              opponentSeriesWins={opponentSeriesWins}
-              onPressConference={canOpenPressConference ? handlePressConference : undefined}
-              onContinue={handleDraftResultContinue}
-              teams={gameState.teams}
-            />
-          );
-        }
-
         return (
-          <PostGame
+          <DraftResultStage
             snapshot={renderSnapshotWithTactics ?? snapshot}
             gameState={gameState}
-            userSide={userSide}
+            controlledSide={userSelectedSide}
             finalRuntimeState={finalRuntimeState}
+            result={draftScreenResult}
             championSelections={championSelections}
-            onPressConference={handlePressConference}
-            onFinish={handleFinishMatch}
+            seriesGames={seriesGames}
+            seriesLength={seriesLength}
+            seriesGameIndex={Math.max(1, seriesGameIndex)}
+            userSeriesWins={userSeriesWins}
+            opponentSeriesWins={opponentSeriesWins}
+            onPressConference={canOpenPressConference ? handlePressConference : undefined}
+            onContinue={handleDraftResultContinue}
           />
         );
       }

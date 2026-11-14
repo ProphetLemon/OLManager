@@ -90,6 +90,7 @@ const entry = (t: number, kind: TimelineEntry["kind"], side: "blue" | "red" | nu
   dragonKind: null,
   structureOwner: null,
   actorId: null,
+  labelKey: null,
   event: { t, text: "", type: kind },
 });
 

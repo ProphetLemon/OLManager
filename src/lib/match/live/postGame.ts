@@ -26,11 +26,12 @@ export interface PostGameChampion {
   name: string;
   team: Side;
   role: string;
-  level: number;
+  /** A simulated result has no level, CS or items: they are left out, not zero. */
+  level?: number;
   kills: number;
   deaths: number;
   assists: number;
-  cs: number;
+  cs?: number;
   gold?: number;
   spentGold?: number;
   /** Damage to enemy champions. Only the Rust engine sends it. */
@@ -56,6 +57,10 @@ export interface PostGameState {
   champions?: PostGameChampion[];
   /** The engine's own list: its last 200 events. Only used when there is no record. */
   events?: KeyEvent[];
+  /** A result that names its MVP (a simulation) overrides the score used for a match played out. */
+  mvpId?: string;
+  /** Counts the engine's events cannot give (a simulated result knows them). */
+  counts?: Partial<Record<Side, { grubs: number; heralds: number }>>;
   matchRecord?: MatchRecord;
 }
 
@@ -64,15 +69,16 @@ export interface PlayerRow {
   name: string;
   side: Side;
   role: string;
-  level: number;
+  level: number | null;
   kills: number;
   deaths: number;
   assists: number;
-  cs: number;
+  cs: number | null;
   /** Gold earned: the purse plus what was spent. */
   gold: number;
   damage: number | null;
-  items: string[];
+  /** Null when the match has no item data at all (a simulated result). */
+  items: string[] | null;
   /** Catalogue key of the trinket's icon, or null when the engine sent none. */
   trinket: string | null;
   spells: string[];
@@ -85,7 +91,8 @@ export interface TeamTotals {
   kills: number;
   deaths: number;
   assists: number;
-  cs: number;
+  /** Null when any player's CS is unknown. */
+  cs: number | null;
   gold: number;
   /** Null when any player's damage was not sent. */
   damage: number | null;
@@ -114,7 +121,7 @@ export function keyEventsOf(state: Pick<PostGameState, "matchRecord" | "events">
 }
 
 /** Winner-side score the old result screen used; kept so the same player is named. */
-const mvpScore = (row: PlayerRow): number => row.kills * 3 + row.assists * 1.6 - row.deaths * 1.25 + row.cs * 0.02 + row.gold * 0.001;
+const mvpScore = (row: PlayerRow): number => row.kills * 3 + row.assists * 1.6 - row.deaths * 1.25 + (row.cs ?? 0) * 0.02 + row.gold * 0.001;
 
 function rowOf(champion: PostGameChampion): PlayerRow {
   const trinket = champion.trinketKey?.trim().toLowerCase();
@@ -123,14 +130,14 @@ function rowOf(champion: PostGameChampion): PlayerRow {
     name: champion.name,
     side: champion.team,
     role: champion.role,
-    level: whole(champion.level),
+    level: isNumber(champion.level) ? Math.round(champion.level) : null,
     kills: whole(champion.kills),
     deaths: whole(champion.deaths),
     assists: whole(champion.assists),
-    cs: whole(champion.cs),
+    cs: isNumber(champion.cs) ? Math.round(champion.cs) : null,
     gold: Math.round(totalGold(champion)),
     damage: isNumber(champion.damageDealt) ? Math.round(champion.damageDealt) : null,
-    items: (champion.items ?? []).filter((item) => typeof item === "string" && item.trim()).slice(0, ITEM_SLOTS),
+    items: champion.items ? champion.items.filter((item) => typeof item === "string" && item.trim()).slice(0, ITEM_SLOTS) : null,
     trinket: trinket ? (TRINKET_ITEM[trinket] ?? null) : null,
     spells: (champion.summonerSpells ?? []).map((spell) => spell.key.trim().toLowerCase()).filter(Boolean).slice(0, 2),
     mvp: false,
@@ -140,6 +147,8 @@ function rowOf(champion: PostGameChampion): PlayerRow {
 const sum = (rows: readonly PlayerRow[], pick: (row: PlayerRow) => number): number => rows.reduce((total, row) => total + pick(row), 0);
 
 function heraldCount(state: PostGameState, side: Side): number | null {
+  const counted = state.counts?.[side]?.heralds;
+  if (isNumber(counted)) return counted;
   const record = state.matchRecord;
   if (!record || record.skippedAtSec !== null) return null;
   return record.events.filter((event) => event.code === "herald_secured" && event.data?.team === side).length;
@@ -153,13 +162,13 @@ function totalsOf(state: PostGameState, side: Side, rows: readonly PlayerRow[]):
     kills: isNumber(stats?.kills) ? Math.round(stats.kills) : sum(rows, (row) => row.kills),
     deaths: sum(rows, (row) => row.deaths),
     assists: sum(rows, (row) => row.assists),
-    cs: sum(rows, (row) => row.cs),
+    cs: rows.length > 0 && rows.every((row) => row.cs !== null) ? sum(rows, (row) => row.cs ?? 0) : null,
     gold: sum(rows, (row) => row.gold),
     damage: rows.length > 0 && rows.every((row) => row.damage !== null) ? sum(rows, (row) => row.damage ?? 0) : null,
     towers: whole(stats?.towers),
     dragons: whole(stats?.dragons),
     barons: whole(stats?.barons),
-    grubs: readTeamBuffs(state, side).voidgrubStacks,
+    grubs: state.counts?.[side]?.grubs ?? readTeamBuffs(state, side).voidgrubStacks,
     heralds: heraldCount(state, side),
   };
 }
@@ -171,7 +180,8 @@ export function buildScoreboard(state: PostGameState): Scoreboard {
     red: all.filter((row) => row.side === "red").sort((a, b) => roleRank(a.role) - roleRank(b.role)),
   };
   const winners = state.winner ? rows[state.winner] : [];
-  const mvp = [...winners].sort((a, b) => mvpScore(b) - mvpScore(a))[0] ?? null;
+  const named = state.mvpId ? all.find((row) => row.id === state.mvpId) : undefined;
+  const mvp = named ?? [...winners].sort((a, b) => mvpScore(b) - mvpScore(a))[0] ?? null;
   if (mvp) mvp.mvp = true;
   return {
     winner: state.winner,

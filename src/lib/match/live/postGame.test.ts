@@ -115,3 +115,29 @@ describe("goldAtMinute", () => {
     expect(goldAtMinute(undefined, "b-adc", 10)).toBeNull();
   });
 });
+
+describe("buildScoreboard: a result with only what a simulation knows", () => {
+  const bare = champions({ level: undefined, cs: undefined, items: undefined, trinketKey: undefined, summonerSpells: undefined });
+
+  it("leaves level, CS, items and spells null instead of inventing them", () => {
+    const row = buildScoreboard(finishedMatch({ champions: bare, matchRecord: undefined })).rows.blue[0];
+    expect(row).toMatchObject({ level: null, cs: null, items: null, trinket: null, spells: [] });
+    expect(row.gold).toBeGreaterThan(0);
+  });
+
+  it("has no CS total when a player's CS is unknown", () => {
+    expect(buildScoreboard(finishedMatch({ champions: bare })).totals.blue.cs).toBeNull();
+  });
+
+  it("names the MVP the result names, when it names one", () => {
+    const board = buildScoreboard(finishedMatch({ mvpId: "r-adc" }));
+    expect(board.mvp?.id).toBe("r-adc");
+    expect(board.rows.red.find((row) => row.mvp)?.id).toBe("r-adc");
+  });
+
+  it("takes grubs and heralds from the counts the result carries", () => {
+    const board = buildScoreboard(finishedMatch({ matchRecord: undefined, counts: { blue: { grubs: 3, heralds: 1 }, red: { grubs: 0, heralds: 0 } } }));
+    expect(board.totals.blue).toMatchObject({ grubs: 3, heralds: 1 });
+    expect(board.totals.red.heralds).toBe(0);
+  });
+});

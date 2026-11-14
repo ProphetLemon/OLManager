@@ -21,8 +21,9 @@ const TWO_COLUMNS_FROM = 12;
 
 function Event({ entry, championByPlayerId }: { entry: TimelineEntry; championByPlayerId: Record<string, string> }) {
   const { t } = useTranslation();
-  const sentence = eventSentence(entry.event, t);
-  const text = entry.kind === "firstBlood" ? `${t("match.draftResult.timelineEvents.firstBlood")}: ${sentence}` : sentence;
+  // A simulated result's events carry no data: their words come from the key they were given.
+  const sentence = entry.labelKey ? t(entry.labelKey, { defaultValue: entry.event.text }) : eventSentence(entry.event, t);
+  const text = entry.kind === "firstBlood" && !entry.labelKey ? `${t("match.draftResult.timelineEvents.firstBlood")}: ${sentence}` : sentence;
   const portrait = entry.kind === "kill" || entry.kind === "firstBlood" ? (entry.actorId ? championByPlayerId[entry.actorId] : undefined) : undefined;
   const icon = entryIcon(entry);
   return (
