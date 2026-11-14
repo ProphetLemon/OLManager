@@ -178,6 +178,22 @@
     "cancel": "Annuler",
     "manager": "Head Coach : {{name}}",
     "deleteSave": "Supprimer la sauvegarde",
+    "transfer": {
+      "export": "Exporter la sauvegarde",
+      "import": "Importer une sauvegarde",
+      "exported": "Sauvegarde exportée.",
+      "imported": "« {{name}} » importée.",
+      "replacePrompt": "« {{name}} » figure déjà dans votre liste. La remplacer par la copie importée ? La copie importée l’emporte ; les deux ne sont pas fusionnées.",
+      "replace": "Remplacer",
+      "error": {
+        "too_small": "Ce fichier est trop petit pour être une sauvegarde.",
+        "wrong_version": "Ce fichier provient d’une autre version du jeu et ne peut pas être chargé ici. Exportez-le de nouveau depuis la version qui l’a créé, ou mettez celle-ci à jour.",
+        "corrupt": "Ce fichier est endommagé ou n’est pas une sauvegarde OLManager.",
+        "storage": "La sauvegarde n’a pas pu être lue ou enregistrée. Vérifiez le fichier et l’espace libre, puis réessayez.",
+        "id_taken": "Une sauvegarde avec cet identifiant existe déjà.",
+        "unknown": "Une erreur s’est produite : {{error}}"
+      }
+    },
     "noResults": "Aucun résultat",
     "importedDescription": "Base de données de monde importée",
     "invalidWorldDb": "Fichier de base de données de monde invalide : {{error}}",

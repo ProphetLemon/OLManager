@@ -210,6 +210,22 @@
     "cancel": "Cancelar",
     "manager": "Head Coach: {{name}}",
     "deleteSave": "Eliminar partida",
+    "transfer": {
+      "export": "Exportar partida",
+      "import": "Importar partida",
+      "exported": "Partida exportada.",
+      "imported": "Se importó «{{name}}».",
+      "replacePrompt": "«{{name}}» ya está en tu lista. ¿Reemplazarla por la copia importada? Gana la copia importada; no se fusionan.",
+      "replace": "Reemplazar",
+      "error": {
+        "too_small": "Ese archivo es demasiado pequeño para ser una partida.",
+        "wrong_version": "Ese archivo es de otra versión del juego y no se puede cargar aquí. Vuelve a exportarlo desde la versión que lo creó o actualiza esta.",
+        "corrupt": "Ese archivo está dañado o no es una partida de OLManager.",
+        "storage": "No se pudo leer o guardar la partida. Revisa el archivo y el espacio libre e inténtalo de nuevo.",
+        "id_taken": "Ya existe una partida con ese identificador.",
+        "unknown": "Algo salió mal: {{error}}"
+      }
+    },
     "noResults": "Sin resultados",
     "importedDescription": "Base de datos de mundo importada",
     "invalidWorldDb": "Archivo de base de datos de mundo inválido: {{error}}",

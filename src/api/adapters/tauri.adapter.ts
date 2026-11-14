@@ -8,6 +8,10 @@ export const tauriAdapter: ApiClient = {
     create: (name, manager, data) => invoke("start_new_game_lightweight", { name, manager, ...(data as Record<string, unknown>) }),
     delete: (id) => invoke("delete_save", { saveId: id }),
     clearAll: () => invoke("clear_all_saves"),
+    exportToFile: (id) => invoke("export_save_file", { saveId: id }),
+    pickImport: () => invoke("pick_import_save"),
+    confirmImport: (replace) => invoke("confirm_import_save", { replace }),
+    cancelImport: () => invoke("cancel_import_save"),
   },
 
   settings: {

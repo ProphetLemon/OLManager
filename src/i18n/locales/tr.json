@@ -178,6 +178,22 @@
     "cancel": "İptal",
     "manager": "Koç: {{name}}",
     "deleteSave": "Kaydı sil",
+    "transfer": {
+      "export": "Kaydı dışa aktar",
+      "import": "Kayıt içe aktar",
+      "exported": "Kayıt dışa aktarıldı.",
+      "imported": "“{{name}}” içe aktarıldı.",
+      "replacePrompt": "“{{name}}” zaten listenizde var. İçe aktarılan kopyayla değiştirilsin mi? İçe aktarılan kopya geçerli olur; ikisi birleştirilmez.",
+      "replace": "Değiştir",
+      "error": {
+        "too_small": "Bu dosya kayıt olamayacak kadar küçük.",
+        "wrong_version": "Bu dosya oyunun başka bir sürümüne ait ve burada yüklenemez. Onu oluşturan sürümden yeniden dışa aktarın ya da bu sürümü güncelleyin.",
+        "corrupt": "Bu dosya bozuk ya da bir OLManager kaydı değil.",
+        "storage": "Kayıt okunamadı veya saklanamadı. Dosyayı ve boş alanı kontrol edip yeniden deneyin.",
+        "id_taken": "Bu kimliğe sahip bir kayıt zaten var.",
+        "unknown": "Bir şeyler ters gitti: {{error}}"
+      }
+    },
     "noResults": "Sonuç bulunamadı",
     "importedDescription": "İçe aktarılmış dünya veritabanı",
     "invalidWorldDb": "Geçersiz dünya veritabanı dosyası: {{error}}",

@@ -178,6 +178,22 @@
     "cancel": "Abbrechen",
     "manager": "Head Coach: {{name}}",
     "deleteSave": "Spielstand löschen",
+    "transfer": {
+      "export": "Spielstand exportieren",
+      "import": "Spielstand importieren",
+      "exported": "Spielstand exportiert.",
+      "imported": "„{{name}}“ importiert.",
+      "replacePrompt": "„{{name}}“ ist bereits in deiner Liste. Durch die importierte Kopie ersetzen? Die importierte Kopie gewinnt; beide werden nicht zusammengeführt.",
+      "replace": "Ersetzen",
+      "error": {
+        "too_small": "Diese Datei ist zu klein, um ein Spielstand zu sein.",
+        "wrong_version": "Diese Datei stammt aus einer anderen Spielversion und kann hier nicht geladen werden. Exportiere sie erneut aus der Version, die sie erstellt hat, oder aktualisiere diese.",
+        "corrupt": "Diese Datei ist beschädigt oder kein OLManager-Spielstand.",
+        "storage": "Der Spielstand konnte nicht gelesen oder gespeichert werden. Prüfe die Datei und den freien Speicher und versuche es erneut.",
+        "id_taken": "Ein Spielstand mit dieser ID existiert bereits.",
+        "unknown": "Etwas ist schiefgelaufen: {{error}}"
+      }
+    },
     "noResults": "Keine Ergebnisse",
     "importedDescription": "Importierte Weltdatenbank",
     "invalidWorldDb": "Ungültige Welt-Datenbankdatei: {{error}}",

@@ -8,6 +8,7 @@ import { useGameStore } from "@/store/gameStore";
 
 import { Button, DatePicker, CountryFlag } from "@/ui-v2/_legacy/components/ui";
 import SavesList from "@/ui-v2/_legacy/components/menu/SavesList";
+import { useSaveTransfer } from "@/ui-v2/_legacy/components/menu/useSaveTransfer";
 import MenuBackground from "@/ui-v2/_legacy/components/menu/MenuBackground";
 import CommunityPanel from "@/ui-v2/_legacy/components/menu/CommunityPanel";
 import PatchNotesPanel from "@/ui-v2/_legacy/components/menu/PatchNotesPanel";
@@ -325,6 +326,11 @@ export default function MainMenu() {
       setIsLoadingSaves(false);
     }
   };
+
+  const transfer = useSaveTransfer(() => getApiClientSync().saves, async () => {
+    const refreshed = (await getApiClientSync().saves.list()) as unknown as SaveEntry[];
+    setSaves(refreshed);
+  });
 
   const handleLoadGame = async (saveId: string) => {
     console.log("[MainMenu] handleLoadGame start, saveId:", saveId);
@@ -910,6 +916,13 @@ export default function MainMenu() {
                     onDelete={handleDeleteSave}
                     onConfirmDelete={setConfirmDeleteId}
                     onClose={() => setMenuState("main")}
+                    onExport={transfer.exportSave}
+                    onImport={transfer.startImport}
+                    onConfirmReplace={transfer.confirmReplace}
+                    onCancelReplace={transfer.cancelReplace}
+                    transferBusy={transfer.busy}
+                    transferNotice={transfer.notice}
+                    pendingReplace={transfer.pendingReplace}
                   />
                 )}
 

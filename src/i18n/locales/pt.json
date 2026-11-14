@@ -178,6 +178,22 @@
     "cancel": "Cancelar",
     "manager": "Head Coach: {{name}}",
     "deleteSave": "Eliminar jogo",
+    "transfer": {
+      "export": "Exportar jogo guardado",
+      "import": "Importar jogo guardado",
+      "exported": "Jogo guardado exportado.",
+      "imported": "«{{name}}» importado.",
+      "replacePrompt": "«{{name}}» já está na lista. Substituir pela cópia importada? A cópia importada prevalece; as duas não são combinadas.",
+      "replace": "Substituir",
+      "error": {
+        "too_small": "Esse ficheiro é demasiado pequeno para ser um jogo guardado.",
+        "wrong_version": "Esse ficheiro é de outra versão do jogo e não pode ser carregado aqui. Exporta-o de novo a partir da versão que o criou ou atualiza esta.",
+        "corrupt": "Esse ficheiro está danificado ou não é um jogo guardado do OLManager.",
+        "storage": "Não foi possível ler ou guardar o jogo. Verifica o ficheiro e o espaço livre e tenta de novo.",
+        "id_taken": "Já existe um jogo guardado com esse identificador.",
+        "unknown": "Algo correu mal: {{error}}"
+      }
+    },
     "noResults": "Sem resultados",
     "importedDescription": "Base de dados de mundo importada",
     "invalidWorldDb": "Ficheiro de base de dados de mundo inválido: {{error}}",
