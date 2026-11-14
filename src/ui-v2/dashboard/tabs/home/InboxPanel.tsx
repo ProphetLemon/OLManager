@@ -88,9 +88,9 @@ export function InboxPanel({ messages, unreadCount, onOpen }: InboxPanelProps) {
       aria-label={t("onAir.home.inboxTitle", { defaultValue: "Inbox" })}
       className="flex h-full min-h-0 flex-col gap-3 rounded-xl border border-line bg-card p-4 text-card-foreground"
     >
-      <header className="flex items-center gap-2">
+      <header className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <h2
-          className="min-w-0 flex-1 truncate whitespace-nowrap font-heading text-section font-bold uppercase leading-tight tracking-wide">
+          className="min-w-fit flex-1 font-heading text-section font-bold uppercase leading-tight tracking-wide">
           {t("onAir.home.inboxTitleShort", { defaultValue: "Inbox" })}
         </h2>
         {unreadCount > 0 ? (
