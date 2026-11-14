@@ -1149,6 +1149,10 @@ pub(crate) fn prepare_new_game_season(
     }
 
     game.leagues = all_leagues;
+    // Every club a league schedules starts with its tier's sponsor, so day-1 projections
+    // include it. The monthly finance step renews it and covers old saves.
+    let sponsored = olm_core::tier_sponsorship::assign_missing_tier_sponsorships(game);
+    info!("[game] {sponsored} scheduled main clubs start with a tier sponsor");
     game.user_competition_id = user_cid.map(String::from);
     olm_core::champions::bootstrap_champion_state(game);
     olm_core::season_context::refresh_game_context(game);
@@ -2200,6 +2204,56 @@ mod tests {
                 .filter(|id| olm_core::world_catalog::is_stale_duplicate_competition(id))
                 .collect();
             assert!(stale.is_empty(), "stale leagues built: {stale:?}");
+        }
+
+        /// Every main club a league schedules starts with a 12-month sponsor sized by its
+        /// tier, so day-1 projections include it; the historical-roster clubs no league
+        /// schedules and the academy sub-teams get none.
+        #[test]
+        fn a_new_game_gives_every_scheduled_main_club_its_tier_sponsor() {
+            use olm_core::tier_sponsorship::{
+                TIER_1_SPONSORSHIP_VALUE, TIER_2_SPONSORSHIP_VALUE, TIER_SPONSORSHIP_MONTHS,
+                scheduled_main_club_tiers,
+            };
+
+            let (mut game, _catalog_players, _overlay, user_team) = new_game();
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &user_team).expect("season setup");
+
+            let scheduled = scheduled_main_club_tiers(&game);
+            assert!(
+                scheduled.values().any(|tier| *tier == 1)
+                    && scheduled.values().any(|tier| *tier == 2),
+                "the world schedules a tier-1 and a tier-2 club"
+            );
+            for team in &game.teams {
+                match scheduled.get(&team.id) {
+                    Some(tier) => {
+                        let deal = team
+                            .sponsorship
+                            .as_ref()
+                            .unwrap_or_else(|| panic!("{} has no starting sponsor", team.id));
+                        let expected = if *tier == 1 {
+                            TIER_1_SPONSORSHIP_VALUE
+                        } else {
+                            TIER_2_SPONSORSHIP_VALUE
+                        };
+                        assert_eq!(deal.base_value, expected, "{} (tier {tier})", team.id);
+                        assert_eq!(deal.remaining_months, TIER_SPONSORSHIP_MONTHS);
+                    }
+                    None => assert!(
+                        team.sponsorship.is_none(),
+                        "{} is not scheduled by any league but holds a sponsor",
+                        team.id
+                    ),
+                }
+            }
+            assert!(
+                game.teams
+                    .iter()
+                    .any(|team| team.is_main() && !scheduled.contains_key(&team.id)),
+                "the world holds main clubs no league schedules"
+            );
         }
 
         /// Fails when a player's stored `lol_ovr` differs from what a load computes for them

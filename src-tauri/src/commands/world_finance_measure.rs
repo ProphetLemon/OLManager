@@ -427,3 +427,63 @@ fn world_finance_measure() {
     print_report(&runs);
     println!("\ntotal wall time {:.1}s", started.elapsed().as_secs_f64());
 }
+
+/// Median of `values` (lower middle for an even count); 0 when empty.
+fn median(values: &mut [i64]) -> i64 {
+    values.sort_unstable();
+    values
+        .get(values.len().saturating_sub(1) / 2)
+        .copied()
+        .unwrap_or(0)
+}
+
+/// Sizing of the tier sponsors (ignored): the median annual player plus staff wage
+/// bill of the scheduled main clubs of tier 1 and of tier 2 in the world a new game
+/// builds. The constants in `olm_core::tier_sponsorship` come from these figures,
+/// rounded up to the nearest 50,000.
+#[test]
+#[ignore = "measurement: prints the wage-bill medians that size the tier sponsors"]
+fn world_sponsor_sizing_measure() {
+    let world = build_start_world();
+    let tiers = olm_core::tier_sponsorship::scheduled_main_club_tiers(&world);
+    let wage_bill = |team_id: &str| -> i64 {
+        let players: i64 = world
+            .players
+            .iter()
+            .filter(|p| p.team_id.as_deref() == Some(team_id))
+            .map(|p| i64::from(p.wage))
+            .sum();
+        let staff: i64 = world
+            .staff
+            .iter()
+            .filter(|s| s.team_id.as_deref() == Some(team_id))
+            .map(|s| i64::from(s.wage))
+            .sum();
+        players + staff
+    };
+    for (label, wanted) in [("tier 1", 1u8), ("tier 2", 2u8)] {
+        let mut bills: Vec<i64> = tiers
+            .iter()
+            .filter(|(_, tier)| **tier == wanted)
+            .map(|(team_id, _)| wage_bill(team_id))
+            .collect();
+        let clubs = bills.len();
+        let min = bills.iter().copied().min().unwrap_or(0);
+        let max = bills.iter().copied().max().unwrap_or(0);
+        let med = median(&mut bills);
+        let rounded = (med + 49_999) / 50_000 * 50_000;
+        println!("{label}: {clubs} clubs, wage bill min {min} median {med} max {max}, rounded up to 50k: {rounded}");
+    }
+    let mut others: Vec<(String, u8)> = tiers
+        .iter()
+        .filter(|(_, tier)| !matches!(**tier, 1 | 2))
+        .map(|(id, tier)| (id.clone(), *tier))
+        .collect();
+    others.sort();
+    println!(
+        "scheduled clubs with another tier: {} {:?}",
+        others.len(),
+        others.first()
+    );
+    println!("scheduled main clubs total: {}", tiers.len());
+}
