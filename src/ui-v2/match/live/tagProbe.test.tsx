@@ -68,8 +68,8 @@ describe("the probe of a tag stands in for the tag", () => {
           <ChampionLayer state={state} championByPlayerId={{}} contacts={{ fightingIds: [] }} selectedId={null} onSelect={() => {}} />
         </ArenaHarness>,
       );
-      // The team colours come from the theme, which is not part of liveMatch.css.
-      const page = `<style>:root{--team-blue:#2a7de1;--team-red:#e5484d}${css}</style>
+      // The team colours come from the theme and the clubs' from the screen root, neither part of liveMatch.css.
+      const page = `<style>:root{--team-blue:#2a7de1;--team-red:#e5484d;--side-blue:#2a7de1;--side-red:#e5484d}${css}</style>
         <div style="position:relative;width:540px;height:540px"><div class="arena-map" style="width:540px;height:540px"><div class="arena-layer">${markup}</div></div></div>`;
 
       const browser = await chromium.launch();

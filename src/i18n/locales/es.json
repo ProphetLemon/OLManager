@@ -4703,7 +4703,9 @@
         "kills": "Asesinatos de {{team}}: {{value}}",
         "buff": "{{name}} {{time}}",
         "soul": "Alma: {{kind}}",
-        "buffs": "Mejoras activas"
+        "buffs": "Mejoras activas",
+        "blueSide": "Lado azul",
+        "redSide": "Lado rojo"
       },
       "map": {
         "label": "Mapa de la partida. Base azul abajo a la izquierda, base roja arriba a la derecha.",

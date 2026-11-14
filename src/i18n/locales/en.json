@@ -4738,7 +4738,9 @@
         "kills": "{{team}} kills {{value}}",
         "buff": "{{name}} {{time}}",
         "soul": "Soul: {{kind}}",
-        "buffs": "Active buffs"
+        "buffs": "Active buffs",
+        "blueSide": "Blue side",
+        "redSide": "Red side"
       },
       "map": {
         "label": "Match map. Blue base at the bottom left, red base at the top right.",

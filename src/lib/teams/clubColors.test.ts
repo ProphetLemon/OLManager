@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   FALLBACK_ACCENT,
   FALLBACK_SECONDARY,
+  DARK_CARD_HEX,
   SURFACE,
   SURFACE_HEX,
   contrastRatio,
@@ -53,6 +54,13 @@ describe("colour maths", () => {
     const css = readFileSync(resolve(__dirname, "../../themes/default.css"), "utf8");
     const token = css.match(/--surface-clamp:\s*(#[0-9a-fA-F]{6})\s*;/);
     expect(token?.[1].toLowerCase()).toBe(SURFACE);
+  });
+
+  it("exports the dark card the washes are mixed over", () => {
+    const css = readFileSync(resolve(__dirname, "../../themes/default.css"), "utf8");
+    const dark = css.slice(css.indexOf("\n.dark {"));
+    const token = dark.match(/--card:\s*(#[0-9a-fA-F]{6})\s*;/);
+    expect(token?.[1].toLowerCase()).toBe(DARK_CARD_HEX.toLowerCase());
   });
 
   it("distinguishes chromatic colours from placeholders", () => {

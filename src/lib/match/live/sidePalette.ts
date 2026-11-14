@@ -9,12 +9,16 @@
  * club) takes its secondary colour.
  */
 import {
+  DARK_CARD_HEX,
   ensureContrast,
+  formatHex,
   hexToOklch,
   isChromatic,
+  parseHex,
   readableForeground,
   resolveClubPalette,
   SURFACE,
+  type ClubPalette,
   type ClubPaletteSource,
   type LogoPalette,
 } from "@/lib/teams/clubColors";
@@ -41,6 +45,49 @@ export interface SidePalette {
   secondary: string;
   /** Where the accent came from; "secondary" when the closeness fallback replaced it. */
   source: ClubPaletteSource | "secondary";
+  /** The club's own colour, for the washes and the bar's side tag; the accent in high contrast. */
+  band: string;
+  /** Text on the band: near-black or white, whichever contrasts more. */
+  bandForeground: string;
+  /** The accent as text on the wash (the band at WASH_SHARE over the dark card): at least 4.5:1. */
+  washText: string;
+}
+
+/** How much of the band the bar's wash shows over the card; the home screen's next-match card uses the same share. */
+export const WASH_SHARE = 0.36;
+const WASH_TEXT_MIN_CONTRAST = 4.5;
+
+function mixHex(base: string, over: string, share: number): string {
+  const a = parseHex(base) ?? [0, 0, 0];
+  const b = parseHex(over) ?? a;
+  return formatHex([0, 1, 2].map((i) => a[i] * (1 - share) + b[i] * share) as [number, number, number]);
+}
+
+/** The band, its text and the wash text that follow from an accent and the club's own colour. */
+function bandTones(accent: string, accentText: string, band: string) {
+  const wash = mixHex(DARK_CARD_HEX, band, WASH_SHARE);
+  return {
+    band,
+    bandForeground: readableForeground(band),
+    washText: ensureContrast(accentText, wash, WASH_TEXT_MIN_CONTRAST),
+    accent,
+  };
+}
+
+/** The side palette of a resolved club palette: its tones plus the band the bar and the washes use. */
+export function toSidePalette(palette: ClubPalette, highContrast: boolean): SidePalette {
+  const band = highContrast ? palette.accent : palette.primary;
+  const { bandForeground, washText } = bandTones(palette.accent, palette.accentText, band);
+  return {
+    accent: palette.accent,
+    accentText: palette.accentText,
+    foreground: palette.accentForeground,
+    secondary: palette.secondary,
+    source: palette.source,
+    band,
+    bandForeground,
+    washText,
+  };
 }
 
 export interface SideStyle {
@@ -105,13 +152,7 @@ function styleFor(
     primary: palette.primary,
     style: {
       logoUrl: resolveTeamLogoById(teams, ref.id, () => resolveTeamLogo(ref.name)),
-      palette: {
-        accent: palette.accent,
-        accentText: palette.accentText,
-        foreground: palette.accentForeground,
-        secondary: palette.secondary,
-        source: palette.source,
-      },
+      palette: toSidePalette(palette, highContrast),
     },
   };
 }
@@ -119,12 +160,18 @@ function styleFor(
 /** The palette with its accent replaced by its own secondary colour, clamped like any accent. */
 function withSecondary(palette: SidePalette, highContrast: boolean): SidePalette {
   const accent = ensureContrast(palette.secondary, SURFACE, highContrast ? 4.5 : 3);
+  const accentText = ensureContrast(accent, SURFACE, 4.5);
+  // The secondary colour is only known clamped, so the band is that tone.
+  const { bandForeground, washText } = bandTones(accent, accentText, accent);
   return {
     accent,
-    accentText: ensureContrast(accent, SURFACE, 4.5),
+    accentText,
     foreground: readableForeground(accent),
     secondary: palette.secondary,
     source: "secondary",
+    band: accent,
+    bandForeground,
+    washText,
   };
 }
 
@@ -150,4 +197,26 @@ export function resolveSideStyles(
     fellBack: true,
     closeness,
   };
+}
+
+/** The tone suffixes of the side tokens, in the order `sideTokens` writes them. */
+export const SIDE_TOKEN_SUFFIXES = ["", "-text", "-fg", "-band", "-band-fg", "-wash-text"] as const;
+
+/**
+ * The `--side-*` custom properties of a match: for each side its fill, text, text on the fill, band,
+ * text on the band and text on the wash. Published once on the screen root as an inline style, so
+ * the whole screen paints in the two clubs' colours without any per-frame work.
+ */
+export function sideTokens(blue: SidePalette, red: SidePalette): Record<string, string> {
+  const tokens: Record<string, string> = {};
+  for (const [side, palette] of [
+    ["blue", blue],
+    ["red", red],
+  ] as const) {
+    const values = [palette.accent, palette.accentText, palette.foreground, palette.band, palette.bandForeground, palette.washText];
+    SIDE_TOKEN_SUFFIXES.forEach((suffix, index) => {
+      tokens[`--side-${side}${suffix}`] = values[index];
+    });
+  }
+  return tokens;
 }

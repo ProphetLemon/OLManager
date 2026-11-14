@@ -4704,7 +4704,9 @@
         "kills": "{{team}} Kills: {{value}}",
         "buff": "{{name}} {{time}}",
         "soul": "Drachenseele: {{kind}}",
-        "buffs": "Aktive Buffs"
+        "buffs": "Aktive Buffs",
+        "blueSide": "Blaue Seite",
+        "redSide": "Rote Seite"
       },
       "map": {
         "label": "Spielkarte. Blaue Basis unten links, rote Basis oben rechts.",

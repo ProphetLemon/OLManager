@@ -174,6 +174,12 @@ export function oklchToHex(l: number, c: number, h: number): string {
 export const SURFACE_HEX = "#2A3347";
 export const SURFACE: string = SURFACE_HEX.toLowerCase();
 
+/**
+ * The dark theme's `--card`: the surface a club wash is mixed over, so text can be clamped
+ * against the tinted result. A test keeps it in sync with themes/default.css.
+ */
+export const DARK_CARD_HEX = "#141924";
+
 export const FALLBACK_ACCENT = "#f97316";
 export const FALLBACK_SECONDARY = "#a1a1aa";
 const FOREGROUND_DARK = "#0a0a0a";

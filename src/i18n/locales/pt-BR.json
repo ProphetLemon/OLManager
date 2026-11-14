@@ -4704,7 +4704,9 @@
         "kills": "Abates de {{team}}: {{value}}",
         "buff": "{{name}} {{time}}",
         "soul": "Alma: {{kind}}",
-        "buffs": "Bônus ativos"
+        "buffs": "Bônus ativos",
+        "blueSide": "Lado azul",
+        "redSide": "Lado vermelho"
       },
       "map": {
         "label": "Mapa da partida. Base azul embaixo à esquerda, base vermelha em cima à direita.",

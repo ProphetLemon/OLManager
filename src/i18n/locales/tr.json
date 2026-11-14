@@ -4704,7 +4704,9 @@
         "kills": "{{team}} öldürmeleri: {{value}}",
         "buff": "{{name}} {{time}}",
         "soul": "Ruh: {{kind}}",
-        "buffs": "Etkin güçlendirmeler"
+        "buffs": "Etkin güçlendirmeler",
+        "blueSide": "Mavi taraf",
+        "redSide": "Kırmızı taraf"
       },
       "map": {
         "label": "Maç haritası. Mavi üs sol altta, kırmızı üs sağ üstte.",

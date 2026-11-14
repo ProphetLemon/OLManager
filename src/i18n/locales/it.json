@@ -4703,7 +4703,9 @@
         "kills": "Uccisioni {{team}}: {{value}}",
         "buff": "{{name}} {{time}}",
         "soul": "Anima: {{kind}}",
-        "buffs": "Bonus attivi"
+        "buffs": "Bonus attivi",
+        "blueSide": "Lato blu",
+        "redSide": "Lato rosso"
       },
       "map": {
         "label": "Mappa della partita. Base blu in basso a sinistra, base rossa in alto a destra.",

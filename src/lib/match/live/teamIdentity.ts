@@ -5,7 +5,7 @@
  * the name itself. Logo and palette come from `resolveSideStyles` (sidePalette.ts).
  */
 import { resolveClubPalette } from "@/lib/teams/clubColors";
-import type { SideStyle } from "./sidePalette";
+import { toSidePalette, type SideStyle } from "./sidePalette";
 
 export interface TeamIdentity extends SideStyle {
   /** Short code, "EMB". */
@@ -54,13 +54,7 @@ export function neutralSide(): SideStyle {
   const palette = resolveClubPalette(null, {});
   return {
     logoUrl: null,
-    palette: {
-      accent: palette.accent,
-      accentText: palette.accentText,
-      foreground: palette.accentForeground,
-      secondary: palette.secondary,
-      source: palette.source,
-    },
+    palette: toSidePalette(palette, false),
   };
 }
 
