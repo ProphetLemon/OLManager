@@ -589,6 +589,48 @@ const RECALL_INTERRUPT_TOWER_MARGIN: f64 = 0.02;
 /// Time left in the channel that the interrupter needs to land the hit after he arrives.
 const RECALL_INTERRUPT_HIT_MARGIN_SEC: f64 = 0.6;
 
+/// Whether an enemy can walk up to `recaller` and land a hit before a channel that starts now
+/// ends: the same reach test `recall_interrupt_idx` applies to the champion who stops a recall
+/// (alive, not recalling himself, healthy enough to leave what he does, inside the engagement
+/// radius), read from the recaller's side. Nothing here asks what the enemy sees or has at hand,
+/// so it names every enemy who might come, unless the recaller's group outnumbers the enemies
+/// around him.
+pub(super) fn recall_channel_can_be_stopped(
+    recaller: &ChampionRuntime,
+    champions: &[ChampionRuntime],
+) -> bool {
+    let team = normalized_team(&recaller.team);
+    // He does not walk into a group: the recaller's side near him must not outnumber his own,
+    // the same count `recall_interrupt_idx` makes.
+    let near = |recaller_side: bool| {
+        champions
+            .iter()
+            .filter(|c| {
+                c.alive
+                    && c.id != recaller.id
+                    && c.state != "recall"
+                    && (normalized_team(&c.team) == team) == recaller_side
+                    && dist(c.pos, recaller.pos) <= RECALL_INTERRUPT_FIGHT_RADIUS
+            })
+            .count()
+    };
+    if near(false) < near(true) {
+        return false;
+    }
+    champions.iter().any(|enemy| {
+        let reach = enemy.attack_range.max(MIN_ATTACK_REACH);
+        let d = dist(enemy.pos, recaller.pos);
+        enemy.alive
+            && enemy.state != "recall"
+            && normalized_team(&enemy.team) != team
+            && enemy.hp / enemy.max_hp.max(1.0) >= RECALL_INTERRUPT_MIN_HP_RATIO
+            && d <= LOCAL_COMBAT_ENGAGE_RADIUS
+            && (d <= reach
+                || (d - reach) / enemy.move_speed.max(0.01) + RECALL_INTERRUPT_HIT_MARGIN_SEC
+                    <= RECALL_CHANNEL_SEC)
+    })
+}
+
 /// The enemy champion channeling a recall that `champion_idx` can reach and hit before the
 /// channel ends. Damage cancels a recall, so a champion who sees one and has nothing bigger at
 /// hand (an objective, a fight he is losing, his own low health) goes and hits it: a recall that
