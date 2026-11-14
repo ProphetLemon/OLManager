@@ -503,6 +503,7 @@ pub fn process_contract_expiries(game: &mut Game) {
             player.transfer_listed = false;
             player.loan_listed = false;
             player.transfer_offers.clear();
+            player.clear_renewal_session();
 
             game.messages.push(contract_expired_message(
                 &player_id,
