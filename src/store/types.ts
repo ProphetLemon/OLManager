@@ -732,6 +732,8 @@ export function getStandingKillDiff(standing: StandingData): number {
 export interface CompetitionSummary {
   id: string;
   name: string;
+  /** Long name from the competition manifest ("LCK Challenger League Series"). */
+  full_name?: string | null;
   region: string;
   logo: string | null;
   tier: number;

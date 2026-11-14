@@ -13,6 +13,7 @@ pub mod discord;
 pub mod game;
 pub mod import;
 pub mod jobs;
+pub mod league_preview;
 pub mod live_match;
 pub mod logo;
 pub mod messages;

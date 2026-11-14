@@ -926,7 +926,7 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
 /// bundled overlay and the one downloaded into the app data dir (see
 /// `commands::world_overlay`). A malformed overlay must never block a new game,
 /// so errors are logged and the game starts from the bundled data alone.
-fn resolve_world_overlay(app_handle: &tauri::AppHandle) -> Option<WorldOverlay> {
+pub(crate) fn resolve_world_overlay(app_handle: &tauri::AppHandle) -> Option<WorldOverlay> {
     super::world_overlay::resolve_overlay_for_new_game(app_handle)
 }
 

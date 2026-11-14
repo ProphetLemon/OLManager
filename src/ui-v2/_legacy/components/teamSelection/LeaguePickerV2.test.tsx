@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { CompetitionSummary } from "@/store/gameStore";
@@ -69,5 +69,29 @@ describe("LeaguePickerV2", () => {
     expect(screen.getByText("1 equipo")).toBeInTheDocument();
     expect(screen.getByText("8 equipos")).toBeInTheDocument();
     expect(screen.queryByText(/Teams/)).toBeNull();
+  });
+
+  it("titles a regional card with the short name and puts the long name under it, with no repeat", () => {
+    const lckcl = { ...competition("lckcl", 2), name: "LCKCL", region: "LCKCL", full_name: "LCK Challenger League Series" };
+    render(<LeaguePickerV2 competitions={[lckcl]} onSelect={vi.fn()} />);
+
+    expect(screen.getByRole("heading", { name: "LCKCL" })).toBeInTheDocument();
+    expect(screen.getByText("LCK Challenger League Series")).toBeInTheDocument();
+    expect(screen.getAllByText("LCKCL")).toHaveLength(1);
+  });
+
+  it("finds a league by its long name, with or without the spaces of the short name", () => {
+    const lckcl = { ...competition("lckcl", 2), name: "LCKCL", region: "LCKCL", full_name: "LCK Challenger League Series" };
+    const prm = { ...competition("prm", 2), name: "PRM", region: "PRM", full_name: "Techniker Prime League" };
+    const search = (text: string) => {
+      fireEvent.change(screen.getByRole("textbox"), { target: { value: text } });
+      return screen.queryAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    };
+    render(<LeaguePickerV2 competitions={[lckcl, prm]} onSelect={vi.fn()} />);
+
+    expect(search("Prime")).toEqual(["PRM"]);
+    expect(search("Challenger")).toEqual(["LCKCL"]);
+    expect(search("LCK CL")).toEqual(["LCKCL"]);
+    expect(search("lckcl")).toEqual(["LCKCL"]);
   });
 });
