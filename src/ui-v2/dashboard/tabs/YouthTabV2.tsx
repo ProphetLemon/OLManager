@@ -22,6 +22,7 @@ import {
   getAcademyAcquisitionOptions,
   promoteAcademyPlayer,
 } from "@/services/academyService";
+import { academyBlockedMessage, academyRegionKey } from "@/lib/academy/acquisitionMessage";
 import { calcAge } from "@/lib/common/helpers";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
@@ -95,6 +96,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
   const [promotingPlayerId, setPromotingPlayerId] = useState<string | null>(null);
   const [acquisitionOptions, setAcquisitionOptions] = useState<AcademyAcquisitionOptionData[]>([]);
   const [acquisitionBlockedReason, setAcquisitionBlockedReason] = useState<string | null>(null);
+  const [acquisitionRegion, setAcquisitionRegion] = useState<string | null>(null);
   const [acquisitionLoading, setAcquisitionLoading] = useState(false);
   const [acquiringSourceId, setAcquiringSourceId] = useState<string | null>(null);
   const [academyCustomName, setAcademyCustomName] = useState("");
@@ -106,6 +108,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
     if (academyTeam || !myTeam?.id) {
       setAcquisitionOptions([]);
       setAcquisitionBlockedReason(null);
+      setAcquisitionRegion(null);
       setAcquisitionLoading(false);
       return;
     }
@@ -116,11 +119,13 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
         if (cancelled) return;
         setAcquisitionOptions(response.options ?? []);
         setAcquisitionBlockedReason(response.blocked_reason ?? null);
+        setAcquisitionRegion(response.region ?? null);
       })
       .catch(() => {
         if (cancelled) return;
         setAcquisitionOptions([]);
         setAcquisitionBlockedReason("youthAcademy.loadOptionsError");
+        setAcquisitionRegion(null);
       })
       .finally(() => {
         if (cancelled) return;
@@ -129,6 +134,11 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
 
     return () => { cancelled = true; };
   }, [academyTeam, myTeam?.id]);
+
+  const regionKey = academyRegionKey(acquisitionRegion);
+  const regionLabel = regionKey ? t(regionKey) : null;
+  const blockedMessage = academyBlockedMessage(acquisitionBlockedReason, regionLabel);
+  const notTopLeague = blockedMessage?.key === "youthAcademy.blocked.notTopLeague";
 
   const youthPlayers = useMemo(
     () =>
@@ -368,10 +378,14 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                 {acquisitionLoading
                   ? t("youthAcademy.acquisitionLoading")
                   : acquisitionOptions.length > 0
-                    ? t("youthAcademy.acquisitionIntro")
+                    ? regionLabel
+                      ? t("youthAcademy.acquisitionIntroRegion", { region: regionLabel })
+                      : t("youthAcademy.acquisitionIntro")
                     : acquisitionBlockedReason === "youthAcademy.loadOptionsError"
                       ? t("youthAcademy.loadOptionsError")
-                      : acquisitionBlockedReason ?? t("youthAcademy.acquisitionNoOptions")}
+                      : blockedMessage
+                        ? t(blockedMessage.key, blockedMessage.params)
+                        : acquisitionBlockedReason ?? t("youthAcademy.acquisitionNoOptions")}
               </p>
 
               {acquisitionOptions.length > 0 && (
@@ -463,7 +477,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                 </div>
               )}
 
-              {acquisitionOptions.length === 0 && !acquisitionLoading && (
+              {acquisitionOptions.length === 0 && !acquisitionLoading && !notTopLeague && (
                 <button
                   type="button"
                   disabled

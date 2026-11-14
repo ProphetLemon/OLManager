@@ -2,6 +2,7 @@ use crate::domain::message::{InboxMessage, MessageCategory, MessageContext, Mess
 use crate::domain::team::{
     AcademyLifecycle, AcademyMetadata, ErlAssignment, FinancialTransactionKind, Team, TeamKind,
 };
+use crate::domain::league::LeagueKind;
 use crate::finances::{
     BudgetImpact, FinanceTransactionInput, LedgerText, record_transaction_with_text,
 };
@@ -686,7 +687,13 @@ fn catalogs_from_tier2_manifests() -> Vec<ErlLeagueDefinition> {
             }
 
             let country_code = manifest.country.clone().unwrap_or_default();
-            let region = manifest.region.clone();
+            // Macro region from the game's residency table (the manifest `region` is
+            // only the league label). Empty when the competition has no known region,
+            // so such a league is never offered.
+            let region = crate::residency::region_for_competition(&manifest.id)
+                .or_else(|| crate::residency::region_for_competition(&league_id))
+                .map(|region| region.code().to_string())
+                .unwrap_or_default();
             let reputation = manifest.reputation.unwrap_or(3);
             let nearby = manifest.nearby_country_codes.clone();
 
@@ -753,14 +760,69 @@ fn normalize(val: &str) -> String {
         .collect()
 }
 
+/// Stable code returned as the blocked reason when the parent does not play in a
+/// tier-1 competition. The UI maps it to a localized message.
+pub const BLOCKED_NOT_TOP_LEAGUE: &str = "ACADEMY_PARENT_NOT_TOP_LEAGUE";
+
+/// Stable code returned as the blocked reason when no free tier-2 team exists in
+/// the parent's own region. The UI maps it to a localized message.
+pub const BLOCKED_NO_REGION_CANDIDATES: &str = "ACADEMY_NO_REGION_CANDIDATES";
+
+/// Acquisition options for one parent team plus the reason they are blocked.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct AcademyAcquisitionReport {
+    pub options: Vec<AcademyAcquisitionOption>,
+    pub blocked_reason: Option<String>,
+    /// Region code (see [`crate::residency::Region::code`]) the options are
+    /// limited to. `None` when the parent cannot fund an academy.
+    pub region: Option<String>,
+}
+
 /// Compute available acquisition options and any blocking reason for a parent team.
 pub fn get_acquisition_options(
     game: &Game,
     parent_team_id: &str,
 ) -> (Vec<AcademyAcquisitionOption>, Option<String>) {
-    let parent = match game.teams.iter().find(|t| t.id == parent_team_id) {
-        Some(t) => t.clone(),
-        None => return (vec![], Some("Team not found".to_string())),
+    let report = get_acquisition_report(game, parent_team_id);
+    (report.options, report.blocked_reason)
+}
+
+/// Same as [`get_acquisition_options`], with the region the options belong to.
+pub fn get_acquisition_report(game: &Game, parent_team_id: &str) -> AcademyAcquisitionReport {
+    acquisition_report(
+        game,
+        parent_team_id,
+        academy_erl_catalog(),
+        academy_candidate_catalog(),
+    )
+}
+
+/// Catalog-injected core of [`get_acquisition_report`].
+pub fn acquisition_report(
+    game: &Game,
+    parent_team_id: &str,
+    leagues: &[ErlLeagueDefinition],
+    candidates: &[ErlAcademyCandidate],
+) -> AcademyAcquisitionReport {
+    let Some(parent) = game.teams.iter().find(|t| t.id == parent_team_id) else {
+        return AcademyAcquisitionReport {
+            options: vec![],
+            blocked_reason: Some("Team not found".to_string()),
+            region: None,
+        };
+    };
+
+    // Only a tier-1 club can fund an academy, and only from tier-2 teams of its own
+    // region. A club outside the top flight gets no options at all.
+    let parent_region = top_league_region(game, parent);
+    let region_code = parent_region.map(|region| region.code().to_string());
+    let region_leagues: Vec<ErlLeagueDefinition> = match &region_code {
+        Some(code) => leagues
+            .iter()
+            .filter(|league| league.region == *code)
+            .cloned()
+            .collect(),
+        None => vec![],
     };
 
     // Already occupied academy team IDs + names
@@ -784,28 +846,49 @@ pub fn get_acquisition_options(
         .filter_map(|t| t.academy.as_ref().map(|m| normalize(&m.original_name)))
         .collect();
 
-    let options: Vec<AcademyAcquisitionOption> = eligible_academy_acquisition_options(
-        &parent.country,
-        academy_erl_catalog(),
-        academy_candidate_catalog(),
-    )
-    .into_iter()
-    .filter(|o| !occupied.contains(&o.source_team_id) && !taken.contains(&normalize(&o.name)))
-    .collect();
+    let options: Vec<AcademyAcquisitionOption> =
+        eligible_academy_acquisition_options(&parent.country, &region_leagues, candidates)
+            .into_iter()
+            .filter(|o| {
+                !occupied.contains(&o.source_team_id) && !taken.contains(&normalize(&o.name))
+            })
+            .collect();
 
     let blocked = if !parent.is_main() {
         Some("Academy can only be acquired for a main team".to_string())
     } else if parent.academy_team_id.is_some() {
         Some("Parent team already has academy".to_string())
+    } else if parent_region.is_none() {
+        Some(BLOCKED_NOT_TOP_LEAGUE.to_string())
     } else if options.is_empty() {
-        Some("No free academy candidates available".to_string())
+        Some(BLOCKED_NO_REGION_CANDIDATES.to_string())
     } else if options.iter().all(|o| parent.finance < o.acquisition_cost) {
-        Some("Insufficient funds".to_string())
+        Some("Insufficient funds for all eligible academy acquisition options".to_string())
     } else {
         None
     };
 
-    (options, blocked)
+    AcademyAcquisitionReport {
+        options,
+        blocked_reason: blocked,
+        region: region_code,
+    }
+}
+
+/// Region of a parent that plays in a tier-1 competition, `None` otherwise.
+///
+/// The tier comes from the loaded league of the team's competition; the region
+/// from the game's residency table, keyed by the same competition id.
+fn top_league_region(game: &Game, parent: &Team) -> Option<crate::residency::Region> {
+    let competition_id = parent.competition_id.as_deref()?;
+    let league = game.leagues.iter().find(|league| {
+        league.competition_id.as_deref() == Some(competition_id)
+            && league.league_kind == LeagueKind::Main
+    })?;
+    if league.tier != 1 {
+        return None;
+    }
+    crate::residency::region_for_competition(competition_id)
 }
 
 /// Acquire an academy team for the parent, deducting cost and linking.

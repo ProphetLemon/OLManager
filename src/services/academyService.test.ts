@@ -113,6 +113,50 @@ describe("academyService", () => {
     });
   });
 
+  it("carries the backend region onto the response and every option", async () => {
+    mockedInvoke.mockResolvedValueOnce({
+      parent_team_id: "team-3",
+      acquisition_allowed: true,
+      blocked_reason: null,
+      region: "KR",
+      options: [
+        {
+          source_team_id: "cl-1",
+          name: "CL One",
+          short_name: "CL1",
+          erl_league_id: "lck_cl",
+          erl_league_name: "LCK CL",
+          country_code: "KR",
+          assignment_rule: "Domestic",
+          reputation: 3,
+          development_level: 2,
+          acquisition_cost: 260000,
+        },
+      ],
+    });
+
+    const response = await getAcademyAcquisitionOptions("team-3");
+
+    expect(response.region).toBe("KR");
+    expect(response.options[0].region).toBe("KR");
+  });
+
+  it("leaves the region empty when the club is blocked by tier", async () => {
+    mockedInvoke.mockResolvedValueOnce({
+      parent_team_id: "team-4",
+      acquisition_allowed: false,
+      blocked_reason: "ACADEMY_PARENT_NOT_TOP_LEAGUE",
+      region: null,
+      options: [],
+    });
+
+    await expect(getAcademyAcquisitionOptions("team-4")).resolves.toMatchObject({
+      region: null,
+      blocked_reason: "ACADEMY_PARENT_NOT_TOP_LEAGUE",
+      options: [],
+    });
+  });
+
   it("acquires an academy through the backend command with the selected source team", async () => {
     const updatedGame = { teams: [{ id: "mkoi-fenix" }] };
     mockedInvoke.mockResolvedValueOnce(updatedGame);

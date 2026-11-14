@@ -436,12 +436,14 @@ pub fn peer_ovr_percentiles(peers: &[&Team], players: &[Player]) -> OvrPercentil
 
 /// Academy teams that belong to `replaced`: linked from it, parented to it, or
 /// an unparented seed academy named after the club (or its known alias).
-/// Returns the one the custom club inherits, if it has no academy of its own,
-/// and the ids to dissolve.
+/// Returns the one the custom club inherits, if it has no academy of its own and
+/// `may_inherit` (the replaced club plays in a tier-1 competition), and the ids
+/// to dissolve.
 fn split_replaced_academies(
     game: &Game,
     replaced: &Team,
     custom_id: &str,
+    may_inherit: bool,
 ) -> (Option<String>, Vec<String>) {
     let club_key = academy::normalize_key(&replaced.name);
     let alias_key = game_setup::academy_team_alias_for_parent(&replaced.name);
@@ -461,7 +463,7 @@ fn split_replaced_academies(
     let custom_has_academy = game.teams.iter().any(|t| {
         t.team_kind == TeamKind::Academy && t.parent_team_id.as_deref() == Some(custom_id)
     });
-    if custom_has_academy || found.is_empty() {
+    if !may_inherit || custom_has_academy || found.is_empty() {
         return (None, found);
     }
     let inherited = found.remove(0);
@@ -548,14 +550,17 @@ pub struct CustomTeamOutcome {
 /// and staff become teamless (their contracts are cleared later by the usual
 /// free-agent pass) and are recorded in `moved_player_ids`; the replaced id is
 /// recorded in `removed_team_ids` so catalog rehydration never restores it.
-/// Academy links to the replaced club are cut on both sides. The replaced
-/// club's academy team (linked by id, or an unparented seed academy named after
-/// the club) passes to the new club when it has no academy of its own, keeping
-/// its players and staff; otherwise it is dissolved and its people are released
-/// like the replaced club's.
+/// Academy links to the replaced club are cut on both sides. Only a tier-1
+/// club (`competition_tier == Some(1)`) can own an academy: its academy team
+/// (linked by id, or an unparented seed academy named after the club) passes to
+/// the new club when it has no academy of its own, keeping its players and
+/// staff. Otherwise (a lower or unknown tier, or a club that already has one)
+/// the academy is dissolved and its people are released like the replaced
+/// club's.
 pub fn replace_team_with_custom(
     game: &mut Game,
     competition_id: &str,
+    competition_tier: Option<u8>,
     replaces_team_id: &str,
     spec: &CustomTeamSpec,
 ) -> Result<CustomTeamOutcome, CustomTeamError> {
@@ -585,7 +590,7 @@ pub fn replace_team_with_custom(
         .collect();
     let team_id = custom_team_id(competition_id, &spec.short_name);
     let (inherited_academy_id, dissolved_academy_ids) =
-        split_replaced_academies(game, replaced, &team_id);
+        split_replaced_academies(game, replaced, &team_id, competition_tier == Some(1));
     let mut team = build_custom_team(
         &team_id,
         competition_id,
