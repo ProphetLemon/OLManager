@@ -8,6 +8,7 @@ import {
 } from "../../../scripts/world/lib/pool-rating.mjs";
 import { buildPoolOps, selectPool } from "../../../scripts/world/lib/pool.mjs";
 import { fetchPoolInputs } from "../../../scripts/world/lib/pool-fetch.mjs";
+import { MIN_TIER_ROLE_PLAYERS, computeBaselines } from "../../../scripts/world/lib/generate.mjs";
 import { baselines, context, stubClient, world } from "./poolFixtures";
 
 const estimate = (over: Record<string, unknown> = {}) => ({
@@ -157,5 +158,42 @@ describe("buildPoolOps ratings", () => {
     const expected = ratePoolPlayer({ tier: target.person.tier, position: target.role, baselines, estimate: skill.get(target.page)! as never });
     expect(byPage(rated, target.page).player.attributes).toEqual(expected.attributes);
     expect(byPage(rated, target.page).player.potential_base).toBe(expected.potential);
+  });
+});
+
+describe("tier anchor (one policy with the game's placeholder ratings)", () => {
+  const ATTRIBUTES = ["mechanics", "laning", "teamfighting", "macro_play", "consistency", "shotcalling", "champion_pool", "discipline", "mental_resilience"];
+  const rated = (value: number) => Object.fromEntries(ATTRIBUTES.map((key) => [key, value]));
+  const player = (competition: string, position: string, value: number) => ({ competition, position, raw: { attributes: rated(value), potential_base: value + 5 } });
+  /** `count` real players of `position` in each competition: tier 1 rated 90, tier 2 rated 70. */
+  const worldOf = (count: number, position = "Top") => ({
+    competitions: [{ id: "top", tier: 1 }, { id: "second", tier: 2 }, { id: "low", tier: 4 }],
+    players: [
+      // One weak player keeps the shifted defaults inside the observed range.
+      player("low", position, 40),
+      ...Array.from({ length: count }, () => player("top", position, 90)),
+      ...Array.from({ length: count }, () => player("second", position, 70)),
+    ],
+    staff: [],
+  });
+
+  it("takes the median of the tier's own real players in the role when the tier has enough", () => {
+    const measured = computeBaselines(worldOf(MIN_TIER_ROLE_PLAYERS));
+    expect(tierBaselines(measured, 2).player(null, "Top").attributes.mechanics).toBe(70);
+    expect(tierBaselines(measured, 1).player(null, "Top").attributes.mechanics).toBe(90);
+  });
+
+  it("falls back to the game median shifted by the tier offset below the minimum", () => {
+    const thin = computeBaselines(worldOf(MIN_TIER_ROLE_PLAYERS - 1));
+    expect(thin.tierPlayer(2, "Top")).toBeNull();
+    const game = thin.player(null, "Top").attributes.mechanics;
+    expect(tierBaselines(thin, 2).player(null, "Top").attributes.mechanics).toBe(game + TIER_OFFSETS[2]);
+  });
+
+  it("applies the offset to a tier the world has no real players of, and counts roles apart", () => {
+    const measured = computeBaselines(worldOf(MIN_TIER_ROLE_PLAYERS));
+    const game = measured.player(null, "Top").attributes.mechanics;
+    expect(tierBaselines(measured, 3).player(null, "Top").attributes.mechanics).toBe(game + TIER_OFFSETS[3]);
+    expect(measured.tierPlayer(2, "Mid")).toBeNull();
   });
 });

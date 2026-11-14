@@ -195,9 +195,10 @@ matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision
     shrunk by reliability (`rho`); the anchor is the tier default OVR of his role (both the "authored" value and the league median);
     `blendRating` with a league sd of 4 gives the final OVR; the change from the anchor is capped at 6 points; `deriveAttributes` spreads
     it over the nine attributes. Seeded jitter is not applied: the stats are the rating.
-  - `"tier-default"`: everybody else, and all staff (no per-game stats): the game's median per position (staff: per role) shifted by the
-    person's tier (1 top flight, 0; 2 official circuit, -6; 3 recurring seasonal league, -12; any other tier counts as 3), with the
-    usual seeded jitter. A player whose estimate is for another role, has fewer than 8 games, or has no estimate (cohort too small) also
+  - `"tier-default"`: everybody else, and all staff (no per-game stats): for a player, the median of the real players of his tier in his
+    position when the tier has at least 10 of them in the game (the same rule as the game's placeholder ratings), otherwise the game's
+    median per position shifted by the tier (1 top flight, 0; 2 official circuit, -6; 3 recurring seasonal league, -12; any other tier
+    counts as 3); for staff, the game's median per role shifted by the tier; with the usual seeded jitter. A player whose estimate is for another role, has fewer than 8 games, or has no estimate (cohort too small) also
     lands here.
   Stats come from `--pool-stats <rows.json>` (the per-game rows of `scripts/stats/pro-stats.mjs`, read from disk, no network). Without
   it every add is a tier default. Competitions with fewer than 15 players of the role with 10 or more games give no estimate. The report
