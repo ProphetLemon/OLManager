@@ -163,6 +163,26 @@ fn data_base_candidates(app_handle: &tauri::AppHandle, cwd: &Path) -> Vec<Option
     candidates
 }
 
+/// Resolve `data/messages/` (templates and senders) from the same candidate
+/// bases as every other bundled data file, so a packaged build finds it in the
+/// resource dir and an Android build in its writable app-data dirs.
+pub fn resolve_messages_root(app_handle: &tauri::AppHandle) -> Option<PathBuf> {
+    let cwd = std::env::current_dir().unwrap_or_default();
+    let bases: Vec<PathBuf> = data_base_candidates(app_handle, &cwd)
+        .into_iter()
+        .flatten()
+        .collect();
+    first_messages_dir(&bases)
+}
+
+/// First `messages/` directory found under `data_bases`, in candidate order.
+fn first_messages_dir(data_bases: &[PathBuf]) -> Option<PathBuf> {
+    data_bases
+        .iter()
+        .map(|base| base.join("messages"))
+        .find(|messages| messages.is_dir())
+}
+
 /// Like [`resolve_data_base`], but with the descriptive error listing every
 /// candidate that was checked.
 pub fn require_data_base(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
@@ -308,6 +328,45 @@ mod tests {
         assert!(status.contains("competitions_dir=true"));
         assert!(status.contains("manifest=true"));
 
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn messages_root_is_found_in_the_bundled_data_dir() {
+        let root = std::env::temp_dir().join(format!("olm-messages-bundled-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let bundled = root.join("resources").join("data");
+        fs::create_dir_all(bundled.join("messages").join("triggers")).unwrap();
+        let dev_checkout = root.join("not-a-repo").join("data");
+
+        let found = first_messages_dir(&[dev_checkout, bundled.clone()]);
+
+        assert_eq!(found, Some(bundled.join("messages")));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn messages_root_prefers_the_earlier_candidate() {
+        let root = std::env::temp_dir().join(format!("olm-messages-order-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let dev = root.join("dev").join("data");
+        let bundled = root.join("bundled").join("data");
+        fs::create_dir_all(dev.join("messages")).unwrap();
+        fs::create_dir_all(bundled.join("messages")).unwrap();
+
+        let found = first_messages_dir(&[dev.clone(), bundled]);
+
+        assert_eq!(found, Some(dev.join("messages")));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn messages_root_is_none_when_no_candidate_has_one() {
+        let root = std::env::temp_dir().join(format!("olm-messages-none-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("data")).unwrap();
+
+        assert_eq!(first_messages_dir(&[root.join("data")]), None);
         let _ = fs::remove_dir_all(&root);
     }
 }

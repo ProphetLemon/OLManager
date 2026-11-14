@@ -1347,23 +1347,9 @@ pub async fn select_team(
 
     // Initialize message template store
     {
-        // Look for messages root directory (to find senders)
-        let msg_root_candidates = [std::env::current_dir()
-                .ok()
-                .map(|d| d.join("data").join("messages")),
-            std::env::current_dir()
-                .ok()
-                .map(|d| d.join("../data").join("messages")),
-            std::env::current_dir()
-                .ok()
-                .map(|d| d.join("src-tauri/data").join("messages"))];
-        let mut messages_root = None;
-        for path in msg_root_candidates.iter().flatten() {
-            if path.is_dir() {
-                messages_root = Some(path.clone());
-                break;
-            }
-        }
+        // Same data-base candidates as teams and players, so a packaged or
+        // Android build finds the bundled templates too.
+        let messages_root = crate::commands::competitions::resolve_messages_root(&app_handle);
 
         // Look for triggers/ subdirectory inside messages root
         let triggers_candidates = [messages_root.as_ref().map(|p| p.join("triggers"))];
