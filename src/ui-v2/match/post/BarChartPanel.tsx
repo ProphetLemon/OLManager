@@ -8,6 +8,7 @@ import type { TeamIdentity } from "@/lib/match/live/teamIdentity";
 
 import { Portrait } from "./Portrait";
 import "./postGame.css";
+import { Name, NAME_LANG } from "@/ui-v2/match/NameText";
 
 export interface BarChartPanelProps {
   /** Used to name the heading and to tie the summary to the chart. */
@@ -54,11 +55,11 @@ export function BarChartPanel({ id, title, chart, blue, red, championByPlayerId,
         <span className="pg-legend" aria-hidden="true">
           <span>
             <i className="pg-shape" data-team="blue" />
-            {blue.tag}
+            <Name>{blue.tag}</Name>
           </span>
           <span>
             <i className="pg-shape" data-team="red" />
-            {red.tag}
+            <Name>{red.tag}</Name>
           </span>
         </span>
         <button type="button" className="pg-toggle" aria-pressed={table} onClick={() => setTable((on) => !on)}>
@@ -107,7 +108,7 @@ export function BarChartPanel({ id, title, chart, blue, red, championByPlayerId,
             <div key={group.side} className="pg-group" role="group" aria-label={`${identity[group.side].name}, ${value(group.total)}`}>
               <div className="pg-group-head" data-team={group.side}>
                 <i className="pg-shape" data-team={group.side} aria-hidden="true" />
-                {identity[group.side].tag}
+                <Name>{identity[group.side].tag}</Name>
                 <b>{value(group.total)}</b>
               </div>
               {group.rows.map((row) => (
@@ -119,7 +120,7 @@ export function BarChartPanel({ id, title, chart, blue, red, championByPlayerId,
                   aria-label={t("onAir.match.post.barRow", { name: row.name, value: value(row.value), share: percent(row.share) })}
                 >
                   <Portrait side={row.side} championKey={championByPlayerId[row.id]} name={row.name} size="sm" />
-                  <span className="pg-barrow-name">{row.name}</span>
+                  <span className="pg-barrow-name" lang={NAME_LANG}>{row.name}</span>
                   <span className="pg-barrow-bar">
                     <i style={{ width: `calc(${(row.width * 100).toFixed(2)}% * 0.8)` }} />
                     <b>{value(row.value)}</b>

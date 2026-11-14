@@ -9,6 +9,7 @@ import { Button } from "@/ui-v2/components/ui/button";
 
 import { SideCrest } from "./SideCrest";
 import "./liveMatch.css";
+import { NAME_SLOT, NameIn } from "@/ui-v2/match/NameText";
 
 export interface EndPanelProps {
   summary: EndSummary;
@@ -59,7 +60,7 @@ export function EndPanel({ summary, blue, red, onContinue }: EndPanelProps) {
               ? t("match.victory")
               : summary.outcome === "defeat"
                 ? t("match.defeat")
-                : t("onAir.match.end.winner", { team: winner.name })}
+                : <NameIn text={t("onAir.match.end.winner", { team: NAME_SLOT })} name={winner.name} />}
           </h2>
         </div>
         <p className="live-end-score">

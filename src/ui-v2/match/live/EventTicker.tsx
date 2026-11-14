@@ -7,6 +7,7 @@ import { formatClock } from "@/lib/match/live/clock";
 import { parseFeed, type FeedEntry, type FeedSourceEvent, type RosterEntry } from "@/lib/match/live/liveEvents";
 import { NEUTRAL_OBJECTIVE_ICON_PATH } from "@/lib/match/lolMapLayout";
 
+import type { TeamNames } from "./eventSentence";
 import { causeText, entrySentence } from "./feedText";
 import "./liveMatch.css";
 
@@ -41,6 +42,8 @@ export interface EventTickerProps {
   events: readonly FeedSourceEvent[] | null | undefined;
   roster: readonly RosterEntry[];
   limit?: number;
+  /** The clubs' tags; a line names the club by its tag instead of "Blue" or "Red". */
+  teamNames?: TeamNames;
 }
 
 /**
@@ -49,11 +52,11 @@ export interface EventTickerProps {
  * a screen reader hears each event once and the list itself is never re-read. The newest entry
  * fades in with opacity only, and not at all for people who ask for less motion.
  */
-export function EventTicker({ events, roster, limit = FEED_LIMIT }: EventTickerProps) {
+export function EventTicker({ events, roster, limit = FEED_LIMIT, teamNames }: EventTickerProps) {
   const { t } = useTranslation();
   const entries = useMemo(() => parseFeed(events, roster, limit), [events, roster, limit]);
   const newest = entries[0];
-  const latest = newest ? t("onAir.match.feed.latest", { time: formatClock(newest.t), text: entrySentence(newest, t) }) : "";
+  const latest = newest ? t("onAir.match.feed.latest", { time: formatClock(newest.t), text: entrySentence(newest, t, teamNames) }) : "";
 
   return (
     <section className="arena-ticker" aria-label={t("onAir.match.feed.section")} data-testid="event-ticker">
@@ -68,7 +71,7 @@ export function EventTicker({ events, roster, limit = FEED_LIMIT }: EventTickerP
       ) : (
         <ul className="arena-tk-list" role="list" tabIndex={0} aria-label={t("onAir.match.feed.label")}>
           {entries.map((entry, index) => {
-            const sentence = entrySentence(entry, t);
+            const sentence = entrySentence(entry, t, teamNames);
             const glyph = glyphOf(entry);
             return (
               <li key={entry.id} className="arena-tk" data-kind={entry.kind} data-new={index === 0 || undefined}>

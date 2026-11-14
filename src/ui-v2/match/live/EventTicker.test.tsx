@@ -20,11 +20,13 @@ const ev = (t: number, text: string, type: string): FeedSourceEvent => ({ t, tex
 const KILL = ev(723, "KORVAN killed RUVIA (tower)", "kill");
 const LIST_NAME = "Event feed, newest first. Use the arrow keys to scroll.";
 
-function renderTicker(events: FeedSourceEvent[], limit?: number) {
-  const view = render(<EventTicker events={events} roster={ROSTER} limit={limit} />);
+const TAGS = { blue: "KT.C", red: "EMB" };
+
+function renderTicker(events: FeedSourceEvent[], limit?: number, teamNames?: typeof TAGS) {
+  const view = render(<EventTicker events={events} roster={ROSTER} limit={limit} teamNames={teamNames} />);
   return {
     ...view,
-    rerenderWith: (next: FeedSourceEvent[]) => view.rerender(<EventTicker events={next} roster={ROSTER} limit={limit} />),
+    rerenderWith: (next: FeedSourceEvent[]) => view.rerender(<EventTicker events={next} roster={ROSTER} limit={limit} teamNames={teamNames} />),
   };
 }
 
@@ -78,6 +80,37 @@ describe("what each event says", () => {
     expect(within(grubs).getByText("Blue cleared the voidgrub camp")).toBeInTheDocument();
     expect(grubs.querySelector("img")).toHaveAttribute("src", expect.stringContaining("grub"));
     expect(herald).toHaveAttribute("data-kind", "objective");
+  });
+
+  it("names the club by its tag on every objective line when the screen knows the clubs", () => {
+    renderTicker(
+      [
+        ev(100, "BLUE secured Scuttle Top", "info"),
+        ev(200, "RED secured rift herald", "info"),
+        ev(300, "BLUE cleared voidgrub camp", "info"),
+        ev(400, "BLUE secured infernal dragon", "dragon"),
+        ev(500, "RED secured elder dragon", "dragon"),
+        ev(600, "RED secured Baron", "baron"),
+        ev(700, "BLUE destroyed red-top-outer", "tower"),
+        ev(800, "RED destroyed blue-nexus", "nexus"),
+      ],
+      undefined,
+      TAGS,
+    );
+    expect(screen.getByText("KT.C killed the Scuttle Crab")).toBeInTheDocument();
+    expect(screen.getByText("EMB secured the Rift Herald")).toBeInTheDocument();
+    expect(screen.getByText("KT.C cleared the voidgrub camp")).toBeInTheDocument();
+    expect(screen.getByText("KT.C secured the Infernal Dragon")).toBeInTheDocument();
+    expect(screen.getByText("EMB secured the Elder Dragon")).toBeInTheDocument();
+    expect(screen.getByText("EMB secured Baron")).toBeInTheDocument();
+    expect(screen.getByText("KT.C destroyed the outer turret (top)")).toBeInTheDocument();
+    expect(screen.getByText("EMB destroyed the nexus")).toBeInTheDocument();
+    expect(screen.queryByText(/A team/i)).toBeNull();
+  });
+
+  it("does not report a scuttle crab nobody took when its camp despawns", () => {
+    renderTicker([ev(100, "Scuttle Top despawned", "info"), ev(110, "Scuttle Bot despawned", "info")], undefined, TAGS);
+    expect(screen.queryAllByRole("listitem")).toHaveLength(0);
   });
 
   it("falls back to the engine text for a line it cannot read", () => {

@@ -3,6 +3,7 @@ import type { TFunction } from "i18next";
 import type { FeedEntry, NeutralObjective, StructureLabel, StructurePart } from "@/lib/match/live/liveEvents";
 import type { LaneKey, TeamSide } from "@/lib/match/live/mapGeometry";
 
+import type { TeamNames } from "./eventSentence";
 import { DRAGON_NAME_KEYS, DRAGON_PLAIN_KEY, TEAM_KEYS } from "./liveNames";
 
 /**
@@ -51,12 +52,14 @@ export function structureText(label: StructureLabel, t: TFunction): string {
   return label.lane ? t("onAir.match.feed.structure", { part, lane: t(LANE_KEYS[label.lane]) }) : part;
 }
 
-function teamText(side: TeamSide | null, t: TFunction): string {
-  return side ? t(TEAM_KEYS[side]) : t("onAir.match.feed.someone");
+function teamText(side: TeamSide | null, t: TFunction, teamNames?: TeamNames): string {
+  if (!side) return t("onAir.match.feed.someone");
+  return teamNames?.[side] || t(TEAM_KEYS[side]);
 }
 
-export function entrySentence(entry: FeedEntry, t: TFunction): string {
-  const team = teamText(entry.side, t);
+/** `teamNames`: the clubs' tags, so a line names the club; without them it says Blue or Red. */
+export function entrySentence(entry: FeedEntry, t: TFunction, teamNames?: TeamNames): string {
+  const team = teamText(entry.side, t, teamNames);
   switch (entry.kind) {
     case "kill": {
       const names = { killer: entry.killer.name, victim: entry.victim.name };
