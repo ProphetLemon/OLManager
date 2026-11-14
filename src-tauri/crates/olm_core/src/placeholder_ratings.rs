@@ -30,10 +30,13 @@
 //!
 //! 1. A competition with enough real players (see
 //!    [`MIN_REAL_PLAYERS_PER_COMPETITION`]) uses its own medians.
-//! 2. Any other competition takes the median of every rostered player with a real
-//!    rating, per role, shifted by its tier: [`TIER_OFFSETS`] (tier 1 by 0, tier 2 by
-//!    -6, any other or unknown tier by -12).
-//! 3. With no real rating anywhere, [`NO_REAL_DATA_LEVEL`] applies.
+//! 2. Otherwise the real players of the competition's own tier give the median of the
+//!    role, when the tier has [`MIN_REAL_PLAYERS_PER_TIER_ROLE`] of them in that role.
+//!    The strongest tier-2 league is not pulled down by the game-wide median this way.
+//! 3. Otherwise the median of every rostered player with a real rating, per role,
+//!    is shifted by the tier: [`TIER_OFFSETS`] (tier 1 by 0, tier 2 by -6, any other
+//!    or unknown tier by -12).
+//! 4. With no real rating anywhere, [`NO_REAL_DATA_LEVEL`] applies.
 //!
 //! Free agents keep the amateur level: a flat-50 free agent has no activity record.
 
@@ -51,13 +54,17 @@ use crate::stable_hash::stable_hash;
 /// 10 (about two per role) cleanly separates them.
 const MIN_REAL_PLAYERS_PER_COMPETITION: usize = 10;
 
+/// A tier gives the median of a role when it has at least this many real players
+/// in that role (two competitions of ten teams hold about that many).
+const MIN_REAL_PLAYERS_PER_TIER_ROLE: usize = 10;
+
 /// Within a competition, a role uses its own medians from this many real players;
 /// otherwise the competition-wide median is used. Matches `MIN_GROUP` in
 /// `scripts/world/lib/generate.mjs`.
 const MIN_REAL_PLAYERS_PER_ROLE: usize = 5;
 
-/// Shift, in OVR points, of the game-wide median for a competition without enough
-/// real players, by the competition's tier (see the module docs). Same table as
+/// Shift, in OVR points, of the game-wide median for a competition whose tier has no
+/// real ratings of its own, by the competition's tier (see the module docs). Same table as
 /// `TIER_OFFSETS` in `scripts/world/lib/pool-rating.mjs`.
 const TIER_OFFSETS: [(u8, i16); 2] = [(1, 0), (2, -6)];
 
@@ -155,7 +162,8 @@ pub fn estimate_placeholder_ratings_excluding(
 
     // Medians come from the world as it is before any estimate is written, so one
     // estimated player never feeds another.
-    let pools = RealRatingPools::collect(players, &competition_by_team, excluded);
+    let pools =
+        RealRatingPools::collect(players, &competition_by_team, competition_tiers, excluded);
 
     let mut report = PlaceholderRatingReport::default();
     for player in players.iter_mut().filter(|p| is_placeholder_rating(p)) {
@@ -183,6 +191,7 @@ pub fn estimate_placeholder_ratings_excluding(
 struct RealRatingPools<'a> {
     all: Vec<[u8; ATTRIBUTE_COUNT]>,
     by_role: HashMap<LolRole, Vec<[u8; ATTRIBUTE_COUNT]>>,
+    by_tier_role: HashMap<(u8, LolRole), Vec<[u8; ATTRIBUTE_COUNT]>>,
     by_competition: HashMap<&'a str, Vec<[u8; ATTRIBUTE_COUNT]>>,
     by_competition_role: HashMap<(&'a str, LolRole), Vec<[u8; ATTRIBUTE_COUNT]>>,
 }
@@ -191,10 +200,12 @@ impl<'a> RealRatingPools<'a> {
     fn collect(
         players: &[Player],
         competition_by_team: &HashMap<&'a str, Option<&'a str>>,
+        competition_tiers: &HashMap<String, u8>,
         excluded: &HashSet<String>,
     ) -> Self {
         let mut all = Vec::new();
         let mut by_role: HashMap<LolRole, Vec<[u8; ATTRIBUTE_COUNT]>> = HashMap::new();
+        let mut by_tier_role: HashMap<(u8, LolRole), Vec<[u8; ATTRIBUTE_COUNT]>> = HashMap::new();
         let mut by_competition: HashMap<&str, Vec<[u8; ATTRIBUTE_COUNT]>> = HashMap::new();
         let mut by_competition_role: HashMap<(&str, LolRole), Vec<[u8; ATTRIBUTE_COUNT]>> =
             HashMap::new();
@@ -213,6 +224,12 @@ impl<'a> RealRatingPools<'a> {
                 continue;
             };
             all.push(row);
+            if let Some(tier) = competition_tiers.get(competition) {
+                by_tier_role
+                    .entry((*tier, player.position))
+                    .or_default()
+                    .push(row);
+            }
             by_role.entry(player.position).or_default().push(row);
             by_competition.entry(competition).or_default().push(row);
             by_competition_role
@@ -223,13 +240,15 @@ impl<'a> RealRatingPools<'a> {
         Self {
             all,
             by_role,
+            by_tier_role,
             by_competition,
             by_competition_role,
         }
     }
 
     /// Base attribute levels for a rostered placeholder: the competition's real
-    /// medians when it has enough real players, else the game-wide policy.
+    /// medians when it has enough real players, else its tier's, else the game-wide
+    /// policy.
     fn base_for(
         &self,
         competition: Option<&str>,
@@ -247,6 +266,12 @@ impl<'a> RealRatingPools<'a> {
                 }
                 _ => attribute_medians(rows),
             };
+        }
+        if let Some(tier) = tier
+            && let Some(rows) = self.by_tier_role.get(&(tier, role))
+            && rows.len() >= MIN_REAL_PLAYERS_PER_TIER_ROLE
+        {
+            return attribute_medians(rows);
         }
         self.tier_default(tier, role)
     }
@@ -503,6 +528,81 @@ mod tests {
 
             assert_levels_near(&players, 68.0, competition);
         }
+    }
+
+    /// A strong top flight (rated 90) next to `competitions` thin tier-2 competitions
+    /// of one real player per role (rated 70), plus placeholders in the thin tier-2
+    /// league `ldl`.
+    fn tier_two_world(competitions: usize) -> (Vec<Team>, Vec<Player>) {
+        let mut teams = vec![team("lck-t", Some("lck")), team("ph-t", Some("ldl"))];
+        let mut players = real_roster("lck-real", "lck-t", 10, 90);
+        for c in 0..competitions {
+            let id = format!("thin-{c}");
+            teams.push(team(&format!("{id}-t"), Some(&id)));
+            players.extend(real_roster(
+                &format!("{id}-real"),
+                &format!("{id}-t"),
+                1,
+                70,
+            ));
+        }
+        for i in 0..20 {
+            players.push(player(&format!("ph-{i}"), ROLES[i % 5], Some("ph-t"), 50));
+        }
+        (teams, players)
+    }
+
+    fn tiers_with_thin(competitions: usize) -> HashMap<String, u8> {
+        let mut tiers = tiers();
+        for c in 0..competitions {
+            tiers.insert(format!("thin-{c}"), 2);
+        }
+        tiers
+    }
+
+    #[test]
+    fn a_thin_league_takes_the_median_of_its_own_tier_when_the_tier_has_ten_real_players_per_role()
+    {
+        let (teams, mut players) = tier_two_world(10);
+        estimate_placeholder_ratings(&mut players, &teams, &tiers_with_thin(10));
+
+        assert_levels_near(
+            &players,
+            70.0,
+            "tier 2 median, not the game median minus six",
+        );
+    }
+
+    #[test]
+    fn a_tier_with_fewer_than_ten_real_players_in_a_role_falls_back_to_the_shifted_game_median() {
+        let (teams, mut players) = tier_two_world(9);
+        estimate_placeholder_ratings(&mut players, &teams, &tiers_with_thin(9));
+
+        // Game-wide median of the role: 50 players rated 90 against 9 rated 70.
+        assert_levels_near(&players, 84.0, "game median 90 - 6");
+    }
+
+    #[test]
+    fn a_league_with_ten_real_players_keeps_its_own_median_over_its_tier() {
+        let mut teams = vec![team("own-t", Some("own"))];
+        let mut players = real_roster("own-real", "own-t", 2, 80);
+        for c in 0..10 {
+            let id = format!("thin-{c}");
+            teams.push(team(&format!("{id}-t"), Some(&id)));
+            players.extend(real_roster(
+                &format!("{id}-real"),
+                &format!("{id}-t"),
+                1,
+                60,
+            ));
+        }
+        players.push(player("ph-top", LolRole::Top, Some("own-t"), 50));
+        let mut tiers = tiers_with_thin(10);
+        tiers.insert("own".to_string(), 2);
+
+        estimate_placeholder_ratings(&mut players, &teams, &tiers);
+
+        assert_levels_near(&players[players.len() - 1..], 80.0, "own competition");
     }
 
     #[test]
