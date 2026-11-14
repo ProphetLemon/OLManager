@@ -269,7 +269,14 @@ pub fn get_league_selection_data(
     info!("[cmd] get_league_selection_data");
     let data_base = resolve_data_base(&app_handle)
         .ok_or_else(|| data_directory_not_found_error(&app_handle))?;
-    Ok(competitions::build_league_selection(&data_base))
+    // Money, reputation and roster sizes of the world a new game assembles (the raw team
+    // files lack them for most second-tier clubs). Assembly takes tens of milliseconds in
+    // release, so it is rebuilt on each open instead of cached.
+    let overlay = super::game::resolve_world_overlay(&app_handle);
+    Ok(super::league_preview::build_start_league_selection(
+        &data_base,
+        overlay.as_ref(),
+    ))
 }
 
 #[cfg(test)]

@@ -328,6 +328,34 @@ fn competition_summary(
     })
 }
 
+/// Replace each picker team's money, reputation and player count with what the game
+/// starts it with, read from an assembled world (`teams` and `players` of a new game).
+///
+/// The raw team files lack money and reputation for most second-tier clubs and know
+/// nothing of the roster overlay or the roster fill, so the picker would disagree with
+/// the career. Teams the world does not hold keep their raw values.
+pub fn apply_start_values(data: &mut LeagueSelectionData, teams: &[Team], players: &[Player]) {
+    let mut roster_sizes: HashMap<&str, usize> = HashMap::new();
+    for team_id in players.iter().filter_map(|player| player.team_id.as_deref()) {
+        *roster_sizes.entry(team_id).or_default() += 1;
+    }
+    let world_teams: HashMap<&str, &Team> =
+        teams.iter().map(|team| (team.id.as_str(), team)).collect();
+
+    for summary in data
+        .competitions
+        .iter_mut()
+        .flat_map(|competition| competition.teams.iter_mut())
+    {
+        let Some(team) = world_teams.get(summary.id.as_str()) else {
+            continue;
+        };
+        summary.finance = Some(team.finance);
+        summary.reputation = Some(team.reputation);
+        summary.player_count = Some(roster_sizes.get(summary.id.as_str()).copied().unwrap_or(0));
+    }
+}
+
 /// A competition is offered at team selection when it is active, not legacy,
 /// is not a stale copy of a live competition (a new game builds no league or teams for it)
 /// and has at least one split to play (so regional leagues without a schedule stay hidden).
@@ -647,6 +675,61 @@ mod tests {
             Some(Some("LCK Challenger League Series".to_string()))
         );
         assert_eq!(full_name("plain"), Some(None));
+    }
+
+    #[test]
+    fn start_values_replace_the_raw_ones_and_leave_unknown_teams_alone() {
+        use crate::domain::player::PlayerAttributes;
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_competition(dir.path(), "les", 2, false, true);
+        let new_team = |id: &str| {
+            Team::new(
+                id.to_string(),
+                id.to_string(),
+                id.to_string(),
+                "ES".to_string(),
+                "X".to_string(),
+                "S".to_string(),
+                1,
+            )
+        };
+        let file = TeamDataFile {
+            name: None,
+            description: None,
+            competition_id: None,
+            teams: vec![new_team("a"), new_team("b")],
+        };
+        std::fs::write(
+            dir.path().join("teams/les.json"),
+            serde_json::to_string(&file).expect("teams json"),
+        )
+        .expect("teams");
+        let mut data = build_league_selection(dir.path());
+        let mut world_team = new_team("les-a");
+        world_team.finance = 2_000_000;
+        world_team.reputation = 40;
+        let player = |id: &str| {
+            let mut p = Player::new(
+                id.to_string(),
+                id.to_string(),
+                id.to_string(),
+                "2000-01-01".to_string(),
+                "ES".to_string(),
+                crate::domain::stats::LolRole::Mid,
+                PlayerAttributes::default(),
+            );
+            p.team_id = Some("les-a".to_string());
+            p
+        };
+
+        apply_start_values(&mut data, &[world_team], &[player("p1"), player("p2")]);
+
+        let teams = &data.competitions[0].teams;
+        assert_eq!(
+            (teams[0].finance, teams[0].reputation, teams[0].player_count),
+            (Some(2_000_000), Some(40), Some(2))
+        );
+        assert_eq!(teams[1].player_count, None, "a team the world lacks keeps its raw values");
     }
 
     #[test]
