@@ -228,11 +228,11 @@ fn install_custom_club(
     inputs: &NewGameWorldInputs<'_>,
     spec: &CustomTeamSpec,
 ) -> Result<String, String> {
-    let allowed = inputs
+    let manifest = inputs
         .manifests
         .iter()
-        .find(|manifest| manifest.id == inputs.competition_id)
-        .is_some_and(custom_team::custom_team_allowed);
+        .find(|manifest| manifest.id == inputs.competition_id);
+    let allowed = manifest.is_some_and(custom_team::custom_team_allowed);
     if !allowed {
         return Err(format!(
             "Competition '{}' does not accept custom clubs",
@@ -250,6 +250,7 @@ fn install_custom_club(
     let outcome = custom_team::replace_team_with_custom(
         game,
         inputs.competition_id,
+        manifest.and_then(|manifest| manifest.tier),
         inputs.team_id,
         spec,
     )?;
@@ -6027,7 +6028,7 @@ mod tests {
                     continue;
                 };
                 let mut game = base.clone();
-                let outcome = custom_team::replace_team_with_custom(&mut game, &manifest.id, &slot, &seeded_rayo(1))
+                let outcome = custom_team::replace_team_with_custom(&mut game, &manifest.id, manifest.tier, &slot, &seeded_rayo(1))
                     .expect("custom club");
                 match olm_core::founding_squad::install_founding_squad(
                     &mut game,
@@ -6807,14 +6808,26 @@ mod tests {
                     problems.push(format!("{} still links to the replaced team", team.id));
                 }
             }
-            let academy = game
+            // A tier-2 club funds no academy: the custom club inherits none and the
+            // replaced club's seed copy is dissolved, not left orphaned.
+            let owns_academy = game
                 .teams
                 .iter()
                 .find(|t| t.id == id)
-                .and_then(|club| club.academy_team_id.as_deref())
-                .and_then(|academy_id| game.teams.iter().find(|t| t.id == academy_id));
-            if academy.is_none_or(|a| a.parent_team_id.as_deref() != Some(id)) {
-                problems.push("the custom club does not own the inherited academy".to_string());
+                .is_some_and(|club| club.academy_team_id.is_some())
+                || game
+                    .teams
+                    .iter()
+                    .any(|t| t.parent_team_id.as_deref() == Some(id));
+            if owns_academy {
+                problems.push("the custom club inherited an academy from a tier-2 club".to_string());
+            }
+            if game
+                .teams
+                .iter()
+                .any(|t| t.team_kind == TeamKind::Academy && t.name == REPLACED_NAME)
+            {
+                problems.push("the replaced club's academy copy was left behind".to_string());
             }
             if game.players.iter().any(|p| p.team_id.as_deref() == Some(LES_SLOT))
                 || game.staff.iter().any(|s| s.team_id.as_deref() == Some(LES_SLOT))
