@@ -158,7 +158,7 @@ fn the_offsets_cover_a_full_round_robin_in_every_split() {
         let manifest = manifest_of(&manifests, id);
         let ids = team_ids(manifest);
         let n = ids.len();
-        let rounds = if n % 2 == 0 { n - 1 } else { n };
+        let rounds = if n.is_multiple_of(2) { n - 1 } else { n };
         assert_eq!(manifest.schedule.splits.len(), 3, "{id} has no schedule");
         for (index, split) in manifest.schedule.splits.iter().enumerate() {
             assert_eq!(
