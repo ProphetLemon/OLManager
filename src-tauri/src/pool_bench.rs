@@ -55,14 +55,14 @@ fn data_dir() -> PathBuf {
         .join("data")
 }
 
-fn env_usize(key: &str, default: usize) -> usize {
+pub(crate) fn env_usize(key: &str, default: usize) -> usize {
     std::env::var(key)
         .ok()
         .and_then(|value| value.parse().ok())
         .unwrap_or(default)
 }
 
-fn median(values: &mut [f64]) -> f64 {
+pub(crate) fn median(values: &mut [f64]) -> f64 {
     values.sort_by(f64::total_cmp);
     let mid = values.len() / 2;
     if values.len() % 2 == 1 {
@@ -73,7 +73,7 @@ fn median(values: &mut [f64]) -> f64 {
 }
 
 /// The message and sender stores `select_team` initialises before the first day.
-fn init_message_stores() {
+pub(crate) fn init_message_stores() {
     static ONCE: Once = Once::new();
     ONCE.call_once(|| {
         let messages = data_dir().join("messages");
@@ -167,7 +167,7 @@ fn empty_session() -> Game {
 }
 
 /// One new game with `overlay`; returns it with the world-build and season-setup times in ms.
-fn new_game(overlay: &WorldOverlay, team_id: &str) -> (Game, f64, f64) {
+pub(crate) fn new_game(overlay: &WorldOverlay, team_id: &str) -> (Game, f64, f64) {
     let manifests = scan_competitions(&data_dir().join("competitions"));
     let known: Vec<String> = manifests
         .iter()
@@ -202,7 +202,7 @@ fn new_game(overlay: &WorldOverlay, team_id: &str) -> (Game, f64, f64) {
 }
 
 /// Size of the `.olsave` the game writes.
-fn save_bytes(game: &Game) -> u64 {
+pub(crate) fn save_bytes(game: &Game) -> u64 {
     let dir = tempfile::tempdir().expect("save dir");
     let mut manager = SaveManager::init(dir.path()).expect("save manager");
     let save_id = manager

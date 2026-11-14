@@ -4,6 +4,8 @@ mod commands;
 mod discord_rpc;
 pub mod error;
 #[cfg(test)]
+mod l3_timing;
+#[cfg(test)]
 mod pool_bench;
 #[cfg(target_os = "linux")]
 mod linux_render;
