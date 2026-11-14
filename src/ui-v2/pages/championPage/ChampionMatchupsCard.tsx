@@ -20,7 +20,7 @@ export default function ChampionMatchupsCard({ championKey }: Props) {
   return (
     <Card data-testid="champion-matchups-card">
       <CardHeader className="pb-3">
-        <CardTitle className="font-heading text-xs uppercase tracking-widest text-muted-foreground">
+        <CardTitle className="font-heading text-xs uppercase tracking-wide text-muted-foreground">
           {t("championPage.counterTitle")}
         </CardTitle>
       </CardHeader>
@@ -45,7 +45,7 @@ function MatchupList({ title, items, tone }: { title: string; items: ChampionMat
     <section aria-label={title}>
       <h3
         className={cn(
-          "mb-2 flex items-center gap-2 font-heading text-xs uppercase tracking-widest",
+          "mb-2 flex items-center gap-2 font-heading text-xs uppercase tracking-wide",
           tone === "strong" ? "text-positive" : "text-negative",
         )}
       >
