@@ -17,8 +17,10 @@ import { DEFAULT_OPTIONS, blendRating, dayNumber, estimateSkill } from "../../st
 export const GAME_POSITION = Object.freeze({ Top: "Top", Jungle: "Jungle", Mid: "Mid", Bot: "ADC", Support: "Support" });
 
 /**
- * Tier default: the game's median for the position, shifted by the tier of the person's best competition
- * (1 top flight, 2 official circuit, 3 recurring seasonal league). An unknown tier counts as the lowest one.
+ * Tier default, one policy with the game's placeholder ratings (`placeholder_ratings.rs`): the median of the real players
+ * of the person's tier in the position when the tier has enough of them (`baselines.tierPlayer`); otherwise the game's
+ * median for the position shifted by the tier of the person's best competition (1 top flight, 2 official circuit,
+ * 3 recurring seasonal league). An unknown tier counts as the lowest one.
  */
 export const TIER_OFFSETS = Object.freeze({ 1: 0, 2: -6, 3: -12 });
 
@@ -41,11 +43,13 @@ function shift(values, delta, range) {
   return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, clamp(value + delta, range?.[key]?.min ?? 1, range?.[key]?.max ?? 100)]));
 }
 
-/** Baselines shifted by the tier offset: the tier default rating (see TIER_OFFSETS). */
+/** Baselines of one tier: the tier's own median when measured, else shifted by the tier offset (see TIER_OFFSETS). */
 export function tierBaselines(baselines, tier) {
   const delta = TIER_OFFSETS[tier] ?? TIER_OFFSETS[3];
   return {
     player(competition, position) {
+      const measured = baselines.tierPlayer?.(tier, position);
+      if (measured) return measured;
       const base = baselines.player(competition, position);
       return { ...base, attributes: shift(base.attributes, delta, base.range), potential: clamp(base.potential + delta, 1, 100) };
     },

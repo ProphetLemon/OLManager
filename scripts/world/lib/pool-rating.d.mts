@@ -10,6 +10,8 @@ export const POOL_MAX_CHANGE: number;
 
 export interface Baselines {
   player(competition: string | null, position: string): { attributes: Record<string, number>; potential: number; range: Record<string, { min: number; max: number }> };
+  /** Optional: the median of the real players of one tier in a role, or null when the tier has too few. */
+  tierPlayer?(tier: number, position: string): { attributes: Record<string, number>; potential: number; range: Record<string, { min: number; max: number }> } | null;
   staff(role: string): { attributes: Record<string, number>; range: Record<string, { min: number; max: number }> };
 }
 export function tierBaselines(baselines: Baselines, tier: number): Baselines;
