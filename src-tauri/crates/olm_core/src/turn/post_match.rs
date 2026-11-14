@@ -544,7 +544,12 @@ fn apply_lol_profile_progression(
         } else {
             0
         };
-        let macro_delta: i16 = if vision_per_min >= exp_vision + 0.25 {
+        // Neither match engine models vision yet, so a line with no vision score
+        // and no wards carries no information: it must not read as "bad vision".
+        let vision_measured = ps.vision_score > 0 || ps.wards_placed > 0;
+        let macro_delta: i16 = if !vision_measured {
+            0
+        } else if vision_per_min >= exp_vision + 0.25 {
             1
         } else if vision_per_min < exp_vision - 0.30 {
             -1
@@ -883,6 +888,173 @@ fn deplete_match_stamina(game: &mut Game, team_id: &str, report: &crate::engine:
                     player.fitness = player.fitness.saturating_add(1);
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod vision_progression_tests {
+    use super::apply_lol_profile_progression;
+    use crate::clock::GameClock;
+    use crate::domain::manager::Manager;
+    use crate::domain::player::{LolRole as PlayerRole, Player, PlayerAttributes};
+    use crate::engine::sim_background::LolRole;
+    use crate::engine::{MatchReport, MatchReportEndReason, PlayerMatchStats, TeamStats};
+    use crate::game::Game;
+    use chrono::{TimeZone, Utc};
+    use std::collections::HashMap;
+
+    const MINUTES: u32 = 30;
+
+    /// Attributes after one match: every attribute the vision term can reach.
+    type Outcome = (u8, u8, u8, u8, u8, u8, u8, u8, u8);
+
+    fn attrs() -> PlayerAttributes {
+        PlayerAttributes {
+            mechanics: 50,
+            laning: 50,
+            teamfighting: 50,
+            macro_play: 50,
+            consistency: 50,
+            shotcalling: 50,
+            champion_pool: 50,
+            discipline: 50,
+            mental_resilience: 50,
+        }
+    }
+
+    fn outcome(role: LolRole, vision_score: u16, wards_placed: u16) -> Outcome {
+        let position = match role {
+            LolRole::Top => PlayerRole::Top,
+            LolRole::Jungle => PlayerRole::Jungle,
+            LolRole::Mid => PlayerRole::Mid,
+            LolRole::Adc => PlayerRole::Adc,
+            LolRole::Support => PlayerRole::Support,
+        };
+        let mut player = Player::new(
+            "p1".to_string(),
+            "P1".to_string(),
+            "Player One".to_string(),
+            "1998-03-15".to_string(),
+            "England".to_string(),
+            position,
+            attrs(),
+        );
+        player.team_id = Some("home".to_string());
+
+        let mut manager = Manager::new(
+            "m".to_string(),
+            "A".to_string(),
+            "B".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        manager.hire("home".to_string());
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2025, 8, 12, 12, 0, 0).unwrap());
+        let mut game = Game::new(clock, manager, vec![], vec![player], vec![], vec![]);
+
+        let stats = PlayerMatchStats {
+            role: Some(role),
+            duration_seconds: MINUTES * 60,
+            kills: 2,
+            deaths: 3,
+            assists: 4,
+            creep_score: 180,
+            damage_dealt: 15_000,
+            vision_score,
+            wards_placed,
+            ..Default::default()
+        };
+        let report = MatchReport {
+            home_wins: 1,
+            away_wins: 0,
+            home_stats: TeamStats::default(),
+            away_stats: TeamStats::default(),
+            events: vec![],
+            kill_feed: vec![],
+            player_stats: HashMap::from([("p1".to_string(), stats)]),
+            home_possession: 50.0,
+            total_minutes: MINUTES as u8,
+            game_duration_seconds: MINUTES * 60,
+            ended_by: MatchReportEndReason::TimeLimit,
+        };
+
+        apply_lol_profile_progression(&mut game, &report, "home", "away");
+        let a = &game.players[0].attributes;
+        (
+            a.mechanics,
+            a.laning,
+            a.teamfighting,
+            a.macro_play,
+            a.consistency,
+            a.shotcalling,
+            a.champion_pool,
+            a.discipline,
+            a.mental_resilience,
+        )
+    }
+
+    /// Vision per minute well inside the neutral band of the role.
+    fn neutral_vision(role: LolRole) -> u16 {
+        match role {
+            LolRole::Support => 36,
+            LolRole::Jungle => 20,
+            _ => 15,
+        }
+    }
+
+    const ALL_ROLES: [LolRole; 5] = [
+        LolRole::Top,
+        LolRole::Jungle,
+        LolRole::Mid,
+        LolRole::Adc,
+        LolRole::Support,
+    ];
+
+    #[test]
+    fn unmeasured_vision_should_not_move_progression_for_any_role() {
+        for role in ALL_ROLES {
+            assert_eq!(
+                outcome(role, 0, 0),
+                outcome(role, neutral_vision(role), 0),
+                "{role:?} drifted on a line with no vision data"
+            );
+        }
+    }
+
+    #[test]
+    fn jungle_and_support_should_lose_vision_term_when_measured_vision_is_low() {
+        for role in [LolRole::Jungle, LolRole::Support] {
+            let neutral = outcome(role, neutral_vision(role), 0);
+            let low = outcome(role, 1, 0);
+            assert_eq!(low.3, neutral.3 - 1, "{role:?} macro_play");
+            assert_eq!(low.4, neutral.4 - 2, "{role:?} consistency");
+        }
+    }
+
+    #[test]
+    fn jungle_and_support_should_gain_vision_term_when_measured_vision_is_high() {
+        for role in [LolRole::Jungle, LolRole::Support] {
+            let neutral = outcome(role, neutral_vision(role), 0);
+            let high = outcome(role, 90, 0);
+            assert_eq!(high.3, neutral.3 + 1, "{role:?} macro_play");
+            assert_eq!(high.4, neutral.4 + 2, "{role:?} consistency");
+        }
+    }
+
+    #[test]
+    fn wards_alone_should_count_as_measured_vision() {
+        let neutral = outcome(LolRole::Support, neutral_vision(LolRole::Support), 0);
+        let low = outcome(LolRole::Support, 0, 3);
+        assert_eq!(low.3, neutral.3 - 1);
+    }
+
+    #[test]
+    fn top_mid_adc_should_ignore_the_vision_term_whatever_the_vision() {
+        for role in [LolRole::Top, LolRole::Mid, LolRole::Adc] {
+            let base = outcome(role, 0, 0);
+            assert_eq!(base, outcome(role, 1, 0), "{role:?} low vision");
+            assert_eq!(base, outcome(role, 90, 0), "{role:?} high vision");
         }
     }
 }
