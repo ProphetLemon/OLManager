@@ -10,3 +10,4 @@ export function applyRosterFloor(input: {
   players: OpEntry[];
   minRosterSize: number;
 }): { players: OpEntry[]; skipped: Array<{ kind: string; subject: string; detail: string }> };
+export function simulateRosterCounts(world: World, playerOps: unknown[]): Map<string, number>;
