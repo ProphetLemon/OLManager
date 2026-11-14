@@ -240,6 +240,11 @@ export function useLiveSession(options: UseLiveSessionOptions): LiveSession {
       engine.state = null;
       engine.inFlight = false;
       engine.pendingDt = 0;
+      // The local simulation takes over from 0:00, so what was written down of the lost match would sit
+      // after the new minutes. The record starts again with the match the screen now shows.
+      engine.goldRecord = newGoldRecord();
+      engine.keyLog = newKeyEventLog();
+      engine.skippedAtSec = null;
       commit(engine, scheduler.now());
     },
     [commit, scheduler],

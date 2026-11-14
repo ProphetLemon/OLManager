@@ -460,6 +460,22 @@ describe("useLiveSession: the record of the match", () => {
     expect(m.result.current.record().skippedAtSec).toBeNull();
   });
 
+  it("starts a new record when the backend fails and the local simulation takes over from minute 0", async () => {
+    backend.current = answerAt(130, { gold: 400, events: [{ t: 120, text: "BLUE tower", type: "tower", code: "structure_destroyed", data: { team: "blue" } }] });
+    const m = await mount();
+    await m.frames(3);
+    expect(m.result.current.record().gold.map((s) => s.minute)).toEqual([2]);
+
+    backend.tickImpl = () => Promise.reject(new Error("backend gone"));
+    await m.frames(6);
+
+    // The screen now shows a match that starts again at 0:00: the old minutes would sit after the new ones.
+    const record = m.result.current.record();
+    expect(record.gold.map((s) => s.minute)).toEqual([0]);
+    expect(record.events).toEqual([]);
+    expect(record.skippedAtSec).toBeNull();
+  });
+
   it("starts a new record with a new match", async () => {
     const m = await mount();
     await m.frames(2);
