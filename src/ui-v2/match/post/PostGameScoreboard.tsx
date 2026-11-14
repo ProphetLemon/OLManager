@@ -162,6 +162,17 @@ function TeamTable({ side, identity, board, columns, maxDamage, championByPlayer
   const rows = board.rows[side];
   return (
     <table className="pg-table" data-team={side} aria-label={t("onAir.match.team.players", { team: identity.name })}>
+      <colgroup>
+        {/* The same widths for both teams, so the two tables read as one grid. */}
+        <col data-col="player" />
+        {columns.level ? <col data-col="level" /> : null}
+        <col data-col="kda" />
+        {columns.cs ? <col data-col="cs" /> : null}
+        <col data-col="gold" />
+        {columns.damage ? <col data-col="damage" /> : null}
+        {columns.gear ? <col data-col="gear" /> : null}
+        {columns.spells ? <col data-col="spells" /> : null}
+      </colgroup>
       <thead>
         <tr className="pg-head">
           <th scope="col" className="pg-team">
