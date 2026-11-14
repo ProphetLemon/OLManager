@@ -570,7 +570,7 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {t("finances.sponsorWeeklyValue", { amount: Math.round(activeSponsorship.baseValue / 12) })}
+                    {t("finances.sponsorWeeklyValue", { amount: formatCurrencyAmountParam(Math.round(activeSponsorship.baseValue / 12)) })}
                     <span className="mx-1.5 text-border">·</span>
                     {t("finances.sponsorRemainingMonths", { count: activeSponsorship.remainingMonths })}
                   </p>
