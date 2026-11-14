@@ -65,7 +65,7 @@ export interface CooldownChip {
 }
 
 const ULTIMATE_LETTER = "R";
-const TRINKET_ITEM: Readonly<Record<string, string>> = { wardingtotem: "stealth_ward", oraclelens: "oracle_lens" };
+export const TRINKET_ITEM: Readonly<Record<string, string>> = { wardingtotem: "stealth_ward", oraclelens: "oracle_lens" };
 
 const stateOf = (seconds: number): CooldownState => (seconds > 0 ? "waiting" : "ready");
 const textOrNull = (value: unknown): string | null => (typeof value === "string" && value.trim() ? value.trim() : null);
