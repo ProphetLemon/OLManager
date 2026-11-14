@@ -8,6 +8,7 @@ use crate::domain::stats::{
 };
 use crate::game::Game;
 use crate::messages;
+use crate::potential::{GAIN_TAPER_WINDOW, effective_potential_cap, gain_headroom};
 use log::debug;
 
 fn compact_team_stats(
@@ -417,11 +418,16 @@ fn build_stats_state_capture(
 fn apply_player_stats(
     game: &mut Game,
     report: &crate::engine::MatchReport,
-    _home_team_id: &str,
+    home_team_id: &str,
     _away_team_id: &str,
 ) {
     for player in game.players.iter_mut() {
         if let Some(ps) = report.player_stats.get(&player.id) {
+            let team_damage = if player.team_id.as_deref() == Some(home_team_id) {
+                report.home_stats.damage_dealt
+            } else {
+                report.away_stats.damage_dealt
+            };
             let minutes_played = if ps.duration_seconds > 0 {
                 ps.duration_seconds / 60
             } else {
@@ -450,8 +456,13 @@ fn apply_player_stats(
             let match_rating = if ps.rating > 0.0 {
                 ps.rating
             } else {
+                // Damage counts by share of the team's damage, centred on the role's par so
+                // the rating keeps the scale it had when damage added nothing: par adds 0,
+                // 1.5x par adds +0.5, half of par takes 0.5 off. Unmeasured adds 0.
+                let damage_bonus = damage_vs_par(ps.damage_dealt, team_damage, ps.role)
+                    .map_or(0.0, |ratio| (ratio - 1.0).clamp(-0.5, 0.5) as f32);
                 6.0 + ((kills + ps.assists) as f32 * 0.35) - (ps.deaths as f32 * 0.25)
-                    + ((ps.damage_dealt as f32 / 10_000.0).min(1.5))
+                    + damage_bonus
             };
             if player.stats.appearances == 1 {
                 player.stats.avg_rating = match_rating.clamp(0.0, 10.0);
@@ -466,12 +477,74 @@ fn apply_player_stats(
     }
 }
 
+/// Share of its team's damage a player of `role` is expected to deal.
+///
+/// Both match engines report damage on an abstract HP scale, so progression compares
+/// shares, never absolute damage. Real pro shares (about Top 23%, Jungle 15%, Mid 27%,
+/// ADC 28%, Support 7%) do not fit what the engines produce, so those would always or
+/// never fire. These are the mean of the two engines' measured shares, equal weight:
+///
+/// | role    | background engine | live engine | expected |
+/// |---------|-------------------|-------------|----------|
+/// | Top     | 0.17              | 0.30        | 0.23     |
+/// | Jungle  | 0.21              | 0.12        | 0.16     |
+/// | Mid     | 0.23              | 0.26        | 0.24     |
+/// | ADC     | 0.24              | 0.22        | 0.23     |
+/// | Support | 0.16              | 0.12        | 0.14     |
+///
+/// Unknown role: an even fifth. Revisit when the engines' damage models settle.
+fn expected_damage_share(role: Option<crate::engine::sim_background::LolRole>) -> f64 {
+    match role {
+        Some(crate::engine::sim_background::LolRole::Top) => 0.23,
+        Some(crate::engine::sim_background::LolRole::Jungle) => 0.16,
+        Some(crate::engine::sim_background::LolRole::Mid) => 0.24,
+        Some(crate::engine::sim_background::LolRole::Adc) => 0.23,
+        Some(crate::engine::sim_background::LolRole::Support) => 0.14,
+        None => 0.20,
+    }
+}
+
+/// The player's damage share relative to the role's expected share (1.0 = par), or
+/// `None` when the team dealt no damage, which means damage was not measured.
+fn damage_vs_par(
+    damage: u32,
+    team_damage: u32,
+    role: Option<crate::engine::sim_background::LolRole>,
+) -> Option<f64> {
+    if team_damage == 0 {
+        return None;
+    }
+    Some(f64::from(damage) / f64::from(team_damage) / expected_damage_share(role))
+}
+
 fn clamp_attr_range(value: i16) -> u8 {
     value.clamp(1, 99) as u8
 }
 
 fn scale_delta(delta: i16, num: i16, den: i16) -> i16 {
     (delta * num) / den.max(1)
+}
+
+/// Scales a positive delta by the attribute's headroom to `ceiling`, so growth fades
+/// out inside the last `GAIN_TAPER_WINDOW` points and stops at the ceiling. Negative
+/// deltas are never tapered.
+///
+/// Deltas are whole points, so the scaled value is rounded with `phase` (any per-match
+/// counter) as a deterministic dither: over `GAIN_TAPER_WINDOW` consecutive phases the
+/// gains add up to exactly `delta * headroom`, with no RNG.
+fn tapered_gain(delta: i16, current: u8, ceiling: u8, phase: u32) -> i16 {
+    if delta <= 0 {
+        return delta;
+    }
+    let headroom = gain_headroom(current, ceiling);
+    if headroom <= 0 {
+        return 0;
+    }
+    if headroom >= GAIN_TAPER_WINDOW {
+        return delta;
+    }
+    let dither = (phase % u32::from(GAIN_TAPER_WINDOW.unsigned_abs())) as i16;
+    (delta * headroom + dither) / GAIN_TAPER_WINDOW
 }
 
 fn apply_lol_profile_progression(
@@ -500,7 +573,11 @@ fn apply_lol_profile_progression(
         let role = ps.role;
         let kda = (ps.kills + ps.assists) as f64 / ps.deaths.max(1) as f64;
         let cs_per_min = ps.creep_score as f64 / minutes;
-        let dmg_per_min = ps.damage_dealt as f64 / minutes;
+        let team_damage = if tid == home_team_id {
+            report.home_stats.damage_dealt
+        } else {
+            report.away_stats.damage_dealt
+        };
         let vision_per_min = ps.vision_score as f64 / minutes;
         let kp = (ps.kills + ps.assists) as f64 / team_kills;
 
@@ -523,6 +600,11 @@ fn apply_lol_profile_progression(
             None => (6.0, 560.0, 0.55, 0.48, 5_u16, 8_u16),
         };
 
+        // The thresholds below keep their old per-minute margins around `exp_dmg`; the
+        // player's damage is its share of the team's against the role's par, rescaled onto
+        // that axis. A report with no team damage is unmeasured and reads as par.
+        let dmg_per_min =
+            damage_vs_par(ps.damage_dealt, team_damage, role).unwrap_or(1.0) * exp_dmg;
         let mechanics_delta: i16 = if dmg_per_min >= exp_dmg + 120.0 {
             1
         } else if dmg_per_min < exp_dmg - 150.0 && ps.deaths >= deaths_bad {
@@ -632,28 +714,25 @@ fn apply_lol_profile_progression(
             *delta = (*delta).clamp(-2, 2);
         }
 
-        player.attributes.mechanics =
-            clamp_attr_range(i16::from(player.attributes.mechanics) + d_dribbling);
-        player.attributes.champion_pool =
-            clamp_attr_range(i16::from(player.attributes.champion_pool) + d_agility);
-        player.attributes.laning =
-            clamp_attr_range(i16::from(player.attributes.laning) + d_shooting);
-        player.attributes.consistency =
-            clamp_attr_range(i16::from(player.attributes.consistency) + d_positioning);
-        player.attributes.teamfighting =
-            clamp_attr_range(i16::from(player.attributes.teamfighting) + d_teamwork);
-        player.attributes.mental_resilience =
-            clamp_attr_range(i16::from(player.attributes.mental_resilience) + d_stamina);
-        player.attributes.macro_play =
-            clamp_attr_range(i16::from(player.attributes.macro_play) + d_vision);
-        player.attributes.consistency =
-            clamp_attr_range(i16::from(player.attributes.consistency) + d_decisions);
-        player.attributes.discipline =
-            clamp_attr_range(i16::from(player.attributes.discipline) + d_composure);
-        player.attributes.shotcalling =
-            clamp_attr_range(i16::from(player.attributes.shotcalling) + d_leadership);
-        player.attributes.teamfighting =
-            clamp_attr_range(i16::from(player.attributes.teamfighting) + d_passing);
+        // Attributes stop growing at the potential cap, like training does at OVR level.
+        let ceiling = effective_potential_cap(player);
+        let phase = player.stats.appearances;
+        let grow = |attribute: &mut u8, delta: i16, slot: u32| {
+            let gain = tapered_gain(delta, *attribute, ceiling, phase.wrapping_add(slot));
+            *attribute = clamp_attr_range(i16::from(*attribute) + gain);
+        };
+
+        grow(&mut player.attributes.mechanics, d_dribbling, 0);
+        grow(&mut player.attributes.champion_pool, d_agility, 1);
+        grow(&mut player.attributes.laning, d_shooting, 2);
+        grow(&mut player.attributes.consistency, d_positioning, 3);
+        grow(&mut player.attributes.teamfighting, d_teamwork, 4);
+        grow(&mut player.attributes.mental_resilience, d_stamina, 5);
+        grow(&mut player.attributes.macro_play, d_vision, 6);
+        grow(&mut player.attributes.consistency, d_decisions, 7);
+        grow(&mut player.attributes.discipline, d_composure, 8);
+        grow(&mut player.attributes.shotcalling, d_leadership, 9);
+        grow(&mut player.attributes.teamfighting, d_passing, 10);
     }
 }
 
@@ -894,7 +973,7 @@ fn deplete_match_stamina(game: &mut Game, team_id: &str, report: &crate::engine:
 
 #[cfg(test)]
 mod vision_progression_tests {
-    use super::apply_lol_profile_progression;
+    use super::{apply_lol_profile_progression, expected_damage_share};
     use crate::clock::GameClock;
     use crate::domain::manager::Manager;
     use crate::domain::player::{LolRole as PlayerRole, Player, PlayerAttributes};
@@ -905,6 +984,21 @@ mod vision_progression_tests {
     use std::collections::HashMap;
 
     const MINUTES: u32 = 30;
+    /// A team's damage in an engine report: the engines run on an abstract HP scale,
+    /// a few hundred to a few thousand a game, nowhere near real-LoL 15,000 a player.
+    const TEAM_DAMAGE: u32 = 4_000;
+
+    fn team_stats(damage_dealt: u32) -> TeamStats {
+        TeamStats {
+            damage_dealt,
+            ..TeamStats::default()
+        }
+    }
+
+    /// Damage of a player who deals exactly the role's expected share of `TEAM_DAMAGE`.
+    fn par_damage(role: LolRole) -> u32 {
+        (expected_damage_share(Some(role)) * f64::from(TEAM_DAMAGE)).round() as u32
+    }
 
     /// Attributes after one match: every attribute the vision term can reach.
     type Outcome = (u8, u8, u8, u8, u8, u8, u8, u8, u8);
@@ -960,7 +1054,7 @@ mod vision_progression_tests {
             deaths: 3,
             assists: 4,
             creep_score: 180,
-            damage_dealt: 15_000,
+            damage_dealt: par_damage(role),
             vision_score,
             wards_placed,
             ..Default::default()
@@ -968,7 +1062,7 @@ mod vision_progression_tests {
         let report = MatchReport {
             home_wins: 1,
             away_wins: 0,
-            home_stats: TeamStats::default(),
+            home_stats: team_stats(TEAM_DAMAGE),
             away_stats: TeamStats::default(),
             events: vec![],
             kill_feed: vec![],
@@ -1056,5 +1150,329 @@ mod vision_progression_tests {
             assert_eq!(base, outcome(role, 1, 0), "{role:?} low vision");
             assert_eq!(base, outcome(role, 90, 0), "{role:?} high vision");
         }
+    }
+}
+
+#[cfg(test)]
+mod progression_bound_tests {
+    use super::{
+        GAIN_TAPER_WINDOW, apply_lol_profile_progression, apply_player_stats,
+        expected_damage_share, tapered_gain,
+    };
+    use crate::clock::GameClock;
+    use crate::domain::manager::Manager;
+    use crate::domain::player::{LolRole as PlayerRole, Player, PlayerAttributes};
+    use crate::engine::sim_background::LolRole;
+    use crate::engine::{MatchReport, MatchReportEndReason, PlayerMatchStats, TeamStats};
+    use crate::game::Game;
+    use crate::potential::calculate_lol_ovr;
+    use chrono::{TimeZone, Utc};
+    use std::collections::HashMap;
+
+    const MINUTES: u32 = 30;
+    /// A team's damage in an engine report: the engines run on an abstract HP scale,
+    /// a few hundred to a few thousand a game, nowhere near real-LoL 15,000 a player.
+    const TEAM_DAMAGE: u32 = 4_000;
+
+    fn team_stats(damage_dealt: u32) -> TeamStats {
+        TeamStats {
+            damage_dealt,
+            ..TeamStats::default()
+        }
+    }
+
+    /// Damage of a player who deals exactly the role's expected share of `TEAM_DAMAGE`.
+    fn par_damage(role: LolRole) -> u32 {
+        (expected_damage_share(Some(role)) * f64::from(TEAM_DAMAGE)).round() as u32
+    }
+
+    fn flat_attrs(level: u8) -> PlayerAttributes {
+        PlayerAttributes {
+            mechanics: level,
+            laning: level,
+            teamfighting: level,
+            macro_play: level,
+            consistency: level,
+            shotcalling: level,
+            champion_pool: level,
+            discipline: level,
+            mental_resilience: level,
+        }
+    }
+
+    fn game_with_player(level: u8, potential_base: u8, potential_revealed: Option<u8>) -> Game {
+        let mut player = Player::new(
+            "p1".to_string(),
+            "P1".to_string(),
+            "Player One".to_string(),
+            "1998-03-15".to_string(),
+            "England".to_string(),
+            PlayerRole::Mid,
+            flat_attrs(level),
+        );
+        player.team_id = Some("home".to_string());
+        player.potential_base = potential_base;
+        player.potential_revealed = potential_revealed;
+
+        let mut manager = Manager::new(
+            "m".to_string(),
+            "A".to_string(),
+            "B".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        manager.hire("home".to_string());
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2025, 8, 12, 12, 0, 0).unwrap());
+        Game::new(clock, manager, vec![], vec![player], vec![], vec![])
+    }
+
+    fn report_for(stats: PlayerMatchStats) -> MatchReport {
+        MatchReport {
+            home_wins: 1,
+            away_wins: 0,
+            home_stats: team_stats(TEAM_DAMAGE),
+            away_stats: TeamStats::default(),
+            events: vec![],
+            kill_feed: vec![],
+            player_stats: HashMap::from([("p1".to_string(), stats)]),
+            home_possession: 50.0,
+            total_minutes: MINUTES as u8,
+            game_duration_seconds: MINUTES * 60,
+            ended_by: MatchReportEndReason::TimeLimit,
+        }
+    }
+
+    /// A dominant game: every positive threshold of every role term is met.
+    fn strong_report() -> MatchReport {
+        report_for(PlayerMatchStats {
+            role: Some(LolRole::Mid),
+            duration_seconds: MINUTES * 60,
+            kills: 9,
+            deaths: 0,
+            assists: 12,
+            creep_score: 300,
+            damage_dealt: 1_800,
+            vision_score: 30,
+            wards_placed: 6,
+            ..Default::default()
+        })
+    }
+
+    /// A losing game: deaths and missing farm trip every negative threshold.
+    fn weak_report() -> MatchReport {
+        report_for(PlayerMatchStats {
+            role: Some(LolRole::Mid),
+            duration_seconds: MINUTES * 60,
+            kills: 0,
+            deaths: 12,
+            assists: 1,
+            creep_score: 90,
+            damage_dealt: 200,
+            vision_score: 2,
+            wards_placed: 0,
+            ..Default::default()
+        })
+    }
+
+    fn attribute_sum(game: &Game) -> u32 {
+        let a = &game.players[0].attributes;
+        [
+            a.mechanics,
+            a.laning,
+            a.teamfighting,
+            a.macro_play,
+            a.consistency,
+            a.shotcalling,
+            a.champion_pool,
+            a.discipline,
+            a.mental_resilience,
+        ]
+        .iter()
+        .map(|v| u32::from(*v))
+        .sum()
+    }
+
+    #[test]
+    fn player_far_below_potential_should_still_gain_from_a_strong_match() {
+        let mut game = game_with_player(60, 99, None);
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        assert!(attribute_sum(&game) > before);
+    }
+
+    #[test]
+    fn player_at_potential_should_not_gain_from_a_strong_match() {
+        let mut game = game_with_player(80, 80, None);
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        assert_eq!(attribute_sum(&game), before);
+    }
+
+    #[test]
+    fn player_at_revealed_potential_should_not_gain_when_base_potential_is_higher() {
+        let mut game = game_with_player(80, 99, Some(80));
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        assert_eq!(attribute_sum(&game), before);
+    }
+
+    #[test]
+    fn player_at_potential_should_still_lose_from_a_weak_match() {
+        let mut game = game_with_player(80, 80, None);
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &weak_report(), "home", "away");
+        assert!(attribute_sum(&game) < before);
+    }
+
+    #[test]
+    fn many_strong_matches_should_not_push_ovr_past_potential() {
+        let mut game = game_with_player(70, 85, None);
+        for appearance in 1..=400 {
+            game.players[0].stats.appearances = appearance;
+            apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        }
+        assert!(calculate_lol_ovr(&game.players[0]) <= 85);
+    }
+
+    #[test]
+    fn gain_should_pass_through_unchanged_outside_the_taper_window() {
+        for phase in 0..GAIN_TAPER_WINDOW as u32 {
+            assert_eq!(tapered_gain(2, 60, 99, phase), 2);
+        }
+    }
+
+    #[test]
+    fn gain_should_average_to_the_headroom_share_inside_the_window() {
+        let window = GAIN_TAPER_WINDOW as u32;
+        let total: i16 = (0..window)
+            .map(|phase| tapered_gain(1, 95, 99, phase))
+            .sum();
+        // Headroom 4 of a 10 window: four matches out of ten keep the +1.
+        assert_eq!(total, 4);
+    }
+
+    #[test]
+    fn gain_should_vanish_at_or_above_the_ceiling() {
+        for phase in 0..GAIN_TAPER_WINDOW as u32 {
+            assert_eq!(tapered_gain(2, 85, 85, phase), 0);
+            assert_eq!(tapered_gain(2, 90, 85, phase), 0);
+        }
+    }
+
+    #[test]
+    fn loss_should_never_be_tapered() {
+        for phase in 0..GAIN_TAPER_WINDOW as u32 {
+            assert_eq!(tapered_gain(-2, 85, 85, phase), -2);
+            assert_eq!(tapered_gain(-1, 40, 85, phase), -1);
+        }
+    }
+
+    #[test]
+    fn gain_should_never_overshoot_the_ceiling() {
+        for current in 70..=85_u8 {
+            for phase in 0..GAIN_TAPER_WINDOW as u32 {
+                let gained = i16::from(current) + tapered_gain(2, current, 85, phase);
+                assert!(gained <= 85);
+            }
+        }
+    }
+
+    /// Mechanics after one Mid game with the given damage and deaths; every other
+    /// term of the line is neutral for mechanics. `team_damage` 0 means unmeasured.
+    fn mechanics_after(damage: u32, team_damage: u32, deaths: u16) -> u8 {
+        let mut game = game_with_player(50, 90, None);
+        let mut report = report_for(PlayerMatchStats {
+            role: Some(LolRole::Mid),
+            duration_seconds: MINUTES * 60,
+            kills: 5,
+            deaths,
+            assists: 4,
+            creep_score: 180,
+            damage_dealt: damage,
+            ..Default::default()
+        });
+        report.home_stats = team_stats(team_damage);
+        apply_lol_profile_progression(&mut game, &report, "home", "away");
+        game.players[0].attributes.mechanics
+    }
+
+    #[test]
+    fn above_par_damage_share_should_raise_mechanics() {
+        assert_eq!(mechanics_after(1_800, TEAM_DAMAGE, 3), 51);
+    }
+
+    #[test]
+    fn par_damage_share_should_not_cost_mechanics_even_with_many_deaths() {
+        assert_eq!(
+            mechanics_after(par_damage(LolRole::Mid), TEAM_DAMAGE, 8),
+            50
+        );
+    }
+
+    #[test]
+    fn far_below_par_damage_share_with_many_deaths_should_cost_mechanics() {
+        assert_eq!(mechanics_after(200, TEAM_DAMAGE, 8), 49);
+    }
+
+    #[test]
+    fn unmeasured_team_damage_should_not_cost_mechanics() {
+        assert_eq!(mechanics_after(0, 0, 8), 50);
+    }
+
+    #[test]
+    fn expected_damage_shares_should_add_up_to_the_whole_team() {
+        let total: f64 = [
+            LolRole::Top,
+            LolRole::Jungle,
+            LolRole::Mid,
+            LolRole::Adc,
+            LolRole::Support,
+        ]
+        .iter()
+        .map(|role| expected_damage_share(Some(*role)))
+        .sum();
+        assert!((total - 1.0).abs() < 1e-9, "shares add up to {total}");
+    }
+
+    /// Fallback rating (no engine rating) of a Mid with 2 kills, 4 assists, 3 deaths
+    /// whose team dealt `team_damage`; the kills/assists/deaths part is 7.35.
+    fn fallback_rating(damage: u32, team_damage: u32) -> f32 {
+        let mut game = game_with_player(50, 90, None);
+        let mut report = report_for(PlayerMatchStats {
+            role: Some(LolRole::Mid),
+            duration_seconds: MINUTES * 60,
+            kills: 2,
+            deaths: 3,
+            assists: 4,
+            damage_dealt: damage,
+            ..Default::default()
+        });
+        report.home_stats = team_stats(team_damage);
+        apply_player_stats(&mut game, &report, "home", "away");
+        game.players[0].stats.avg_rating
+    }
+
+    #[test]
+    fn fallback_rating_should_add_nothing_for_a_par_damage_share() {
+        let rating = fallback_rating(par_damage(LolRole::Mid), TEAM_DAMAGE);
+        assert!((rating - 7.35).abs() < 0.01, "rating {rating}");
+    }
+
+    #[test]
+    fn fallback_rating_should_credit_an_above_par_damage_share() {
+        let rating = fallback_rating(par_damage(LolRole::Mid) * 3 / 2, TEAM_DAMAGE);
+        assert!((rating - 7.85).abs() < 0.01, "rating {rating}");
+    }
+
+    #[test]
+    fn fallback_rating_should_dock_a_below_par_damage_share() {
+        let rating = fallback_rating(par_damage(LolRole::Mid) / 2, TEAM_DAMAGE);
+        assert!((rating - 6.85).abs() < 0.01, "rating {rating}");
+    }
+
+    #[test]
+    fn fallback_rating_should_ignore_unmeasured_damage() {
+        let rating = fallback_rating(0, 0);
+        assert!((rating - 7.35).abs() < 0.01, "rating {rating}");
     }
 }
