@@ -47,6 +47,10 @@ pub struct AcademyAcquisitionOption {
     pub reputation: u8,
     pub development_level: u8,
     pub acquisition_cost: i64,
+    /// True when the option is a real club to link (it keeps its own name, logo and
+    /// league); false for a legacy generated copy, which the user may rebrand.
+    #[serde(default)]
+    pub real_club: bool,
 }
 
 pub type AcademyCreationOption = AcademyAcquisitionOption;
@@ -144,6 +148,7 @@ pub fn eligible_academy_acquisition_options(
                 reputation: candidate.reputation,
                 development_level: candidate.development_level,
                 acquisition_cost: acquisition_cost_for_candidate(candidate),
+                real_club: false,
             })
         })
         .collect();
@@ -383,6 +388,7 @@ fn acquisition_option_from_league(
         reputation: erl.reputation,
         development_level: erl.reputation,
         acquisition_cost: acquisition_cost_for_reputation(erl.reputation),
+        real_club: false,
     }
 }
 

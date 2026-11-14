@@ -137,6 +137,7 @@ fn option_for_club(
         reputation,
         development_level,
         acquisition_cost: link_fee(game, club, formula),
+        real_club: true,
     }
 }
 

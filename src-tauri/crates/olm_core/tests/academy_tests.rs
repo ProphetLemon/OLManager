@@ -85,6 +85,18 @@ fn acquisition_options_include_candidates_from_all_configured_erl_leagues() {
 }
 
 #[test]
+fn copy_options_are_not_flagged_as_real_clubs() {
+    let options = eligible_academy_acquisition_options(
+        "FR",
+        &[erl("lfl", "FR", "western", 5, &[])],
+        &[candidate("alpha", "lfl", "FR", 5, 4)],
+    );
+
+    assert_eq!(options.len(), 1);
+    assert!(!options[0].real_club);
+}
+
+#[test]
 fn acquisition_options_order_domestic_candidates_by_league_then_name() {
     let options = eligible_academy_acquisition_options(
         "ES",
@@ -179,6 +191,7 @@ fn insufficient_funds_blocks_academy_acquisition() {
         reputation: 5,
         development_level: 4,
         acquisition_cost: 100_000,
+        real_club: false,
     };
 
     assert_eq!(

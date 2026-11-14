@@ -166,6 +166,16 @@ fn options_keep_the_clubs_own_name_logo_and_league() {
 }
 
 #[test]
+fn options_are_flagged_as_real_clubs_so_the_ui_hides_the_rebrand_fields() {
+    let game = new_world();
+
+    let report = linked_club_report(&game, "koi");
+
+    assert!(!report.options.is_empty());
+    assert!(report.options.iter().all(|option| option.real_club));
+}
+
+#[test]
 fn custom_clubs_and_clubs_with_a_parent_are_not_offered() {
     let mut game = new_world();
     game.teams[2].parent_team_id = Some("someone-else".to_string());
