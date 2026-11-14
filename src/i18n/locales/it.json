@@ -4677,6 +4677,7 @@
         "itemEmpty": "Slot vuoto",
         "cdUltimate": "Abilità suprema",
         "cdReady": "{{name}} pronto",
+        "cdLocked": "{{name}} si sblocca al livello {{level}}",
         "cdWait_one": "{{name}} pronto tra {{count}} secondo",
         "cdWait_other": "{{name}} pronto tra {{count}} secondi",
         "descLevel": "Livello {{level}}",

@@ -4677,6 +4677,7 @@
         "itemEmpty": "Espaço vazio",
         "cdUltimate": "Definitiva",
         "cdReady": "{{name}}: disponível",
+        "cdLocked": "{{name}} desbloqueia no nível {{level}}",
         "cdWait_one": "{{name}}: disponível em {{count}} segundo",
         "cdWait_other": "{{name}}: disponível em {{count}} segundos",
         "descLevel": "Nível {{level}}",

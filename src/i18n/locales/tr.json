@@ -4678,6 +4678,7 @@
         "itemEmpty": "Boş yuva",
         "cdUltimate": "Büyük yetenek",
         "cdReady": "{{name}} hazır",
+        "cdLocked": "{{name}}, {{level}}. seviyede açılır",
         "cdWait_one": "{{name}} {{count}} saniye sonra hazır",
         "cdWait_other": "{{name}} {{count}} saniye sonra hazır",
         "descLevel": "Seviye {{level}}",

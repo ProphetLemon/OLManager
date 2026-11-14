@@ -1534,6 +1534,94 @@
   color: var(--foreground);
 }
 
+/* The ultimate and the trinket are icons. The state shows in the frame and the face, not in colour:
+   ready is a double frame and the bare icon; waiting is a dashed frame, a dimmed icon and the
+   seconds on it; locked (the ultimate before its level) is a dotted frame, a greyed icon and a
+   lock. A summoner spell keeps its letter. The chip is a square of the slot's size, so the gear
+   row never grows. */
+.arena-cd-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--arena-slot, 1.375rem);
+  height: var(--arena-slot, 1.375rem);
+  padding: 0;
+  overflow: hidden;
+  background: var(--rail);
+}
+
+.arena-cd-trinket {
+  border-radius: 50%;
+}
+
+.arena-cd-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.arena-cd-glyph {
+  width: 70%;
+  height: 70%;
+}
+
+.arena-cd-icon[data-state="ready"] {
+  border: 3px double var(--foreground);
+}
+
+.arena-cd-icon[data-state="waiting"] {
+  border: 2px dashed var(--dim);
+}
+
+.arena-cd-icon[data-state="waiting"] > img,
+.arena-cd-icon[data-state="waiting"] > .arena-cd-glyph {
+  opacity: 0.32;
+}
+
+.arena-cd-icon[data-state="locked"] {
+  border: 2px dotted var(--dim);
+}
+
+.arena-cd-icon[data-state="locked"] > img,
+.arena-cd-icon[data-state="locked"] > .arena-cd-glyph {
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.55;
+}
+
+/* The seconds sit on the icon in the map's light ink with a dark casing, so they read on any face. */
+.arena-cd-secs {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--map-ink);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow:
+    0 0 2px var(--map-casing),
+    0 0 2px var(--map-casing),
+    0 0 3px var(--map-casing);
+}
+
+.arena-cd-lock {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-end: 0;
+  box-sizing: content-box;
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 1px;
+  border-start-start-radius: 3px;
+  background: var(--background);
+  color: var(--foreground);
+}
+
 /* The state sits on the health row, so the gear row never has to share its width with it. */
 .arena-card-state {
   flex: 0 1 auto;
@@ -1575,6 +1663,22 @@
     flex: none;
     align-self: stretch;
     block-size: 1.0625rem;
+  }
+
+  /* The strip is 17px tall here, so the icon chips shrink to it and the frames thin out; dashed,
+     dotted and solid still tell the states apart, and the seconds and the lock stay (the lock gets a little smaller). */
+  .arena-cd-icon {
+    width: 1.0625rem;
+    height: 1.0625rem;
+  }
+
+  .arena-cd-icon[data-state] {
+    border-width: 2px;
+  }
+
+  .arena-cd-lock {
+    width: 0.4375rem;
+    height: 0.4375rem;
   }
 }
 

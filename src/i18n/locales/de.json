@@ -4678,6 +4678,7 @@
         "itemEmpty": "Leerer Platz",
         "cdUltimate": "Ultimative Fähigkeit",
         "cdReady": "{{name}} bereit",
+        "cdLocked": "{{name}} wird auf Stufe {{level}} freigeschaltet",
         "cdWait_one": "{{name}} in {{count}} Sekunde bereit",
         "cdWait_other": "{{name}} in {{count}} Sekunden bereit",
         "descLevel": "Stufe {{level}}",

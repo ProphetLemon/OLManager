@@ -4677,6 +4677,7 @@
         "itemEmpty": "Hueco vacío",
         "cdUltimate": "Definitiva",
         "cdReady": "{{name}} listo",
+        "cdLocked": "{{name}} se desbloquea en el nivel {{level}}",
         "cdWait_one": "{{name}} listo en {{count}} segundo",
         "cdWait_other": "{{name}} listo en {{count}} segundos",
         "descLevel": "Nivel {{level}}",

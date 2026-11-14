@@ -4712,6 +4712,7 @@
         "itemEmpty": "Empty slot",
         "cdUltimate": "Ultimate",
         "cdReady": "{{name}} ready",
+        "cdLocked": "{{name}} unlocks at level {{level}}",
         "cdWait_one": "{{name}} ready in {{count}} second",
         "cdWait_other": "{{name}} ready in {{count}} seconds",
         "descLevel": "Level {{level}}",
