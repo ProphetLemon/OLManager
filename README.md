@@ -139,7 +139,6 @@ OLManager/
 ├── src-tauri/                # Backend (Rust)
 │   ├── src/                  # Tauri commands and setup
 │   ├── crates/olm_core/      # Core game logic
-│   ├── databases/            # World data
 │   └── tauri.conf.json       # Tauri and updater config
 │
 ├── assets/                   # Simulation data, draft data, updater public key

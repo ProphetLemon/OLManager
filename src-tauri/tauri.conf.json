@@ -29,7 +29,6 @@
     "targets": ["nsis", "deb", "rpm", "appimage", "app", "dmg"],
     "createUpdaterArtifacts": true,
     "resources": [
-      "databases/world.json",
       "data/**/*",
       "../public/**/*",
       "../assets/simulation/*.json",
