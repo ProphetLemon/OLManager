@@ -6,13 +6,18 @@ interface ChampionRelationshipsDataset {
   counters: Array<{ source: string; target: string; value: number }>;
 }
 
-function canonicalChampionId(value: string): string {
+export function canonicalChampionId(value: string): string {
   const normalized = value.toLowerCase().replace(/[^a-z0-9]/g, "");
   return normalized === "wukong" || normalized === "monkeyking" ? "monkeyking" : normalized;
 }
 
+/** Every directed counter: `source` counters `target` with strength `value` (1 slight edge .. 5 near-unplayable). */
+export const CHAMPION_COUNTERS: ReadonlyArray<{ source: string; target: string; value: number }> = (
+  championRelationships as ChampionRelationshipsDataset
+).counters;
+
 const COUNTER_VALUES = new Map(
-  (championRelationships as ChampionRelationshipsDataset).counters.map((relationship) => [
+  CHAMPION_COUNTERS.map((relationship) => [
     `${relationship.source}::${relationship.target}`,
     relationship.value,
   ]),
