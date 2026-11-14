@@ -178,3 +178,24 @@ describe("the stage: a band, the cards and a low module in each column, and the 
     expect(mid).toContain("justify-self: center");
   });
 });
+
+describe("the lane strip at the 960x640 minimum (T13 D4)", () => {
+  const start = atRuleStart("@container lanes (max-width: 26rem)");
+  const block = css.slice(start, css.indexOf("\n}\n", start));
+
+  it("stacks the name over a full-width track in a strip narrower than 26rem, so both ends of the track show", () => {
+    // 960px gives a 352px strip, 114px a cell: name (about 56px) + 62px track + gaps did not fit.
+    expect(352).toBeLessThan(26 * 16);
+    expect(block).toMatch(/\.arena-lane\s*\{[^}]*display:\s*grid/);
+    expect(block).toMatch(/\.arena-lane-track\s*\{[^}]*grid-column:\s*1 \/ -1[^}]*inline-size:\s*auto/);
+    expect(block).toMatch(/\.arena-lane-text\s*\{[^}]*display:\s*none/);
+    // The word of a fight shares the name's row instead of opening a third one.
+    expect(block).toMatch(/\.arena-lane-fight\s*\{[^}]*grid-area:\s*1 \/ 2/);
+  });
+
+  it("fits the 44px strip with the double frame of a fight: 16px name row, 22px track, 6px of frame", () => {
+    expect(block).toMatch(/\.arena-lane-name\s*\{[^}]*font-size:\s*1rem/);
+    expect(ruleBody(".arena-lane-track")).toMatch(/block-size:\s*1\.375rem/);
+    expect(16 + 22 + 2 * 3).toBeLessThanOrEqual(44);
+  });
+});
