@@ -548,15 +548,6 @@ pub fn set_active_lineup(
     set_active_lineup_internal(&state, player_ids)
 }
 
-#[tauri::command]
-pub fn set_starting_xi(
-    state: State<'_, StateManager>,
-    player_ids: Vec<String>,
-) -> Result<Game, String> {
-    info!("[cmd] set_starting_xi is deprecated; use set_active_lineup");
-    set_active_lineup_internal(&state, player_ids)
-}
-
 fn set_active_lineup_internal(
     state: &State<'_, StateManager>,
     player_ids: Vec<String>,
@@ -586,38 +577,6 @@ fn apply_active_lineup(
 }
 
 #[tauri::command]
-pub fn set_draft_strategy(
-    state: State<'_, StateManager>,
-    draft_strategy: String,
-) -> Result<Game, String> {
-    info!("[cmd] set_draft_strategy: {}", draft_strategy);
-    let mut game = state
-        .get_game(|g| g.clone())
-        .ok_or("No active game session".to_string())?;
-
-    let team_id = game
-        .manager
-        .team_id
-        .clone()
-        .ok_or("No team assigned".to_string())?;
-
-    let strategy = match draft_strategy.as_str() {
-        "Attacking" | "HighPress" => olm_core::domain::team::DraftStrategy::Aggressive,
-        "Defensive" => olm_core::domain::team::DraftStrategy::Passive,
-        "Possession" => olm_core::domain::team::DraftStrategy::Scaling,
-        "Counter" => olm_core::domain::team::DraftStrategy::CounterPick,
-        _ => olm_core::domain::team::DraftStrategy::Balanced,
-    };
-
-    if let Some(team) = game.teams.iter_mut().find(|t| t.id == team_id) {
-        team.draft_strategy = strategy;
-    }
-
-    state.set_game(game.clone());
-    Ok(crate::client_game::game_for_client(&game))
-}
-
-#[tauri::command]
 pub fn set_lol_tactics(
     state: State<'_, StateManager>,
     lol_tactics: olm_core::domain::team::LolTactics,
@@ -635,30 +594,6 @@ pub fn set_lol_tactics(
 
     if let Some(team) = game.teams.iter_mut().find(|t| t.id == team_id) {
         team.lol_tactics = lol_tactics;
-    }
-
-    state.set_game(game.clone());
-    Ok(crate::client_game::game_for_client(&game))
-}
-
-#[tauri::command]
-pub fn set_team_roles(
-    state: State<'_, StateManager>,
-    team_roles: olm_core::domain::team::TeamRoles,
-) -> Result<Game, String> {
-    info!("[cmd] set_team_roles");
-    let mut game = state
-        .get_game(|g| g.clone())
-        .ok_or("No active game session".to_string())?;
-
-    let team_id = game
-        .manager
-        .team_id
-        .clone()
-        .ok_or("No team assigned".to_string())?;
-
-    if let Some(team) = game.teams.iter_mut().find(|t| t.id == team_id) {
-        team.team_roles = team_roles;
     }
 
     state.set_game(game.clone());
@@ -2161,25 +2096,6 @@ pub fn reroll_player_lol_role(
 
     state.set_game(game.clone());
     Ok(crate::client_game::game_for_client(&game))
-}
-
-#[tauri::command]
-pub fn auto_select_team_roles(
-    state: State<'_, StateManager>,
-    player_ids: Vec<String>,
-) -> Result<serde_json::Value, String> {
-    log::debug!("[cmd] auto_select_team_roles: {} players", player_ids.len());
-    let game = state
-        .get_game(|g| g.clone())
-        .ok_or("No active game session".to_string())?;
-
-    let (captain, shotcaller) =
-        olm_core::live_match_manager::auto_select_team_roles(&game, &player_ids);
-
-    Ok(serde_json::json!({
-        "captain": captain,
-        "shotcaller": shotcaller,
-    }))
 }
 
 #[cfg(test)]

@@ -51,11 +51,6 @@ pub use world_export::*;
 pub use world_overlay::*;
 
 #[tauri::command]
-pub fn debug_log(message: String) {
-    println!("[JS DEBUG] {}", message);
-}
-
-#[tauri::command]
 pub fn update_manager_profile(
     state: tauri::State<'_, olm_core::state::StateManager>,
     nickname: Option<String>,

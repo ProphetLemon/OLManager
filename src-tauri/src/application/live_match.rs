@@ -431,7 +431,6 @@ pub fn start_live_match(
 
     let match_mode = match mode {
         "spectator" => MatchMode::Spectator,
-        "instant" => MatchMode::Instant,
         _ => MatchMode::Live,
     };
 
@@ -449,35 +448,6 @@ pub fn start_live_match(
     );
     state.set_live_match(session);
     Ok(snapshot)
-}
-
-pub fn step_live_match(
-    state: &StateManager,
-    minutes: u16,
-) -> Result<Vec<olm_core::engine::MinuteResult>, String> {
-    log::debug!("[cmd] step_live_match: minutes={}", minutes);
-    let results = state
-        .with_live_match(|session| {
-            if minutes <= 1 {
-                vec![session.step()]
-            } else {
-                session.step_many(minutes)
-            }
-        })
-        .ok_or_else(|| "No active live match".to_string())?;
-
-    if let Some(last) = results.last() {
-        info!(
-            "[cmd] step_live_match: minutes={}, result_count={}, last_minute={}, phase={:?}, finished={}",
-            minutes,
-            results.len(),
-            last.minute,
-            last.phase,
-            last.is_finished
-        );
-    }
-
-    Ok(results)
 }
 
 pub fn apply_match_command(
