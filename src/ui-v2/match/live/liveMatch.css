@@ -2932,6 +2932,17 @@
   .live-area-dock .arena-sp-line {
     -webkit-line-clamp: 1;
   }
+
+  /* The feed keeps 28px to 32px here, one row of 27px. A sentence that wraps is 41px, so with the
+     newest row at the top no whole row showed for minutes (T16 D1). A row is one line: the text gives
+     way with an ellipsis, and the whole sentence stays in the row's title and in the accessible name,
+     where the polite live region reads it as it arrives. */
+  .live-area-dock .arena-tk-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .live-notice {

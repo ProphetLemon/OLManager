@@ -61,6 +61,11 @@ describe("what each event says", () => {
     expect(screen.getByText("Blue destroyed the nexus")).toBeInTheDocument();
   });
 
+  it("keeps the whole sentence of an objective line in its title, for the rows the short windows clip to one line", () => {
+    renderTicker([ev(600, "BLUE destroyed red-top-outer", "tower")]);
+    expect(screen.getByText("Blue destroyed the outer turret (top)")).toHaveAttribute("title", "Blue destroyed the outer turret (top)");
+  });
+
   it("shows the dragon by kind, the Elder and Baron", () => {
     renderTicker([
       ev(400, "BLUE secured infernal dragon", "dragon"),

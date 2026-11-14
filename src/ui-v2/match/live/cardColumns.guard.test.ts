@@ -329,4 +329,14 @@ describe("the feed on short windows keeps a readable row (T13 D2)", () => {
       expect(list(module, 2), `${module}px, two lines`).toBeLessThan(ROW_PX);
     }
   });
+
+  it("keeps every row to one line, so the newest row is whole however long its sentence is (T16 D1)", () => {
+    const text = ruleIn(short, ".live-area-dock .arena-tk-text");
+    expect(text).toMatch(/white-space:\s*nowrap/);
+    expect(text).toMatch(/overflow:\s*hidden/);
+    expect(text).toMatch(/text-overflow:\s*ellipsis/);
+    expect(text).toMatch(/min-width:\s*0/);
+    // A wrapped sentence is 41px in the real window, more than the 28px to 32px list; one line is a row.
+    expect(ROW_PX).toBeLessThanOrEqual(28);
+  });
 });

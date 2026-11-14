@@ -103,7 +103,9 @@ export function EventTicker({ events, roster, limit = FEED_LIMIT, teamNames }: E
                         )}
                       </span>
                     ) : null}
-                    <span className="arena-tk-text">{sentence}</span>
+                    <span className="arena-tk-text" title={sentence}>
+                      {sentence}
+                    </span>
                   </>
                 )}
               </li>
