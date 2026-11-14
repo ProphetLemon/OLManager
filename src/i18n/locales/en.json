@@ -210,6 +210,22 @@
     "cancel": "Cancel",
     "manager": "Head Coach: {{name}}",
     "deleteSave": "Delete save",
+    "transfer": {
+      "export": "Export save",
+      "import": "Import save",
+      "exported": "Save exported.",
+      "imported": "Imported “{{name}}”.",
+      "replacePrompt": "“{{name}}” is already in your list. Replace it with the imported copy? The imported copy wins; the two are not merged.",
+      "replace": "Replace",
+      "error": {
+        "too_small": "That file is too small to be a save.",
+        "wrong_version": "That file is from another game version and cannot be loaded here. Export it again from the version that created it, or update this one.",
+        "corrupt": "That file is damaged or is not an OLManager save.",
+        "storage": "The save could not be read or stored. Check the file and the free space, then try again.",
+        "id_taken": "A save with that id already exists.",
+        "unknown": "Something went wrong: {{error}}"
+      }
+    },
     "noResults": "No results",
     "importedDescription": "Imported world database",
     "invalidWorldDb": "Invalid world database file: {{error}}",

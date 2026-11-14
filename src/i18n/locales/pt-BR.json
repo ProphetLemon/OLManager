@@ -178,6 +178,22 @@
     "cancel": "Cancelar",
     "manager": "Head Coach: {{name}}",
     "deleteSave": "Excluir save",
+    "transfer": {
+      "export": "Exportar save",
+      "import": "Importar save",
+      "exported": "Save exportado.",
+      "imported": "“{{name}}” importado.",
+      "replacePrompt": "“{{name}}” já está na lista. Substituir pela cópia importada? A cópia importada prevalece; as duas não são mescladas.",
+      "replace": "Substituir",
+      "error": {
+        "too_small": "Esse arquivo é pequeno demais para ser um save.",
+        "wrong_version": "Esse arquivo é de outra versão do jogo e não pode ser carregado aqui. Exporte-o novamente da versão que o criou ou atualize esta.",
+        "corrupt": "Esse arquivo está danificado ou não é um save do OLManager.",
+        "storage": "Não foi possível ler ou gravar o save. Verifique o arquivo e o espaço livre e tente novamente.",
+        "id_taken": "Já existe um save com esse identificador.",
+        "unknown": "Algo deu errado: {{error}}"
+      }
+    },
     "noResults": "Sem resultados",
     "importedDescription": "Banco de dados importado",
     "invalidWorldDb": "Arquivo de banco de dados de mundo inválido: {{error}}",

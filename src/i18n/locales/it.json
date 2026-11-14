@@ -15,6 +15,22 @@
     "cancel": "Annulla",
     "manager": "Head Coach: {{name}}",
     "deleteSave": "Elimina salvataggio",
+    "transfer": {
+      "export": "Esporta salvataggio",
+      "import": "Importa salvataggio",
+      "exported": "Salvataggio esportato.",
+      "imported": "«{{name}}» importato.",
+      "replacePrompt": "«{{name}}» è già nell’elenco. Sostituirlo con la copia importata? Vince la copia importata; le due non vengono unite.",
+      "replace": "Sostituisci",
+      "error": {
+        "too_small": "Il file è troppo piccolo per essere un salvataggio.",
+        "wrong_version": "Il file proviene da un’altra versione del gioco e non può essere caricato qui. Esportalo di nuovo dalla versione che lo ha creato, oppure aggiorna questa.",
+        "corrupt": "Il file è danneggiato o non è un salvataggio di OLManager.",
+        "storage": "Non è stato possibile leggere o salvare il salvataggio. Controlla il file e lo spazio libero, poi riprova.",
+        "id_taken": "Esiste già un salvataggio con questo identificativo.",
+        "unknown": "Qualcosa è andato storto: {{error}}"
+      }
+    },
     "noResults": "Nessun risultato",
     "importedDescription": "Database del mondo importato",
     "invalidWorldDb": "File di database del mondo non valido: {{error}}",

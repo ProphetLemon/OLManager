@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDate } from "@/lib/common/helpers";
-import { Play, Clock, Trash2, X, Loader2 } from "lucide-react";
+import { Play, Clock, Trash2, X, Loader2, Download, Upload } from "lucide-react";
+import type { SaveImportPreview } from "@/api/types";
+import type { TransferNotice } from "./useSaveTransfer";
 import { useRovingFocus } from "@/hooks/useRovingFocus";
 
 interface SaveEntry {
@@ -23,6 +25,13 @@ interface SavesListProps {
   onDelete: (saveId: string) => void;
   onConfirmDelete: (saveId: string | null) => void;
   onClose: () => void;
+  onExport: (saveId: string) => void;
+  onImport: () => void;
+  onConfirmReplace: () => void;
+  onCancelReplace: () => void;
+  transferBusy: boolean;
+  transferNotice: TransferNotice | null;
+  pendingReplace: SaveImportPreview | null;
 }
 
 export default function SavesList({
@@ -34,6 +43,13 @@ export default function SavesList({
   onDelete,
   onConfirmDelete,
   onClose,
+  onExport,
+  onImport,
+  onConfirmReplace,
+  onCancelReplace,
+  transferBusy,
+  transferNotice,
+  pendingReplace,
 }: SavesListProps) {
   const { t, i18n } = useTranslation();
 
@@ -58,6 +74,16 @@ export default function SavesList({
         <h2 className="text-2xl font-heading font-bold uppercase tracking-wider text-white drop-shadow">
           {t("menu.loadGame")}
         </h2>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onImport}
+            disabled={transferBusy || isLoading}
+            className="flex items-center gap-2 px-3 py-1.5 border border-white/20 text-gray-200 hover:border-white/40 hover:bg-white/5 disabled:opacity-50 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            {t("menu.transfer.import")}
+          </button>
         <button
           type="button"
           onClick={onClose}
@@ -65,7 +91,42 @@ export default function SavesList({
         >
           <X className="w-5 h-5" />
         </button>
+        </div>
       </div>
+
+      {pendingReplace && (
+        <div role="alertdialog" className="flex flex-col gap-2 pb-4">
+          <p className="text-sm text-gray-300">
+            {t("menu.transfer.replacePrompt", { name: pendingReplace.name })}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onConfirmReplace}
+              disabled={transferBusy}
+              className="flex-1 py-2 border border-red-500/50 text-red-400 hover:border-red-500 hover:bg-red-500/10 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-colors"
+            >
+              {t("menu.transfer.replace")}
+            </button>
+            <button
+              type="button"
+              onClick={onCancelReplace}
+              className="flex-1 py-2 border border-white/20 text-gray-200 hover:border-white/40 hover:bg-white/5 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-colors"
+            >
+              {t("menu.cancel")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {transferNotice && (
+        <p
+          role={transferNotice.tone === "error" ? "alert" : "status"}
+          className={`pb-4 text-sm ${transferNotice.tone === "error" ? "text-red-400" : "text-emerald-400"}`}
+        >
+          {transferNotice.text}
+        </p>
+      )}
 
       <div className="max-h-[60vh] overflow-y-auto overscroll-contain border-t border-white/10 scrollbar-v2">
         {isLoading ? (
@@ -137,6 +198,18 @@ export default function SavesList({
                         </span>
                       </div>
                     </div>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onExport(save.id);
+                    }}
+                    disabled={transferBusy}
+                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all shrink-0"
+                    title={t("menu.transfer.export")}
+                    aria-label={t("menu.transfer.export")}
+                  >
+                    <Download className="w-4 h-4" />
                   </button>
                   <button
                     onClick={(e) => {
