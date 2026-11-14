@@ -1,9 +1,6 @@
 use chrono::Utc;
 use log::info;
-use olm_core::academy::{
-    academy_candidate_catalog, academy_erl_catalog, eligible_academy_acquisition_options,
-    validate_academy_acquisition, AcademyAcquisitionOption,
-};
+use olm_core::academy::{validate_academy_acquisition, AcademyAcquisitionOption};
 use olm_core::domain::team::{Team, TeamKind};
 use olm_core::finances::{
     record_transaction_with_text, BudgetImpact, FinanceTransactionInput, LedgerText,
@@ -20,6 +17,9 @@ pub struct AcademyAcquisitionOptionsResponse {
     pub parent_team_id: String,
     pub acquisition_allowed: bool,
     pub blocked_reason: Option<String>,
+    /// Region code the options are limited to; `None` when the parent cannot
+    /// fund an academy.
+    pub region: Option<String>,
     pub options: Vec<AcademyAcquisitionOption>,
 }
 
@@ -176,67 +176,14 @@ pub(crate) fn get_academy_acquisition_options_for_game(
     parent_team_id: &str,
 ) -> Result<AcademyAcquisitionOptionsResponse, String> {
     let parent = olm_core::academy::find_team(game, parent_team_id)?;
-    let normalize_key = |value: &str| {
-        value
-            .chars()
-            .filter(|ch| ch.is_ascii_alphanumeric())
-            .flat_map(|ch| ch.to_lowercase())
-            .collect::<String>()
-    };
-    let occupied_source_ids: std::collections::HashSet<String> = game
-        .teams
-        .iter()
-        .filter(|team| team.team_kind == TeamKind::Academy && team.parent_team_id.is_some())
-        .flat_map(|team| {
-            let mut ids = vec![team.id.clone()];
-            if let Some(metadata) = team.academy.as_ref() {
-                ids.push(metadata.source_team_id.clone());
-            }
-            ids
-        })
-        .collect();
-    let taken_original_names: std::collections::HashSet<String> = game
-        .teams
-        .iter()
-        .filter(|team| team.team_kind == TeamKind::Academy && team.parent_team_id.is_some())
-        .filter_map(|team| {
-            team.academy
-                .as_ref()
-                .map(|metadata| normalize_key(&metadata.original_name))
-        })
-        .collect();
-
-    let options = eligible_academy_acquisition_options(
-        &parent.country,
-        academy_erl_catalog(),
-        academy_candidate_catalog(),
-    )
-    .into_iter()
-    .filter(|option| {
-        !occupied_source_ids.contains(&option.source_team_id)
-            && !taken_original_names.contains(&normalize_key(&option.name))
-    })
-    .collect::<Vec<_>>();
-    let blocked_reason = if !parent.is_main() {
-        Some("Academy can only be acquired for a main team".to_string())
-    } else if parent.academy_team_id.is_some() {
-        Some("Parent team already has academy".to_string())
-    } else if options.is_empty() {
-        Some("No free academy candidates available in LES, LFL, or Prime League".to_string())
-    } else if options
-        .iter()
-        .all(|option| parent.finance < option.acquisition_cost)
-    {
-        Some("Insufficient funds for all eligible academy acquisition options".to_string())
-    } else {
-        None
-    };
+    let report = olm_core::academy::get_acquisition_report(game, parent_team_id);
 
     Ok(AcademyAcquisitionOptionsResponse {
         parent_team_id: parent.id.clone(),
-        acquisition_allowed: blocked_reason.is_none(),
-        blocked_reason,
-        options,
+        acquisition_allowed: report.blocked_reason.is_none(),
+        blocked_reason: report.blocked_reason,
+        region: report.region,
+        options: report.options,
     })
 }
 
@@ -421,6 +368,7 @@ mod tests {
     };
     use chrono::{TimeZone, Utc};
     use olm_core::clock::GameClock;
+    use olm_core::domain::league::League;
     use olm_core::domain::manager::Manager;
     use olm_core::domain::team::{
         AcademyLifecycle, AcademyMetadata, ErlAssignment, ErlAssignmentRule,
@@ -452,7 +400,12 @@ mod tests {
         team
     }
 
-    fn game_with_team(mut parent: Team) -> Game {
+    fn game_with_team(parent: Team) -> Game {
+        game_with_team_in(parent, "lec", 1)
+    }
+
+    fn game_with_team_in(mut parent: Team, competition_id: &str, tier: u8) -> Game {
+        parent.competition_id = Some(competition_id.to_string());
         let mut manager = Manager::new(
             "manager-1".to_string(),
             "Test".to_string(),
@@ -463,14 +416,24 @@ mod tests {
         manager.hire(parent.id.clone());
         parent.manager_id = Some(manager.id.clone());
 
-        Game::new(
+        let mut league = League::new(
+            format!("league-{competition_id}"),
+            competition_id.to_uppercase(),
+            1,
+            &[parent.id.clone()],
+            Some(competition_id.to_string()),
+        );
+        league.tier = tier;
+        let mut game = Game::new(
             GameClock::new(Utc.with_ymd_and_hms(2026, 1, 1, 12, 0, 0).unwrap()),
             manager,
             vec![parent],
             vec![],
             vec![],
             vec![],
-        )
+        );
+        game.leagues.push(league);
+        game
     }
 
     #[test]
@@ -523,6 +486,73 @@ mod tests {
             .expect("kcb option available cross-country");
         assert_eq!(kcb.assignment_rule, ErlAssignmentRule::Fallback);
         assert_eq!(kcb.fallback_reason, None);
+    }
+
+    #[test]
+    fn tier_two_parent_is_blocked_and_gets_no_options() {
+        let game = game_with_team_in(team("les-club", "ES", 1_000_000), "les", 2);
+
+        let response = get_academy_acquisition_options_for_game(&game, "les-club").expect("options");
+
+        assert!(!response.acquisition_allowed);
+        assert_eq!(
+            response.blocked_reason.as_deref(),
+            Some(olm_core::academy::BLOCKED_NOT_TOP_LEAGUE)
+        );
+        assert!(response.options.is_empty());
+        assert_eq!(response.region, None);
+    }
+
+    #[test]
+    fn tier_two_parent_cannot_acquire_an_academy_even_with_a_valid_source_id() {
+        let top_game = game_with_team(team("probe", "ES", 1_000_000));
+        let source_team_id = source_id_by_name(&top_game, "probe", "Movistar KOI Fénix");
+        let mut game = game_with_team_in(team("les-club", "ES", 1_000_000), "les", 2);
+
+        let result = acquire_academy_team_in_game(
+            &mut game,
+            AcquireAcademyTeamRequest {
+                parent_team_id: "les-club".to_string(),
+                source_team_id,
+                custom_name: None,
+                custom_short_name: None,
+                custom_logo_url: None,
+            },
+        );
+
+        assert!(result
+            .expect_err("tier-2 parent should be rejected")
+            .contains("is not eligible for this team"));
+        assert_eq!(game.teams.len(), 1);
+        assert_eq!(game.teams[0].academy_team_id, None);
+        assert_eq!(game.teams[0].finance, 1_000_000);
+    }
+
+    #[test]
+    fn lec_parent_only_sees_emea_candidates_and_reports_the_region() {
+        let game = game_with_team(team("mad", "ES", 1_000_000));
+
+        let response = get_academy_acquisition_options_for_game(&game, "mad").expect("options");
+
+        assert_eq!(response.region.as_deref(), Some("EMEA"));
+        assert!(!response.options.iter().any(|option| matches!(
+            option.erl_league_id.as_str(),
+            "lckcl" | "lck_cl" | "nacl" | "ldl" | "vcs" | "ljl" | "pcs" | "cd" | "lrn" | "lrs"
+        )));
+    }
+
+    #[test]
+    fn lck_parent_only_sees_korean_candidates() {
+        let game = game_with_team_in(team("kr-club", "KR", 1_000_000), "lck", 1);
+
+        let response = get_academy_acquisition_options_for_game(&game, "kr-club").expect("options");
+
+        assert_eq!(response.region.as_deref(), Some("KR"));
+        assert!(!response.options.is_empty());
+        assert!(response
+            .options
+            .iter()
+            .all(|option| option.erl_league_id.starts_with("lck")));
     }
 
     #[test]

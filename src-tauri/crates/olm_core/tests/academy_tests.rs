@@ -1,11 +1,13 @@
 use chrono::{TimeZone, Utc};
 use olm_core::academy::{
-    AcademyAcquisitionOption, AcademyError, ErlAcademyCandidate, ErlAssignmentRule,
-    ErlLeagueDefinition, acquire_academy, eligible_academy_acquisition_options,
-    get_acquisition_options, validate_academy_acquisition, validate_parent_academy_link,
+    AcademyAcquisitionOption, AcademyError, BLOCKED_NOT_TOP_LEAGUE, BLOCKED_NO_REGION_CANDIDATES,
+    ErlAcademyCandidate, ErlAssignmentRule, ErlLeagueDefinition, acquire_academy,
+    acquisition_report, eligible_academy_acquisition_options, get_acquisition_options,
+    validate_academy_acquisition, validate_parent_academy_link,
 };
 use olm_core::clock::GameClock;
 use olm_core::domain::manager::Manager;
+use olm_core::domain::league::League;
 use olm_core::domain::team::{FinancialTransactionKind, Team, TeamKind};
 use olm_core::game::Game;
 
@@ -221,8 +223,18 @@ fn academy_acquisition_records_canonical_ledger_date_and_source() {
         "FR".to_string(),
     );
     manager.hire("lec-team".to_string());
-    let parent = team("lec-team", "FR", 2_000_000);
+    let mut parent = team("lec-team", "FR", 2_000_000);
+    parent.competition_id = Some("lec".to_string());
+    let mut lec = League::new(
+        "league-lec".to_string(),
+        "LEC".to_string(),
+        1,
+        &["lec-team".to_string()],
+        Some("lec".to_string()),
+    );
+    lec.tier = 1;
     let mut game = Game::new(clock, manager, vec![parent], vec![], vec![], vec![]);
+    game.leagues.push(lec);
     let (options, _) = get_acquisition_options(&game, "lec-team");
     let source_team_id = options
         .first()
@@ -254,4 +266,123 @@ fn academy_acquisition_records_canonical_ledger_date_and_source() {
         entry.correlation_id.as_deref(),
         Some(expected_correlation.as_str())
     );
+}
+
+// ---------------------------------------------------------------------------
+// Tier and region rule
+// ---------------------------------------------------------------------------
+
+fn game_with_parent(competition_id: &str, tier: u8, country: &str) -> Game {
+    let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 3, 15, 12, 0, 0).unwrap());
+    let mut manager = Manager::new(
+        "manager-1".to_string(),
+        "Jane".to_string(),
+        "Doe".to_string(),
+        "1980-01-01".to_string(),
+        country.to_string(),
+    );
+    manager.hire("parent".to_string());
+    let mut parent = team("parent", country, 5_000_000);
+    parent.competition_id = Some(competition_id.to_string());
+    let mut league = League::new(
+        format!("league-{competition_id}"),
+        competition_id.to_uppercase(),
+        1,
+        &["parent".to_string()],
+        Some(competition_id.to_string()),
+    );
+    league.tier = tier;
+    let mut game = Game::new(clock, manager, vec![parent], vec![], vec![], vec![]);
+    game.leagues.push(league);
+    game
+}
+
+fn region_catalog() -> (Vec<ErlLeagueDefinition>, Vec<ErlAcademyCandidate>) {
+    (
+        vec![
+            erl("les", "ES", "EMEA", 3, &[]),
+            erl("lfl", "FR", "EMEA", 3, &[]),
+            erl("lck_cl", "KR", "KR", 3, &[]),
+            erl("nacl", "US", "NA", 3, &[]),
+        ],
+        vec![
+            candidate("les-fenix", "les", "ES", 3, 2),
+            candidate("lfl-blue", "lfl", "FR", 3, 2),
+            candidate("cl-rookies", "lck_cl", "KR", 3, 2),
+            candidate("nacl-bears", "nacl", "US", 3, 2),
+        ],
+    )
+}
+
+fn option_ids(game: &Game) -> Vec<String> {
+    let (leagues, candidates) = region_catalog();
+    let mut ids: Vec<String> = acquisition_report(game, "parent", &leagues, &candidates)
+        .options
+        .into_iter()
+        .map(|option| option.source_team_id)
+        .collect();
+    ids.sort();
+    ids
+}
+
+#[test]
+fn tier_two_parent_gets_no_options_and_a_top_league_blocked_reason() {
+    let game = game_with_parent("les", 2, "ES");
+    let (leagues, candidates) = region_catalog();
+
+    let report = acquisition_report(&game, "parent", &leagues, &candidates);
+
+    assert_eq!(report.blocked_reason.as_deref(), Some(BLOCKED_NOT_TOP_LEAGUE));
+    assert!(report.options.is_empty());
+    assert_eq!(report.region, None);
+}
+
+#[test]
+fn parent_without_a_known_competition_is_blocked_as_not_top_league() {
+    let mut game = game_with_parent("lec", 1, "ES");
+    game.teams[0].competition_id = None;
+    let (leagues, candidates) = region_catalog();
+
+    let report = acquisition_report(&game, "parent", &leagues, &candidates);
+
+    assert_eq!(report.blocked_reason.as_deref(), Some(BLOCKED_NOT_TOP_LEAGUE));
+}
+
+#[test]
+fn lec_parent_only_sees_emea_tier_two_teams() {
+    let game = game_with_parent("lec", 1, "ES");
+
+    assert_eq!(option_ids(&game), ["les-fenix", "lfl-blue"]);
+}
+
+#[test]
+fn lck_parent_only_sees_lck_cl_teams() {
+    let game = game_with_parent("lck", 1, "KR");
+
+    assert_eq!(option_ids(&game), ["cl-rookies"]);
+}
+
+#[test]
+fn top_league_parent_reports_the_region_its_options_belong_to() {
+    let game = game_with_parent("lcs", 1, "US");
+    let (leagues, candidates) = region_catalog();
+
+    let report = acquisition_report(&game, "parent", &leagues, &candidates);
+
+    assert_eq!(report.region.as_deref(), Some("NA"));
+    assert_eq!(report.blocked_reason, None);
+}
+
+#[test]
+fn top_league_parent_with_no_free_team_in_its_region_gets_a_region_reason() {
+    let game = game_with_parent("lcp", 1, "KR");
+    let (leagues, candidates) = region_catalog();
+
+    let report = acquisition_report(&game, "parent", &leagues, &candidates);
+
+    assert_eq!(
+        report.blocked_reason.as_deref(),
+        Some(BLOCKED_NO_REGION_CANDIDATES)
+    );
+    assert_eq!(report.region.as_deref(), Some("APAC"));
 }

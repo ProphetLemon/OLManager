@@ -415,12 +415,13 @@ pub fn dispatch(command: &str, args: &Value, game: &mut Game) -> Result<Dispatch
         "get_academy_acquisition_options" => {
             let ptid = string_arg(args, &["parentTeamId", "parent_team_id"])?;
             commands::bootstrap_academy_pool(game);
-            let (options, blocked) = crate::academy::get_acquisition_options(game, &ptid);
+            let report = crate::academy::get_acquisition_report(game, &ptid);
             Ok(DispatchResult::GameModified(json!({
                 "parent_team_id": ptid,
-                "acquisition_allowed": blocked.is_none(),
-                "blocked_reason": blocked,
-                "options": options,
+                "acquisition_allowed": report.blocked_reason.is_none(),
+                "blocked_reason": report.blocked_reason,
+                "region": report.region,
+                "options": report.options,
             })))
         }
         "acquire_academy_team" => {
