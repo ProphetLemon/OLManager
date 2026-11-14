@@ -13,17 +13,20 @@ use olm_core::game::Game;
 use olm_core::turn;
 use std::collections::HashMap;
 
-fn attrs() -> PlayerAttributes {
+/// Attributes whose average is exactly `value`. The turn loop recomputes the stored
+/// `lol_ovr` from the attributes every day, so a fixture that wants a given rating
+/// has to carry it in the attributes, not only in the stored field.
+fn attrs(value: u8) -> PlayerAttributes {
     PlayerAttributes {
-        mental_resilience: 60,
-        champion_pool: 60,
-        laning: 60,
-        mechanics: 60,
-        macro_play: 60,
-        consistency: 60,
-        discipline: 60,
-        teamfighting: 60,
-        shotcalling: 60,
+        mental_resilience: value,
+        champion_pool: value,
+        laning: value,
+        mechanics: value,
+        macro_play: value,
+        consistency: value,
+        discipline: value,
+        teamfighting: value,
+        shotcalling: value,
     }
 }
 
@@ -41,7 +44,7 @@ fn player(
         "2000-01-01".to_string(),
         "Spain".to_string(),
         role,
-        attrs(),
+        attrs(lol_ovr),
     );
     player.team_id = team_id.map(str::to_string);
     player.wage = 50_000;

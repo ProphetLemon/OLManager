@@ -540,6 +540,7 @@ fn measure(until: NaiveDate) -> Measurement {
         }
         // The state the market acts on: after the expiry step, before the day's AI decisions.
         let generated_slots = generated_starter_slots(&game);
+        market.snapshot_pool(&game, false);
         market.begin_day(game.clock.current_date.date_naive());
         market.maybe_sample(&game);
         turn::process_day(&mut game);
@@ -554,6 +555,7 @@ fn measure(until: NaiveDate) -> Measurement {
         }
         teams = now;
     }
+    market.snapshot_pool(&game, true);
     Measurement {
         starters: classify(&game, &tracked, |t| t.starter),
         everyone: classify(&game, &tracked, |_| true),
