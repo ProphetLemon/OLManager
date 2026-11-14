@@ -115,7 +115,7 @@ export interface PitView {
   heraldCarrier: HeraldCarrier | null;
 }
 
-function statusOf(timer: TimerLike | undefined, fallbackNext: number | null | undefined, now: number): PitStatus {
+export function statusOf(timer: TimerLike | undefined, fallbackNext: number | null | undefined, now: number): PitStatus {
   if (timer?.alive) return { state: "alive", hpPct: hpPercent(timer) };
   const next = spawnAt(timer?.nextSpawnAt, fallbackNext);
   return next === null ? { state: "none" } : { state: "countdown", seconds: Math.max(0, next - now) };

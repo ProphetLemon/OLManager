@@ -3893,10 +3893,17 @@
       },
       "board": {
         "heading": "Tablero de combate",
-        "label": "Contactos, fuego de las torres, regresos y caídas",
-        "summary_one": "{{count}} activo",
-        "summary_other": "{{count}} activos",
-        "summaryQuiet": "Calma",
+        "label": "Contactos y disparos de torre",
+        "away": "Lejos",
+        "awayLabel": "Regresos y muertes",
+        "awayQuiet": "Nadie está regresando ni esperando para reaparecer",
+        "short": {
+          "contact": "{{a}} contra {{b}}",
+          "hit": "{{attacker}} golpea a {{victim}}",
+          "turret": "Torre dispara a {{target}}",
+          "recall": "{{champion}} regresa, {{seconds}}s",
+          "dead": "{{champion}} vuelve en {{seconds}}s"
+        },
         "who": "{{name}} ({{team}})",
         "contactMutual_one": "{{a}} y {{b}} se golpean entre sí, último golpe hace {{count}} segundo",
         "contactMutual_other": "{{a}} y {{b}} se golpean entre sí, último golpe hace {{count}} segundos",
@@ -3908,13 +3915,12 @@
         "recall_other": "{{champion}} está volviendo a la base, quedan {{count}} segundos",
         "dead_one": "{{champion}} cayó y vuelve en {{count}} segundo",
         "dead_other": "{{champion}} cayó y vuelve en {{count}} segundos",
-        "quiet": "Nadie está peleando, volviendo a la base ni esperando para reaparecer",
+        "quiet": "Nadie está peleando",
         "kind": {
           "contact": "Peleando",
           "turret": "Torre",
           "recall": "Regreso",
-          "dead": "Caído",
-          "quiet": "Calma"
+          "dead": "Caído"
         }
       },
       "feed": {
@@ -4033,8 +4039,34 @@
         "fighting": "Pelea",
         "objective": "Obj."
       },
+      "lanes": {
+        "label": "Calles",
+        "top": "Arriba",
+        "mid": "Centro",
+        "bot": "Abajo",
+        "none": "Sin oleada",
+        "even": "Igualado",
+        "push": "{{team}} empuja",
+        "fight": "Pelea",
+        "aria": {
+          "none": "Calle {{lane}}: no hay oleada en la calle.",
+          "noneFight": "Calle {{lane}}: no hay oleada en la calle y hay una pelea.",
+          "even": "Calle {{lane}}: las oleadas están igualadas.",
+          "evenFight": "Calle {{lane}}: las oleadas están igualadas y hay una pelea.",
+          "push": "Calle {{lane}}: {{team}} empuja hacia la base {{target}}.",
+          "pushFight": "Calle {{lane}}: {{team}} empuja hacia la base {{target}} y hay una pelea."
+        }
+      },
+      "rail": {
+        "label": "Temporizadores de objetivos",
+        "gone": "Terminado",
+        "carriedBy": "Heraldo llevado por {{team}}",
+        "buffHeld": "Mejora de {{name}}, {{team}}: quedan {{time}}"
+      },
       "legend": {
         "heading": "Leyenda del mapa",
+        "lanes": "Franja sobre el mapa: la flecha marca dónde se encuentran las dos oleadas y hacia dónde empujan. Un marco doble y la palabra Pelea indican que hay campeones peleando en esa calle",
+        "timers": "Columna izquierda bajo los jugadores: los temporizadores del dragón, los Vacíolarvas, el Heraldo y el Barón. Una etiqueta de equipo en una casilla es una mejora activa y quién la tiene",
         "champions": "Los campeones azules son redondos y los rojos, cuadrados con esquinas redondeadas",
         "structures": "Torres, inhibidores y nexo: el azul es redondo y el rojo es un rombo; una forma rayada está destruida",
         "camp": "Rombo gris pequeño: un campamento de la jungla, relleno mientras sus monstruos siguen y con borde discontinuo cuando está limpio",

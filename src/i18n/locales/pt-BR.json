@@ -3893,10 +3893,17 @@
       },
       "board": {
         "heading": "Quadro de lutas",
-        "label": "Contatos, fogo das torres, retornos e mortes",
-        "summary_one": "{{count}} ativo",
-        "summary_other": "{{count}} ativos",
-        "summaryQuiet": "Calmaria",
+        "label": "Contatos e disparos de torre",
+        "away": "Fora",
+        "awayLabel": "Retornos e mortes",
+        "awayQuiet": "Ninguém está voltando para a base nem esperando para voltar",
+        "short": {
+          "contact": "{{a}} contra {{b}}",
+          "hit": "{{attacker}} acerta {{victim}}",
+          "turret": "Torre atira em {{target}}",
+          "recall": "{{champion}} volta, {{seconds}} s",
+          "dead": "{{champion}} volta em {{seconds}} s"
+        },
         "who": "{{name}} ({{team}})",
         "contactMutual_one": "{{a}} e {{b}} estão trocando golpes, último golpe há {{count}} segundo",
         "contactMutual_other": "{{a}} e {{b}} estão trocando golpes, último golpe há {{count}} segundos",
@@ -3908,13 +3915,12 @@
         "recall_other": "{{champion}} está voltando para a base, faltam {{count}} segundos",
         "dead_one": "{{champion}} morreu e volta em {{count}} segundo",
         "dead_other": "{{champion}} morreu e volta em {{count}} segundos",
-        "quiet": "Ninguém está lutando, voltando para a base ou esperando para voltar",
+        "quiet": "Ninguém está lutando",
         "kind": {
           "contact": "Luta",
           "turret": "Torre",
           "recall": "Retorno",
-          "dead": "Morto",
-          "quiet": "Calmaria"
+          "dead": "Morto"
         }
       },
       "feed": {
@@ -4033,8 +4039,34 @@
         "fighting": "Luta",
         "objective": "Obj."
       },
+      "lanes": {
+        "label": "Rotas",
+        "top": "Topo",
+        "mid": "Meio",
+        "bot": "Inferior",
+        "none": "Sem onda",
+        "even": "Equilibrado",
+        "push": "{{team}} empurra",
+        "fight": "Luta",
+        "aria": {
+          "none": "Rota {{lane}}: sem onda na rota.",
+          "noneFight": "Rota {{lane}}: sem onda na rota e há uma luta.",
+          "even": "Rota {{lane}}: as ondas estão equilibradas.",
+          "evenFight": "Rota {{lane}}: as ondas estão equilibradas e há uma luta.",
+          "push": "Rota {{lane}}: {{team}} está empurrando para a base {{target}}.",
+          "pushFight": "Rota {{lane}}: {{team}} está empurrando para a base {{target}} e há uma luta."
+        }
+      },
+      "rail": {
+        "label": "Cronômetros de objetivos",
+        "gone": "Acabou",
+        "carriedBy": "Arauto carregado por {{team}}",
+        "buffHeld": "Bônus de {{name}}, {{team}}: faltam {{time}}"
+      },
       "legend": {
         "heading": "Legenda do mapa",
+        "lanes": "Faixa acima do mapa: a seta marca onde as duas ondas se encontram e para onde empurram. Uma moldura dupla e a palavra Luta indicam que há campeões lutando nessa rota",
+        "timers": "Coluna da esquerda abaixo dos jogadores: os cronômetros do dragão, das Larvas do Vazio, do Arauto e do Barão. Uma etiqueta de time em um bloco é um bônus ativo e quem o tem",
         "champions": "Os campeões azuis são redondos e os vermelhos são quadrados arredondados",
         "structures": "Torres, inibidores e nexus: o azul é redondo e o vermelho é um losango; uma forma riscada está destruída",
         "camp": "Pequeno losango cinza: um acampamento da selva, cheio enquanto os monstros estão lá, contorno tracejado depois de limpo",

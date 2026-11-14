@@ -3893,10 +3893,17 @@
       },
       "board": {
         "heading": "Tableau des combats",
-        "label": "Contacts, tirs des tours, retours et morts",
-        "summary_one": "{{count}} en cours",
-        "summary_other": "{{count}} en cours",
-        "summaryQuiet": "Calme",
+        "label": "Contacts et tirs de tour",
+        "away": "Absents",
+        "awayLabel": "Rappels et morts",
+        "awayQuiet": "Personne ne rentre à la base ni n'attend de revenir",
+        "short": {
+          "contact": "{{a}} contre {{b}}",
+          "hit": "{{attacker}} frappe {{victim}}",
+          "turret": "Tour tire sur {{target}}",
+          "recall": "{{champion}} rappelle, {{seconds}} s",
+          "dead": "{{champion}} revient dans {{seconds}} s"
+        },
         "who": "{{name}} ({{team}})",
         "contactMutual_one": "{{a}} et {{b}} échangent des coups, dernier coup il y a {{count}} seconde",
         "contactMutual_other": "{{a}} et {{b}} échangent des coups, dernier coup il y a {{count}} secondes",
@@ -3908,13 +3915,12 @@
         "recall_other": "{{champion}} rentre à la base, encore {{count}} secondes",
         "dead_one": "{{champion}} est mort et revient dans {{count}} seconde",
         "dead_other": "{{champion}} est mort et revient dans {{count}} secondes",
-        "quiet": "Personne ne se bat, ne rentre à la base ni n'attend de revenir",
+        "quiet": "Personne ne se bat",
         "kind": {
           "contact": "Combat",
           "turret": "Tour",
           "recall": "Rappel",
-          "dead": "Mort",
-          "quiet": "Calme"
+          "dead": "Mort"
         }
       },
       "feed": {
@@ -4033,8 +4039,34 @@
         "fighting": "Duel",
         "objective": "Obj."
       },
+      "lanes": {
+        "label": "Voies",
+        "top": "Haut",
+        "mid": "Milieu",
+        "bot": "Bas",
+        "none": "Pas de vague",
+        "even": "Équilibré",
+        "push": "{{team}} pousse",
+        "fight": "Combat",
+        "aria": {
+          "none": "Voie {{lane}} : pas de vague sur la voie.",
+          "noneFight": "Voie {{lane}} : pas de vague sur la voie, et un combat est en cours.",
+          "even": "Voie {{lane}} : les vagues sont équilibrées.",
+          "evenFight": "Voie {{lane}} : les vagues sont équilibrées, et un combat est en cours.",
+          "push": "Voie {{lane}} : {{team}} pousse vers la base {{target}}.",
+          "pushFight": "Voie {{lane}} : {{team}} pousse vers la base {{target}}, et un combat est en cours."
+        }
+      },
+      "rail": {
+        "label": "Minuteurs d'objectifs",
+        "gone": "Parti",
+        "carriedBy": "Héraut porté par {{team}}",
+        "buffHeld": "Bonus de {{name}}, {{team}} : encore {{time}}"
+      },
       "legend": {
         "heading": "Légende de la carte",
+        "lanes": "Bandeau au-dessus de la carte : la flèche marque où les deux vagues se rencontrent et dans quel sens elles poussent. Un double cadre et le mot Combat indiquent que des champions se battent sur cette voie",
+        "timers": "Colonne de gauche sous les joueurs : les minuteurs du dragon, des Larves du Néant, du Héraut et du Baron. Une étiquette d'équipe sur une tuile est un bonus actif et indique qui le détient",
         "champions": "Les champions bleus sont ronds, les champions rouges sont des carrés arrondis",
         "structures": "Tours, inhibiteurs et nexus : le bleu est rond, le rouge est un losange ; une forme hachurée est détruite",
         "camp": "Petit losange gris : un camp de la jungle, plein tant que ses monstres sont là, contour en pointillés une fois nettoyé",

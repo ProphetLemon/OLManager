@@ -3893,10 +3893,17 @@
       },
       "board": {
         "heading": "Quadro degli scontri",
-        "label": "Contatti, fuoco delle torri, ritorni e morti",
-        "summary_one": "{{count}} attivo",
-        "summary_other": "{{count}} attivi",
-        "summaryQuiet": "Calma",
+        "label": "Contatti e colpi delle torri",
+        "away": "Assenti",
+        "awayLabel": "Richiami e morti",
+        "awayQuiet": "Nessuno sta tornando alla base o aspetta di tornare",
+        "short": {
+          "contact": "{{a}} contro {{b}}",
+          "hit": "{{attacker}} colpisce {{victim}}",
+          "turret": "Torre spara su {{target}}",
+          "recall": "{{champion}} richiama, {{seconds}} s",
+          "dead": "{{champion}} torna tra {{seconds}} s"
+        },
         "who": "{{name}} ({{team}})",
         "contactMutual_one": "{{a}} e {{b}} si scambiano colpi, ultimo colpo {{count}} secondo fa",
         "contactMutual_other": "{{a}} e {{b}} si scambiano colpi, ultimo colpo {{count}} secondi fa",
@@ -3908,13 +3915,12 @@
         "recall_other": "{{champion}} sta tornando alla base, mancano {{count}} secondi",
         "dead_one": "{{champion}} è morto e torna tra {{count}} secondo",
         "dead_other": "{{champion}} è morto e torna tra {{count}} secondi",
-        "quiet": "Nessuno combatte, torna alla base o aspetta di tornare",
+        "quiet": "Nessuno combatte",
         "kind": {
           "contact": "Scontro",
           "turret": "Torre",
           "recall": "Richiamo",
-          "dead": "Morto",
-          "quiet": "Calma"
+          "dead": "Morto"
         }
       },
       "feed": {
@@ -4033,8 +4039,34 @@
         "fighting": "Scontro",
         "objective": "Obiett."
       },
+      "lanes": {
+        "label": "Corsie",
+        "top": "Alta",
+        "mid": "Centrale",
+        "bot": "Bassa",
+        "none": "Nessuna ondata",
+        "even": "In equilibrio",
+        "push": "{{team}} spinge",
+        "fight": "Scontro",
+        "aria": {
+          "none": "Corsia {{lane}}: nessuna ondata sulla corsia.",
+          "noneFight": "Corsia {{lane}}: nessuna ondata sulla corsia e uno scontro in corso.",
+          "even": "Corsia {{lane}}: le ondate sono in equilibrio.",
+          "evenFight": "Corsia {{lane}}: le ondate sono in equilibrio e uno scontro è in corso.",
+          "push": "Corsia {{lane}}: {{team}} spinge verso la base {{target}}.",
+          "pushFight": "Corsia {{lane}}: {{team}} spinge verso la base {{target}} e uno scontro è in corso."
+        }
+      },
+      "rail": {
+        "label": "Timer degli obiettivi",
+        "gone": "Finito",
+        "carriedBy": "Araldo portato da {{team}}",
+        "buffHeld": "Bonus di {{name}}, {{team}}: restano {{time}}"
+      },
       "legend": {
         "heading": "Legenda della mappa",
+        "lanes": "Fascia sopra la mappa: la freccia indica dove si incontrano le due ondate e in che direzione spingono. Una doppia cornice e la parola Scontro indicano che dei campioni combattono su quella corsia",
+        "timers": "Colonna di sinistra sotto i giocatori: i timer di drago, Larve del Vuoto, Araldo e Barone. Un'etichetta di squadra su una casella è un bonus attivo e chi lo possiede",
         "champions": "I campioni blu sono rotondi, i campioni rossi sono quadrati arrotondati",
         "structures": "Torri, inibitori e nexus: il blu è rotondo, il rosso è un rombo; una forma tratteggiata è distrutta",
         "camp": "Piccolo rombo grigio: un accampamento della giungla, pieno finché i mostri ci sono, contorno tratteggiato una volta ripulito",

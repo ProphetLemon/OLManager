@@ -117,11 +117,13 @@ export function MatchControls({
         <Menu.Trigger
           ref={optionsRef}
           aria-expanded={menuOpen}
+          title={t("onAir.match.controls.options")}
           disabled={disabled}
           className={cn(buttonVariants({ variant: "ghost", size: "touch" }), "arena-options")}
         >
           <MoreHorizontal aria-hidden="true" />
-          {t("onAir.match.controls.options")}
+          {/* Clipped, not removed, where the row is narrow: the button keeps its name and becomes an icon. */}
+          <span className="arena-btn-label">{t("onAir.match.controls.options")}</span>
         </Menu.Trigger>
         <Menu.Portal>
           <Menu.Positioner align="end" sideOffset={4} className="z-50">
