@@ -116,4 +116,21 @@ describe("PostGameScoreboard", () => {
     // The rest of the row is still there.
     expect(screen.getAllByText("7/2/8").length).toBeGreaterThan(0);
   });
+
+  it("fills the table's width for a simulated result: no cell of any row falls outside the header's columns", () => {
+    show({
+      champions: champions({ level: undefined, cs: undefined, damageDealt: undefined, items: undefined, trinketKey: undefined, summonerSpells: [] }),
+    });
+    for (const name of ["Shifters players", "Movistar KOI players"]) {
+      const table = tableOf(name);
+      const columns = table.querySelectorAll("colgroup col").length;
+      expect(columns).toBe(table.querySelectorAll("thead th").length);
+      for (const row of table.querySelectorAll("tr")) {
+        const span = [...row.children].reduce((sum, cell) => sum + Number(cell.getAttribute("colspan") ?? 1), 0);
+        expect(span, row.className).toBe(columns);
+      }
+      // The objectives are still shown, on a row of their own.
+      expect(within(table).getAllByRole("img", { name: /^Towers: / })).toHaveLength(1);
+    }
+  });
 });

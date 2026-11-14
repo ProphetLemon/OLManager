@@ -160,6 +160,8 @@ function TeamTable({ side, identity, board, columns, maxDamage, championByPlayer
   const { t, i18n } = useTranslation();
   const totals = board.totals[side];
   const rows = board.rows[side];
+  const trailing = Number(columns.gear) + Number(columns.spells);
+  const columnCount = 3 + Number(columns.level) + Number(columns.cs) + Number(columns.damage) + trailing;
   return (
     <table className="pg-table" data-team={side} aria-label={t("onAir.match.team.players", { team: identity.name })}>
       <colgroup>
@@ -207,10 +209,20 @@ function TeamTable({ side, identity, board, columns, maxDamage, championByPlayer
           {columns.cs ? <td className="pg-num">{totals.cs ?? "-"}</td> : null}
           <td className="pg-num">{compactGold(totals.gold, i18n.language)}</td>
           {columns.damage ? <td className="pg-num">{compactGold(totals.damage ?? 0, i18n.language)}</td> : null}
-          <td colSpan={Number(columns.gear) + Number(columns.spells) || 1}>
-            <Objectives totals={totals} />
-          </td>
+          {trailing > 0 ? (
+            <td colSpan={trailing}>
+              <Objectives totals={totals} />
+            </td>
+          ) : null}
         </tr>
+        {/* With no items or spells column there is no cell beside the totals to hold them: they get a row. */}
+        {trailing === 0 ? (
+          <tr className="pg-total pg-total-objs">
+            <td colSpan={columnCount}>
+              <Objectives totals={totals} />
+            </td>
+          </tr>
+        ) : null}
       </tfoot>
     </table>
   );
