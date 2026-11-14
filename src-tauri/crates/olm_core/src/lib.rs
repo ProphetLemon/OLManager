@@ -16,7 +16,6 @@ pub mod custom_logo;
 pub mod custom_team;
 pub mod db;
 pub mod delegated_renewals;
-pub mod dispatch;
 pub mod domain;
 pub mod draft;
 pub mod end_of_season;
