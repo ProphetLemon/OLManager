@@ -107,6 +107,12 @@ pub(crate) fn build_world_naming_replaced_club(
 ) -> Result<(String, Option<String>), String> {
     assemble_base_world(game, inputs, rating_overrides)?;
 
+    // The catalog never stores `lol_ovr` (the save DB does not either), and a load refreshes
+    // every player's from the attributes. Do the same here so a new game and a loaded one
+    // agree, and the AI systems that read the stored field (purchases, sales, wage policy,
+    // renewals) do not see 0 for most of the world until the first load.
+    game.refresh_lol_ovrs();
+
     // The custom club takes its slot after the overlay (so roster moves into the
     // replaced club are released with the rest) and before the fill. Its founding
     // squad is generated right away, so the fill finds all five roles covered; if
@@ -2194,6 +2200,44 @@ mod tests {
                 .filter(|id| olm_core::world_catalog::is_stale_duplicate_competition(id))
                 .collect();
             assert!(stale.is_empty(), "stale leagues built: {stale:?}");
+        }
+
+        /// Fails when a player's stored `lol_ovr` differs from what a load computes for them
+        /// (`load_game` and `get_active_game` refresh every player's from the attributes).
+        fn assert_stored_lol_ovr_is_computed(game: &Game) {
+            let stale: Vec<&str> = game
+                .players
+                .iter()
+                .filter(|p| p.lol_ovr != olm_core::potential::calculate_lol_ovr(p))
+                .map(|p| p.id.as_str())
+                .collect();
+            assert!(
+                stale.is_empty(),
+                "{} players keep a stale lol_ovr, e.g. {:?}",
+                stale.len(),
+                &stale[..stale.len().min(5)]
+            );
+        }
+
+        /// A new game stores the same `lol_ovr` a loaded one computes, so the AI systems
+        /// that read the stored field (purchases, sales, wage policy, renewals) see real
+        /// ratings from day one instead of 0 until the first load.
+        #[test]
+        fn a_new_game_stores_the_computed_lol_ovr_of_every_player() {
+            let (mut game, _catalog_players, _overlay, user_team) = new_game();
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &user_team)
+                .expect("season setup");
+
+            assert_stored_lol_ovr_is_computed(&game);
+        }
+
+        /// A custom club's world is built by the same path and ends the same way.
+        #[test]
+        fn a_new_game_with_a_custom_club_stores_the_computed_lol_ovr_of_every_player() {
+            let (game, _id) = custom_game();
+
+            assert_stored_lol_ovr_is_computed(&game);
         }
 
         /// Every live competition gets a league with the first split scheduled, one league per
