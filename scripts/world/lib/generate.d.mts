@@ -14,4 +14,4 @@ export interface Baselines {
 }
 export function computeBaselines(world: unknown): Baselines;
 export function generatePlayer(input: Record<string, any>): { record: Record<string, any>; dobApprox: boolean; nationalityMissing: boolean };
-export function generateStaff(input: Record<string, any>): { record: Record<string, any>; dobApprox: boolean };
+export function generateStaff(input: Record<string, any>): { record: Record<string, any>; dobApprox: boolean; nationalityMissing: boolean };

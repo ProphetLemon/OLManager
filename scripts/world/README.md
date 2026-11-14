@@ -204,7 +204,7 @@ matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision
   it every add is a tier default. Competitions with fewer than 15 players of the role with 10 or more games give no estimate. The report
   counts both kinds by tier and role. `pool.games` (scoreboard rows in the window, `null` if that query was unavailable), `entries`, `tier`,
   `best_level`, `leagues` and `levels` are context. `wage`, `market_value` and `contract_end` are the roster refresh's empty
-  values. `dob_approx` is set when the page has no birth date. Staff nationality is the country name, as in the roster refresh.
+  values. `dob_approx` is set when the page has no birth date. A staff add's nationality is an ISO-2 code like a player's (empty when the country does not resolve); the roster refresh's staff on a team keep the country name.
 - The tournament list of each person is summarised (count, leagues, levels) to keep the overlay small; a list longer than the wiki's
   `GROUP_CONCAT` limit sets `pool.tournaments_truncated`.
 
