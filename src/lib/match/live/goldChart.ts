@@ -173,3 +173,14 @@ export function goldSummary(series: readonly GoldSample[], gaps: readonly GoldGa
     gaps: [...gaps],
   };
 }
+
+/** The sample nearest to a place across the plot (0 to 1), for a pointer or a keyboard step. Null for an empty chart. */
+export function nearestIndex(points: ReadonlyArray<Pick<ChartPoint, "x">>, x: number): number | null {
+  if (points.length === 0) return null;
+  const at = Math.max(0, Math.min(1, x));
+  let best = 0;
+  points.forEach((point, index) => {
+    if (Math.abs(point.x - at) < Math.abs(points[best].x - at)) best = index;
+  });
+  return best;
+}

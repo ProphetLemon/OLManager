@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { goldChartModel, goldSummary, leadOf, niceStep } from "./goldChart";
+import { goldChartModel, goldSummary, leadOf, nearestIndex, niceStep } from "./goldChart";
 import type { GoldSample } from "./matchRecord";
 
 const at = (minute: number, diff: number, timeSec = minute * 60): GoldSample => ({ minute, timeSec, diff, players: {} });
@@ -105,5 +105,23 @@ describe("leadOf and goldSummary", () => {
 
   it("has no peak for a side that never led", () => {
     expect(goldSummary([at(0, 0), at(5, 500)], []).peakRed).toBeNull();
+  });
+});
+
+describe("nearestIndex", () => {
+  const points = [0, 0.1, 0.5, 1].map((x) => ({ x, timeSec: x * 100, diff: 0, y: 0.5 }));
+
+  it("finds the sample closest to a place on the plot", () => {
+    expect(nearestIndex(points, 0)).toBe(0);
+    expect(nearestIndex(points, 0.04)).toBe(0);
+    expect(nearestIndex(points, 0.07)).toBe(1);
+    expect(nearestIndex(points, 0.45)).toBe(2);
+    expect(nearestIndex(points, 0.99)).toBe(3);
+  });
+
+  it("clamps a place outside the plot and has no answer for an empty one", () => {
+    expect(nearestIndex(points, -2)).toBe(0);
+    expect(nearestIndex(points, 5)).toBe(3);
+    expect(nearestIndex([], 0.5)).toBeNull();
   });
 });
