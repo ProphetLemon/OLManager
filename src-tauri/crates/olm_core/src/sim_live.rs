@@ -3514,10 +3514,6 @@ fn safe_recall_anchor(
     proposed: Vec2,
     structures: &[StructureRuntime],
 ) -> Vec2 {
-    if champion.role == "JGL" {
-        return proposed;
-    }
-
     let enemy_tower = structures
         .iter()
         .filter(|structure| {
@@ -6997,6 +6993,9 @@ mod captured_replay_harness_tests;
 
 #[cfg(test)]
 mod engine_parity_tests;
+
+#[cfg(test)]
+mod jungler_recall_tests;
 
 #[cfg(test)]
 mod recall_interrupt_tests;

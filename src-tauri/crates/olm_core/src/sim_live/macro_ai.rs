@@ -153,6 +153,11 @@ pub(super) fn should_recall_in_place(
     champion: &ChampionRuntime,
     champions: &[ChampionRuntime],
 ) -> bool {
+    // The jungler is the one who dies around a recall: he channels only where no enemy can
+    // arrive before the end. Laners keep the rule below.
+    if champion.role == "JGL" {
+        return !super::combat::recall_channel_can_be_stopped(champion, champions);
+    }
     // Recall should only be blocked by VERY close enemies.
     // Distant enemies pushing the wave must not prevent backing.
     let nearest = nearest_enemy_champion_snapshot(champion, champions, RECALL_CANCEL_ENEMY_RADIUS);
