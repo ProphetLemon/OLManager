@@ -589,7 +589,8 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         write_competition(dir.path(), "lec", 1, false, true);
         write_competition(dir.path(), "les", 2, false, true);
-        write_competition(dir.path(), "lfl", 2, false, false);
+        // Not a bundled override target: the real regional leagues now ship a schedule.
+        write_competition(dir.path(), "unscheduled", 2, false, false);
         write_competition(dir.path(), "old", 1, true, true);
 
         let data = build_league_selection(dir.path());
