@@ -9,7 +9,7 @@ use olm_core::domain::player::{
     Player, PlayerAttributes, PlayerIssue, PlayerIssueCategory, PlayerPromise, PlayerPromiseKind,
 };
 use olm_core::domain::stats::LolRole;
-use olm_core::domain::team::Team;
+use olm_core::domain::team::{Sponsorship, Team};
 use olm_core::engine::Side;
 use olm_core::engine::report::{
     KillDetail, MatchReport, MatchReportEndReason, PlayerMatchStats, TeamStats,
@@ -484,6 +484,15 @@ fn finish_live_match_day_processes_monthly_finances_on_month_boundary_once() {
         .unwrap();
     team.finance = 100_000;
     team.season_expenses = 0;
+    // The club is in a league's standings, so the 1st would give it a tier sponsor; a
+    // running deal that pays nothing keeps this test on the wage line.
+    team.sponsorship = Some(Sponsorship {
+        sponsor_name: "No Income".to_string(),
+        base_value: 0,
+        remaining_months: 12,
+        bonus_criteria: vec![],
+        origin: Default::default(),
+    });
 
     for player in game
         .players
@@ -1897,7 +1906,10 @@ fn matchday_recovery_is_smaller_than_a_rest_day() {
             .max()
             .unwrap()
     };
-    assert!(benched(&matchday) > 40, "a matchday still recovers some condition");
+    assert!(
+        benched(&matchday) > 40,
+        "a matchday still recovers some condition"
+    );
     assert!(
         benched(&matchday) < benched(&rest_day),
         "a matchday recovers less than a rest day ({} vs {})",
