@@ -340,3 +340,50 @@ describe("the feed on short windows keeps a readable row (T13 D2)", () => {
     expect(ROW_PX).toBeLessThanOrEqual(28);
   });
 });
+
+/**
+ * The score bar at 960 and 1024 with every chip of a late match (T16 D2): the side box is two rows
+ * (the crest row and the stats row) and, under 1205px, a third row of its own for the soul and the
+ * two buffs. The bar's row is fixed (--live-bar) and clips what passes it, so the box has to fit it.
+ */
+describe("the score bar holds the late-game chips at 960 and 1024", () => {
+  const MID = "@container live (max-width: 1204px) {";
+  const CREST_PX = 40; // .arena-crest, 2.5rem
+  const PIP_PX = 22; // .arena-pip, 1.375rem
+  const BAR_PADDING_PX = 4; // .arena-bar, 0.25rem above and below
+  const CHIP_LINE = 1.1;
+
+  /** A bar property as the steps leave it at a window of this width: the steps are in source order. */
+  const barRow = () =>
+    px(cascade(".live-shell", "--live-bar", ".live-match", [blockOf("@container live (max-width: 1539px) {"), css.includes(MID) ? blockOf(MID) : ""]));
+
+  const sideBoxPx = () => {
+    const compact = blockOf("@container bar (max-width: 1499px) {");
+    const sideGap = px(declared(ruleIn(compact, ".arena-bar-side"), "row-gap"));
+    const statsGap = px(declared(ruleIn(compact, ".arena-bar-stats"), "gap").split(" ")[0]);
+    const chip = CAPTION_PX * CHIP_LINE + BORDER_PX;
+    // The stats row (22px pips) and the slot under it, whose row is as tall as its reserved height.
+    const buffs = Math.max(px(declared(ruleIn(compact, ".arena-bar-buffs"), "min-height")), chip);
+    return { box: CREST_PX + sideGap + PIP_PX + statsGap + buffs };
+  };
+
+  it("gives the buffs slot a row of its own that never wraps, so three chips cannot make a fourth row", () => {
+    const mid = blockOf(MID);
+    const buffs = ruleIn(mid, ".arena-bar-buffs");
+    expect(buffs).toMatch(/flex:\s*1 0 100%/);
+    expect(buffs).toMatch(/flex-wrap:\s*nowrap/);
+    expect(buffs).toMatch(/overflow:\s*hidden/);
+    expect(ruleIn(mid, ".arena-buff")).toMatch(/text-overflow:\s*ellipsis/);
+  });
+
+  it("makes the bar tall enough for the crest row, the stats row and the chip row, with the bar's padding and frame", () => {
+    const { box } = sideBoxPx();
+    // 88px of side box (40 + 2 + 22 + 4 + 20), 8 of padding and 2 of frame: 98px. The row under 1205px is 100px; the old 76px was not enough.
+    expect(barRow()).toBeGreaterThanOrEqual(box + 2 * BAR_PADDING_PX + BORDER_PX);
+  });
+
+  it("keeps the 76px bar where the stats and chips fit beside each other's rows (1205px and up)", () => {
+    expect(px(declared(blockOf("@container live (max-width: 1539px) {"), "--live-bar"))).toBe(76);
+    expect(css.indexOf(MID)).toBeGreaterThan(css.indexOf("@container live (max-width: 1539px) {"));
+  });
+});
