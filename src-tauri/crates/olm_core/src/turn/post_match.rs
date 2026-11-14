@@ -8,6 +8,7 @@ use crate::domain::stats::{
 };
 use crate::game::Game;
 use crate::messages;
+use crate::potential::effective_potential_cap;
 use log::debug;
 
 fn compact_team_stats(
@@ -474,6 +475,31 @@ fn scale_delta(delta: i16, num: i16, den: i16) -> i16 {
     (delta * num) / den.max(1)
 }
 
+/// Attribute points below the ceiling inside which a positive gain starts to taper.
+const GAIN_TAPER_WINDOW: i16 = 10;
+
+/// Scales a positive delta by the attribute's headroom to `ceiling`, so growth fades
+/// out inside the last `GAIN_TAPER_WINDOW` points and stops at the ceiling. Negative
+/// deltas are never tapered.
+///
+/// Deltas are whole points, so the scaled value is rounded with `phase` (any per-match
+/// counter) as a deterministic dither: over `GAIN_TAPER_WINDOW` consecutive phases the
+/// gains add up to exactly `delta * headroom`, with no RNG.
+fn tapered_gain(delta: i16, current: u8, ceiling: u8, phase: u32) -> i16 {
+    if delta <= 0 {
+        return delta;
+    }
+    let headroom = i16::from(ceiling) - i16::from(current);
+    if headroom <= 0 {
+        return 0;
+    }
+    if headroom >= GAIN_TAPER_WINDOW {
+        return delta;
+    }
+    let dither = (phase % u32::from(GAIN_TAPER_WINDOW.unsigned_abs())) as i16;
+    (delta * headroom + dither) / GAIN_TAPER_WINDOW
+}
+
 fn apply_lol_profile_progression(
     game: &mut Game,
     report: &crate::engine::MatchReport,
@@ -632,28 +658,25 @@ fn apply_lol_profile_progression(
             *delta = (*delta).clamp(-2, 2);
         }
 
-        player.attributes.mechanics =
-            clamp_attr_range(i16::from(player.attributes.mechanics) + d_dribbling);
-        player.attributes.champion_pool =
-            clamp_attr_range(i16::from(player.attributes.champion_pool) + d_agility);
-        player.attributes.laning =
-            clamp_attr_range(i16::from(player.attributes.laning) + d_shooting);
-        player.attributes.consistency =
-            clamp_attr_range(i16::from(player.attributes.consistency) + d_positioning);
-        player.attributes.teamfighting =
-            clamp_attr_range(i16::from(player.attributes.teamfighting) + d_teamwork);
-        player.attributes.mental_resilience =
-            clamp_attr_range(i16::from(player.attributes.mental_resilience) + d_stamina);
-        player.attributes.macro_play =
-            clamp_attr_range(i16::from(player.attributes.macro_play) + d_vision);
-        player.attributes.consistency =
-            clamp_attr_range(i16::from(player.attributes.consistency) + d_decisions);
-        player.attributes.discipline =
-            clamp_attr_range(i16::from(player.attributes.discipline) + d_composure);
-        player.attributes.shotcalling =
-            clamp_attr_range(i16::from(player.attributes.shotcalling) + d_leadership);
-        player.attributes.teamfighting =
-            clamp_attr_range(i16::from(player.attributes.teamfighting) + d_passing);
+        // Attributes stop growing at the potential cap, like training does at OVR level.
+        let ceiling = effective_potential_cap(player);
+        let phase = player.stats.appearances;
+        let grow = |attribute: &mut u8, delta: i16, slot: u32| {
+            let gain = tapered_gain(delta, *attribute, ceiling, phase.wrapping_add(slot));
+            *attribute = clamp_attr_range(i16::from(*attribute) + gain);
+        };
+
+        grow(&mut player.attributes.mechanics, d_dribbling, 0);
+        grow(&mut player.attributes.champion_pool, d_agility, 1);
+        grow(&mut player.attributes.laning, d_shooting, 2);
+        grow(&mut player.attributes.consistency, d_positioning, 3);
+        grow(&mut player.attributes.teamfighting, d_teamwork, 4);
+        grow(&mut player.attributes.mental_resilience, d_stamina, 5);
+        grow(&mut player.attributes.macro_play, d_vision, 6);
+        grow(&mut player.attributes.consistency, d_decisions, 7);
+        grow(&mut player.attributes.discipline, d_composure, 8);
+        grow(&mut player.attributes.shotcalling, d_leadership, 9);
+        grow(&mut player.attributes.teamfighting, d_passing, 10);
     }
 }
 
@@ -1055,6 +1078,213 @@ mod vision_progression_tests {
             let base = outcome(role, 0, 0);
             assert_eq!(base, outcome(role, 1, 0), "{role:?} low vision");
             assert_eq!(base, outcome(role, 90, 0), "{role:?} high vision");
+        }
+    }
+}
+
+#[cfg(test)]
+mod progression_bound_tests {
+    use super::{GAIN_TAPER_WINDOW, apply_lol_profile_progression, tapered_gain};
+    use crate::clock::GameClock;
+    use crate::domain::manager::Manager;
+    use crate::domain::player::{LolRole as PlayerRole, Player, PlayerAttributes};
+    use crate::engine::sim_background::LolRole;
+    use crate::engine::{MatchReport, MatchReportEndReason, PlayerMatchStats, TeamStats};
+    use crate::game::Game;
+    use crate::potential::calculate_lol_ovr;
+    use chrono::{TimeZone, Utc};
+    use std::collections::HashMap;
+
+    const MINUTES: u32 = 30;
+
+    fn flat_attrs(level: u8) -> PlayerAttributes {
+        PlayerAttributes {
+            mechanics: level,
+            laning: level,
+            teamfighting: level,
+            macro_play: level,
+            consistency: level,
+            shotcalling: level,
+            champion_pool: level,
+            discipline: level,
+            mental_resilience: level,
+        }
+    }
+
+    fn game_with_player(level: u8, potential_base: u8, potential_revealed: Option<u8>) -> Game {
+        let mut player = Player::new(
+            "p1".to_string(),
+            "P1".to_string(),
+            "Player One".to_string(),
+            "1998-03-15".to_string(),
+            "England".to_string(),
+            PlayerRole::Mid,
+            flat_attrs(level),
+        );
+        player.team_id = Some("home".to_string());
+        player.potential_base = potential_base;
+        player.potential_revealed = potential_revealed;
+
+        let mut manager = Manager::new(
+            "m".to_string(),
+            "A".to_string(),
+            "B".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        manager.hire("home".to_string());
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2025, 8, 12, 12, 0, 0).unwrap());
+        Game::new(clock, manager, vec![], vec![player], vec![], vec![])
+    }
+
+    fn report_for(stats: PlayerMatchStats) -> MatchReport {
+        MatchReport {
+            home_wins: 1,
+            away_wins: 0,
+            home_stats: TeamStats::default(),
+            away_stats: TeamStats::default(),
+            events: vec![],
+            kill_feed: vec![],
+            player_stats: HashMap::from([("p1".to_string(), stats)]),
+            home_possession: 50.0,
+            total_minutes: MINUTES as u8,
+            game_duration_seconds: MINUTES * 60,
+            ended_by: MatchReportEndReason::TimeLimit,
+        }
+    }
+
+    /// A dominant game: every positive threshold of every role term is met.
+    fn strong_report() -> MatchReport {
+        report_for(PlayerMatchStats {
+            role: Some(LolRole::Mid),
+            duration_seconds: MINUTES * 60,
+            kills: 9,
+            deaths: 0,
+            assists: 12,
+            creep_score: 300,
+            damage_dealt: 30_000,
+            vision_score: 30,
+            wards_placed: 6,
+            ..Default::default()
+        })
+    }
+
+    /// A losing game: deaths and missing farm trip every negative threshold.
+    fn weak_report() -> MatchReport {
+        report_for(PlayerMatchStats {
+            role: Some(LolRole::Mid),
+            duration_seconds: MINUTES * 60,
+            kills: 0,
+            deaths: 12,
+            assists: 1,
+            creep_score: 90,
+            damage_dealt: 6_000,
+            vision_score: 2,
+            wards_placed: 0,
+            ..Default::default()
+        })
+    }
+
+    fn attribute_sum(game: &Game) -> u32 {
+        let a = &game.players[0].attributes;
+        [
+            a.mechanics,
+            a.laning,
+            a.teamfighting,
+            a.macro_play,
+            a.consistency,
+            a.shotcalling,
+            a.champion_pool,
+            a.discipline,
+            a.mental_resilience,
+        ]
+        .iter()
+        .map(|v| u32::from(*v))
+        .sum()
+    }
+
+    #[test]
+    fn player_far_below_potential_should_still_gain_from_a_strong_match() {
+        let mut game = game_with_player(60, 99, None);
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        assert!(attribute_sum(&game) > before);
+    }
+
+    #[test]
+    fn player_at_potential_should_not_gain_from_a_strong_match() {
+        let mut game = game_with_player(80, 80, None);
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        assert_eq!(attribute_sum(&game), before);
+    }
+
+    #[test]
+    fn player_at_revealed_potential_should_not_gain_when_base_potential_is_higher() {
+        let mut game = game_with_player(80, 99, Some(80));
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        assert_eq!(attribute_sum(&game), before);
+    }
+
+    #[test]
+    fn player_at_potential_should_still_lose_from_a_weak_match() {
+        let mut game = game_with_player(80, 80, None);
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &weak_report(), "home", "away");
+        assert!(attribute_sum(&game) < before);
+    }
+
+    #[test]
+    fn many_strong_matches_should_not_push_ovr_past_potential() {
+        let mut game = game_with_player(70, 85, None);
+        for appearance in 1..=400 {
+            game.players[0].stats.appearances = appearance;
+            apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        }
+        assert!(calculate_lol_ovr(&game.players[0]) <= 85);
+    }
+
+    #[test]
+    fn gain_should_pass_through_unchanged_outside_the_taper_window() {
+        for phase in 0..GAIN_TAPER_WINDOW as u32 {
+            assert_eq!(tapered_gain(2, 60, 99, phase), 2);
+        }
+    }
+
+    #[test]
+    fn gain_should_average_to_the_headroom_share_inside_the_window() {
+        let window = GAIN_TAPER_WINDOW as u32;
+        let total: i16 = (0..window)
+            .map(|phase| tapered_gain(1, 95, 99, phase))
+            .sum();
+        // Headroom 4 of a 10 window: four matches out of ten keep the +1.
+        assert_eq!(total, 4);
+    }
+
+    #[test]
+    fn gain_should_vanish_at_or_above_the_ceiling() {
+        for phase in 0..GAIN_TAPER_WINDOW as u32 {
+            assert_eq!(tapered_gain(2, 85, 85, phase), 0);
+            assert_eq!(tapered_gain(2, 90, 85, phase), 0);
+        }
+    }
+
+    #[test]
+    fn loss_should_never_be_tapered() {
+        for phase in 0..GAIN_TAPER_WINDOW as u32 {
+            assert_eq!(tapered_gain(-2, 85, 85, phase), -2);
+            assert_eq!(tapered_gain(-1, 40, 85, phase), -1);
+        }
+    }
+
+    #[test]
+    fn gain_should_never_overshoot_the_ceiling() {
+        for current in 70..=85_u8 {
+            for phase in 0..GAIN_TAPER_WINDOW as u32 {
+                let gained = i16::from(current) + tapered_gain(2, current, 85, phase);
+                assert!(gained <= 85);
+            }
         }
     }
 }
