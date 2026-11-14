@@ -52,6 +52,16 @@ describe("SavesList transfer controls", () => {
     expect(props.onLoad).not.toHaveBeenCalled();
   });
 
+  it("shows the export and delete buttons without hover, since touch has no hover", () => {
+    renderList();
+    const buttons = [screen.getByRole("button", { name: "menu.transfer.export" }), screen.getByRole("button", { name: "menu.deleteSave" })];
+    for (const button of buttons) {
+      expect(button.className).not.toMatch(/(^|\s)opacity-0(\s|$)/);
+      expect(button.className).not.toMatch(/group-hover:opacity/);
+      expect(button).toBeVisible();
+    }
+  });
+
   it("offers import even when the list is empty", () => {
     const props = renderList({ saves: [] });
 

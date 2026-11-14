@@ -205,7 +205,7 @@ export default function SavesList({
                       onExport(save.id);
                     }}
                     disabled={transferBusy}
-                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all shrink-0"
+                    className="p-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 opacity-70 hover:opacity-100 focus-visible:opacity-100 transition-all shrink-0"
                     title={t("menu.transfer.export")}
                     aria-label={t("menu.transfer.export")}
                   >
@@ -216,8 +216,9 @@ export default function SavesList({
                       e.stopPropagation();
                       onConfirmDelete(save.id);
                     }}
-                    className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                    className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-500/10 opacity-70 hover:opacity-100 focus-visible:opacity-100 transition-all shrink-0"
                     title={t("menu.deleteSave")}
+                    aria-label={t("menu.deleteSave")}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
