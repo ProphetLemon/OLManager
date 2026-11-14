@@ -14,6 +14,7 @@ import {
   logoKeyForTeam,
   oklchToHex,
   parseHex,
+  readableForeground,
   resolveClubPalette,
 } from "./clubColors";
 
@@ -182,5 +183,15 @@ describe("logoKeyForTeam", () => {
     expect(logoKeyForTeam({ name: "Fúria Esports!" })).toBe("furiaesports.webp");
     expect(logoKeyForTeam({ logo_url: null, name: "G2 Esports" })).toBe("g2esports.webp");
     expect(logoKeyForTeam({})).toBeNull();
+  });
+});
+
+describe("readableForeground", () => {
+  it("picks near-black on a light fill and white on a dark one, at 4.5:1 or better", () => {
+    expect(readableForeground("#edece8")).toBe("#0a0a0a");
+    expect(readableForeground("#1d1d4d")).toBe("#ffffff");
+    for (const fill of ["#8b5aff", "#009ef7", "#e11d2e", "#16a34a", "#fbbf24"]) {
+      expect(contrastRatio(readableForeground(fill), fill)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

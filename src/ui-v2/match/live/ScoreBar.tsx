@@ -6,6 +6,7 @@ import { formatClock, formatCountdown } from "@/lib/match/live/clock";
 import { compactGold } from "@/lib/match/live/formatNumbers";
 import type { TeamSide } from "@/lib/match/live/mapGeometry";
 import { teamBarView, type DragonPip, type TeamBarSide } from "@/lib/match/live/objectivesView";
+import type { TeamIdentity } from "@/lib/match/live/teamIdentity";
 import { NEUTRAL_OBJECTIVE_ICON_PATH } from "@/lib/match/lolMapLayout";
 import type { LolSimV1RuntimeState } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
 
@@ -16,12 +17,6 @@ import "./liveMatch.css";
 
 /** The clock is written at most this often. The bus runs at the screen's rate; a person reads seconds. */
 export const CLOCK_INTERVAL_MS = 100;
-
-export interface TeamIdentity {
-  /** Short code, "EMB". */
-  tag: string;
-  name: string;
-}
 
 export type ScoreStatus = "live" | "paused" | "final";
 

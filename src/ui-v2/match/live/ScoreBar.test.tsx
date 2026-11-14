@@ -5,6 +5,7 @@ import { Profiler } from "react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import i18n from "@/i18n";
+import { teamIdentity } from "@/lib/match/live/teamIdentity";
 import type { LolSimV1RuntimeState } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
 
 import { createTestBus, makeFrame, makeState } from "./arenaFixtures.testing";
@@ -12,8 +13,8 @@ import { CLOCK_INTERVAL_MS, ScoreBar, type ScoreStatus } from "./ScoreBar";
 
 const css = readFileSync(resolve(__dirname, "liveMatch.css"), "utf8");
 
-const BLUE = { tag: "EMB", name: "Emberfall" };
-const RED = { tag: "TDL", name: "Tidal Lanterns" };
+const BLUE = teamIdentity("Emberfall", [{ name: "Emberfall", short_name: "EMB" }]);
+const RED = teamIdentity("Tidal Lanterns", [{ name: "Tidal Lanterns", short_name: "TDL" }]);
 
 type Buffs = Record<string, unknown>;
 

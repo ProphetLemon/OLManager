@@ -13,6 +13,8 @@ export type LogoPalette = Readonly<Record<string, LogoPaletteEntry>>;
 export type ClubPaletteSource = "custom" | "logo" | "authored" | "fallback";
 
 export interface ClubPalette {
+  /** The club's primary colour as authored, before any contrast clamp (lowercase `#rrggbb`). */
+  primary: string;
   accent: string;
   accentForeground: string;
   accentText: string;
@@ -270,6 +272,13 @@ export function isCustomClub(team: ClubColorTeam): boolean {
 // Palette resolution
 // ---------------------------------------------------------------------------
 
+/** Text colour for a fill of `accent`: whichever of near-black and white contrasts more. */
+export function readableForeground(accent: string): string {
+  return contrastRatio(FOREGROUND_DARK, accent) >= contrastRatio(FOREGROUND_LIGHT, accent)
+    ? FOREGROUND_DARK
+    : FOREGROUND_LIGHT;
+}
+
 function buildPalette(
   rawAccent: string,
   rawSecondary: string,
@@ -280,17 +289,21 @@ function buildPalette(
   const accentText = ensureContrast(accent, SURFACE, 4.5);
   const secondary = ensureContrast(rawSecondary, SURFACE, highContrast ? 4.5 : 3);
 
-  let accentForeground =
-    contrastRatio(FOREGROUND_DARK, accent) >= contrastRatio(FOREGROUND_LIGHT, accent)
-      ? FOREGROUND_DARK
-      : FOREGROUND_LIGHT;
+  let accentForeground = readableForeground(accent);
   let finalAccent = accent;
   if (contrastRatio(accentForeground, accent) < 4.5) {
     // Unreachable in practice (the two extremes cross over above 4.5), kept as a guard.
     finalAccent = ensureContrast(accent, FOREGROUND_DARK, 4.5);
     accentForeground = FOREGROUND_DARK;
   }
-  return { accent: finalAccent, accentForeground, accentText, secondary, source };
+  return {
+    primary: normalizeHex(rawAccent) ?? rawAccent,
+    accent: finalAccent,
+    accentForeground,
+    accentText,
+    secondary,
+    source,
+  };
 }
 
 /**
