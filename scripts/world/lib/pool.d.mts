@@ -1,14 +1,15 @@
 import type { Person, Tournament, TournamentClass } from "./pool-scope.mjs";
 import type { World } from "./world.mjs";
+import type { SkillEstimate } from "../../stats/lib/skill.mjs";
+import type { Baselines } from "./pool-rating.mjs";
 
 export const POOL_FILTER: "recommended";
 export const DEFAULT_POOL_SINCE: string;
 export const DEFAULT_QUALIFIER_CAP: number;
 export const DEFAULT_POOL_PROBE: string;
 export const POOL_LIMITS: Readonly<{ players: number; staff: number; opsPerList: number; overlayBytes: number }>;
-export const PLACEHOLDER_RATING: "tier-default-placeholder";
-export const TIER_OFFSETS: Readonly<Record<1 | 2 | 3, number>>;
-export const GAME_POSITION: Readonly<Record<string, string>>;
+export { GAME_POSITION, RATING_STATS, RATING_TIER_DEFAULT, TIER_OFFSETS, tierBaselines } from "./pool-rating.mjs";
+export type { Baselines } from "./pool-rating.mjs";
 export function compare(a: string, b: string): -1 | 0 | 1;
 export function isoDate(value: unknown): string | null;
 export function poolId(kind: "player" | "staff", page: string): string;
@@ -64,12 +65,6 @@ export function selectPool(input: {
   rosterIds?: Set<string>;
 }): PoolSelection;
 
-export interface Baselines {
-  player(competition: string | null, position: string): { attributes: Record<string, number>; potential: number; range: Record<string, { min: number; max: number }> };
-  staff(role: string): { attributes: Record<string, number>; range: Record<string, { min: number; max: number }> };
-}
-export function tierBaselines(baselines: Baselines, tier: number): Baselines;
-
 export interface PoolOpEntry {
   op: Record<string, any>;
   id: string;
@@ -81,5 +76,7 @@ export function buildPoolOps(input: {
   selection: PoolSelection;
   tournamentIndex?: Map<string, Tournament>;
   games?: Map<string, number> | null;
+  /** Usable skill estimate per player page: a player with one that has enough games is rated from stats. */
+  skill?: Map<string, SkillEstimate> | null;
   baselines: Baselines;
 }): { players: PoolOpEntry[]; staff: PoolOpEntry[]; skipped: Array<{ kind: string; subject: string; detail: string }> };

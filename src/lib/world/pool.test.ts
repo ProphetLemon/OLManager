@@ -8,7 +8,7 @@ import { PEOPLE_FILTER, fetchPoolInputs, type PoolInputs } from "../../../script
 import {
   bestLevel, classifyTournaments, mergePerson, normalizeTournament, parseTournaments, personFromRow, qualifierSplit, TOURS_MAX_CHARS,
 } from "../../../scripts/world/lib/pool-scope.mjs";
-import { PLACEHOLDER_RATING, TIER_OFFSETS, buildPoolOps, isoDate, poolId, poolTournaments, selectPool, tierBaselines } from "../../../scripts/world/lib/pool.mjs";
+import { RATING_TIER_DEFAULT, TIER_OFFSETS, buildPoolOps, isoDate, poolId, poolTournaments, selectPool, tierBaselines } from "../../../scripts/world/lib/pool.mjs";
 import { baselines, context, entryRows, overlayOf, peopleOf, row, select, stubClient, tournamentRows, world } from "./poolFixtures";
 
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
@@ -163,6 +163,21 @@ describe("selectPool", () => {
     }
   });
 
+  it("refuses both pages of namesakes without a birth date: nothing separates them, so a human decides", () => {
+    const a = row({ player: "Twin", ign: "Twin", name: "Same Name", birth: "" });
+    const b = row({ player: "Twin (Same Name)", ign: "Twin", name: "Same Name", birth: "" });
+    const out = select([a, b]);
+    expect(out.players).toHaveLength(0);
+    expect(out.counts.duplicates).toBe(2);
+    expect(out.refused).toEqual([
+      expect.objectContaining({ page: "Twin", code: "duplicate-in-pool", reason: expect.stringContaining("Twin (Same Name)") }),
+      expect.objectContaining({ page: "Twin (Same Name)", code: "duplicate-in-pool", reason: expect.stringContaining("Twin") }),
+    ]);
+    // a known birth date tells them apart
+    const apart = select([a, { ...b, birth: "2002-02-02" }]);
+    expect(apart.players.map((e) => e.page)).toEqual(["Twin", "Twin (Same Name)"]);
+  });
+
   it("reports an id collision with the game and leaves the person out", () => {
     const squatter = { ...world.players[0], id: poolId("player", "Send0o") };
     const crowded = { ...world, players: [...world.players, squatter] };
@@ -229,7 +244,7 @@ describe("buildPoolOps", () => {
     for (const entry of ops.players) expect(POSITIONS).toContain(entry.op.player.position);
   });
 
-  it("carries the game's fields plus what A4 needs, and names the rating a placeholder", () => {
+  it("carries the game's fields plus what A4 needs, and names the rating a tier default", () => {
     const op = playerOp("Send0o");
     expect(op).toMatchObject({
       op: "add",
@@ -238,10 +253,10 @@ describe("buildPoolOps", () => {
       player: { id: "player-bea33543", team_id: null, position: "Top", nationality: "ES", full_name: "Rosendo Fuentes Bóveda", match_name: "Send0o", wage: 0, market_value: 0, contract_end: "" },
       pool: {
         page: "Send0o", kind: "player", role: "Top", region: "EMEA", country: "Spain", birth_date: null, tier: 2, best_level: "Secondary", entries: 11, games: 106, tournaments: 11,
-        leagues: ["EMEA Masters", "Liga Española de League of Legends", "Prime League 1st Division", "Prime League Pro Division"], levels: { Secondary: 11 }, rating: PLACEHOLDER_RATING,
+        leagues: ["EMEA Masters", "Liga Española de League of Legends", "Prime League 1st Division", "Prime League Pro Division"], levels: { Secondary: 11 }, rating: RATING_TIER_DEFAULT,
       },
     });
-    for (const entry of [...ops.players, ...ops.staff]) expect(entry.op.pool.rating).toBe("tier-default-placeholder");
+    for (const entry of [...ops.players, ...ops.staff]) expect(entry.op.pool.rating).toBe("tier-default");
   });
 
   it("maps Leaguepedia's Bot to the game's ADC", () => {

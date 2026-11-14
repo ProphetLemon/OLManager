@@ -164,8 +164,8 @@ npm run world:refresh -- --offline --pool --pool-cap 60 --pool-probe Send0o     
 ```
 
 Flags: `--pool` `--pool-since YYYY-MM-DD` (default 2023-11-12, three years) `--pool-cap n` (default 60) `--pool-probe <page>`
-(default `Send0o`; `""` for none). Code: `lib/pool-fetch.mjs` (queries), `lib/pool.mjs` (selection, ids, ops),
-`lib/pool-gates.mjs`, `lib/pool-report.mjs`. Tests: `src/lib/world/pool.test.ts`, `pool-refresh.test.ts` with the recorded rows in
+(default `Send0o`; `""` for none) `--pool-stats <rows.json>` (rate from stats, see Ratings). Code: `lib/pool-fetch.mjs` (queries), `lib/pool.mjs` (selection, ids, ops), `lib/pool-rating.mjs` (ratings),
+`lib/pool-gates.mjs`, `lib/pool-report.mjs`. Tests: `src/lib/world/pool.test.ts`, `pool-rating.test.ts`, `pool-refresh.test.ts` with the recorded rows in
 `scripts/world/fixtures/pool/`.
 
 **Who is in.** The `recommended` tournament filter above; people not retired (`Players.IsRetired` 0 or empty) **with a Leaguepedia
@@ -184,15 +184,25 @@ matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision
   "evidence": "https://lol.fandom.com/wiki/Send0o", "dob_approx": true,
   "pool": { "page": "Send0o", "kind": "player", "role": "Top", "region": "EMEA", "country": "Spain", "birth_date": null, "tier": 2,
     "best_level": "Secondary", "entries": 11, "last_start": "2026-09-23", "games": 106, "tournaments": 11,
-    "leagues": ["..."], "levels": { "Secondary": 11 }, "rating": "tier-default-placeholder" } }
+    "leagues": ["..."], "levels": { "Secondary": 11 }, "rating": "tier-default" } }
 ```
 
 - **Ids** are `player-`/`staff-` + the first 8 hex of `sha256("leaguepedia:" + page title)`, the same function the roster refresh uses, so
   they depend only on the Leaguepedia page: equal across runs and machines, whatever the input order.
-- **Ratings are a placeholder.** `pool.rating` is `tier-default-placeholder`: the game's median per position (staff: per role) shifted
-  by the person's tier (1 top flight, 0; 2 official circuit, -6; 3 recurring seasonal league, -12), with the usual seeded jitter. A4
-  replaces them from stats; `pool.games` (scoreboard rows in the window, `null` if that query was unavailable), `entries`, `tier`,
-  `best_level`, `leagues` and `levels` are what it reads. `wage`, `market_value` and `contract_end` are the roster refresh's empty
+- **Ratings** (`lib/pool-rating.mjs`). `pool.rating` says where the attributes came from:
+  - `"stats"` (plus `pool.rating_games`): the player has a skill estimate for his own role with at least 8 usable games (the skill model's
+    write floor). The method is the one of `docs/STAT_RATINGS.md`, reusing `scripts/stats/lib`: `estimateSkill` gives a role-relative z
+    shrunk by reliability (`rho`); the anchor is the tier default OVR of his role (both the "authored" value and the league median);
+    `blendRating` with a league sd of 4 gives the final OVR; the change from the anchor is capped at 6 points; `deriveAttributes` spreads
+    it over the nine attributes. Seeded jitter is not applied: the stats are the rating.
+  - `"tier-default"`: everybody else, and all staff (no per-game stats): the game's median per position (staff: per role) shifted by the
+    person's tier (1 top flight, 0; 2 official circuit, -6; 3 recurring seasonal league, -12; any other tier counts as 3), with the
+    usual seeded jitter. A player whose estimate is for another role, has fewer than 8 games, or has no estimate (cohort too small) also
+    lands here.
+  Stats come from `--pool-stats <rows.json>` (the per-game rows of `scripts/stats/pro-stats.mjs`, read from disk, no network). Without
+  it every add is a tier default. Competitions with fewer than 15 players of the role with 10 or more games give no estimate. The report
+  counts both kinds by tier and role. `pool.games` (scoreboard rows in the window, `null` if that query was unavailable), `entries`, `tier`,
+  `best_level`, `leagues` and `levels` are context. `wage`, `market_value` and `contract_end` are the roster refresh's empty
   values. `dob_approx` is set when the page has no birth date. Staff nationality is the country name, as in the roster refresh.
 - The tournament list of each person is summarised (count, leagues, levels) to keep the overlay small; a list longer than the wiki's
   `GROUP_CONCAT` limit sets `pool.tournaments_truncated`.

@@ -67,6 +67,31 @@ describe("plausibility gates", () => {
     expect(counts.get("lck-team-932ee946")).toBe(teams("lck-team-932ee946").length + 2);
   });
 
+  describe("max-adds-per-team with teamless adds (the active-pros pool)", () => {
+    const team = "lck-team-bc4c40ec";
+    const add = (n: number, teamId: string | null) => ({ op: "add", player: { id: `player-add${String(n).padStart(5, "0")}`, team_id: teamId }, evidence });
+    const adds = (count: number, teamId: string | null, from = 0) => Array.from({ length: count }, (_, i) => add(from + i, teamId));
+    const maxAdds = (overlay: unknown[]) => gate(runGates({ overlay: overlayOf(overlay), world, coveredTeamIds: covered }), "max-adds-per-team");
+
+    it("lets a team gain exactly the maximum while many free agents are added next to it", () => {
+      expect(maxAdds([...adds(8, team), ...adds(500, null, 100)])).toMatchObject({ ok: true });
+    });
+
+    it("still fails a team that gains one more than the maximum, whatever the free agents are", () => {
+      const result = maxAdds([...adds(9, team), ...adds(500, null, 100)]);
+      expect(result).toMatchObject({ ok: false });
+      expect(result.detail).toContain(`${team} +9`);
+    });
+
+    it("never counts teamless adds against a team, however many there are", () => {
+      expect(maxAdds(adds(5000, null))).toMatchObject({ ok: true });
+    });
+
+    it("counts only the adds of the team, not those of another team", () => {
+      expect(maxAdds([...adds(8, team), ...adds(8, "lck-team-932ee946", 100), ...adds(40, null, 200)])).toMatchObject({ ok: true });
+    });
+  });
+
   it("passes a shortfall caused only by confirmed moves and lists the team", () => {
     const roster = teams("lck-team-bc4c40ec");
     const overlay = overlayOf(roster.slice(0, roster.length - 4).map((p) => ({ op: "move", id: p.id, team_id: "lck-team-932ee946", evidence })));
