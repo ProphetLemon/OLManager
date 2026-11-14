@@ -124,24 +124,24 @@ export function TeamGridV2({
                     <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-center transition-colors group-hover:bg-muted/50">
                       <Users className="mx-auto mb-0.5 size-4 text-muted-foreground" />
                       <p className="font-heading text-sm font-bold tabular-nums text-foreground">{team.player_count ?? "—"}</p>
-                      <p className="text-2xs text-muted-foreground">Players</p>
+                      <p className="text-2xs text-muted-foreground">{t("teams.colPlayers")}</p>
                     </div>
                     <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-center transition-colors group-hover:bg-muted/50">
                       <Star className="mx-auto mb-0.5 size-4 text-muted-foreground" />
                       <p className="font-heading text-sm font-bold text-foreground">{team.short_name}</p>
-                      <p className="text-2xs text-muted-foreground">Tag</p>
+                      <p className="text-2xs text-muted-foreground">{t("teamSelect.custom.fields.shortName")}</p>
                     </div>
                     <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-center transition-colors group-hover:bg-muted/50">
                       <Landmark className="mx-auto mb-0.5 size-4 text-muted-foreground" />
                       <p className="font-heading text-sm font-bold tabular-nums text-emerald-400">{formatFinance(team.finance ?? 0)}</p>
-                      <p className="text-2xs text-muted-foreground">Budget</p>
+                      <p className="text-2xs text-muted-foreground">{t("finances.budget")}</p>
                     </div>
                   </div>
 
                   <div className="mt-4 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <Badge variant={rep.variant} className="text-2xs">{t(rep.labelKey)}</Badge>
-                      <span className="text-2xs text-muted-foreground/60">Rep: {team.reputation}</span>
+                      <span className="text-2xs text-muted-foreground/60">{t("teams.rep")}: {team.reputation}</span>
                     </div>
                     {team.colors?.primary && team.colors.primary !== "#000000" && (
                       <span className="size-3 rounded-full border border-border" style={{ backgroundColor: team.colors.primary }} />
