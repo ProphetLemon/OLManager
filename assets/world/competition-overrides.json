@@ -1,6 +1,246 @@
 {
   "version": 1,
   "competitions": {
+    "al": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "cd": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 10,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "ebl": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 10,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "eec": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "hll": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "hm": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "lckcl": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 10,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "ldl": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 10,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
     "les": {
       "promotion": {
         "to": "lec",
@@ -39,6 +279,427 @@
           }
         ]
       }
+    },
+    "lfl": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 10,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "lit": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "ljl": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 10,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "lplol": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "lrn": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "lrs": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "nacl": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "nlc": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 10,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "pcs": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 10,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "prm": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 10,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42, 49, 56],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "rl": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "rol": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "tcl": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 8,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28, 35, 42],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
+    },
+    "vcs": {
+      "schedule": {
+        "format": "single_round_robin",
+        "team_count": 6,
+        "preseason_friendlies": 0,
+        "splits": [
+          {
+            "name": "Winter",
+            "best_of": 1,
+            "season_start": { "month": 1, "day": 17 },
+            "superweek_offsets": [0, 7, 14, 21, 28],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Spring",
+            "best_of": 3,
+            "season_start": { "month": 4, "day": 8 },
+            "superweek_offsets": [0, 7, 14, 21, 28],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          },
+          {
+            "name": "Summer",
+            "best_of": 3,
+            "season_start": { "month": 7, "day": 14 },
+            "superweek_offsets": [0, 7, 14, 21, 28],
+            "playoffs": { "format": "single_elimination", "teams": 4, "best_of": 5 }
+          }
+        ]
+      }
     }
   }
 }
+
