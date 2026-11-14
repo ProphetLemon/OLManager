@@ -4095,85 +4095,73 @@
     }
   },
   "traits": {
-    "Speedster": {
-      "label": "Velocista",
-      "desc": "Velocidad excepcional"
+    "LightningQuick": {
+      "label": "Rayo",
+      "desc": "Mecánicas excepcionales"
     },
-    "Tank": {
-      "label": "Tanque",
-      "desc": "Poderoso e incansable"
+    "Immovable": {
+      "label": "Inamovible",
+      "desc": "Imperturbable bajo presión"
     },
-    "Agile": {
-      "label": "Ágil",
-      "desc": "Rápido y escurridizo"
+    "NimbleFingers": {
+      "label": "Dedos Ágiles",
+      "desc": "Grupo de campeones amplio"
     },
-    "Tireless": {
-      "label": "Incansable",
-      "desc": "Nunca se queda sin energía"
+    "MarathonMan": {
+      "label": "Maratoniano",
+      "desc": "Aguanta las series más largas"
     },
-    "Playmaker": {
-      "label": "Creador",
-      "desc": "Lee la partida y orquesta las jugadas"
+    "GameManager": {
+      "label": "Gestor de Partida",
+      "desc": "Gran teamfight y macro"
     },
-    "Sharpshooter": {
-      "label": "Tirador Certero",
-      "desc": "Letal en los intercambios de línea"
+    "Lethal": {
+      "label": "Letal",
+      "desc": "Gana los cambios en línea"
     },
-    "Dribbler": {
+    "KiteMaster": {
       "label": "Maestro del Kiteo",
-      "desc": "Mecánicamente dotado"
+      "desc": "Mecánicas para kitear y superar al rival"
     },
-    "BallWinner": {
+    "Interceptor": {
       "label": "Interceptor",
-      "desc": "Intercepta las rotaciones rivales sin descanso"
+      "desc": "Lee el mapa y lo respalda con llamadas"
     },
-    "Rock": {
-      "label": "Roca",
-      "desc": "Muro defensivo inamovible"
+    "Sentinel": {
+      "label": "Centinela",
+      "desc": "Disciplinado y constante"
     },
-    "Leader": {
-      "label": "Líder",
-      "desc": "Inspira a sus compañeros"
+    "ShotCaller": {
+      "label": "Shotcaller",
+      "desc": "Dirige las peleas con llamadas precisas"
     },
-    "CoolHead": {
-      "label": "Cabeza Fría",
-      "desc": "Calmado bajo presión"
+    "IceCold": {
+      "label": "Sangre Fría",
+      "desc": "Sereno, disciplinado y casi sin errores"
     },
     "Visionary": {
       "label": "Visionario",
-      "desc": "Ve jugadas que otros no ven"
+      "desc": "Macro excepcional"
     },
-    "HotHead": {
-      "label": "Temperamental",
-      "desc": "Propenso a perder los estribos"
+    "Intimidator": {
+      "label": "Intimidador",
+      "desc": "Autoritario pero indisciplinado"
     },
     "TeamPlayer": {
       "label": "Jugador de Equipo",
-      "desc": "Siempre antepone al equipo"
+      "desc": "Teamfight de élite"
     },
-    "SafeHands": {
-      "label": "Manos Seguras",
-      "desc": "Fiable bajo presión"
-    },
-    "CatReflexes": {
-      "label": "Reflejos Felinos",
-      "desc": "Reflejos ultrarrápidos"
-    },
-    "AerialDominance": {
-      "label": "Control de Zona",
-      "desc": "Domina el espacio con habilidades de largo alcance"
-    },
-    "CompleteForward": {
+    "HyperCarry": {
       "label": "Hypercarry",
-      "desc": "Peligroso en todos los sentidos"
+      "desc": "Fuerte en línea y mecánicas, mente firme"
     },
-    "Engine": {
-      "label": "Motor",
-      "desc": "Fuerza incansable en todo el mapa"
+    "Workhorse": {
+      "label": "Caballo de Batalla",
+      "desc": "Resistente, mecánico y fuerte en peleas"
     },
-    "SetPieceSpecialist": {
-      "label": "Especialista en Objetivos",
-      "desc": "Letal en peleas por objetivos"
+    "MacroSpecialist": {
+      "label": "Especialista en Macro",
+      "desc": "Peleas, línea y macro sólidas"
     }
   },
   "date": {

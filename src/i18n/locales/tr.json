@@ -3847,85 +3847,73 @@
     }
   },
   "traits": {
-    "Speedster": {
-      "label": "Çevik",
-      "desc": "Sıra dışı bir hız"
+    "LightningQuick": {
+      "label": "Şimşek",
+      "desc": "Olağanüstü mekanik"
     },
-    "Tank": {
-      "label": "Tank",
-      "desc": "Güçlü ve yorulmak bilmez"
+    "Immovable": {
+      "label": "Sarsılmaz",
+      "desc": "Baskı altında dimdik"
     },
-    "Agile": {
-      "label": "Seri",
-      "desc": "Hızlı ve atik"
+    "NimbleFingers": {
+      "label": "Çevik Parmaklar",
+      "desc": "Geniş şampiyon havuzu"
     },
-    "Tireless": {
-      "label": "Yorulmaz",
-      "desc": "Enerjisi asla tükenmez"
+    "MarathonMan": {
+      "label": "Maratoncu",
+      "desc": "En uzun serilere dayanır"
     },
-    "Playmaker": {
-      "label": "Oyun Kurucu",
-      "desc": "Oyunu okur ve hamleleri yönetir"
+    "GameManager": {
+      "label": "Oyun Yöneticisi",
+      "desc": "Güçlü takım savaşı ve makro"
     },
-    "Sharpshooter": {
-      "label": "Keskin Nişancı",
-      "desc": "Koridor trade'lerinde ölümcül"
+    "Lethal": {
+      "label": "Ölümcül",
+      "desc": "Koridor takaslarını kazanır"
     },
-    "Dribbler": {
-      "label": "Mekanik Ustası",
-      "desc": "Mekaniklerde yetenekli"
+    "KiteMaster": {
+      "label": "Kiting Ustası",
+      "desc": "Kiting yapıp rakibi alt edecek mekanik"
     },
-    "BallWinner": {
-      "label": "Mücadeleci",
-      "desc": "Araya girip skor arayan pes etmez yapı"
+    "Interceptor": {
+      "label": "Önleyici",
+      "desc": "Haritayı okur, çağrılarla destekler"
     },
-    "Rock": {
-      "label": "Kaya",
-      "desc": "Aşılamaz savunma duvarı"
+    "Sentinel": {
+      "label": "Nöbetçi",
+      "desc": "Disiplinli ve istikrarlı"
     },
-    "Leader": {
-      "label": "Lider",
-      "desc": "Takım arkadaşlarına ilham verir"
+    "ShotCaller": {
+      "label": "Shotcaller",
+      "desc": "Savaşları isabetli çağrılarla yönetir"
     },
-    "CoolHead": {
+    "IceCold": {
       "label": "Soğukkanlı",
-      "desc": "Baskı altında sakin kalır"
+      "desc": "Sakin, disiplinli, neredeyse hatasız"
     },
     "Visionary": {
       "label": "Vizyoner",
-      "desc": "Başkalarının göremediği fırsatları görür"
+      "desc": "Olağanüstü makro"
     },
-    "HotHead": {
-      "label": "Agresif",
-      "desc": "Çabuk sinirlenmeye eğilimli"
+    "Intimidator": {
+      "label": "Gözdağı Veren",
+      "desc": "Otoriter ama disiplinsiz"
     },
     "TeamPlayer": {
       "label": "Takım Oyuncusu",
-      "desc": "Her zaman takımı ön planda tutar"
+      "desc": "Elit takım savaşı"
     },
-    "SafeHands": {
-      "label": "Güvenilir Eller",
-      "desc": "Baskı altında güvenilir ve istikrarlı"
+    "HyperCarry": {
+      "label": "Hypercarry",
+      "desc": "Koridorda ve mekanikte güçlü, sağlam akıl"
     },
-    "CatReflexes": {
-      "label": "Kedi Refleksleri",
-      "desc": "Yıldırım hızında refleksler"
+    "Workhorse": {
+      "label": "İş Beygiri",
+      "desc": "Dayanıklı, mekanik ve savaşlarda güçlü"
     },
-    "AerialDominance": {
-      "label": "Alan Hakimiyeti",
-      "desc": "Uzun menzilli yeteneklerle alanı kontrol eder"
-    },
-    "CompleteForward": {
-      "label": "Çok Yönlü Taşıyıcı",
-      "desc": "Her yönden tehlikeli"
-    },
-    "Engine": {
-      "label": "Motor",
-      "desc": "Haritanın her yerinde yorulmayan güç"
-    },
-    "SetPieceSpecialist": {
-      "label": "Kuşatma Uzmanı",
-      "desc": "Hedef savaşlarında ölümcül"
+    "MacroSpecialist": {
+      "label": "Makro Uzmanı",
+      "desc": "Savaş, koridor ve makro güçlü"
     }
   },
   "date": {

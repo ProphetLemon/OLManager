@@ -4130,85 +4130,73 @@
     }
   },
   "traits": {
-    "Speedster": {
-      "label": "Speedster",
-      "desc": "Exceptional pace"
+    "LightningQuick": {
+      "label": "Lightning Quick",
+      "desc": "Exceptional mechanics"
     },
-    "Tank": {
-      "label": "Tank",
-      "desc": "Powerful and tireless"
+    "Immovable": {
+      "label": "Immovable",
+      "desc": "Unshaken under pressure"
     },
-    "Agile": {
-      "label": "Agile",
-      "desc": "Quick and nimble"
+    "NimbleFingers": {
+      "label": "Nimble Fingers",
+      "desc": "Deep champion pool"
     },
-    "Tireless": {
-      "label": "Tireless",
-      "desc": "Never runs out of energy"
+    "MarathonMan": {
+      "label": "Marathon Man",
+      "desc": "Outlasts the longest series"
     },
-    "Playmaker": {
-      "label": "Playmaker",
-      "desc": "Reads the game and orchestrates plays"
+    "GameManager": {
+      "label": "Game Manager",
+      "desc": "Strong teamfighting and macro play"
     },
-    "Sharpshooter": {
-      "label": "Sharpshooter",
-      "desc": "Lethal in lane trades"
+    "Lethal": {
+      "label": "Lethal",
+      "desc": "Wins lane trades"
     },
-    "Dribbler": {
+    "KiteMaster": {
       "label": "Kite Master",
-      "desc": "Mechanically gifted"
+      "desc": "Mechanics to kite and outplay"
     },
-    "BallWinner": {
+    "Interceptor": {
       "label": "Interceptor",
-      "desc": "Intercepts enemy rotations relentlessly"
+      "desc": "Reads the map and backs it with calls"
     },
-    "Rock": {
-      "label": "Rock",
-      "desc": "Immovable defensive wall"
+    "Sentinel": {
+      "label": "Sentinel",
+      "desc": "Disciplined and consistent"
     },
-    "Leader": {
-      "label": "Leader",
-      "desc": "Inspires teammates"
+    "ShotCaller": {
+      "label": "In-Game Leader",
+      "desc": "Leads fights with sharp calls"
     },
-    "CoolHead": {
-      "label": "Cool Head",
-      "desc": "Calm under pressure"
+    "IceCold": {
+      "label": "Ice Cold",
+      "desc": "Calm, disciplined, rarely errs"
     },
     "Visionary": {
       "label": "Visionary",
-      "desc": "Sees plays others miss"
+      "desc": "Exceptional macro play"
     },
-    "HotHead": {
-      "label": "Hot Head",
-      "desc": "Prone to losing temper"
+    "Intimidator": {
+      "label": "Intimidator",
+      "desc": "Commanding but undisciplined"
     },
     "TeamPlayer": {
       "label": "Team Player",
-      "desc": "Always puts the team first"
+      "desc": "Elite teamfighting"
     },
-    "SafeHands": {
-      "label": "Safe Hands",
-      "desc": "Reliable when the pressure is on"
-    },
-    "CatReflexes": {
-      "label": "Cat Reflexes",
-      "desc": "Lightning-fast reflexes"
-    },
-    "AerialDominance": {
-      "label": "Zone Control",
-      "desc": "Controls space with long-range abilities"
-    },
-    "CompleteForward": {
+    "HyperCarry": {
       "label": "Hyper Carry",
-      "desc": "Dangerous in every way"
+      "desc": "Strong in lane and mechanics, steady mind"
     },
-    "Engine": {
-      "label": "Engine",
-      "desc": "Tireless force across the whole map"
+    "Workhorse": {
+      "label": "Workhorse",
+      "desc": "Resilient, mechanical and strong in fights"
     },
-    "SetPieceSpecialist": {
+    "MacroSpecialist": {
       "label": "Macro Specialist",
-      "desc": "Deadly in objective fights"
+      "desc": "Fights, lane and macro all strong"
     }
   },
   "date": {

@@ -3847,85 +3847,73 @@
     }
   },
   "traits": {
-    "Speedster": {
-      "label": "Velocista",
-      "desc": "Velocidade excepcional"
+    "LightningQuick": {
+      "label": "Relâmpago",
+      "desc": "Mecânica excepcional"
     },
-    "Tank": {
-      "label": "Tanque",
-      "desc": "Poderoso e incansável"
+    "Immovable": {
+      "label": "Inabalável",
+      "desc": "Firme sob pressão"
     },
-    "Agile": {
-      "label": "Ágil",
-      "desc": "Rápido e habilidoso"
+    "NimbleFingers": {
+      "label": "Dedos Ágeis",
+      "desc": "Grande pool de campeões"
     },
-    "Tireless": {
-      "label": "Incansável",
-      "desc": "Nunca fica sem energia"
+    "MarathonMan": {
+      "label": "Maratonista",
+      "desc": "Aguenta as séries mais longas"
     },
-    "Playmaker": {
-      "label": "Armador",
-      "desc": "Lê a partida e orquestra as jogadas"
+    "GameManager": {
+      "label": "Maestro",
+      "desc": "Teamfight e macro fortes"
     },
-    "Sharpshooter": {
-      "label": "Atirador Certeiro",
-      "desc": "Letal nas trocas de rota"
+    "Lethal": {
+      "label": "Letal",
+      "desc": "Vence as trocas na lane"
     },
-    "Dribbler": {
+    "KiteMaster": {
       "label": "Mestre do Kiting",
-      "desc": "Mecanicamente talentoso"
+      "desc": "Mecânica para kitar e superar o rival"
     },
-    "BallWinner": {
+    "Interceptor": {
       "label": "Interceptador",
-      "desc": "Intercepta as rotações inimigas incansavelmente"
+      "desc": "Lê o mapa e sustenta com calls"
     },
-    "Rock": {
-      "label": "Rocha",
-      "desc": "Muralha defensiva inabalável"
+    "Sentinel": {
+      "label": "Sentinela",
+      "desc": "Disciplinado e consistente"
     },
-    "Leader": {
-      "label": "Líder",
-      "desc": "Inspira os companheiros"
+    "ShotCaller": {
+      "label": "Shotcaller",
+      "desc": "Lidera as lutas com calls precisas"
     },
-    "CoolHead": {
-      "label": "Cabeça Fria",
-      "desc": "Calmo sob pressão"
+    "IceCold": {
+      "label": "Sangue-Frio",
+      "desc": "Calmo, disciplinado, quase sem erros"
     },
     "Visionary": {
       "label": "Visionário",
-      "desc": "Enxerga jogadas que ninguém vê"
+      "desc": "Macro excepcional"
     },
-    "HotHead": {
-      "label": "Esquentado",
-      "desc": "Propenso a perder a calma"
+    "Intimidator": {
+      "label": "Intimidador",
+      "desc": "Autoritário, mas indisciplinado"
     },
     "TeamPlayer": {
       "label": "Jogador de Equipe",
-      "desc": "Sempre coloca o time em primeiro"
+      "desc": "Teamfight de elite"
     },
-    "SafeHands": {
-      "label": "Mãos Seguras",
-      "desc": "Confiável sob pressão"
-    },
-    "CatReflexes": {
-      "label": "Reflexos de Gato",
-      "desc": "Reflexos ultra-rápidos"
-    },
-    "AerialDominance": {
-      "label": "Controle de Zona",
-      "desc": "Controla o espaço com habilidades de longo alcance"
-    },
-    "CompleteForward": {
+    "HyperCarry": {
       "label": "Hypercarry",
-      "desc": "Perigoso de todas as formas"
+      "desc": "Forte na lane e na mecânica, mente firme"
     },
-    "Engine": {
-      "label": "Motor",
-      "desc": "Força incansável em todo o mapa"
+    "Workhorse": {
+      "label": "Cavalo de Batalha",
+      "desc": "Resistente, mecânico e forte nas lutas"
     },
-    "SetPieceSpecialist": {
-      "label": "Especialista em Objetivos",
-      "desc": "Letal em fights por objetivos"
+    "MacroSpecialist": {
+      "label": "Especialista em Macro",
+      "desc": "Lutas, lane e macro fortes"
     }
   },
   "date": {
