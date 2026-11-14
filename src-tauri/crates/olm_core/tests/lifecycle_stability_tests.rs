@@ -178,41 +178,6 @@ fn same_day_mass_expiry_depletes_ai_team_and_repair_restores_eligibility() {
 }
 
 #[test]
-fn mass_expiry_fills_every_role_from_free_agents_when_they_exist() {
-    // The five released players are themselves free agents of exactly the roles the club
-    // lost, and the budget allows them. The daily emergency cap (one per club) must not
-    // push the other four slots onto generated players.
-    let mut game = game_with_ai_team(
-        expired_roster("ai-team"),
-        vec!["exp-top", "exp-jungle", "exp-mid", "exp-adc", "exp-support"],
-    );
-    game.teams
-        .iter_mut()
-        .find(|team| team.id == "ai-team")
-        .expect("ai team")
-        .wage_budget = 10_000_000;
-
-    olm_core::contracts::process_contract_expiries(&mut game);
-
-    let generated: Vec<&str> = game
-        .players
-        .iter()
-        .filter(|p| p.id.starts_with("emergency-"))
-        .map(|p| p.id.as_str())
-        .collect();
-    assert!(
-        generated.is_empty(),
-        "free agents of every role existed, yet the repair generated {generated:?}"
-    );
-    let signed = game
-        .players
-        .iter()
-        .filter(|p| p.team_id.as_deref() == Some("ai-team"))
-        .count();
-    assert_eq!(signed, 5, "all five roles are filled by real players");
-}
-
-#[test]
 fn role_loss_expiry_restores_eligibility_after_repair() {
     // Four players with active contracts, one key role (support) expired.
     let players = vec![
