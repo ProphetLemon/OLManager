@@ -1,4 +1,6 @@
 pub mod academy;
+#[cfg(test)]
+mod ai_renewals_measure;
 pub mod bug_report;
 pub mod club;
 pub mod competitions;
