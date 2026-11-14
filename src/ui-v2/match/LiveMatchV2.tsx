@@ -218,8 +218,8 @@ export default function LiveMatchV2({
   const summary = useMemo(() => endSummary(finishedState, userSide), [finishedState, userSide]);
   const handleContinue = useCallback(() => {
     if (!finishedState) return;
-    onFullTime({ ...finishedState, goldDiffTimeline: [...view.goldDiffTimeline] }, { source: "live" });
-  }, [finishedState, onFullTime, view.goldDiffTimeline]);
+    onFullTime({ ...finishedState, goldDiffTimeline: [...view.goldDiffTimeline], matchRecord: session.record() }, { source: "live" });
+  }, [finishedState, onFullTime, session, view.goldDiffTimeline]);
 
   // ── Controls ──────────────────────────────────────────────────────────
   const handleSkip = useCallback(async () => {

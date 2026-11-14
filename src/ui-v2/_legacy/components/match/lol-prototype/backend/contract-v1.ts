@@ -1,3 +1,4 @@
+import type { MatchRecord } from "@/lib/match/live/matchRecord";
 import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 import type { ChampionCombatProfile } from "@/ui-v2/_legacy/components/match/lol-prototype/engine/simulation";
 import type { MatchState, TeamId } from "@/ui-v2/_legacy/components/match/lol-prototype/engine/types";
@@ -54,6 +55,11 @@ export type LolSimV1RuntimeState = Pick<
   /** Game seconds of the next step already collected, from 0 to `stepSec`. */
   stepAccumSec?: number;
   goldDiffTimeline?: Array<{ minute: number; diff: number }>;
+  /**
+   * Added by the live screen when it hands the finished match on: gold per champion per minute and
+   * the key events it saw. Not an engine field; it never goes to the backend.
+   */
+  matchRecord?: MatchRecord;
 };
 
 export function createEmptyNeutralTimersState(): LolSimV1RuntimeState["neutralTimers"] {
