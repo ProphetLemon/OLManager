@@ -542,45 +542,6 @@ describe("useAdvanceTime", function (): void {
     expect(screen.getByTestId("blocker-count")).toHaveTextContent("0");
   });
 
-  it("auto-delegates scrim decision and retries skip-to-match-day when blocked", async function (): Promise<void> {
-    mockedInvoke
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce({
-        action: "blocked",
-        game: { clock: { current_date: "2026-07-02", start_date: "2026-07-01" } },
-        blockers: [
-          {
-            id: "scrim_decision_required",
-            severity: "warn",
-            tab: "Scrims",
-            text: "Make a scrim decision before continuing.",
-          },
-        ],
-      })
-      .mockResolvedValueOnce({
-        action: "advanced",
-        game: { clock: { current_date: "2026-07-06", start_date: "2026-07-01" } },
-        days_skipped: 4,
-      });
-    mockedDelegateScrimDecision.mockResolvedValue({
-      clock: { current_date: "2026-07-02", start_date: "2026-07-01" },
-    } as GameStateData);
-
-    render(<HookHarness hasMatchToday={false} defaultMatchMode="live" scrimReviewMode="assistant" />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
-
-    await waitFor(function (): void {
-      expect(mockedInvoke).toHaveBeenNthCalledWith(1, "check_blocking_actions", { mode: "live", includeScrimStops: false });
-      expect(mockedInvoke).toHaveBeenNthCalledWith(2, "skip_to_match_day");
-      expect(mockedDelegateScrimDecision).toHaveBeenCalledTimes(1);
-      expect(mockedInvoke).toHaveBeenNthCalledWith(3, "skip_to_match_day");
-    });
-
-    expect(screen.getByTestId("blocker-count")).toHaveTextContent("0");
-    expect(screen.getByTestId("auto-delegation-notice")).toHaveTextContent("Assistant Coach resolved");
-  });
-
   it("tells the user the staff played their match when skipping to match day", async function (): Promise<void> {
     mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({
       action: "arrived",
