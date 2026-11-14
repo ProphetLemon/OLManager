@@ -263,7 +263,6 @@ Note: Rust has extra variants (`Carry`, `Flank`) not exposed in the frontend.
 | `src-tauri/crates/olm_core/src/domain/team.rs` (L199-279) | Rust `LolTactics` + all enums |
 | `src-tauri/src/commands/squad.rs` (L547-568) | Tauri command handler |
 | `src-tauri/crates/olm_core/src/commands.rs` (L72-76) | Game engine command |
-| `src-tauri/crates/olm_core/src/dispatch.rs` (L132-137) | Action routing |
 | `src-tauri/crates/olm_core/src/sim_live.rs` (L289-381) | `RuntimeTeamTactics` |
 | `src-tauri/crates/olm_core/src/sim_live/state_init.rs` (L148-179) | Injects tactics into match runtime |
 | `src-tauri/crates/olm_core/src/sim_live/combat.rs` (L460-461, L5044-5249) | Fight plan AI |

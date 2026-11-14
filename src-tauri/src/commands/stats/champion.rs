@@ -1,7 +1,8 @@
 //! Champion page stats, computed from the in-memory `StatsState`.
 //!
-//! This is a port of the SQL in `olm_core::db::repositories::champion_stats_repo`, which the
-//! single-file save system left without a database to run on. A "game" is one
+//! This is a port of the SQL of the former `olm_core::db::repositories::champion_stats_repo`
+//! (removed in 2026-11; recover it from git history), which the single-file save system left
+//! without a database to run on. A "game" is one
 //! `PlayerMatchStatsRecord`: one player in one fixture, so a best-of series counts once, with the
 //! series' summed stats. Pick and ban rates divide by every player record, as the SQL did.
 

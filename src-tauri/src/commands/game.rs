@@ -4,7 +4,6 @@ use olm_core::domain::player::Player;
 use olm_core::domain::staff::Staff;
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::{Team, TeamKind};
-use serde::Serialize;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use tauri::State;
@@ -25,13 +24,6 @@ use olm_core::state::StateManager;
 use olm_core::world_overlay::{OverlayApplyReport, WorldOverlay, apply_world_overlay};
 
 use crate::SaveManagerState;
-
-#[derive(Debug, Clone, Serialize)]
-pub struct TeamSelectionData {
-    pub manager: Manager,
-    pub teams: Vec<olm_core::domain::team::Team>,
-    pub players: Vec<olm_core::domain::player::Player>,
-}
 
 // ---------------------------------------------------------------------------
 // Local helpers that stay in the Tauri layer
@@ -1355,23 +1347,9 @@ pub async fn select_team(
 
     // Initialize message template store
     {
-        // Look for messages root directory (to find senders)
-        let msg_root_candidates = [std::env::current_dir()
-                .ok()
-                .map(|d| d.join("data").join("messages")),
-            std::env::current_dir()
-                .ok()
-                .map(|d| d.join("../data").join("messages")),
-            std::env::current_dir()
-                .ok()
-                .map(|d| d.join("src-tauri/data").join("messages"))];
-        let mut messages_root = None;
-        for path in msg_root_candidates.iter().flatten() {
-            if path.is_dir() {
-                messages_root = Some(path.clone());
-                break;
-            }
-        }
+        // Same data-base candidates as teams and players, so a packaged or
+        // Android build finds the bundled templates too.
+        let messages_root = crate::commands::competitions::resolve_messages_root(&app_handle);
 
         // Look for triggers/ subdirectory inside messages root
         let triggers_candidates = [messages_root.as_ref().map(|p| p.join("triggers"))];
@@ -1734,25 +1712,6 @@ pub async fn get_champions() -> Result<Vec<olm_core::domain::champion::Champion>
         .collect();
     log::info!("[cmd] get_champions: embedded {} champions", catalog.len());
     Ok(catalog)
-}
-
-#[tauri::command]
-pub async fn get_team_selection_data(
-    state: State<'_, StateManager>,
-) -> Result<TeamSelectionData, String> {
-    log::debug!("[cmd] get_team_selection_data");
-    state
-        .get_game(|game| TeamSelectionData {
-            manager: game.manager.clone(),
-            teams: game
-                .teams
-                .iter()
-                .filter(|team| team.team_kind != TeamKind::Academy)
-                .cloned()
-                .collect(),
-            players: game.players.clone(),
-        })
-        .ok_or("No active game session".to_string())
 }
 
 #[tauri::command]

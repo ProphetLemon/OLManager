@@ -7,37 +7,6 @@ use crate::application::advance_blockers::{advance_block, DEFAULT_ADVANCE_MODE};
 use olm_core::game::Game;
 use olm_core::state::StateManager;
 
-fn advance_time_internal(state: &StateManager) -> Result<Game, String> {
-    let mut current_game = state
-        .get_game(|g| g.clone())
-        .ok_or("No active game session".to_string())?;
-
-    info!(
-        "[cmd] advance_time: date={}",
-        current_game.clock.current_date.format("%Y-%m-%d")
-    );
-
-    if current_game
-        .active_league()
-        .is_some_and(olm_core::end_of_season::is_league_complete)
-    {
-        info!("[cmd] advance_time: split finished, nothing advanced");
-        return Ok(crate::client_game::game_for_client(&current_game));
-    }
-
-    let mut captures = Vec::new();
-    olm_core::turn::process_day_with_capture(&mut current_game, &mut |capture| {
-        captures.push(capture);
-    });
-
-    for capture in captures {
-        state.append_stats_state(capture);
-    }
-
-    state.set_game(current_game.clone());
-    Ok(crate::client_game::game_for_client(&current_game))
-}
-
 fn advance_time_with_mode_internal(
     state: &StateManager,
     mode: &str,
@@ -55,11 +24,6 @@ pub fn advance_time_with_mode(
     mode: String,
 ) -> Result<AdvanceTimeWithModeResponse, String> {
     advance_time_with_mode_internal(&state, &mode)
-}
-
-#[tauri::command]
-pub fn advance_time(state: State<'_, StateManager>) -> Result<Game, String> {
-    advance_time_internal(&state)
 }
 
 pub fn compute_blocking_actions(game: &Game) -> Vec<serde_json::Value> {
@@ -440,29 +404,6 @@ mod tests {
     }
 
     #[test]
-    fn advance_time_records_match_history_in_active_stats_state() {
-        let state = StateManager::new();
-        state.set_game(make_game_with_matchday());
-        state.set_stats_state(StatsState::default());
-
-        let advanced = super::advance_time_internal(&state).unwrap();
-        let stats = state.get_stats_state(|current| current.clone()).unwrap();
-
-        assert_eq!(
-            advanced.clock.current_date.date_naive(),
-            Utc.with_ymd_and_hms(2025, 6, 16, 12, 0, 0)
-                .unwrap()
-                .date_naive()
-        );
-        assert!(
-            !stats.player_matches.is_empty(),
-            "expected player match history to be recorded"
-        );
-        assert_eq!(stats.team_matches.len(), 2);
-        assert_eq!(stats.player_matches[0].fixture_id, "fixture-1");
-    }
-
-    #[test]
     fn skip_to_match_day_simulates_the_users_match_with_an_auto_draft() {
         let state = StateManager::new();
         state.set_game(make_game_with_matchday());
@@ -609,25 +550,6 @@ mod tests {
                 assert!(state.take_live_match().is_none());
             }
         }
-    }
-
-    #[test]
-    fn advance_time_refuses_while_the_split_is_over() {
-        let state = StateManager::new();
-        let game = make_finished_split_game();
-        let start = game.clock.current_date;
-        let messages = game.messages.len();
-        state.set_game(game);
-        state.set_stats_state(StatsState::default());
-
-        let returned = super::advance_time_internal(&state).expect("current game");
-
-        assert_eq!(returned.clock.current_date, start);
-        let game = state.get_game(|g| g.clone()).unwrap();
-        assert_eq!(game.clock.current_date, start);
-        assert_eq!(game.messages.len(), messages);
-        let stats = state.get_stats_state(|current| current.clone()).unwrap();
-        assert!(stats.team_matches.is_empty());
     }
 
     #[test]
