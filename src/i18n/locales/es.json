@@ -2815,20 +2815,6 @@
         "nexus": "Nexo"
       }
     },
-    "lolResult": {
-      "dragonSummary": "Dragón {{kind}} · Cargas L/V {{home}}/{{away}} · Alma {{soul}}",
-      "performanceHeader": "Rendimiento · K / D / A · CS · Oro",
-      "teamStats": "Estadísticas del equipo",
-      "goldDiffOverTime": "Diferencia de oro a lo largo del tiempo",
-      "keyTimeline": "Cronología clave",
-      "stats": {
-        "gold": "Oro",
-        "towers": "Torres",
-        "dragons": "Dragones",
-        "barons": "Barones",
-        "kills": "Bajas"
-      }
-    },
     "liveMap": {
       "teamBlue": "{{team}} (Azul)",
       "teamRed": "{{team}} (Rojo)",
@@ -4819,7 +4805,11 @@
         "timelinePartial": "La partida se saltó desde el {{time}}: pueden faltar eventos posteriores.",
         "timelineNoRecord": "Los eventos de esta partida no se registraron por completo.",
         "timelineEmpty": "No se registró ningún evento clave.",
-        "timelineColumn": "Eventos clave, de {{from}} a {{to}}"
+        "timelineColumn": "Eventos clave, de {{from}} a {{to}}",
+        "viewLabel": "Vista posterior a la partida",
+        "viewGraphs": "Gráficos",
+        "viewTimeline": "Cronología",
+        "noRecord": "No se registraron los detalles de esta partida, así que solo se puede mostrar el resultado."
       },
       "pit": {
         "voidgrubs": "Larvas del Vacío",

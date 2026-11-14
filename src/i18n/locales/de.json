@@ -2566,20 +2566,6 @@
         "nexus": "Nexus"
       }
     },
-    "lolResult": {
-      "dragonSummary": "Dragon {{kind}} · Heim/Auswärts-Stacks {{home}}/{{away}} · Soul {{soul}}",
-      "performanceHeader": "Leistung · K / D / A · CS · Gold",
-      "teamStats": "Team-Statistiken",
-      "goldDiffOverTime": "Gold-Differenz im Spielverlauf",
-      "keyTimeline": "Wichtige Timeline",
-      "stats": {
-        "gold": "Gold",
-        "towers": "Türme",
-        "dragons": "Dragons",
-        "barons": "Barons",
-        "kills": "Kills"
-      }
-    },
     "liveMap": {
       "teamBlue": "{{team}} (Blau)",
       "teamRed": "{{team}} (Rot)",
@@ -4820,7 +4806,11 @@
         "timelinePartial": "Das Spiel wurde ab {{time}} übersprungen: spätere Ereignisse können fehlen.",
         "timelineNoRecord": "Die Ereignisse dieses Spiels wurden nicht vollständig aufgezeichnet.",
         "timelineEmpty": "Es wurden keine wichtigen Ereignisse aufgezeichnet.",
-        "timelineColumn": "Wichtige Ereignisse, {{from}} bis {{to}}"
+        "timelineColumn": "Wichtige Ereignisse, {{from}} bis {{to}}",
+        "viewLabel": "Ansicht nach dem Spiel",
+        "viewGraphs": "Diagramme",
+        "viewTimeline": "Zeitleiste",
+        "noRecord": "Die Einzelheiten dieses Spiels wurden nicht aufgezeichnet, daher kann nur das Ergebnis gezeigt werden."
       },
       "pit": {
         "voidgrubs": "Leerenlarven",

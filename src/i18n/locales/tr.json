@@ -2548,20 +2548,6 @@
         "nexus": "Nexus"
       }
     },
-    "lolResult": {
-      "dragonSummary": "{{kind}} Ejderi · Ev/Dep skorları {{home}}/{{away}} · Ruh {{soul}}",
-      "performanceHeader": "Performans · K / D / A · CS · Altın",
-      "teamStats": "Takım istatistikleri",
-      "goldDiffOverTime": "Zaman içindeki altın farkı",
-      "keyTimeline": "Önemli anlar",
-      "stats": {
-        "gold": "Altın",
-        "towers": "Kuleler",
-        "dragons": "Ejderler",
-        "barons": "Baronlar",
-        "kills": "Skorlar"
-      }
-    },
     "liveMap": {
       "teamBlue": "{{team}} (Mavi)",
       "teamRed": "{{team}} (Kırmızı)",
@@ -4820,7 +4806,11 @@
         "timelinePartial": "Maç {{time}} anından itibaren atlandı: sonraki olaylar eksik olabilir.",
         "timelineNoRecord": "Bu maçın olayları tam olarak kaydedilmedi.",
         "timelineEmpty": "Hiçbir önemli olay kaydedilmedi.",
-        "timelineColumn": "Önemli olaylar, {{from}} - {{to}}"
+        "timelineColumn": "Önemli olaylar, {{from}} - {{to}}",
+        "viewLabel": "Maç sonu görünümü",
+        "viewGraphs": "Grafikler",
+        "viewTimeline": "Zaman çizelgesi",
+        "noRecord": "Bu maçın ayrıntıları kaydedilmedi, bu yüzden yalnızca sonuç gösterilebiliyor."
       },
       "pit": {
         "voidgrubs": "Boşluk Larvaları",

@@ -2566,20 +2566,6 @@
         "nexus": "Nexus"
       }
     },
-    "lolResult": {
-      "dragonSummary": "Dragon {{kind}} · Charges D/E {{home}}/{{away}} · Âme {{soul}}",
-      "performanceHeader": "Performance · K / D / A · CS · Or",
-      "teamStats": "Stats d'équipe",
-      "goldDiffOverTime": "Différence d'or au fil du temps",
-      "keyTimeline": "Chronologie clé",
-      "stats": {
-        "gold": "Or",
-        "towers": "Tourelles",
-        "dragons": "Dragons",
-        "barons": "Barons",
-        "kills": "Kills"
-      }
-    },
     "liveMap": {
       "teamBlue": "{{team}} (Bleu)",
       "teamRed": "{{team}} (Rouge)",
@@ -4820,7 +4806,11 @@
         "timelinePartial": "La partie a été passée à partir de {{time}} : des événements ultérieurs peuvent manquer.",
         "timelineNoRecord": "Les événements de cette partie n'ont pas été enregistrés en entier.",
         "timelineEmpty": "Aucun événement clé n'a été enregistré.",
-        "timelineColumn": "Événements clés, de {{from}} à {{to}}"
+        "timelineColumn": "Événements clés, de {{from}} à {{to}}",
+        "viewLabel": "Vue d'après-match",
+        "viewGraphs": "Graphiques",
+        "viewTimeline": "Chronologie",
+        "noRecord": "Les détails de cette partie n'ont pas été enregistrés : seul le résultat peut être affiché."
       },
       "pit": {
         "voidgrubs": "Larves du Néant",

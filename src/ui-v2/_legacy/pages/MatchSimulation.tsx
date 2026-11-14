@@ -18,9 +18,9 @@ import ChampionDraft, {
 import type { ChampionDraftResultPayload } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import { finalizeLiveMatch, type FinishLiveMatchResponse } from "@/ui-v2/_legacy/pages/MatchSimulation.finalize";
 import LiveMatchV2 from "@/ui-v2/match/LiveMatchV2";
+import PostGame from "@/ui-v2/match/PostGame";
 import type { ChampionSelectionByPlayer } from "@/ui-v2/match/live/useChampionProfiles";
 import MatchTacticsStage from "@/ui-v2/_legacy/components/match/MatchTacticsStage";
-import LolResultScreen from "@/ui-v2/_legacy/components/match/LolResultScreen";
 import DraftResultScreenV2 from "@/ui-v2/components/DraftResultScreenV2";
 import PressConference from "@/ui-v2/_legacy/components/match/PressConference";
 import {
@@ -775,7 +775,7 @@ export default function MatchSimulation() {
     routeState?.snapshot ?? null,
   );
   const [stage, setStage] = useState<MatchDayStage>("prematch");
-  const [importantEvents, setImportantEvents] = useState<MatchEvent[]>([]);
+  const [, setImportantEvents] = useState<MatchEvent[]>([]);
   const [finalRuntimeState, setFinalRuntimeState] = useState<LolSimV1RuntimeState | null>(null);
   const [draftPayload, setDraftPayload] = useState<ChampionDraftResultPayload | null>(null);
   const [draftEvaluations, setDraftEvaluations] = useState<DraftEvaluationsBySide | null>(null);
@@ -1932,13 +1932,12 @@ export default function MatchSimulation() {
         }
 
         return (
-          <LolResultScreen
+          <PostGame
             snapshot={renderSnapshotWithTactics ?? snapshot}
             gameState={gameState}
-            currentFixture={currentFixture}
             userSide={userSide}
-            importantEvents={importantEvents}
             finalRuntimeState={finalRuntimeState}
+            championSelections={championSelections}
             onPressConference={handlePressConference}
             onFinish={handleFinishMatch}
           />
@@ -1947,13 +1946,12 @@ export default function MatchSimulation() {
 
     case "postmatch":
       return (
-        <LolResultScreen
+        <PostGame
           snapshot={snapshot}
           gameState={gameState}
-          currentFixture={currentFixture}
           userSide={userSide}
-          importantEvents={importantEvents}
           finalRuntimeState={finalRuntimeState}
+          championSelections={championSelections}
           onPressConference={handlePressConference}
           onFinish={handleFinishMatch}
         />
