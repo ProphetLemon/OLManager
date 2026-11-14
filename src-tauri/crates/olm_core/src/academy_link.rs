@@ -49,6 +49,12 @@ pub fn linked_club_id(game: &Game, parent_team_id: &str) -> Option<String> {
         .map(|team| team.id.clone())
 }
 
+/// Id of the real club linked to the user's club. The AI market treats it and its
+/// players as the user's side: it never buys, sells or recruits for it, nor from it.
+pub fn user_linked_club_id(game: &Game) -> Option<String> {
+    linked_club_id(game, game.manager.team_id.as_deref()?)
+}
+
 /// Sum of the market values of the players rostered at `team_id`.
 fn squad_market_value(game: &Game, team_id: &str) -> u64 {
     game.players
