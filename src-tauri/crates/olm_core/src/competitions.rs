@@ -315,6 +315,7 @@ fn competition_summary(
     Some(CompetitionSummary {
         id: manifest.id,
         name: manifest.name,
+        full_name: manifest.full_name,
         region: manifest.region,
         logo: manifest.logo,
         tier: manifest.tier.unwrap_or(0),
@@ -617,6 +618,35 @@ mod tests {
 
         assert_eq!(flag("lec"), Some(false));
         assert_eq!(flag("les"), Some(true));
+    }
+
+    #[test]
+    fn league_selection_carries_the_manifest_full_name() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_competition(dir.path(), "lckcl", 2, false, true);
+        write_competition(dir.path(), "plain", 2, false, true);
+        let manifest_path = dir.path().join("competitions/lckcl/manifest.json");
+        let json = std::fs::read_to_string(&manifest_path).expect("read manifest");
+        let json = json.replacen(
+            "\"name\": \"lckcl\",",
+            "\"name\": \"lckcl\", \"full_name\": \"LCK Challenger League Series\",",
+            1,
+        );
+        std::fs::write(&manifest_path, json).expect("write manifest");
+
+        let data = build_league_selection(dir.path());
+        let full_name = |id: &str| {
+            data.competitions
+                .iter()
+                .find(|c| c.id == id)
+                .map(|c| c.full_name.clone())
+        };
+
+        assert_eq!(
+            full_name("lckcl"),
+            Some(Some("LCK Challenger League Series".to_string()))
+        );
+        assert_eq!(full_name("plain"), Some(None));
     }
 
     #[test]
