@@ -64,17 +64,19 @@ function PlayerLine({ row, hasDamage, maxDamage, championByPlayerId, itemNames }
   return (
     <tr className="pg-row" data-team={row.side} data-mvp={row.mvp || undefined}>
       <th scope="row" className="pg-player">
-        <Portrait side={row.side} championKey={key} name={row.name} />
-        <span className="pg-player-text">
-          <b>{row.name}</b>
-          <small>{champion ? `${champion}, ${role}` : role}</small>
-        </span>
-        {row.mvp ? (
-          <span className="pg-mvp">
-            <Star aria-hidden="true" focusable="false" />
-            {t("match.draftResult.mvp")}
+        <span className="pg-player-cell">
+          <Portrait side={row.side} championKey={key} name={row.name} />
+          <span className="pg-player-text">
+            <b>{row.name}</b>
+            <small>{champion ? `${champion}, ${role}` : role}</small>
           </span>
-        ) : null}
+          {row.mvp ? (
+            <span className="pg-mvp">
+              <Star aria-hidden="true" focusable="false" />
+              {t("match.draftResult.mvp")}
+            </span>
+          ) : null}
+        </span>
       </th>
       <td className="pg-num">{row.level}</td>
       <td className="pg-num">{`${row.kills}/${row.deaths}/${row.assists}`}</td>
