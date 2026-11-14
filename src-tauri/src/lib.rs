@@ -144,6 +144,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(log::LevelFilter::Info)
@@ -173,6 +175,7 @@ pub fn run() {
         })
         .manage(StateManager::new())
         .manage(SimLiveStoreState::default())
+        .manage(ImportStage::default())
         .setup(move |app| {
             use tauri::Manager as TauriManager;
             #[cfg(target_os = "linux")]
@@ -238,6 +241,10 @@ pub fn run() {
             prepare_custom_logo,
             prepare_custom_portrait,
             get_saves,
+            export_save_file,
+            pick_import_save,
+            confirm_import_save,
+            cancel_import_save,
             load_game,
             get_active_game,
             get_champions,
