@@ -6,6 +6,7 @@ import { resolveChampionTile, resolveChampionSplash } from "@/lib/champions/cham
 import { championDisplayName } from "@/lib/champions/championNames";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
+import ChampionMatchupsCard from "./championPage/ChampionMatchupsCard";
 import { cn } from "@/ui-v2/lib/utils";
 import { formatNumber } from "@/lib/formatting/valueFormatting";
 import { formatDecimal } from "@/lib/formatting/decimalFormatting";
@@ -206,6 +207,8 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
             <MatchupBlock title={t("championPage.bestAgainst")} items={s?.best_against} type="best" pct={pct} />
             <MatchupBlock title={t("championPage.worstAgainst")} items={s?.worst_against} type="worst" pct={pct} />
           </div>
+
+          <ChampionMatchupsCard championKey={championKey} />
         </div>
 
         {/* RIGHT COLUMN — SIDEBAR */}
