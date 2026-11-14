@@ -2163,6 +2163,46 @@ mod tests {
             assert!(stale.is_empty(), "stale leagues built: {stale:?}");
         }
 
+        /// Every live competition gets a league with the first split scheduled, one league per
+        /// competition, and each league plays a round robin among its own real teams.
+        #[test]
+        fn a_new_game_schedules_every_live_competition() {
+            let (mut game, _catalog_players, _overlay, user_team) = new_game();
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &user_team).expect("season setup");
+
+            let live: Vec<&CompetitionManifest> = manifests
+                .iter()
+                .filter(|m| m.active && !m.legacy && !olm_core::world_catalog::is_stale_duplicate_competition(&m.id))
+                .collect();
+            assert_eq!(live.len(), 29, "live competitions");
+            assert_eq!(game.leagues.len(), live.len(), "one league per live competition");
+            for manifest in live {
+                let league = game
+                    .leagues
+                    .iter()
+                    .find(|l| l.competition_id.as_deref() == Some(manifest.id.as_str()))
+                    .unwrap_or_else(|| panic!("no league for {}", manifest.id));
+                let teams = game
+                    .teams
+                    .iter()
+                    .filter(|t| t.competition_id.as_deref() == Some(manifest.id.as_str()))
+                    .count();
+                assert_eq!(manifest.schedule.team_count as usize, teams, "{} team_count", manifest.id);
+                assert_eq!(league.standings.len(), teams, "{} standings", manifest.id);
+                let regular = league
+                    .fixtures
+                    .iter()
+                    .filter(|f| f.match_type == olm_core::domain::league::MatchType::League)
+                    .count();
+                assert!(
+                    regular >= teams * (teams - 1) / 2,
+                    "{} schedules {regular} fixtures for {teams} teams",
+                    manifest.id
+                );
+            }
+        }
+
         /// The stale duplicates' teams are not part of a new game either: without a league
         /// they would never be repaired or simulated, and still show up in the market, in
         /// search and in the tier lookup. Their players become free agents.
