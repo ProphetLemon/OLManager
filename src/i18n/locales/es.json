@@ -4815,7 +4815,11 @@
         "barRow": "{{name}}: {{value}}, {{share}} del equipo",
         "valuesLabel": "{{title}}, valores",
         "teamShare": "Parte del equipo",
-        "goldAt": "Oro a los {{time}}"
+        "goldAt": "Oro a los {{time}}",
+        "timelinePartial": "La partida se saltó desde el {{time}}: pueden faltar eventos posteriores.",
+        "timelineNoRecord": "Los eventos de esta partida no se registraron por completo.",
+        "timelineEmpty": "No se registró ningún evento clave.",
+        "timelineColumn": "Eventos clave, de {{from}} a {{to}}"
       },
       "pit": {
         "voidgrubs": "Larvas del Vacío",

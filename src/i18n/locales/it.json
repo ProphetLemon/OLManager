@@ -4815,7 +4815,11 @@
         "barRow": "{{name}}: {{value}}, {{share}} della squadra",
         "valuesLabel": "{{title}}, valori",
         "teamShare": "Quota della squadra",
-        "goldAt": "Oro a {{time}}"
+        "goldAt": "Oro a {{time}}",
+        "timelinePartial": "La partita è stata saltata da {{time}}: gli eventi successivi potrebbero mancare.",
+        "timelineNoRecord": "Gli eventi di questa partita non sono stati registrati per intero.",
+        "timelineEmpty": "Non è stato registrato alcun evento chiave.",
+        "timelineColumn": "Eventi chiave, da {{from}} a {{to}}"
       },
       "pit": {
         "voidgrubs": "Larve del Vuoto",

@@ -91,12 +91,14 @@ export function buildTimeline(events: readonly KeyEvent[], options: { complete: 
       if (base === "kill") seenKill = true;
       const kind: TimelineKind = first && options.complete ? "firstBlood" : base;
       const data = event.data ?? {};
-      const actor = data.actorId ?? options.roster.find((member) => member.name === data.actor)?.id ?? null;
+      const member = options.roster.find((candidate) => candidate.id === data.actorId) ?? options.roster.find((candidate) => candidate.name === data.actor);
+      const actor = data.actorId ?? member?.id ?? null;
       const dragonKind = data.dragonKind && DRAGON_KINDS.has(data.dragonKind) ? (data.dragonKind as DragonKind) : null;
       entries.push({
         id: `${event.t}-${event.code ?? event.type}-${index}`,
         t: event.t,
-        side: asSide(data.team) ?? sideFromText(event.text),
+        // What the event says about its team comes first, then the team of the champion that acted, then its English text.
+        side: asSide(data.team) ?? member?.team ?? sideFromText(event.text),
         kind,
         big: BIG.has(kind),
         dragonKind,

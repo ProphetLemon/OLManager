@@ -4815,7 +4815,11 @@
         "barRow": "{{name}}: {{value}}, {{share}} da equipa",
         "valuesLabel": "{{title}}, valores",
         "teamShare": "Parte da equipa",
-        "goldAt": "Ouro aos {{time}}"
+        "goldAt": "Ouro aos {{time}}",
+        "timelinePartial": "O jogo foi saltado a partir dos {{time}}: podem faltar eventos posteriores.",
+        "timelineNoRecord": "Os eventos deste jogo não foram registados na totalidade.",
+        "timelineEmpty": "Não foi registado nenhum evento importante.",
+        "timelineColumn": "Eventos importantes, de {{from}} a {{to}}"
       },
       "pit": {
         "voidgrubs": "Larvas do Vazio",

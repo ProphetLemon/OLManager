@@ -54,6 +54,21 @@ describe("buildTimeline", () => {
     expect(timeline[13]).toMatchObject({ kind: "nexus", side: "blue", structureOwner: "red" });
   });
 
+  it("takes the side of a kill from the team of the champion that acted when its data names no team", () => {
+    const [byId, byName, byTeam] = buildTimeline(
+      [
+        { t: 10, text: "Paduck killed Supa", type: "kill", code: "champion_killed", data: { actor: "Paduck", actorId: "b-adc", target: "Supa" } },
+        { t: 20, text: "Myrwn killed Sheo", type: "kill", code: "champion_killed", data: { actor: "Myrwn", target: "Sheo" } },
+        { t: 30, text: "Paduck killed Supa", type: "kill", code: "champion_killed", data: { team: "red", actorId: "b-adc" } },
+      ],
+      { complete: true, roster },
+    );
+    expect(byId.side).toBe("blue");
+    expect(byName.side).toBe("red");
+    // What the event itself says about its team comes before what the roster says.
+    expect(byTeam.side).toBe("red");
+  });
+
   it("reads the side of an older event from its text, and ignores an event it cannot place", () => {
     const old = buildTimeline(
       [

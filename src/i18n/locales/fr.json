@@ -4816,7 +4816,11 @@
         "barRow": "{{name}} : {{value}}, {{share}} de l'équipe",
         "valuesLabel": "{{title}}, valeurs",
         "teamShare": "Part de l'équipe",
-        "goldAt": "Or à {{time}}"
+        "goldAt": "Or à {{time}}",
+        "timelinePartial": "La partie a été passée à partir de {{time}} : des événements ultérieurs peuvent manquer.",
+        "timelineNoRecord": "Les événements de cette partie n'ont pas été enregistrés en entier.",
+        "timelineEmpty": "Aucun événement clé n'a été enregistré.",
+        "timelineColumn": "Événements clés, de {{from}} à {{to}}"
       },
       "pit": {
         "voidgrubs": "Larves du Néant",

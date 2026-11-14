@@ -4816,7 +4816,11 @@
         "barRow": "{{name}}: {{value}}, {{share}} des Teams",
         "valuesLabel": "{{title}}, Werte",
         "teamShare": "Teamanteil",
-        "goldAt": "Gold bei {{time}}"
+        "goldAt": "Gold bei {{time}}",
+        "timelinePartial": "Das Spiel wurde ab {{time}} übersprungen: spätere Ereignisse können fehlen.",
+        "timelineNoRecord": "Die Ereignisse dieses Spiels wurden nicht vollständig aufgezeichnet.",
+        "timelineEmpty": "Es wurden keine wichtigen Ereignisse aufgezeichnet.",
+        "timelineColumn": "Wichtige Ereignisse, {{from}} bis {{to}}"
       },
       "pit": {
         "voidgrubs": "Leerenlarven",

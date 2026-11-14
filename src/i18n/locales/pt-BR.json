@@ -4816,7 +4816,11 @@
         "barRow": "{{name}}: {{value}}, {{share}} da equipe",
         "valuesLabel": "{{title}}, valores",
         "teamShare": "Parte da equipe",
-        "goldAt": "Ouro aos {{time}}"
+        "goldAt": "Ouro aos {{time}}",
+        "timelinePartial": "A partida foi pulada a partir de {{time}}: eventos posteriores podem estar faltando.",
+        "timelineNoRecord": "Os eventos desta partida não foram registrados por completo.",
+        "timelineEmpty": "Nenhum evento importante foi registrado.",
+        "timelineColumn": "Eventos importantes, de {{from}} a {{to}}"
       },
       "pit": {
         "voidgrubs": "Vastilarvas",

@@ -4816,7 +4816,11 @@
         "barRow": "{{name}}: {{value}}, takımın {{share}} kadarı",
         "valuesLabel": "{{title}}, değerler",
         "teamShare": "Takım payı",
-        "goldAt": "{{time}} anında altın"
+        "goldAt": "{{time}} anında altın",
+        "timelinePartial": "Maç {{time}} anından itibaren atlandı: sonraki olaylar eksik olabilir.",
+        "timelineNoRecord": "Bu maçın olayları tam olarak kaydedilmedi.",
+        "timelineEmpty": "Hiçbir önemli olay kaydedilmedi.",
+        "timelineColumn": "Önemli olaylar, {{from}} - {{to}}"
       },
       "pit": {
         "voidgrubs": "Boşluk Larvaları",
