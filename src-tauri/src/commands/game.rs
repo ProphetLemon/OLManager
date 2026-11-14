@@ -4,7 +4,7 @@ use olm_core::domain::player::Player;
 use olm_core::domain::staff::Staff;
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::{Team, TeamKind};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use tauri::State;
 
@@ -755,6 +755,24 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
     // before rosters and wages are seeded, so the budgets are visible to both.
     let filled = olm_core::team_overrides::bundled().apply_all(&mut all_teams);
     info!("[game] team overrides filled {} teams", filled);
+
+    // Teams still without reputation or money (most second-tier clubs) get defaults taken
+    // from reviewed teams of their tier; reviewed values are never touched.
+    let competition_tiers: HashMap<String, u8> = manifests
+        .iter()
+        .filter_map(|m| m.tier.map(|tier| (m.id.clone(), tier)))
+        .collect();
+    let derived = olm_core::team_metadata_defaults::derive_missing_team_metadata(
+        &mut all_teams,
+        &competition_tiers,
+    );
+    info!(
+        "[game] derived reputation or money for {} teams without reviewed values",
+        derived.len()
+    );
+    for team in &derived {
+        log::debug!("[game] derived {} for {}", team.fields.join(", "), team.team_id);
+    }
 
     // Resolve ids shipped twice (stale duplicate competitions), then fix known field errors.
     let (mut all_players, dropped_duplicates) = world_catalog::dedupe_players(tagged_players);
@@ -2698,6 +2716,92 @@ mod tests {
                     team.wage_budget
                 );
             }
+        }
+
+        /// The league clubs of the bundled catalog: every team of a live (active, not
+        /// legacy) competition. Academy farm teams are created later and have no budgets.
+        fn catalog_league_teams(game: &Game) -> Vec<&Team> {
+            let live: HashSet<String> = olm_core::competitions::scan_competitions(
+                &data_base().join("competitions"),
+            )
+            .into_iter()
+            .filter(|m| m.active && !m.legacy)
+            .map(|m| m.id)
+            .collect();
+            game.teams
+                .iter()
+                .filter(|t| t.competition_id.as_ref().is_some_and(|c| live.contains(c)))
+                .collect()
+        }
+
+        /// The TCL ships reputation, finance and budgets for its eight clubs, so they are
+        /// "reviewed" and never replaced by a derived default, yet the numbers contradict
+        /// the same files: a wage budget of 15k to 40k against authored wages and staff of
+        /// 45k to 126k a year, and a 100k treasury that facility upkeep drains within a
+        /// season. These lists pin exactly which teams break the invariants below, so a
+        /// data fix (or a decision to treat the TCL as unreviewed) has to edit them.
+        const TCL_REVIEWED_BUDGET_BELOW_ITS_WAGES: [&str; 6] = [
+            "tcl-dark-passage",
+            "tcl-ozarox-esports",
+            "tcl-pcific-esports",
+            "tcl-su-esports",
+            "tcl-misa-esports",
+            "tcl-team-phoenix",
+        ];
+        const TCL_REVIEWED_FINANCE_BELOW_ITS_COSTS: [&str; 1] = ["tcl-team-phoenix"];
+
+        #[test]
+        fn every_league_team_has_reputation_and_budgets() {
+            let (game, _, _, _) = new_game();
+            let teams = catalog_league_teams(&game);
+            assert!(teams.len() > 200, "the catalog holds {} league teams", teams.len());
+            for team in teams {
+                assert!(team.reputation > 0, "{} has no reputation", team.id);
+                assert!(team.finance > 0, "{} has no finance", team.id);
+                assert!(team.wage_budget > 0, "{} has no wage budget", team.id);
+                assert!(team.transfer_budget > 0, "{} has no transfer budget", team.id);
+            }
+        }
+
+        #[test]
+        fn every_league_team_pays_its_players_inside_its_wage_budget() {
+            let (game, _, _, _) = new_game();
+            let mut over_budget = Vec::new();
+            for team in catalog_league_teams(&game) {
+                let roster: Vec<_> = game
+                    .players
+                    .iter()
+                    .filter(|p| p.team_id.as_deref() == Some(team.id.as_str()))
+                    .collect();
+                assert!(!roster.is_empty(), "{} has a roster", team.id);
+                assert!(roster.iter().all(|p| p.wage > 0), "{} has an unpaid player", team.id);
+                let bill = annual_bill(&game, &team.id);
+                if bill > team.wage_budget {
+                    over_budget.push(format!("{} bill {bill} budget {}", team.id, team.wage_budget));
+                }
+            }
+            let over_budget: Vec<&str> = over_budget.iter().map(|line| line.split(' ').next().unwrap_or("")).collect();
+            assert_eq!(over_budget, TCL_REVIEWED_BUDGET_BELOW_ITS_WAGES);
+        }
+
+        #[test]
+        fn no_league_team_is_insolvent_after_a_season_of_monthly_finances() {
+            let (mut game, _, _, _) = new_game();
+            let ids: Vec<String> = catalog_league_teams(&game).iter().map(|t| t.id.clone()).collect();
+            let first_of_month = game.clock.current_date;
+            for month in 0..12u32 {
+                game.clock.current_date = first_of_month
+                    .checked_add_months(chrono::Months::new(month))
+                    .expect("date in range");
+                olm_core::finances::process_monthly_finances(&mut game);
+            }
+            let insolvent: Vec<&str> = ids
+                .iter()
+                .filter_map(|id| game.teams.iter().find(|t| &t.id == id))
+                .filter(|t| t.finance < 0)
+                .map(|t| t.id.as_str())
+                .collect();
+            assert_eq!(insolvent, TCL_REVIEWED_FINANCE_BELOW_ITS_COSTS);
         }
 
         #[test]

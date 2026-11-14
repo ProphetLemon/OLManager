@@ -8,6 +8,7 @@ pub mod clock;
 pub mod club;
 pub mod commands;
 pub mod competition_overrides;
+pub mod team_metadata_defaults;
 pub mod team_overrides;
 pub mod competitions;
 pub mod contract_wage_policy;
