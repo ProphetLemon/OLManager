@@ -1,4 +1,5 @@
 pub mod academy;
+pub mod academy_link;
 pub mod ai_player_agent;
 pub mod ai_renewals;
 pub mod ai_rotation;
