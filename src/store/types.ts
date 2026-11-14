@@ -138,6 +138,7 @@ export interface AcademyAcquisitionOptionsResponseData {
   parent_team_id: string;
   acquisition_allowed: boolean;
   blocked_reason: string | null;
+  region?: string | null;
   options: AcademyAcquisitionOptionData[];
 }
 

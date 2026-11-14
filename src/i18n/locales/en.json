@@ -1040,6 +1040,22 @@
     "academyCardTitle": "Academy",
     "acquisitionLoading": "Loading academy acquisition options...",
     "acquisitionIntro": "You do not have a linked academy yet. Choose an ERL team to acquire it.",
+    "acquisitionIntroRegion": "Choose a tier-2 team (region: {{region}}) to fund as your academy.",
+    "blocked": {
+      "notTopLeague": "Only clubs in a top-tier league can fund an academy.",
+      "noRegionCandidates": "No free tier-2 teams are available for an academy (region: {{region}}).",
+      "insufficientFunds": "Not enough funds for any eligible academy.",
+      "notMainTeam": "Only a main team can fund an academy."
+    },
+    "regions": {
+      "EMEA": "Europe, Middle East and Africa",
+      "KR": "South Korea",
+      "CN": "China",
+      "NA": "North America",
+      "BR": "Brazil",
+      "LATAM": "Latin America",
+      "APAC": "Asia-Pacific"
+    },
     "acquisitionNoOptions": "No academy options are available for your team right now.",
     "placeholderCustomName": "Custom name (optional)",
     "placeholderCustomShortName": "Custom short name (optional)",

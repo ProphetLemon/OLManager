@@ -643,6 +643,22 @@
     "academyCardTitle": "Accademia",
     "acquisitionLoading": "Caricamento delle opzioni di acquisizione dell'accademia...",
     "acquisitionIntro": "Non hai ancora un'accademia collegata. Scegli una squadra ERL per acquisirla.",
+    "acquisitionIntroRegion": "Scegli una squadra di secondo livello (regione: {{region}}) da finanziare come accademia.",
+    "blocked": {
+      "notTopLeague": "Solo i club di una lega di primo livello possono finanziare un'accademia.",
+      "noRegionCandidates": "Nessuna squadra libera di secondo livello è disponibile per un'accademia (regione: {{region}}).",
+      "insufficientFunds": "Fondi insufficienti per qualsiasi accademia idonea.",
+      "notMainTeam": "Solo una squadra principale può finanziare un'accademia."
+    },
+    "regions": {
+      "EMEA": "Europa, Medio Oriente e Africa",
+      "KR": "Corea del Sud",
+      "CN": "Cina",
+      "NA": "Nord America",
+      "BR": "Brasile",
+      "LATAM": "America Latina",
+      "APAC": "Asia-Pacifico"
+    },
     "acquisitionNoOptions": "Al momento non ci sono opzioni di accademia disponibili per la tua squadra.",
     "placeholderCustomName": "Nome personalizzato (facoltativo)",
     "placeholderCustomShortName": "Nome breve personalizzato (facoltativo)",

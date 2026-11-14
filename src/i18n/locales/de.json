@@ -807,6 +807,22 @@
     "academyCardTitle": "Akademie",
     "acquisitionLoading": "Optionen zur Akademie-Übernahme werden geladen...",
     "acquisitionIntro": "Du hast noch keine verknüpfte Akademie. Wähle ein ERL-Team, um sie zu übernehmen.",
+    "acquisitionIntroRegion": "Wähle ein Team der zweiten Ebene (Region: {{region}}), um es als Akademie zu finanzieren.",
+    "blocked": {
+      "notTopLeague": "Nur Vereine einer erstklassigen Liga können eine Akademie finanzieren.",
+      "noRegionCandidates": "Für eine Akademie sind keine freien Teams der zweiten Ebene verfügbar (Region: {{region}}).",
+      "insufficientFunds": "Das Budget reicht für keine infrage kommende Akademie.",
+      "notMainTeam": "Nur ein Hauptteam kann eine Akademie finanzieren."
+    },
+    "regions": {
+      "EMEA": "Europa, Naher Osten und Afrika",
+      "KR": "Südkorea",
+      "CN": "Festlandchina",
+      "NA": "Nordamerika",
+      "BR": "Brasilien",
+      "LATAM": "Lateinamerika",
+      "APAC": "Asien-Pazifik"
+    },
     "acquisitionNoOptions": "Für dein Team sind derzeit keine Akademie-Optionen verfügbar.",
     "placeholderCustomName": "Eigener Name (optional)",
     "placeholderCustomShortName": "Eigener Kurzname (optional)",

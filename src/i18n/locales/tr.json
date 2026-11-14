@@ -807,6 +807,22 @@
     "academyCardTitle": "Akademi",
     "acquisitionLoading": "Akademi satın alma seçenekleri yükleniyor...",
     "acquisitionIntro": "Henüz bağlı bir akademiniz yok. Bir akademi edinmek için bir ERL takımı seçin.",
+    "acquisitionIntroRegion": "Akademi olarak finanse etmek için ikinci seviye bir takım seçin (bölge: {{region}}).",
+    "blocked": {
+      "notTopLeague": "Yalnızca birinci seviye bir ligdeki kulüpler akademi finanse edebilir.",
+      "noRegionCandidates": "Akademi için boşta ikinci seviye takım yok (bölge: {{region}}).",
+      "insufficientFunds": "Uygun hiçbir akademi için yeterli bütçe yok.",
+      "notMainTeam": "Yalnızca ana takım bir akademi finanse edebilir."
+    },
+    "regions": {
+      "EMEA": "Avrupa, Orta Doğu ve Afrika",
+      "KR": "Güney Kore",
+      "CN": "Çin",
+      "NA": "Kuzey Amerika",
+      "BR": "Brezilya",
+      "LATAM": "Latin Amerika",
+      "APAC": "Asya-Pasifik"
+    },
     "acquisitionNoOptions": "Şu anda takımınız için akademi seçeneği bulunmuyor.",
     "placeholderCustomName": "Özel isim (isteğe bağlı)",
     "placeholderCustomShortName": "Özel kısa isim (isteğe bağlı)",
