@@ -32,6 +32,17 @@ export function summarizePool(selection: PoolSelection): {
   staffByRegion: Map<string, number>;
   staffByLevel: Map<string, number>;
 };
+export interface RatingCounts {
+  stats: number;
+  tierDefault: number;
+}
+export function summarizeRatings(ops: { players: Array<{ op: Record<string, any> }>; staff: Array<{ op: Record<string, any> }> }): {
+  total: RatingCounts;
+  playersByTier: Map<string, RatingCounts>;
+  playersByRole: Map<string, RatingCounts>;
+  staffByTier: Map<string, RatingCounts>;
+  staffByRole: Map<string, RatingCounts>;
+};
 export function renderPoolSection(pool: {
   settings: { since: string; cap: number };
   inputs: PoolInputs;
@@ -39,4 +50,5 @@ export function renderPoolSection(pool: {
   limits: { players: number; staff: number; overlayBytes: number };
   bytes: number;
   probe: ProbeExplanation | null;
+  ops?: { players: Array<{ op: Record<string, any> }>; staff: Array<{ op: Record<string, any> }> } | null;
 }): string[];

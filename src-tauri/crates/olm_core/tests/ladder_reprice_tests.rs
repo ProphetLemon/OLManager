@@ -3,11 +3,17 @@
 
 mod common;
 
+use chrono::{TimeZone, Utc};
 use common::*;
+use olm_core::domain::league::StandingEntry;
 use olm_core::domain::team::{Sponsorship, Team};
+use olm_core::finances::process_monthly_finances;
 use olm_core::game::Game;
-use olm_core::ladder_reprice::reprice_moved_clubs;
+use olm_core::ladder_reprice::{RELEGATED_SPONSORSHIP_PERCENT, reprice_moved_clubs};
 use olm_core::season_rollover::advance_season;
+use olm_core::tier_sponsorship::{
+    TIER_1_SPONSORSHIP_VALUE, TIER_2_SPONSORSHIP_VALUE, TIER_SPONSORSHIP_MONTHS, tier_sponsorship,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Economy {
@@ -122,7 +128,10 @@ fn the_treasury_top_up_line_carries_a_translation_key() {
 
     let promoted = game.teams.iter().find(|t| t.id == "reg1").expect("team");
     let entry = promoted.financial_ledger.last().expect("ledger entry");
-    assert_eq!(entry.description_key.as_deref(), Some("be.ledger.promotionFunding"));
+    assert_eq!(
+        entry.description_key.as_deref(),
+        Some("be.ledger.promotionFunding")
+    );
     assert_eq!(entry.description, "Promotion funding");
 }
 
@@ -174,6 +183,7 @@ fn a_relegated_club_loses_a_fifth_of_its_sponsorship() {
                 base_value: 1_000_000,
                 remaining_months: 12,
                 bonus_criteria: vec![],
+                origin: Default::default(),
             });
         }
     }
@@ -192,6 +202,7 @@ fn sponsor(team: &mut Team, base_value: i64) {
         base_value,
         remaining_months: 12,
         bonus_criteria: vec![],
+        origin: Default::default(),
     });
 }
 
@@ -379,4 +390,55 @@ fn the_season_wrap_reprices_the_moved_clubs() {
         ),
         (650, 650)
     );
+}
+
+/// A relegated club's tier deal is cut to `RELEGATED_SPONSORSHIP_PERCENT` for the rest
+/// of its term; when it ends, the monthly renewal gives the tier-2 value.
+#[test]
+fn a_relegated_clubs_cut_tier_deal_is_renewed_at_the_new_tier_value() {
+    let mut game = after_swap("lec1");
+    // The swap also moves the club between the leagues' standings.
+    for league in &mut game.leagues {
+        match league.competition_id.as_deref() {
+            Some("lec") => league.standings.retain(|s| s.team_id != "lec4"),
+            Some("reg") => league
+                .standings
+                .push(StandingEntry::new("lec4".to_string())),
+            _ => {}
+        }
+    }
+    let relegated = game
+        .teams
+        .iter_mut()
+        .find(|t| t.id == "lec4")
+        .expect("team");
+    relegated.sponsorship = Some(tier_sponsorship("lec4", 1));
+    reprice(&mut game);
+
+    assert_eq!(
+        sponsorship_of(&game, "lec4"),
+        Some(TIER_1_SPONSORSHIP_VALUE * RELEGATED_SPONSORSHIP_PERCENT / 100)
+    );
+
+    let relegated = game
+        .teams
+        .iter_mut()
+        .find(|t| t.id == "lec4")
+        .expect("team");
+    relegated
+        .sponsorship
+        .as_mut()
+        .expect("deal")
+        .remaining_months = 1;
+    game.clock.current_date = Utc.with_ymd_and_hms(2025, 7, 1, 12, 0, 0).unwrap();
+    process_monthly_finances(&mut game);
+
+    let renewed = game
+        .teams
+        .iter()
+        .find(|t| t.id == "lec4")
+        .and_then(|t| t.sponsorship.as_ref())
+        .expect("a renewed deal");
+    assert_eq!(renewed.base_value, TIER_2_SPONSORSHIP_VALUE);
+    assert_eq!(renewed.remaining_months, TIER_SPONSORSHIP_MONTHS);
 }

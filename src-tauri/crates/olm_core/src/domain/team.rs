@@ -855,6 +855,20 @@ pub enum SponsorshipBonusCriterion {
     },
 }
 
+/// Where a sponsorship deal came from. Only `Offer` deals send inbox mail (payout,
+/// bonus, expiry); `Tier` deals are the silent per-tier income every scheduled club
+/// holds, shown in the ledger and on the finance card like wages.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "typescript", derive(TS))]
+#[cfg_attr(feature = "typescript", ts(export))]
+pub enum SponsorshipOrigin {
+    /// A deal the user accepted from a random offer. Also what saves without the field load as.
+    #[default]
+    Offer,
+    /// The deal sized by league tier (see `tier_sponsorship`).
+    Tier,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 #[cfg_attr(feature = "typescript", derive(TS))]
 #[cfg_attr(feature = "typescript", ts(export))]
@@ -865,6 +879,8 @@ pub struct Sponsorship {
     pub base_value: i64,
     pub remaining_months: u32,
     pub bonus_criteria: Vec<SponsorshipBonusCriterion>,
+    #[serde(default)]
+    pub origin: SponsorshipOrigin,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

@@ -25,11 +25,14 @@ type BackendAcademyAcquisitionOptionsResponse = {
   parent_team_id: string;
   acquisition_allowed: boolean;
   blocked_reason?: string | null;
+  /** Region code the options are limited to (e.g. "EMEA"); null when blocked by tier. */
+  region?: string | null;
   options?: BackendAcademyAcquisitionOption[];
 };
 
 function normalizeAcademyOption(
   option: BackendAcademyAcquisitionOption,
+  region: string | null,
 ): AcademyAcquisitionOptionData {
   return {
     source_team_id: option.source_team_id,
@@ -39,7 +42,7 @@ function normalizeAcademyOption(
     erl_league_id: option.erl_league_id,
     league_name: option.erl_league_name,
     country: option.country_code,
-    region: "EMEA",
+    region: region ?? "",
     assignment_rule: option.assignment_rule,
     fallback_reason: option.fallback_reason ?? null,
     reputation: option.reputation,
@@ -62,8 +65,9 @@ function normalizeAcademyAcquisitionOptionsResponse(
     parent_team_id: response.parent_team_id,
     acquisition_allowed: Boolean(response.acquisition_allowed),
     blocked_reason: response.blocked_reason ?? null,
+    region: response.region ?? null,
     options: Array.isArray(response.options)
-      ? response.options.map(normalizeAcademyOption)
+      ? response.options.map((option) => normalizeAcademyOption(option, response.region ?? null))
       : [],
   };
 }

@@ -178,6 +178,10 @@ pub fn is_season_complete(game: &Game) -> bool {
     game.active_league().is_some_and(is_league_complete)
 }
 
+/// Participation payment for a final position past the prize table; it stays below the
+/// last listed position so finishing lower never pays more.
+const PRIZE_MONEY_PAST_TABLE: i64 = 30_000;
+
 const PRIZE_MONEY_BY_POSITION: [i64; 10] = [
     800_000, 500_000, 350_000, 250_000, 180_000, 140_000, 110_000, 90_000, 70_000, 50_000,
 ];
@@ -199,7 +203,7 @@ fn prize_money_for_position(position: u32) -> i64 {
     PRIZE_MONEY_BY_POSITION
         .get(position.saturating_sub(1) as usize)
         .copied()
-        .unwrap_or(150_000)
+        .unwrap_or(PRIZE_MONEY_PAST_TABLE)
 }
 
 /// Share of the treasury that becomes the yearly wage budget after a settlement.
@@ -1158,6 +1162,18 @@ fn renew_contracts_for_retained_players(game: &mut Game) {
 mod tests {
     use super::*;
     use crate::clock::GameClock;
+
+    #[test]
+    fn prize_money_past_the_table_pays_less_than_tenth_place() {
+        assert!(prize_money_for_position(11) < prize_money_for_position(10));
+    }
+
+    #[test]
+    fn prize_money_past_the_table_is_a_flat_participation_payment() {
+        assert_eq!(prize_money_for_position(11), 30_000);
+        assert_eq!(prize_money_for_position(40), 30_000);
+    }
+
     use crate::generator::definitions::{CompetitionManifest, SeasonStart, SplitConfig};
 
     fn make_team(id: &str) -> crate::domain::team::Team {

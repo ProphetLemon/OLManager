@@ -8,7 +8,9 @@ use crate::domain::team::{
     TrainingFocus, TrainingIntensity, TrainingSchedule,
 };
 use crate::game::Game;
-use crate::potential::{calculate_lol_ovr, effective_potential_cap};
+use crate::potential::{
+    GAIN_TAPER_WINDOW, calculate_lol_ovr, effective_potential_cap, gain_headroom,
+};
 use crate::staff_effects::LolStaffEffects;
 use chrono::Datelike;
 use rand::SeedableRng;
@@ -1047,13 +1049,15 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
 
             // Apply LoL stat gains only when the player's current LoL OVR is below potential cap.
             let capped = is_lol_training_capped(player);
-            apply_focus_gains(&mut player.attributes, player_focus, gain, capped);
+            let ceiling = effective_potential_cap(player);
+            apply_focus_gains(&mut player.attributes, player_focus, gain, capped, ceiling);
             if let Some((focus, focus_mult)) = scrim_focus_gain_by_team.get(&plan.team_id) {
                 apply_scrim_plan_focus_gains(
                     &mut player.attributes,
                     focus,
                     gain * 1.9 * *focus_mult,
                     capped,
+                    ceiling,
                 );
             }
 
@@ -1115,11 +1119,7 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
         game.champion_patch.rng_seed,
         &week_seed,
     ));
-    crate::champions::apply_training_mastery_ticks(
-        game,
-        &mastery_training_ticks,
-        &mut mastery_rng,
-    );
+    crate::champions::apply_training_mastery_ticks(game, &mastery_training_ticks, &mut mastery_rng);
 
     if weekday_num == 6
         && let Some(manager_team_id) = game.manager.team_id.clone()
@@ -1194,14 +1194,22 @@ fn apply_fitness_change(fitness: &mut u8, focus: &TrainingFocus, intensity_mult:
     }
 }
 
-fn try_gain(current: &mut u8, gain: f64) {
+/// Chance multiplier for a training gain: the shared headroom rule, as a fraction.
+fn taper_factor(current: u8, ceiling: u8) -> f64 {
+    f64::from(gain_headroom(current, ceiling)) / f64::from(GAIN_TAPER_WINDOW)
+}
+
+/// Rolls a +1 on `current` with probability `gain`, tapered by the headroom to
+/// `ceiling` (the player's effective potential cap). The roll is the one training
+/// already made, so the taper adds no RNG: it only lowers the chance.
+fn try_gain(current: &mut u8, gain: f64, ceiling: u8) {
     use rand::RngExt;
     if *current >= 99 {
         return;
     }
     let mut rng = rand::rng();
     let roll: f64 = rng.random_range(0.0..1.0);
-    if roll < gain {
+    if roll < gain * taper_factor(*current, ceiling) {
         *current = (*current + 1).min(99);
     }
 }
@@ -1214,6 +1222,7 @@ fn apply_focus_gains(
     focus: &TrainingFocus,
     gain: f64,
     capped: bool,
+    ceiling: u8,
 ) {
     if capped {
         return;
@@ -1231,37 +1240,37 @@ fn apply_focus_gains(
     // mental resilience -> stamina
     match focus {
         TrainingFocus::Scrims => {
-            try_gain(&mut attrs.consistency, gain);
-            try_gain(&mut attrs.teamfighting, gain);
-            try_gain(&mut attrs.discipline, gain * 0.85);
-            try_gain(&mut attrs.mental_resilience, gain * 0.65);
-            try_gain(&mut attrs.macro_play, gain * 0.55);
+            try_gain(&mut attrs.consistency, gain, ceiling);
+            try_gain(&mut attrs.teamfighting, gain, ceiling);
+            try_gain(&mut attrs.discipline, gain * 0.85, ceiling);
+            try_gain(&mut attrs.mental_resilience, gain * 0.65, ceiling);
+            try_gain(&mut attrs.macro_play, gain * 0.55, ceiling);
         }
         TrainingFocus::VODReview => {
-            try_gain(&mut attrs.macro_play, gain);
-            try_gain(&mut attrs.consistency, gain);
-            try_gain(&mut attrs.discipline, gain * 0.75);
-            try_gain(&mut attrs.shotcalling, gain * 0.6);
+            try_gain(&mut attrs.macro_play, gain, ceiling);
+            try_gain(&mut attrs.consistency, gain, ceiling);
+            try_gain(&mut attrs.discipline, gain * 0.75, ceiling);
+            try_gain(&mut attrs.shotcalling, gain * 0.6, ceiling);
         }
         TrainingFocus::IndividualCoaching => {
-            try_gain(&mut attrs.laning, gain);
-            try_gain(&mut attrs.mechanics, gain);
-            try_gain(&mut attrs.champion_pool, gain);
-            try_gain(&mut attrs.discipline, gain * 0.8);
-            try_gain(&mut attrs.teamfighting, gain * 0.4);
+            try_gain(&mut attrs.laning, gain, ceiling);
+            try_gain(&mut attrs.mechanics, gain, ceiling);
+            try_gain(&mut attrs.champion_pool, gain, ceiling);
+            try_gain(&mut attrs.discipline, gain * 0.8, ceiling);
+            try_gain(&mut attrs.teamfighting, gain * 0.4, ceiling);
         }
         TrainingFocus::ChampionPoolPractice => {
-            try_gain(&mut attrs.mechanics, gain);
-            try_gain(&mut attrs.champion_pool, gain);
-            try_gain(&mut attrs.macro_play, gain * 0.8);
-            try_gain(&mut attrs.laning, gain * 0.7);
-            try_gain(&mut attrs.consistency, gain * 0.65);
+            try_gain(&mut attrs.mechanics, gain, ceiling);
+            try_gain(&mut attrs.champion_pool, gain, ceiling);
+            try_gain(&mut attrs.macro_play, gain * 0.8, ceiling);
+            try_gain(&mut attrs.laning, gain * 0.7, ceiling);
+            try_gain(&mut attrs.consistency, gain * 0.65, ceiling);
         }
         TrainingFocus::MacroSystems => {
-            try_gain(&mut attrs.macro_play, gain);
-            try_gain(&mut attrs.consistency, gain);
-            try_gain(&mut attrs.teamfighting, gain * 0.8);
-            try_gain(&mut attrs.shotcalling, gain * 0.7);
+            try_gain(&mut attrs.macro_play, gain, ceiling);
+            try_gain(&mut attrs.consistency, gain, ceiling);
+            try_gain(&mut attrs.teamfighting, gain * 0.8, ceiling);
+            try_gain(&mut attrs.shotcalling, gain * 0.7, ceiling);
         }
         TrainingFocus::MentalResetRecovery => {
             // No attribute gains on recovery days
@@ -1274,6 +1283,7 @@ fn apply_scrim_plan_focus_gains(
     focus: &ScrimFocus,
     gain: f64,
     capped: bool,
+    ceiling: u8,
 ) {
     if capped {
         return;
@@ -1281,34 +1291,34 @@ fn apply_scrim_plan_focus_gains(
 
     match focus {
         ScrimFocus::DraftPrep => {
-            try_gain(&mut attrs.macro_play, gain);
-            try_gain(&mut attrs.consistency, gain * 0.9);
-            try_gain(&mut attrs.shotcalling, gain * 0.7);
+            try_gain(&mut attrs.macro_play, gain, ceiling);
+            try_gain(&mut attrs.consistency, gain * 0.9, ceiling);
+            try_gain(&mut attrs.shotcalling, gain * 0.7, ceiling);
         }
         ScrimFocus::ChampionPool => {
-            try_gain(&mut attrs.mechanics, gain);
-            try_gain(&mut attrs.champion_pool, gain);
-            try_gain(&mut attrs.laning, gain * 0.7);
+            try_gain(&mut attrs.mechanics, gain, ceiling);
+            try_gain(&mut attrs.champion_pool, gain, ceiling);
+            try_gain(&mut attrs.laning, gain * 0.7, ceiling);
         }
         ScrimFocus::EarlyGame => {
-            try_gain(&mut attrs.laning, gain);
-            try_gain(&mut attrs.consistency, gain * 0.85);
-            try_gain(&mut attrs.macro_play, gain * 0.75);
+            try_gain(&mut attrs.laning, gain, ceiling);
+            try_gain(&mut attrs.consistency, gain * 0.85, ceiling);
+            try_gain(&mut attrs.macro_play, gain * 0.75, ceiling);
         }
         ScrimFocus::Teamfighting => {
-            try_gain(&mut attrs.teamfighting, gain);
-            try_gain(&mut attrs.discipline, gain * 0.9);
-            try_gain(&mut attrs.consistency, gain * 0.75);
+            try_gain(&mut attrs.teamfighting, gain, ceiling);
+            try_gain(&mut attrs.discipline, gain * 0.9, ceiling);
+            try_gain(&mut attrs.consistency, gain * 0.75, ceiling);
         }
         ScrimFocus::Macro => {
-            try_gain(&mut attrs.macro_play, gain);
-            try_gain(&mut attrs.consistency, gain);
-            try_gain(&mut attrs.teamfighting, gain * 0.7);
+            try_gain(&mut attrs.macro_play, gain, ceiling);
+            try_gain(&mut attrs.consistency, gain, ceiling);
+            try_gain(&mut attrs.teamfighting, gain * 0.7, ceiling);
         }
         ScrimFocus::Mental => {
-            try_gain(&mut attrs.discipline, gain);
-            try_gain(&mut attrs.mental_resilience, gain * 0.85);
-            try_gain(&mut attrs.shotcalling, gain * 0.65);
+            try_gain(&mut attrs.discipline, gain, ceiling);
+            try_gain(&mut attrs.mental_resilience, gain * 0.85, ceiling);
+            try_gain(&mut attrs.shotcalling, gain * 0.65, ceiling);
         }
     }
 }
@@ -1330,11 +1340,11 @@ pub fn apply_post_scrim_decision(
             .scrim_reports
             .iter_mut()
             .find(|r| r.date == today && r.slot_index == slot_index && r.post_decision.is_none())
-        {
-            let d = parse_post_scrim_decision(decision)?;
-            report.post_decision = Some(d);
-            return Ok(());
-        }
+    {
+        let d = parse_post_scrim_decision(decision)?;
+        report.post_decision = Some(d);
+        return Ok(());
+    }
     Err("No unresolved scrim report found for this slot".to_string())
 }
 
@@ -1629,9 +1639,12 @@ pub fn estimate_team_lol_ovr(game: &crate::game::Game, team_id: &str) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use super::{apply_focus_gains, estimate_age, is_lol_training_capped};
+    use super::{
+        apply_focus_gains, apply_scrim_plan_focus_gains, estimate_age, is_lol_training_capped,
+        taper_factor,
+    };
     use crate::domain::player::{LolRole, Player, PlayerAttributes};
-    use crate::domain::team::TrainingFocus;
+    use crate::domain::team::{ScrimFocus, TrainingFocus};
 
     #[test]
     fn estimated_age_follows_the_game_year() {
@@ -1674,9 +1687,57 @@ mod tests {
             &TrainingFocus::IndividualCoaching,
             1.0,
             true,
+            90,
         );
         assert_eq!(player.attributes.mechanics, before.mechanics);
         assert_eq!(player.attributes.laning, before.laning);
         assert_eq!(player.attributes.champion_pool, before.champion_pool);
+    }
+
+    /// How many of `trials` independent Scrims days raise `consistency` from `level`,
+    /// when the cap is `ceiling` and the base gain chance is 1.0.
+    fn consistency_gains(level: u8, ceiling: u8, trials: u32) -> u32 {
+        (0..trials)
+            .filter(|_| {
+                let mut a = attrs(level);
+                apply_focus_gains(&mut a, &TrainingFocus::Scrims, 1.0, false, ceiling);
+                a.consistency > level
+            })
+            .count() as u32
+    }
+
+    #[test]
+    fn attribute_at_the_cap_should_gain_nothing_from_training() {
+        assert_eq!(consistency_gains(90, 90, 500), 0);
+    }
+
+    #[test]
+    fn attribute_with_five_points_of_headroom_should_gain_about_half_as_often() {
+        let hits = consistency_gains(85, 90, 4000);
+        assert!((1800..=2200).contains(&hits), "hits {hits} of 4000");
+    }
+
+    #[test]
+    fn attribute_with_ten_or_more_points_of_headroom_should_gain_unchanged() {
+        assert_eq!(consistency_gains(80, 90, 500), 500);
+        assert_eq!(consistency_gains(60, 90, 500), 500);
+    }
+
+    #[test]
+    fn scrim_plan_gain_should_vanish_at_the_cap_and_pass_through_far_below() {
+        let mut at_cap = attrs(90);
+        apply_scrim_plan_focus_gains(&mut at_cap, &ScrimFocus::Macro, 1.0, false, 90);
+        assert_eq!(at_cap.consistency, 90);
+        let mut far = attrs(70);
+        apply_scrim_plan_focus_gains(&mut far, &ScrimFocus::Macro, 1.0, false, 90);
+        assert_eq!(far.consistency, 71);
+    }
+
+    #[test]
+    fn taper_factor_should_be_the_headroom_fraction() {
+        assert_eq!(taper_factor(90, 90), 0.0);
+        assert_eq!(taper_factor(85, 90), 0.5);
+        assert_eq!(taper_factor(70, 90), 1.0);
+        assert_eq!(taper_factor(95, 90), 0.0);
     }
 }

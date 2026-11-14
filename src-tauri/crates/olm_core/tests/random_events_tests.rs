@@ -574,6 +574,10 @@ fn apply_sponsor_accept_adds_finance() {
         .expect("accepted sponsor should create active sponsorship state");
     assert_eq!(sponsorship.base_value, 100_000);
     assert_eq!(sponsorship.remaining_months, 3);
+    assert_eq!(
+        sponsorship.origin,
+        olm_core::domain::team::SponsorshipOrigin::Offer
+    );
     assert_eq!(sponsorship.sponsor_name, "Test Sponsor");
     assert!(matches!(
         sponsorship.bonus_criteria.as_slice(),

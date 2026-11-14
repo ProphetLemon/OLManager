@@ -315,21 +315,55 @@ fn competition_summary(
     Some(CompetitionSummary {
         id: manifest.id,
         name: manifest.name,
+        full_name: manifest.full_name,
         region: manifest.region,
         logo: manifest.logo,
         tier: manifest.tier.unwrap_or(0),
         legacy: manifest.legacy,
         active: manifest.active,
-        team_count: manifest.schedule.team_count,
+        // The roster is the truth: the manifest value drifts from the teams file.
+        team_count: team_summaries.len() as u32,
         custom_team_allowed,
         teams: team_summaries,
     })
 }
 
+/// Replace each picker team's money, reputation and player count with what the game
+/// starts it with, read from an assembled world (`teams` and `players` of a new game).
+///
+/// The raw team files lack money and reputation for most second-tier clubs and know
+/// nothing of the roster overlay or the roster fill, so the picker would disagree with
+/// the career. Teams the world does not hold keep their raw values.
+pub fn apply_start_values(data: &mut LeagueSelectionData, teams: &[Team], players: &[Player]) {
+    let mut roster_sizes: HashMap<&str, usize> = HashMap::new();
+    for team_id in players.iter().filter_map(|player| player.team_id.as_deref()) {
+        *roster_sizes.entry(team_id).or_default() += 1;
+    }
+    let world_teams: HashMap<&str, &Team> =
+        teams.iter().map(|team| (team.id.as_str(), team)).collect();
+
+    for summary in data
+        .competitions
+        .iter_mut()
+        .flat_map(|competition| competition.teams.iter_mut())
+    {
+        let Some(team) = world_teams.get(summary.id.as_str()) else {
+            continue;
+        };
+        summary.finance = Some(team.finance);
+        summary.reputation = Some(team.reputation);
+        summary.player_count = Some(roster_sizes.get(summary.id.as_str()).copied().unwrap_or(0));
+    }
+}
+
 /// A competition is offered at team selection when it is active, not legacy,
+/// is not a stale copy of a live competition (a new game builds no league or teams for it)
 /// and has at least one split to play (so regional leagues without a schedule stay hidden).
 pub(crate) fn is_selectable_competition(manifest: &CompetitionManifest) -> bool {
-    manifest.active && !manifest.legacy && !manifest.schedule.splits.is_empty()
+    manifest.active
+        && !manifest.legacy
+        && !crate::world_catalog::is_stale_duplicate_competition(&manifest.id)
+        && !manifest.schedule.splits.is_empty()
 }
 
 /// Build lightweight league selection metadata from all competition manifests.
@@ -584,7 +618,8 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         write_competition(dir.path(), "lec", 1, false, true);
         write_competition(dir.path(), "les", 2, false, true);
-        write_competition(dir.path(), "lfl", 2, false, false);
+        // Not a bundled override target: the real regional leagues now ship a schedule.
+        write_competition(dir.path(), "unscheduled", 2, false, false);
         write_competition(dir.path(), "old", 1, true, true);
 
         let data = build_league_selection(dir.path());
@@ -614,6 +649,90 @@ mod tests {
     }
 
     #[test]
+    fn league_selection_carries_the_manifest_full_name() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_competition(dir.path(), "lckcl", 2, false, true);
+        write_competition(dir.path(), "plain", 2, false, true);
+        let manifest_path = dir.path().join("competitions/lckcl/manifest.json");
+        let json = std::fs::read_to_string(&manifest_path).expect("read manifest");
+        let json = json.replacen(
+            "\"name\": \"lckcl\",",
+            "\"name\": \"lckcl\", \"full_name\": \"LCK Challenger League Series\",",
+            1,
+        );
+        std::fs::write(&manifest_path, json).expect("write manifest");
+
+        let data = build_league_selection(dir.path());
+        let full_name = |id: &str| {
+            data.competitions
+                .iter()
+                .find(|c| c.id == id)
+                .map(|c| c.full_name.clone())
+        };
+
+        assert_eq!(
+            full_name("lckcl"),
+            Some(Some("LCK Challenger League Series".to_string()))
+        );
+        assert_eq!(full_name("plain"), Some(None));
+    }
+
+    #[test]
+    fn start_values_replace_the_raw_ones_and_leave_unknown_teams_alone() {
+        use crate::domain::player::PlayerAttributes;
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_competition(dir.path(), "les", 2, false, true);
+        let new_team = |id: &str| {
+            Team::new(
+                id.to_string(),
+                id.to_string(),
+                id.to_string(),
+                "ES".to_string(),
+                "X".to_string(),
+                "S".to_string(),
+                1,
+            )
+        };
+        let file = TeamDataFile {
+            name: None,
+            description: None,
+            competition_id: None,
+            teams: vec![new_team("a"), new_team("b")],
+        };
+        std::fs::write(
+            dir.path().join("teams/les.json"),
+            serde_json::to_string(&file).expect("teams json"),
+        )
+        .expect("teams");
+        let mut data = build_league_selection(dir.path());
+        let mut world_team = new_team("les-a");
+        world_team.finance = 2_000_000;
+        world_team.reputation = 40;
+        let player = |id: &str| {
+            let mut p = Player::new(
+                id.to_string(),
+                id.to_string(),
+                id.to_string(),
+                "2000-01-01".to_string(),
+                "ES".to_string(),
+                crate::domain::stats::LolRole::Mid,
+                PlayerAttributes::default(),
+            );
+            p.team_id = Some("les-a".to_string());
+            p
+        };
+
+        apply_start_values(&mut data, &[world_team], &[player("p1"), player("p2")]);
+
+        let teams = &data.competitions[0].teams;
+        assert_eq!(
+            (teams[0].finance, teams[0].reputation, teams[0].player_count),
+            (Some(2_000_000), Some(40), Some(2))
+        );
+        assert_eq!(teams[1].player_count, None, "a team the world lacks keeps its raw values");
+    }
+
+    #[test]
     fn league_selection_hides_stale_competitions_without_a_teams_file() {
         let dir = tempfile::tempdir().expect("tempdir");
         write_competition(dir.path(), "lec", 1, false, true);
@@ -624,6 +743,46 @@ mod tests {
         let ids: Vec<_> = data.competitions.iter().map(|c| c.id.as_str()).collect();
 
         assert_eq!(ids, vec!["lec"]);
+    }
+
+    #[test]
+    fn league_selection_hides_stale_duplicate_competitions() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_competition(dir.path(), "lckcl", 2, false, true);
+        write_competition(dir.path(), "lck-cl", 2, false, true);
+        write_competition(dir.path(), "prime_league", 2, false, true);
+
+        let data = build_league_selection(dir.path());
+        let ids: Vec<_> = data.competitions.iter().map(|c| c.id.as_str()).collect();
+
+        assert_eq!(ids, vec!["lckcl"]);
+    }
+
+    #[test]
+    fn league_selection_counts_teams_from_the_roster_not_the_manifest() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_competition(dir.path(), "les", 2, false, true);
+        // The manifest claims 10 teams (`write_competition` writes 0 and the shipped
+        // manifests drift the same way); the teams file holds three.
+        let manifest_path = dir.path().join("competitions").join("les").join("manifest.json");
+        let manifest = std::fs::read_to_string(&manifest_path).expect("manifest");
+        std::fs::write(&manifest_path, manifest.replace(r#""team_count": 0"#, r#""team_count": 10"#))
+            .expect("manifest");
+        let team = |n: u8| {
+            format!(
+                r#"{{"id": "t{n}", "name": "T{n}", "short_name": "T{n}", "country": "ES", "city": "Madrid", "manager_id": null}}"#
+            )
+        };
+        std::fs::write(
+            dir.path().join("teams").join("les.json"),
+            format!(r#"{{"teams": [{}, {}, {}]}}"#, team(1), team(2), team(3)),
+        )
+        .expect("teams file");
+
+        let data = build_league_selection(dir.path());
+        let les = data.competitions.iter().find(|c| c.id == "les").expect("les offered");
+
+        assert_eq!(les.team_count, 3);
     }
 
     fn write_staff_file(path: &std::path::Path) {

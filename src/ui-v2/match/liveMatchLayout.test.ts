@@ -34,18 +34,29 @@ describe("the screen has no script-decided layout", () => {
 });
 
 describe("reading order", () => {
-  it("writes the areas in the order a person reads them: bar, map, feed, controls, blue cards, red cards", () => {
-    const order = ["live-area-bar", "live-area-map", "live-area-dock", "live-area-ctl", "live-area-blue", "live-area-red"].map((name) =>
-      screen.indexOf(`"${name}`),
-    );
+  it("writes the areas in the order a person reads them: bar, lanes, map, fight board, away, caption and feed, controls, then each team's band, cards and timers", () => {
+    const order = [
+      '"live-area-bar"',
+      '"live-area-lanes"',
+      '"live-area-map"',
+      '"live-area-fight"',
+      '"live-area-away"',
+      '"live-area-dock"',
+      '"live-area-ctl"',
+      'renderBand("blue"',
+      '"live-area-blue scrollbar-v2"',
+      '"live-area-rail"',
+      'renderBand("red"',
+      '"live-area-red scrollbar-v2"',
+    ].map((marker) => screen.lastIndexOf(marker));
     expect(order.every((at) => at > 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
   it("keeps the map first on every width, and the cards after the controls on a phone", () => {
     const phone = css.slice(atRuleStart("@container live (max-width: 719px)"));
-    const areas = [...phone.slice(phone.indexOf("grid-template-areas")).matchAll(/"(\w+)"/g)].map((match) => match[1]).slice(0, 6);
-    expect(areas).toEqual(["bar", "map", "dock", "ctl", "blue", "red"]);
+    const areas = [...phone.slice(phone.indexOf("grid-template-areas")).matchAll(/"(\w+)"/g)].map((match) => match[1]).slice(0, 12);
+    expect(areas).toEqual(["bar", "lanes", "map", "fight", "away", "dock", "ctl", "bband", "blue", "rail", "rband", "red"]);
   });
 });
 
@@ -58,16 +69,26 @@ describe("no scroll at 1280x800", () => {
     expect(css).not.toMatch(/calc\(100vh/);
   });
 
-  it("never lets the map pass 660 px or fall under the smallest readable size", () => {
-    const side = /--map-side:\s*min\(([^;]*)\);/.exec(ruleBody(".live-shell"))?.[1] ?? "";
-    expect(side).toContain("41.25rem");
-    expect(side).toContain("20rem");
+  it("never lets the map pass 712 px or fall under the smallest readable size", () => {
+    const side = /--map-side:\s*max\(([^;]*)\);/.exec(ruleBody(".live-shell"))?.[1] ?? "";
+    expect(side).toContain("44.5rem");
+    expect(side).toMatch(/^\s*20rem,/);
   });
 
-  it("counts the taller bar of narrow windows in the room it takes off the map", () => {
+  it("also caps the map by the width, so each card column keeps the 21rem the wide card needs", () => {
+    const side = /--map-side:\s*max\(([^;]*)\);/.exec(ruleBody(".live-shell"))?.[1] ?? "";
+    expect(side).toMatch(/100cqw[^,]*--live-col-min/);
+    expect(ruleBody(".live-match")).toMatch(/--live-col-min:\s*21rem/);
+    // The `side` container turns the card's cooldowns into a second line, but only below 19rem (304px):
+    // the narrowest side-by-side column (21rem) keeps items and cooldowns on one line (see cardColumns.guard).
+    expect(css).toContain("@container side (max-width: 19rem)");
+    expect(css).not.toContain("@container side (max-width: 21rem)");
+  });
+
+  it("counts the two-row bar, the default at every width, in the room it takes off the map", () => {
     expect(ruleBody(".live-shell")).toMatch(/--live-rows:[^;]*var\(--live-bar\)/);
-    const tall = css.slice(atRuleStart("@container live (max-width: 1539px)"));
-    expect(tall.slice(0, 120)).toContain("--live-bar: 4.75rem");
+    expect(ruleBody(".live-match")).toMatch(/--live-bar:\s*4\.75rem/);
+    expect(css).not.toContain("@container live (max-width: 1539px)");
   });
 });
 
@@ -78,6 +99,16 @@ describe("the score bar fits at 1280 and 1440", () => {
     expect(body).toMatch(/\.arena-bar-side\s*\{[^}]*flex-wrap:\s*wrap/);
     expect(body).toMatch(/\.arena-bar-stats\s*\{[^}]*flex:\s*1 0 100%/);
     expect(ruleBody(".arena-bar-stats")).toMatch(/display:\s*contents/);
+  });
+
+  it("draws the high-contrast underline of a side outside its box, in the bar's bottom padding, not over the stats row (T13 D3)", () => {
+    const hc = ruleBody(':root[data-contrast="high"] .arena-bar-side');
+    expect(hc).not.toMatch(/inset/);
+    const shadow = /box-shadow:\s*0\s+([\d.]+)rem\s+0\s+var\(--team-color\)/.exec(hc);
+    expect(shadow).not.toBeNull();
+    // The bar pads its content by 0.25rem below, which is all the line may use.
+    expect(ruleBody(".arena-bar")).toMatch(/padding:\s*0\.25rem\s/);
+    expect(Number(shadow![1])).toBeLessThanOrEqual(0.25);
   });
 });
 
@@ -105,5 +136,66 @@ describe("nothing hidden can widen the page", () => {
   it("keeps the feed list and both card columns clipping what they hold", () => {
     expect(ruleBody(".arena-tk-list")).toMatch(/overflow-y:\s*auto/);
     expect(ruleBody(".live-area-blue,\n.live-area-red")).toMatch(/overflow-y:\s*auto/);
+  });
+});
+
+describe("the stage: a band, the cards and a low module in each column, and the map across all three", () => {
+  const areas = (from = 0) => [...css.slice(from).slice(css.slice(from).indexOf("grid-template-areas")).matchAll(/"([\w ]+)"/g)].map((match) => match[1]);
+
+  it("lays out the bar, the lanes and board row, the stage rows and the controls where the three columns fit", () => {
+    expect(areas().slice(0, 6)).toEqual(["bar bar bar", "fight lanes away", "bband map rband", "blue map red", "rail map dock", "ctl ctl ctl"]);
+    const rows = /grid-template-rows:([^;]*);/.exec(ruleBody(".live-shell"))?.[1] ?? "";
+    // bar, lanes and board, band (its own height), cards (bounded), low module, controls.
+    expect(rows.replace(/\s+/g, " ").trim()).toBe("var(--live-bar) var(--live-sit) auto minmax(0, 1fr) var(--live-low) minmax(var(--live-ctl), auto)");
+  });
+
+  it("puts the lanes over the map column and the two board strips over the card columns", () => {
+    const grid = areas()[1].split(" ");
+    const columns = /grid-template-columns:([^;]*);/.exec(ruleBody(".live-shell"))?.[1] ?? "";
+    expect(columns).toMatch(/minmax\(0, 1fr\) var\(--map-side\) minmax\(0, 1fr\)/);
+    expect(grid).toEqual(["fight", "lanes", "away"]);
+  });
+
+  it("stacks the strips, the caption and feed, and the timers around one full-width map in the middle layout", () => {
+    const mid = css.indexOf("@container live (max-width: 1239px)");
+    expect(areas(mid).slice(0, 9)).toEqual([
+      "bar bar",
+      "lanes lanes",
+      "map map",
+      "fight away",
+      "dock dock",
+      "ctl ctl",
+      "bband rband",
+      "blue red",
+      "rail rail",
+    ]);
+  });
+
+  it("keeps the lane strip as wide as the map above it in every layout", () => {
+    expect(ruleBody(".live-area-lanes")).toMatch(/grid-area:\s*lanes/);
+    const mid = css.slice(atRuleStart("@container live (max-width: 1239px)"));
+    expect(ruleBody(".live-area-lanes", atRuleStart("@container live (max-width: 1239px)"))).toMatch(/inline-size:\s*var\(--map-side\)/);
+    expect(mid).toContain("justify-self: center");
+  });
+});
+
+describe("the lane strip at the 960x640 minimum (T13 D4)", () => {
+  const start = atRuleStart("@container lanes (max-width: 26rem)");
+  const block = css.slice(start, css.indexOf("\n}\n", start));
+
+  it("stacks the name over a full-width track in a strip narrower than 26rem, so both ends of the track show", () => {
+    // 960px gives a 352px strip, 114px a cell: name (about 56px) + 62px track + gaps did not fit.
+    expect(352).toBeLessThan(26 * 16);
+    expect(block).toMatch(/\.arena-lane\s*\{[^}]*display:\s*grid/);
+    expect(block).toMatch(/\.arena-lane-track\s*\{[^}]*grid-column:\s*1 \/ -1[^}]*inline-size:\s*auto/);
+    expect(block).toMatch(/\.arena-lane-text\s*\{[^}]*display:\s*none/);
+    // The word of a fight shares the name's row instead of opening a third one.
+    expect(block).toMatch(/\.arena-lane-fight\s*\{[^}]*grid-area:\s*1 \/ 2/);
+  });
+
+  it("fits the 44px strip with the double frame of a fight: 16px name row, 22px track, 6px of frame", () => {
+    expect(block).toMatch(/\.arena-lane-name\s*\{[^}]*font-size:\s*1rem/);
+    expect(ruleBody(".arena-lane-track")).toMatch(/block-size:\s*1\.375rem/);
+    expect(16 + 22 + 2 * 3).toBeLessThanOrEqual(44);
   });
 });

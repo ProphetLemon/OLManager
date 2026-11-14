@@ -15,30 +15,12 @@ pub(super) fn round_to(value: f32, digits: i32) -> f32 {
     (value * factor).round() / factor
 }
 
-pub(super) fn calculate_per_match(total: u32, matches_played: u32) -> Option<f32> {
-    if matches_played == 0 {
-        return None;
-    }
-
-    Some(round_to(total as f32 / matches_played as f32, 1))
-}
-
 pub(super) fn calculate_average(total: u32, count: u32) -> Option<f32> {
     if count == 0 {
         return None;
     }
 
     Some(round_to(total as f32 / count as f32, 1))
-}
-
-pub(super) fn percentile_rank(values: &[f32], target: Option<f32>) -> Option<u32> {
-    let target = target?;
-    if values.is_empty() {
-        return None;
-    }
-
-    let ranked_count = values.iter().filter(|value| **value <= target).count();
-    Some(((ranked_count as f32 / values.len() as f32) * 100.0).round() as u32)
 }
 
 pub(super) fn opponent_name(state: &StateManager, opponent_team_id: &str) -> String {

@@ -8,7 +8,7 @@ import ptBR from "./locales/pt-BR.json";
 import pt from "./locales/pt.json";
 import tr from "./locales/tr.json";
 
-const LOCALES: Record<string, { settings: { riotNotice: string } }> = {
+const LOCALES: Record<string, { settings: { riotNotice: string; marksNotice: string } }> = {
   de,
   en,
   es,
@@ -33,6 +33,22 @@ describe("Riot Games fan project notice", () => {
     for (const [locale, messages] of Object.entries(LOCALES)) {
       if (locale === "en") continue;
       expect(messages.settings.riotNotice, locale).not.toBe(en.settings.riotNotice);
+    }
+  });
+});
+
+// Team names, logos and player photos ship with public releases and belong to their owners.
+describe("Team marks and player images notice", () => {
+  it.each(Object.keys(LOCALES))("%s has the notice", (locale) => {
+    const notice = LOCALES[locale].settings.marksNotice;
+    expect(notice).toContain("Open League Manager");
+    expect(notice.length).toBeGreaterThan(80);
+  });
+
+  it("is translated outside English", () => {
+    for (const [locale, messages] of Object.entries(LOCALES)) {
+      if (locale === "en") continue;
+      expect(messages.settings.marksNotice, locale).not.toBe(en.settings.marksNotice);
     }
   });
 });

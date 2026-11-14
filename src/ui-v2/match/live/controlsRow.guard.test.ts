@@ -34,10 +34,30 @@ describe("touch targets of the controls row", () => {
     expect(body).toMatch(/min-height:\s*var\(--hit\)/);
   });
 
-  it.each([".arena-board-summary", ".arena-legend-summary"])("sizes %s to --hit in both dimensions", (selector) => {
+  it.each([".arena-legend-summary"])("sizes %s to --hit in both dimensions", (selector) => {
     const body = ruleBody(selector);
     expect(body).toMatch(/min-width:\s*var\(--hit\)/);
     expect(body).toMatch(/min-height:\s*var\(--hit\)/);
+  });
+});
+
+describe("Match options and Map key at 1360px and below", () => {
+  const narrow = containerBlock("max-width: 1360px");
+
+  it("clips the label, and keeps it in the page, so each button is an icon with its name", () => {
+    expect(narrow).toMatch(/\.arena-btn-label\s*\{[^}]*position:\s*absolute[^}]*clip-path:\s*inset\(50%\)/);
+    expect(narrow).not.toMatch(/\.arena-btn-label\s*\{[^}]*display:\s*none/);
+    expect(css).not.toMatch(/\.arena-btn-label\s*\{[^}]*display:\s*none/);
+  });
+
+  it("keeps the touch target and marks an open key by a bar under it, not by the arrow that goes with the label", () => {
+    expect(narrow).toMatch(/\.arena-legend\[open\] \.arena-legend-summary\s*\{[^}]*box-shadow:\s*inset 0 -3px 0 var\(--foreground\)/);
+    expect(narrow).toMatch(/\.arena-legend-summary\s*\{[^}]*justify-content:\s*center/);
+    expect(ruleBody(".arena-legend-summary")).toMatch(/min-width:\s*var\(--hit\)/);
+  });
+
+  it("clips from the live container's width, which is also where the key's list is placed", () => {
+    expect(css).toContain("@container live (max-width: 1360px) {");
   });
 });
 
@@ -45,7 +65,12 @@ describe("controls row at laptop widths", () => {
   /** Measured with the real stylesheet and fonts, over the 8 locales (px). */
   const SHELL_PADDING = 40;
   const GAP = 12;
-  /** [group without the note (Pause + speeds + Options + two gaps), the note, board + key + bug button + three gaps]. */
+  /**
+   * [group without the note (Pause + speeds + Options + two gaps), the note, board + key + bug button + three gaps].
+   * Measured when the Fight board sat in this row. It has since moved to the strip above the columns and the key
+   * is an icon at 1360px and below, so the row is only narrower now: these figures stay an upper bound, and the
+   * 1180px thresholds below stay safe without a new measurement (jsdom cannot take one).
+   */
   const LOCALES: Record<string, [number, number, number]> = {
     es: [588, 229, 512],
     en: [534, 193, 358],

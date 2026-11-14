@@ -11,12 +11,11 @@ import { TEAM_KEYS } from "./liveNames";
  * words, because for a screen reader the board is the only place the map is told.
  */
 
-export const BOARD_KIND_KEYS: Readonly<Record<FightBoardRow["kind"], string>> = {
+export const BOARD_KIND_KEYS: Readonly<Record<Exclude<FightBoardRow["kind"], "quiet">, string>> = {
   contact: "onAir.match.board.kind.contact",
   turret: "onAir.match.board.kind.turret",
   recall: "onAir.match.board.kind.recall",
   dead: "onAir.match.board.kind.dead",
-  quiet: "onAir.match.board.kind.quiet",
 };
 
 function who(champion: ChampionRef, t: TFunction): string {
@@ -54,5 +53,27 @@ export function boardRowText(row: FightBoardRow, t: TFunction): string {
       return t("onAir.match.board.dead", { count: row.params.respawnSec, champion: who(row.params.champion, t) });
     case "quiet":
       return t("onAir.match.board.quiet");
+  }
+}
+
+/**
+ * The same row in a few words, for the strip where the sentence does not fit. Names only: the
+ * team sits in the kind chip's strip and in the full sentence, which stays on the page for
+ * assistive technology.
+ */
+export function boardRowShort(row: Exclude<FightBoardRow, { kind: "quiet" }>, t: TFunction): string {
+  switch (row.kind) {
+    case "contact": {
+      const { a, b, mutual, hits } = row.params;
+      if (mutual) return t("onAir.match.board.short.contact", { a: a.name, b: b.name });
+      const hit = hits[0];
+      return t("onAir.match.board.short.hit", { attacker: (hit?.attacker ?? a).name, victim: (hit?.victim ?? b).name });
+    }
+    case "turret":
+      return t("onAir.match.board.short.turret", { target: row.params.target.name });
+    case "recall":
+      return t("onAir.match.board.short.recall", { champion: row.params.champion.name, seconds: wholeSeconds(row.params.secondsLeft) });
+    case "dead":
+      return t("onAir.match.board.short.dead", { champion: row.params.champion.name, seconds: row.params.respawnSec });
   }
 }

@@ -106,6 +106,18 @@ fn make_first_of_month_game() -> Game {
     make_game_on(2025, 6, 1)
 }
 
+/// A running deal that pays nothing, for tests of the other monthly lines: a club in a
+/// league's standings would otherwise be given a tier sponsor on the 1st.
+fn no_sponsor_income() -> Option<Sponsorship> {
+    Some(Sponsorship {
+        sponsor_name: "No Income".to_string(),
+        base_value: 0,
+        remaining_months: 12,
+        bonus_criteria: vec![],
+        origin: Default::default(),
+    })
+}
+
 fn finance_snapshot(team: &Team) -> (i64, i64, i64, i64, usize) {
     (
         team.finance,
@@ -436,6 +448,38 @@ fn scoped_finance_mail_helpers_use_localized_payloads_route_and_correlation_dedu
 }
 
 #[test]
+fn board_health_mail_without_a_runway_uses_the_stable_body_and_no_months_param() {
+    let mut game = make_first_of_month_game();
+
+    assert!(finances::push_board_financial_health_mail(
+        &mut game,
+        "team1",
+        4_000_000,
+        25_000,
+        None,
+        "2025-06-01",
+    ));
+
+    let message = game
+        .messages
+        .iter()
+        .find(|message| message.id == "finance:board-health:team1:2025-06-01:boardFinancialHealth")
+        .expect("board health mail should exist");
+    assert_eq!(
+        message.body_key.as_deref(),
+        Some("be.msg.finance.boardFinancialHealth.bodyStable")
+    );
+    assert!(
+        message.i18n_params.values().all(|value| value != "stable"),
+        "a raw token must never reach a mail: {:?}",
+        message.i18n_params
+    );
+    assert!(!message.i18n_params.contains_key("monthsLeft"));
+    assert!(message.i18n_params.contains_key("balance"));
+    assert!(message.i18n_params.contains_key("monthlyNet"));
+}
+
+#[test]
 fn accepting_sponsor_offer_sends_finance_mail_and_dedupes() {
     let mut game = make_first_of_month_game();
     let mut offer = olm_core::domain::message::InboxMessage::new(
@@ -659,6 +703,7 @@ fn evaluate_sponsorship_bonus_sums_met_criteria_for_team_context() {
                 bonus_amount: 25_000,
             },
         ],
+        ..Default::default()
     };
 
     let bonus = finances::evaluate_sponsorship_bonus(
@@ -680,6 +725,7 @@ fn calc_sponsorship_income_applies_esports_or_pc_theme_bonus() {
             required_matches: 3,
             bonus_amount: 25_000,
         }],
+        ..Default::default()
     };
 
     let income = finances::calc_sponsorship_income(
@@ -701,6 +747,7 @@ fn calc_sponsorship_income_leaves_generic_brands_unmodified() {
             required_matches: 3,
             bonus_amount: 25_000,
         }],
+        ..Default::default()
     };
 
     let income = finances::calc_sponsorship_income(
@@ -798,11 +845,17 @@ fn monthly_expense_ledger_lines_carry_translation_keys() {
     };
     assert_eq!(
         keyed(FinancialTransactionKind::Salary),
-        Some(("be.ledger.playerWages".to_string(), "Monthly player wages".to_string()))
+        Some((
+            "be.ledger.playerWages".to_string(),
+            "Monthly player wages".to_string()
+        ))
     );
     assert_eq!(
         keyed(FinancialTransactionKind::StaffWage),
-        Some(("be.ledger.staffWages".to_string(), "Monthly staff wages".to_string()))
+        Some((
+            "be.ledger.staffWages".to_string(),
+            "Monthly staff wages".to_string()
+        ))
     );
     assert_eq!(
         keyed(FinancialTransactionKind::FacilityUpkeep),
@@ -827,6 +880,7 @@ fn monthly_sponsorship_ledger_line_carries_a_translation_key() {
         base_value: 100_000,
         remaining_months: 2,
         bonus_criteria: vec![],
+        origin: Default::default(),
     });
 
     finances::process_monthly_finances(&mut game);
@@ -836,7 +890,10 @@ fn monthly_sponsorship_ledger_line_carries_a_translation_key() {
         .iter()
         .find(|entry| entry.kind == FinancialTransactionKind::Sponsorship)
         .expect("a sponsorship line");
-    assert_eq!(entry.description_key.as_deref(), Some("be.ledger.sponsorshipIncome"));
+    assert_eq!(
+        entry.description_key.as_deref(),
+        Some("be.ledger.sponsorshipIncome")
+    );
     assert_eq!(entry.description, "Monthly sponsorship income");
 }
 
@@ -880,7 +937,10 @@ fn record_transaction_with_text_stores_the_key_and_params_and_keeps_the_english_
     .expect("valid transaction records");
 
     assert_eq!(transaction.description, "Staff hiring cost: Ana Coach");
-    assert_eq!(transaction.description_key.as_deref(), Some("be.ledger.staffHiring"));
+    assert_eq!(
+        transaction.description_key.as_deref(),
+        Some("be.ledger.staffHiring")
+    );
     assert_eq!(text_params(&transaction), vec![("name", "Ana Coach")]);
     assert_eq!(team.financial_ledger[0], transaction);
 }
@@ -921,6 +981,7 @@ fn monthly_sponsorship_payout_is_applied_and_duration_decrements_on_monday() {
             required_matches: 3,
             bonus_amount: 25_000,
         }],
+        ..Default::default()
     });
 
     finances::process_monthly_finances(&mut game);
@@ -970,6 +1031,7 @@ fn monthly_finance_hooks_send_sponsor_upkeep_bonus_and_expiry_mail_once() {
             required_matches: 3,
             bonus_amount: 24_000,
         }],
+        ..Default::default()
     });
 
     finances::process_monthly_finances(&mut game);
@@ -1029,6 +1091,7 @@ fn sponsorship_expires_after_the_final_monthly_tick() {
         base_value: 100_000,
         remaining_months: 1,
         bonus_criteria: vec![],
+        origin: Default::default(),
     });
 
     finances::process_monthly_finances(&mut game);
@@ -1150,6 +1213,7 @@ fn sponsorship_income_prevents_false_low_runway_warning() {
         base_value: 83_200, // equivalent to 1_600/week annualized
         remaining_months: 8,
         bonus_criteria: vec![],
+        origin: Default::default(),
     });
 
     finances::process_monthly_finances(&mut game);
@@ -1263,6 +1327,7 @@ fn home_match_generates_income() {
         ..Default::default()
     };
     game.leagues = vec![league];
+    game.teams[0].sponsorship = no_sponsor_income();
 
     finances::process_monthly_finances(&mut game);
 
@@ -1331,6 +1396,7 @@ fn away_match_no_income() {
         ..Default::default()
     };
     game.leagues = vec![league];
+    game.teams[0].sponsorship = no_sponsor_income();
 
     let initial_finance = game.teams[0].finance;
     finances::process_monthly_finances(&mut game);

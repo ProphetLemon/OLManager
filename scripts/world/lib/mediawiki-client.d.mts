@@ -77,3 +77,8 @@ export function resolveTitles(
   client: MediaWikiClient,
   titles: string[],
 ): Promise<Map<string, { title: string; missing: boolean; redirected: boolean; isTeam: boolean }>>;
+export function sectionsParams(page: string): Record<string, string>;
+export function sectionTextParams(page: string, index: string | number): Record<string, string>;
+export function wikitextParams(title: string): Record<string, string>;
+export function siteRightsParams(): Record<string, string>;
+export function resolveTitlesParams(titles: string[]): Record<string, string>;

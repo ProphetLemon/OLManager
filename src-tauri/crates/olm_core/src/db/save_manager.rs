@@ -12,6 +12,79 @@ use crate::db::save_index_manager::SaveIndexManager;
 /// Current save format version. Increment when breaking changes are made.
 const FORMAT_VERSION: u32 = 3;
 
+/// Why a save file could not be imported. Nothing is written when one is returned.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SaveImportError {
+    /// The file is empty or shorter than the format header.
+    TooSmall,
+    /// The header names a format this game version does not read.
+    WrongVersion { found: u32, expected: u32 },
+    /// The header is right but the body is not a gzipped game.
+    Corrupt(String),
+    /// Writing to the saves folder failed.
+    Storage(String),
+    /// The id is already in the list and the caller did not ask to replace it.
+    IdTaken,
+}
+
+impl SaveImportError {
+    /// Stable machine code the UI maps to a localized message.
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::TooSmall => "too_small",
+            Self::WrongVersion { .. } => "wrong_version",
+            Self::Corrupt(_) => "corrupt",
+            Self::Storage(_) => "storage",
+            Self::IdTaken => "id_taken",
+        }
+    }
+}
+
+impl std::fmt::Display for SaveImportError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::TooSmall => write!(f, "The file is too small to be a save"),
+            Self::WrongVersion { found, expected } => write!(
+                f,
+                "The file is from another game version (save format {found}, this version reads {expected})"
+            ),
+            Self::Corrupt(why) => write!(f, "The file is not a readable save: {why}"),
+            Self::Storage(why) => write!(f, "Could not store the save: {why}"),
+            Self::IdTaken => write!(f, "A save with this id already exists"),
+        }
+    }
+}
+
+impl std::error::Error for SaveImportError {}
+
+/// A validated save file waiting to be committed to the saves folder.
+#[derive(Debug, Clone)]
+pub struct PreparedImport {
+    pub id: String,
+    pub name: String,
+    pub manager_name: String,
+    /// The entry this import would overwrite, when its id is already in the list.
+    pub replaces: Option<SaveEntry>,
+    bytes: Vec<u8>,
+}
+
+/// Pull a save id and a display name out of a file name such as `My career-<uuid>.olsave`.
+fn parse_file_hint(hint: &str) -> (Option<String>, Option<String>) {
+    // A hyphenated uuid is 36 ASCII bytes and holds no character a file manager
+    // percent-encodes, so it can be found in a raw content-URI segment too.
+    let found = hint.char_indices().find_map(|(at, _)| {
+        let window = hint.get(at..at + 36)?;
+        let id = uuid::Uuid::parse_str(window).ok()?;
+        Some((at, id.hyphenated().to_string()))
+    });
+    let Some((at, id)) = found else {
+        return (None, None);
+    };
+    let name = hint[..at].trim_matches(|c: char| "-_ []()".contains(c));
+    let name = (!name.is_empty() && !name.contains('%')).then(|| name.to_string());
+    (Some(id), name)
+}
+
 /// Manages save sessions: creating, loading, saving, deleting, and listing.
 pub struct SaveManager {
     saves_dir: PathBuf,
@@ -307,6 +380,130 @@ impl SaveManager {
         );
 
         Ok(game)
+    }
+
+    /// Name for the exported file: `<save name>-<id>.olsave`, safe on every platform.
+    pub fn export_file_name(&self, save_id: &str) -> Result<String, String> {
+        let entry = self
+            .save_index
+            .find(save_id)
+            .ok_or_else(|| format!("Save '{}' not found", save_id))?;
+        let cleaned: String = entry
+            .name
+            .chars()
+            .map(|c| if c.is_alphanumeric() || " -_".contains(c) { c } else { '_' })
+            .take(60)
+            .collect();
+        let cleaned = cleaned.trim();
+        let stem = if cleaned.is_empty() { "save" } else { cleaned };
+        Ok(format!("{stem}-{}.olsave", entry.id))
+    }
+
+    /// Copy the stored bytes of a save to `out` without re-encoding them.
+    pub fn export_save<W: std::io::Write>(
+        &self,
+        save_id: &str,
+        out: &mut W,
+    ) -> Result<u64, String> {
+        if self.save_index.find(save_id).is_none() {
+            return Err(format!("Save '{}' not found", save_id));
+        }
+        let mut file = fs::File::open(self.save_path(save_id))
+            .map_err(|e| format!("Failed to open save: {}", e))?;
+        let copied = std::io::copy(&mut file, out)
+            .map_err(|e| format!("Failed to write exported save: {}", e))?;
+        info!("[save_manager] exported save {} ({} bytes)", save_id, copied);
+        Ok(copied)
+    }
+
+    /// Validate a save file without touching the saves folder.
+    /// `file_hint` is the picked file's name, when the platform gives one.
+    pub fn prepare_import(
+        &self,
+        bytes: Vec<u8>,
+        file_hint: Option<&str>,
+    ) -> Result<PreparedImport, SaveImportError> {
+        let header: [u8; 4] = bytes
+            .get(..4)
+            .and_then(|h| h.try_into().ok())
+            .ok_or(SaveImportError::TooSmall)?;
+        let found = u32::from_le_bytes(header);
+        if found != FORMAT_VERSION {
+            return Err(SaveImportError::WrongVersion {
+                found,
+                expected: FORMAT_VERSION,
+            });
+        }
+
+        use flate2::read::GzDecoder;
+        let mut json = String::new();
+        GzDecoder::new(&bytes[4..])
+            .read_to_string(&mut json)
+            .map_err(|e| SaveImportError::Corrupt(format!("decompress: {e}")))?;
+        let game: Game = serde_json::from_str(&json)
+            .map_err(|e| SaveImportError::Corrupt(format!("parse: {e}")))?;
+
+        let (hinted_id, hinted_name) = file_hint.map(parse_file_hint).unwrap_or_default();
+        let id = hinted_id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+        let replaces = self.save_index.find(&id).cloned();
+        let manager_name = game.manager.display_name();
+        let name = hinted_name
+            .or_else(|| replaces.as_ref().map(|e| e.name.clone()))
+            .unwrap_or_else(|| format!("{manager_name}'s Career"));
+
+        Ok(PreparedImport {
+            id,
+            name,
+            manager_name,
+            replaces,
+            bytes,
+        })
+    }
+
+    /// Store a prepared import and list it. An id already in the list needs `replace`.
+    pub fn commit_import(
+        &mut self,
+        prepared: PreparedImport,
+        replace: bool,
+    ) -> Result<SaveEntry, SaveImportError> {
+        let existing = self.save_index.find(&prepared.id).cloned();
+        if existing.is_some() && !replace {
+            return Err(SaveImportError::IdTaken);
+        }
+
+        let path = self.save_path(&prepared.id);
+        let tmp_path = path.with_extension("olsave.tmp");
+        let storage = |what: &str, e: std::io::Error| SaveImportError::Storage(format!("{what}: {e}"));
+        fs::write(&tmp_path, &prepared.bytes).map_err(|e| storage("write", e))?;
+        if let Err(e) = fs::rename(&tmp_path, &path) {
+            let _ = fs::remove_file(&tmp_path);
+            return Err(storage("rename", e));
+        }
+
+        let now = Utc::now().to_rfc3339();
+        let entry = SaveEntry {
+            id: prepared.id,
+            name: prepared.name,
+            manager_name: prepared.manager_name,
+            created_at: existing
+                .as_ref()
+                .map_or_else(|| now.clone(), |e| e.created_at.clone()),
+            last_played_at: now,
+        };
+        let indexed = if existing.is_some() {
+            self.save_index.update_save(entry.clone())
+        } else {
+            self.save_index.record_new_save(entry.clone())
+        };
+        if let Err(e) = indexed {
+            if existing.is_none() {
+                let _ = fs::remove_file(&path);
+            }
+            return Err(SaveImportError::Storage(e));
+        }
+
+        info!("[save_manager] imported save {}", entry.id);
+        Ok(entry)
     }
 
     /// Delete a save (removes .olsave file and index entry).
@@ -865,5 +1062,253 @@ mod tests {
 
         let result = SaveManager::read_olsave(&path);
         assert!(result.is_err());
+    }
+
+    fn save_file_bytes(sm: &SaveManager, id: &str) -> Vec<u8> {
+        fs::read(sm.save_path(id)).unwrap()
+    }
+
+    fn olsave_with_version(version: u32, body: &[u8]) -> Vec<u8> {
+        let mut bytes = version.to_le_bytes().to_vec();
+        bytes.extend_from_slice(body);
+        bytes
+    }
+
+    fn dir_listing(dir: &Path) -> Vec<String> {
+        let mut names: Vec<String> = fs::read_dir(dir)
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        names
+    }
+
+    /// Two managers, as if two devices: returns (source, its save id, target).
+    fn two_devices() -> (tempfile::TempDir, SaveManager, String, SaveManager) {
+        let dir = tempfile::tempdir().unwrap();
+        let mut source = SaveManager::init(&dir.path().join("pc")).unwrap();
+        let id = source.create_save(&sample_game(), "Main career").unwrap();
+        let target = SaveManager::init(&dir.path().join("phone")).unwrap();
+        (dir, source, id, target)
+    }
+
+    fn exported(sm: &SaveManager, id: &str) -> Vec<u8> {
+        let mut out = Vec::new();
+        sm.export_save(id, &mut out).unwrap();
+        out
+    }
+
+    #[test]
+    fn export_writes_the_stored_bytes_unchanged() {
+        let (_dir, source, id, _target) = two_devices();
+
+        assert_eq!(exported(&source, &id), save_file_bytes(&source, &id));
+    }
+
+    #[test]
+    fn export_of_an_unknown_save_fails() {
+        let (_dir, source, _id, _target) = two_devices();
+
+        assert!(source.export_save("nope", &mut Vec::new()).is_err());
+    }
+
+    #[test]
+    fn export_file_name_carries_the_save_id_and_drops_unsafe_characters() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut sm = SaveManager::init(&dir.path().join("saves")).unwrap();
+        let id = sm.create_save(&sample_game(), "a/b:c*d?").unwrap();
+
+        let name = sm.export_file_name(&id).unwrap();
+
+        assert_eq!(name, format!("a_b_c_d_-{id}.olsave"));
+    }
+
+    #[test]
+    fn importing_an_exported_file_lists_the_same_career() {
+        let (_dir, source, id, mut target) = two_devices();
+        let hint = source.export_file_name(&id).unwrap();
+
+        let prepared = target.prepare_import(exported(&source, &id), Some(&hint)).unwrap();
+        let entry = target.commit_import(prepared, false).unwrap();
+
+        assert_eq!(entry.id, id);
+        assert_eq!(entry.name, "Main career");
+        assert_eq!(target.list_saves().len(), 1);
+        assert_eq!(target.load_game(&id).unwrap().manager.last_name, "Smith");
+    }
+
+    #[test]
+    fn import_without_a_file_name_gets_a_fresh_id_and_the_manager_name() {
+        let (_dir, source, id, mut target) = two_devices();
+
+        let prepared = target.prepare_import(exported(&source, &id), None).unwrap();
+        let entry = target.commit_import(prepared, false).unwrap();
+
+        assert_ne!(entry.id, id);
+        assert_eq!(entry.name, "John Smith's Career");
+        assert_eq!(save_file_bytes(&target, &entry.id), save_file_bytes(&source, &id));
+    }
+
+    #[test]
+    fn an_imported_save_survives_the_next_start() {
+        let (dir, source, id, mut target) = two_devices();
+        let prepared = target.prepare_import(exported(&source, &id), None).unwrap();
+        let entry = target.commit_import(prepared, false).unwrap();
+        drop(target);
+
+        let reopened = SaveManager::init(&dir.path().join("phone")).unwrap();
+
+        assert_eq!(reopened.list_saves().len(), 1);
+        assert_eq!(reopened.list_saves()[0].id, entry.id);
+    }
+
+    #[test]
+    fn a_file_from_another_format_version_is_refused_and_nothing_changes() {
+        let (_dir, _source, _id, target) = two_devices();
+        let before = dir_listing(&target.saves_dir);
+        let bytes = olsave_with_version(FORMAT_VERSION + 1, b"whatever");
+
+        let err = target.prepare_import(bytes, None).unwrap_err();
+
+        assert_eq!(
+            err,
+            SaveImportError::WrongVersion { found: FORMAT_VERSION + 1, expected: FORMAT_VERSION }
+        );
+        assert!(target.list_saves().is_empty());
+        assert_eq!(dir_listing(&target.saves_dir), before);
+    }
+
+    #[test]
+    fn a_wrong_version_message_says_the_file_is_from_another_game_version() {
+        let (_dir, _source, _id, target) = two_devices();
+
+        let err = target
+            .prepare_import(olsave_with_version(1, b"x"), None)
+            .unwrap_err();
+
+        assert!(err.to_string().contains("another game version"));
+    }
+
+    #[test]
+    fn a_file_shorter_than_the_header_is_refused() {
+        let (_dir, _source, _id, target) = two_devices();
+
+        assert_eq!(
+            target.prepare_import(vec![3, 0], None).unwrap_err(),
+            SaveImportError::TooSmall
+        );
+        assert_eq!(
+            target.prepare_import(Vec::new(), None).unwrap_err(),
+            SaveImportError::TooSmall
+        );
+    }
+
+    #[test]
+    fn a_right_version_with_garbage_after_it_is_refused_as_corrupt() {
+        let (_dir, _source, _id, target) = two_devices();
+        let before = dir_listing(&target.saves_dir);
+
+        let err = target
+            .prepare_import(olsave_with_version(FORMAT_VERSION, b"not gzip at all"), None)
+            .unwrap_err();
+
+        assert_eq!(err.code(), "corrupt");
+        assert_eq!(dir_listing(&target.saves_dir), before);
+    }
+
+    #[test]
+    fn a_gzip_of_json_that_is_not_a_game_is_refused_as_corrupt() {
+        use flate2::{Compression, write::GzEncoder};
+        use std::io::Write;
+        let (_dir, _source, _id, target) = two_devices();
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(b"{\"hello\":1}").unwrap();
+        let bytes = olsave_with_version(FORMAT_VERSION, &encoder.finish().unwrap());
+
+        let err = target.prepare_import(bytes, None).unwrap_err();
+
+        assert_eq!(err.code(), "corrupt");
+    }
+
+    #[test]
+    fn a_truncated_export_is_refused_as_corrupt() {
+        let (_dir, source, id, target) = two_devices();
+        let mut bytes = exported(&source, &id);
+        bytes.truncate(bytes.len() / 2);
+
+        let err = target.prepare_import(bytes, None).unwrap_err();
+
+        assert_eq!(err.code(), "corrupt");
+    }
+
+    #[test]
+    fn preparing_an_import_writes_nothing() {
+        let (_dir, source, id, target) = two_devices();
+        let before = dir_listing(&target.saves_dir);
+
+        target.prepare_import(exported(&source, &id), None).unwrap();
+
+        assert_eq!(dir_listing(&target.saves_dir), before);
+        assert!(target.list_saves().is_empty());
+    }
+
+    #[test]
+    fn an_id_already_in_the_list_is_reported_before_anything_is_replaced() {
+        let (_dir, source, id, _target) = two_devices();
+        let hint = source.export_file_name(&id).unwrap();
+
+        let prepared = source.prepare_import(exported(&source, &id), Some(&hint)).unwrap();
+
+        assert_eq!(prepared.replaces.map(|e| e.id), Some(id));
+    }
+
+    #[test]
+    fn committing_over_an_existing_id_without_replace_is_refused_and_keeps_the_old_save() {
+        let (_dir, mut source, id, _target) = two_devices();
+        let hint = source.export_file_name(&id).unwrap();
+        let old = save_file_bytes(&source, &id);
+        let prepared = source.prepare_import(exported(&source, &id), Some(&hint)).unwrap();
+
+        let err = source.commit_import(prepared, false).unwrap_err();
+
+        assert_eq!(err, SaveImportError::IdTaken);
+        assert_eq!(save_file_bytes(&source, &id), old);
+    }
+
+    #[test]
+    fn replacing_makes_the_imported_copy_win_without_adding_an_entry() {
+        let (_dir, mut source, id, mut target) = two_devices();
+        let hint = source.export_file_name(&id).unwrap();
+        let mut played = source.load_game(&id).unwrap();
+        played.manager.reputation = 777;
+        source.save_game(&played, &id).unwrap();
+        let newer = exported(&source, &id);
+        let stale = target.prepare_import(save_file_bytes(&source, &id), Some(&hint)).unwrap();
+        target.commit_import(stale, false).unwrap();
+        let mut later = target.load_game(&id).unwrap();
+        later.manager.reputation = 1;
+        target.save_game(&later, &id).unwrap();
+
+        let prepared = target.prepare_import(newer, Some(&hint)).unwrap();
+        target.commit_import(prepared, true).unwrap();
+
+        assert_eq!(target.list_saves().len(), 1);
+        assert_eq!(target.load_game(&id).unwrap().manager.reputation, 777);
+    }
+
+    #[test]
+    fn file_hints_yield_an_id_and_a_name_only_when_they_carry_them() {
+        let id = "0b8f4a52-6f3e-4d51-9a1c-2f6d1c0e9a77";
+
+        assert_eq!(
+            parse_file_hint(&format!("My career-{id}.olsave")),
+            (Some(id.to_string()), Some("My career".to_string()))
+        );
+        assert_eq!(parse_file_hint(&format!("{id}.olsave")), (Some(id.to_string()), None));
+        assert_eq!(parse_file_hint("backup.olsave"), (None, None));
+        assert_eq!(
+            parse_file_hint(&format!("My%20career-{id}.olsave")),
+            (Some(id.to_string()), None)
+        );
     }
 }

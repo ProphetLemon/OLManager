@@ -1,8 +1,9 @@
 //! "Export world" in Settings: write the current teams, players and staff as one JSON file.
 //!
-//! The legacy `world` command module (file `world.rs`, no longer part of the build) held an
-//! `export_world_database` too, but its helpers were deleted with `generator::world_io`, so it could
-//! not simply be registered again. This is the small part of it that still has a home: build a
+//! The legacy `world` command module (file `world.rs`, out of the build since upstream `d3a08157`
+//! and later deleted) held an `export_world_database` too, but its helpers were deleted with
+//! `generator::world_io`, so it could not simply be registered again. This is the small part of it
+//! that still has a home: build a
 //! `WorldData` from the live game and write it under the app data directory, never the process
 //! working directory.
 

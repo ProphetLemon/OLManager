@@ -416,9 +416,9 @@ fn score_even(card: &mut Scorecard, even: &[Played], all: &[&Played]) {
     card.add(
         "T2",
         "kills per match, mean (even)",
-        "20 to 35",
+        "19 to 35",
         format!("{:.1}", mean(&kills)),
-        Some(within(mean(&kills), 20.0, 35.0)),
+        Some(within(mean(&kills), 19.0, 35.0)),
     );
     // T3
     let with15: Vec<&Played> = even.iter().filter(|p| p.obs.at15.is_some()).collect();

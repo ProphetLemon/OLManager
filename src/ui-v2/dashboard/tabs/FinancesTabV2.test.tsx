@@ -46,6 +46,7 @@ vi.mock("react-i18next", () => ({
         "finances.runwayStable": "Stable",
         "finances.activeSponsor": "Active sponsor",
         "finances.noActiveSponsor": "No active sponsor",
+        "finances.sponsorWeeklyValue": "Monthly value: €{{amount}}",
         "finances.contractRisk": "Contract risk",
         "finances.noContractRisks": "No contract risks",
         "finances.payroll": "Payroll",
@@ -71,7 +72,7 @@ vi.mock("react-i18next", () => ({
         return String(options.defaultValue);
       }
 
-      return translations[key] ?? key;
+      return (translations[key] ?? key).replace(/\{\{(\w+)\}\}/g, (_match, name: string) => String(options?.[name] ?? ""));
     },
   }),
 }));
@@ -199,6 +200,21 @@ describe("FinancesTabV2 summary semantics", () => {
     expect(screen.getByText("€650K")).toBeInTheDocument();
     expect(screen.getByText("Season net")).toBeInTheDocument();
     expect(screen.getAllByText("€250K")).toHaveLength(2);
+  });
+
+  it("groups the thousands of the active sponsor's monthly value", async () => {
+    const { FinancesTabV2 } = await import("./FinancesTabV2");
+    const state = createGameState();
+    state.teams = [
+      createTeam({
+        sponsorship: { sponsor_name: "Acme", base_value: 950_000, remaining_months: 6, bonus_criteria: [] },
+      } as Partial<TeamData>),
+    ];
+
+    render(<FinancesTabV2 gameState={state} onGameUpdate={vi.fn()} />);
+
+    // 950,000 / 12 = 79,166.67, shown rounded and grouped, with the symbol only once (the string has it).
+    expect(screen.getByText(/Monthly value: €79,167/)).toBeInTheDocument();
   });
 
   it("renders a concise populated financial ledger", async () => {

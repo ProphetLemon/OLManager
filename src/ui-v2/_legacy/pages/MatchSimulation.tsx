@@ -18,10 +18,10 @@ import ChampionDraft, {
 import type { ChampionDraftResultPayload } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import { finalizeLiveMatch, type FinishLiveMatchResponse } from "@/ui-v2/_legacy/pages/MatchSimulation.finalize";
 import LiveMatchV2 from "@/ui-v2/match/LiveMatchV2";
+import DraftResultStage from "@/ui-v2/match/DraftResultStage";
+import PostGame from "@/ui-v2/match/PostGame";
 import type { ChampionSelectionByPlayer } from "@/ui-v2/match/live/useChampionProfiles";
 import MatchTacticsStage from "@/ui-v2/_legacy/components/match/MatchTacticsStage";
-import LolResultScreen from "@/ui-v2/_legacy/components/match/LolResultScreen";
-import DraftResultScreenV2 from "@/ui-v2/components/DraftResultScreenV2";
 import PressConference from "@/ui-v2/_legacy/components/match/PressConference";
 import {
   simulateDraftMatchResult,
@@ -498,8 +498,6 @@ export function buildDraftResultFromRuntime(params: {
   const resolvedRows = playerResults.length > 0 ? playerResults : fallbackRows;
   const mvp = [...resolvedRows].sort((a, b) => b.rating - a.rating)[0] ?? fallbackRows[0];
 
-  const blueGold = runtime.stats?.blue?.gold ?? 0;
-  const redGold = runtime.stats?.red?.gold ?? 0;
   const timelineEvents = (runtime.events ?? [])
     .map((event) => {
       const side = parseRuntimeEventSide(event.text);
@@ -516,68 +514,12 @@ export function buildDraftResultFromRuntime(params: {
     .filter((item): item is NonNullable<typeof item> => item !== null)
     .slice(-28);
 
-  const finalDelta = blueGold - redGold;
-  const runtimeGoldTimeline = (runtime.goldDiffTimeline ?? [])
+  // What the match recorded, and nothing else. A match with no record (a simulation that was never
+  // watched) has no series: one is never drawn from the final totals.
+  const recordedGoldTimeline = (runtime.goldDiffTimeline ?? [])
     .filter((point) => Number.isFinite(point.minute) && Number.isFinite(point.diff))
     .map((point) => ({ minute: Math.max(0, Math.floor(point.minute)), diff: Math.round(point.diff) }));
-  const timelinePoints = Math.max(8, Math.min(24, Math.floor(durationMinutes / 2) + 1));
-  const timelineMinutes = Array.from({ length: timelinePoints }, (_, idx) =>
-    Math.floor((idx / Math.max(1, timelinePoints - 1)) * durationMinutes),
-  );
-  if (timelineMinutes[timelineMinutes.length - 1] !== durationMinutes) {
-    timelineMinutes.push(durationMinutes);
-  }
-
-  const eventImpact = (type: NonNullable<ReturnType<typeof runtimeEventToDraftType>>, side: "blue" | "red") => {
-    const sign = side === "blue" ? 1 : -1;
-    switch (type) {
-      case "first_blood":
-        return sign * 450;
-      case "voidgrubs":
-        return sign * 320;
-      case "dragon":
-        return sign * 220;
-      case "dragon_soul":
-        return sign * 700;
-      case "elder":
-        return sign * 1100;
-      case "herald":
-        return sign * 380;
-      case "baron":
-        return sign * 900;
-      case "turret":
-        return sign * 650;
-      case "inhibitor":
-        return sign * 850;
-      case "nexus_turret":
-        return sign * 1050;
-      case "nexus":
-        return sign * 2000;
-      default:
-        return 0;
-    }
-  };
-
-  const rawTimeline = timelineMinutes.map((minute, idx) => {
-    if (idx === 0) return 0;
-    const progress = Math.max(0, Math.min(1, minute / Math.max(1, durationMinutes)));
-    const base = finalDelta * Math.pow(progress, 1.08);
-    const events = timelineEvents
-      .filter((event) => event.minute <= minute)
-      .reduce((sum, event) => sum + eventImpact(event.type, event.side), 0);
-    const jitter = Math.round((Math.sin(minute + idx) * 0.5 + 0.5) * 120 * (1 - progress));
-    return base + events * 0.35 + jitter;
-  });
-
-  const rawFirst = rawTimeline[0] ?? 0;
-  const rawLast = rawTimeline[rawTimeline.length - 1] ?? 0;
-  const scale = Math.abs(rawLast - rawFirst) < 1 ? 1 : (finalDelta / (rawLast - rawFirst));
-  const goldDiffTimeline = runtimeGoldTimeline.length >= 2
-    ? runtimeGoldTimeline
-    : timelineMinutes.map((minute, idx) => ({
-      minute,
-      diff: Math.round((rawTimeline[idx] - rawFirst) * scale),
-    }));
+  const goldDiffTimeline = recordedGoldTimeline.length >= 2 ? recordedGoldTimeline : [];
 
   const winnerSide = runtime.winner === "red" ? "red" : "blue";
 
@@ -833,7 +775,7 @@ export default function MatchSimulation() {
     routeState?.snapshot ?? null,
   );
   const [stage, setStage] = useState<MatchDayStage>("prematch");
-  const [importantEvents, setImportantEvents] = useState<MatchEvent[]>([]);
+  const [, setImportantEvents] = useState<MatchEvent[]>([]);
   const [finalRuntimeState, setFinalRuntimeState] = useState<LolSimV1RuntimeState | null>(null);
   const [draftPayload, setDraftPayload] = useState<ChampionDraftResultPayload | null>(null);
   const [draftEvaluations, setDraftEvaluations] = useState<DraftEvaluationsBySide | null>(null);
@@ -1971,47 +1913,33 @@ export default function MatchSimulation() {
           : null;
         const draftScreenResult = draftResultSimulation ?? runtimeBasedResult;
 
-        if (draftScreenResult) {
-          return (
-            <DraftResultScreenV2
-              snapshot={renderSnapshotWithTactics ?? snapshot}
-              controlledSide={userSelectedSide}
-              result={draftScreenResult}
-              seriesGames={seriesGames}
-              seriesLength={seriesLength}
-              seriesGameIndex={Math.max(1, seriesGameIndex)}
-              userSeriesWins={userSeriesWins}
-              opponentSeriesWins={opponentSeriesWins}
-              onPressConference={canOpenPressConference ? handlePressConference : undefined}
-              onContinue={handleDraftResultContinue}
-              teams={gameState.teams}
-            />
-          );
-        }
-
         return (
-          <LolResultScreen
+          <DraftResultStage
             snapshot={renderSnapshotWithTactics ?? snapshot}
             gameState={gameState}
-            currentFixture={currentFixture}
-            userSide={userSide}
-            importantEvents={importantEvents}
+            controlledSide={userSelectedSide}
             finalRuntimeState={finalRuntimeState}
-            onPressConference={handlePressConference}
-            onFinish={handleFinishMatch}
+            result={draftScreenResult}
+            championSelections={championSelections}
+            seriesGames={seriesGames}
+            seriesLength={seriesLength}
+            seriesGameIndex={Math.max(1, seriesGameIndex)}
+            userSeriesWins={userSeriesWins}
+            opponentSeriesWins={opponentSeriesWins}
+            onPressConference={canOpenPressConference ? handlePressConference : undefined}
+            onContinue={handleDraftResultContinue}
           />
         );
       }
 
     case "postmatch":
       return (
-        <LolResultScreen
+        <PostGame
           snapshot={snapshot}
           gameState={gameState}
-          currentFixture={currentFixture}
           userSide={userSide}
-          importantEvents={importantEvents}
           finalRuntimeState={finalRuntimeState}
+          championSelections={championSelections}
           onPressConference={handlePressConference}
           onFinish={handleFinishMatch}
         />

@@ -87,6 +87,17 @@ describe("deterministic generation", () => {
     expect(validateOverlay(overlay).errors).toEqual([]);
   });
 
+  it("writes teamless staff nationality as an ISO-2 code like players, and empty when unresolved", () => {
+    const free = generateStaff({ ...staffInput, teamId: null });
+    expect(free.record.nationality).toBe("DK");
+    expect(free.nationalityMissing).toBe(false);
+    const unknown = generateStaff({ ...staffInput, teamId: null, country: "Atlantis" });
+    expect(unknown.record.nationality).toBe("");
+    expect(unknown.nationalityMissing).toBe(true);
+    // the roster refresh keeps the game's own convention for staff on a team: the country name
+    expect(generateStaff(staffInput).record.nationality).toBe("Denmark");
+  });
+
   it("refuses to reuse an id that already exists", () => {
     const { record } = generatePlayer(playerInput);
     expect(() => generatePlayer({ ...playerInput, takenIds: new Set([record.id]) })).toThrow(IdCollisionError);

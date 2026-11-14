@@ -97,6 +97,16 @@ describe("speed", () => {
   });
 });
 
+describe("the options button as an icon", () => {
+  it("keeps its name in a label the narrow row clips, with a title, so it stays a named button at 1360px and below", () => {
+    setup();
+    expect(options()).toHaveAccessibleName("Match options");
+    expect(options()).toHaveAttribute("title", "Match options");
+    expect(options().querySelector(".arena-btn-label")).toHaveTextContent("Match options");
+    expect(options().querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  });
+});
+
 describe("skip and reset", () => {
   it("keeps both out of sight until the options menu is open, and Reset marked as destructive", async () => {
     setup();

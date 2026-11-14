@@ -92,7 +92,7 @@ fn with_custom_club() -> Game {
 
 fn custom_club_on(date: NaiveDate) -> Game {
     let mut game = world_on(date);
-    replace_team_with_custom(&mut game, "les", "les-t0", &spec()).expect("custom club");
+    replace_team_with_custom(&mut game, "les", Some(2), "les-t0", &spec()).expect("custom club");
     game
 }
 

@@ -135,17 +135,57 @@ pub fn player_age(date_of_birth: &str, today: NaiveDate) -> u8 {
 // Composite retention score
 // ---------------------------------------------------------------------------
 
+/// The season rating of a player, or `None` when no match ever recorded one.
+///
+/// Matches outside the user's league do not write player stats, so those players sit at
+/// rating 0 with no appearances. That is missing data, not bad form.
+fn known_rating(player: &Player) -> Option<f32> {
+    (player.stats.appearances > 0 || player.stats.avg_rating > 0.0)
+        .then_some(player.stats.avg_rating)
+}
+
+/// The player's overall rating for renewal decisions. The stored `lol_ovr` is 0 until
+/// something computes it (a new game never does for most players), which is not a rating.
+fn current_ovr(player: &Player) -> u8 {
+    if player.lol_ovr == 0 {
+        crate::potential::calculate_lol_ovr(player)
+    } else {
+        player.lol_ovr
+    }
+}
+
 /// Compute a 0..1 retention score for a player relative to their team.
 /// Uses EXISTING player/team fields only — no schema changes.
+///
+/// Without rating data the rating term is left out and the other terms are rescaled to
+/// the full range, so the player is neither rewarded nor punished for it.
 pub fn retention_score(player: &Player, team: &Team, today: NaiveDate) -> f64 {
-    let lol_ovr = f64::from(player.lol_ovr) / 99.0; // normalise 0..1
+    weighted_score(player, team, today, true)
+}
 
-    let rating = f64::from(player.stats.avg_rating) / 10.0; // avg_rating is 0..10, normalise
+/// The retention score the renewal decision uses: [`retention_score`] without the
+/// contract-security term, the remaining weights rescaled to the full range.
+///
+/// A renewal session opens in the final weeks of a contract, when the contract-security
+/// term is about 0 by construction. Counting it would cap exactly the players the
+/// decision is about, whatever their quality.
+pub fn renewal_score(player: &Player, team: &Team, today: NaiveDate) -> f64 {
+    weighted_score(player, team, today, false)
+}
+
+/// The weighted sum behind both scores. A term that is left out (no rating data, or the
+/// contract term for a renewal) takes its weight out of the divisor, so what remains
+/// still spans 0..1.
+fn weighted_score(
+    player: &Player,
+    team: &Team,
+    today: NaiveDate,
+    with_contract_security: bool,
+) -> f64 {
+    let lol_ovr = f64::from(current_ovr(player)) / 99.0; // normalise 0..1
 
     let age = player_age(&player.date_of_birth, today);
     let age_f = age_factor(age);
-
-    let cs = contract_security(player.contract_end.as_deref(), today);
 
     // Expected wage from contracts module
     let expected = crate::contracts::expected_wage(player, team, today);
@@ -153,12 +193,25 @@ pub fn retention_score(player: &Player, team: &Team, today: NaiveDate) -> f64 {
 
     let tb = trait_bonus(&player.traits);
 
-    lol_ovr * W_LOL_OVR
-        + rating * W_AVG_RATING
-        + age_f * W_AGE
-        + cs * W_CONTRACT_SECURITY
-        + wvr * W_WAGE_VALUE
-        + tb * W_TRAIT_BONUS
+    let mut weighted = lol_ovr * W_LOL_OVR + age_f * W_AGE;
+    let mut left_out = 0.0;
+    if with_contract_security {
+        let cs = contract_security(player.contract_end.as_deref(), today);
+        weighted += cs * W_CONTRACT_SECURITY;
+    } else {
+        left_out += W_CONTRACT_SECURITY;
+    }
+    weighted += wvr * W_WAGE_VALUE;
+    weighted += tb * W_TRAIT_BONUS;
+
+    match known_rating(player) {
+        // avg_rating is 0..10, normalise
+        Some(rating) => {
+            weighted += f64::from(rating) / 10.0 * W_AVG_RATING;
+        }
+        None => left_out += W_AVG_RATING,
+    }
+    weighted / (1.0 - left_out)
 }
 
 // ---------------------------------------------------------------------------
@@ -173,6 +226,8 @@ pub struct RosterReport {
     pub avg_ovr_by_role: HashMap<crate::domain::stats::LolRole, f64>,
     /// Player IDs sorted by retention score (descending)
     pub retention_scores: Vec<(String, f64)>,
+    /// Each player's [`renewal_score`], the score `evaluate_renewals` decides on
+    pub renewal_scores: Vec<(String, f64)>,
     /// Player IDs whose score suggests renewal
     pub renewal_candidates: Vec<String>,
     /// Roles with 0 players
@@ -229,6 +284,11 @@ pub fn assess_roster(team: &Team, players: &[Player], today: NaiveDate) -> Roste
         .collect();
     retention_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
+    let renewal_scores: Vec<(String, f64)> = team_players
+        .iter()
+        .map(|p| (p.id.clone(), renewal_score(p, team, today)))
+        .collect();
+
     let renewal_candidates: Vec<String> = retention_scores
         .iter()
         .filter(|(_, score)| *score >= RENEWAL_THRESHOLD)
@@ -245,6 +305,7 @@ pub fn assess_roster(team: &Team, players: &[Player], today: NaiveDate) -> Roste
         role_depth,
         avg_ovr_by_role,
         retention_scores,
+        renewal_scores,
         renewal_candidates,
         role_gaps,
     }
@@ -283,17 +344,18 @@ pub fn evaluate_renewals(
             continue;
         }
 
-        // Find their retention score from the report
+        // Find their renewal score (no contract-security term) from the report
         let score = report
-            .retention_scores
+            .renewal_scores
             .iter()
             .find(|(id, _)| id == &player.id)
             .map(|(_, s)| *s)
             .unwrap_or(0.5);
 
         // Spec TA-02: Skip underperformer
-        let is_underperformer =
-            player.stats.avg_rating < UNDERPERFORMER_RATING || player.lol_ovr < UNDERPERFORMER_OVR;
+        let is_underperformer = known_rating(player)
+            .is_some_and(|rating| rating < UNDERPERFORMER_RATING)
+            || current_ovr(player) < UNDERPERFORMER_OVR;
         if is_underperformer {
             continue;
         }
@@ -318,7 +380,7 @@ pub fn evaluate_renewals(
 
         // Spec TA-02: Renew high performer
         let is_high_performer = player.stats.avg_rating > HIGH_PERFORMER_RATING
-            && player.lol_ovr > HIGH_PERFORMER_OVR
+            && current_ovr(player) > HIGH_PERFORMER_OVR
             && contract_security(player.contract_end.as_deref(), today) < 0.5; // < ~18 months
 
         if score >= RENEWAL_THRESHOLD || is_high_performer {
@@ -1132,6 +1194,279 @@ mod tests {
             players[0].morale_core.renewal_state.is_none(),
             "underperformer should NOT get renewal state"
         );
+    }
+
+    /// Matches of clubs outside the user's league never write player stats, so their
+    /// players sit at rating 0 with no appearances: that is missing data, not bad form.
+    #[test]
+    fn evaluate_renewals_opens_session_for_player_without_rating_data() {
+        let team = make_team("t1", "Test Team");
+        let today = test_date();
+        let mut players = vec![make_player(
+            "p1",
+            "Unrated Star",
+            "t1",
+            LolRole::Mid,
+            85,
+            0.0, // no matches recorded
+            50_000,
+            Some("2029-06-15"),
+            "2002-01-01",
+            vec![],
+        )];
+        let report = assess_roster(&team, &players, today);
+        evaluate_renewals(&team, &mut players, &report, today);
+
+        assert!(
+            matches!(
+                &players[0].morale_core.renewal_state,
+                Some(s) if s.status == RenewalSessionStatus::Open
+            ),
+            "a good player with no rating data should get a renewal session"
+        );
+    }
+
+    /// `lol_ovr` is stored, not derived, and a new game never fills it in for most of the
+    /// world (saves refresh it on load). A stored 0 is "not computed", not a 0-rated player.
+    #[test]
+    fn evaluate_renewals_derives_ovr_when_the_stored_one_was_never_computed() {
+        let team = make_team("t1", "Test Team");
+        let today = test_date();
+        let mut player = make_player(
+            "p1",
+            "Fresh Star",
+            "t1",
+            LolRole::Mid,
+            0, // never computed
+            8.0,
+            50_000,
+            Some("2029-06-15"),
+            "2002-01-01",
+            vec![],
+        );
+        player.stats.appearances = 20;
+        player.attributes = PlayerAttributes {
+            mechanics: 85,
+            laning: 85,
+            teamfighting: 85,
+            macro_play: 85,
+            consistency: 85,
+            shotcalling: 85,
+            champion_pool: 85,
+            discipline: 85,
+            mental_resilience: 85,
+        };
+        let mut players = vec![player];
+        let report = assess_roster(&team, &players, today);
+        evaluate_renewals(&team, &mut players, &report, today);
+
+        assert!(
+            matches!(
+                &players[0].morale_core.renewal_state,
+                Some(s) if s.status == RenewalSessionStatus::Open
+            ),
+            "an 85-attribute player must not be skipped as a 0-ovr underperformer"
+        );
+    }
+
+    #[test]
+    fn evaluate_renewals_skips_low_ovr_player_without_rating_data() {
+        let team = make_team("t1", "Test Team");
+        let today = test_date();
+        let mut players = vec![make_player(
+            "p1",
+            "Unrated Bust",
+            "t1",
+            LolRole::Top,
+            55,
+            0.0,
+            50_000,
+            Some("2029-06-15"),
+            "2002-01-01",
+            vec![],
+        )];
+        let report = assess_roster(&team, &players, today);
+        evaluate_renewals(&team, &mut players, &report, today);
+
+        assert!(
+            players[0].morale_core.renewal_state.is_none(),
+            "no rating data must still be judged on lol_ovr"
+        );
+    }
+
+    #[test]
+    fn evaluate_renewals_skips_player_with_a_recorded_bad_rating() {
+        let team = make_team("t1", "Test Team");
+        let today = test_date();
+        let mut player = make_player(
+            "p1",
+            "Slumping Star",
+            "t1",
+            LolRole::Mid,
+            85,
+            5.0,
+            50_000,
+            Some("2029-06-15"),
+            "2002-01-01",
+            vec![],
+        );
+        player.stats.appearances = 20;
+        let mut players = vec![player];
+        let report = assess_roster(&team, &players, today);
+        evaluate_renewals(&team, &mut players, &report, today);
+
+        assert!(
+            players[0].morale_core.renewal_state.is_none(),
+            "a rating recorded over real matches still counts as underperforming"
+        );
+    }
+
+    #[test]
+    fn retention_score_does_not_punish_missing_rating_data() {
+        let team = make_team("t1", "Test Team");
+        let unrated = make_player(
+            "p1",
+            "Unrated",
+            "t1",
+            LolRole::Mid,
+            85,
+            0.0,
+            50_000,
+            Some("2029-06-15"),
+            "2002-01-01",
+            vec![],
+        );
+        let mut slumping = unrated.clone();
+        slumping.stats.avg_rating = 5.0;
+        slumping.stats.appearances = 20;
+
+        assert!(
+            retention_score(&unrated, &team, test_date())
+                > retention_score(&slumping, &team, test_date()),
+            "a player nobody has rated must not score below one with a poor rating"
+        );
+    }
+
+    /// A player at the end of a contract has a contract-security term of about 0 by
+    /// construction, so the renewal decision (which opens sessions in the final weeks)
+    /// must not count it: it would cap exactly the players it is deciding about.
+    fn expiring_star(contract_end: &str) -> Player {
+        make_player(
+            "p1",
+            "Expiring Star",
+            "t1",
+            LolRole::Mid,
+            80,
+            0.0, // no rating data
+            20_000,
+            Some(contract_end),
+            "2004-01-01",
+            vec![PlayerTrait::HyperCarry, PlayerTrait::ShotCaller],
+        )
+    }
+
+    #[test]
+    fn renewal_score_does_not_depend_on_the_contract_length() {
+        let team = make_team("t1", "Test Team");
+        let today = test_date();
+        let expiring = expiring_star("2026-06-25");
+        let long = expiring_star("2029-06-15");
+
+        assert!(
+            (renewal_score(&expiring, &team, today) - renewal_score(&long, &team, today)).abs()
+                < 1e-9
+        );
+    }
+
+    #[test]
+    fn retention_score_still_rewards_contract_security() {
+        let team = make_team("t1", "Test Team");
+        let today = test_date();
+
+        assert!(
+            retention_score(&expiring_star("2029-06-15"), &team, today)
+                > retention_score(&expiring_star("2026-06-25"), &team, today) + 0.05,
+            "other callers (sales, roster report) keep counting the contract"
+        );
+    }
+
+    #[test]
+    fn renewal_score_is_renormalised_so_a_perfect_player_scores_one() {
+        let team = make_team("t1", "Test Team");
+        let today = test_date();
+        let mut perfect = make_player(
+            "p1",
+            "Perfect",
+            "t1",
+            LolRole::Mid,
+            99,
+            10.0,
+            1,
+            Some("2026-06-25"),
+            "2008-01-01",
+            vec![
+                PlayerTrait::HyperCarry,
+                PlayerTrait::ShotCaller,
+                PlayerTrait::IceCold,
+                PlayerTrait::Visionary,
+                PlayerTrait::TeamPlayer,
+                PlayerTrait::Sentinel,
+            ],
+        );
+        perfect.stats.appearances = 30;
+
+        assert!((renewal_score(&perfect, &team, today) - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn evaluate_renewals_opens_a_session_for_a_good_player_in_his_final_weeks() {
+        let team = make_team("t1", "Test Team");
+        let today = test_date();
+        let mut players = vec![expiring_star("2026-06-25")];
+        assert!(
+            retention_score(&players[0], &team, today) < 0.70,
+            "premise: only the contract term keeps him under the threshold"
+        );
+        let report = assess_roster(&team, &players, today);
+        evaluate_renewals(&team, &mut players, &report, today);
+
+        assert!(
+            matches!(
+                &players[0].morale_core.renewal_state,
+                Some(s) if s.status == RenewalSessionStatus::Open
+            ),
+            "a contract about to end must not count against the player"
+        );
+    }
+
+    #[test]
+    fn evaluate_renewals_keeps_the_threshold_for_a_middling_player() {
+        let team = make_team("t1", "Test Team");
+        let today = test_date();
+        let mut middling = expiring_star("2026-06-25");
+        middling.lol_ovr = 66;
+        middling.traits = vec![];
+        middling.date_of_birth = "1996-01-01".to_string();
+        let mut players = vec![middling];
+        let report = assess_roster(&team, &players, today);
+        evaluate_renewals(&team, &mut players, &report, today);
+
+        assert!(
+            players[0].morale_core.renewal_state.is_none(),
+            "dropping the contract term does not lower the bar"
+        );
+    }
+
+    #[test]
+    fn evaluate_renewals_still_skips_a_player_at_the_soft_cap() {
+        let mut team = make_team("t1", "Test Team");
+        team.wage_budget = 10_000; // the bill is already above the cap
+        let today = test_date();
+        let mut players = vec![expiring_star("2026-06-25")];
+        let report = assess_roster(&team, &players, today);
+        evaluate_renewals(&team, &mut players, &report, today);
+
+        assert!(players[0].morale_core.renewal_state.is_none());
     }
 
     #[test]

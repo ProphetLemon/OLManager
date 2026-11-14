@@ -59,6 +59,23 @@ describe("the map key", () => {
   });
 });
 
+describe("the key as an icon button", () => {
+  it("keeps its name in a label the narrow row clips, and has an icon and a title, so it stays a named button", () => {
+    render(<MapLegend />);
+    const summary = legend().querySelector("summary") as HTMLElement;
+    expect(summary.querySelector(".arena-btn-label")).toHaveTextContent("Map key");
+    expect(summary.querySelector("svg.arena-btn-icon")).toHaveAttribute("aria-hidden", "true");
+    expect(summary).toHaveAttribute("title", "Map key");
+    expect(summary).toHaveAccessibleName("Map key");
+  });
+
+  it("explains the lane strip and the timer rail", () => {
+    render(<MapLegend />);
+    expect(rowOf("lanes")).toHaveTextContent("Strip above the map");
+    expect(rowOf("timers")).toHaveTextContent("Left column under the players");
+  });
+});
+
 describe("the map key in the Spanish UI", () => {
   beforeAll(async () => {
     await i18n.changeLanguage("es");

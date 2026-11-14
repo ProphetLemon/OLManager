@@ -8,11 +8,11 @@ import { drawMinions, type MinionColors } from "./drawMinions";
 /** Used when a token cannot be read (a DOM with no stylesheet): the canvas text colour. */
 const FALLBACK_COLOR = "currentColor";
 
-/** The team colours as the theme defines them for this element right now. */
+/** The two clubs' colours as the screen publishes them for this element right now (the game's own blue and red until it does). */
 export function readMinionColors(element: Element): MinionColors {
   const style = getComputedStyle(element);
   const token = (name: string) => style.getPropertyValue(name).trim() || FALLBACK_COLOR;
-  return { blue: token("--team-blue"), red: token("--team-red") };
+  return { blue: token("--side-blue"), red: token("--side-red") };
 }
 
 /** Attributes of the page root that switch the theme (high contrast) or retint it (the club). */

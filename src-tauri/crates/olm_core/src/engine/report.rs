@@ -218,6 +218,8 @@ impl MatchReport {
                 stats.deaths = unit.deaths as u16;
                 stats.gold_earned = (unit.gold + unit.gold_spent).round().max(0.0) as u32;
                 stats.damage_dealt = unit.damage_dealt.round().max(0.0) as u32;
+                stats.assists = unit.assists;
+                stats.creep_score = unit.cs.round().max(0.0) as u16;
 
                 match unit.side {
                     Side::Home => {

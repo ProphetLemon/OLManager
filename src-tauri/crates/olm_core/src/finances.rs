@@ -1,7 +1,7 @@
 use crate::domain::message::*;
 use crate::domain::team::{
     Facilities, FinancialTransaction, FinancialTransactionKind, MainFacilityModuleKind,
-    Sponsorship, SponsorshipBonusCriterion, Team, main_facility_module_catalog,
+    Sponsorship, SponsorshipBonusCriterion, SponsorshipOrigin, Team, main_facility_module_catalog,
 };
 use crate::game::Game;
 use chrono::{Datelike, NaiveDate};
@@ -407,23 +407,26 @@ pub fn push_board_financial_health_mail(
     months_left: Option<i64>,
     date: &str,
 ) -> bool {
+    let mut mail_params = params(&[
+        ("balance", format_money(balance.unsigned_abs())),
+        ("monthlyNet", signed_money(monthly_net)),
+    ]);
+    // Without a runway (the monthly net is not negative) there is no number of months to print.
+    let body_key = match months_left {
+        Some(months) => {
+            mail_params.insert("monthsLeft".to_string(), months.to_string());
+            "be.msg.finance.boardFinancialHealth.body"
+        }
+        None => "be.msg.finance.boardFinancialHealth.bodyStable",
+    };
     push_finance_mail_once(
         game,
         team_id,
         &format!("board-health:{team_id}:{date}"),
         "boardFinancialHealth",
         "be.msg.finance.boardFinancialHealth.subject",
-        "be.msg.finance.boardFinancialHealth.body",
-        params(&[
-            ("balance", format_money(balance.unsigned_abs())),
-            ("monthlyNet", signed_money(monthly_net)),
-            (
-                "monthsLeft",
-                months_left
-                    .map(|value| value.to_string())
-                    .unwrap_or_else(|| "stable".to_string()),
-            ),
-        ]),
+        body_key,
+        mail_params,
         date,
     )
 }
@@ -649,6 +652,14 @@ pub fn process_monthly_finances(game: &mut Game) {
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
     let user_team_id = game.manager.team_id.clone();
     let mut mail_events = Vec::new();
+    // Every scheduled main club holds a tier deal. A club with none (an old save, or a
+    // club that just entered a league) gets one before the payout below, so no month
+    // goes unpaid.
+    let scheduled_tiers = crate::tier_sponsorship::scheduled_main_club_tiers(game);
+    crate::tier_sponsorship::assign_missing_tier_sponsorships_from(
+        &mut game.teams,
+        &scheduled_tiers,
+    );
     let team_expenses: Vec<MonthlyTeamExpenses> = game
         .teams
         .iter()
@@ -798,7 +809,13 @@ pub fn process_monthly_finances(game: &mut Game) {
                 LedgerText::new("be.ledger.sponsorshipIncome", &[]),
             )
             .ok();
+            // Tier deals are silent like wages: the ledger and the finance card show them.
+            let mails_user = team
+                .sponsorship
+                .as_ref()
+                .is_some_and(|deal| deal.origin == SponsorshipOrigin::Offer);
             if Some(team.id.as_str()) == user_team_id.as_deref()
+                && mails_user
                 && let Some((sponsor_name, monthly_income, monthly_bonus, _)) = &sponsorship_context
                 {
                     mail_events.push(MonthlyFinanceMailEvent::SponsorPayout {
@@ -819,16 +836,25 @@ pub fn process_monthly_finances(game: &mut Game) {
 
         if let Some(sponsorship) = team.sponsorship.as_mut() {
             let sponsor_name = sponsorship.sponsor_name.clone();
+            let mails_user = sponsorship.origin == SponsorshipOrigin::Offer;
             sponsorship.remaining_months = sponsorship.remaining_months.saturating_sub(1);
             if sponsorship.remaining_months == 0 {
                 team.sponsorship = None;
-                if Some(team.id.as_str()) == user_team_id.as_deref() {
+                if mails_user && Some(team.id.as_str()) == user_team_id.as_deref() {
                     mail_events.push(MonthlyFinanceMailEvent::SponsorExpired {
                         team_id: team.id.clone(),
                         sponsor_name,
                     });
                 }
             }
+        }
+
+        // The deal that just ended (this month's payout is already booked) is replaced
+        // by a new tier deal at the club's current tier, so next month is paid too.
+        if team.sponsorship.is_none()
+            && let Some(tier) = scheduled_tiers.get(&team.id)
+        {
+            team.sponsorship = Some(crate::tier_sponsorship::tier_sponsorship(&team.id, *tier));
         }
     }
 

@@ -6,6 +6,7 @@
 //! five-player roster plus two same-role substitutes (a Top and a Mid).
 
 use chrono::{Duration, TimeZone, Utc};
+use olm_core::ai_rotation::REST_BELOW;
 use olm_core::clock::GameClock;
 use olm_core::domain::league::{Fixture, FixtureStatus, League};
 use olm_core::domain::manager::Manager;
@@ -175,16 +176,49 @@ struct Outcome {
     lowest: u8,
     /// Rival team-days on which a substitute started.
     substitute_starts: usize,
+    /// Starters forced tired before day one that a fresh substitute replaced on day one.
+    rested_on_day_one: usize,
     game: Game,
 }
 
+/// Condition a forced-tired starter begins with: far below `REST_BELOW`, so one
+/// day of recovery cannot lift it back over the threshold.
+const FORCED_TIRED_CONDITION: u8 = 10;
+
 fn simulate(substitutes: usize) -> Outcome {
+    simulate_with_tired_starters(substitutes, &[])
+}
+
+/// Like [`simulate`], but the starters named in `tired_ids` begin the run at
+/// [`FORCED_TIRED_CONDITION`]. Whether a team rests them does not depend on how
+/// tiring the matches turn out to be, so the rest rule is exercised for certain.
+fn simulate_with_tired_starters(substitutes: usize, tired_ids: &[&str]) -> Outcome {
     let mut game = build_game(substitutes);
+    for player in game
+        .players
+        .iter_mut()
+        .filter(|p| tired_ids.contains(&p.id.as_str()))
+    {
+        player.condition = FORCED_TIRED_CONDITION;
+    }
+    let mut rested_on_day_one = 0;
     let mut daily_average = Vec::new();
     let mut lowest = 100u8;
     let mut substitute_starts = 0;
-    for _ in 0..70 {
+    for day in 0..70 {
         turn::process_day(&mut game);
+        if day == 0 {
+            rested_on_day_one = tired_ids
+                .iter()
+                .filter(|id| {
+                    !game.teams.iter().any(|team| {
+                        team.active_lineup_ids
+                            .iter()
+                            .any(|lineup_id| lineup_id == *id)
+                    })
+                })
+                .count();
+        }
         substitute_starts += game
             .teams
             .iter()
@@ -205,6 +239,7 @@ fn simulate(substitutes: usize) -> Outcome {
         final_week,
         lowest,
         substitute_starts,
+        rested_on_day_one,
         game,
     }
 }
@@ -221,7 +256,15 @@ fn assert_valid_lineups(game: &Game) {
 
 #[test]
 fn rivals_with_a_deep_bench_stay_fresh_and_keep_valid_lineups() {
-    let outcome = simulate(2);
+    // One tired Top and one tired Mid starter on two rivals, each with a fresh
+    // same-role substitute on the bench.
+    let tired = ["t1-s0", "t2-s2"];
+    let outcome = simulate_with_tired_starters(2, &tired);
+    assert_eq!(
+        outcome.rested_on_day_one,
+        tired.len(),
+        "every forced-tired starter should sit out the first day"
+    );
     assert!(
         outcome.lowest >= 20,
         "a rival starter fell to {} condition; the lowest tolerated is 20",
@@ -233,9 +276,12 @@ fn rivals_with_a_deep_bench_stay_fresh_and_keep_valid_lineups() {
         outcome.overall,
         outcome.final_week
     );
+    // Real assists and CS (background matches record them) keep mental resilience
+    // from decaying, so starters rarely sink below `REST_BELOW` on their own; the
+    // forced-tired starters above are what make the rest observable.
     assert!(
         outcome.substitute_starts > 0,
-        "tired starters should have been rested for their substitutes"
+        "starters were forced to condition {FORCED_TIRED_CONDITION} (below {REST_BELOW}) but no substitute started"
     );
     assert_valid_lineups(&outcome.game);
 }

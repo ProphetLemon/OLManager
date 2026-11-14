@@ -16,11 +16,15 @@
 //!   because wages are contracted, and the sponsorship is scaled down.
 //! - The user's board is happier after a promotion and unhappier after a relegation.
 //!
-//! The sponsorship steps only touch a club that already has a sponsor, and the median is 0
-//! when no peer has one. The bundled world data ships every club with `sponsorship: null`
-//! and nothing seeds one, so on that data the sponsorship repricing is inert: a promoted
-//! club gains no income stream here. Seeding tier-aware sponsors is an open product
-//! decision, tracked as a follow-up.
+//! The sponsorship steps only touch a club that holds a sponsor, and the median is 0 when
+//! no peer has one. Every club a league schedules starts with a tier deal (see
+//! [`crate::tier_sponsorship`]), so these steps are live:
+//!
+//! - a promoted club's deal steps toward the new tier's median deal value (never down);
+//! - a relegated club keeps [`RELEGATED_SPONSORSHIP_PERCENT`] of its deal value for the
+//!   rest of the term;
+//! - when the deal ends, the monthly finance step renews it at the club's current tier,
+//!   so the value is reset to that tier's amount.
 //!
 //! Peers are the destination league's other main clubs, so a league that has no peer
 //! left leaves the moved clubs unchanged.

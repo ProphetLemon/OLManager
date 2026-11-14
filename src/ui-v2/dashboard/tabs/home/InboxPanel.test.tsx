@@ -45,6 +45,15 @@ describe("InboxPanel", () => {
     expect(screen.getByText("5 unread")).toBeInTheDocument()
   })
 
+  it("lets a long heading (German \"Posteingang\") wrap or push the buttons down instead of truncating", () => {
+    render(<InboxPanel messages={[msg(1)]} unreadCount={3} onOpen={vi.fn()} />)
+    const heading = screen.getByRole("heading", { level: 2 })
+    expect(heading.className).not.toMatch(/(^|\s)truncate(\s|$)/)
+    expect(heading.className).toMatch(/min-w-fit/)
+    expect(heading.parentElement?.className).toMatch(/flex-wrap/)
+    // Layout is unverified in jsdom: only the classes that forbid the truncation are pinned here.
+  })
+
   it("puts the category tag before the subject and shows no raw date", () => {
     render(<InboxPanel messages={[msg(1, { date: "2027-10-05T09:00:00Z" })]} unreadCount={0} onOpen={vi.fn()} />)
     const row = screen.getByRole("button", { name: /Subject 1/ })
@@ -99,10 +108,11 @@ describe("InboxPanel", () => {
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Inbox")
   })
 
-  it("keeps the header on one line: the title truncates while the pill and link hold their width", () => {
+  it("never cuts the title short: the header wraps instead, and the pill and link hold their width", () => {
     render(<InboxPanel messages={[msg(1)]} unreadCount={13} onOpen={vi.fn()} />)
     const title = screen.getByRole("heading", { name: "Inbox" })
-    expect(title).toHaveClass("min-w-0", "truncate", "whitespace-nowrap")
+    expect(title).toHaveClass("min-w-fit")
+    expect(title).not.toHaveClass("truncate")
     expect(document.querySelector('[data-slot="inbox-unread-count"]')).toHaveClass("shrink-0", "whitespace-nowrap")
     expect(screen.getByRole("button", { name: "Open inbox" })).toHaveClass("shrink-0", "whitespace-nowrap")
   })

@@ -52,3 +52,37 @@ describe("gold on the end screen result", () => {
     ]);
   });
 });
+
+describe("the gold difference over time on the end screen result", () => {
+  const withTimeline = (goldDiffTimeline?: Array<{ minute: number; diff: number }>) =>
+    buildDraftResultFromRuntime({
+      runtime: {
+        timeSec: 1500,
+        running: false,
+        winner: "blue",
+        champions: [],
+        stats: {
+          blue: { kills: 5, towers: 6, dragons: 2, barons: 0, gold: 40000 },
+          red: { kills: 3, towers: 1, dragons: 1, barons: 0, gold: 35000 },
+        },
+        events: [{ t: 300, text: "BLUE killed a champion", type: "kill" }],
+        ...(goldDiffTimeline ? { goldDiffTimeline } : {}),
+      } as unknown as LolSimV1RuntimeState,
+      snapshot,
+      championSelections: null,
+    });
+
+  it("keeps what the match recorded", () => {
+    const recorded = [
+      { minute: 0, diff: 0 },
+      { minute: 12, diff: 3100 },
+      { minute: 25, diff: 5000 },
+    ];
+    expect(withTimeline(recorded).goldDiffTimeline).toEqual(recorded);
+  });
+
+  it("has no series when the match recorded none, instead of drawing one from the final totals", () => {
+    expect(withTimeline().goldDiffTimeline).toEqual([]);
+    expect(withTimeline([{ minute: 0, diff: 0 }]).goldDiffTimeline).toEqual([]);
+  });
+});

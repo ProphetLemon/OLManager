@@ -7,7 +7,7 @@ use crate::application::live_match::{
     apply_match_command as apply_match_command_service,
     finish_live_match as finish_live_match_service,
     get_match_snapshot as get_match_snapshot_service, start_live_match as start_live_match_service,
-    step_live_match as step_live_match_service, LolSimMatchReportInput,
+    LolSimMatchReportInput,
 };
 use olm_core::domain::stats::MatchOutcome;
 use olm_core::draft::{
@@ -15,7 +15,6 @@ use olm_core::draft::{
 };
 use olm_core::game::Game;
 use olm_core::state::StateManager;
-use olm_core::team_talk::apply_team_talk as apply_team_talk_core;
 
 fn apply_delta(value: u8, delta: i16) -> u8 {
     ((value as i16) + delta).clamp(10, 100) as u8
@@ -95,17 +94,8 @@ fn finish_live_match_internal(
     finish_live_match_service(state, lol_report, locale, data_base)
 }
 
-fn apply_team_talk_internal(
-    game: &mut Game,
-    tone: &str,
-    context: &str,
-    seed: u64,
-) -> Result<Vec<serde_json::Value>, String> {
-    apply_team_talk_core(game, tone, context, seed)
-}
-
 /// Start a live match for a given fixture.
-/// mode: "live" | "spectator" | "instant"
+/// mode: "live" | "spectator"
 #[tauri::command]
 pub fn start_live_match(
     state: State<'_, StateManager>,
@@ -126,15 +116,6 @@ pub fn evaluate_draft_state(
         .get_game(|game: &Game| game.clone())
         .ok_or("No active game session".to_string())?;
     evaluate_draft_state_core(&game, &input)
-}
-
-/// Step the live match forward by N minutes. Returns the events from each minute.
-#[tauri::command]
-pub fn step_live_match(
-    state: State<'_, StateManager>,
-    minutes: u16,
-) -> Result<Vec<olm_core::engine::MinuteResult>, String> {
-    step_live_match_service(&state, minutes)
 }
 
 /// Apply a match command (substitution, tactic change, set piece taker, etc.)
@@ -231,51 +212,6 @@ pub fn record_fixture_champion_picks(
 
     state.set_game(game.clone());
     Ok(crate::client_game::game_for_client(&game))
-}
-
-#[tauri::command]
-pub fn apply_champion_mastery_from_draft(
-    state: State<'_, StateManager>,
-    winner_team_id: String,
-    picks: Vec<FixtureChampionPickInput>,
-) -> Result<Game, String> {
-    info!(
-        "[cmd] apply_champion_mastery_from_draft: picks={}",
-        picks.len()
-    );
-
-    let mut game = state
-        .get_game(|g| g.clone())
-        .ok_or("No active game session".to_string())?;
-
-    let mastery_picks: Vec<(String, String)> = picks
-        .iter()
-        .map(|pick| (pick.player_id.clone(), pick.champion_id.clone()))
-        .collect();
-    olm_core::champions::apply_match_mastery_progress(&mut game, &winner_team_id, &mastery_picks);
-
-    state.set_game(game.clone());
-    Ok(crate::client_game::game_for_client(&game))
-}
-
-/// Apply a team talk and return per-player morale changes.
-/// tone: "calm" | "motivational" | "assertive" | "aggressive" | "praise" | "disappointed"
-/// context: "winning" | "losing" | "drawing"
-#[tauri::command]
-pub fn apply_team_talk(
-    state: State<'_, StateManager>,
-    tone: String,
-    context: String,
-) -> Result<Vec<serde_json::Value>, String> {
-    info!("[cmd] apply_team_talk: tone={}, context={}", tone, context);
-    let mut game = state
-        .get_game(|g| g.clone())
-        .ok_or("No active game session")?;
-    let seed = rand::rng().random::<u64>();
-    let results = apply_team_talk_internal(&mut game, &tone, &context, seed)?;
-
-    state.set_game(game);
-    Ok(results)
 }
 
 /// Process press conference answers: generate news article, affect squad morale.
@@ -455,8 +391,9 @@ pub fn submit_press_conference(
 #[cfg(test)]
 mod tests {
     use super::{
-        apply_press_conference_effects, apply_team_talk_internal, finish_live_match_internal,
+        apply_press_conference_effects, finish_live_match_internal,
     };
+    use olm_core::team_talk::apply_team_talk;
     use chrono::{TimeZone, Utc};
     use olm_core::clock::GameClock;
     use olm_core::domain::league::{
@@ -730,7 +667,7 @@ mod tests {
             severity: 70,
         });
 
-        let results = apply_team_talk_internal(&mut game, "aggressive", "winning", 7).unwrap();
+        let results = apply_team_talk(&mut game, "aggressive", "winning", 7).unwrap();
 
         assert!(delta_for(&results, "t1_mid0") > delta_for(&results, "t1_fwd0"));
     }
@@ -746,8 +683,8 @@ mod tests {
         player.morale = 50;
         player.morale_core.manager_trust = 70;
 
-        let first = apply_team_talk_internal(&mut game, "motivational", "losing", 13).unwrap();
-        let second = apply_team_talk_internal(&mut game, "motivational", "losing", 13).unwrap();
+        let first = apply_team_talk(&mut game, "motivational", "losing", 13).unwrap();
+        let second = apply_team_talk(&mut game, "motivational", "losing", 13).unwrap();
 
         assert!(delta_for(&second, "t1_mid0") <= delta_for(&first, "t1_mid0"));
     }

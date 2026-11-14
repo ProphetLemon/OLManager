@@ -263,7 +263,7 @@ fn replace_accepts_the_replaced_clubs_own_name() {
     s.name = "Bravo Club".to_string();
     s.short_name = "BRV".to_string();
 
-    assert!(replace_team_with_custom(&mut game, "les", "les-b", &s).is_ok());
+    assert!(replace_team_with_custom(&mut game, "les", Some(2), "les-b", &s).is_ok());
 }
 
 #[test]
@@ -273,7 +273,7 @@ fn replace_rejects_a_name_used_by_another_competition() {
     s.name = "g2 esports".to_string();
 
     assert_eq!(
-        replace_team_with_custom(&mut game, "les", "les-b", &s).unwrap_err(),
+        replace_team_with_custom(&mut game, "les", Some(2), "les-b", &s).unwrap_err(),
         CustomTeamError::DuplicateName
     );
 }
@@ -354,7 +354,7 @@ fn replace_team_removes_replaced_and_releases_players_and_staff() {
     let mut game = world();
     let before = game.teams.len();
 
-    let outcome = replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+    let outcome = replace_team_with_custom(&mut game, "les", Some(2), "les-b", &spec()).unwrap();
 
     assert_eq!(game.teams.len(), before);
     assert!(game.teams.iter().all(|t| t.id != "les-b"));
@@ -379,7 +379,7 @@ fn replace_team_removes_replaced_and_releases_players_and_staff() {
 fn replace_team_leaves_released_player_contracts_to_the_free_agent_pass() {
     let mut game = world();
 
-    replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+    replace_team_with_custom(&mut game, "les", Some(2), "les-b", &spec()).unwrap();
 
     let released = game.players.iter().find(|p| p.id == "p-b1").unwrap();
     assert_eq!(released.wage, 12_000);
@@ -390,7 +390,7 @@ fn replace_team_leaves_released_player_contracts_to_the_free_agent_pass() {
 fn replace_team_builds_the_club_from_the_league_median() {
     let mut game = world();
 
-    replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+    replace_team_with_custom(&mut game, "les", Some(2), "les-b", &spec()).unwrap();
 
     let custom = game
         .teams
@@ -415,7 +415,7 @@ fn replace_team_builds_the_club_from_the_league_median() {
 }
 
 #[test]
-fn replace_team_clears_links_to_the_replaced_team() {
+fn replace_team_of_a_top_league_club_clears_links_to_the_replaced_team() {
     let mut game = world();
     let mut academy = team("les-b-acad", "Bravo Academy", "BRA", "les");
     academy.team_kind = TeamKind::Academy;
@@ -426,7 +426,7 @@ fn replace_team_clears_links_to_the_replaced_team() {
     sister.parent_team_id = Some("les-b".to_string());
     game.teams.push(sister);
 
-    replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+    replace_team_with_custom(&mut game, "les", Some(1), "les-b", &spec()).unwrap();
 
     let academy = game.teams.iter().find(|t| t.id == "les-b-acad").unwrap();
     assert_eq!(academy.parent_team_id.as_deref(), Some("les-custom-ray"));
@@ -449,11 +449,11 @@ fn orphan_seed_academy(game: &mut Game) {
 }
 
 #[test]
-fn replace_team_hands_the_replaced_clubs_academy_to_the_custom_club() {
+fn replace_team_of_a_top_league_club_hands_its_academy_to_the_custom_club() {
     let mut game = world();
     orphan_seed_academy(&mut game);
 
-    let outcome = replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+    let outcome = replace_team_with_custom(&mut game, "les", Some(1), "les-b", &spec()).unwrap();
 
     let academy = game
         .teams
@@ -477,11 +477,11 @@ fn replace_team_hands_the_replaced_clubs_academy_to_the_custom_club() {
 }
 
 #[test]
-fn replace_team_keeps_the_inherited_academys_people() {
+fn replace_team_of_a_top_league_club_keeps_the_inherited_academys_people() {
     let mut game = world();
     orphan_seed_academy(&mut game);
 
-    replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+    replace_team_with_custom(&mut game, "les", Some(1), "les-b", &spec()).unwrap();
 
     let player = game.players.iter().find(|p| p.id == "p-acad1").unwrap();
     assert_eq!(player.team_id.as_deref(), Some("academy-les-bravo-club"));
@@ -495,6 +495,57 @@ fn replace_team_keeps_the_inherited_academys_people() {
 }
 
 #[test]
+fn replace_team_of_a_tier_two_club_inherits_no_academy() {
+    let mut game = world();
+    orphan_seed_academy(&mut game);
+
+    let outcome = replace_team_with_custom(&mut game, "les", Some(2), "les-b", &spec()).unwrap();
+
+    let custom = game
+        .teams
+        .iter()
+        .find(|t| t.id == "les-custom-ray")
+        .unwrap();
+    assert_eq!(custom.academy_team_id, None);
+    assert!(game.teams.iter().all(|t| t.id != "academy-les-bravo-club"));
+    assert!(
+        game.removed_team_ids
+            .contains(&"academy-les-bravo-club".to_string())
+    );
+    assert!(outcome.released_player_ids.contains(&"p-acad1".to_string()));
+    assert!(outcome.released_staff_ids.contains(&"s-acad1".to_string()));
+}
+
+#[test]
+fn replace_team_of_a_tier_two_club_dissolves_its_linked_academy_too() {
+    let mut game = world();
+    let mut academy = team("les-b-acad", "Bravo Academy", "BRA", "les");
+    academy.team_kind = TeamKind::Academy;
+    academy.parent_team_id = Some("les-b".to_string());
+    game.teams.push(academy);
+
+    replace_team_with_custom(&mut game, "les", Some(2), "les-b", &spec()).unwrap();
+
+    assert!(game.teams.iter().all(|t| t.id != "les-b-acad"));
+    assert!(game.removed_team_ids.contains(&"les-b-acad".to_string()));
+}
+
+#[test]
+fn replace_team_with_an_unknown_tier_inherits_no_academy() {
+    let mut game = world();
+    orphan_seed_academy(&mut game);
+
+    replace_team_with_custom(&mut game, "les", None, "les-b", &spec()).unwrap();
+
+    let custom = game
+        .teams
+        .iter()
+        .find(|t| t.id == "les-custom-ray")
+        .unwrap();
+    assert_eq!(custom.academy_team_id, None);
+}
+
+#[test]
 fn replace_team_dissolves_the_orphan_academy_when_the_custom_club_has_one() {
     let mut game = world();
     orphan_seed_academy(&mut game);
@@ -503,7 +554,7 @@ fn replace_team_dissolves_the_orphan_academy_when_the_custom_club_has_one() {
     own.parent_team_id = Some("les-custom-ray".to_string());
     game.teams.push(own);
 
-    let outcome = replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+    let outcome = replace_team_with_custom(&mut game, "les", Some(1), "les-b", &spec()).unwrap();
 
     assert!(game.teams.iter().all(|t| t.id != "academy-les-bravo-club"));
     assert!(
@@ -535,15 +586,15 @@ fn replace_team_rejects_unknown_academy_and_wrong_competition_ids() {
     game.teams.push(academy);
 
     assert_eq!(
-        replace_team_with_custom(&mut game, "les", "nope", &spec()).unwrap_err(),
+        replace_team_with_custom(&mut game, "les", Some(2), "nope", &spec()).unwrap_err(),
         CustomTeamError::ReplacedTeamNotFound("nope".to_string())
     );
     assert_eq!(
-        replace_team_with_custom(&mut game, "les", "les-acad", &spec()).unwrap_err(),
+        replace_team_with_custom(&mut game, "les", Some(2), "les-acad", &spec()).unwrap_err(),
         CustomTeamError::NotCustomizableTeamKind
     );
     assert_eq!(
-        replace_team_with_custom(&mut game, "les", "lec-g2", &spec()).unwrap_err(),
+        replace_team_with_custom(&mut game, "les", Some(2), "lec-g2", &spec()).unwrap_err(),
         CustomTeamError::ReplacedTeamNotInCompetition
     );
     assert!(game.removed_team_ids.is_empty());
@@ -716,7 +767,7 @@ fn replace_team_stores_the_uploaded_logo_instead_of_the_generated_badge() {
     let mut s = spec();
     s.logo_data_uri = Some(logo_uri(512, 512));
 
-    replace_team_with_custom(&mut game, "les", "les-b", &s).unwrap();
+    replace_team_with_custom(&mut game, "les", Some(2), "les-b", &s).unwrap();
 
     let custom = game.teams.iter().find(|t| t.id == "les-custom-ray").unwrap();
     let logo = custom.logo_url.as_deref().unwrap();
@@ -728,7 +779,7 @@ fn replace_team_stores_the_uploaded_logo_instead_of_the_generated_badge() {
 fn replace_team_keeps_the_generated_badge_without_an_uploaded_logo() {
     let mut game = world();
 
-    replace_team_with_custom(&mut game, "les", "les-b", &spec()).unwrap();
+    replace_team_with_custom(&mut game, "les", Some(2), "les-b", &spec()).unwrap();
 
     let custom = game.teams.iter().find(|t| t.id == "les-custom-ray").unwrap();
     assert!(custom.logo_url.as_deref().unwrap().starts_with("data:image/svg+xml"));
@@ -740,7 +791,7 @@ fn replace_team_rejects_an_invalid_logo_before_changing_anything() {
     let mut s = spec();
     s.logo_data_uri = Some("data:image/svg+xml;base64,PHN2Zy8+".to_string());
 
-    let error = replace_team_with_custom(&mut game, "les", "les-b", &s).unwrap_err();
+    let error = replace_team_with_custom(&mut game, "les", Some(2), "les-b", &s).unwrap_err();
 
     assert_eq!(
         error,
@@ -835,7 +886,7 @@ fn join_team_matches_the_replace_install_for_identity_and_look() {
     let mut replaced = world();
 
     join_team_with_custom(&mut joined, "les", &spec()).unwrap();
-    replace_team_with_custom(&mut replaced, "les", "les-b", &spec()).unwrap();
+    replace_team_with_custom(&mut replaced, "les", Some(2), "les-b", &spec()).unwrap();
 
     let find = |game: &Game| {
         game.teams

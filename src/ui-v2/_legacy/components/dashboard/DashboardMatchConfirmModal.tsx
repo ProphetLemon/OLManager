@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { getFixtureDisplayLabel, getTeamName } from "@/lib/common/helpers";
 import type { FixtureData, TeamData } from "@/store/gameStore";
 import type { MatchModeType } from "@/hooks/useAdvanceTime";
-import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboard/DashboardHeader";
+import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 import DashboardModalFrame from "@/ui-v2/_legacy/components/dashboard/DashboardModalFrame";
 
 interface DashboardMatchConfirmModalProps {

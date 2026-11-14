@@ -6,7 +6,7 @@ const MATCH_ROOT = resolve(__dirname, "..");
 const SRC_ROOT = resolve(MATCH_ROOT, "..", "..");
 
 // Raw colours are banned in the match screen: it paints with the On Air tokens,
-// the --terrain-* set and the team tokens. A hex literal or rgb()/hsl() call is
+// the map tokens (--terrain-ground, --map-casing, --map-ink) and the team tokens. A hex literal or rgb()/hsl() call is
 // a colour that skipped the theme.
 const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(/;
 

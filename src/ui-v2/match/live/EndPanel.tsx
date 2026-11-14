@@ -7,7 +7,9 @@ import { compactGold } from "@/lib/match/live/formatNumbers";
 import type { TeamIdentity } from "@/lib/match/live/teamIdentity";
 import { Button } from "@/ui-v2/components/ui/button";
 
+import { SideCrest } from "./SideCrest";
 import "./liveMatch.css";
+import { NAME_SLOT, NameIn } from "@/ui-v2/match/NameText";
 
 export interface EndPanelProps {
   summary: EndSummary;
@@ -51,13 +53,16 @@ export function EndPanel({ summary, blue, red, onContinue }: EndPanelProps) {
         data-outcome={summary.outcome ?? "neutral"}
       >
         <span className="live-end-kicker">{t("match.matchOver")}</span>
-        <h2 className="live-end-result">
-          {summary.outcome === "victory"
-            ? t("match.victory")
-            : summary.outcome === "defeat"
-              ? t("match.defeat")
-              : t("onAir.match.end.winner", { team: winner.name })}
-        </h2>
+        <div className="live-end-winner">
+          <SideCrest side={summary.winner} identity={winner} size="3rem" />
+          <h2 className="live-end-result">
+            {summary.outcome === "victory"
+              ? t("match.victory")
+              : summary.outcome === "defeat"
+                ? t("match.defeat")
+                : <NameIn text={t("onAir.match.end.winner", { team: NAME_SLOT })} name={winner.name} />}
+          </h2>
+        </div>
         <p className="live-end-score">
           <span data-team="blue">{summary.blue.kills}</span>
           <span aria-hidden="true">-</span>
@@ -71,10 +76,16 @@ export function EndPanel({ summary, blue, red, onContinue }: EndPanelProps) {
             <tr>
               <td />
               <th scope="col" data-team="blue">
-                {blue.tag}
+                <span className="live-end-colhead">
+                  <SideCrest side="blue" identity={blue} size="1.5rem" />
+                  {blue.tag}
+                </span>
               </th>
               <th scope="col" data-team="red">
-                {red.tag}
+                <span className="live-end-colhead">
+                  <SideCrest side="red" identity={red} size="1.5rem" />
+                  {red.tag}
+                </span>
               </th>
             </tr>
           </thead>

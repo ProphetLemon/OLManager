@@ -13,6 +13,9 @@ import {
 } from "@/lib/match/live/playerCardView";
 import { itemDisplayName, summonerSpellName, type ItemNamesByKey } from "@/ui-v2/_legacy/components/match/itemNames";
 
+import { IconTip } from "@/ui-v2/components/ui/icon-tip";
+
+import { CooldownChip as CooldownChipView } from "./CooldownChip";
 import { useMarkerTexts } from "./useMarkerTexts";
 import "./liveMatch.css";
 
@@ -45,13 +48,13 @@ export interface LivePlayerCardProps {
 function ItemSlot({ itemKey, name }: { itemKey: string; name: string }) {
   const [failed, setFailed] = useState(false);
   return (
-    <span className="arena-item" title={name} data-testid="card-item">
+    <IconTip className="arena-item" label={name} data-testid="card-item">
       {failed ? (
         <span aria-hidden="true">{initialsOf(name)}</span>
       ) : (
         <img src={`/lol-item-icons/${itemKey}.png`} alt="" draggable={false} onError={() => setFailed(true)} />
       )}
-    </span>
+    </IconTip>
   );
 }
 
@@ -96,9 +99,11 @@ export const LivePlayerCard = memo(function LivePlayerCard({
     return itemName(chip.key ?? "");
   };
   const cooldownSentence = (chip: CooldownChip) =>
-    chip.seconds > 0
-      ? t("onAir.match.card.cdWait", { name: cooldownName(chip), count: chip.seconds })
-      : t("onAir.match.card.cdReady", { name: cooldownName(chip) });
+    chip.state === "locked"
+      ? t("onAir.match.card.cdLocked", { name: cooldownName(chip), level: chip.unlockLevel })
+      : chip.state === "waiting"
+        ? t("onAir.match.card.cdWait", { name: cooldownName(chip), count: chip.seconds })
+        : t("onAir.match.card.cdReady", { name: cooldownName(chip) });
 
   const gapSentence = (g: GoldGap | null): string => {
     if (!g || !parts.opponentRole) return "";
@@ -212,21 +217,18 @@ export const LivePlayerCard = memo(function LivePlayerCard({
             return key ? (
               <ItemSlot key={`${slot}-${key}`} itemKey={key} name={itemName(key)} />
             ) : (
-              <span key={`empty-${slot}`} className="arena-item" data-empty title={t("onAir.match.card.itemEmpty")} />
+              <IconTip key={`empty-${slot}`} className="arena-item" data-empty label={t("onAir.match.card.itemEmpty")} />
             );
           })}
         </span>
         <span className="arena-card-cds">
           {parts.cooldowns.map((chip) => (
-            <span
-              key={`${chip.kind}-${chip.letter}`}
-              className="arena-cd"
-              data-ready={chip.seconds === 0 || undefined}
-              title={cooldownSentence(chip)}
-              data-testid="card-cd"
-            >
-              {chip.seconds > 0 ? `${chip.letter} ${chip.seconds}` : chip.letter}
-            </span>
+            <CooldownChipView
+              key={`${chip.kind}-${chip.key ?? "ultimate"}`}
+              chip={chip}
+              label={cooldownSentence(chip)}
+              name={cooldownName(chip)}
+            />
           ))}
         </span>
       </span>

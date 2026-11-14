@@ -157,7 +157,7 @@ export function DashboardHeaderV2({
           items={[
             {
               id: "skipToMatchDay",
-              label: t("onAir.bar.skipToMatchDay", { defaultValue: "Skip to match day" }),
+              label: t("onAir.bar.skipToMatchDay", { defaultValue: "Simulate to next match" }),
               icon: <SkipForward aria-hidden="true" />,
               onSelect: onSkipToMatchDay,
             },

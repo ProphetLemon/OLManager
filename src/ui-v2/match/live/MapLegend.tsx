@@ -1,4 +1,4 @@
-import { ChevronsUp } from "lucide-react";
+import { ChevronsRight, ChevronsUp, Map as MapIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -13,6 +13,8 @@ export const LEGEND_KEYS = {
   camp: "onAir.match.legend.camp",
   ward: "onAir.match.legend.ward",
   push: "onAir.match.legend.push",
+  lanes: "onAir.match.legend.lanes",
+  timers: "onAir.match.legend.timers",
   items: "onAir.match.legend.items",
   cooldowns: "onAir.match.legend.cooldowns",
 } as const;
@@ -51,6 +53,8 @@ const ROWS: readonly LegendRow[] = [
   { id: "camp", key: LEGEND_KEYS.camp, glyph: <i className="arena-lg-camp" /> },
   { id: "ward", key: LEGEND_KEYS.ward, glyph: <ShapePair kind="ward" /> },
   { id: "push", key: LEGEND_KEYS.push, glyph: <ChevronsUp aria-hidden="true" focusable="false" className="arena-lg-icon" /> },
+  { id: "lanes", key: LEGEND_KEYS.lanes, glyph: <ChevronsRight aria-hidden="true" focusable="false" className="arena-lg-icon" /> },
+  { id: "timers", key: LEGEND_KEYS.timers, glyph: null },
   { id: "items", key: LEGEND_KEYS.items, glyph: null },
   { id: "cooldowns", key: LEGEND_KEYS.cooldowns, glyph: null },
 ];
@@ -64,7 +68,11 @@ export function MapLegend() {
   const { t } = useTranslation();
   return (
     <details className="arena-legend" data-testid="map-legend">
-      <summary className="arena-legend-summary">{t("onAir.match.legend.heading")}</summary>
+      <summary className="arena-legend-summary" title={t("onAir.match.legend.heading")}>
+        <MapIcon className="arena-btn-icon" aria-hidden="true" focusable="false" />
+        {/* Clipped, not removed, where the row is narrow: the summary keeps its name and becomes an icon. */}
+        <span className="arena-btn-label">{t("onAir.match.legend.heading")}</span>
+      </summary>
       <ul className="arena-legend-list">
         {ROWS.map((row) => (
           <li key={row.id} className="arena-lg-row" data-row={row.id}>

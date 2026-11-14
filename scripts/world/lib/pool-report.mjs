@@ -1,6 +1,7 @@
 // The "Active-pros pool" section of the review report: what the pool adds, what it left out and why.
 import { evenSample } from "./pool-scope.mjs";
-import { PLACEHOLDER_RATING, compare } from "./pool.mjs";
+import { compare } from "./pool.mjs";
+import { RATING_STATS, STATS_MIN_GAMES } from "./pool-rating.mjs";
 
 const md = (text) => String(text ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");
 const bump = (map, key) => map.set(key, (map.get(key) ?? 0) + 1);
@@ -65,7 +66,38 @@ export function summarizePool(selection) {
 }
 
 /**
+ * How many adds got a rating from stats and how many the tier default, from the `pool` metadata of the ops.
+ * @param {{players: Array<{op: {pool: object}}>, staff: Array<{op: {pool: object}}>}} ops
+ */
+export function summarizeRatings(ops) {
+  const tally = (list, pick) => {
+    const map = new Map();
+    for (const { op } of list) {
+      const key = pick(op.pool) || "(none)";
+      const row = map.get(key) ?? { stats: 0, tierDefault: 0 };
+      if (op.pool.rating === RATING_STATS) row.stats += 1;
+      else row.tierDefault += 1;
+      map.set(key, row);
+    }
+    return new Map([...map].sort(([a], [b]) => compare(String(a), String(b))));
+  };
+  const all = [...ops.players, ...ops.staff];
+  const total = { stats: all.filter((e) => e.op.pool.rating === RATING_STATS).length, tierDefault: 0 };
+  total.tierDefault = all.length - total.stats;
+  return {
+    total,
+    playersByTier: tally(ops.players, (p) => `tier ${p.tier}`),
+    playersByRole: tally(ops.players, (p) => p.role),
+    staffByTier: tally(ops.staff, (p) => `tier ${p.tier}`),
+    staffByRole: tally(ops.staff, (p) => p.role),
+  };
+}
+
+const ratingTable = (map, label) => table([...map].map(([key, v]) => [key, v.stats, v.tierDefault, v.stats + v.tierDefault]), [label, "from stats", "tier default", "total"]);
+
+/**
  * @param {object} pool
+ * @param {{players: object[], staff: object[]}} [pool.ops] the pool ops, for the rating counts
  * @param {{since: string, cap: number}} pool.settings
  * @param {object} pool.inputs result of fetchPoolInputs (or an equivalent)
  * @param {ReturnType<import("./pool.mjs").selectPool>} pool.selection
@@ -73,13 +105,13 @@ export function summarizePool(selection) {
  * @param {number} pool.bytes size of the serialised overlay
  * @param {ReturnType<typeof explainProbe>|null} pool.probe
  */
-export function renderPoolSection({ settings, inputs, selection, limits, bytes, probe }) {
+export function renderPoolSection({ settings, inputs, selection, limits, bytes, probe, ops = null }) {
   const lines = ["## Active-pros pool", ""];
   const { counts } = selection;
   const summary = summarizePool(selection);
   lines.push(`- Scope: \`recommended\` tournament filter, tournaments starting on or after ${settings.since}, people with a Leaguepedia Players page who are not retired, qualifier-flagged tournaments only up to ${settings.cap} roster entries.`);
   lines.push(`- Result: ${summary.players} players and ${summary.staff} staff added as teamless free agents (limits ${limits.players} and ${limits.staff}); overlay ${bytes} bytes (the app rejects more than ${limits.overlayBytes}).`);
-  lines.push(`- Ratings are a placeholder (\`pool.rating: "${PLACEHOLDER_RATING}"\`): the game's median per position shifted by tier (1 top flight, 2 official circuit, 3 recurring seasonal league). A4 replaces them from stats.`);
+  lines.push(`- Ratings: a player with at least ${STATS_MIN_GAMES} usable games and a skill estimate is rated from stats (\`pool.rating: "stats"\`, the method of docs/STAT_RATINGS.md); everybody else, and all staff, get the game's median per position shifted by tier (\`"tier-default"\`; 1 top flight, 2 official circuit, 3 recurring seasonal league).`);
   lines.push(`- Wage, market value and contract are the roster refresh's empty values (0, 0, ""); the game decides them when it accepts teamless adds (A5).`);
   lines.push(`- Games per player: ${inputs.games ? "from scoreboard rows in the window" : "unavailable (null)"}. Tournament lists are summarised as counts, leagues and levels.`, "");
 
@@ -106,6 +138,16 @@ export function renderPoolSection({ settings, inputs, selection, limits, bytes, 
   lines.push("Staff by game role (Leaguepedia label)", "", ...countTable(summary.staffByKind, "kind"), "");
   lines.push("Staff by region", "", ...countTable(summary.staffByRegion, "region"), "");
   lines.push("Staff by best tournament level", "", ...countTable(summary.staffByLevel, "level"), "");
+
+  if (ops) {
+    const ratings = summarizeRatings(ops);
+    lines.push("### Ratings: stats or tier default", "");
+    lines.push(`${ratings.total.stats} of ${ratings.total.stats + ratings.total.tierDefault} adds were rated from stats; ${ratings.total.tierDefault} took the tier default.`, "");
+    lines.push("Players by tier", "", ...ratingTable(ratings.playersByTier, "tier"), "");
+    lines.push("Players by position (Leaguepedia label)", "", ...ratingTable(ratings.playersByRole, "position"), "");
+    lines.push("Staff by tier (staff have no per-game stats)", "", ...ratingTable(ratings.staffByTier, "tier"), "");
+    lines.push("Staff by Leaguepedia label", "", ...ratingTable(ratings.staffByRole, "kind"), "");
+  }
 
   const view = inputs.view;
   lines.push("### Qualifier cap", "");

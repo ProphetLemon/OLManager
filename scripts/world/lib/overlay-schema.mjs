@@ -73,6 +73,8 @@ function checkStaffRecord(record, path, errors) {
   if (!isNonEmptyString(record.nickname)) errors.add(`${path}.nickname`, "invalid_field", "nickname is required");
   if (!isNonEmptyString(record.first_name)) errors.add(`${path}.first_name`, "invalid_field", "first_name is required");
   if (record.team_id !== null && !isNonEmptyString(record.team_id)) errors.add(`${path}.team_id`, "invalid_field", "team_id must be a string or null");
+  // Staff on a team carry the country name, as the game's staff files do; a free-agent add carries an ISO-2 code like a player.
+  if (record.team_id === null && (typeof record.nationality !== "string" || !/^([A-Z]{2})?$/.test(record.nationality))) errors.add(`${path}.nationality`, "invalid_field", "nationality of a staff add without a team must be an ISO-2 code or empty");
   checkAttributes(record.attributes, STAFF_ATTRIBUTE_KEYS, `${path}.attributes`, errors);
 }
 

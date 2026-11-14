@@ -29,7 +29,7 @@ export interface CardChampion extends ContactChampion {
   sweeperCdUntil?: number;
   sweeperActiveUntil?: number;
   summonerSpells?: ReadonlyArray<{ key: string; cdUntil: number }>;
-  ultimate?: { cdUntil: number } | null;
+  ultimate?: { cdUntil: number; icon?: string; archetype?: string } | null;
 }
 
 const isTime = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
@@ -41,30 +41,67 @@ const secondsLeft = (until: unknown, nowSec: number): number => (isTime(until) ?
 
 export type CooldownKind = "ultimate" | "summoner" | "trinket";
 
+/** What a cooldown chip shows: ready to use, counting down, or not yet unlocked (the ultimate before its level). */
+export type CooldownState = "ready" | "waiting" | "locked";
+
+/** The level at which a champion learns the ultimate; the engine casts none before it (`ULTIMATE_UNLOCK_LEVEL`). */
+export const ULTIMATE_UNLOCK_LEVEL = 6;
+
 export interface CooldownChip {
   kind: CooldownKind;
-  /** The letter on the chip: R for the ultimate, the first letter of a summoner spell, W or O for the trinket. */
+  state: CooldownState;
+  /** The letter of a summoner spell and the ultimate's last resort, on the chip when no icon shows; empty for a trinket. */
   letter: string;
   /** Summoner spell key, or the catalogue key of the trinket; null for the ultimate. */
   key: string | null;
-  /** Whole seconds left; 0 means ready. */
+  /** Whole seconds left; 0 when ready or locked. */
   seconds: number;
+  /** Image of the ultimate or the trinket; null when the engine sent none and for a summoner spell. */
+  icon: string | null;
+  /** The ultimate's archetype, for the glyph that stands in for a missing icon. */
+  archetype: string | null;
+  /** The level that unlocks the ultimate; only on a locked chip. */
+  unlockLevel: number | null;
 }
 
 const ULTIMATE_LETTER = "R";
-const TRINKET_LETTER: Readonly<Record<string, string>> = { wardingtotem: "W", oraclelens: "O" };
-const TRINKET_ITEM: Readonly<Record<string, string>> = { wardingtotem: "stealth_ward", oraclelens: "oracle_lens" };
+export const TRINKET_ITEM: Readonly<Record<string, string>> = { wardingtotem: "stealth_ward", oraclelens: "oracle_lens" };
+
+const stateOf = (seconds: number): CooldownState => (seconds > 0 ? "waiting" : "ready");
+const textOrNull = (value: unknown): string | null => (typeof value === "string" && value.trim() ? value.trim() : null);
 
 /** Ultimate, the two summoner spells and the trinket, in that order. A cooldown the engine does not send is left out. */
 export function cooldownChips(champion: CardChampion, nowSec: number): CooldownChip[] {
   const chips: CooldownChip[] = [];
   if (champion.ultimate) {
-    chips.push({ kind: "ultimate", letter: ULTIMATE_LETTER, key: null, seconds: secondsLeft(champion.ultimate.cdUntil, nowSec) });
+    // Before the unlock level the engine sends a cooldown of 0, which would read as "ready".
+    const locked = !(champion.level >= ULTIMATE_UNLOCK_LEVEL);
+    const seconds = locked ? 0 : secondsLeft(champion.ultimate.cdUntil, nowSec);
+    chips.push({
+      kind: "ultimate",
+      state: locked ? "locked" : stateOf(seconds),
+      letter: ULTIMATE_LETTER,
+      key: null,
+      seconds,
+      icon: textOrNull(champion.ultimate.icon),
+      archetype: textOrNull(champion.ultimate.archetype),
+      unlockLevel: locked ? ULTIMATE_UNLOCK_LEVEL : null,
+    });
   }
   for (const spell of (champion.summonerSpells ?? []).slice(0, 2)) {
     const key = spell.key.trim().toLowerCase();
     if (!key) continue;
-    chips.push({ kind: "summoner", letter: key.charAt(0).toUpperCase(), key, seconds: secondsLeft(spell.cdUntil, nowSec) });
+    const seconds = secondsLeft(spell.cdUntil, nowSec);
+    chips.push({
+      kind: "summoner",
+      state: stateOf(seconds),
+      letter: key.charAt(0).toUpperCase(),
+      key,
+      seconds,
+      icon: null,
+      archetype: null,
+      unlockLevel: null,
+    });
   }
   const trinket = champion.trinketKey?.trim().toLowerCase();
   if (trinket && TRINKET_ITEM[trinket]) {
@@ -73,7 +110,16 @@ export function cooldownChips(champion: CardChampion, nowSec: number): CooldownC
       trinket === "oraclelens"
         ? secondsLeft(champion.sweeperActiveUntil, nowSec) || secondsLeft(champion.sweeperCdUntil, nowSec)
         : secondsLeft(champion.wardCdUntil, nowSec);
-    chips.push({ kind: "trinket", letter: TRINKET_LETTER[trinket], key: TRINKET_ITEM[trinket], seconds });
+    chips.push({
+      kind: "trinket",
+      state: stateOf(seconds),
+      letter: "",
+      key: TRINKET_ITEM[trinket],
+      seconds,
+      icon: `/lol-item-icons/${TRINKET_ITEM[trinket]}.png`,
+      archetype: null,
+      unlockLevel: null,
+    });
   }
   return chips;
 }

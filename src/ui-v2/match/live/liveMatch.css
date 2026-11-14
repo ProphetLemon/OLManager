@@ -75,11 +75,11 @@
 }
 
 .arena-champ[data-team="blue"] {
-  --team-color: var(--team-blue);
+  --team-color: var(--side-blue);
 }
 
 .arena-champ[data-team="red"] {
-  --team-color: var(--team-red);
+  --team-color: var(--side-red);
 }
 
 .arena-champ[data-dead] {
@@ -103,6 +103,8 @@
   color: var(--card-foreground);
   pointer-events: auto;
   cursor: pointer;
+  /* The pale lanes of the Rift picture would swallow a coloured ring: it wears a dark casing. */
+  box-shadow: 0 0 0 2px var(--map-casing);
 }
 
 .arena-champ[data-team="red"] .arena-bubble,
@@ -153,8 +155,8 @@
   padding: 0 3px;
   border: 1px solid var(--team-color);
   border-radius: 9px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-weight: 700;
@@ -169,8 +171,8 @@
   left: 0;
   box-sizing: border-box;
   height: 5px;
-  border: 1px solid var(--line);
-  background: var(--background);
+  border: 1px solid var(--map-casing);
+  background: var(--map-casing);
 }
 
 .arena-hp i {
@@ -208,10 +210,11 @@
 /* Rings: double = fighting, dashed = tower fire (ContactLayer), club colour = followed. */
 .ring-fighting {
   box-shadow:
-    0 0 0 2px var(--terrain-ground),
+    0 0 0 2px var(--map-casing),
     0 0 0 4px var(--warning),
-    0 0 0 6px var(--terrain-ground),
-    0 0 0 8px var(--warning);
+    0 0 0 6px var(--map-casing),
+    0 0 0 8px var(--warning),
+    0 0 0 10px var(--map-casing);
 }
 
 .ring-selected {
@@ -234,8 +237,8 @@
   padding: 0 4px;
   border: 1px solid var(--team-color);
   border-radius: 3px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-weight: 700;
@@ -253,8 +256,8 @@
   padding: 1px 5px;
   border: 1px solid var(--team-color);
   border-radius: 3px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   line-height: 1.05;
   white-space: nowrap;
@@ -360,25 +363,26 @@
 }
 
 .arena-links [data-team="blue"] {
-  --team-color: var(--team-blue);
+  --team-color: var(--side-blue);
 }
 
 .arena-links [data-team="red"] {
-  --team-color: var(--team-red);
+  --team-color: var(--side-red);
 }
 
 .arena-link-halo,
 .arena-link,
 .arena-beam,
 .arena-beam-head,
+.arena-beam-head-halo,
 .arena-link-dot,
 .ring-fire {
   vector-effect: non-scaling-stroke;
 }
 
 .arena-link-halo {
-  stroke: var(--terrain-ground);
-  stroke-width: 6px;
+  stroke: var(--map-casing);
+  stroke-width: 7px;
   stroke-linecap: round;
 }
 
@@ -390,14 +394,23 @@
 
 .arena-link-dot {
   fill: var(--warning);
-  stroke: var(--terrain-ground);
-  stroke-width: 1.5px;
+  stroke: var(--map-casing);
+  stroke-width: 2px;
 }
 
 .arena-beam {
   stroke: var(--team-color);
   stroke-width: 3px;
   stroke-dasharray: 8 6;
+}
+
+/* The dark casing under the arrowhead, as the link halo is under the beam. */
+.arena-beam-head-halo {
+  fill: none;
+  stroke: var(--map-casing);
+  stroke-width: 7px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* The arrowhead: two short arms meeting on the target's end of the beam, solid so it reads even when the dashes do not. */
@@ -441,8 +454,8 @@
   padding: 0 5px;
   border: 2px solid var(--warning);
   border-radius: 12px;
-  background: var(--background);
-  color: var(--warning);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-weight: 700;
@@ -454,15 +467,14 @@
 .arena-chip[data-kind="tower"] {
   border-style: dashed;
   border-color: var(--team-color);
-  color: var(--foreground);
 }
 
 .arena-chip[data-team="blue"] {
-  --team-color: var(--team-blue);
+  --team-color: var(--side-blue);
 }
 
 .arena-chip[data-team="red"] {
-  --team-color: var(--team-red);
+  --team-color: var(--side-red);
 }
 
 /* ── Structures, camps, wards, push badge ────────────────────────────────
@@ -497,13 +509,21 @@
   z-index: 3;
 }
 
-.arena-ward[data-team="blue"],
+/* Wards belong to a club and wear its colour. Structures, and the push badge that points at one,
+   keep the game's own blue and red: a tower is the side's, not the club's. */
+.arena-ward[data-team="blue"] {
+  --team-color: var(--side-blue);
+}
+
+.arena-ward[data-team="red"] {
+  --team-color: var(--side-red);
+}
+
 .arena-struct[data-team="blue"],
 .arena-push[data-team="blue"] {
   --team-color: var(--team-blue);
 }
 
-.arena-ward[data-team="red"],
 .arena-struct[data-team="red"],
 .arena-push[data-team="red"] {
   --team-color: var(--team-red);
@@ -518,6 +538,8 @@
   width: clamp(7px, 1.2cqw, 12px);
   height: clamp(7px, 1.2cqw, 12px);
   background: var(--dim);
+  /* A grey diamond would sink into a pale lane: it wears the dark casing. */
+  filter: drop-shadow(0 0 1px var(--map-casing)) drop-shadow(0 0 1px var(--map-casing));
   transform: translate(-50%, -50%) rotate(45deg);
 }
 
@@ -535,7 +557,8 @@
   width: clamp(9px, 1.6cqw, 15px);
   height: clamp(9px, 1.6cqw, 15px);
   border: 2px solid var(--team-color);
-  background: var(--terrain-ground);
+  background: var(--map-casing);
+  box-shadow: 0 0 0 1px var(--map-casing);
   transform: translate(-50%, -50%);
 }
 
@@ -601,8 +624,8 @@
   box-sizing: border-box;
   width: clamp(18px, 3.4cqw, 34px);
   height: 5px;
-  border: 1px solid var(--line);
-  background: var(--background);
+  border: 1px solid var(--map-casing);
+  background: var(--map-casing);
 }
 
 .arena-struct-hp i {
@@ -615,8 +638,8 @@
   padding: 0 5px;
   border: 1px solid var(--team-color);
   border-radius: 3px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-weight: 700;
@@ -637,8 +660,8 @@
   padding: 2px 7px;
   border: 2px solid var(--team-color);
   border-radius: 4px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-variant-numeric: tabular-nums;
@@ -687,7 +710,7 @@
   top: 0;
   width: var(--pit-glyph);
   height: var(--pit-glyph);
-  background: var(--foreground);
+  background: var(--map-ink);
   transform: translate(-50%, -50%);
 }
 
@@ -697,7 +720,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--background);
+  background: var(--map-casing);
 }
 
 .arena-pit-glyph-in img {
@@ -707,7 +730,8 @@
 }
 
 .arena-pit:not([data-status="alive"]) .arena-pit-glyph {
-  background: var(--dim);
+  background: var(--map-ink);
+  opacity: 0.55;
 }
 
 .arena-pit:not([data-status="alive"]) .arena-pit-glyph-in img {
@@ -724,10 +748,10 @@
   gap: 2px;
   box-sizing: border-box;
   padding: 2px 6px;
-  border: 1px solid var(--foreground);
+  border: 1px solid var(--map-ink);
   border-radius: 3px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   line-height: 1.05;
   white-space: nowrap;
@@ -736,8 +760,7 @@
 
 .arena-pit:not([data-status="alive"]) .arena-pit-label {
   border-style: dashed;
-  border-color: var(--dim);
-  color: var(--dim);
+  opacity: 0.8;
 }
 
 .arena-pit-name {
@@ -762,13 +785,13 @@
 .arena-pit-hp {
   align-self: stretch;
   height: 4px;
-  background: var(--line);
+  background: var(--map-casing);
 }
 
 .arena-pit-hp i {
   display: block;
   height: 100%;
-  background: var(--foreground);
+  background: var(--map-ink);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -784,6 +807,9 @@
    starting or ending never reflows the bar. */
 
 .arena-bar {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   container-type: inline-size;
   container-name: bar;
   display: grid;
@@ -798,6 +824,41 @@
   color: var(--foreground);
 }
 
+/* Each club's colour washes its half of the bar in a diagonal, as on the home screen's next-match
+   card: static wedges behind the content. High contrast drops the wash and underlines the side. */
+.arena-bar::before,
+.arena-bar::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  z-index: -1;
+  width: 58%;
+  pointer-events: none;
+}
+
+.arena-bar::before {
+  inset-inline-start: 0;
+  background: color-mix(in srgb, var(--side-blue-band) 36%, transparent);
+  clip-path: polygon(0 0, 100% 0, 62% 100%, 0 100%);
+}
+
+.arena-bar::after {
+  inset-inline-end: 0;
+  background: color-mix(in srgb, var(--side-red-band) 36%, transparent);
+  clip-path: polygon(38% 0, 100% 0, 100% 100%, 0 100%);
+}
+
+:root[data-contrast="high"] .arena-bar::before,
+:root[data-contrast="high"] .arena-bar::after {
+  display: none;
+}
+
+/* The underline is drawn outside the side's box, in the bar's own bottom padding (0.25rem), so it
+   never lies over the stats row that ends the box. */
+:root[data-contrast="high"] .arena-bar-side {
+  box-shadow: 0 0.25rem 0 var(--team-color);
+}
+
 .arena-bar-side {
   display: flex;
   align-items: center;
@@ -810,32 +871,102 @@
 }
 
 .arena-bar-side[data-team="blue"] {
-  --team-color: var(--team-blue);
+  --team-color: var(--side-blue);
 }
 
 .arena-bar-side[data-team="red"] {
-  --team-color: var(--team-red);
+  --team-color: var(--side-red);
 }
 
-.arena-bar-mono {
+/* The club's logo on a light plate (the logos are drawn for light grounds), ringed in the club's
+   colour: round for blue, a rounded square for red. Without a logo the plate is the club's fill. */
+.arena-crest {
   flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 2px solid var(--team-color);
+  width: var(--crest-size, 2.5rem);
+  height: var(--crest-size, 2.5rem);
+  padding: 0.25rem;
+  overflow: hidden;
+  border: 3px solid var(--team-color);
   border-radius: 50%;
-  background: var(--card);
+  background: var(--map-ink);
+  box-shadow: 0 0 0 2px var(--rail);
+}
+
+.arena-crest[data-team="red"] {
+  border-radius: 32%;
+}
+
+.arena-crest img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.arena-crest[data-fallback] {
+  padding: 0;
+  background: var(--team-color);
+  color: var(--crest-fg);
   font-family: var(--font-heading);
   font-size: var(--text-section);
   font-weight: 700;
   line-height: 1;
 }
 
-.arena-bar-side[data-team="red"] .arena-bar-mono {
-  border-radius: 32%;
+.arena-crest[data-team="blue"] {
+  --team-color: var(--side-blue);
+  --crest-fg: var(--side-blue-fg);
+}
+
+.arena-crest[data-team="red"] {
+  --team-color: var(--side-red);
+  --crest-fg: var(--side-red-fg);
+}
+
+/* "Blue side" / "Red side": the shape and the words say the side, whatever the club's colour is. */
+.arena-bar-side-tag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.3125rem;
+  margin-inline-start: auto;
+  padding: 0 0.4375rem 0 0.3125rem;
+  border: 1px solid var(--foreground);
+  border-radius: 3px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.arena-bar-side-tag[data-team="blue"] {
+  border-radius: 0.5625rem;
+}
+
+.arena-side-shape {
+  display: block;
+  flex: none;
+  box-sizing: border-box;
+  width: 0.6875rem;
+  height: 0.6875rem;
+  border: 1px solid var(--background);
+  background: var(--foreground);
+  box-shadow: 0 0 0 1px var(--foreground);
+}
+
+.arena-bar-side-tag[data-team="blue"] .arena-side-shape {
+  border-radius: 50%;
+}
+
+.arena-bar-side-tag[data-team="red"] .arena-side-shape {
+  border-radius: 2px;
 }
 
 .arena-bar-id {
@@ -963,6 +1094,25 @@
   text-align: right;
 }
 
+/* A club's colour as text is clamped for a dark surface, so it only paints text where the surface
+   is dark; in a light theme the digits keep the text colour and the club's colour stays on the
+   crest, the wash and the underline. */
+.dark .arena-bar-kills[data-team="blue"] {
+  color: var(--side-blue-text);
+}
+
+.dark .arena-bar-kills[data-team="red"] {
+  color: var(--side-red-text);
+}
+
+.dark .arena-bar-side[data-team="blue"] .arena-bar-stat[data-stat="gold"] .arena-bar-num {
+  color: var(--side-blue-wash-text);
+}
+
+.dark .arena-bar-side[data-team="red"] .arena-bar-stat[data-stat="gold"] .arena-bar-num {
+  color: var(--side-red-wash-text);
+}
+
 .arena-bar-clock {
   display: flex;
   flex-direction: column;
@@ -1024,8 +1174,9 @@
   border-radius: 1px;
 }
 
-/* The stats are the bar's own children on a wide screen. Under 1500px they take a second row of
-   their side, so the bar never wraps by accident and nothing is cut. */
+/* The stats are the bar's own children only where the bar is 1500px wide or more. The shell caps
+   the bar at 1416px (90rem less its padding), so in practice they take a second row of each side
+   at every window width, and the bar never wraps by accident and nothing is cut. */
 .arena-bar-stats {
   display: contents;
 }
@@ -1094,12 +1245,22 @@
 }
 
 .arena-card[data-team="blue"] {
-  --team-color: var(--team-blue);
+  --team-color: var(--side-blue);
 }
 
 .arena-card[data-team="red"] {
-  --team-color: var(--team-red);
+  --team-color: var(--side-red);
   text-align: end;
+}
+
+/* The club's colour runs down the outer edge of its players' cards. It is a shadow, so it takes no
+   room; a followed card replaces it with the club-accent bar below. */
+.arena-card[data-team="blue"] {
+  box-shadow: inset 0.25rem 0 0 var(--team-color);
+}
+
+.arena-card[data-team="red"] {
+  box-shadow: inset -0.25rem 0 0 var(--team-color);
 }
 
 .arena-card:hover {
@@ -1116,6 +1277,14 @@
   box-shadow:
     0 0 0 2px var(--club),
     inset 0.25rem 0 0 var(--club);
+}
+
+.dark .arena-card[data-team="blue"] .arena-card-kda {
+  color: var(--side-blue-text);
+}
+
+.dark .arena-card[data-team="red"] .arena-card-kda {
+  color: var(--side-red-text);
 }
 
 .arena-card[data-team="red"][aria-pressed="true"] {
@@ -1368,6 +1537,94 @@
   color: var(--foreground);
 }
 
+/* The ultimate and the trinket are icons. The state shows in the frame and the face, not in colour:
+   ready is a double frame and the bare icon; waiting is a dashed frame, a dimmed icon and the
+   seconds on it; locked (the ultimate before its level) is a dotted frame, a greyed icon and a
+   lock. A summoner spell keeps its letter. The chip is a square of the slot's size, so the gear
+   row never grows. */
+.arena-cd-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--arena-slot, 1.375rem);
+  height: var(--arena-slot, 1.375rem);
+  padding: 0;
+  overflow: hidden;
+  background: var(--rail);
+}
+
+.arena-cd-trinket {
+  border-radius: 50%;
+}
+
+.arena-cd-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.arena-cd-glyph {
+  width: 70%;
+  height: 70%;
+}
+
+.arena-cd-icon[data-state="ready"] {
+  border: 3px double var(--foreground);
+}
+
+.arena-cd-icon[data-state="waiting"] {
+  border: 2px dashed var(--dim);
+}
+
+.arena-cd-icon[data-state="waiting"] > img,
+.arena-cd-icon[data-state="waiting"] > .arena-cd-glyph {
+  opacity: 0.32;
+}
+
+.arena-cd-icon[data-state="locked"] {
+  border: 2px dotted var(--dim);
+}
+
+.arena-cd-icon[data-state="locked"] > img,
+.arena-cd-icon[data-state="locked"] > .arena-cd-glyph {
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.55;
+}
+
+/* The seconds sit on the icon in the map's light ink with a dark casing, so they read on any face. */
+.arena-cd-secs {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--map-ink);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow:
+    0 0 2px var(--map-casing),
+    0 0 2px var(--map-casing),
+    0 0 3px var(--map-casing);
+}
+
+.arena-cd-lock {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-end: 0;
+  box-sizing: content-box;
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 1px;
+  border-start-start-radius: 3px;
+  background: var(--background);
+  color: var(--foreground);
+}
+
 /* The state sits on the health row, so the gear row never has to share its width with it. */
 .arena-card-state {
   flex: 0 1 auto;
@@ -1392,8 +1649,11 @@
   border-width: 3px;
 }
 
-/* Too narrow for items and cooldowns side by side: two fixed lines, the same in every card. */
-@container side (max-width: 21rem) {
+/* Too narrow for items and cooldowns side by side: two fixed lines, the same in every card. The six
+   slots, the gap and the four cooldown chips need about 264px of the 314px inside a card of the
+   narrowest side-by-side column (21rem), so only a column under 19rem wraps; at 21rem the wrap used
+   to add 20px to every card and five of them no longer fit a 1280x800 window. */
+@container side (max-width: 19rem) {
   .arena-card[data-team] .arena-card-gear {
     flex-direction: column;
     align-items: flex-start;
@@ -1409,6 +1669,22 @@
     flex: none;
     align-self: stretch;
     block-size: 1.0625rem;
+  }
+
+  /* The strip is 17px tall here, so the icon chips shrink to it and the frames thin out; dashed,
+     dotted and solid still tell the states apart, and the seconds and the lock stay (the lock gets a little smaller). */
+  .arena-cd-icon {
+    width: 1.0625rem;
+    height: 1.0625rem;
+  }
+
+  .arena-cd-icon[data-state] {
+    border-width: 2px;
+  }
+
+  .arena-cd-lock {
+    width: 0.4375rem;
+    height: 0.4375rem;
   }
 }
 
@@ -1526,12 +1802,12 @@
 /* Blue is round and red a rounded square, as on the map. */
 .arena-tk-ini[data-team="blue"],
 .arena-tk-icon[data-team="blue"] {
-  border-color: var(--team-blue);
+  border-color: var(--side-blue);
 }
 
 .arena-tk-ini[data-team="red"],
 .arena-tk-icon[data-team="red"] {
-  border-color: var(--team-red);
+  border-color: var(--side-red);
   border-radius: 32%;
 }
 
@@ -1648,64 +1924,90 @@
   align-self: flex-start;
 }
 
+/* The two strips of the board sit on the row above the columns, always on show: a kind chip and
+   a few words per row, two rows at most. The full sentence stays beside them, visually hidden, as
+   the map's text twin; rows past the second are hidden the same way and a +N counts them. */
 .arena-board {
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-  background: var(--rail);
-  color: var(--foreground);
-}
-
-.arena-board-summary {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 0.75rem;
-  min-width: var(--hit);
-  min-height: var(--hit);
-  padding: 0.375rem 0.75rem;
-  cursor: pointer;
-}
-
-.arena-board-summary:focus-visible {
-  outline: 2px solid var(--foreground);
-  outline-offset: -2px;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  inline-size: 100%;
+  color: var(--foreground);
 }
 
 .arena-board-title {
+  flex: none;
+  inline-size: 4.25rem;
+  margin: 0;
+  color: var(--dim);
   font-family: var(--font-heading);
   font-size: var(--text-caption);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.06em;
+  line-height: 1.05;
   text-transform: uppercase;
 }
 
-.arena-board-count {
-  color: var(--dim);
-  font-size: var(--text-caption);
-}
-
-/* The open marker is a shape, not a colour: a triangle that points down once it is open. */
-.arena-board-summary::marker {
-  color: var(--foreground);
-}
-
 .arena-board-list {
+  /* The containing block of the hidden sentences, so one clipped here cannot widen the page. */
+  position: relative;
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
   margin: 0;
-  padding: 0 0.75rem 0.5rem;
+  padding: 0;
   list-style: none;
 }
 
 .arena-board-row {
-  display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 2px 0;
-  border-top: 1px solid var(--line);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  block-size: 1.25rem;
+}
+
+.arena-board-short,
+.arena-board-quiet {
+  min-width: 0;
+  overflow: hidden;
   font-size: var(--text-caption);
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arena-board-quiet,
+.arena-board-more {
+  color: var(--dim);
+  font-size: var(--text-caption);
+}
+
+.arena-board-more {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-end: 0;
+  padding-inline: 0.25rem;
+  background: var(--background);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25rem;
+}
+
+/* The sentence: for assistive technology, and for the pointer through the chip's neighbours. */
+.arena-board-text,
+.arena-board-row[data-extra] {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .arena-board-kind {
@@ -1718,6 +2020,304 @@
   border-width: 2px;
   border-color: var(--warning);
   color: var(--foreground);
+}
+
+/* ── Lane strip and objective timers ─────────────────────────────────────
+   The strip sits over the map: one cell per lane with a track from the blue base (a circle) to
+   the red base (a diamond), the mark where the waves meet, the pushing club, and a double frame
+   with the word Fight while champions fight there. The rail keeps the objective timers in four
+   fixed tiles under the blue cards. Nothing here rests on colour: arrows, words, frames. */
+
+.arena-lanes {
+  container: lanes / inline-size;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+  inline-size: 100%;
+  min-width: 0;
+}
+
+.arena-lane {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  padding-inline: 0.375rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.25rem;
+  background: var(--rail);
+  color: var(--foreground);
+}
+
+/* A double frame: a fight, by a line and not by a colour. */
+.arena-lane[data-fight] {
+  padding-inline: 0.25rem;
+  border: 3px double var(--foreground);
+}
+
+.arena-lane-name {
+  flex: none;
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.arena-lane-track {
+  position: relative;
+  flex: none;
+  inline-size: 3.875rem;
+  block-size: 1.375rem;
+}
+
+.arena-lane-track::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0.4375rem;
+  top: 0.625rem;
+  block-size: 2px;
+  background: var(--dim);
+}
+
+.arena-lane-end {
+  position: absolute;
+  top: 0.375rem;
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+}
+
+.arena-lane-end[data-team="blue"] {
+  left: 0;
+  border-radius: 50%;
+  background: var(--side-blue);
+}
+
+.arena-lane-end[data-team="red"] {
+  right: 0.0625rem;
+  border-radius: 1px;
+  background: var(--side-red);
+  transform: rotate(45deg);
+}
+
+.arena-lane-mark {
+  position: absolute;
+  top: 0;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  inline-size: 1.5rem;
+  block-size: 1.375rem;
+  border: 1px solid var(--foreground);
+  border-radius: 3px;
+  background: var(--background);
+  transform: translateX(-50%);
+}
+
+.arena-lane-mark svg {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  stroke-width: 2.4;
+}
+
+.arena-lane-logo {
+  display: block;
+  flex: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+  object-fit: contain;
+}
+
+.arena-lane-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.arena-lane-fight {
+  flex: none;
+  padding: 0 0.375rem;
+  border: 1px solid var(--foreground);
+  border-radius: 0.25rem;
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+/* Under ~640px of strip (a 580px map and less) the club's logo steps aside, then the track shortens. */
+@container lanes (max-width: 40rem) {
+  .arena-lane-logo {
+    display: none;
+  }
+}
+
+@container lanes (max-width: 30rem) {
+  .arena-lane-track {
+    inline-size: 2.75rem;
+  }
+
+  .arena-lane-fight {
+    padding-inline: 0.25rem;
+  }
+}
+
+/* Under ~416px of strip (the 960x640 minimum gives 352px) a cell is about 100px wide: too little for
+   the name, a track and the club in a row, so the track clipped and lost its end marker. The name
+   goes over the track, which takes the cell's whole width; the club's text steps aside (the cell's
+   label still says it) and the fight word shares the name's row. 16px of name and a 22px track fit
+   the 44px strip with the double frame of a fight. */
+@container lanes (max-width: 26rem) {
+  .arena-lane {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: center;
+    column-gap: 0.25rem;
+    row-gap: 0;
+  }
+
+  .arena-lane-name {
+    font-size: 1rem;
+  }
+
+  .arena-lane-track {
+    grid-column: 1 / -1;
+    inline-size: auto;
+  }
+
+  .arena-lane-text {
+    display: none;
+  }
+
+  .arena-lane-fight {
+    grid-area: 1 / 2;
+    justify-self: end;
+    padding-inline: 0.25rem;
+    line-height: 1.1;
+  }
+
+  .arena-lane-track {
+    grid-row: 2;
+  }
+}
+
+.arena-rail {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem;
+  inline-size: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arena-rail-tile {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  min-height: 0;
+  padding-inline: 0.375rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.25rem;
+  background: var(--rail);
+  color: var(--foreground);
+}
+
+/* Up is a heavy frame and the words "Up 54%"; over is a dashed frame and "Gone". */
+.arena-rail-tile[data-status="alive"] {
+  padding-inline: calc(0.375rem - 1px);
+  border: 2px solid var(--foreground);
+}
+
+.arena-rail-tile[data-status="none"] {
+  border-style: dashed;
+  color: var(--dim);
+}
+
+.arena-rail-icon {
+  display: block;
+  flex: none;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  object-fit: contain;
+}
+
+.arena-rail-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.05;
+}
+
+.arena-rail-label {
+  overflow: hidden;
+  color: var(--dim);
+  font-size: var(--text-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arena-rail-value {
+  overflow: hidden;
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arena-rail-tag {
+  flex: none;
+  padding: 0 0.25rem;
+  border: 2px solid var(--side-blue);
+  border-radius: 0.5rem;
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.arena-rail-tag[data-team="red"] {
+  border-color: var(--side-red);
+  border-radius: 2px;
+}
+
+/* Where the module has room (the full-size cards), the tiles get a larger icon and number. */
+@container live (min-width: 1240px) and (min-height: 849px) {
+  .arena-rail-icon {
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+  }
+
+  .arena-rail-value {
+    font-size: var(--text-section);
+  }
+
+  .live-area-dock .arena-sp-line {
+    font-size: 1.0625rem;
+  }
 }
 
 /* ── Match controls and map key ──────────────────────────────────────────
@@ -1885,13 +2485,22 @@
 }
 
 .arena-lg-shape[data-team="blue"] {
-  border: 3px solid var(--team-blue);
+  border: 3px solid var(--side-blue);
   border-radius: 50%;
 }
 
 .arena-lg-shape[data-team="red"] {
-  border: 3px solid var(--team-red);
+  border: 3px solid var(--side-red);
   transform: rotate(45deg);
+}
+
+/* Structures keep the game's own colours, as on the map. */
+.arena-lg-shape[data-shape="structure"][data-team="blue"] {
+  border-color: var(--team-blue);
+}
+
+.arena-lg-shape[data-shape="structure"][data-team="red"] {
+  border-color: var(--team-red);
 }
 
 .arena-lg-shape[data-shape="champion"][data-team="red"] {
@@ -1919,24 +2528,53 @@
 
 /* ── The screen: one grid, one scroll root ───────────────────────────────
    The scroll root is a size container, so the map can be sized from the room the app really
-   leaves it (100cqh) instead of from a guess about the window chrome. The rows around the map
-   have fixed heights (--live-bar, --live-dock, --live-ctl), which is what --live-rows adds up.
-   The cap on the map's height applies at every width. The source order is the reading order:
-   bar, map, feed and caption, controls, then the blue and the red cards; the areas only move
-   them. No script decides the layout.
+   leaves it (100cqh) instead of from a guess about the window chrome (the title bar takes 36px
+   of a window's height). The rows around the stage have fixed heights (--live-bar, --live-sit,
+   --live-ctl), which is what --live-rows adds up. The stage is the rest: a band, the cards and
+   a low module (the objective timers under the blue cards, the caption and the feed under the
+   red ones), and the map spans all three rows of it. The cap on the map applies at every width.
+   The source order is the reading order: bar, lanes, map, fight board, away, caption and feed,
+   controls, then each team's band, cards and timers; the areas only move them. No script
+   decides the layout.
 
    Where the three columns fit, the shell is exactly as tall as the room the app leaves (never
-   less than the rows plus the smallest map), and the row of the map is a bounded `1fr`, so the
-   height of a row comes from the window and never from what is inside the card columns. A column
-   that needs more than that scrolls inside itself; the page does not. Below 1240px the cards
-   are under the map and the one scroll root does the scrolling. */
+   less than the rows plus the smallest map), and the row of the cards is a bounded `1fr`, so
+   the height of a row comes from the window and never from what is inside the card columns. A
+   column that needs more than that scrolls inside itself; the page does not. The map is also
+   capped by the width, so each card column keeps the 21rem it needs for the wide card (see the
+   `side` container). Below 1240px the cards are under the map and the one scroll root does the
+   scrolling. */
 
 .live-match {
-  --live-bar: 3.5rem;
+  /* The clubs' colours. The screen publishes the real ones as an inline style once per match (see
+     sideTokens); these keep every rule painting, in the game's own blue and red, where it does not. */
+  --side-blue: var(--team-blue);
+  --side-blue-text: var(--team-blue);
+  --side-blue-fg: var(--background);
+  --side-blue-band: var(--team-blue);
+  --side-blue-band-fg: var(--background);
+  --side-blue-wash-text: var(--team-blue);
+  --side-red: var(--team-red);
+  --side-red-text: var(--team-red);
+  --side-red-fg: var(--background);
+  --side-red-band: var(--team-red);
+  --side-red-band-fg: var(--background);
+  --side-red-wash-text: var(--team-red);
+  /* Two rows: the shell caps the bar at 1416px, under the 1500px its one-row layout needs, so the
+     stats always take a second row of each side (see the score bar). Under 1205px, a third row. */
+  --live-bar: 4.75rem;
+  /* The row of the lanes and the two strips of the board: two 20px rows and their gap. */
+  --live-sit: 2.75rem;
+  /* The low module of each column; the cards give it room in steps (see the container queries). */
+  --live-low: 6.5rem;
   --live-dock: 6.5rem;
   --live-ctl: 3.5rem;
-  --live-gap: 0.625rem;
-  --live-pad: 0.75rem;
+  --live-gap: 0.25rem;
+  --live-pad: 0.25rem;
+  --live-pad-x: 0.75rem;
+  --live-col-gap: 0.75rem;
+  /* The narrowest a card column may be and keep the wide card (the `side` container breaks at 21rem). */
+  --live-col-min: 21rem;
   overflow: hidden;
 }
 
@@ -1949,24 +2587,35 @@
 }
 
 .live-shell {
-  /* Padding above and below, the three fixed rows, and the three gaps between the four rows.
-     Declared here, not on the root, so a taller bar (set on this element) is counted. */
-  --live-rows: calc(2 * var(--live-pad) + var(--live-bar) + var(--live-dock) + var(--live-ctl) + 3 * var(--live-gap));
-  --map-side: min(41.25rem, max(20rem, calc(100cqh - var(--live-rows))));
+  /* Padding above and below, the three fixed rows, and the three gaps between the four rows of
+     the shell (the stage counts as one). Declared here, not on the root, so a taller bar (set on
+     this element) is counted. */
+  --live-rows: calc(2 * var(--live-pad) + var(--live-bar) + var(--live-sit) + var(--live-ctl) + 3 * var(--live-gap));
+  /* The smaller of: the cap, the room left under the rows, and the width the two card columns leave. */
+  --map-side: max(
+    20rem,
+    min(
+      44.5rem,
+      calc(100cqh - var(--live-rows)),
+      calc(100cqw - 2 * var(--live-pad-x) - 2 * var(--live-col-gap) - 2 * var(--live-col-min))
+    )
+  );
   box-sizing: border-box;
   display: grid;
   height: 100%;
   min-height: calc(var(--live-rows) + 20rem);
   max-width: 90rem;
   margin-inline: auto;
-  padding: var(--live-pad) 1.25rem;
-  gap: var(--live-gap) 0.75rem;
+  padding: var(--live-pad) var(--live-pad-x);
+  gap: var(--live-gap) var(--live-col-gap);
   grid-template-columns: minmax(0, 1fr) var(--map-side) minmax(0, 1fr);
-  grid-template-rows: var(--live-bar) minmax(0, 1fr) var(--live-dock) minmax(var(--live-ctl), auto);
+  grid-template-rows: var(--live-bar) var(--live-sit) auto minmax(0, 1fr) var(--live-low) minmax(var(--live-ctl), auto);
   grid-template-areas:
     "bar bar bar"
+    "fight lanes away"
+    "bband map rband"
     "blue map red"
-    "dock dock dock"
+    "rail map dock"
     "ctl ctl ctl";
 }
 
@@ -1981,10 +2630,32 @@
   height: 100%;
 }
 
-/* Under 1540px the bar's stats take a second row of each side (see the score bar), so it is taller. */
-@container live (max-width: 1539px) {
+/* Under 1205px (the bar is under 1181px wide) a side's stats row is full: the towers, gold, four
+   dragons, grubs and barons leave no room for the soul and the two buffs beside them, so late in a
+   match the chips wrapped onto a third row the bar did not have, and its overflow clipped the
+   stats. The buffs slot is now a third row of its own, always, with room kept for it in the bar
+   (4.75rem plus the 4px gap and the 1.25rem row), so a chip arriving never moves anything. The
+   chips share the row and give way with an ellipsis, never by wrapping to a fourth row. The
+   window scrolls here, so the 24px cost the map none of the room of the cards. */
+@container live (max-width: 1204px) {
   .live-shell {
-    --live-bar: 4.75rem;
+    --live-bar: 6.25rem;
+  }
+
+  .arena-bar-buffs {
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .arena-bar-side[data-team="red"] .arena-bar-buffs {
+    justify-content: flex-end;
+  }
+
+  .arena-buff {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
@@ -1994,12 +2665,105 @@
   min-height: 0;
 }
 
+.live-area-lanes {
+  grid-area: lanes;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+.live-area-fight,
+.live-area-away {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+.live-area-fight {
+  grid-area: fight;
+}
+
+.live-area-away {
+  grid-area: away;
+}
+
+/* The band over a column: the club's name on its band colour, the side's shape beside it. It is
+   decoration (the column is a labelled section), and the shape says the side besides the colour. */
+.live-band {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  min-width: 0;
+  block-size: 1.5rem;
+  padding-inline: 0.5rem 1.25rem;
+  overflow: hidden;
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.live-band-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.live-band[data-team="blue"] {
+  background: var(--side-blue-band);
+  color: var(--side-blue-band-fg);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 0.875rem) 100%, 0 100%);
+}
+
+.live-band[data-team="red"] {
+  flex-direction: row-reverse;
+  padding-inline: 1.25rem 0.5rem;
+  background: var(--side-red-band);
+  color: var(--side-red-band-fg);
+  clip-path: polygon(0.875rem 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.live-band .arena-side-shape {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: 0 0 0 1.5px currentColor;
+}
+
+.live-band[data-team="blue"] .arena-side-shape {
+  border-radius: 50%;
+}
+
+.live-band[data-team="red"] .arena-side-shape {
+  border-radius: 2px;
+}
+
+.live-area-bband {
+  grid-area: bband;
+}
+
+.live-area-rband {
+  grid-area: rband;
+}
+
+.live-area-rail {
+  grid-area: rail;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
 .live-area-dock {
   grid-area: dock;
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: var(--live-gap) 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--live-gap);
   min-width: 0;
   min-height: 0;
 }
@@ -2012,15 +2776,46 @@
 .live-area-dock .arena-ticker {
   height: 100%;
   box-sizing: border-box;
+  gap: 0;
+  padding: 0.125rem 0.5rem;
 }
 
 .live-area-dock .arena-tk-list {
   flex: 1 1 0;
 }
 
+/* The caption is one sentence here, the other engagements being on the board's strips above. */
 .live-area-dock .arena-spotlight {
-  overflow-y: auto;
+  overflow: hidden;
   box-sizing: border-box;
+  gap: 0;
+  padding: 0.25rem 0.5rem;
+}
+
+/* The sentence and "Stop following" share one line, so a followed player does not take the feed's room. */
+.live-area-dock .arena-spotlight {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.live-area-dock .arena-sp-head {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.live-area-dock .arena-sp-line {
+  display: -webkit-box;
+  flex-basis: 0;
+  overflow: hidden;
+  font-size: 1rem;
+  line-height: 1.1;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.live-area-dock .arena-sp-chips {
+  display: none;
 }
 
 .live-area-ctl {
@@ -2050,10 +2845,11 @@
   grid-area: red;
 }
 
-/* A card column is as tall as the map. Five cards share that height and none is squeezed below
-   what it needs; when the window leaves less, the column scrolls in place (the browser scrolls
-   it to a card that takes focus, and its scrollbar is the visible hint). The padding and the
-   matching negative margin keep the follow ring and the focus ring from being clipped. */
+/* A card column is as tall as the stage less its band and its low module. Five cards share that
+   height and none is squeezed below what it needs; when the window leaves less, the column scrolls
+   in place (the browser scrolls it to a card that takes focus, and its scrollbar is the visible
+   hint). The padding and the matching negative margin keep the follow ring and the focus ring
+   from being clipped. */
 .live-area-blue,
 .live-area-red {
   /* Also the containing block of the cards' hidden text, so a card scrolled out of view cannot
@@ -2080,15 +2876,16 @@
   container-name: side;
 }
 
-/* Short windows. A card is about 98.6px tall (10 of border and padding, a 42.6px head, an 18px
-   health row, a 22px gear row and two 3px gaps), so five of them with four 6px gaps need 517px;
-   the map row is the window minus 290px of rows around it, so it reaches that only from about
-   807px of room. Below that, with the cards beside the map, the card gives up spacing and
-   nothing else: 2px of padding above and below instead of 4px, 2px between its rows, a 20px
-   slot, a 17px health row, and 4px between cards. Every row keeps its text and its 0.75rem size.
-   A card is then 88.6px, and five with four gaps take 459px: they fit the 474px row of a
-   1280x800 window with 15px to spare. Taller windows, and the stacked layouts, keep the full size. */
-@container live (min-width: 1240px) and (max-height: 806px) {
+/* The stage is the window less the rows around it (236px at 1440x900: 24 of band, two 4px gaps and
+   the 104px low module come off it), and the cards take what the low module leaves. Full-size cards
+   (about 98.6px: 10 of border and padding, a 42.6px head, an 18px health row, a 22px gear row and two
+   3px gaps; five with four 6px gaps are 517px) need a 849px scroll root, with the 104px module.
+   Below that the module gives up room first, then the cards give up spacing, in the steps below. */
+@container live (min-width: 1240px) and (max-height: 848px) {
+  .live-shell {
+    --live-low: 4.5rem;
+  }
+
   .live-side {
     --arena-slot: 1.25rem;
     gap: 0.25rem;
@@ -2099,8 +2896,18 @@
     padding-block: 2px;
   }
 
-  .live-side .arena-card-who {
-    gap: 2px;
+  /* The head is the taller of two columns beside the 36px portrait: the name over two chips, and the
+     kills line over the farm line. With no gap between their lines and a line box the size of the text
+     (12px text in a 14px chip, a 12px farm line) both are 36px, so the head is the portrait's height
+     instead of 42.6px. */
+  .live-side .arena-card-who,
+  .live-side .arena-card-score {
+    gap: 0;
+  }
+
+  .live-side .arena-chip-text,
+  .live-side .arena-card-farm {
+    line-height: 1;
   }
 
   .live-side .arena-card-vitals {
@@ -2108,14 +2915,16 @@
   }
 }
 
-/* Laptop windows (1366x768). The compact step above fits five cards from a 749px scroll root up;
-   below that the row of the map is shorter than the column. With the controls on one line the
-   row at 1366x768 is the 732px root minus 290px of rows around it, 442px, and five compact cards
-   with four gaps measure 5 x 89 + 4 x 4 = 461px. A second step takes spacing only: 1px of
-   padding above and below, 1px between a card's rows, 2px between cards. A card is then 85px and
-   the column 433px. The 17px health row stays (its gap chip is 15px of text and a border), the
-   20px slot stays, and every text keeps its size. At 749px and up, the first step is enough. */
-@container live (min-width: 1240px) and (max-height: 748px) {
+/* Laptop windows (1366x768). The step above fits five cards from a 759px scroll root up; below
+   that the stage is shorter than the column. A second step takes spacing only: 1px of padding
+   above and below, 1px between a card's rows, 2px between cards, and a 68px module. A card is then
+   85px and the column 433px. The 17px health row stays (its gap chip is 15px of text and a border),
+   the 20px slot stays, and every text keeps its size. */
+@container live (min-width: 1240px) and (max-height: 758px) {
+  .live-shell {
+    --live-low: 4.25rem;
+  }
+
   .live-side {
     gap: 0.125rem;
   }
@@ -2123,6 +2932,41 @@
   .live-side .arena-card {
     gap: 1px;
     padding-block: 1px;
+  }
+}
+
+/* On the short windows the low module is 72px or 68px (see the two steps above, which change spacing
+   only): a tile is 34px or 32px with its frame, so the two lines of 12px and 16px text fit, and the
+   feed's heading, hidden from assistive technology already, gives its line up to the rows. */
+@container live (max-height: 848px) and (min-width: 1240px) {
+  .arena-rail-text {
+    line-height: 1;
+  }
+
+  .arena-rail-value {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .live-area-dock .arena-ticker-heading {
+    display: none;
+  }
+
+  /* The caption keeps one line here: with two, a 72px or 68px module left the feed 12px, no row at
+     all. The full sentence stays in the accessible text and on the board's strips. */
+  .live-area-dock .arena-sp-line {
+    -webkit-line-clamp: 1;
+  }
+
+  /* The feed keeps 28px to 32px here, one row of 27px. A sentence that wraps is 41px, so with the
+     newest row at the top no whole row showed for minutes (T16 D1). A row is one line: the text gives
+     way with an ellipsis, and the whole sentence stays in the row's title and in the accessible name,
+     where the polite live region reads it as it arrives. */
+  .live-area-dock .arena-tk-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -2145,13 +2989,11 @@
   margin: 0;
 }
 
-/* The Fight board and the key open upward over the map, so opening one never moves the layout. */
-.live-area-ctl .arena-board,
+/* The key opens upward over the map, so opening it never moves the layout. */
 .live-area-ctl .arena-legend {
   position: relative;
 }
 
-.live-area-ctl .arena-board[open] .arena-board-list,
 .live-area-ctl .arena-legend[open] .arena-legend-list {
   position: absolute;
   inset-inline-end: 0;
@@ -2166,6 +3008,53 @@
   border-radius: 0.5rem;
   background: var(--rail);
   padding-top: 0.5rem;
+}
+
+/* Match options and Map key become icon buttons where the row is narrow: the label is clipped, not
+   removed, so each keeps its accessible name (and a title for the pointer). An open key keeps a bar
+   under it, so the state does not rest on the arrow of the summary, which goes with the label. */
+.arena-btn-icon {
+  flex: none;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  margin-inline-end: 0.375rem;
+}
+
+@container live (max-width: 1360px) {
+  .arena-btn-label {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .arena-options,
+  .arena-legend-summary {
+    position: relative;
+  }
+
+  .arena-btn-icon {
+    margin-inline-end: 0;
+  }
+
+  .arena-legend-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 0.5rem;
+    list-style: none;
+  }
+
+  .arena-legend-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .arena-legend[open] .arena-legend-summary {
+    box-shadow: inset 0 -3px 0 var(--foreground);
+  }
 }
 
 /* One line. Measured with the real stylesheet and fonts, Pause, speeds and Options need 532 to
@@ -2216,20 +3105,41 @@
   }
 }
 
-/* Below this width the cards no longer fit beside the map: map first, then feed and controls, then two card columns. */
+/* Below this width the cards no longer fit beside the map: the map first with its lanes over it,
+   then the board's strips, the caption and the feed, the controls, then the two card columns, each
+   under its band, and the timers last. */
 @container live (max-width: 1239px) {
   .live-shell {
-    --map-side: min(calc(100cqw - 2.5rem), 41.25rem, max(20rem, calc(100cqh - var(--live-rows))));
+    --map-side: min(calc(100cqw - 2 * var(--live-pad-x)), 44.5rem, max(20rem, calc(100cqh - var(--live-rows))));
     height: auto;
     min-height: 100%;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: var(--live-bar) var(--map-side) var(--live-dock) minmax(var(--live-ctl), auto) auto;
+    grid-template-rows: var(--live-bar) var(--live-sit) var(--map-side) auto var(--live-dock) minmax(var(--live-ctl), auto) auto auto auto;
     grid-template-areas:
       "bar bar"
+      "lanes lanes"
       "map map"
+      "fight away"
       "dock dock"
       "ctl ctl"
-      "blue red";
+      "bband rband"
+      "blue red"
+      "rail rail";
+  }
+
+  .live-area-lanes {
+    inline-size: var(--map-side);
+    max-inline-size: 100%;
+    justify-self: center;
+  }
+
+  .live-area-dock {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .live-area-dock .arena-sp-chips {
+    display: flex;
   }
 
   .live-side {
@@ -2244,33 +3154,55 @@
     padding: 0;
     overflow: visible;
   }
+
+  .live-area-rail .arena-rail {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: none;
+    grid-auto-rows: minmax(2.75rem, auto);
+  }
 }
 
 /* A phone: one column in reading order, the map as wide as the screen allows, taller rows that wrap. */
 @container live (max-width: 719px) {
   .live-shell {
-    --map-side: min(calc(100cqw - 2rem), 41.25rem);
-    padding-inline: 1rem;
+    --map-side: min(calc(100cqw - 2rem), 44.5rem);
+    --live-pad-x: 1rem;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto var(--map-side) auto auto auto auto;
+    grid-template-rows: auto auto var(--map-side) auto auto auto auto auto auto auto auto auto;
     grid-template-areas:
       "bar"
+      "lanes"
       "map"
+      "fight"
+      "away"
       "dock"
       "ctl"
+      "bband"
       "blue"
+      "rail"
+      "rband"
       "red";
   }
 
   .live-area-dock {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto var(--live-dock);
   }
 
-  .live-area-dock .arena-ticker {
-    height: var(--live-dock);
+  .live-area-rail .arena-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .live-area-ctl .arena-board[open] .arena-board-list,
+  .live-area-fight,
+  .live-area-away {
+    align-items: flex-start;
+  }
+
+  .arena-board-row {
+    block-size: auto;
+    min-block-size: 1.25rem;
+  }
+
   .live-area-ctl .arena-legend[open] .arena-legend-list {
     position: static;
     width: auto;
@@ -2362,12 +3294,24 @@
 /* Team colour is a rule under the number, solid for blue and dashed for red; the digits stay in the text colour. */
 .live-end-score [data-team],
 .live-end-stats th[data-team] {
-  border-bottom: 3px solid var(--team-blue);
+  border-bottom: 3px solid var(--side-blue);
 }
 
 .live-end-score [data-team="red"],
 .live-end-stats th[data-team="red"] {
-  border-bottom: 3px dashed var(--team-red);
+  border-bottom: 3px dashed var(--side-red);
+}
+
+.live-end-winner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.live-end-colhead {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
 }
 
 .live-end-duration {

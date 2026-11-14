@@ -86,8 +86,10 @@ interface AnswerOptions {
   speed?: number;
   winner?: "blue" | "red" | null;
   kills?: number;
-  events?: Array<{ t: number; text: string; type: string }>;
+  events?: Array<{ t: number; text: string; type: string; code?: string; data?: Record<string, string> }>;
   gold?: number;
+  /** Gold earned by the one champion (purse plus spent). */
+  playerGold?: number;
 }
 
 const answerAt = (timeSec: number, o: AnswerOptions = {}): Answer => ({
@@ -98,7 +100,7 @@ const answerAt = (timeSec: number, o: AnswerOptions = {}): Answer => ({
   speed: o.speed ?? 4,
   stepSec: 0.6,
   stepAccumSec: 0,
-  champions: [{ id: "c1", name: "c1", team: "blue", pos: { x: o.x ?? 0.5, y: o.y ?? 0.5 }, alive: true, hp: 100, maxHp: 100, moveSpeed: 0.05 }],
+  champions: [{ id: "c1", name: "c1", team: "blue", pos: { x: o.x ?? 0.5, y: o.y ?? 0.5 }, alive: true, hp: 100, maxHp: 100, moveSpeed: 0.05, gold: o.playerGold ?? 0, spentGold: 0 }],
   minions: [],
   structures: [],
   objectives: {},
@@ -402,6 +404,93 @@ describe("useLiveSession: the commit path", () => {
       { minute: 0, diff: 0 },
       { minute: 1, diff: 900 },
     ]);
+  });
+});
+
+describe("useLiveSession: the record of the match", () => {
+  it("writes down each champion's gold per minute beside the team difference", async () => {
+    const m = await mount();
+    await m.frames(2);
+    backend.current = answerAt(61, { gold: 500, playerGold: 650 });
+    await m.frames(2);
+    backend.current = answerAt(125, { gold: 900, playerGold: 1300 });
+    await m.frames(2);
+
+    const { gold, skippedAtSec } = m.result.current.record();
+    expect(gold.map((s) => [s.minute, s.diff, s.players.c1])).toEqual([
+      [0, 0, 0],
+      [1, 500, 650],
+      [2, 900, 1300],
+    ]);
+    expect(skippedAtSec).toBeNull();
+  });
+
+  it("keeps the key events the engine drops from its rolling list", async () => {
+    const m = await mount();
+    await m.frames(2);
+    const kill = { t: 140, text: "BLUE Paduck killed Supa", type: "kill", code: "champion_killed", data: { team: "blue" } };
+    backend.current = answerAt(141, { events: [kill] });
+    await m.frames(2);
+    backend.current = answerAt(900, { events: [{ t: 890, text: "BLUE tower", type: "tower", code: "structure_destroyed", data: { team: "blue" } }] });
+    await m.frames(2);
+
+    expect(m.result.current.record().events.map((e) => e.t)).toEqual([140, 890]);
+  });
+
+  it("marks the record as skipped from the second the skip started, and keeps what was watched", async () => {
+    backend.current = answerAt(130, { gold: 100 });
+    const m = await mount();
+    await m.frames(4);
+    await act(async () => {
+      await m.result.current.skip();
+    });
+
+    const record = m.result.current.record();
+    expect(record.skippedAtSec).toBe(130);
+    expect(record.gold.map((s) => s.minute)).toEqual([2, 25]);
+  });
+
+  it("is not marked as skipped when the skip failed and the match went on", async () => {
+    backend.skipImpl = () => Promise.reject(new Error("engine"));
+    const m = await mount();
+    await m.frames(2);
+    await act(async () => {
+      await m.result.current.skip();
+    });
+    expect(m.result.current.record().skippedAtSec).toBeNull();
+  });
+
+  it("starts a new record when the backend fails and the local simulation takes over from minute 0", async () => {
+    backend.current = answerAt(130, { gold: 400, events: [{ t: 120, text: "BLUE tower", type: "tower", code: "structure_destroyed", data: { team: "blue" } }] });
+    const m = await mount();
+    await m.frames(3);
+    expect(m.result.current.record().gold.map((s) => s.minute)).toEqual([2]);
+
+    backend.tickImpl = () => Promise.reject(new Error("backend gone"));
+    await m.frames(6);
+
+    // The screen now shows a match that starts again at 0:00: the old minutes would sit after the new ones.
+    const record = m.result.current.record();
+    expect(record.gold.map((s) => s.minute)).toEqual([0]);
+    expect(record.events).toEqual([]);
+    expect(record.skippedAtSec).toBeNull();
+  });
+
+  it("starts a new record with a new match", async () => {
+    const m = await mount();
+    await m.frames(2);
+    backend.current = answerAt(90, { gold: 300 });
+    await m.frames(2);
+    backend.resetState = answerAt(0);
+    backend.current = answerAt(0);
+    await act(async () => {
+      m.result.current.reset();
+      await flush();
+    });
+    await m.frames(2);
+
+    expect(m.result.current.record().gold.map((s) => s.minute)).toEqual([0]);
+    expect(m.result.current.record().events).toEqual([]);
   });
 });
 

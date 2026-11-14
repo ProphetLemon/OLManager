@@ -11,10 +11,18 @@ pub use responses::apply_event_response;
 
 use crate::contracts::{ContractWarningStage, contract_warning_stage};
 use crate::domain::message::*;
+use crate::domain::team::Sponsorship;
 use crate::game::Game;
 use chrono::Datelike;
 use rand::RngExt;
 use std::collections::HashMap;
+
+/// Whether a rolled sponsor offer is worth showing: its annual amount must beat the
+/// annual value of the deal the club already holds (no deal counts as 0), so an offer
+/// is never a downgrade.
+pub fn sponsor_offer_improves_on(current: Option<&Sponsorship>, annual_amount: i64) -> bool {
+    annual_amount > current.map_or(0, |deal| deal.base_value)
+}
 
 fn params(pairs: &[(&str, &str)]) -> HashMap<String, String> {
     pairs
@@ -52,13 +60,14 @@ pub fn check_random_events(game: &mut Game) {
     {
         let msg_id = format!("sponsor_{}", today);
         if !existing_ids.contains(&msg_id) && rng.random_range(0..100) == 0 {
-            let team_name = game
-                .teams
-                .iter()
-                .find(|t| t.id == user_team_id)
-                .map(|t| t.name.as_str())
-                .unwrap_or("Your Club");
+            let user_team = game.teams.iter().find(|t| t.id == user_team_id);
+            let team_name = user_team.map(|t| t.name.as_str()).unwrap_or("Your Club");
             let amount = rng.random_range(12..=60) * 52_000; // 624k - 3.12M (annual)
+            // An offer that does not beat the current deal is never shown.
+            let worth_offering = sponsor_offer_improves_on(
+                user_team.and_then(|t| t.sponsorship.as_ref()),
+                amount as i64,
+            );
             let sponsor_names = [
                 "GreenTech Industries",
                 "Nova Sports",
@@ -71,9 +80,11 @@ pub fn check_random_events(game: &mut Game) {
             ];
             let sponsor = sponsor_names[rng.random_range(0..sponsor_names.len())];
 
-            new_messages.push(message_builders::sponsor_offer_message(
-                &msg_id, team_name, sponsor, amount, &today,
-            ));
+            if worth_offering {
+                new_messages.push(message_builders::sponsor_offer_message(
+                    &msg_id, team_name, sponsor, amount, &today,
+                ));
+            }
         }
     }
 

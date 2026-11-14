@@ -126,6 +126,18 @@ describe("parseEvent: objectives", () => {
     expect(parseEvent({ t: 500, text, type: "info" }, ROSTER)).toMatchObject({ kind: "objective", objective, side });
   });
 
+  it.each(["Scuttle Top despawned", "Scuttle Bot despawned", "Rift Herald despawned", "Voidgrubs despawned"])(
+    "does not read the unclaimed line %s as an objective someone secured",
+    (text) => {
+      expect(parseEvent({ t: 500, text, type: "info" }, ROSTER)).toMatchObject({ kind: "neutral", side: null });
+    },
+  );
+
+  it("keeps despawn lines out of the feed", () => {
+    const feed = parseFeed([{ t: 500, text: "Scuttle Top despawned", type: "info" }], ROSTER);
+    expect(feed).toEqual([]);
+  });
+
   it("leaves other info lines neutral", () => {
     expect(parseEvent({ t: 0, text: "Match started", type: "info" }, ROSTER)).toMatchObject({ kind: "neutral", text: "Match started" });
   });

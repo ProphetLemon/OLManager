@@ -1,10 +1,13 @@
 /**
- * Short code and name of a team for the score bar and the end panel. Pure: the screen passes the
- * teams it knows and gets a tag back. The tag comes from the game's own team list when the name is
- * there, then from the well-known tags of the league, and last from the name itself.
+ * Short code, name, logo and colours of a team for the score bar and the end panel. Pure: the
+ * screen passes the teams it knows and gets an identity back. The tag comes from the game's own
+ * team list when the name is there, then from the well-known tags of the league, and last from
+ * the name itself. Logo and palette come from `resolveSideStyles` (sidePalette.ts).
  */
+import { resolveClubPalette } from "@/lib/teams/clubColors";
+import { toSidePalette, type SideStyle } from "./sidePalette";
 
-export interface TeamIdentity {
+export interface TeamIdentity extends SideStyle {
   /** Short code, "EMB". */
   tag: string;
   name: string;
@@ -46,10 +49,18 @@ export function tagFromName(name: string): string {
   return (parts[0] ?? name).slice(0, 4).toUpperCase();
 }
 
-export function teamIdentity(name: string, teams?: readonly KnownTeam[] | null): TeamIdentity {
+/** The generic palette, for a side whose club is not known: no logo, the fallback colours. */
+export function neutralSide(): SideStyle {
+  const palette = resolveClubPalette(null, {});
+  return {
+    logoUrl: null,
+    palette: toSidePalette(palette, false),
+  };
+}
+
+export function teamIdentity(name: string, teams?: readonly KnownTeam[] | null, side: SideStyle = neutralSide()): TeamIdentity {
   const key = normalizeKey(name);
   const listed = teams?.find((team) => normalizeKey(team.name) === key);
   const listedTag = listed?.short_name?.trim();
-  if (listedTag) return { tag: listedTag, name };
-  return { tag: KNOWN_TAGS[key] ?? tagFromName(name), name };
+  return { tag: listedTag || KNOWN_TAGS[key] || tagFromName(name), name, ...side };
 }

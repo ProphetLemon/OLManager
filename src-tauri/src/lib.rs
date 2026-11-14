@@ -3,6 +3,10 @@ mod client_game;
 mod commands;
 mod discord_rpc;
 pub mod error;
+#[cfg(test)]
+mod l3_timing;
+#[cfg(test)]
+mod pool_bench;
 #[cfg(target_os = "linux")]
 mod linux_render;
 use commands::*;
@@ -144,6 +148,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(log::LevelFilter::Info)
@@ -173,6 +179,7 @@ pub fn run() {
         })
         .manage(StateManager::new())
         .manage(SimLiveStoreState::default())
+        .manage(ImportStage::default())
         .setup(move |app| {
             use tauri::Manager as TauriManager;
             #[cfg(target_os = "linux")]
@@ -238,29 +245,27 @@ pub fn run() {
             prepare_custom_logo,
             prepare_custom_portrait,
             get_saves,
+            export_save_file,
+            pick_import_save,
+            confirm_import_save,
+            cancel_import_save,
             load_game,
             get_active_game,
             get_champions,
-            get_team_selection_data,
             get_league_selection_data,
             get_academy_acquisition_options,
             acquire_academy_team,
             promote_academy_player,
             demote_main_player_to_academy,
 
-            advance_time,
             advance_time_with_mode,
-            upgrade_facility,
             upgrade_main_facility_module,
             expand_main_facility_hub,
             propose_renewal,
             delegate_renewals,
             preview_renewal_financial_impact,
             set_active_lineup,
-            set_starting_xi,
-            set_draft_strategy,
             set_lol_tactics,
-            set_team_roles,
             set_training,
             set_training_schedule,
             set_training_groups,
@@ -294,7 +299,6 @@ pub fn run() {
             mark_all_messages_read,
             clear_old_messages,
             save_game,
-            auto_select_team_roles,
             toggle_transfer_list,
             toggle_loan_list,
             make_transfer_bid,
@@ -305,29 +309,23 @@ pub fn run() {
             get_transfer_history_cmd,
             release_player_contract,
             send_scout,
-            check_season_complete,
             advance_to_next_season,
-            get_season_awards,
             resolve_message_action,
             start_live_match,
             evaluate_draft_state,
             get_player_match_history,
-            get_player_stats_overview,
             get_team_match_history,
             get_team_stats_overview,
             get_champion_stats,
             export_world_database,
-            step_live_match,
             apply_match_command,
             get_match_snapshot,
             finish_live_match,
             record_fixture_champion_picks,
-            apply_champion_mastery_from_draft,
             delete_save,
             skip_to_match_day,
             check_blocking_actions,
             export_bug_report,
-            apply_team_talk,
             submit_press_conference,
             exit_to_menu,
             get_settings,
@@ -359,7 +357,6 @@ pub fn run() {
             init_discord_rpc,
             update_discord_presence,
             shutdown_discord_rpc,
-            debug_log,
             update_manager_profile,
             debug_serde_test,
         ])

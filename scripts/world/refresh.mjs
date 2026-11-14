@@ -40,6 +40,7 @@ of pool-scope.mjs), minus people the game already has or the roster overlay hand
   --pool                  turn the pool on (needs --login for live runs; the people queries are heavy, run it once and keep the cache)
   --pool-since YYYY-MM-DD first tournament start date (default ${DEFAULT_POOL_SINCE})
   --pool-cap <n>          qualifier-flagged tournaments count only up to <n> roster entries (default ${DEFAULT_QUALIFIER_CAP})
+  --pool-stats <file>     rows.json of scripts/stats/pro-stats.mjs: players with enough games are rated from them, the rest by tier default
   --pool-probe <page>     Leaguepedia page whose inclusion the report explains (default ${DEFAULT_POOL_PROBE}; "" for none)
 `;
 
@@ -65,6 +66,7 @@ const { values } = parseArgs({
     pool: { type: "boolean", default: false },
     "pool-since": { type: "string", default: DEFAULT_POOL_SINCE },
     "pool-cap": { type: "string", default: String(DEFAULT_QUALIFIER_CAP) },
+    "pool-stats": { type: "string" },
     "pool-probe": { type: "string", default: DEFAULT_POOL_PROBE },
     help: { type: "boolean", default: false },
   },
@@ -112,7 +114,12 @@ async function refresh() {
     client,
     gateExceptions: loadGateExceptions(values["gate-exceptions"]),
     asOf: values["as-of"],
-    pool: values.pool ? { since: values["pool-since"], cap: Number(values["pool-cap"]), probe: values["pool-probe"] } : undefined,
+    pool: values.pool
+      ? {
+          since: values["pool-since"], cap: Number(values["pool-cap"]), probe: values["pool-probe"],
+          statsRows: values["pool-stats"] ? JSON.parse(fs.readFileSync(values["pool-stats"], "utf8")).rows : undefined,
+        }
+      : undefined,
     log,
   });
   writeFile(values.report, result.report);

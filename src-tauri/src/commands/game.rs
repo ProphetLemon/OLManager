@@ -4,8 +4,7 @@ use olm_core::domain::player::Player;
 use olm_core::domain::staff::Staff;
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::{Team, TeamKind};
-use serde::Serialize;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use tauri::State;
 
@@ -25,13 +24,6 @@ use olm_core::state::StateManager;
 use olm_core::world_overlay::{OverlayApplyReport, WorldOverlay, apply_world_overlay};
 
 use crate::SaveManagerState;
-
-#[derive(Debug, Clone, Serialize)]
-pub struct TeamSelectionData {
-    pub manager: Manager,
-    pub teams: Vec<olm_core::domain::team::Team>,
-    pub players: Vec<olm_core::domain::player::Player>,
-}
 
 // ---------------------------------------------------------------------------
 // Local helpers that stay in the Tauri layer
@@ -114,6 +106,12 @@ pub(crate) fn build_world_naming_replaced_club(
     rating_overrides: &PlayerRatingOverrides,
 ) -> Result<(String, Option<String>), String> {
     assemble_base_world(game, inputs, rating_overrides)?;
+
+    // The catalog never stores `lol_ovr` (the save DB does not either), and a load refreshes
+    // every player's from the attributes. Do the same here so a new game and a loaded one
+    // agree, and the AI systems that read the stored field (purchases, sales, wage policy,
+    // renewals) do not see 0 for most of the world until the first load.
+    game.refresh_lol_ovrs();
 
     // The custom club takes its slot after the overlay (so roster moves into the
     // replaced club are released with the rest) and before the fill. Its founding
@@ -228,11 +226,11 @@ fn install_custom_club(
     inputs: &NewGameWorldInputs<'_>,
     spec: &CustomTeamSpec,
 ) -> Result<String, String> {
-    let allowed = inputs
+    let manifest = inputs
         .manifests
         .iter()
-        .find(|manifest| manifest.id == inputs.competition_id)
-        .is_some_and(custom_team::custom_team_allowed);
+        .find(|manifest| manifest.id == inputs.competition_id);
+    let allowed = manifest.is_some_and(custom_team::custom_team_allowed);
     if !allowed {
         return Err(format!(
             "Competition '{}' does not accept custom clubs",
@@ -250,6 +248,7 @@ fn install_custom_club(
     let outcome = custom_team::replace_team_with_custom(
         game,
         inputs.competition_id,
+        manifest.and_then(|manifest| manifest.tier),
         inputs.team_id,
         spec,
     )?;
@@ -687,7 +686,20 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
                     }
                     team.competition_id = Some(cid.to_string());
                 }
-                all_teams.extend(comp_teams);
+                // Stale copies of a live competition, and competitions no league ever
+                // schedules, keep no teams: nothing would repair or simulate them. Their
+                // players follow the duplicate and orphan rules below.
+                if world_catalog::is_stale_duplicate_competition(cid)
+                    || world_catalog::is_never_scheduled_competition(manifest)
+                {
+                    info!(
+                        "[game] dropped {} teams of unscheduled or stale competition '{}'",
+                        comp_teams.len(),
+                        cid
+                    );
+                } else {
+                    all_teams.extend(comp_teams);
+                }
             }
             Err(err) => {
                 eprintln!("[game] FAILED to load teams for '{}': {}", cid, err);
@@ -728,11 +740,16 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
         match olm_core::competitions::load_staff(data_dir, manifest) {
             Ok(comp_staff) => {
                 eprintln!("[game] loaded {} staff for '{}'", comp_staff.len(), cid);
+                let unscheduled = world_catalog::is_never_scheduled_competition(manifest);
                 for mut s in comp_staff {
                     if let Some(ref tid) = s.team_id.clone() {
                         if !tid.starts_with(&prefix) {
                             s.team_id = Some(format!("{}-{}", cid, tid));
                         }
+                    }
+                    // No team is built for a competition no league schedules.
+                    if unscheduled {
+                        s.team_id = None;
                     }
                     staff.push(s);
                 }
@@ -769,6 +786,12 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
         correction_report.applied,
         correction_report.skipped.len()
     );
+
+    // Competition tiers, for the placeholder ratings and the team metadata defaults.
+    let competition_tiers: HashMap<String, u8> = manifests
+        .iter()
+        .filter_map(|m| m.tier.map(|tier| (m.id.clone(), tier)))
+        .collect();
 
     // 2. Bootstrap academy seeds from ERL catalog (JSON or legacy .txt fallback)
     let academy_bootstrap_date = start_date.format("%Y-%m-%d").to_string();
@@ -818,6 +841,7 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
     let estimated = olm_core::placeholder_ratings::estimate_placeholder_ratings_excluding(
         &mut all_players,
         &all_teams,
+        &competition_tiers,
         &rated.low_confidence_ids,
     );
     info!(
@@ -865,6 +889,36 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
         completed.attributes, completed.wages
     );
 
+    // Teams still without reputation or money (most second-tier clubs), and teams whose
+    // reviewed budget contradicts their own wage bill, get defaults taken from the
+    // coherent reviewed teams of their tier. Runs once the wages are final: duplicates
+    // dropped, catalog corrections applied and the staff wages completed.
+    let wage_bills = olm_core::team_metadata_defaults::committed_wage_bills(&all_players, &staff);
+    let derived = olm_core::team_metadata_defaults::derive_missing_team_metadata(
+        &mut all_teams,
+        &competition_tiers,
+        &wage_bills,
+    );
+    info!(
+        "[game] derived reputation or money for {} teams without coherent reviewed values",
+        derived.len()
+    );
+    for team in &derived {
+        let line = format!(
+            "[game] derived {} for {} ({:?})",
+            team.fields.join(", "),
+            team.team_id,
+            team.reason
+        );
+        // A gap in the data is routine (most second-tier clubs); a rejected reviewed
+        // budget is worth a line each.
+        if team.reason == olm_core::team_metadata_defaults::DerivationReason::Missing {
+            log::debug!("{line}");
+        } else {
+            info!("{line}");
+        }
+    }
+
     info!(
         "[game] assemble_world_from_modular_data: {} teams, {} players, {} staff",
         all_teams.len(),
@@ -879,7 +933,7 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
 /// bundled overlay and the one downloaded into the app data dir (see
 /// `commands::world_overlay`). A malformed overlay must never block a new game,
 /// so errors are logged and the game starts from the bundled data alone.
-fn resolve_world_overlay(app_handle: &tauri::AppHandle) -> Option<WorldOverlay> {
+pub(crate) fn resolve_world_overlay(app_handle: &tauri::AppHandle) -> Option<WorldOverlay> {
     super::world_overlay::resolve_overlay_for_new_game(app_handle)
 }
 
@@ -990,6 +1044,11 @@ pub(crate) fn prepare_new_game_season(
 
     for manifest in manifests.iter().filter(|m| !m.legacy) {
         let cid = &manifest.id;
+        // Stale copies of a live competition get no league in a new game: they would
+        // be repaired and simulated every day for nothing. Saves keep their own set.
+        if olm_core::world_catalog::is_stale_duplicate_competition(cid) {
+            continue;
+        }
         let team_ids: Vec<String> = game
             .teams
             .iter()
@@ -1097,6 +1156,10 @@ pub(crate) fn prepare_new_game_season(
     }
 
     game.leagues = all_leagues;
+    // Every club a league schedules starts with its tier's sponsor, so day-1 projections
+    // include it. The monthly finance step renews it and covers old saves.
+    let sponsored = olm_core::tier_sponsorship::assign_missing_tier_sponsorships(game);
+    info!("[game] {sponsored} scheduled main clubs start with a tier sponsor");
     game.user_competition_id = user_cid.map(String::from);
     olm_core::champions::bootstrap_champion_state(game);
     olm_core::season_context::refresh_game_context(game);
@@ -1354,23 +1417,9 @@ pub async fn select_team(
 
     // Initialize message template store
     {
-        // Look for messages root directory (to find senders)
-        let msg_root_candidates = [std::env::current_dir()
-                .ok()
-                .map(|d| d.join("data").join("messages")),
-            std::env::current_dir()
-                .ok()
-                .map(|d| d.join("../data").join("messages")),
-            std::env::current_dir()
-                .ok()
-                .map(|d| d.join("src-tauri/data").join("messages"))];
-        let mut messages_root = None;
-        for path in msg_root_candidates.iter().flatten() {
-            if path.is_dir() {
-                messages_root = Some(path.clone());
-                break;
-            }
-        }
+        // Same data-base candidates as teams and players, so a packaged or
+        // Android build finds the bundled templates too.
+        let messages_root = crate::commands::competitions::resolve_messages_root(&app_handle);
 
         // Look for triggers/ subdirectory inside messages root
         let triggers_candidates = [messages_root.as_ref().map(|p| p.join("triggers"))];
@@ -1736,25 +1785,6 @@ pub async fn get_champions() -> Result<Vec<olm_core::domain::champion::Champion>
 }
 
 #[tauri::command]
-pub async fn get_team_selection_data(
-    state: State<'_, StateManager>,
-) -> Result<TeamSelectionData, String> {
-    log::debug!("[cmd] get_team_selection_data");
-    state
-        .get_game(|game| TeamSelectionData {
-            manager: game.manager.clone(),
-            teams: game
-                .teams
-                .iter()
-                .filter(|team| team.team_kind != TeamKind::Academy)
-                .cloned()
-                .collect(),
-            players: game.players.clone(),
-        })
-        .ok_or("No active game session".to_string())
-}
-
-#[tauri::command]
 pub async fn save_game(
     state: State<'_, StateManager>,
     sm_state: State<'_, SaveManagerState>,
@@ -1963,6 +1993,39 @@ mod tests {
         assert!(rookie.market_value > 0);
     }
 
+    /// The active-pros pool adds people without a team (shape as `scripts/world/lib/pool.mjs` emits).
+    #[test]
+    fn roster_overlay_keeps_teamless_pool_adds_as_free_agents_with_a_market_value() {
+        let mut game = test_game();
+        let overlay = WorldOverlay::parse(
+            r#"{"schemaVersion":1,"as_of":"2026-11-07",
+                "source":{"name":"Leaguepedia","license":"CC BY-SA 3.0","license_url":"https://www.fandom.com/licensing"},
+                "players":[{"op":"add","evidence":"https://lol.fandom.com/wiki/Send0o","dob_approx":true,
+                  "player":{"id":"player-bea33543","team_id":null,"position":"Top","nationality":"ES",
+                    "full_name":"Rosendo Fuentes Boveda","match_name":"Send0o","wage":0,"market_value":0,
+                    "contract_end":"","date_of_birth":"2002-05-01","potential_base":60},
+                  "pool":{"page":"Send0o","kind":"player","role":"Top","tier":2,"rating":"tier-default"}}],
+                "staff":[{"op":"add","evidence":"https://lol.fandom.com/wiki/Pad","dob_approx":true,
+                  "staff":{"id":"staff-1a2b3c4d","role":"Analyst","wage":null,"team_id":null,"last_name":"Suckow-Breum",
+                    "first_name":"Patrick Suckow-Breum","nickname":"Pad","nationality":"DK","contract_end":null,
+                    "birth_country":null,"date_of_birth":"1990-01-01","specialization":null,"profile_image_url":null},
+                  "pool":{"page":"Pad","kind":"staff","role":"Analyst","tier":2,"rating":"tier-default"}}]}"#,
+        )
+        .expect("pool overlay");
+
+        let report = apply_roster_overlay(&mut game, &overlay);
+
+        let player = game.players.iter().find(|p| p.id == "player-bea33543").unwrap();
+        assert_eq!(player.team_id, None);
+        assert!(player.market_value > 0);
+        assert_eq!(player.contract_end, None);
+        let staff = game.staff.iter().find(|s| s.id == "staff-1a2b3c4d").unwrap();
+        assert_eq!((staff.team_id.as_deref(), staff.contract_end.as_deref()), (None, None));
+        assert_eq!(report.added_player_ids, vec!["player-bea33543".to_string()]);
+        assert_eq!(report.added_staff_ids, vec!["staff-1a2b3c4d".to_string()]);
+        assert!(report.skipped.is_empty());
+    }
+
     /// End-to-end new game with the real `data/` catalog and the bundled overlay.
     ///
     /// `select_team` needs a Tauri `AppHandle` and `State`, so the AppHandle-free world setup
@@ -2129,6 +2192,370 @@ mod tests {
             (manifests, known)
         }
 
+        /// A new game schedules no league for the stale duplicates the catalog still
+        /// ships (`lck-cl`, `prime_league`): they have no teams and would only be repaired
+        /// and simulated every day for nothing.
+        #[test]
+        fn a_new_game_builds_no_league_for_stale_duplicate_competitions() {
+            let (mut game, _catalog_players, _overlay, user_team) = new_game();
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &user_team).expect("season setup");
+
+            let ids: Vec<&str> = game
+                .leagues
+                .iter()
+                .filter_map(|l| l.competition_id.as_deref())
+                .collect();
+            let stale: Vec<&&str> = ids
+                .iter()
+                .filter(|id| olm_core::world_catalog::is_stale_duplicate_competition(id))
+                .collect();
+            assert!(stale.is_empty(), "stale leagues built: {stale:?}");
+        }
+
+        /// Every main club a league schedules starts with a 12-month sponsor sized by its
+        /// tier, so day-1 projections include it; the academy sub-teams get none (and no club
+        /// exists that no league schedules).
+        #[test]
+        fn a_new_game_gives_every_scheduled_main_club_its_tier_sponsor() {
+            use olm_core::tier_sponsorship::{
+                TIER_1_SPONSORSHIP_VALUE, TIER_2_SPONSORSHIP_VALUE, TIER_SPONSORSHIP_MONTHS,
+                scheduled_main_club_tiers,
+            };
+
+            let (mut game, _catalog_players, _overlay, user_team) = new_game();
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &user_team).expect("season setup");
+
+            let scheduled = scheduled_main_club_tiers(&game);
+            assert!(
+                scheduled.values().any(|tier| *tier == 1)
+                    && scheduled.values().any(|tier| *tier == 2),
+                "the world schedules a tier-1 and a tier-2 club"
+            );
+            for team in &game.teams {
+                match scheduled.get(&team.id) {
+                    Some(tier) => {
+                        let deal = team
+                            .sponsorship
+                            .as_ref()
+                            .unwrap_or_else(|| panic!("{} has no starting sponsor", team.id));
+                        let expected = if *tier == 1 {
+                            TIER_1_SPONSORSHIP_VALUE
+                        } else {
+                            TIER_2_SPONSORSHIP_VALUE
+                        };
+                        assert_eq!(deal.base_value, expected, "{} (tier {tier})", team.id);
+                        assert_eq!(deal.remaining_months, TIER_SPONSORSHIP_MONTHS);
+                    }
+                    None => assert!(
+                        team.sponsorship.is_none(),
+                        "{} is not scheduled by any league but holds a sponsor",
+                        team.id
+                    ),
+                }
+            }
+            assert!(
+                game.teams
+                    .iter()
+                    .all(|team| !team.is_main() || scheduled.contains_key(&team.id)),
+                "the world holds main clubs no league schedules"
+            );
+        }
+
+        /// Fails when a player's stored `lol_ovr` differs from what a load computes for them
+        /// (`load_game` and `get_active_game` refresh every player's from the attributes).
+        fn assert_stored_lol_ovr_is_computed(game: &Game) {
+            let stale: Vec<&str> = game
+                .players
+                .iter()
+                .filter(|p| p.lol_ovr != olm_core::potential::calculate_lol_ovr(p))
+                .map(|p| p.id.as_str())
+                .collect();
+            assert!(
+                stale.is_empty(),
+                "{} players keep a stale lol_ovr, e.g. {:?}",
+                stale.len(),
+                &stale[..stale.len().min(5)]
+            );
+        }
+
+        /// A new game stores the same `lol_ovr` a loaded one computes, so the AI systems
+        /// that read the stored field (purchases, sales, wage policy, renewals) see real
+        /// ratings from day one instead of 0 until the first load.
+        #[test]
+        fn a_new_game_stores_the_computed_lol_ovr_of_every_player() {
+            let (mut game, _catalog_players, _overlay, user_team) = new_game();
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &user_team)
+                .expect("season setup");
+
+            assert_stored_lol_ovr_is_computed(&game);
+        }
+
+        /// A custom club's world is built by the same path and ends the same way.
+        #[test]
+        fn a_new_game_with_a_custom_club_stores_the_computed_lol_ovr_of_every_player() {
+            let (game, _id) = custom_game();
+
+            assert_stored_lol_ovr_is_computed(&game);
+        }
+
+        /// Every live competition gets a league with the first split scheduled, one league per
+        /// competition, and each league plays a round robin among its own real teams.
+        #[test]
+        fn a_new_game_schedules_every_live_competition() {
+            let (mut game, _catalog_players, _overlay, user_team) = new_game();
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &user_team).expect("season setup");
+
+            let live: Vec<&CompetitionManifest> = manifests
+                .iter()
+                .filter(|m| m.active && !m.legacy && !olm_core::world_catalog::is_stale_duplicate_competition(&m.id))
+                .collect();
+            assert_eq!(live.len(), 29, "live competitions");
+            assert_eq!(game.leagues.len(), live.len(), "one league per live competition");
+            for manifest in live {
+                let league = game
+                    .leagues
+                    .iter()
+                    .find(|l| l.competition_id.as_deref() == Some(manifest.id.as_str()))
+                    .unwrap_or_else(|| panic!("no league for {}", manifest.id));
+                let teams = game
+                    .teams
+                    .iter()
+                    .filter(|t| t.competition_id.as_deref() == Some(manifest.id.as_str()))
+                    .count();
+                assert_eq!(manifest.schedule.team_count as usize, teams, "{} team_count", manifest.id);
+                assert_eq!(league.standings.len(), teams, "{} standings", manifest.id);
+                let regular = league
+                    .fixtures
+                    .iter()
+                    .filter(|f| f.match_type == olm_core::domain::league::MatchType::League)
+                    .count();
+                assert!(
+                    regular >= teams * (teams - 1) / 2,
+                    "{} schedules {regular} fixtures for {teams} teams",
+                    manifest.id
+                );
+            }
+        }
+
+        /// The stale duplicates' teams are not part of a new game either: without a league
+        /// they would never be repaired or simulated, and still show up in the market, in
+        /// search and in the tier lookup. Their players become free agents.
+        #[test]
+        fn a_new_game_has_no_teams_or_rostered_players_for_stale_duplicate_competitions() {
+            let (game, _catalog_players, _overlay, _user_team) = new_game();
+
+            let stale_teams: Vec<&str> = game
+                .teams
+                .iter()
+                .filter(|t| {
+                    t.competition_id
+                        .as_deref()
+                        .is_some_and(olm_core::world_catalog::is_stale_duplicate_competition)
+                })
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(stale_teams.is_empty(), "stale teams kept: {stale_teams:?}");
+
+            let team_ids: HashSet<&str> = game.teams.iter().map(|t| t.id.as_str()).collect();
+            let dangling = game
+                .players
+                .iter()
+                .filter(|p| p.team_id.as_deref().is_some_and(|id| !team_ids.contains(id)))
+                .count();
+            assert_eq!(dangling, 0, "players left on a team that does not exist");
+            assert!(
+                game.teams.iter().any(|t| t.competition_id.as_deref() == Some("lckcl")),
+                "the live LCK CL keeps its teams"
+            );
+        }
+
+        /// The historical rosters the bundled catalog ships for competitions no league plays.
+        const UNSCHEDULED_COMPETITIONS: [&str; 12] = [
+            "al-l", "cblol-l", "eu-lcs-l", "lck-l", "lfl-l", "ljl-l", "lla-l", "lms-l", "lpl-l",
+            "na-lcs-l", "nacl-l", "prm-l",
+        ];
+
+        /// The competitions no league schedules (not legacy, not active, no splits) are exactly
+        /// the twelve historical "-l" rosters; no active or scheduled competition matches.
+        #[test]
+        fn the_never_scheduled_predicate_matches_exactly_the_twelve_historical_competitions() {
+            let (manifests, _known) = known_ids_and_manifests();
+            let mut matched: Vec<&str> = manifests
+                .iter()
+                .filter(|m| olm_core::world_catalog::is_never_scheduled_competition(m))
+                .map(|m| m.id.as_str())
+                .collect();
+            matched.sort_unstable();
+            assert_eq!(matched, UNSCHEDULED_COMPETITIONS);
+        }
+
+        /// A new game builds no club for a competition no league schedules: it would never
+        /// play, yet draw wages and a generated roster. Every active competition keeps its teams.
+        #[test]
+        fn a_new_game_builds_no_team_for_competitions_no_league_schedules() {
+            let (game, _catalog_players, _overlay, _user_team) = new_game();
+            let (manifests, _known) = known_ids_and_manifests();
+
+            let unscheduled: Vec<&str> = game
+                .teams
+                .iter()
+                .filter(|t| {
+                    t.competition_id
+                        .as_deref()
+                        .is_some_and(|cid| UNSCHEDULED_COMPETITIONS.contains(&cid))
+                })
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(unscheduled.is_empty(), "unscheduled clubs built: {unscheduled:?}");
+
+            for manifest in manifests.iter().filter(|m| m.active && !m.legacy) {
+                if olm_core::world_catalog::is_stale_duplicate_competition(&manifest.id) {
+                    continue;
+                }
+                assert!(
+                    game.teams
+                        .iter()
+                        .any(|t| t.competition_id.as_deref() == Some(manifest.id.as_str())),
+                    "{} lost its teams",
+                    manifest.id
+                );
+            }
+        }
+
+        /// The runtime catalog reader skips the same competitions, so a load never re-adds
+        /// their clubs.
+        #[test]
+        fn the_runtime_catalog_reader_skips_competitions_no_league_schedules() {
+            let data = data_base();
+            let manifests = olm_core::competitions::scan_competitions(&data.join("competitions"));
+            let teams = crate::commands::import::runtime_catalog_teams(&manifests, |m| {
+                olm_core::competitions::load_teams(&data, m)
+            });
+            let unscheduled: Vec<&str> = teams
+                .iter()
+                .filter(|t| {
+                    t.competition_id
+                        .as_deref()
+                        .is_some_and(|cid| UNSCHEDULED_COMPETITIONS.contains(&cid))
+                })
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(unscheduled.is_empty(), "reader returned unscheduled clubs: {unscheduled:?}");
+            assert!(!teams.is_empty(), "the reader still returns the scheduled clubs");
+        }
+
+        /// A new game after the rehydration holds none of those clubs either.
+        #[test]
+        fn a_rehydrated_new_game_holds_no_team_no_league_schedules() {
+            let game = rehydrated_new_game("Kiwoom DRX", None);
+            let unscheduled: Vec<&str> = game
+                .teams
+                .iter()
+                .filter(|t| {
+                    t.competition_id
+                        .as_deref()
+                        .is_some_and(|cid| UNSCHEDULED_COMPETITIONS.contains(&cid))
+                })
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(unscheduled.is_empty(), "unscheduled clubs after rehydration: {unscheduled:?}");
+        }
+
+        /// A new game after the catalog rehydration `get_active_game` and `load_game` run on
+        /// it, built from the same files the running app reads.
+        fn rehydrated_new_game(team_name: &str, team_id: Option<&str>) -> Game {
+            let (mut game, _catalog, _overlay, _user_team) = new_game_as(team_name, team_id);
+            let data = data_base();
+            let manifests = olm_core::competitions::scan_competitions(&data.join("competitions"));
+            let teams = crate::commands::import::runtime_catalog_teams(&manifests, |m| {
+                olm_core::competitions::load_teams(&data, m)
+            });
+            let players = crate::commands::import::runtime_catalog_players(&manifests, |m| {
+                olm_core::competitions::load_players(&data, m)
+            });
+            crate::commands::import::apply_catalog_to_game(&mut game, teams, players, vec![]);
+            game
+        }
+
+        fn main_players_of(game: &Game, team_name: &str) -> usize {
+            let team = game
+                .teams
+                .iter()
+                .find(|t| t.name == team_name && t.team_kind != TeamKind::Academy)
+                .unwrap_or_else(|| panic!("no main team {team_name}"));
+            game.players
+                .iter()
+                .filter(|p| p.team_id.as_deref() == Some(team.id.as_str()))
+                .count()
+        }
+
+        /// The catalog rehydration that runs on every load must not bring back the clubs of
+        /// the stale duplicate competitions: Mundo > Equipos listed each LCKCL club twice.
+        #[test]
+        fn a_rehydrated_new_game_holds_no_team_of_a_stale_competition_and_each_lckcl_club_once() {
+            let game = rehydrated_new_game("Kiwoom DRX", None);
+
+            let stale: Vec<&str> = game
+                .teams
+                .iter()
+                .filter(|t| {
+                    t.competition_id
+                        .as_deref()
+                        .is_some_and(olm_core::world_catalog::is_stale_duplicate_competition)
+                })
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(stale.is_empty(), "stale teams after rehydration: {stale:?}");
+
+            let mut names: Vec<&str> = game
+                .teams
+                .iter()
+                .filter(|t| t.competition_id.as_deref() == Some("lckcl"))
+                .map(|t| t.name.as_str())
+                .collect();
+            let total = names.len();
+            names.sort_unstable();
+            names.dedup();
+            assert_eq!(names.len(), total, "an LCKCL club name is listed twice");
+        }
+
+        /// The roster the picker promises is the roster the game holds once the catalog has
+        /// been rehydrated.
+        #[test]
+        fn a_rehydrated_new_game_keeps_the_roster_the_new_game_built() {
+            let (built, _c, _o, _u) = new_game_as("Berlin International Gaming", Some("prm-team-0be37b7e"));
+            let rehydrated = rehydrated_new_game("Berlin International Gaming", Some("prm-team-0be37b7e"));
+
+            assert_eq!(
+                main_players_of(&rehydrated, "Berlin International Gaming"),
+                main_players_of(&built, "Berlin International Gaming")
+            );
+        }
+
+        /// The academy catalogs read the manifests from disk; they must skip the stale
+        /// duplicates too, or the academy offers teams the game no longer carries.
+        #[test]
+        fn the_academy_catalogs_skip_stale_duplicate_competitions() {
+            let _ = new_game();
+            let erl = olm_core::academy::academy_erl_catalog();
+            assert!(erl.iter().any(|l| l.id == "lckcl"), "live leagues stay");
+            let stale_leagues: Vec<&str> = erl
+                .iter()
+                .filter(|l| matches!(l.id.as_str(), "lck_cl" | "lck-cl" | "prime_league"))
+                .map(|l| l.id.as_str())
+                .collect();
+            assert!(stale_leagues.is_empty(), "stale ERL leagues: {stale_leagues:?}");
+            let stale_candidates = olm_core::academy::academy_candidate_catalog()
+                .iter()
+                .filter(|c| matches!(c.erl_league_id.as_str(), "lck_cl" | "lck-cl" | "prime_league"))
+                .count();
+            assert_eq!(stale_candidates, 0);
+        }
+
         /// A user promoted from the LES to the LEC at a season wrap keeps the LEC after the
         /// save is written and read back through the load path: the save round trip, catalog
         /// rehydration, the rebuilt competition configs and the reference sanitising.
@@ -2235,6 +2662,60 @@ mod tests {
                 "the ladder link is read from the current manifests"
             );
             assert_eq!(loaded.ladder.movements.len(), 1);
+        }
+
+        /// A saved new game keeps its league set and its teams through the load path: the
+        /// catalog rehydration and the rebuilt competition configs (which still list the stale
+        /// duplicate manifests) add neither a league nor a team of a stale competition.
+        #[test]
+        fn loading_a_new_game_save_brings_back_no_stale_league_or_team() {
+            let (mut game, catalog_players, _overlay, user_team) = new_game();
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &user_team).expect("season setup");
+            let league_ids = |game: &Game| -> Vec<Option<String>> {
+                game.leagues.iter().map(|l| l.competition_id.clone()).collect()
+            };
+            let (leagues_before, teams_before) = (league_ids(&game), game.teams.len());
+
+            let dir = tempfile::tempdir().expect("tempdir");
+            let mut manager = SaveManager::init(dir.path()).expect("save manager");
+            let save_id = manager.create_save(&game, "stale").expect("create save");
+            let mut loaded = manager.load_game(&save_id).expect("load save");
+
+            // The same steps `load_game` runs after reading the file.
+            let data = data_base();
+            let scanned = olm_core::competitions::scan_competitions(&data.join("competitions"));
+            let (catalog_teams, _players, catalog_staff) = assemble_world_from_modular_data(
+                &data,
+                &scanned,
+                "",
+                "",
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+            )
+            .expect("catalog");
+            crate::commands::import::apply_catalog_to_game(
+                &mut loaded,
+                catalog_teams,
+                catalog_players,
+                catalog_staff,
+            );
+            let current: Vec<_> = scanned.into_iter().filter(|m| !m.legacy).collect();
+            let known_now: Vec<String> = current.iter().map(|m| m.id.clone()).collect();
+            loaded.competition_configs.clear();
+            for manifest in &current {
+                loaded.competition_configs.insert(manifest.id.clone(), manifest.clone());
+            }
+            sanitize_competition_references(&mut loaded, &known_now);
+
+            assert_eq!(league_ids(&loaded), leagues_before, "the league set is the saved one");
+            assert_eq!(loaded.teams.len(), teams_before, "no team is added by the load");
+            assert!(
+                loaded
+                    .teams
+                    .iter()
+                    .all(|t| !t.competition_id.as_deref().is_some_and(olm_core::world_catalog::is_stale_duplicate_competition)),
+                "a stale competition's team came back"
+            );
         }
 
         /// A new world built the way `select_team` does, but with the given rating
@@ -2408,16 +2889,12 @@ mod tests {
             );
             let with = rating_snapshot(&with_game);
             let without = rating_snapshot(&without_game);
-            let free_agents: HashSet<&str> = without_game
-                .players
-                .iter()
-                .filter(|p| p.team_id.is_none())
-                .map(|p| p.id.as_str())
-                .collect();
 
             // Placeholder estimates take their league medians from the rated players
             // around them, so an unlisted rostered placeholder may drift a little when
-            // its league's ratings move. Nothing else about an unlisted player may change.
+            // its league's ratings move; so may the placeholder of a free agent (the new game
+            // no longer spends the best free agents on clubs no league plays, so more of
+            // them remain). Nothing else about an unlisted player may change.
             let mut drifted = 0;
             let mut max_drift = 0u8;
             for (id, row) in without.iter().filter(|(id, _)| bundled.entry(id).is_none()) {
@@ -2425,7 +2902,6 @@ mod tests {
                 if after != row {
                     drifted += 1;
                     max_drift = max_drift.max(after.1.abs_diff(row.1));
-                    assert!(!free_agents.contains(id.as_str()), "{id}: free agents never drift");
                 }
             }
             println!("unlisted players that drifted: {drifted}, max OVR drift {max_drift}");
@@ -2595,6 +3071,75 @@ mod tests {
                     team.wage_budget
                 );
             }
+        }
+
+        /// The league clubs of the bundled catalog: every team of a live (active, not
+        /// legacy) competition. Academy farm teams are created later and have no budgets.
+        fn catalog_league_teams(game: &Game) -> Vec<&Team> {
+            let live: HashSet<String> = olm_core::competitions::scan_competitions(
+                &data_base().join("competitions"),
+            )
+            .into_iter()
+            .filter(|m| m.active && !m.legacy)
+            .map(|m| m.id)
+            .collect();
+            game.teams
+                .iter()
+                .filter(|t| t.competition_id.as_ref().is_some_and(|c| live.contains(c)))
+                .collect()
+        }
+
+        #[test]
+        fn every_league_team_has_reputation_and_budgets() {
+            let (game, _, _, _) = new_game();
+            let teams = catalog_league_teams(&game);
+            assert!(teams.len() > 200, "the catalog holds {} league teams", teams.len());
+            for team in teams {
+                assert!(team.reputation > 0, "{} has no reputation", team.id);
+                assert!(team.finance > 0, "{} has no finance", team.id);
+                assert!(team.wage_budget > 0, "{} has no wage budget", team.id);
+                assert!(team.transfer_budget > 0, "{} has no transfer budget", team.id);
+            }
+        }
+
+        #[test]
+        fn every_league_team_pays_its_players_inside_its_wage_budget() {
+            let (game, _, _, _) = new_game();
+            let mut over_budget = Vec::new();
+            for team in catalog_league_teams(&game) {
+                let roster: Vec<_> = game
+                    .players
+                    .iter()
+                    .filter(|p| p.team_id.as_deref() == Some(team.id.as_str()))
+                    .collect();
+                assert!(!roster.is_empty(), "{} has a roster", team.id);
+                assert!(roster.iter().all(|p| p.wage > 0), "{} has an unpaid player", team.id);
+                let bill = annual_bill(&game, &team.id);
+                if bill > team.wage_budget {
+                    over_budget.push(format!("{} bill {bill} budget {}", team.id, team.wage_budget));
+                }
+            }
+            assert!(over_budget.is_empty(), "{over_budget:#?}");
+        }
+
+        #[test]
+        fn no_league_team_is_insolvent_after_a_season_of_monthly_finances() {
+            let (mut game, _, _, _) = new_game();
+            let ids: Vec<String> = catalog_league_teams(&game).iter().map(|t| t.id.clone()).collect();
+            let first_of_month = game.clock.current_date;
+            for month in 0..12u32 {
+                game.clock.current_date = first_of_month
+                    .checked_add_months(chrono::Months::new(month))
+                    .expect("date in range");
+                olm_core::finances::process_monthly_finances(&mut game);
+            }
+            let insolvent: Vec<&str> = ids
+                .iter()
+                .filter_map(|id| game.teams.iter().find(|t| &t.id == id))
+                .filter(|t| t.finance < 0)
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(insolvent.is_empty(), "{insolvent:?}");
         }
 
         #[test]
@@ -5026,6 +5571,29 @@ mod tests {
                 }
             }
 
+            /// A season wrap rebuilds the leagues the game already holds; it never adds one,
+            /// and in particular never brings back a stale duplicate competition.
+            #[test]
+            fn a_season_wrap_keeps_the_league_set() {
+                let (mut game, id) = career(true);
+                let ids = |game: &Game| -> Vec<Option<String>> {
+                    let mut ids: Vec<_> = game.leagues.iter().map(|l| l.competition_id.clone()).collect();
+                    ids.sort();
+                    ids
+                };
+                let before = ids(&game);
+                assert!(
+                    before.iter().flatten().all(|id| !olm_core::world_catalog::is_stale_duplicate_competition(id)),
+                    "a new game starts without stale leagues"
+                );
+                let les_order = order_with(&game, "les", &[id.as_str()]);
+                let lec_order = table_ids(&game, "lec");
+
+                roll_over(&mut game, &les_order, &lec_order);
+
+                assert_eq!(ids(&game), before);
+            }
+
             /// Q1: the club, the user's league and the clubs that move.
             #[test]
             fn the_promoted_custom_club_moves_to_the_lec_and_the_last_lec_club_comes_down() {
@@ -6027,7 +6595,7 @@ mod tests {
                     continue;
                 };
                 let mut game = base.clone();
-                let outcome = custom_team::replace_team_with_custom(&mut game, &manifest.id, &slot, &seeded_rayo(1))
+                let outcome = custom_team::replace_team_with_custom(&mut game, &manifest.id, manifest.tier, &slot, &seeded_rayo(1))
                     .expect("custom club");
                 match olm_core::founding_squad::install_founding_squad(
                     &mut game,
@@ -6807,14 +7375,26 @@ mod tests {
                     problems.push(format!("{} still links to the replaced team", team.id));
                 }
             }
-            let academy = game
+            // A tier-2 club funds no academy: the custom club inherits none and the
+            // replaced club's seed copy is dissolved, not left orphaned.
+            let owns_academy = game
                 .teams
                 .iter()
                 .find(|t| t.id == id)
-                .and_then(|club| club.academy_team_id.as_deref())
-                .and_then(|academy_id| game.teams.iter().find(|t| t.id == academy_id));
-            if academy.is_none_or(|a| a.parent_team_id.as_deref() != Some(id)) {
-                problems.push("the custom club does not own the inherited academy".to_string());
+                .is_some_and(|club| club.academy_team_id.is_some())
+                || game
+                    .teams
+                    .iter()
+                    .any(|t| t.parent_team_id.as_deref() == Some(id));
+            if owns_academy {
+                problems.push("the custom club inherited an academy from a tier-2 club".to_string());
+            }
+            if game
+                .teams
+                .iter()
+                .any(|t| t.team_kind == TeamKind::Academy && t.name == REPLACED_NAME)
+            {
+                problems.push("the replaced club's academy copy was left behind".to_string());
             }
             if game.players.iter().any(|p| p.team_id.as_deref() == Some(LES_SLOT))
                 || game.staff.iter().any(|s| s.team_id.as_deref() == Some(LES_SLOT))

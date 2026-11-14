@@ -89,16 +89,30 @@ describe("team tokens", () => {
     }
   });
 
-  it("declares the terrain tokens the arena paints with", () => {
-    for (const name of [
-      "--terrain-ground",
-      "--terrain-river",
-      "--terrain-lane-edge",
-      "--terrain-lane",
-      "--terrain-pit",
-      "--terrain-pit-edge",
-    ]) {
+  it.each(Object.keys(BLOCKS) as Array<keyof typeof BLOCKS>)(
+    "keeps both teams and the warning colour readable on the map casing in the %s block (3:1)",
+    (key) => {
+      const casing = declared("--map-casing", key);
+      for (const token of ["--team-blue", "--team-red", "--warning"]) {
+        const colour = declared(token, key);
+        expect(contrast(colour, casing), `${token} ${colour} on casing ${casing} in ${key}`).toBeGreaterThanOrEqual(3);
+      }
+    },
+  );
+
+  it("declares the map tokens once, theme independent: the Rift is pale in every theme", () => {
+    for (const name of ["--terrain-ground", "--map-casing", "--map-ink"]) {
       expect(BLOCKS.light).toContain(`${name}:`);
+      for (const key of ["dark", "lightHigh", "darkHigh"] as const) {
+        expect(BLOCKS[key], `${name} redeclared in ${key}`).not.toContain(`${name}:`);
+      }
+    }
+    expect(contrast(declared("--map-ink", "light"), declared("--map-casing", "light"))).toBeGreaterThanOrEqual(7);
+  });
+
+  it("no longer declares the terrain tokens nothing paints with", () => {
+    for (const name of ["river", "lane-edge", "lane", "pit", "pit-edge", "wall", "path", "base"]) {
+      expect(css, `--terrain-${name}`).not.toContain(`--terrain-${name}:`);
     }
   });
 });

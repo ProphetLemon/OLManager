@@ -10,8 +10,9 @@ v1 fue eliminada. No hay toggle, no hay `src/components/`, no hay `src/App.tsx`.
 |----------|--------|
 | `src/components/` | ❌ Eliminado |
 | `src/pages/` | ❌ Eliminado |
-| `src/App.tsx` / `App.css` | ❌ Eliminado |
-| `src/ui-v2/uiVersion.ts` | 🗑️ Stub (exporta "v2" fijo) |
+| `src/App.tsx` | ❌ Eliminado |
+| `src/App.css` | ✅ Existe; `main.tsx` lo importa |
+| `src/ui-v2/uiVersion.ts` | ❌ Eliminado |
 | `src/main.tsx` | ✅ Renderiza AppV2 directo |
 | Toggle v1/v2 en Config | ❌ Ya no existe funcionalmente |
 
@@ -26,19 +27,19 @@ src/
 ├── main.tsx                   # entry point → siempre AppV2
 ├── lib/                       # helpers puros (movidos de @/components/)
 │   ├── squad/helpers.ts       # antes en components/squad/SquadTab.helpers
-│   ├── home/helpers.ts
+│   ├── home/helpers.ts        # sin importadores en runtime; sólo lo usan tests
 │   ├── dashboard/helpers.ts
 │   ├── match/live/            # lógica pura del partido en directo (contactos, etiquetas, foco, tablero, vistas)
 │   └── ...
 ├── ui-v2/
 │   ├── AppV2.tsx              # router root + update checker + UI scale + Android immersive
 │   ├── _legacy/               # copias de v1 con imports convertidos
-│   │   ├── components/        # ~30 subdirectorios
+│   │   ├── components/        # 11 subdirectorios
 │   │   └── pages/
 │   ├── components/ui/         # shadcn primitives + On Air primitives (see section 4)
 │   ├── shell/                 # navModel.ts (rails, groups, strip tabs), RailItem, SectionStripV2, ClockPlate
 │   ├── lib/utils.ts           # cn()
-│   ├── pages/                 # v2 pages (SettingsV2, TeamSelectionV2)
+│   ├── pages/                 # v2 pages (SettingsV2, TeamSelectionV2, PlayerProfileV2, TeamProfileV2, StaffProfileV2, ChampionPageV2; customTeam/, playerProfile/, settings/, teamProfile/)
 │   ├── match/                 # partido en directo (Arena): LiveMatchV2.tsx es la pantalla; MatchSimulation la monta
 │   │   └── live/              # mapa (ArenaMap + capas), barra, tarjetas, feed, controles, EndPanel, hooks de sesión
 │   └── dashboard/
@@ -46,7 +47,7 @@ src/
 │       ├── DashboardSidebarV2.tsx  # rail (4.75rem), built on navModel
 │       ├── DashboardHeaderV2.tsx   # bar + section strip
 │       └── tabs/              # tabs nativos v2 (home/, squad/ = On Air panels)
-└── store/, services/, hooks/, api/, context/  # compartidos (hooks/useRovingFocus, useClubTheme)
+└── store/, services/, hooks/, api/  # compartidos (hooks/useRovingFocus, useClubTheme)
 ```
 
 ---
@@ -57,13 +58,12 @@ src/
 |--------|-------------------|
 | PlayerProfileV2 | `DashboardModalFrame` desde _legacy (modales de renovación, rescisión y oferta; la página es nativa en `pages/playerProfile/`) |
 | ScheduleTabV2 | `_legacy/components/schedule/ScheduleCalendarView` |
-| ScheduleTabV2 | `_legacy/components/match/DraftResultScreen` |
 | ScheduleTabV2 | `_legacy/components/playoffs/PlayoffBracketBoard` |
-| HomeTabV2 | `_legacy/components/NextMatchDisplay` |
-| SquadTabV2, PlayersTabV2 | PlayerAvatar, ContextMenu desde _legacy |
+| PlayersTabV2 | PlayerAvatar desde _legacy (SquadTabV2 no importa nada de _legacy) |
 | CompetitionsTabV2 | ScheduleCalendarView desde _legacy |
-| AppV2 | MainMenu, MatchSimulation, SettingsV2 (ya no hay botón de bug flotante: cada pantalla aloja el suyo) |
-| TeamSelectionV2 | FloatingBugButton en el pie de `RosterOverlayPanel` (prop `actions`), en todos los pasos de /select-team |
+| AppV2 | MainMenu, MatchSimulation, UpdateModal; `SettingsV2` es nativo en `ui-v2/pages/` y envuelve `_legacy/pages/Settings` (ya no hay botón de bug flotante: cada pantalla aloja el suyo) |
+| DashboardV2 | `DashboardOverlays`, `FiredModal`, `dashboardHelpers` y `DashboardWorkspaceContent` → `DashboardTabContent` → `EndOfSeasonScreen`: ese camino sólo se monta con la pantalla de fin de temporada (Home); el resto de pestañas son nativas v2 |
+| TeamSelectionV2 | `LeaguePickerV2`, `TeamGridV2`, `teamSelection.helpers`; FloatingBugButton en el pie de `RosterOverlayPanel` (prop `actions`), en todos los pasos de /select-team |
 | DashboardSidebarV2 | FloatingBugButton (el rail lo aloja en las rutas del dashboard) |
 | LiveMatchV2 | FloatingBugButton en la fila de controles de /match (no flota: no tapa el mapa ni las tarjetas) |
 
@@ -86,7 +86,7 @@ Tocado en _legacy por On Air: `FloatingBugButton` (ya sólo en línea, sin varia
 
 **Shell: rail + bar + strip.** `DashboardSidebarV2` es un rail de 4.75rem (escudo, paradas, ajustes/salir/avatar abajo) con foco por flechas (`useRovingFocus`). `DashboardHeaderV2` es la barra (título, chip de decisiones, reloj, Continuar) y, debajo, `SectionStripV2` con las pestañas del grupo activo. `shell/navModel.ts` es la fuente única de paradas, grupos y pestañas. Con la pantalla de fin de temporada ambos pasan a `compact`.
 
-**Primitivas** (`src/ui-v2/components/ui/`): `ClubShield`, `LowerThird`, `Meter`, `ScoreNumeral`, `SegmentedControl`, `SplitButton`, `TagBlock`, además de las shadcn (`button` con variantes `club` y tamaños `touch`).
+**Primitivas** (`src/ui-v2/components/ui/`): `ClubShield`, `LowerThird` (primitiva todavía sin montar: `NeedsYourCallPanel` usa `data-slot="lower-third"` propio), `Meter`, `ScoreNumeral`, `SegmentedControl`, `SplitButton`, `TagBlock`, además de las shadcn (`button` con variantes `club` y tamaños `touch`).
 
 **Home y Squad On Air:** `tabs/home/` (ScoreboardHero, NeedsYourCallPanel, InboxPanel, StandingsPanel) y `tabs/squad/` (PlayerCardV2, SelectedPlayerBar, BenchEmptyState, StartingFiveGrid). Textos por i18next con las claves `onAir.*` en los 8 locales (`src/i18n/onAirKeys.test.ts` exige el mismo conjunto de claves).
 

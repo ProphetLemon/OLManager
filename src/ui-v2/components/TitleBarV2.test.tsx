@@ -28,6 +28,13 @@ describe("TitleBarV2", () => {
     expect(screen.getByText(APP_EDITION)).toBeInTheDocument();
   });
 
+  it("gives the edition the neutral name language so Turkish uppercasing does not dot it", async () => {
+    const { TitleBarV2 } = await import("./TitleBarV2");
+    render(<TitleBarV2 />);
+
+    expect(screen.getByText(APP_EDITION)).toHaveAttribute("lang", "und");
+  });
+
   it("sits on the rail surface token without wide tracking on the app name", async () => {
     const { TitleBarV2 } = await import("./TitleBarV2");
     const { container } = render(<TitleBarV2 />);

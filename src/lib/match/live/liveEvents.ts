@@ -191,7 +191,13 @@ function splitKill(text: string, roster: readonly RosterEntry[]): { killer: stri
   return { killer: first.killer, victim: first.victim, cause: ignite ? null : cause, ignite };
 }
 
+/**
+ * An objective line is news only when a team did it. The engine also logs "Scuttle Top despawned"
+ * and "Voidgrubs despawned" as info, with no team in them; read as an objective they came out as
+ * "a team killed the Scuttle Crab", so a line with no team is not an objective.
+ */
 function neutralObjective(text: string): NeutralObjective | null {
+  if (!sideFromText(text)) return null;
   if (/voidgrub/i.test(text)) return /camp/i.test(text) ? "voidgrub-camp" : "voidgrub";
   if (/herald/i.test(text)) return "herald";
   if (/scuttle/i.test(text)) return "scuttle";

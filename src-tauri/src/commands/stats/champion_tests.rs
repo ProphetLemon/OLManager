@@ -98,7 +98,7 @@ fn an_empty_stats_state_returns_zeros_not_nan() {
 
 #[test]
 fn wins_and_losses_average_to_the_old_sql_figures() {
-    // The 4-row fixture of champion_stats_repo's own test: 2 wins, 2 losses, 5/3/7 each.
+    // The 4-row fixture of the former champion_stats_repo's own test: 2 wins, 2 losses, 5/3/7 each.
     let mut rows: Vec<_> = (0..4)
         .map(|i| {
             let result = if i < 2 {

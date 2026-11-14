@@ -197,6 +197,10 @@ pub struct LeagueSelectionData {
 pub struct CompetitionSummary {
     pub id: String,
     pub name: String,
+    /// Long name from the manifest ("LCK Challenger League Series"); absent when the
+    /// manifest does not carry one.
+    #[serde(default)]
+    pub full_name: Option<String>,
     pub region: String,
     #[serde(default)]
     pub logo: Option<String>,

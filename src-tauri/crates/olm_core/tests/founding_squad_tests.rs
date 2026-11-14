@@ -86,7 +86,7 @@ fn world(competition: &str, level: u8) -> Game {
 fn with_custom_club(competition: &str, level: u8) -> Game {
     let mut game = world(competition, level);
     let slot = format!("{competition}-t0");
-    replace_team_with_custom(&mut game, competition, &slot, &spec(None)).expect("custom club");
+    replace_team_with_custom(&mut game, competition, Some(2), &slot, &spec(None)).expect("custom club");
     game
 }
 

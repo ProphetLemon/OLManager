@@ -754,7 +754,15 @@ fn assign_free_agent(
     };
 
     // Cap consumption and transfer recording only happen for the selected candidate.
-    let candidates = free_agent_candidates(game, role, current_date);
+    // Strongest first, judged by the unrounded attribute average (the value the stored
+    // `lol_ovr` is rounded from, but always current); id breaks ties so the pick is
+    // deterministic. Every candidate still goes through the signing policy below.
+    let mut candidates = free_agent_candidates(game, role, current_date);
+    candidates.sort_by(|(left_id, left_index), (right_id, right_index)| {
+        natural_ovr(&game.players[*right_index])
+            .total_cmp(&natural_ovr(&game.players[*left_index]))
+            .then_with(|| left_id.cmp(right_id))
+    });
 
     for (_, index) in candidates {
         let decision = {
@@ -764,7 +772,13 @@ fn assign_free_agent(
         if !decision.accepted {
             continue;
         }
-        if !ai_transfer_cap_try_consume(game, team_id, cap_kind) {
+        // The daily cap limits how often a club shops. A club whose contracts ended today
+        // has holes it must fill (at most one per role, so it is bounded already): capping
+        // those at one a day left the other roles to generated players while hundreds of
+        // real free agents the policy accepts stayed unsigned.
+        if reason != RosterStabilityReason::ContractExpired
+            && !ai_transfer_cap_try_consume(game, team_id, cap_kind)
+        {
             continue;
         }
 

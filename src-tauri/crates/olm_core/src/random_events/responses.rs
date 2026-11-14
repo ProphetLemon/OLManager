@@ -1,5 +1,5 @@
 use super::format_money;
-use crate::domain::team::{Sponsorship, SponsorshipBonusCriterion};
+use crate::domain::team::{Sponsorship, SponsorshipBonusCriterion, SponsorshipOrigin};
 use crate::finances::push_sponsor_accepted_mail;
 use crate::game::Game;
 use rand::RngExt;
@@ -63,6 +63,7 @@ pub fn apply_event_response(
                             required_matches: 3,
                             bonus_amount: amount as i64 / 4,
                         }],
+                        origin: SponsorshipOrigin::Offer,
                     });
                 }
                 let today = game.clock.current_date.format("%Y-%m-%d").to_string();

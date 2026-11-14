@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 
 import { championDisplayName } from "@/lib/champions/championNames";
 import { endSummary } from "@/lib/match/live/endSummary";
 import { buildFightBoard } from "@/lib/match/live/fightBoard";
+import { laneStripView } from "@/lib/match/live/laneStrip";
 import { pitViews } from "@/lib/match/live/objectivesView";
 import { opposingChampion, type CardChampion } from "@/lib/match/live/playerCardView";
 import { buildSpotlight, type SpotlightPit } from "@/lib/match/live/spotlight";
+import { resolveSideStyles, sideTokens } from "@/lib/match/live/sidePalette";
 import { teamIdentity } from "@/lib/match/live/teamIdentity";
 import type { TeamSide } from "@/lib/match/live/mapGeometry";
 import type { GameStateData } from "@/store/gameStore";
@@ -27,7 +29,8 @@ import { ChampionLayer } from "./live/ChampionLayer";
 import { ContactLayer } from "./live/ContactLayer";
 import { EndPanel } from "./live/EndPanel";
 import { EventTicker } from "./live/EventTicker";
-import { FightBoard, FIGHT_BOARD_ID } from "./live/FightBoard";
+import { AWAY_BOARD_ID, FightBoard, FIGHT_BOARD_ID } from "./live/FightBoard";
+import { LaneStrip } from "./live/LaneStrip";
 import { LivePlayerCard } from "./live/LivePlayerCard";
 import { MapLegend } from "./live/MapLegend";
 import { Button } from "@/ui-v2/components/ui/button";
@@ -37,11 +40,13 @@ import { PitMarkers } from "./live/PitMarkers";
 import { ScoreBar, type ScoreStatus } from "./live/ScoreBar";
 import { SpotlightCaption } from "./live/SpotlightCaption";
 import { StructureLayer } from "./live/StructureLayer";
+import { TimerRail } from "./live/TimerRail";
 import { TowerFireLayer } from "./live/TowerFireLayer";
 import { useChampionProfiles, type ChampionSelectionByPlayer } from "./live/useChampionProfiles";
 import { useContactView } from "./live/useContactView";
 import { useLiveSession } from "./live/useLiveSession";
 import "./live/liveMatch.css";
+import { NAME_LANG } from "@/ui-v2/match/NameText";
 
 /**
  * Resolves once the browser has had the chance to paint what was just rendered, or after a short
@@ -157,8 +162,20 @@ export default function LiveMatchV2({
   const toggleSelected = useCallback((id: string) => setSelectedId((current) => (current === id ? null : id)), []);
 
   // ── Who is who ────────────────────────────────────────────────────────
-  const blue = useMemo(() => teamIdentity(snapshot.home_team.name, gameState?.teams), [snapshot.home_team.name, gameState?.teams]);
-  const red = useMemo(() => teamIdentity(snapshot.away_team.name, gameState?.teams), [snapshot.away_team.name, gameState?.teams]);
+  // Home is the blue side and away the red one; each wears its club's logo and colours.
+  const highContrast = useSettingsStore((s) => s.settings.high_contrast);
+  const { blue, red } = useMemo(() => {
+    const homeRef = { id: snapshot.home_team.id, name: snapshot.home_team.name };
+    const awayRef = { id: snapshot.away_team.id, name: snapshot.away_team.name };
+    const sides = resolveSideStyles(gameState?.teams, homeRef, awayRef, { highContrast });
+    return {
+      blue: teamIdentity(homeRef.name, gameState?.teams, sides.blue),
+      red: teamIdentity(awayRef.name, gameState?.teams, sides.red),
+    };
+  }, [snapshot.home_team.id, snapshot.home_team.name, snapshot.away_team.id, snapshot.away_team.name, gameState?.teams, highContrast]);
+  // The two clubs' colours, published once on the screen root: every rule below reads them, and
+  // nothing recomputes them per frame (they change only with the clubs or the contrast setting).
+  const sideStyle = useMemo(() => sideTokens(blue.palette, red.palette) as CSSProperties, [blue.palette, red.palette]);
   const managerTeamId = gameState?.manager?.team_id ?? null;
   const userSide: TeamSide | null =
     managerTeamId === null ? null : managerTeamId === snapshot.home_team.id ? "blue" : managerTeamId === snapshot.away_team.id ? "red" : null;
@@ -205,8 +222,8 @@ export default function LiveMatchV2({
   const summary = useMemo(() => endSummary(finishedState, userSide), [finishedState, userSide]);
   const handleContinue = useCallback(() => {
     if (!finishedState) return;
-    onFullTime({ ...finishedState, goldDiffTimeline: [...view.goldDiffTimeline] }, { source: "live" });
-  }, [finishedState, onFullTime, view.goldDiffTimeline]);
+    onFullTime({ ...finishedState, goldDiffTimeline: [...view.goldDiffTimeline], matchRecord: session.record() }, { source: "live" });
+  }, [finishedState, onFullTime, session, view.goldDiffTimeline]);
 
   // ── Controls ──────────────────────────────────────────────────────────
   const handleSkip = useCallback(async () => {
@@ -244,6 +261,10 @@ export default function LiveMatchV2({
     () => buildFightBoard({ nowSec: state.timeSec, champions: state.champions, structures: state.structures }),
     [state.champions, state.structures, state.timeSec],
   );
+  const lanes = useMemo(
+    () => laneStripView({ minions: state.minions, champions: state.champions, fightingIds: contacts.fightingIds }),
+    [contacts.fightingIds, state.champions, state.minions],
+  );
   const roster = useMemo(
     () => state.champions.map((champion) => ({ id: champion.id, name: champion.name, team: champion.team })),
     [state.champions],
@@ -257,6 +278,14 @@ export default function LiveMatchV2({
 
   const status: ScoreStatus = winner ? "final" : view.running ? "live" : "paused";
   const ended = Boolean(summary);
+
+  /** The strip over a column: the club's name on its band colour, with the side's shape beside it. */
+  const renderBand = (team: TeamSide, identity: { name: string }) => (
+    <div className={team === "blue" ? "live-band live-area-bband" : "live-band live-area-rband"} data-team={team} aria-hidden="true">
+      <i className="arena-side-shape" />
+      <span className="live-band-name" lang={NAME_LANG}>{identity.name}</span>
+    </div>
+  );
 
   const renderCards = (team: TeamSide, identity: { name: string }) => (
     <section className="live-side" data-team={team} aria-label={t("onAir.match.team.players", { team: identity.name })}>
@@ -284,6 +313,7 @@ export default function LiveMatchV2({
     <div
       className="live-match relative min-h-0 flex-1 bg-background text-foreground"
       data-testid="live-match"
+      style={sideStyle}
       aria-busy={busy || undefined}
     >
       <div className="live-scroll scrollbar-v2" inert={ended || busy ? true : undefined}>
@@ -292,10 +322,14 @@ export default function LiveMatchV2({
             <ScoreBar state={state} blue={blue} red={red} status={status} bus={bus} />
           </div>
 
+          <div className="live-area-lanes">
+            <LaneStrip lanes={lanes} blue={blue} red={red} />
+          </div>
+
           <div className="live-area-map">
             <ArenaMap
               bus={bus}
-              describedBy={FIGHT_BOARD_ID}
+              describedBy={`${FIGHT_BOARD_ID} ${AWAY_BOARD_ID}`}
               paused={!view.running && !winner}
               layers={{
                 structures: <StructureLayer state={state} beams={beams} />,
@@ -317,9 +351,16 @@ export default function LiveMatchV2({
             />
           </div>
 
+          <div className="live-area-fight">
+            <FightBoard rows={board} variant="fights" />
+          </div>
+          <div className="live-area-away">
+            <FightBoard rows={board} variant="away" />
+          </div>
+
           <div className="live-area-dock">
-            <EventTicker events={state.events} roster={roster} />
             <SpotlightCaption spotlight={spotlight} onRelease={() => setSelectedId(null)} />
+            <EventTicker events={state.events} roster={roster} teamNames={{ blue: blue.tag, red: red.tag }} />
           </div>
 
           <div className="live-area-ctl">
@@ -332,7 +373,6 @@ export default function LiveMatchV2({
               onSkip={handleSkip}
               onReset={handleReset}
             />
-            <FightBoard rows={board} />
             <MapLegend />
             {/* In the row, not floating: a fixed button would sit over the map or a card. */}
             <FloatingBugButton />
@@ -346,7 +386,12 @@ export default function LiveMatchV2({
             ) : null}
           </div>
 
+          {renderBand("blue", blue)}
           <div className="live-area-blue scrollbar-v2">{renderCards("blue", blue)}</div>
+          <div className="live-area-rail">
+            <TimerRail state={state} blue={blue} red={red} />
+          </div>
+          {renderBand("red", red)}
           <div className="live-area-red scrollbar-v2">{renderCards("red", red)}</div>
         </div>
       </div>

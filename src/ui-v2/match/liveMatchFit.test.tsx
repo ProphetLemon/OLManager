@@ -128,10 +128,10 @@ describe("the rows of a card are fixed and never wrap", () => {
     expect(ruleBody(".arena-card-state")).toMatch(/text-overflow:\s*ellipsis/);
   });
 
-  it("stacks the cooldowns on a line of their own when the column is narrow, in every card alike", () => {
+  it("stacks the cooldowns on a line of their own when the column is under 19rem, in every card alike", () => {
     expect(ruleBody(".live-side")).toMatch(/container-type:\s*inline-size/);
     expect(ruleBody(".live-side")).toMatch(/container-name:\s*side/);
-    const narrow = css.slice(css.indexOf("@container side (max-width: 21rem)"));
+    const narrow = css.slice(css.indexOf("@container side (max-width: 19rem)"));
     expect(narrow.slice(0, 600)).toMatch(/\.arena-card-gear\s*\{[^}]*flex-direction:\s*column/);
   });
 });

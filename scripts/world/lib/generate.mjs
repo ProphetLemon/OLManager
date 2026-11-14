@@ -56,8 +56,18 @@ function collectRange(rows, keys) {
   return range;
 }
 
-/** Medians per competition + position (players) and per role (staff), with global fallbacks. */
+/** Real players a tier needs in a role before `tierPlayer` gives its median (as MIN_REAL_PLAYERS_PER_TIER_ROLE in the game). */
+export const MIN_TIER_ROLE_PLAYERS = 10;
+
+/**
+ * Medians per competition + position (players) and per role (staff), with global fallbacks.
+ * `tierPlayer(tier, position)` is the median of the real players of one tier in a role, or null when the tier has fewer
+ * than MIN_TIER_ROLE_PLAYERS of them.
+ */
 export function computeBaselines(world) {
+  const tierOf = new Map((world.competitions ?? []).map((c) => [c.id, c.tier]));
+  const tierGroups = new Map();
+  const tierPotentials = new Map();
   const playerGroups = new Map();
   const potentialGroups = new Map();
   const staffGroups = new Map();
@@ -69,6 +79,11 @@ export function computeBaselines(world) {
     playerRows.push(attrs);
     pushTo(playerGroups, `${p.competition}|${p.position}`, attrs);
     pushTo(playerGroups, `*|${p.position}`, attrs);
+    const tier = tierOf.get(p.competition);
+    if (tier != null) {
+      pushTo(tierGroups, `${tier}|${p.position}`, attrs);
+      if (p.raw.potential_base > 0) pushTo(tierPotentials, `${tier}|${p.position}`, p.raw.potential_base);
+    }
     if (p.raw.potential_base > 0) {
       pushTo(potentialGroups, `${p.competition}|${p.position}`, p.raw.potential_base);
       pushTo(potentialGroups, `*|${p.position}`, p.raw.potential_base);
@@ -94,6 +109,13 @@ export function computeBaselines(world) {
       const pots = potentialGroups.get(`${competition}|${position}`);
       const potRows = pots && pots.length >= MIN_GROUP ? pots : (potentialGroups.get(`*|${position}`) ?? [70]);
       return { attributes: medians(rows, PLAYER_ATTRIBUTES), potential: median(potRows), range: playerRange };
+    },
+    tierPlayer(tier, position) {
+      const rows = tierGroups.get(`${tier}|${position}`);
+      if (!rows || rows.length < MIN_TIER_ROLE_PLAYERS) return null;
+      const pots = tierPotentials.get(`${tier}|${position}`);
+      const potential = pots && pots.length >= MIN_GROUP ? median(pots) : (potentialGroups.get(`*|${position}`) ? median(potentialGroups.get(`*|${position}`)) : 70);
+      return { attributes: medians(rows, PLAYER_ATTRIBUTES), potential, range: playerRange };
     },
     staff(role) {
       const group = staffGroups.get(role);
@@ -159,13 +181,17 @@ export function generatePlayer({ page, ign, realName, country, position, teamId,
 }
 
 /**
- * @returns {{record: object, dobApprox: boolean}}
+ * Staff on a team keep the roster refresh's convention (the country name, as the game's staff files carry it); a free-agent
+ * staff add (no team) carries an ISO-2 code like a player, empty when the country does not resolve.
+ * @returns {{record: object, dobApprox: boolean, nationalityMissing: boolean}}
  */
 export function generateStaff({ canonicalTitle, ign, realName, country, role, teamId, baselines, takenIds }) {
   const id = deterministicId("staff", canonicalTitle);
   if (takenIds?.has(id)) throw new IdCollisionError(id, canonicalTitle);
   const base = baselines.staff(role);
   const fullName = realName || ign;
+  const teamless = teamId === null;
+  const nationality = teamless ? countryToIso2(country) : (country ?? "");
   const record = {
     id,
     role,
@@ -174,7 +200,7 @@ export function generateStaff({ canonicalTitle, ign, realName, country, role, te
     last_name: fullName.split(/\s+/).filter(Boolean).at(-1) ?? "",
     attributes: jitteredAttributes(id, base.attributes, STAFF_ATTRIBUTES, base.range),
     first_name: fullName,
-    nationality: country ?? "",
+    nationality,
     contract_end: null,
     birth_country: null,
     date_of_birth: "1990-01-01",
@@ -182,5 +208,5 @@ export function generateStaff({ canonicalTitle, ign, realName, country, role, te
     profile_image_url: null,
     nickname: ign || fullName,
   };
-  return { record, dobApprox: true };
+  return { record, dobApprox: true, nationalityMissing: teamless && !nationality };
 }

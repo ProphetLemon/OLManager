@@ -556,27 +556,6 @@ export function useAdvanceTime(
             : i18n.t("dashboard.matchPlayedByStaffNoScore", { defaultValue: "Your staff played the match." }),
         );
       }
-      const hasScrimDecisionBlocker = (result.blockers ?? []).some((blocker) => blocker.id === SCRIM_DECISION_BLOCKER_ID);
-      if (result.action === "blocked" && hasScrimDecisionBlocker && scrimReviewMode === "assistant") {
-        try {
-          const delegated = await delegateScrimDecision();
-          setGameState(delegated);
-          setAutoDelegationNotice(noticeAssistantResolvedDecision());
-          const retry = await skipToMatchDay();
-          if (retry.action === "fired") {
-            if (retry.game) setGameState(retry.game as GameStateData);
-            setShowFiredModal(true);
-            return;
-          }
-          if (retry.game) setGameState(retry.game as GameStateData);
-          if (retry.action === "blocked" && retry.blockers && retry.blockers.length > 0) {
-            setBlockerModal(buildBlockerModal(retry.blockers, "skipToMatchDay"));
-          }
-          return;
-        } catch (error) {
-          console.error("Failed to auto-delegate scrim decision while skipping:", error);
-        }
-      }
       if (result.action === "blocked" && result.blockers && result.blockers.length > 0) {
         setBlockerModal(buildBlockerModal(result.blockers, "skipToMatchDay"));
       }

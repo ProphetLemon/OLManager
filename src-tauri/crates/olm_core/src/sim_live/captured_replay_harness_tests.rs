@@ -93,6 +93,103 @@ const STUCK_EXAMPLES_PER_MATCH: usize = 3;
 /// Seconds without champion damage between a pair after which the next hit starts a new trade.
 const TRADE_GAP_SEC: f64 = 5.0;
 
+/// Game seconds that split the jungler's deaths into before 10:00, 10:00 to 20:00 and after.
+const JUNGLE_PHASE_EDGES_SEC: [f64; 2] = [600.0, 1200.0];
+/// Radius for counting the champions around a jungler who died (the engine's trade radius).
+const GANK_CONTACT_RADIUS: f64 = LANE_CHAMPION_TRADE_RADIUS;
+/// A gank episode is a stretch in which the end of the jungler's path is an enemy champion (the
+/// engine's gank target, or a chase); it ends once the path has pointed elsewhere for this long.
+const GANK_GAP_SEC: f64 = 8.0;
+/// How near a path's end must be to a camp, a pit or a champion to count as going to it.
+const DESTINATION_RADIUS: f64 = 0.06;
+/// A kill of an enemy this close to the jungler, while the episode lasts, is a kill by the gank.
+const GANK_KILL_RADIUS: f64 = 0.25;
+/// Distance from a camp or a pit that places a jungler death or an invade there.
+const JUNGLE_PLACE_RADIUS: f64 = 0.10;
+const PIT_PLACE_RADIUS: f64 = OBJECTIVE_ATTEMPT_RADIUS;
+/// An invade starts when the jungler is within `JUNGLE_CAMP_ENGAGE_RADIUS` of an enemy-side camp
+/// and is over once he has stayed beyond `INVADE_LEAVE_RADIUS` for `INVADE_REARM_SEC`.
+const INVADE_LEAVE_RADIUS: f64 = 0.15;
+const INVADE_REARM_SEC: f64 = 15.0;
+/// Invades that start before this game second are early invades.
+const EARLY_INVADE_SEC: f64 = 240.0;
+
+/// What the observer counted about the two junglers in one match (the sums of both).
+#[derive(Debug, Clone, Default)]
+struct JungleStats {
+    kills: i64,
+    deaths: i64,
+    assists: i64,
+    /// Deaths before 10:00, from 10:00 to 20:00, and after.
+    deaths_by_phase: [u32; 3],
+    /// Deaths by where the jungler stood (tower, scuttle, objective_pit, enemy_jungle,
+    /// own_jungle, lane_gank, open), by phase, with how many of them were outnumbered.
+    death_places: BTreeMap<&'static str, ([u32; 3], u32)>,
+    /// Deaths that also meet a condition that overlaps the places: outnumbered, died inside an
+    /// enemy tower's reach, died during a gank episode.
+    death_flags: BTreeMap<&'static str, u32>,
+    /// Seconds the end of the jungler's path pointed at each kind of place, by phase.
+    destination_secs: BTreeMap<&'static str, [f64; 3]>,
+    /// Deaths by where his path pointed in the step before (what he was walking to).
+    death_destinations: BTreeMap<&'static str, u32>,
+    /// Recalls started (by trigger and whether an enemy was near), recalls that reached the base,
+    /// and the deaths while recalling: by trigger, enemy near at the start, channel running.
+    recall_starts: BTreeMap<String, u32>,
+    recalls_completed: u32,
+    recall_deaths: BTreeMap<String, u32>,
+    /// Where the jungler stood when he died while recalling.
+    recall_death_places: BTreeMap<&'static str, u32>,
+    /// Pit deaths by the objective the pit belongs to.
+    pit_deaths: BTreeMap<String, u32>,
+    /// Deaths by the jungler's state in the last step he was alive (the engine resets it on death).
+    death_states: BTreeMap<String, u32>,
+    /// Deaths by what killed him: tower, minion, or the role of the enemy champion.
+    death_killers: BTreeMap<String, u32>,
+    /// Gank episodes by the jungler's state when the episode started and the phase, those in
+    /// which an enemy near the jungler died to his team, and those in which the jungler died.
+    gank_attempts: BTreeMap<String, [u32; 3]>,
+    gank_hits: BTreeMap<String, [u32; 3]>,
+    gank_deaths: BTreeMap<String, [u32; 3]>,
+    /// Times he came within `JUNGLE_CAMP_ENGAGE_RADIUS` of an enemy-side camp, those before
+    /// `EARLY_INVADE_SEC`, enemy-side camps he cleared, and those cleared before that second.
+    invades: u32,
+    early_invades: u32,
+    invade_camps_cleared: u32,
+    early_camps_cleared: u32,
+}
+
+/// One jungler as the observer follows him.
+#[derive(Debug, Clone, Default)]
+struct JungleTrack {
+    was_alive: bool,
+    gank_active: bool,
+    gank_last_contact: f64,
+    gank_hit: bool,
+    /// The jungler's state and the phase when the open episode started.
+    gank_start: (String, usize),
+    /// When he was last in the recall state.
+    last_recall_at: f64,
+    invading: bool,
+    invade_out_since: f64,
+    /// Where his path pointed in the last step he was alive.
+    last_destination: &'static str,
+    /// His state and whether a recall channel was running in the last step he was alive.
+    last_state: String,
+    last_channeling: bool,
+    /// How the open recall started: his health was at or under the recall trigger ("low_hp") or
+    /// not ("item_or_other"), and whether an enemy champion stood in the trade radius then.
+    recall_trigger: &'static str,
+    recall_enemy_near: bool,
+}
+
+/// The fixed map facts and the per-jungler tracks the jungle counters need.
+struct JungleWatch {
+    /// Jungle camp keys with their positions (scuttle crabs are left out: they have no side).
+    camps: Vec<(String, Vec2)>,
+    pits: Vec<(String, Vec2)>,
+    tracks: Vec<JungleTrack>,
+}
+
 /// What the observer counted in one match.
 #[derive(Debug, Clone, Default)]
 struct ContactStats {
@@ -155,6 +252,8 @@ struct ContactStats {
     /// and those started with the attacker inside the reach of an enemy tower.
     trade_starts: u32,
     trade_starts_in_tower_reach: u32,
+    /// What the two junglers did and how they died.
+    jungle: JungleStats,
 }
 
 /// Stacks of both sides when the unclaimed Voidgrubs expired, and what each side gained.
@@ -209,6 +308,7 @@ struct ContactObserver {
     herald_minions_seen: usize,
     /// Per pair of champions: damage each dealt the other so far, and when damage last passed.
     trade_watch: HashMap<(usize, usize), ([f64; 2], f64)>,
+    jungle: Option<JungleWatch>,
     stats: ContactStats,
 }
 
@@ -229,6 +329,7 @@ impl ContactObserver {
             herald_secured_at: None,
             herald_minions_seen: 0,
             trade_watch: HashMap::new(),
+            jungle: None,
             stats: ContactStats::default(),
         }
     }
@@ -275,6 +376,7 @@ impl ContactObserver {
         self.observe_bases(state, dt);
         self.observe_stuck(state, dt);
         self.observe_audit(state);
+        self.observe_jungle(state);
         self.previous = state
             .champions
             .iter()
@@ -369,6 +471,278 @@ impl ContactObserver {
                 self.stats.trade_starts_in_tower_reach += u32::from(in_reach);
             }
         }
+    }
+
+    /// Counts the jungler's deaths (when, where, by what), his gank episodes and his invades.
+    fn observe_jungle(&mut self, state: &RuntimeState) {
+        let now = state.time_sec;
+        let mut watch = self.jungle.take().unwrap_or_else(|| {
+            let timers = decode_neutral_timers_state(&state.neutral_timers);
+            let entities = timers.iter().flat_map(|t| t.entities.values());
+            JungleWatch {
+                camps: entities
+                    .clone()
+                    .filter(|t| macro_ai::is_jungle_camp_key(&t.key) && !macro_ai::is_objective_neutral_key(&t.key))
+                    .map(|t| (t.key.clone(), t.pos))
+                    .collect(),
+                pits: entities
+                    .filter(|t| macro_ai::is_objective_neutral_key(&t.key))
+                    .map(|t| (t.key.clone(), t.pos))
+                    .collect(),
+                tracks: state
+                    .champions
+                    .iter()
+                    .map(|_| JungleTrack { was_alive: true, last_recall_at: f64::NEG_INFINITY, ..JungleTrack::default() })
+                    .collect(),
+            }
+        });
+        let previous_time = self.previous_time;
+        let fresh: Vec<&RuntimeEvent> =
+            state.events.iter().rev().take_while(|event| event.t > previous_time).collect();
+        let stats = &mut self.stats.jungle;
+        for (idx, jungler) in state.champions.iter().enumerate().filter(|(_, c)| c.role == "JGL") {
+            let team = normalized_team(&jungler.team);
+            let own_suffix = if team == "blue" { "-blue" } else { "-red" };
+            let side_camp = |key: &str| key.ends_with("-blue") || key.ends_with("-red");
+            let track = &mut watch.tracks[idx];
+            let recalling = jungler.state == "recall";
+            if recalling && jungler.alive {
+                track.last_recall_at = now;
+            }
+            let was_recalling = track.last_state == "recall";
+            let enemy_in_reach = |pos: Vec2| {
+                state.champions.iter().any(|c| c.alive && normalized_team(&c.team) != team && dist(c.pos, pos) <= GANK_CONTACT_RADIUS)
+            };
+            if jungler.alive && recalling && !was_recalling {
+                track.recall_trigger = if jungler.hp <= jungler.max_hp * RECALL_TRIGGER_HP_RATIO { "low_hp" } else { "item_or_other" };
+                track.recall_enemy_near = enemy_in_reach(jungler.pos);
+                let key = format!("{}, {}", track.recall_trigger, if track.recall_enemy_near { "enemy near" } else { "no enemy near" });
+                *stats.recall_starts.entry(key).or_default() += 1;
+            }
+            if jungler.alive && was_recalling && !recalling && dist(jungler.pos, base_position_for(&jungler.team)) <= FOUNTAIN_RADIUS {
+                stats.recalls_completed += 1;
+            }
+
+            // Invades: standing at a camp on the enemy side of the jungle.
+            if jungler.alive && !recalling {
+                let nearest = watch
+                    .camps
+                    .iter()
+                    .filter(|(key, _)| side_camp(key) && !key.ends_with(own_suffix))
+                    .map(|(_, pos)| dist(jungler.pos, *pos))
+                    .fold(f64::INFINITY, f64::min);
+                if !track.invading && nearest <= JUNGLE_CAMP_ENGAGE_RADIUS {
+                    track.invading = true;
+                    track.invade_out_since = 0.0;
+                    stats.invades += 1;
+                    stats.early_invades += u32::from(now < EARLY_INVADE_SEC);
+                } else if track.invading && nearest > INVADE_LEAVE_RADIUS {
+                    if track.invade_out_since <= 0.0 {
+                        track.invade_out_since = now;
+                    } else if now - track.invade_out_since >= INVADE_REARM_SEC {
+                        track.invading = false;
+                    }
+                } else {
+                    track.invade_out_since = 0.0;
+                }
+            }
+            for event in &fresh {
+                if event.code == Some(EventCode::CampCleared)
+                    && event.data.actor_id.as_deref() == Some(jungler.id.as_str())
+                    && event.data.objective.as_deref().is_some_and(|key| side_camp(key) && !key.ends_with(own_suffix))
+                {
+                    stats.invade_camps_cleared += 1;
+                    stats.early_camps_cleared += u32::from(now < EARLY_INVADE_SEC);
+                }
+            }
+
+            // Where the jungler is going, by the end of his path, and gank episodes.
+            let phase_now = JUNGLE_PHASE_EDGES_SEC.iter().filter(|edge| now >= **edge).count();
+            let step = (now - previous_time).max(0.0);
+            let toward = |pos: Vec2| jungler.target_path.last().is_some_and(|end| dist(*end, pos) <= DESTINATION_RADIUS);
+            let destination = if !jungler.alive {
+                "dead"
+            } else if recalling {
+                "recall"
+            } else if jungler.target_path.is_empty() {
+                "none"
+            } else if watch.pits.iter().any(|(_, pos)| toward(*pos)) {
+                "pit"
+            } else if watch.camps.iter().any(|(key, pos)| side_camp(key) && key.ends_with(own_suffix) && toward(*pos)) {
+                "own_camp"
+            } else if watch.camps.iter().any(|(key, pos)| side_camp(key) && !key.ends_with(own_suffix) && toward(*pos)) {
+                "enemy_camp"
+            } else if state.champions.iter().any(|c| c.alive && normalized_team(&c.team) != team && toward(c.pos)) {
+                "enemy_champion"
+            } else if state.champions.iter().any(|c| {
+                c.alive && c.id != jungler.id && normalized_team(&c.team) == team && toward(c.pos)
+            }) {
+                "ally_champion"
+            } else if toward(base_position_for(&jungler.team)) {
+                "base"
+            } else {
+                "other"
+            };
+            stats.destination_secs.entry(destination).or_default()[phase_now] += step;
+            let walking_to = track.last_destination;
+            if jungler.alive {
+                track.last_destination = destination;
+            }
+            // A gank is a path that ends at an enemy laner and not at a camp or a pit (the enemy
+            // junglers are left out: a chase of the enemy jungler is not a gank).
+            let contact = destination == "enemy_champion"
+                && state.champions.iter().any(|c| c.alive && c.role != "JGL" && normalized_team(&c.team) != team && toward(c.pos));
+            if contact {
+                if !track.gank_active {
+                    track.gank_active = true;
+                    track.gank_hit = false;
+                    track.gank_start = (jungler.state.clone(), phase_now);
+                    stats.gank_attempts.entry(jungler.state.clone()).or_default()[phase_now] += 1;
+                }
+                track.gank_last_contact = now;
+            }
+            if track.gank_active && !track.gank_hit {
+                let scored = fresh.iter().any(|event| {
+                    event.code == Some(EventCode::ChampionKilled)
+                        && state.champions.iter().any(|victim| {
+                            event.data.target_id.as_deref() == Some(victim.id.as_str())
+                                && normalized_team(&victim.team) != team
+                                && dist(victim.pos, jungler.pos) <= GANK_KILL_RADIUS
+                        })
+                        && state.champions.iter().any(|killer| {
+                            event.data.actor_id.as_deref() == Some(killer.id.as_str())
+                                && normalized_team(&killer.team) == team
+                        })
+                });
+                if scored {
+                    track.gank_hit = true;
+                    stats.gank_hits.entry(track.gank_start.0.clone()).or_default()[track.gank_start.1] += 1;
+                }
+            }
+            let in_gank = track.gank_active;
+            if track.gank_active && !contact && now - track.gank_last_contact > GANK_GAP_SEC {
+                track.gank_active = false;
+            }
+
+            // Deaths: where, when, by what.
+            if track.was_alive && !jungler.alive {
+                let by_tower = state
+                    .tower_ledger
+                    .shots()
+                    .iter()
+                    .any(|shot| shot.killed && matches!(shot.victim, TowerVictim::Champion(victim) if victim == idx));
+                let credited = fresh.iter().find(|event| {
+                    matches!(event.code, Some(EventCode::ChampionKilled | EventCode::IgniteKill))
+                        && event.data.target_id.as_deref() == Some(jungler.id.as_str())
+                });
+                let killer = if by_tower {
+                    "tower".to_string()
+                } else {
+                    match credited {
+                        Some(event) => match event.data.cause.as_deref() {
+                            Some(cause) => cause.to_string(),
+                            None => state
+                                .champions
+                                .iter()
+                                .find(|c| event.data.actor_id.as_deref() == Some(c.id.as_str()))
+                                .map_or("unknown".to_string(), |c| format!("enemy {}", c.role)),
+                        },
+                        None => "uncredited".to_string(),
+                    }
+                };
+                let near = |pos: Vec2, radius: f64| dist(jungler.pos, pos) <= radius;
+                let enemies = state
+                    .champions
+                    .iter()
+                    .filter(|c| c.alive && normalized_team(&c.team) != team && near(c.pos, GANK_CONTACT_RADIUS))
+                    .count();
+                let allies = 1 + state
+                    .champions
+                    .iter()
+                    .filter(|c| {
+                        c.alive && c.id != jungler.id && normalized_team(&c.team) == team && near(c.pos, GANK_CONTACT_RADIUS)
+                    })
+                    .count();
+                let laner_near = state.champions.iter().any(|c| {
+                    c.alive && c.role != "JGL" && normalized_team(&c.team) != team && near(c.pos, GANK_CONTACT_RADIUS)
+                });
+                let outnumbered = enemies >= 2 && enemies > allies;
+                let pit_key = watch
+                    .pits
+                    .iter()
+                    .filter(|(_, pos)| near(*pos, PIT_PLACE_RADIUS))
+                    .min_by(|a, b| dist(jungler.pos, a.1).total_cmp(&dist(jungler.pos, b.1)))
+                    .map(|(key, _)| key.as_str());
+                let place = if killer == "tower" {
+                    "tower"
+                } else if pit_key.is_some_and(|key| key.starts_with("scuttle")) {
+                    "scuttle"
+                } else if pit_key.is_some() {
+                    "objective_pit"
+                } else if watch
+                    .camps
+                    .iter()
+                    .any(|(key, pos)| side_camp(key) && !key.ends_with(own_suffix) && near(*pos, JUNGLE_PLACE_RADIUS))
+                {
+                    "enemy_jungle"
+                } else if watch.camps.iter().any(|(key, pos)| key.ends_with(own_suffix) && near(*pos, JUNGLE_PLACE_RADIUS)) {
+                    "own_jungle"
+                } else if laner_near {
+                    "lane_gank"
+                } else {
+                    "open"
+                };
+                if place == "objective_pit"
+                    && let Some(key) = pit_key
+                {
+                    *stats.pit_deaths.entry(key.to_string()).or_default() += 1;
+                }
+                let phase = phase_now;
+                stats.deaths_by_phase[phase] += 1;
+                let entry = stats.death_places.entry(place).or_default();
+                entry.0[phase] += 1;
+                entry.1 += u32::from(outnumbered);
+                if outnumbered {
+                    *stats.death_flags.entry("outnumbered").or_default() += 1;
+                }
+                if state.structures.iter().any(|tower| {
+                    tower.alive
+                        && tower.kind == "tower"
+                        && normalized_team(&tower.team) != team
+                        && near(tower.pos, TOWER_ATTACK_RANGE)
+                }) {
+                    *stats.death_flags.entry("in_enemy_tower_reach").or_default() += 1;
+                }
+                if in_gank {
+                    *stats.death_flags.entry("during_gank_episode").or_default() += 1;
+                    stats.gank_deaths.entry(track.gank_start.0.clone()).or_default()[track.gank_start.1] += 1;
+                }
+                if now - track.last_recall_at <= 10.0 {
+                    *stats.death_flags.entry("within_10s_of_recall").or_default() += 1;
+                }
+                *stats.death_destinations.entry(walking_to).or_default() += 1;
+                if was_recalling {
+                    let key = format!(
+                        "{}, {}, {}",
+                        track.recall_trigger,
+                        if track.recall_enemy_near { "enemy near at start" } else { "no enemy near at start" },
+                        if track.last_channeling { "channeling" } else { "walking to the anchor" }
+                    );
+                    *stats.recall_deaths.entry(key).or_default() += 1;
+                    *stats.recall_death_places.entry(place).or_default() += 1;
+                }
+                *stats.death_states.entry(track.last_state.clone()).or_default() += 1;
+                *stats.death_killers.entry(killer).or_default() += 1;
+                track.gank_active = false;
+                track.invading = false;
+            }
+            track.was_alive = jungler.alive;
+            if jungler.alive {
+                track.last_state.clone_from(&jungler.state);
+                track.last_channeling = jungler.recall_channel_until > now;
+            }
+        }
+        self.jungle = Some(watch);
     }
 
     /// Counts the two stuck states: a long recall with no channel, and a long stand in the own
@@ -793,6 +1167,9 @@ fn play(n: usize, template: &SimLiveInitRequest, dt_sec: f64, speed: f64, exact:
         Some("red") => Some((red_kills, blue_kills)),
         _ => None,
     };
+    observer.stats.jungle.kills = state.champions.iter().filter(|c| c.role == "JGL").map(|c| c.kills).sum();
+    observer.stats.jungle.deaths = state.champions.iter().filter(|c| c.role == "JGL").map(|c| c.deaths).sum();
+    observer.stats.jungle.assists = state.champions.iter().filter(|c| c.role == "JGL").map(|c| c.assists).sum();
     Played {
         seed: n,
         winner: state.winner.clone(),
@@ -1084,6 +1461,115 @@ fn replay_captured_start() {
         total(&|c| f64::from(c.trade_starts)) / matches,
         total(&|c| f64::from(c.trade_starts_in_tower_reach)),
         100.0 * total(&|c| f64::from(c.trade_starts_in_tower_reach)) / total(&|c| f64::from(c.trade_starts)).max(1.0),
+    );
+
+
+    let jungle = |f: &dyn Fn(&JungleStats) -> f64| played.iter().map(|p| f(&p.contact.jungle)).sum::<f64>();
+    let jungler_matches = played.iter().map(|p| p.levels.iter().filter(|(_, role, _)| role == "JGL").count()).sum::<usize>().max(1) as f64;
+    println!(
+        "jungler per jungler-match ({jungler_matches} of them): kills {:.2} deaths {:.2} assists {:.2}",
+        jungle(&|j| j.kills as f64) / jungler_matches,
+        jungle(&|j| j.deaths as f64) / jungler_matches,
+        jungle(&|j| j.assists as f64) / jungler_matches,
+    );
+    println!(
+        "jungler deaths by phase (before 10:00, 10-20, after 20): {:.2} / {:.2} / {:.2} per jungler-match",
+        jungle(&|j| f64::from(j.deaths_by_phase[0])) / jungler_matches,
+        jungle(&|j| f64::from(j.deaths_by_phase[1])) / jungler_matches,
+        jungle(&|j| f64::from(j.deaths_by_phase[2])) / jungler_matches,
+    );
+    let jungle_tally = |pick: &dyn Fn(&JungleStats) -> Vec<(String, u32)>| {
+        let mut sums: BTreeMap<String, u32> = BTreeMap::new();
+        for p in &played {
+            for (key, n) in pick(&p.contact.jungle) {
+                *sums.entry(key).or_default() += n;
+            }
+        }
+        let mut sums: Vec<(String, u32)> = sums.into_iter().collect();
+        sums.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
+        sums.iter().map(|(k, n)| format!("{k} {n}")).collect::<Vec<_>>().join("; ")
+    };
+    println!(
+        "jungler deaths by place: {}",
+        jungle_tally(&|j| j.death_places.iter().map(|(k, (n, _))| (k.to_string(), n.iter().sum())).collect())
+    );
+    for (label, phase) in [("before 10:00", 0), ("10-20", 1), ("after 20", 2)] {
+        println!(
+            "jungler deaths by place {label}: {}",
+            jungle_tally(&|j| j.death_places.iter().map(|(k, (n, _))| (k.to_string(), n[phase])).collect())
+        );
+    }
+    println!(
+        "jungler deaths by place, outnumbered only: {}",
+        jungle_tally(&|j| j.death_places.iter().map(|(k, (_, o))| (k.to_string(), *o)).collect())
+    );
+    println!("jungler pit deaths by objective: {}", jungle_tally(&|j| j.pit_deaths.iter().map(|(k, n)| (k.clone(), *n)).collect()));
+    for (label, phase) in [("before 10:00", 0), ("10-20", 1), ("after 20", 2)] {
+        let mut kinds: BTreeMap<&str, f64> = BTreeMap::new();
+        for p in &played {
+            for (kind, secs) in &p.contact.jungle.destination_secs {
+                *kinds.entry(kind).or_default() += secs[phase];
+            }
+        }
+        let total: f64 = kinds.values().sum::<f64>().max(1.0);
+        let mut kinds: Vec<(&str, f64)> = kinds.into_iter().collect();
+        kinds.sort_by(|a, b| b.1.total_cmp(&a.1));
+        println!(
+            "jungler path ends {label}: {}",
+            kinds.iter().map(|(k, secs)| format!("{k} {:.0}%", 100.0 * secs / total)).collect::<Vec<_>>().join("; ")
+        );
+    }
+    println!("jungler death flags: {}", jungle_tally(&|j| j.death_flags.iter().map(|(k, n)| (k.to_string(), *n)).collect()));
+    println!(
+        "jungler recalls started {} ({:.2} per jungler-match), reached the base {}; died while recalling {} ({:.1}% of his deaths)",
+        jungle(&|j| j.recall_starts.values().sum::<u32>() as f64),
+        jungle(&|j| j.recall_starts.values().sum::<u32>() as f64) / jungler_matches,
+        jungle(&|j| f64::from(j.recalls_completed)),
+        jungle(&|j| j.recall_deaths.values().sum::<u32>() as f64),
+        100.0 * jungle(&|j| j.recall_deaths.values().sum::<u32>() as f64) / jungle(&|j| j.deaths as f64).max(1.0),
+    );
+    println!("jungler recalls started by trigger: {}", jungle_tally(&|j| j.recall_starts.iter().map(|(k, n)| (k.clone(), *n)).collect()));
+    println!("jungler deaths while recalling: {}", jungle_tally(&|j| j.recall_deaths.iter().map(|(k, n)| (k.clone(), *n)).collect()));
+    println!("jungler deaths while recalling, by place: {}", jungle_tally(&|j| j.recall_death_places.iter().map(|(k, n)| (k.to_string(), *n)).collect()));
+    println!("jungler deaths by what the path pointed at: {}", jungle_tally(&|j| j.death_destinations.iter().map(|(k, n)| (k.to_string(), *n)).collect()));
+    println!("jungler deaths by state: {}", jungle_tally(&|j| j.death_states.iter().map(|(k, n)| (k.clone(), *n)).collect()));
+    println!("jungler deaths by killer: {}", jungle_tally(&|j| j.death_killers.iter().map(|(k, n)| (k.clone(), *n)).collect()));
+    let gank_total = |pick: &dyn Fn(&JungleStats) -> &BTreeMap<String, [u32; 3]>, state: Option<&str>, phase: Option<usize>| {
+        played
+            .iter()
+            .flat_map(|p| pick(&p.contact.jungle).iter())
+            .filter(|(key, _)| state.is_none_or(|wanted| key.as_str() == wanted))
+            .map(|(_, by_phase)| phase.map_or(by_phase.iter().sum::<u32>(), |i| by_phase[i]))
+            .sum::<u32>()
+    };
+    let mut gank_states: Vec<String> = played
+        .iter()
+        .flat_map(|p| p.contact.jungle.gank_attempts.keys().cloned())
+        .collect();
+    gank_states.sort();
+    gank_states.dedup();
+    println!("jungler gank episodes (path ends at an enemy laner, not at a camp or a pit), per jungler-match {:.2}", f64::from(gank_total(&|j| &j.gank_attempts, None, None)) / jungler_matches);
+    for state in &gank_states {
+        for (label, phase) in [("all", None), ("before 10:00", Some(0)), ("10-20", Some(1)), ("after 20", Some(2))] {
+            let (attempts, hits, deaths) = (
+                gank_total(&|j| &j.gank_attempts, Some(state), phase),
+                gank_total(&|j| &j.gank_hits, Some(state), phase),
+                gank_total(&|j| &j.gank_deaths, Some(state), phase),
+            );
+            println!(
+                "  started in state {state}, {label}: {attempts} episodes, with a kill {hits} ({:.1}%), jungler died {deaths} ({:.1}%)",
+                100.0 * f64::from(hits) / f64::from(attempts.max(1)),
+                100.0 * f64::from(deaths) / f64::from(attempts.max(1)),
+            );
+        }
+    }
+    println!(
+        "jungler came near an enemy camp {} times ({:.2} per jungler-match), before 4:00 {}; enemy-side camps cleared {}, before 4:00 {}",
+        jungle(&|j| f64::from(j.invades)),
+        jungle(&|j| f64::from(j.invades)) / jungler_matches,
+        jungle(&|j| f64::from(j.early_invades)),
+        jungle(&|j| f64::from(j.invade_camps_cleared)),
+        jungle(&|j| f64::from(j.early_camps_cleared)),
     );
 
     let mut levels: BTreeMap<(String, String), Vec<f64>> = BTreeMap::new();

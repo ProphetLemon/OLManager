@@ -58,6 +58,7 @@ export function TowerFireLayer({ state, beams }: TowerFireLayerProps) {
         writeLine(elements.current.get(keyOf("halo", beam.structureId)), geometry);
         writeLine(elements.current.get(keyOf("beam", beam.structureId)), geometry);
         elements.current.get(keyOf("head", beam.structureId))?.setAttribute("points", geometry.head);
+        elements.current.get(keyOf("head-halo", beam.structureId))?.setAttribute("points", geometry.head);
         writeDot(elements.current.get(keyOf("beam-dot", beam.structureId)), geometry.x1, geometry.y1);
         const chip = elements.current.get(keyOf("chip", beam.structureId)) as HTMLElement | undefined;
         if (chip) chip.style.transform = anchorTransform(geometry.chip, size);
@@ -94,6 +95,7 @@ export function TowerFireLayer({ state, beams }: TowerFireLayerProps) {
             <g key={beam.structureId} data-beam={beam.structureId} data-team={structure.team} opacity={linkOpacity(beam.ageSec)}>
               <circle className={RING_CLASSES.fire} cx={structure.pos.x * MAP_UNITS} cy={structure.pos.y * MAP_UNITS} r={ringRadius} />
               <line ref={refFor(keyOf("halo", beam.structureId))} className="arena-link-halo" data-part="beam-halo" />
+              <polyline ref={refFor(keyOf("head-halo", beam.structureId))} className="arena-beam-head-halo" data-part="beam-head-halo" />
               <line ref={refFor(keyOf("beam", beam.structureId))} className="arena-beam" />
               <polyline ref={refFor(keyOf("head", beam.structureId))} className="arena-beam-head" data-part="beam-head" />
               <circle ref={refFor(keyOf("beam-dot", beam.structureId))} className="arena-link-dot" data-part="beam-dot" r={dotRadius} />

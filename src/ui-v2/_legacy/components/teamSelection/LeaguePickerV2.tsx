@@ -20,6 +20,23 @@ const REGION_BG: Record<string, string> = {
   "CBLOL": "from-emerald-600/30 via-emerald-800/10 to-transparent",
 };
 
+/** Lowercase without spaces or punctuation, so "LCK CL" finds "LCKCL" and "Prime" the "Prime League". */
+const compact = (text: string | null | undefined) => (text ?? "").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+
+/** The line under the league name: its long name and region, never a repeat of the short name. */
+export function leagueSubtitle(comp: CompetitionSummary): string {
+  const seen = new Set([compact(comp.name)]);
+  const parts: string[] = [];
+  for (const part of [comp.full_name, comp.region]) {
+    const key = compact(part);
+    if (part && key && !seen.has(key)) {
+      seen.add(key);
+      parts.push(part);
+    }
+  }
+  return parts.join(" · ");
+}
+
 export function LeaguePickerV2({ competitions, onSelect }: LeaguePickerV2Props) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
@@ -28,7 +45,11 @@ export function LeaguePickerV2({ competitions, onSelect }: LeaguePickerV2Props) 
     if (!query.trim()) return competitions;
     const q = query.toLowerCase();
     return competitions.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.region.toLowerCase().includes(q),
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.region.toLowerCase().includes(q) ||
+        (c.full_name ?? "").toLowerCase().includes(q) ||
+        compact(c.name).includes(compact(q)),
     );
   }, [competitions, query]);
 
@@ -51,6 +72,8 @@ export function LeaguePickerV2({ competitions, onSelect }: LeaguePickerV2Props) 
   const renderCard = (comp: CompetitionSummary, i: number) => {
     const region = Object.keys(REGION_BG).find((k) => comp.name.toUpperCase().includes(k) || comp.region.toUpperCase().includes(k));
     const bgGradient = region ? REGION_BG[region] : "from-primary/20 via-primary/5 to-transparent";
+
+    const subtitle = leagueSubtitle(comp);
 
     return (
       <button
@@ -84,7 +107,7 @@ export function LeaguePickerV2({ competitions, onSelect }: LeaguePickerV2Props) 
             <h3 className="truncate font-heading text-base font-bold uppercase tracking-wide text-foreground group-hover:text-club-text transition-colors">
               {comp.name}
             </h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">{comp.region}</p>
+            {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
             <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground/60">
               <span className="flex items-center gap-1.5">
                 <Users className="size-3.5" />

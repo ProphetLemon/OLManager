@@ -146,7 +146,8 @@ describe("refresh with --pool", () => {
     it("has a pool section with the counts by role, region, level and staff kind", () => {
       expect(report).toContain("## Active-pros pool");
       expect(report).toContain("34 players and 14 staff added as teamless free agents");
-      expect(report).toContain("tier-default-placeholder");
+      expect(report).toContain("### Ratings: stats or tier default");
+      expect(report).toContain("0 of 48 adds were rated from stats; 48 took the tier default.");
       for (const heading of ["Players by position", "Players by region", "Players by best tournament level", "Players by tier", "Staff by game role (Leaguepedia label)", "Staff by region", "Staff by best tournament level"]) {
         expect(report).toContain(heading);
       }
@@ -189,6 +190,46 @@ describe("refresh with --pool", () => {
       expect(report).toContain("### Refused and ambiguous");
       expect(report).toContain("**no-position** (1)");
       expect(report).toContain("- player FLAME: no usable position");
+    });
+  });
+
+  describe("ratings from stats", () => {
+    // 15 fillers plus the pool's own Top players share one league with 12 games each; the first Top player is far better than the rest.
+    const rowsFor = (pages: string[], star: string) =>
+      pages.flatMap((page, p) =>
+        Array.from({ length: 12 }, (_, g) => {
+          const skill = page === star ? 4 : 0;
+          return {
+            playerKey: page, competition: "lec", role: "Top", date: `2026-0${1 + (g % 9)}-1${g % 9}`, gameMinutes: 30 + (g % 4), kills: 3 + skill + (p % 3), deaths: 3 - (skill > 0 ? 2 : 0) + (p % 3),
+            assists: 5 + (p % 4), teamKills: 18, damageToChampions: 16000 + 2500 * skill + p * 100, teamDamageToChampions: 70000, gold: 11000 + 800 * skill + p * 20, teamGold: 60000, cs: 300 + 25 * skill + p, visionScore: null,
+          };
+        }),
+      );
+
+    it("rates the players who have rows, reports both counts, and leaves every other op untouched", async () => {
+      const plain = await run({ inputs });
+      const tops = plain.pool!.selection.players.filter((e) => e.role === "Top").map((e) => e.page);
+      expect(tops.length).toBeGreaterThan(1);
+      const pages = [...tops, ...Array.from({ length: 15 }, (_, i) => `Filler ${i}`)];
+      const rated = await run({ inputs, statsRows: rowsFor(pages, tops[0]) });
+      const addsOf = (result: typeof plain) => result.overlay.players as Array<Record<string, any>>;
+      const op = (result: typeof plain, page: string) => addsOf(result).find((o) => o.op === "add" && o.pool?.page === page)!;
+      expect(op(rated, tops[0]).pool).toMatchObject({ rating: "stats", rating_games: 12 });
+      expect(op(rated, tops[0]).player.attributes).not.toEqual(op(plain, tops[0]).player.attributes);
+      for (const page of tops) expect(op(rated, page).pool.rating).toBe("stats");
+      const rest = addsOf(plain).filter((o) => o.op !== "add" || !tops.includes(o.pool?.page));
+      expect(addsOf(rated).filter((o) => o.op !== "add" || !tops.includes(o.pool?.page))).toEqual(rest);
+      expect(rated.overlay.staff).toEqual(plain.overlay.staff);
+      expect(rated.gates.ok).toBe(true);
+      expect(rated.report).toContain(`${tops.length} of 48 adds were rated from stats; ${48 - tops.length} took the tier default.`);
+      expect(rated.report).toMatch(/\| Top \| \d+ \| \d* ?\|?/);
+      expect(rated.report).toContain("Players by tier");
+      expect(serializeOverlay(rated.overlay)).toBe(serializeOverlay((await run({ inputs, statsRows: rowsFor(pages, tops[0]) })).overlay));
+    });
+
+    it("rates nobody when the rows give no cohort", async () => {
+      const result = await run({ inputs, statsRows: rowsFor(["Nobody"], "Nobody") });
+      expect(result.report).toContain("0 of 48 adds were rated from stats; 48 took the tier default.");
     });
   });
 

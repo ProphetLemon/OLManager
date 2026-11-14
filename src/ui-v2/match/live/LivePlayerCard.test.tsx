@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { useState } from "react";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import i18n from "@/i18n";
 import type { ChampionState } from "@/ui-v2/_legacy/components/match/lol-prototype/engine/types";
@@ -161,17 +161,92 @@ describe("what the card shows", () => {
     const slots = card().querySelectorAll(".arena-item");
     expect(slots).toHaveLength(6);
     expect([...slots].map((slot) => slot.hasAttribute("data-empty"))).toEqual([false, false, true, true, true, true]);
-    expect(slots[0]).toHaveAttribute("title", "Abyssal Mask");
     expect(slots[0].querySelector("img")).toHaveAttribute("src", "/lol-item-icons/abyssal_mask.png");
   });
 
-  it("lists the cooldowns with a letter, the seconds while cooling down and a solid outline when ready", () => {
+  it("lists the cooldowns: the ultimate and the spells with the seconds while cooling down, ready ones bare", () => {
     render(<LivePlayerCard {...props()} />);
     const chips = screen.getAllByTestId("card-cd");
-    expect(chips.map((chip) => chip.textContent)).toEqual(["R 13", "F", "I 60"]);
+    expect(chips.map((chip) => chip.textContent)).toEqual(["13", "F", "I 60"]);
+    expect(chips.map((chip) => chip.getAttribute("data-state"))).toEqual(["waiting", "ready", "waiting"]);
     expect(chips.map((chip) => chip.hasAttribute("data-ready"))).toEqual([false, true, false]);
-    expect(chips[1]).toHaveAttribute("title", "Flash ready");
-    expect(chips[2]).toHaveAttribute("title", "Ignite ready in 60 seconds");
+  });
+
+  it("shows the ultimate's own icon when the engine sends one, and an archetype glyph when it does not", () => {
+    const { rerender } = render(<LivePlayerCard {...props({ champion: champion({ ultimate: { archetype: "burst", icon: "/lol-ultimate-icons/AmbessaR.png", cdUntil: 0 } }) })} />);
+    const ult = () => screen.getAllByTestId("card-cd")[0];
+    expect(ult().querySelector("img")).toHaveAttribute("src", "/lol-ultimate-icons/AmbessaR.png");
+    expect(ult().querySelector("svg")).toBeNull();
+    fireEvent.error(ult().querySelector("img") as Element);
+    expect(ult().querySelector("img")).toBeNull();
+    expect(ult().querySelector(".arena-cd-glyph")).not.toBeNull();
+    rerender(<LivePlayerCard {...props({ champion: champion({ ultimate: { archetype: "engage", icon: "", cdUntil: 0 } }) })} />);
+    expect(ult().querySelector("img")).toBeNull();
+    expect(ult().querySelector(".arena-cd-glyph")).not.toBeNull();
+  });
+
+  it("tells ready, waiting and locked apart by frame, seconds and lock, not by colour", () => {
+    const ult = () => screen.getAllByTestId("card-cd")[0];
+    const { rerender } = render(<LivePlayerCard {...props({ champion: champion({ level: 8, ultimate: { archetype: "burst", icon: "", cdUntil: 0 } }) })} />);
+    expect(ult()).toHaveAttribute("data-state", "ready");
+    expect(ult().textContent).toBe("");
+    expect(ult().querySelector(".arena-cd-lock")).toBeNull();
+
+    rerender(<LivePlayerCard {...props({ champion: champion({ level: 8, ultimate: { archetype: "burst", icon: "", cdUntil: 113 } }) })} />);
+    expect(ult()).toHaveAttribute("data-state", "waiting");
+    expect(ult().querySelector(".arena-cd-secs")).toHaveTextContent("13");
+    expect(ult().querySelector(".arena-cd-lock")).toBeNull();
+
+    rerender(<LivePlayerCard {...props({ champion: champion({ level: 5, ultimate: { archetype: "burst", icon: "", cdUntil: 0 } }) })} />);
+    expect(ult()).toHaveAttribute("data-state", "locked");
+    expect(ult().hasAttribute("data-ready")).toBe(false);
+    expect(ult().querySelector(".arena-cd-secs")).toBeNull();
+    expect(ult().querySelector(".arena-cd-lock")).not.toBeNull();
+  });
+
+  it("names the ultimate in each state, on the tip and in the description a screen reader hears", () => {
+    vi.useFakeTimers();
+    const tip = () => screen.queryByRole("tooltip");
+    const { rerender } = render(<LivePlayerCard {...props({ champion: champion({ level: 4, ultimate: { archetype: "burst", icon: "", cdUntil: 0 } }) })} />);
+    const showTip = () => {
+      fireEvent.pointerEnter(screen.getAllByTestId("card-cd")[0], { pointerType: "mouse" });
+      act(() => void vi.advanceTimersByTime(400));
+    };
+    expect(description()).toContain("Ultimate unlocks at level 6");
+    showTip();
+    expect(tip()).toHaveTextContent("Ultimate unlocks at level 6");
+    fireEvent.pointerLeave(screen.getAllByTestId("card-cd")[0], { pointerType: "mouse" });
+
+    rerender(<LivePlayerCard {...props({ champion: champion({ level: 8, ultimate: { archetype: "burst", icon: "", cdUntil: 0 } }) })} />);
+    expect(description()).toContain("Ultimate ready,");
+    showTip();
+    expect(tip()).toHaveTextContent("Ultimate ready");
+    fireEvent.pointerLeave(screen.getAllByTestId("card-cd")[0], { pointerType: "mouse" });
+
+    rerender(<LivePlayerCard {...props({ champion: champion({ level: 8 }) })} />);
+    expect(description()).toContain("Ultimate ready in 13 seconds");
+    vi.useRealTimers();
+  });
+
+  it("shows the trinket as its icon, never as a W or an O, and names it", () => {
+    render(<LivePlayerCard {...props({ champion: champion({ trinketKey: "wardingtotem", wardCdUntil: 0 }) })} />);
+    const chips = screen.getAllByTestId("card-cd");
+    const trinket = chips[chips.length - 1];
+    expect(trinket.querySelector("img")).toHaveAttribute("src", "/lol-item-icons/stealth_ward.png");
+    expect(trinket.textContent).toBe("");
+    expect(trinket).toHaveAttribute("data-state", "ready");
+    expect(description()).toMatch(/Stealth Ward ready|stealth ward ready/i);
+  });
+
+  it("counts a trinket down on its icon and falls back to initials when the icon fails", () => {
+    render(<LivePlayerCard {...props({ champion: champion({ trinketKey: "oraclelens", sweeperActiveUntil: 108, sweeperCdUntil: 140 }) })} />);
+    const chips = screen.getAllByTestId("card-cd");
+    const trinket = chips[chips.length - 1];
+    expect(trinket).toHaveAttribute("data-state", "waiting");
+    expect(trinket.querySelector(".arena-cd-secs")).toHaveTextContent("8");
+    fireEvent.error(trinket.querySelector("img") as Element);
+    expect(trinket.querySelector("img")).toBeNull();
+    expect(trinket.textContent).toMatch(/^[A-Z]{1,2}8$/);
   });
 
   it("shows the state as text: lane, fighting, recall or dead", () => {
@@ -272,5 +347,71 @@ describe("LivePlayerCard in the Spanish UI", () => {
     expect(text).toContain("Objetos: Abyssal Mask, Statikk Shiv, 4 huecos vacíos");
     expect(text).toContain("Definitiva listo en 13 segundos");
     expect(container.textContent).not.toMatch(/onAir\.|championPage\./);
+  });
+});
+
+describe("the tips on the icons", () => {
+  afterEach(() => vi.useRealTimers());
+  const tip = () => screen.queryByRole("tooltip");
+  const advance = (ms: number) => act(() => void vi.advanceTimersByTime(ms));
+
+  it("keeps no native title on any slot or cooldown chip", () => {
+    render(<LivePlayerCard {...props()} />);
+    const icons = [...card().querySelectorAll(".arena-item, .arena-cd")];
+    expect(icons).toHaveLength(9);
+    expect(icons.filter((icon) => icon.hasAttribute("title"))).toEqual([]);
+  });
+
+  it("shows an item name, the empty slot text and a cooldown sentence on hover", () => {
+    vi.useFakeTimers();
+    render(<LivePlayerCard {...props()} />);
+    const hover = (el: Element) => {
+      fireEvent.pointerEnter(el, { pointerType: "mouse" });
+      advance(400);
+    };
+    hover(screen.getAllByTestId("card-item")[0]);
+    expect(tip()).toHaveTextContent("Abyssal Mask");
+    fireEvent.pointerLeave(screen.getAllByTestId("card-item")[0], { pointerType: "mouse" });
+    expect(tip()).toBeNull();
+
+    hover(card().querySelector(".arena-item[data-empty]") as Element);
+    expect(tip()).toHaveTextContent(i18n.t("onAir.match.card.itemEmpty"));
+    fireEvent.pointerLeave(card().querySelector(".arena-item[data-empty]") as Element, { pointerType: "mouse" });
+
+    hover(screen.getAllByTestId("card-cd")[2]);
+    expect(tip()).toHaveTextContent("Ignite ready in 60 seconds");
+  });
+
+  it("shows the name on a long press without following the player", () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    render(<LivePlayerCard {...props({ onSelect })} />);
+    const item = screen.getAllByTestId("card-item")[1];
+    fireEvent.pointerDown(item, { pointerType: "touch" });
+    advance(500);
+    fireEvent.pointerUp(item, { pointerType: "touch" });
+    fireEvent.click(item);
+    expect(tip()).toHaveTextContent("Statikk Shiv");
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("still follows the player on a plain tap on an icon", () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    render(<LivePlayerCard {...props({ onSelect })} />);
+    const item = screen.getAllByTestId("card-item")[0];
+    fireEvent.pointerDown(item, { pointerType: "touch" });
+    advance(120);
+    fireEvent.pointerUp(item, { pointerType: "touch" });
+    fireEvent.click(item);
+    expect(tip()).toBeNull();
+    expect(onSelect).toHaveBeenCalledWith("korvan");
+  });
+
+  it("gives screen readers the item names and the spell sentences through the description", () => {
+    render(<LivePlayerCard {...props()} />);
+    expect(description()).toContain("Abyssal Mask, Statikk Shiv");
+    expect(description()).toContain("Flash ready");
+    expect(description()).toContain("Ignite ready in 60 seconds");
   });
 });

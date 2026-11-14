@@ -2,33 +2,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct PlayerAdvancedMetricDto {
-    pub total: u32,
-    pub per_match: Option<f32>,
-    pub percentile: Option<u32>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct PlayerStatsOverviewMetricsDto {
-    pub kills: PlayerAdvancedMetricDto,
-    pub deaths: PlayerAdvancedMetricDto,
-    pub assists: PlayerAdvancedMetricDto,
-    pub creep_score: PlayerAdvancedMetricDto,
-    pub vision_score: PlayerAdvancedMetricDto,
-    pub wards_placed: PlayerAdvancedMetricDto,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct PlayerStatsOverviewDto {
-    pub percentile_eligible: bool,
-    pub matches_played: u32,
-    pub metrics: PlayerStatsOverviewMetricsDto,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
 pub struct PlayerMatchHistoryEntryDto {
     pub fixture_id: String,
     pub season: u32,

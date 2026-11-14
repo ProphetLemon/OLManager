@@ -71,18 +71,21 @@ function objectiveName(key: string | undefined, t: TFunction): string | null {
   return CAMP_TIMER.test(key) ? t(CAMP_KEY) : null;
 }
 
+/** Names to use for the two sides instead of "Blue" and "Red": a screen that knows the clubs passes their tags. */
+export type TeamNames = Partial<Record<TeamSide, string>>;
+
 /** The sentence for one event, or its stored text when there is nothing to compose. */
-export function eventSentence(event: CodedEventLike, t: TFunction): string {
+export function eventSentence(event: CodedEventLike, t: TFunction, teamNames?: TeamNames): string {
   const stored = typeof event.text === "string" ? event.text : "";
-  const sentence = compose(event, t);
+  const sentence = compose(event, t, teamNames);
   return sentence ?? stored;
 }
 
-function compose(event: CodedEventLike, t: TFunction): string | null {
+function compose(event: CodedEventLike, t: TFunction, teamNames?: TeamNames): string | null {
   const data = event.data ?? {};
   const { actor, target } = data;
   const side = sideOf(data.team);
-  const team = side ? t(TEAM_KEYS[side]) : null;
+  const team = side ? (teamNames?.[side] ?? t(TEAM_KEYS[side])) : null;
 
   switch (event.code) {
     case "champion_killed": {

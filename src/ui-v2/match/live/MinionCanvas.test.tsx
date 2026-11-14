@@ -40,7 +40,7 @@ const wave = [
 ];
 
 let recorder: RecordingContext;
-const tokens: Record<string, string> = { "--team-blue": "blue-from-theme", "--team-red": "red-from-theme" };
+const tokens: Record<string, string> = { "--side-blue": "blue-from-theme", "--side-red": "red-from-theme" };
 
 beforeEach(() => {
   recorder = createRecordingContext();
@@ -53,8 +53,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  tokens["--team-blue"] = "blue-from-theme";
-  tokens["--team-red"] = "red-from-theme";
+  tokens["--side-blue"] = "blue-from-theme";
+  tokens["--side-red"] = "red-from-theme";
 });
 
 function Scene({ test, size = SIZE }: { test: TestBus; size?: number }) {
@@ -141,8 +141,8 @@ describe("MinionCanvas", () => {
     render(<Scene test={test} />);
     test.publish(frameWith(wave));
 
-    tokens["--team-blue"] = "blue-high-contrast";
-    tokens["--team-red"] = "red-high-contrast";
+    tokens["--side-blue"] = "blue-high-contrast";
+    tokens["--side-red"] = "red-high-contrast";
     recorder.clear();
     document.documentElement.setAttribute("data-contrast", "high");
 

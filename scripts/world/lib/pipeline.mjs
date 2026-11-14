@@ -22,6 +22,7 @@ import { runPoolGates } from "./pool-gates.mjs";
 import { explainProbe } from "./pool-report.mjs";
 import { gameTeamKeys } from "./pool-scope.mjs";
 import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, POOL_LIMITS, buildPoolOps, selectPool } from "./pool.mjs";
+import { poolSkillFromRows } from "./pool-rating.mjs";
 import { loadTeamMap } from "./team-map.mjs";
 import { coveredCompetitionIds, loadWorld } from "./world.mjs";
 
@@ -141,11 +142,14 @@ export async function runRefresh(options) {
     };
     const rosterIds = new Set([...ops.players, ...ops.staff].map((entry) => entry.id));
     const selection = selectPool({ people: inputs.people, context, world, rosterIds });
+    // Per-game stats rate the players who have enough of them; without them everybody takes the tier default.
+    const positions = new Map(selection.players.map((e) => [e.page, e.role]));
+    const skill = options.pool.skill ?? (options.pool.statsRows ? poolSkillFromRows(options.pool.statsRows, positions) : null);
     const poolOps = buildPoolOps({
-      selection, baselines, games: inputs.games, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])),
+      selection, baselines, games: inputs.games, skill, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])),
     });
     ops = { players: [...ops.players, ...poolOps.players], staff: [...ops.staff, ...poolOps.staff], skipped: [...ops.skipped, ...poolOps.skipped] };
-    poolRun = { settings, inputs, selection };
+    poolRun = { settings, inputs, selection, ops: { players: poolOps.players, staff: poolOps.staff } };
     log(`pool: ${poolOps.players.length} players, ${poolOps.staff.length} staff as free agents`);
   }
 
@@ -173,9 +177,9 @@ export async function runRefresh(options) {
     const bytes = Buffer.byteLength(serializeOverlay(overlay));
     const results = [...gates.results, ...runPoolGates({ overlay, world, overrides, collisions: poolRun.selection.collisions, bytes })];
     gates = { ok: results.every((r) => r.ok), results };
-    const { inputs, selection, settings } = poolRun;
+    const { inputs, selection, settings, ops: poolOpsRun } = poolRun;
     poolReport = {
-      settings, inputs, selection, limits: POOL_LIMITS, bytes,
+      settings, inputs, selection, limits: POOL_LIMITS, bytes, ops: poolOpsRun,
       probe: inputs.probe ? explainProbe({ probe: inputs.probe, tournaments: inputs.tournaments, classes: inputs.classes, entryCount: inputs.entryCount, cap: settings.cap, since: settings.since, selection }) : null,
     };
   }

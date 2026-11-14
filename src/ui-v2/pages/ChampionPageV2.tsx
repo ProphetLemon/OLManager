@@ -6,6 +6,7 @@ import { resolveChampionTile, resolveChampionSplash } from "@/lib/champions/cham
 import { championDisplayName } from "@/lib/champions/championNames";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
+import ChampionMatchupsCard from "./championPage/ChampionMatchupsCard";
 import { cn } from "@/ui-v2/lib/utils";
 import { formatNumber } from "@/lib/formatting/valueFormatting";
 import { formatDecimal } from "@/lib/formatting/decimalFormatting";
@@ -206,6 +207,8 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
             <MatchupBlock title={t("championPage.bestAgainst")} items={s?.best_against} type="best" pct={pct} />
             <MatchupBlock title={t("championPage.worstAgainst")} items={s?.worst_against} type="worst" pct={pct} />
           </div>
+
+          <ChampionMatchupsCard championKey={championKey} />
         </div>
 
         {/* RIGHT COLUMN — SIDEBAR */}
@@ -242,13 +245,16 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
             </CardContent>
           </Card>
 
-          {/* Vision */}
+          {/* Vision + duration. No match engine models vision yet, so a zero means "not recorded":
+              the tile waits for a value above 0, like the player profile card. */}
           {s && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-border bg-card p-4 text-center">
-                <p className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">{t("championPage.vision")}</p>
-                <p className="font-heading text-2xl font-black tabular-nums text-purple-400">{s.avg_vision.toFixed(0)}</p>
-              </div>
+            <div className={cn("grid gap-3", s.avg_vision > 0 ? "grid-cols-2" : "grid-cols-1")}>
+              {s.avg_vision > 0 && (
+                <div className="rounded-xl border border-border bg-card p-4 text-center">
+                  <p className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">{t("championPage.vision")}</p>
+                  <p className="font-heading text-2xl font-black tabular-nums text-purple-400">{s.avg_vision.toFixed(0)}</p>
+                </div>
+              )}
               <div className="rounded-xl border border-border bg-card p-4 text-center">
                 <p className="font-heading text-2xs uppercase tracking-widest text-muted-foreground">{t("championPage.duration")}</p>
                 <p className="font-heading text-2xl font-black tabular-nums text-foreground">{t("championPage.minutesShort", { count: Math.round(s.avg_duration / 60) })}</p>

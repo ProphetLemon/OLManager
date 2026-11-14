@@ -9,7 +9,7 @@ use olm_core::domain::player::{
     Player, PlayerAttributes, PlayerIssue, PlayerIssueCategory, PlayerPromise, PlayerPromiseKind,
 };
 use olm_core::domain::stats::LolRole;
-use olm_core::domain::team::Team;
+use olm_core::domain::team::{Sponsorship, Team};
 use olm_core::engine::Side;
 use olm_core::engine::report::{
     KillDetail, MatchReport, MatchReportEndReason, PlayerMatchStats, TeamStats,
@@ -355,6 +355,46 @@ fn process_day_no_match_runs_training() {
 }
 
 #[test]
+fn process_day_keeps_the_stored_lol_ovr_in_step_with_the_attributes() {
+    let mut game = make_game_with_match();
+    game.leagues.first_mut().unwrap().fixtures[0].date = "2025-06-20".to_string();
+    for player in &mut game.players {
+        // Stale on purpose: the stored field only follows the attributes when the turn loop
+        // refreshes it, and the AI systems (purchases, wage policy, renewals) read it.
+        player.lol_ovr = 1;
+    }
+
+    for _ in 0..10 {
+        turn::process_day(&mut game);
+    }
+
+    let stale: Vec<&str> = game
+        .players
+        .iter()
+        .filter(|player| player.lol_ovr != olm_core::potential::calculate_lol_ovr(player))
+        .map(|player| player.id.as_str())
+        .collect();
+    assert!(stale.is_empty(), "stored lol_ovr is stale for {stale:?}");
+}
+
+#[test]
+fn finish_live_match_day_keeps_the_stored_lol_ovr_in_step_with_the_attributes() {
+    let mut game = make_game_with_match();
+    for player in &mut game.players {
+        player.lol_ovr = 1;
+    }
+
+    turn::finish_live_match_day(&mut game);
+
+    assert!(
+        game.players
+            .iter()
+            .all(|player| player.lol_ovr == olm_core::potential::calculate_lol_ovr(player)),
+        "stored lol_ovr is stale after a live match day"
+    );
+}
+
+#[test]
 fn process_day_no_league_no_crash() {
     let mut game = make_game_with_match();
     game.leagues.clear();
@@ -444,6 +484,15 @@ fn finish_live_match_day_processes_monthly_finances_on_month_boundary_once() {
         .unwrap();
     team.finance = 100_000;
     team.season_expenses = 0;
+    // The club is in a league's standings, so the 1st would give it a tier sponsor; a
+    // running deal that pays nothing keeps this test on the wage line.
+    team.sponsorship = Some(Sponsorship {
+        sponsor_name: "No Income".to_string(),
+        base_value: 0,
+        remaining_months: 12,
+        bonus_criteria: vec![],
+        origin: Default::default(),
+    });
 
     for player in game
         .players
@@ -1857,7 +1906,10 @@ fn matchday_recovery_is_smaller_than_a_rest_day() {
             .max()
             .unwrap()
     };
-    assert!(benched(&matchday) > 40, "a matchday still recovers some condition");
+    assert!(
+        benched(&matchday) > 40,
+        "a matchday still recovers some condition"
+    );
     assert!(
         benched(&matchday) < benched(&rest_day),
         "a matchday recovers less than a rest day ({} vs {})",

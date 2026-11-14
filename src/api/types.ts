@@ -40,12 +40,27 @@ export type SimLiveSkipToEndResponse = unknown
 
 // ── Repositorios ─────────────────────────────────────────────
 
+/** A save file picked for import, validated but not stored yet. */
+export interface SaveImportPreview {
+  name: string
+  manager_name: string
+  /** The save the import would overwrite, when its id is already in the list. */
+  replaces: SaveFile | null
+}
+
 export interface SaveRepository {
   list(): Promise<SaveFile[]>
   load(id: string): Promise<GameStateData>
   create(name: string, manager: string, data: unknown): Promise<SaveFile>
   delete(id: string): Promise<void>
   clearAll(): Promise<void>
+  /** Asks where to write the save; resolves to the chosen target, or null when cancelled. */
+  exportToFile(id: string): Promise<string | null>
+  /** Asks for a save file and validates it without storing it; null when cancelled. */
+  pickImport(): Promise<SaveImportPreview | null>
+  /** Stores the import staged by pickImport; `replace` overwrites a save with the same id. */
+  confirmImport(replace: boolean): Promise<SaveFile>
+  cancelImport(): Promise<void>
 }
 
 export interface SettingsRepository {

@@ -657,6 +657,12 @@ pub fn compute_traits(attrs: &PlayerAttributes, _role: &LolRole) -> Vec<PlayerTr
 }
 
 impl Player {
+    /// Forgets the renewal talks of the contract the player is leaving behind, so a new
+    /// contract (a new club, or a renewal the club concluded itself) can get its own.
+    pub fn clear_renewal_session(&mut self) {
+        self.morale_core.renewal_state = None;
+    }
+
     pub fn new<R: Into<LolRole>>(
         id: String,
         match_name: String,

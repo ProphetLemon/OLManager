@@ -1,82 +1,49 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ArenaTerrain } from "@/ui-v2/match/live/ArenaTerrain";
-import {
-  BASE_ZONES,
-  LANES,
-  LANE_HALF_WIDTH_UNITS,
-  LANE_KEYS,
-  PITS,
-  distanceToPolyline,
-  isInBase,
-  type MapPoint,
-} from "@/lib/match/live/mapGeometry";
-import { STRUCTURES_LAYOUT } from "@/lib/match/lolMapLayout";
+import { RIFT_IMAGE_SRC } from "@/ui-v2/match/live/riftImage";
+import { MAP_UNITS } from "@/lib/match/live/mapGeometry";
 
-function parsePoints(value: string | null): MapPoint[] {
-  return (value ?? "")
-    .trim()
-    .split(/\s+/)
-    .map((pair) => {
-      const [x, y] = pair.split(",").map(Number);
-      return { x, y };
-    });
-}
+const draw = () => render(<ArenaTerrain />).container;
 
 describe("ArenaTerrain", () => {
   it("is hidden from assistive technology and not focusable", () => {
-    const { container } = render(<ArenaTerrain />);
-    const svg = container.querySelector("svg")!;
+    const svg = draw().querySelector("svg")!;
     expect(svg).toHaveAttribute("aria-hidden", "true");
     expect(svg).toHaveAttribute("focusable", "false");
-    expect(svg).toHaveAttribute("viewBox", "0 0 1000 1000");
+    expect(svg).toHaveAttribute("viewBox", `0 0 ${MAP_UNITS} ${MAP_UNITS}`);
   });
 
-  it("draws the three lanes from the geometry", () => {
-    const { container } = render(<ArenaTerrain />);
-    for (const lane of LANE_KEYS) {
-      const drawn = container.querySelectorAll(`polyline[data-lane="${lane}"]`);
-      expect(drawn).toHaveLength(2);
-      expect(parsePoints(drawn[0].getAttribute("points"))).toEqual(LANES[lane]);
-    }
+  it("draws the Rift image across the whole map, over the terrain ground", () => {
+    const container = draw();
+    const image = container.querySelector("image")!;
+    expect(RIFT_IMAGE_SRC).toBe("/map.webp");
+    expect(image).toHaveAttribute("href", RIFT_IMAGE_SRC);
+    expect(image).toHaveAttribute("x", "0");
+    expect(image).toHaveAttribute("y", "0");
+    expect(image).toHaveAttribute("width", String(MAP_UNITS));
+    expect(image).toHaveAttribute("height", String(MAP_UNITS));
+    expect(container.querySelector("rect")).toHaveStyle({ fill: "var(--terrain-ground)" });
   });
 
-  it("puts every engine structure on a lane that is actually drawn, or in a drawn base", () => {
-    const { container } = render(<ArenaTerrain />);
-    const drawnLanes = Object.fromEntries(
-      LANE_KEYS.map((lane) => [
-        lane,
-        parsePoints(container.querySelector(`polyline[data-lane="${lane}"][data-part="edge"]`)!.getAttribute("points")),
-      ]),
-    );
-    expect(container.querySelector('path[data-base="blue"]')).toHaveAttribute("d", BASE_ZONES.blue.path);
-    expect(container.querySelector('path[data-base="red"]')).toHaveAttribute("d", BASE_ZONES.red.path);
-
-    const offenders = STRUCTURES_LAYOUT.filter((s) => {
-      const p = { x: s.x * 1000, y: s.y * 1000 };
-      return s.lane === "base"
-        ? !isInBase(p, s.side)
-        : distanceToPolyline(p, drawnLanes[s.lane]) > LANE_HALF_WIDTH_UNITS;
-    }).map((s) => s.id);
-    expect(offenders).toEqual([]);
+  it("keeps the picture in full colour: no filter, no dimming, no direction switch", () => {
+    const container = draw();
+    const image = container.querySelector("image")!;
+    expect(container.querySelector("filter")).toBeNull();
+    expect(image).not.toHaveAttribute("filter");
+    expect(image).not.toHaveAttribute("opacity");
+    expect(container.querySelector("svg")).not.toHaveAttribute("data-direction");
   });
 
-  it("centres the two pits where the engine puts them", () => {
-    const { container } = render(<ArenaTerrain />);
-    const top = container.querySelector('circle[data-pit="top"]')!;
-    const dragon = container.querySelector('circle[data-pit="dragon"]')!;
-    expect(Number(top.getAttribute("cx"))).toBeCloseTo(PITS.top.x, 6);
-    expect(Number(top.getAttribute("cy"))).toBeCloseTo(PITS.top.y, 6);
-    expect(Number(dragon.getAttribute("cx"))).toBeCloseTo(PITS.dragon.x, 6);
-    expect(Number(dragon.getAttribute("cy"))).toBeCloseTo(PITS.dragon.y, 6);
+  it("draws nothing but the ground and the picture (no vector schematic)", () => {
+    const container = draw();
+    expect(Array.from(container.querySelector("svg")!.children).map((node) => node.tagName.toLowerCase())).toEqual([
+      "rect",
+      "image",
+    ]);
   });
 
   it("paints with tokens only", () => {
-    const { container } = render(<ArenaTerrain />);
-    const html = container.innerHTML;
-    expect(html).toContain("var(--terrain-ground)");
-    expect(html).toContain("var(--team-blue)");
-    expect(html).toContain("var(--team-red)");
-    expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(/);
+    expect(draw().innerHTML).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(/);
   });
 });

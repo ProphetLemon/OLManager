@@ -1,4 +1,10 @@
 pub mod academy;
+#[cfg(test)]
+mod ai_market_counters;
+#[cfg(test)]
+mod ai_renewals_measure;
+#[cfg(test)]
+mod ai_repair_counters;
 pub mod bug_report;
 pub mod club;
 pub mod competitions;
@@ -7,10 +13,12 @@ pub mod discord;
 pub mod game;
 pub mod import;
 pub mod jobs;
+pub mod league_preview;
 pub mod live_match;
 pub mod logo;
 pub mod messages;
 pub mod round_summary;
+pub mod save_transfer;
 pub mod season;
 pub mod settings;
 pub mod sim_live;
@@ -22,6 +30,10 @@ pub mod time;
 pub mod transfers;
 pub mod world_export;
 pub mod world_overlay;
+#[cfg(test)]
+mod world_finance_measure;
+#[cfg(test)]
+mod world_progression_measure;
 pub use academy::*;
 pub use bug_report::*;
 pub use club::*;
@@ -34,6 +46,7 @@ pub use jobs::*;
 pub use live_match::*;
 pub use logo::*;
 pub use messages::*;
+pub use save_transfer::*;
 pub use season::*;
 pub use settings::*;
 pub use sim_live::*;
@@ -45,11 +58,6 @@ pub use time::*;
 pub use transfers::*;
 pub use world_export::*;
 pub use world_overlay::*;
-
-#[tauri::command]
-pub fn debug_log(message: String) {
-    println!("[JS DEBUG] {}", message);
-}
 
 #[tauri::command]
 pub fn update_manager_profile(
