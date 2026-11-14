@@ -25,6 +25,7 @@ use olm_core::domain::team::{Team, TeamKind};
 use olm_core::game::Game;
 use olm_core::{end_of_season, season_rollover, turn};
 
+use super::ai_repair_counters::{generated_by_reason, RepairCounters};
 use super::world_progression_measure::build_start_world;
 
 /// Where an AI starter with an ending contract stands at the end of the stretch.
@@ -407,6 +408,11 @@ struct Measurement {
     /// Starters that were not renewed: teamless, on another club, other.
     starter_whereabouts: [u32; 3],
     tracked: HashMap<String, Tracked>,
+    repair: RepairCounters,
+    generated_by_reason: std::collections::BTreeMap<String, u32>,
+    generated_by_reason_at_start: std::collections::BTreeMap<String, u32>,
+    players: usize,
+    refresh_micros: f64,
 }
 
 /// Plays a fresh world until `until`, rolling the season whenever the league completes.
@@ -424,12 +430,15 @@ fn measure(until: NaiveDate) -> Measurement {
     let mut teams = team_of_each_player(&game);
     let mut rollovers = 0;
     let mut peak_open = 0;
+    let mut repair = RepairCounters::default();
+    let generated_by_reason_at_start = generated_by_reason(&game);
     while game.clock.current_date.date_naive() < until {
         if end_of_season::is_season_complete(&game) {
             season_rollover::advance_season(&mut game);
             rollovers += 1;
         }
         snapshot_final_weeks(&game, &mut tracked);
+        repair.run_expiry_step(&mut game);
         turn::process_day(&mut game);
         peak_open = peak_open.max(open_ai_sessions(&game));
         let now = team_of_each_player(&game);
@@ -460,7 +469,24 @@ fn measure(until: NaiveDate) -> Measurement {
         staffed_at_end: staffed_ai_teams(&game),
         starter_whereabouts: starter_whereabouts(&game, &tracked),
         tracked,
+        repair,
+        generated_by_reason: generated_by_reason(&game),
+        generated_by_reason_at_start,
+        players: game.players.len(),
+        refresh_micros: refresh_cost_micros(&game),
     }
+}
+
+/// Mean cost of one `refresh_lol_ovrs` over this world, in microseconds.
+fn refresh_cost_micros(game: &Game) -> f64 {
+    let mut copy = game.clone();
+    let runs = 200;
+    let started = std::time::Instant::now();
+    for _ in 0..runs {
+        copy.refresh_lol_ovrs();
+        std::hint::black_box(&copy.players);
+    }
+    started.elapsed().as_secs_f64() * 1e6 / f64::from(runs)
 }
 
 /// Where the starters that did not get a later contract at their club stand now.
@@ -630,6 +656,15 @@ fn ai_renewals_measure() {
         "AI main teams with 5+ players: start {}/{} | end {}/{}",
         run.staffed_at_start.0, run.staffed_at_start.1, run.staffed_at_end.0, run.staffed_at_end.1
     );
+    println!(
+        "refresh_lol_ovrs: {:.0} us per call over {} players",
+        run.refresh_micros, run.players
+    );
+    println!(
+        "generated players by the repair reason in their id: start {:?} | end {:?}",
+        run.generated_by_reason_at_start, run.generated_by_reason
+    );
+    run.repair.print();
     print_final_weeks(&run.tracked);
     println!("session states at the end: {}", run.session_states);
     println!(
