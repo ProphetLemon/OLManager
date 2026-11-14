@@ -406,18 +406,25 @@ fn staffed_ai_teams(game: &Game) -> (usize, usize) {
     (staffed, teams.len())
 }
 
-/// AI main-league clubs with fewer than five players at the end: how many there are, how many
-/// play in a competition with a fixture still scheduled after `until`, and how many have any
-/// scheduled fixture left.
-fn understaffed_with_fixtures(game: &Game, until: NaiveDate) -> (u32, u32, u32) {
+/// AI main teams with fewer than five players at the end, by the competitions they appear in.
+#[derive(Debug, Default)]
+struct Understaffed {
+    total: u32,
+    in_main_league_standings: u32,
+    in_main_league_fixtures: u32,
+    in_any_league: u32,
+    /// Appears in a league that has a fixture scheduled after the window end.
+    fixtures_after_window: u32,
+    kinds: Vec<(String, u32)>,
+}
+
+fn understaffed_with_fixtures(game: &Game, until: NaiveDate) -> Understaffed {
     let user = game.manager.team_id.as_deref();
     let until = until.format("%Y-%m-%d").to_string();
-    let (mut total, mut after_window, mut any) = (0, 0, 0);
+    let mut out = Understaffed::default();
+    let mut kinds: HashMap<String, u32> = HashMap::new();
     for team in game.teams.iter().filter(|t| {
-        t.team_kind == TeamKind::Main
-            && t.manager_id.is_none()
-            && user != Some(t.id.as_str())
-            && in_main_league(game, &t.id)
+        t.team_kind == TeamKind::Main && t.manager_id.is_none() && user != Some(t.id.as_str())
     }) {
         let players = game
             .players
@@ -427,23 +434,46 @@ fn understaffed_with_fixtures(game: &Game, until: NaiveDate) -> (u32, u32, u32) 
         if players >= 5 {
             continue;
         }
-        total += 1;
-        let scheduled = |after: Option<&str>| {
-            game.leagues.iter().any(|league| {
-                league
-                    .standings
-                    .iter()
-                    .any(|entry| entry.team_id == team.id)
-                    && league.fixtures.iter().any(|f| {
-                        f.status == FixtureStatus::Scheduled
-                            && after.is_none_or(|date| f.date.as_str() > date)
-                    })
-            })
+        out.total += 1;
+        let in_standings =
+            |l: &olm_core::domain::league::League| l.standings.iter().any(|e| e.team_id == team.id);
+        let in_fixtures = |l: &olm_core::domain::league::League| {
+            l.fixtures
+                .iter()
+                .any(|f| f.home_team_id == team.id || f.away_team_id == team.id)
         };
-        any += u32::from(scheduled(None));
-        after_window += u32::from(scheduled(Some(until.as_str())));
+        let main_standings = game
+            .leagues
+            .iter()
+            .any(|l| l.league_kind == LeagueKind::Main && in_standings(l));
+        let main_fixtures = game
+            .leagues
+            .iter()
+            .any(|l| l.league_kind == LeagueKind::Main && in_fixtures(l));
+        let any = game
+            .leagues
+            .iter()
+            .any(|l| in_standings(l) || in_fixtures(l));
+        let after = game.leagues.iter().any(|l| {
+            (in_standings(l) || in_fixtures(l))
+                && l.fixtures.iter().any(|f| {
+                    f.status == FixtureStatus::Scheduled && f.date.as_str() > until.as_str()
+                })
+        });
+        out.in_main_league_standings += u32::from(main_standings);
+        out.in_main_league_fixtures += u32::from(main_fixtures);
+        out.in_any_league += u32::from(any);
+        out.fixtures_after_window += u32::from(after);
+        let kind = game
+            .leagues
+            .iter()
+            .find(|l| in_standings(l) || in_fixtures(l))
+            .map_or("no league".to_string(), |l| format!("{:?}", l.league_kind));
+        *kinds.entry(kind).or_default() += 1;
     }
-    (total, after_window, any)
+    out.kinds = kinds.into_iter().collect();
+    out.kinds.sort();
+    out
 }
 
 /// Everything one run prints.
@@ -455,7 +485,7 @@ struct Measurement {
     /// Moves made by the contract-expiry step (release, then the repair's signings).
     repair_movement: Movement,
     market: MarketCounters,
-    understaffed_with_fixtures: (u32, u32, u32),
+    understaffed_with_fixtures: Understaffed,
     rollovers: u32,
     peak_open: usize,
     session_states: String,
@@ -747,10 +777,8 @@ fn ai_renewals_measure() {
     );
     run.market.print();
     println!(
-        "AI main-league clubs with fewer than 5 players at the end: {} | in a competition with fixtures scheduled after the window end: {} | with any fixture still scheduled: {}",
-        run.understaffed_with_fixtures.0,
-        run.understaffed_with_fixtures.1,
-        run.understaffed_with_fixtures.2
+        "AI main teams with fewer than 5 players at the end: {:?}",
+        run.understaffed_with_fixtures
     );
     println!(
         "contract-expiry step: released {} | re-signed by another club the same day {} | signed from free agency {}",
