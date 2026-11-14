@@ -491,6 +491,7 @@ fn finish_live_match_day_processes_monthly_finances_on_month_boundary_once() {
         base_value: 0,
         remaining_months: 12,
         bonus_criteria: vec![],
+        origin: Default::default(),
     });
 
     for player in game
@@ -1905,7 +1906,10 @@ fn matchday_recovery_is_smaller_than_a_rest_day() {
             .max()
             .unwrap()
     };
-    assert!(benched(&matchday) > 40, "a matchday still recovers some condition");
+    assert!(
+        benched(&matchday) > 40,
+        "a matchday still recovers some condition"
+    );
     assert!(
         benched(&matchday) < benched(&rest_day),
         "a matchday recovers less than a rest day ({} vs {})",

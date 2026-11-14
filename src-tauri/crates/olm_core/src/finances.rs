@@ -1,7 +1,7 @@
 use crate::domain::message::*;
 use crate::domain::team::{
     Facilities, FinancialTransaction, FinancialTransactionKind, MainFacilityModuleKind,
-    Sponsorship, SponsorshipBonusCriterion, Team, main_facility_module_catalog,
+    Sponsorship, SponsorshipBonusCriterion, SponsorshipOrigin, Team, main_facility_module_catalog,
 };
 use crate::game::Game;
 use chrono::{Datelike, NaiveDate};
@@ -806,7 +806,13 @@ pub fn process_monthly_finances(game: &mut Game) {
                 LedgerText::new("be.ledger.sponsorshipIncome", &[]),
             )
             .ok();
+            // Tier deals are silent like wages: the ledger and the finance card show them.
+            let mails_user = team
+                .sponsorship
+                .as_ref()
+                .is_some_and(|deal| deal.origin == SponsorshipOrigin::Offer);
             if Some(team.id.as_str()) == user_team_id.as_deref()
+                && mails_user
                 && let Some((sponsor_name, monthly_income, monthly_bonus, _)) = &sponsorship_context
                 {
                     mail_events.push(MonthlyFinanceMailEvent::SponsorPayout {
@@ -827,10 +833,11 @@ pub fn process_monthly_finances(game: &mut Game) {
 
         if let Some(sponsorship) = team.sponsorship.as_mut() {
             let sponsor_name = sponsorship.sponsor_name.clone();
+            let mails_user = sponsorship.origin == SponsorshipOrigin::Offer;
             sponsorship.remaining_months = sponsorship.remaining_months.saturating_sub(1);
             if sponsorship.remaining_months == 0 {
                 team.sponsorship = None;
-                if Some(team.id.as_str()) == user_team_id.as_deref() {
+                if mails_user && Some(team.id.as_str()) == user_team_id.as_deref() {
                     mail_events.push(MonthlyFinanceMailEvent::SponsorExpired {
                         team_id: team.id.clone(),
                         sponsor_name,

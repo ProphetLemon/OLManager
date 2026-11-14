@@ -2,7 +2,9 @@ use chrono::{TimeZone, Utc};
 use olm_core::clock::GameClock;
 use olm_core::domain::league::League;
 use olm_core::domain::manager::Manager;
-use olm_core::domain::team::{FinancialTransactionKind, Sponsorship, Team, TeamKind};
+use olm_core::domain::team::{
+    FinancialTransactionKind, Sponsorship, SponsorshipOrigin, Team, TeamKind,
+};
 use olm_core::finances;
 use olm_core::game::Game;
 use olm_core::random_events::sponsor_offer_improves_on;
@@ -147,6 +149,7 @@ fn assigning_leaves_an_existing_deal_alone() {
         base_value: 123_000,
         remaining_months: 2,
         bonus_criteria: vec![],
+        origin: Default::default(),
     };
     team_mut(&mut game, "top").sponsorship = Some(existing.clone());
 
@@ -279,6 +282,7 @@ fn deal_worth(base_value: i64) -> Sponsorship {
         base_value,
         remaining_months: 6,
         bonus_criteria: vec![],
+        origin: Default::default(),
     }
 }
 
@@ -309,4 +313,103 @@ fn a_random_offer_above_the_current_deal_is_generated() {
 #[test]
 fn any_random_offer_is_generated_when_the_club_has_no_deal() {
     assert!(sponsor_offer_improves_on(None, 624_000));
+}
+
+fn sponsor_mail_ids(game: &Game) -> Vec<&str> {
+    game.messages
+        .iter()
+        .map(|message| message.id.as_str())
+        .filter(|id| id.starts_with("finance:sponsor-"))
+        .collect()
+}
+
+#[test]
+fn a_tier_deal_is_marked_as_a_tier_deal() {
+    assert_eq!(tier_sponsorship("top", 1).origin, SponsorshipOrigin::Tier);
+}
+
+#[test]
+fn a_tier_deal_pays_the_user_club_with_no_mail() {
+    let mut game = make_world();
+    assign_missing_tier_sponsorships(&mut game);
+
+    finances::process_monthly_finances(&mut game);
+
+    assert!(sponsorship_income(&game, "top") > 0, "the deal is paid");
+    assert_eq!(sponsor_mail_ids(&game), Vec::<&str>::new());
+}
+
+#[test]
+fn a_tier_deal_that_ends_renews_the_user_club_with_no_mail() {
+    let mut game = make_world();
+    team_mut(&mut game, "top").sponsorship = Some(Sponsorship {
+        remaining_months: 1,
+        ..tier_sponsorship("top", 1)
+    });
+
+    finances::process_monthly_finances(&mut game);
+
+    assert_eq!(sponsor_mail_ids(&game), Vec::<&str>::new());
+    assert_eq!(
+        team(&game, "top")
+            .sponsorship
+            .as_ref()
+            .unwrap()
+            .remaining_months,
+        TIER_SPONSORSHIP_MONTHS
+    );
+}
+
+#[test]
+fn an_offer_deal_still_mails_the_user_on_payout_and_expiry() {
+    let mut game = make_world();
+    team_mut(&mut game, "top").sponsorship = Some(Sponsorship {
+        sponsor_name: "Offer Co".to_string(),
+        base_value: 2_000_000,
+        remaining_months: 1,
+        bonus_criteria: vec![],
+        origin: SponsorshipOrigin::Offer,
+    });
+
+    finances::process_monthly_finances(&mut game);
+
+    let ids = sponsor_mail_ids(&game);
+    assert!(
+        ids.iter()
+            .any(|id| id.starts_with("finance:sponsor-payout:top:"))
+    );
+    assert!(
+        ids.iter()
+            .any(|id| id.starts_with("finance:sponsor-expired:top:"))
+    );
+}
+
+#[test]
+fn the_tier_deal_that_follows_an_expired_offer_deal_is_silent() {
+    let mut game = make_world();
+    team_mut(&mut game, "top").sponsorship = Some(Sponsorship {
+        sponsor_name: "Offer Co".to_string(),
+        base_value: 2_000_000,
+        remaining_months: 1,
+        bonus_criteria: vec![],
+        origin: SponsorshipOrigin::Offer,
+    });
+    finances::process_monthly_finances(&mut game);
+    let mails_after_expiry = sponsor_mail_ids(&game).len();
+    game.clock.current_date = Utc.with_ymd_and_hms(2027, 4, 1, 12, 0, 0).unwrap();
+
+    finances::process_monthly_finances(&mut game);
+
+    let renewed = team(&game, "top").sponsorship.as_ref().expect("tier deal");
+    assert_eq!(renewed.origin, SponsorshipOrigin::Tier);
+    assert_eq!(sponsor_mail_ids(&game).len(), mails_after_expiry);
+}
+
+#[test]
+fn a_sponsorship_saved_without_an_origin_loads_as_an_offer_deal() {
+    let saved = r#"{"sponsor_name":"Old Deal","base_value":100000,"remaining_months":3,"bonus_criteria":[]}"#;
+
+    let loaded: Sponsorship = serde_json::from_str(saved).expect("an old save loads");
+
+    assert_eq!(loaded.origin, SponsorshipOrigin::Offer);
 }

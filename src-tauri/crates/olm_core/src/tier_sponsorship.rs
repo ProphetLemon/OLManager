@@ -10,7 +10,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::domain::league::LeagueKind;
-use crate::domain::team::{Sponsorship, Team};
+use crate::domain::team::{Sponsorship, SponsorshipOrigin, Team};
 use crate::game::Game;
 
 /// Annual value of a tier-1 club's sponsor, in euros.
@@ -68,13 +68,15 @@ pub fn tier_sponsor_name(team_id: &str) -> &'static str {
     TIER_SPONSOR_NAMES[(stable_hash(team_id) % TIER_SPONSOR_NAMES.len() as u64) as usize]
 }
 
-/// A fresh tier deal for `team_id`: 12 months, no bonus criteria.
+/// A fresh tier deal for `team_id`: 12 months, no bonus criteria, and silent (no
+/// inbox mail), see [`SponsorshipOrigin::Tier`].
 pub fn tier_sponsorship(team_id: &str, tier: u8) -> Sponsorship {
     Sponsorship {
         sponsor_name: tier_sponsor_name(team_id).to_string(),
         base_value: tier_sponsorship_value(tier),
         remaining_months: TIER_SPONSORSHIP_MONTHS,
         bonus_criteria: Vec::new(),
+        origin: SponsorshipOrigin::Tier,
     }
 }
 
