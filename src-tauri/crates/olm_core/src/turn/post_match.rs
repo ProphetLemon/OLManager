@@ -8,7 +8,7 @@ use crate::domain::stats::{
 };
 use crate::game::Game;
 use crate::messages;
-use crate::potential::effective_potential_cap;
+use crate::potential::{GAIN_TAPER_WINDOW, effective_potential_cap, gain_headroom};
 use log::debug;
 
 fn compact_team_stats(
@@ -475,9 +475,6 @@ fn scale_delta(delta: i16, num: i16, den: i16) -> i16 {
     (delta * num) / den.max(1)
 }
 
-/// Attribute points below the ceiling inside which a positive gain starts to taper.
-const GAIN_TAPER_WINDOW: i16 = 10;
-
 /// Scales a positive delta by the attribute's headroom to `ceiling`, so growth fades
 /// out inside the last `GAIN_TAPER_WINDOW` points and stops at the ceiling. Negative
 /// deltas are never tapered.
@@ -489,7 +486,7 @@ fn tapered_gain(delta: i16, current: u8, ceiling: u8, phase: u32) -> i16 {
     if delta <= 0 {
         return delta;
     }
-    let headroom = i16::from(ceiling) - i16::from(current);
+    let headroom = gain_headroom(current, ceiling);
     if headroom <= 0 {
         return 0;
     }

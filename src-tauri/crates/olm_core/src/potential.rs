@@ -166,6 +166,18 @@ pub fn effective_potential_cap(player: &Player) -> u8 {
         .min(99)
 }
 
+/// Attribute points below the potential ceiling inside which growth tapers off.
+pub const GAIN_TAPER_WINDOW: i16 = 10;
+
+/// Points of headroom an attribute has to `ceiling`, clamped to `0..=GAIN_TAPER_WINDOW`.
+///
+/// This is the single taper rule for attribute growth: post-match progression scales
+/// its whole-point deltas by it and training scales its per-attribute gain chance by
+/// `headroom / GAIN_TAPER_WINDOW`. Zero at or above the ceiling, full at 10+ points.
+pub fn gain_headroom(current: u8, ceiling: u8) -> i16 {
+    (i16::from(ceiling) - i16::from(current)).clamp(0, GAIN_TAPER_WINDOW)
+}
+
 pub fn calculate_lol_ovr(player: &Player) -> u8 {
     let attrs = &player.attributes;
     let avg = (attrs.mechanics as f64
