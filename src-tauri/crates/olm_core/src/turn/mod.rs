@@ -98,6 +98,7 @@ where
         training::check_squad_fitness_warnings(game);
     }
 
+    crate::ai_renewals::conclude_ai_renewals(game);
     crate::contracts::process_contract_expiries(game);
 
     // Monthly financial processing (wages, matchday income, warnings)
@@ -152,6 +153,7 @@ pub fn finish_live_match_day(game: &mut Game) {
     // The live-match day recovers like any other matchday.
     training::process_matchday_recovery(game);
 
+    crate::ai_renewals::conclude_ai_renewals(game);
     crate::contracts::process_contract_expiries(game);
 
     // Match normal day advancement: monthly finances are evaluated on the

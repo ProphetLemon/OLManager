@@ -1,5 +1,6 @@
 pub mod academy;
 pub mod ai_player_agent;
+pub mod ai_renewals;
 pub mod ai_rotation;
 pub mod ai_team_agent;
 pub mod board_objectives;
