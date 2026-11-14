@@ -47,6 +47,21 @@ describe("PlayerProfileTraitsCardV2", () => {
     expect(screen.queryByText("LightningQuick")).toBeNull();
   });
 
+  it("shows the description as visible text, not only as a tooltip", () => {
+    render(<PlayerProfileTraitsCardV2 title="Rasgos" traits={["LightningQuick"]} />);
+    const description = i18n.t(traitDescKey("LightningQuick"));
+    expect(description).not.toBe(traitDescKey("LightningQuick"));
+    const node = screen.getByText(description);
+    expect(node).toBeVisible();
+    expect(node.closest("[title]")).toBeNull();
+  });
+
+  it("shows no description line for an unknown trait", () => {
+    render(<PlayerProfileTraitsCardV2 title="Rasgos" traits={["fast_learner"]} />);
+    expect(screen.queryByText(traitDescKey("fast_learner"))).toBeNull();
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+  });
+
   it("falls back to a readable label for an unknown trait", () => {
     render(<PlayerProfileTraitsCardV2 title="Rasgos" traits={["fast_learner", "ClutchGene"]} />);
     expect(screen.getByText("Fast learner")).toBeInTheDocument();
