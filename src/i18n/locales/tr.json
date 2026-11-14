@@ -3682,7 +3682,7 @@
       "continueMenu": "Daha fazla ilerleme seçeneği",
       "continue": "Devam",
       "matchDay": "Maç günü",
-      "skipToMatchDay": "Maç gününe atla",
+      "skipToMatchDay": "Sonraki maça kadar simüle et",
       "skipToNextDay": "Sonraki güne atla",
       "clock": "Oyun tarihi ve aşaması"
     },

@@ -3717,7 +3717,7 @@
       "continueMenu": "More ways to advance",
       "continue": "Continue",
       "matchDay": "Match day",
-      "skipToMatchDay": "Skip to match day",
+      "skipToMatchDay": "Simulate to next match",
       "skipToNextDay": "Skip to next day",
       "clock": "Game date and phase"
     },
