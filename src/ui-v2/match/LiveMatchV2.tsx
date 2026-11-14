@@ -359,7 +359,7 @@ export default function LiveMatchV2({
 
           <div className="live-area-dock">
             <SpotlightCaption spotlight={spotlight} onRelease={() => setSelectedId(null)} />
-            <EventTicker events={state.events} roster={roster} />
+            <EventTicker events={state.events} roster={roster} teamNames={{ blue: blue.tag, red: red.tag }} />
           </div>
 
           <div className="live-area-ctl">
