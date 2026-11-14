@@ -913,7 +913,11 @@ mod tests {
     fn teamless_pool_player_add_is_kept_as_a_free_agent_with_no_contract() {
         let mut w = world();
         let report = apply(&mut w, &overlay(POOL_PLAYER, ""));
-        let added = w.players.iter().find(|p| p.id == "player-bea33543").unwrap();
+        let added = w
+            .players
+            .iter()
+            .find(|p| p.id == "player-bea33543")
+            .unwrap();
         assert_eq!(added.team_id, None);
         assert_eq!(added.nationality, "ES");
         assert_eq!((added.wage, added.contract_end.as_deref()), (0, None));
