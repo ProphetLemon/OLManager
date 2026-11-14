@@ -16,7 +16,7 @@
 use std::collections::HashMap;
 
 use chrono::NaiveDate;
-use olm_core::ai_team_agent::retention_score;
+use olm_core::ai_team_agent::{renewal_score, retention_score};
 use olm_core::contract_wage_policy::renewal_wage_policy_allows;
 use olm_core::contracts::{contract_warning_stage, expected_wage, ContractWarningStage};
 use olm_core::domain::league::LeagueKind;
@@ -53,7 +53,10 @@ struct FinalWeeks {
     avg_rating: f32,
     appearances: u32,
     lol_ovr: u8,
+    /// The score `evaluate_renewals` decides on (no contract-security term).
     score: f64,
+    /// The retention score with the contract-security term, for comparison.
+    retention: f64,
     /// For an open session: what the club's answer is going to be.
     conclusion: Option<&'static str>,
     /// Why `evaluate_renewals` would not open a session for him (or the session he has).
@@ -106,7 +109,7 @@ fn skip_reason(game: &Game, team: &Team, player: &Player) -> String {
     }
     let high_performer = player.stats.avg_rating > HIGH_PERFORMER_RATING
         && effective_ovr(player) > HIGH_PERFORMER_OVR;
-    if retention_score(player, team, today) < RENEWAL_THRESHOLD && !high_performer {
+    if renewal_score(player, team, today) < RENEWAL_THRESHOLD && !high_performer {
         return "score below 0.70".to_string();
     }
     "would be offered".to_string()
@@ -157,7 +160,8 @@ fn snapshot_final_weeks(game: &Game, tracked: &mut HashMap<String, Tracked>) {
             avg_rating: player.stats.avg_rating,
             appearances: player.stats.appearances,
             lol_ovr: effective_ovr(player),
-            score: retention_score(player, team, today),
+            score: renewal_score(player, team, today),
+            retention: retention_score(player, team, today),
             conclusion: player
                 .morale_core
                 .renewal_state
@@ -344,6 +348,23 @@ fn clubbed_players_without_ovr(game: &Game) -> (usize, usize) {
     )
 }
 
+/// Players on a club whose stored `lol_ovr` no longer matches their attributes: nothing
+/// refreshes the field during a session, only a load does.
+fn clubbed_players_with_stale_ovr(game: &Game) -> (usize, usize) {
+    let clubbed: Vec<_> = game
+        .players
+        .iter()
+        .filter(|p| p.team_id.is_some())
+        .collect();
+    (
+        clubbed
+            .iter()
+            .filter(|p| p.lol_ovr != olm_core::potential::calculate_lol_ovr(p))
+            .count(),
+        clubbed.len(),
+    )
+}
+
 /// AI main teams with at least five players, and all AI main teams.
 fn staffed_ai_teams(game: &Game) -> (usize, usize) {
     let user = game.manager.team_id.as_deref();
@@ -380,6 +401,7 @@ struct Measurement {
     generated_at_end: (u32, u32),
     no_ovr_at_start: (usize, usize),
     no_ovr_at_end: (usize, usize),
+    stale_ovr_at_end: (usize, usize),
     staffed_at_start: (usize, usize),
     staffed_at_end: (usize, usize),
     /// Starters that were not renewed: teamless, on another club, other.
@@ -433,6 +455,7 @@ fn measure(until: NaiveDate) -> Measurement {
         generated_at_end: generated_starters(&game),
         no_ovr_at_start,
         no_ovr_at_end: clubbed_players_without_ovr(&game),
+        stale_ovr_at_end: clubbed_players_with_stale_ovr(&game),
         staffed_at_start,
         staffed_at_end: staffed_ai_teams(&game),
         starter_whereabouts: starter_whereabouts(&game, &tracked),
@@ -495,28 +518,39 @@ fn print_final_weeks(tracked: &HashMap<String, Tracked>) {
         pct(90),
         ovrs.iter().filter(|o| **o < UNDERPERFORMER_OVR).count()
     );
-    let mut scores: Vec<f64> = starters
-        .iter()
-        .filter(|s| s.lol_ovr >= UNDERPERFORMER_OVR)
-        .map(|s| s.score)
-        .collect();
-    scores.sort_by(f64::total_cmp);
-    let spct = |p: usize| {
-        scores
-            .get(scores.len().saturating_sub(1) * p / 100)
-            .copied()
-    };
-    println!(
-        "  retention score of starters with lol_ovr >= 65 ({}): p10 {:.2} | p50 {:.2} | p90 {:.2} | max {:.2} | at least 0.70: {} | at least 0.60: {} | at least 0.55: {}",
-        scores.len(),
-        spct(10).unwrap_or(0.0),
-        spct(50).unwrap_or(0.0),
-        spct(90).unwrap_or(0.0),
-        spct(100).unwrap_or(0.0),
-        scores.iter().filter(|s| **s >= 0.70).count(),
-        scores.iter().filter(|s| **s >= 0.60).count(),
-        scores.iter().filter(|s| **s >= 0.55).count(),
-    );
+    for (label, score_of) in [
+        (
+            "renewal score",
+            (|s: &FinalWeeks| s.score) as fn(&FinalWeeks) -> f64,
+        ),
+        (
+            "retention score (with contract security)",
+            |s: &FinalWeeks| s.retention,
+        ),
+    ] {
+        let mut scores: Vec<f64> = starters
+            .iter()
+            .filter(|s| s.lol_ovr >= UNDERPERFORMER_OVR)
+            .map(|s| score_of(s))
+            .collect();
+        scores.sort_by(f64::total_cmp);
+        let spct = |p: usize| {
+            scores
+                .get(scores.len().saturating_sub(1) * p / 100)
+                .copied()
+        };
+        println!(
+            "  {label} of starters with lol_ovr >= 65 ({}): p10 {:.2} | p50 {:.2} | p90 {:.2} | max {:.2} | at least 0.70: {} | at least 0.60: {} | at least 0.55: {}",
+            scores.len(),
+            spct(10).unwrap_or(0.0),
+            spct(50).unwrap_or(0.0),
+            spct(90).unwrap_or(0.0),
+            spct(100).unwrap_or(0.0),
+            scores.iter().filter(|s| **s >= 0.70).count(),
+            scores.iter().filter(|s| **s >= 0.60).count(),
+            scores.iter().filter(|s| **s >= 0.55).count(),
+        );
+    }
     for (label, user_league) in [("user league", true), ("other leagues", false)] {
         let group: Vec<_> = seen
             .iter()
@@ -587,6 +621,10 @@ fn ai_renewals_measure() {
     println!(
         "players on a club with lol_ovr 0: start {}/{} | end {}/{}",
         run.no_ovr_at_start.0, run.no_ovr_at_start.1, run.no_ovr_at_end.0, run.no_ovr_at_end.1
+    );
+    println!(
+        "players on a club whose stored lol_ovr differs from their attributes at the end: {}/{}",
+        run.stale_ovr_at_end.0, run.stale_ovr_at_end.1
     );
     println!(
         "AI main teams with 5+ players: start {}/{} | end {}/{}",
