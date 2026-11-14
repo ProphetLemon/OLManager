@@ -4,6 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Minus, Square, X } from "lucide-react";
 
 import { APP_EDITION } from "@/lib/common/edition";
+import { NAME_LANG } from "@/ui-v2/match/NameText";
 
 export function TitleBarV2() {
   const { t } = useTranslation();
@@ -65,7 +66,8 @@ export function TitleBarV2() {
         <span aria-hidden="true" className="text-xs text-muted-foreground/60">
           ·
         </span>
-        <span className="truncate font-heading text-xs font-bold uppercase tracking-widest text-club-text">
+        {/* A brand is not a word of the UI language: in Turkish the uppercase rule would dot its i. */}
+        <span lang={NAME_LANG} className="truncate font-heading text-xs font-bold uppercase tracking-widest text-club-text">
           {APP_EDITION}
         </span>
       </div>

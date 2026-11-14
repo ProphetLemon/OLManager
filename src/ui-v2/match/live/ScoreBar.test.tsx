@@ -147,6 +147,11 @@ describe("the Baron and Elder buffs and the soul", () => {
     expect(blueSide().children.length).toBe(childrenBefore);
   });
 
+  it("keeps the whole text of a chip in its title, for the narrow bars that clip it with an ellipsis", () => {
+    renderBar(stateWith({ timeSec: 600, buffs: { blue: { baron_until: 761 } } }));
+    expect(within(blueSide()).getByText("Baron 2:41")).toHaveAttribute("title", "Baron 2:41");
+  });
+
   it("reserves the space of the buff slot in the stylesheet", () => {
     expect(css).toMatch(/\.arena-bar-buffs\s*\{[^}]*min-width:\s*7\.5rem/);
   });

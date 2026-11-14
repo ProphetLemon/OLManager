@@ -2634,6 +2634,35 @@
   }
 }
 
+/* Under 1205px (the bar is under 1181px wide) a side's stats row is full: the towers, gold, four
+   dragons, grubs and barons leave no room for the soul and the two buffs beside them, so late in a
+   match the chips wrapped onto a third row the bar did not have, and its overflow clipped the
+   stats. The buffs slot is now a third row of its own, always, with room kept for it in the bar
+   (4.75rem plus the 4px gap and the 1.25rem row), so a chip arriving never moves anything. The
+   chips share the row and give way with an ellipsis, never by wrapping to a fourth row. The
+   window scrolls here, so the 24px cost the map none of the room of the cards. */
+@container live (max-width: 1204px) {
+  .live-shell {
+    --live-bar: 6.25rem;
+  }
+
+  .arena-bar-buffs {
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .arena-bar-side[data-team="red"] .arena-bar-buffs {
+    justify-content: flex-end;
+  }
+
+  .arena-buff {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 .live-area-map {
   grid-area: map;
   min-width: 0;
@@ -2931,6 +2960,17 @@
      all. The full sentence stays in the accessible text and on the board's strips. */
   .live-area-dock .arena-sp-line {
     -webkit-line-clamp: 1;
+  }
+
+  /* The feed keeps 28px to 32px here, one row of 27px. A sentence that wraps is 41px, so with the
+     newest row at the top no whole row showed for minutes (T16 D1). A row is one line: the text gives
+     way with an ellipsis, and the whole sentence stays in the row's title and in the accessible name,
+     where the polite live region reads it as it arrives. */
+  .live-area-dock .arena-tk-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

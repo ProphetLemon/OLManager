@@ -147,7 +147,7 @@ function BarSide({ side, identity, view }: { side: TeamSide; identity: TeamIdent
           aria-label={chips.length > 0 ? t("onAir.match.bar.buffs") : undefined}
         >
           {chips.map((chip) => (
-            <span key={chip.id} className="arena-buff" data-kind={chip.id}>
+            <span key={chip.id} className="arena-buff" data-kind={chip.id} title={chip.text}>
               {chip.text}
             </span>
           ))}
