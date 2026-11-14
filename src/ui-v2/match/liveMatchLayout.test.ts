@@ -79,8 +79,10 @@ describe("no scroll at 1280x800", () => {
     const side = /--map-side:\s*max\(([^;]*)\);/.exec(ruleBody(".live-shell"))?.[1] ?? "";
     expect(side).toMatch(/100cqw[^,]*--live-col-min/);
     expect(ruleBody(".live-match")).toMatch(/--live-col-min:\s*21rem/);
-    // The `side` container turns the card's cooldowns into a second line below 21rem (336px).
-    expect(css).toContain("@container side (max-width: 21rem)");
+    // The `side` container turns the card's cooldowns into a second line, but only below 19rem (304px):
+    // the narrowest side-by-side column (21rem) keeps items and cooldowns on one line (see cardColumns.guard).
+    expect(css).toContain("@container side (max-width: 19rem)");
+    expect(css).not.toContain("@container side (max-width: 21rem)");
   });
 
   it("counts the taller bar of narrow windows in the room it takes off the map", () => {

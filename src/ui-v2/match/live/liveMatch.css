@@ -1646,8 +1646,11 @@
   border-width: 3px;
 }
 
-/* Too narrow for items and cooldowns side by side: two fixed lines, the same in every card. */
-@container side (max-width: 21rem) {
+/* Too narrow for items and cooldowns side by side: two fixed lines, the same in every card. The six
+   slots, the gap and the four cooldown chips need about 264px of the 314px inside a card of the
+   narrowest side-by-side column (21rem), so only a column under 19rem wraps; at 21rem the wrap used
+   to add 20px to every card and five of them no longer fit a 1280x800 window. */
+@container side (max-width: 19rem) {
   .arena-card[data-team] .arena-card-gear {
     flex-direction: column;
     align-items: flex-start;
@@ -2827,8 +2830,18 @@
     padding-block: 2px;
   }
 
-  .live-side .arena-card-who {
-    gap: 2px;
+  /* The head is the taller of two columns beside the 36px portrait: the name over two chips, and the
+     kills line over the farm line. With no gap between their lines and a line box the size of the text
+     (12px text in a 14px chip, a 12px farm line) both are 36px, so the head is the portrait's height
+     instead of 42.6px. */
+  .live-side .arena-card-who,
+  .live-side .arena-card-score {
+    gap: 0;
+  }
+
+  .live-side .arena-chip-text,
+  .live-side .arena-card-farm {
+    line-height: 1;
   }
 
   .live-side .arena-card-vitals {
@@ -2871,6 +2884,12 @@
 
   .live-area-dock .arena-ticker-heading {
     display: none;
+  }
+
+  /* The caption keeps one line here: with two, a 72px or 68px module left the feed 12px, no row at
+     all. The full sentence stays in the accessible text and on the board's strips. */
+  .live-area-dock .arena-sp-line {
+    -webkit-line-clamp: 1;
   }
 }
 
