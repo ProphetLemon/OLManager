@@ -2354,7 +2354,7 @@
         "facilityUpkeepSummary": { "subject": "Anlagenunterhalt bezahlt", "body": "Der monatliche Anlagenunterhalt von €{{amount}} wurde vom Vereinskonto bezahlt." },
         "facilityUpkeepSpike": { "subject": "Anstieg beim Anlagenunterhalt", "body": "Der Anlagenunterhalt erreichte diesen Monat €{{amount}}. Jüngste Ausbauten erhöhen die Betriebskosten." },
         "prizePayout": { "subject": "Preisgeld bestätigt", "body": "Für Saison {{season}} wurden €{{amount}} Preisgeld für Platz {{position}} zugesprochen." },
-        "boardFinancialHealth": { "subject": "Finanzübersicht des Vorstands", "body": "Aktueller Kontostand: €{{balance}}. Monatlicher Nettotrend: €{{monthlyNet}}. Geschätzte Reichweite: {{monthsLeft}} Monate." }
+        "boardFinancialHealth": { "subject": "Finanzübersicht des Vorstands", "body": "Aktueller Kontostand: €{{balance}}. Monatlicher Nettotrend: €{{monthlyNet}}. Geschätzte Reichweite: {{monthsLeft}} Monate.", "bodyStable": "Aktueller Kontostand: €{{balance}}. Monatlicher Nettotrend: €{{monthlyNet}}. Der monatliche Trend ist nicht negativ, daher droht keine Liquiditätslücke." }
       },
       "seasonPayout": {
         "subject": "Saison {{season}} — Preisgeld ausgezahlt",

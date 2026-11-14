@@ -2354,7 +2354,7 @@
         "facilityUpkeepSummary": { "subject": "Manutenção das instalações paga", "body": "A manutenção mensal das instalações de €{{amount}} foi paga pela conta do clube." },
         "facilityUpkeepSpike": { "subject": "Alta na manutenção das instalações", "body": "A manutenção das instalações chegou a €{{amount}} este mês. As melhorias recentes estão aumentando os custos operacionais." },
         "prizePayout": { "subject": "Premiação confirmada", "body": "A premiação da temporada {{season}} de €{{amount}} foi concedida pela posição {{position}}." },
-        "boardFinancialHealth": { "subject": "Resumo financeiro da diretoria", "body": "Saldo atual: €{{balance}}. Tendência líquida mensal: €{{monthlyNet}}. Autonomia estimada: {{monthsLeft}} meses." }
+        "boardFinancialHealth": { "subject": "Resumo financeiro da diretoria", "body": "Saldo atual: €{{balance}}. Tendência líquida mensal: €{{monthlyNet}}. Autonomia estimada: {{monthsLeft}} meses.", "bodyStable": "Saldo atual: €{{balance}}. Tendência líquida mensal: €{{monthlyNet}}. A tendência mensal não é negativa, então não há risco de ficar sem caixa." }
       },
       "seasonPayout": {
         "subject": "Temporada {{season}} — Premiação concedida",
