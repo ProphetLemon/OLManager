@@ -1,6 +1,7 @@
 import { shortName } from "@/lib/match/live/championMarker";
 
 import type { MarkerTexts } from "./useMarkerTexts";
+import { NAME_LANG } from "@/ui-v2/match/NameText";
 
 export interface TagContentProps {
   name: string;
@@ -29,7 +30,7 @@ function Words({ text, className, probe }: { text: string; className: string; pr
 export function TagContent({ name, texts, probe = false }: TagContentProps) {
   return (
     <>
-      <b>
+      <b lang={NAME_LANG}>
         <Words text={name} className="arena-tag-long" probe={probe} />
         <Words text={shortName(name)} className="arena-tag-short" probe={probe} />
       </b>

@@ -558,7 +558,7 @@ describe("in Spanish", () => {
     expect(document.body.textContent ?? "").not.toMatch(/\bmatch\.[a-z]+[A-Z]?\w*\./);
     expect(screen.getByRole("dialog", { name: "Resultado de la partida" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continuar" })).toBeInTheDocument();
-    expect(screen.getByText("Gana Tides")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Gana Tides" })).toBeInTheDocument();
   });
 
   it("labels the two card sections in Spanish", async () => {

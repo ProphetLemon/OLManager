@@ -7,6 +7,7 @@ import type { TeamIdentity } from "@/lib/match/live/teamIdentity";
 
 import { TEAM_KEYS } from "./liveNames";
 import "./liveMatch.css";
+import { NAME_SLOT, NameIn } from "@/ui-v2/match/NameText";
 
 const LANE_NAME_KEYS: Readonly<Record<LaneKey, string>> = {
   top: "onAir.match.lanes.top",
@@ -79,7 +80,7 @@ export function LaneStrip({ lanes, blue, red }: LaneStripProps) {
             </span>
             {pusher?.logoUrl ? <img className="arena-lane-logo" src={pusher.logoUrl} alt="" draggable={false} /> : null}
             <span className="arena-lane-text" aria-hidden="true">
-              {pusher ? t("onAir.match.lanes.push", { team: pusher.tag }) : t(TEXT_KEYS[lane.push === "even" ? "even" : "none"])}
+              {pusher ? <NameIn text={t("onAir.match.lanes.push", { team: NAME_SLOT })} name={pusher.tag} /> : t(TEXT_KEYS[lane.push === "even" ? "even" : "none"])}
             </span>
             {lane.fight ? (
               <span className="arena-lane-fight" aria-hidden="true">

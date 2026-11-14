@@ -11,6 +11,7 @@ import type { TeamIdentity } from "@/lib/match/live/teamIdentity";
 import { eventSentence } from "../live/eventSentence";
 import { entryIcon } from "./postGameIcons";
 import "./postGame.css";
+import { NAME_SLOT, NameIn } from "@/ui-v2/match/NameText";
 
 export interface GoldDiffChartProps {
   record: MatchRecord | undefined;
@@ -52,10 +53,11 @@ export function GoldDiffChart({ record, durationSec, entries, blue, red }: GoldD
   const tagOf = (side: "blue" | "red" | null) => (side === "blue" ? blue.tag : side === "red" ? red.tag : "");
   const nameOf = (side: "blue" | "red" | null) => (side === "blue" ? blue.name : side === "red" ? red.name : "");
 
-  const readout = (sample: GoldSample): string => {
+  /** `slot`: leave the tag as `NAME_SLOT`, for a caller that shows it with `NameIn`. */
+  const readout = (sample: GoldSample, slot = false): string => {
     const lead = leadOf(sample);
     return lead.side
-      ? t("onAir.match.post.readout", { time: formatClock(sample.timeSec), team: tagOf(lead.side), amount: gold(lead.amount) })
+      ? t("onAir.match.post.readout", { time: formatClock(sample.timeSec), team: slot ? NAME_SLOT : tagOf(lead.side), amount: gold(lead.amount) })
       : t("onAir.match.post.readoutEven", { time: formatClock(sample.timeSec) });
   };
 
@@ -187,18 +189,18 @@ export function GoldDiffChart({ record, durationSec, entries, blue, red }: GoldD
             ))}
             <span className="pg-sidetag" data-team="blue" aria-hidden="true">
               <i className="pg-shape" data-team="blue" />
-              {t("onAir.match.post.ahead", { team: blue.tag })}
+              <NameIn text={t("onAir.match.post.ahead", { team: NAME_SLOT })} name={blue.tag} />
             </span>
             <span className="pg-sidetag" data-team="red" aria-hidden="true">
               <i className="pg-shape" data-team="red" />
-              {t("onAir.match.post.ahead", { team: red.tag })}
+              <NameIn text={t("onAir.match.post.ahead", { team: NAME_SLOT })} name={red.tag} />
             </span>
             {point ? (
               <>
                 <i className="pg-cross" style={{ left: pct(point.x) }} aria-hidden="true" />
                 <i className="pg-cross-dot" style={{ left: pct(point.x), top: pct(point.y) }} aria-hidden="true" />
                 <span className="pg-tip" style={{ left: pct(Math.min(0.9, Math.max(0.1, point.x))) }} aria-hidden="true">
-                  {readout(series[index ?? 0])}
+                  <NameIn text={readout(series[index ?? 0], true)} name={tagOf(leadOf(series[index ?? 0]).side)} />
                 </span>
               </>
             ) : null}

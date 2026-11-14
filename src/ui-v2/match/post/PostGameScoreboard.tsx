@@ -15,6 +15,7 @@ import { SideCrest } from "../live/SideCrest";
 import { Portrait } from "./Portrait";
 import { itemIcon, spellIcon } from "./postGameIcons";
 import "./postGame.css";
+import { NAME_LANG } from "@/ui-v2/match/NameText";
 
 /** The engine's role ids, mapped to the role names every screen already translates. */
 const ROLE_KEYS: Readonly<Record<string, string>> = {
@@ -76,7 +77,7 @@ function PlayerLine({ row, columns, maxDamage, championByPlayerId, itemNames }: 
         <span className="pg-player-cell">
           <Portrait side={row.side} championKey={key} name={row.name} />
           <span className="pg-player-text">
-            <b>{row.name}</b>
+            <b lang={NAME_LANG}>{row.name}</b>
             <small>{champion ? `${champion}, ${role}` : role}</small>
           </span>
           {row.mvp ? (
@@ -179,8 +180,8 @@ function TeamTable({ side, identity, board, columns, maxDamage, championByPlayer
         <tr className="pg-head">
           <th scope="col" className="pg-team">
             <SideCrest side={side} identity={identity} size="1.75rem" />
-            <b>{identity.tag}</b>
-            <span>{identity.name}</span>
+            <b lang={NAME_LANG}>{identity.tag}</b>
+            <span lang={NAME_LANG}>{identity.name}</span>
             {board.winner ? (
               <span className="pg-result" data-result={totals.won ? "win" : "loss"}>
                 {totals.won ? t("match.victory") : t("match.defeat")}

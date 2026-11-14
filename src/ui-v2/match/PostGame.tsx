@@ -23,6 +23,7 @@ import { PostGameScoreboard } from "./post/PostGameScoreboard";
 import { PostGameTimeline } from "./post/PostGameTimeline";
 import { useSideIdentities } from "./post/useSideIdentities";
 import "./post/postGame.css";
+import { Name, NAME_LANG } from "@/ui-v2/match/NameText";
 
 type View = "scoreboard" | "graphs" | "timeline";
 const VIEWS: ReadonlyArray<{ id: View; key: string }> = [
@@ -107,7 +108,7 @@ export default function PostGame({ snapshot, gameState, userSide, finalRuntimeSt
       <div className="pg-side" data-team={side} data-yours={userBlue === side || undefined}>
         <SideCrest side={side} identity={club} size="3.25rem" />
         <span className="pg-side-name">
-          <b>{club.tag}</b>
+          <b lang={NAME_LANG}>{club.tag}</b>
           <span>{club.name}</span>
         </span>
         {board?.winner ? (
@@ -166,7 +167,7 @@ export default function PostGame({ snapshot, gameState, userSide, finalRuntimeSt
                 {game.winnerSide ? (
                   <>
                     <i className="pg-shape" aria-hidden="true" />
-                    {identity[game.winnerSide].tag}
+                    <Name>{identity[game.winnerSide].tag}</Name>
                   </>
                 ) : null}
               </span>
@@ -178,7 +179,7 @@ export default function PostGame({ snapshot, gameState, userSide, finalRuntimeSt
             <Portrait side={mvp.side} championKey={championByPlayerId[mvp.id]} name={mvp.name} />
             <span className="pg-mvpchip-text">
               <b>
-                {t("match.draftResult.mvp")} {mvp.name}
+                {t("match.draftResult.mvp")} <Name>{mvp.name}</Name>
               </b>
               <small>{`${mvpChampion ? `${mvpChampion}, ` : ""}${mvp.kills}/${mvp.deaths}/${mvp.assists}`}</small>
             </span>

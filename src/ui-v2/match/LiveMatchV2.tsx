@@ -46,6 +46,7 @@ import { useChampionProfiles, type ChampionSelectionByPlayer } from "./live/useC
 import { useContactView } from "./live/useContactView";
 import { useLiveSession } from "./live/useLiveSession";
 import "./live/liveMatch.css";
+import { NAME_LANG } from "@/ui-v2/match/NameText";
 
 /**
  * Resolves once the browser has had the chance to paint what was just rendered, or after a short
@@ -282,7 +283,7 @@ export default function LiveMatchV2({
   const renderBand = (team: TeamSide, identity: { name: string }) => (
     <div className={team === "blue" ? "live-band live-area-bband" : "live-band live-area-rband"} data-team={team} aria-hidden="true">
       <i className="arena-side-shape" />
-      <span className="live-band-name">{identity.name}</span>
+      <span className="live-band-name" lang={NAME_LANG}>{identity.name}</span>
     </div>
   );
 
