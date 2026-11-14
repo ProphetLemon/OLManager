@@ -33,7 +33,7 @@ fn is_enemy_jungle_camp_key_for_team(key: &str, team: &str) -> bool {
     (key.ends_with("-blue") || key.ends_with("-red")) && !key.ends_with(own_suffix)
 }
 
-fn own_jungle_camps_available_or_pending(
+pub(super) fn own_jungle_camps_available_or_pending(
     neutral_timers: &NeutralTimersRuntime,
     team: &str,
     now: f64,
@@ -783,7 +783,9 @@ pub(super) fn pick_combat_target(
             ) {
                 return Some(CombatTarget::Neutral(neutral_key));
             }
-            return None;
+            // No camp under his hands: he is here because a gank started while no camp was
+            // pending, or a chase. A camp that came due on the way must not turn a credible kill
+            // beside him into standing still, so the kill is taken below.
         }
 
         let gank_target = runtime

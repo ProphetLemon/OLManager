@@ -150,6 +150,9 @@ struct JungleStats {
     gank_attempts: BTreeMap<String, [u32; 3]>,
     gank_hits: BTreeMap<String, [u32; 3]>,
     gank_deaths: BTreeMap<String, [u32; 3]>,
+    /// Engine steps spent in a gank episode with the path ending at an enemy laner, by how the
+    /// jungler stood to him: far (beyond the 0.11 gate), near and credible, near and not.
+    gank_steps: BTreeMap<String, u32>,
     /// Times he came within `JUNGLE_CAMP_ENGAGE_RADIUS` of an enemy-side camp, those before
     /// `EARLY_INVADE_SEC`, enemy-side camps he cleared, and those cleared before that second.
     invades: u32,
@@ -592,6 +595,29 @@ impl ContactObserver {
             // junglers are left out: a chase of the enemy jungler is not a gank).
             let contact = destination == "enemy_champion"
                 && state.champions.iter().any(|c| c.alive && c.role != "JGL" && normalized_team(&c.team) != team && toward(c.pos));
+            if contact {
+                let nearest_laner = state
+                    .champions
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, c)| c.alive && c.role != "JGL" && normalized_team(&c.team) != team && toward(c.pos))
+                    .min_by(|(_, a), (_, b)| dist(a.pos, jungler.pos).total_cmp(&dist(b.pos, jungler.pos)));
+                if let Some((enemy_idx, enemy)) = nearest_laner {
+                    let key = if dist(enemy.pos, jungler.pos) > 0.11 {
+                        "far (beyond 0.11)".to_string()
+                    } else {
+                        let credible = combat::has_credible_kill_chance(state, idx, enemy_idx, now);
+                        let pending = decode_neutral_timers_state(&state.neutral_timers)
+                            .is_some_and(|t| combat::own_jungle_camps_available_or_pending(&t, &jungler.team, now));
+                        format!(
+                            "near, {}, {}",
+                            if credible { "credible" } else { "not credible" },
+                            if pending { "own camps pending (no fight)" } else { "no camp pending" }
+                        )
+                    };
+                    *stats.gank_steps.entry(key).or_default() += 1;
+                }
+            }
             if contact {
                 if !track.gank_active {
                     track.gank_active = true;
@@ -1548,6 +1574,7 @@ fn replay_captured_start() {
         .collect();
     gank_states.sort();
     gank_states.dedup();
+    println!("jungler steps with the path ending at an enemy laner: {}", jungle_tally(&|j| j.gank_steps.iter().map(|(k, n)| (k.clone(), *n)).collect()));
     println!("jungler gank episodes (path ends at an enemy laner, not at a camp or a pit), per jungler-match {:.2}", f64::from(gank_total(&|j| &j.gank_attempts, None, None)) / jungler_matches);
     for state in &gank_states {
         for (label, phase) in [("all", None), ("before 10:00", Some(0)), ("10-20", Some(1)), ("after 20", Some(2))] {

@@ -6992,6 +6992,9 @@ mod real_items_harness_tests;
 mod captured_replay_harness_tests;
 
 #[cfg(test)]
+mod jungler_gank_tests;
+
+#[cfg(test)]
 mod jungler_recall_tests;
 
 #[cfg(test)]
