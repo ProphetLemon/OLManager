@@ -853,6 +853,9 @@
     "custom": {
       "create": "Create your team",
       "createHint": "Add your own club to this league, or replace one.",
+      "disabledInvalid": "Complete the club details in the earlier steps first.",
+      "disabledLoading": "Wait until the founding squad has been generated.",
+      "disabledFailed": "Retry the founding squad first: it could not be generated.",
       "title": "Create your team",
       "subtitle": "Add your own club to this league, or replace one of its clubs",
       "stepOf": "Step {{current}} of {{total}}",

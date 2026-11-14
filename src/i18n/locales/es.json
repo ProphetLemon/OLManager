@@ -853,6 +853,9 @@
     "custom": {
       "create": "Crea tu equipo",
       "createHint": "Añade tu propio club a esta liga o sustituye a uno.",
+      "disabledInvalid": "Completa primero los datos del club en los pasos anteriores.",
+      "disabledLoading": "Espera a que se genere la plantilla inicial.",
+      "disabledFailed": "Reintenta primero la plantilla inicial: no se pudo generar.",
       "title": "Crea tu equipo",
       "subtitle": "Añade tu propio club a esta liga o sustituye a uno de sus clubes",
       "stepOf": "Paso {{current}} de {{total}}",

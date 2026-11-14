@@ -456,6 +456,9 @@
     "custom": {
       "create": "Crea la tua squadra",
       "createHint": "Aggiungi il tuo club a questa lega o sostituiscine uno.",
+      "disabledInvalid": "Completa prima i dati del club nei passaggi precedenti.",
+      "disabledLoading": "Attendi che la rosa fondatrice sia stata generata.",
+      "disabledFailed": "Riprova prima la rosa fondatrice: non è stato possibile generarla.",
       "title": "Crea la tua squadra",
       "subtitle": "Aggiungi il tuo club a questa lega o sostituisci uno dei suoi club",
       "stepOf": "Passo {{current}} di {{total}}",

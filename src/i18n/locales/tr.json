@@ -620,6 +620,9 @@
     "custom": {
       "create": "Kendi takımını kur",
       "createHint": "Kendi kulübünü bu lige ekle ya da birinin yerine koy.",
+      "disabledInvalid": "Önce önceki adımlardaki kulüp bilgilerini tamamlayın.",
+      "disabledLoading": "Kurucu kadro oluşturulana kadar bekleyin.",
+      "disabledFailed": "Önce kurucu kadroyu yeniden deneyin: oluşturulamadı.",
       "title": "Kendi takımını kur",
       "subtitle": "Kendi kulübünü bu lige ekle ya da kulüplerinden birinin yerine koy",
       "stepOf": "Adım {{current}} / {{total}}",

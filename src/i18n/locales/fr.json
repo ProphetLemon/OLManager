@@ -620,6 +620,9 @@
     "custom": {
       "create": "Créer votre équipe",
       "createHint": "Ajoutez votre propre club à cette ligue, ou remplacez-en un.",
+      "disabledInvalid": "Complétez d'abord les informations du club dans les étapes précédentes.",
+      "disabledLoading": "Attendez que l'effectif fondateur soit généré.",
+      "disabledFailed": "Relancez d'abord l'effectif fondateur : il n'a pas pu être généré.",
       "title": "Créer votre équipe",
       "subtitle": "Ajoutez votre propre club à cette ligue, ou remplacez l'un de ses clubs",
       "stepOf": "Étape {{current}} sur {{total}}",

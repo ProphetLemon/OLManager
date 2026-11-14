@@ -620,6 +620,9 @@
     "custom": {
       "create": "Eigenes Team gründen",
       "createHint": "Füge deinen eigenen Verein zu dieser Liga hinzu oder ersetze einen.",
+      "disabledInvalid": "Vervollständige zuerst die Vereinsangaben in den vorherigen Schritten.",
+      "disabledLoading": "Warte, bis der Gründungskader erstellt wurde.",
+      "disabledFailed": "Versuche zuerst erneut, den Gründungskader zu erstellen: Er konnte nicht erzeugt werden.",
       "title": "Eigenes Team gründen",
       "subtitle": "Füge deinen eigenen Verein zu dieser Liga hinzu oder ersetze einen ihrer Vereine",
       "stepOf": "Schritt {{current}} von {{total}}",

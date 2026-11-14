@@ -619,6 +619,9 @@
     "custom": {
       "create": "Cria a tua equipa",
       "createHint": "Junta o teu clube a esta liga ou substitui um.",
+      "disabledInvalid": "Preenche primeiro os dados do clube nos passos anteriores.",
+      "disabledLoading": "Aguarda até que o plantel fundador seja gerado.",
+      "disabledFailed": "Tenta primeiro de novo o plantel fundador: não foi possível gerá-lo.",
       "title": "Cria a tua equipa",
       "subtitle": "Junta o teu clube a esta liga ou substitui um dos seus clubes",
       "stepOf": "Passo {{current}} de {{total}}",
