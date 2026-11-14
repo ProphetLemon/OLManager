@@ -46,6 +46,8 @@ ts-rs = { version = "10", optional = true, features = ["serde-compat"] }
 discord-rich-presence = "1.1"
 uuid = { version = "1", features = ["v4"] }
 tauri-plugin-process = "~2.3.1"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Already in the lock file (tao and wry use it); used for the start-up question.
