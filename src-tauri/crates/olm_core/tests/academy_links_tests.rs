@@ -174,8 +174,12 @@ fn custom_clubs_and_clubs_with_a_parent_are_not_offered() {
 }
 
 #[test]
-fn the_fee_is_the_formula_or_a_quarter_of_the_squad_value_whichever_is_higher() {
+fn the_fee_is_the_formula_or_the_full_squad_value_whichever_is_higher() {
     let mut game = new_world();
+    // A cheap squad: the league formula decides.
+    for player in game.players.iter_mut() {
+        player.market_value = 10_000;
+    }
     let formula = linked_club_report(&game, "koi")
         .options
         .iter()
@@ -184,7 +188,7 @@ fn the_fee_is_the_formula_or_a_quarter_of_the_squad_value_whichever_is_higher() 
         .expect("beta is offered");
     assert!(formula > 0);
 
-    // Squad worth 8 million: a quarter is 2 million, far above the league formula.
+    // Squad worth just over 8 million: the full value is far above the league formula.
     for player in game
         .players
         .iter_mut()
@@ -199,7 +203,7 @@ fn the_fee_is_the_formula_or_a_quarter_of_the_squad_value_whichever_is_higher() 
         .map(|option| option.acquisition_cost)
         .expect("alpha is offered");
 
-    assert!(alpha_fee >= 2_000_000, "fee was {alpha_fee}");
+    assert!(alpha_fee >= 8_000_000, "fee was {alpha_fee}");
     assert_eq!(formula, 100_000 + 3 * 40_000 + 2 * 20_000);
 }
 

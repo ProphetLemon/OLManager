@@ -25,8 +25,6 @@ use crate::finances::{
 };
 use crate::game::Game;
 
-/// Share of a club's squad market value the link fee never falls below.
-const SQUAD_VALUE_FEE_PERCENT: u64 = 25;
 /// Tier a club must play in to be offered as an academy.
 const LINKABLE_TIER: u8 = 2;
 /// League reputation assumed when a manifest does not declare one.
@@ -76,11 +74,12 @@ fn league_ratings(game: &Game, competition_id: &str) -> (u8, u8) {
     (reputation, development_level)
 }
 
-/// Fee for linking `club`: the league formula, or a quarter of the squad's market
-/// value when that is higher, so a link is never a free transfer route.
+/// Fee for linking `club`: the league formula, or the squad's full market value when
+/// that is higher. A link gives call-up rights to the whole squad, so it never costs
+/// less than buying it.
 fn link_fee(game: &Game, club: &Team, formula: i64) -> i64 {
-    let quarter = squad_market_value(game, &club.id) / 100 * SQUAD_VALUE_FEE_PERCENT;
-    formula.max(i64::try_from(quarter).unwrap_or(i64::MAX))
+    let squad_value = squad_market_value(game, &club.id);
+    formula.max(i64::try_from(squad_value).unwrap_or(i64::MAX))
 }
 
 /// Tier-2 league of the parent's region that `club` is a member of.
