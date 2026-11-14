@@ -135,6 +135,11 @@ describe("shortCompetitionName", () => {
     expect(shortCompetitionName("LEC")).toBe("LEC");
   });
 
+  it("keeps a code of five or six characters whole instead of cutting it to four (T13 D8: LCKCL showed as LCKC)", () => {
+    expect(shortCompetitionName("LCKCL")).toBe("LCKCL");
+    expect(shortCompetitionName("LFL2ND")).toBe("LFL2ND");
+  });
+
   it("collapses long names to their initials", () => {
     expect(shortCompetitionName("League of Legends Championship")).toBe("LOLC");
     expect(shortCompetitionName("Liga Espanola Superior")).toBe("LES");
