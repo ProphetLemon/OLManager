@@ -100,6 +100,16 @@ describe("the score bar fits at 1280 and 1440", () => {
     expect(body).toMatch(/\.arena-bar-stats\s*\{[^}]*flex:\s*1 0 100%/);
     expect(ruleBody(".arena-bar-stats")).toMatch(/display:\s*contents/);
   });
+
+  it("draws the high-contrast underline of a side outside its box, in the bar's bottom padding, not over the stats row (T13 D3)", () => {
+    const hc = ruleBody(':root[data-contrast="high"] .arena-bar-side');
+    expect(hc).not.toMatch(/inset/);
+    const shadow = /box-shadow:\s*0\s+([\d.]+)rem\s+0\s+var\(--team-color\)/.exec(hc);
+    expect(shadow).not.toBeNull();
+    // The bar pads its content by 0.25rem below, which is all the line may use.
+    expect(ruleBody(".arena-bar")).toMatch(/padding:\s*0\.25rem\s/);
+    expect(Number(shadow![1])).toBeLessThanOrEqual(0.25);
+  });
 });
 
 describe("the end panel", () => {

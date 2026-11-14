@@ -853,8 +853,10 @@
   display: none;
 }
 
+/* The underline is drawn outside the side's box, in the bar's own bottom padding (0.25rem), so it
+   never lies over the stats row that ends the box. */
 :root[data-contrast="high"] .arena-bar-side {
-  box-shadow: inset 0 -0.3125rem 0 var(--team-color);
+  box-shadow: 0 0.25rem 0 var(--team-color);
 }
 
 .arena-bar-side {
