@@ -456,10 +456,11 @@ fn apply_player_stats(
             let match_rating = if ps.rating > 0.0 {
                 ps.rating
             } else {
-                // Damage counts by share of the team's damage against the role's par:
-                // par is worth +1.0 and the bonus tops out at +1.5, as it did at real-LoL scale.
+                // Damage counts by share of the team's damage, centred on the role's par so
+                // the rating keeps the scale it had when damage added nothing: par adds 0,
+                // 1.5x par adds +0.5, half of par takes 0.5 off. Unmeasured adds 0.
                 let damage_bonus = damage_vs_par(ps.damage_dealt, team_damage, ps.role)
-                    .map_or(0.0, |ratio| ratio.clamp(0.0, 1.5) as f32);
+                    .map_or(0.0, |ratio| (ratio - 1.0).clamp(-0.5, 0.5) as f32);
                 6.0 + ((kills + ps.assists) as f32 * 0.35) - (ps.deaths as f32 * 0.25)
                     + damage_bonus
             };
@@ -1433,21 +1434,45 @@ mod progression_bound_tests {
         assert!((total - 1.0).abs() < 1e-9, "shares add up to {total}");
     }
 
-    #[test]
-    fn fallback_rating_should_credit_par_damage_share_at_engine_scale() {
+    /// Fallback rating (no engine rating) of a Mid with 2 kills, 4 assists, 3 deaths
+    /// whose team dealt `team_damage`; the kills/assists/deaths part is 7.35.
+    fn fallback_rating(damage: u32, team_damage: u32) -> f32 {
         let mut game = game_with_player(50, 90, None);
-        let report = report_for(PlayerMatchStats {
+        let mut report = report_for(PlayerMatchStats {
             role: Some(LolRole::Mid),
             duration_seconds: MINUTES * 60,
             kills: 2,
             deaths: 3,
             assists: 4,
-            damage_dealt: par_damage(LolRole::Mid),
+            damage_dealt: damage,
             ..Default::default()
         });
+        report.home_stats = team_stats(team_damage);
         apply_player_stats(&mut game, &report, "home", "away");
-        // 6.0 + 6 * 0.35 - 3 * 0.25 + 1.0 for a par damage share.
-        let rating = game.players[0].stats.avg_rating;
-        assert!((rating - 8.35).abs() < 0.01, "rating {rating}");
+        game.players[0].stats.avg_rating
+    }
+
+    #[test]
+    fn fallback_rating_should_add_nothing_for_a_par_damage_share() {
+        let rating = fallback_rating(par_damage(LolRole::Mid), TEAM_DAMAGE);
+        assert!((rating - 7.35).abs() < 0.01, "rating {rating}");
+    }
+
+    #[test]
+    fn fallback_rating_should_credit_an_above_par_damage_share() {
+        let rating = fallback_rating(par_damage(LolRole::Mid) * 3 / 2, TEAM_DAMAGE);
+        assert!((rating - 7.85).abs() < 0.01, "rating {rating}");
+    }
+
+    #[test]
+    fn fallback_rating_should_dock_a_below_par_damage_share() {
+        let rating = fallback_rating(par_damage(LolRole::Mid) / 2, TEAM_DAMAGE);
+        assert!((rating - 6.85).abs() < 0.01, "rating {rating}");
+    }
+
+    #[test]
+    fn fallback_rating_should_ignore_unmeasured_damage() {
+        let rating = fallback_rating(0, 0);
+        assert!((rating - 7.35).abs() < 0.01, "rating {rating}");
     }
 }
