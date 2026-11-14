@@ -1,30 +1,11 @@
-/**
- * Player trait ids as the backend serializes them (`PlayerTrait` in
- * `olm_core/src/domain/player.rs`) mapped to the key under the long-standing
- * `traits.*` i18n family, which is keyed by the trait's former names.
- */
-const LEGACY_TRAIT_KEYS: Record<string, string> = {
-  LightningQuick: "Speedster",
-  Immovable: "Tank",
-  NimbleFingers: "Agile",
-  MarathonMan: "Tireless",
-  GameManager: "Playmaker",
-  Lethal: "Sharpshooter",
-  KiteMaster: "Dribbler",
-  Interceptor: "BallWinner",
-  Sentinel: "Rock",
-  ShotCaller: "Leader",
-  IceCold: "CoolHead",
-  Visionary: "Visionary",
-  Intimidator: "HotHead",
-  TeamPlayer: "TeamPlayer",
-  HyperCarry: "CompleteForward",
-  Workhorse: "Engine",
-  MacroSpecialist: "SetPieceSpecialist",
-};
-
+/** i18n key of a player trait's short label; ids are the backend's `PlayerTrait` variant names. */
 export function traitLabelKey(traitId: string): string {
-  return `traits.${LEGACY_TRAIT_KEYS[traitId] ?? traitId}.label`;
+  return `traits.${traitId}.label`;
+}
+
+/** i18n key of a player trait's one-line description. */
+export function traitDescKey(traitId: string): string {
+  return `traits.${traitId}.desc`;
 }
 
 /** "fast_learner" / "FastLearner" -> "Fast learner". */
@@ -36,5 +17,3 @@ export function humanizeTraitId(traitId: string): string {
     .toLowerCase();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
-
-export const KNOWN_TRAIT_IDS = Object.keys(LEGACY_TRAIT_KEYS);

@@ -4,9 +4,18 @@ import { render, screen } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import i18n from "@/i18n";
-import { KNOWN_TRAIT_IDS, humanizeTraitId, traitLabelKey } from "@/lib/playerProfile/traits";
+import de from "@/i18n/locales/de.json";
+import en from "@/i18n/locales/en.json";
+import es from "@/i18n/locales/es.json";
+import fr from "@/i18n/locales/fr.json";
+import itLocale from "@/i18n/locales/it.json";
+import pt from "@/i18n/locales/pt.json";
+import ptBR from "@/i18n/locales/pt-BR.json";
+import tr from "@/i18n/locales/tr.json";
+import { humanizeTraitId, traitDescKey, traitLabelKey } from "@/lib/playerProfile/traits";
 import PlayerProfileTraitsCardV2 from "./PlayerProfileTraitsCardV2";
 
+const LOCALE_FILES: Record<string, { traits: Record<string, unknown> }> = { en, es, de, fr, it: itLocale, pt, "pt-BR": ptBR, tr };
 const LOCALES = ["en", "es", "de", "fr", "it", "pt", "pt-BR", "tr"];
 
 /** Variant names of `PlayerTrait`, read from the Rust source so the two cannot drift. */
@@ -34,7 +43,7 @@ afterAll(async () => {
 describe("PlayerProfileTraitsCardV2", () => {
   it("shows the translated label for a known trait", () => {
     render(<PlayerProfileTraitsCardV2 title="Rasgos" traits={["LightningQuick"]} />);
-    expect(screen.getByText("Velocista")).toBeInTheDocument();
+    expect(screen.getByText("Rayo")).toBeInTheDocument();
     expect(screen.queryByText("LightningQuick")).toBeNull();
   });
 
@@ -55,14 +64,21 @@ describe("trait ids", () => {
     expect(rustTraitIds().length).toBeGreaterThan(10);
   });
 
+  it("has no trait keys beyond the Rust variants", () => {
+    const ids = new Set(rustTraitIds());
+    for (const [lng, bundle] of Object.entries(LOCALE_FILES)) {
+      expect(Object.keys(bundle.traits).filter((id) => !ids.has(id)), lng).toEqual([]);
+    }
+  });
+
   it("covers every trait the backend can produce, in every locale", async () => {
     const ids = rustTraitIds();
-    expect([...KNOWN_TRAIT_IDS].sort()).toEqual([...ids].sort());
     for (const lng of LOCALES) {
       const t = i18n.getFixedT(lng);
       for (const id of ids) {
         expect(i18n.exists(traitLabelKey(id), { lng }), `${lng}:${id}`).toBe(true);
         expect(t(traitLabelKey(id))).not.toBe(traitLabelKey(id));
+        expect(i18n.exists(traitDescKey(id), { lng }), `${lng}:${id}:desc`).toBe(true);
       }
     }
   });

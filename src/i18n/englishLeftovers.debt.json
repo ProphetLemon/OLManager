@@ -569,9 +569,6 @@
   "training.scrims.planC",
   "training.soloQTiers.Challenger",
   "training.tab.soloq",
-  "traits.Agile.label",
-  "traits.Leader.label",
-  "traits.Tank.label",
   "transfers.destination",
   "transfers.negotiationPatience",
   "transfers.negotiationTension",
@@ -809,8 +806,6 @@
   "training.soloQTiers.Grandmaster",
   "training.soloQTiers.Master",
   "training.tab.soloq",
-  "traits.Agile.label",
-  "traits.Leader.label",
   "transfers.negotiationRound",
   "youthAcademy.ovr",
   "youthAcademy.pos"
@@ -1354,7 +1349,6 @@
   "training.scrims.planC",
   "training.scrims.slot",
   "training.tab.soloq",
-  "traits.Tank.label",
   "transfers.transfer",
   "youthAcademy.ovr"
  ]

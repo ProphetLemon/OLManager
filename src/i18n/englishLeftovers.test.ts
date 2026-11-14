@@ -266,7 +266,7 @@ const ES_ALLOWED: ReadonlyArray<{ reason: string; keys: readonly string[] }> = [
       "settings.speeds.normal",
       "teamProfile.balance",
       "tournaments.playoffFinal",
-      "traits.BallWinner.label",
+      "traits.Interceptor.label",
     ],
   },
 ];
