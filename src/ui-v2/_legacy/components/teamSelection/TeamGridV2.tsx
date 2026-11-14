@@ -105,7 +105,7 @@ export function TeamGridV2({
                       </div>
                       <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
                         <MapPin className="size-3" />
-                        {team.short_name} · {team.country}
+                        {[team.short_name, team.country].filter(Boolean).join(" · ")}
                       </p>
                     </div>
 

@@ -33,4 +33,13 @@ describe("TeamGridV2 team cards", () => {
     expect(screen.getByText("Ruf: 80")).toBeInTheDocument();
     await i18n.changeLanguage("es");
   });
+
+  it("joins the tag and the country only when both are present", () => {
+    const noCountry = { ...team, id: "bnky", name: "Banky", short_name: "BNK.Y", country: "" } as TeamSummary;
+    render(<TeamGridV2 teams={[team, noCountry]} selectedTeamId={null} onSelectTeam={() => {}} />);
+    expect(screen.getByText("MKOI · ES")).toBeInTheDocument();
+    const card = screen.getByRole("button", { name: /Banky/ });
+    const line = card.querySelector("p.flex.items-center.gap-2");
+    expect(line?.textContent).toBe("BNK.Y");
+  });
 });
