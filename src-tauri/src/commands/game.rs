@@ -983,6 +983,11 @@ pub(crate) fn prepare_new_game_season(
 
     for manifest in manifests.iter().filter(|m| !m.legacy) {
         let cid = &manifest.id;
+        // Stale copies of a live competition get no league in a new game: they would
+        // be repaired and simulated every day for nothing. Saves keep their own set.
+        if olm_core::world_catalog::is_stale_duplicate_competition(cid) {
+            continue;
+        }
         let team_ids: Vec<String> = game
             .teams
             .iter()
@@ -2087,6 +2092,27 @@ mod tests {
                 .map(|m| m.id.clone())
                 .collect();
             (manifests, known)
+        }
+
+        /// A new game schedules no league for the stale duplicates the catalog still
+        /// ships (`lck-cl`, `prime_league`): they have no teams and would only be repaired
+        /// and simulated every day for nothing.
+        #[test]
+        fn a_new_game_builds_no_league_for_stale_duplicate_competitions() {
+            let (mut game, _catalog_players, _overlay, user_team) = new_game();
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &user_team).expect("season setup");
+
+            let ids: Vec<&str> = game
+                .leagues
+                .iter()
+                .filter_map(|l| l.competition_id.as_deref())
+                .collect();
+            let stale: Vec<&&str> = ids
+                .iter()
+                .filter(|id| olm_core::world_catalog::is_stale_duplicate_competition(id))
+                .collect();
+            assert!(stale.is_empty(), "stale leagues built: {stale:?}");
         }
 
         /// A user promoted from the LES to the LEC at a season wrap keeps the LEC after the
