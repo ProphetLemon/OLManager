@@ -9,6 +9,7 @@
 import { IdCollisionError, deterministicId, generatePlayer, generateStaff } from "./generate.mjs";
 import { pageUrl } from "./leaguepedia-parse.mjs";
 import { OPEN_QUALIFIER_ENTRIES, gameStatus, qualifierSplit } from "./pool-scope.mjs";
+import { GAME_POSITION, RATING_STATS, RATING_TIER_DEFAULT, ratePoolPlayer, tierBaselines } from "./pool-rating.mjs";
 import { dataRoleForLabel } from "./staff-policy.mjs";
 import { compactKey, countryToIso2 } from "./text.mjs";
 
@@ -26,21 +27,10 @@ export const POOL_LIMITS = Object.freeze({
   overlayBytes: 4 * 1024 * 1024,
 });
 
-/** Marks attributes that are a stand-in until A4 rates the person from stats. Carried on every pool op as `pool.rating`. */
-export const PLACEHOLDER_RATING = "tier-default-placeholder";
-/**
- * Placeholder rating: the game's median for the position, shifted by the tier of the person's best competition
- * (1 top flight, 2 official circuit, 3 recurring seasonal league). Replaced by the stats-based rating of A4.
- */
-export const TIER_OFFSETS = Object.freeze({ 1: 0, 2: -6, 3: -12 });
-
-/** The position names the game's overlay uses; Leaguepedia says "Bot" where the game says "ADC". */
-export const GAME_POSITION = Object.freeze({ Top: "Top", Jungle: "Jungle", Mid: "Mid", Bot: "ADC", Support: "Support" });
+export { GAME_POSITION, RATING_STATS, RATING_TIER_DEFAULT, TIER_OFFSETS, tierBaselines } from "./pool-rating.mjs";
 
 /** Code-unit order, so ids and lists come out the same on every machine and locale. */
 export const compare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
-
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 /** `YYYY-MM-DD` when the value is a real calendar date, otherwise null. */
 export function isoDate(value) {
@@ -190,31 +180,10 @@ export function selectPool({ people, context, world, rosterIds = new Set() }) {
   };
 }
 
-// --- Placeholder ratings -----------------------------------------------------------------------------
-
-function shift(values, delta, range) {
-  return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, clamp(value + delta, range?.[key]?.min ?? 1, range?.[key]?.max ?? 100)]));
-}
-
-/** Baselines shifted by the tier offset: the tier-default placeholder rating (see TIER_OFFSETS). */
-export function tierBaselines(baselines, tier) {
-  const delta = TIER_OFFSETS[tier] ?? TIER_OFFSETS[3];
-  return {
-    player(competition, position) {
-      const base = baselines.player(competition, position);
-      return { ...base, attributes: shift(base.attributes, delta, base.range), potential: clamp(base.potential + delta, 1, 100) };
-    },
-    staff(role) {
-      const base = baselines.staff(role);
-      return { ...base, attributes: shift(base.attributes, delta, base.range) };
-    },
-  };
-}
-
 // --- Operations --------------------------------------------------------------------------------------
 
-/** What A4 needs to rate a pool person later, carried on the op next to the game's own fields. */
-function poolMeta(entry, { tournamentIndex, games }) {
+/** What the review report and later runs read about a pool person, carried on the op next to the game's own fields. */
+function poolMeta(entry, { tournamentIndex, games, rating }) {
   const person = entry.person;
   const levels = {};
   const leagues = new Set();
@@ -241,7 +210,8 @@ function poolMeta(entry, { tournamentIndex, games }) {
     levels: Object.fromEntries(Object.entries(levels).sort(([a], [b]) => compare(a, b))),
   };
   if (person.toursTruncated) meta.tournaments_truncated = true;
-  meta.rating = PLACEHOLDER_RATING;
+  meta.rating = rating.source;
+  if (rating.source === RATING_STATS) meta.rating_games = rating.games;
   return meta;
 }
 
@@ -251,9 +221,11 @@ function poolMeta(entry, { tournamentIndex, games }) {
  * @param {ReturnType<typeof selectPool>} input.selection
  * @param {Map<string, object>} [input.tournamentIndex] tournaments by page, for the level and league summary
  * @param {Map<string, number>|null} [input.games] scoreboard games per player page in the window, or null when unavailable
+ * @param {Map<string, import("../../stats/lib/skill.mjs").SkillEstimate>|null} [input.skill] usable skill estimate per player page
+ *   (see pool-rating.mjs); a player with one that has enough games is rated from stats, everybody else gets the tier default
  * @param {ReturnType<import("./generate.mjs").computeBaselines>} input.baselines
  */
-export function buildPoolOps({ selection, tournamentIndex, games = null, baselines }) {
+export function buildPoolOps({ selection, tournamentIndex, games = null, skill = null, baselines }) {
   const players = [];
   const staff = [];
   const skipped = [];
@@ -269,9 +241,15 @@ export function buildPoolOps({ selection, tournamentIndex, games = null, baselin
           page: person.page, ign: profile.ign, realName: profile.name, country, position: entry.role, teamId: null, competition: null,
           infobox: { birthDate: birth, name: profile.name, country }, baselines: rated, takenIds: new Set(),
         });
+        // Stats replace the tier default's seeded jitter: the jitter only keeps clones of one baseline apart.
+        const rating = ratePoolPlayer({ tier: person.tier, position: entry.role, baselines, estimate: skill?.get(person.page) ?? null });
+        if (rating.source === RATING_STATS) {
+          record.attributes = rating.attributes;
+          record.potential_base = rating.potential;
+        }
         const op = { op: "add", player: record, evidence: pageUrl(person.page) };
         if (dobApprox) op.dob_approx = true;
-        op.pool = poolMeta(entry, { tournamentIndex, games });
+        op.pool = poolMeta(entry, { tournamentIndex, games, rating });
         players.push({ op, id: record.id, teamId: null, competition: null, note: `${profile.ign} (${record.full_name}) free agent ${entry.role}, tier ${person.tier}, ${person.region}${nationalityMissing ? "; nationality unresolved" : ""}` });
       } else {
         const { record } = generateStaff({
@@ -280,7 +258,7 @@ export function buildPoolOps({ selection, tournamentIndex, games = null, baselin
         const op = { op: "add", staff: record, evidence: pageUrl(person.page) };
         if (birth) record.date_of_birth = birth;
         else op.dob_approx = true;
-        op.pool = poolMeta(entry, { tournamentIndex, games });
+        op.pool = poolMeta(entry, { tournamentIndex, games, rating: { source: RATING_TIER_DEFAULT } });
         staff.push({ op, id: record.id, teamId: null, competition: null, note: `${profile.ign} (${record.first_name}) free agent ${entry.role} (${person.staffLabel}), tier ${person.tier}, ${person.region}` });
       }
     } catch (error) {
