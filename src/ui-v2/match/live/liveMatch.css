@@ -1174,8 +1174,9 @@
   border-radius: 1px;
 }
 
-/* The stats are the bar's own children on a wide screen. Under 1500px they take a second row of
-   their side, so the bar never wraps by accident and nothing is cut. */
+/* The stats are the bar's own children only where the bar is 1500px wide or more. The shell caps
+   the bar at 1416px (90rem less its padding), so in practice they take a second row of each side
+   at every window width, and the bar never wraps by accident and nothing is cut. */
 .arena-bar-stats {
   display: contents;
 }
@@ -2559,7 +2560,9 @@
   --side-red-band: var(--team-red);
   --side-red-band-fg: var(--background);
   --side-red-wash-text: var(--team-red);
-  --live-bar: 3.5rem;
+  /* Two rows: the shell caps the bar at 1416px, under the 1500px its one-row layout needs, so the
+     stats always take a second row of each side (see the score bar). Under 1205px, a third row. */
+  --live-bar: 4.75rem;
   /* The row of the lanes and the two strips of the board: two 20px rows and their gap. */
   --live-sit: 2.75rem;
   /* The low module of each column; the cards give it room in steps (see the container queries). */
@@ -2625,13 +2628,6 @@
 .live-area-bar .arena-bar {
   box-sizing: border-box;
   height: 100%;
-}
-
-/* Under 1540px the bar's stats take a second row of each side (see the score bar), so it is taller. */
-@container live (max-width: 1539px) {
-  .live-shell {
-    --live-bar: 4.75rem;
-  }
 }
 
 /* Under 1205px (the bar is under 1181px wide) a side's stats row is full: the towers, gold, four

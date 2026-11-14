@@ -85,10 +85,10 @@ describe("no scroll at 1280x800", () => {
     expect(css).not.toContain("@container side (max-width: 21rem)");
   });
 
-  it("counts the taller bar of narrow windows in the room it takes off the map", () => {
+  it("counts the two-row bar, the default at every width, in the room it takes off the map", () => {
     expect(ruleBody(".live-shell")).toMatch(/--live-rows:[^;]*var\(--live-bar\)/);
-    const tall = css.slice(atRuleStart("@container live (max-width: 1539px)"));
-    expect(tall.slice(0, 120)).toContain("--live-bar: 4.75rem");
+    expect(ruleBody(".live-match")).toMatch(/--live-bar:\s*4\.75rem/);
+    expect(css).not.toContain("@container live (max-width: 1539px)");
   });
 });
 
