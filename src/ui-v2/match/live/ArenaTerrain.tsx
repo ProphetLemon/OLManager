@@ -1,27 +1,15 @@
 import { memo } from "react";
 import { MAP_UNITS } from "@/lib/match/live/mapGeometry";
-import { NIGHT_FILTER_ID, NightFilter, TOKENS_FILTER_ID, TokensFilter } from "./ArenaTerrainFilters";
-import {
-  NIGHT_IMAGE_OPACITY,
-  RIFT_IMAGE_SRC,
-  TERRAIN_DIRECTION,
-  type TerrainDirection,
-} from "./terrainDirection";
+import { RIFT_IMAGE_SRC } from "./riftImage";
 
 /**
- * Static terrain of the arena: the Summoner's Rift picture over the terrain ground. It never
- * changes while a match runs, so it costs nothing per frame, and it is decoration only (the Fight
- * board is the text twin). The picture lines up 1:1 with the engine coordinates, so the layers
- * above need no offset. The direction (see terrainDirection.ts) only changes how it is filtered.
+ * Static terrain of the arena: the Summoner's Rift picture in full colour over the terrain
+ * ground. It never changes while a match runs, so it costs nothing per frame, and it is
+ * decoration only (the Fight board is the text twin). The picture lines up 1:1 with the engine
+ * coordinates, so the layers above need no offset. Its lanes are pale in every theme, which is
+ * why each marker, tag and beam above it wears the dark `--map-casing` (see liveMatch.css).
  */
-export const ArenaTerrain = memo(function ArenaTerrain({
-  className,
-  direction = TERRAIN_DIRECTION,
-}: {
-  className?: string;
-  direction?: TerrainDirection;
-}) {
-  const filterId = direction === "night" ? NIGHT_FILTER_ID : direction === "tokens" ? TOKENS_FILTER_ID : null;
+export const ArenaTerrain = memo(function ArenaTerrain({ className }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -30,10 +18,7 @@ export const ArenaTerrain = memo(function ArenaTerrain({
       aria-hidden="true"
       focusable="false"
       data-testid="arena-terrain"
-      data-direction={direction}
     >
-      {direction === "night" ? <NightFilter /> : null}
-      {direction === "tokens" ? <TokensFilter /> : null}
       <rect width={MAP_UNITS} height={MAP_UNITS} style={{ fill: "var(--terrain-ground)" }} />
       <image
         href={RIFT_IMAGE_SRC}
@@ -42,8 +27,6 @@ export const ArenaTerrain = memo(function ArenaTerrain({
         width={MAP_UNITS}
         height={MAP_UNITS}
         preserveAspectRatio="xMidYMid meet"
-        opacity={direction === "night" ? NIGHT_IMAGE_OPACITY : undefined}
-        filter={filterId ? `url(#${filterId})` : undefined}
       />
     </svg>
   );

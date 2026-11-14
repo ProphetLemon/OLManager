@@ -179,21 +179,13 @@
 
   /* P1 structural tokens (theme independent) */
   --surface-clamp: #2a3347;
-  /* Match simulator terrain. Theme independent on purpose: the arena is always
-     a dark schematic, like --surface-clamp. Team colours tint the bases at draw
-     time (fill opacity), so these never need a dark variant. */
+  /* Match simulator map. Theme independent on purpose: the Rift picture is painted
+     in full colour (pale lanes) in every theme, behind the dark ground the map sits
+     on. Everything drawn over it wears a dark casing (--map-casing) and light text
+     (--map-ink) so it reads on the pale lanes, in light themes too. */
   --terrain-ground: #0d131d;
-  --terrain-river: #10304a;
-  --terrain-lane-edge: #2a3347;
-  --terrain-lane: #182131;
-  --terrain-pit: #0a0d13;
-  --terrain-pit-edge: #3a465c;
-  /* Rift picture recoloured by ArenaTerrain (tokens direction): wall is the jungle
-     and the outside, path is every lane and jungle path, base is the grey floor
-     of both bases (each gets its team wash on top). */
-  --terrain-wall: var(--terrain-ground);
-  --terrain-path: #2a3347;
-  --terrain-base: #182131;
+  --map-casing: #0a0d13;
+  --map-ink: #eef1f7;
   --club-wash: color-mix(in srgb, var(--club) 36%, transparent);
   --hit: max(2.75rem, 24px);
   /* WCAG 2.2 target size minimum (2.5.8): floor for every control, at any root font size */
@@ -232,7 +224,7 @@
   --info: #1d4ed8;
   --info-foreground: #ffffff;
   /* Match simulator teams. Non-text colour: at least 3:1 on --card and
-     --background, and on --terrain-ground (checked in tokens.parity.test.ts).
+     --background, and on --terrain-ground and --map-casing (checked in teamTokens.test.ts).
      Names stay in --foreground; the team colour is a border or a fill. */
   --team-blue: #1d78d4;
   --team-red: #d63a52;
@@ -311,8 +303,6 @@
   --team-blue: #1a68bc;
   --team-red: #c42a44;
   --focus-ring-width: 3px;
-  /* Tokens direction of the arena: a deeper wall separates the paths without lightening them. */
-  --terrain-wall: #05080d;
 }
 
 .dark[data-contrast="high"],
@@ -330,6 +320,4 @@
   --team-blue: #8fd8ff;
   --team-red: #ff8a9b;
   --focus-ring-width: 3px;
-  /* Tokens direction of the arena: a deeper wall separates the paths without lightening them. */
-  --terrain-wall: #05080d;
 }

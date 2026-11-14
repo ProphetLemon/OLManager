@@ -103,6 +103,8 @@
   color: var(--card-foreground);
   pointer-events: auto;
   cursor: pointer;
+  /* The pale lanes of the Rift picture would swallow a coloured ring: it wears a dark casing. */
+  box-shadow: 0 0 0 2px var(--map-casing);
 }
 
 .arena-champ[data-team="red"] .arena-bubble,
@@ -153,8 +155,8 @@
   padding: 0 3px;
   border: 1px solid var(--team-color);
   border-radius: 9px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-weight: 700;
@@ -169,8 +171,8 @@
   left: 0;
   box-sizing: border-box;
   height: 5px;
-  border: 1px solid var(--line);
-  background: var(--background);
+  border: 1px solid var(--map-casing);
+  background: var(--map-casing);
 }
 
 .arena-hp i {
@@ -208,10 +210,11 @@
 /* Rings: double = fighting, dashed = tower fire (ContactLayer), club colour = followed. */
 .ring-fighting {
   box-shadow:
-    0 0 0 2px var(--terrain-ground),
+    0 0 0 2px var(--map-casing),
     0 0 0 4px var(--warning),
-    0 0 0 6px var(--terrain-ground),
-    0 0 0 8px var(--warning);
+    0 0 0 6px var(--map-casing),
+    0 0 0 8px var(--warning),
+    0 0 0 10px var(--map-casing);
 }
 
 .ring-selected {
@@ -234,8 +237,8 @@
   padding: 0 4px;
   border: 1px solid var(--team-color);
   border-radius: 3px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-weight: 700;
@@ -253,8 +256,8 @@
   padding: 1px 5px;
   border: 1px solid var(--team-color);
   border-radius: 3px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   line-height: 1.05;
   white-space: nowrap;
@@ -371,14 +374,15 @@
 .arena-link,
 .arena-beam,
 .arena-beam-head,
+.arena-beam-head-halo,
 .arena-link-dot,
 .ring-fire {
   vector-effect: non-scaling-stroke;
 }
 
 .arena-link-halo {
-  stroke: var(--terrain-ground);
-  stroke-width: 6px;
+  stroke: var(--map-casing);
+  stroke-width: 7px;
   stroke-linecap: round;
 }
 
@@ -390,14 +394,23 @@
 
 .arena-link-dot {
   fill: var(--warning);
-  stroke: var(--terrain-ground);
-  stroke-width: 1.5px;
+  stroke: var(--map-casing);
+  stroke-width: 2px;
 }
 
 .arena-beam {
   stroke: var(--team-color);
   stroke-width: 3px;
   stroke-dasharray: 8 6;
+}
+
+/* The dark casing under the arrowhead, as the link halo is under the beam. */
+.arena-beam-head-halo {
+  fill: none;
+  stroke: var(--map-casing);
+  stroke-width: 7px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* The arrowhead: two short arms meeting on the target's end of the beam, solid so it reads even when the dashes do not. */
@@ -441,8 +454,8 @@
   padding: 0 5px;
   border: 2px solid var(--warning);
   border-radius: 12px;
-  background: var(--background);
-  color: var(--warning);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-weight: 700;
@@ -454,7 +467,6 @@
 .arena-chip[data-kind="tower"] {
   border-style: dashed;
   border-color: var(--team-color);
-  color: var(--foreground);
 }
 
 .arena-chip[data-team="blue"] {
@@ -518,6 +530,8 @@
   width: clamp(7px, 1.2cqw, 12px);
   height: clamp(7px, 1.2cqw, 12px);
   background: var(--dim);
+  /* A grey diamond would sink into a pale lane: it wears the dark casing. */
+  filter: drop-shadow(0 0 1px var(--map-casing)) drop-shadow(0 0 1px var(--map-casing));
   transform: translate(-50%, -50%) rotate(45deg);
 }
 
@@ -535,7 +549,8 @@
   width: clamp(9px, 1.6cqw, 15px);
   height: clamp(9px, 1.6cqw, 15px);
   border: 2px solid var(--team-color);
-  background: var(--terrain-ground);
+  background: var(--map-casing);
+  box-shadow: 0 0 0 1px var(--map-casing);
   transform: translate(-50%, -50%);
 }
 
@@ -601,8 +616,8 @@
   box-sizing: border-box;
   width: clamp(18px, 3.4cqw, 34px);
   height: 5px;
-  border: 1px solid var(--line);
-  background: var(--background);
+  border: 1px solid var(--map-casing);
+  background: var(--map-casing);
 }
 
 .arena-struct-hp i {
@@ -615,8 +630,8 @@
   padding: 0 5px;
   border: 1px solid var(--team-color);
   border-radius: 3px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-weight: 700;
@@ -637,8 +652,8 @@
   padding: 2px 7px;
   border: 2px solid var(--team-color);
   border-radius: 4px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   font-size: var(--text-map);
   font-variant-numeric: tabular-nums;
@@ -687,7 +702,7 @@
   top: 0;
   width: var(--pit-glyph);
   height: var(--pit-glyph);
-  background: var(--foreground);
+  background: var(--map-ink);
   transform: translate(-50%, -50%);
 }
 
@@ -697,7 +712,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--background);
+  background: var(--map-casing);
 }
 
 .arena-pit-glyph-in img {
@@ -707,7 +722,8 @@
 }
 
 .arena-pit:not([data-status="alive"]) .arena-pit-glyph {
-  background: var(--dim);
+  background: var(--map-ink);
+  opacity: 0.55;
 }
 
 .arena-pit:not([data-status="alive"]) .arena-pit-glyph-in img {
@@ -724,10 +740,10 @@
   gap: 2px;
   box-sizing: border-box;
   padding: 2px 6px;
-  border: 1px solid var(--foreground);
+  border: 1px solid var(--map-ink);
   border-radius: 3px;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--map-casing);
+  color: var(--map-ink);
   font-family: var(--font-heading);
   line-height: 1.05;
   white-space: nowrap;
@@ -736,8 +752,7 @@
 
 .arena-pit:not([data-status="alive"]) .arena-pit-label {
   border-style: dashed;
-  border-color: var(--dim);
-  color: var(--dim);
+  opacity: 0.8;
 }
 
 .arena-pit-name {
@@ -762,13 +777,13 @@
 .arena-pit-hp {
   align-self: stretch;
   height: 4px;
-  background: var(--line);
+  background: var(--map-casing);
 }
 
 .arena-pit-hp i {
   display: block;
   height: 100%;
-  background: var(--foreground);
+  background: var(--map-ink);
 }
 
 @media (prefers-reduced-motion: reduce) {
