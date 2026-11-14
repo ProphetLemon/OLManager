@@ -119,7 +119,7 @@ describe("DashboardHeaderV2", () => {
     chevron.focus();
     fireEvent.keyDown(chevron, { key: "ArrowDown" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((i) => i.textContent)).toEqual(["Skip to match day", "Skip to next day", "Continue"]);
+    expect(items.map((i) => i.textContent)).toEqual(["Simulate to next match", "Skip to next day", "Continue"]);
     fireEvent.click(items[0]);
     expect(onSkipToMatchDay).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());

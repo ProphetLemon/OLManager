@@ -3682,7 +3682,7 @@
       "continueMenu": "Más formas de avanzar",
       "continue": "Continuar",
       "matchDay": "Día de partida",
-      "skipToMatchDay": "Saltar al día de partida",
+      "skipToMatchDay": "Simular hasta la próxima partida",
       "skipToNextDay": "Saltar al día siguiente",
       "clock": "Fecha y fase del juego"
     },
