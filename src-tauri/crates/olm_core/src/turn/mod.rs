@@ -98,6 +98,9 @@ where
         training::check_squad_fitness_warnings(game);
     }
 
+    // Training and match progression just moved attributes; the AI systems below read the
+    // stored overall, and only a load refreshed it before.
+    game.refresh_lol_ovrs();
     crate::ai_renewals::conclude_ai_renewals(game);
     crate::contracts::process_contract_expiries(game);
 
@@ -133,6 +136,9 @@ where
 
     debug!("[turn] process_day {}: complete, advancing clock", today);
     // After recovery and roster moves, so the next match sees the rested lineup.
+    // Research, champion work and the day's roster moves may have changed attributes or
+    // added players: leave the stored overall consistent for whoever reads it next.
+    game.refresh_lol_ovrs();
     crate::ai_rotation::rotate_ai_lineups(game);
     game.clock.advance_days(1);
     game.day_phase = crate::game::DayPhase::Morning;
@@ -153,6 +159,9 @@ pub fn finish_live_match_day(game: &mut Game) {
     // The live-match day recovers like any other matchday.
     training::process_matchday_recovery(game);
 
+    // Training and match progression just moved attributes; the AI systems below read the
+    // stored overall, and only a load refreshed it before.
+    game.refresh_lol_ovrs();
     crate::ai_renewals::conclude_ai_renewals(game);
     crate::contracts::process_contract_expiries(game);
 
@@ -184,6 +193,9 @@ pub fn finish_live_match_day(game: &mut Game) {
     potential::process_potential_research(game);
     champions::process_daily_champion_system(game);
 
+    // Research, champion work and the day's roster moves may have changed attributes or
+    // added players: leave the stored overall consistent for whoever reads it next.
+    game.refresh_lol_ovrs();
     crate::ai_rotation::rotate_ai_lineups(game);
     game.clock.advance_days(1);
     game.day_phase = crate::game::DayPhase::Morning;
