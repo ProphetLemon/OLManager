@@ -3,6 +3,8 @@ mod client_game;
 mod commands;
 mod discord_rpc;
 pub mod error;
+#[cfg(test)]
+mod pool_bench;
 #[cfg(target_os = "linux")]
 mod linux_render;
 use commands::*;

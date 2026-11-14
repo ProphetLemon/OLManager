@@ -1976,6 +1976,39 @@ mod tests {
         assert!(rookie.market_value > 0);
     }
 
+    /// The active-pros pool adds people without a team (shape as `scripts/world/lib/pool.mjs` emits).
+    #[test]
+    fn roster_overlay_keeps_teamless_pool_adds_as_free_agents_with_a_market_value() {
+        let mut game = test_game();
+        let overlay = WorldOverlay::parse(
+            r#"{"schemaVersion":1,"as_of":"2026-11-07",
+                "source":{"name":"Leaguepedia","license":"CC BY-SA 3.0","license_url":"https://www.fandom.com/licensing"},
+                "players":[{"op":"add","evidence":"https://lol.fandom.com/wiki/Send0o","dob_approx":true,
+                  "player":{"id":"player-bea33543","team_id":null,"position":"Top","nationality":"ES",
+                    "full_name":"Rosendo Fuentes Boveda","match_name":"Send0o","wage":0,"market_value":0,
+                    "contract_end":"","date_of_birth":"2002-05-01","potential_base":60},
+                  "pool":{"page":"Send0o","kind":"player","role":"Top","tier":2,"rating":"tier-default"}}],
+                "staff":[{"op":"add","evidence":"https://lol.fandom.com/wiki/Pad","dob_approx":true,
+                  "staff":{"id":"staff-1a2b3c4d","role":"Analyst","wage":null,"team_id":null,"last_name":"Suckow-Breum",
+                    "first_name":"Patrick Suckow-Breum","nickname":"Pad","nationality":"DK","contract_end":null,
+                    "birth_country":null,"date_of_birth":"1990-01-01","specialization":null,"profile_image_url":null},
+                  "pool":{"page":"Pad","kind":"staff","role":"Analyst","tier":2,"rating":"tier-default"}}]}"#,
+        )
+        .expect("pool overlay");
+
+        let report = apply_roster_overlay(&mut game, &overlay);
+
+        let player = game.players.iter().find(|p| p.id == "player-bea33543").unwrap();
+        assert_eq!(player.team_id, None);
+        assert!(player.market_value > 0);
+        assert_eq!(player.contract_end, None);
+        let staff = game.staff.iter().find(|s| s.id == "staff-1a2b3c4d").unwrap();
+        assert_eq!((staff.team_id.as_deref(), staff.contract_end.as_deref()), (None, None));
+        assert_eq!(report.added_player_ids, vec!["player-bea33543".to_string()]);
+        assert_eq!(report.added_staff_ids, vec!["staff-1a2b3c4d".to_string()]);
+        assert!(report.skipped.is_empty());
+    }
+
     /// End-to-end new game with the real `data/` catalog and the bundled overlay.
     ///
     /// `select_team` needs a Tauri `AppHandle` and `State`, so the AppHandle-free world setup

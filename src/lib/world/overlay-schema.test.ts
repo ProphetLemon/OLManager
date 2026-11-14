@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { generatePlayer, computeBaselines } from "../../../scripts/world/lib/generate.mjs";
+import { generatePlayer, generateStaff, computeBaselines } from "../../../scripts/world/lib/generate.mjs";
 import { validateOverlay } from "../../../scripts/world/lib/overlay-schema.mjs";
 import { loadWorld, toOverlayWorld } from "../../../scripts/world/lib/world.mjs";
 import { FIXTURES } from "./fixtures";
@@ -71,5 +71,17 @@ describe("validateOverlay", () => {
     overlay.coverage = ["lck", "atlantis"];
     overlay.staff = [{ op: "move", id: "staff-62319f46", team_id: null, role: "Owner", evidence: "https://lol.fandom.com/wiki/X" }];
     expect(codes(overlay)).toEqual(expect.arrayContaining(["unknown_competition", "invalid_role"]));
+  });
+
+  it("checks the nationality of teamless staff adds as an ISO-2 code or empty", () => {
+    const record = generateStaff({ canonicalTitle: "Pad", ign: "Pad", realName: "Patrick Suckow-Breum", country: "DK", role: "HeadCoach", teamId: null, baselines: computeBaselines(world) }).record;
+    const staffAdd = (nationality: string) => {
+      const overlay = valid() as Record<string, any>;
+      overlay.staff = [{ op: "add", staff: { ...record, nationality }, evidence: "https://lol.fandom.com/wiki/Pad" }];
+      return codes(overlay);
+    };
+    expect(staffAdd("DK")).toEqual([]);
+    expect(staffAdd("")).toEqual([]);
+    expect(staffAdd("Denmark")).toContain("invalid_field");
   });
 });

@@ -242,6 +242,7 @@ describe("buildPoolOps", () => {
     const overlay = overlayOf(ops);
     expect(validateOverlay(overlay, { playerIds: new Set(world.players.map((p) => p.id)), staffIds: new Set(world.staff.map((s) => s.id)), teamIds: new Set(world.teams.keys()) })).toEqual({ ok: true, errors: [] });
     for (const entry of ops.players) expect(POSITIONS).toContain(entry.op.player.position);
+    for (const entry of ops.staff) expect(entry.op.staff.nationality).toMatch(/^([A-Z]{2})?$/);
   });
 
   it("carries the game's fields plus what A4 needs, and names the rating a tier default", () => {

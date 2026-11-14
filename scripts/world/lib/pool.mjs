@@ -252,14 +252,14 @@ export function buildPoolOps({ selection, tournamentIndex, games = null, skill =
         op.pool = poolMeta(entry, { tournamentIndex, games, rating });
         players.push({ op, id: record.id, teamId: null, competition: null, note: `${profile.ign} (${record.full_name}) free agent ${entry.role}, tier ${person.tier}, ${person.region}${nationalityMissing ? "; nationality unresolved" : ""}` });
       } else {
-        const { record } = generateStaff({
+        const { record, nationalityMissing } = generateStaff({
           canonicalTitle: person.page, ign: profile.ign, realName: profile.name, country, role: entry.role, teamId: null, baselines: rated, takenIds: new Set(),
         });
         const op = { op: "add", staff: record, evidence: pageUrl(person.page) };
         if (birth) record.date_of_birth = birth;
         else op.dob_approx = true;
         op.pool = poolMeta(entry, { tournamentIndex, games, rating: { source: RATING_TIER_DEFAULT } });
-        staff.push({ op, id: record.id, teamId: null, competition: null, note: `${profile.ign} (${record.first_name}) free agent ${entry.role} (${person.staffLabel}), tier ${person.tier}, ${person.region}` });
+        staff.push({ op, id: record.id, teamId: null, competition: null, note: `${profile.ign} (${record.first_name}) free agent ${entry.role} (${person.staffLabel}), tier ${person.tier}, ${person.region}${nationalityMissing ? "; nationality unresolved" : ""}` });
       }
     } catch (error) {
       if (!(error instanceof IdCollisionError)) throw error;

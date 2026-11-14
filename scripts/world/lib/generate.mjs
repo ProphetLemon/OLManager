@@ -181,13 +181,17 @@ export function generatePlayer({ page, ign, realName, country, position, teamId,
 }
 
 /**
- * @returns {{record: object, dobApprox: boolean}}
+ * Staff on a team keep the roster refresh's convention (the country name, as the game's staff files carry it); a free-agent
+ * staff add (no team) carries an ISO-2 code like a player, empty when the country does not resolve.
+ * @returns {{record: object, dobApprox: boolean, nationalityMissing: boolean}}
  */
 export function generateStaff({ canonicalTitle, ign, realName, country, role, teamId, baselines, takenIds }) {
   const id = deterministicId("staff", canonicalTitle);
   if (takenIds?.has(id)) throw new IdCollisionError(id, canonicalTitle);
   const base = baselines.staff(role);
   const fullName = realName || ign;
+  const teamless = teamId === null;
+  const nationality = teamless ? countryToIso2(country) : (country ?? "");
   const record = {
     id,
     role,
@@ -196,7 +200,7 @@ export function generateStaff({ canonicalTitle, ign, realName, country, role, te
     last_name: fullName.split(/\s+/).filter(Boolean).at(-1) ?? "",
     attributes: jitteredAttributes(id, base.attributes, STAFF_ATTRIBUTES, base.range),
     first_name: fullName,
-    nationality: country ?? "",
+    nationality,
     contract_end: null,
     birth_country: null,
     date_of_birth: "1990-01-01",
@@ -204,5 +208,5 @@ export function generateStaff({ canonicalTitle, ign, realName, country, role, te
     profile_image_url: null,
     nickname: ign || fullName,
   };
-  return { record, dobApprox: true };
+  return { record, dobApprox: true, nationalityMissing: teamless && !nationality };
 }

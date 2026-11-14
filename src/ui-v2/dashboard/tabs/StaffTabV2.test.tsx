@@ -109,4 +109,29 @@ describe("StaffTabV2 cards", () => {
     expect(screen.queryByText("Xpeke")).not.toBeInTheDocument();
     expect(screen.getAllByTitle("staff.hireStaff")).toHaveLength(1);
   });
+
+  it("offers a free-agent staff add shaped like the active-pros pool emits it", () => {
+    render(
+      <StaffTabV2
+        gameState={createGameState([
+          createStaff({
+            id: "staff-1a2b3c4d",
+            first_name: "Patrick Suckow-Breum",
+            last_name: "Suckow-Breum",
+            nationality: "DK",
+            role: "Scout",
+            team_id: null,
+            wage: 0,
+            contract_end: null,
+          }),
+        ])}
+        onGameUpdate={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /staff\.available 1/ }));
+
+    expect(screen.getByText("Patrick Suckow-Breum Suckow-Breum")).toBeInTheDocument();
+    expect(screen.getAllByTitle("staff.hireStaff")).toHaveLength(1);
+  });
 });
