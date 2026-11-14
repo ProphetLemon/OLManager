@@ -61,6 +61,7 @@ pub mod social_data;
 pub mod social_registry;
 mod social_templates;
 pub mod squad_generator;
+pub(crate) mod stable_hash;
 pub mod staff_completion;
 pub mod staff_effects;
 pub mod state;

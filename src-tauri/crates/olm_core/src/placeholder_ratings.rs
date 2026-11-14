@@ -28,6 +28,7 @@ use crate::domain::player::{Player, PlayerAttributes};
 use crate::domain::stats::LolRole;
 use crate::domain::team::Team;
 use crate::potential::calculate_lol_ovr;
+use crate::stable_hash::stable_hash;
 
 /// A competition needs at least this many rostered players with real ratings before
 /// its own medians are trusted. The smallest data-rich leagues in the bundle (PCS,
@@ -263,21 +264,10 @@ fn apply_estimate(player: &mut Player, base: [u8; ATTRIBUTE_COUNT]) {
     player.lol_ovr = calculate_lol_ovr(player);
 }
 
-/// Integer in `-JITTER..=JITTER` derived only from the seed and key: a stable
-/// FNV-1a hash with a splitmix64 finalizer, so there is no RNG state and the same
-/// input always gives the same output.
+/// Integer in `-JITTER..=JITTER` derived only from the seed and key, so there is
+/// no RNG state and the same input always gives the same output.
 fn seeded_jitter(seed: &str, key: &str) -> i16 {
-    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-    for byte in seed.bytes().chain(std::iter::once(b':')).chain(key.bytes()) {
-        hash ^= u64::from(byte);
-        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
-    }
-    hash ^= hash >> 30;
-    hash = hash.wrapping_mul(0xbf58_476d_1ce4_e5b9);
-    hash ^= hash >> 27;
-    hash = hash.wrapping_mul(0x94d0_49bb_1331_11eb);
-    hash ^= hash >> 31;
-    (hash % JITTER_SPAN) as i16 - JITTER
+    (stable_hash(seed, key) % JITTER_SPAN) as i16 - JITTER
 }
 
 #[cfg(test)]
