@@ -119,7 +119,7 @@ describe("StaffTabV2 cards", () => {
             first_name: "Patrick Suckow-Breum",
             last_name: "Suckow-Breum",
             nationality: "DK",
-            role: "Analyst",
+            role: "Scout",
             team_id: null,
             wage: 0,
             contract_end: null,
