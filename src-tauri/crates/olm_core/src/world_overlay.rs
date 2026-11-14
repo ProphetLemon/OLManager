@@ -894,6 +894,57 @@ mod tests {
         assert_eq!(report.added_player_ids, vec!["p-new".to_string()]);
     }
 
+    /// A free-agent add shaped like `scripts/world/lib/pool.mjs` emits it: no team, an ISO-2
+    /// nationality, the generator's empty wage, market value and contract end, and an extra
+    /// `pool` object the app does not know.
+    const POOL_PLAYER: &str = r#"{"op":"add","evidence":"https://lol.fandom.com/wiki/Send0o","dob_approx":true,
+        "player":{"id":"player-bea33543","team_id":null,"position":"Top","nationality":"ES",
+          "full_name":"Rosendo Fuentes Boveda","match_name":"Send0o","wage":0,"market_value":0,
+          "contract_end":"","date_of_birth":"2002-05-01","potential_base":60},
+        "pool":{"page":"Send0o","kind":"player","role":"Top","region":"EMEA","tier":2,"rating":"tier-default"}}"#;
+
+    const POOL_STAFF: &str = r#"{"op":"add","evidence":"https://lol.fandom.com/wiki/Pad","dob_approx":true,
+        "staff":{"id":"staff-1a2b3c4d","role":"Analyst","wage":null,"team_id":null,"last_name":"Suckow-Breum",
+          "first_name":"Patrick Suckow-Breum","nickname":"Pad","nationality":"DK","contract_end":null,
+          "birth_country":null,"date_of_birth":"1990-01-01","specialization":null,"profile_image_url":null},
+        "pool":{"page":"Pad","kind":"staff","role":"Analyst","region":"EMEA","tier":2,"rating":"tier-default"}}"#;
+
+    #[test]
+    fn teamless_pool_player_add_is_kept_as_a_free_agent_with_no_contract() {
+        let mut w = world();
+        let report = apply(&mut w, &overlay(POOL_PLAYER, ""));
+        let added = w.players.iter().find(|p| p.id == "player-bea33543").unwrap();
+        assert_eq!(added.team_id, None);
+        assert_eq!(added.nationality, "ES");
+        assert_eq!((added.wage, added.contract_end.as_deref()), (0, None));
+        assert_eq!(report.added_player_ids, vec!["player-bea33543".to_string()]);
+        assert!(report.skipped.is_empty());
+    }
+
+    #[test]
+    fn teamless_pool_staff_add_is_kept_as_a_free_agent() {
+        let mut w = world();
+        let report = apply(&mut w, &overlay("", POOL_STAFF));
+        let added = w.staff.iter().find(|s| s.id == "staff-1a2b3c4d").unwrap();
+        assert_eq!(added.team_id, None);
+        assert_eq!(added.nationality, "DK");
+        assert_eq!((added.wage, added.contract_end.as_deref()), (0, None));
+        assert_eq!(report.added_staff_ids, vec!["staff-1a2b3c4d".to_string()]);
+        assert!(report.skipped.is_empty());
+    }
+
+    #[test]
+    fn a_wage_written_as_an_empty_string_makes_the_overlay_unreadable() {
+        // `lenient_u32` accepts a number, a float or null, not a string: the generator writes 0 (players)
+        // and null (staff), and an empty string would reject the whole overlay rather than read as 0.
+        let json = format!(
+            r#"{{"schemaVersion":1,"as_of":"2026-11-07","source":{{"name":"x","license":"y","license_url":"https://www.fandom.com/licensing"}},
+                "players":[{}]}}"#,
+            POOL_PLAYER.replace(r#""wage":0"#, r#""wage":"""#)
+        );
+        assert!(WorldOverlay::parse(&json).is_err());
+    }
+
     #[test]
     fn add_with_existing_id_is_skipped_and_reported() {
         let mut w = world();
