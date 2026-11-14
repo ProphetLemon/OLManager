@@ -2827,20 +2827,6 @@
         "nexus": "Nexus"
       }
     },
-    "lolResult": {
-      "dragonSummary": "Dragon {{kind}} · H/A stacks {{home}}/{{away}} · Soul {{soul}}",
-      "performanceHeader": "Performance · K / D / A · CS · Gold",
-      "teamStats": "Team stats",
-      "goldDiffOverTime": "Gold difference over time",
-      "keyTimeline": "Key timeline",
-      "stats": {
-        "gold": "Gold",
-        "towers": "Towers",
-        "dragons": "Dragons",
-        "barons": "Barons",
-        "kills": "Kills"
-      }
-    },
     "liveMap": {
       "teamBlue": "{{team}} (Blue)",
       "teamRed": "{{team}} (Red)",
@@ -4821,6 +4807,44 @@
         "winner": "{{team}} wins",
         "lead": "{{team}} finished {{amount}} ahead in gold",
         "leadEven": "Gold finished even"
+      },
+      "post": {
+        "columnLevel": "Level",
+        "columnItems": "Items and trinket",
+        "columnSpells": "Summoner spells",
+        "teamTotal": "Team total",
+        "goldTitle": "Team gold difference",
+        "table": "Table",
+        "goldSummary": "Team gold difference over the match.",
+        "peak": "Biggest lead for {{team}}: {{amount}}, at {{time}}.",
+        "partial": "This series is partial: the match was skipped and nothing was recorded from {{from}} to {{to}}.",
+        "partialBadge": "Partial: match skipped",
+        "goldNone": "The gold difference of this match was not recorded.",
+        "readout": "{{time}}: {{team}} ahead by {{amount}}",
+        "readoutEven": "{{time}}: even",
+        "ahead": "{{team}} ahead",
+        "scrubLabel": "Gold difference, minute by minute",
+        "goldTableLabel": "Gold difference by minute",
+        "columnTime": "Time",
+        "gapRow": "Not recorded from {{from}} to {{to}}",
+        "gapLabel": "Not recorded",
+        "markersLabel": "Objectives and structures, in time order",
+        "markerRun": "{{from}} to {{to}}: {{team}} destroyed {{count}} structures",
+        "damageTitle": "Damage to champions",
+        "damageNone": "The engine did not send damage for this match, so there is no damage chart.",
+        "barSummary": "{{title}} per player. {{blue}}: {{blueTotal}} in total. {{red}}: {{redTotal}}. Highest: {{name}}, {{value}}. The table has every value.",
+        "barRow": "{{name}}: {{value}}, {{share}} of the team",
+        "valuesLabel": "{{title}}, values",
+        "teamShare": "Team share",
+        "goldAt": "Gold at {{time}}",
+        "timelinePartial": "This match was skipped from {{time}}: events after it may be missing.",
+        "timelineNoRecord": "The events of this match were not recorded in full.",
+        "timelineEmpty": "No key events were recorded.",
+        "timelineColumn": "Key events, {{from}} to {{to}}",
+        "viewLabel": "Post-game view",
+        "viewGraphs": "Graphs",
+        "viewTimeline": "Timeline",
+        "noRecord": "The details of this match were not recorded, so only the result can be shown."
       },
       "pit": {
         "voidgrubs": "Voidgrubs",

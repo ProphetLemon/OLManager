@@ -2448,20 +2448,6 @@
         "nexus": "Nexus"
       }
     },
-    "lolResult": {
-      "dragonSummary": "Dragon {{kind}} · stack C/T {{home}}/{{away}} · Soul {{soul}}",
-      "performanceHeader": "Prestazione · K / D / A · CS · Gold",
-      "teamStats": "Statistiche di squadra",
-      "goldDiffOverTime": "Differenza di gold nel tempo",
-      "keyTimeline": "Cronologia chiave",
-      "stats": {
-        "gold": "Gold",
-        "towers": "Torri",
-        "dragons": "Dragons",
-        "barons": "Barons",
-        "kills": "Kills"
-      }
-    },
     "liveMap": {
       "teamBlue": "{{team}} (Blu)",
       "teamRed": "{{team}} (Rosso)",
@@ -4786,6 +4772,44 @@
         "winner": "Vince {{team}}",
         "lead": "{{team}} ha chiuso con {{amount}} d'oro di vantaggio",
         "leadEven": "L'oro è finito in parità"
+      },
+      "post": {
+        "columnLevel": "Livello",
+        "columnItems": "Oggetti e amuleto",
+        "columnSpells": "Incantesimi dell'evocatore",
+        "teamTotal": "Totale della squadra",
+        "goldTitle": "Differenza di oro tra le squadre",
+        "table": "Tabella",
+        "goldSummary": "Differenza di oro tra le squadre nel corso della partita.",
+        "peak": "Maggior vantaggio di {{team}}: {{amount}}, a {{time}}.",
+        "partial": "Questa serie è parziale: la partita è stata saltata e non è stato registrato nulla da {{from}} a {{to}}.",
+        "partialBadge": "Parziale: partita saltata",
+        "goldNone": "La differenza di oro di questa partita non è stata registrata.",
+        "readout": "{{time}}: {{team}} in vantaggio di {{amount}}",
+        "readoutEven": "{{time}}: pari",
+        "ahead": "{{team}} avanti",
+        "scrubLabel": "Differenza di oro, minuto per minuto",
+        "goldTableLabel": "Differenza di oro per minuto",
+        "columnTime": "Tempo",
+        "gapRow": "Non registrato da {{from}} a {{to}}",
+        "gapLabel": "Non registrato",
+        "markersLabel": "Obiettivi e strutture, in ordine di tempo",
+        "markerRun": "Da {{from}} a {{to}}: {{team}} ha distrutto {{count}} strutture",
+        "damageTitle": "Danni ai campioni",
+        "damageNone": "Il motore non ha inviato i danni di questa partita, quindi non c'è il grafico dei danni.",
+        "barSummary": "{{title}} per giocatore. {{blue}}: {{blueTotal}} in totale. {{red}}: {{redTotal}}. Il più alto: {{name}}, {{value}}. La tabella contiene tutti i valori.",
+        "barRow": "{{name}}: {{value}}, {{share}} della squadra",
+        "valuesLabel": "{{title}}, valori",
+        "teamShare": "Quota della squadra",
+        "goldAt": "Oro a {{time}}",
+        "timelinePartial": "La partita è stata saltata da {{time}}: gli eventi successivi potrebbero mancare.",
+        "timelineNoRecord": "Gli eventi di questa partita non sono stati registrati per intero.",
+        "timelineEmpty": "Non è stato registrato alcun evento chiave.",
+        "timelineColumn": "Eventi chiave, da {{from}} a {{to}}",
+        "viewLabel": "Vista del post-partita",
+        "viewGraphs": "Grafici",
+        "viewTimeline": "Cronologia",
+        "noRecord": "I dettagli di questa partita non sono stati registrati, quindi si può mostrare solo il risultato."
       },
       "pit": {
         "voidgrubs": "Larve del Vuoto",

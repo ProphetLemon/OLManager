@@ -299,6 +299,17 @@ describe("the finish", () => {
     expect(finalState.goldDiffTimeline?.length).toBeGreaterThan(0);
   });
 
+  it("hands the record of the match on with it: gold per champion per minute, and no skip", async () => {
+    const { onFullTime } = mount();
+    await screen.findByRole("dialog", { name: "Match result" });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    const record = onFullTime.mock.calls[0][0].matchRecord;
+    expect(record?.skippedAtSec).toBeNull();
+    expect(record?.gold.length).toBeGreaterThan(0);
+    expect(record?.gold[record.gold.length - 1].timeSec).toBe(1923);
+  });
+
   it("shows the result: the outcome for the manager, the numbers, the lead and Continue", async () => {
     mount({ gameState: { manager: { team_id: "home" }, teams: [] } as never });
     const panel = await screen.findByTestId("end-panel");
@@ -363,6 +374,8 @@ describe("skipping", () => {
     expect(onFullTime).toHaveBeenCalledTimes(1);
     expect(onFullTime.mock.calls[0][1]).toEqual({ source: "live" });
     expect(onFullTime.mock.calls[0][0]).toMatchObject({ winner: "red" });
+    // A skip leaves no minutes behind it: the record says where it began, so the screen can say it is partial.
+    expect(typeof onFullTime.mock.calls[0][0].matchRecord?.skippedAtSec).toBe("number");
   });
 
   it("says so, and the match keeps running, when the engine cannot play it out", async () => {

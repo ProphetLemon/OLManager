@@ -19,6 +19,17 @@ import {
   type StepView,
 } from "@/ui-v2/_legacy/components/match/lol-prototype/ui/stepInterpolation";
 import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
+import {
+  buildMatchRecord,
+  goldSeries,
+  newGoldRecord,
+  newKeyEventLog,
+  recordGold as recordGoldSample,
+  recordKeyEvents,
+  type GoldRecord,
+  type KeyEventLog,
+  type MatchRecord,
+} from "@/lib/match/live/matchRecord";
 
 import { browserScheduler, createFrameBus, type FrameBus, type FrameScheduler } from "./frameBus";
 
@@ -77,6 +88,12 @@ export interface LiveSession {
   setRunning(running: boolean): void;
   /** A new match from minute 0 with a new seed. */
   reset(): void;
+  /**
+   * What the session wrote down of this match for the post-game screen: each champion's gold per
+   * minute, the key events, and the second the match was skipped at (null for one watched whole).
+   * Read when the match is handed on, never during the frame path.
+   */
+  record(): MatchRecord;
   /** Plays this match to its end on the engine. Resolves with the final state, or null when it failed. */
   skip(): Promise<LolSimV1RuntimeState | null>;
 }
@@ -93,6 +110,10 @@ interface Engine {
   epoch: number;
   lastFrameMs: number;
   gold: GoldPoint[];
+  /** Gold per champion per minute, the key events, and where a skip began: the post-game record. */
+  goldRecord: GoldRecord;
+  keyLog: KeyEventLog;
+  skippedAtSec: number | null;
   committedSignature: string;
   lastCommitMs: number;
   dirty: boolean;
@@ -121,6 +142,13 @@ function recordGold(timeline: GoldPoint[], state: LolSimV1RuntimeState) {
   const last = timeline[timeline.length - 1];
   if (!last || last.minute !== minute) timeline.push({ minute, diff });
   else last.diff = diff;
+}
+
+/** Writes an engine answer into both gold series and the key-event log. */
+function note(engine: Engine, state: LolSimV1RuntimeState) {
+  recordGold(engine.gold, state);
+  recordGoldSample(engine.goldRecord, state);
+  recordKeyEvents(engine.keyLog, state.events);
 }
 
 const initialView = (speed: number): LiveView => ({
@@ -177,7 +205,7 @@ export function useLiveSession(options: UseLiveSessionOptions): LiveSession {
   const commit = useCallback(
     (engine: Engine, nowMs: number) => {
       const state = currentState(engine);
-      if (state) recordGold(engine.gold, state);
+      if (state) note(engine, state);
       engine.committedSignature = state ? discreteSignature(state) : "";
       engine.lastCommitMs = nowMs;
       engine.dirty = false;
@@ -199,7 +227,7 @@ export function useLiveSession(options: UseLiveSessionOptions): LiveSession {
       const nowMs = scheduler.now();
       engine.stepView = nextStepView(engine.stepView, engine.state, next, nowMs);
       engine.state = next;
-      recordGold(engine.gold, next);
+      note(engine, next);
       if (force || discreteSignature(next) !== engine.committedSignature) commit(engine, nowMs);
       else engine.dirty = true;
     },
@@ -212,6 +240,11 @@ export function useLiveSession(options: UseLiveSessionOptions): LiveSession {
       engine.state = null;
       engine.inFlight = false;
       engine.pendingDt = 0;
+      // The local simulation takes over from 0:00, so what was written down of the lost match would sit
+      // after the new minutes. The record starts again with the match the screen now shows.
+      engine.goldRecord = newGoldRecord();
+      engine.keyLog = newKeyEventLog();
+      engine.skippedAtSec = null;
       commit(engine, scheduler.now());
     },
     [commit, scheduler],
@@ -293,6 +326,9 @@ export function useLiveSession(options: UseLiveSessionOptions): LiveSession {
       epoch: 0,
       lastFrameMs: 0,
       gold: [{ minute: 0, diff: 0 }],
+      goldRecord: newGoldRecord(),
+      keyLog: newKeyEventLog(),
+      skippedAtSec: null,
       committedSignature: "",
       lastCommitMs: scheduler.now(),
       dirty: false,
@@ -368,6 +404,9 @@ export function useLiveSession(options: UseLiveSessionOptions): LiveSession {
     engine.stepView = EMPTY_STEP_VIEW;
     engine.pendingDt = 0;
     engine.gold = [{ minute: 0, diff: 0 }];
+    engine.goldRecord = newGoldRecord();
+    engine.keyLog = newKeyEventLog();
+    engine.skippedAtSec = null;
     engine.dirty = false;
     const client = engine.client;
     const epoch = engine.epoch;
@@ -400,6 +439,8 @@ export function useLiveSession(options: UseLiveSessionOptions): LiveSession {
     if (!engine || !client || !engine.state || skippingRef.current) return null;
     skippingRef.current = true;
     runningRef.current = false;
+    // Everything from here to the end is played in one call: the record is partial from this second.
+    engine.skippedAtSec = engine.state.timeSec;
     engine.epoch += 1;
     engine.inFlight = true;
     engine.pendingDt = 0;
@@ -416,6 +457,7 @@ export function useLiveSession(options: UseLiveSessionOptions): LiveSession {
       return response.state;
     } catch {
       if (!current()) return null;
+      engine.skippedAtSec = null;
       skippingRef.current = false;
       runningRef.current = true;
       engine.inFlight = false;
@@ -424,5 +466,11 @@ export function useLiveSession(options: UseLiveSessionOptions): LiveSession {
     }
   }, [applyAnswer, commit, scheduler]);
 
-  return { view, bus, setSpeed, setRunning, reset, skip };
+  const record = useCallback((): MatchRecord => {
+    const engine = engineRef.current;
+    if (!engine) return buildMatchRecord([], [], null);
+    return buildMatchRecord(goldSeries(engine.goldRecord), [...engine.keyLog.events], engine.skippedAtSec);
+  }, []);
+
+  return { view, bus, setSpeed, setRunning, reset, skip, record };
 }

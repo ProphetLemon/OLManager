@@ -2548,20 +2548,6 @@
         "nexus": "Nexus"
       }
     },
-    "lolResult": {
-      "dragonSummary": "{{kind}} Ejderi · Ev/Dep skorları {{home}}/{{away}} · Ruh {{soul}}",
-      "performanceHeader": "Performans · K / D / A · CS · Altın",
-      "teamStats": "Takım istatistikleri",
-      "goldDiffOverTime": "Zaman içindeki altın farkı",
-      "keyTimeline": "Önemli anlar",
-      "stats": {
-        "gold": "Altın",
-        "towers": "Kuleler",
-        "dragons": "Ejderler",
-        "barons": "Baronlar",
-        "kills": "Skorlar"
-      }
-    },
     "liveMap": {
       "teamBlue": "{{team}} (Mavi)",
       "teamRed": "{{team}} (Kırmızı)",
@@ -4787,6 +4773,44 @@
         "winner": "{{team}} kazandı",
         "lead": "{{team}} {{amount}} altın farkla önde bitirdi",
         "leadEven": "Altın eşit bitti"
+      },
+      "post": {
+        "columnLevel": "Seviye",
+        "columnItems": "Eşyalar ve muska",
+        "columnSpells": "Büyücü büyüleri",
+        "teamTotal": "Takım toplamı",
+        "goldTitle": "Takımlar arası altın farkı",
+        "table": "Tablo",
+        "goldSummary": "Maç boyunca takımlar arası altın farkı.",
+        "peak": "{{team}} için en büyük fark: {{time}} anında {{amount}}.",
+        "partial": "Bu seri eksik: maç atlandı ve {{from}} ile {{to}} arasında hiçbir şey kaydedilmedi.",
+        "partialBadge": "Eksik: maç atlandı",
+        "goldNone": "Bu maçın altın farkı kaydedilmedi.",
+        "readout": "{{time}}: {{team}} {{amount}} önde",
+        "readoutEven": "{{time}}: eşit",
+        "ahead": "{{team}} önde",
+        "scrubLabel": "Altın farkı, dakika dakika",
+        "goldTableLabel": "Dakika başına altın farkı",
+        "columnTime": "Süre",
+        "gapRow": "{{from}} ile {{to}} arası kaydedilmedi",
+        "gapLabel": "Kaydedilmedi",
+        "markersLabel": "Hedefler ve yapılar, zaman sırasıyla",
+        "markerRun": "{{from}} - {{to}} arası: {{team}} {{count}} yapı yok etti",
+        "damageTitle": "Şampiyonlara verilen hasar",
+        "damageNone": "Motor bu maç için hasar verisi göndermedi, bu yüzden hasar grafiği yok.",
+        "barSummary": "Oyuncu başına {{title}}. {{blue}}: toplam {{blueTotal}}. {{red}}: toplam {{redTotal}}. En yüksek: {{name}}, {{value}}. Tabloda tüm değerler var.",
+        "barRow": "{{name}}: {{value}}, takımın {{share}} kadarı",
+        "valuesLabel": "{{title}}, değerler",
+        "teamShare": "Takım payı",
+        "goldAt": "{{time}} anında altın",
+        "timelinePartial": "Maç {{time}} anından itibaren atlandı: sonraki olaylar eksik olabilir.",
+        "timelineNoRecord": "Bu maçın olayları tam olarak kaydedilmedi.",
+        "timelineEmpty": "Hiçbir önemli olay kaydedilmedi.",
+        "timelineColumn": "Önemli olaylar, {{from}} - {{to}}",
+        "viewLabel": "Maç sonu görünümü",
+        "viewGraphs": "Grafikler",
+        "viewTimeline": "Zaman çizelgesi",
+        "noRecord": "Bu maçın ayrıntıları kaydedilmedi, bu yüzden yalnızca sonuç gösterilebiliyor."
       },
       "pit": {
         "voidgrubs": "Boşluk Larvaları",

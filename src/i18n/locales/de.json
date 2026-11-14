@@ -2566,20 +2566,6 @@
         "nexus": "Nexus"
       }
     },
-    "lolResult": {
-      "dragonSummary": "Dragon {{kind}} · Heim/Auswärts-Stacks {{home}}/{{away}} · Soul {{soul}}",
-      "performanceHeader": "Leistung · K / D / A · CS · Gold",
-      "teamStats": "Team-Statistiken",
-      "goldDiffOverTime": "Gold-Differenz im Spielverlauf",
-      "keyTimeline": "Wichtige Timeline",
-      "stats": {
-        "gold": "Gold",
-        "towers": "Türme",
-        "dragons": "Dragons",
-        "barons": "Barons",
-        "kills": "Kills"
-      }
-    },
     "liveMap": {
       "teamBlue": "{{team}} (Blau)",
       "teamRed": "{{team}} (Rot)",
@@ -4787,6 +4773,44 @@
         "winner": "{{team}} gewinnt",
         "lead": "{{team}} lag am Ende mit {{amount}} Gold vorn",
         "leadEven": "Das Gold war am Ende ausgeglichen"
+      },
+      "post": {
+        "columnLevel": "Stufe",
+        "columnItems": "Gegenstände und Trinket",
+        "columnSpells": "Beschwörerzauber",
+        "teamTotal": "Teamsumme",
+        "goldTitle": "Gold-Unterschied der Teams",
+        "table": "Tabelle",
+        "goldSummary": "Gold-Unterschied der Teams im Verlauf des Spiels.",
+        "peak": "Größter Vorsprung von {{team}}: {{amount}} bei {{time}}.",
+        "partial": "Diese Reihe ist unvollständig: Das Spiel wurde übersprungen und von {{from}} bis {{to}} wurde nichts aufgezeichnet.",
+        "partialBadge": "Unvollständig: Spiel übersprungen",
+        "goldNone": "Der Gold-Unterschied dieses Spiels wurde nicht aufgezeichnet.",
+        "readout": "{{time}}: {{team}} führt um {{amount}}",
+        "readoutEven": "{{time}}: ausgeglichen",
+        "ahead": "{{team}} vorn",
+        "scrubLabel": "Gold-Unterschied, Minute für Minute",
+        "goldTableLabel": "Gold-Unterschied pro Minute",
+        "columnTime": "Zeit",
+        "gapRow": "Nicht aufgezeichnet von {{from}} bis {{to}}",
+        "gapLabel": "Nicht aufgezeichnet",
+        "markersLabel": "Ziele und Strukturen in zeitlicher Reihenfolge",
+        "markerRun": "{{from}} bis {{to}}: {{team}} zerstörte {{count}} Strukturen",
+        "damageTitle": "Schaden an Champions",
+        "damageNone": "Die Engine hat für dieses Spiel keinen Schaden geliefert, daher gibt es kein Schadensdiagramm.",
+        "barSummary": "{{title}} pro Spieler. {{blue}}: {{blueTotal}} insgesamt. {{red}}: {{redTotal}}. Höchster Wert: {{name}}, {{value}}. Die Tabelle enthält alle Werte.",
+        "barRow": "{{name}}: {{value}}, {{share}} des Teams",
+        "valuesLabel": "{{title}}, Werte",
+        "teamShare": "Teamanteil",
+        "goldAt": "Gold bei {{time}}",
+        "timelinePartial": "Das Spiel wurde ab {{time}} übersprungen: spätere Ereignisse können fehlen.",
+        "timelineNoRecord": "Die Ereignisse dieses Spiels wurden nicht vollständig aufgezeichnet.",
+        "timelineEmpty": "Es wurden keine wichtigen Ereignisse aufgezeichnet.",
+        "timelineColumn": "Wichtige Ereignisse, {{from}} bis {{to}}",
+        "viewLabel": "Ansicht nach dem Spiel",
+        "viewGraphs": "Diagramme",
+        "viewTimeline": "Zeitleiste",
+        "noRecord": "Die Einzelheiten dieses Spiels wurden nicht aufgezeichnet, daher kann nur das Ergebnis gezeigt werden."
       },
       "pit": {
         "voidgrubs": "Leerenlarven",

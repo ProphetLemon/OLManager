@@ -2566,20 +2566,6 @@
         "nexus": "Nexus"
       }
     },
-    "lolResult": {
-      "dragonSummary": "Dragon {{kind}} · Charges D/E {{home}}/{{away}} · Âme {{soul}}",
-      "performanceHeader": "Performance · K / D / A · CS · Or",
-      "teamStats": "Stats d'équipe",
-      "goldDiffOverTime": "Différence d'or au fil du temps",
-      "keyTimeline": "Chronologie clé",
-      "stats": {
-        "gold": "Or",
-        "towers": "Tourelles",
-        "dragons": "Dragons",
-        "barons": "Barons",
-        "kills": "Kills"
-      }
-    },
     "liveMap": {
       "teamBlue": "{{team}} (Bleu)",
       "teamRed": "{{team}} (Rouge)",
@@ -4787,6 +4773,44 @@
         "winner": "{{team}} gagne",
         "lead": "{{team}} termine avec {{amount}} d'or d'avance",
         "leadEven": "L'or est resté à égalité"
+      },
+      "post": {
+        "columnLevel": "Niveau",
+        "columnItems": "Objets et bibelot",
+        "columnSpells": "Sorts d'invocateur",
+        "teamTotal": "Total de l'équipe",
+        "goldTitle": "Écart d'or entre les équipes",
+        "table": "Tableau",
+        "goldSummary": "Écart d'or entre les équipes au fil de la partie.",
+        "peak": "Plus grande avance de {{team}} : {{amount}}, à {{time}}.",
+        "partial": "Cette série est partielle : la partie a été passée et rien n'a été enregistré de {{from}} à {{to}}.",
+        "partialBadge": "Partiel : partie passée",
+        "goldNone": "L'écart d'or de cette partie n'a pas été enregistré.",
+        "readout": "{{time}} : {{team}} mène de {{amount}}",
+        "readoutEven": "{{time}} : égalité",
+        "ahead": "{{team}} devant",
+        "scrubLabel": "Écart d'or, minute par minute",
+        "goldTableLabel": "Écart d'or par minute",
+        "columnTime": "Temps",
+        "gapRow": "Non enregistré de {{from}} à {{to}}",
+        "gapLabel": "Non enregistré",
+        "markersLabel": "Objectifs et structures, dans l'ordre du temps",
+        "markerRun": "De {{from}} à {{to}} : {{team}} a détruit {{count}} structures",
+        "damageTitle": "Dégâts aux champions",
+        "damageNone": "Le moteur n'a pas envoyé les dégâts de cette partie : il n'y a donc pas de graphique des dégâts.",
+        "barSummary": "{{title}} par joueur. {{blue}} : {{blueTotal}} au total. {{red}} : {{redTotal}}. Le plus élevé : {{name}}, {{value}}. Le tableau contient toutes les valeurs.",
+        "barRow": "{{name}} : {{value}}, {{share}} de l'équipe",
+        "valuesLabel": "{{title}}, valeurs",
+        "teamShare": "Part de l'équipe",
+        "goldAt": "Or à {{time}}",
+        "timelinePartial": "La partie a été passée à partir de {{time}} : des événements ultérieurs peuvent manquer.",
+        "timelineNoRecord": "Les événements de cette partie n'ont pas été enregistrés en entier.",
+        "timelineEmpty": "Aucun événement clé n'a été enregistré.",
+        "timelineColumn": "Événements clés, de {{from}} à {{to}}",
+        "viewLabel": "Vue d'après-match",
+        "viewGraphs": "Graphiques",
+        "viewTimeline": "Chronologie",
+        "noRecord": "Les détails de cette partie n'ont pas été enregistrés : seul le résultat peut être affiché."
       },
       "pit": {
         "voidgrubs": "Larves du Néant",

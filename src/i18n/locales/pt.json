@@ -2565,20 +2565,6 @@
         "nexus": "Nexus"
       }
     },
-    "lolResult": {
-      "dragonSummary": "Dragão {{kind}} · Acúmulo C/F {{home}}/{{away}} · Alma {{soul}}",
-      "performanceHeader": "Desempenho · K / D / A · CS · Ouro",
-      "teamStats": "Estatísticas da equipe",
-      "goldDiffOverTime": "Diferença de ouro ao longo do tempo",
-      "keyTimeline": "Linha do tempo principal",
-      "stats": {
-        "gold": "Ouro",
-        "towers": "Torres",
-        "dragons": "Dragões",
-        "barons": "Barões",
-        "kills": "Abates"
-      }
-    },
     "liveMap": {
       "teamBlue": "{{team}} (Azul)",
       "teamRed": "{{team}} (Vermelho)",
@@ -4786,6 +4772,44 @@
         "winner": "{{team}} vence",
         "lead": "{{team}} terminou com {{amount}} de ouro de vantagem",
         "leadEven": "O ouro terminou empatado"
+      },
+      "post": {
+        "columnLevel": "Nível",
+        "columnItems": "Itens e amuleto",
+        "columnSpells": "Feitiços de invocador",
+        "teamTotal": "Total da equipa",
+        "goldTitle": "Diferença de ouro entre equipas",
+        "table": "Tabela",
+        "goldSummary": "Diferença de ouro entre as equipas ao longo do jogo.",
+        "peak": "Maior vantagem de {{team}}: {{amount}}, aos {{time}}.",
+        "partial": "Esta série é parcial: o jogo foi saltado e nada foi registado entre {{from}} e {{to}}.",
+        "partialBadge": "Parcial: jogo saltado",
+        "goldNone": "A diferença de ouro deste jogo não foi registada.",
+        "readout": "{{time}}: {{team}} lidera por {{amount}}",
+        "readoutEven": "{{time}}: empatado",
+        "ahead": "{{team}} à frente",
+        "scrubLabel": "Diferença de ouro, minuto a minuto",
+        "goldTableLabel": "Diferença de ouro por minuto",
+        "columnTime": "Tempo",
+        "gapRow": "Sem registo de {{from}} a {{to}}",
+        "gapLabel": "Sem registo",
+        "markersLabel": "Objetivos e estruturas, por ordem de tempo",
+        "markerRun": "De {{from}} a {{to}}: {{team}} destruiu {{count}} estruturas",
+        "damageTitle": "Dano a campeões",
+        "damageNone": "O motor não enviou o dano deste jogo, por isso não há gráfico de dano.",
+        "barSummary": "{{title}} por jogador. {{blue}}: {{blueTotal}} no total. {{red}}: {{redTotal}}. O mais alto: {{name}}, {{value}}. A tabela tem todos os valores.",
+        "barRow": "{{name}}: {{value}}, {{share}} da equipa",
+        "valuesLabel": "{{title}}, valores",
+        "teamShare": "Parte da equipa",
+        "goldAt": "Ouro aos {{time}}",
+        "timelinePartial": "O jogo foi saltado a partir dos {{time}}: podem faltar eventos posteriores.",
+        "timelineNoRecord": "Os eventos deste jogo não foram registados na totalidade.",
+        "timelineEmpty": "Não foi registado nenhum evento importante.",
+        "timelineColumn": "Eventos importantes, de {{from}} a {{to}}",
+        "viewLabel": "Vista pós-jogo",
+        "viewGraphs": "Gráficos",
+        "viewTimeline": "Cronologia",
+        "noRecord": "Os detalhes deste jogo não foram registados, por isso só é possível mostrar o resultado."
       },
       "pit": {
         "voidgrubs": "Larvas do Vazio",

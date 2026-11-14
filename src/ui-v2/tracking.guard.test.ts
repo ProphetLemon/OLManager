@@ -27,7 +27,6 @@ const BASELINE: Record<string, number> = {
   "ui-v2/_legacy/components/dashboard/DashboardMatchConfirmModal.tsx": 3,
   "ui-v2/_legacy/components/dashboard/FiredModal.tsx": 1,
   "ui-v2/_legacy/components/dashboard/ReportBugModal.tsx": 6,
-  "ui-v2/_legacy/components/match/LolResultScreen.tsx": 4,
   "ui-v2/_legacy/components/match/MatchTacticsStage.tsx": 3,
   "ui-v2/_legacy/components/match/OpponentIntelCard.tsx": 5,
   "ui-v2/_legacy/components/match/PreMatchLineup.tsx": 13,
