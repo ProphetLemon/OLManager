@@ -3928,10 +3928,17 @@
       },
       "board": {
         "heading": "Fight board",
-        "label": "Contacts, tower fire, recalls and deaths",
-        "summary_one": "{{count}} active",
-        "summary_other": "{{count}} active",
-        "summaryQuiet": "Quiet",
+        "label": "Contacts and tower fire",
+        "away": "Away",
+        "awayLabel": "Recalls and deaths",
+        "awayQuiet": "Nobody is recalling or waiting to return",
+        "short": {
+          "contact": "{{a}} vs {{b}}",
+          "hit": "{{attacker}} hits {{victim}}",
+          "turret": "Tower fire on {{target}}",
+          "recall": "{{champion}} recalls, {{seconds}}s",
+          "dead": "{{champion}} back in {{seconds}}s"
+        },
         "who": "{{name}} ({{team}})",
         "contactMutual_one": "{{a}} and {{b}} are trading hits, last hit {{count}} second ago",
         "contactMutual_other": "{{a}} and {{b}} are trading hits, last hit {{count}} seconds ago",
@@ -3943,13 +3950,12 @@
         "recall_other": "{{champion}} is recalling, {{count}} seconds left",
         "dead_one": "{{champion}} is dead and returns in {{count}} second",
         "dead_other": "{{champion}} is dead and returns in {{count}} seconds",
-        "quiet": "Nobody is fighting, recalling or waiting to return",
+        "quiet": "Nobody is fighting",
         "kind": {
           "contact": "Fighting",
           "turret": "Tower",
           "recall": "Recall",
-          "dead": "Dead",
-          "quiet": "Quiet"
+          "dead": "Dead"
         }
       },
       "feed": {
@@ -4068,8 +4074,34 @@
         "fighting": "Fight",
         "objective": "Obj"
       },
+      "lanes": {
+        "label": "Lanes",
+        "top": "Top",
+        "mid": "Mid",
+        "bot": "Bot",
+        "none": "No wave",
+        "even": "Even",
+        "push": "{{team}} pushes",
+        "fight": "Fight",
+        "aria": {
+          "none": "{{lane}} lane: no wave on the lane.",
+          "noneFight": "{{lane}} lane: no wave on the lane, and a fight is on.",
+          "even": "{{lane}} lane: the waves are even.",
+          "evenFight": "{{lane}} lane: the waves are even, and a fight is on.",
+          "push": "{{lane}} lane: {{team}} is pushing toward the {{target}} base.",
+          "pushFight": "{{lane}} lane: {{team}} is pushing toward the {{target}} base, and a fight is on."
+        }
+      },
+      "rail": {
+        "label": "Objective timers",
+        "gone": "Gone",
+        "carriedBy": "Herald carried by {{team}}",
+        "buffHeld": "{{name}} buff, {{team}}: {{time}} left"
+      },
       "legend": {
         "heading": "Map key",
+        "lanes": "Strip above the map: the arrow marks where the two waves meet and which way they push. A double frame and the word Fight mean champions are fighting in that lane",
+        "timers": "Left column under the players: the timers of the dragon, Voidgrubs, Herald and Baron. A team tag on a tile is a running buff and who holds it",
         "champions": "Blue champions are round, red champions are rounded squares",
         "structures": "Towers, inhibitors and nexus: blue is round, red is a diamond; a hatched shape is destroyed",
         "camp": "Small grey diamond: a jungle camp, solid while its monsters are up, dashed outline once cleared",

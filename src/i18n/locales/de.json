@@ -3893,10 +3893,17 @@
       },
       "board": {
         "heading": "Kampftafel",
-        "label": "Kontakte, Turmfeuer, Rückkehr und Tote",
-        "summary_one": "{{count}} aktiv",
-        "summary_other": "{{count}} aktiv",
-        "summaryQuiet": "Ruhe",
+        "label": "Kontakte und Turmfeuer",
+        "away": "Abwesend",
+        "awayLabel": "Rückrufe und Tode",
+        "awayQuiet": "Niemand kehrt zurück oder wartet aufs Wiederauftauchen",
+        "short": {
+          "contact": "{{a}} gegen {{b}}",
+          "hit": "{{attacker}} trifft {{victim}}",
+          "turret": "Turmfeuer auf {{target}}",
+          "recall": "{{champion}} ruft zurück, {{seconds}} s",
+          "dead": "{{champion}} zurück in {{seconds}} s"
+        },
         "who": "{{name}} ({{team}})",
         "contactMutual_one": "{{a}} und {{b}} tauschen Treffer aus, letzter Treffer vor {{count}} Sekunde",
         "contactMutual_other": "{{a}} und {{b}} tauschen Treffer aus, letzter Treffer vor {{count}} Sekunden",
@@ -3908,13 +3915,12 @@
         "recall_other": "{{champion}} kehrt zur Basis zurück, noch {{count}} Sekunden",
         "dead_one": "{{champion}} ist tot und kehrt in {{count}} Sekunde zurück",
         "dead_other": "{{champion}} ist tot und kehrt in {{count}} Sekunden zurück",
-        "quiet": "Niemand kämpft, kehrt zurück oder wartet aufs Wiederauftauchen",
+        "quiet": "Niemand kämpft",
         "kind": {
           "contact": "Kampf",
           "turret": "Turm",
           "recall": "Rückruf",
-          "dead": "Tot",
-          "quiet": "Ruhe"
+          "dead": "Tot"
         }
       },
       "feed": {
@@ -4033,8 +4039,34 @@
         "fighting": "Kampf",
         "objective": "Ziel"
       },
+      "lanes": {
+        "label": "Lane-Übersicht",
+        "top": "Oben",
+        "mid": "Mitte",
+        "bot": "Unten",
+        "none": "Keine Welle",
+        "even": "Ausgeglichen",
+        "push": "{{team}} pusht",
+        "fight": "Kampf",
+        "aria": {
+          "none": "Lane {{lane}}: keine Welle auf der Lane.",
+          "noneFight": "Lane {{lane}}: keine Welle auf der Lane, und ein Kampf läuft.",
+          "even": "Lane {{lane}}: die Wellen sind ausgeglichen.",
+          "evenFight": "Lane {{lane}}: die Wellen sind ausgeglichen, und ein Kampf läuft.",
+          "push": "Lane {{lane}}: {{team}} pusht in Richtung der Basis von {{target}}.",
+          "pushFight": "Lane {{lane}}: {{team}} pusht in Richtung der Basis von {{target}}, und ein Kampf läuft."
+        }
+      },
+      "rail": {
+        "label": "Zielobjekt-Timer",
+        "gone": "Weg",
+        "carriedBy": "Herold getragen von {{team}}",
+        "buffHeld": "{{name}}-Buff, {{team}}: noch {{time}}"
+      },
       "legend": {
         "heading": "Kartenlegende",
+        "lanes": "Leiste über der Karte: Der Pfeil zeigt, wo sich die beiden Wellen treffen und in welche Richtung sie pushen. Ein Doppelrahmen und das Wort Kampf bedeuten, dass auf dieser Lane Champions kämpfen",
+        "timers": "Linke Spalte unter den Spielern: die Timer von Drache, Leerenlarven, Herold und Baron. Ein Teamkürzel auf einer Kachel ist ein laufender Buff und zeigt, wer ihn hält",
         "champions": "Blaue Champions sind rund, rote sind Quadrate mit runden Ecken",
         "structures": "Türme, Inhibitoren und Nexus: Blau ist rund, Rot ist eine Raute; eine schraffierte Form ist zerstört",
         "camp": "Kleine graue Raute: ein Dschungelcamp, gefüllt solange die Monster da sind, gestrichelter Rand nach dem Räumen",

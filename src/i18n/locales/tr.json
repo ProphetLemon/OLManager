@@ -3893,10 +3893,17 @@
       },
       "board": {
         "heading": "Çatışma tablosu",
-        "label": "Temaslar, kule ateşi, dönüşler ve ölümler",
-        "summary_one": "{{count}} aktif",
-        "summary_other": "{{count}} aktif",
-        "summaryQuiet": "Sakin",
+        "label": "Temaslar ve kule ateşi",
+        "away": "Uzakta",
+        "awayLabel": "Dönüşler ve ölümler",
+        "awayQuiet": "Kimse dönmüyor ya da yeniden doğmayı beklemiyor",
+        "short": {
+          "contact": "{{a}} - {{b}}",
+          "hit": "{{attacker}}, {{victim}} hedefine vuruyor",
+          "turret": "Kule {{target}} hedefine ateş ediyor",
+          "recall": "{{champion}} dönüyor, {{seconds}} sn",
+          "dead": "{{champion}} {{seconds}} sn sonra geri"
+        },
         "who": "{{name}} ({{team}})",
         "contactMutual_one": "{{a}} ve {{b}} vuruş takas ediyor, son vuruş {{count}} saniye önce",
         "contactMutual_other": "{{a}} ve {{b}} vuruş takas ediyor, son vuruş {{count}} saniye önce",
@@ -3908,13 +3915,12 @@
         "recall_other": "{{champion}} üsse dönüyor, {{count}} saniye kaldı",
         "dead_one": "{{champion}} öldü, {{count}} saniye sonra dönecek",
         "dead_other": "{{champion}} öldü, {{count}} saniye sonra dönecek",
-        "quiet": "Kimse savaşmıyor, üsse dönmüyor ya da yeniden doğmayı beklemiyor",
+        "quiet": "Kimse savaşmıyor",
         "kind": {
           "contact": "Çatışma",
           "turret": "Kule",
           "recall": "Dönüş",
-          "dead": "Ölü",
-          "quiet": "Sakin"
+          "dead": "Ölü"
         }
       },
       "feed": {
@@ -4033,8 +4039,34 @@
         "fighting": "Savaş",
         "objective": "Hdf"
       },
+      "lanes": {
+        "label": "Koridorlar",
+        "top": "Üst",
+        "mid": "Orta",
+        "bot": "Alt",
+        "none": "Dalga yok",
+        "even": "Dengede",
+        "push": "{{team}} itiyor",
+        "fight": "Çatışma",
+        "aria": {
+          "none": "{{lane}} koridoru: koridorda dalga yok.",
+          "noneFight": "{{lane}} koridoru: koridorda dalga yok ve bir çatışma sürüyor.",
+          "even": "{{lane}} koridoru: dalgalar dengede.",
+          "evenFight": "{{lane}} koridoru: dalgalar dengede ve bir çatışma sürüyor.",
+          "push": "{{lane}} koridoru: {{team}}, {{target}} üssüne doğru itiyor.",
+          "pushFight": "{{lane}} koridoru: {{team}}, {{target}} üssüne doğru itiyor ve bir çatışma sürüyor."
+        }
+      },
+      "rail": {
+        "label": "Hedef sayaçları",
+        "gone": "Bitti",
+        "carriedBy": "Haberci'yi taşıyan: {{team}}",
+        "buffHeld": "{{name}} bonusu, {{team}}: {{time}} kaldı"
+      },
       "legend": {
         "heading": "Harita anahtarı",
+        "lanes": "Haritanın üstündeki şerit: ok iki dalganın nerede buluştuğunu ve hangi yöne ittiğini gösterir. Çift çerçeve ve Çatışma sözcüğü, o koridorda şampiyonların savaştığını belirtir",
+        "timers": "Oyuncuların altındaki sol sütun: ejderha, Boşluk Larvaları, Haberci ve Baron sayaçları. Bir kutudaki takım etiketi, sürmekte olan bir bonusu ve onu kimin taşıdığını gösterir",
         "champions": "Mavi şampiyonlar yuvarlak, kırmızı şampiyonlar köşeleri yuvarlatılmış karedir",
         "structures": "Kuleler, inhibitörler ve nexus: mavi yuvarlak, kırmızı eşkenar dörtgendir; taralı bir şekil yıkılmış demektir",
         "camp": "Küçük gri eşkenar dörtgen: bir orman kampı; canavarları durdukça dolu, temizlenince kesik çizgili kenarlıdır",
