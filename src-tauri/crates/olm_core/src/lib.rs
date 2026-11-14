@@ -73,6 +73,7 @@ pub mod training;
 pub mod wage_scale;
 pub mod transfers;
 pub mod turn;
+pub mod tier_sponsorship;
 pub mod world_catalog;
 pub mod world_overlay;
 pub mod world_overlay_signature;

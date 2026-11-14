@@ -106,6 +106,17 @@ fn make_first_of_month_game() -> Game {
     make_game_on(2025, 6, 1)
 }
 
+/// A running deal that pays nothing, for tests of the other monthly lines: a club in a
+/// league's standings would otherwise be given a tier sponsor on the 1st.
+fn no_sponsor_income() -> Option<Sponsorship> {
+    Some(Sponsorship {
+        sponsor_name: "No Income".to_string(),
+        base_value: 0,
+        remaining_months: 12,
+        bonus_criteria: vec![],
+    })
+}
+
 fn finance_snapshot(team: &Team) -> (i64, i64, i64, i64, usize) {
     (
         team.finance,
@@ -1263,6 +1274,7 @@ fn home_match_generates_income() {
         ..Default::default()
     };
     game.leagues = vec![league];
+    game.teams[0].sponsorship = no_sponsor_income();
 
     finances::process_monthly_finances(&mut game);
 
@@ -1331,6 +1343,7 @@ fn away_match_no_income() {
         ..Default::default()
     };
     game.leagues = vec![league];
+    game.teams[0].sponsorship = no_sponsor_income();
 
     let initial_finance = game.teams[0].finance;
     finances::process_monthly_finances(&mut game);

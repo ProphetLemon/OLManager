@@ -649,6 +649,14 @@ pub fn process_monthly_finances(game: &mut Game) {
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
     let user_team_id = game.manager.team_id.clone();
     let mut mail_events = Vec::new();
+    // Every scheduled main club holds a tier deal. A club with none (an old save, or a
+    // club that just entered a league) gets one before the payout below, so no month
+    // goes unpaid.
+    let scheduled_tiers = crate::tier_sponsorship::scheduled_main_club_tiers(game);
+    crate::tier_sponsorship::assign_missing_tier_sponsorships_from(
+        &mut game.teams,
+        &scheduled_tiers,
+    );
     let team_expenses: Vec<MonthlyTeamExpenses> = game
         .teams
         .iter()
@@ -829,6 +837,14 @@ pub fn process_monthly_finances(game: &mut Game) {
                     });
                 }
             }
+        }
+
+        // The deal that just ended (this month's payout is already booked) is replaced
+        // by a new tier deal at the club's current tier, so next month is paid too.
+        if team.sponsorship.is_none()
+            && let Some(tier) = scheduled_tiers.get(&team.id)
+        {
+            team.sponsorship = Some(crate::tier_sponsorship::tier_sponsorship(&team.id, *tier));
         }
     }
 
