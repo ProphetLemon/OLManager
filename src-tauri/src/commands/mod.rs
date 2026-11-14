@@ -1,6 +1,10 @@
 pub mod academy;
 #[cfg(test)]
+mod ai_market_counters;
+#[cfg(test)]
 mod ai_renewals_measure;
+#[cfg(test)]
+mod ai_repair_counters;
 pub mod bug_report;
 pub mod club;
 pub mod competitions;

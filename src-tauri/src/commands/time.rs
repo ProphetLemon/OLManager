@@ -1579,7 +1579,7 @@ mod tests {
 
     /// The game as data, without the phase and without what the game draws from an unseeded
     /// random generator, so two runs of the same flow give the same value: the attribute and
-    /// fitness training rolls, board targets, champion mastery and patch, AI lineups, transfer
+    /// fitness training rolls (and the overall derived from the attributes), board targets, champion mastery and patch, AI lineups, transfer
     /// offers, and every message but the weekly scrim summary and the mood report.
     fn comparable(state: &StateManager) -> Value {
         let game = state.get_game(|g| g.clone()).expect("game");
@@ -1590,7 +1590,14 @@ mod tests {
         }
         for player in root["players"].as_array_mut().expect("players") {
             let player = player.as_object_mut().expect("player");
-            for key in ["attributes", "fitness", "champion_training_targets", "transfer_offers"] {
+            // `lol_ovr` is derived from the attributes and the turn loop keeps it in step.
+            for key in [
+                "attributes",
+                "lol_ovr",
+                "fitness",
+                "champion_training_targets",
+                "transfer_offers",
+            ] {
                 player.remove(key);
             }
         }

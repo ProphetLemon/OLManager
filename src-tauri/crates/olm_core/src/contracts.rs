@@ -462,6 +462,19 @@ pub fn contract_warning_stage(
 }
 
 pub fn process_contract_expiries(game: &mut Game) {
+    let affected_team_ids = release_expired_contracts(game);
+
+    // After releasing expired players, repair non-player AI teams affected by
+    // the expirations. User-managed teams are skipped internally by repair_team
+    // (is_schedulable_ai_main_team returns false when manager_id is Some).
+    for team_id in affected_team_ids {
+        let _ = repair_team(game, &team_id, RosterStabilityReason::ContractExpired);
+    }
+}
+
+/// Releases every player whose contract ends today or earlier and returns the ids of the
+/// clubs that lost someone, sorted. The roster repair of those clubs is the caller's step.
+pub fn release_expired_contracts(game: &mut Game) -> Vec<String> {
     let current_date = game.clock.current_date.date_naive();
     let today = game.clock.current_date.format("%Y-%m-%d").to_string();
 
@@ -518,14 +531,8 @@ pub fn process_contract_expiries(game: &mut Game) {
         }
     }
 
-    // After releasing expired players, repair non-player AI teams affected by
-    // the expirations. User-managed teams are skipped internally by repair_team
-    // (is_schedulable_ai_main_team returns false when manager_id is Some).
-    let mut sorted_ids = affected_team_ids.clone();
-    sorted_ids.sort();
-    for team_id in sorted_ids {
-        let _ = repair_team(game, &team_id, RosterStabilityReason::ContractExpired);
-    }
+    affected_team_ids.sort();
+    affected_team_ids
 }
 
 pub fn expected_wage(player: &Player, team: &Team, current_date: NaiveDate) -> u32 {

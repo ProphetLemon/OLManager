@@ -19,12 +19,14 @@ use chrono::NaiveDate;
 use olm_core::ai_team_agent::{renewal_score, retention_score};
 use olm_core::contract_wage_policy::renewal_wage_policy_allows;
 use olm_core::contracts::{contract_warning_stage, expected_wage, ContractWarningStage};
-use olm_core::domain::league::LeagueKind;
+use olm_core::domain::league::{FixtureStatus, LeagueKind};
 use olm_core::domain::player::{Player, RenewalSessionStatus};
 use olm_core::domain::team::{Team, TeamKind};
 use olm_core::game::Game;
 use olm_core::{end_of_season, season_rollover, turn};
 
+use super::ai_market_counters::{generated_starter_slots, MarketCounters};
+use super::ai_repair_counters::{generated_by_reason, RepairCounters};
 use super::world_progression_measure::build_start_world;
 
 /// Where an AI starter with an ending contract stands at the end of the stretch.
@@ -300,6 +302,22 @@ pub(super) struct Movement {
     pub(super) signed_from_free: u32,
 }
 
+/// Adds the club changes between two daily snapshots to `movement`.
+fn count_moves(
+    before: &HashMap<String, Option<String>>,
+    after: &HashMap<String, Option<String>>,
+    movement: &mut Movement,
+) {
+    for (id, team) in after {
+        match (before.get(id), team) {
+            (Some(Some(a)), Some(b)) if a != b => movement.club_to_club += 1,
+            (Some(Some(_)), None) => movement.released += 1,
+            (Some(None), Some(_)) => movement.signed_from_free += 1,
+            _ => {}
+        }
+    }
+}
+
 fn team_of_each_player(game: &Game) -> HashMap<String, Option<String>> {
     game.players
         .iter()
@@ -388,12 +406,86 @@ fn staffed_ai_teams(game: &Game) -> (usize, usize) {
     (staffed, teams.len())
 }
 
+/// AI main teams with fewer than five players at the end, by the competitions they appear in.
+#[derive(Debug, Default)]
+struct Understaffed {
+    total: u32,
+    in_main_league_standings: u32,
+    in_main_league_fixtures: u32,
+    in_any_league: u32,
+    /// Appears in a league that has a fixture scheduled after the window end.
+    fixtures_after_window: u32,
+    kinds: Vec<(String, u32)>,
+}
+
+fn understaffed_with_fixtures(game: &Game, until: NaiveDate) -> Understaffed {
+    let user = game.manager.team_id.as_deref();
+    let until = until.format("%Y-%m-%d").to_string();
+    let mut out = Understaffed::default();
+    let mut kinds: HashMap<String, u32> = HashMap::new();
+    for team in game.teams.iter().filter(|t| {
+        t.team_kind == TeamKind::Main && t.manager_id.is_none() && user != Some(t.id.as_str())
+    }) {
+        let players = game
+            .players
+            .iter()
+            .filter(|p| p.team_id.as_deref() == Some(team.id.as_str()))
+            .count();
+        if players >= 5 {
+            continue;
+        }
+        out.total += 1;
+        let in_standings =
+            |l: &olm_core::domain::league::League| l.standings.iter().any(|e| e.team_id == team.id);
+        let in_fixtures = |l: &olm_core::domain::league::League| {
+            l.fixtures
+                .iter()
+                .any(|f| f.home_team_id == team.id || f.away_team_id == team.id)
+        };
+        let main_standings = game
+            .leagues
+            .iter()
+            .any(|l| l.league_kind == LeagueKind::Main && in_standings(l));
+        let main_fixtures = game
+            .leagues
+            .iter()
+            .any(|l| l.league_kind == LeagueKind::Main && in_fixtures(l));
+        let any = game
+            .leagues
+            .iter()
+            .any(|l| in_standings(l) || in_fixtures(l));
+        let after = game.leagues.iter().any(|l| {
+            (in_standings(l) || in_fixtures(l))
+                && l.fixtures.iter().any(|f| {
+                    f.status == FixtureStatus::Scheduled && f.date.as_str() > until.as_str()
+                })
+        });
+        out.in_main_league_standings += u32::from(main_standings);
+        out.in_main_league_fixtures += u32::from(main_fixtures);
+        out.in_any_league += u32::from(any);
+        out.fixtures_after_window += u32::from(after);
+        let kind = game
+            .leagues
+            .iter()
+            .find(|l| in_standings(l) || in_fixtures(l))
+            .map_or("no league".to_string(), |l| format!("{:?}", l.league_kind));
+        *kinds.entry(kind).or_default() += 1;
+    }
+    out.kinds = kinds.into_iter().collect();
+    out.kinds.sort();
+    out
+}
+
 /// Everything one run prints.
 struct Measurement {
     starters: RenewalOutcomes,
     everyone: RenewalOutcomes,
     repaired_starters: RenewalOutcomes,
     movement: Movement,
+    /// Moves made by the contract-expiry step (release, then the repair's signings).
+    repair_movement: Movement,
+    market: MarketCounters,
+    understaffed_with_fixtures: Understaffed,
     rollovers: u32,
     peak_open: usize,
     session_states: String,
@@ -407,6 +499,11 @@ struct Measurement {
     /// Starters that were not renewed: teamless, on another club, other.
     starter_whereabouts: [u32; 3],
     tracked: HashMap<String, Tracked>,
+    repair: RepairCounters,
+    generated_by_reason: std::collections::BTreeMap<String, u32>,
+    generated_by_reason_at_start: std::collections::BTreeMap<String, u32>,
+    players: usize,
+    refresh_micros: f64,
 }
 
 /// Plays a fresh world until `until`, rolling the season whenever the league completes.
@@ -421,24 +518,38 @@ fn measure(until: NaiveDate) -> Measurement {
     let no_ovr_at_start = clubbed_players_without_ovr(&game);
     let staffed_at_start = staffed_ai_teams(&game);
     let mut movement = Movement::default();
+    let mut repair_movement = Movement::default();
     let mut teams = team_of_each_player(&game);
     let mut rollovers = 0;
     let mut peak_open = 0;
+    let mut repair = RepairCounters::default();
+    let mut market = MarketCounters::default();
+    let generated_by_reason_at_start = generated_by_reason(&game);
     while game.clock.current_date.date_naive() < until {
         if end_of_season::is_season_complete(&game) {
             season_rollover::advance_season(&mut game);
             rollovers += 1;
         }
         snapshot_final_weeks(&game, &mut tracked);
+        // The expiry step is the repair's own: its moves are counted apart, so the market
+        // figures below are the AI transfers and free-agency signings of `process_day`.
+        if repair.run_expiry_step(&mut game) {
+            let now = team_of_each_player(&game);
+            count_moves(&teams, &now, &mut repair_movement);
+            teams = now;
+        }
+        // The state the market acts on: after the expiry step, before the day's AI decisions.
+        let generated_slots = generated_starter_slots(&game);
+        market.begin_day(game.clock.current_date.date_naive());
+        market.maybe_sample(&game);
         turn::process_day(&mut game);
         peak_open = peak_open.max(open_ai_sessions(&game));
         let now = team_of_each_player(&game);
+        count_moves(&teams, &now, &mut movement);
         for (id, team) in &now {
-            match (teams.get(id), team) {
-                (Some(Some(a)), Some(b)) if a != b => movement.club_to_club += 1,
-                (Some(Some(_)), None) => movement.released += 1,
-                (Some(None), Some(_)) => movement.signed_from_free += 1,
-                _ => {}
+            if let (Some(None), Some(buyer)) = (teams.get(id), team) {
+                let player = game.players.iter().find(|p| &p.id == id);
+                market.record_signing(&generated_slots, buyer, player);
             }
         }
         teams = now;
@@ -448,6 +559,9 @@ fn measure(until: NaiveDate) -> Measurement {
         everyone: classify(&game, &tracked, |_| true),
         repaired_starters: classify(&game, &tracked, |t| t.starter && t.repaired_club),
         movement,
+        repair_movement,
+        market,
+        understaffed_with_fixtures: understaffed_with_fixtures(&game, until),
         rollovers,
         peak_open,
         session_states: session_states(&game, &tracked),
@@ -460,7 +574,24 @@ fn measure(until: NaiveDate) -> Measurement {
         staffed_at_end: staffed_ai_teams(&game),
         starter_whereabouts: starter_whereabouts(&game, &tracked),
         tracked,
+        repair,
+        generated_by_reason: generated_by_reason(&game),
+        generated_by_reason_at_start,
+        players: game.players.len(),
+        refresh_micros: refresh_cost_micros(&game),
     }
+}
+
+/// Mean cost of one `refresh_lol_ovrs` over this world, in microseconds.
+fn refresh_cost_micros(game: &Game) -> f64 {
+    let mut copy = game.clone();
+    let runs = 200;
+    let started = std::time::Instant::now();
+    for _ in 0..runs {
+        copy.refresh_lol_ovrs();
+        std::hint::black_box(&copy.players);
+    }
+    started.elapsed().as_secs_f64() * 1e6 / f64::from(runs)
 }
 
 /// Where the starters that did not get a later contract at their club stand now.
@@ -630,11 +761,31 @@ fn ai_renewals_measure() {
         "AI main teams with 5+ players: start {}/{} | end {}/{}",
         run.staffed_at_start.0, run.staffed_at_start.1, run.staffed_at_end.0, run.staffed_at_end.1
     );
+    println!(
+        "refresh_lol_ovrs: {:.0} us per call over {} players",
+        run.refresh_micros, run.players
+    );
+    println!(
+        "generated players by the repair reason in their id: start {:?} | end {:?}",
+        run.generated_by_reason_at_start, run.generated_by_reason
+    );
+    run.repair.print();
     print_final_weeks(&run.tracked);
     println!("session states at the end: {}", run.session_states);
     println!(
-        "club-to-club moves {} | released or expired {} | signed from free agency {}",
+        "market (process_day): club-to-club moves {} | released {} | signed from free agency {}",
         run.movement.club_to_club, run.movement.released, run.movement.signed_from_free
+    );
+    run.market.print();
+    println!(
+        "AI main teams with fewer than 5 players at the end: {:?}",
+        run.understaffed_with_fixtures
+    );
+    println!(
+        "contract-expiry step: released {} | re-signed by another club the same day {} | signed from free agency {}",
+        run.repair_movement.released,
+        run.repair_movement.club_to_club,
+        run.repair_movement.signed_from_free
     );
     println!("wall time {:.1}s", started.elapsed().as_secs_f64());
 }
