@@ -8,7 +8,6 @@ import PlayerProfileContractCardV2 from "./PlayerProfileContractCardV2";
 import PlayerProfileMatchHistoryCardV2 from "./PlayerProfileMatchHistoryCardV2";
 import PlayerProfileScoutActionV2 from "./PlayerProfileScoutActionV2";
 import PlayerProfileStatsCardV2 from "./PlayerProfileStatsCardV2";
-import PlayerProfileTraitsCardV2 from "./PlayerProfileTraitsCardV2";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
@@ -240,14 +239,6 @@ describe("PlayerProfileContractActionsV2", () => {
     expect(onOpenTransferBid).toHaveBeenCalled();
     rerender(<PlayerProfileContractActionsV2 {...base} isOwnClub={false} isTransferWindowOpen={false} />);
     expect(screen.queryByRole("button", { name: "playerProfile.makeTransferOffer" })).toBeNull();
-  });
-});
-
-describe("PlayerProfileTraitsCardV2", () => {
-  it("renders every trait", () => {
-    render(<PlayerProfileTraitsCardV2 title="Traits" traits={["Leader", "Clutch"]} />);
-    expect(screen.getByText("Leader")).toBeInTheDocument();
-    expect(screen.getByText("Clutch")).toBeInTheDocument();
   });
 });
 

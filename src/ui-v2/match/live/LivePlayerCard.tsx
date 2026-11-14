@@ -15,6 +15,7 @@ import { itemDisplayName, summonerSpellName, type ItemNamesByKey } from "@/ui-v2
 
 import { IconTip } from "@/ui-v2/components/ui/icon-tip";
 
+import { CooldownChip as CooldownChipView } from "./CooldownChip";
 import { useMarkerTexts } from "./useMarkerTexts";
 import "./liveMatch.css";
 
@@ -98,9 +99,11 @@ export const LivePlayerCard = memo(function LivePlayerCard({
     return itemName(chip.key ?? "");
   };
   const cooldownSentence = (chip: CooldownChip) =>
-    chip.seconds > 0
-      ? t("onAir.match.card.cdWait", { name: cooldownName(chip), count: chip.seconds })
-      : t("onAir.match.card.cdReady", { name: cooldownName(chip) });
+    chip.state === "locked"
+      ? t("onAir.match.card.cdLocked", { name: cooldownName(chip), level: chip.unlockLevel })
+      : chip.state === "waiting"
+        ? t("onAir.match.card.cdWait", { name: cooldownName(chip), count: chip.seconds })
+        : t("onAir.match.card.cdReady", { name: cooldownName(chip) });
 
   const gapSentence = (g: GoldGap | null): string => {
     if (!g || !parts.opponentRole) return "";
@@ -220,15 +223,12 @@ export const LivePlayerCard = memo(function LivePlayerCard({
         </span>
         <span className="arena-card-cds">
           {parts.cooldowns.map((chip) => (
-            <IconTip
-              key={`${chip.kind}-${chip.letter}`}
-              className="arena-cd"
-              data-ready={chip.seconds === 0 || undefined}
+            <CooldownChipView
+              key={`${chip.kind}-${chip.key ?? "ultimate"}`}
+              chip={chip}
               label={cooldownSentence(chip)}
-              data-testid="card-cd"
-            >
-              {chip.seconds > 0 ? `${chip.letter} ${chip.seconds}` : chip.letter}
-            </IconTip>
+              name={cooldownName(chip)}
+            />
           ))}
         </span>
       </span>

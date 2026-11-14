@@ -171,6 +171,29 @@ describe("the screen", () => {
     expect(screen.getByTestId("map-legend")).toBeInTheDocument();
   });
 
+  it("publishes the two clubs' colours once, as an inline style on the screen root", async () => {
+    const teams = [
+      { id: "home", name: "Embers Esports", short_name: "EMB", logo_url: "/teams-icons/embers.webp", colors: { primary: "#e11d2e", secondary: "#f5f5f5" } },
+      { id: "away", name: "Tides", short_name: "TDE", logo_url: null, colors: { primary: "#16a34a", secondary: "#101010" } },
+    ];
+    mount({ gameState: { teams, manager: { team_id: "home" } } as unknown as Props["gameState"] });
+    await screen.findByTestId("champion-b-TOP");
+    const root = screen.getByTestId("live-match");
+    for (const side of ["blue", "red"]) {
+      for (const suffix of ["", "-text", "-fg", "-band", "-band-fg", "-wash-text"]) {
+        expect(root.style.getPropertyValue(`--side-${side}${suffix}`), `--side-${side}${suffix}`).toMatch(/^#[0-9a-f]{6}$/);
+      }
+    }
+    // The bar wears each club's own logo.
+    expect(screen.getByTestId("score-bar").querySelector("img[src='/teams-icons/embers.webp']")).not.toBeNull();
+  });
+
+  it("still publishes the tokens, from the generic palette, when the game has no team list", async () => {
+    mount();
+    await screen.findByTestId("champion-b-TOP");
+    expect(screen.getByTestId("live-match").style.getPropertyValue("--side-blue")).toMatch(/^#[0-9a-f]{6}$/);
+  });
+
   it("hosts the bug button in the controls row, in the flow and not floating", async () => {
     mount();
     await screen.findByTestId("champion-b-TOP");
@@ -276,6 +299,17 @@ describe("the finish", () => {
     expect(finalState.goldDiffTimeline?.length).toBeGreaterThan(0);
   });
 
+  it("hands the record of the match on with it: gold per champion per minute, and no skip", async () => {
+    const { onFullTime } = mount();
+    await screen.findByRole("dialog", { name: "Match result" });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    const record = onFullTime.mock.calls[0][0].matchRecord;
+    expect(record?.skippedAtSec).toBeNull();
+    expect(record?.gold.length).toBeGreaterThan(0);
+    expect(record?.gold[record.gold.length - 1].timeSec).toBe(1923);
+  });
+
   it("shows the result: the outcome for the manager, the numbers, the lead and Continue", async () => {
     mount({ gameState: { manager: { team_id: "home" }, teams: [] } as never });
     const panel = await screen.findByTestId("end-panel");
@@ -340,6 +374,8 @@ describe("skipping", () => {
     expect(onFullTime).toHaveBeenCalledTimes(1);
     expect(onFullTime.mock.calls[0][1]).toEqual({ source: "live" });
     expect(onFullTime.mock.calls[0][0]).toMatchObject({ winner: "red" });
+    // A skip leaves no minutes behind it: the record says where it began, so the screen can say it is partial.
+    expect(typeof onFullTime.mock.calls[0][0].matchRecord?.skippedAtSec).toBe("number");
   });
 
   it("says so, and the match keeps running, when the engine cannot play it out", async () => {

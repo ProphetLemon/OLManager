@@ -5,6 +5,8 @@ import { Profiler } from "react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import i18n from "@/i18n";
+import { WASH_SHARE } from "@/lib/match/live/sidePalette";
+import { teamIdentity } from "@/lib/match/live/teamIdentity";
 import type { LolSimV1RuntimeState } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
 
 import { createTestBus, makeFrame, makeState } from "./arenaFixtures.testing";
@@ -12,8 +14,8 @@ import { CLOCK_INTERVAL_MS, ScoreBar, type ScoreStatus } from "./ScoreBar";
 
 const css = readFileSync(resolve(__dirname, "liveMatch.css"), "utf8");
 
-const BLUE = { tag: "EMB", name: "Emberfall" };
-const RED = { tag: "TDL", name: "Tidal Lanterns" };
+const BLUE = teamIdentity("Emberfall", [{ name: "Emberfall", short_name: "EMB" }]);
+const RED = teamIdentity("Tidal Lanterns", [{ name: "Tidal Lanterns", short_name: "TDL" }]);
 
 type Buffs = Record<string, unknown>;
 
@@ -248,5 +250,81 @@ describe("ScoreBar in the Spanish UI", () => {
     expect(within(blueSide()).getByText("Barón 1:40")).toBeInTheDocument();
     expect(clock()).toHaveAccessibleName("Tiempo de partida");
     expect(container.textContent).not.toMatch(/onAir\.match\.|match\.liveA11y/);
+  });
+});
+
+describe("the club colours on the bar", () => {
+  it("names each side in words, beside the shape that says it too", () => {
+    renderBar(stateWith());
+    const blueTag = within(blueSide()).getByText("Blue side");
+    const redTag = within(redSide()).getByText("Red side");
+    expect(blueTag).toHaveAttribute("data-team", "blue");
+    expect(redTag).toHaveAttribute("data-team", "red");
+    expect(blueTag.querySelector(".arena-side-shape")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("shows each club's logo on its crest, decorative, and the initial when a club has none", () => {
+    const blue = { ...BLUE, logoUrl: "/teams-icons/emberfall.webp" };
+    const view = render(<ScoreBar state={stateWith()} blue={blue} red={RED} status="live" bus={createTestBus().bus} />);
+    const crests = view.container.querySelectorAll(".arena-crest");
+    expect(crests).toHaveLength(2);
+    expect(crests[0].querySelector("img")).toHaveAttribute("src", "/teams-icons/emberfall.webp");
+    expect(crests[0]).toHaveAttribute("data-team", "blue");
+    expect(crests[1]).toHaveAttribute("data-fallback", "true");
+    expect(crests[1]).toHaveTextContent("T");
+    expect(screen.queryAllByRole("img", { name: "Emberfall" })).toHaveLength(0);
+  });
+
+  it("marks the gold stat so the club's wash text can reach it, and no other", () => {
+    const { container } = renderBar(stateWith({ blue: { gold: 5000 } }));
+    const marked = [...container.querySelectorAll("[data-stat]")];
+    expect(marked).toHaveLength(2);
+    expect(marked.every((el) => el.getAttribute("data-stat") === "gold")).toBe(true);
+    expect(within(blueSide()).getByText("5.0k").closest("[data-stat]")).not.toBeNull();
+  });
+
+  it("keeps the side tag in the bar's flow, once per side", () => {
+    const { container } = renderBar(stateWith());
+    expect(container.querySelectorAll(".arena-bar-side-tag")).toHaveLength(2);
+  });
+});
+
+describe("the washes and the high contrast rules in the stylesheet", () => {
+  /** Every body of a rule whose selector ends in `selector`, joined: a selector may sit in a group and in its own rule. */
+  const rule = (selector: string) => {
+    const bodies: string[] = [];
+    for (let at = css.indexOf(`${selector} {`); at > -1; at = css.indexOf(`${selector} {`, at + 1)) {
+      bodies.push(css.slice(at, css.indexOf("}", at)));
+    }
+    expect(bodies.length, selector).toBeGreaterThan(0);
+    return bodies.join("\n");
+  };
+
+  it("washes each half of the bar with its club's band, at the share the palette clamps the text against", () => {
+    const share = `${Math.round(WASH_SHARE * 100)}%`;
+    expect(rule(".arena-bar::before")).toContain(`color-mix(in srgb, var(--side-blue-band) ${share}, transparent)`);
+    expect(rule(".arena-bar::after")).toContain(`color-mix(in srgb, var(--side-red-band) ${share}, transparent)`);
+    expect(rule(".arena-bar::before")).toContain("clip-path: polygon(");
+  });
+
+  it("drops the wash in high contrast and underlines each side instead", () => {
+    const hide = css.indexOf(':root[data-contrast="high"] .arena-bar::before');
+    expect(hide).toBeGreaterThan(-1);
+    expect(css.slice(hide, css.indexOf("}", hide))).toMatch(/\.arena-bar::after\s*\{\s*display:\s*none/);
+    expect(rule(':root[data-contrast="high"] .arena-bar-side')).toContain("box-shadow: inset 0 -0.3125rem 0 var(--team-color)");
+  });
+
+  it("paints a club's colour as text only where the surface is dark", () => {
+    expect(rule('.dark .arena-bar-kills[data-team="blue"]')).toContain("color: var(--side-blue-text)");
+    expect(rule('.dark .arena-bar-kills[data-team="red"]')).toContain("color: var(--side-red-text)");
+    expect(rule('.dark .arena-bar-side[data-team="blue"] .arena-bar-stat[data-stat="gold"] .arena-bar-num')).toContain(
+      "var(--side-blue-wash-text)",
+    );
+    expect(css).not.toMatch(/\n\.arena-bar-kills\[data-team="(?:blue|red)"\]\s*\{[^}]*--side-/);
+  });
+
+  it("draws the crest's plate from the map ink and its ring in the club's colour", () => {
+    expect(rule(".arena-crest")).toContain("background: var(--map-ink)");
+    expect(rule(".arena-crest")).toContain("border: 3px solid var(--team-color)");
   });
 });

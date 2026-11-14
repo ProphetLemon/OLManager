@@ -1,0 +1,1280 @@
+/*
+ * The post-game screen. Painted with the On Air tokens and the two clubs' `--side-*` tokens, which
+ * the screen publishes once on its root. No raw colour: tints are `color-mix` of a token. Blue is
+ * round and red a rounded square wherever a side is drawn, and a result is a word plus a solid or
+ * dashed frame, so nothing rests on colour alone.
+ */
+
+.post-game {
+  /* The clubs' colours. The screen publishes the real ones as an inline style; these keep every
+     rule painting, in the game's own blue and red, where it does not. */
+  --side-blue: var(--team-blue);
+  --side-blue-text: var(--team-blue);
+  --side-blue-fg: var(--background);
+  --side-blue-band: var(--team-blue);
+  --side-blue-band-fg: var(--background);
+  --side-blue-wash-text: var(--team-blue);
+  --side-red: var(--team-red);
+  --side-red-text: var(--team-red);
+  --side-red-fg: var(--background);
+  --side-red-band: var(--team-red);
+  --side-red-band-fg: var(--background);
+  --side-red-wash-text: var(--team-red);
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  flex: 1 1 0;
+  height: 100%;
+  min-height: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.875rem;
+}
+
+.post-game *,
+.post-game *::before,
+.post-game *::after {
+  box-sizing: border-box;
+}
+
+.post-game [data-team="blue"] {
+  --team-color: var(--side-blue);
+  --team-text: var(--side-blue-text);
+  --team-fg: var(--side-blue-fg);
+  --team-band: var(--side-blue-band);
+}
+
+.post-game [data-team="red"] {
+  --team-color: var(--side-red);
+  --team-text: var(--side-red-text);
+  --team-fg: var(--side-red-fg);
+  --team-band: var(--side-red-band);
+}
+
+.pg-heading {
+  font-family: var(--font-heading);
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+}
+
+/* ── Result bar: both clubs, the kills, the clock ─────────────────────── */
+
+.pg-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  min-height: 4.5rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--rail);
+}
+
+.pg-side {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-width: 0;
+  padding: 0.5rem 1.75rem 0.5rem 0.75rem;
+  background: color-mix(in srgb, var(--team-band) 22%, var(--card));
+  clip-path: polygon(0 0, 100% 0, calc(100% - 1.5rem) 100%, 0 100%);
+}
+
+/* High contrast drops the wash and underlines the side instead. */
+:root[data-contrast="high"] .pg-side {
+  background: var(--card);
+  box-shadow: inset 0 -0.3125rem 0 var(--team-color);
+}
+
+.pg-side[data-team="red"] {
+  flex-direction: row-reverse;
+  padding: 0.5rem 0.75rem 0.5rem 1.75rem;
+  text-align: end;
+  clip-path: polygon(1.5rem 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.pg-side-name {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.pg-side-name b {
+  font-family: var(--font-heading);
+  font-size: var(--text-title);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pg-side-name span {
+  margin-top: 0.1875rem;
+  overflow: hidden;
+  color: var(--dim);
+  font-size: var(--text-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Victory is a solid plate with a tick, defeat a dashed frame with a cross. */
+.pg-result {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 1.875rem;
+  padding: 0 0.75rem;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pg-result[data-result="win"] {
+  border: 2px solid var(--foreground);
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.pg-result[data-result="loss"] {
+  border: 2px dashed var(--dim);
+  color: var(--foreground);
+}
+
+.pg-mid {
+  display: grid;
+  grid-template-columns: 4.5rem 9rem 4.5rem;
+  align-items: center;
+  justify-items: center;
+  padding: 0 0.375rem;
+}
+
+.pg-kills {
+  font-family: var(--font-heading);
+  font-size: 3rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* A club's colour as text is clamped for a dark surface, so it only paints text where the surface
+   is dark; in a light theme the digits keep the text colour and the club's colour stays on the
+   crest, the wash and the shapes. */
+.dark .pg-kills[data-team] {
+  color: var(--team-text);
+}
+
+.pg-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  font-family: var(--font-heading);
+  line-height: 1;
+}
+
+.pg-clock b {
+  font-size: var(--text-title);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.pg-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.125rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--foreground);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* ── View switch and the MVP ──────────────────────────────────────────── */
+
+.pg-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0 0.75rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--rail);
+}
+
+.pg-views {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pg-views label {
+  position: relative;
+  display: block;
+}
+
+.pg-views input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.pg-views label > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 7rem;
+  min-height: var(--target-min, 2.75rem);
+  padding: 0 1.25rem;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pg-views label + label > span {
+  border-inline-start: 0;
+}
+
+.pg-views input:checked + span {
+  background: var(--foreground);
+  color: var(--background);
+  box-shadow: inset 0 -0.25rem 0 var(--club);
+}
+
+.pg-views input:focus-visible + span {
+  outline: 3px solid var(--club);
+  outline-offset: -3px;
+}
+
+.pg-series {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.5rem;
+  min-width: 0;
+}
+
+.pg-series-score {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pg-series-game {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  min-height: 1.5rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pg-mvpchip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.25rem 0.75rem 0.25rem 0.25rem;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.pg-mvpchip-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.pg-mvpchip b {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pg-mvpchip small {
+  overflow: hidden;
+  color: var(--dim);
+  font-size: var(--text-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Portraits ────────────────────────────────────────────────────────── */
+
+.pg-portrait {
+  display: block;
+  flex: none;
+  width: 2.125rem;
+  height: 2.125rem;
+  overflow: hidden;
+  border: 3px solid var(--team-color);
+  border-radius: 50%;
+  background: var(--background);
+}
+
+.pg-portrait[data-team="red"] {
+  border-radius: 32%;
+}
+
+.pg-portrait[data-size="sm"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-width: 2px;
+}
+
+.pg-portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pg-portrait > span {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  background: var(--team-color);
+  color: var(--team-fg);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+/* ── Views ────────────────────────────────────────────────────────────── */
+
+.pg-main {
+  min-height: 0;
+  padding: 0.5rem 0.75rem;
+  overflow: auto;
+}
+
+.pg-main:focus-visible {
+  outline: 3px solid var(--club);
+  outline-offset: -3px;
+}
+
+.pg-note {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--dim);
+  color: var(--foreground);
+  font-size: 0.875rem;
+}
+
+/* ── Scoreboard ───────────────────────────────────────────────────────── */
+
+.pg-scoreboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.pg-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-variant-numeric: tabular-nums;
+}
+
+.pg-table th,
+.pg-table td {
+  padding: 0.1875rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  text-align: start;
+  vertical-align: middle;
+}
+
+.pg-head th {
+  min-height: 1.875rem;
+  background: var(--rail);
+  color: var(--dim);
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pg-head .pg-team {
+  display: table-cell;
+  color: var(--foreground);
+}
+
+.pg-team > * {
+  vertical-align: middle;
+}
+
+.pg-team {
+  white-space: nowrap;
+}
+
+.pg-team b {
+  margin-inline: 0.5rem 0.375rem;
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.pg-team span:not(.pg-result):not(.arena-crest) {
+  margin-inline-end: 0.5rem;
+  font-weight: 600;
+}
+
+.pg-team .pg-result {
+  min-height: 1.375rem;
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+}
+
+.pg-row th {
+  font-weight: 400;
+}
+
+.pg-player {
+  min-width: 11rem;
+}
+
+/* The row header stays a table cell; its contents lay themselves out in here. */
+.pg-player-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pg-player-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.125rem;
+  line-height: 1;
+}
+
+.pg-player-text b {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pg-player-text small {
+  overflow: hidden;
+  color: var(--dim);
+  font-size: var(--text-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pg-mvp {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.1875rem;
+  min-height: 1.125rem;
+  padding: 0 0.3125rem 0 0.1875rem;
+  background: var(--foreground);
+  color: var(--background);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.pg-mvp svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  fill: currentColor;
+  stroke: none;
+}
+
+.pg-num {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.pg-dmg {
+  min-width: 5.75rem;
+}
+
+.pg-dmg b {
+  display: block;
+  margin-bottom: 0.1875rem;
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pg-bar {
+  display: block;
+  height: 0.25rem;
+  background: var(--background);
+}
+
+.pg-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 0 0.1875rem 0.1875rem 0;
+  background: var(--team-color);
+}
+
+.pg-items,
+.pg-spells {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+}
+
+.pg-icon {
+  display: grid;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  overflow: hidden;
+  border: 1px dashed var(--dim);
+  border-radius: 0.1875rem;
+  color: var(--foreground);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+.pg-icon[data-filled] {
+  border: 1px solid var(--dim);
+  background: var(--background);
+}
+
+.pg-icon[data-shape="trinket"] {
+  margin-inline-start: 0.3125rem;
+  border-radius: 50%;
+}
+
+.pg-icon[data-shape="spell"] {
+  border-color: var(--foreground);
+}
+
+.pg-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pg-total th,
+.pg-total td {
+  min-height: 1.875rem;
+  background: var(--rail);
+  color: var(--dim);
+  font-weight: 700;
+}
+
+.pg-total th {
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+}
+
+.pg-total .pg-num {
+  color: var(--foreground);
+}
+
+.pg-objs {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pg-obj {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pg-obj img {
+  width: 1.25rem;
+  height: 1.25rem;
+  object-fit: contain;
+}
+
+.pg-scrim {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.pg-scrim b {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+}
+
+/* ── Graphs ───────────────────────────────────────────────────────────── */
+
+.pg-graphs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  min-height: 100%;
+}
+
+.pg-panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  padding: 0.375rem 0.75rem 0.5rem;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.pg-panel[data-kind="line"] {
+  flex: 1 1 15.625rem;
+}
+
+.pg-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 1rem;
+  min-height: 2rem;
+}
+
+.pg-panel-head h3 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.pg-readout {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.pg-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-inline-start: auto;
+  color: var(--dim);
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pg-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+}
+
+.pg-shape {
+  display: block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 3px solid var(--team-color);
+  border-radius: 50%;
+}
+
+[data-team="red"] > .pg-shape,
+.pg-shape[data-team="red"] {
+  border-radius: 0.1875rem;
+}
+
+.pg-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: var(--target-min, 2.75rem);
+  min-height: var(--target-min, 2.75rem);
+  margin: -0.375rem 0 -0.375rem auto;
+  padding: 0 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pg-toggle[aria-pressed="true"] {
+  border-color: var(--foreground);
+  box-shadow: inset 0 -0.1875rem 0 var(--foreground);
+}
+
+.pg-toggle svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.pg-toggle:focus-visible {
+  outline: 3px solid var(--club);
+  outline-offset: 2px;
+}
+
+/* The line chart */
+
+.pg-lc {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 2.875rem minmax(0, 1fr);
+  grid-template-rows: minmax(6.25rem, 1fr) auto auto;
+  column-gap: 0.375rem;
+  min-height: 0;
+  padding-inline-end: 1rem;
+}
+
+.pg-yax {
+  position: relative;
+}
+
+.pg-yax span {
+  position: absolute;
+  inset-inline-end: 0;
+  transform: translateY(-50%);
+  color: var(--dim);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pg-plot {
+  position: relative;
+  min-height: 6.25rem;
+  border: 1px solid var(--line);
+  background: var(--background);
+  cursor: crosshair;
+}
+
+.pg-plot:has(.pg-scrub:focus-visible) {
+  outline: 3px solid var(--club);
+  outline-offset: 2px;
+}
+
+.pg-plot svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pg-grid {
+  position: absolute;
+  inset-inline: 0;
+  height: 0;
+  border-top: 1px dashed var(--line);
+}
+
+.pg-grid[data-zero] {
+  border-top: 2px solid var(--dim);
+}
+
+.pg-area-blue {
+  fill: color-mix(in srgb, var(--side-blue) 32%, transparent);
+}
+
+.pg-area-red {
+  fill: color-mix(in srgb, var(--side-red) 36%, transparent);
+}
+
+.pg-line {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Minutes nobody saw: hatched, so the line is seen to stop and start again, never to bridge them. */
+.pg-gap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-inline: 1px dashed var(--dim);
+  background: repeating-linear-gradient(135deg, var(--line) 0 0.25rem, transparent 0.25rem 0.5rem);
+}
+
+.pg-gap-label {
+  position: absolute;
+  bottom: 0.1875rem;
+  left: 50%;
+  padding: 0.0625rem 0.375rem;
+  transform: translateX(-50%);
+  border: 1px solid var(--foreground);
+  background: var(--background);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.pg-dot {
+  position: absolute;
+  width: 0.5rem;
+  height: 0.5rem;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--foreground);
+  pointer-events: none;
+}
+
+.pg-sidetag {
+  position: absolute;
+  inset-inline-start: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  padding: 0.0625rem 0.4375rem 0.0625rem 0.25rem;
+  border: 1px solid var(--line);
+  background: var(--background);
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pg-sidetag[data-team="blue"] {
+  top: 0.25rem;
+}
+
+.pg-sidetag[data-team="red"] {
+  bottom: 0.25rem;
+}
+
+.pg-cross {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-inline-start: 1px solid var(--foreground);
+  pointer-events: none;
+}
+
+.pg-cross-dot {
+  position: absolute;
+  width: 0.75rem;
+  height: 0.75rem;
+  transform: translate(-50%, -50%);
+  border: 3px solid var(--foreground);
+  border-radius: 50%;
+  background: var(--background);
+  pointer-events: none;
+}
+
+.pg-tip {
+  position: absolute;
+  top: 0.25rem;
+  z-index: 3;
+  padding: 0.125rem 0.5rem;
+  transform: translateX(-50%);
+  border: 2px solid var(--foreground);
+  background: var(--background);
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.pg-scrub {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: crosshair;
+}
+
+.pg-rail {
+  position: relative;
+  grid-column: 2;
+  margin-top: 0.375rem;
+}
+
+.pg-marker {
+  position: absolute;
+  display: grid;
+  width: 1.375rem;
+  height: 1.375rem;
+  place-items: center;
+  transform: translateX(-50%);
+  border: 2px solid var(--team-color, var(--dim));
+  border-radius: 50%;
+  background: var(--background);
+}
+
+.pg-marker[data-team="red"] {
+  border-radius: 0.375rem;
+}
+
+.pg-marker img {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  object-fit: contain;
+}
+
+.pg-marker sup {
+  position: absolute;
+  top: -0.5rem;
+  inset-inline-end: -0.5rem;
+  min-width: 0.9375rem;
+  height: 0.9375rem;
+  padding: 0 0.1875rem;
+  border-radius: 0.5rem;
+  background: var(--foreground);
+  color: var(--background);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  line-height: 0.9375rem;
+  text-align: center;
+}
+
+.pg-xax {
+  position: relative;
+  grid-column: 2;
+  height: 1.125rem;
+  margin-top: 0.125rem;
+}
+
+.pg-xax span {
+  position: absolute;
+  transform: translateX(-50%);
+  color: var(--dim);
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Tables that stand for a chart */
+
+.pg-values {
+  min-height: 0;
+  overflow: auto;
+}
+
+.pg-values table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.pg-values th,
+.pg-values td {
+  padding: 0.1875rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: start;
+}
+
+.pg-values thead th {
+  color: var(--dim);
+  font-size: var(--text-caption);
+}
+
+/* Bars */
+
+.pg-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.pg-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin-top: 0.125rem;
+}
+
+.pg-group-head {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 1.25rem;
+  color: var(--dim);
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pg-group-head b {
+  color: var(--foreground);
+  font-size: 1rem;
+}
+
+.pg-barrow {
+  display: grid;
+  grid-template-columns: 1.25rem 5.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.25rem;
+}
+
+.pg-barrow-name {
+  overflow: hidden;
+  font-family: var(--font-heading);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pg-barrow-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.pg-barrow-bar i {
+  display: block;
+  flex: none;
+  height: 0.75rem;
+  border-radius: 0 0.25rem 0.25rem 0;
+  background: var(--team-color);
+}
+
+.pg-barrow-bar b {
+  font-family: var(--font-heading);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.pg-barrow-bar small {
+  color: var(--dim);
+  font-size: var(--text-caption);
+  white-space: nowrap;
+}
+
+/* ── Timeline ─────────────────────────────────────────────────────────── */
+
+.pg-timeline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.5rem;
+}
+
+.pg-timeline[data-single] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pg-events {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--card);
+  list-style: none;
+}
+
+.pg-event {
+  display: grid;
+  grid-template-columns: 2.875rem 1.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.25rem;
+  padding: 0.1875rem 0.625rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9375rem;
+  line-height: 1.2;
+}
+
+.pg-event:last-child {
+  border-bottom: 0;
+}
+
+.pg-event[data-big] {
+  background: color-mix(in srgb, var(--foreground) 7%, transparent);
+  font-weight: 700;
+}
+
+.pg-event time {
+  color: var(--dim);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pg-event-icon {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid var(--team-color, var(--dim));
+  border-radius: 50%;
+  background: var(--background);
+}
+
+.pg-event-icon[data-team="red"] {
+  border-radius: 0.4375rem;
+}
+
+.pg-event-icon img {
+  width: 1.125rem;
+  height: 1.125rem;
+  object-fit: contain;
+}
+
+.pg-event-icon[data-portrait] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+
+.pg-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--line);
+  background: var(--rail);
+}
+
+/* ── Narrow windows ───────────────────────────────────────────────────── */
+
+@media (max-width: 85rem) {
+  .pg-side-name span {
+    display: none;
+  }
+
+  .pg-mid {
+    grid-template-columns: 3.75rem 8rem 3.75rem;
+  }
+
+  .pg-legend {
+    font-size: var(--text-caption);
+  }
+}
+
+@media (max-width: 68.75rem) {
+  .pg-timeline {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 53.75rem) {
+  .pg-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 47.5rem) {
+  .post-game {
+    display: block;
+    height: auto;
+    overflow: auto;
+  }
+
+  .pg-top {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pg-side,
+  .pg-side[data-team="red"] {
+    padding: 0.5rem 0.75rem;
+    clip-path: none;
+  }
+
+  .pg-mid {
+    order: -1;
+    padding: 0.375rem 0;
+  }
+
+  .pg-tabs {
+    flex-wrap: wrap;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .pg-views label > span {
+    min-width: 0;
+    padding: 0 0.75rem;
+    font-size: 1rem;
+  }
+
+  .pg-main {
+    overflow: visible;
+  }
+
+  .pg-scoreboard {
+    overflow-x: auto;
+  }
+
+  .pg-table {
+    min-width: 52.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .post-game * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

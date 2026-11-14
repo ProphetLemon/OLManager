@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   FALLBACK_ACCENT,
   FALLBACK_SECONDARY,
+  DARK_CARD_HEX,
   SURFACE,
   SURFACE_HEX,
   contrastRatio,
@@ -14,6 +15,7 @@ import {
   logoKeyForTeam,
   oklchToHex,
   parseHex,
+  readableForeground,
   resolveClubPalette,
 } from "./clubColors";
 
@@ -52,6 +54,13 @@ describe("colour maths", () => {
     const css = readFileSync(resolve(__dirname, "../../themes/default.css"), "utf8");
     const token = css.match(/--surface-clamp:\s*(#[0-9a-fA-F]{6})\s*;/);
     expect(token?.[1].toLowerCase()).toBe(SURFACE);
+  });
+
+  it("exports the dark card the washes are mixed over", () => {
+    const css = readFileSync(resolve(__dirname, "../../themes/default.css"), "utf8");
+    const dark = css.slice(css.indexOf("\n.dark {"));
+    const token = dark.match(/--card:\s*(#[0-9a-fA-F]{6})\s*;/);
+    expect(token?.[1].toLowerCase()).toBe(DARK_CARD_HEX.toLowerCase());
   });
 
   it("distinguishes chromatic colours from placeholders", () => {
@@ -182,5 +191,15 @@ describe("logoKeyForTeam", () => {
     expect(logoKeyForTeam({ name: "Fúria Esports!" })).toBe("furiaesports.webp");
     expect(logoKeyForTeam({ logo_url: null, name: "G2 Esports" })).toBe("g2esports.webp");
     expect(logoKeyForTeam({})).toBeNull();
+  });
+});
+
+describe("readableForeground", () => {
+  it("picks near-black on a light fill and white on a dark one, at 4.5:1 or better", () => {
+    expect(readableForeground("#edece8")).toBe("#0a0a0a");
+    expect(readableForeground("#1d1d4d")).toBe("#ffffff");
+    for (const fill of ["#8b5aff", "#009ef7", "#e11d2e", "#16a34a", "#fbbf24"]) {
+      expect(contrastRatio(readableForeground(fill), fill)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

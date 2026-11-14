@@ -4,6 +4,7 @@ import {
   cardDescriptionParts,
   cardState,
   cooldownChips,
+  ULTIMATE_UNLOCK_LEVEL,
   goldGap,
   ITEM_SLOTS,
   opposingChampion,
@@ -39,7 +40,7 @@ describe("cooldownChips", () => {
   it("lists the ultimate, the two summoner spells and the trinket, with the seconds left rounded up", () => {
     const chips = cooldownChips(
       champ({
-        ultimate: { cdUntil: 112.3 },
+        ultimate: { cdUntil: 112.3, icon: "/lol-ultimate-icons/AmbessaR.png", archetype: "engage" },
         summonerSpells: [
           { key: "Flash", cdUntil: 100 },
           { key: "ignite", cdUntil: 160.01 },
@@ -49,19 +50,48 @@ describe("cooldownChips", () => {
       }),
       100,
     );
+    const none = { icon: null, archetype: null, unlockLevel: null };
     expect(chips).toEqual([
-      { kind: "ultimate", letter: "R", key: null, seconds: 13 },
-      { kind: "summoner", letter: "F", key: "flash", seconds: 0 },
-      { kind: "summoner", letter: "I", key: "ignite", seconds: 61 },
-      { kind: "trinket", letter: "W", key: "stealth_ward", seconds: 7 },
+      { kind: "ultimate", state: "waiting", letter: "R", key: null, seconds: 13, icon: "/lol-ultimate-icons/AmbessaR.png", archetype: "engage", unlockLevel: null },
+      { kind: "summoner", state: "ready", letter: "F", key: "flash", seconds: 0, ...none },
+      { kind: "summoner", state: "waiting", letter: "I", key: "ignite", seconds: 61, ...none },
+      { kind: "trinket", state: "waiting", letter: "", key: "stealth_ward", seconds: 7, icon: "/lol-item-icons/stealth_ward.png", archetype: null, unlockLevel: null },
     ]);
   });
 
   it("counts the oracle lens through its active time and then its cooldown", () => {
     const lens = champ({ trinketKey: "oraclelens", sweeperActiveUntil: 108, sweeperCdUntil: 140 });
-    expect(cooldownChips(lens, 100)[0]).toMatchObject({ letter: "O", key: "oracle_lens", seconds: 8 });
+    expect(cooldownChips(lens, 100)[0]).toMatchObject({ key: "oracle_lens", icon: "/lol-item-icons/oracle_lens.png", seconds: 8, state: "waiting" });
     expect(cooldownChips(lens, 120)[0]).toMatchObject({ seconds: 20 });
-    expect(cooldownChips(lens, 150)[0]).toMatchObject({ seconds: 0 });
+    expect(cooldownChips(lens, 150)[0]).toMatchObject({ seconds: 0, state: "ready" });
+  });
+
+  it("shows no letter for the trinket: its icon replaces the W and the O", () => {
+    for (const trinketKey of ["wardingtotem", "oraclelens"]) {
+      const [chip] = cooldownChips(champ({ trinketKey }), 100);
+      expect(chip.kind).toBe("trinket");
+      expect(chip.letter).toBe("");
+      expect(chip.icon).toMatch(/^\/lol-item-icons\/\w+\.png$/);
+    }
+  });
+
+  it("locks the ultimate below level 6, whatever cooldown the engine sends", () => {
+    for (const level of [1, 5]) {
+      const [chip] = cooldownChips(champ({ level, ultimate: { cdUntil: 0 } }), 100);
+      expect(chip).toMatchObject({ kind: "ultimate", state: "locked", seconds: 0, unlockLevel: ULTIMATE_UNLOCK_LEVEL });
+    }
+    expect(cooldownChips(champ({ level: 3, ultimate: { cdUntil: 400 } }), 100)[0]).toMatchObject({ state: "locked", seconds: 0 });
+  });
+
+  it("unlocks the ultimate at level 6: ready with no seconds left, waiting while it cools down", () => {
+    expect(cooldownChips(champ({ level: ULTIMATE_UNLOCK_LEVEL, ultimate: { cdUntil: 0 } }), 100)[0]).toMatchObject({ state: "ready", seconds: 0, unlockLevel: null });
+    expect(cooldownChips(champ({ level: 11, ultimate: { cdUntil: 130.2 } }), 100)[0]).toMatchObject({ state: "waiting", seconds: 31 });
+  });
+
+  it("reads an ultimate with no icon as an empty icon and keeps its archetype for the glyph", () => {
+    const [chip] = cooldownChips(champ({ ultimate: { cdUntil: 0, icon: "  ", archetype: "burst" } }), 100);
+    expect(chip.icon).toBeNull();
+    expect(chip.archetype).toBe("burst");
   });
 
   it("leaves out what the engine does not send", () => {

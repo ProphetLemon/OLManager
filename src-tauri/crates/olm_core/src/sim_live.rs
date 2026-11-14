@@ -6996,6 +6996,9 @@ mod real_items_harness_tests;
 mod captured_replay_harness_tests;
 
 #[cfg(test)]
+mod engine_parity_tests;
+
+#[cfg(test)]
 mod recall_interrupt_tests;
 
 #[cfg(test)]
