@@ -4,6 +4,71 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1114.1] - 2026-11-14
+
+### Changed
+
+- The game data now comes from a fork of the data repository, so a fresh clone with submodules builds. Before, the data commit the repository pointed to was not on any server. This matters only if you build from source.
+- 22 more second-tier leagues are playable, so the team picker lists 29 leagues: 6 first-tier and 23 second-tier. Before, only the six top leagues and the Spanish one could be chosen. LCK CL and Prime League are among the new ones. Each new league plays a single round robin sized to its real number of teams (6, 8 or 10), then a four-team best-of-five playoff, with no promotion or relegation between leagues. In 10 simulated seasons every league finished with no error. A new game takes about the same time to build (about 33 ms with 29 leagues against 32 ms with 7). A day takes about 5 ms longer on ordinary days, a whole season about 18% longer (49.5 s against 42.1 s in the timing test), and a save is about 6% larger. New games only: a save keeps the leagues it already has.
+- The team picker shows what a new game really starts with: each club's money, reputation and squad size equal the game's. Each card shows the league's full name (for example "LCKCL / LCK Challenger League Series"), and search finds a league by its long name, so "Prime", "Challenger" and "LCK CL" all work. A league's team count is the number of teams it lists.
+- Second-tier clubs that shipped with no money or reputation now start with both, worked out from clubs of the same tier. 168 of the 200 second-tier clubs had none. Eight TCL clubs whose budget could not pay their own wages also get a workable budget. Leagues whose players have no real ratings use the typical rating of their own tier: LDL goes from about 73 to about 66 and EEC from 60 to about 66. New games only.
+- Every club in a scheduled league now starts with a sponsor sized by its tier: €1.5M a year in the first tier and €950K in the second, paid monthly. Before, no club had one, and the median club of each tier lost money in a measured season: about €1.5M in the first tier and about €0.9M in the second. Now the median first-tier club ends its first season level (-€4K) and the median second-tier club gains about €61K. When a deal ends, the club gets a new 12-month deal for its current tier, so promotion and relegation change it. Random sponsor offers still arrive, but only when they pay more than your current deal; an accepted offer lasts 3 months, then the tier deal comes back. Tier deals send no inbox mail. In an old save, clubs get their sponsor on the next 1st of the month.
+- Finishing below 10th place pays €30,000 in prize money. Before, it paid €150,000, more than 7th to 10th place got.
+- Attribute gains are bounded. Before, attributes only went up. Over two years of play, the user league's starters rose from an overall of about 80 to 83.7, with discipline at 91.5 (9.9% of starters at 99) and teamfighting at 87.8. Now each gain shrinks as the attribute nears the player's potential, in matches and in training. In the same two years the overall ends at 81.0, discipline at 82.1 and teamfighting at 82.5, with none at 99. In the other leagues, starters at 99 in the attributes that used to pile up went from 5 to 8% to 0 to 0.5%. This applies to every save from now on; it slows gains and does not lower a rating.
+- Post-match progression now judges damage as a player's share of the team's damage, compared with what the player's role should deal. Before, it expected real League of Legends damage per minute, and the game's matches produce about 10 against the 560 it expected, so the mechanics bonus never fired. Average ratings stay where they were (for example ADC 7.52 against 7.49).
+- Watched matches have fewer kills again: about 21 per match (about 24 before), lasting about 36 minutes (about 37 before). Measured on 3,200 replays of match starts captured from the game. The difference is junglers no longer dying to the recall problems below.
+- Jungler deaths per watched match went from about 5.9 to about 3.6 for each jungler in 3,200 replayed matches. A jungler now starts a recall only where no enemy can stop the channel, and otherwise walks toward its own jungle or base first. Stuck recalls fell from 534 to 371, and matches that ran past 50 minutes from 37 to 24, in the same 3,200 matches.
+- AI clubs now conclude the renewals they open. Before, they opened renewal sessions and never finished them, so almost every AI starter whose contract ended walked away: of 1,618 AI starters in a two-season replay, 5 were renewed. Now about 222 are (about 14%). An open session renews at the player's expected wage before the contract ends, a player with no match stats is no longer read as playing badly, and the renewal score no longer counts a contract-security term that is close to zero for every player about to expire.
+- The Continue menu's skip item now reads "Simulate to next match" ("Simular hasta la próxima partida" in Spanish, and so on in all 8 languages). It always simulated your next match, using your staff's draft, and the old name read as stopping before it. Pressing it once still plays one match.
+- Academies are limited to clubs in a first-tier league, and the academy team must come from a second-tier league of the same region (EMEA, Korea, China, North America, Brazil, Latin America or Asia-Pacific). Before, any club could set one up with any of 232 second-tier teams worldwide. The Youth tab now says why a club cannot, in your language, and shows the real region. A custom club that replaces a second-tier club no longer inherits that club's academy; one that replaces a first-tier club still does. Academies you already own stay as they are.
+- Player traits use League of Legends names and read in the game's language, with their description as text. Before, they were football terms: "Speedster" is now "Lightning Quick" ("Exceptional mechanics"), and "Tank" is now "Immovable" ("Unshaken under pressure").
+- A new game no longer builds clubs that no league plays: 12 lists of historical rosters (the old LCK, LPL, LLA, LCS and similar lists) held 67 clubs that never played, and 20 more clubs came from duplicate copies of LCK CL and Prime League. A new game goes from 557 clubs to 470. The 189 real free agents the historical clubs had hired stay on the market (279 free agents instead of 90), and the 146 filler players generated for them are gone. Saves from older versions keep their historical clubs.
+
+### Added
+
+- Watched match, on the map:
+  - the map is the official League of Legends Rift art in full colour, with marks that stay readable on its pale lanes. Before, the lanes were drawn in a flat vector style;
+  - each side uses its club's colours and logo on the bar, the player columns, the champions, the beams, the chips, the wards and the minions. When two clubs' colours are too close (less than 30 degrees of hue apart), the game uses a fallback pair. "Blue side" and "Red side" tags and the circle and rounded-square shapes still tell the sides apart, and high contrast hides the colour washes and underlines each side;
+  - a lane strip above the map shows which side is pushing each lane and where fights are on;
+  - a timer rail shows the dragon or Elder, Voidgrubs, Herald and Baron timers, with a tag for the team that holds a Baron or Elder buff.
+- Watched match, around the map:
+  - each player card shows an icon chip for the champion's ultimate: ready, waiting with the seconds left, or locked below level 6. The trinket is an icon instead of a letter "W";
+  - hovering an item, an empty slot or a cooldown chip with the mouse, or long-pressing it on a touch screen, shows its name;
+  - the Fight board is always visible as two strips, one for fights and one for recalls and deaths, with a "+N" when more than fit, and screen readers get the full sentences;
+  - on short windows the timer tiles and the feed stay readable, and each feed row is one line.
+- Watched match, on small windows: five player cards per side fit with no scroll at 1280x800 and 1366x768 (no column scroll in 156 samples at six sizes), the score bar gives its buff chips their own row under 1205 px wide, the lane name sits over its track in a narrow lane strip, and the footer buttons become icons at 1360 px and below.
+- The post-match screen is rebuilt, in the club colours of the two sides:
+  - a scoreboard with level, CS, items and spells for each player, the objectives, and the series score with the game count;
+  - a gold-difference chart with objective markers, a slider and a table, plus damage and gold bars per player, each with a table alternative. The gold line is the real per-minute gold, and minutes skipped with Skip show as a hatched gap labelled "partial". Before, the gold line was a straight line across a skip;
+  - a timeline of kills and objectives that names the clubs;
+  - after a Simulate from the tactics stage, the columns the simulator does not produce (level, CS, items, spells, the gold line) are hidden and the graphs say "not recorded", instead of showing 0;
+  - the press conference is offered only at the end of a series.
+- Export and import saves. "Export" on each save in the saves list writes it to a file through the system file picker, and "Import" in the list header adds a picked save file. Import refuses a file from another game version or a corrupt file with a message and leaves your saves unchanged, and asks before replacing a save with the same id. Use it to move a career between computers with Drive, Syncthing or a cable. The file pickers have not been tried on a real device.
+- The champion page shows a card with the champions this one is strong against and the ones that counter it, up to five each, with a rating from 1 to 5 shown as "N/5", from the game's champion data.
+- Matches you do not watch now record assists and creep score. Before, every assist and CS in them was 0. CS per minute now matches watched matches (about 5.5 for top and jungle, 6.0 for mid, 4.1 for ADC, 0.4 for support), and assists run about 1.1 per kill (1.08 in watched matches). Matches already stored keep their zeros, which lowers averages built from them. The assists award has winners again (it was empty), AI players' average ratings rose from about 6.2 to 6.8 to about 7.0 to 7.8 when this landed, and AI players at full morale rose from 75% to 93%.
+- A notice in Settings says that team names, logos and player photos belong to their owners and that the game is an unofficial fan project, in the 8 languages.
+- Screen readers now hear why the "Create club" button is disabled.
+
+### Fixed
+
+- AI clubs treated 1,968 of 3,078 players as having an overall rating of 0 until you first loaded a save, so purchases, sales, wage decisions and renewals ran on bad numbers. The rating is now computed when a new game's world is built and refreshed every day. Before, it went stale in a session: 875 of 1,563 players differed after two seasons.
+- A renewal session now ends when the contract it was about changes, so a player who was renewed, released or signed elsewhere can get a new session later. Before, that never happened.
+- Jungle and Support progression no longer drains while the game does not measure vision. In one league split, AI junglers' macro play went from -9.9 to +1.6 and supports' from -12.3 to -1.9, and consistency of every role went from -2.4 to +6.2. The champion page hides the vision tile until a value above zero exists, as the player profile already did.
+- Duplicate copies of LCK CL and Prime League clubs (20 clubs with 100 players and no league) are no longer built in a new game, and the team picker never offers them. Saves from older versions keep these clubs as they are.
+- The game finds its message templates when it is installed, not only when run from the source folder.
+- The live feed names the club on every objective line where it said "Blue" or "Red", and it no longer prints a line for an unclaimed Scuttle Crab despawning, which read "Un equipo" in Spanish.
+- Turkish no longer dots the capital I in player handles, club names and the title-bar edition. UI words keep their Turkish capitals.
+- The league picker's team cards use your language for their labels, such as "Rep:".
+- The academy search field is wide enough for its placeholder, and the Home inbox heading wraps instead of being cut.
+- When contracts expire, an AI club is no longer limited to one free-agent signing a day to refill its roster, and for each role it signs the strongest free agent it may sign instead of the first one listed. Roles with no free agent available (often Top and Jungle) are still filled with generated players.
+- Watched match: the score bar is no longer cut on windows 1540 px wide or more (1920x1080 included). It lost its second row there: the towers, gold and objectives, the "Paused" tag and the Soul chip.
+- The board's financial summary mail no longer reads "stable months" when your monthly balance is not negative. It now says the trend is not negative. Mails already in an old save keep the old wording.
+- The finance card's monthly sponsor value groups its thousands, like the card's other amounts.
+
+### Removed
+
+- After a series, the post-match screen no longer reopens an earlier game's full result. The Schedule tab still opens the old result screen for past matches.
+
 ## [2026.1113.2] - 2026-11-13
 
 ### Changed
