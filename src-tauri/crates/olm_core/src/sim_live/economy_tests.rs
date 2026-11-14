@@ -248,11 +248,22 @@ pub(super) fn batch_size(default: usize) -> usize {
         .unwrap_or(default)
 }
 
-/// Mean gold earned per team over the four seeds 0..4 after 12 simulated
+/// Seeds of the team gold guard: the first 32, fixed before looking at the result. The mean of 4
+/// matches is noise-limited (see `EARLY_SHARE_SEEDS`), which made the weighted-to-neutral ratio
+/// swing past the band whatever the engine did.
+const TEAM_GOLD_SEEDS: usize = 32;
+
+/// Mean gold earned per team over the first `TEAM_GOLD_SEEDS` seeds after 12 simulated
 /// minutes, measured with every role income weight set to 1.0 (no role
 /// weighting, everything else as shipped). [PLACEHOLDER] regenerate it with
 /// the same setup if the base economy changes.
-const NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN: f64 = 15_564.0;
+///
+/// Re-measured 2026-11-14 on the engine with the jungler recall rules (3d343289) over 32 seeds:
+/// 15,466.7. The old 4-seed value was 15,564, already 0.8% above the engine before those rules
+/// (15,442 on 4 seeds); 4 seeds were noise-limited. Over 32 seeds the weighted-to-neutral ratio
+/// is 1.0006 on the engine before the rules (15,528.1 against 15,519.5) and 0.9957 on this one
+/// (15,399.8 against 15,466.7).
+const NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN: f64 = 15_466.7;
 
 /// The role income weights only redistribute gold between roles; they must not
 /// inflate the team total. Measured against the unweighted baseline above the
@@ -261,7 +272,7 @@ const NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN: f64 = 15_564.0;
 /// check fails on the old weights and tolerates simulation noise.
 #[test]
 fn role_weights_keep_team_gold_at_the_unweighted_baseline() {
-    let outcomes = run_batch(0, 4, 0.0, 0.0, SHORT_RUN_TICKS);
+    let outcomes = run_batch(0, TEAM_GOLD_SEEDS, 0.0, 0.0, SHORT_RUN_TICKS);
     let mean = outcomes.iter().map(|o| o.team_gold).sum::<f64>() / outcomes.len() as f64;
     let ratio = mean / NEUTRAL_WEIGHT_TEAM_GOLD_12_MIN;
     assert!(
@@ -376,7 +387,7 @@ fn print_economy_report() {
 #[test]
 #[ignore = "measurement report; run with --ignored --nocapture"]
 fn print_early_economy_report() {
-    let outcomes = run_batch(0, 4, 0.0, 0.0, SHORT_RUN_TICKS);
+    let outcomes = run_batch(0, TEAM_GOLD_SEEDS, 0.0, 0.0, SHORT_RUN_TICKS);
     let mean = outcomes.iter().map(|o| o.team_gold).sum::<f64>() / outcomes.len() as f64;
     println!("team gold after 12 min: {mean:.1}");
     let summary = summarize(&outcomes);
