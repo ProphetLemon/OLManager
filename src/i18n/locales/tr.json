@@ -4788,6 +4788,12 @@
         "lead": "{{team}} {{amount}} altın farkla önde bitirdi",
         "leadEven": "Altın eşit bitti"
       },
+      "post": {
+        "columnLevel": "Seviye",
+        "columnItems": "Eşyalar ve muska",
+        "columnSpells": "Büyücü büyüleri",
+        "teamTotal": "Takım toplamı"
+      },
       "pit": {
         "voidgrubs": "Boşluk Larvaları",
         "dragonInfernal": "Cehennem Ejderhası",

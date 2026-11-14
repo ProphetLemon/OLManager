@@ -4788,6 +4788,12 @@
         "lead": "{{team}} lag am Ende mit {{amount}} Gold vorn",
         "leadEven": "Das Gold war am Ende ausgeglichen"
       },
+      "post": {
+        "columnLevel": "Stufe",
+        "columnItems": "Gegenstände und Trinket",
+        "columnSpells": "Beschwörerzauber",
+        "teamTotal": "Teamsumme"
+      },
       "pit": {
         "voidgrubs": "Leerenlarven",
         "dragonInfernal": "Infernodrache",

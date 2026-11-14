@@ -4787,6 +4787,12 @@
         "lead": "{{team}} ha chiuso con {{amount}} d'oro di vantaggio",
         "leadEven": "L'oro è finito in parità"
       },
+      "post": {
+        "columnLevel": "Livello",
+        "columnItems": "Oggetti e amuleto",
+        "columnSpells": "Incantesimi dell'evocatore",
+        "teamTotal": "Totale della squadra"
+      },
       "pit": {
         "voidgrubs": "Larve del Vuoto",
         "dragonInfernal": "Drago infernale",

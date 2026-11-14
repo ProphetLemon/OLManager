@@ -4787,6 +4787,12 @@
         "lead": "{{team}} terminou com {{amount}} de ouro de vantagem",
         "leadEven": "O ouro terminou empatado"
       },
+      "post": {
+        "columnLevel": "Nível",
+        "columnItems": "Itens e amuleto",
+        "columnSpells": "Feitiços de invocador",
+        "teamTotal": "Total da equipa"
+      },
       "pit": {
         "voidgrubs": "Larvas do Vazio",
         "dragonInfernal": "Dragão Infernal",

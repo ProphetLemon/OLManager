@@ -4822,6 +4822,12 @@
         "lead": "{{team}} finished {{amount}} ahead in gold",
         "leadEven": "Gold finished even"
       },
+      "post": {
+        "columnLevel": "Level",
+        "columnItems": "Items and trinket",
+        "columnSpells": "Summoner spells",
+        "teamTotal": "Team total"
+      },
       "pit": {
         "voidgrubs": "Voidgrubs",
         "dragonInfernal": "Infernal Dragon",

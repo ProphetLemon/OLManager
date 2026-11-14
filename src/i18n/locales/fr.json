@@ -4788,6 +4788,12 @@
         "lead": "{{team}} termine avec {{amount}} d'or d'avance",
         "leadEven": "L'or est resté à égalité"
       },
+      "post": {
+        "columnLevel": "Niveau",
+        "columnItems": "Objets et bibelot",
+        "columnSpells": "Sorts d'invocateur",
+        "teamTotal": "Total de l'équipe"
+      },
       "pit": {
         "voidgrubs": "Larves du Néant",
         "dragonInfernal": "Dragon infernal",
