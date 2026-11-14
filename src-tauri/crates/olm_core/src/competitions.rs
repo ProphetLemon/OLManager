@@ -320,7 +320,8 @@ fn competition_summary(
         tier: manifest.tier.unwrap_or(0),
         legacy: manifest.legacy,
         active: manifest.active,
-        team_count: manifest.schedule.team_count,
+        // The roster is the truth: the manifest value drifts from the teams file.
+        team_count: team_summaries.len() as u32,
         custom_team_allowed,
         teams: team_summaries,
     })
@@ -624,6 +625,33 @@ mod tests {
         let ids: Vec<_> = data.competitions.iter().map(|c| c.id.as_str()).collect();
 
         assert_eq!(ids, vec!["lec"]);
+    }
+
+    #[test]
+    fn league_selection_counts_teams_from_the_roster_not_the_manifest() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_competition(dir.path(), "les", 2, false, true);
+        // The manifest claims 10 teams (`write_competition` writes 0 and the shipped
+        // manifests drift the same way); the teams file holds three.
+        let manifest_path = dir.path().join("competitions").join("les").join("manifest.json");
+        let manifest = std::fs::read_to_string(&manifest_path).expect("manifest");
+        std::fs::write(&manifest_path, manifest.replace(r#""team_count": 0"#, r#""team_count": 10"#))
+            .expect("manifest");
+        let team = |n: u8| {
+            format!(
+                r#"{{"id": "t{n}", "name": "T{n}", "short_name": "T{n}", "country": "ES", "city": "Madrid", "manager_id": null}}"#
+            )
+        };
+        std::fs::write(
+            dir.path().join("teams").join("les.json"),
+            format!(r#"{{"teams": [{}, {}, {}]}}"#, team(1), team(2), team(3)),
+        )
+        .expect("teams file");
+
+        let data = build_league_selection(dir.path());
+        let les = data.competitions.iter().find(|c| c.id == "les").expect("les offered");
+
+        assert_eq!(les.team_count, 3);
     }
 
     fn write_staff_file(path: &std::path::Path) {
