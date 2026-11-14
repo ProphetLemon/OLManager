@@ -328,9 +328,13 @@ fn competition_summary(
 }
 
 /// A competition is offered at team selection when it is active, not legacy,
+/// is not a stale copy of a live competition (a new game builds no league or teams for it)
 /// and has at least one split to play (so regional leagues without a schedule stay hidden).
 pub(crate) fn is_selectable_competition(manifest: &CompetitionManifest) -> bool {
-    manifest.active && !manifest.legacy && !manifest.schedule.splits.is_empty()
+    manifest.active
+        && !manifest.legacy
+        && !crate::world_catalog::is_stale_duplicate_competition(&manifest.id)
+        && !manifest.schedule.splits.is_empty()
 }
 
 /// Build lightweight league selection metadata from all competition manifests.
@@ -625,6 +629,19 @@ mod tests {
         let ids: Vec<_> = data.competitions.iter().map(|c| c.id.as_str()).collect();
 
         assert_eq!(ids, vec!["lec"]);
+    }
+
+    #[test]
+    fn league_selection_hides_stale_duplicate_competitions() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_competition(dir.path(), "lckcl", 2, false, true);
+        write_competition(dir.path(), "lck-cl", 2, false, true);
+        write_competition(dir.path(), "prime_league", 2, false, true);
+
+        let data = build_league_selection(dir.path());
+        let ids: Vec<_> = data.competitions.iter().map(|c| c.id.as_str()).collect();
+
+        assert_eq!(ids, vec!["lckcl"]);
     }
 
     #[test]

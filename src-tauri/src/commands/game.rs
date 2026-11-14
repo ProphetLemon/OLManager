@@ -680,7 +680,18 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
                     }
                     team.competition_id = Some(cid.to_string());
                 }
-                all_teams.extend(comp_teams);
+                // Stale copies of a live competition keep no teams: they get no league,
+                // so nothing would repair or simulate them. Their players follow the
+                // duplicate and orphan rules below.
+                if world_catalog::is_stale_duplicate_competition(cid) {
+                    info!(
+                        "[game] dropped {} teams of stale competition '{}'",
+                        comp_teams.len(),
+                        cid
+                    );
+                } else {
+                    all_teams.extend(comp_teams);
+                }
             }
             Err(err) => {
                 eprintln!("[game] FAILED to load teams for '{}': {}", cid, err);
@@ -2115,6 +2126,58 @@ mod tests {
             assert!(stale.is_empty(), "stale leagues built: {stale:?}");
         }
 
+        /// The stale duplicates' teams are not part of a new game either: without a league
+        /// they would never be repaired or simulated, and still show up in the market, in
+        /// search and in the tier lookup. Their players become free agents.
+        #[test]
+        fn a_new_game_has_no_teams_or_rostered_players_for_stale_duplicate_competitions() {
+            let (game, _catalog_players, _overlay, _user_team) = new_game();
+
+            let stale_teams: Vec<&str> = game
+                .teams
+                .iter()
+                .filter(|t| {
+                    t.competition_id
+                        .as_deref()
+                        .is_some_and(olm_core::world_catalog::is_stale_duplicate_competition)
+                })
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(stale_teams.is_empty(), "stale teams kept: {stale_teams:?}");
+
+            let team_ids: HashSet<&str> = game.teams.iter().map(|t| t.id.as_str()).collect();
+            let dangling = game
+                .players
+                .iter()
+                .filter(|p| p.team_id.as_deref().is_some_and(|id| !team_ids.contains(id)))
+                .count();
+            assert_eq!(dangling, 0, "players left on a team that does not exist");
+            assert!(
+                game.teams.iter().any(|t| t.competition_id.as_deref() == Some("lckcl")),
+                "the live LCK CL keeps its teams"
+            );
+        }
+
+        /// The academy catalogs read the manifests from disk; they must skip the stale
+        /// duplicates too, or the academy offers teams the game no longer carries.
+        #[test]
+        fn the_academy_catalogs_skip_stale_duplicate_competitions() {
+            let _ = new_game();
+            let erl = olm_core::academy::academy_erl_catalog();
+            assert!(erl.iter().any(|l| l.id == "lckcl"), "live leagues stay");
+            let stale_leagues: Vec<&str> = erl
+                .iter()
+                .filter(|l| matches!(l.id.as_str(), "lck_cl" | "lck-cl" | "prime_league"))
+                .map(|l| l.id.as_str())
+                .collect();
+            assert!(stale_leagues.is_empty(), "stale ERL leagues: {stale_leagues:?}");
+            let stale_candidates = olm_core::academy::academy_candidate_catalog()
+                .iter()
+                .filter(|c| matches!(c.erl_league_id.as_str(), "lck_cl" | "lck-cl" | "prime_league"))
+                .count();
+            assert_eq!(stale_candidates, 0);
+        }
+
         /// A user promoted from the LES to the LEC at a season wrap keeps the LEC after the
         /// save is written and read back through the load path: the save round trip, catalog
         /// rehydration, the rebuilt competition configs and the reference sanitising.
@@ -2221,6 +2284,60 @@ mod tests {
                 "the ladder link is read from the current manifests"
             );
             assert_eq!(loaded.ladder.movements.len(), 1);
+        }
+
+        /// A saved new game keeps its league set and its teams through the load path: the
+        /// catalog rehydration and the rebuilt competition configs (which still list the stale
+        /// duplicate manifests) add neither a league nor a team of a stale competition.
+        #[test]
+        fn loading_a_new_game_save_brings_back_no_stale_league_or_team() {
+            let (mut game, catalog_players, _overlay, user_team) = new_game();
+            let (manifests, known) = known_ids_and_manifests();
+            prepare_new_game_season(&mut game, &manifests, &known, &user_team).expect("season setup");
+            let league_ids = |game: &Game| -> Vec<Option<String>> {
+                game.leagues.iter().map(|l| l.competition_id.clone()).collect()
+            };
+            let (leagues_before, teams_before) = (league_ids(&game), game.teams.len());
+
+            let dir = tempfile::tempdir().expect("tempdir");
+            let mut manager = SaveManager::init(dir.path()).expect("save manager");
+            let save_id = manager.create_save(&game, "stale").expect("create save");
+            let mut loaded = manager.load_game(&save_id).expect("load save");
+
+            // The same steps `load_game` runs after reading the file.
+            let data = data_base();
+            let scanned = olm_core::competitions::scan_competitions(&data.join("competitions"));
+            let (catalog_teams, _players, catalog_staff) = assemble_world_from_modular_data(
+                &data,
+                &scanned,
+                "",
+                "",
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+            )
+            .expect("catalog");
+            crate::commands::import::apply_catalog_to_game(
+                &mut loaded,
+                catalog_teams,
+                catalog_players,
+                catalog_staff,
+            );
+            let current: Vec<_> = scanned.into_iter().filter(|m| !m.legacy).collect();
+            let known_now: Vec<String> = current.iter().map(|m| m.id.clone()).collect();
+            loaded.competition_configs.clear();
+            for manifest in &current {
+                loaded.competition_configs.insert(manifest.id.clone(), manifest.clone());
+            }
+            sanitize_competition_references(&mut loaded, &known_now);
+
+            assert_eq!(league_ids(&loaded), leagues_before, "the league set is the saved one");
+            assert_eq!(loaded.teams.len(), teams_before, "no team is added by the load");
+            assert!(
+                loaded
+                    .teams
+                    .iter()
+                    .all(|t| !t.competition_id.as_deref().is_some_and(olm_core::world_catalog::is_stale_duplicate_competition)),
+                "a stale competition's team came back"
+            );
         }
 
         /// A new world built the way `select_team` does, but with the given rating
@@ -5010,6 +5127,29 @@ mod tests {
                         assert!(table.contains(&fixture.home_team_id) && table.contains(&fixture.away_team_id), "{competition}: {} names an outsider", fixture.id);
                     }
                 }
+            }
+
+            /// A season wrap rebuilds the leagues the game already holds; it never adds one,
+            /// and in particular never brings back a stale duplicate competition.
+            #[test]
+            fn a_season_wrap_keeps_the_league_set() {
+                let (mut game, id) = career(true);
+                let ids = |game: &Game| -> Vec<Option<String>> {
+                    let mut ids: Vec<_> = game.leagues.iter().map(|l| l.competition_id.clone()).collect();
+                    ids.sort();
+                    ids
+                };
+                let before = ids(&game);
+                assert!(
+                    before.iter().flatten().all(|id| !olm_core::world_catalog::is_stale_duplicate_competition(id)),
+                    "a new game starts without stale leagues"
+                );
+                let les_order = order_with(&game, "les", &[id.as_str()]);
+                let lec_order = table_ids(&game, "lec");
+
+                roll_over(&mut game, &les_order, &lec_order);
+
+                assert_eq!(ids(&game), before);
             }
 
             /// Q1: the club, the user's league and the clubs that move.
