@@ -680,7 +680,18 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
                     }
                     team.competition_id = Some(cid.to_string());
                 }
-                all_teams.extend(comp_teams);
+                // Stale copies of a live competition keep no teams: they get no league,
+                // so nothing would repair or simulate them. Their players follow the
+                // duplicate and orphan rules below.
+                if world_catalog::is_stale_duplicate_competition(cid) {
+                    info!(
+                        "[game] dropped {} teams of stale competition '{}'",
+                        comp_teams.len(),
+                        cid
+                    );
+                } else {
+                    all_teams.extend(comp_teams);
+                }
             }
             Err(err) => {
                 eprintln!("[game] FAILED to load teams for '{}': {}", cid, err);
@@ -2113,6 +2124,58 @@ mod tests {
                 .filter(|id| olm_core::world_catalog::is_stale_duplicate_competition(id))
                 .collect();
             assert!(stale.is_empty(), "stale leagues built: {stale:?}");
+        }
+
+        /// The stale duplicates' teams are not part of a new game either: without a league
+        /// they would never be repaired or simulated, and still show up in the market, in
+        /// search and in the tier lookup. Their players become free agents.
+        #[test]
+        fn a_new_game_has_no_teams_or_rostered_players_for_stale_duplicate_competitions() {
+            let (game, _catalog_players, _overlay, _user_team) = new_game();
+
+            let stale_teams: Vec<&str> = game
+                .teams
+                .iter()
+                .filter(|t| {
+                    t.competition_id
+                        .as_deref()
+                        .is_some_and(olm_core::world_catalog::is_stale_duplicate_competition)
+                })
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(stale_teams.is_empty(), "stale teams kept: {stale_teams:?}");
+
+            let team_ids: HashSet<&str> = game.teams.iter().map(|t| t.id.as_str()).collect();
+            let dangling = game
+                .players
+                .iter()
+                .filter(|p| p.team_id.as_deref().is_some_and(|id| !team_ids.contains(id)))
+                .count();
+            assert_eq!(dangling, 0, "players left on a team that does not exist");
+            assert!(
+                game.teams.iter().any(|t| t.competition_id.as_deref() == Some("lckcl")),
+                "the live LCK CL keeps its teams"
+            );
+        }
+
+        /// The academy catalogs read the manifests from disk; they must skip the stale
+        /// duplicates too, or the academy offers teams the game no longer carries.
+        #[test]
+        fn the_academy_catalogs_skip_stale_duplicate_competitions() {
+            let _ = new_game();
+            let erl = olm_core::academy::academy_erl_catalog();
+            assert!(erl.iter().any(|l| l.id == "lckcl"), "live leagues stay");
+            let stale_leagues: Vec<&str> = erl
+                .iter()
+                .filter(|l| matches!(l.id.as_str(), "lck_cl" | "lck-cl" | "prime_league"))
+                .map(|l| l.id.as_str())
+                .collect();
+            assert!(stale_leagues.is_empty(), "stale ERL leagues: {stale_leagues:?}");
+            let stale_candidates = olm_core::academy::academy_candidate_catalog()
+                .iter()
+                .filter(|c| matches!(c.erl_league_id.as_str(), "lck_cl" | "lck-cl" | "prime_league"))
+                .count();
+            assert_eq!(stale_candidates, 0);
         }
 
         /// A user promoted from the LES to the LEC at a season wrap keeps the LEC after the

@@ -527,6 +527,13 @@ pub fn academy_seed_catalog() -> &'static Vec<AcademyTeamSeed> {
             if manifest["legacy"].as_bool().unwrap_or(false) {
                 continue;
             }
+            // A stale copy of a live competition: the game no longer carries its teams.
+            if manifest["id"]
+                .as_str()
+                .is_some_and(crate::world_catalog::is_stale_duplicate_competition)
+            {
+                continue;
+            }
             let tier = manifest["tier"].as_u64().unwrap_or(1);
             if tier <= 1 {
                 continue;
@@ -678,7 +685,7 @@ fn catalogs_from_tier2_manifests() -> Vec<ErlLeagueDefinition> {
         };
         if let Ok(manifest) = serde_json::from_str::<CompetitionManifest>(&json_str) {
             // Skip legacy competitions
-            if manifest.legacy {
+            if manifest.legacy || crate::world_catalog::is_stale_duplicate_competition(&manifest.id) {
                 continue;
             }
             // Only tier 2+ competitions are ERL / academy sources
