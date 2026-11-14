@@ -4081,6 +4081,7 @@
         "readout": "{{time}}: {{team}} führt um {{amount}}",
         "readoutEven": "{{time}}: ausgeglichen",
         "ahead": "{{team}} vorn",
+        "aheadByGold": "{{team}} vorn um {{amount}} Gold",
         "scrubLabel": "Gold-Unterschied, Minute für Minute",
         "goldTableLabel": "Gold-Unterschied pro Minute",
         "columnTime": "Zeit",

@@ -4081,6 +4081,7 @@
         "readout": "{{time}}: {{team}} {{amount}} önde",
         "readoutEven": "{{time}}: eşit",
         "ahead": "{{team}} önde",
+        "aheadByGold": "{{team}} {{amount}} altın önde",
         "scrubLabel": "Altın farkı, dakika dakika",
         "goldTableLabel": "Dakika başına altın farkı",
         "columnTime": "Süre",

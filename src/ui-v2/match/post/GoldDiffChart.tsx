@@ -148,7 +148,7 @@ export function GoldDiffChart({ record, durationSec, entries, blue, red }: GoldD
                   ) : null,
                   <tr key={`s-${i}`}>
                     <th scope="row">{formatClock(sample.timeSec)}</th>
-                    <td>{lead.side ? t("onAir.match.post.ahead", { team: tagOf(lead.side) }) + ` ${gold(lead.amount)}` : t("match.draftResult.evenGold")}</td>
+                    <td>{lead.side ? t("onAir.match.post.aheadByGold", { team: tagOf(lead.side), amount: gold(lead.amount) }) : t("match.draftResult.evenGold")}</td>
                   </tr>,
                 ];
               })}
@@ -222,7 +222,7 @@ export function GoldDiffChart({ record, durationSec, entries, blue, red }: GoldD
               const label =
                 marker.count > 1
                   ? t("onAir.match.post.markerRun", { from: formatClock(first.t), to: formatClock(last.t), count: marker.count, team: nameOf(marker.side) })
-                  : `${formatClock(first.t)}, ${eventSentence(first.event, t)}`;
+                  : `${formatClock(first.t)}, ${eventSentence(first.event, t, { blue: blue.tag, red: red.tag })}`;
               const icon = entryIcon({ kind: marker.kind, side: marker.side, structureOwner: first.structureOwner, dragonKind: marker.dragonKind });
               return (
                 <span

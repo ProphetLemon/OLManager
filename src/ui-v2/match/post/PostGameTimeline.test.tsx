@@ -38,6 +38,19 @@ describe("PostGameTimeline", () => {
     expect(times).toEqual([...times].sort((a, b) => Number(a.replace(":", "")) - Number(b.replace(":", ""))));
   });
 
+  it("names the team by its tag, not by a side colour, wherever a sentence names a team", () => {
+    render(
+      <PostGameTimeline
+        entries={buildTimeline(KEY_EVENTS, { complete: true, roster })}
+        championByPlayerId={PICKS}
+        partialFromSec={null}
+        teams={{ blue: "SHI", red: "MKOI" }}
+      />,
+    );
+    expect(screen.getByText("SHI secured the Ocean Dragon")).toBeInTheDocument();
+    expect(screen.queryByText(/\bBlue\b|\bRed\b/)).not.toBeInTheDocument();
+  });
+
   it("shows the killer's portrait for a kill and the map's own icon for an objective or a structure", () => {
     show();
     const rows = screen.getAllByRole("listitem");

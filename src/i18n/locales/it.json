@@ -4081,6 +4081,7 @@
         "readout": "{{time}}: {{team}} in vantaggio di {{amount}}",
         "readoutEven": "{{time}}: pari",
         "ahead": "{{team}} avanti",
+        "aheadByGold": "{{team}} avanti di {{amount}} d'oro",
         "scrubLabel": "Differenza di oro, minuto per minuto",
         "goldTableLabel": "Differenza di oro per minuto",
         "columnTime": "Tempo",

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { formatClock } from "@/lib/match/live/clock";
 import type { TimelineEntry } from "@/lib/match/live/postGameTimeline";
 
-import { eventSentence } from "../live/eventSentence";
+import { eventSentence, type TeamNames } from "../live/eventSentence";
 import { championTile, entryIcon } from "./postGameIcons";
 import "./postGame.css";
 
@@ -14,15 +14,17 @@ export interface PostGameTimelineProps {
   championByPlayerId: Record<string, string>;
   /** Game second after which events may be missing (the match was skipped); 0 when nothing was recorded; null when it is whole. */
   partialFromSec: number | null;
+  /** What to call each side in a sentence (the clubs' tags); "Blue" and "Red" when left out. */
+  teams?: TeamNames;
 }
 
 /** Past this many events the list runs in two columns, as long as the window is wide enough. */
 const TWO_COLUMNS_FROM = 12;
 
-function Event({ entry, championByPlayerId }: { entry: TimelineEntry; championByPlayerId: Record<string, string> }) {
+function Event({ entry, championByPlayerId, teams }: { entry: TimelineEntry; championByPlayerId: Record<string, string>; teams?: TeamNames }) {
   const { t } = useTranslation();
   // A simulated result's events carry no data: their words come from the key they were given.
-  const sentence = entry.labelKey ? t(entry.labelKey, { defaultValue: entry.event.text }) : eventSentence(entry.event, t);
+  const sentence = entry.labelKey ? t(entry.labelKey, { defaultValue: entry.event.text }) : eventSentence(entry.event, t, teams);
   const text = entry.kind === "firstBlood" && !entry.labelKey ? `${t("match.draftResult.timelineEvents.firstBlood")}: ${sentence}` : sentence;
   const portrait = entry.kind === "kill" || entry.kind === "firstBlood" ? (entry.actorId ? championByPlayerId[entry.actorId] : undefined) : undefined;
   const icon = entryIcon(entry);
@@ -48,7 +50,7 @@ function Event({ entry, championByPlayerId }: { entry: TimelineEntry; championBy
  * and the nexus, each with its time, its icon and the sentence the live feed uses. First blood is
  * named only when the match was watched whole. A skipped match says from when events may be missing.
  */
-export function PostGameTimeline({ entries, championByPlayerId, partialFromSec }: PostGameTimelineProps) {
+export function PostGameTimeline({ entries, championByPlayerId, partialFromSec, teams }: PostGameTimelineProps) {
   const { t } = useTranslation();
   const split = entries.length > TWO_COLUMNS_FROM ? Math.ceil(entries.length / 2) : entries.length;
   const columns = entries.length === 0 ? [] : split < entries.length ? [entries.slice(0, split), entries.slice(split)] : [entries];
@@ -70,7 +72,7 @@ export function PostGameTimeline({ entries, championByPlayerId, partialFromSec }
               aria-label={t("onAir.match.post.timelineColumn", { from: formatClock(column[0].t), to: formatClock(column[column.length - 1].t) })}
             >
               {column.map((entry) => (
-                <Event key={entry.id} entry={entry} championByPlayerId={championByPlayerId} />
+                <Event key={entry.id} entry={entry} championByPlayerId={championByPlayerId} teams={teams} />
               ))}
             </ol>
           ))}
