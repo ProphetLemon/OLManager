@@ -407,23 +407,26 @@ pub fn push_board_financial_health_mail(
     months_left: Option<i64>,
     date: &str,
 ) -> bool {
+    let mut mail_params = params(&[
+        ("balance", format_money(balance.unsigned_abs())),
+        ("monthlyNet", signed_money(monthly_net)),
+    ]);
+    // Without a runway (the monthly net is not negative) there is no number of months to print.
+    let body_key = match months_left {
+        Some(months) => {
+            mail_params.insert("monthsLeft".to_string(), months.to_string());
+            "be.msg.finance.boardFinancialHealth.body"
+        }
+        None => "be.msg.finance.boardFinancialHealth.bodyStable",
+    };
     push_finance_mail_once(
         game,
         team_id,
         &format!("board-health:{team_id}:{date}"),
         "boardFinancialHealth",
         "be.msg.finance.boardFinancialHealth.subject",
-        "be.msg.finance.boardFinancialHealth.body",
-        params(&[
-            ("balance", format_money(balance.unsigned_abs())),
-            ("monthlyNet", signed_money(monthly_net)),
-            (
-                "monthsLeft",
-                months_left
-                    .map(|value| value.to_string())
-                    .unwrap_or_else(|| "stable".to_string()),
-            ),
-        ]),
+        body_key,
+        mail_params,
         date,
     )
 }

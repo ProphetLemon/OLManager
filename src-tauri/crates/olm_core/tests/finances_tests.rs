@@ -448,6 +448,38 @@ fn scoped_finance_mail_helpers_use_localized_payloads_route_and_correlation_dedu
 }
 
 #[test]
+fn board_health_mail_without_a_runway_uses_the_stable_body_and_no_months_param() {
+    let mut game = make_first_of_month_game();
+
+    assert!(finances::push_board_financial_health_mail(
+        &mut game,
+        "team1",
+        4_000_000,
+        25_000,
+        None,
+        "2025-06-01",
+    ));
+
+    let message = game
+        .messages
+        .iter()
+        .find(|message| message.id == "finance:board-health:team1:2025-06-01:boardFinancialHealth")
+        .expect("board health mail should exist");
+    assert_eq!(
+        message.body_key.as_deref(),
+        Some("be.msg.finance.boardFinancialHealth.bodyStable")
+    );
+    assert!(
+        message.i18n_params.values().all(|value| value != "stable"),
+        "a raw token must never reach a mail: {:?}",
+        message.i18n_params
+    );
+    assert!(!message.i18n_params.contains_key("monthsLeft"));
+    assert!(message.i18n_params.contains_key("balance"));
+    assert!(message.i18n_params.contains_key("monthlyNet"));
+}
+
+#[test]
 fn accepting_sponsor_offer_sends_finance_mail_and_dedupes() {
     let mut game = make_first_of_month_game();
     let mut offer = olm_core::domain::message::InboxMessage::new(

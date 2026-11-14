@@ -2574,7 +2574,8 @@
         },
         "boardFinancialHealth": {
           "subject": "Board Financial Health Summary",
-          "body": "Current balance: €{{balance}}. Monthly net trend: €{{monthlyNet}}. Estimated runway: {{monthsLeft}} months."
+          "body": "Current balance: €{{balance}}. Monthly net trend: €{{monthlyNet}}. Estimated runway: {{monthsLeft}} months.",
+          "bodyStable": "Current balance: €{{balance}}. Monthly net trend: €{{monthlyNet}}. The monthly trend is not negative, so there is no cash runway to worry about."
         }
       },
       "seasonPayout": {

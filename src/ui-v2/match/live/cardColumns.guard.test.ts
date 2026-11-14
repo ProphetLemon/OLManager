@@ -126,16 +126,16 @@ function columnPxOf(blocks: string[], columnPx: number): number {
 
 /**
  * The room the card column has, from the stylesheet: the scroll root less the rows around the
- * stage (padding, the bar of windows under 1540px, the lanes and board row, the controls row and
- * three gaps), the band, the low module under the column and the two gaps that separate them.
- * Where the cards sit beside the map the bar is the taller one (every window here is under 1540px).
+ * stage (padding, the two-row bar, the lanes and board row, the controls row and three gaps), the
+ * band, the low module under the column and the two gaps that separate them. Where the cards sit
+ * beside the map the bar is the 76px one: it is the default, and only under 1205px is it taller.
  */
 function cardRoom(root: number, lowBlock?: string): number {
   const match = ruleIn(css, ".live-match");
   const gap = px(declared(match, "--live-gap"));
   const rows =
     2 * px(declared(match, "--live-pad")) +
-    px(declared(blockOf("@container live (max-width: 1539px) {"), "--live-bar")) +
+    px(declared(match, "--live-bar")) +
     px(declared(match, "--live-sit")) +
     px(declared(match, "--live-ctl")) +
     3 * gap;
@@ -149,7 +149,7 @@ describe("the rows around the stage", () => {
     const match = ruleIn(css, ".live-match");
     expect(px(declared(match, "--live-sit"))).toBe(44);
     expect(px(declared(match, "--live-ctl"))).toBe(56);
-    expect(px(declared(blockOf("@container live (max-width: 1539px) {"), "--live-bar"))).toBe(76);
+    expect(px(declared(ruleIn(css, ".live-match"), "--live-bar"))).toBe(76);
     // 8 of padding, 76 of bar, 44 of lanes and board, 56 of controls, 3 gaps of 4.
     expect(cardRoom(ROOT_1280X800, compactBlockSource()) + 24 + 72 + 8).toBe(ROOT_1280X800 - 196);
   });
@@ -355,7 +355,7 @@ describe("the score bar holds the late-game chips at 960 and 1024", () => {
 
   /** A bar property as the steps leave it at a window of this width: the steps are in source order. */
   const barRow = () =>
-    px(cascade(".live-shell", "--live-bar", ".live-match", [blockOf("@container live (max-width: 1539px) {"), css.includes(MID) ? blockOf(MID) : ""]));
+    px(cascade(".live-shell", "--live-bar", ".live-match", [css.includes(MID) ? blockOf(MID) : ""]));
 
   const sideBoxPx = () => {
     const compact = blockOf("@container bar (max-width: 1499px) {");
@@ -383,7 +383,32 @@ describe("the score bar holds the late-game chips at 960 and 1024", () => {
   });
 
   it("keeps the 76px bar where the stats and chips fit beside each other's rows (1205px and up)", () => {
-    expect(px(declared(blockOf("@container live (max-width: 1539px) {"), "--live-bar"))).toBe(76);
-    expect(css.indexOf(MID)).toBeGreaterThan(css.indexOf("@container live (max-width: 1539px) {"));
+    expect(px(declared(ruleIn(css, ".live-match"), "--live-bar"))).toBe(76);
+    expect(css).not.toContain("@container live (max-width: 1539px)");
+    expect(css.indexOf(MID)).toBeGreaterThan(css.indexOf(".live-match {"));
+  });
+});
+
+/**
+ * The bar's height must follow from its width, not from the window's. The shell caps itself at
+ * 90rem and pads each side, so the bar is never wider than 1416px, under the 1500px its one-row
+ * layout needs: the stats always take a second row of each side, at every window width. So the
+ * two-row height (76px) has to be the bar's height in the widest window too (QA: the row was 56px
+ * from 1540px up and the overflow clipped the towers, gold and objectives row).
+ */
+describe("the bar is as tall as its two rows in the widest window", () => {
+  const BAR_ONE_ROW_FROM = 1500;
+  const TWO_ROW_BAR_PX = 76;
+
+  it("is never wider than the one-row breakpoint, because the shell caps and pads it", () => {
+    const shell = ruleIn(css, ".live-shell");
+    const widest = px(declared(shell, "max-width")) - 2 * px(declared(ruleIn(css, ".live-match"), "--live-pad-x"));
+    expect(css).toContain(`@container bar (max-width: ${BAR_ONE_ROW_FROM - 1}px) {`);
+    expect(widest).toBeLessThan(BAR_ONE_ROW_FROM);
+  });
+
+  it("sets --live-bar to at least the two-row height with no container step applied", () => {
+    const widestWindow = px(cascade(".live-shell", "--live-bar", ".live-match", []));
+    expect(widestWindow).toBeGreaterThanOrEqual(TWO_ROW_BAR_PX);
   });
 });
