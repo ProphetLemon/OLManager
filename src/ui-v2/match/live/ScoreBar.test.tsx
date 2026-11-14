@@ -311,7 +311,7 @@ describe("the washes and the high contrast rules in the stylesheet", () => {
     const hide = css.indexOf(':root[data-contrast="high"] .arena-bar::before');
     expect(hide).toBeGreaterThan(-1);
     expect(css.slice(hide, css.indexOf("}", hide))).toMatch(/\.arena-bar::after\s*\{\s*display:\s*none/);
-    expect(rule(':root[data-contrast="high"] .arena-bar-side')).toContain("box-shadow: inset 0 -0.3125rem 0 var(--team-color)");
+    expect(rule(':root[data-contrast="high"] .arena-bar-side')).toContain("box-shadow: 0 0.25rem 0 var(--team-color)");
   });
 
   it("paints a club's colour as text only where the surface is dark", () => {
