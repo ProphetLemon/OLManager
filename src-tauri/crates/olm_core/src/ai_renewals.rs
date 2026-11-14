@@ -6,7 +6,8 @@
 //! final weeks of its contract the club now answers it with the same rules the user-side
 //! renewal uses: the player's expected wage and contract length, under the board wage
 //! policy. A renewal the club cannot afford, or for a player it has put up for sale, is
-//! marked `Stalled` and the contract runs out as before.
+//! marked `Stalled` and the contract runs out as before. A concluded renewal leaves no
+//! session behind, so the next contract can open its own.
 //!
 //! Runs every day from the turn loop, before contract expiries.
 
@@ -59,10 +60,11 @@ pub fn conclude_ai_renewals(game: &mut Game) {
         state.last_attempt_date = Some(today_text.clone());
         match new_end {
             Some(end) if affordable => {
-                state.status = RenewalSessionStatus::Agreed;
-                state.last_outcome = Some(RenewalSessionOutcome::AcceptedByManager);
                 player.wage = wage;
                 player.contract_end = Some(end.format("%Y-%m-%d").to_string());
+                // The talks are over with the new contract: leaving them `Agreed` would
+                // keep the club from ever opening a session for the next one.
+                player.clear_renewal_session();
             }
             _ => {
                 state.status = RenewalSessionStatus::Stalled;
@@ -170,12 +172,39 @@ mod tests {
         conclude_ai_renewals(&mut game);
 
         let p = &game.players[0];
-        assert_eq!(state_of(&game, "p1"), RenewalSessionStatus::Agreed);
         assert!(
             p.contract_end.as_deref() > Some("2027-11-10"),
             "{:?}",
             p.contract_end
         );
+    }
+
+    #[test]
+    fn renewed_player_has_no_session_left_over() {
+        let mut game = game_with(vec![player("p1", "ai", 50_000, "2026-11-30")], 500_000);
+
+        conclude_ai_renewals(&mut game);
+
+        assert!(
+            game.players[0].morale_core.renewal_state.is_none(),
+            "a settled session would keep the next contract from ever getting one"
+        );
+    }
+
+    #[test]
+    fn released_player_loses_a_stalled_session() {
+        let mut game = game_with(vec![player("p1", "ai", 400_000, "2026-11-10")], 100_000);
+        game.players[0]
+            .morale_core
+            .renewal_state
+            .as_mut()
+            .unwrap()
+            .status = RenewalSessionStatus::Stalled;
+
+        crate::contracts::process_contract_expiries(&mut game);
+
+        assert!(game.players[0].team_id.is_none());
+        assert!(game.players[0].morale_core.renewal_state.is_none());
     }
 
     #[test]

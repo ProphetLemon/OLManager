@@ -1707,6 +1707,7 @@ fn execute_free_agent_signing_with_payer(
             .retain(|offer| offer.status == TransferOfferStatus::Accepted);
         player.contract_end = Some(contract_end_for_years(current_date, contract_years));
         player.wage = annual_wage;
+        player.clear_renewal_session();
     } else {
         return Err("Player not found".to_string());
     }
@@ -2622,6 +2623,7 @@ fn complete_transfer_with_wage(
         p.loan_listed = false;
         p.transfer_offers
             .retain(|o| o.status == TransferOfferStatus::Accepted);
+        p.clear_renewal_session();
     }
 
     if let Some(t) = game.teams.iter_mut().find(|t| t.id == payer_team_id) {
@@ -3387,6 +3389,7 @@ fn execute_transfer_with_payer(
         p.can_be_transferred_until = Some(next_split_date);
         p.contract_end = Some(contract_end_for_years(current_date, contract_years));
         p.wage = annual_wage;
+        p.clear_renewal_session();
     }
 
     if !departing_starter_ids.is_empty() {
@@ -3657,5 +3660,104 @@ mod split_date_tests {
     #[test]
     fn split_end_follows_the_first_league_when_the_user_plays_in_it() {
         assert_eq!(next_split_end_date(&game_with_leagues("lec")), "2026-03-28");
+    }
+}
+
+#[cfg(test)]
+mod renewal_session_tests {
+    use super::*;
+    use crate::clock::GameClock;
+    use crate::domain::manager::Manager;
+    use crate::domain::player::{
+        ContractRenewalState, Player, PlayerAttributes, RenewalSessionStatus,
+    };
+    use crate::domain::stats::LolRole;
+    use crate::domain::team::Team;
+    use chrono::{TimeZone, Utc};
+
+    fn club(id: &str) -> Team {
+        let mut team = Team::new(
+            id.to_string(),
+            id.to_string(),
+            "TST".to_string(),
+            "KR".to_string(),
+            "Seoul".to_string(),
+            "Arena".to_string(),
+            10_000,
+        );
+        team.finance = 50_000_000;
+        team.transfer_budget = 50_000_000;
+        team.wage_budget = 50_000_000;
+        team
+    }
+
+    fn settled_player(team_id: Option<&str>) -> Player {
+        let skill = 70;
+        let mut player = Player::new(
+            "p1".to_string(),
+            "p1".to_string(),
+            "p1".to_string(),
+            "2000-01-01".to_string(),
+            "KR".to_string(),
+            LolRole::Mid,
+            PlayerAttributes {
+                mechanics: skill,
+                laning: skill,
+                teamfighting: skill,
+                macro_play: skill,
+                consistency: skill,
+                shotcalling: skill,
+                champion_pool: skill,
+                discipline: skill,
+                mental_resilience: skill,
+            },
+        );
+        player.team_id = team_id.map(str::to_string);
+        player.contract_end = team_id.map(|_| "2027-06-30".to_string());
+        player.market_value = 300_000;
+        player.morale_core.renewal_state = Some(ContractRenewalState {
+            status: RenewalSessionStatus::Stalled,
+            ..ContractRenewalState::default()
+        });
+        player
+    }
+
+    fn game_with(player: Player) -> Game {
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap());
+        let manager = Manager::new(
+            "mgr".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "KR".to_string(),
+        );
+        Game::new(
+            clock,
+            manager,
+            vec![club("seller"), club("buyer")],
+            vec![player],
+            vec![],
+            vec![],
+        )
+    }
+
+    #[test]
+    fn club_to_club_transfer_clears_the_old_renewal_session() {
+        let mut game = game_with(settled_player(Some("seller")));
+
+        execute_transfer(&mut game, "p1", "buyer", "seller", 100_000, false).unwrap();
+
+        assert_eq!(game.players[0].team_id.as_deref(), Some("buyer"));
+        assert!(game.players[0].morale_core.renewal_state.is_none());
+    }
+
+    #[test]
+    fn free_agent_signing_clears_the_old_renewal_session() {
+        let mut game = game_with(settled_player(None));
+
+        execute_free_agent_signing(&mut game, "p1", "buyer", 0).unwrap();
+
+        assert_eq!(game.players[0].team_id.as_deref(), Some("buyer"));
+        assert!(game.players[0].morale_core.renewal_state.is_none());
     }
 }
