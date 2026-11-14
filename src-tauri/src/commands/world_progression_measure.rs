@@ -411,7 +411,7 @@ fn data_base() -> PathBuf {
         .join("data")
 }
 
-fn build_start_world() -> Game {
+pub(super) fn build_start_world() -> Game {
     let data = data_base();
     let manifests = olm_core::competitions::scan_competitions(&data.join("competitions"));
     let known: Vec<String> = manifests
