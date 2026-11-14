@@ -5,6 +5,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import i18n from "@/i18n";
 import type { MatchSnapshot } from "@/ui-v2/_legacy/components/match/types";
 
+import { LANES } from "@/lib/match/live/mapGeometry";
+
 import { makeChampion, makeState } from "./live/arenaFixtures.testing";
 import LiveMatchV2 from "./LiveMatchV2";
 
@@ -167,6 +169,9 @@ describe("the screen", () => {
     expect(screen.getByTestId("event-ticker")).toHaveTextContent("Blue TOP");
     expect(screen.getByTestId("spotlight-caption")).toBeInTheDocument();
     expect(screen.getByTestId("fight-board")).toBeInTheDocument();
+    expect(screen.getByTestId("away-board")).toBeInTheDocument();
+    expect(screen.getByTestId("lane-strip")).toBeInTheDocument();
+    expect(screen.getByTestId("timer-rail")).toBeInTheDocument();
     expect(screen.getByTestId("match-controls")).toBeInTheDocument();
     expect(screen.getByTestId("map-legend")).toBeInTheDocument();
   });
@@ -204,12 +209,76 @@ describe("the screen", () => {
     expect(row).toContainElement(screen.getByTestId("map-legend"));
   });
 
-  it("points the map at the Fight board, which is in the page", async () => {
+  it("points the map at both strips of the Fight board, which are in the page", async () => {
     mount();
     const map = await screen.findByTestId("arena-map");
-    const id = map.getAttribute("aria-describedby");
-    expect(id).toBeTruthy();
-    expect(document.getElementById(id as string)).toBe(screen.getByTestId("fight-board"));
+    expect(map.getAttribute("aria-describedby")).toBe("arena-fight-board arena-away-board");
+    expect(document.getElementById("arena-fight-board")).toBe(screen.getByTestId("fight-board"));
+    expect(document.getElementById("arena-away-board")).toBe(screen.getByTestId("away-board"));
+  });
+
+  it("keeps the Fight board on show, outside any popover, and beside the lanes above the map", async () => {
+    mount();
+    await screen.findByTestId("champion-b-TOP");
+    const board = screen.getByTestId("fight-board");
+    expect(board.closest("details")).toBeNull();
+    expect(board.parentElement).toHaveClass("live-area-fight");
+    expect(screen.getByTestId("away-board").parentElement).toHaveClass("live-area-away");
+    expect(screen.getByTestId("lane-strip").parentElement).toHaveClass("live-area-lanes");
+    // The two fighting top laners are on the fights strip, in words.
+    expect(within(board).getByText(/Blue TOP \(Blue\)/)).toBeInTheDocument();
+  });
+
+  it("draws each club's band over its column, and the timers under the blue cards and the feed under the red ones", async () => {
+    const { container } = mount();
+    await screen.findByTestId("champion-b-TOP");
+    const bands = [...container.querySelectorAll<HTMLElement>(".live-band")];
+    expect(bands.map((band) => [band.dataset.team, band.textContent])).toEqual([
+      ["blue", "Embers Esports"],
+      ["red", "Tides"],
+    ]);
+    // The band is decoration: the column is a labelled section already.
+    expect(bands.every((band) => band.getAttribute("aria-hidden") === "true")).toBe(true);
+    expect(screen.getByTestId("timer-rail").parentElement).toHaveClass("live-area-rail");
+    const dock = screen.getByTestId("event-ticker").parentElement as HTMLElement;
+    expect(dock).toHaveClass("live-area-dock");
+    expect(dock).toContainElement(screen.getByTestId("spotlight-caption"));
+  });
+
+  it("reads the lane strip from the minions of the engine's answer", async () => {
+    const along = (index: number) => ({ x: LANES.mid[index].x / 1000, y: LANES.mid[index].y / 1000 });
+    const minion = (id: string, team: "blue" | "red", index: number) => ({
+      id,
+      team,
+      lane: "mid",
+      pos: along(index),
+      hp: 400,
+      maxHp: 400,
+      alive: true,
+      kind: "melee",
+    });
+    engine.initState = matchState({ minions: [minion("m1", "blue", 6), minion("m2", "red", 7)] } as Partial<Answer>);
+    mount();
+    await screen.findByTestId("champion-b-TOP");
+    expect(screen.getByRole("img", { name: /^Mid lane:/ })).toHaveAccessibleName("Mid lane: Embers Esports is pushing toward the Red base.");
+    expect(screen.getByRole("img", { name: /^Top lane:/ })).toHaveAccessibleName("Top lane: no wave on the lane.");
+  });
+
+  it("shows the objective timers from the first answer, with the dragon counting down", async () => {
+    mount();
+    await screen.findByTestId("champion-b-TOP");
+    const rail = screen.getByTestId("timer-rail");
+    expect([...rail.children].map((tile) => tile.getAttribute("data-timer"))).toEqual(["dragon", "voidgrubs", "herald", "baron"]);
+  });
+
+  it("keeps Match options and Map key in the controls row, as named buttons that can become icons", async () => {
+    mount();
+    await screen.findByTestId("champion-b-TOP");
+    const row = screen.getByTestId("bug-button").parentElement as HTMLElement;
+    expect(within(row).getByRole("button", { name: "Match options" })).toHaveAttribute("title", "Match options");
+    expect(within(row).getByText("Map key", { selector: "summary .arena-btn-label" })).toBeInTheDocument();
+    // The Fight board is no longer a control of the row.
+    expect(row.querySelector("[data-testid='fight-board']")).toBeNull();
   });
 
   it("shows the feed on a 900 px tall coarse-pointer touch window, where the old screen hid it", async () => {
