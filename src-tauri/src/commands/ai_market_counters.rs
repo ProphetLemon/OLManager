@@ -75,11 +75,29 @@ struct PeriodStats {
     best_free_agent: BTreeMap<String, u32>,
 }
 
+/// Dates on which the free-agent pool is counted per role, besides the first and last day.
+const POOL_DATES: [(i32, u32, u32); 6] = [
+    (2027, 11, 1),
+    (2027, 12, 1),
+    (2028, 1, 1),
+    (2028, 3, 1),
+    (2028, 6, 1),
+    (2028, 11, 1),
+];
+
+/// Free agents of one day: per role, all of them and the ones the probe counts (not released).
+#[derive(Debug)]
+struct PoolSnapshot {
+    label: String,
+    per_role: [(u32, u32); 5],
+}
+
 #[derive(Debug, Default)]
 pub(super) struct MarketCounters {
     periods: [PeriodStats; 3],
     period: usize,
     days_seen: u32,
+    pools: Vec<PoolSnapshot>,
 }
 
 impl MarketCounters {
@@ -92,6 +110,32 @@ impl MarketCounters {
             })
             .count();
         self.periods[self.period].days += 1;
+    }
+
+    /// Counts the free agents per role on the first day, on each of `POOL_DATES` and (with
+    /// `last_day`) on the day the run ends. Called once per day, before `process_day`.
+    pub(super) fn snapshot_pool(&mut self, game: &Game, last_day: bool) {
+        let date = game.clock.current_date.date_naive();
+        let first = self.pools.is_empty();
+        let listed = POOL_DATES.iter().any(|(y, m, d)| {
+            chrono::NaiveDate::from_ymd_opt(*y, *m, *d).is_some_and(|day| day == date)
+        });
+        if !(first || listed || last_day) {
+            return;
+        }
+        let mut per_role = [(0, 0); 5];
+        for player in game.players.iter().filter(|p| p.team_id.is_none()) {
+            if let Some(slot) = ROLES.iter().position(|r| *r == player.natural_position) {
+                per_role[slot].0 += 1;
+                if !player.was_released {
+                    per_role[slot].1 += 1;
+                }
+            }
+        }
+        self.pools.push(PoolSnapshot {
+            label: date.to_string(),
+            per_role,
+        });
     }
 
     /// Classifies one market signing of `player` by the club that bought him.
@@ -167,6 +211,18 @@ impl MarketCounters {
     }
 
     pub(super) fn print(&self) {
+        for pool in &self.pools {
+            let roles: Vec<String> = ROLES
+                .iter()
+                .zip(&pool.per_role)
+                .map(|(role, (all, open))| format!("{role:?} {all} ({open} not released)"))
+                .collect();
+            println!(
+                "free agents per role on {}: {}",
+                pool.label,
+                roles.join(" | ")
+            );
+        }
         for (label, stats) in PERIOD_LABELS.iter().zip(&self.periods) {
             println!(
                 "market free-agency signings, {label} ({} days): replaced a generated starter {} | other {} | club-role pairs with free agents on {} sampled days {} | policy accepts at least one {} | best free agent of the role {:?}",
