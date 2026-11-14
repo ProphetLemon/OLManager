@@ -4,8 +4,8 @@
 //! amount per tier, so a club that plays only in a background league (no prize money,
 //! no matchday income) still covers a typical wage bill. The deal is paid by the
 //! ordinary monthly sponsorship step (`base_value / 12`); this module only decides who
-//! holds one and for how much. Clubs a league does not schedule (the historical-roster
-//! clubs) and academy sub-teams get none.
+//! holds one and for how much. No club exists that a league does not schedule (a new game
+//! builds none); academy sub-teams get none.
 
 use std::collections::{HashMap, HashSet};
 

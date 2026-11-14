@@ -956,7 +956,8 @@ pub(crate) fn runtime_catalog_players(
     for manifest in manifests.iter().filter(|manifest| !manifest.legacy) {
         let cid = &manifest.id;
         let prefix = format!("{}-", cid);
-        let stale = world_catalog::is_stale_duplicate_competition(cid);
+        let stale = world_catalog::is_stale_duplicate_competition(cid)
+            || world_catalog::is_never_scheduled_competition(manifest);
         match load(manifest) {
             Ok(comp_players) => {
                 for mut player in comp_players {
@@ -968,7 +969,7 @@ pub(crate) fn runtime_catalog_players(
                             player.team_id = Some(format!("{}-{team_id}", cid));
                         }
                     }
-                    // A new game keeps no team of a stale duplicate, so its players that
+                    // A new game keeps no team of a stale duplicate or an unscheduled competition, so its players that
                     // have no live twin are free agents there; the catalog says the same.
                     if stale {
                         player.team_id = None;
@@ -1014,6 +1015,10 @@ pub(crate) fn runtime_catalog_teams(
         // Stale copies of a live competition keep no teams: a new game drops them, and
         // bringing them back on every load listed each club twice.
         if world_catalog::is_stale_duplicate_competition(cid) {
+            continue;
+        }
+        // The same for competitions no league schedules (the historical "-l" rosters).
+        if world_catalog::is_never_scheduled_competition(manifest) {
             continue;
         }
         let prefix = format!("{}-", cid);
@@ -2088,6 +2093,26 @@ mod tests {
                 )
             })
             .collect()
+    }
+
+    /// A player whose only record sits in a competition no league schedules is a free agent,
+    /// the way a stale duplicate's player is: the world build keeps no team for it.
+    #[test]
+    fn runtime_players_of_an_unscheduled_competition_become_free_agents() {
+        let data = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("data");
+        let manifests = olm_core::competitions::scan_competitions(&data.join("competitions"));
+        let unscheduled: Vec<CompetitionManifest> = manifests
+            .into_iter()
+            .filter(|m| m.id == "lck-l")
+            .collect();
+        assert_eq!(unscheduled.len(), 1, "lck-l manifest present");
+
+        let players = runtime_catalog_players(&unscheduled, |_| {
+            Ok(vec![rehydrate_test_player("only-lck-l", Some("some-team"))])
+        });
+
+        assert_eq!(players.len(), 1);
+        assert_eq!(players[0].team_id, None);
     }
 
     fn game_with_stale_team(in_league: bool) -> Game {
