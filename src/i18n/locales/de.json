@@ -2901,6 +2901,10 @@
         "subject": "Akademie finanziert: {{academy}}",
         "body": "Die Operation wurde erfolgreich abgeschlossen. {{team}} hat nun eine verbundene Akademie ({{academy}}) zu Kosten von €{{cost}}."
       },
+      "academyLinkDissolved": {
+        "subject": "Akademie-Verbindung beendet: {{academy}}",
+        "body": "{{academy}} ist in die höchste Liga aufgestiegen und ist nicht mehr Ihre Akademie. Die Verbindung endet ohne Rückerstattung."
+      },
       "esportmaniacos": {
         "positive": {
           "subject0": "Esportmaníacos lobt die Rift-Kontrolle von {{player}} – die Runde ist sich einig",

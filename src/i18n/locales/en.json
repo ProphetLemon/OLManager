@@ -3123,6 +3123,10 @@
         "subject": "Academy funded: {{academy}}",
         "body": "The operation completed successfully. {{team}} now has an affiliated academy ({{academy}}) at a cost of €{{cost}}."
       },
+      "academyLinkDissolved": {
+        "subject": "Academy link ended: {{academy}}",
+        "body": "{{academy}} was promoted to the top flight and is no longer your academy. The link ends with no refund."
+      },
       "esportmaniacos": {
         "positive": {
           "subject0": "Esportmaníacos praises {{player}}'s Rift control — the desk is unanimous",

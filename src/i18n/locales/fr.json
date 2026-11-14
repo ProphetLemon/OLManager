@@ -2901,6 +2901,10 @@
         "subject": "Académie financée : {{academy}}",
         "body": "L'opération s'est déroulée avec succès. {{team}} dispose désormais d'une académie affiliée ({{academy}}) pour un coût de €{{cost}}."
       },
+      "academyLinkDissolved": {
+        "subject": "Fin du lien d'académie : {{academy}}",
+        "body": "{{academy}} est monté dans l'élite et n'est plus votre académie. Le lien prend fin sans remboursement."
+      },
       "esportmaniacos": {
         "positive": {
           "subject0": "Esportmaníacos salue le contrôle de la Faille de {{player}} – le plateau est unanime",

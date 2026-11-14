@@ -3087,6 +3087,10 @@
         "subject": "Academia financiada: {{academy}}",
         "body": "La operación se ha completado con éxito. {{team}} ahora tiene una academia vinculada ({{academy}}) por un costo de €{{cost}}."
       },
+      "academyLinkDissolved": {
+        "subject": "Vínculo de academia terminado: {{academy}}",
+        "body": "{{academy}} ha ascendido a la máxima categoría y deja de ser tu academia. El vínculo termina sin reembolso."
+      },
       "esportmaniacos": {
         "positive": {
           "subject0": "Esportmaníacos elogia el control de Grieta de {{player}} — la tertulia se pone de acuerdo",

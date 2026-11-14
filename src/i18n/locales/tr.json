@@ -2901,6 +2901,10 @@
         "subject": "Akademi finanse edildi: {{academy}}",
         "body": "Operasyon başarıyla tamamlandı. {{team}} artık €{{cost}} maliyetle bağlı bir akademiye ({{academy}}) sahip."
       },
+      "academyLinkDissolved": {
+        "subject": "Akademi bağlantısı sona erdi: {{academy}}",
+        "body": "{{academy}} en üst lige yükseldi ve artık akademiniz değil. Bağlantı geri ödeme olmadan sona erer."
+      },
       "esportmaniacos": {
         "positive": {
           "subject0": "Esportmaníacos, {{player}} oyuncusunu övüyor — masa hemfikir",

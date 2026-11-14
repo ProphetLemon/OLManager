@@ -2955,6 +2955,10 @@
         "subject": "Accademia finanziata: {{academy}}",
         "body": "L'operazione si è conclusa con successo. {{team}} ora ha un'accademia affiliata ({{academy}}) al costo di €{{cost}}."
       },
+      "academyLinkDissolved": {
+        "subject": "Collegamento accademia terminato: {{academy}}",
+        "body": "{{academy}} è stata promossa nella massima serie e non è più la tua accademia. Il collegamento termina senza rimborso."
+      },
       "contractTerminated": {
         "subject": "Contratto risolto: {{player}}",
         "body": "Hai risolto il contratto di {{player}}. Il giocatore è ora svincolato. Costo della risoluzione: €{{cost}}."

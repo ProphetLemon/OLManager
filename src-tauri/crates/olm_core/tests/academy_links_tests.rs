@@ -336,3 +336,75 @@ fn promotion_of_an_unlinked_club_touches_nothing() {
     assert_eq!(koi.academy_team_id.as_deref(), Some("les-alpha"));
     assert_eq!(game.messages.len(), messages_before);
 }
+
+// ---------------------------------------------------------------------------
+// Season and squad (AC2)
+// ---------------------------------------------------------------------------
+
+use olm_core::custom_team::{CustomTeamSpec, replace_team_with_custom};
+use olm_core::time_blockers::compute_blocking_actions;
+
+fn blocker_ids(game: &Game) -> Vec<String> {
+    compute_blocking_actions(game)
+        .iter()
+        .filter_map(|blocker| blocker["id"].as_str().map(str::to_string))
+        .collect()
+}
+
+#[test]
+fn the_role_coverage_blocker_reads_the_linked_club_roster() {
+    let mut game = new_world();
+    acquire_linked_club(&mut game, "koi", "les-alpha").expect("link");
+
+    // The linked club only fields Top, Jungle and Mid.
+    assert!(blocker_ids(&game).contains(&"academy_missing_roles".to_string()));
+
+    game.players.push(player("alpha-adc", "les-alpha", LolRole::Adc, 1));
+    game.players.push(player("alpha-sup", "les-alpha", LolRole::Support, 1));
+    assert!(!blocker_ids(&game).contains(&"academy_missing_roles".to_string()));
+}
+
+#[test]
+fn a_custom_club_replacing_the_linked_club_dissolves_the_link() {
+    let mut game = new_world();
+    acquire_linked_club(&mut game, "koi", "les-alpha").expect("link");
+    let spec = CustomTeamSpec {
+        name: "Ray Esports".to_string(),
+        short_name: "ray".to_string(),
+        primary_color: "#112233".to_string(),
+        secondary_color: "#FFFFFF".to_string(),
+        country: "ES".to_string(),
+        logo_data_uri: None,
+        founding_seed: None,
+        founder_overrides: None,
+        founder_photos: None,
+    };
+
+    replace_team_with_custom(&mut game, "les", Some(2), "les-alpha", &spec).expect("replace");
+
+    let koi = game.teams.iter().find(|t| t.id == "koi").expect("koi");
+    assert_eq!(koi.academy_team_id, None);
+    assert!(!game.teams.iter().any(|t| t.parent_team_id.as_deref() == Some("koi")));
+}
+
+#[test]
+fn a_custom_club_replacing_the_parent_frees_the_linked_club() {
+    let mut game = new_world();
+    acquire_linked_club(&mut game, "koi", "les-alpha").expect("link");
+    let spec = CustomTeamSpec {
+        name: "Ray Esports".to_string(),
+        short_name: "ray".to_string(),
+        primary_color: "#112233".to_string(),
+        secondary_color: "#FFFFFF".to_string(),
+        country: "ES".to_string(),
+        logo_data_uri: None,
+        founding_seed: None,
+        founder_overrides: None,
+        founder_photos: None,
+    };
+
+    replace_team_with_custom(&mut game, "lec", Some(1), "koi", &spec).expect("replace");
+
+    let alpha = game.teams.iter().find(|t| t.id == "les-alpha").expect("alpha");
+    assert_eq!(alpha.parent_team_id, None);
+}

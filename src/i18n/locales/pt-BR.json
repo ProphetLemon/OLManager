@@ -2901,6 +2901,10 @@
         "subject": "Academia financiada: {{academy}}",
         "body": "A operação foi concluída com sucesso. {{team}} agora tem uma academia vinculada ({{academy}}) por um custo de €{{cost}}."
       },
+      "academyLinkDissolved": {
+        "subject": "Vínculo da academia encerrado: {{academy}}",
+        "body": "{{academy}} subiu para a elite e deixou de ser a sua academia. O vínculo termina sem reembolso."
+      },
       "esportmaniacos": {
         "positive": {
           "subject0": "Esportmaníacos elogia o controle da Rift de {{player}} — a mesa é unânime",
