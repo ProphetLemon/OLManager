@@ -184,7 +184,12 @@ impl RepairCounters {
                 .expect("repaired team exists");
             let decisions: Vec<_> = candidates
                 .iter()
-                .map(|p| (*p, ai_signing_policy(game, team, p, SigningIntent::Emergency)))
+                .map(|p| {
+                    (
+                        *p,
+                        ai_signing_policy(game, team, p, SigningIntent::Emergency),
+                    )
+                })
                 .collect();
             if decisions.iter().any(|(_, d)| d.accepted) {
                 let used = game
@@ -205,7 +210,8 @@ impl RepairCounters {
                     let soft_cap = team.wage_budget as f64 * 1.10;
                     let bill = annual_team_wage_bill(game, team_id) as f64;
                     if soft_cap > 0.0 {
-                        self.wage_pressure.push((bill + f64::from(cheapest)) / soft_cap);
+                        self.wage_pressure
+                            .push((bill + f64::from(cheapest)) / soft_cap);
                     }
                 }
                 format!("signing policy refused all: {reasons:?}")
@@ -217,7 +223,11 @@ impl RepairCounters {
     pub(super) fn print(&self) {
         let quantiles = |values: &mut Vec<f64>| {
             values.sort_by(f64::total_cmp);
-            let at = |p: usize| values.get(values.len().saturating_sub(1) * p / 100).copied();
+            let at = |p: usize| {
+                values
+                    .get(values.len().saturating_sub(1) * p / 100)
+                    .copied()
+            };
             (at(0), at(50), at(100))
         };
         println!("repair at contract expiry (harness runs the expiry step, see module docs):");

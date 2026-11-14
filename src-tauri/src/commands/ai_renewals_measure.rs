@@ -301,6 +301,22 @@ pub(super) struct Movement {
     pub(super) signed_from_free: u32,
 }
 
+/// Adds the club changes between two daily snapshots to `movement`.
+fn count_moves(
+    before: &HashMap<String, Option<String>>,
+    after: &HashMap<String, Option<String>>,
+    movement: &mut Movement,
+) {
+    for (id, team) in after {
+        match (before.get(id), team) {
+            (Some(Some(a)), Some(b)) if a != b => movement.club_to_club += 1,
+            (Some(Some(_)), None) => movement.released += 1,
+            (Some(None), Some(_)) => movement.signed_from_free += 1,
+            _ => {}
+        }
+    }
+}
+
 fn team_of_each_player(game: &Game) -> HashMap<String, Option<String>> {
     game.players
         .iter()
@@ -395,6 +411,8 @@ struct Measurement {
     everyone: RenewalOutcomes,
     repaired_starters: RenewalOutcomes,
     movement: Movement,
+    /// Moves made by the contract-expiry step (release, then the repair's signings).
+    repair_movement: Movement,
     rollovers: u32,
     peak_open: usize,
     session_states: String,
@@ -427,6 +445,7 @@ fn measure(until: NaiveDate) -> Measurement {
     let no_ovr_at_start = clubbed_players_without_ovr(&game);
     let staffed_at_start = staffed_ai_teams(&game);
     let mut movement = Movement::default();
+    let mut repair_movement = Movement::default();
     let mut teams = team_of_each_player(&game);
     let mut rollovers = 0;
     let mut peak_open = 0;
@@ -438,18 +457,17 @@ fn measure(until: NaiveDate) -> Measurement {
             rollovers += 1;
         }
         snapshot_final_weeks(&game, &mut tracked);
-        repair.run_expiry_step(&mut game);
+        // The expiry step is the repair's own: its moves are counted apart, so the market
+        // figures below are the AI transfers and free-agency signings of `process_day`.
+        if repair.run_expiry_step(&mut game) {
+            let now = team_of_each_player(&game);
+            count_moves(&teams, &now, &mut repair_movement);
+            teams = now;
+        }
         turn::process_day(&mut game);
         peak_open = peak_open.max(open_ai_sessions(&game));
         let now = team_of_each_player(&game);
-        for (id, team) in &now {
-            match (teams.get(id), team) {
-                (Some(Some(a)), Some(b)) if a != b => movement.club_to_club += 1,
-                (Some(Some(_)), None) => movement.released += 1,
-                (Some(None), Some(_)) => movement.signed_from_free += 1,
-                _ => {}
-            }
-        }
+        count_moves(&teams, &now, &mut movement);
         teams = now;
     }
     Measurement {
@@ -457,6 +475,7 @@ fn measure(until: NaiveDate) -> Measurement {
         everyone: classify(&game, &tracked, |_| true),
         repaired_starters: classify(&game, &tracked, |t| t.starter && t.repaired_club),
         movement,
+        repair_movement,
         rollovers,
         peak_open,
         session_states: session_states(&game, &tracked),
@@ -668,8 +687,14 @@ fn ai_renewals_measure() {
     print_final_weeks(&run.tracked);
     println!("session states at the end: {}", run.session_states);
     println!(
-        "club-to-club moves {} | released or expired {} | signed from free agency {}",
+        "market (process_day): club-to-club moves {} | released {} | signed from free agency {}",
         run.movement.club_to_club, run.movement.released, run.movement.signed_from_free
+    );
+    println!(
+        "contract-expiry step: released {} | re-signed by another club the same day {} | signed from free agency {}",
+        run.repair_movement.released,
+        run.repair_movement.club_to_club,
+        run.repair_movement.signed_from_free
     );
     println!("wall time {:.1}s", started.elapsed().as_secs_f64());
 }
