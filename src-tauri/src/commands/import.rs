@@ -24,9 +24,11 @@ use olm_core::domain::staff::Staff;
 use olm_core::domain::team::Team;
 use olm_core::game::Game;
 use olm_core::game_setup;
+use olm_core::generator::definitions::CompetitionManifest;
 use olm_core::generator::definitions::StaffDataFile;
 use olm_core::staff_completion::complete_missing_staff;
 use olm_core::state::StateManager;
+use olm_core::world_catalog;
 use serde_json::Value;
 use tauri::Emitter;
 use tauri::Manager as TauriManager;
@@ -936,15 +938,26 @@ fn collect_runtime_staff(app_handle: &tauri::AppHandle) -> Vec<Staff> {
 /// prefix `team_id` with the competition id and backfill default morale /
 /// condition. Deduplicated by player id so multi-competition overlaps collapse.
 fn collect_runtime_players(app_handle: &tauri::AppHandle) -> Vec<Player> {
-    let mut players: Vec<Player> = Vec::new();
+    let manifests = crate::commands::competitions::scan_competitions(app_handle);
+    runtime_catalog_players(&manifests, |manifest| {
+        crate::commands::competitions::load_competition_players(app_handle, manifest)
+    })
+}
 
-    for manifest in crate::commands::competitions::scan_competitions(app_handle)
-        .iter()
-        .filter(|manifest| !manifest.legacy)
-    {
+/// [`collect_runtime_players`] over the given manifests, reading each competition's
+/// players through `load`.
+pub(crate) fn runtime_catalog_players(
+    manifests: &[CompetitionManifest],
+    mut load: impl FnMut(&CompetitionManifest) -> Result<Vec<Player>, String>,
+) -> Vec<Player> {
+    // Tagged with their competition so a record of a stale duplicate loses to the live one.
+    let mut players: Vec<(String, Player)> = Vec::new();
+
+    for manifest in manifests.iter().filter(|manifest| !manifest.legacy) {
         let cid = &manifest.id;
         let prefix = format!("{}-", cid);
-        match crate::commands::competitions::load_competition_players(app_handle, manifest) {
+        let stale = world_catalog::is_stale_duplicate_competition(cid);
+        match load(manifest) {
             Ok(comp_players) => {
                 for mut player in comp_players {
                     if let Some(team_id) = player.team_id.clone() {
@@ -955,13 +968,18 @@ fn collect_runtime_players(app_handle: &tauri::AppHandle) -> Vec<Player> {
                             player.team_id = Some(format!("{}-{team_id}", cid));
                         }
                     }
+                    // A new game keeps no team of a stale duplicate, so its players that
+                    // have no live twin are free agents there; the catalog says the same.
+                    if stale {
+                        player.team_id = None;
+                    }
                     if player.morale == 0 {
                         player.morale = 68;
                     }
                     if player.condition == 0 {
                         player.condition = 100;
                     }
-                    players.push(player);
+                    players.push((cid.clone(), player));
                 }
             }
             Err(err) => {
@@ -970,26 +988,36 @@ fn collect_runtime_players(app_handle: &tauri::AppHandle) -> Vec<Player> {
         }
     }
 
-    let mut seen = HashSet::new();
-    players
-        .into_iter()
-        .filter(|player| seen.insert(player.id.clone()))
-        .collect()
+    world_catalog::dedupe_players(players).0
 }
 
 /// Load every non-legacy competition's teams and apply the SAME namespacing the
 /// new-game world assembly does: prefix the team id with the competition id and
 /// stamp `competition_id`. Deduplicated by team id.
 fn collect_runtime_teams(app_handle: &tauri::AppHandle) -> Vec<Team> {
+    let manifests = crate::commands::competitions::scan_competitions(app_handle);
+    runtime_catalog_teams(&manifests, |manifest| {
+        crate::commands::competitions::load_competition_teams(app_handle, manifest)
+    })
+}
+
+/// [`collect_runtime_teams`] over the given manifests, reading each competition's
+/// teams through `load`.
+pub(crate) fn runtime_catalog_teams(
+    manifests: &[CompetitionManifest],
+    mut load: impl FnMut(&CompetitionManifest) -> Result<Vec<Team>, String>,
+) -> Vec<Team> {
     let mut teams: Vec<Team> = Vec::new();
 
-    for manifest in crate::commands::competitions::scan_competitions(app_handle)
-        .iter()
-        .filter(|manifest| !manifest.legacy)
-    {
+    for manifest in manifests.iter().filter(|manifest| !manifest.legacy) {
         let cid = &manifest.id;
+        // Stale copies of a live competition keep no teams: a new game drops them, and
+        // bringing them back on every load listed each club twice.
+        if world_catalog::is_stale_duplicate_competition(cid) {
+            continue;
+        }
         let prefix = format!("{}-", cid);
-        match crate::commands::competitions::load_competition_teams(app_handle, manifest) {
+        match load(manifest) {
             Ok(mut comp_teams) => {
                 for team in &mut comp_teams {
                     if !team.id.starts_with(&prefix) {
@@ -1162,11 +1190,19 @@ pub struct RehydrateCounts {
     pub staff: usize,
     /// Existing staff the save stored without attributes, now completed.
     pub staff_completed: usize,
+    /// Teams of stale duplicate competitions, held by the save and played by no league,
+    /// that were removed.
+    pub stale_teams_removed: usize,
 }
 
 impl RehydrateCounts {
     pub fn total(&self) -> usize {
-        self.teams + self.players + self.players_reassigned + self.staff + self.staff_completed
+        self.teams
+            + self.players
+            + self.players_reassigned
+            + self.staff
+            + self.staff_completed
+            + self.stale_teams_removed
     }
 }
 
@@ -1195,6 +1231,7 @@ pub(crate) fn apply_catalog_to_game(
     catalog_players: Vec<Player>,
     mut catalog_staff: Vec<Staff>,
 ) -> RehydrateCounts {
+    let stale_teams_removed = world_catalog::remove_orphan_stale_teams(game).len();
     let teams = merge_missing_teams(game, catalog_teams);
 
     let players_reassigned = reassign_stale_player_teams(game, &catalog_players);
@@ -1215,6 +1252,7 @@ pub(crate) fn apply_catalog_to_game(
         players_reassigned,
         staff,
         staff_completed,
+        stale_teams_removed,
     };
     if counts.total() > 0 {
         // Rehydrated players arrive without a residency; the save was already
@@ -1994,16 +2032,25 @@ mod tests {
     #[test]
     fn rehydration_completes_a_stored_staff_member_without_data_but_keeps_the_wage() {
         let mut game = game_with_removed_team();
-        game.staff.push(rehydrate_test_staff("rated", Some("team-1")));
-        game.staff.push(rehydrate_test_staff_without_data("gap", Some("team-1")));
+        game.staff
+            .push(rehydrate_test_staff("rated", Some("team-1")));
+        game.staff
+            .push(rehydrate_test_staff_without_data("gap", Some("team-1")));
 
         let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
 
         assert_eq!(counts.staff_completed, 1);
-        assert_eq!(counts.total(), 1, "a completed member makes the save persist");
+        assert_eq!(
+            counts.total(),
+            1,
+            "a completed member makes the save persist"
+        );
         let gap = game.staff.iter().find(|m| m.id == "gap").unwrap();
         assert!(gap.has_attribute_data());
-        assert_eq!(gap.wage, 0, "a stored member keeps the wage its finances ran with");
+        assert_eq!(
+            gap.wage, 0,
+            "a stored member keeps the wage its finances ran with"
+        );
     }
 
     #[test]
@@ -2041,5 +2088,73 @@ mod tests {
                 )
             })
             .collect()
+    }
+
+    fn game_with_stale_team(in_league: bool) -> Game {
+        use olm_core::domain::league::League;
+
+        let mut game = rehydrate_test_game(vec![
+            rehydrate_test_player("stale-only", Some("lck-cl-orphan")),
+            rehydrate_test_player("stays", Some("team-1")),
+        ]);
+        let mut stale = Team::new(
+            "lck-cl-orphan".to_string(),
+            "Orphan".to_string(),
+            "ORP".to_string(),
+            "Korea".to_string(),
+            "Seoul".to_string(),
+            "Ground".to_string(),
+            1_000,
+        );
+        stale.competition_id = Some("lck-cl".to_string());
+        game.teams.push(stale);
+        game.staff
+            .push(rehydrate_test_staff("orphan-coach", Some("lck-cl-orphan")));
+        if in_league {
+            game.leagues.push(League::new(
+                "lck-cl".to_string(),
+                "LCK CL".to_string(),
+                2026,
+                &["lck-cl-orphan".to_string()],
+                Some("lck-cl".to_string()),
+            ));
+        }
+        game
+    }
+
+    #[test]
+    fn rehydration_removes_a_stale_competition_team_no_league_plays() {
+        let mut game = game_with_stale_team(false);
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_teams_removed, 1);
+        assert!(game.teams.iter().all(|team| team.id != "lck-cl-orphan"));
+        assert!(game.removed_team_ids.contains(&"lck-cl-orphan".to_string()));
+        let freed = game.players.iter().find(|p| p.id == "stale-only").unwrap();
+        assert_eq!(freed.team_id, None);
+        let coach = game.staff.iter().find(|s| s.id == "orphan-coach").unwrap();
+        assert_eq!(coach.team_id, None);
+    }
+
+    #[test]
+    fn rehydration_keeps_a_stale_competition_team_a_league_still_plays() {
+        let mut game = game_with_stale_team(true);
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_teams_removed, 0);
+        assert!(game.teams.iter().any(|team| team.id == "lck-cl-orphan"));
+    }
+
+    #[test]
+    fn rehydration_keeps_the_managers_team_even_in_a_stale_competition() {
+        let mut game = game_with_stale_team(false);
+        game.manager.team_id = Some("lck-cl-orphan".to_string());
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_teams_removed, 0);
+        assert!(game.teams.iter().any(|team| team.id == "lck-cl-orphan"));
     }
 }

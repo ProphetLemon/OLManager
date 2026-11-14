@@ -8,6 +8,7 @@
 
 use crate::domain::player::Player;
 use crate::domain::team::Team;
+use crate::game::Game;
 use log::warn;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -22,6 +23,64 @@ pub fn is_stale_duplicate_competition(competition_id: &str) -> bool {
     STALE_DUPLICATE_COMPETITIONS
         .iter()
         .any(|(stale, _)| *stale == competition_id)
+}
+
+/// Remove the teams of stale duplicate competitions that no league plays, from a game that
+/// already holds them (saves rehydrated before the catalog stopped re-adding them).
+/// Their players and staff become free agents and their ids are recorded in
+/// `removed_team_ids`, so a catalog rehydration never brings them back. A stale team a
+/// league still schedules (a save made before new games stopped building those leagues)
+/// and the manager's own team stay. Returns the removed team ids.
+pub fn remove_orphan_stale_teams(game: &mut Game) -> Vec<String> {
+    let scheduled: HashSet<&str> = game
+        .leagues
+        .iter()
+        .flat_map(|league| league.standings.iter().map(|entry| entry.team_id.as_str()))
+        .collect();
+    let manager_team = game.manager.team_id.as_deref();
+    let orphans: HashSet<String> = game
+        .teams
+        .iter()
+        .filter(|team| {
+            team.competition_id
+                .as_deref()
+                .is_some_and(is_stale_duplicate_competition)
+                && !scheduled.contains(team.id.as_str())
+                && manager_team != Some(team.id.as_str())
+        })
+        .map(|team| team.id.clone())
+        .collect();
+    if orphans.is_empty() {
+        return Vec::new();
+    }
+
+    game.teams.retain(|team| !orphans.contains(&team.id));
+    for player in &mut game.players {
+        if player
+            .team_id
+            .as_ref()
+            .is_some_and(|id| orphans.contains(id))
+        {
+            player.team_id = None;
+        }
+    }
+    for member in &mut game.staff {
+        if member
+            .team_id
+            .as_ref()
+            .is_some_and(|id| orphans.contains(id))
+        {
+            member.team_id = None;
+        }
+    }
+    let mut removed: Vec<String> = orphans.into_iter().collect();
+    removed.sort_unstable();
+    for id in &removed {
+        if !game.removed_team_ids.contains(id) {
+            game.removed_team_ids.push(id.clone());
+        }
+    }
+    removed
 }
 
 /// A player record that lost a duplicate-id resolution.
@@ -124,7 +183,9 @@ pub fn apply_catalog_corrections(
     let mut report = CorrectionReport::default();
     for correction in corrections {
         let Some(player) = players.iter_mut().find(|p| p.id == correction.id) else {
-            report.skipped.push(format!("{}: unknown player id", correction.id));
+            report
+                .skipped
+                .push(format!("{}: unknown player id", correction.id));
             continue;
         };
         let slot = match correction.field.as_str() {
@@ -207,8 +268,14 @@ mod tests {
     #[test]
     fn dedupe_keeps_the_canonical_record_when_the_stale_copy_comes_first() {
         let (kept, dropped) = dedupe_players(vec![
-            ("lck-cl".into(), player("p1", "Stale", Some("lck-cl-team-a"))),
-            ("lckcl".into(), player("p1", "Canonical", Some("lckcl-team-a"))),
+            (
+                "lck-cl".into(),
+                player("p1", "Stale", Some("lck-cl-team-a")),
+            ),
+            (
+                "lckcl".into(),
+                player("p1", "Canonical", Some("lckcl-team-a")),
+            ),
         ]);
         assert_eq!(kept.len(), 1);
         assert_eq!(kept[0].match_name, "Canonical");
@@ -226,7 +293,10 @@ mod tests {
     fn dedupe_keeps_the_canonical_record_when_it_comes_first() {
         let (kept, _) = dedupe_players(vec![
             ("prm".into(), player("p1", "Canonical", Some("prm-team-a"))),
-            ("prime_league".into(), player("p1", "Stale", Some("prime_league-team-a"))),
+            (
+                "prime_league".into(),
+                player("p1", "Stale", Some("prime_league-team-a")),
+            ),
         ]);
         assert_eq!(kept.len(), 1);
         assert_eq!(kept[0].match_name, "Canonical");
@@ -306,7 +376,8 @@ mod tests {
     fn correction_is_skipped_when_from_no_longer_matches() {
         let mut players = vec![player("p1", "Oner", None)];
         let before = players[0].full_name.clone();
-        let report = apply_catalog_corrections(&mut players, &[fix("p1", "full_name", "stale", "x")]);
+        let report =
+            apply_catalog_corrections(&mut players, &[fix("p1", "full_name", "stale", "x")]);
         assert_eq!(players[0].full_name, before);
         assert_eq!(report.applied, 0);
         assert_eq!(report.skipped.len(), 1);

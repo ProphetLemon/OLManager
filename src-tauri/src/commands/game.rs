@@ -2312,6 +2312,77 @@ mod tests {
             );
         }
 
+        /// A new game after the catalog rehydration `get_active_game` and `load_game` run on
+        /// it, built from the same files the running app reads.
+        fn rehydrated_new_game(team_name: &str, team_id: Option<&str>) -> Game {
+            let (mut game, _catalog, _overlay, _user_team) = new_game_as(team_name, team_id);
+            let data = data_base();
+            let manifests = olm_core::competitions::scan_competitions(&data.join("competitions"));
+            let teams = crate::commands::import::runtime_catalog_teams(&manifests, |m| {
+                olm_core::competitions::load_teams(&data, m)
+            });
+            let players = crate::commands::import::runtime_catalog_players(&manifests, |m| {
+                olm_core::competitions::load_players(&data, m)
+            });
+            crate::commands::import::apply_catalog_to_game(&mut game, teams, players, vec![]);
+            game
+        }
+
+        fn main_players_of(game: &Game, team_name: &str) -> usize {
+            let team = game
+                .teams
+                .iter()
+                .find(|t| t.name == team_name && t.team_kind != TeamKind::Academy)
+                .unwrap_or_else(|| panic!("no main team {team_name}"));
+            game.players
+                .iter()
+                .filter(|p| p.team_id.as_deref() == Some(team.id.as_str()))
+                .count()
+        }
+
+        /// The catalog rehydration that runs on every load must not bring back the clubs of
+        /// the stale duplicate competitions: Mundo > Equipos listed each LCKCL club twice.
+        #[test]
+        fn a_rehydrated_new_game_holds_no_team_of_a_stale_competition_and_each_lckcl_club_once() {
+            let game = rehydrated_new_game("Kiwoom DRX", None);
+
+            let stale: Vec<&str> = game
+                .teams
+                .iter()
+                .filter(|t| {
+                    t.competition_id
+                        .as_deref()
+                        .is_some_and(olm_core::world_catalog::is_stale_duplicate_competition)
+                })
+                .map(|t| t.id.as_str())
+                .collect();
+            assert!(stale.is_empty(), "stale teams after rehydration: {stale:?}");
+
+            let mut names: Vec<&str> = game
+                .teams
+                .iter()
+                .filter(|t| t.competition_id.as_deref() == Some("lckcl"))
+                .map(|t| t.name.as_str())
+                .collect();
+            let total = names.len();
+            names.sort_unstable();
+            names.dedup();
+            assert_eq!(names.len(), total, "an LCKCL club name is listed twice");
+        }
+
+        /// The roster the picker promises is the roster the game holds once the catalog has
+        /// been rehydrated.
+        #[test]
+        fn a_rehydrated_new_game_keeps_the_roster_the_new_game_built() {
+            let (built, _c, _o, _u) = new_game_as("Berlin International Gaming", Some("prm-team-0be37b7e"));
+            let rehydrated = rehydrated_new_game("Berlin International Gaming", Some("prm-team-0be37b7e"));
+
+            assert_eq!(
+                main_players_of(&rehydrated, "Berlin International Gaming"),
+                main_players_of(&built, "Berlin International Gaming")
+            );
+        }
+
         /// The academy catalogs read the manifests from disk; they must skip the stale
         /// duplicates too, or the academy offers teams the game no longer carries.
         #[test]
