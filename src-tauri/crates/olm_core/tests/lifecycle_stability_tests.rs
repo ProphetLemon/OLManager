@@ -8,7 +8,7 @@ use olm_core::domain::player::{Player, PlayerAttributes};
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::Team;
 use olm_core::game::Game;
-use olm_core::roster_stability::{RepairAction, RosterStabilityReason, evaluate_team};
+use olm_core::roster_stability::{RepairAction, RosterStabilityReason, evaluate_team, repair_team};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -593,4 +593,96 @@ fn repair_league_contract_expired_restores_all_ai_teams() {
         .expect("other-ai should evaluate");
     assert!(other_after.match_eligible, "other-ai should be eligible");
     assert_eq!(other_after.eligible_player_count, 5);
+}
+
+fn rated_free_agent(id: &str, role: LolRole, rating: u8) -> Player {
+    let mut free_agent = player(id, None, role, None);
+    free_agent.attributes = PlayerAttributes {
+        mental_resilience: rating,
+        champion_pool: rating,
+        laning: rating,
+        mechanics: rating,
+        macro_play: rating,
+        consistency: rating,
+        discipline: rating,
+        teamfighting: rating,
+        shotcalling: rating,
+    };
+    free_agent
+}
+
+#[test]
+fn expiry_repair_signs_the_strongest_acceptable_free_agent_not_the_lowest_id() {
+    // The club lost its support (nobody to renew), two free supports exist, and the weaker
+    // one has the lower id, so an id-ordered pick would take him.
+    let players = vec![
+        player("top", Some("ai-team"), LolRole::Top, Some("2028-06-30")),
+        player(
+            "jungle",
+            Some("ai-team"),
+            LolRole::Jungle,
+            Some("2028-06-30"),
+        ),
+        player("mid", Some("ai-team"), LolRole::Mid, Some("2028-06-30")),
+        player("adc", Some("ai-team"), LolRole::Adc, Some("2028-06-30")),
+        rated_free_agent("fa-1-weak", LolRole::Support, 55),
+        rated_free_agent("fa-2-strong", LolRole::Support, 80),
+    ];
+    let mut game = game_with_ai_team(players, vec!["top", "jungle", "mid", "adc"]);
+    game.teams
+        .iter_mut()
+        .find(|team| team.id == "ai-team")
+        .expect("ai team")
+        .wage_budget = 10_000_000;
+
+    repair_team(&mut game, "ai-team", RosterStabilityReason::ContractExpired)
+        .expect("repair succeeds");
+
+    let team_of = |id: &str| {
+        game.players
+            .iter()
+            .find(|p| p.id == id)
+            .expect("player exists")
+            .team_id
+            .clone()
+    };
+    assert_eq!(team_of("fa-2-strong").as_deref(), Some("ai-team"));
+    assert_eq!(team_of("fa-1-weak"), None);
+}
+
+#[test]
+fn expiry_repair_breaks_a_rating_tie_by_id() {
+    let players = vec![
+        player("top", Some("ai-team"), LolRole::Top, Some("2028-06-30")),
+        player(
+            "jungle",
+            Some("ai-team"),
+            LolRole::Jungle,
+            Some("2028-06-30"),
+        ),
+        player("mid", Some("ai-team"), LolRole::Mid, Some("2028-06-30")),
+        player("adc", Some("ai-team"), LolRole::Adc, Some("2028-06-30")),
+        rated_free_agent("fa-b", LolRole::Support, 70),
+        rated_free_agent("fa-a", LolRole::Support, 70),
+    ];
+    let mut game = game_with_ai_team(players, vec!["top", "jungle", "mid", "adc"]);
+    game.teams
+        .iter_mut()
+        .find(|team| team.id == "ai-team")
+        .expect("ai team")
+        .wage_budget = 10_000_000;
+
+    repair_team(&mut game, "ai-team", RosterStabilityReason::ContractExpired)
+        .expect("repair succeeds");
+
+    let signed = |id: &str| {
+        game.players
+            .iter()
+            .find(|p| p.id == id)
+            .expect("player exists")
+            .team_id
+            .is_some()
+    };
+    assert!(signed("fa-a"));
+    assert!(!signed("fa-b"));
 }
