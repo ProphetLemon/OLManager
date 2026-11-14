@@ -540,6 +540,7 @@ fn measure(until: NaiveDate) -> Measurement {
         }
         // The state the market acts on: after the expiry step, before the day's AI decisions.
         let generated_slots = generated_starter_slots(&game);
+        market.begin_day(game.clock.current_date.date_naive());
         market.maybe_sample(&game);
         turn::process_day(&mut game);
         peak_open = peak_open.max(open_ai_sessions(&game));

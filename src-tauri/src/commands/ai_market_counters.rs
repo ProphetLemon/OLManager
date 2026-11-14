@@ -53,11 +53,19 @@ pub(super) fn generated_starter_slots(game: &Game) -> HashSet<(String, LolRole)>
         .collect()
 }
 
+/// First day of each period after the first, as `(year, month, day)`.
+const PERIOD_STARTS: [(i32, u32, u32); 2] = [(2027, 11, 30), (2028, 11, 30)];
+const PERIOD_LABELS: [&str; 3] = [
+    "start to 2027-11-29",
+    "2027-11-30 to 2028-11-29",
+    "2028-11-30 to end",
+];
+
 #[derive(Debug, Default)]
-pub(super) struct MarketCounters {
-    pub(super) signed_replaced_generated: u32,
-    pub(super) signed_other: u32,
-    days_seen: u32,
+struct PeriodStats {
+    days: u32,
+    signed_replaced_generated: u32,
+    signed_other: u32,
     sampled_days: u32,
     /// (club, role) pairs with free agents of the role, on sampled days.
     pairs: u32,
@@ -67,7 +75,25 @@ pub(super) struct MarketCounters {
     best_free_agent: BTreeMap<String, u32>,
 }
 
+#[derive(Debug, Default)]
+pub(super) struct MarketCounters {
+    periods: [PeriodStats; 3],
+    period: usize,
+    days_seen: u32,
+}
+
 impl MarketCounters {
+    /// Called once per simulated day, before anything else of that day is counted.
+    pub(super) fn begin_day(&mut self, date: chrono::NaiveDate) {
+        self.period = PERIOD_STARTS
+            .iter()
+            .filter(|(y, m, d)| {
+                chrono::NaiveDate::from_ymd_opt(*y, *m, *d).is_some_and(|start| date >= start)
+            })
+            .count();
+        self.periods[self.period].days += 1;
+    }
+
     /// Classifies one market signing of `player` by the club that bought him.
     pub(super) fn record_signing(
         &mut self,
@@ -77,10 +103,11 @@ impl MarketCounters {
     ) {
         let replaced = player
             .is_some_and(|p| generated_slots.contains(&(team_id.to_string(), p.natural_position)));
+        let stats = &mut self.periods[self.period];
         if replaced {
-            self.signed_replaced_generated += 1;
+            stats.signed_replaced_generated += 1;
         } else {
-            self.signed_other += 1;
+            stats.signed_other += 1;
         }
     }
 
@@ -90,7 +117,8 @@ impl MarketCounters {
         if !(self.days_seen - 1).is_multiple_of(SAMPLE_EVERY_DAYS) {
             return;
         }
-        self.sampled_days += 1;
+        let stats = &mut self.periods[self.period];
+        stats.sampled_days += 1;
         let user = game.manager.team_id.as_deref();
         let in_main_league: HashSet<&str> = game
             .leagues
@@ -120,7 +148,7 @@ impl MarketCounters {
         }) {
             let bill = annual_team_wage_bill(game, &team.id);
             for agents in free_by_role.iter().filter(|agents| !agents.is_empty()) {
-                self.pairs += 1;
+                stats.pairs += 1;
                 let decide = |p: &Player| {
                     ai_signing_policy_for_bill(game, team, p, SigningIntent::Strategic, bill)
                 };
@@ -130,22 +158,26 @@ impl MarketCounters {
                 } else {
                     format!("{:?}", best.reason)
                 };
-                *self.best_free_agent.entry(label).or_default() += 1;
+                *stats.best_free_agent.entry(label).or_default() += 1;
                 if best.accepted || agents.iter().skip(1).any(|p| decide(p).accepted) {
-                    self.pairs_any_accepted += 1;
+                    stats.pairs_any_accepted += 1;
                 }
             }
         }
     }
 
     pub(super) fn print(&self) {
-        println!(
-            "market free-agency signings: replaced a generated starter {} | other {}",
-            self.signed_replaced_generated, self.signed_other
-        );
-        println!(
-            "policy gate probe (Strategic intent, every {SAMPLE_EVERY_DAYS} days, {} sampled days): club-role pairs with free agents {} | policy accepts at least one {} | answer for the best free agent of the role {:?}",
-            self.sampled_days, self.pairs, self.pairs_any_accepted, self.best_free_agent
-        );
+        for (label, stats) in PERIOD_LABELS.iter().zip(&self.periods) {
+            println!(
+                "market free-agency signings, {label} ({} days): replaced a generated starter {} | other {} | club-role pairs with free agents on {} sampled days {} | policy accepts at least one {} | best free agent of the role {:?}",
+                stats.days,
+                stats.signed_replaced_generated,
+                stats.signed_other,
+                stats.sampled_days,
+                stats.pairs,
+                stats.pairs_any_accepted,
+                stats.best_free_agent
+            );
+        }
     }
 }
