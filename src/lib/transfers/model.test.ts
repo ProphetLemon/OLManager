@@ -356,4 +356,45 @@ describe("transfers/model", () => {
       "market-keep",
     ]);
   });
+
+  // Shaped like a free agent the active-pros pool adds: no team, an ISO-2 nationality, no contract.
+  const poolFreeAgent = (overrides: Partial<PlayerData> = {}) =>
+    createPlayer({
+      id: "player-bea33543",
+      full_name: "Rosendo Fuentes Boveda",
+      match_name: "Send0o",
+      nationality: "ES",
+      natural_position: "Top",
+      position: "Top",
+      team_id: null,
+      contract_end: null,
+      wage: 0,
+      market_value: 120000,
+      transfer_listed: false,
+      ...overrides,
+    });
+
+  it("lists a pool free agent with no team and no contract in the market", () => {
+    const gameState = createGameState([poolFreeAgent()]);
+
+    const collections = deriveTransferCollections(gameState, "team-1");
+
+    expect(collections.marketPlayers.map((player) => player.id)).toEqual([
+      "player-bea33543",
+    ]);
+  });
+
+  it("hides a free agent whose nick equals a contracted player's", () => {
+    const contracted = createPlayer({
+      id: "contracted-send0o",
+      full_name: "Another Person",
+      match_name: "Send0o",
+      team_id: "team-2",
+    });
+    const gameState = createGameState([contracted, poolFreeAgent()]);
+
+    const collections = deriveTransferCollections(gameState, "team-1");
+
+    expect(collections.marketPlayers).toEqual([]);
+  });
 });
