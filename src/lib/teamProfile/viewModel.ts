@@ -1,4 +1,4 @@
-import { resolveUserLeague } from "@/lib/userLeague";
+import { resolveTeamLeague } from "@/lib/userLeague";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { compareStandingsByLolScore } from "@/store/gameStore";
 import type { GameStateData, PlayerData, TeamData } from "@/store/gameStore";
@@ -38,8 +38,8 @@ function calculateAverageOvr(roster: PlayerData[]): number {
   );
 }
 
-function getSortedStandings(gameState: GameStateData): LeagueStanding[] {
-  const standings = resolveUserLeague(gameState)?.standings;
+function getSortedStandings(gameState: GameStateData, team: TeamData): LeagueStanding[] {
+  const standings = resolveTeamLeague(gameState, team)?.standings;
   if (!standings) {
     return [];
   }
@@ -54,7 +54,7 @@ export function buildTeamProfileViewModel(
   const roster = sortRoster(
     gameState.players.filter((player) => player.team_id === team.id),
   );
-  const allStandings = getSortedStandings(gameState);
+  const allStandings = getSortedStandings(gameState, team);
 
   return {
     roster,
@@ -64,7 +64,7 @@ export function buildTeamProfileViewModel(
     manager: gameState.manager.team_id === team.id ? gameState.manager : null,
     leaguePos: allStandings.findIndex((entry) => entry.team_id === team.id) + 1,
     standings:
-      resolveUserLeague(gameState)?.standings.find((entry) => entry.team_id === team.id) ?? null,
+      allStandings.find((entry) => entry.team_id === team.id) ?? null,
   };
 }
 
