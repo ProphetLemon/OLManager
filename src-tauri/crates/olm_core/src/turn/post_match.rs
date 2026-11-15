@@ -10,6 +10,7 @@ use crate::game::Game;
 use crate::messages;
 use crate::potential::{GAIN_TAPER_WINDOW, effective_potential_cap, gain_headroom};
 use log::debug;
+use std::collections::HashMap;
 
 fn compact_team_stats(
     stats: &crate::engine::TeamStats,
@@ -547,12 +548,82 @@ fn tapered_gain(delta: i16, current: u8, ceiling: u8, phase: u32) -> i16 {
     (delta * headroom + dither) / GAIN_TAPER_WINDOW
 }
 
+/// Creep-score ratio at which a laner counts as clearly ahead of the lane opponent, per
+/// role: the 80th percentile of r = (CS + 1) / (CS_opponent + 1) over every paired
+/// player-game of the 2026 pro games in the SR0 reference data (`players_2026.jsonl.gz`:
+/// 2,602 games, 2026-01-14 to 2026-11-14, 13,010 role pairings, 2,602 per role, both sides
+/// counted). That file includes 222 qualifier and promotion games that SR0's own summaries
+/// drop; on SR0's 2,380 games every cut moves by at most 0.004 (Support 1.2896, Top 1.1197,
+/// Jungle 1.1712, Mid 1.1098, ADC 1.1049). Real farm at or above the cut
+/// is 20% of player-games and at or below its inverse is 20%, so laning +1 and -1 fire
+/// equally often. The rule compares two players of one game, so it holds on any engine's
+/// CS scale. Script: OLManager-notes/research/laning-cs-relative-scripts/cut_points.py.
+/// Support carries the loosest cut because its farm is near 1 CS a minute and noisy.
+fn laning_cs_cut(role: crate::engine::sim_background::LolRole) -> f64 {
+    use crate::engine::sim_background::LolRole;
+    match role {
+        LolRole::Top => 1.1214,
+        LolRole::Jungle => 1.1733,
+        LolRole::Mid => 1.1119,
+        LolRole::Adc => 1.1061,
+        LolRole::Support => 1.2857,
+    }
+}
+
+/// The player's creep score against the same-role opponent's, as (CS + 1) / (CS_opp + 1).
+/// The +1 keeps a zero-CS line finite. `None` when the role is unknown or the other side
+/// has no same-role line in the report, which means laning is not measured.
+fn lane_cs_ratio(
+    creep_score: u16,
+    role: Option<crate::engine::sim_background::LolRole>,
+    opponent_cs: &HashMap<crate::engine::sim_background::LolRole, u16>,
+) -> Option<f64> {
+    let opponent = *opponent_cs.get(&role?)?;
+    Some((f64::from(creep_score) + 1.0) / (f64::from(opponent) + 1.0))
+}
+
+/// Laning delta from the lane CS ratio: +1 at or above the role's cut, -1 at or below its
+/// inverse, 0 in between and when laning is unmeasured.
+fn laning_delta_from_ratio(
+    ratio: Option<f64>,
+    role: Option<crate::engine::sim_background::LolRole>,
+) -> i16 {
+    let (Some(ratio), Some(role)) = (ratio, role) else {
+        return 0;
+    };
+    let cut = laning_cs_cut(role);
+    if ratio >= cut {
+        1
+    } else if ratio <= 1.0 / cut {
+        -1
+    } else {
+        0
+    }
+}
+
 fn apply_lol_profile_progression(
     game: &mut Game,
     report: &crate::engine::MatchReport,
     home_team_id: &str,
     away_team_id: &str,
 ) {
+    // Creep score of each side's player per role, so every player finds their lane
+    // opponent in the other side's map. A side with two players of one role keeps the last.
+    let mut home_cs: HashMap<crate::engine::sim_background::LolRole, u16> = HashMap::new();
+    let mut away_cs: HashMap<crate::engine::sim_background::LolRole, u16> = HashMap::new();
+    for player in &game.players {
+        let side = match player.team_id.as_deref() {
+            Some(team_id) if team_id == home_team_id => &mut home_cs,
+            Some(team_id) if team_id == away_team_id => &mut away_cs,
+            _ => continue,
+        };
+        if let Some(ps) = report.player_stats.get(&player.id)
+            && let Some(role) = ps.role
+        {
+            side.insert(role, ps.creep_score);
+        }
+    }
+
     for player in game.players.iter_mut() {
         let tid = match player.team_id.as_deref() {
             Some(team_id) if team_id == home_team_id || team_id == away_team_id => team_id,
@@ -572,7 +643,12 @@ fn apply_lol_profile_progression(
 
         let role = ps.role;
         let kda = (ps.kills + ps.assists) as f64 / ps.deaths.max(1) as f64;
-        let cs_per_min = ps.creep_score as f64 / minutes;
+        let opponent_cs = if tid == home_team_id {
+            &away_cs
+        } else {
+            &home_cs
+        };
+        let lane_ratio = lane_cs_ratio(ps.creep_score, role, opponent_cs);
         let team_damage = if tid == home_team_id {
             report.home_stats.damage_dealt
         } else {
@@ -581,23 +657,17 @@ fn apply_lol_profile_progression(
         let vision_per_min = ps.vision_score as f64 / minutes;
         let kp = (ps.kills + ps.assists) as f64 / team_kills;
 
-        let (exp_cs, exp_dmg, exp_vision, exp_kp, assist_good, deaths_bad) = match role {
-            Some(crate::engine::sim_background::LolRole::Top) => {
-                (6.1, 560.0, 0.45, 0.42, 4_u16, 7_u16)
-            }
+        let (exp_dmg, exp_vision, exp_kp, assist_good, deaths_bad) = match role {
+            Some(crate::engine::sim_background::LolRole::Top) => (560.0, 0.45, 0.42, 4_u16, 7_u16),
             Some(crate::engine::sim_background::LolRole::Jungle) => {
-                (5.2, 520.0, 0.65, 0.52, 5_u16, 8_u16)
+                (520.0, 0.65, 0.52, 5_u16, 8_u16)
             }
-            Some(crate::engine::sim_background::LolRole::Mid) => {
-                (6.8, 660.0, 0.55, 0.50, 5_u16, 7_u16)
-            }
-            Some(crate::engine::sim_background::LolRole::Adc) => {
-                (7.8, 740.0, 0.45, 0.50, 4_u16, 7_u16)
-            }
+            Some(crate::engine::sim_background::LolRole::Mid) => (660.0, 0.55, 0.50, 5_u16, 7_u16),
+            Some(crate::engine::sim_background::LolRole::Adc) => (740.0, 0.45, 0.50, 4_u16, 7_u16),
             Some(crate::engine::sim_background::LolRole::Support) => {
-                (2.2, 340.0, 1.20, 0.56, 8_u16, 9_u16)
+                (340.0, 1.20, 0.56, 8_u16, 9_u16)
             }
-            None => (6.0, 560.0, 0.55, 0.48, 5_u16, 8_u16),
+            None => (560.0, 0.55, 0.48, 5_u16, 8_u16),
         };
 
         // The thresholds below keep their old per-minute margins around `exp_dmg`; the
@@ -612,13 +682,7 @@ fn apply_lol_profile_progression(
         } else {
             0
         };
-        let laning_delta: i16 = if cs_per_min >= exp_cs + 0.9 {
-            1
-        } else if cs_per_min < exp_cs - 1.4 {
-            -1
-        } else {
-            0
-        };
+        let laning_delta = laning_delta_from_ratio(lane_ratio, role);
         let teamfighting_delta: i16 = if kp >= exp_kp + 0.08 && kda >= 2.0 {
             1
         } else if kp < exp_kp - 0.2 && ps.deaths >= deaths_bad.saturating_sub(1) {
@@ -652,7 +716,8 @@ fn apply_lol_profile_progression(
         } else {
             0
         };
-        let champion_pool_delta: i16 = if kda >= 3.0 && cs_per_min >= (exp_cs - 0.2) {
+        let champion_pool_delta: i16 = if kda >= 3.0 && lane_ratio.is_some_and(|ratio| ratio >= 1.0)
+        {
             1
         } else if kda < 1.0 && ps.deaths >= deaths_bad.saturating_sub(1) {
             -1
@@ -1474,5 +1539,190 @@ mod progression_bound_tests {
     fn fallback_rating_should_ignore_unmeasured_damage() {
         let rating = fallback_rating(0, 0);
         assert!((rating - 7.35).abs() < 0.01, "rating {rating}");
+    }
+}
+
+#[cfg(test)]
+mod laning_relative_tests {
+    use super::apply_lol_profile_progression;
+    use crate::clock::GameClock;
+    use crate::domain::manager::Manager;
+    use crate::domain::player::{LolRole as PlayerRole, Player, PlayerAttributes};
+    use crate::engine::sim_background::LolRole;
+    use crate::engine::{MatchReport, MatchReportEndReason, PlayerMatchStats, TeamStats};
+    use crate::game::Game;
+    use chrono::{TimeZone, Utc};
+    use std::collections::HashMap;
+
+    const MINUTES: u32 = 30;
+
+    fn flat_attrs() -> PlayerAttributes {
+        PlayerAttributes {
+            mechanics: 50,
+            laning: 50,
+            teamfighting: 50,
+            macro_play: 50,
+            consistency: 50,
+            shotcalling: 50,
+            champion_pool: 50,
+            discipline: 50,
+            mental_resilience: 50,
+        }
+    }
+
+    fn position(role: LolRole) -> PlayerRole {
+        match role {
+            LolRole::Top => PlayerRole::Top,
+            LolRole::Jungle => PlayerRole::Jungle,
+            LolRole::Mid => PlayerRole::Mid,
+            LolRole::Adc => PlayerRole::Adc,
+            LolRole::Support => PlayerRole::Support,
+        }
+    }
+
+    fn player(id: &str, team: &str, role: LolRole) -> Player {
+        let mut player = Player::new(
+            id.to_string(),
+            id.to_string(),
+            format!("Player {id}"),
+            "1998-03-15".to_string(),
+            "England".to_string(),
+            position(role),
+            flat_attrs(),
+        );
+        player.team_id = Some(team.to_string());
+        player.potential_base = 99;
+        player
+    }
+
+    /// A line whose only meaningful input is creep score; kills, deaths and assists are
+    /// neutral for every term except the champion pool, which the caller opts into.
+    fn line(role: LolRole, creep_score: u16, deaths: u16) -> PlayerMatchStats {
+        PlayerMatchStats {
+            role: Some(role),
+            duration_seconds: MINUTES * 60,
+            kills: 5,
+            deaths,
+            assists: 4,
+            creep_score,
+            ..Default::default()
+        }
+    }
+
+    /// `(laning, champion_pool)` of the home player "h" and the away player "a" after one
+    /// match. `None` for the away side leaves it out of both the game and the report.
+    fn play(
+        home: (LolRole, PlayerMatchStats),
+        away: Option<(LolRole, PlayerMatchStats)>,
+    ) -> ((u8, u8), Option<(u8, u8)>) {
+        let mut players = vec![player("h", "home", home.0)];
+        let mut stats = HashMap::from([("h".to_string(), home.1)]);
+        if let Some((role, line)) = away {
+            players.push(player("a", "away", role));
+            stats.insert("a".to_string(), line);
+        }
+        let manager = Manager::new(
+            "m".to_string(),
+            "A".to_string(),
+            "B".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2025, 8, 12, 12, 0, 0).unwrap());
+        let mut game = Game::new(clock, manager, vec![], players, vec![], vec![]);
+        let report = MatchReport {
+            home_wins: 1,
+            away_wins: 0,
+            home_stats: TeamStats::default(),
+            away_stats: TeamStats::default(),
+            events: vec![],
+            kill_feed: vec![],
+            player_stats: stats,
+            home_possession: 50.0,
+            total_minutes: MINUTES as u8,
+            game_duration_seconds: MINUTES * 60,
+            ended_by: MatchReportEndReason::TimeLimit,
+        };
+        apply_lol_profile_progression(&mut game, &report, "home", "away");
+        let read = |p: &Player| (p.attributes.laning, p.attributes.champion_pool);
+        let away_out = game.players.get(1).map(read);
+        (read(&game.players[0]), away_out)
+    }
+
+    #[test]
+    fn adc_at_four_cs_per_minute_against_an_equal_opponent_should_keep_laning() {
+        let cs = 4 * MINUTES as u16;
+        let (home, away) = play(
+            (LolRole::Adc, line(LolRole::Adc, cs, 3)),
+            Some((LolRole::Adc, line(LolRole::Adc, cs, 3))),
+        );
+        assert_eq!(home.0, 50);
+        assert_eq!(away.unwrap().0, 50);
+    }
+
+    #[test]
+    fn adc_at_ten_cs_per_minute_against_an_equal_opponent_should_keep_laning() {
+        let cs = 10 * MINUTES as u16;
+        let (home, _) = play(
+            (LolRole::Adc, line(LolRole::Adc, cs, 3)),
+            Some((LolRole::Adc, line(LolRole::Adc, cs, 3))),
+        );
+        assert_eq!(home.0, 50);
+    }
+
+    #[test]
+    fn clear_cs_lead_should_raise_laning_for_the_winner_and_cost_the_opponent() {
+        let (home, away) = play(
+            (LolRole::Mid, line(LolRole::Mid, 300, 3)),
+            Some((LolRole::Mid, line(LolRole::Mid, 200, 3))),
+        );
+        assert_eq!(home.0, 51);
+        assert_eq!(away.unwrap().0, 49);
+    }
+
+    #[test]
+    fn missing_same_role_opponent_should_keep_laning() {
+        // Opposite lane is a different role, so there is no lane opponent.
+        let (home, away) = play(
+            (LolRole::Mid, line(LolRole::Mid, 300, 3)),
+            Some((LolRole::Top, line(LolRole::Top, 100, 3))),
+        );
+        assert_eq!(home.0, 50);
+        assert_eq!(away.unwrap().0, 50);
+    }
+
+    #[test]
+    fn no_opponent_in_the_report_should_keep_laning() {
+        let (home, _) = play((LolRole::Mid, line(LolRole::Mid, 300, 3)), None);
+        assert_eq!(home.0, 50);
+    }
+
+    #[test]
+    fn zero_cs_on_both_sides_should_keep_laning() {
+        let (home, away) = play(
+            (LolRole::Mid, line(LolRole::Mid, 0, 3)),
+            Some((LolRole::Mid, line(LolRole::Mid, 0, 3))),
+        );
+        assert_eq!(home.0, 50);
+        assert_eq!(away.unwrap().0, 50);
+    }
+
+    /// kills 5 + assists 4 over 2 deaths: kda 4.5, past the champion-pool bar of 3.
+    #[test]
+    fn good_kda_with_cs_at_least_even_should_raise_champion_pool() {
+        let (home, _) = play(
+            (LolRole::Adc, line(LolRole::Adc, 120, 2)),
+            Some((LolRole::Adc, line(LolRole::Adc, 120, 2))),
+        );
+        assert_eq!(home.1, 51);
+    }
+
+    #[test]
+    fn good_kda_with_cs_behind_the_opponent_should_not_raise_champion_pool() {
+        let (home, _) = play(
+            (LolRole::Adc, line(LolRole::Adc, 300, 2)),
+            Some((LolRole::Adc, line(LolRole::Adc, 310, 2))),
+        );
+        assert_eq!(home.1, 50);
     }
 }
