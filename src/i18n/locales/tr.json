@@ -585,6 +585,12 @@
     "fundAcademy": "Akademiyi fonla",
     "fundingAcademy": "Fonlanıyor...",
     "academyRosterLinked": "Akademi kadrosu",
+    "linkedFinance": {
+      "title": "Bağlı kulübün finansı",
+      "balance": "Bakiye",
+      "sponsor": "Sponsor / ay",
+      "wages": "Maaşlar / ay"
+    },
     "academyNotLinked": "Akademi bağlı değil",
     "promoting": "As takıma çıkarılıyor...",
     "promote": "As Takıma Çıkar",

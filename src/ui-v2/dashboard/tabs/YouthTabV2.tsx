@@ -40,7 +40,7 @@ import {
 } from "@/ui-v2/components/ui/table";
 import { cn } from "@/ui-v2/lib/utils";
 import { AcademySearchField } from "./youth/AcademySearchField";
-import { activeCurrencySymbol, formatNumber } from "@/lib/formatting/valueFormatting";
+import { activeCurrencySymbol, formatNumber, formatVal } from "@/lib/formatting/valueFormatting";
 
 interface YouthTabV2Props {
   gameState: GameStateData;
@@ -164,6 +164,19 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
         }),
     [gameState.clock.current_date, gameState.players, gameState.teams, myTeam],
   );
+
+  // A linked real club plays with its own money; legacy copies carry none worth showing.
+  const linkedClubFinance = useMemo(() => {
+    if (!academyTeam || academyTeam.team_kind === "Academy") return null;
+    const annualWages = youthPlayers.reduce((sum, player) => sum + (Number(player.wage) || 0), 0);
+    return {
+      balance: Number(academyTeam.finance) || 0,
+      sponsorMonthly: academyTeam.sponsorship
+        ? Math.round((Number(academyTeam.sponsorship.base_value) || 0) / 12)
+        : null,
+      wagesMonthly: Math.round(annualWages / 12),
+    };
+  }, [academyTeam, youthPlayers]);
 
   const avgOvr = youthPlayers.length > 0
     ? Math.round(youthPlayers.reduce((sum, player) => sum + player.ovr, 0) / youthPlayers.length)
@@ -495,6 +508,42 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                   {t("youthAcademy.fundAcademy")}
                 </button>
               )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {linkedClubFinance && (
+        <Card data-testid="linked-club-finance" className="shrink-0">
+          <CardHeader className="pb-2">
+            <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
+              {t("youthAcademy.linkedFinance.title")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
+                {t("youthAcademy.linkedFinance.balance")}
+              </p>
+              <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", linkedClubFinance.balance >= 0 ? "text-positive" : "text-negative")}>
+                {formatVal(linkedClubFinance.balance)}
+              </p>
+            </div>
+            <div>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
+                {t("youthAcademy.linkedFinance.sponsor")}
+              </p>
+              <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">
+                {linkedClubFinance.sponsorMonthly === null ? "-" : formatVal(linkedClubFinance.sponsorMonthly)}
+              </p>
+            </div>
+            <div>
+              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
+                {t("youthAcademy.linkedFinance.wages")}
+              </p>
+              <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">
+                {formatVal(linkedClubFinance.wagesMonthly)}
+              </p>
             </div>
           </CardContent>
         </Card>

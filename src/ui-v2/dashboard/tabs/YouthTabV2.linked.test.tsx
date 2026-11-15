@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import "@/i18n";
@@ -89,6 +89,42 @@ describe("YouthTabV2 with a linked real club", () => {
     expect(screen.getByText("kid-one", { selector: "p.text-foreground" })).toBeInTheDocument();
     expect(screen.queryByText("pro")).toBeNull();
     expect(getOptions).not.toHaveBeenCalled();
+  });
+
+  it("summarises the linked club's own money: balance, sponsor and monthly wages", () => {
+    getOptions.mockResolvedValue({ options: [], blocked_reason: null, region: null });
+    const teams = [
+      { id: "team-1", name: "Koi", academy_team_id: "les-alpha", team_kind: "Main", finance: 9_000_000 },
+      {
+        id: "les-alpha",
+        name: "Alpha Esports",
+        parent_team_id: "team-1",
+        team_kind: "Main",
+        finance: 1_500_000,
+        sponsorship: { sponsor_name: "Tier Co", base_value: 240_000, remaining_months: 10, bonus_criteria: [] },
+      },
+    ];
+    const kid = { ...player("kid-one", "les-alpha"), wage: 36_000 };
+
+    render(<YouthTabV2 gameState={state(teams, [kid, player("pro", "team-1")])} />);
+
+    const card = screen.getByTestId("linked-club-finance");
+    expect(within(card).getByText(/1\.5M/)).toBeInTheDocument();
+    expect(within(card).getByText(/20K/)).toBeInTheDocument();
+    expect(within(card).getByText(/3K/)).toBeInTheDocument();
+    expect(within(card).queryByText(/9\.0M/)).toBeNull();
+  });
+
+  it("shows no finance summary for a legacy copy", () => {
+    getOptions.mockResolvedValue({ options: [], blocked_reason: null, region: null });
+    const teams = [
+      { id: "team-1", name: "Koi", academy_team_id: "copy", team_kind: "Main" },
+      { id: "copy", name: "Copy", parent_team_id: "team-1", team_kind: "Academy", finance: 0 },
+    ];
+
+    render(<YouthTabV2 gameState={state(teams, [player("kid-one", "copy")])} />);
+
+    expect(screen.queryByTestId("linked-club-finance")).toBeNull();
   });
 
   it("offers a real club without the custom name, short name and logo fields", async () => {

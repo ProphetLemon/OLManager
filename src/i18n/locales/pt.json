@@ -585,6 +585,12 @@
     "fundAcademy": "Financiar academia",
     "fundingAcademy": "Financiando...",
     "academyRosterLinked": "Elenco da academia",
+    "linkedFinance": {
+      "title": "Finanças do clube associado",
+      "balance": "Saldo",
+      "sponsor": "Patrocinador / mês",
+      "wages": "Salários / mês"
+    },
     "academyNotLinked": "Academia não vinculada",
     "promoting": "Subindo...",
     "promote": "Subir",

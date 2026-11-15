@@ -422,6 +422,12 @@
     "fundAcademy": "Finanzia l'accademia",
     "fundingAcademy": "Finanziamento...",
     "academyRosterLinked": "Rosa dell'accademia",
+    "linkedFinance": {
+      "title": "Finanze del club collegato",
+      "balance": "Saldo",
+      "sponsor": "Sponsor / mese",
+      "wages": "Stipendi / mese"
+    },
     "academyNotLinked": "Accademia non collegata",
     "promoting": "Promozione in corso...",
     "promote": "Promuovi",

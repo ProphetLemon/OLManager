@@ -585,6 +585,12 @@
     "fundAcademy": "Akademie finanzieren",
     "fundingAcademy": "Wird finanziert...",
     "academyRosterLinked": "Akademie-Kader",
+    "linkedFinance": {
+      "title": "Finanzen des verknüpften Clubs",
+      "balance": "Kontostand",
+      "sponsor": "Sponsor / Monat",
+      "wages": "Gehälter / Monat"
+    },
     "academyNotLinked": "Akademie nicht verknüpft",
     "promoting": "Wird befördert...",
     "promote": "Befördern",

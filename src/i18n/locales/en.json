@@ -757,6 +757,12 @@
     "fundAcademy": "Fund academy",
     "fundingAcademy": "Funding...",
     "academyRosterLinked": "Academy roster",
+    "linkedFinance": {
+      "title": "Linked club finances",
+      "balance": "Balance",
+      "sponsor": "Sponsor / month",
+      "wages": "Wages / month"
+    },
     "academyNotLinked": "Academy not linked",
     "promoting": "Promoting...",
     "promote": "Promote",
