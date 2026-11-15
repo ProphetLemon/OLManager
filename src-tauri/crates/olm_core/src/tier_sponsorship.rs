@@ -17,15 +17,21 @@ use crate::game::Game;
 ///
 /// Measured on 2026-11-14 on the world a new game builds (`world_sponsor_sizing_measure`):
 /// the median annual player plus staff wage bill of the 58 scheduled tier-1 main clubs
-/// is 1,490,000, rounded up to the nearest 50,000.
+/// is 1,490,000, rounded up to the nearest 50,000. Not lowered for the prize and matchday
+/// income that every league now pays (median 180,000 + 54,000 on 2026-11-15): a season
+/// of play has drifted wages above that bill (median salary 1,785,000), so the median
+/// tier-1 club already ends the season about 150,000 below its start with this value and
+/// about 390,000 below it without the new income. The drift is tracked separately.
 pub const TIER_1_SPONSORSHIP_VALUE: i64 = 1_500_000;
 
 /// Annual value of a tier-2 (and lower) club's sponsor, in euros.
 ///
-/// Measured on 2026-11-14 like [`TIER_1_SPONSORSHIP_VALUE`]: the median annual wage
-/// bill of the 200 scheduled tier-2 main clubs is 918,000, rounded up to the nearest
-/// 50,000. Tier 3 and lower, and a league with no tier, use this value.
-pub const TIER_2_SPONSORSHIP_VALUE: i64 = 950_000;
+/// Measured on 2026-11-15 like [`TIER_1_SPONSORSHIP_VALUE`]: the median annual wage bill
+/// of the 200 scheduled tier-2 main clubs is 903,000, and the median club also earns
+/// 108,000 of prize money and no matchday revenue (most tier-2 clubs have no stadium
+/// capacity in the data). The earlier 950,000 is lowered by that 108,000 and rounded to
+/// the nearest 50,000. Tier 3 and lower, and a league with no tier, use this value.
+pub const TIER_2_SPONSORSHIP_VALUE: i64 = 850_000;
 
 /// Length of a tier deal; a club whose deal ends gets a new one the same month.
 pub const TIER_SPONSORSHIP_MONTHS: u32 = 12;
