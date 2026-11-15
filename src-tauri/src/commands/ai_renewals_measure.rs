@@ -562,6 +562,13 @@ fn mo1_probe_before(game: &Game) -> Option<Mo1Before> {
         })
         .count();
     let ctx = &game.season_context;
+    let mut per_role = std::collections::BTreeMap::<String, usize>::new();
+    for p in game.players.iter().filter(|p| p.team_id.is_none()) {
+        *per_role
+            .entry(format!("{:?}", p.natural_position))
+            .or_default() += 1;
+    }
+    println!("MO1 free agents per role {per_role:?}");
     println!(
         "MO1 {} window {:?} start {:?} end {:?} complete {} | main clubs {} funded {} roster<7 {} cap>25k {} all-pass {}",
         game.clock.current_date.format("%Y-%m-%d"),
@@ -592,6 +599,51 @@ fn mo1_probe_after(game: &Game, before: Option<Mo1Before>) {
     }
 }
 
+/// Roster sizes, wage bill and balance of the AI main clubs at the end, by league tier.
+fn print_club_economy(game: &Game) {
+    let user = game.manager.team_id.clone().unwrap_or_default();
+    let mut by_tier: std::collections::BTreeMap<u8, Vec<(usize, i64, i64)>> = Default::default();
+    let mut sizes: std::collections::BTreeMap<usize, u32> = Default::default();
+    for team in game
+        .teams
+        .iter()
+        .filter(|t| t.id != user && t.team_kind == TeamKind::Main)
+    {
+        let Some(league) = game
+            .leagues
+            .iter()
+            .find(|l| l.standings.iter().any(|e| e.team_id == team.id))
+        else {
+            continue;
+        };
+        let roster = game
+            .players
+            .iter()
+            .filter(|p| p.team_id.as_deref() == Some(team.id.as_str()));
+        let (size, wages) = roster.fold((0usize, 0i64), |(n, w), p| (n + 1, w + p.wage as i64));
+        *sizes.entry(size).or_default() += 1;
+        by_tier
+            .entry(league.tier)
+            .or_default()
+            .push((size, wages, team.finance));
+    }
+    let median = |mut v: Vec<i64>| {
+        v.sort_unstable();
+        v.get(v.len() / 2).copied().unwrap_or(0)
+    };
+    for (tier, clubs) in &by_tier {
+        println!(
+            "MO3 economy tier {tier}: clubs {} | median roster {} | median wage bill {} | median balance {} | min balance {}",
+            clubs.len(),
+            median(clubs.iter().map(|c| c.0 as i64).collect()),
+            median(clubs.iter().map(|c| c.1).collect()),
+            median(clubs.iter().map(|c| c.2).collect()),
+            clubs.iter().map(|c| c.2).min().unwrap_or(0)
+        );
+    }
+    println!("MO3 AI main club roster sizes at the end: {sizes:?}");
+}
+
 /// Plays a fresh world until `until`, rolling the season whenever the league completes.
 fn measure(until: NaiveDate) -> Measurement {
     let mut game = build_start_world();
@@ -607,6 +659,7 @@ fn measure(until: NaiveDate) -> Measurement {
     let mut repair_movement = Movement::default();
     let mut teams = team_of_each_player(&game);
     let mut rollovers = 0;
+    let mut signings_by_month: std::collections::BTreeMap<String, u32> = Default::default();
     let mut peak_open = 0;
     let mut repair = RepairCounters::default();
     let mut market = MarketCounters::default();
@@ -639,11 +692,18 @@ fn measure(until: NaiveDate) -> Measurement {
             if let (Some(None), Some(buyer)) = (teams.get(id), team) {
                 let player = game.players.iter().find(|p| &p.id == id);
                 market.record_signing(&generated_slots, buyer, player);
+                let month = game.clock.current_date.format("%Y-%m").to_string();
+                *signings_by_month.entry(month).or_default() += 1;
             }
         }
         teams = now;
     }
     market.snapshot_pool(&game, true);
+    println!("MO3 free-agency signings per month (process_day, day of signing):");
+    for (month, count) in &signings_by_month {
+        println!("MO3   {month} {count}");
+    }
+    print_club_economy(&game);
     Measurement {
         starters: classify(&game, &tracked, |t| t.starter),
         everyone: classify(&game, &tracked, |_| true),
