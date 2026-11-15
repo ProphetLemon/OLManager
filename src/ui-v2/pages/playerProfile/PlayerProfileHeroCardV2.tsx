@@ -9,6 +9,7 @@ import type { PlayerProfileScoutStatus, ScoutAvailability } from "@/lib/playerPr
 import PlayerProfileScoutActionV2 from "@/ui-v2/pages/playerProfile/PlayerProfileScoutActionV2";
 import { countryName } from "@/lib/common/countries";
 import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
+import { Badge } from "@/ui-v2/components/ui/badge";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
@@ -25,6 +26,8 @@ interface PlayerProfileHeroCardV2Props {
   annualSuffix: string;
   language: string;
   isOwnClub: boolean;
+  /** The player plays for the academy (linked club or legacy copy) of the user's club. */
+  isUserAcademy?: boolean;
   scoutAvailability: ScoutAvailability;
   scoutStatus: PlayerProfileScoutStatus;
   scoutError: string | null;
@@ -62,6 +65,7 @@ export default function PlayerProfileHeroCardV2({
   teamName,
   annualSuffix,
   isOwnClub,
+  isUserAcademy = false,
   scoutAvailability,
   scoutStatus,
   scoutError,
@@ -231,6 +235,7 @@ export default function PlayerProfileHeroCardV2({
                 ) : (
                   <span>{teamName}</span>
                 )}
+                {isUserAcademy && <Badge className="text-2xs">{t("teams.yourAcademy")}</Badge>}
               </span>
               {isOwnClub && (
                 <>

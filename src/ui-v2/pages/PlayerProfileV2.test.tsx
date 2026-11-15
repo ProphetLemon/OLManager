@@ -881,3 +881,38 @@ describe("PlayerProfileV2 contract surfaces", () => {
 });
 
 
+
+describe("PlayerProfileV2 academy badge", () => {
+  function stateWithTeams(player: PlayerData, extraTeams: TeamData[]): GameStateData {
+    const state = createGameState(player);
+    return { ...state, teams: [createTeam(), ...extraTeams] };
+  }
+
+  it("shows the academy badge for a player of the user's linked academy club", () => {
+    const player = createPlayer({ team_id: "club-academy" });
+    const gameState = stateWithTeams(player, [
+      createTeam({
+        id: "club-academy",
+        name: "Beta Academy",
+        parent_team_id: "team-1",
+        competition_id: "tier-2",
+      }),
+    ]);
+    gameState.teams[0] = { ...gameState.teams[0], academy_team_id: "club-academy" };
+
+    render(<PlayerProfile player={player} gameState={gameState} onClose={vi.fn()} />);
+
+    expect(screen.getByText("teams.yourAcademy")).toBeInTheDocument();
+  });
+
+  it("does not show the academy badge for a player of another club", () => {
+    const player = createPlayer({ team_id: "other-club" });
+    const gameState = stateWithTeams(player, [
+      createTeam({ id: "other-club", name: "Gamma FC" }),
+    ]);
+
+    render(<PlayerProfile player={player} gameState={gameState} onClose={vi.fn()} />);
+
+    expect(screen.queryByText("teams.yourAcademy")).not.toBeInTheDocument();
+  });
+});
