@@ -550,8 +550,11 @@ fn tapered_gain(delta: i16, current: u8, ceiling: u8, phase: u32) -> i16 {
 
 /// Creep-score ratio at which a laner counts as clearly ahead of the lane opponent, per
 /// role: the 80th percentile of r = (CS + 1) / (CS_opponent + 1) over every paired
-/// player-game of the 2026 pro games in the SR0 reference data (13,010 role pairings,
-/// 2,602 per role, both sides counted, Jan to Nov 2026). Real farm at or above the cut
+/// player-game of the 2026 pro games in the SR0 reference data (`players_2026.jsonl.gz`:
+/// 2,602 games, 2026-01-14 to 2026-11-14, 13,010 role pairings, 2,602 per role, both sides
+/// counted). That file includes 222 qualifier and promotion games that SR0's own summaries
+/// drop; on SR0's 2,380 games every cut moves by at most 0.004 (Support 1.2896, Top 1.1197,
+/// Jungle 1.1712, Mid 1.1098, ADC 1.1049). Real farm at or above the cut
 /// is 20% of player-games and at or below its inverse is 20%, so laning +1 and -1 fire
 /// equally often. The rule compares two players of one game, so it holds on any engine's
 /// CS scale. Script: OLManager-notes/research/laning-cs-relative-scripts/cut_points.py.
