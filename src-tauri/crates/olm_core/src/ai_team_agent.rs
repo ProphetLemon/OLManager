@@ -616,6 +616,8 @@ pub fn process_ai_team_agents(game: &mut Game) {
     let today = game.clock.current_date.date_naive();
 
     let team_ids = select_ai_teams_for_today(game);
+    // The user's linked club keeps its renewals (the user's staff) but never joins the market.
+    let linked_club_id = crate::academy_link::user_linked_club_id(game);
 
     // --- Phase 1: Renewals + Sales (borrow team + players mutably) ---
     for team_id in &team_ids {
@@ -630,12 +632,17 @@ pub fn process_ai_team_agents(game: &mut Game) {
         evaluate_renewals(team, &mut game.players, &report, today);
 
         // Apply sale decisions (mutable borrow of game.players)
-        evaluate_sales(team, &mut game.players, today);
+        if linked_club_id.as_deref() != Some(team_id.as_str()) {
+            evaluate_sales(team, &mut game.players, today);
+        }
     }
 
     // --- Phase 2: Purchases (need &mut Game for transfers module) ---
     // Separate loop so the &Team borrow from game.teams ends before &mut Game.
-    for team_id in &team_ids {
+    for team_id in team_ids
+        .iter()
+        .filter(|id| linked_club_id.as_deref() != Some(id.as_str()))
+    {
         let report = {
             let team = match game.teams.iter().find(|t| t.id == *team_id) {
                 Some(t) => t,
@@ -672,6 +679,10 @@ pub fn ai_strategic_recruitment(game: &mut Game, team_id: &str) {
     if team.team_kind != crate::domain::team::TeamKind::Main || team.manager_id.is_some() {
         return;
     }
+    let linked_club_id = crate::academy_link::user_linked_club_id(game);
+    if linked_club_id.as_deref() == Some(team_id) {
+        return;
+    }
     if team.reputation < STRATEGIC_REPUTATION_THRESHOLD {
         return;
     }
@@ -698,7 +709,7 @@ pub fn ai_strategic_recruitment(game: &mut Game, team_id: &str) {
                     return None;
                 }
                 // Do not poach the user-managed team without a negotiated offer.
-                if user_team_id == Some(seller_id) {
+                if user_team_id == Some(seller_id) || linked_club_id.as_deref() == Some(seller_id) {
                     return None;
                 }
                 let seller_team = game.teams.iter().find(|t| t.id == seller_id)?;

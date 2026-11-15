@@ -376,54 +376,65 @@ fn maybe_push_weekly_academy_report(game: &mut Game, today: &str) {
         .map(|metadata| metadata.erl_assignment.erl_league_id.clone())
         .unwrap_or_default();
 
-    let mut league_rows: Vec<(String, String, u32, i32, u32, u32, u32)> = game
-        .teams
-        .iter()
-        .filter(|team| {
-            team.team_kind == TeamKind::Academy
-                && team
-                    .academy
-                    .as_ref()
-                    .map(|metadata| metadata.erl_assignment.erl_league_id.as_str())
-                    == Some(academy_league_id.as_str())
-        })
-        .map(|team| {
-            let record = team
-                .history
+    // A linked real club reads its own league's standings; a copy reads the invented one.
+    let mut league_rows: Vec<(String, String, u32, i32, u32, u32, u32)> =
+        if academy_team.team_kind == TeamKind::Main {
+            crate::academy_link::linked_league_rows(game, &academy_team_id)
+        } else {
+            game
+                .teams
                 .iter()
-                .find(|record| record.season == season)
-                .cloned()
-                .unwrap_or(TeamSeasonRecord {
-                    season,
-                    league_position: 0,
-                    played: 0,
-                    won: 0,
-                    lost: 0,
-                    kills_for: 0,
-                    kills_against: 0,
-                    competition_id: None,
-                });
-            let points = record.won.saturating_mul(3);
-            let goal_diff = record.kills_for as i32 - record.kills_against as i32;
-            (
-                team.id.clone(),
-                team.name.clone(),
-                points,
-                goal_diff,
-                record.kills_for,
-                record.won,
-                record.lost,
-            )
-        })
-        .collect();
-    league_rows.sort_by(|left, right| {
-        right
-            .2
-            .cmp(&left.2)
-            .then_with(|| right.3.cmp(&left.3))
-            .then_with(|| right.4.cmp(&left.4))
-            .then_with(|| left.1.cmp(&right.1))
-    });
+                .filter(|team| {
+                    team.team_kind == TeamKind::Academy
+                        && team
+                            .academy
+                            .as_ref()
+                            .map(|metadata| metadata.erl_assignment.erl_league_id.as_str())
+                            == Some(academy_league_id.as_str())
+                })
+                .map(|team| {
+                    let record = team
+                        .history
+                        .iter()
+                        .find(|record| record.season == season)
+                        .cloned()
+                        .unwrap_or(TeamSeasonRecord {
+                            season,
+                            league_position: 0,
+                            played: 0,
+                            won: 0,
+                            lost: 0,
+                            kills_for: 0,
+                            kills_against: 0,
+                            competition_id: None,
+                        });
+                    let points = record.won.saturating_mul(3);
+                    let goal_diff = record.kills_for as i32 - record.kills_against as i32;
+                    (
+                        team.id.clone(),
+                        team.name.clone(),
+                        points,
+                        goal_diff,
+                        record.kills_for,
+                        record.won,
+                        record.lost,
+                    )
+                })
+                .collect()
+            };
+
+    // Linked rows already come in the league table's order (`sorted_standings`); only
+    // the invented copy league needs its own sort.
+    if academy_team.team_kind != TeamKind::Main {
+        league_rows.sort_by(|left, right| {
+            right
+                .2
+                .cmp(&left.2)
+                .then_with(|| right.3.cmp(&left.3))
+                .then_with(|| right.4.cmp(&left.4))
+                .then_with(|| left.1.cmp(&right.1))
+        });
+    }
     let academy_position = league_rows
         .iter()
         .position(|row| row.0 == academy_team_id)
@@ -2598,5 +2609,105 @@ mod tests {
 
         // BG league fixture should still be Scheduled (no due fixtures)
         assert_eq!(game.leagues[1].fixtures[0].status, FixtureStatus::Scheduled);
+    }
+
+    fn real_club_world() -> Game {
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 3, 16, 12, 0, 0).unwrap());
+        let mut manager = crate::domain::manager::Manager::new(
+            "mgr".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "ES".to_string(),
+        );
+        manager.hire("koi".to_string());
+        let ids = ["koi", "les-a", "les-b", "les-c"];
+        let mut teams: Vec<Team> = ids.iter().map(|id| make_team(id)).collect();
+        teams[0].competition_id = Some("lec".to_string());
+        for team in &mut teams[1..] {
+            team.competition_id = Some("les".to_string());
+        }
+        teams[0].academy_team_id = Some("les-b".to_string());
+        teams[2].parent_team_id = Some("koi".to_string());
+        let players = vec![make_player("b-p1", "les-b", 70), make_player("koi-p1", "koi", 70)];
+        let mut game = Game::new(clock, manager, teams, players, vec![], vec![]);
+        let mut lec = League::new(
+            "league-lec".to_string(),
+            "LEC".to_string(),
+            2026,
+            &["koi".to_string()],
+            Some("lec".to_string()),
+        );
+        lec.tier = 1;
+        let mut les = League::new(
+            "league-les".to_string(),
+            "LES".to_string(),
+            2026,
+            &["les-a".to_string(), "les-b".to_string(), "les-c".to_string()],
+            Some("les".to_string()),
+        );
+        les.tier = 2;
+        for (entry, (won, lost, points)) in les.standings.iter_mut().zip([(5, 1, 15), (3, 3, 9), (1, 5, 3)])
+        {
+            entry.won = won;
+            entry.lost = lost;
+            entry.points = points;
+        }
+        game.leagues = vec![lec, les];
+        game
+    }
+
+    #[test]
+    fn the_weekly_report_of_a_linked_club_reads_its_real_league_table() {
+        let mut game = real_club_world();
+
+        maybe_push_weekly_academy_report(&mut game, "2026-03-16");
+
+        let report = game
+            .messages
+            .iter()
+            .find(|m| m.id == "academy-weekly-report-koi-2026-03-16")
+            .expect("weekly report");
+        assert_eq!(report.i18n_params.get("position").map(String::as_str), Some("2"));
+        assert_eq!(report.i18n_params.get("total").map(String::as_str), Some("3"));
+    }
+
+    #[test]
+    fn the_weekly_report_position_matches_the_league_table_on_a_full_tie() {
+        let mut game = real_club_world();
+        // les-b and les-a level on every key; the table keeps the standings order
+        // (les-b first), so the report must say #1, not re-break the tie by name.
+        let les = game.leagues.iter_mut().find(|l| l.id == "league-les").unwrap();
+        les.standings.sort_by(|a, b| b.team_id.cmp(&a.team_id));
+        for entry in les.standings.iter_mut().filter(|e| e.team_id != "les-c") {
+            entry.won = 5;
+            entry.lost = 1;
+            entry.points = 15;
+        }
+        let table_first = les.sorted_standings()[0].team_id.clone();
+        assert_eq!(table_first, "les-b");
+
+        maybe_push_weekly_academy_report(&mut game, "2026-03-16");
+
+        let report = game
+            .messages
+            .iter()
+            .find(|m| m.id == "academy-weekly-report-koi-2026-03-16")
+            .expect("weekly report");
+        assert_eq!(report.i18n_params.get("position").map(String::as_str), Some("1"));
+    }
+
+    #[test]
+    fn a_linked_club_builds_no_parallel_academy_league() {
+        let mut game = real_club_world();
+        let leagues_before = game.leagues.len();
+
+        maybe_simulate_parallel_academy_leagues(&mut game);
+
+        assert_eq!(game.leagues.len(), leagues_before);
+        assert!(!game
+            .leagues
+            .iter()
+            .any(|l| l.league_kind == crate::domain::league::LeagueKind::Academy));
     }
 }

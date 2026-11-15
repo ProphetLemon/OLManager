@@ -562,6 +562,7 @@
     "acquisitionLoading": "Chargement des options d'acquisition d'académie...",
     "acquisitionIntro": "Vous n'avez pas encore d'académie liée. Choisissez une équipe ERL pour l'acquérir.",
     "acquisitionIntroRegion": "Choisissez une équipe de deuxième niveau (région : {{region}}) à financer comme académie.",
+    "acquisitionIntroLinked": "Choisissez un club de deuxième niveau (région : {{region}}) à affilier comme académie. Il garde son nom, sa ligue et ses finances, et vous décidez des joueurs qu'il compte.",
     "blocked": {
       "notTopLeague": "Seuls les clubs d'une ligue de premier niveau peuvent financer une académie.",
       "noRegionCandidates": "Aucune équipe libre de deuxième niveau n'est disponible pour une académie (région : {{region}}).",
@@ -584,6 +585,12 @@
     "fundAcademy": "Financer l'académie",
     "fundingAcademy": "Financement...",
     "academyRosterLinked": "Effectif de l'académie",
+    "linkedFinance": {
+      "title": "Finances du club lié",
+      "balance": "Solde",
+      "sponsor": "Sponsor / mois",
+      "wages": "Salaires / mois"
+    },
     "academyNotLinked": "Académie non liée",
     "promoting": "Promotion...",
     "promote": "Promouvoir",
@@ -1442,6 +1449,7 @@
   },
   "teams": {
     "yourTeam": "Votre Équipe",
+    "yourAcademy": "Votre Académie",
     "hq": "QG :",
     "squad": "Effectif",
     "avgOvr": "OVR Moyen",
@@ -1776,7 +1784,7 @@
     "academyPending": "Acquisition de l'académie en attente",
     "academyRosterCount": "{{count}} joueurs dans l'effectif acquis",
     "viewAcquisitionOptions": "Voir les options d'acquisition",
-    "academyDescription": "Acquérez une équipe d'académie pour former de jeunes talents et alimenter votre équipe première avec des joueurs formés au club.",
+    "academyDescription": "Affiliez un club de deuxième niveau comme académie pour former de jeunes talents et alimenter votre équipe première avec des joueurs formés au club.",
     "academyPendingTitle": "Pas d'académie",
     "benefitCompare": "Comparer",
     "benefitCompareDesc": "Comparez les statistiques et trouvez la meilleure option",
@@ -2900,6 +2908,10 @@
       "academyAcquired": {
         "subject": "Académie financée : {{academy}}",
         "body": "L'opération s'est déroulée avec succès. {{team}} dispose désormais d'une académie affiliée ({{academy}}) pour un coût de €{{cost}}."
+      },
+      "academyLinkDissolved": {
+        "subject": "Fin du lien d'académie : {{academy}}",
+        "body": "{{academy}} est monté dans l'élite et n'est plus votre académie. Le lien prend fin sans remboursement."
       },
       "esportmaniacos": {
         "positive": {

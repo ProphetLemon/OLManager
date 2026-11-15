@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Clock, Eye, GraduationCap, ScanSearch, User } from "lucide-react";
 
 import type { GameStateData } from "@/store/gameStore";
+import { findAcademyTeamForParent } from "@/store/academySelectors";
 import { useTabUiField } from "@/store/tabUiStore";
 import { sendScout } from "@/services/scoutingService";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
@@ -31,9 +32,7 @@ export function ScoutingTabV2({ gameState, onGameUpdate, onSelectPlayer, onNavig
 
   const myTeamId = gameState.manager.team_id ?? "";
   const myTeam = gameState.teams.find((team) => team.id === myTeamId);
-  const academyTeam = myTeam?.academy_team_id
-    ? gameState.teams.find((team) => team.id === myTeam.academy_team_id)
-    : gameState.teams.find((team) => team.team_kind === "Academy" && team.parent_team_id === myTeamId);
+  const academyTeam = findAcademyTeamForParent(gameState.teams, myTeamId);
   const academyRosterCount = academyTeam
     ? gameState.players.filter((p) => p.team_id === academyTeam.id).length
     : 0;

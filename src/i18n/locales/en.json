@@ -734,6 +734,7 @@
     "acquisitionLoading": "Loading academy acquisition options...",
     "acquisitionIntro": "You do not have a linked academy yet. Choose an ERL team to acquire it.",
     "acquisitionIntroRegion": "Choose a tier-2 team (region: {{region}}) to fund as your academy.",
+    "acquisitionIntroLinked": "Choose a tier-2 club (region: {{region}}) to link as your academy. It keeps its name, league and finances, and you decide which players it holds.",
     "blocked": {
       "notTopLeague": "Only clubs in a top-tier league can fund an academy.",
       "noRegionCandidates": "No free tier-2 teams are available for an academy (region: {{region}}).",
@@ -756,6 +757,12 @@
     "fundAcademy": "Fund academy",
     "fundingAcademy": "Funding...",
     "academyRosterLinked": "Academy roster",
+    "linkedFinance": {
+      "title": "Linked club finances",
+      "balance": "Balance",
+      "sponsor": "Sponsor / month",
+      "wages": "Wages / month"
+    },
     "academyNotLinked": "Academy not linked",
     "promoting": "Promoting...",
     "promote": "Promote",
@@ -1625,6 +1632,7 @@
   },
   "teams": {
     "yourTeam": "Your Team",
+    "yourAcademy": "Your Academy",
     "hq": "HQ:",
     "squad": "Squad",
     "avgOvr": "Avg OVR",
@@ -1973,7 +1981,7 @@
     "academyPending": "Academy acquisition pending",
     "academyRosterCount": "{{count}} players in the acquired roster",
     "viewAcquisitionOptions": "View acquisition options",
-    "academyDescription": "Acquire an academy team to develop young talent and feed your first team with homegrown players.",
+    "academyDescription": "Link a tier-2 club as your academy to develop young talent and feed your first team with homegrown players.",
     "academyPendingTitle": "No Academy",
     "benefitCompare": "Compare",
     "benefitCompareDesc": "Compare stats and find the best option",
@@ -3122,6 +3130,10 @@
       "academyAcquired": {
         "subject": "Academy funded: {{academy}}",
         "body": "The operation completed successfully. {{team}} now has an affiliated academy ({{academy}}) at a cost of €{{cost}}."
+      },
+      "academyLinkDissolved": {
+        "subject": "Academy link ended: {{academy}}",
+        "body": "{{academy}} was promoted to the top flight and is no longer your academy. The link ends with no refund."
       },
       "esportmaniacos": {
         "positive": {

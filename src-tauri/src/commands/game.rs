@@ -793,22 +793,8 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
         .filter_map(|m| m.tier.map(|tier| (m.id.clone(), tier)))
         .collect();
 
-    // 2. Bootstrap academy seeds from ERL catalog (JSON or legacy .txt fallback)
-    let academy_bootstrap_date = start_date.format("%Y-%m-%d").to_string();
-    let pre_count = all_teams.len();
-    game_setup::bootstrap_example_academy_pool_from_example(
-        &mut all_teams,
-        &mut all_players,
-        &academy_bootstrap_date,
-    );
-    let academy_count = all_teams.len() - pre_count;
-    if academy_count > 0 {
-        info!(
-            "[game] bootstrapped {} academy teams from ERL catalog",
-            academy_count
-        );
-    }
-    game_setup::remove_free_agents_shadowed_by_academy(&mut all_players, &all_teams);
+    // 2. Academies: a new world carries no academy copies. Funding an academy links a
+    // real tier-2 club of the parent's region (see `olm_core::academy_link`).
 
     // 4. Inject free agent players from JSON
     game_setup::inject_json_free_agents(&mut all_players);
@@ -3285,7 +3271,8 @@ mod tests {
                 .filter(|t| t.wage_budget == 0 && t.finance == 0)
                 .map(|t| t.id.as_str())
                 .collect();
-            assert!(!shells.is_empty(), "the data ships shell teams");
+            // The shell teams this guarded were the academy copies, which a new world no
+            // longer builds; the check stays for any team the data ships without a budget.
             let seeded: Vec<&str> = game
                 .players
                 .iter()

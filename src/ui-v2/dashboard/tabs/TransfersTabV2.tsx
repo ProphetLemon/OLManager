@@ -23,6 +23,7 @@ import type {
   PlayerSelectionOptions,
   TransferOfferData,
 } from "@/store/gameStore";
+import { findAcademyTeamForParent } from "@/store/academySelectors";
 import { useTabUiField } from "@/store/tabUiStore";
 import { formatVal, calcAge, getTeamName } from "@/lib/common/helpers";
 import { formatNumber } from "@/lib/formatting/valueFormatting";
@@ -131,11 +132,7 @@ export function TransfersTabV2({
   const { t, i18n } = useTranslation();
   const userTeamId = gameState.manager.team_id;
   const myTeam = gameState.teams.find((team) => team.id === userTeamId);
-  const academyTeam = gameState.teams.find(
-    (team) => team.id === myTeam?.academy_team_id,
-  ) ?? gameState.teams.find(
-    (team) => team.team_kind === "Academy" && team.parent_team_id === myTeam?.id,
-  ) ?? null;
+  const academyTeam = findAcademyTeamForParent(gameState.teams, myTeam?.id);
   const managedTeamIds = [myTeam?.id, academyTeam?.id].filter(Boolean) as string[];
 
   const myRoster = myTeam ? gameState.players.filter((p) => p.team_id === myTeam.id) : [];

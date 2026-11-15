@@ -19,6 +19,8 @@ type BackendAcademyAcquisitionOption = {
   reputation: number;
   development_level: number;
   acquisition_cost: number;
+  /** Absent in legacy payloads (generated copies). */
+  real_club?: boolean;
 };
 
 type BackendAcademyAcquisitionOptionsResponse = {
@@ -48,7 +50,8 @@ function normalizeAcademyOption(
     reputation: option.reputation,
     development_level: option.development_level,
     acquisition_cost: option.acquisition_cost,
-    rebrand_allowed: true,
+    rebrand_allowed: !option.real_club,
+    real_club: Boolean(option.real_club),
     source_identity: {
       source_team_id: option.source_team_id,
       original_name: option.name,

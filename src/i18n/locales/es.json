@@ -734,6 +734,7 @@
     "acquisitionLoading": "Cargando opciones para adquirir academia...",
     "acquisitionIntro": "Todavía no tienes academia vinculada. Elige un equipo ERL para adquirirla.",
     "acquisitionIntroRegion": "Elige un equipo de segundo nivel (región: {{region}}) para financiarlo como tu academia.",
+    "acquisitionIntroLinked": "Elige un club de segundo nivel (región: {{region}}) para vincularlo como tu academia. Conserva su nombre, su liga y sus finanzas, y tú decides qué jugadores tiene.",
     "blocked": {
       "notTopLeague": "Solo los clubes de una liga de primer nivel pueden financiar una academia.",
       "noRegionCandidates": "No hay equipos libres de segundo nivel disponibles para una academia (región: {{region}}).",
@@ -756,6 +757,12 @@
     "fundAcademy": "Financiar academia",
     "fundingAcademy": "Financiando...",
     "academyRosterLinked": "Plantilla de academia",
+    "linkedFinance": {
+      "title": "Finanzas del club vinculado",
+      "balance": "Saldo",
+      "sponsor": "Patrocinador / mes",
+      "wages": "Salarios / mes"
+    },
     "academyNotLinked": "Academia no vinculada",
     "promoting": "Subiendo...",
     "promote": "Subir",
@@ -1614,6 +1621,7 @@
   },
   "teams": {
     "yourTeam": "Tu Equipo",
+    "yourAcademy": "Tu Academia",
     "hq": "Base:",
     "squad": "Plantilla",
     "avgOvr": "Media OVR",
@@ -1962,7 +1970,7 @@
     "academyPending": "Adquisición de academia pendiente",
     "academyRosterCount": "{{count}} jugadores en la plantilla adquirida",
     "viewAcquisitionOptions": "Ver opciones de adquisición",
-    "academyDescription": "Adquiere un equipo de academia para formar jóvenes talentos y nutrir a tu primer equipo con jugadores de la cantera.",
+    "academyDescription": "Vincula un club de segundo nivel como tu academia para formar jóvenes talentos y nutrir a tu primer equipo con jugadores de la cantera.",
     "academyPendingTitle": "Sin academia",
     "benefitCompare": "Comparar",
     "benefitCompareDesc": "Compara estadísticas y encuentra la mejor opción",
@@ -3086,6 +3094,10 @@
       "academyAcquired": {
         "subject": "Academia financiada: {{academy}}",
         "body": "La operación se ha completado con éxito. {{team}} ahora tiene una academia vinculada ({{academy}}) por un costo de €{{cost}}."
+      },
+      "academyLinkDissolved": {
+        "subject": "Vínculo de academia terminado: {{academy}}",
+        "body": "{{academy}} ha ascendido a la máxima categoría y deja de ser tu academia. El vínculo termina sin reembolso."
       },
       "esportmaniacos": {
         "positive": {

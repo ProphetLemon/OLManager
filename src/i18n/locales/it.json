@@ -399,6 +399,7 @@
     "acquisitionLoading": "Caricamento delle opzioni di acquisizione dell'accademia...",
     "acquisitionIntro": "Non hai ancora un'accademia collegata. Scegli una squadra ERL per acquisirla.",
     "acquisitionIntroRegion": "Scegli una squadra di secondo livello (regione: {{region}}) da finanziare come accademia.",
+    "acquisitionIntroLinked": "Scegli un club di secondo livello (regione: {{region}}) da collegare come accademia. Mantiene nome, lega e finanze, e sei tu a decidere quali giocatori ha.",
     "blocked": {
       "notTopLeague": "Solo i club di una lega di primo livello possono finanziare un'accademia.",
       "noRegionCandidates": "Nessuna squadra libera di secondo livello è disponibile per un'accademia (regione: {{region}}).",
@@ -421,6 +422,12 @@
     "fundAcademy": "Finanzia l'accademia",
     "fundingAcademy": "Finanziamento...",
     "academyRosterLinked": "Rosa dell'accademia",
+    "linkedFinance": {
+      "title": "Finanze del club collegato",
+      "balance": "Saldo",
+      "sponsor": "Sponsor / mese",
+      "wages": "Stipendi / mese"
+    },
     "academyNotLinked": "Accademia non collegata",
     "promoting": "Promozione in corso...",
     "promote": "Promuovi",
@@ -1279,6 +1286,7 @@
   },
   "teams": {
     "yourTeam": "La tua squadra",
+    "yourAcademy": "La tua accademia",
     "squad": "Rosa",
     "avgOvr": "OVR medio",
     "rep": "Rep",
@@ -1613,7 +1621,7 @@
     "academyPending": "Acquisizione dell'accademia in sospeso",
     "academyRosterCount": "{{count}} giocatori nella rosa acquisita",
     "viewAcquisitionOptions": "Vedi opzioni di acquisizione",
-    "academyDescription": "Acquisisci una squadra accademia per far crescere giovani talenti e alimentare la prima squadra con giocatori del vivaio.",
+    "academyDescription": "Collega un club di secondo livello come accademia per far crescere giovani talenti e alimentare la prima squadra con giocatori del vivaio.",
     "academyPendingTitle": "Nessuna accademia",
     "benefitCompare": "Confronta",
     "benefitCompareDesc": "Confronta le statistiche e trova l'opzione migliore",
@@ -2954,6 +2962,10 @@
       "academyAcquired": {
         "subject": "Accademia finanziata: {{academy}}",
         "body": "L'operazione si è conclusa con successo. {{team}} ora ha un'accademia affiliata ({{academy}}) al costo di €{{cost}}."
+      },
+      "academyLinkDissolved": {
+        "subject": "Collegamento accademia terminato: {{academy}}",
+        "body": "{{academy}} è stata promossa nella massima serie e non è più la tua accademia. Il collegamento termina senza rimborso."
       },
       "contractTerminated": {
         "subject": "Contratto risolto: {{player}}",

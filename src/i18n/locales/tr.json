@@ -562,6 +562,7 @@
     "acquisitionLoading": "Akademi satın alma seçenekleri yükleniyor...",
     "acquisitionIntro": "Henüz bağlı bir akademiniz yok. Bir akademi edinmek için bir ERL takımı seçin.",
     "acquisitionIntroRegion": "Akademi olarak finanse etmek için ikinci seviye bir takım seçin (bölge: {{region}}).",
+    "acquisitionIntroLinked": "Akademiniz olarak bağlamak için ikinci seviye bir kulüp seçin (bölge: {{region}}). Adını, ligini ve mali durumunu korur; hangi oyunculara sahip olacağına siz karar verirsiniz.",
     "blocked": {
       "notTopLeague": "Yalnızca birinci seviye bir ligdeki kulüpler akademi finanse edebilir.",
       "noRegionCandidates": "Akademi için boşta ikinci seviye takım yok (bölge: {{region}}).",
@@ -584,6 +585,12 @@
     "fundAcademy": "Akademiyi fonla",
     "fundingAcademy": "Fonlanıyor...",
     "academyRosterLinked": "Akademi kadrosu",
+    "linkedFinance": {
+      "title": "Bağlı kulübün finansı",
+      "balance": "Bakiye",
+      "sponsor": "Sponsor / ay",
+      "wages": "Maaşlar / ay"
+    },
     "academyNotLinked": "Akademi bağlı değil",
     "promoting": "As takıma çıkarılıyor...",
     "promote": "As Takıma Çıkar",
@@ -1442,6 +1449,7 @@
   },
   "teams": {
     "yourTeam": "Takımınız",
+    "yourAcademy": "Akademiniz",
     "hq": "Merkez:",
     "squad": "Kadro",
     "avgOvr": "Ort. OVR",
@@ -1776,7 +1784,7 @@
     "academyPending": "Akademi satın alımı beklemede",
     "academyRosterCount": "Satın alınan kadroda {{count}} oyuncu var",
     "viewAcquisitionOptions": "Satın alma seçeneklerini gör",
-    "academyDescription": "Genç yetenekleri geliştirmek ve ilk takımınızı altyapıdan çıkan oyuncularla beslemek için bir akademi takımı satın alın.",
+    "academyDescription": "Genç yetenekleri geliştirmek ve ilk takımınızı altyapıdan çıkan oyuncularla beslemek için ikinci seviye bir kulübü akademi olarak bağlayın.",
     "academyPendingTitle": "Akademi yok",
     "benefitCompare": "Karşılaştır",
     "benefitCompareDesc": "İstatistikleri karşılaştırın ve en iyi seçeneği bulun",
@@ -2900,6 +2908,10 @@
       "academyAcquired": {
         "subject": "Akademi finanse edildi: {{academy}}",
         "body": "Operasyon başarıyla tamamlandı. {{team}} artık €{{cost}} maliyetle bağlı bir akademiye ({{academy}}) sahip."
+      },
+      "academyLinkDissolved": {
+        "subject": "Akademi bağlantısı sona erdi: {{academy}}",
+        "body": "{{academy}} en üst lige yükseldi ve artık akademiniz değil. Bağlantı geri ödeme olmadan sona erer."
       },
       "esportmaniacos": {
         "positive": {

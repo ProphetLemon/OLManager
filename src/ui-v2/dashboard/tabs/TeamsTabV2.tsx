@@ -5,7 +5,7 @@ import { Building2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Filter, S
 
 import type { GameStateData } from "@/store/gameStore";
 import { compareStandingsByLolScore } from "@/store/gameStore";
-import { getMainTeams } from "@/store/academySelectors";
+import { getMainTeams, isUserAcademyClub } from "@/store/academySelectors";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { formatVal } from "@/lib/common/helpers";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
@@ -157,6 +157,9 @@ export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
                   <h3 className="flex items-center gap-2 truncate font-heading text-base font-bold uppercase tracking-wide">
                     {team.name}
                     {isUser && <Badge className="text-2xs">{t("teams.yourTeam")}</Badge>}
+                    {isUserAcademyClub(gameState.teams, userTeamId, team.id) && (
+                      <Badge className="text-2xs">{t("teams.yourAcademy")}</Badge>
+                    )}
                   </h3>
                   <p className={cn("mt-0.5 flex items-center gap-1 text-xs", hasColor ? "text-white/70" : "text-muted-foreground")}>
                     <span>{t(`countries.${team.country}`, team.country)}</span>

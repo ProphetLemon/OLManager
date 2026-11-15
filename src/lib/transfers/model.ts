@@ -1,5 +1,6 @@
 import type { GameStateData, PlayerData } from "../../store/gameStore";
 import { calculateLolOvr } from "../../lib/players/lolPlayerStats";
+import { findAcademyTeamForParent } from "@/store/academySelectors";
 import { getLolRoleForPlayer } from "@/lib/squad/helpers";
 import { calcAge } from "../../lib/common/helpers";
 
@@ -87,6 +88,11 @@ export function deriveTransferCollections(
       )
       .forEach((team) => userClubTeamIds.add(team.id));
   }
+  // A real club linked as the user's academy is the user's side: it is a normal Main
+  // club, so it is not in `academyTeamIds`, yet its players are not for sale to the user.
+  const linkedClubId = findAcademyTeamForParent(gameState.teams, userTeamId)?.id ?? null;
+  const isLinkedClubPlayer = (player: PlayerData) =>
+    linkedClubId !== null && player.team_id === linkedClubId;
 
   const contractedNickSet = new Set(
     gameState.players
@@ -100,6 +106,7 @@ export function deriveTransferCollections(
       (player) =>
         (player.team_id === null || player.transfer_listed) &&
         player.team_id !== userTeamId &&
+        !isLinkedClubPlayer(player) &&
         !academyIdentityKeys.has(normalizePlayerKey(player)) &&
         !(
           player.team_id === null &&
@@ -114,6 +121,7 @@ export function deriveTransferCollections(
       (player) =>
         player.loan_listed &&
         player.team_id !== userTeamId &&
+        !isLinkedClubPlayer(player) &&
         !academyIdentityKeys.has(normalizePlayerKey(player)),
     ),
     academyTeamIds,

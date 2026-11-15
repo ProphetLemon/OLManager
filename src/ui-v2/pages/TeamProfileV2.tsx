@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { buildTeamProfileViewModel } from "@/lib/teamProfile/viewModel";
+import { isUserAcademyClub } from "@/store/academySelectors";
 import type { GameStateData, TeamData } from "@/store/gameStore";
 import TeamProfileHeroCardV2 from "@/ui-v2/pages/teamProfile/TeamProfileHeroCardV2";
 import {
@@ -52,7 +53,11 @@ function TeamProfileContent({
           {t("common.back")}
         </button>
 
-        <TeamProfileHeroCardV2 team={team} viewModel={viewModel} />
+        <TeamProfileHeroCardV2
+          team={team}
+          viewModel={viewModel}
+          isUserAcademy={isUserAcademyClub(gameState.teams, gameState.manager.team_id, team.id)}
+        />
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <TeamProfileClubDetailsCardV2 team={team} rosterSize={viewModel.roster.length} />

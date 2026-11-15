@@ -47,6 +47,10 @@ pub struct AcademyAcquisitionOption {
     pub reputation: u8,
     pub development_level: u8,
     pub acquisition_cost: i64,
+    /// True when the option is a real club to link (it keeps its own name, logo and
+    /// league); false for a legacy generated copy, which the user may rebrand.
+    #[serde(default)]
+    pub real_club: bool,
 }
 
 pub type AcademyCreationOption = AcademyAcquisitionOption;
@@ -144,6 +148,7 @@ pub fn eligible_academy_acquisition_options(
                 reputation: candidate.reputation,
                 development_level: candidate.development_level,
                 acquisition_cost: acquisition_cost_for_candidate(candidate),
+                real_club: false,
             })
         })
         .collect();
@@ -383,10 +388,11 @@ fn acquisition_option_from_league(
         reputation: erl.reputation,
         development_level: erl.reputation,
         acquisition_cost: acquisition_cost_for_reputation(erl.reputation),
+        real_club: false,
     }
 }
 
-fn acquisition_cost_for_candidate(candidate: &ErlAcademyCandidate) -> i64 {
+pub(crate) fn acquisition_cost_for_candidate(candidate: &ErlAcademyCandidate) -> i64 {
     BASE_ACADEMY_ACQUISITION_COST
         + i64::from(candidate.reputation) * REPUTATION_COST_MULTIPLIER
         + i64::from(candidate.development_level) * 20_000
@@ -396,7 +402,7 @@ fn acquisition_cost_for_reputation(reputation: u8) -> i64 {
     BASE_ACADEMY_ACQUISITION_COST + i64::from(reputation) * REPUTATION_COST_MULTIPLIER
 }
 
-fn country_matches(left: &str, right: &str) -> bool {
+pub(crate) fn country_matches(left: &str, right: &str) -> bool {
     left.eq_ignore_ascii_case(right)
 }
 
@@ -886,7 +892,7 @@ pub fn acquisition_report(
 ///
 /// The tier comes from the loaded league of the team's competition; the region
 /// from the game's residency table, keyed by the same competition id.
-fn top_league_region(game: &Game, parent: &Team) -> Option<crate::residency::Region> {
+pub(crate) fn top_league_region(game: &Game, parent: &Team) -> Option<crate::residency::Region> {
     let competition_id = parent.competition_id.as_deref()?;
     let league = game.leagues.iter().find(|league| {
         league.competition_id.as_deref() == Some(competition_id)

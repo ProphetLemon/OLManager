@@ -681,6 +681,11 @@ pub fn generate_incoming_transfer_offers(game: &mut Game) {
             managed_team_ids.insert(team.id.clone());
         }
     }
+    // A linked real club is part of the user's squad: offers for its players come to the user.
+    let linked_club_id = crate::academy_link::user_linked_club_id(game);
+    if let Some(club_id) = &linked_club_id {
+        managed_team_ids.insert(club_id.clone());
+    }
 
     if managed_squad_has_recent_incoming_offer(
         game,
@@ -697,6 +702,7 @@ pub fn generate_incoming_transfer_offers(game: &mut Game) {
         .teams
         .iter()
         .filter(|team| team.id != user_team_id && team.team_kind == TeamKind::Main)
+        .filter(|team| linked_club_id.as_deref() != Some(team.id.as_str()))
         .map(|team| team.id.clone())
         .collect();
 
@@ -768,7 +774,9 @@ pub fn generate_incoming_transfer_offers(game: &mut Game) {
 
             let player_team = game.teams.iter().find(|team| team.id == player_team_id);
             let is_academy_player = player_team
-                .map(|team| team.team_kind == TeamKind::Academy)
+                .map(|team| {
+                    team.team_kind == TeamKind::Academy || linked_club_id.as_deref() == Some(team.id.as_str())
+                })
                 .unwrap_or(false);
 
             if !allow_unsolicited_offer_for_player(current_date, player, player_team) {
@@ -886,10 +894,12 @@ fn parse_offer_date(date: &str) -> Option<NaiveDate> {
 }
 
 fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
+    let linked_club_id = crate::academy_link::user_linked_club_id(game);
     let mut candidate_team_ids: Vec<String> = game
         .teams
         .iter()
         .filter(|team| team.id != user_team_id && team.team_kind == TeamKind::Main)
+        .filter(|team| linked_club_id.as_deref() != Some(team.id.as_str()))
         .filter(|team| team.transfer_budget > 0 && team.finance > 0)
         .map(|team| team.id.clone())
         .collect();
@@ -995,6 +1005,9 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
 /// Public wrapper for the Team Agent to purchase a free agent for a specific
 /// role. Returns `true` if a signing was executed.
 pub fn ai_agent_purchase(game: &mut Game, team_id: &str, role: &str) -> bool {
+    if crate::academy_link::user_linked_club_id(game).as_deref() == Some(team_id) {
+        return false;
+    }
     let Some(team) = game.teams.iter().find(|t| t.id == team_id).cloned() else {
         return false;
     };
@@ -1042,10 +1055,12 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
     let current_date = game.clock.current_date.date_naive();
 
     let mut completed = 0_usize;
+    let linked_club_id = crate::academy_link::user_linked_club_id(game);
     let buyer_ids: Vec<String> = game
         .teams
         .iter()
         .filter(|team| team.id != user_team_id && team.team_kind == TeamKind::Main)
+        .filter(|team| linked_club_id.as_deref() != Some(team.id.as_str()))
         .filter(|team| team.transfer_budget > 0 && team.finance > 0)
         .map(|team| team.id.clone())
         .collect();
@@ -1080,7 +1095,10 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
                         }
 
                 let seller_id = player.team_id.as_deref()?;
-                if seller_id == user_team_id || seller_id == buyer_id {
+                if seller_id == user_team_id
+                    || seller_id == buyer_id
+                    || linked_club_id.as_deref() == Some(seller_id)
+                {
                     return None;
                 }
 
@@ -1125,7 +1143,10 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
                         }
 
                 let seller_id = player.team_id.as_deref()?;
-                if seller_id == user_team_id || seller_id == buyer_id {
+                if seller_id == user_team_id
+                    || seller_id == buyer_id
+                    || linked_club_id.as_deref() == Some(seller_id)
+                {
                     return None;
                 }
 
