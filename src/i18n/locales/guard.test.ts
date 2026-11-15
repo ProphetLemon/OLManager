@@ -379,8 +379,6 @@ describe("finance ledger locale parity", () => {
     "be.msg.finance.facilityUpkeepSummary.body",
     "be.msg.finance.facilityUpkeepSpike.subject",
     "be.msg.finance.facilityUpkeepSpike.body",
-    "be.msg.finance.prizePayout.subject",
-    "be.msg.finance.prizePayout.body",
     "be.msg.finance.boardFinancialHealth.subject",
     "be.msg.finance.boardFinancialHealth.body",
   ];

@@ -784,6 +784,146 @@ fn champion_receives_prize_money_and_ledger_entry() {
     );
 }
 
+fn prize_entries(game: &Game, team_id: &str) -> Vec<olm_core::domain::team::FinancialTransaction> {
+    game.teams
+        .iter()
+        .find(|team| team.id == team_id)
+        .unwrap()
+        .financial_ledger
+        .iter()
+        .filter(|entry| entry.kind == FinancialTransactionKind::PrizeMoney)
+        .cloned()
+        .collect()
+}
+
+#[test]
+fn tier_two_champion_receives_sixty_percent_of_the_prize() {
+    let mut game = make_completed_season_game();
+    game.leagues[0].tier = 2;
+
+    process_end_of_season(&mut game);
+
+    let entries = prize_entries(&game, "team1");
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].amount, 480_000);
+}
+
+#[test]
+fn tier_one_and_unknown_tier_champions_receive_the_full_prize() {
+    for tier in [0u8, 1] {
+        let mut game = make_completed_season_game();
+        game.leagues[0].tier = tier;
+
+        process_end_of_season(&mut game);
+
+        let entries = prize_entries(&game, "team1");
+        assert_eq!(entries.len(), 1, "tier {tier}");
+        assert_eq!(entries[0].amount, 800_000, "tier {tier}");
+    }
+}
+
+#[test]
+fn tier_two_runner_up_scales_with_the_tier() {
+    let mut game = make_completed_season_game();
+    game.leagues[0].tier = 2;
+
+    process_end_of_season(&mut game);
+
+    // Second place: 500,000 x 60% = 300,000.
+    assert_eq!(prize_entries(&game, "team2")[0].amount, 300_000);
+}
+
+fn make_bg_prize_game(tier: u8, competition_id: Option<&str>, split_index: usize) -> Game {
+    let mut game = make_completed_season_game();
+    game.teams.push(make_team("team3", "Third FC"));
+    game.teams.push(make_team("team4", "Fourth FC"));
+    let mut bg = make_completed_background_league("bg-prize", competition_id, 1);
+    bg.tier = tier;
+    bg.split_index = split_index;
+    bg.standings = vec![
+        make_standing("team3", 2, 0, 3, 1),
+        make_standing("team4", 0, 2, 1, 3),
+    ];
+    bg.fixtures = vec![
+        make_completed_fixture("bg-f1", "team3", "team4", 2, 1),
+        make_completed_fixture("bg-f2", "team4", "team3", 0, 1),
+    ];
+    game.leagues.push(bg);
+    game
+}
+
+#[test]
+fn background_league_season_end_pays_its_clubs_by_tier_once_without_mail() {
+    let mut game = make_bg_prize_game(2, None, 0);
+    let messages_before = game.messages.len();
+
+    process_background_seasons(&mut game, &HashMap::new());
+    process_background_seasons(&mut game, &HashMap::new());
+
+    let champion = prize_entries(&game, "team3");
+    assert_eq!(champion.len(), 1, "paid exactly once");
+    assert_eq!(champion[0].amount, 480_000);
+    assert_eq!(champion[0].source, "prize");
+    assert_eq!(champion[0].source_id.as_deref(), Some("season-1-position-1"));
+    assert_eq!(prize_entries(&game, "team4")[0].amount, 300_000);
+    assert_eq!(game.messages.len(), messages_before, "no inbox mail");
+    // The active league's clubs are not touched by the background roll.
+    assert!(prize_entries(&game, "team1").is_empty());
+}
+
+#[test]
+fn background_league_with_a_manifest_pays_before_it_is_replaced() {
+    let mut game = make_bg_prize_game(1, Some("test-league"), 0);
+    let mut manifests = HashMap::new();
+    manifests.insert("test-league".to_string(), make_test_manifest());
+
+    process_background_seasons(&mut game, &manifests);
+
+    assert_eq!(prize_entries(&game, "team3")[0].amount, 800_000);
+    assert_eq!(prize_entries(&game, "team4")[0].amount, 500_000);
+}
+
+#[test]
+fn background_league_non_final_split_pays_nothing() {
+    let mut game = make_bg_prize_game(1, Some("test-league"), 0);
+    let mut manifest = make_test_manifest();
+    let second = manifest.schedule.splits[0].clone();
+    manifest.schedule.splits.push(second);
+    let mut manifests = HashMap::new();
+    manifests.insert("test-league".to_string(), manifest);
+
+    process_background_seasons(&mut game, &manifests);
+
+    assert!(prize_entries(&game, "team3").is_empty());
+    assert!(prize_entries(&game, "team4").is_empty());
+}
+
+#[test]
+fn matches_played_before_a_background_league_rolled_stay_pending_for_the_monthly_step() {
+    let mut game = make_bg_prize_game(2, None, 0);
+    game.teams
+        .iter_mut()
+        .find(|team| team.id == "team3")
+        .unwrap()
+        .pending_home_matchday_units = 180;
+
+    process_background_seasons(&mut game, &HashMap::new());
+
+    let team3 = game.teams.iter().find(|team| team.id == "team3").unwrap();
+    assert_eq!(team3.pending_home_matchday_units, 180);
+}
+
+#[test]
+fn active_league_is_not_paid_again_by_the_background_roll() {
+    let mut game = make_bg_prize_game(1, None, 0);
+
+    process_end_of_season(&mut game);
+    process_background_seasons(&mut game, &HashMap::new());
+
+    assert_eq!(prize_entries(&game, "team1").len(), 1);
+    assert_eq!(prize_entries(&game, "team3").len(), 1);
+}
+
 #[test]
 fn prize_money_ledger_line_carries_the_season_and_position_as_parameters() {
     let mut game = make_completed_season_game();
@@ -974,20 +1114,45 @@ fn settlement_still_sets_other_clubs_to_half_the_treasury() {
 }
 
 #[test]
-fn season_end_sends_scoped_prize_and_board_health_finance_mail_once() {
+fn season_end_announces_the_prize_once_and_sends_board_health_finance_mail_once() {
     let mut game = make_completed_season_game();
     game.teams[0].finance = 3_500_000;
 
     process_end_of_season(&mut game);
     process_end_of_season(&mut game);
 
+    // One prize mail: the chairman's, with the amount and the position.
+    let prize_mails: Vec<_> = game
+        .messages
+        .iter()
+        .filter(|message| {
+            let announces_prize = message.id.starts_with("season_payout_")
+                || message.id.starts_with("finance:prize:")
+                || message
+                    .subject_key
+                    .as_deref()
+                    .is_some_and(|key| key.contains("rizePayout") || key.contains("seasonPayout"));
+            // The second call closes the next season, which has its own prize.
+            announces_prize && message.i18n_params.get("season").map(String::as_str) == Some("1")
+        })
+        .collect();
+    assert_eq!(prize_mails.len(), 1, "the prize is announced by one mail: {:?}", prize_mails.iter().map(|m| (&m.id, &m.subject_key)).collect::<Vec<_>>());
+    let prize = prize_mails[0];
+    assert_eq!(prize.id, "season_payout_1");
+    assert_eq!(prize.category, MessageCategory::Finance);
     assert_eq!(
-        game.messages
-            .iter()
-            .filter(|message| message.id == "finance:prize:team1:1:1:prizePayout")
-            .count(),
-        1
+        prize.subject_key.as_deref(),
+        Some("be.msg.seasonPayout.subject")
     );
+    assert_eq!(
+        prize.i18n_params.get("amount").map(String::as_str),
+        Some("800K")
+    );
+    assert_eq!(
+        prize.i18n_params.get("position").map(String::as_str),
+        Some("1")
+    );
+
     assert_eq!(
         game.messages
             .iter()
@@ -995,17 +1160,6 @@ fn season_end_sends_scoped_prize_and_board_health_finance_mail_once() {
                 == "finance:board-health:team1:2025-06-01:boardFinancialHealth")
             .count(),
         1
-    );
-
-    let prize = game
-        .messages
-        .iter()
-        .find(|message| message.id == "finance:prize:team1:1:1:prizePayout")
-        .expect("prize finance mail should exist");
-    assert_eq!(prize.category, MessageCategory::Finance);
-    assert_eq!(
-        prize.subject_key.as_deref(),
-        Some("be.msg.finance.prizePayout.subject")
     );
 
     let board_health = game

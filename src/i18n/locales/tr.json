@@ -2365,7 +2365,6 @@
         "sponsorExpired": { "subject": "Sponsorluk anlaşması sona erdi", "body": "{{sponsorName}} sponsorluğu sona erdi. Yeni bir anlaşma için piyasayı kontrol edin." },
         "facilityUpkeepSummary": { "subject": "Tesis bakım ödemesi yapıldı", "body": "€{{amount}} tutarındaki aylık tesis bakımı kulüp hesabından ödendi." },
         "facilityUpkeepSpike": { "subject": "Tesis bakım maliyeti arttı", "body": "Tesis bakımı bu ay €{{amount}} seviyesine ulaştı. Son yükseltmeler işletme maliyetlerini artırıyor." },
-        "prizePayout": { "subject": "Ödül parası onaylandı", "body": "{{season}}. sezon için {{position}}. sıra karşılığında €{{amount}} ödül verildi." },
         "boardFinancialHealth": { "subject": "Yönetim finansal durum özeti", "body": "Mevcut bakiye: €{{balance}}. Aylık net eğilim: €{{monthlyNet}}. Tahmini dayanma süresi: {{monthsLeft}} ay.", "bodyStable": "Mevcut bakiye: €{{balance}}. Aylık net eğilim: €{{monthlyNet}}. Aylık eğilim negatif değil, bu yüzden nakit tükenme riski yok." }
       },
       "seasonPayout": {

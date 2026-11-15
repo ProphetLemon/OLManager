@@ -17,15 +17,21 @@ use crate::game::Game;
 ///
 /// Measured on 2026-11-14 on the world a new game builds (`world_sponsor_sizing_measure`):
 /// the median annual player plus staff wage bill of the 58 scheduled tier-1 main clubs
-/// is 1,490,000, rounded up to the nearest 50,000.
+/// is 1,490,000, rounded up to the nearest 50,000. Not lowered for the prize and matchday
+/// income that every league now pays (median 180,000 + 54,000 on 2026-11-15): a season
+/// of play has drifted wages above that bill (median salary 1,785,000), so the median
+/// tier-1 club already ends the season about 150,000 below its start with this value and
+/// about 390,000 below it without the new income. The drift is tracked separately.
 pub const TIER_1_SPONSORSHIP_VALUE: i64 = 1_500_000;
 
 /// Annual value of a tier-2 (and lower) club's sponsor, in euros.
 ///
-/// Measured on 2026-11-14 like [`TIER_1_SPONSORSHIP_VALUE`]: the median annual wage
-/// bill of the 200 scheduled tier-2 main clubs is 918,000, rounded up to the nearest
-/// 50,000. Tier 3 and lower, and a league with no tier, use this value.
-pub const TIER_2_SPONSORSHIP_VALUE: i64 = 950_000;
+/// Measured on 2026-11-15 like [`TIER_1_SPONSORSHIP_VALUE`]: the median annual wage bill
+/// of the 200 scheduled tier-2 main clubs is 903,000, and the median club also earns
+/// 108,000 of prize money and no matchday revenue (most tier-2 clubs have no stadium
+/// capacity in the data). The earlier 950,000 is lowered by that 108,000 and rounded to
+/// the nearest 50,000. Tier 3 and lower, and a league with no tier, use this value.
+pub const TIER_2_SPONSORSHIP_VALUE: i64 = 850_000;
 
 /// Length of a tier deal; a club whose deal ends gets a new one the same month.
 pub const TIER_SPONSORSHIP_MONTHS: u32 = 12;
@@ -54,6 +60,23 @@ pub fn tier_sponsorship_value(tier: u8) -> i64 {
     } else {
         TIER_2_SPONSORSHIP_VALUE
     }
+}
+
+/// Share of the tier-1 income (season prize, matchday revenue) a league of `tier` pays,
+/// in whole percent. Tier 1 is the reference; tier 2 and lower pay 60% (the median wage
+/// bill of a tier-2 club over a tier-1 club's, 918,000 / 1,490,000 = 0.62, rounded down).
+/// Tier 0, a league with no tier (old saves, fixtures), pays in full so it keeps the
+/// amounts it always had.
+pub fn tier_income_percent(tier: u8) -> i64 {
+    match tier {
+        0 | 1 => 100,
+        _ => 60,
+    }
+}
+
+/// `amount` scaled by the income percent of `tier`.
+pub fn scale_by_tier(amount: i64, tier: u8) -> i64 {
+    amount * tier_income_percent(tier) / 100
 }
 
 /// FNV-1a over the team id: stable across runs and platforms, unlike `DefaultHasher`.
