@@ -1114,20 +1114,45 @@ fn settlement_still_sets_other_clubs_to_half_the_treasury() {
 }
 
 #[test]
-fn season_end_sends_scoped_prize_and_board_health_finance_mail_once() {
+fn season_end_announces_the_prize_once_and_sends_board_health_finance_mail_once() {
     let mut game = make_completed_season_game();
     game.teams[0].finance = 3_500_000;
 
     process_end_of_season(&mut game);
     process_end_of_season(&mut game);
 
+    // One prize mail: the chairman's, with the amount and the position.
+    let prize_mails: Vec<_> = game
+        .messages
+        .iter()
+        .filter(|message| {
+            let announces_prize = message.id.starts_with("season_payout_")
+                || message.id.starts_with("finance:prize:")
+                || message
+                    .subject_key
+                    .as_deref()
+                    .is_some_and(|key| key.contains("rizePayout") || key.contains("seasonPayout"));
+            // The second call closes the next season, which has its own prize.
+            announces_prize && message.i18n_params.get("season").map(String::as_str) == Some("1")
+        })
+        .collect();
+    assert_eq!(prize_mails.len(), 1, "the prize is announced by one mail: {:?}", prize_mails.iter().map(|m| (&m.id, &m.subject_key)).collect::<Vec<_>>());
+    let prize = prize_mails[0];
+    assert_eq!(prize.id, "season_payout_1");
+    assert_eq!(prize.category, MessageCategory::Finance);
     assert_eq!(
-        game.messages
-            .iter()
-            .filter(|message| message.id == "finance:prize:team1:1:1:prizePayout")
-            .count(),
-        1
+        prize.subject_key.as_deref(),
+        Some("be.msg.seasonPayout.subject")
     );
+    assert_eq!(
+        prize.i18n_params.get("amount").map(String::as_str),
+        Some("800000")
+    );
+    assert_eq!(
+        prize.i18n_params.get("position").map(String::as_str),
+        Some("1")
+    );
+
     assert_eq!(
         game.messages
             .iter()
@@ -1135,17 +1160,6 @@ fn season_end_sends_scoped_prize_and_board_health_finance_mail_once() {
                 == "finance:board-health:team1:2025-06-01:boardFinancialHealth")
             .count(),
         1
-    );
-
-    let prize = game
-        .messages
-        .iter()
-        .find(|message| message.id == "finance:prize:team1:1:1:prizePayout")
-        .expect("prize finance mail should exist");
-    assert_eq!(prize.category, MessageCategory::Finance);
-    assert_eq!(
-        prize.subject_key.as_deref(),
-        Some("be.msg.finance.prizePayout.subject")
     );
 
     let board_health = game

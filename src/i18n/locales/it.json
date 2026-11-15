@@ -2103,7 +2103,6 @@
         "sponsorExpired": { "subject": "Sponsorizzazione scaduta", "body": "La sponsorizzazione {{sponsorName}} è terminata. Controlla il mercato per trovare un sostituto." },
         "facilityUpkeepSummary": { "subject": "Manutenzione strutture pagata", "body": "La manutenzione mensile delle strutture di €{{amount}} è stata pagata dal conto del club." },
         "facilityUpkeepSpike": { "subject": "Aumento manutenzione strutture", "body": "La manutenzione delle strutture ha raggiunto €{{amount}} questo mese. I miglioramenti recenti stanno aumentando i costi operativi." },
-        "prizePayout": { "subject": "Premio confermato", "body": "Il premio della stagione {{season}} di €{{amount}} è stato assegnato per la posizione {{position}}." },
         "boardFinancialHealth": { "subject": "Riepilogo finanziario del consiglio", "body": "Saldo attuale: €{{balance}}. Tendenza netta mensile: €{{monthlyNet}}. Autonomia stimata: {{monthsLeft}} mesi.", "bodyStable": "Saldo attuale: €{{balance}}. Tendenza netta mensile: €{{monthlyNet}}. La tendenza mensile non è negativa, quindi non c'è rischio di esaurire la liquidità." }
       },
       "seasonPayout": {

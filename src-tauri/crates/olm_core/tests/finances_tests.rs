@@ -385,14 +385,6 @@ fn scoped_finance_mail_helpers_use_localized_payloads_route_and_correlation_dedu
         "Acme Corp",
         "2025-06-01",
     ));
-    assert!(finances::push_prize_payout_mail(
-        &mut game,
-        "team1",
-        1,
-        2,
-        500_000,
-        "2025-06-01",
-    ));
     assert!(finances::push_board_financial_health_mail(
         &mut game,
         "team1",
@@ -407,7 +399,7 @@ fn scoped_finance_mail_helpers_use_localized_payloads_route_and_correlation_dedu
         .iter()
         .filter(|message| message.category == olm_core::domain::message::MessageCategory::Finance)
         .collect();
-    assert_eq!(finance_messages.len(), 4);
+    assert_eq!(finance_messages.len(), 3);
 
     let expected = [
         (
@@ -419,11 +411,6 @@ fn scoped_finance_mail_helpers_use_localized_payloads_route_and_correlation_dedu
             "finance:sponsor-expired:team1:Acme Corp:2025-06-01:sponsorExpired",
             "be.msg.finance.sponsorExpired.subject",
             "be.msg.finance.sponsorExpired.body",
-        ),
-        (
-            "finance:prize:team1:1:2:prizePayout",
-            "be.msg.finance.prizePayout.subject",
-            "be.msg.finance.prizePayout.body",
         ),
         (
             "finance:board-health:team1:2025-06-01:boardFinancialHealth",

@@ -5,7 +5,7 @@ use crate::domain::player::PlayerSeasonStats;
 use crate::domain::team::{FinancialTransactionKind, Team, TeamSeasonRecord};
 use crate::finances::{
     BudgetImpact, FinanceTransactionInput, LedgerText, calc_annual_wages,
-    push_board_financial_health_mail, push_prize_payout_mail, record_transaction_with_text,
+    push_board_financial_health_mail, record_transaction_with_text,
 };
 use crate::custom_team::is_custom_team_id;
 use crate::game::Game;
@@ -955,16 +955,6 @@ fn process_end_of_season_inner(
         })
         .with_sender_i18n("be.sender.boardOfDirectors", "be.role.chairman");
         game.messages.push(payout_message);
-    }
-    if user_prize_money > 0 && !user_team_id.is_empty() {
-        push_prize_payout_mail(
-            game,
-            &user_team_id,
-            season,
-            user_position,
-            user_prize_money,
-            &last_fixture_date,
-        );
     }
 
     if let Some(user_team) = game.teams.iter().find(|team| team.id == user_team_id) {

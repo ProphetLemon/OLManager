@@ -2580,10 +2580,6 @@
           "subject": "Facility Upkeep Spike",
           "body": "Facility upkeep reached €{{amount}} this month. Recent upgrades are increasing operating costs."
         },
-        "prizePayout": {
-          "subject": "Prize Money Confirmed",
-          "body": "Season {{season}} prize money of €{{amount}} has been awarded for finishing {{position}}."
-        },
         "boardFinancialHealth": {
           "subject": "Board Financial Health Summary",
           "body": "Current balance: €{{balance}}. Monthly net trend: €{{monthlyNet}}. Estimated runway: {{monthsLeft}} months.",

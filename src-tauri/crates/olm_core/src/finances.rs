@@ -375,30 +375,6 @@ pub fn push_facility_upkeep_spike_mail(
     )
 }
 
-pub fn push_prize_payout_mail(
-    game: &mut Game,
-    team_id: &str,
-    season: u32,
-    position: u32,
-    amount: i64,
-    date: &str,
-) -> bool {
-    push_finance_mail_once(
-        game,
-        team_id,
-        &format!("prize:{team_id}:{season}:{position}"),
-        "prizePayout",
-        "be.msg.finance.prizePayout.subject",
-        "be.msg.finance.prizePayout.body",
-        params(&[
-            ("season", season.to_string()),
-            ("position", position.to_string()),
-            ("amount", format_money(amount.unsigned_abs())),
-        ]),
-        date,
-    )
-}
-
 pub fn push_board_financial_health_mail(
     game: &mut Game,
     team_id: &str,
