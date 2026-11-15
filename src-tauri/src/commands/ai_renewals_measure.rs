@@ -506,6 +506,92 @@ struct Measurement {
     refresh_micros: f64,
 }
 
+/// MO1 probe (opt-in, `OLM_MEASURE_MO1=YYYY-MM-DD`): from that day of each year, prints the
+/// transfer window and, per day, how many AI main clubs pass each free-agent signing filter.
+struct Mo1Before {
+    free_agents: usize,
+}
+
+fn mo1_enabled(game: &Game) -> bool {
+    let Ok(from) = std::env::var("OLM_MEASURE_MO1") else {
+        return false;
+    };
+    let Some((month, day)) = from.get(5..).and_then(|md| md.split_once('-')) else {
+        return false;
+    };
+    let (Ok(month), Ok(day)) = (month.parse::<u32>(), day.parse::<u32>()) else {
+        return false;
+    };
+    let date = game.clock.current_date.date_naive();
+    use chrono::Datelike;
+    (date.month(), date.day()) >= (month, day) || date.month() < 3
+}
+
+fn mo1_probe_before(game: &Game) -> Option<Mo1Before> {
+    if !mo1_enabled(game) {
+        return None;
+    }
+    let user = game.manager.team_id.clone().unwrap_or_default();
+    let main: Vec<&Team> = game
+        .teams
+        .iter()
+        .filter(|t| t.id != user && t.team_kind == TeamKind::Main)
+        .collect();
+    let size = |t: &Team| {
+        game.players
+            .iter()
+            .filter(|p| p.team_id.as_deref() == Some(t.id.as_str()))
+            .count()
+    };
+    let funded = main
+        .iter()
+        .filter(|t| t.transfer_budget > 0 && t.finance > 0)
+        .count();
+    let short = main.iter().filter(|t| size(t) < 7).count();
+    let cap_ok = main
+        .iter()
+        .filter(|t| t.transfer_budget.min(t.finance) > 25_000)
+        .count();
+    let all_pass = main
+        .iter()
+        .filter(|t| {
+            t.transfer_budget > 0
+                && t.finance > 0
+                && t.transfer_budget.min(t.finance) > 25_000
+                && size(t) < 7
+        })
+        .count();
+    let ctx = &game.season_context;
+    println!(
+        "MO1 {} window {:?} start {:?} end {:?} complete {} | main clubs {} funded {} roster<7 {} cap>25k {} all-pass {}",
+        game.clock.current_date.format("%Y-%m-%d"),
+        ctx.transfer_window.status,
+        ctx.season_start,
+        ctx.season_end,
+        end_of_season::is_season_complete(game),
+        main.len(),
+        funded,
+        short,
+        cap_ok,
+        all_pass
+    );
+    Some(Mo1Before {
+        free_agents: game.players.iter().filter(|p| p.team_id.is_none()).count(),
+    })
+}
+
+fn mo1_probe_after(game: &Game, before: Option<Mo1Before>) {
+    if let Some(before) = before {
+        let now = game.players.iter().filter(|p| p.team_id.is_none()).count();
+        println!(
+            "MO1   free agents {} -> {} (delta {})",
+            before.free_agents,
+            now,
+            now as i64 - before.free_agents as i64
+        );
+    }
+}
+
 /// Plays a fresh world until `until`, rolling the season whenever the league completes.
 fn measure(until: NaiveDate) -> Measurement {
     let mut game = build_start_world();
@@ -543,7 +629,9 @@ fn measure(until: NaiveDate) -> Measurement {
         market.snapshot_pool(&game, false);
         market.begin_day(game.clock.current_date.date_naive());
         market.maybe_sample(&game);
+        let probe_before = mo1_probe_before(&game);
         turn::process_day(&mut game);
+        mo1_probe_after(&game, probe_before);
         peak_open = peak_open.max(open_ai_sessions(&game));
         let now = team_of_each_player(&game);
         count_moves(&teams, &now, &mut movement);
