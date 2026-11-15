@@ -22,3 +22,22 @@ export function resolveUserLeague(
   }
   return leagues[0] ?? null;
 }
+
+/**
+ * The league a club actually plays in: the one matching its `competition_id`, else the
+ * one whose standings list it (the user's league first). Falls back to the user's league.
+ */
+export function resolveTeamLeague(
+  gameState: Partial<LeagueHolder> | null | undefined,
+  team: { id: string; competition_id?: string | null },
+): LeagueData | null {
+  const leagues = gameState?.leagues ?? [];
+  if (team.competition_id) {
+    const byCompetition = leagues.find((league) => league.competition_id === team.competition_id);
+    if (byCompetition) return byCompetition;
+  }
+  const userLeague = resolveUserLeague(gameState);
+  const lists = (league: LeagueData) => league.standings.some((entry) => entry.team_id === team.id);
+  if (userLeague && lists(userLeague)) return userLeague;
+  return leagues.find(lists) ?? userLeague;
+}

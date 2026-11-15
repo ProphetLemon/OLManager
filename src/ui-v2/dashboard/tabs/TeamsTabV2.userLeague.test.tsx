@@ -61,3 +61,22 @@ describe("TeamsTabV2 founding year", () => {
     expect(screen.queryByText(new RegExp(`${i18n.t("teams.est")} 0`))).toBeNull();
   });
 });
+
+describe("TeamsTabV2 clubs of other leagues", () => {
+  it("shows the record and position of a club from its own league's standings", () => {
+    const state = buildState();
+    state.leagues.push({
+      id: "lck-league", competition_id: "lck", name: "LCK", season: 1, fixtures: [],
+      standings: [standing("t9", 1, 4), standing("t8", 4, 1)],
+    } as never);
+    state.teams.push({
+      id: "t8", name: "Bravo", short_name: "BRA", competition_id: "lck", colors: { primary: "#111", secondary: "#eee" },
+    } as never);
+
+    render(<TeamsTabV2 gameState={state} onSelectTeam={() => {}} />);
+
+    expect(screen.getByText(/4W 1L/)).toBeTruthy();
+    // Bravo leads its league: shown as position 1 (the user's club also shows 1 in its own league).
+    expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(2);
+  });
+});

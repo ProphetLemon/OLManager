@@ -327,6 +327,7 @@ function PlayerProfileContent({
         annualSuffix={annualSuffix}
         language={i18n.language}
         isOwnClub={isOwnClub || !onGameUpdate}
+        isUserAcademy={isOwnAcademyPlayer}
         soloqTier={soloqTier}
         scoutAvailability={scoutAvailability}
         scoutStatus={scoutStatus}
