@@ -62,6 +62,9 @@ const MAX_INCOMING_OFFERS_PER_DAY: usize = 2;
 const MAX_OFFERS_PER_TEAM_PER_WEEK: usize = 2;
 const MAX_AI_FREE_AGENT_SIGNINGS_PER_DAY: usize = 2;
 const MAX_AI_INTERCLUB_TRANSFERS_PER_DAY: usize = 1;
+/// An AI club signs no more players once its roster has this many, from free agency or
+/// from another club.
+const MAX_AI_ROSTER_SIZE: usize = 7;
 const LOL_CORE_ROLES: [&str; 5] = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"];
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -932,7 +935,7 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
             .iter()
             .filter(|player| player.team_id.as_deref() == Some(team_id.as_str()))
             .count();
-        if roster_size >= 7 {
+        if roster_size >= MAX_AI_ROSTER_SIZE {
             continue;
         }
 
@@ -1073,6 +1076,14 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
         let Some(buyer_team) = game.teams.iter().find(|team| team.id == buyer_id).cloned() else {
             continue;
         };
+        let buyer_roster_size = game
+            .players
+            .iter()
+            .filter(|player| player.team_id.as_deref() == Some(buyer_id.as_str()))
+            .count();
+        if buyer_roster_size >= MAX_AI_ROSTER_SIZE {
+            continue;
+        }
         let budget_cap = buyer_team.transfer_budget.min(buyer_team.finance);
         if budget_cap <= 200_000 {
             continue;
