@@ -1076,7 +1076,7 @@ fn generate_financial_warnings(game: &mut Game, today: &str) {
     game.messages.extend(new_messages);
 }
 
-fn format_money(amount: u64) -> String {
+pub fn format_money(amount: u64) -> String {
     if amount >= 1_000_000 {
         format!("{:.1}M", amount as f64 / 1_000_000.0)
     } else if amount >= 1_000 {

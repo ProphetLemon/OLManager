@@ -1146,7 +1146,7 @@ fn season_end_announces_the_prize_once_and_sends_board_health_finance_mail_once(
     );
     assert_eq!(
         prize.i18n_params.get("amount").map(String::as_str),
-        Some("800000")
+        Some("800K")
     );
     assert_eq!(
         prize.i18n_params.get("position").map(String::as_str),

@@ -949,7 +949,10 @@ fn process_end_of_season_inner(
         .with_i18n("be.msg.seasonPayout.subject", "be.msg.seasonPayout.body", {
             let mut params = std::collections::HashMap::new();
             params.insert("season".to_string(), season.to_string());
-            params.insert("amount".to_string(), user_prize_money.to_string());
+            params.insert(
+                "amount".to_string(),
+                crate::finances::format_money(user_prize_money.unsigned_abs()),
+            );
             params.insert("position".to_string(), user_position.to_string());
             params
         })
