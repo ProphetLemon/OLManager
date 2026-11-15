@@ -40,7 +40,17 @@ export function buildOverlay({ asOf, license, coverage, players, staff }) {
 
 export const todayUtc = () => new Date().toISOString().slice(0, 10);
 
-/** Stable serialisation: 2-space JSON with a trailing newline. */
+const hasPoolOps = (overlay) => [...(overlay.players ?? []), ...(overlay.staff ?? [])].some((op) => op.pool !== undefined);
+const withoutPool = ({ pool, ...rest }) => rest;
+
+/**
+ * Stable serialisation with a trailing newline. The default (roster-only) overlay is 2-space JSON, byte-identical to what the
+ * tool has always written. An overlay that carries active-pros pool adds is written compact and without each add's `pool`
+ * summary (review data the game ignores, kept in the report), so about 4.7k extra people stay under the app's 4 MiB cap;
+ * the game parses either form and the signature covers whatever bytes are written.
+ */
 export function serializeOverlay(overlay) {
-  return `${JSON.stringify(overlay, null, 2)}\n`;
+  if (!hasPoolOps(overlay)) return `${JSON.stringify(overlay, null, 2)}\n`;
+  const lean = { ...overlay, players: overlay.players.map(withoutPool), staff: overlay.staff.map(withoutPool) };
+  return `${JSON.stringify(lean)}\n`;
 }
