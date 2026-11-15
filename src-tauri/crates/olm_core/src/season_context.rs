@@ -32,7 +32,7 @@ pub fn derive_season_context(game: &Game) -> SeasonContext {
         (days >= 0).then_some(days)
     });
 
-    let transfer_window = derive_transfer_window_context(current_date, season_start);
+    let transfer_window = derive_transfer_window_context(current_date, season_start, season_end);
 
     SeasonContext {
         phase,
@@ -69,9 +69,13 @@ fn league_has_started(league: &League) -> bool {
         })
 }
 
+/// The window is open before the season's first fixture and, as in the real off-season,
+/// from the day after its last fixture until the next season is scheduled (when the
+/// boundaries move to the new season). It is closed while the season is being played.
 fn derive_transfer_window_context(
     current_date: NaiveDate,
     season_start: Option<NaiveDate>,
+    season_end: Option<NaiveDate>,
 ) -> TransferWindowContext {
     let Some(season_start) = season_start else {
         return TransferWindowContext::default();
@@ -80,22 +84,33 @@ fn derive_transfer_window_context(
     let opens_on = season_start - Duration::days(365);
     let closes_on = season_start;
 
-    let (status, days_until_opens, days_remaining) = if current_date < season_start {
-        (
-            TransferWindowStatus::Open,
-            None,
-            Some((season_start - current_date).num_days()),
-        )
-    } else {
-        (TransferWindowStatus::Closed, None, None)
-    };
+    if current_date < season_start {
+        return TransferWindowContext {
+            status: TransferWindowStatus::Open,
+            opens_on: Some(format_date(opens_on)),
+            closes_on: Some(format_date(closes_on)),
+            days_until_opens: None,
+            days_remaining: Some((season_start - current_date).num_days()),
+        };
+    }
+
+    if let Some(season_end) = season_end.filter(|end| current_date > *end) {
+        // The next season's first fixture is not known yet, so the window has no end date.
+        return TransferWindowContext {
+            status: TransferWindowStatus::Open,
+            opens_on: Some(format_date(season_end + Duration::days(1))),
+            closes_on: None,
+            days_until_opens: None,
+            days_remaining: None,
+        };
+    }
 
     TransferWindowContext {
-        status,
+        status: TransferWindowStatus::Closed,
         opens_on: Some(format_date(opens_on)),
         closes_on: Some(format_date(closes_on)),
-        days_until_opens,
-        days_remaining,
+        days_until_opens: None,
+        days_remaining: None,
     }
 }
 
@@ -306,5 +321,61 @@ mod tests {
 
         assert_eq!(context.phase, SeasonPhase::PostSeason);
         assert_eq!(context.season_end.as_deref(), Some("2026-08-08"));
+    }
+
+    fn league_played_in_august() -> League {
+        let mut alpha = StandingEntry::new("team1".to_string());
+        alpha.record_result(2, 1);
+        let mut beta = StandingEntry::new("team2".to_string());
+        beta.record_result(1, 2);
+        League {
+            id: "league1".to_string(),
+            name: "Premier Division".to_string(),
+            season: 2026,
+            competition_id: None,
+            fixtures: vec![
+                make_fixture("fx1", "2026-08-01", FixtureStatus::Completed, 1),
+                make_fixture("fx2", "2026-08-08", FixtureStatus::Completed, 2),
+            ],
+            standings: vec![alpha, beta],
+            logo: None,
+            league_kind: LeagueKind::Main,
+            split_index: 0,
+            tier: 0,
+            active: false,
+        }
+    }
+
+    #[test]
+    fn opens_transfer_window_the_day_after_the_last_fixture() {
+        let game = make_game((2026, 8, 9), Some(league_played_in_august()));
+
+        let context = derive_season_context(&game);
+
+        assert_eq!(context.transfer_window.status, TransferWindowStatus::Open);
+        assert_eq!(
+            context.transfer_window.opens_on.as_deref(),
+            Some("2026-08-09")
+        );
+        assert_eq!(context.transfer_window.closes_on, None);
+        assert_eq!(context.transfer_window.days_remaining, None);
+    }
+
+    #[test]
+    fn keeps_transfer_window_closed_on_the_last_fixture_day() {
+        let game = make_game((2026, 8, 8), Some(league_played_in_august()));
+
+        let context = derive_season_context(&game);
+
+        assert_eq!(context.transfer_window.status, TransferWindowStatus::Closed);
+    }
+
+    #[test]
+    fn keeps_transfer_window_closed_between_the_first_and_last_fixture() {
+        let game = make_game((2026, 8, 5), Some(league_played_in_august()));
+
+        let context = derive_season_context(&game);
+
+        assert_eq!(context.transfer_window.status, TransferWindowStatus::Closed);
     }
 }

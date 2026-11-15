@@ -1852,6 +1852,60 @@ fn process_day_enforces_daily_ai_transfer_cap() {
     }
 }
 
+/// The cap world after its season ended: every fixture is played and in the past, the next
+/// season is not scheduled yet, and the window is derived from the dates rather than set.
+fn make_offseason_game() -> Game {
+    use olm_core::domain::season::TransferWindowStatus;
+
+    let mut game = make_cap_game();
+    for fixture in game.leagues[0].fixtures.iter_mut() {
+        fixture.date = "2025-11-14".to_string();
+        fixture.status = FixtureStatus::Completed;
+        fixture.result = Some(olm_core::domain::league::MatchResult {
+            home_wins: 1,
+            away_wins: 0,
+            ..Default::default()
+        });
+    }
+    // Every role is covered, so only the market can add a player: roster repair would
+    // otherwise sign through a closed window and hide the gate.
+    for (team_id, missing) in [
+        ("ai-1", [LolRole::Mid, LolRole::Adc, LolRole::Support]),
+        ("ai-2", [LolRole::Top, LolRole::Jungle, LolRole::Support]),
+    ] {
+        for role in missing {
+            let id = format!("{team_id}-{role:?}");
+            game.players.push(make_role_player(&id, team_id, role));
+        }
+    }
+    game.season_context.transfer_window.status = TransferWindowStatus::Closed;
+    olm_core::season_context::refresh_game_context(&mut game);
+    game
+}
+
+fn ai_free_agent_signings(game: &Game) -> usize {
+    game.players
+        .iter()
+        .filter(|p| p.id.starts_with("fa-"))
+        .filter(|p| matches!(p.team_id.as_deref(), Some("ai-1" | "ai-2")))
+        .count()
+}
+
+#[test]
+fn process_day_lets_ai_clubs_sign_free_agents_after_the_season_ends() {
+    let mut game = make_offseason_game();
+    assert_eq!(ai_free_agent_signings(&game), 0);
+
+    for _ in 0..10 {
+        turn::process_day_with_capture(&mut game, &mut |_| {});
+    }
+
+    assert!(
+        ai_free_agent_signings(&game) > 0,
+        "AI clubs with short rosters signed no free agent in ten off-season days"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Matchday recovery (upstream OLManager PR #325)
 // ---------------------------------------------------------------------------
