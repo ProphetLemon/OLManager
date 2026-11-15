@@ -1680,3 +1680,113 @@ fn upgraded_facilities_post_one_upkeep_entry_every_month() {
         vec![-expected_monthly; 3]
     );
 }
+
+/// Revenue of `units` matchday units (100 per full-rate match) at `capacity`: every value the
+/// monthly step can pay, from `calc_matchday` over the units divided by 100.
+fn revenues_for_units(capacity: u32, units: i64) -> Vec<i64> {
+    let mut out = Vec::new();
+    for attendance in 15..=30 {
+        for ticket in 4..=8 {
+            out.push(
+                finances::calc_matchday(capacity, units, attendance as f64 / 100.0, ticket as f64)
+                    / 100,
+            );
+        }
+    }
+    out
+}
+
+#[test]
+fn tier_two_club_with_no_stadium_capacity_still_earns_matchday_revenue() {
+    let mut game = game_with_background_club(120, 2);
+    game.teams[1].stadium_capacity = 0;
+    let team_id = game.teams[1].id.clone();
+
+    finances::process_monthly_finances(&mut game);
+
+    let entries = matchday_entries(&game, &team_id);
+    assert_eq!(
+        entries.len(),
+        1,
+        "one matchday line for the background club"
+    );
+    assert!(
+        revenues_for_units(1_500, 120).contains(&entries[0].amount),
+        "a tier-2 club with no capacity in the data plays at 1,500 seats, got {}",
+        entries[0].amount
+    );
+    assert!(entries[0].amount > 0);
+}
+
+#[test]
+fn tier_one_club_with_no_stadium_capacity_plays_at_the_tier_one_default() {
+    let mut game = game_with_background_club(100, 1);
+    game.teams[1].stadium_capacity = 0;
+    let team_id = game.teams[1].id.clone();
+
+    finances::process_monthly_finances(&mut game);
+
+    let entries = matchday_entries(&game, &team_id);
+    assert_eq!(entries.len(), 1);
+    assert!(
+        revenues_for_units(2_500, 100).contains(&entries[0].amount),
+        "a tier-1 club with no capacity in the data plays at 2,500 seats, got {}",
+        entries[0].amount
+    );
+}
+
+#[test]
+fn active_league_club_with_no_stadium_capacity_earns_at_its_tier_default() {
+    let mut game = make_first_of_month_game();
+    game.teams[0].stadium_capacity = 0;
+    game.leagues = vec![League {
+        id: "l1".to_string(),
+        name: "Tier two".to_string(),
+        season: 1,
+        tier: 2,
+        fixtures: vec![completed_home_fixture("f1", "2025-05-30", "team1", "team2")],
+        standings: vec![StandingEntry::new("team1".to_string())],
+        ..Default::default()
+    }];
+    game.teams[0].sponsorship = no_sponsor_income();
+
+    finances::process_monthly_finances(&mut game);
+
+    let entries = matchday_entries(&game, "team1");
+    assert_eq!(entries.len(), 1);
+    assert!(
+        revenues_for_units(1_500, 60).contains(&entries[0].amount),
+        "one tier-2 match at the 1,500-seat default, got {}",
+        entries[0].amount
+    );
+}
+
+#[test]
+fn a_capacity_the_data_sets_is_never_replaced_by_the_tier_default() {
+    let mut game = game_with_background_club(100, 2);
+    game.teams[1].stadium_capacity = 40_000;
+    let team_id = game.teams[1].id.clone();
+
+    finances::process_monthly_finances(&mut game);
+
+    let entries = matchday_entries(&game, &team_id);
+    assert_eq!(entries.len(), 1);
+    assert!(revenues_for_units(40_000, 100).contains(&entries[0].amount));
+}
+
+#[test]
+fn default_stadium_capacity_follows_the_capacities_the_data_uses_per_tier() {
+    use olm_core::tier_sponsorship::{default_stadium_capacity, effective_stadium_capacity};
+
+    assert_eq!(default_stadium_capacity(1), 2_500);
+    assert_eq!(default_stadium_capacity(2), 1_500);
+    assert_eq!(default_stadium_capacity(3), 1_500);
+    assert_eq!(
+        default_stadium_capacity(0),
+        1_500,
+        "no tier sizes like tier 2"
+    );
+    assert_eq!(effective_stadium_capacity(0, 1), 2_500);
+    assert_eq!(effective_stadium_capacity(0, 2), 1_500);
+    assert_eq!(effective_stadium_capacity(7_000, 2), 7_000);
+}
