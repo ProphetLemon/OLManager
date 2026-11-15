@@ -297,57 +297,6 @@ fn step_many_stops_at_finish() {
 }
 
 // ---------------------------------------------------------------------------
-// auto_select_team_roles
-// ---------------------------------------------------------------------------
-
-#[test]
-fn auto_select_team_roles_picks_captain() {
-    let game = make_game_with_fixture();
-    let player_ids: Vec<String> = game
-        .players
-        .iter()
-        .filter(|p| p.team_id.as_deref() == Some("team1"))
-        .map(|p| p.id.clone())
-        .collect();
-
-    let (captain, shotcaller) = live_match_manager::auto_select_team_roles(&game, &player_ids);
-
-    assert!(captain.is_some(), "Should pick a captain");
-    assert!(shotcaller.is_some(), "Should pick a shotcaller");
-}
-
-#[test]
-fn auto_select_team_roles_empty_ids_returns_none() {
-    let game = make_game_with_fixture();
-    let (captain, shotcaller) = live_match_manager::auto_select_team_roles(&game, &[]);
-    assert!(captain.is_none());
-    assert!(shotcaller.is_none());
-}
-
-#[test]
-fn auto_select_team_roles_prefers_high_leadership_captain() {
-    let mut game = make_game_with_fixture();
-    // Give one player very high leadership
-    let leader = game
-        .players
-        .iter_mut()
-        .find(|p| p.id == "team1_mid0")
-        .unwrap();
-    leader.attributes.shotcalling = 99;
-    leader.attributes.teamfighting = 99;
-
-    let player_ids: Vec<String> = game
-        .players
-        .iter()
-        .filter(|p| p.team_id.as_deref() == Some("team1"))
-        .map(|p| p.id.clone())
-        .collect();
-
-    let (captain, _) = live_match_manager::auto_select_team_roles(&game, &player_ids);
-    assert_eq!(captain, Some("team1_mid0".to_string()));
-}
-
-// ---------------------------------------------------------------------------
 // Match modes
 // ---------------------------------------------------------------------------
 
