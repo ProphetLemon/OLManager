@@ -21,15 +21,19 @@ use crate::game::Game;
 /// income that every league now pays (median 180,000 + 54,000 on 2026-11-15): a season
 /// of play has drifted wages above that bill (median salary 1,785,000), so the median
 /// tier-1 club already ends the season about 150,000 below its start with this value and
-/// about 390,000 below it without the new income. The drift is tracked separately.
+/// about 390,000 below it without the new income. The drift is the AI filling a tier-1
+/// bench from the 5 players a new world gives it to 7, at market wages and under the
+/// board's 110% wage cap (`world_wage_drift_measure`, `ai_wage_drift_tests`); the
+/// season-average bill is about 1,810,000.
 pub const TIER_1_SPONSORSHIP_VALUE: i64 = 1_500_000;
 
 /// Annual value of a tier-2 (and lower) club's sponsor, in euros.
 ///
 /// Measured on 2026-11-15 like [`TIER_1_SPONSORSHIP_VALUE`]: the median annual wage bill
 /// of the 200 scheduled tier-2 main clubs is 903,000, and the median club also earns
-/// 108,000 of prize money and no matchday revenue (most tier-2 clubs have no stadium
-/// capacity in the data). The earlier 950,000 is lowered by that 108,000 and rounded to
+/// 108,000 of prize money and no matchday revenue (most tier-2 clubs had no stadium
+/// capacity in the data; since `effective_stadium_capacity` they earn about 16,000 a
+/// season, kept as margin). The earlier 950,000 is lowered by that 108,000 and rounded to
 /// the nearest 50,000. Tier 3 and lower, and a league with no tier, use this value.
 pub const TIER_2_SPONSORSHIP_VALUE: i64 = 850_000;
 
