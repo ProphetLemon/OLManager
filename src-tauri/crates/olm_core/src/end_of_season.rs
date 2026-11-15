@@ -242,6 +242,12 @@ fn pay_season_prize(team: &mut Team, season: u32, position: u32, tier: u8, date:
     .ok();
 }
 
+/// Close the season books of a club: the "this season" income and expenses restart at 0.
+fn reset_season_totals(team: &mut Team) {
+    team.season_income = 0;
+    team.season_expenses = 0;
+}
+
 /// Share of the treasury that becomes the yearly wage budget after a settlement.
 ///
 /// `wage_budget` is a TOTAL annual bill budget (the board policy compares the whole
@@ -444,6 +450,9 @@ pub fn roll_completed_background_leagues(
                         .any(|record| record.season == season && record.league_position != 0);
                     if is_main_league && team.is_main() && !already_closed {
                         pay_season_prize(team, season, position, tier, &prize_date);
+                    }
+                    if !already_closed {
+                        reset_season_totals(team);
                     }
                     // The parallel simulation pre-creates the record with position 0;
                     // fill in the real finish instead of treating it as recorded.
@@ -975,6 +984,14 @@ fn process_end_of_season_inner(
             months_left,
             &last_fixture_date,
         );
+    }
+
+    // Every reader of the finished season's totals (the board mail above) has run:
+    // close the books so "this season" starts from zero.
+    for standing in &final_standings {
+        if let Some(team) = game.teams.iter_mut().find(|t| t.id == standing.team_id) {
+            reset_season_totals(team);
+        }
     }
 
     let msg_id = format!("season_end_{}", season);

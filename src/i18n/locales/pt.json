@@ -2359,7 +2359,7 @@
         "body": "A nossa folha salarial anual (€{{annualWages}}) excede atualmente o orçamento salarial atribuído (€{{wageBudget}}).\n\nEmbora seja sustentável a curto prazo, a direção preferia ver a folha salarial novamente sob controlo."
       },
       "finance": {
-        "sponsorAccepted": { "subject": "Acordo de patrocínio assinado", "body": "O patrocínio {{sponsorName}} foi aceite. O acordo vale €{{amount}} por ano e será pago mensalmente." },
+        "sponsorAccepted": { "subject": "Acordo de patrocínio assinado", "body": "O patrocínio {{sponsorName}} foi aceite. O acordo vale €{{amount}} por ano e será pago mensalmente.", "bodyTerm": "O patrocínio {{sponsorName}} foi aceite. Vais receber €{{monthly}} por mês durante {{months}} meses (€{{total}} no total)." },
         "sponsorPayout": { "subject": "Pagamento de patrocínio recebido", "body": "{{sponsorName}} depositou €{{amount}} na conta do clube este mês." },
         "sponsorBonus": { "subject": "Bónus de patrocínio ativado", "body": "Os critérios de bónus de {{sponsorName}} foram cumpridos. €{{bonusAmount}} foram incluídos no pagamento mensal de €{{totalAmount}}." },
         "sponsorExpired": { "subject": "Patrocínio expirado", "body": "O patrocínio {{sponsorName}} terminou. Consulta o mercado para encontrar uma substituição." },
@@ -2563,10 +2563,12 @@
       "sponsor": {
         "subject": "Proposta de patrocínio — {{sponsor}}",
         "body": "Boas notícias, mister! {{sponsor}} manifestou interesse em tornar-se patrocinador do {{team}}.\n\nEstão a oferecer um pagamento único de €{{amount}} pelo próximo split em troca de espaço publicitário nos cartazes do clube.\n\nParece um acordo razoável, mas a decisão é sua.",
+        "bodyTerm": "Boas notícias, mister! {{sponsor}} manifestou interesse em tornar-se patrocinador do {{team}}.\n\nEstão a oferecer €{{monthly}} por mês durante {{months}} meses (€{{total}} no total) em troca de espaço publicitário no campo de treino.\n\nParece um acordo razoável, mas a decisão é sua.",
         "options": {
           "accept": {
             "label": "Aceitar o acordo",
-            "description": "Recebe €{{amount}} em receitas de patrocínio."
+            "description": "Recebe €{{amount}} em receitas de patrocínio.",
+            "descriptionTerm": "Recebe €{{monthly}} por mês durante {{months}} meses (€{{total}} no total)."
           },
           "decline": {
             "label": "Recusar educadamente",

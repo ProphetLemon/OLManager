@@ -2359,7 +2359,7 @@
         "body": "Unsere jährlichen Gehaltskosten (€{{annualWages}}) übersteigen derzeit das vorgesehene Gehaltsbudget (€{{wageBudget}}).\n\nKurzfristig ist das noch tragbar, aber der Vorstand würde die Gehaltskosten lieber wieder unter Kontrolle sehen."
       },
       "finance": {
-        "sponsorAccepted": { "subject": "Sponsoringvertrag unterzeichnet", "body": "Das Sponsoring von {{sponsorName}} wurde angenommen. Der Vertrag hat einen Jahreswert von €{{amount}} und wird monatlich ausgezahlt." },
+        "sponsorAccepted": { "subject": "Sponsoringvertrag unterzeichnet", "body": "Das Sponsoring von {{sponsorName}} wurde angenommen. Der Vertrag hat einen Jahreswert von €{{amount}} und wird monatlich ausgezahlt.", "bodyTerm": "Das Sponsoring von {{sponsorName}} wurde angenommen. Du erhältst €{{monthly}} pro Monat für {{months}} Monate (insgesamt €{{total}})." },
         "sponsorPayout": { "subject": "Sponsoringzahlung erhalten", "body": "{{sponsorName}} hat diesen Monat €{{amount}} auf das Vereinskonto überwiesen." },
         "sponsorBonus": { "subject": "Sponsoringbonus ausgelöst", "body": "Die Bonuskriterien von {{sponsorName}} wurden erfüllt. €{{bonusAmount}} sind in der monatlichen Sponsoringzahlung von €{{totalAmount}} enthalten." },
         "sponsorExpired": { "subject": "Sponsoringvertrag ausgelaufen", "body": "Das Sponsoring von {{sponsorName}} ist beendet. Prüfe den Markt auf einen Ersatzvertrag." },
@@ -2563,10 +2563,12 @@
       "sponsor": {
         "subject": "Sponsoringangebot — {{sponsor}}",
         "body": "Gute Nachrichten, Boss! {{sponsor}} hat Interesse bekundet, Sponsor von {{team}} zu werden.\n\nSie bieten eine einmalige Zahlung von €{{amount}} für den kommenden Split im Austausch für Werbefläche auf den Bannern des Clubs an.\n\nDas scheint ein vernünftiger Deal zu sein, aber die Entscheidung liegt bei dir.",
+        "bodyTerm": "Gute Nachrichten, Boss! {{sponsor}} hat Interesse bekundet, Sponsor von {{team}} zu werden.\n\nSie bieten €{{monthly}} pro Monat für {{months}} Monate (insgesamt €{{total}}) im Austausch für Werbefläche auf dem Trainingsgelände an.\n\nDas scheint ein vernünftiger Deal zu sein, aber die Entscheidung liegt bei dir.",
         "options": {
           "accept": {
             "label": "Angebot annehmen",
-            "description": "Erhalte €{{amount}} an Sponsoreneinnahmen."
+            "description": "Erhalte €{{amount}} an Sponsoreneinnahmen.",
+            "descriptionTerm": "Erhalte €{{monthly}} pro Monat für {{months}} Monate (insgesamt €{{total}})."
           },
           "decline": {
             "label": "Höflich ablehnen",

@@ -1569,3 +1569,114 @@ fn multiple_teams_processed_independently() {
     assert_eq!(game.teams[0].finance, initial_t1 - t1_wages);
     assert_eq!(game.teams[1].finance, initial_t2 - t2_wages);
 }
+
+// ---------------------------------------------------------------------------
+// Random sponsor offer: the headline is what the deal pays
+// ---------------------------------------------------------------------------
+
+fn shown_number(params: &std::collections::HashMap<String, String>, key: &str) -> i64 {
+    params
+        .get(key)
+        .unwrap_or_else(|| panic!("offer shows {key}: {params:?}"))
+        .replace(',', "")
+        .parse()
+        .unwrap_or_else(|_| panic!("{key} is a whole amount: {params:?}"))
+}
+
+#[test]
+fn sponsor_offer_shows_the_monthly_amount_and_term_the_deal_pays() {
+    let mut game = make_first_of_month_game();
+    let annual = 13 * 52_000; // 676,000 a year: 56,333 a month, not divisible by 1,000
+    let offer = olm_core::random_events::build_sponsor_offer(
+        &game.teams[0],
+        "Acme Corp",
+        annual,
+        "2025-05-20",
+    );
+    let shown_monthly = shown_number(&offer.i18n_params, "monthly");
+    let shown_months = shown_number(&offer.i18n_params, "months");
+    let shown_total = shown_number(&offer.i18n_params, "total");
+    assert!(
+        !offer.i18n_params.contains_key("amount"),
+        "the yearly figure is no longer the headline: {:?}",
+        offer.i18n_params
+    );
+    assert_eq!(shown_total, shown_monthly * shown_months);
+    assert_eq!(offer.body_key.as_deref(), Some("be.msg.sponsor.bodyTerm"));
+
+    game.teams[0].sponsorship = None;
+    game.messages.push(offer);
+    olm_core::random_events::apply_event_response(&mut game, "sponsor_2025-05-20", "respond", "accept")
+        .expect("the offer can be accepted");
+
+    let mut paid = Vec::new();
+    for (month, day) in [(6, 1), (7, 1), (8, 1)] {
+        game.clock = GameClock::new(Utc.with_ymd_and_hms(2025, month, day, 12, 0, 0).unwrap());
+        finances::process_monthly_finances(&mut game);
+        let payout = game.teams[0]
+            .financial_ledger
+            .iter()
+            .rev()
+            .find(|entry| {
+                entry.kind == FinancialTransactionKind::Sponsorship
+                    && entry.date == format!("2025-{month:02}-01")
+            })
+            .map(|entry| entry.amount)
+            .expect("the deal pays every month of its term");
+        paid.push(payout);
+    }
+
+    assert_eq!(paid, vec![shown_monthly; shown_months as usize]);
+    assert_eq!(paid.iter().sum::<i64>(), shown_total);
+    assert!(
+        game.teams[0].sponsorship.as_ref().is_none_or(|deal| deal.sponsor_name != "Acme Corp"),
+        "the deal ends after the term shown"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Facility upkeep: only levels above the starting ones cost anything
+// ---------------------------------------------------------------------------
+
+fn upkeep_entries(game: &Game) -> Vec<&FinancialTransaction> {
+    game.teams[0]
+        .financial_ledger
+        .iter()
+        .filter(|entry| entry.kind == FinancialTransactionKind::FacilityUpkeep)
+        .collect()
+}
+
+#[test]
+fn starting_facilities_post_no_upkeep_entry_in_a_whole_year_of_monthly_steps() {
+    let mut game = make_first_of_month_game();
+    for month in 1..=12 {
+        game.clock = GameClock::new(Utc.with_ymd_and_hms(2026, month, 1, 12, 0, 0).unwrap());
+        finances::process_monthly_finances(&mut game);
+    }
+
+    // Zero upkeep is rejected as a zero-amount transaction, so no line is booked:
+    // the data ships every club at level 1, which costs nothing by design.
+    assert_eq!(upkeep_entries(&game).len(), 0);
+}
+
+#[test]
+fn upgraded_facilities_post_one_upkeep_entry_every_month() {
+    let mut game = make_first_of_month_game();
+    game.teams[0].facilities = Facilities {
+        training: 2,
+        ..Facilities::default()
+    };
+    // Level 2 training lifts the hub (20K) and the two modules that follow it,
+    // Scrims Room (20K) and Analysis Room (15K).
+    let expected_monthly = 55_000;
+    for month in 1..=3 {
+        game.clock = GameClock::new(Utc.with_ymd_and_hms(2026, month, 1, 12, 0, 0).unwrap());
+        finances::process_monthly_finances(&mut game);
+    }
+
+    let entries = upkeep_entries(&game);
+    assert_eq!(
+        entries.iter().map(|entry| entry.amount).collect::<Vec<_>>(),
+        vec![-expected_monthly; 3]
+    );
+}

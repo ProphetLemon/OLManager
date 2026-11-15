@@ -2558,7 +2558,8 @@
       "finance": {
         "sponsorAccepted": {
           "subject": "Sponsorship Deal Signed",
-          "body": "The {{sponsorName}} sponsorship has been accepted. The deal is worth €{{amount}} annually and will be paid monthly."
+          "body": "The {{sponsorName}} sponsorship has been accepted. The deal is worth €{{amount}} annually and will be paid monthly.",
+          "bodyTerm": "The {{sponsorName}} sponsorship has been accepted. You will receive €{{monthly}} per month for {{months}} months (€{{total}} in total)."
         },
         "sponsorPayout": {
           "subject": "Sponsorship Payment Received",
@@ -2782,10 +2783,12 @@
       "sponsor": {
         "subject": "Sponsorship Offer — {{sponsor}}",
         "body": "Good news, boss! {{sponsor}} has expressed interest in becoming a sponsor of {{team}}.\n\nThey are offering a one-time payment of €{{amount}} for the upcoming split in exchange for advertising space on the club's banners.\n\nThis seems like a reasonable deal, but it is your call.",
+        "bodyTerm": "Good news, boss! {{sponsor}} has expressed interest in becoming a sponsor of {{team}}.\n\nThey are offering €{{monthly}} per month for {{months}} months (€{{total}} in total) in exchange for advertising space at the training ground.\n\nThis seems like a reasonable deal, but it is your call.",
         "options": {
           "accept": {
             "label": "Accept the deal",
-            "description": "Receive €{{amount}} in sponsorship income."
+            "description": "Receive €{{amount}} in sponsorship income.",
+            "descriptionTerm": "Receive €{{monthly}} per month for {{months}} months (€{{total}} in total)."
           },
           "decline": {
             "label": "Decline politely",
