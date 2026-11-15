@@ -609,7 +609,11 @@ fn current_league_position(game: &Game, team_id: &str) -> Option<u32> {
         .map(|index| index as u32 + 1)
 }
 
-fn count_recent_home_matches(game: &Game, team_id: &str) -> i64 {
+/// Income units of the home matches `team_id` played in the active league in the last 28
+/// days: 100 per match in a tier-1 league (60 in tier 2, see
+/// [`crate::tier_sponsorship::tier_income_percent`]). Background leagues count theirs when
+/// they simulate them (`Team::pending_home_matchday_units`), so the two never overlap.
+fn recent_home_matchday_units(game: &Game, team_id: &str) -> i64 {
     let Some(league) = game.active_league() else {
         return 0;
     };
@@ -617,7 +621,7 @@ fn count_recent_home_matches(game: &Game, team_id: &str) -> i64 {
     let current = game.clock.current_date.date_naive();
     let month_ago = current - chrono::Duration::days(28);
 
-    league
+    let matches = league
         .fixtures
         .iter()
         .filter(|fixture| {
@@ -632,7 +636,8 @@ fn count_recent_home_matches(game: &Game, team_id: &str) -> i64 {
                 false
             }
         })
-        .count() as i64
+        .count() as i64;
+    matches * crate::tier_sponsorship::tier_income_percent(league.tier)
 }
 
 fn should_apply_upkeep(game: &Game) -> bool {
@@ -897,31 +902,35 @@ pub fn process_monthly_finances(game: &mut Game) {
         }
     }
 
-    // --- Matchday income for home matches completed in last ~28 days ---
+    // --- Matchday income: home matches of the last ~28 days in the active league, plus the
+    // ones background leagues simulated since the last step (consumed here) ---
     if !game.leagues.is_empty() {
-        let home_match_counts: Vec<(String, i64)> = game
+        let recent_units: Vec<(String, i64)> = game
             .teams
             .iter()
-            .map(|team| (team.id.clone(), count_recent_home_matches(game, &team.id)))
+            .map(|team| (team.id.clone(), recent_home_matchday_units(game, &team.id)))
             .collect();
 
         for team in game.teams.iter_mut() {
-            let home_count = home_match_counts
+            let recent = recent_units
                 .iter()
                 .find(|(team_id, _)| team_id == &team.id)
-                .map(|(_, count)| *count)
+                .map(|(_, units)| *units)
                 .unwrap_or(0);
+            let units = recent + std::mem::take(&mut team.pending_home_matchday_units);
 
-            if home_count > 0 {
+            if units > 0 {
                 let mut rng = rand::rng();
                 let attendance_pct = rng.random_range(15..=30) as f64 / 100.0;
                 let avg_ticket = rng.random_range(4..=8) as f64;
+                // `units` is 100 per full-rate match, so the revenue is `calc_matchday`
+                // over the units divided by 100.
                 let total_revenue = calc_matchday(
                     team.stadium_capacity,
-                    home_count,
+                    units,
                     attendance_pct,
                     avg_ticket,
-                );
+                ) / 100;
 
                 record_transaction_with_text(
                     team,

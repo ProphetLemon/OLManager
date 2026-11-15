@@ -899,6 +899,21 @@ fn background_league_non_final_split_pays_nothing() {
 }
 
 #[test]
+fn matches_played_before_a_background_league_rolled_stay_pending_for_the_monthly_step() {
+    let mut game = make_bg_prize_game(2, None, 0);
+    game.teams
+        .iter_mut()
+        .find(|team| team.id == "team3")
+        .unwrap()
+        .pending_home_matchday_units = 180;
+
+    process_background_seasons(&mut game, &HashMap::new());
+
+    let team3 = game.teams.iter().find(|team| team.id == "team3").unwrap();
+    assert_eq!(team3.pending_home_matchday_units, 180);
+}
+
+#[test]
 fn active_league_is_not_paid_again_by_the_background_roll() {
     let mut game = make_bg_prize_game(1, None, 0);
 

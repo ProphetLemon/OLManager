@@ -1363,6 +1363,155 @@ fn home_match_generates_income() {
     assert_eq!(game.teams[0].season_income, matchday_entries[0].amount);
 }
 
+/// Every matchday revenue one home match can pay at the capacity of `make_team`
+/// (attendance 15-30%, ticket 4-8), the same arithmetic as `calc_matchday`.
+fn per_match_revenues(capacity: u32) -> Vec<i64> {
+    let mut out = Vec::new();
+    for attendance in 15..=30 {
+        for ticket in 4..=8 {
+            out.push((capacity as f64 * (attendance as f64 / 100.0) * ticket as f64) as i64);
+        }
+    }
+    out
+}
+
+fn matchday_entries(game: &Game, team_id: &str) -> Vec<FinancialTransaction> {
+    game.teams
+        .iter()
+        .find(|team| team.id == team_id)
+        .unwrap()
+        .financial_ledger
+        .iter()
+        .filter(|entry| entry.kind == FinancialTransactionKind::MatchdayRevenue)
+        .cloned()
+        .collect()
+}
+
+fn completed_home_fixture(id: &str, date: &str, home: &str, away: &str) -> Fixture {
+    Fixture {
+        id: id.to_string(),
+        matchday: 1,
+        date: date.to_string(),
+        home_team_id: home.to_string(),
+        away_team_id: away.to_string(),
+        match_type: MatchType::League,
+        best_of: 1,
+        status: FixtureStatus::Completed,
+        result: Some(MatchResult {
+            home_wins: 1,
+            away_wins: 0,
+            ended_by: Default::default(),
+            game_duration_seconds: 1800,
+            report: None,
+        }),
+    }
+}
+
+#[test]
+fn active_league_home_match_is_scaled_by_the_league_tier() {
+    let mut game = make_first_of_month_game();
+    game.leagues = vec![League {
+        id: "l1".to_string(),
+        name: "Tier two".to_string(),
+        season: 1,
+        tier: 2,
+        fixtures: vec![completed_home_fixture("f1", "2025-05-30", "team1", "team2")],
+        standings: vec![StandingEntry::new("team1".to_string())],
+        ..Default::default()
+    }];
+    game.teams[0].sponsorship = no_sponsor_income();
+
+    finances::process_monthly_finances(&mut game);
+
+    let entries = matchday_entries(&game, "team1");
+    assert_eq!(entries.len(), 1);
+    let allowed: Vec<i64> = per_match_revenues(40_000)
+        .into_iter()
+        .map(|r| r * 60 / 100)
+        .collect();
+    assert!(
+        allowed.contains(&entries[0].amount),
+        "tier 2 pays 60% of a match, got {}",
+        entries[0].amount
+    );
+}
+
+fn game_with_background_club(pending_units: i64, tier: u8) -> Game {
+    let mut game = make_first_of_month_game();
+    game.teams.push(make_team("team3", "Third FC"));
+    game.teams[1].sponsorship = no_sponsor_income();
+    game.teams[0].sponsorship = no_sponsor_income();
+    game.teams[1].pending_home_matchday_units = pending_units;
+    game.leagues = vec![
+        League {
+            id: "active".to_string(),
+            name: "Active".to_string(),
+            season: 1,
+            tier: 1,
+            standings: vec![StandingEntry::new("team1".to_string())],
+            ..Default::default()
+        },
+        League {
+            id: "bg".to_string(),
+            name: "Background".to_string(),
+            season: 1,
+            tier,
+            standings: vec![StandingEntry::new("team3".to_string())],
+            ..Default::default()
+        },
+    ];
+    game
+}
+
+#[test]
+fn background_club_pending_home_matches_are_paid_at_the_next_monthly_step() {
+    // Two tier-2 home matches simulated: 2 x 60 units.
+    let mut game = game_with_background_club(120, 2);
+
+    finances::process_monthly_finances(&mut game);
+
+    let entries = matchday_entries(&game, "team3");
+    assert_eq!(entries.len(), 1, "one matchday line for the background club");
+    let allowed: Vec<i64> = per_match_revenues(40_000)
+        .into_iter()
+        .map(|r| r * 120 / 100)
+        .collect();
+    assert!(
+        allowed.contains(&entries[0].amount),
+        "two tier-2 matches pay 1.2 matches of revenue, got {}",
+        entries[0].amount
+    );
+    assert_eq!(game.teams[1].pending_home_matchday_units, 0, "consumed");
+    assert_eq!(game.teams[1].season_income, entries[0].amount);
+}
+
+#[test]
+fn background_club_matches_are_not_paid_twice() {
+    let mut game = game_with_background_club(100, 1);
+
+    finances::process_monthly_finances(&mut game);
+    finances::process_monthly_finances(&mut game);
+
+    assert_eq!(matchday_entries(&game, "team3").len(), 1);
+}
+
+#[test]
+fn pending_matches_survive_a_save_round_trip() {
+    let mut game = game_with_background_club(160, 1);
+    let json = serde_json::to_string(&game).unwrap();
+    let loaded: Game = serde_json::from_str(&json).unwrap();
+    assert_eq!(loaded.teams[1].pending_home_matchday_units, 160);
+
+    // An old save without the field loads with nothing pending.
+    let mut value: serde_json::Value = serde_json::to_value(&mut game).unwrap();
+    value["teams"][1]
+        .as_object_mut()
+        .unwrap()
+        .remove("pending_home_matchday_units");
+    let old: Game = serde_json::from_value(value).unwrap();
+    assert_eq!(old.teams[1].pending_home_matchday_units, 0);
+}
+
 #[test]
 fn away_match_no_income() {
     let mut game = make_first_of_month_game();
