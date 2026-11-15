@@ -801,6 +801,8 @@ export interface LeagueData {
   league_kind?: "Main" | "Academy";
   tier?: number;
   active?: boolean;
+  /** Zero-based split of the season the league is playing. */
+  split_index?: number;
 }
 
 export type SeasonPhase = "Preseason" | "InSeason" | "PostSeason";
@@ -973,6 +975,8 @@ export interface GameStateData {
   champions?: ChampionData[];
   /** Promotion/relegation ledger. Absent in saves from before the ledger. */
   ladder?: LadderStateData;
+  /** Competition manifests by id; only the split names are read by the UI. */
+  competition_configs?: Record<string, { schedule?: { splits?: { name?: string }[] } }>;
 }
 
 /** Running totals of one competition's regular-season records for the season in progress. */

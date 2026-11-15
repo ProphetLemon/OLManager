@@ -2075,6 +2075,10 @@
   },
   "endOfSeason": {
     "seasonComplete": "Sezon Tamamlandı",
+    "splitComplete": "Split Tamamlandı",
+    "splitCompleteNamed": "{{split}} Split Tamamlandı",
+    "startNextSplit": "Sonraki Split'i Başlat",
+    "nextSplitScheduleNote": "Sonraki split için yeni bir program oluşturulacak.",
     "leagueSeason": "{{league}} — Sezon {{n}}",
     "champions": "Şampiyonlar!",
     "finalPosition": "Final sıralaması",
