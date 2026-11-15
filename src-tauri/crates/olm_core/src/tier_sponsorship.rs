@@ -74,6 +74,36 @@ pub fn tier_income_percent(tier: u8) -> i64 {
     }
 }
 
+/// Seats a tier-1 club plays in when the data gives it none: the capacity the data sets
+/// for every tier-1 league that has one (lck, lec, lpl, lcp, lcs and cblol hold 2,500).
+pub const TIER_1_DEFAULT_STADIUM_CAPACITY: u32 = 2_500;
+
+/// Seats a tier-2 (and lower) club plays in when the data gives it none: the capacity the
+/// data sets for every tier-2 league that has one (lfl, les, prm hold 1,500). Most tier-2
+/// clubs ship with capacity 0, which paid them no matchday income at all.
+pub const TIER_2_DEFAULT_STADIUM_CAPACITY: u32 = 1_500;
+
+/// Default seats for a club of league `tier`. Like the sponsor value, only tier 1 gets the
+/// tier-1 figure; tier 2, lower tiers and a league with no tier (0) get the tier-2 one.
+pub fn default_stadium_capacity(tier: u8) -> u32 {
+    if tier == 1 {
+        TIER_1_DEFAULT_STADIUM_CAPACITY
+    } else {
+        TIER_2_DEFAULT_STADIUM_CAPACITY
+    }
+}
+
+/// The capacity matchday income is paid on: the club's own when it has one, else the
+/// default of its tier. Applied where the capacity is read, so an old save with a 0 in
+/// its teams needs no migration.
+pub fn effective_stadium_capacity(stadium_capacity: u32, tier: u8) -> u32 {
+    if stadium_capacity == 0 {
+        default_stadium_capacity(tier)
+    } else {
+        stadium_capacity
+    }
+}
+
 /// `amount` scaled by the income percent of `tier`.
 pub fn scale_by_tier(amount: i64, tier: u8) -> i64 {
     amount * tier_income_percent(tier) / 100

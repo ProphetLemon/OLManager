@@ -928,7 +928,10 @@ pub fn process_monthly_finances(game: &mut Game) {
                 // `units` is 100 per full-rate match, so the revenue is `calc_matchday`
                 // over the units divided by 100.
                 let total_revenue = calc_matchday(
-                    team.stadium_capacity,
+                    crate::tier_sponsorship::effective_stadium_capacity(
+                        team.stadium_capacity,
+                        scheduled_tiers.get(&team.id).copied().unwrap_or(0),
+                    ),
                     units,
                     attendance_pct,
                     avg_ticket,
