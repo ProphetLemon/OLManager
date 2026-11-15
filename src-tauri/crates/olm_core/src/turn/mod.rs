@@ -423,14 +423,18 @@ fn maybe_push_weekly_academy_report(game: &mut Game, today: &str) {
                 .collect()
             };
 
-    league_rows.sort_by(|left, right| {
-        right
-            .2
-            .cmp(&left.2)
-            .then_with(|| right.3.cmp(&left.3))
-            .then_with(|| right.4.cmp(&left.4))
-            .then_with(|| left.1.cmp(&right.1))
-    });
+    // Linked rows already come in the league table's order (`sorted_standings`); only
+    // the invented copy league needs its own sort.
+    if academy_team.team_kind != TeamKind::Main {
+        league_rows.sort_by(|left, right| {
+            right
+                .2
+                .cmp(&left.2)
+                .then_with(|| right.3.cmp(&left.3))
+                .then_with(|| right.4.cmp(&left.4))
+                .then_with(|| left.1.cmp(&right.1))
+        });
+    }
     let academy_position = league_rows
         .iter()
         .position(|row| row.0 == academy_team_id)
@@ -2666,6 +2670,31 @@ mod tests {
             .expect("weekly report");
         assert_eq!(report.i18n_params.get("position").map(String::as_str), Some("2"));
         assert_eq!(report.i18n_params.get("total").map(String::as_str), Some("3"));
+    }
+
+    #[test]
+    fn the_weekly_report_position_matches_the_league_table_on_a_full_tie() {
+        let mut game = real_club_world();
+        // les-b and les-a level on every key; the table keeps the standings order
+        // (les-b first), so the report must say #1, not re-break the tie by name.
+        let les = game.leagues.iter_mut().find(|l| l.id == "league-les").unwrap();
+        les.standings.sort_by(|a, b| b.team_id.cmp(&a.team_id));
+        for entry in les.standings.iter_mut().filter(|e| e.team_id != "les-c") {
+            entry.won = 5;
+            entry.lost = 1;
+            entry.points = 15;
+        }
+        let table_first = les.sorted_standings()[0].team_id.clone();
+        assert_eq!(table_first, "les-b");
+
+        maybe_push_weekly_academy_report(&mut game, "2026-03-16");
+
+        let report = game
+            .messages
+            .iter()
+            .find(|m| m.id == "academy-weekly-report-koi-2026-03-16")
+            .expect("weekly report");
+        assert_eq!(report.i18n_params.get("position").map(String::as_str), Some("1"));
     }
 
     #[test]
