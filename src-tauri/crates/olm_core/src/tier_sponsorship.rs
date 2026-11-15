@@ -56,6 +56,23 @@ pub fn tier_sponsorship_value(tier: u8) -> i64 {
     }
 }
 
+/// Share of the tier-1 income (season prize, matchday revenue) a league of `tier` pays,
+/// in whole percent. Tier 1 is the reference; tier 2 and lower pay 60% (the median wage
+/// bill of a tier-2 club over a tier-1 club's, 918,000 / 1,490,000 = 0.62, rounded down).
+/// Tier 0, a league with no tier (old saves, fixtures), pays in full so it keeps the
+/// amounts it always had.
+pub fn tier_income_percent(tier: u8) -> i64 {
+    match tier {
+        0 | 1 => 100,
+        _ => 60,
+    }
+}
+
+/// `amount` scaled by the income percent of `tier`.
+pub fn scale_by_tier(amount: i64, tier: u8) -> i64 {
+    amount * tier_income_percent(tier) / 100
+}
+
 /// FNV-1a over the team id: stable across runs and platforms, unlike `DefaultHasher`.
 fn stable_hash(text: &str) -> u64 {
     text.bytes().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {

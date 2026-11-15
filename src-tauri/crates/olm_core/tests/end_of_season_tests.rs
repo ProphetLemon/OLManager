@@ -784,6 +784,131 @@ fn champion_receives_prize_money_and_ledger_entry() {
     );
 }
 
+fn prize_entries(game: &Game, team_id: &str) -> Vec<olm_core::domain::team::FinancialTransaction> {
+    game.teams
+        .iter()
+        .find(|team| team.id == team_id)
+        .unwrap()
+        .financial_ledger
+        .iter()
+        .filter(|entry| entry.kind == FinancialTransactionKind::PrizeMoney)
+        .cloned()
+        .collect()
+}
+
+#[test]
+fn tier_two_champion_receives_sixty_percent_of_the_prize() {
+    let mut game = make_completed_season_game();
+    game.leagues[0].tier = 2;
+
+    process_end_of_season(&mut game);
+
+    let entries = prize_entries(&game, "team1");
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].amount, 480_000);
+}
+
+#[test]
+fn tier_one_and_unknown_tier_champions_receive_the_full_prize() {
+    for tier in [0u8, 1] {
+        let mut game = make_completed_season_game();
+        game.leagues[0].tier = tier;
+
+        process_end_of_season(&mut game);
+
+        let entries = prize_entries(&game, "team1");
+        assert_eq!(entries.len(), 1, "tier {tier}");
+        assert_eq!(entries[0].amount, 800_000, "tier {tier}");
+    }
+}
+
+#[test]
+fn tier_two_runner_up_scales_with_the_tier() {
+    let mut game = make_completed_season_game();
+    game.leagues[0].tier = 2;
+
+    process_end_of_season(&mut game);
+
+    // Second place: 500,000 x 60% = 300,000.
+    assert_eq!(prize_entries(&game, "team2")[0].amount, 300_000);
+}
+
+fn make_bg_prize_game(tier: u8, competition_id: Option<&str>, split_index: usize) -> Game {
+    let mut game = make_completed_season_game();
+    game.teams.push(make_team("team3", "Third FC"));
+    game.teams.push(make_team("team4", "Fourth FC"));
+    let mut bg = make_completed_background_league("bg-prize", competition_id, 1);
+    bg.tier = tier;
+    bg.split_index = split_index;
+    bg.standings = vec![
+        make_standing("team3", 2, 0, 3, 1),
+        make_standing("team4", 0, 2, 1, 3),
+    ];
+    bg.fixtures = vec![
+        make_completed_fixture("bg-f1", "team3", "team4", 2, 1),
+        make_completed_fixture("bg-f2", "team4", "team3", 0, 1),
+    ];
+    game.leagues.push(bg);
+    game
+}
+
+#[test]
+fn background_league_season_end_pays_its_clubs_by_tier_once_without_mail() {
+    let mut game = make_bg_prize_game(2, None, 0);
+    let messages_before = game.messages.len();
+
+    process_background_seasons(&mut game, &HashMap::new());
+    process_background_seasons(&mut game, &HashMap::new());
+
+    let champion = prize_entries(&game, "team3");
+    assert_eq!(champion.len(), 1, "paid exactly once");
+    assert_eq!(champion[0].amount, 480_000);
+    assert_eq!(champion[0].source, "prize");
+    assert_eq!(champion[0].source_id.as_deref(), Some("season-1-position-1"));
+    assert_eq!(prize_entries(&game, "team4")[0].amount, 300_000);
+    assert_eq!(game.messages.len(), messages_before, "no inbox mail");
+    // The active league's clubs are not touched by the background roll.
+    assert!(prize_entries(&game, "team1").is_empty());
+}
+
+#[test]
+fn background_league_with_a_manifest_pays_before_it_is_replaced() {
+    let mut game = make_bg_prize_game(1, Some("test-league"), 0);
+    let mut manifests = HashMap::new();
+    manifests.insert("test-league".to_string(), make_test_manifest());
+
+    process_background_seasons(&mut game, &manifests);
+
+    assert_eq!(prize_entries(&game, "team3")[0].amount, 800_000);
+    assert_eq!(prize_entries(&game, "team4")[0].amount, 500_000);
+}
+
+#[test]
+fn background_league_non_final_split_pays_nothing() {
+    let mut game = make_bg_prize_game(1, Some("test-league"), 0);
+    let mut manifest = make_test_manifest();
+    let second = manifest.schedule.splits[0].clone();
+    manifest.schedule.splits.push(second);
+    let mut manifests = HashMap::new();
+    manifests.insert("test-league".to_string(), manifest);
+
+    process_background_seasons(&mut game, &manifests);
+
+    assert!(prize_entries(&game, "team3").is_empty());
+    assert!(prize_entries(&game, "team4").is_empty());
+}
+
+#[test]
+fn active_league_is_not_paid_again_by_the_background_roll() {
+    let mut game = make_bg_prize_game(1, None, 0);
+
+    process_end_of_season(&mut game);
+    process_background_seasons(&mut game, &HashMap::new());
+
+    assert_eq!(prize_entries(&game, "team1").len(), 1);
+    assert_eq!(prize_entries(&game, "team3").len(), 1);
+}
+
 #[test]
 fn prize_money_ledger_line_carries_the_season_and_position_as_parameters() {
     let mut game = make_completed_season_game();

@@ -1,8 +1,8 @@
-use crate::domain::league::{FixtureStatus, League, MatchType, StandingEntry};
+use crate::domain::league::{FixtureStatus, League, LeagueKind, MatchType, StandingEntry};
 use crate::domain::manager::CareerSplitMark;
 use crate::domain::message::*;
 use crate::domain::player::PlayerSeasonStats;
-use crate::domain::team::{FinancialTransactionKind, TeamSeasonRecord};
+use crate::domain::team::{FinancialTransactionKind, Team, TeamSeasonRecord};
 use crate::finances::{
     BudgetImpact, FinanceTransactionInput, LedgerText, calc_annual_wages,
     push_board_financial_health_mail, push_prize_payout_mail, record_transaction_with_text,
@@ -195,15 +195,51 @@ fn position_suffix(position: u32) -> &'static str {
     }
 }
 
-fn prize_money_for_position(position: u32) -> i64 {
+/// Season prize for a final position in a league of `tier` (see
+/// [`crate::tier_sponsorship::tier_income_percent`]).
+fn prize_money_for_position(position: u32, tier: u8) -> i64 {
     if position == 0 {
         return 0;
     }
 
-    PRIZE_MONEY_BY_POSITION
+    let base = PRIZE_MONEY_BY_POSITION
         .get(position.saturating_sub(1) as usize)
         .copied()
-        .unwrap_or(PRIZE_MONEY_PAST_TABLE)
+        .unwrap_or(PRIZE_MONEY_PAST_TABLE);
+    crate::tier_sponsorship::scale_by_tier(base, tier)
+}
+
+/// Credit `team` with the season prize of `position`; the ledger entry is the same on
+/// the active and the background path.
+fn pay_season_prize(team: &mut Team, season: u32, position: u32, tier: u8, date: &str) {
+    let prize_money = prize_money_for_position(position, tier);
+    if prize_money <= 0 {
+        return;
+    }
+    record_transaction_with_text(
+        team,
+        FinanceTransactionInput {
+            date: date.to_string(),
+            description: format!(
+                "Season {} prize money for {}{} place",
+                season,
+                position,
+                position_suffix(position)
+            ),
+            amount: prize_money,
+            kind: FinancialTransactionKind::PrizeMoney,
+            budget_impact: BudgetImpact::None,
+            affects_season_totals: true,
+            source: "prize".to_string(),
+            source_id: Some(format!("season-{season}-position-{position}")),
+            correlation_id: Some(format!("prize:{}:{}:{}", team.id, season, position)),
+        },
+        LedgerText::new(
+            "be.ledger.seasonPrize",
+            &[("season", &season.to_string()), ("position", &position.to_string())],
+        ),
+    )
+    .ok();
 }
 
 /// Share of the treasury that becomes the yearly wage budget after a settlement.
@@ -387,10 +423,28 @@ pub fn roll_completed_background_leagues(
         }
 
         if is_end_of_season {
-            // Record TeamSeasonRecord for each team (no prize money, no messages)
+            let tier = game.leagues[i].tier;
+            let is_main_league = game.leagues[i].league_kind == LeagueKind::Main;
+            let prize_date = game.leagues[i]
+                .fixtures
+                .iter()
+                .filter(|f| f.counts_for_league_standings() && f.status == FixtureStatus::Completed)
+                .map(|f| f.date.clone())
+                .max()
+                .unwrap_or_else(|| game.clock.current_date.format("%Y-%m-%d").to_string());
+            // Record TeamSeasonRecord and pay the season prize for each team (no messages)
             for (idx, standing) in final_standings.iter().enumerate() {
                 if let Some(team) = game.teams.iter_mut().find(|t| t.id == standing.team_id) {
                     let position = (idx + 1) as u32;
+                    // A record already filled in means this season was closed before (a
+                    // finished league without a manifest is rolled again every day).
+                    let already_closed = team
+                        .history
+                        .iter()
+                        .any(|record| record.season == season && record.league_position != 0);
+                    if is_main_league && team.is_main() && !already_closed {
+                        pay_season_prize(team, season, position, tier, &prize_date);
+                    }
                     // The parallel simulation pre-creates the record with position 0;
                     // fill in the real finish instead of treating it as recorded.
                     if let Some(record) = team
@@ -616,6 +670,7 @@ fn process_end_of_season_inner(
         .unwrap_or(&league.id)
         .to_string();
     let season = league.season;
+    let league_tier = league.tier;
     let league_competition_id = league.competition_id.clone();
     let league_name = league.name.clone();
     let _current_split_index = league.split_index;
@@ -716,8 +771,6 @@ fn process_end_of_season_inner(
     for (idx, standing) in final_standings.iter().enumerate() {
         if let Some(team) = game.teams.iter_mut().find(|t| t.id == standing.team_id) {
             let position = (idx + 1) as u32;
-            let prize_money = prize_money_for_position(position);
-
             team.history.push(TeamSeasonRecord {
                 season,
                 league_position: position,
@@ -731,32 +784,7 @@ fn process_end_of_season_inner(
             // Reset form
             team.form.clear();
 
-            if prize_money > 0 {
-                record_transaction_with_text(
-                    team,
-                    FinanceTransactionInput {
-                        date: last_fixture_date.clone(),
-                        description: format!(
-                            "Season {} prize money for {}{} place",
-                            season,
-                            position,
-                            position_suffix(position)
-                        ),
-                        amount: prize_money,
-                        kind: FinancialTransactionKind::PrizeMoney,
-                        budget_impact: BudgetImpact::None,
-                        affects_season_totals: true,
-                        source: "prize".to_string(),
-                        source_id: Some(format!("season-{season}-position-{position}")),
-                        correlation_id: Some(format!("prize:{}:{}:{}", team.id, season, position)),
-                    },
-                    LedgerText::new(
-                        "be.ledger.seasonPrize",
-                        &[("season", &season.to_string()), ("position", &position.to_string())],
-                    ),
-                )
-                .ok();
-            }
+            pay_season_prize(team, season, position, league_tier, &last_fixture_date);
 
             let bill_floor = custom_bill_floors.get(&team.id).copied().unwrap_or(0);
             refresh_hiring_cycle_budgets(team, bill_floor);
@@ -901,7 +929,7 @@ fn process_end_of_season_inner(
     }
 
     let payout_msg_id = format!("season_payout_{}", season);
-    let user_prize_money = prize_money_for_position(user_position);
+    let user_prize_money = prize_money_for_position(user_position, league_tier);
     if user_prize_money > 0 && !existing_ids.contains(&payout_msg_id) {
         let payout_message = InboxMessage::new(
             payout_msg_id,
@@ -1165,13 +1193,16 @@ mod tests {
 
     #[test]
     fn prize_money_past_the_table_pays_less_than_tenth_place() {
-        assert!(prize_money_for_position(11) < prize_money_for_position(10));
+        assert!(prize_money_for_position(11, 1) < prize_money_for_position(10, 1));
     }
 
     #[test]
     fn prize_money_past_the_table_is_a_flat_participation_payment() {
-        assert_eq!(prize_money_for_position(11), 30_000);
-        assert_eq!(prize_money_for_position(40), 30_000);
+        assert_eq!(prize_money_for_position(11, 1), 30_000);
+        assert_eq!(prize_money_for_position(40, 1), 30_000);
+        assert_eq!(prize_money_for_position(11, 2), 18_000);
+        assert_eq!(prize_money_for_position(1, 2), 480_000);
+        assert_eq!(prize_money_for_position(1, 0), 800_000);
     }
 
     use crate::generator::definitions::{CompetitionManifest, SeasonStart, SplitConfig};
