@@ -761,7 +761,11 @@ fn champion_receives_prize_money_and_ledger_entry() {
 
     let team1 = game.teams.iter().find(|team| team.id == "team1").unwrap();
     assert_eq!(team1.finance, initial_finance + 800_000);
-    assert_eq!(team1.season_income, 800_000);
+    assert_eq!(
+        (team1.season_income, team1.season_expenses),
+        (0, 0),
+        "the settlement closes the season totals"
+    );
     assert_eq!(
         team1.wage_budget,
         ((team1.finance as f64) * 0.5).round() as i64
@@ -1172,6 +1176,40 @@ fn season_end_announces_the_prize_once_and_sends_board_health_finance_mail_once(
         board_health.subject_key.as_deref(),
         Some("be.msg.finance.boardFinancialHealth.subject")
     );
+}
+
+#[test]
+fn settlement_resets_season_totals_after_the_board_mail_reads_them() {
+    let mut game = make_completed_season_game();
+    for team in game.teams.iter_mut() {
+        team.season_income = 1_200_000;
+        team.season_expenses = 600_000;
+    }
+    let user_id = game.manager.team_id.clone().unwrap();
+
+    process_end_of_season(&mut game);
+
+    // 1.2M income + 800K prize (the champion is team1) over a 600K bill: the mail
+    // still reads the finished season, i.e. (income - expenses) / 12.
+    let user = game.teams.iter().find(|t| t.id == user_id).unwrap();
+    let mail_id = "finance:board-health:team1:2025-06-01:boardFinancialHealth";
+    let mail = game.messages.iter().find(|m| m.id == mail_id).expect("board health mail");
+    let expected_net = (1_200_000 + 800_000 - 600_000) / 12;
+    assert_eq!(user_id, "team1");
+    assert!(
+        mail.i18n_params["monthlyNet"].contains(&olm_core::finances::format_money(expected_net as u64)),
+        "mail used the finished season totals: {:?}",
+        mail.i18n_params
+    );
+    for team in &game.teams {
+        assert_eq!(
+            (team.season_income, team.season_expenses),
+            (0, 0),
+            "{} keeps last season's totals",
+            team.id
+        );
+    }
+    assert_eq!(user.season_income, 0);
 }
 
 #[test]
