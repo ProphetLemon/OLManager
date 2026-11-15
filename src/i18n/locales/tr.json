@@ -2359,7 +2359,7 @@
         "body": "Yıllık maaş faturamız (€{{annualWages}}) şu anda ayrılan maaş bütçesini (€{{wageBudget}}) aşıyor.\n\nKısa vadede bunu sürdürebilsek de, yönetim maaş giderinin kontrol altına alınmasını tercih eder."
       },
       "finance": {
-        "sponsorAccepted": { "subject": "Sponsorluk anlaşması imzalandı", "body": "{{sponsorName}} sponsorluğu kabul edildi. Anlaşmanın yıllık değeri €{{amount}} ve aylık olarak ödenecek." },
+        "sponsorAccepted": { "subject": "Sponsorluk anlaşması imzalandı", "body": "{{sponsorName}} sponsorluğu kabul edildi. Anlaşmanın yıllık değeri €{{amount}} ve aylık olarak ödenecek.", "bodyTerm": "{{sponsorName}} sponsorluğu kabul edildi. {{months}} ay boyunca ayda €{{monthly}} alacaksınız (toplam €{{total}})." },
         "sponsorPayout": { "subject": "Sponsorluk ödemesi alındı", "body": "{{sponsorName}} bu ay kulüp hesabına €{{amount}} yatırdı." },
         "sponsorBonus": { "subject": "Sponsorluk bonusu tetiklendi", "body": "{{sponsorName}} bonus kriterleri karşılandı. Bu ayki €{{totalAmount}} sponsorluk ödemesine €{{bonusAmount}} dahil edildi." },
         "sponsorExpired": { "subject": "Sponsorluk anlaşması sona erdi", "body": "{{sponsorName}} sponsorluğu sona erdi. Yeni bir anlaşma için piyasayı kontrol edin." },
@@ -2563,10 +2563,12 @@
       "sponsor": {
         "subject": "Sponsorluk Teklifi — {{sponsor}}",
         "body": "İyi haberler koç! {{sponsor}}, {{team}} takımına sponsor olmakla ilgilendiğini belirtti.\n\nkulübün afişlerindeki reklam alanı karşılığında gelecek split için tek seferlik €{{amount}} ödeme teklif ediyorlar.\n\nBu makul bir anlaşma gibi görünüyor, ancak karar sizin.",
+        "bodyTerm": "İyi haberler koç! {{sponsor}}, {{team}} takımına sponsor olmakla ilgilendiğini belirtti.\n\nAntrenman tesisindeki reklam alanı karşılığında {{months}} ay boyunca ayda €{{monthly}} (toplam €{{total}}) teklif ediyorlar.\n\nBu makul bir anlaşma gibi görünüyor, ancak karar sizin.",
         "options": {
           "accept": {
             "label": "Anlaşmayı kabul et",
-            "description": "Sponsorluk geliri olarak €{{amount}} alın."
+            "description": "Sponsorluk geliri olarak €{{amount}} alın.",
+            "descriptionTerm": "{{months}} ay boyunca ayda €{{monthly}} alın (toplam €{{total}})."
           },
           "decline": {
             "label": "Kibarca reddet",

@@ -11,7 +11,7 @@ pub use responses::apply_event_response;
 
 use crate::contracts::{ContractWarningStage, contract_warning_stage};
 use crate::domain::message::*;
-use crate::domain::team::Sponsorship;
+use crate::domain::team::{Sponsorship, SponsorshipBonusCriterion, SponsorshipOrigin, Team};
 use crate::game::Game;
 use chrono::Datelike;
 use rand::RngExt;
@@ -22,6 +22,54 @@ use std::collections::HashMap;
 /// is never a downgrade.
 pub fn sponsor_offer_improves_on(current: Option<&Sponsorship>, annual_amount: i64) -> bool {
     annual_amount > current.map_or(0, |deal| deal.base_value)
+}
+
+/// Months an accepted random sponsor offer pays for.
+pub const SPONSOR_OFFER_MONTHS: u32 = 3;
+
+/// The deal an accepted offer of `annual_value` signs: the same value the monthly step
+/// pays `base_value / 12` of, for [`SPONSOR_OFFER_MONTHS`] months.
+pub(super) fn sponsor_offer_deal(sponsor_name: &str, annual_value: i64) -> Sponsorship {
+    Sponsorship {
+        sponsor_name: sponsor_name.to_string(),
+        base_value: annual_value,
+        remaining_months: SPONSOR_OFFER_MONTHS,
+        bonus_criteria: vec![SponsorshipBonusCriterion::UnbeatenRun {
+            required_matches: 3,
+            bonus_amount: annual_value / 4,
+        }],
+        origin: SponsorshipOrigin::Offer,
+    }
+}
+
+/// What the monthly step books for the offer's base value each month for `team`: the
+/// number the offer shows, so the headline and the payout cannot drift apart. The
+/// unbeaten-run bonus is extra and not part of it.
+pub fn sponsor_offer_monthly_payment(team: &Team, sponsor_name: &str, annual_value: i64) -> i64 {
+    let mut deal = sponsor_offer_deal(sponsor_name, annual_value);
+    deal.bonus_criteria.clear();
+    let base = crate::finances::calc_sponsorship_income(None, &[], &deal);
+    let facility_mult = crate::finances::facility_module_sponsorship_multiplier(&team.facilities);
+    ((base as f64 * facility_mult) / 12.0).round() as i64
+}
+
+/// The inbox offer of a short sponsor deal worth `annual_value` a year: it shows the
+/// monthly payment, the term and the total, which is what the deal pays.
+pub fn build_sponsor_offer(
+    team: &Team,
+    sponsor_name: &str,
+    annual_value: u64,
+    date: &str,
+) -> InboxMessage {
+    let monthly = sponsor_offer_monthly_payment(team, sponsor_name, annual_value as i64);
+    message_builders::sponsor_offer_message(
+        &format!("sponsor_{date}"),
+        &team.name,
+        sponsor_name,
+        annual_value,
+        monthly,
+        date,
+    )
 }
 
 fn params(pairs: &[(&str, &str)]) -> HashMap<String, String> {
@@ -61,8 +109,7 @@ pub fn check_random_events(game: &mut Game) {
         let msg_id = format!("sponsor_{}", today);
         if !existing_ids.contains(&msg_id) && rng.random_range(0..100) == 0 {
             let user_team = game.teams.iter().find(|t| t.id == user_team_id);
-            let team_name = user_team.map(|t| t.name.as_str()).unwrap_or("Your Club");
-            let amount = rng.random_range(12..=60) * 52_000; // 624k - 3.12M (annual)
+            let amount = rng.random_range(12..=60) * 52_000; // 624k - 3.12M (annual value)
             // An offer that does not beat the current deal is never shown.
             let worth_offering = sponsor_offer_improves_on(
                 user_team.and_then(|t| t.sponsorship.as_ref()),
@@ -80,10 +127,8 @@ pub fn check_random_events(game: &mut Game) {
             ];
             let sponsor = sponsor_names[rng.random_range(0..sponsor_names.len())];
 
-            if worth_offering {
-                new_messages.push(message_builders::sponsor_offer_message(
-                    &msg_id, team_name, sponsor, amount, &today,
-                ));
+            if worth_offering && let Some(team) = user_team {
+                new_messages.push(build_sponsor_offer(team, sponsor, amount, &today));
             }
         }
     }
@@ -387,12 +432,3 @@ fn choose_rival_interest_target<'a, R: rand::Rng + ?Sized>(
     eligible.last().copied()
 }
 
-fn format_money(amount: u64) -> String {
-    if amount >= 1_000_000 {
-        format!("{:.1}M", amount as f64 / 1_000_000.0)
-    } else if amount >= 1_000 {
-        format!("{}K", amount / 1_000)
-    } else {
-        amount.to_string()
-    }
-}

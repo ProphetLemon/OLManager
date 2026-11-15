@@ -2545,7 +2545,7 @@
         "body": "Nuestra masa salarial anual (€{{annualWages}}) supera actualmente el presupuesto salarial asignado (€{{wageBudget}}).\n\nAunque podemos sostenerlo a corto plazo, la directiva preferiría ver la masa salarial bajo control."
       },
       "finance": {
-        "sponsorAccepted": { "subject": "Acuerdo de patrocinio firmado", "body": "Se aceptó el patrocinio de {{sponsorName}}. El acuerdo vale €{{amount}} al año y se pagará mensualmente." },
+        "sponsorAccepted": { "subject": "Acuerdo de patrocinio firmado", "body": "Se aceptó el patrocinio de {{sponsorName}}. El acuerdo vale €{{amount}} al año y se pagará mensualmente.", "bodyTerm": "Se aceptó el patrocinio de {{sponsorName}}. Recibirás €{{monthly}} al mes durante {{months}} meses (€{{total}} en total)." },
         "sponsorPayout": { "subject": "Pago de patrocinio recibido", "body": "{{sponsorName}} ingresó €{{amount}} en la cuenta del club este mes." },
         "sponsorBonus": { "subject": "Bonus de patrocinio activado", "body": "Se cumplieron los criterios de bonus de {{sponsorName}}. €{{bonusAmount}} se incluyeron en el pago mensual de patrocinio de €{{totalAmount}}." },
         "sponsorExpired": { "subject": "Patrocinio finalizado", "body": "El patrocinio de {{sponsorName}} ha terminado. Revisa el mercado para encontrar un reemplazo." },
@@ -2749,10 +2749,12 @@
       "sponsor": {
         "subject": "Oferta de patrocinio — {{sponsor}}",
         "body": "Buenas noticias, míster: {{sponsor}} ha mostrado interés en convertirse en patrocinador de {{team}}.\n\nOfrecen un pago único de €{{amount}} por el próximo split a cambio de espacio publicitario en los carteles del club.\n\nParece un acuerdo razonable, pero la decisión es tuya.",
+        "bodyTerm": "Buenas noticias, míster: {{sponsor}} ha mostrado interés en convertirse en patrocinador de {{team}}.\n\nOfrecen €{{monthly}} al mes durante {{months}} meses (€{{total}} en total) a cambio de espacio publicitario en la ciudad deportiva.\n\nParece un acuerdo razonable, pero la decisión es tuya.",
         "options": {
           "accept": {
             "label": "Aceptar el acuerdo",
-            "description": "Recibe €{{amount}} en ingresos de patrocinio."
+            "description": "Recibe €{{amount}} en ingresos de patrocinio.",
+            "descriptionTerm": "Recibe €{{monthly}} al mes durante {{months}} meses (€{{total}} en total)."
           },
           "decline": {
             "label": "Rechazar cortésmente",

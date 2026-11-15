@@ -275,6 +275,32 @@ pub fn push_sponsor_accepted_mail(
     )
 }
 
+/// Mail for a signed short sponsor offer: states what it pays per month and for how long.
+pub fn push_sponsor_offer_signed_mail(
+    game: &mut Game,
+    team_id: &str,
+    sponsor_name: &str,
+    monthly: i64,
+    months: u32,
+    date: &str,
+) -> bool {
+    push_finance_mail_once(
+        game,
+        team_id,
+        &format!("sponsor-accepted:{team_id}:{sponsor_name}:{date}"),
+        "sponsorAccepted",
+        "be.msg.finance.sponsorAccepted.subject",
+        "be.msg.finance.sponsorAccepted.bodyTerm",
+        params(&[
+            ("sponsorName", sponsor_name.to_string()),
+            ("monthly", format_exact(monthly)),
+            ("months", months.to_string()),
+            ("total", format_exact(monthly * i64::from(months))),
+        ]),
+        date,
+    )
+}
+
 pub fn push_sponsor_payout_mail(
     game: &mut Game,
     team_id: &str,
@@ -1074,6 +1100,22 @@ fn generate_financial_warnings(game: &mut Game, today: &str) {
     }
 
     game.messages.extend(new_messages);
+}
+
+/// Whole amount with thousands separators ("56,333"): exact, unlike `format_money`.
+pub fn format_exact(amount: i64) -> String {
+    let digits = amount.unsigned_abs().to_string();
+    let mut grouped = String::new();
+    for (index, digit) in digits.chars().enumerate() {
+        if index > 0 && (digits.len() - index) % 3 == 0 {
+            grouped.push(',');
+        }
+        grouped.push(digit);
+    }
+    if amount < 0 {
+        grouped.insert(0, '-');
+    }
+    grouped
 }
 
 pub fn format_money(amount: u64) -> String {
