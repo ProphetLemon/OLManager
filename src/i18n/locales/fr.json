@@ -2083,6 +2083,10 @@
   },
   "endOfSeason": {
     "seasonComplete": "Saison Terminée",
+    "splitComplete": "Split Terminé",
+    "splitCompleteNamed": "Split {{split}} Terminé",
+    "startNextSplit": "Démarrer le Split Suivant",
+    "nextSplitScheduleNote": "Un nouveau calendrier sera généré pour le split suivant.",
     "leagueSeason": "{{league}} — Saison {{n}}",
     "champions": "Champions !",
     "finalPosition": "Position finale",

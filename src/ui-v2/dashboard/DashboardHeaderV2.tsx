@@ -17,6 +17,8 @@ interface Props {
   isAdvancing: boolean;
   /** The split is over: the clock stays put until the next season starts. */
   seasonComplete?: boolean;
+  /** The closed period is a split with later splits in the season, not the season. */
+  endsSplit?: boolean;
   isSaving: boolean;
   saveFlash: boolean;
   hasMatchToday: boolean;
@@ -50,6 +52,7 @@ export function DashboardHeaderV2({
   hasProfileHistory,
   isAdvancing,
   seasonComplete = false,
+  endsSplit = false,
   isSaving,
   saveFlash,
   hasMatchToday,
@@ -85,7 +88,9 @@ export function DashboardHeaderV2({
 
   const saveLabel = t("onAir.bar.save", { defaultValue: "Save" });
   const continueLabel = seasonComplete
-    ? t("endOfSeason.seasonComplete", { defaultValue: "Season Complete" })
+    ? endsSplit
+      ? t("endOfSeason.splitComplete", { defaultValue: "Split Complete" })
+      : t("endOfSeason.seasonComplete", { defaultValue: "Season Complete" })
     : hasMatchToday
       ? t("onAir.bar.matchDay", { defaultValue: "Match" })
       : t("onAir.bar.continue", { defaultValue: "Continue" });

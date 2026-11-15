@@ -2280,6 +2280,10 @@
   },
   "endOfSeason": {
     "seasonComplete": "Season Complete",
+    "splitComplete": "Split Complete",
+    "splitCompleteNamed": "{{split}} Split Complete",
+    "startNextSplit": "Start Next Split",
+    "nextSplitScheduleNote": "A new schedule will be generated for the next split.",
     "leagueSeason": "{{league}} — Season {{n}}",
     "champions": "Champions!",
     "finalPosition": "Final position",

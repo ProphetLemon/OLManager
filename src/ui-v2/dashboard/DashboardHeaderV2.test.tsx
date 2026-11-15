@@ -75,6 +75,12 @@ describe("DashboardHeaderV2", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Saved");
   });
 
+  it("calls the closed period a split when later splits remain in the season", () => {
+    setup({ seasonComplete: true, endsSplit: true });
+    expect(screen.getByRole("button", { name: "Split Complete" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Season Complete" })).toBeNull();
+  });
+
   it("disables the advance controls and says why while the split is over", () => {
     const { onContinue, onSkipToMatchDay, onSkipToNextDay } = setup({ seasonComplete: true });
     const main = screen.getByRole("button", { name: "Season Complete" });

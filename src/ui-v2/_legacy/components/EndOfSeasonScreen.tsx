@@ -6,6 +6,7 @@ import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 import { compareStandingsByLolScore, GameStateData } from "@/store/gameStore";
 import { useGameStore } from "@/store/gameStore";
 import type { EndOfSeasonSummaryData } from "@/store/types";
+import { resolveEndPeriod } from "@/lib/season/endPeriod";
 import { resolveSummaryPeriod } from "@/lib/season/summaryPeriod";
 import { PromotionRelegationCard } from "@/ui-v2/components/season/PromotionRelegationCard";
 import { Card, CardBody } from "@/ui-v2/_legacy/components/ui";
@@ -69,6 +70,9 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
   // After the rollover `league` is the new one: a split change keeps the closed season.
   const summaryPeriod = summary ? resolveSummaryPeriod(summary.season, league?.season) : null;
 
+  const endPeriod = resolveEndPeriod(gameState);
+  const endsSplit = endPeriod.kind === "split";
+
   const handleAdvance = async () => {
     if (loading) return;
     setLoading(true);
@@ -108,7 +112,11 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
               {isChampion ? <Crown className="w-10 h-10 text-white" /> : <Trophy className="w-10 h-10 text-gray-300" />}
             </div>
             <h1 className="text-3xl font-heading font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wide">
-              {t('endOfSeason.seasonComplete')}
+              {endPeriod.kind === "split"
+                ? endPeriod.name
+                  ? t('endOfSeason.splitCompleteNamed', { split: endPeriod.name })
+                  : t('endOfSeason.splitComplete')
+                : t('endOfSeason.seasonComplete')}
             </h1>
             <p className="text-lg text-gray-500 dark:text-gray-400 mt-1">
               {t('endOfSeason.leagueSeason', { league: league?.name, n: league?.season })}
@@ -204,11 +212,11 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
               disabled={loading}
               className="px-8 py-4 bg-primary-500 text-white rounded-xl font-heading font-bold text-lg uppercase tracking-wider hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 disabled:opacity-50 flex items-center gap-3 mx-auto"
             >
-              {loading ? t('endOfSeason.processing') : t('endOfSeason.startNextSeason')}
+              {loading ? t('endOfSeason.processing') : t(endsSplit ? 'endOfSeason.startNextSplit' : 'endOfSeason.startNextSeason')}
               <ArrowRight className="w-5 h-5" />
             </button>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
-              {t('endOfSeason.statsArchived')}
+              {t(endsSplit ? 'endOfSeason.nextSplitScheduleNote' : 'endOfSeason.statsArchived')}
             </p>
           </div>
         </>
