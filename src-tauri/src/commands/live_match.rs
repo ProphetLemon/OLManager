@@ -393,7 +393,6 @@ mod tests {
     use super::{
         apply_press_conference_effects, finish_live_match_internal,
     };
-    use olm_core::team_talk::apply_team_talk;
     use chrono::{TimeZone, Utc};
     use olm_core::clock::GameClock;
     use olm_core::domain::league::{
@@ -401,7 +400,7 @@ mod tests {
     };
     use olm_core::domain::manager::Manager;
     use olm_core::domain::player::{
-        LolRole, Player, PlayerAttributes, PlayerIssue, PlayerIssueCategory,
+        LolRole, Player, PlayerAttributes,
     };
     use olm_core::domain::team::Team;
     use olm_core::game::Game;
@@ -543,14 +542,6 @@ mod tests {
         game
     }
 
-    fn delta_for(results: &[serde_json::Value], player_id: &str) -> i64 {
-        results
-            .iter()
-            .find(|result| result["player_id"] == player_id)
-            .and_then(|result| result["delta"].as_i64())
-            .unwrap()
-    }
-
     #[test]
     fn stable_press_effect_id_applies_squad_morale_once() {
         let mut game = make_game_with_round();
@@ -640,52 +631,5 @@ mod tests {
                 .to_string(),
             "2025-06-16"
         );
-    }
-
-    #[test]
-    fn team_talk_reactions_vary_by_player_context() {
-        let mut game = make_game_with_round();
-        let composed = game
-            .players
-            .iter_mut()
-            .find(|player| player.id == "t1_mid0")
-            .unwrap();
-        composed.attributes.discipline = 90;
-        composed.attributes.shotcalling = 90;
-        composed.morale_core.manager_trust = 80;
-
-        let volatile = game
-            .players
-            .iter_mut()
-            .find(|player| player.id == "t1_fwd0")
-            .unwrap();
-        volatile.attributes.discipline = 20;
-        volatile.attributes.shotcalling = 20;
-        volatile.morale_core.manager_trust = 25;
-        volatile.morale_core.unresolved_issue = Some(PlayerIssue {
-            category: PlayerIssueCategory::Morale,
-            severity: 70,
-        });
-
-        let results = apply_team_talk(&mut game, "aggressive", "winning", 7).unwrap();
-
-        assert!(delta_for(&results, "t1_mid0") > delta_for(&results, "t1_fwd0"));
-    }
-
-    #[test]
-    fn repeating_same_team_talk_loses_effectiveness() {
-        let mut game = make_game_with_round();
-        let player = game
-            .players
-            .iter_mut()
-            .find(|player| player.id == "t1_mid0")
-            .unwrap();
-        player.morale = 50;
-        player.morale_core.manager_trust = 70;
-
-        let first = apply_team_talk(&mut game, "motivational", "losing", 13).unwrap();
-        let second = apply_team_talk(&mut game, "motivational", "losing", 13).unwrap();
-
-        assert!(delta_for(&second, "t1_mid0") <= delta_for(&first, "t1_mid0"));
     }
 }

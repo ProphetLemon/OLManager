@@ -1,6 +1,6 @@
 use crate::domain::stats::LolRole;
 use crate::domain::team::{
-    DraftStrategy, ScrimFocus, TrainingFocus, TrainingIntensity, TrainingSchedule,
+    ScrimFocus, TrainingFocus, TrainingIntensity, TrainingSchedule,
 };
 use crate::domain::transfer_history::TransferHistoryEntry;
 use crate::game::Game;
@@ -45,21 +45,6 @@ pub fn set_player_training_focus(game: &mut Game, player_id: &str, focus: Option
     }
 }
 
-// ── Draft Strategy ───────────────────────────────────────────
-
-pub fn set_draft_strategy(game: &mut Game, team_id: &str, value: &str) {
-    if let Some(team) = game.teams.iter_mut().find(|t| t.id == team_id) {
-        team.draft_strategy = match value {
-            "Attacking" | "HighPress" => DraftStrategy::Aggressive,
-            "Defensive" => DraftStrategy::Passive,
-            "Possession" => DraftStrategy::Scaling,
-            "Counter" => DraftStrategy::CounterPick,
-            "PriorityBans" => DraftStrategy::PriorityBans,
-            _ => DraftStrategy::Balanced,
-        };
-    }
-}
-
 // ── Lineup ───────────────────────────────────────────────────
 
 /// Set the team's active lineup. Refuses a lineup with more imports than the
@@ -82,14 +67,6 @@ pub fn set_active_lineup(
 pub fn set_lol_tactics(game: &mut Game, team_id: &str, tactics: crate::domain::team::LolTactics) {
     if let Some(team) = game.teams.iter_mut().find(|t| t.id == team_id) {
         team.lol_tactics = tactics;
-    }
-}
-
-// ── Team Roles ───────────────────────────────────────────────
-
-pub fn set_team_roles(game: &mut Game, team_id: &str, roles: crate::domain::team::TeamRoles) {
-    if let Some(team) = game.teams.iter_mut().find(|t| t.id == team_id) {
-        team.team_roles = roles;
     }
 }
 

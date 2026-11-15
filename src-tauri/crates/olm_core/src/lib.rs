@@ -68,7 +68,6 @@ pub(crate) mod stable_hash;
 pub mod staff_completion;
 pub mod staff_effects;
 pub mod state;
-pub mod team_talk;
 pub mod time_blockers;
 pub mod training;
 pub mod wage_scale;
