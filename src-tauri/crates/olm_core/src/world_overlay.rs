@@ -318,6 +318,19 @@ fn check_staff_record(at: &dyn Fn(&str) -> String, staff: &Staff) -> Result<(), 
 }
 
 impl WorldOverlay {
+    /// Ids of the players the overlay adds without a team (the active-pros
+    /// pool). A new game keeps them as free agents instead of filling short
+    /// rosters with them.
+    pub fn teamless_added_player_ids(&self) -> HashSet<String> {
+        self.players
+            .iter()
+            .filter_map(|op| match op {
+                PlayerOp::Add { player, .. } if player.team_id.is_none() => Some(player.id.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
     /// Parse and validate an overlay document. The schema version is checked
     /// before the rest of the shape so a future version reports as
     /// [`OverlayError::UnsupportedSchemaVersion`] rather than a decoding error.

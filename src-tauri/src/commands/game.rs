@@ -138,8 +138,13 @@ pub(crate) fn build_world_naming_replaced_club(
         None => inputs.team_id.to_string(),
     };
 
-    // The overlay can leave a team short; make every Main team playable.
-    fill_short_rosters(game);
+    // The overlay can leave a team short; make every Main team playable. Its teamless
+    // adds (the active-pros pool) stay free agents rather than filling those slots.
+    let reserved = inputs
+        .overlay
+        .map(WorldOverlay::teamless_added_player_ids)
+        .unwrap_or_default();
+    fill_short_rosters(game, &reserved);
     if inputs.custom_team.is_some() {
         ensure_custom_club_roster(game, &user_team_id)?;
     }
@@ -954,8 +959,11 @@ fn apply_roster_overlay(game: &mut Game, overlay: &WorldOverlay) -> OverlayApply
 
 /// Fill roles the assembled world left empty on every Main team and protect the
 /// filled players from catalog rehydration reverting them.
-fn fill_short_rosters(game: &mut Game) -> Vec<roster_stability::NewGameRosterFill> {
-    let fills = roster_stability::fill_new_game_rosters(game);
+fn fill_short_rosters(
+    game: &mut Game,
+    reserved: &HashSet<String>,
+) -> Vec<roster_stability::NewGameRosterFill> {
+    let fills = roster_stability::fill_new_game_rosters_excluding(game, reserved);
     game.moved_player_ids
         .extend(fills.iter().map(|fill| fill.player_id.clone()));
     if !fills.is_empty() {
@@ -1959,7 +1967,7 @@ mod tests {
         free_agent.team_id = None;
         game.players.push(free_agent);
 
-        let fills = fill_short_rosters(&mut game);
+        let fills = fill_short_rosters(&mut game, &HashSet::new());
 
         assert!(!fills.is_empty());
         for fill in &fills {
@@ -2176,6 +2184,83 @@ mod tests {
                 .map(|m| m.id.clone())
                 .collect();
             (manifests, known)
+        }
+
+        /// The active-pros pool arrives as teamless overlay adds. They must start as free
+        /// agents (to be signed through the market and the AI's normal logic), never be
+        /// handed to short rosters by the new-game fill, which fills with generated players
+        /// or the world's ordinary free agents instead.
+        #[test]
+        fn a_new_game_keeps_teamless_overlay_adds_as_free_agents_and_still_fills_short_rosters() {
+            let mut overlay =
+                olm_core::world_overlay::bundled_world_overlay().expect("bundled overlay");
+            let strong = PlayerAttributes {
+                mental_resilience: 95,
+                champion_pool: 95,
+                laning: 95,
+                mechanics: 95,
+                macro_play: 95,
+                consistency: 95,
+                discipline: 95,
+                teamfighting: 95,
+                shotcalling: 95,
+            };
+            let pool_ids: Vec<String> =
+                (0..200).map(|i| format!("player-pooltest{i:04}")).collect();
+            for (i, id) in pool_ids.iter().enumerate() {
+                let mut player = Player::new(
+                    id.clone(),
+                    format!("PoolTest{i}"),
+                    format!("Pool Test {i}"),
+                    "2000-01-01".to_string(),
+                    "ES".to_string(),
+                    ROLES[i % ROLES.len()],
+                    strong.clone(),
+                );
+                player.team_id = None;
+                player.wage = 0;
+                player.market_value = 0;
+                player.contract_end = None;
+                overlay
+                    .players
+                    .push(olm_core::world_overlay::PlayerOp::Add {
+                        player: Box::new(player),
+                        evidence: String::new(),
+                        dob_approx: false,
+                    });
+            }
+            let mut game = empty_session();
+
+            build_world_into(&mut game, &overlay, "lec-g2-esports", None).expect("world");
+
+            let signed: Vec<&str> = game
+                .players
+                .iter()
+                .filter(|p| pool_ids.contains(&p.id) && p.team_id.is_some())
+                .map(|p| p.id.as_str())
+                .collect();
+            assert!(
+                signed.is_empty(),
+                "pool adds signed during setup: {signed:?}"
+            );
+            let pool_present = game
+                .players
+                .iter()
+                .filter(|p| pool_ids.contains(&p.id))
+                .count();
+            assert_eq!(pool_present, pool_ids.len());
+            for team in game.teams.iter().filter(|t| t.team_kind == TeamKind::Main) {
+                for role in ROLES {
+                    assert!(
+                        game.players
+                            .iter()
+                            .any(|p| p.team_id.as_deref() == Some(team.id.as_str())
+                                && p.natural_position == role),
+                        "{} has no {role:?}",
+                        team.id
+                    );
+                }
+            }
         }
 
         /// A new game schedules no league for the stale duplicates the catalog still
@@ -4010,7 +4095,7 @@ mod tests {
             let id = install_custom_club(&mut game, &inputs, &spec).expect("install");
 
             game.players.retain(|p| p.team_id.is_some());
-            fill_short_rosters(&mut game);
+            fill_short_rosters(&mut game, &HashSet::new());
 
             ensure_custom_club_roster(&game, &id).expect("full roster");
             let club = game.teams.iter().find(|t| t.id == id).expect("club");
@@ -6523,7 +6608,7 @@ mod tests {
 
             assert_eq!(game.players.len(), players_before);
             assert_eq!(game.teams.iter().find(|t| t.id == id).map(|t| t.wage_budget), budget_before);
-            fill_short_rosters(&mut game);
+            fill_short_rosters(&mut game, &HashSet::new());
             ensure_custom_club_roster(&game, &id).expect("the free-agent fill still staffs the club");
         }
 
