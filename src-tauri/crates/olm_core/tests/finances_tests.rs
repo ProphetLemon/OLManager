@@ -1633,3 +1633,50 @@ fn sponsor_offer_shows_the_monthly_amount_and_term_the_deal_pays() {
         "the deal ends after the term shown"
     );
 }
+
+// ---------------------------------------------------------------------------
+// Facility upkeep: only levels above the starting ones cost anything
+// ---------------------------------------------------------------------------
+
+fn upkeep_entries(game: &Game) -> Vec<&FinancialTransaction> {
+    game.teams[0]
+        .financial_ledger
+        .iter()
+        .filter(|entry| entry.kind == FinancialTransactionKind::FacilityUpkeep)
+        .collect()
+}
+
+#[test]
+fn starting_facilities_post_no_upkeep_entry_in_a_whole_year_of_monthly_steps() {
+    let mut game = make_first_of_month_game();
+    for month in 1..=12 {
+        game.clock = GameClock::new(Utc.with_ymd_and_hms(2026, month, 1, 12, 0, 0).unwrap());
+        finances::process_monthly_finances(&mut game);
+    }
+
+    // Zero upkeep is rejected as a zero-amount transaction, so no line is booked:
+    // the data ships every club at level 1, which costs nothing by design.
+    assert_eq!(upkeep_entries(&game).len(), 0);
+}
+
+#[test]
+fn upgraded_facilities_post_one_upkeep_entry_every_month() {
+    let mut game = make_first_of_month_game();
+    game.teams[0].facilities = Facilities {
+        training: 2,
+        ..Facilities::default()
+    };
+    // Level 2 training lifts the hub (20K) and the two modules that follow it,
+    // Scrims Room (20K) and Analysis Room (15K).
+    let expected_monthly = 55_000;
+    for month in 1..=3 {
+        game.clock = GameClock::new(Utc.with_ymd_and_hms(2026, month, 1, 12, 0, 0).unwrap());
+        finances::process_monthly_finances(&mut game);
+    }
+
+    let entries = upkeep_entries(&game);
+    assert_eq!(
+        entries.iter().map(|entry| entry.amount).collect::<Vec<_>>(),
+        vec![-expected_monthly; 3]
+    );
+}
