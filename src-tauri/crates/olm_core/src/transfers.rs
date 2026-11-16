@@ -2796,6 +2796,29 @@ fn complete_transfer_with_wage(
     Ok(())
 }
 
+/// What each listed player would ask the user's club for a new contract: the same
+/// `expected_signing_wage` reference [`negotiate_player_wage`] measures offers and counters
+/// against. Read-only, so the UI can show it before any offer is made (a free agent's own
+/// `wage` is 0 when the record carries none). Unknown ids are skipped.
+pub fn expected_signing_wages_for_user(
+    game: &Game,
+    player_ids: &[String],
+) -> Result<std::collections::HashMap<String, u32>, String> {
+    let user_team_id = game.manager.team_id.as_deref().ok_or("No user team")?;
+    let team = game
+        .teams
+        .iter()
+        .find(|t| t.id == user_team_id)
+        .ok_or("User team not found")?;
+    let today = game.clock.current_date.date_naive();
+    Ok(game
+        .players
+        .iter()
+        .filter(|p| player_ids.contains(&p.id))
+        .map(|p| (p.id.clone(), expected_signing_wage(p, team, today)))
+        .collect())
+}
+
 pub fn get_transfer_history(game: &Game) -> Vec<TransferHistoryEntry> {
     game.transfer_history.entries.clone()
 }
