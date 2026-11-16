@@ -1687,22 +1687,35 @@ fn resolve_auto_draft(game: &Game, home_team_id: &str, away_team_id: &str) -> Au
             })
         })
         .collect();
-    let mut ban_candidates: Vec<_> = profiles.iter().collect();
-    ban_candidates.sort_by(|left, right| {
-        let threat = |profile: &&ChampionProfile| {
-            let mastery = game
-                .champion_masteries
-                .iter()
-                .filter(|entry| entry.champion_id.eq_ignore_ascii_case(&profile.champion_id))
-                .map(|entry| entry.mastery)
-                .max()
+    // Highest mastery per champion over every holder, keyed by ASCII-lowercased id
+    // (the old per-comparison scan matched with `eq_ignore_ascii_case`).
+    let mut best_mastery: std::collections::HashMap<String, u8> = std::collections::HashMap::new();
+    for entry in &game.champion_masteries {
+        best_mastery
+            .entry(entry.champion_id.to_ascii_lowercase())
+            .and_modify(|best| *best = (*best).max(entry.mastery))
+            .or_insert(entry.mastery);
+    }
+    let mut scored: Vec<(u16, &ChampionProfile)> = profiles
+        .iter()
+        .map(|profile| {
+            let mastery = best_mastery
+                .get(&profile.champion_id.to_ascii_lowercase())
+                .copied()
                 .unwrap_or(25);
-            u16::from(profile.meta_power) * 2 + u16::from(mastery)
-        };
-        threat(right)
-            .cmp(&threat(left))
+            (
+                u16::from(profile.meta_power) * 2 + u16::from(mastery),
+                profile,
+            )
+        })
+        .collect();
+    // Stable sort: equal threat and champion id keep their profile order.
+    scored.sort_by(|(left_threat, left), (right_threat, right)| {
+        right_threat
+            .cmp(left_threat)
             .then_with(|| left.champion_id.cmp(&right.champion_id))
     });
+    let ban_candidates = scored.into_iter().map(|(_, profile)| profile);
     // Preserve two legal options per role for the two opposing starters before banning.
     let mut bans = Vec::new();
     for candidate in ban_candidates {
@@ -2215,6 +2228,159 @@ mod tests {
         let captured_stats = serde_json::to_string(&capture).unwrap();
         assert!(!captured_stats.contains("relationship"));
         assert!(!captured_stats.contains("modifier"));
+    }
+
+    /// World with mixed-case ids, case-variant masteries, duplicated masteries,
+    /// low masteries and ties, used to pin the ban order.
+    fn ban_order_game() -> Game {
+        let (mut game, _) = bg_test_game("2025-06-15");
+        let roles = ["top", "jungle", "mid", "adc", "support"];
+        let tiers = ["S", "A", "B", "C", "D", "X"];
+        game.champion_patch.hidden_meta = roles
+            .iter()
+            .flat_map(|role| {
+                (0..9).map(move |index| crate::champions::ChampionMetaEntry {
+                    champion_id: match index % 3 {
+                        0 => format!("Champ{role}{index}"),
+                        1 => format!("champ{role}{index}"),
+                        _ => format!("CHAMP{role}{index}"),
+                    },
+                    role: (*role).to_string(),
+                    tier: tiers[index % tiers.len()].to_string(),
+                })
+            })
+            .collect();
+        // Same id twice (different role): equal keys must keep their input order.
+        game.champion_patch
+            .hidden_meta
+            .push(crate::champions::ChampionMetaEntry {
+                champion_id: "Champtop0".to_string(),
+                role: "mid".to_string(),
+                tier: "S".to_string(),
+            });
+        let ids: Vec<String> = game
+            .champion_patch
+            .hidden_meta
+            .iter()
+            .map(|meta| meta.champion_id.clone())
+            .collect();
+        game.champion_masteries.clear();
+        for (index, id) in ids.iter().enumerate() {
+            // Every third champion has no mastery at all (default 25, many ties).
+            if index % 3 == 2 {
+                continue;
+            }
+            for owner in 0..4usize {
+                let case_variant = match (index + owner) % 3 {
+                    0 => id.to_ascii_lowercase(),
+                    1 => id.to_ascii_uppercase(),
+                    _ => id.clone(),
+                };
+                let mastery = u8::try_from((index * 7 + owner * 13) % 40).unwrap() * 2 + 5;
+                game.champion_masteries
+                    .push(crate::champions::ChampionMasteryEntry {
+                        player_id: format!("owner-{owner}"),
+                        champion_id: case_variant,
+                        mastery,
+                        last_active_on: "2025-06-01".to_string(),
+                    });
+            }
+        }
+        // A mastery below the 25 default: the max over entries wins, not max(25).
+        game.champion_masteries
+            .push(crate::champions::ChampionMasteryEntry {
+                player_id: "owner-low".to_string(),
+                champion_id: "CHAMPJUNGLE5".to_string(),
+                mastery: 3,
+                last_active_on: "2025-06-01".to_string(),
+            });
+        game
+    }
+
+    /// The pre-optimisation ban selection, kept verbatim as the reference.
+    fn reference_bans(game: &Game) -> Vec<String> {
+        struct Profile {
+            champion_id: String,
+            role: &'static str,
+            meta_power: u8,
+        }
+        let profiles: Vec<Profile> = game
+            .champion_patch
+            .hidden_meta
+            .iter()
+            .map(|meta| Profile {
+                champion_id: meta.champion_id.clone(),
+                role: match meta.role.as_str() {
+                    "top" => "top",
+                    "jungle" => "jungle",
+                    "mid" => "mid",
+                    "adc" => "adc",
+                    _ => "support",
+                },
+                meta_power: match meta.tier.to_ascii_uppercase().as_str() {
+                    "S" => 90,
+                    "A" => 75,
+                    "B" => 60,
+                    "C" => 45,
+                    "D" => 30,
+                    _ => 60,
+                },
+            })
+            .collect();
+        let mut ban_candidates: Vec<_> = profiles.iter().collect();
+        ban_candidates.sort_by(|left, right| {
+            let threat = |profile: &&Profile| {
+                let mastery = game
+                    .champion_masteries
+                    .iter()
+                    .filter(|entry| entry.champion_id.eq_ignore_ascii_case(&profile.champion_id))
+                    .map(|entry| entry.mastery)
+                    .max()
+                    .unwrap_or(25);
+                u16::from(profile.meta_power) * 2 + u16::from(mastery)
+            };
+            threat(right)
+                .cmp(&threat(left))
+                .then_with(|| left.champion_id.cmp(&right.champion_id))
+        });
+        let mut bans = Vec::new();
+        for candidate in ban_candidates {
+            if bans.len() == 10 {
+                break;
+            }
+            let remaining_for_role = profiles
+                .iter()
+                .filter(|profile| {
+                    profile.role == candidate.role && !bans.contains(&profile.champion_id)
+                })
+                .count();
+            if remaining_for_role > 2 {
+                bans.push(candidate.champion_id.clone());
+            }
+        }
+        bans
+    }
+
+    #[test]
+    fn auto_draft_ban_order_matches_reference_comparator() {
+        let game = ban_order_game();
+        let bans = resolve_auto_draft(&game, "team1", "team2").bans;
+        assert_eq!(bans, reference_bans(&game));
+        assert_eq!(
+            bans,
+            [
+                "Champtop0",
+                "Champtop0",
+                "Champjungle6",
+                "Champsupport0",
+                "Champjungle0",
+                "Champmid6",
+                "Champmid0",
+                "Champadc6",
+                "Champadc0",
+                "Champtop6",
+            ]
+        );
     }
 
     #[test]
