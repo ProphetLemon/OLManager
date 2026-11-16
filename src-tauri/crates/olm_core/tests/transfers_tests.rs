@@ -16,8 +16,8 @@ use olm_core::game::Game;
 use olm_core::transfers::{
     TransferDestination, TransferNegotiationDecision, ai_agent_purchase, counter_offer,
     generate_incoming_transfer_offers, get_transfer_history, make_transfer_bid,
-    negotiate_player_wage, project_transfer_bid_financial_impact, release_player_contract,
-    respond_to_offer,
+    expected_signing_wages_for_user, negotiate_player_wage, project_transfer_bid_financial_impact,
+    release_player_contract, respond_to_offer,
 };
 
 fn default_attrs() -> PlayerAttributes {
@@ -2680,4 +2680,28 @@ fn wage_negotiation_accepts_the_shortest_and_longest_contract_lengths() {
 
         assert!(result.is_ok(), "years = {years}: {result:?}");
     }
+}
+
+#[test]
+fn expected_signing_wages_name_the_ask_a_wage_zero_free_agent_gets_in_talks() {
+    let (game, _) = no_wage_free_agent_with_accepted_offer();
+    let today = game.clock.current_date.date_naive();
+    let ask = olm_core::contracts::expected_signing_wage(&game.players[0], &game.teams[0], today);
+
+    let wages = expected_signing_wages_for_user(&game, &["fa-no-wage".to_string()])
+        .expect("a managed club");
+
+    assert!(ask > 0);
+    assert_eq!(wages.get("fa-no-wage"), Some(&ask));
+}
+
+#[test]
+fn expected_signing_wages_skip_unknown_players_and_need_a_club() {
+    let (mut game, _) = no_wage_free_agent_with_accepted_offer();
+
+    let wages = expected_signing_wages_for_user(&game, &["ghost".to_string()]).expect("club");
+    assert!(wages.is_empty());
+
+    game.manager.team_id = None;
+    assert!(expected_signing_wages_for_user(&game, &["fa-no-wage".to_string()]).is_err());
 }

@@ -1,9 +1,14 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { formatVal } from "@/lib/common/helpers";
 import type { PlayerData, TeamData } from "@/store/gameStore";
 import WageNegotiationDialog from "./WageNegotiationDialog";
+
+const getExpectedSigningWages = vi.fn();
+vi.mock("@/services/transfersService", () => ({
+  getExpectedSigningWages: (ids: string[]) => getExpectedSigningWages(ids),
+}));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -142,5 +147,44 @@ describe("WageNegotiationDialog", () => {
     const props = renderDialog();
     fireEvent.change(screen.getByLabelText("transfers.contractLength"), { target: { value: "5" } });
     expect(props.onContractYearsChange).toHaveBeenCalledWith(5);
+  });
+
+  it("prefills a wage-0 free agent with the wage they would ask", async () => {
+    getExpectedSigningWages.mockResolvedValue({ p1: 211_000 });
+    const props = renderDialog({
+      target: {
+        player: { ...player, wage: 0 } as PlayerData,
+        offerId: "o1",
+        fromTeamId: null,
+        fee: 0,
+        destinationTeamId: "t1",
+      },
+      wageAmount: "",
+    });
+
+    await waitFor(() => expect(props.onWageAmountChange).toHaveBeenCalledWith("211000"));
+    expect(getExpectedSigningWages).toHaveBeenCalledWith(["p1"]);
+  });
+
+  it("is submittable once the expected wage fills the field", () => {
+    renderDialog({
+      target: {
+        player: { ...player, wage: 0 } as PlayerData,
+        offerId: "o1",
+        fromTeamId: null,
+        fee: 0,
+        destinationTeamId: "t1",
+      },
+      wageAmount: "211000",
+    });
+    expect(screen.getByRole("button", { name: "Submit Wage Offer" })).toBeEnabled();
+  });
+
+  it("leaves a typed amount and players with a real wage alone", async () => {
+    getExpectedSigningWages.mockReset();
+    const props = renderDialog({ wageAmount: "150000" });
+    await Promise.resolve();
+    expect(getExpectedSigningWages).not.toHaveBeenCalled();
+    expect(props.onWageAmountChange).not.toHaveBeenCalled();
   });
 });

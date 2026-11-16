@@ -20,6 +20,8 @@ type UiRole = "TOP" | "JUNGLE" | "MID" | "ADC" | "SUPPORT";
 
 interface PlayerProfileHeroCardV2Props {
   player: PlayerData;
+  /** Wage to show when it differs from `player.wage` (a free agent's expected ask). */
+  displayWage?: number;
   ovr: number;
   primaryRole?: UiRole;
   /** `null` when the date of birth is unknown. */
@@ -66,6 +68,7 @@ export default function PlayerProfileHeroCardV2({
   age,
   teamName,
   annualSuffix,
+  displayWage,
   isOwnClub,
   isUserAcademy = false,
   scoutAvailability,
@@ -293,7 +296,7 @@ export default function PlayerProfileHeroCardV2({
                 <QuickStatV2 label={t("common.morale")} value={`${player.morale}%`} color={player.morale >= 70 ? "text-club-text" : "text-negative"} />
                 <QuickStatV2 label={t("common.potential")} value={potentialValueLabel} color="text-foreground/90" icon={potentialRevealed === null ? <EyeOff className="size-4" /> : undefined} />
                 <QuickStatV2 label={t("common.value")} value={formatPlayerMarketValue(player.market_value)} color="text-foreground" />
-                <QuickStatV2 label={t("common.wage")} value={formatPlayerWage(player.wage, annualSuffix)} color="text-foreground" />
+                <QuickStatV2 label={t("common.wage")} value={formatPlayerWage(displayWage ?? player.wage, annualSuffix)} color="text-foreground" />
               </div>
             </div>
           </div>

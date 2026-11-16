@@ -45,6 +45,7 @@ export const tauriAdapter: ApiClient = {
     releaseContract: (args) => invoke("release_player_contract", args),
     negotiateWage: (args) => invoke("negotiate_player_wage", args),
     getHistory: () => invoke("get_transfer_history_cmd"),
+    getExpectedSigningWages: (args) => invoke("get_expected_signing_wages", args),
   },
 
   inbox: {
