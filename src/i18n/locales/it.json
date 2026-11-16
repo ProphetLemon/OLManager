@@ -2097,13 +2097,12 @@
         "body": "Il nostro monte ingaggi annuale (€{{annualWages}}) supera attualmente il budget stipendi assegnato (€{{wageBudget}}).\n\nAnche se possiamo sostenerlo nel breve periodo, il consiglio preferirebbe vedere il monte ingaggi tornare sotto controllo."
       },
       "finance": {
-        "sponsorAccepted": { "subject": "Accordo di sponsorizzazione firmato", "body": "La sponsorizzazione {{sponsorName}} è stata accettata. L'accordo vale €{{amount}} all'anno e verrà pagato mensilmente." },
+        "sponsorAccepted": { "subject": "Accordo di sponsorizzazione firmato", "body": "La sponsorizzazione {{sponsorName}} è stata accettata. L'accordo vale €{{amount}} all'anno e verrà pagato mensilmente.", "bodyTerm": "La sponsorizzazione {{sponsorName}} è stata accettata. Riceverai €{{monthly}} al mese per {{months}} mesi (€{{total}} in totale)." },
         "sponsorPayout": { "subject": "Pagamento sponsor ricevuto", "body": "{{sponsorName}} ha versato €{{amount}} sul conto del club questo mese." },
         "sponsorBonus": { "subject": "Bonus sponsor attivato", "body": "I criteri bonus di {{sponsorName}} sono stati raggiunti. €{{bonusAmount}} sono inclusi nel pagamento mensile di €{{totalAmount}}." },
         "sponsorExpired": { "subject": "Sponsorizzazione scaduta", "body": "La sponsorizzazione {{sponsorName}} è terminata. Controlla il mercato per trovare un sostituto." },
         "facilityUpkeepSummary": { "subject": "Manutenzione strutture pagata", "body": "La manutenzione mensile delle strutture di €{{amount}} è stata pagata dal conto del club." },
         "facilityUpkeepSpike": { "subject": "Aumento manutenzione strutture", "body": "La manutenzione delle strutture ha raggiunto €{{amount}} questo mese. I miglioramenti recenti stanno aumentando i costi operativi." },
-        "prizePayout": { "subject": "Premio confermato", "body": "Il premio della stagione {{season}} di €{{amount}} è stato assegnato per la posizione {{position}}." },
         "boardFinancialHealth": { "subject": "Riepilogo finanziario del consiglio", "body": "Saldo attuale: €{{balance}}. Tendenza netta mensile: €{{monthlyNet}}. Autonomia stimata: {{monthsLeft}} mesi.", "bodyStable": "Saldo attuale: €{{balance}}. Tendenza netta mensile: €{{monthlyNet}}. La tendenza mensile non è negativa, quindi non c'è rischio di esaurire la liquidità." }
       },
       "seasonPayout": {
@@ -2306,10 +2305,12 @@
       "sponsor": {
         "subject": "Offerta di sponsorizzazione — {{sponsor}}",
         "body": "Buone notizie, mister! {{sponsor}} ha espresso interesse a diventare sponsor del {{team}}.\n\nOffre un pagamento una tantum di €{{amount}} per lo split in arrivo in cambio di spazio pubblicitario sui cartelli del club.\n\nSembra un buon accordo, ma la decisione spetta a te.",
+        "bodyTerm": "Buone notizie, mister! {{sponsor}} ha espresso interesse a diventare sponsor del {{team}}.\n\nOffre €{{monthly}} al mese per {{months}} mesi (€{{total}} in totale) in cambio di spazio pubblicitario al centro di allenamento.\n\nSembra un buon accordo, ma la decisione spetta a te.",
         "options": {
           "accept": {
             "label": "Accetta l'accordo",
-            "description": "Ricevi €{{amount}} di introiti da sponsorizzazione."
+            "description": "Ricevi €{{amount}} di introiti da sponsorizzazione.",
+            "descriptionTerm": "Ricevi €{{monthly}} al mese per {{months}} mesi (€{{total}} in totale)."
           },
           "decline": {
             "label": "Rifiuta educatamente",

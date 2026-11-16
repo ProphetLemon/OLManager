@@ -47,6 +47,11 @@ pub struct Team {
     pub season_income: i64,
     #[serde(default)]
     pub season_expenses: i64,
+    /// Home matches a background league simulated for this club since the last monthly
+    /// finance step, weighted by the league's income percent at the time (100 per match
+    /// in a tier-1 league, 60 in tier 2). The monthly step pays them and resets it to 0.
+    #[serde(default)]
+    pub pending_home_matchday_units: i64,
     #[serde(default)]
     pub financial_ledger: Vec<FinancialTransaction>,
     #[serde(default)]
@@ -1400,6 +1405,7 @@ impl Team {
             transfer_budget: 500_000,
             season_income: 0,
             season_expenses: 0,
+            pending_home_matchday_units: 0,
             financial_ledger: Vec::new(),
             sponsorship: None,
             facilities: Facilities::default(),

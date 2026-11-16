@@ -487,3 +487,631 @@ fn world_sponsor_sizing_measure() {
     );
     println!("scheduled main clubs total: {}", tiers.len());
 }
+
+// ---------------------------------------------------------------------------
+// Wage drift attribution (ignored measurement, no game behaviour is touched).
+// ---------------------------------------------------------------------------
+
+/// What the drift measurement keeps of a player between two days.
+#[derive(Clone)]
+struct PlayerSnap {
+    team: Option<String>,
+    wage: u32,
+    contract_end: Option<String>,
+    position: olm_core::domain::stats::LolRole,
+}
+
+fn snapshot_players(game: &Game) -> std::collections::HashMap<String, PlayerSnap> {
+    game.players
+        .iter()
+        .map(|player| {
+            (
+                player.id.clone(),
+                PlayerSnap {
+                    team: player.team_id.clone(),
+                    wage: player.wage,
+                    contract_end: player.contract_end.clone(),
+                    position: player.position,
+                },
+            )
+        })
+        .collect()
+}
+
+/// One change to a club's annual player wage bill between two snapshots.
+struct WageEvent {
+    club: String,
+    path: String,
+    old_wage: u32,
+    new_wage: u32,
+    position: olm_core::domain::stats::LolRole,
+    /// A free agent signing: the wage the player held while unattached.
+    free_agent_join: bool,
+    expiry_leave: bool,
+}
+
+#[derive(Clone, Default)]
+struct PathStat {
+    count: u64,
+    /// Change of the club's wage bill: new minus old (a leave counts `-old`, a join `+new`).
+    delta: i64,
+    old_sum: i64,
+    new_sum: i64,
+}
+
+impl PathStat {
+    fn add(&mut self, old: i64, new: i64, delta: i64) {
+        self.count += 1;
+        self.delta += delta;
+        self.old_sum += old;
+        self.new_sum += new;
+    }
+}
+
+/// Classifies every wage-bill change between two daily snapshots, `today` being the date
+/// the day was processed on (a contract ending that day expires in it).
+fn wage_events(
+    before: &std::collections::HashMap<String, PlayerSnap>,
+    after: &std::collections::HashMap<String, PlayerSnap>,
+    today: &str,
+    prefix: &str,
+) -> (Vec<WageEvent>, Vec<(String, i64)>) {
+    let mut events: Vec<WageEvent> = Vec::new();
+    // Free agents whose wage the expiry release reset: (path, new - old).
+    let mut resets: Vec<(String, i64)> = Vec::new();
+    let mut push = |club: &str,
+                    path: &str,
+                    old_wage: u32,
+                    new_wage: u32,
+                    position: &olm_core::domain::stats::LolRole,
+                    free_agent_join: bool,
+                    expiry_leave: bool| {
+        events.push(WageEvent {
+            club: club.to_string(),
+            path: format!("{prefix}{path}"),
+            old_wage,
+            new_wage,
+            position: *position,
+            free_agent_join,
+            expiry_leave,
+        });
+    };
+
+    for (id, a) in after {
+        match before.get(id) {
+            None => {
+                if let Some(club) = &a.team {
+                    push(
+                        club,
+                        "joins: generated player",
+                        0,
+                        a.wage,
+                        &a.position,
+                        false,
+                        false,
+                    );
+                }
+            }
+            Some(b) => match (&b.team, &a.team) {
+                (Some(x), Some(y)) if x == y => {
+                    if b.contract_end != a.contract_end {
+                        push(
+                            x,
+                            "renewal (new contract, same club)",
+                            b.wage,
+                            a.wage,
+                            &a.position,
+                            false,
+                            false,
+                        );
+                    } else if b.wage != a.wage {
+                        push(
+                            x,
+                            "wage change inside a running contract",
+                            b.wage,
+                            a.wage,
+                            &a.position,
+                            false,
+                            false,
+                        );
+                    }
+                }
+                (Some(x), Some(y)) => {
+                    push(
+                        x,
+                        "leaves: moved to another club",
+                        b.wage,
+                        0,
+                        &b.position,
+                        false,
+                        false,
+                    );
+                    push(
+                        y,
+                        "joins: from another club",
+                        0,
+                        a.wage,
+                        &a.position,
+                        false,
+                        false,
+                    );
+                }
+                (Some(x), None) => {
+                    let expired = b.contract_end.as_deref().is_some_and(|end| end <= today);
+                    let path = if expired {
+                        "leaves: contract expired"
+                    } else {
+                        "leaves: released or sold out of the game"
+                    };
+                    push(x, path, b.wage, 0, &b.position, false, expired);
+                    if expired {
+                        resets.push((
+                            format!(
+                                "{prefix}expired player's free-agent wage vs his last contract"
+                            ),
+                            i64::from(a.wage) - i64::from(b.wage),
+                        ));
+                    }
+                }
+                (None, Some(y)) => {
+                    // Wage the player asks as a free agent is `b.wage`; the club pays `a.wage`.
+                    push(
+                        y,
+                        "joins: free agent",
+                        b.wage,
+                        a.wage,
+                        &a.position,
+                        true,
+                        false,
+                    );
+                }
+                (None, None) => {}
+            },
+        }
+    }
+    for (id, b) in before {
+        if after.contains_key(id) {
+            continue;
+        }
+        if let Some(club) = &b.team {
+            push(
+                club,
+                "leaves: removed from the game",
+                b.wage,
+                0,
+                &b.position,
+                false,
+                false,
+            );
+        }
+    }
+
+    // A free agent signed by a club that lost someone to an expiry the same day is the
+    // roster repair of that expiry.
+    let expiry_clubs: HashSet<String> = events
+        .iter()
+        .filter(|e| e.expiry_leave)
+        .map(|e| e.club.clone())
+        .collect();
+    for event in events.iter_mut() {
+        if event.free_agent_join && expiry_clubs.contains(&event.club) {
+            event.path =
+                format!("{prefix}joins: free agent, same day an expiry hit the club (repair)");
+        }
+    }
+    (events, resets)
+}
+
+#[derive(Default)]
+struct ClubWage {
+    group: &'static str,
+    user: bool,
+    start_bill: i64,
+    end_bill: i64,
+    bill_day_sum: i64,
+    days: i64,
+    start_staff: i64,
+    end_staff: i64,
+    wage_budget: i64,
+    start_players: usize,
+    end_players: usize,
+    paths: BTreeMap<String, PathStat>,
+}
+
+struct DriftRun {
+    clubs: std::collections::HashMap<String, ClubWage>,
+    resets: BTreeMap<String, PathStat>,
+    /// Repair signings paired with the player of the same role the club lost the same day:
+    /// (replaced wage, new wage).
+    pairs: Vec<(&'static str, i64, i64)>,
+    /// Free-agent signings by (club group, calendar month).
+    join_months: BTreeMap<(&'static str, u32), u64>,
+    days: u32,
+}
+
+fn bills_by_club(game: &Game) -> std::collections::HashMap<String, i64> {
+    let mut bills = std::collections::HashMap::new();
+    for player in &game.players {
+        if let Some(club) = &player.team_id {
+            *bills.entry(club.clone()).or_insert(0) += i64::from(player.wage);
+        }
+    }
+    bills
+}
+
+fn head_count_by_club(game: &Game) -> std::collections::HashMap<String, usize> {
+    let mut counts = std::collections::HashMap::new();
+    for player in &game.players {
+        if let Some(club) = &player.team_id {
+            *counts.entry(club.clone()).or_insert(0) += 1;
+        }
+    }
+    counts
+}
+
+fn staff_bills_by_club(game: &Game) -> std::collections::HashMap<String, i64> {
+    let mut bills = std::collections::HashMap::new();
+    for staff in &game.staff {
+        if let Some(club) = &staff.team_id {
+            *bills.entry(club.clone()).or_insert(0) += i64::from(staff.wage);
+        }
+    }
+    bills
+}
+
+fn run_wage_drift(mut game: Game) -> DriftRun {
+    let user_team = game.manager.team_id.clone();
+    let mut clubs: std::collections::HashMap<String, ClubWage> = std::collections::HashMap::new();
+    let start_bills = bills_by_club(&game);
+    let start_staff = staff_bills_by_club(&game);
+    let start_counts = head_count_by_club(&game);
+    for team in &game.teams {
+        clubs.insert(
+            team.id.clone(),
+            ClubWage {
+                group: group_of(team, &game.leagues),
+                user: user_team.as_deref() == Some(team.id.as_str()),
+                start_bill: start_bills.get(&team.id).copied().unwrap_or(0),
+                start_staff: start_staff.get(&team.id).copied().unwrap_or(0),
+                wage_budget: team.wage_budget,
+                start_players: start_counts.get(&team.id).copied().unwrap_or(0),
+                ..ClubWage::default()
+            },
+        );
+    }
+    let mut resets: BTreeMap<String, PathStat> = BTreeMap::new();
+    let mut pairs: Vec<(&'static str, i64, i64)> = Vec::new();
+    let mut join_months: BTreeMap<(&'static str, u32), u64> = BTreeMap::new();
+    let mut previous = snapshot_players(&game);
+    let mut days = 0;
+
+    let mut record = |game: &Game,
+                      clubs: &mut std::collections::HashMap<String, ClubWage>,
+                      previous: &mut std::collections::HashMap<String, PlayerSnap>,
+                      today: &str,
+                      prefix: &str,
+                      count_day: bool| {
+        let current = snapshot_players(game);
+        let (events, day_resets) = wage_events(previous, &current, today, prefix);
+        // Pair repair signings with the expiry leaves of the same club and role.
+        let mut leaves: Vec<(&str, &olm_core::domain::stats::LolRole, u32, bool)> = events
+            .iter()
+            .filter(|e| e.expiry_leave)
+            .map(|e| (e.club.as_str(), &e.position, e.old_wage, false))
+            .collect();
+        for event in events.iter().filter(|e| e.path.ends_with("(repair)")) {
+            if let Some(slot) = leaves.iter_mut().find(|(club, position, _, used)| {
+                !*used && *club == event.club && **position == event.position
+            }) {
+                slot.3 = true;
+                let counted = clubs.get(&event.club).filter(|club| {
+                    !club.user && matches!(club.group, "main tier 1" | "main tier 2")
+                });
+                if let Some(club) = counted {
+                    pairs.push((club.group, i64::from(slot.2), i64::from(event.new_wage)));
+                }
+            }
+        }
+        let month: u32 = today.get(5..7).and_then(|m| m.parse().ok()).unwrap_or(0);
+        for event in &events {
+            if !event.free_agent_join {
+                continue;
+            }
+            if let Some(club) = clubs.get(&event.club) {
+                *join_months.entry((club.group, month)).or_default() += 1;
+            }
+        }
+        for event in &events {
+            if let Some(club) = clubs.get_mut(&event.club) {
+                let delta = i64::from(event.new_wage) - i64::from(event.old_wage);
+                club.paths.entry(event.path.clone()).or_default().add(
+                    i64::from(event.old_wage),
+                    i64::from(event.new_wage),
+                    delta,
+                );
+            }
+        }
+        for (path, change) in day_resets {
+            resets.entry(path).or_default().add(0, 0, change);
+        }
+        if count_day {
+            let bills = bills_by_club(game);
+            for (id, club) in clubs.iter_mut() {
+                club.bill_day_sum += bills.get(id).copied().unwrap_or(0);
+                club.days += 1;
+            }
+        }
+        *previous = current;
+    };
+
+    for _ in 0..MAX_DAYS {
+        let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+        if end_of_season::is_season_complete(&game) {
+            let advance = season_rollover::advance_season(&mut game);
+            record(
+                &game,
+                &mut clubs,
+                &mut previous,
+                &today,
+                "rollover: ",
+                false,
+            );
+            if advance.was_season_end {
+                break;
+            }
+        }
+        turn::process_day(&mut game);
+        days += 1;
+        record(&game, &mut clubs, &mut previous, &today, "", true);
+    }
+
+    let end_bills = bills_by_club(&game);
+    let end_staff = staff_bills_by_club(&game);
+    let end_counts = head_count_by_club(&game);
+    for (id, club) in clubs.iter_mut() {
+        club.end_players = end_counts.get(id).copied().unwrap_or(0);
+        club.end_bill = end_bills.get(id).copied().unwrap_or(0);
+        club.end_staff = end_staff.get(id).copied().unwrap_or(0);
+    }
+    DriftRun {
+        clubs,
+        resets,
+        pairs,
+        join_months,
+        days,
+    }
+}
+
+fn k(value: i64) -> String {
+    format!("{:>7.0}k", value as f64 / 1_000.0)
+}
+
+fn print_drift_report(runs: &[DriftRun]) {
+    println!(
+        "=== WAGE DRIFT: {} replicate(s), AI clubs only (the user's club is left out) ===",
+        runs.len()
+    );
+    for (i, run) in runs.iter().enumerate() {
+        println!("rep {i}: {} days played", run.days);
+    }
+    for group in ["main tier 1", "main tier 2"] {
+        let rows: Vec<&ClubWage> = runs
+            .iter()
+            .flat_map(|run| run.clubs.values())
+            .filter(|club| club.group == group && !club.user)
+            .collect();
+        let n = rows.len() as i64;
+        if n == 0 {
+            continue;
+        }
+        let pick = |f: fn(&ClubWage) -> i64| -> Vec<i64> { rows.iter().map(|c| f(c)).collect() };
+        let avg_bill = |c: &ClubWage| {
+            if c.days > 0 {
+                c.bill_day_sum / c.days
+            } else {
+                0
+            }
+        };
+        let avg_bills: Vec<i64> = rows.iter().map(|c| avg_bill(c)).collect();
+        let mut starts = pick(|c| c.start_bill);
+        let mut ends = pick(|c| c.end_bill);
+        let mut avgs = avg_bills.clone();
+        let mut growth = pick(|c| c.end_bill - c.start_bill);
+        let mut avg_growth: Vec<i64> = rows.iter().map(|c| avg_bill(c) - c.start_bill).collect();
+        let mut staff_growth = pick(|c| c.end_staff - c.start_staff);
+        println!("\n--- {group}: {n} club rows (clubs x replicates) ---");
+        println!(
+            "  player wage bill  start median {} | season average median {} | end median {}",
+            k(median(&mut starts)),
+            k(median(&mut avgs)),
+            k(median(&mut ends))
+        );
+        println!(
+            "  change            end - start median {} (total {}) | average - start median {} (total {}) | staff bill change median {}",
+            k(median(&mut growth)),
+            k(growth.iter().sum::<i64>() / runs.len() as i64),
+            k(median(&mut avg_growth)),
+            k(avg_growth.iter().sum::<i64>() / runs.len() as i64),
+            k(median(&mut staff_growth)),
+        );
+        println!(
+            "  clubs whose end bill is above start: {}/{}",
+            rows.iter().filter(|c| c.end_bill > c.start_bill).count(),
+            n
+        );
+        let mut budgets = pick(|c| c.wage_budget);
+        let mut budget_use_start: Vec<i64> = rows
+            .iter()
+            .map(|c| c.start_bill * 100 / c.wage_budget.max(1))
+            .collect();
+        let mut budget_use_end: Vec<i64> = rows
+            .iter()
+            .map(|c| c.end_bill * 100 / c.wage_budget.max(1))
+            .collect();
+        println!(
+            "  wage budget median {} | bill as % of budget: start median {}% , end median {}% (the board allows signings up to 110%)",
+            k(median(&mut budgets)),
+            median(&mut budget_use_start),
+            median(&mut budget_use_end)
+        );
+        let mut head_start: Vec<i64> = rows.iter().map(|c| c.start_players as i64).collect();
+        let mut head_end: Vec<i64> = rows.iter().map(|c| c.end_players as i64).collect();
+        println!(
+            "  players on the roster: start median {} | end median {}, end p90 {} max {} (start max {})",
+            median(&mut head_start),
+            median(&mut head_end),
+            percentile(&head_end, 90.0),
+            head_end.iter().copied().max().unwrap_or(0),
+            head_start.iter().copied().max().unwrap_or(0),
+        );
+        let mut use_sorted = budget_use_end.clone();
+        use_sorted.sort_unstable();
+        println!(
+            "  end bill as % of budget: p10 {}% p90 {}% max {}%; clubs over the 110% soft cap at the end: {}",
+            percentile(&use_sorted, 10.0),
+            percentile(&use_sorted, 90.0),
+            use_sorted.last().copied().unwrap_or(0),
+            use_sorted.iter().filter(|u| **u > 110).count()
+        );
+        let fa_per_club: Vec<i64> = rows
+            .iter()
+            .map(|c| {
+                c.paths
+                    .iter()
+                    .filter(|(path, _)| path.starts_with("joins: free agent"))
+                    .map(|(_, stat)| stat.count as i64)
+                    .sum()
+            })
+            .collect();
+        println!(
+            "  free-agent signings per club over the season: 0: {} 1: {} 2: {} 3+: {} (max {})",
+            fa_per_club.iter().filter(|c| **c == 0).count(),
+            fa_per_club.iter().filter(|c| **c == 1).count(),
+            fa_per_club.iter().filter(|c| **c == 2).count(),
+            fa_per_club.iter().filter(|c| **c >= 3).count(),
+            fa_per_club.iter().copied().max().unwrap_or(0),
+        );
+        let months: Vec<String> = (1..=12u32)
+            .map(|m| {
+                let total: u64 = runs
+                    .iter()
+                    .map(|r| r.join_months.get(&(group, m)).copied().unwrap_or(0))
+                    .sum();
+                format!("{m}:{}", total / runs.len() as u64)
+            })
+            .collect();
+        println!(
+            "  free-agent signings by month (per replicate): {}",
+            months.join(" ")
+        );
+        let paths: std::collections::BTreeSet<&String> =
+            rows.iter().flat_map(|c| c.paths.keys()).collect();
+        println!(
+            "  {:<66} {:>8} {:>10} {:>10} {:>9} {:>9}",
+            "path (totals are per replicate average)",
+            "contracts",
+            "total",
+            "per club",
+            "mean",
+            "new/old"
+        );
+        let mut reconciled = 0usize;
+        for club in &rows {
+            let sum: i64 = club.paths.values().map(|p| p.delta).sum();
+            if sum == club.end_bill - club.start_bill {
+                reconciled += 1;
+            }
+        }
+        for path in paths {
+            let stats: Vec<PathStat> = rows
+                .iter()
+                .map(|c| c.paths.get(path).cloned().unwrap_or_default())
+                .collect();
+            let count: u64 = stats.iter().map(|s| s.count).sum();
+            let delta: i64 = stats.iter().map(|s| s.delta).sum();
+            let old: i64 = stats.iter().map(|s| s.old_sum).sum();
+            let new: i64 = stats.iter().map(|s| s.new_sum).sum();
+            let mut per_club: Vec<i64> = stats.iter().map(|s| s.delta).collect();
+            let ratio = if old > 0 && new > 0 {
+                format!("{:.2}", new as f64 / old as f64)
+            } else {
+                "-".to_string()
+            };
+            println!(
+                "  {:<66} {:>8} {} {} {} {:>9}",
+                path,
+                count / runs.len() as u64,
+                k(delta / runs.len() as i64),
+                k(median(&mut per_club)),
+                k(if count > 0 { delta / count as i64 } else { 0 }),
+                ratio
+            );
+        }
+        println!("  path deltas add up to the bill change for {reconciled}/{n} club rows");
+        let pairs: Vec<&(&str, i64, i64)> = runs
+            .iter()
+            .flat_map(|r| r.pairs.iter())
+            .filter(|p| p.0 == group)
+            .collect();
+        if !pairs.is_empty() {
+            let old: i64 = pairs.iter().map(|p| p.1).sum();
+            let new: i64 = pairs.iter().map(|p| p.2).sum();
+            let mut diffs: Vec<i64> = pairs.iter().map(|p| p.2 - p.1).collect();
+            println!(
+                "  repair signing vs the expired player of the same club and role (same day): {} pairs, replaced wage mean {}, new wage mean {}, mean raise {} (median {}), new/old {:.2}",
+                pairs.len() / runs.len(),
+                k(old / pairs.len() as i64),
+                k(new / pairs.len() as i64),
+                k((new - old) / pairs.len() as i64),
+                k(median(&mut diffs)),
+                new as f64 / old.max(1) as f64
+            );
+        }
+    }
+    println!("\n--- free-agent wage reset at expiry (no club bill effect) ---");
+    let mut merged: BTreeMap<&String, PathStat> = BTreeMap::new();
+    for run in runs {
+        for (path, stat) in &run.resets {
+            let slot = merged.entry(path).or_default();
+            slot.count += stat.count;
+            slot.delta += stat.delta;
+        }
+    }
+    for (path, stat) in merged {
+        println!(
+            "  {path}: {} players per replicate, mean change {}",
+            stat.count / runs.len() as u64,
+            k(stat.delta / stat.count.max(1) as i64)
+        );
+    }
+}
+
+/// Wage drift attribution (ignored): plays one season like [`world_finance_measure`] and
+/// attributes the change of every AI club's player wage bill to the path that moved it.
+///
+/// ```text
+/// OLM_MEASURE_REPS=1 \
+///   cargo test --release -p openleaguemanager --lib -- --ignored \
+///   world_wage_drift_measure --nocapture
+/// ```
+#[test]
+#[ignore = "measurement: prints the wage-bill change per path, run it explicitly in release"]
+fn world_wage_drift_measure() {
+    let reps = env_number("OLM_MEASURE_REPS", 1) as usize;
+    let world = build_start_world();
+    let started = Instant::now();
+    let runs: Vec<DriftRun> = std::thread::scope(|scope| {
+        let handles: Vec<_> = (0..reps)
+            .map(|_| {
+                let copy = world.clone();
+                scope.spawn(move || run_wage_drift(copy))
+            })
+            .collect();
+        handles
+            .into_iter()
+            .map(|h| h.join().expect("replicate thread"))
+            .collect()
+    });
+    print_drift_report(&runs);
+    println!("\ntotal wall time {:.1}s", started.elapsed().as_secs_f64());
+}

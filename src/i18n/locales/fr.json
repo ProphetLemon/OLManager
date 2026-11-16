@@ -2359,13 +2359,12 @@
         "body": "Notre masse salariale annuelle (€{{annualWages}}) dépasse actuellement le budget salarial alloué (€{{wageBudget}}).\n\nMême si cela reste soutenable à court terme, le conseil préférerait voir la masse salariale revenir sous contrôle."
       },
       "finance": {
-        "sponsorAccepted": { "subject": "Contrat de sponsoring signé", "body": "Le sponsoring {{sponsorName}} a été accepté. Le contrat vaut €{{amount}} par an et sera versé mensuellement." },
+        "sponsorAccepted": { "subject": "Contrat de sponsoring signé", "body": "Le sponsoring {{sponsorName}} a été accepté. Le contrat vaut €{{amount}} par an et sera versé mensuellement.", "bodyTerm": "Le sponsoring {{sponsorName}} a été accepté. Vous recevrez €{{monthly}} par mois pendant {{months}} mois (€{{total}} au total)." },
         "sponsorPayout": { "subject": "Paiement de sponsoring reçu", "body": "{{sponsorName}} a versé €{{amount}} sur le compte du club ce mois-ci." },
         "sponsorBonus": { "subject": "Bonus de sponsoring déclenché", "body": "Les critères de bonus de {{sponsorName}} ont été remplis. €{{bonusAmount}} sont inclus dans le paiement mensuel de €{{totalAmount}}." },
         "sponsorExpired": { "subject": "Contrat de sponsoring expiré", "body": "Le sponsoring {{sponsorName}} est terminé. Consultez le marché pour trouver un remplaçant." },
         "facilityUpkeepSummary": { "subject": "Entretien des installations payé", "body": "L'entretien mensuel des installations de €{{amount}} a été payé depuis le compte du club." },
         "facilityUpkeepSpike": { "subject": "Hausse de l'entretien des installations", "body": "L'entretien des installations atteint €{{amount}} ce mois-ci. Les améliorations récentes augmentent les coûts d'exploitation." },
-        "prizePayout": { "subject": "Prime confirmée", "body": "La prime de la saison {{season}} de €{{amount}} a été attribuée pour la place {{position}}." },
         "boardFinancialHealth": { "subject": "Résumé financier du conseil", "body": "Solde actuel : €{{balance}}. Tendance nette mensuelle : €{{monthlyNet}}. Trésorerie estimée : {{monthsLeft}} mois.", "bodyStable": "Solde actuel : €{{balance}}. Tendance nette mensuelle : €{{monthlyNet}}. La tendance mensuelle n'est pas négative : aucun risque de manquer de trésorerie." }
       },
       "seasonPayout": {
@@ -2564,10 +2563,12 @@
       "sponsor": {
         "subject": "Offre de sponsoring — {{sponsor}}",
         "body": "Bonne nouvelle, boss ! {{sponsor}} a manifesté son intérêt pour devenir sponsor de {{team}}.\n\nIls proposent un paiement unique de €{{amount}} pour le prochain split en échange d'un espace publicitaire sur les bannières du club.\n\nCela semble être un accord raisonnable, mais la décision vous appartient.",
+        "bodyTerm": "Bonne nouvelle, boss ! {{sponsor}} a manifesté son intérêt pour devenir sponsor de {{team}}.\n\nIls proposent €{{monthly}} par mois pendant {{months}} mois (€{{total}} au total) en échange d'un espace publicitaire sur le terrain d'entraînement.\n\nCela semble être un accord raisonnable, mais la décision vous appartient.",
         "options": {
           "accept": {
             "label": "Accepter l'accord",
-            "description": "Recevez €{{amount}} de revenus de sponsoring."
+            "description": "Recevez €{{amount}} de revenus de sponsoring.",
+            "descriptionTerm": "Recevez €{{monthly}} par mois pendant {{months}} mois (€{{total}} au total)."
           },
           "decline": {
             "label": "Refuser poliment",

@@ -777,6 +777,21 @@ fn simulate_background_league(
         }
     }
 
+    // Every home match is gate income, paid by the next monthly finance step: count it
+    // now, weighted by this league's income percent, because the fixture may be gone
+    // (the league rolled) before that step runs. Academy leagues pay no gate.
+    if league.league_kind == crate::domain::league::LeagueKind::Main {
+        let units = crate::tier_sponsorship::tier_income_percent(league.tier);
+        for (home_team_id, ..) in &completed_fixtures {
+            if let Some(home_team) = teams
+                .iter_mut()
+                .find(|team| team.id == *home_team_id && team.is_main())
+            {
+                home_team.pending_home_matchday_units += units;
+            }
+        }
+    }
+
     // Update team form (no player stats, messages, news)
     for (home_team_id, away_team_id, home_wins, away_wins, _) in &completed_fixtures {
         let home_won = if home_wins == away_wins {
@@ -2370,6 +2385,41 @@ mod tests {
         let result = fixture.result.as_ref().unwrap();
         // One team must have won (home_wins + away_wins >= 1 in a bo1)
         assert!(result.home_wins >= 1 || result.away_wins >= 1);
+    }
+
+    #[test]
+    fn test_bg_league_counts_the_home_match_at_the_league_tier() {
+        let (mut game, today_str) = bg_test_game("2025-06-15");
+        let league = game.leagues.first_mut().unwrap();
+        league.tier = 2;
+
+        simulate_background_league(&mut game.teams, &game.players, league, &today_str, 2025);
+
+        let home = game.teams.iter().find(|t| t.id == "team1").unwrap();
+        let away = game.teams.iter().find(|t| t.id == "team2").unwrap();
+        assert_eq!(home.pending_home_matchday_units, 60);
+        assert_eq!(away.pending_home_matchday_units, 0);
+    }
+
+    #[test]
+    fn test_bg_league_counts_nothing_without_a_due_home_match() {
+        let (mut game, _) = bg_test_game("2025-06-15");
+        let league = game.leagues.first_mut().unwrap();
+
+        simulate_background_league(&mut game.teams, &game.players, league, "2025-06-14", 2025);
+
+        assert!(game.teams.iter().all(|t| t.pending_home_matchday_units == 0));
+    }
+
+    #[test]
+    fn test_bg_academy_league_counts_no_home_matches() {
+        let (mut game, today_str) = bg_test_game("2025-06-15");
+        let league = game.leagues.first_mut().unwrap();
+        league.league_kind = crate::domain::league::LeagueKind::Academy;
+
+        simulate_background_league(&mut game.teams, &game.players, league, &today_str, 2025);
+
+        assert!(game.teams.iter().all(|t| t.pending_home_matchday_units == 0));
     }
 
     #[test]

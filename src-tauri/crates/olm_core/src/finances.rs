@@ -275,6 +275,32 @@ pub fn push_sponsor_accepted_mail(
     )
 }
 
+/// Mail for a signed short sponsor offer: states what it pays per month and for how long.
+pub fn push_sponsor_offer_signed_mail(
+    game: &mut Game,
+    team_id: &str,
+    sponsor_name: &str,
+    monthly: i64,
+    months: u32,
+    date: &str,
+) -> bool {
+    push_finance_mail_once(
+        game,
+        team_id,
+        &format!("sponsor-accepted:{team_id}:{sponsor_name}:{date}"),
+        "sponsorAccepted",
+        "be.msg.finance.sponsorAccepted.subject",
+        "be.msg.finance.sponsorAccepted.bodyTerm",
+        params(&[
+            ("sponsorName", sponsor_name.to_string()),
+            ("monthly", format_exact(monthly)),
+            ("months", months.to_string()),
+            ("total", format_exact(monthly * i64::from(months))),
+        ]),
+        date,
+    )
+}
+
 pub fn push_sponsor_payout_mail(
     game: &mut Game,
     team_id: &str,
@@ -371,30 +397,6 @@ pub fn push_facility_upkeep_spike_mail(
         "be.msg.finance.facilityUpkeepSpike.subject",
         "be.msg.finance.facilityUpkeepSpike.body",
         params(&[("amount", format_money(amount.unsigned_abs()))]),
-        date,
-    )
-}
-
-pub fn push_prize_payout_mail(
-    game: &mut Game,
-    team_id: &str,
-    season: u32,
-    position: u32,
-    amount: i64,
-    date: &str,
-) -> bool {
-    push_finance_mail_once(
-        game,
-        team_id,
-        &format!("prize:{team_id}:{season}:{position}"),
-        "prizePayout",
-        "be.msg.finance.prizePayout.subject",
-        "be.msg.finance.prizePayout.body",
-        params(&[
-            ("season", season.to_string()),
-            ("position", position.to_string()),
-            ("amount", format_money(amount.unsigned_abs())),
-        ]),
         date,
     )
 }
@@ -609,7 +611,11 @@ fn current_league_position(game: &Game, team_id: &str) -> Option<u32> {
         .map(|index| index as u32 + 1)
 }
 
-fn count_recent_home_matches(game: &Game, team_id: &str) -> i64 {
+/// Income units of the home matches `team_id` played in the active league in the last 28
+/// days: 100 per match in a tier-1 league (60 in tier 2, see
+/// [`crate::tier_sponsorship::tier_income_percent`]). Background leagues count theirs when
+/// they simulate them (`Team::pending_home_matchday_units`), so the two never overlap.
+fn recent_home_matchday_units(game: &Game, team_id: &str) -> i64 {
     let Some(league) = game.active_league() else {
         return 0;
     };
@@ -617,7 +623,7 @@ fn count_recent_home_matches(game: &Game, team_id: &str) -> i64 {
     let current = game.clock.current_date.date_naive();
     let month_ago = current - chrono::Duration::days(28);
 
-    league
+    let matches = league
         .fixtures
         .iter()
         .filter(|fixture| {
@@ -632,7 +638,8 @@ fn count_recent_home_matches(game: &Game, team_id: &str) -> i64 {
                 false
             }
         })
-        .count() as i64
+        .count() as i64;
+    matches * crate::tier_sponsorship::tier_income_percent(league.tier)
 }
 
 fn should_apply_upkeep(game: &Game) -> bool {
@@ -897,31 +904,38 @@ pub fn process_monthly_finances(game: &mut Game) {
         }
     }
 
-    // --- Matchday income for home matches completed in last ~28 days ---
+    // --- Matchday income: home matches of the last ~28 days in the active league, plus the
+    // ones background leagues simulated since the last step (consumed here) ---
     if !game.leagues.is_empty() {
-        let home_match_counts: Vec<(String, i64)> = game
+        let recent_units: Vec<(String, i64)> = game
             .teams
             .iter()
-            .map(|team| (team.id.clone(), count_recent_home_matches(game, &team.id)))
+            .map(|team| (team.id.clone(), recent_home_matchday_units(game, &team.id)))
             .collect();
 
         for team in game.teams.iter_mut() {
-            let home_count = home_match_counts
+            let recent = recent_units
                 .iter()
                 .find(|(team_id, _)| team_id == &team.id)
-                .map(|(_, count)| *count)
+                .map(|(_, units)| *units)
                 .unwrap_or(0);
+            let units = recent + std::mem::take(&mut team.pending_home_matchday_units);
 
-            if home_count > 0 {
+            if units > 0 {
                 let mut rng = rand::rng();
                 let attendance_pct = rng.random_range(15..=30) as f64 / 100.0;
                 let avg_ticket = rng.random_range(4..=8) as f64;
+                // `units` is 100 per full-rate match, so the revenue is `calc_matchday`
+                // over the units divided by 100.
                 let total_revenue = calc_matchday(
-                    team.stadium_capacity,
-                    home_count,
+                    crate::tier_sponsorship::effective_stadium_capacity(
+                        team.stadium_capacity,
+                        scheduled_tiers.get(&team.id).copied().unwrap_or(0),
+                    ),
+                    units,
                     attendance_pct,
                     avg_ticket,
-                );
+                ) / 100;
 
                 record_transaction_with_text(
                     team,
@@ -1091,7 +1105,23 @@ fn generate_financial_warnings(game: &mut Game, today: &str) {
     game.messages.extend(new_messages);
 }
 
-fn format_money(amount: u64) -> String {
+/// Whole amount with thousands separators ("56,333"): exact, unlike `format_money`.
+pub fn format_exact(amount: i64) -> String {
+    let digits = amount.unsigned_abs().to_string();
+    let mut grouped = String::new();
+    for (index, digit) in digits.chars().enumerate() {
+        if index > 0 && (digits.len() - index).is_multiple_of(3) {
+            grouped.push(',');
+        }
+        grouped.push(digit);
+    }
+    if amount < 0 {
+        grouped.insert(0, '-');
+    }
+    grouped
+}
+
+pub fn format_money(amount: u64) -> String {
     if amount >= 1_000_000 {
         format!("{:.1}M", amount as f64 / 1_000_000.0)
     } else if amount >= 1_000 {

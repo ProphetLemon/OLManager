@@ -206,7 +206,7 @@ fn check_random_events_sponsor_offer_has_correct_structure() {
         assert_eq!(msg.category, MessageCategory::Finance);
         assert_eq!(msg.priority, MessagePriority::Normal);
         assert!(!msg.actions.is_empty());
-        assert!(msg.i18n_params.contains_key("amount"));
+        assert!(msg.i18n_params.contains_key("monthly"));
         assert_choose_option_keys(msg);
     }
 }

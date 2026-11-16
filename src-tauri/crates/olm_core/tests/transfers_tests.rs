@@ -1509,6 +1509,100 @@ fn ai_free_agent_signing_prioritizes_missing_role() {
     );
 }
 
+/// A buyer with a missing ADC and `bench` extra players, and a seller listing an ADC the
+/// buyer can afford. The buyer's roster size is `4 + bench`.
+fn club_transfer_game(bench: usize) -> Game {
+    let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap());
+    let mut manager = Manager::new(
+        "manager-1".to_string(),
+        "Jane".to_string(),
+        "Doe".to_string(),
+        "1980-01-01".to_string(),
+        "England".to_string(),
+    );
+    manager.hire("team-1".to_string());
+
+    let mut user_team = make_user_team(5_000_000, 2_000_000);
+    user_team.team_kind = TeamKind::Main;
+
+    let new_team = |id: &str, name: &str| {
+        let mut team = Team::new(
+            id.to_string(),
+            name.to_string(),
+            name.chars().take(3).collect::<String>().to_uppercase(),
+            "England".to_string(),
+            "Leeds".to_string(),
+            format!("{name} Ground"),
+            25_000,
+        );
+        team.team_kind = TeamKind::Main;
+        team.finance = 6_000_000;
+        team.transfer_budget = 3_500_000;
+        team.wage_budget = 2_000_000;
+        team
+    };
+    let buyer = new_team("team-2", "Buyer FC");
+    let mut seller = new_team("team-3", "Seller City");
+    // A lineup that lists nobody on the market, so the seller has no key player.
+    seller.active_lineup_ids = vec!["seller-lineup-placeholder".to_string()];
+
+    let mut seller_adc =
+        make_player_with_position("seller-adc", LolRole::Adc, Some("team-3"), 950_000);
+    seller_adc.transfer_listed = true;
+
+    let mut players = vec![
+        make_player_with_position("buyer-top", LolRole::Top, Some("team-2"), 900_000),
+        make_player_with_position("buyer-jungle", LolRole::Jungle, Some("team-2"), 880_000),
+        make_player_with_position("buyer-mid", LolRole::Mid, Some("team-2"), 920_000),
+        make_player_with_position("buyer-support", LolRole::Support, Some("team-2"), 870_000),
+        seller_adc,
+    ];
+    for i in 0..bench {
+        players.push(make_player_with_position(
+            &format!("buyer-bench-{i}"),
+            LolRole::Mid,
+            Some("team-2"),
+            300_000,
+        ));
+    }
+
+    let mut game = Game::new(
+        clock,
+        manager,
+        vec![user_team, buyer, seller],
+        players,
+        vec![],
+        vec![],
+    );
+    game.season_context.transfer_window.status = TransferWindowStatus::Open;
+    game
+}
+
+fn club_transfer_buyer_team(game: &Game) -> Option<&str> {
+    game.players
+        .iter()
+        .find(|player| player.id == "seller-adc")
+        .and_then(|player| player.team_id.as_deref())
+}
+
+#[test]
+fn ai_club_transfer_buys_into_a_roster_under_the_cap() {
+    let mut game = club_transfer_game(2);
+
+    generate_incoming_transfer_offers(&mut game);
+
+    assert_eq!(club_transfer_buyer_team(&game), Some("team-2"));
+}
+
+#[test]
+fn ai_club_transfer_never_buys_into_a_roster_at_the_cap() {
+    let mut game = club_transfer_game(3);
+
+    generate_incoming_transfer_offers(&mut game);
+
+    assert_eq!(club_transfer_buyer_team(&game), Some("team-3"));
+}
+
 #[test]
 fn ai_club_transfer_prioritizes_missing_role() {
     let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap());

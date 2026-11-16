@@ -306,6 +306,28 @@ fn the_swap_happens_when_the_lower_league_finishes_last() {
 }
 
 #[test]
+fn a_background_league_closing_its_season_resets_the_club_season_totals() {
+    let mut game = plain_game("lec1");
+    game.leagues[1] = unfinished_league("reg", 2, &REG);
+    advance_season(&mut game);
+    game.leagues[1] = finished_league("reg", 2, &REG);
+    for team in game.teams.iter_mut().filter(|t| t.id.starts_with("reg")) {
+        team.season_income = 90_000;
+        team.season_expenses = 40_000;
+    }
+    let manifests = game.competition_configs.clone();
+    roll_completed_background_leagues(&mut game, &manifests, &[1]);
+
+    let leftovers: Vec<_> = game
+        .teams
+        .iter()
+        .filter(|t| t.id.starts_with("reg") && (t.season_income, t.season_expenses) != (0, 0))
+        .map(|t| t.id.clone())
+        .collect();
+    assert!(leftovers.is_empty(), "clubs keeping last season's totals: {leftovers:?}");
+}
+
+#[test]
 fn a_late_swap_is_recorded_as_skipped_and_moves_nobody() {
     let mut game = plain_game("lec1");
     // The new calendars start on Aug 1, 2026; the clock is already past that.
