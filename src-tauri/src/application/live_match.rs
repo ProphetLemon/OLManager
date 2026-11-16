@@ -66,6 +66,10 @@ pub struct LolSimMatchReportInput {
     pub events: Vec<LolSimMatchReportEventInput>,
     pub stats: LolSimMatchReportStatsInput,
     pub champions: Vec<LolSimMatchReportChampionInput>,
+    /// The fixture team that plays blue in this game. Reports built without champions (a
+    /// skipped or delegated game) cannot be read from player ids, so the frontend names it.
+    #[serde(default)]
+    pub blue_team_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -326,15 +330,23 @@ fn build_match_report_from_lol_sim(input: LolSimMatchReportInput) -> MatchReport
 ///
 /// The frontend seats the user on the blue side they pick, so the user's club can be the
 /// fixture's away team on blue (or its home team on red). The report only says "blue" and
-/// "red", so the side is read from who the blue champions are: their ids are player ids,
-/// and each player belongs to one of the fixture's two teams. Ids that resolve to neither
-/// team (or to both equally) keep the original reading, blue as home.
+/// "red", so unless it names the blue team the side is read from who the blue champions
+/// are: their ids are player ids, and each player belongs to one of the fixture's two
+/// teams. Ids that resolve to neither team (or to both equally) keep the original reading,
+/// blue as home.
 fn blue_side_is_home(
     game: &Game,
     home_team_id: &str,
     away_team_id: &str,
     champions: &[LolSimMatchReportChampionInput],
+    blue_team_id: Option<&str>,
 ) -> bool {
+    // The frontend names the blue team when it knows it; that settles it for a fixture team.
+    match blue_team_id {
+        Some(id) if id == home_team_id => return true,
+        Some(id) if id == away_team_id => return false,
+        _ => {}
+    }
     let (mut home_votes, mut away_votes) = (0_usize, 0_usize);
     for champion in champions
         .iter()
@@ -374,7 +386,13 @@ fn fixture_report_from_lol_sim(
     away_team_id: &str,
     input: LolSimMatchReportInput,
 ) -> MatchReport {
-    let blue_is_home = blue_side_is_home(game, home_team_id, away_team_id, &input.champions);
+    let blue_is_home = blue_side_is_home(
+        game,
+        home_team_id,
+        away_team_id,
+        &input.champions,
+        input.blue_team_id.as_deref(),
+    );
     let mut report = build_match_report_from_lol_sim(input);
     if !blue_is_home {
         swap_report_sides(&mut report);
@@ -713,6 +731,7 @@ mod tests {
                 red: team_stats(),
             },
             champions,
+            blue_team_id: None,
         }
     }
 

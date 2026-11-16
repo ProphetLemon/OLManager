@@ -710,6 +710,7 @@ mod tests {
                 red: sim_team_stats(red_kills, blue_kills),
             },
             champions,
+            blue_team_id: None,
         }
     }
 
@@ -1084,5 +1085,38 @@ mod tests {
         let state = StateManager::new();
 
         assert!(record_series_game(&state, 1, game_one()).is_err());
+    }
+    #[test]
+    fn a_game_without_champions_is_credited_by_the_blue_team_the_frontend_names() {
+        let state = state_with_live_session("team2", 1);
+        let mut report = sim_game("t2", "t1", "blue", 10, 4);
+        report.champions.clear();
+        report.blue_team_id = Some("team2".to_string());
+
+        finish_live_match_internal(&state, Some(report), None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (0, 1));
+    }
+
+    #[test]
+    fn a_game_without_champions_or_blue_team_keeps_blue_as_home() {
+        let state = state_with_live_session("team2", 1);
+        let mut report = sim_game("t2", "t1", "blue", 10, 4);
+        report.champions.clear();
+
+        finish_live_match_internal(&state, Some(report), None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (1, 0));
+    }
+
+    #[test]
+    fn a_blue_team_that_is_in_neither_side_of_the_fixture_falls_back_to_the_players() {
+        let state = state_with_live_session("team2", 1);
+        let mut report = sim_game("t2", "t1", "blue", 10, 4);
+        report.blue_team_id = Some("team9".to_string());
+
+        finish_live_match_internal(&state, Some(report), None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (0, 1));
     }
 }

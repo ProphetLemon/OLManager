@@ -160,7 +160,7 @@ function attachLolTacticsToSnapshot(
   } as MatchSnapshot;
 }
 
-export function buildLolMatchReport(runtime: LolSimV1RuntimeState): LolSimV1MatchReportInput {
+export function buildLolMatchReport(runtime: LolSimV1RuntimeState, blueTeamId?: string): LolSimV1MatchReportInput {
   const safeStats = {
     blue: {
       kills: runtime.stats?.blue?.kills ?? 0,
@@ -179,6 +179,7 @@ export function buildLolMatchReport(runtime: LolSimV1RuntimeState): LolSimV1Matc
   };
 
   return {
+    ...(blueTeamId ? { blueTeamId } : {}),
     winner: runtime.winner,
     timeSec: runtime.timeSec ?? 0,
     events: (runtime.events ?? []).map((event) => ({
@@ -1374,7 +1375,7 @@ export default function MatchSimulation() {
       }
 
       void (async () => {
-        const finalized = await finalizeMatch(buildLolMatchReport(finalRuntimeState));
+        const finalized = await finalizeMatch(buildLolMatchReport(finalRuntimeState, blueTeamId ?? undefined));
         if (finalized) {
           setStage("draft_result");
         }
@@ -1571,7 +1572,7 @@ export default function MatchSimulation() {
 
     if (seriesComplete) {
       void (async () => {
-        const finalized = await finalizeMatch(buildLolMatchReport(runtimeForFinalize));
+        const finalized = await finalizeMatch(buildLolMatchReport(runtimeForFinalize, blueTeamId ?? undefined));
         if (finalized) {
           setStage("draft_result");
         }
@@ -1585,7 +1586,7 @@ export default function MatchSimulation() {
       await recordSeriesGame({
         record: (args) => invoke("record_series_game", args),
         gameNumber: currentGameNumber,
-        lolReport: buildLolMatchReport(runtimeForFinalize),
+        lolReport: buildLolMatchReport(runtimeForFinalize, blueTeamId ?? undefined),
       });
       setStage("draft_result");
     })();

@@ -90,3 +90,17 @@ describe("recordSeriesGame", () => {
     errorSpy.mockRestore();
   });
 });
+
+describe("buildLolMatchReport names the blue team", () => {
+  it("sends the team that plays blue so a game with no champions is credited right", () => {
+    const report = buildLolMatchReport(runtime("blue"), "team-away");
+
+    expect(report.blueTeamId).toBe("team-away");
+  });
+
+  it("sends no blue team when the page does not know it", () => {
+    const report = buildLolMatchReport(runtime("blue"));
+
+    expect(report).not.toHaveProperty("blueTeamId");
+  });
+});
