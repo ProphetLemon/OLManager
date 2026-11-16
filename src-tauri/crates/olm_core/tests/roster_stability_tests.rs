@@ -11,7 +11,7 @@ use olm_core::domain::team::{Team, TeamKind};
 use olm_core::game::Game;
 use olm_core::roster_stability::{
     NewGameRosterFill, RepairAction, RosterStabilityReason, evaluate_team, fill_new_game_rosters,
-    repair_league, repair_team,
+    fill_new_game_rosters_excluding, repair_league, repair_team,
 };
 use olm_core::transfers::get_transfer_history;
 
@@ -1709,6 +1709,29 @@ fn new_game_fill_assigns_free_agents_by_natural_position_in_id_order() {
     assert_eq!(untouched.team_id, None);
     let spare_top = game.players.iter().find(|p| p.id == "fa-top").unwrap();
     assert_eq!(spare_top.team_id, None);
+}
+
+#[test]
+fn new_game_fill_leaves_reserved_free_agents_alone_and_fills_with_the_rest() {
+    let mut players = short_roster("ai-team");
+    players.push(player("pool-jungle", None, LolRole::Jungle, None));
+    players.push(player("fa-jungle", None, LolRole::Jungle, None));
+    players.push(player("pool-support", None, LolRole::Support, None));
+    let mut game = game_with(players, vec![]);
+    game.teams[1].team_kind = TeamKind::Academy;
+    let reserved: std::collections::HashSet<String> =
+        ["pool-jungle".to_string(), "pool-support".to_string()].into();
+
+    let fills = fill_new_game_rosters_excluding(&mut game, &reserved);
+
+    let jungle = fills.iter().find(|f| f.role == LolRole::Jungle).unwrap();
+    assert_eq!(jungle.player_id, "fa-jungle");
+    let support = fills.iter().find(|f| f.role == LolRole::Support).unwrap();
+    assert!(support.generated);
+    for id in &reserved {
+        let kept = game.players.iter().find(|p| &p.id == id).unwrap();
+        assert_eq!(kept.team_id, None);
+    }
 }
 
 #[test]

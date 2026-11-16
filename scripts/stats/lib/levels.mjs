@@ -22,7 +22,7 @@ export function populationSd(values) {
 }
 
 /** A placeholder row carries no rating data: flat 50, all zero, or jittered inside the isSuspect flat band. */
-const isPlaceholder = (p) => p.isFlat50 || p.isAllZero || isSuspect({ attributes: p.attributes });
+export const isPlaceholder = (p) => p.isFlat50 || p.isAllZero || isSuspect({ attributes: p.attributes });
 
 /**
  * The ladder plus, per competition, how many rostered rows fed it and how many placeholders were left out.

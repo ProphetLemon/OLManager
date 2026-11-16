@@ -143,6 +143,10 @@ app. A tampered, unsigned or wrongly signed overlay is rejected and the app keep
 - **Re-sign.** `npm run world:refresh` signs automatically after writing the overlay when the key is available and prints a
   warning when it is not. To sign by hand (for example after editing the overlay): `npm run world:sign [-- path/to/overlay.json]`.
 - **Check.** `npm run verify:world-overlay` also verifies the signature against the committed public key.
+- **Schema version.** An overlay with teamless adds (the pool) is emitted as `schemaVersion: 2`; any other overlay stays `1`.
+  The app accepts both. Apps released before the pool accept only `1` and reject `2` at parse, so they keep their rosters
+  instead of putting pool players on AI teams. `world:sign` and `verify:world-overlay` refuse a version 1 file with teamless
+  adds (`teamless_adds_need_schema_v2`): that guard is what stops a mis-emitted file reaching installed apps.
 - **Publishing.** The app downloads `<source>` and `<source>.sig` from the fork's `develop` branch. Downloads only succeed once
   the signed overlay and its `.sig` are both on `develop`; until then the app keeps the bundled overlay. Commit the overlay and
   its `.sig` together.
@@ -186,7 +190,7 @@ npm run world:refresh -- --offline --pool --pool-cap 60 --pool-probe Send0o     
 ```
 
 Flags: `--pool` `--pool-since YYYY-MM-DD` (default 2023-11-12, three years) `--pool-cap n` (default 60) `--pool-probe <page>`
-(default `Send0o`; `""` for none) `--pool-stats <rows.json>` (rate from stats, see Ratings). Code: `lib/pool-fetch.mjs` (queries), `lib/pool.mjs` (selection, ids, ops), `lib/pool-rating.mjs` (ratings),
+(default `Send0o`; `""` for none) `--pool-stats <rows.json>` (rate from stats, anchored to the game's league levels, see Ratings). Code: `lib/pool-fetch.mjs` (queries), `lib/pool.mjs` (selection, ids, ops), `lib/pool-rating.mjs` (ratings),
 `lib/pool-gates.mjs`, `lib/pool-report.mjs`. Tests: `src/lib/world/pool.test.ts`, `pool-rating.test.ts`, `pool-refresh.test.ts` with the recorded rows in
 `scripts/world/fixtures/pool/`.
 
@@ -195,10 +199,10 @@ Players page** (it is the only source of country, birth date and role); qualifie
 `--pool-cap` roster entries (promotion stages and closed qualifiers stay, open qualifiers go). The cap leaves a qualifier out
 whole; it never keeps "the first 60 names" of one. **Who is out.** Anybody the game has (`lib/match.mjs` plus the reviewed
 `id-map.json`), anybody whose current team is in `team-map.json` (the roster overlay handles them), anybody the same run's roster
-overlay adds or moves, players with no usable position, staff whose label is not coaching/analysis/scouting, and anybody the
+overlay adds or moves (matched by id, and by page title: Unicode-normalised, case-insensitive, underscores as spaces, so "revenge (X)" in the pool is the "Revenge (X)" the team page adds), players with no usable position, staff whose label is not coaching/analysis/scouting, and anybody the
 matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision`). Those are listed in the report with the reason.
 
-**Op shape** (the game's `Player`/`Staff` record, `team_id: null`, plus a `pool` object the game ignores; `Bot` becomes `ADC`):
+**Op shape** (the game's `Player`/`Staff` record, `team_id: null`, plus a `pool` object the game ignores; `Bot` becomes `ADC`). The `pool` object is review data: the gates and the report read it in memory, but the file written (`serializeOverlay`) is compact JSON without it, because about 4.7k adds pretty-printed with it come to about 5 MB and the app rejects more than 4 MiB. A roster-only overlay is still 2-space JSON, byte-identical to before. The example below is the in-memory op:
 
 ```json
 { "op": "add", "player": { "id": "player-bea33543", "team_id": null, "position": "Top", "nationality": "ES", "full_name": "...",
@@ -211,22 +215,44 @@ matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision
 
 - **Ids** are `player-`/`staff-` + the first 8 hex of `sha256("leaguepedia:" + page title)`, the same function the roster refresh uses, so
   they depend only on the Leaguepedia page: equal across runs and machines, whatever the input order.
-- **Ratings** (`lib/pool-rating.mjs`). `pool.rating` says where the attributes came from:
-  - `"stats"` (plus `pool.rating_games`): the player has a skill estimate for his own role with at least 8 usable games (the skill model's
-    write floor). The method is the one of `docs/STAT_RATINGS.md`, reusing `scripts/stats/lib`: `estimateSkill` gives a role-relative z
-    shrunk by reliability (`rho`); the anchor is the tier default OVR of his role (both the "authored" value and the league median);
-    `blendRating` with a league sd of 4 gives the final OVR; the change from the anchor is capped at 6 points; `deriveAttributes` spreads
-    it over the nine attributes. Seeded jitter is not applied: the stats are the rating.
-  - `"tier-default"`: everybody else, and all staff (no per-game stats): for a player, the median of the real players of his tier in his
-    position when the tier has at least 10 of them in the game (the same rule as the game's placeholder ratings), otherwise the game's
-    median per position shifted by the tier (1 top flight, 0; 2 official circuit, -6; 3 recurring seasonal league, -12; any other tier
-    counts as 3); for staff, the game's median per role shifted by the tier; with the usual seeded jitter. A player whose estimate is for another role, has fewer than 8 games, or has no estimate (cohort too small) also
-    lands here.
-  Stats come from `--pool-stats <rows.json>` (the per-game rows of `scripts/stats/pro-stats.mjs`, read from disk, no network). Without
-  it every add is a tier default. Competitions with fewer than 15 players of the role with 10 or more games give no estimate. The report
-  counts both kinds by tier and role. `pool.games` (scoreboard rows in the window, `null` if that query was unavailable), `entries`, `tier`,
-  `best_level`, `leagues` and `levels` are context. `wage`, `market_value` and `contract_end` are the roster refresh's empty
-  values. `dob_approx` is set when the page has no birth date. A staff add's nationality is an ISO-2 code like a player's (empty when the country does not resolve); the roster refresh's staff on a team keep the country name.
+- **Ratings** (`lib/pool-rating.mjs`, `lib/pool-anchors.mjs`). `pool.rating` says where the attributes came from. With `--pool-stats` the run also
+  builds the game's league ladder the way `npm run stats:build` does (the game data with the committed roster overlay, the reviewed team
+  map and pins, the Leaguepedia player index `<rows>.players.json` next to `rows.json`) and anchors the pool to it (method (c) of the A6f
+  analysis, no discount for being teamless or inactive: no data supports one):
+  - `"stats"` (plus `pool.rating_games`, `pool.rating_competition`): the player has a skill estimate for his own role with at least 8 usable
+    games (the skill model's write floor) from a league the game has a level for. The method is the one of `docs/STAT_RATINGS.md`,
+    reusing `scripts/stats/lib`: `estimateSkill` gives a role-relative z shrunk by reliability (`rho`), and small leagues borrow the cohort
+    of leagues of a similar level (`poolOf`, as `build-overrides.mjs` does); the anchor is the median of `league_levels` for the league
+    his stats come from (both the "authored" value and the league median), so a player of a game tier-2 league is rated against that
+    league, not against a top flight; `blendRating` with that league's sd (clamped 3..5) gives the final OVR; the change from the anchor
+    is capped at 6 points; `deriveAttributes` spreads it over the nine attributes of the league's median profile for his role. Seeded
+    jitter is not applied: the stats are the rating.
+  - `"league-default"`: no usable estimate (no stats, another role, fewer than 8 games, a cohort too small, or a league without a level).
+    The default is the median authored OVR of the rostered players of the league he last played in (the latest tournament of the pool
+    window whose page matches `scripts/stats/prefix-map.json` and whose league has a level) who also have no usable estimate, when the
+    league has at least 10 of them (`MIN_LEAGUE_DEFAULT_PLAYERS`). This rule is back-tested on the game's rostered players
+    (`OLManager-notes/research/a6f-pool-ratings-2026-11-16.md`); the attributes keep the seeded jitter of his record and land on that OVR.
+  - `"game-tier-default"`: his league has fewer than 10 such players, so the median of the same population in the game tier of that
+    league (top flight or the rest) stands in. Thin: the tier-1 population is 12 players.
+  - `"judgment-default"`: **a judgment, not a measurement.** No league the game models (LCP Wildcard League, Battle of S.E.A, Thailand
+    Series, ...: minor leagues with no rostered counterpart). The default is the median of the game's tier-2 population of rostered
+    players with no usable estimate (329 players, `JUDGMENT_DEFAULT_TIER`), the nearest measured population. Nothing validates this
+    number for these leagues. A person of Leaguepedia tier 1 or 2 with no tournament in a modelled league is here. A tier-3 person with
+    no mapped league is not: nothing measured tier 3, and 65 would rank him above the rostered tier-2 bench (64.0), so he keeps the
+    `"tier-default"` below (the tier-3 baseline, about 57), as before the ladder existed (reason `no-mapped-league`).
+  - `"tier-default"`: staff (no per-game stats), and everybody when the run has no ladder (no `--pool-stats`): for a player, the median of
+    the real players of his tier in his position when the tier has at least 10 of them in the game (the same rule as the game's
+    placeholder ratings), otherwise the game's median per position shifted by the tier (1 top flight, 0; 2 official circuit, -6; 3
+    recurring seasonal league, -12; any other tier counts as 3); for staff, the game's median per role shifted by the tier; with the usual
+    seeded jitter. Without a ladder a player whose estimate is for another role, has fewer than 8 games, or has no estimate also lands
+    here, and a stats rating is anchored to this tier default instead of a league level.
+
+  Stats come from `--pool-stats <rows.json>` (the per-game rows of `scripts/stats/pro-stats.mjs`, read from disk, no network). Competitions
+  with fewer than 15 players of the role with 10 or more games give no estimate unless the ladder pools them with a similar league.
+  The report counts every kind by tier and role. `pool.games` (scoreboard rows in the window, `null` if that query was unavailable),
+  `entries`, `tier`, `best_level`, `leagues` and `levels` are context. `wage`, `market_value` and `contract_end` are the roster
+  refresh's empty values. `dob_approx` is set when the page has no birth date. A staff add's nationality is an ISO-2 code like a
+  player's (empty when the country does not resolve); the roster refresh's staff on a team keep the country name.
 - The tournament list of each person is summarised (count, leagues, levels) to keep the overlay small; a list longer than the wiki's
   `GROUP_CONCAT` limit sets `pool.tournaments_truncated`.
 

@@ -540,6 +540,17 @@ pub struct NewGameRosterFill {
 /// chosen; that running total is local to the fill, since the stored wage stays
 /// untouched.
 pub fn fill_new_game_rosters(game: &mut Game) -> Vec<NewGameRosterFill> {
+    fill_new_game_rosters_excluding(game, &HashSet::new())
+}
+
+/// [`fill_new_game_rosters`] that never signs a free agent whose id is in
+/// `reserved`. The roster overlay's teamless adds (the active-pros pool) are
+/// reserved so they start as free agents; the short slot is filled with a
+/// generated player or another free agent instead.
+pub fn fill_new_game_rosters_excluding(
+    game: &mut Game,
+    reserved: &HashSet<String>,
+) -> Vec<NewGameRosterFill> {
     let mut team_order = game
         .teams
         .iter()
@@ -556,8 +567,14 @@ pub fn fill_new_game_rosters(game: &mut Game) -> Vec<NewGameRosterFill> {
         let missing = missing_roles(&eligible_team_players(game, &team_id, current_date));
         let mut wage_bill = annual_team_wage_bill(game, &team_id);
         for role in missing {
-            let free_agent =
-                best_free_agent_for_new_game(game, &team_id, role, current_date, wage_bill);
+            let free_agent = best_free_agent_for_new_game(
+                game,
+                &team_id,
+                role,
+                current_date,
+                wage_bill,
+                reserved,
+            );
             if let Some((index, signing_wage)) = free_agent {
                 wage_bill += i64::from(signing_wage);
                 let player_id = game.players[index].id.clone();
@@ -607,10 +624,12 @@ fn best_free_agent_for_new_game(
     role: LolRole,
     current_date: NaiveDate,
     wage_bill: i64,
+    reserved: &HashSet<String>,
 ) -> Option<(usize, u32)> {
     let team = game.teams.iter().find(|team| team.id == team_id)?;
     let scored = free_agent_candidates(game, role, current_date)
         .into_iter()
+        .filter(|(id, _)| !reserved.contains(id))
         .map(|(id, index)| {
             let player = &game.players[index];
             let decision =

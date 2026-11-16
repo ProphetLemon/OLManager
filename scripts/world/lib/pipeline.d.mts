@@ -10,6 +10,8 @@ import type { GameRow, SkillEstimate } from "../../stats/lib/skill.mjs";
 export interface OpEntry {
   op: Record<string, any>;
   id: string;
+  /** Page title of an added person as the team page spelled it (the input of his id); absent on moves and retirements. */
+  page?: string;
   teamId: string | null;
   competition: string | null;
   note: string;

@@ -27,7 +27,7 @@ describe("validateOverlay", () => {
   });
 
   it("rejects an unknown schemaVersion before looking at anything else", () => {
-    const result = validateOverlay({ ...valid(), schemaVersion: 2 }, ids);
+    const result = validateOverlay({ ...valid(), schemaVersion: 3 }, ids);
     expect(result.ok).toBe(false);
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0]).toMatchObject({ path: "schemaVersion", code: "unsupported_schema_version" });
@@ -77,6 +77,7 @@ describe("validateOverlay", () => {
     const record = generateStaff({ canonicalTitle: "Pad", ign: "Pad", realName: "Patrick Suckow-Breum", country: "DK", role: "HeadCoach", teamId: null, baselines: computeBaselines(world) }).record;
     const staffAdd = (nationality: string) => {
       const overlay = valid() as Record<string, any>;
+      overlay.schemaVersion = 2; // a teamless add needs version 2
       overlay.staff = [{ op: "add", staff: { ...record, nationality }, evidence: "https://lol.fandom.com/wiki/Pad" }];
       return codes(overlay);
     };

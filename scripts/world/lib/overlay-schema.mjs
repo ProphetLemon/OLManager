@@ -1,7 +1,11 @@
-// Contract v1 of `assets/world/roster-overlay.json` and its validator.
+// Contract v1/v2 of `assets/world/roster-overlay.json` and its validator.
 // The validator is pure: pass an optional world (id sets) to also check references.
 
+/** Base contract. Apps released before the active-pros pool understand only this version and reject any other at parse. */
 export const OVERLAY_SCHEMA_VERSION = 1;
+/** Required when the overlay carries teamless adds (pool players and staff): old apps reject the file and keep their rosters. */
+export const POOL_OVERLAY_SCHEMA_VERSION = 2;
+export const SUPPORTED_SCHEMA_VERSIONS = Object.freeze([OVERLAY_SCHEMA_VERSION, POOL_OVERLAY_SCHEMA_VERSION]);
 export const POSITIONS = Object.freeze(["Top", "Jungle", "Mid", "ADC", "Support"]);
 /** Roles an overlay `move` may set. Owners and Assistants are protected (see staff-policy.mjs). */
 export const MOVABLE_STAFF_ROLES = Object.freeze(["HeadCoach", "Analyst", "Performance Coach", "Scout", "Coach"]);
@@ -28,6 +32,38 @@ const isDate = (value) => {
 };
 const isHttpsUrl = (value) => typeof value === "string" && /^https:\/\/\S+$/.test(value);
 const isRating = (value) => Number.isInteger(value) && value >= 1 && value <= 100;
+
+const isTeamlessAdd = (op) => {
+  if (!isRecord(op) || op.op !== "add") return false;
+  const record = op.player ?? op.staff;
+  return isRecord(record) && (record.team_id ?? null) === null;
+};
+
+/** True when any player or staff op adds a person without a team (the active-pros pool). */
+export function hasTeamlessAdds(overlay) {
+  return [overlay?.players, overlay?.staff].some((ops) => Array.isArray(ops) && ops.some(isTeamlessAdd));
+}
+
+/** The version an overlay with these ops must declare: 2 with teamless adds, 1 otherwise. */
+export function overlaySchemaVersion({ players = [], staff = [] }) {
+  return hasTeamlessAdds({ players, staff }) ? POOL_OVERLAY_SCHEMA_VERSION : OVERLAY_SCHEMA_VERSION;
+}
+
+/**
+ * Compatibility problems that make an overlay unsafe to publish, independent of the game world. This is the guard
+ * `world:sign` and `verify:world-overlay` share against a mis-emitted version 1 file reaching installed apps.
+ * @returns {Array<{path: string, code: string, message: string}>}
+ */
+export function checkSchemaCompat(overlay) {
+  if (!isRecord(overlay)) return [];
+  if (!SUPPORTED_SCHEMA_VERSIONS.includes(overlay.schemaVersion)) {
+    return [{ path: "schemaVersion", code: "unsupported_schema_version", message: `unsupported schemaVersion ${JSON.stringify(overlay.schemaVersion)}; expected ${OVERLAY_SCHEMA_VERSION} or ${POOL_OVERLAY_SCHEMA_VERSION}` }];
+  }
+  if (overlay.schemaVersion < POOL_OVERLAY_SCHEMA_VERSION && hasTeamlessAdds(overlay)) {
+    return [{ path: "schemaVersion", code: "teamless_adds_need_schema_v2", message: `schemaVersion ${overlay.schemaVersion} cannot carry teamless adds; they need schemaVersion ${POOL_OVERLAY_SCHEMA_VERSION}, which installed apps without the pool reject instead of putting pool players on AI teams` }];
+  }
+  return [];
+}
 
 class Errors {
   constructor() {
@@ -141,10 +177,9 @@ export function validateOverlay(overlay, world) {
     errors.add("", "invalid_overlay", "overlay must be a JSON object");
     return { ok: false, errors: errors.list };
   }
-  if (overlay.schemaVersion !== OVERLAY_SCHEMA_VERSION) {
-    errors.add("schemaVersion", "unsupported_schema_version", `unsupported schemaVersion ${JSON.stringify(overlay.schemaVersion)}; expected ${OVERLAY_SCHEMA_VERSION}`);
-    return { ok: false, errors: errors.list };
-  }
+  const compat = checkSchemaCompat(overlay);
+  if (!SUPPORTED_SCHEMA_VERSIONS.includes(overlay.schemaVersion)) return { ok: false, errors: compat };
+  for (const problem of compat) errors.add(problem.path, problem.code, problem.message);
   if (!isDate(overlay.as_of)) errors.add("as_of", "invalid_field", "as_of must be YYYY-MM-DD");
   checkSource(overlay.source, errors);
   if (!Array.isArray(overlay.coverage) || !overlay.coverage.every(isNonEmptyString) || new Set(overlay.coverage).size !== overlay.coverage.length) {

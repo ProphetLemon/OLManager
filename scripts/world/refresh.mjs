@@ -12,6 +12,7 @@ import { resolveKeyPath, signOverlayFile } from "./lib/signing.mjs";
 import { runRefresh } from "./lib/pipeline.mjs";
 import { buildTeamMap, loadTeamMap, summarizeTeamMap } from "./lib/team-map.mjs";
 import { DEFAULT_POOL_PROBE, DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP } from "./lib/pool.mjs";
+import { loadPoolAnchors } from "./lib/pool-anchors.mjs";
 import { coveredCompetitionIds, loadWorld } from "./lib/world.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
@@ -40,7 +41,9 @@ of pool-scope.mjs), minus people the game already has or the roster overlay hand
   --pool                  turn the pool on (needs --login for live runs; the people queries are heavy, run it once and keep the cache)
   --pool-since YYYY-MM-DD first tournament start date (default ${DEFAULT_POOL_SINCE})
   --pool-cap <n>          qualifier-flagged tournaments count only up to <n> roster entries (default ${DEFAULT_QUALIFIER_CAP})
-  --pool-stats <file>     rows.json of scripts/stats/pro-stats.mjs: players with enough games are rated from them, the rest by tier default
+  --pool-stats <file>     rows.json of scripts/stats/pro-stats.mjs (its <file>.players.json index must sit next to it): players with enough
+                          games are rated from them, anchored to the game's league levels; the rest take the default of the league they last
+                          played in (see README, "Ratings"). Without it every add is a tier default.
   --pool-probe <page>     Leaguepedia page whose inclusion the report explains (default ${DEFAULT_POOL_PROBE}; "" for none)
 `;
 
@@ -105,6 +108,20 @@ async function buildMap() {
   log(`wrote ${values["team-map"]} (${client.stats.network} live requests)`);
 }
 
+/** The pool's options; with `--pool-stats` also the game's league ladder, built the way `npm run stats:build` builds it. */
+async function poolOptions() {
+  const options = { since: values["pool-since"], cap: Number(values["pool-cap"]), probe: values["pool-probe"] };
+  const statsFile = values["pool-stats"];
+  if (!statsFile) return options;
+  const rowsFile = path.resolve(statsFile);
+  const world = loadWorld(values["data-dir"]);
+  const anchors = loadPoolAnchors({
+    rowsFile, dataDir: values["data-dir"], teamMapFile: values["team-map"], pinsFile: path.join(ROOT, "scripts/stats/pins.json"),
+    prefixMapFile: path.join(ROOT, "scripts/stats/prefix-map.json"), tierOf: new Map(world.competitions.map((c) => [c.id, c.tier])),
+  });
+  return { ...options, statsRows: JSON.parse(fs.readFileSync(rowsFile, "utf8")).rows, anchors };
+}
+
 async function refresh() {
   const result = await runRefresh({
     dataDir: values["data-dir"],
@@ -114,12 +131,7 @@ async function refresh() {
     client,
     gateExceptions: loadGateExceptions(values["gate-exceptions"]),
     asOf: values["as-of"],
-    pool: values.pool
-      ? {
-          since: values["pool-since"], cap: Number(values["pool-cap"]), probe: values["pool-probe"],
-          statsRows: values["pool-stats"] ? JSON.parse(fs.readFileSync(values["pool-stats"], "utf8")).rows : undefined,
-        }
-      : undefined,
+    pool: values.pool ? await poolOptions() : undefined,
     log,
   });
   writeFile(values.report, result.report);
