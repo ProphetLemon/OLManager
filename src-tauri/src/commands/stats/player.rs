@@ -52,6 +52,7 @@ fn to_dto(state: &StateManager, record: &PlayerMatchStatsRecord) -> PlayerMatchH
         damage_to_champions: record.damage_dealt,
         vision_score: record.vision_score,
         wards_placed: record.wards_placed,
+        games: record.game_count(),
     }
 }
 

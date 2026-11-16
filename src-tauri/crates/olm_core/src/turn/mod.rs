@@ -2374,6 +2374,25 @@ mod tests {
         assert!(records.iter().any(|r| r.assists > 0));
     }
 
+    #[test]
+    fn a_best_of_three_row_counts_every_game_it_sums() {
+        let (mut game, today) = bg_test_game("2025-06-15");
+        if let Some(league) = game.active_league_mut() {
+            league.fixtures[0].best_of = 3;
+        }
+        let mut capture = StatsState::default();
+        simulate_other_matches_with_capture(&mut game, &today, None, &mut |stats| capture = stats);
+
+        let fixture = game.active_league().unwrap().fixtures[0]
+            .result
+            .as_ref()
+            .unwrap();
+        let games = fixture.home_wins + fixture.away_wins;
+        assert!(games >= 2);
+        assert!(capture.player_matches.iter().all(|r| r.games == games));
+        assert!(capture.team_matches.iter().all(|r| r.games == games));
+    }
+
     // -----------------------------------------------------------------------
     // T9: simulate_background_league tests
     // -----------------------------------------------------------------------

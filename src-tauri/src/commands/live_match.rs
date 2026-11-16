@@ -953,6 +953,30 @@ mod tests {
     }
 
     #[test]
+    fn the_series_rows_count_the_games_they_sum() {
+        let state = play_series("team1", 3, vec![game_one(), game_two(), game_three()]);
+
+        let (player_games, team_games) = state.with_stats_state(|stats| {
+            (
+                stats
+                    .player_matches
+                    .iter()
+                    .map(|r| r.games)
+                    .collect::<Vec<_>>(),
+                stats
+                    .team_matches
+                    .iter()
+                    .map(|r| r.games)
+                    .collect::<Vec<_>>(),
+            )
+        });
+        assert!(player_games
+            .iter()
+            .chain(&team_games)
+            .all(|games| *games == 3));
+    }
+
+    #[test]
     fn the_series_team_row_sums_both_teams_over_the_games() {
         let state = play_series("team1", 3, vec![game_one(), game_two(), game_three()]);
 

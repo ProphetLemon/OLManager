@@ -52,8 +52,15 @@ fn compact_match_report(report: &crate::engine::MatchReport) -> CompactMatchRepo
         })
         .collect();
 
+    // A series report keeps the last game's `total_minutes` beside the summed duration.
+    let total_minutes = if report.game_duration_seconds > 0 {
+        report.game_duration_seconds / 60
+    } else {
+        report.total_minutes.into()
+    };
+
     CompactMatchReport {
-        total_minutes: report.total_minutes.into(),
+        total_minutes,
         game_duration_seconds: report.game_duration_seconds,
         home_stats: compact_team_stats(&report.home_stats, report.home_possession.round() as u8),
         away_stats: compact_team_stats(
@@ -325,6 +332,7 @@ fn build_stats_state_capture(
         .map(|(player_id, champion_id)| (player_id.as_str(), champion_id.as_str()))
         .collect();
     let bans_json = serde_json::to_string(bans).unwrap_or_default();
+    let games = games_in_report(report);
 
     let player_matches = report
         .player_stats
@@ -367,6 +375,7 @@ fn build_stats_state_capture(
                 vision_score: stats.vision_score,
                 wards_placed: stats.wards_placed,
                 bans_json: bans_json.clone(),
+                games,
             })
         })
         .collect();
@@ -388,6 +397,7 @@ fn build_stats_state_capture(
             gold_earned: report.home_stats.gold_earned,
             damage_dealt: report.home_stats.damage_dealt,
             objectives: report.home_stats.objectives,
+            games,
         },
         TeamMatchStatsRecord {
             fixture_id: fixture.id.clone(),
@@ -405,6 +415,7 @@ fn build_stats_state_capture(
             gold_earned: report.away_stats.gold_earned,
             damage_dealt: report.away_stats.damage_dealt,
             objectives: report.away_stats.objectives,
+            games,
         },
     ];
 
@@ -2462,5 +2473,46 @@ mod shotcalling_relative_tests {
             assert_eq!(shotcalling_assist_cut(role), cut);
             assert!(cut.0 > cut.1);
         }
+    }
+}
+
+#[cfg(test)]
+mod compact_report_tests {
+    use super::compact_match_report;
+    use crate::engine::{MatchReport, MatchReportEndReason};
+
+    fn report(total_minutes: u8, game_duration_seconds: u32) -> MatchReport {
+        MatchReport {
+            home_wins: 2,
+            away_wins: 1,
+            home_stats: Default::default(),
+            away_stats: Default::default(),
+            events: Vec::new(),
+            kill_feed: Vec::new(),
+            player_stats: Default::default(),
+            home_possession: 50.0,
+            total_minutes,
+            game_duration_seconds,
+            ended_by: MatchReportEndReason::NexusDestroyed,
+        }
+    }
+
+    #[test]
+    fn a_series_report_should_compact_to_its_summed_minutes() {
+        // The merged series keeps the last game's minutes beside the summed duration.
+        let compact = compact_match_report(&report(31, 95 * 60));
+        assert_eq!(compact.total_minutes, 95);
+    }
+
+    #[test]
+    fn a_single_game_should_keep_its_minutes() {
+        let compact = compact_match_report(&report(31, 31 * 60));
+        assert_eq!(compact.total_minutes, 31);
+    }
+
+    #[test]
+    fn a_report_without_a_duration_should_keep_its_minutes() {
+        let compact = compact_match_report(&report(31, 0));
+        assert_eq!(compact.total_minutes, 31);
     }
 }
