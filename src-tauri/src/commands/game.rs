@@ -835,6 +835,12 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
         estimated.rostered, estimated.free_agents
     );
 
+    // 6b. Players shipped without a potential (0) get one from real peers of their age,
+    // measured on their final OVR. Market values and wages below follow the potential.
+    let potentials_filled =
+        olm_core::potential_fill::fill_missing_potentials(&mut all_players, start_date);
+    info!("[game] filled the potential of {} players shipped without one", potentials_filled);
+
     // 7. Recalculate market_value for players who have 0 (data issue in regional leagues)
     game_setup::apply_default_market_values(&mut all_players);
 
@@ -2928,8 +2934,17 @@ mod tests {
                 .map(|p| p.id.clone())
                 .collect();
             assert_eq!(rated_below, Vec::<String>::new());
-            // Data players shipped without a potential (0) sit below their rating with or
-            // without overrides; overrides must not add to them.
+            // Data players shipped with a small positive potential under their rating stay
+            // below it with or without overrides; overrides must not add to them.
+            // Players shipped without a potential (0) are filled at assembly, so none is
+            // left at 0 and none of them sits below its rating.
+            let unfilled: Vec<_> = world
+                .players
+                .iter()
+                .filter(|p| p.potential_base == 0)
+                .map(|p| p.id.clone())
+                .collect();
+            assert_eq!(unfilled, Vec::<String>::new());
             let already_below: HashSet<_> =
                 without.players.iter().filter(below).map(|p| p.id.as_str()).collect();
             let new_below: Vec<_> = world
@@ -2940,6 +2955,36 @@ mod tests {
                 .map(|p| p.id.clone())
                 .collect();
             assert_eq!(new_below, Vec::<String>::new());
+        }
+
+        #[test]
+        fn no_player_of_a_new_world_has_a_potential_of_zero() {
+            let (game, ..) = new_game();
+            let zero: Vec<_> = game
+                .players
+                .iter()
+                .filter(|p| p.potential_base == 0)
+                .map(|p| p.id.clone())
+                .collect();
+            assert_eq!(zero, Vec::<String>::new());
+        }
+
+        #[test]
+        fn a_data_player_shipped_without_a_potential_is_given_one_at_or_above_his_rating() {
+            // Elmillor ships `potential_base: 0`; the report used to read 0 to 3.
+            let (game, ..) = new_game();
+            let elmillor = game
+                .players
+                .iter()
+                .find(|p| p.id == "fa-c45e5ff7")
+                .expect("Elmillor is a bundled free agent");
+            assert!(
+                elmillor.potential_base >= elmillor.lol_ovr,
+                "potential {} under OVR {}",
+                elmillor.potential_base,
+                elmillor.lol_ovr
+            );
+            assert!(elmillor.potential_base > 3);
         }
 
         #[test]
