@@ -1228,6 +1228,13 @@ pub struct RehydrateCounts {
     pub canonical_players_dropped: usize,
     /// Players of the removed canonical clubs released as free agents.
     pub canonical_players_released: usize,
+    /// Duplicate academies removed: the unlinked stale copy of an academy, or the canonical
+    /// twin of a stale one a club links.
+    pub stale_academies_removed: usize,
+    /// Players of a removed academy dropped as the same person as one on the surviving twin.
+    pub stale_academy_players_dropped: usize,
+    /// Players of a removed academy released as free agents.
+    pub stale_academy_players_released: usize,
 }
 
 impl RehydrateCounts {
@@ -1241,6 +1248,9 @@ impl RehydrateCounts {
             + self.canonical_duplicates_removed
             + self.canonical_players_dropped
             + self.canonical_players_released
+            + self.stale_academies_removed
+            + self.stale_academy_players_dropped
+            + self.stale_academy_players_released
     }
 }
 
@@ -1272,6 +1282,7 @@ pub(crate) fn apply_catalog_to_game(
 ) -> RehydrateCounts {
     let stale_teams_removed = world_catalog::remove_orphan_stale_teams(game).len();
     let canonical = world_catalog::remove_unscheduled_canonical_duplicates(game);
+    let academies = world_catalog::remove_stale_academy_duplicates(game);
     let teams = merge_missing_teams(game, catalog_teams);
 
     let players_reassigned = reassign_stale_player_teams(game, &catalog_players);
@@ -1305,6 +1316,9 @@ pub(crate) fn apply_catalog_to_game(
         canonical_duplicates_removed: canonical.removed_teams.len(),
         canonical_players_dropped: canonical.dropped_players.len(),
         canonical_players_released: canonical.released_players,
+        stale_academies_removed: academies.removed_teams.len(),
+        stale_academy_players_dropped: academies.dropped_players.len(),
+        stale_academy_players_released: academies.released_players,
     };
     if counts.total() > 0 {
         // Rehydrated players arrive without a residency; the save was already
@@ -2884,5 +2898,522 @@ mod tests {
         assert_eq!(player.team_id, None);
         assert_eq!(player.transfer_offers.len(), 1);
         assert_eq!(player.transfer_offers[0].from_team_id, "team-1");
+    }
+
+    /// An academy team with the given id, as a save of release 2026.1113.2 or older holds.
+    fn academy_team(id: &str) -> Team {
+        let mut team = Team::new(
+            id.to_string(),
+            id.to_string(),
+            "ACA".to_string(),
+            "Germany".to_string(),
+            "Berlin".to_string(),
+            "Ground".to_string(),
+            1_000,
+        );
+        team.team_kind = olm_core::domain::team::TeamKind::Academy;
+        team
+    }
+
+    /// A player on an academy, known by a nickname and a birth date.
+    fn academy_player(id: &str, team: &str, match_name: &str, dob: &str) -> Player {
+        let mut player = rehydrate_test_player(id, Some(team));
+        player.match_name = match_name.to_string();
+        player.full_name = match_name.to_string();
+        player.date_of_birth = dob.to_string();
+        player
+    }
+
+    /// A game that still plays the stale Prime League (so the repair gate is open), holding
+    /// the stale academy `academy-prime_league-nord` next to its canonical twin
+    /// `academy-prm-nord`. Neither is linked to a club.
+    fn game_with_academy_twins() -> Game {
+        let mut game = game_with_canonical_twin("prime_league", "prm");
+        game.teams.push(academy_team("academy-prime_league-nord"));
+        game.teams.push(academy_team("academy-prm-nord"));
+        game
+    }
+
+    fn stale_academy_removed(game: &Game) -> bool {
+        game.teams
+            .iter()
+            .all(|team| team.id != "academy-prime_league-nord")
+    }
+
+    fn canonical_academy_removed(game: &Game) -> bool {
+        game.teams.iter().all(|team| team.id != "academy-prm-nord")
+    }
+
+    #[test]
+    fn rehydration_removes_an_empty_stale_academy_shell() {
+        let mut game = game_with_canonical_twin("lck-cl", "lckcl");
+        game.teams.push(academy_team("academy-lck_cl-t1"));
+        game.teams.push(academy_team("academy-lckcl-t1"));
+        game.players.push(academy_player(
+            "twin-player",
+            "academy-lckcl-t1",
+            "Kept",
+            "2005-05-05",
+        ));
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academies_removed, 1);
+        assert!(game.teams.iter().all(|team| team.id != "academy-lck_cl-t1"));
+        assert!(game.teams.iter().any(|team| team.id == "academy-lckcl-t1"));
+        assert!(game
+            .removed_team_ids
+            .contains(&"academy-lck_cl-t1".to_string()));
+        let kept = game.players.iter().find(|p| p.id == "twin-player");
+        assert_eq!(
+            kept.expect("twin player kept").team_id.as_deref(),
+            Some("academy-lckcl-t1")
+        );
+    }
+
+    #[test]
+    fn rehydration_drops_same_person_academy_players_and_releases_the_rest() {
+        let mut game = game_with_academy_twins();
+        game.players.extend([
+            academy_player(
+                "stale-same",
+                "academy-prime_league-nord",
+                "Toasty",
+                "January 19, 2006",
+            ),
+            academy_player(
+                "stale-other",
+                "academy-prime_league-nord",
+                "Solo",
+                "March 3, 2004",
+            ),
+            academy_player("twin-same", "academy-prm-nord", "toasty", "2006-01-19"),
+        ]);
+        game.scouting_assignments
+            .push(olm_core::game::ScoutingAssignment {
+                id: "assignment-1".to_string(),
+                scout_id: "scout-1".to_string(),
+                player_id: "stale-same".to_string(),
+                days_remaining: 5,
+            });
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academy_players_dropped, 1);
+        assert_eq!(counts.stale_academy_players_released, 1);
+        assert!(game.players.iter().all(|p| p.id != "stale-same"));
+        assert_eq!(game.retired_player_ids, vec!["stale-same".to_string()]);
+        assert_eq!(game.scouting_assignments[0].player_id, "twin-same");
+        let released = game.players.iter().find(|p| p.id == "stale-other");
+        assert_eq!(released.expect("player released").team_id, None);
+        let survivor = game.players.iter().find(|p| p.id == "twin-same");
+        assert_eq!(
+            survivor.expect("survivor kept").team_id.as_deref(),
+            Some("academy-prm-nord")
+        );
+    }
+
+    #[test]
+    fn rehydration_releases_a_moved_academy_player_instead_of_dropping_it() {
+        let mut game = game_with_academy_twins();
+        game.players.extend([
+            academy_player(
+                "stale-same",
+                "academy-prime_league-nord",
+                "Toasty",
+                "January 19, 2006",
+            ),
+            academy_player("twin-same", "academy-prm-nord", "Toasty", "2006-01-19"),
+        ]);
+        game.moved_player_ids.insert("stale-same".to_string());
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academy_players_dropped, 0);
+        let kept = game.players.iter().find(|p| p.id == "stale-same");
+        assert_eq!(kept.expect("moved player kept").team_id, None);
+        assert!(game.retired_player_ids.is_empty());
+    }
+
+    fn pending_offer() -> olm_core::domain::player::TransferOffer {
+        serde_json::from_value(serde_json::json!({
+            "id": "offer-1",
+            "from_team_id": "team-1",
+            "fee": 1000,
+            "wage_offered": 100,
+        }))
+        .expect("offer")
+    }
+
+    #[test]
+    fn rehydration_releases_an_academy_player_with_an_open_offer_instead_of_dropping_it() {
+        let mut game = game_with_academy_twins();
+        let mut bid_on = academy_player(
+            "stale-same",
+            "academy-prime_league-nord",
+            "Toasty",
+            "January 19, 2006",
+        );
+        bid_on.transfer_offers.push(pending_offer());
+        game.players.extend([
+            bid_on,
+            academy_player("twin-same", "academy-prm-nord", "Toasty", "2006-01-19"),
+        ]);
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academy_players_dropped, 0);
+        let kept = game.players.iter().find(|p| p.id == "stale-same");
+        let kept = kept.expect("player with an offer kept");
+        assert_eq!(kept.team_id, None);
+        assert_eq!(kept.transfer_offers.len(), 1);
+        assert!(game.retired_player_ids.is_empty());
+    }
+
+    #[test]
+    fn rehydration_releases_a_canonical_club_player_with_an_open_offer_instead_of_dropping_it() {
+        let mut game = game_with_person_records(
+            ("Linus Grönlund", "RoyalKanin", "2002-07-06"),
+            ("Kanin", "RoyalKanin", "July 6, 2002"),
+        );
+        let bid_on = game
+            .players
+            .iter_mut()
+            .find(|p| p.id == "canonical-person")
+            .unwrap();
+        bid_on.transfer_offers.push(pending_offer());
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        let kept = game.players.iter().find(|p| p.id == "canonical-person");
+        assert_eq!(kept.expect("player with an offer kept").team_id, None);
+        assert!(game.retired_player_ids.is_empty());
+    }
+
+    #[test]
+    fn rehydration_points_transfer_history_at_the_surviving_academy() {
+        use olm_core::domain::transfer_history::TransferHistoryEntry;
+
+        let mut game = game_with_academy_twins();
+        let entry: TransferHistoryEntry = serde_json::from_value(serde_json::json!({
+            "id": "transfer-1",
+            "player_id": "someone-else",
+            "from_team_id": "academy-prime_league-nord",
+            "to_team_id": "team-1",
+        }))
+        .expect("transfer entry");
+        game.transfer_history.entries.push(entry);
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        let entry = &game.transfer_history.entries[0];
+        assert_eq!(entry.from_team_id, "academy-prm-nord");
+        assert_eq!(entry.to_team_id, "team-1");
+    }
+
+    #[test]
+    fn a_second_load_with_the_catalog_brings_back_nothing_the_repairs_removed() {
+        let mut game = game_with_person_records(
+            ("Linus Grönlund", "RoyalKanin", "2002-07-06"),
+            ("Kanin", "RoyalKanin", "July 6, 2002"),
+        );
+        game.teams.push(academy_team("academy-prime_league-nord"));
+        game.teams.push(academy_team("academy-prm-nord"));
+        game.players.extend([
+            academy_player(
+                "stale-same",
+                "academy-prime_league-nord",
+                "Toasty",
+                "January 19, 2006",
+            ),
+            academy_player("twin-same", "academy-prm-nord", "Toasty", "2006-01-19"),
+        ]);
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+        let removed_teams = game.removed_team_ids.clone();
+        assert!(removed_teams.contains(&"prm-a".to_string()));
+        assert!(removed_teams.contains(&"academy-prime_league-nord".to_string()));
+        let mut club = game_with_canonical_twin("prime_league", "prm")
+            .teams
+            .into_iter()
+            .find(|team| team.id == "prm-a")
+            .expect("catalog club");
+        club.competition_id = Some("prm".to_string());
+        let catalog_players = vec![
+            academy_player("canonical-person", "prm-a", "RoyalKanin", "2002-07-06"),
+            rehydrate_test_player("canonical-player", Some("prm-a")),
+        ];
+
+        let counts = apply_catalog_to_game(&mut game, vec![club], catalog_players, vec![]);
+
+        assert_eq!(counts.teams, 0);
+        assert_eq!(counts.players, 0);
+        assert_eq!(counts.canonical_duplicates_removed, 0);
+        assert_eq!(counts.stale_academies_removed, 0);
+        assert!(game.teams.iter().all(|team| team.id != "prm-a"));
+        assert!(game.players.iter().all(|p| p.id != "canonical-person"));
+        assert!(game.players.iter().all(|p| p.id != "stale-same"));
+        let released = game.players.iter().find(|p| p.id == "canonical-player");
+        assert_eq!(released.expect("player stays released").team_id, None);
+        assert_eq!(game.removed_team_ids, removed_teams);
+    }
+
+    #[test]
+    fn rehydration_keeps_an_academy_when_both_copies_are_linked() {
+        let mut game = game_with_academy_twins();
+        for (id, academy) in [
+            ("team-1", "academy-prime_league-nord"),
+            ("team-2", "academy-prm-nord"),
+        ] {
+            let team = game.teams.iter_mut().find(|t| t.id == id).unwrap();
+            team.academy_team_id = Some(academy.to_string());
+        }
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academies_removed, 0);
+        assert!(!stale_academy_removed(&game) && !canonical_academy_removed(&game));
+    }
+
+    #[test]
+    fn rehydration_keeps_a_linked_canonical_academy_and_removes_its_stale_twin() {
+        let mut game = game_with_academy_twins();
+        let canonical = game
+            .teams
+            .iter_mut()
+            .find(|t| t.id == "academy-prm-nord")
+            .unwrap();
+        canonical.parent_team_id = Some("team-1".to_string());
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert!(stale_academy_removed(&game));
+        assert!(!canonical_academy_removed(&game));
+    }
+
+    #[test]
+    fn rehydration_keeps_the_managers_academy() {
+        let mut game = game_with_academy_twins();
+        game.manager.team_id = Some("team-1".to_string());
+        let club = game.teams.iter_mut().find(|t| t.id == "team-1").unwrap();
+        club.academy_team_id = Some("academy-prime_league-nord".to_string());
+        game.players.push(academy_player(
+            "academy-kid",
+            "academy-prime_league-nord",
+            "Kid",
+            "2007-01-01",
+        ));
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert!(!stale_academy_removed(&game));
+        let kid = game.players.iter().find(|p| p.id == "academy-kid");
+        assert_eq!(
+            kid.expect("academy player kept").team_id.as_deref(),
+            Some("academy-prime_league-nord")
+        );
+    }
+
+    /// The user's parallel academy league holds every academy of an ERL league, linked or not.
+    fn academy_league_playing(team_ids: &[&str]) -> olm_core::domain::league::League {
+        use olm_core::domain::league::{League, LeagueKind};
+
+        let ids: Vec<String> = team_ids.iter().map(|id| id.to_string()).collect();
+        let mut league = League::new(
+            "prime_league".to_string(),
+            "Prime League academies".to_string(),
+            2026,
+            &ids,
+            None,
+        );
+        league.league_kind = LeagueKind::Academy;
+        league
+    }
+
+    #[test]
+    fn rehydration_keeps_a_pair_when_an_academy_league_schedules_the_stale_copy() {
+        let mut game = game_with_academy_twins();
+        game.leagues
+            .push(academy_league_playing(&["academy-prime_league-nord"]));
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academies_removed, 0);
+        assert!(!stale_academy_removed(&game) && !canonical_academy_removed(&game));
+        assert_eq!(game.leagues[1].standings.len(), 1);
+    }
+
+    #[test]
+    fn rehydration_keeps_a_pair_when_an_academy_league_schedules_the_canonical_copy() {
+        let mut game = game_with_academy_twins();
+        game.leagues
+            .push(academy_league_playing(&["academy-prm-nord"]));
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academies_removed, 0);
+        assert!(!stale_academy_removed(&game) && !canonical_academy_removed(&game));
+    }
+
+    #[test]
+    fn rehydration_keeps_an_academy_the_manager_is_on() {
+        let mut game = game_with_academy_twins();
+        game.manager.team_id = Some("academy-prime_league-nord".to_string());
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert!(!stale_academy_removed(&game));
+    }
+
+    #[test]
+    fn rehydration_keeps_an_academy_that_names_a_parent_even_if_the_parent_does_not_link_back() {
+        let mut game = game_with_academy_twins();
+        let stale = game
+            .teams
+            .iter_mut()
+            .find(|t| t.id == "academy-prime_league-nord")
+            .unwrap();
+        stale.parent_team_id = Some("team-1".to_string());
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert!(!stale_academy_removed(&game));
+    }
+
+    #[test]
+    fn rehydration_keeps_the_stale_academy_a_club_links_and_removes_its_canonical_twin() {
+        let mut game = game_with_academy_twins();
+        let stale = game
+            .teams
+            .iter_mut()
+            .find(|t| t.id == "academy-prime_league-nord")
+            .unwrap();
+        stale.parent_team_id = Some("team-1".to_string());
+        let club = game.teams.iter_mut().find(|t| t.id == "team-1").unwrap();
+        club.academy_team_id = Some("academy-prime_league-nord".to_string());
+        game.players.extend([
+            academy_player(
+                "stale-same",
+                "academy-prime_league-nord",
+                "Toasty",
+                "January 19, 2006",
+            ),
+            academy_player("twin-same", "academy-prm-nord", "Toasty", "2006-01-19"),
+            academy_player("twin-other", "academy-prm-nord", "Solo", "2004-03-03"),
+        ]);
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academies_removed, 1);
+        assert!(!stale_academy_removed(&game));
+        assert!(canonical_academy_removed(&game));
+        assert_eq!(
+            game.removed_team_ids
+                .iter()
+                .filter(|id| *id == "academy-prm-nord")
+                .count(),
+            1
+        );
+        assert!(game.players.iter().all(|p| p.id != "twin-same"));
+        assert_eq!(game.retired_player_ids, vec!["twin-same".to_string()]);
+        let released = game.players.iter().find(|p| p.id == "twin-other");
+        assert_eq!(released.expect("player released").team_id, None);
+        let survivor = game.players.iter().find(|p| p.id == "stale-same");
+        assert_eq!(
+            survivor.expect("survivor kept").team_id.as_deref(),
+            Some("academy-prime_league-nord")
+        );
+        let club = game.teams.iter().find(|t| t.id == "team-1").unwrap();
+        assert_eq!(
+            club.academy_team_id.as_deref(),
+            Some("academy-prime_league-nord")
+        );
+    }
+
+    #[test]
+    fn rehydration_keeps_a_stale_academy_without_a_canonical_twin() {
+        let mut game = game_with_academy_twins();
+        game.teams.retain(|t| t.id != "academy-prm-nord");
+        game.players.push(academy_player(
+            "lonely",
+            "academy-prime_league-nord",
+            "Lonely",
+            "2006-06-06",
+        ));
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academies_removed, 0);
+        assert!(!stale_academy_removed(&game));
+        let kept = game.players.iter().find(|p| p.id == "lonely");
+        assert_eq!(
+            kept.expect("player kept").team_id.as_deref(),
+            Some("academy-prime_league-nord")
+        );
+    }
+
+    #[test]
+    fn rehydration_repairs_the_academies_only_once() {
+        let mut game = game_with_academy_twins();
+        game.players.extend([
+            academy_player(
+                "stale-same",
+                "academy-prime_league-nord",
+                "Toasty",
+                "January 19, 2006",
+            ),
+            academy_player("twin-same", "academy-prm-nord", "Toasty", "2006-01-19"),
+        ]);
+        let first = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+        assert_eq!(first.stale_academies_removed, 1);
+        assert_eq!(first.stale_academy_players_dropped, 1);
+        let team_ids: Vec<String> = game.teams.iter().map(|t| t.id.clone()).collect();
+        let player_ids: Vec<String> = game.players.iter().map(|p| p.id.clone()).collect();
+        let removed = game.removed_team_ids.clone();
+        let retired = game.retired_player_ids.clone();
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academies_removed, 0);
+        assert_eq!(counts.stale_academy_players_dropped, 0);
+        assert_eq!(counts.stale_academy_players_released, 0);
+        assert_eq!(counts.total(), 0);
+        assert_eq!(
+            team_ids,
+            game.teams.iter().map(|t| t.id.clone()).collect::<Vec<_>>()
+        );
+        assert_eq!(
+            player_ids,
+            game.players
+                .iter()
+                .map(|p| p.id.clone())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(removed, game.removed_team_ids);
+        assert_eq!(retired, game.retired_player_ids);
+    }
+
+    #[test]
+    fn rehydration_leaves_the_academies_of_a_new_world_alone() {
+        let mut game = rehydrate_test_game(vec![]);
+        game.teams.push(academy_team("academy-prime_league-nord"));
+        game.teams.push(academy_team("academy-prm-nord"));
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academies_removed, 0);
+        assert!(!stale_academy_removed(&game) && !canonical_academy_removed(&game));
+        assert!(game.removed_team_ids.is_empty());
+    }
+
+    #[test]
+    fn rehydration_repairs_the_academies_of_the_played_stale_league_only() {
+        let mut game = game_with_canonical_twin("lck-cl", "lckcl");
+        game.teams.push(academy_team("academy-prime_league-nord"));
+        game.teams.push(academy_team("academy-prm-nord"));
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academies_removed, 0);
+        assert!(!stale_academy_removed(&game) && !canonical_academy_removed(&game));
     }
 }

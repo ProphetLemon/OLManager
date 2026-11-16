@@ -6,7 +6,7 @@
 //! corrections file (`assets/world/catalog-corrections.json`) fixes individual fields.
 //! Everything is pure and never fails: bad input is skipped and reported.
 
-use crate::domain::player::Player;
+use crate::domain::player::{Player, TransferOfferStatus};
 use crate::domain::team::{Team, TeamKind};
 use crate::game::Game;
 use crate::generator::definitions::CompetitionManifest;
@@ -123,10 +123,20 @@ fn same_person_survivor<'a>(
 }
 
 /// Player ids whose team was changed in play, so catalog rehydration keeps them where the
-/// game put them: ids in `moved_player_ids`, players with a transfer record, and players
-/// swapped in as part of a transfer.
+/// game put them: ids in `moved_player_ids`, players with a transfer record, players swapped
+/// in as part of a transfer, and players with a pending transfer offer (it lives on the
+/// player record, so dropping the record would silently cancel it).
 pub fn transfer_protected_player_ids(game: &Game) -> HashSet<String> {
     let mut ids = game.moved_player_ids.clone();
+    for player in &game.players {
+        if player
+            .transfer_offers
+            .iter()
+            .any(|offer| offer.status == TransferOfferStatus::Pending)
+        {
+            ids.insert(player.id.clone());
+        }
+    }
     for entry in &game.transfer_history.entries {
         ids.insert(entry.player_id.clone());
         for included in &entry.included_players {
@@ -221,6 +231,95 @@ fn remap_dropped_players(game: &mut Game, survivors: &HashMap<String, String>) {
     }
 }
 
+/// Ids of the teams some league schedules.
+fn scheduled_team_ids(game: &Game) -> HashSet<&str> {
+    game.leagues
+        .iter()
+        .flat_map(|league| league.standings.iter().map(|entry| entry.team_id.as_str()))
+        .collect()
+}
+
+/// The stale competitions this save still plays: a stale league with standings, or a stale
+/// club some league schedules. Empty for a new world, which gates every duplicate repair.
+fn stale_era_competitions(game: &Game, scheduled: &HashSet<&str>) -> HashSet<&'static str> {
+    STALE_DUPLICATE_COMPETITIONS
+        .iter()
+        .map(|(stale, _)| *stale)
+        .filter(|stale| {
+            game.leagues.iter().any(|league| {
+                league.competition_id.as_deref() == Some(*stale) && !league.standings.is_empty()
+            }) || game.teams.iter().any(|team| {
+                team.competition_id.as_deref() == Some(*stale)
+                    && scheduled.contains(team.id.as_str())
+            })
+        })
+        .collect()
+}
+
+/// What `remove_teams` took out of a game.
+struct TeamRemoval {
+    /// Removed team ids, sorted.
+    removed: Vec<String>,
+    /// Ids of the dropped players, sorted.
+    dropped: Vec<String>,
+    /// Players of the removed teams released as free agents.
+    released_players: usize,
+}
+
+/// Delete `orphans` from the game. A player in `survivors` (dropped id to surviving id) is
+/// deleted, tombstoned in `retired_player_ids`, and every reference to it is pointed at the
+/// survivor; every other player and every staff member of an orphan becomes a free agent.
+/// The ids are appended to `removed_team_ids` once.
+fn remove_teams(
+    game: &mut Game,
+    orphans: HashSet<String>,
+    survivors: HashMap<String, String>,
+) -> TeamRemoval {
+    game.teams.retain(|team| !orphans.contains(&team.id));
+    game.players
+        .retain(|player| !survivors.contains_key(&player.id));
+    remap_dropped_players(game, &survivors);
+    let mut dropped: Vec<String> = survivors.into_keys().collect();
+    dropped.sort_unstable();
+    for id in &dropped {
+        if !game.retired_player_ids.contains(id) {
+            game.retired_player_ids.push(id.clone());
+        }
+    }
+    let mut released_players = 0;
+    for player in &mut game.players {
+        if player
+            .team_id
+            .as_ref()
+            .is_some_and(|id| orphans.contains(id))
+        {
+            player.team_id = None;
+            released_players += 1;
+        }
+    }
+    for member in &mut game.staff {
+        if member
+            .team_id
+            .as_ref()
+            .is_some_and(|id| orphans.contains(id))
+        {
+            member.team_id = None;
+        }
+    }
+    let mut removed: Vec<String> = orphans.into_iter().collect();
+    removed.sort_unstable();
+    for id in &removed {
+        if !game.removed_team_ids.contains(id) {
+            game.removed_team_ids.push(id.clone());
+        }
+    }
+    TeamRemoval {
+        removed,
+        dropped,
+        released_players,
+    }
+}
+
 /// What `remove_unscheduled_canonical_duplicates` changed.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct CanonicalDuplicateReport {
@@ -247,23 +346,8 @@ pub struct CanonicalDuplicateReport {
 /// has a transfer record or was swapped into a transfer is released instead, never dropped.
 /// Ids are appended to `removed_team_ids` once.
 pub fn remove_unscheduled_canonical_duplicates(game: &mut Game) -> CanonicalDuplicateReport {
-    let scheduled: HashSet<&str> = game
-        .leagues
-        .iter()
-        .flat_map(|league| league.standings.iter().map(|entry| entry.team_id.as_str()))
-        .collect();
-    let stale_competitions: HashSet<&str> = STALE_DUPLICATE_COMPETITIONS
-        .iter()
-        .map(|(stale, _)| *stale)
-        .filter(|stale| {
-            game.leagues.iter().any(|league| {
-                league.competition_id.as_deref() == Some(*stale) && !league.standings.is_empty()
-            }) || game.teams.iter().any(|team| {
-                team.competition_id.as_deref() == Some(*stale)
-                    && scheduled.contains(team.id.as_str())
-            })
-        })
-        .collect();
+    let scheduled = scheduled_team_ids(game);
+    let stale_competitions = stale_era_competitions(game, &scheduled);
     if stale_competitions.is_empty() {
         return CanonicalDuplicateReport::default();
     }
@@ -346,44 +430,11 @@ pub fn remove_unscheduled_canonical_duplicates(game: &mut Game) -> CanonicalDupl
         }
     }
 
-    game.teams.retain(|team| !orphans.contains(&team.id));
-    game.players
-        .retain(|player| !survivors.contains_key(&player.id));
-    remap_dropped_players(game, &survivors);
-    let mut dropped: Vec<String> = survivors.into_keys().collect();
-    dropped.sort_unstable();
-    for id in &dropped {
-        if !game.retired_player_ids.contains(id) {
-            game.retired_player_ids.push(id.clone());
-        }
-    }
-    let mut released_players = 0;
-    for player in &mut game.players {
-        if player
-            .team_id
-            .as_ref()
-            .is_some_and(|id| orphans.contains(id))
-        {
-            player.team_id = None;
-            released_players += 1;
-        }
-    }
-    for member in &mut game.staff {
-        if member
-            .team_id
-            .as_ref()
-            .is_some_and(|id| orphans.contains(id))
-        {
-            member.team_id = None;
-        }
-    }
-    let mut removed: Vec<String> = orphans.into_iter().collect();
-    removed.sort_unstable();
-    for id in &removed {
-        if !game.removed_team_ids.contains(id) {
-            game.removed_team_ids.push(id.clone());
-        }
-    }
+    let TeamRemoval {
+        removed,
+        dropped,
+        released_players,
+    } = remove_teams(game, orphans, survivors);
     info!(
         "[world_catalog] removed {} unscheduled canonical clubs, dropped {} duplicate players {:?}, released {}",
         removed.len(),
@@ -392,6 +443,158 @@ pub fn remove_unscheduled_canonical_duplicates(game: &mut Game) -> CanonicalDupl
         released_players
     );
     CanonicalDuplicateReport {
+        removed_teams: removed,
+        dropped_players: dropped,
+        released_players,
+    }
+}
+
+/// Stale academy families: `(stale competition, stale academy id prefix, canonical prefix)`.
+/// The two copies of an academy share the slug after the prefix (`academy-lck_cl-t1` and
+/// `academy-lckcl-t1`), which is how a twin is found. Academies carry no competition id.
+const ACADEMY_FAMILIES: [(&str, &str, &str); 2] = [
+    ("lck-cl", "academy-lck_cl-", "academy-lckcl-"),
+    ("prime_league", "academy-prime_league-", "academy-prm-"),
+];
+
+/// What `remove_stale_academy_duplicates` changed.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct AcademyDuplicateReport {
+    /// Ids of the removed academies, sorted.
+    pub removed_teams: Vec<String>,
+    /// Ids of the players dropped as the same person as a player of the surviving twin, sorted.
+    pub dropped_players: Vec<String>,
+    /// Players of the removed academies that were released as free agents.
+    pub released_players: usize,
+}
+
+/// Remove the duplicate copy of each academy that a save from releases up to 2026.1113.2
+/// holds twice (a stale `lck_cl` or `prime_league` academy next to its canonical `lckcl` or
+/// `prm` twin, paired by id), while the save still plays a stale league (the gate of
+/// `remove_unscheduled_canonical_duplicates`). The copy a club links as its academy
+/// survives; when neither is linked the canonical copy survives, and when both are linked
+/// neither is touched. A pair is also left alone when a league schedules either copy (the
+/// user's parallel academy league does). The manager's club and its academy are never
+/// removed, and an academy with no twin stays.
+///
+/// Players and staff of a removed academy follow `remove_teams`: a player who is the same
+/// person as one on the surviving twin is dropped and its references remapped, any other
+/// player is released as a free agent, and a player that moved or has a transfer record is
+/// always released. Transfer-history rows that name a removed academy point at its surviving
+/// twin.
+pub fn remove_stale_academy_duplicates(game: &mut Game) -> AcademyDuplicateReport {
+    let scheduled = scheduled_team_ids(game);
+    let stale_competitions = stale_era_competitions(game, &scheduled);
+    if stale_competitions.is_empty() {
+        return AcademyDuplicateReport::default();
+    }
+
+    let academies: HashSet<&str> = game
+        .teams
+        .iter()
+        .filter(|team| team.team_kind == TeamKind::Academy)
+        .map(|team| team.id.as_str())
+        .collect();
+    let mut linked: HashSet<&str> = game.manager.team_id.as_deref().into_iter().collect();
+    for team in &game.teams {
+        if team.parent_team_id.is_some() {
+            linked.insert(team.id.as_str());
+        }
+        linked.extend(team.academy_team_id.as_deref());
+    }
+
+    // `(removed, surviving)` academy ids.
+    let mut pairs: Vec<(&str, String)> = Vec::new();
+    for (competition, stale_prefix, canonical_prefix) in ACADEMY_FAMILIES {
+        if !stale_competitions.contains(competition) {
+            continue;
+        }
+        for stale in &academies {
+            let Some(slug) = stale.strip_prefix(stale_prefix) else {
+                continue;
+            };
+            let canonical = format!("{canonical_prefix}{slug}");
+            let Some(canonical) = academies.get(canonical.as_str()).copied() else {
+                continue;
+            };
+            let pair = match (linked.contains(stale), linked.contains(canonical)) {
+                (false, _) => Some((*stale, canonical.to_string())),
+                (true, false) => Some((canonical, (*stale).to_string())),
+                (true, true) => None,
+            };
+            // A league plays the academy (the user's parallel academy league holds every
+            // academy of an ERL league): removing a copy would leave its standings dangling.
+            if let Some((removed, surviving)) = pair
+                && !scheduled.contains(removed)
+                && !scheduled.contains(surviving.as_str())
+            {
+                pairs.push((removed, surviving));
+            }
+        }
+    }
+    if pairs.is_empty() {
+        return AcademyDuplicateReport::default();
+    }
+
+    let mut roster: HashMap<&str, Vec<&Player>> = HashMap::new();
+    for player in &game.players {
+        if let Some(team) = player.team_id.as_deref() {
+            roster.entry(team).or_default().push(player);
+        }
+    }
+    let protected = transfer_protected_player_ids(game);
+    let mut survivors: HashMap<String, String> = HashMap::new();
+    for (removed, surviving) in &pairs {
+        let mut by_name: HashMap<(String, NaiveDate), String> = HashMap::new();
+        let mut by_match_name: HashMap<(String, NaiveDate), String> = HashMap::new();
+        for player in roster.get(surviving.as_str()).into_iter().flatten() {
+            if let Some(born) = parse_date_of_birth(&player.date_of_birth) {
+                by_name
+                    .entry((person_key(&player.full_name), born))
+                    .or_insert_with(|| player.id.clone());
+                by_match_name
+                    .entry((person_key(&player.match_name), born))
+                    .or_insert_with(|| player.id.clone());
+            }
+        }
+        for player in roster.get(removed).into_iter().flatten() {
+            if protected.contains(&player.id) {
+                continue;
+            }
+            if let Some(survivor) = same_person_survivor(player, &by_name, &by_match_name) {
+                survivors.insert(player.id.clone(), survivor.to_string());
+            }
+        }
+    }
+    let orphans: HashSet<String> = pairs
+        .iter()
+        .map(|(removed, _)| removed.to_string())
+        .collect();
+    let surviving_teams: HashMap<String, String> = pairs
+        .iter()
+        .map(|(removed, surviving)| (removed.to_string(), surviving.clone()))
+        .collect();
+
+    let TeamRemoval {
+        removed,
+        dropped,
+        released_players,
+    } = remove_teams(game, orphans, survivors);
+    for entry in &mut game.transfer_history.entries {
+        for team in [&mut entry.from_team_id, &mut entry.to_team_id] {
+            if let Some(surviving) = surviving_teams.get(team.as_str()) {
+                team.clone_from(surviving);
+            }
+        }
+    }
+    info!(
+        "[world_catalog] removed {} stale academy duplicates, dropped {} duplicate players {:?}, released {}",
+        removed.len(),
+        dropped.len(),
+        dropped,
+        released_players
+    );
+    AcademyDuplicateReport {
         removed_teams: removed,
         dropped_players: dropped,
         released_players,
