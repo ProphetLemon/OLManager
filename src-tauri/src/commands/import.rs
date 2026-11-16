@@ -3112,6 +3112,52 @@ mod tests {
     }
 
     #[test]
+    fn a_second_load_with_the_catalog_brings_back_nothing_the_repairs_removed() {
+        let mut game = game_with_person_records(
+            ("Linus Grönlund", "RoyalKanin", "2002-07-06"),
+            ("Kanin", "RoyalKanin", "July 6, 2002"),
+        );
+        game.teams.push(academy_team("academy-prime_league-nord"));
+        game.teams.push(academy_team("academy-prm-nord"));
+        game.players.extend([
+            academy_player(
+                "stale-same",
+                "academy-prime_league-nord",
+                "Toasty",
+                "January 19, 2006",
+            ),
+            academy_player("twin-same", "academy-prm-nord", "Toasty", "2006-01-19"),
+        ]);
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+        let removed_teams = game.removed_team_ids.clone();
+        assert!(removed_teams.contains(&"prm-a".to_string()));
+        assert!(removed_teams.contains(&"academy-prime_league-nord".to_string()));
+        let mut club = game_with_canonical_twin("prime_league", "prm")
+            .teams
+            .into_iter()
+            .find(|team| team.id == "prm-a")
+            .expect("catalog club");
+        club.competition_id = Some("prm".to_string());
+        let catalog_players = vec![
+            academy_player("canonical-person", "prm-a", "RoyalKanin", "2002-07-06"),
+            rehydrate_test_player("canonical-player", Some("prm-a")),
+        ];
+
+        let counts = apply_catalog_to_game(&mut game, vec![club], catalog_players, vec![]);
+
+        assert_eq!(counts.teams, 0);
+        assert_eq!(counts.players, 0);
+        assert_eq!(counts.canonical_duplicates_removed, 0);
+        assert_eq!(counts.stale_academies_removed, 0);
+        assert!(game.teams.iter().all(|team| team.id != "prm-a"));
+        assert!(game.players.iter().all(|p| p.id != "canonical-person"));
+        assert!(game.players.iter().all(|p| p.id != "stale-same"));
+        let released = game.players.iter().find(|p| p.id == "canonical-player");
+        assert_eq!(released.expect("player stays released").team_id, None);
+        assert_eq!(game.removed_team_ids, removed_teams);
+    }
+
+    #[test]
     fn rehydration_keeps_an_academy_when_both_copies_are_linked() {
         let mut game = game_with_academy_twins();
         for (id, academy) in [
