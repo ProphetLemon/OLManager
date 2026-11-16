@@ -3091,6 +3091,27 @@ mod tests {
     }
 
     #[test]
+    fn rehydration_points_transfer_history_at_the_surviving_academy() {
+        use olm_core::domain::transfer_history::TransferHistoryEntry;
+
+        let mut game = game_with_academy_twins();
+        let entry: TransferHistoryEntry = serde_json::from_value(serde_json::json!({
+            "id": "transfer-1",
+            "player_id": "someone-else",
+            "from_team_id": "academy-prime_league-nord",
+            "to_team_id": "team-1",
+        }))
+        .expect("transfer entry");
+        game.transfer_history.entries.push(entry);
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        let entry = &game.transfer_history.entries[0];
+        assert_eq!(entry.from_team_id, "academy-prm-nord");
+        assert_eq!(entry.to_team_id, "team-1");
+    }
+
+    #[test]
     fn rehydration_keeps_an_academy_when_both_copies_are_linked() {
         let mut game = game_with_academy_twins();
         for (id, academy) in [

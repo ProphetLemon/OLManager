@@ -480,7 +480,8 @@ pub struct AcademyDuplicateReport {
 /// Players and staff of a removed academy follow `remove_teams`: a player who is the same
 /// person as one on the surviving twin is dropped and its references remapped, any other
 /// player is released as a free agent, and a player that moved or has a transfer record is
-/// always released.
+/// always released. Transfer-history rows that name a removed academy point at its surviving
+/// twin.
 pub fn remove_stale_academy_duplicates(game: &mut Game) -> AcademyDuplicateReport {
     let scheduled = scheduled_team_ids(game);
     let stale_competitions = stale_era_competitions(game, &scheduled);
@@ -569,12 +570,23 @@ pub fn remove_stale_academy_duplicates(game: &mut Game) -> AcademyDuplicateRepor
         .iter()
         .map(|(removed, _)| removed.to_string())
         .collect();
+    let surviving_teams: HashMap<String, String> = pairs
+        .iter()
+        .map(|(removed, surviving)| (removed.to_string(), surviving.clone()))
+        .collect();
 
     let TeamRemoval {
         removed,
         dropped,
         released_players,
     } = remove_teams(game, orphans, survivors);
+    for entry in &mut game.transfer_history.entries {
+        for team in [&mut entry.from_team_id, &mut entry.to_team_id] {
+            if let Some(surviving) = surviving_teams.get(team.as_str()) {
+                team.clone_from(surviving);
+            }
+        }
+    }
     info!(
         "[world_catalog] removed {} stale academy duplicates, dropped {} duplicate players {:?}, released {}",
         removed.len(),
