@@ -10,6 +10,8 @@ use crate::domain::player::Player;
 use crate::domain::team::{Team, TeamKind};
 use crate::game::Game;
 use crate::generator::definitions::CompetitionManifest;
+use crate::player_age::parse_date_of_birth;
+use chrono::NaiveDate;
 use log::warn;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -91,6 +93,32 @@ pub fn remove_orphan_stale_teams(game: &mut Game) -> Vec<String> {
     removed
 }
 
+/// A name compared case-insensitively with surrounding and repeated spaces ignored.
+fn person_key(name: &str) -> String {
+    name.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
+}
+
+/// Whether `player` is a person the stale competition already holds: the same full name
+/// and birth date, or the same match name and birth date (the stale records write the
+/// nickname as the full name and the date as "July 6, 2002"). A date that is missing or
+/// unreadable never matches, and neither does an empty name.
+fn is_same_person(
+    player: &Player,
+    stale_by_name: &HashSet<(String, NaiveDate)>,
+    stale_by_match_name: &HashSet<(String, NaiveDate)>,
+) -> bool {
+    let Some(born) = parse_date_of_birth(&player.date_of_birth) else {
+        return false;
+    };
+    let full_name = person_key(&player.full_name);
+    let match_name = person_key(&player.match_name);
+    (!full_name.is_empty() && stale_by_name.contains(&(full_name, born)))
+        || (!match_name.is_empty() && stale_by_match_name.contains(&(match_name, born)))
+}
+
 /// Remove the canonical clubs that no league plays, from a game whose leagues are still the
 /// stale duplicates (releases up to 2026.1113.2 built both families in the same world and
 /// scheduled only the stale one). The stale club survives: league, fixtures and standings
@@ -98,7 +126,7 @@ pub fn remove_orphan_stale_teams(game: &mut Game) -> Vec<String> {
 /// is untouched. Academy clubs and the manager's own club stay (the latter with a warning).
 ///
 /// The removed clubs' staff are freed and their players released with their wage. A player
-/// who is the same person (full name and birth date) as a player of the stale competition
+/// who is the same person as a player of the stale competition (see `is_same_person`)
 /// is dropped and tombstoned in `retired_player_ids`, so the catalog does not re-add it;
 /// one that moved or has a transfer record is released instead, never dropped.
 /// Ids are appended to `removed_team_ids` once. Returns the removed team ids.
@@ -165,17 +193,21 @@ pub fn remove_unscheduled_canonical_duplicates(game: &mut Game) -> Vec<String> {
         })
         .map(|team| team.id.as_str())
         .collect();
-    let stale_people: HashSet<(&str, &str)> = game
-        .players
-        .iter()
-        .filter(|player| {
-            player
-                .team_id
-                .as_deref()
-                .is_some_and(|id| stale_teams.contains(id))
-        })
-        .map(|player| (player.full_name.as_str(), player.date_of_birth.as_str()))
-        .collect();
+    let mut stale_by_name: HashSet<(String, NaiveDate)> = HashSet::new();
+    let mut stale_by_match_name: HashSet<(String, NaiveDate)> = HashSet::new();
+    for player in &game.players {
+        if !player
+            .team_id
+            .as_deref()
+            .is_some_and(|id| stale_teams.contains(id))
+        {
+            continue;
+        }
+        if let Some(born) = parse_date_of_birth(&player.date_of_birth) {
+            stale_by_name.insert((person_key(&player.full_name), born));
+            stale_by_match_name.insert((person_key(&player.match_name), born));
+        }
+    }
     let transferred: HashSet<&str> = game
         .transfer_history
         .entries
@@ -191,7 +223,7 @@ pub fn remove_unscheduled_canonical_duplicates(game: &mut Game) -> Vec<String> {
         if on_orphan
             && !game.moved_player_ids.contains(&player.id)
             && !transferred.contains(player.id.as_str())
-            && stale_people.contains(&(player.full_name.as_str(), player.date_of_birth.as_str()))
+            && is_same_person(player, &stale_by_name, &stale_by_match_name)
         {
             dropped.insert(player.id.clone());
         }

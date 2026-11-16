@@ -2493,6 +2493,64 @@ mod tests {
         assert!(game.players.iter().all(|p| p.id != "canonical-person"));
     }
 
+    /// A canonical and a stale record with the given names and birth dates, on the prm pair.
+    fn game_with_person_records(canonical: (&str, &str, &str), stale: (&str, &str, &str)) -> Game {
+        let mut game = game_with_canonical_twin("prime_league", "prm");
+        for (id, team, (full_name, match_name, dob)) in [
+            ("canonical-person", "prm-a", canonical),
+            ("stale-person", "prime_league-a", stale),
+        ] {
+            let mut player = rehydrate_test_player(id, Some(team));
+            player.full_name = full_name.to_string();
+            player.match_name = match_name.to_string();
+            player.date_of_birth = dob.to_string();
+            game.players.push(player);
+        }
+        game
+    }
+
+    #[test]
+    fn rehydration_drops_a_same_person_known_by_match_name_and_a_differently_written_date() {
+        let mut game = game_with_person_records(
+            ("Linus Grönlund", "RoyalKanin", "2002-07-06"),
+            ("Kanin", " royalkanin ", "July 6, 2002"),
+        );
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert!(game.players.iter().all(|p| p.id != "canonical-person"));
+        assert_eq!(
+            game.retired_player_ids,
+            vec!["canonical-person".to_string()]
+        );
+    }
+
+    #[test]
+    fn rehydration_keeps_a_player_with_the_same_match_name_and_another_birth_date() {
+        let mut game = game_with_person_records(
+            ("Linus Grönlund", "RoyalKanin", "2002-07-06"),
+            ("Kanin", "RoyalKanin", "July 7, 2002"),
+        );
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert!(game.players.iter().any(|p| p.id == "canonical-person"));
+        assert!(game.retired_player_ids.is_empty());
+    }
+
+    #[test]
+    fn rehydration_keeps_a_player_with_the_same_match_name_and_no_readable_date() {
+        let mut game = game_with_person_records(
+            ("Linus Grönlund", "RoyalKanin", ""),
+            ("Kanin", "RoyalKanin", ""),
+        );
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert!(game.players.iter().any(|p| p.id == "canonical-person"));
+        assert!(game.retired_player_ids.is_empty());
+    }
+
     #[test]
     fn rehydration_releases_a_moved_player_instead_of_dropping_it() {
         let mut game = game_with_canonical_twin("prime_league", "prm");
