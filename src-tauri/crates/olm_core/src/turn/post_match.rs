@@ -1149,28 +1149,37 @@ fn update_team_form(
     }
 }
 
+/// Minutes a player was on the map in the report. A series sums every game, so this is the
+/// series total; it stays wide so a long best-of-five never wraps.
+fn minutes_on_map(stats: &crate::engine::PlayerMatchStats) -> u32 {
+    if stats.duration_seconds > 0 {
+        stats.duration_seconds / 60
+    } else {
+        u32::from(stats.minutes_played)
+    }
+}
+
+/// Condition points lost for `minutes` on the map. Round up so even a short stint costs at
+/// least one point.
+fn stamina_depletion(minutes: u32, mental_resilience: u8) -> u8 {
+    let minutes_factor = f64::from(minutes) / 90.0;
+    let stamina_factor = f64::from(mental_resilience) / 100.0;
+    let base_depletion = 15.0 * (1.0 - stamina_factor * 0.25);
+    (base_depletion * minutes_factor).ceil() as u8
+}
+
 fn deplete_match_stamina(game: &mut Game, team_id: &str, report: &crate::engine::MatchReport) {
     for player in game.players.iter_mut() {
         if player.team_id.as_deref() == Some(team_id) {
             let minutes = report
                 .player_stats
                 .get(&player.id)
-                .map(|ps| {
-                    if ps.duration_seconds > 0 {
-                        (ps.duration_seconds / 60) as u8
-                    } else {
-                        ps.minutes_played as u8
-                    }
-                })
+                .map(minutes_on_map)
                 .unwrap_or(0);
             if minutes == 0 {
                 continue;
             }
-            let minutes_factor = minutes as f64 / 90.0;
-            let stamina_factor = player.attributes.mental_resilience as f64 / 100.0;
-            let base_depletion = 15.0 * (1.0 - stamina_factor * 0.25);
-            // Round up so even a short stint costs at least one point.
-            let depletion = (base_depletion * minutes_factor).ceil() as u8;
+            let depletion = stamina_depletion(minutes, player.attributes.mental_resilience);
             player.condition = player.condition.saturating_sub(depletion);
 
             if minutes >= 60 {
@@ -1181,6 +1190,49 @@ fn deplete_match_stamina(game: &mut Game, team_id: &str, report: &crate::engine:
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod stamina_minutes_tests {
+    use super::{minutes_on_map, stamina_depletion};
+    use crate::engine::PlayerMatchStats;
+
+    fn series_minutes(minutes: u32) -> u32 {
+        minutes_on_map(&PlayerMatchStats {
+            duration_seconds: minutes * 60,
+            ..Default::default()
+        })
+    }
+
+    #[test]
+    fn a_series_of_two_hundred_and_sixty_minutes_should_not_wrap() {
+        assert_eq!(series_minutes(260), 260);
+    }
+
+    #[test]
+    fn a_longer_series_should_deplete_more_condition() {
+        let depletion = |minutes| stamina_depletion(series_minutes(minutes), 50);
+        assert!(depletion(260) > depletion(200));
+    }
+
+    #[test]
+    fn a_single_game_should_keep_its_minutes() {
+        assert_eq!(series_minutes(32), 32);
+    }
+
+    #[test]
+    fn the_played_minutes_should_stand_in_when_the_duration_is_missing() {
+        let stats = PlayerMatchStats {
+            minutes_played: 45,
+            ..Default::default()
+        };
+        assert_eq!(minutes_on_map(&stats), 45);
+    }
+
+    #[test]
+    fn a_short_stint_should_cost_at_least_one_point() {
+        assert_eq!(stamina_depletion(1, 100), 1);
     }
 }
 
