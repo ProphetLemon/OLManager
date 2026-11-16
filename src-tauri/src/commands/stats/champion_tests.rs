@@ -52,6 +52,7 @@ fn record(
         vision_score: 30,
         wards_placed: 10,
         bans_json: "[]".to_string(),
+        games: 1,
     }
 }
 
@@ -618,4 +619,51 @@ fn a_background_match_reaches_the_command_through_the_real_recording_path() {
             .unwrap()
             .contains("null")
     );
+}
+
+#[test]
+fn champion_averages_read_per_game_not_per_series_row() {
+    // One single game of 5 kills and one best-of-three row summing 15: 20 kills in 4 games.
+    let mut series = record(
+        "f2",
+        "p1",
+        "a",
+        Some("Ahri"),
+        MatchOutcome::Win,
+        (15, 6, 18),
+    );
+    series.games = 3;
+    series.duration_seconds = 5400;
+    series.gold_earned = 36_000;
+    let stats = stats_of(vec![
+        record("f1", "p1", "a", Some("Ahri"), MatchOutcome::Win, (5, 2, 6)),
+        series,
+    ]);
+
+    let result = dto(&stats, "Ahri");
+
+    assert_eq!(
+        (result.avg_kills, result.avg_deaths, result.avg_assists),
+        (5.0, 2.0, 6.0)
+    );
+    assert_eq!(result.avg_duration, 1800.0);
+    assert_eq!(result.avg_gold, 12_000.0);
+}
+
+#[test]
+fn champion_totals_still_count_one_game_per_fixture_row() {
+    let mut series = record(
+        "f2",
+        "p1",
+        "a",
+        Some("Ahri"),
+        MatchOutcome::Win,
+        (15, 6, 18),
+    );
+    series.games = 3;
+    let stats = stats_of(vec![series]);
+
+    let result = dto(&stats, "Ahri");
+
+    assert_eq!((result.total_games, result.total_wins), (1, 1));
 }

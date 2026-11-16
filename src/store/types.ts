@@ -313,6 +313,8 @@ export interface PlayerMatchHistoryEntryData {
   damageToChampions: number;
   visionScore: number;
   wardsPlaced: number;
+  /** Games the row sums: 1 for a single game, the series' games for a best-of. */
+  games: number;
 }
 
 export interface TeamMatchStatsRecord {

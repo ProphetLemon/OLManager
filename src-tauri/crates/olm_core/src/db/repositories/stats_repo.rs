@@ -174,6 +174,7 @@ fn load_stats_state_from_lol_tables(conn: &Connection) -> Result<StatsState, Str
                 vision_score: row.get(19)?,
                 wards_placed: row.get(20)?,
                 bans_json: row.get(21).unwrap_or_default(),
+                games: 1,
             })
         })
         .map_err(|e| format!("Failed to query lol_player_match_stats: {}", e))?;
@@ -212,6 +213,7 @@ fn load_stats_state_from_lol_tables(conn: &Connection) -> Result<StatsState, Str
                 gold_earned: row.get(12)?,
                 damage_dealt: row.get(13)?,
                 objectives: row.get(14)?,
+                games: 1,
             })
         })
         .map_err(|e| format!("Failed to query lol_team_match_stats: {}", e))?;
@@ -283,6 +285,7 @@ fn load_stats_state_from_legacy_tables(conn: &Connection) -> Result<StatsState, 
                 vision_score,
                 wards_placed,
                 bans_json: String::new(),
+                games: 1,
             })
         })
         .map_err(|e| format!("Failed to query legacy player_match_stats: {}", e))?;
@@ -341,6 +344,7 @@ fn load_stats_state_from_legacy_tables(conn: &Connection) -> Result<StatsState, 
                 } else {
                     row.get(19)?
                 },
+                games: 1,
             })
         })
         .map_err(|e| format!("Failed to query legacy team_match_stats: {}", e))?;

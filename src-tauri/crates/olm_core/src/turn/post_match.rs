@@ -52,8 +52,15 @@ fn compact_match_report(report: &crate::engine::MatchReport) -> CompactMatchRepo
         })
         .collect();
 
+    // A series report keeps the last game's `total_minutes` beside the summed duration.
+    let total_minutes = if report.game_duration_seconds > 0 {
+        report.game_duration_seconds / 60
+    } else {
+        report.total_minutes.into()
+    };
+
     CompactMatchReport {
-        total_minutes: report.total_minutes.into(),
+        total_minutes,
         game_duration_seconds: report.game_duration_seconds,
         home_stats: compact_team_stats(&report.home_stats, report.home_possession.round() as u8),
         away_stats: compact_team_stats(
@@ -325,6 +332,7 @@ fn build_stats_state_capture(
         .map(|(player_id, champion_id)| (player_id.as_str(), champion_id.as_str()))
         .collect();
     let bans_json = serde_json::to_string(bans).unwrap_or_default();
+    let games = games_in_report(report);
 
     let player_matches = report
         .player_stats
@@ -367,6 +375,7 @@ fn build_stats_state_capture(
                 vision_score: stats.vision_score,
                 wards_placed: stats.wards_placed,
                 bans_json: bans_json.clone(),
+                games,
             })
         })
         .collect();
@@ -388,6 +397,7 @@ fn build_stats_state_capture(
             gold_earned: report.home_stats.gold_earned,
             damage_dealt: report.home_stats.damage_dealt,
             objectives: report.home_stats.objectives,
+            games,
         },
         TeamMatchStatsRecord {
             fixture_id: fixture.id.clone(),
@@ -405,6 +415,7 @@ fn build_stats_state_capture(
             gold_earned: report.away_stats.gold_earned,
             damage_dealt: report.away_stats.damage_dealt,
             objectives: report.away_stats.objectives,
+            games,
         },
     ];
 
@@ -1007,6 +1018,38 @@ fn capped_positive_recovery(delta: i16, player: &crate::domain::player::Player) 
     delta
 }
 
+/// Kills credited to `player_id` in the report's kill feed; the fallback for engines that
+/// leave `PlayerMatchStats::kills` at zero.
+fn kill_feed_kills(report: &crate::engine::MatchReport, player_id: &str) -> u16 {
+    report
+        .kill_feed
+        .iter()
+        .filter(|kill| kill.killer_id == player_id)
+        .count() as u16
+}
+
+/// The individual part of a player's post-match morale change. The report carries series
+/// sums, so it reads the player's average game (`feed_kills` stands in for the kills when
+/// the stats row has none): a line that is worth the same in one game is worth the same in
+/// a best-of-five, instead of growing with the number of games.
+fn individual_morale_delta(
+    stats: &crate::engine::PlayerMatchStats,
+    feed_kills: u16,
+    games: u8,
+) -> i16 {
+    let mut per_game = PerGame::of(stats, games);
+    if stats.kills == 0 {
+        per_game.kills = f64::from(feed_kills) / f64::from(games);
+    }
+    let mut delta = per_game.kills * 3.0 + per_game.assists * 2.0;
+    if per_game.deaths >= 5.0 {
+        delta -= 3.0;
+    } else if per_game.kills + per_game.assists >= 6.0 {
+        delta += 2.0;
+    }
+    delta.round() as i16
+}
+
 /// Update player morale based on match result and individual performance.
 fn update_post_match_morale(
     game: &mut Game,
@@ -1019,6 +1062,7 @@ fn update_post_match_morale(
 
     let home_won = report.home_wins > report.away_wins;
     let away_won = report.away_wins > report.home_wins;
+    let games = games_in_report(report);
 
     for player in game.players.iter_mut() {
         let tid = match player.team_id.as_deref() {
@@ -1038,25 +1082,9 @@ fn update_post_match_morale(
             base_loss + margin_penalty
         };
 
-        let mut individual_delta: i16 = 0;
-        if let Some(ps) = report.player_stats.get(&player.id) {
-            let kills = if ps.kills > 0 {
-                ps.kills
-            } else {
-                report
-                    .kill_feed
-                    .iter()
-                    .filter(|kill| kill.killer_id == player.id)
-                    .count() as u16
-            };
-            individual_delta += kills as i16 * 3;
-            individual_delta += ps.assists as i16 * 2;
-            if ps.deaths >= 5 {
-                individual_delta -= 3;
-            } else if kills + ps.assists >= 6 {
-                individual_delta += 2;
-            }
-        }
+        let individual_delta = report.player_stats.get(&player.id).map_or(0, |ps| {
+            individual_morale_delta(ps, kill_feed_kills(report, &player.id), games)
+        });
 
         let total_delta = capped_positive_recovery(result_delta + individual_delta, player);
         let new_morale = (base_morale + total_delta).clamp(10, 100) as u8;
@@ -1132,28 +1160,37 @@ fn update_team_form(
     }
 }
 
+/// Minutes a player was on the map in the report. A series sums every game, so this is the
+/// series total; it stays wide so a long best-of-five never wraps.
+fn minutes_on_map(stats: &crate::engine::PlayerMatchStats) -> u32 {
+    if stats.duration_seconds > 0 {
+        stats.duration_seconds / 60
+    } else {
+        u32::from(stats.minutes_played)
+    }
+}
+
+/// Condition points lost for `minutes` on the map. Round up so even a short stint costs at
+/// least one point.
+fn stamina_depletion(minutes: u32, mental_resilience: u8) -> u8 {
+    let minutes_factor = f64::from(minutes) / 90.0;
+    let stamina_factor = f64::from(mental_resilience) / 100.0;
+    let base_depletion = 15.0 * (1.0 - stamina_factor * 0.25);
+    (base_depletion * minutes_factor).ceil() as u8
+}
+
 fn deplete_match_stamina(game: &mut Game, team_id: &str, report: &crate::engine::MatchReport) {
     for player in game.players.iter_mut() {
         if player.team_id.as_deref() == Some(team_id) {
             let minutes = report
                 .player_stats
                 .get(&player.id)
-                .map(|ps| {
-                    if ps.duration_seconds > 0 {
-                        (ps.duration_seconds / 60) as u8
-                    } else {
-                        ps.minutes_played as u8
-                    }
-                })
+                .map(minutes_on_map)
                 .unwrap_or(0);
             if minutes == 0 {
                 continue;
             }
-            let minutes_factor = minutes as f64 / 90.0;
-            let stamina_factor = player.attributes.mental_resilience as f64 / 100.0;
-            let base_depletion = 15.0 * (1.0 - stamina_factor * 0.25);
-            // Round up so even a short stint costs at least one point.
-            let depletion = (base_depletion * minutes_factor).ceil() as u8;
+            let depletion = stamina_depletion(minutes, player.attributes.mental_resilience);
             player.condition = player.condition.saturating_sub(depletion);
 
             if minutes >= 60 {
@@ -1164,6 +1201,49 @@ fn deplete_match_stamina(game: &mut Game, team_id: &str, report: &crate::engine:
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod stamina_minutes_tests {
+    use super::{minutes_on_map, stamina_depletion};
+    use crate::engine::PlayerMatchStats;
+
+    fn series_minutes(minutes: u32) -> u32 {
+        minutes_on_map(&PlayerMatchStats {
+            duration_seconds: minutes * 60,
+            ..Default::default()
+        })
+    }
+
+    #[test]
+    fn a_series_of_two_hundred_and_sixty_minutes_should_not_wrap() {
+        assert_eq!(series_minutes(260), 260);
+    }
+
+    #[test]
+    fn a_longer_series_should_deplete_more_condition() {
+        let depletion = |minutes| stamina_depletion(series_minutes(minutes), 50);
+        assert!(depletion(260) > depletion(200));
+    }
+
+    #[test]
+    fn a_single_game_should_keep_its_minutes() {
+        assert_eq!(series_minutes(32), 32);
+    }
+
+    #[test]
+    fn the_played_minutes_should_stand_in_when_the_duration_is_missing() {
+        let stats = PlayerMatchStats {
+            minutes_played: 45,
+            ..Default::default()
+        };
+        assert_eq!(minutes_on_map(&stats), 45);
+    }
+
+    #[test]
+    fn a_short_stint_should_cost_at_least_one_point() {
+        assert_eq!(stamina_depletion(1, 100), 1);
     }
 }
 
@@ -1798,6 +1878,60 @@ mod progression_bound_tests {
 }
 
 #[cfg(test)]
+mod series_morale_tests {
+    use super::individual_morale_delta;
+    use crate::engine::PlayerMatchStats;
+
+    /// The report line of a series in which every game was `(kills, deaths, assists)`.
+    fn series_line(per_game: (u16, u16, u16), games: u8) -> PlayerMatchStats {
+        let games = u16::from(games);
+        PlayerMatchStats {
+            kills: per_game.0 * games,
+            deaths: per_game.1 * games,
+            assists: per_game.2 * games,
+            ..Default::default()
+        }
+    }
+
+    fn delta(per_game: (u16, u16, u16), games: u8) -> i16 {
+        individual_morale_delta(&series_line(per_game, games), 0, games)
+    }
+
+    #[test]
+    fn a_single_game_should_keep_its_individual_delta() {
+        // 4 kills * 3 + 6 assists * 2 + 2 for a 10 kill-and-assist game.
+        assert_eq!(delta((4, 2, 6), 1), 26);
+    }
+
+    #[test]
+    fn the_same_per_game_line_should_give_the_same_delta_over_any_number_of_games() {
+        let one = delta((4, 2, 6), 1);
+        assert_eq!([2, 3, 5].map(|games| delta((4, 2, 6), games)), [one; 3]);
+    }
+
+    #[test]
+    fn three_deaths_a_game_over_a_best_of_three_should_not_trip_the_fed_penalty() {
+        // Nine summed deaths, but never more than three in a game: the +2 stays.
+        assert_eq!(delta((3, 3, 4), 3), delta((3, 3, 4), 1));
+    }
+
+    #[test]
+    fn five_deaths_in_every_game_should_still_trip_the_fed_penalty() {
+        assert_eq!(delta((1, 5, 0), 3), 3 - 3);
+    }
+
+    #[test]
+    fn the_kill_feed_should_stand_in_for_missing_kills_per_game() {
+        let stats = PlayerMatchStats {
+            assists: 18,
+            ..Default::default()
+        };
+        // 12 feed kills over 3 games is 4 a game: 12 + 12 + 2.
+        assert_eq!(individual_morale_delta(&stats, 12, 3), 26);
+    }
+}
+
+#[cfg(test)]
 mod laning_relative_tests {
     use super::apply_lol_profile_progression;
     use crate::clock::GameClock;
@@ -2339,5 +2473,46 @@ mod shotcalling_relative_tests {
             assert_eq!(shotcalling_assist_cut(role), cut);
             assert!(cut.0 > cut.1);
         }
+    }
+}
+
+#[cfg(test)]
+mod compact_report_tests {
+    use super::compact_match_report;
+    use crate::engine::{MatchReport, MatchReportEndReason};
+
+    fn report(total_minutes: u8, game_duration_seconds: u32) -> MatchReport {
+        MatchReport {
+            home_wins: 2,
+            away_wins: 1,
+            home_stats: Default::default(),
+            away_stats: Default::default(),
+            events: Vec::new(),
+            kill_feed: Vec::new(),
+            player_stats: Default::default(),
+            home_possession: 50.0,
+            total_minutes,
+            game_duration_seconds,
+            ended_by: MatchReportEndReason::NexusDestroyed,
+        }
+    }
+
+    #[test]
+    fn a_series_report_should_compact_to_its_summed_minutes() {
+        // The merged series keeps the last game's minutes beside the summed duration.
+        let compact = compact_match_report(&report(31, 95 * 60));
+        assert_eq!(compact.total_minutes, 95);
+    }
+
+    #[test]
+    fn a_single_game_should_keep_its_minutes() {
+        let compact = compact_match_report(&report(31, 31 * 60));
+        assert_eq!(compact.total_minutes, 31);
+    }
+
+    #[test]
+    fn a_report_without_a_duration_should_keep_its_minutes() {
+        let compact = compact_match_report(&report(31, 0));
+        assert_eq!(compact.total_minutes, 31);
     }
 }

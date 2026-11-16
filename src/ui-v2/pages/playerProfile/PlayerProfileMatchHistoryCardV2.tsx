@@ -85,6 +85,14 @@ export default function PlayerProfileMatchHistoryCardV2({ history, t, language }
                 </div>
 
                 <span className="shrink-0 text-xs tabular-nums text-foreground/70">
+                  {entry.games > 1 ? (
+                    <span
+                      className="mr-1.5 text-caption text-muted-foreground"
+                      aria-label={`${entry.games} ${t("common.games")}`}
+                    >
+                      ×{entry.games}
+                    </span>
+                  ) : null}
                   {entry.kills}/{entry.deaths}/{entry.assists}
                 </span>
               </div>
