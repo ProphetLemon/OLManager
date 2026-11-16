@@ -65,7 +65,10 @@ export function selectPool(input: {
   context: { playerIndex: unknown; staffIndex: unknown; overrides?: unknown; teamKeys: Set<string> };
   world: World;
   rosterIds?: Set<string>;
+  rosterTitles?: { player?: Set<string>; staff?: Set<string> };
 }): PoolSelection;
+/** Comparison key of a page title: NFKC, underscores as spaces, collapsed and trimmed whitespace, lower case. */
+export function titleKey(title: unknown): string;
 
 export interface PoolOpEntry {
   op: Record<string, any>;

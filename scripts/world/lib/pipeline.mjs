@@ -144,7 +144,10 @@ export async function runRefresh(options) {
       teamKeys: gameTeamKeys(teamMap),
     };
     const rosterIds = new Set([...ops.players, ...ops.staff].map((entry) => entry.id));
-    const selection = selectPool({ people: inputs.people, context, world, rosterIds });
+    // Titles too: the same person can be spelled differently on a team page and in the pool query, which hashes to another id.
+    const addedPages = (entries) => new Set(entries.filter((entry) => entry.op.op === "add" && entry.page).map((entry) => entry.page));
+    const rosterTitles = { player: addedPages(ops.players), staff: addedPages(ops.staff) };
+    const selection = selectPool({ people: inputs.people, context, world, rosterIds, rosterTitles });
     // Per-game stats rate the players who have enough of them; without them everybody takes the tier default.
     const positions = new Map(selection.players.map((e) => [e.page, e.role]));
     const anchors = options.pool.anchors ?? null;

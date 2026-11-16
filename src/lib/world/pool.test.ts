@@ -129,6 +129,23 @@ describe("selectPool", () => {
     expect(handled.statuses.get("Soboro")).toMatchObject({ code: "roster-overlay" });
   });
 
+  it("treats a case, spacing or Unicode-form difference of the roster's title as the same person", () => {
+    const rows = [row({ player: "revenge (Yoon Jeong-bin)", ign: "Revenge", name: "Yoon Jeong-bin", rmin: "Bot", rmax: "Bot", prole: "Bot" })];
+    expect(select(rows).players).toHaveLength(1);
+    for (const title of ["Revenge (Yoon Jeong-bin)", "  revenge  (Yoon_Jeong-bin) ", "REVENGE (YOON JEONG-BIN)"]) {
+      const handled = select(rows, { rosterTitles: { player: new Set([title]) } });
+      expect(handled.players, title).toHaveLength(0);
+      expect(handled.statuses.get("revenge (Yoon Jeong-bin)"), title).toMatchObject({ code: "roster-overlay" });
+    }
+    // Decomposed (i + combining acute) against precomposed: the same title once Unicode-normalised.
+    const accented = [row({ player: "Muri\u0301lo", ign: "Murilo", name: "Some One" })];
+    expect(select(accented).players).toHaveLength(1);
+    expect(select(accented, { rosterTitles: { player: new Set(["Mur\u00edlo"]) } }).players).toHaveLength(0);
+    expect(select(rows, { rosterTitles: { player: new Set(["Revenge (Another Person)"]) } }).players).toHaveLength(1);
+    // Kinds stay apart: a page the roster adds as a head coach does not remove the same page from the pool's players.
+    expect(select(rows, { rosterTitles: { staff: new Set(["Revenge (Yoon Jeong-bin)"]) } }).players).toHaveLength(1);
+  });
+
   it("honours the reviewed id-map: a pinned page is the game's person, a rejected pair is not", () => {
     const pinned = { ...context, overrides: { players: [{ page: "Brand New", id: world.players[0].id }], staff: [], rejections: [] } };
     const rows = [row({ player: "Brand New", ign: "Brand New", name: "Totally Other" })];

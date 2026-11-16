@@ -124,6 +124,17 @@ describe("refresh with --pool", () => {
     expect(adds[0]).toMatchObject({ player: { team_id: "lec-fnatic" } });
   });
 
+  it("compares people by their normalised page title, not by id: a case-only difference is one person (Revenge)", async () => {
+    // The team page spells him "Soboro" (teamed add, id from that spelling); the pool's Cargo page is "soboro" (another id).
+    const twin = personFromRow(row({ player: "soboro", ign: "Soboro", name: "Lim Seong-min", country: "South Korea", rmin: "Top", rmax: "Top", prole: "Top", team: "" }));
+    expect(poolId("player", "soboro")).not.toBe(poolId("player", "Soboro"));
+    const result = await run({ inputs: { ...inputs, people: new Map([...inputs.people, ["soboro", twin]]) } });
+    expect(result.pool!.selection.statuses.get("soboro")).toMatchObject({ state: "excluded", code: "roster-overlay" });
+    const adds = result.overlay.players.filter((op) => op.op === "add" && op.player.match_name === "Soboro");
+    expect(adds).toHaveLength(1);
+    expect(adds[0]).toMatchObject({ player: { team_id: "lec-fnatic" } });
+  });
+
   it("fails the gates when the pool outgrows the app's overlay size, instead of writing it", async () => {
     const base = await run({ inputs });
     expect(base.pool!.bytes).toBeLessThan(POOL_LIMITS.overlayBytes);

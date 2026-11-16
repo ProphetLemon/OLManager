@@ -177,7 +177,7 @@ Players page** (it is the only source of country, birth date and role); qualifie
 `--pool-cap` roster entries (promotion stages and closed qualifiers stay, open qualifiers go). The cap leaves a qualifier out
 whole; it never keeps "the first 60 names" of one. **Who is out.** Anybody the game has (`lib/match.mjs` plus the reviewed
 `id-map.json`), anybody whose current team is in `team-map.json` (the roster overlay handles them), anybody the same run's roster
-overlay adds or moves, players with no usable position, staff whose label is not coaching/analysis/scouting, and anybody the
+overlay adds or moves (matched by id, and by page title: Unicode-normalised, case-insensitive, underscores as spaces, so "revenge (X)" in the pool is the "Revenge (X)" the team page adds), players with no usable position, staff whose label is not coaching/analysis/scouting, and anybody the
 matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision`). Those are listed in the report with the reason.
 
 **Op shape** (the game's `Player`/`Staff` record, `team_id: null`, plus a `pool` object the game ignores; `Bot` becomes `ADC`). The `pool` object is review data: the gates and the report read it in memory, but the file written (`serializeOverlay`) is compact JSON without it, because about 4.7k adds pretty-printed with it come to about 5 MB and the app rejects more than 4 MiB. A roster-only overlay is still 2-space JSON, byte-identical to before. The example below is the in-memory op:

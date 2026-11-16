@@ -45,6 +45,13 @@ export function isoDate(value) {
 /** Stable id of a pool person: the same hash the roster refresh uses for a new person, keyed by the Leaguepedia page. */
 export const poolId = (kind, page) => deterministicId(kind === "staff" ? "staff" : "player", page);
 
+/**
+ * How two spellings of a page title compare: Unicode-normalised (NFKC), underscores read as spaces like the wiki does,
+ * whitespace collapsed and trimmed, case-insensitive. The roster path and the pool path can spell one person's page
+ * differently ("Revenge (Yoon Jeong-bin)" and "revenge (Yoon Jeong-bin)"), and the id is a hash of the spelling.
+ */
+export const titleKey = (title) => String(title ?? "").normalize("NFKC").replace(/_/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+
 const countryOf = (person) => person.profile.country || person.profile.nationality || "";
 
 // --- Tournaments ------------------------------------------------------------------------------------
@@ -80,8 +87,12 @@ function identityKey(person) {
  * @param {{playerIndex: unknown, staffIndex: unknown, overrides: unknown, teamKeys: Set<string>}} input.context what the game has
  * @param {import("./world.mjs").World} input.world
  * @param {Set<string>} [input.rosterIds] ids the roster overlay already adds or touches in this run
+ * @param {{player?: Set<string>, staff?: Set<string>}} [input.rosterTitles] page titles of the players and of the staff the
+ *   roster overlay adds in this run; a pool person of the same kind whose page has the same `titleKey` is the same person,
+ *   whatever id his spelling hashes to. Kinds stay apart: a head coach is not also a pool player.
  */
-export function selectPool({ people, context, world, rosterIds = new Set() }) {
+export function selectPool({ people, context, world, rosterIds = new Set(), rosterTitles = {} }) {
+  const rosterKeys = { player: new Set([...(rosterTitles.player ?? [])].map(titleKey)), staff: new Set([...(rosterTitles.staff ?? [])].map(titleKey)) };
   const counts = { considered: 0, noPage: 0, inGame: 0, onGameTeam: 0, handledByRoster: 0, uncertain: 0, nonSportingStaff: 0, noPosition: 0, duplicates: 0, collisions: 0 };
   const statuses = new Map();
   const refused = [];
@@ -118,9 +129,11 @@ export function selectPool({ people, context, world, rosterIds = new Set() }) {
       continue;
     }
     const id = poolId(person.kind, person.page);
-    if (rosterIds.has(id)) {
+    const sameTitle = rosterKeys[person.kind === "staff" ? "staff" : "player"].has(titleKey(person.page));
+    if (rosterIds.has(id) || sameTitle) {
       counts.handledByRoster += 1;
-      statuses.set(person.page, { state: "excluded", code: "roster-overlay", reason: `the roster overlay of this run already adds or moves ${id}`, id });
+      const why = sameTitle && !rosterIds.has(id) ? `already adds the page "${person.page}" under another spelling` : `already adds or moves ${id}`;
+      statuses.set(person.page, { state: "excluded", code: "roster-overlay", reason: `the roster overlay of this run ${why}`, id });
       continue;
     }
     let role;
