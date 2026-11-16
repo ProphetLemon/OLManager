@@ -516,13 +516,13 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
       {linkedClubFinance && (
         <Card data-testid="linked-club-finance" className="shrink-0">
           <CardHeader className="pb-2">
-            <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
+            <CardTitle className="font-heading text-sm uppercase tracking-wide text-muted-foreground">
               {t("youthAcademy.linkedFinance.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
             <div>
-              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
+              <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">
                 {t("youthAcademy.linkedFinance.balance")}
               </p>
               <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", linkedClubFinance.balance >= 0 ? "text-positive" : "text-negative")}>
@@ -530,7 +530,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
               </p>
             </div>
             <div>
-              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
+              <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">
                 {t("youthAcademy.linkedFinance.sponsor")}
               </p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">
@@ -538,7 +538,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
               </p>
             </div>
             <div>
-              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
+              <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">
                 {t("youthAcademy.linkedFinance.wages")}
               </p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">
