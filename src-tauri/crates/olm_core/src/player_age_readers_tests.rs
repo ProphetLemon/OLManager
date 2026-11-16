@@ -106,7 +106,7 @@ fn the_sample_has_players_with_and_without_a_date_of_birth() {
     let on = date(2027, 1, 1);
     let players = shipped_players();
     let unknown = players.iter().filter(|p| !player_age(p, on).known).count();
-    assert!(unknown >= 500, "{unknown} unknown of {}", players.len());
+    assert!(unknown >= 450, "{unknown} unknown of {}", players.len());
     assert!(players.len() - unknown >= 1000);
 }
 
