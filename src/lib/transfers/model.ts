@@ -4,6 +4,7 @@ import { findAcademyTeamForParent } from "@/store/academySelectors";
 import { getLolRoleForPlayer } from "@/lib/squad/helpers";
 import { calcAge, compareAgesUnknownLast } from "../../lib/common/helpers";
 import { normaliseNationality } from "../../lib/common/countries";
+import { parseDateOfBirth } from "../../lib/formatting/valueFormatting";
 
 function normalizePlayerKey(player: PlayerData): string {
   const normalizeToken = (value: string): string =>
@@ -36,13 +37,18 @@ interface PersonFingerprint {
   nationality: string;
 }
 
+/** The day as `YYYY-MM-DD`, whatever form it is written in; unreadable is unknown (""). */
+function canonicalDob(raw: string | null | undefined): string {
+  return parseDateOfBirth(raw)?.toISOString().slice(0, 10) ?? "";
+}
+
 function personFingerprint(player: PlayerData): PersonFingerprint {
   const nick = normalizeNameToken(player.match_name || "");
   const fullName = normalizeNameToken(player.full_name || "");
   return {
     // A "full name" that only repeats the nick (stale nick-only records) says nothing.
     fullName: fullName === nick ? "" : fullName,
-    dob: (player.date_of_birth || "").trim(),
+    dob: canonicalDob(player.date_of_birth),
     nationality: normaliseNationality((player.nationality || "").trim()).toUpperCase(),
   };
 }
