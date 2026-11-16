@@ -1,5 +1,5 @@
 // Builds the overlay JSON from computed ops.
-import { OVERLAY_SCHEMA_VERSION } from "./overlay-schema.mjs";
+import { overlaySchemaVersion } from "./overlay-schema.mjs";
 
 export const SOURCE_NAME = "Leaguepedia";
 export const SOURCE_URL = "https://lol.fandom.com";
@@ -22,8 +22,11 @@ export function buildAttribution(license) {
  * @param {{asOf: string, license: {text: string, url: string}, coverage: string[], players: object[], staff: object[]}} input
  */
 export function buildOverlay({ asOf, license, coverage, players, staff }) {
+  const playerOps = players.map((entry) => entry.op);
+  const staffOps = staff.map((entry) => entry.op);
   return {
-    schemaVersion: OVERLAY_SCHEMA_VERSION,
+    // Version 2 when the overlay has teamless adds, so apps that predate the pool reject it and keep their rosters.
+    schemaVersion: overlaySchemaVersion({ players: playerOps, staff: staffOps }),
     as_of: asOf,
     source: {
       name: SOURCE_NAME,
@@ -33,8 +36,8 @@ export function buildOverlay({ asOf, license, coverage, players, staff }) {
       attribution: buildAttribution(license),
     },
     coverage: [...coverage].sort(),
-    players: players.map((entry) => entry.op),
-    staff: staff.map((entry) => entry.op),
+    players: playerOps,
+    staff: staffOps,
   };
 }
 

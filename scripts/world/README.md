@@ -121,6 +121,10 @@ app. A tampered, unsigned or wrongly signed overlay is rejected and the app keep
 - **Re-sign.** `npm run world:refresh` signs automatically after writing the overlay when the key is available and prints a
   warning when it is not. To sign by hand (for example after editing the overlay): `npm run world:sign [-- path/to/overlay.json]`.
 - **Check.** `npm run verify:world-overlay` also verifies the signature against the committed public key.
+- **Schema version.** An overlay with teamless adds (the pool) is emitted as `schemaVersion: 2`; any other overlay stays `1`.
+  The app accepts both. Apps released before the pool accept only `1` and reject `2` at parse, so they keep their rosters
+  instead of putting pool players on AI teams. `world:sign` and `verify:world-overlay` refuse a version 1 file with teamless
+  adds (`teamless_adds_need_schema_v2`): that guard is what stops a mis-emitted file reaching installed apps.
 - **Publishing.** The app downloads `<source>` and `<source>.sig` from the fork's `develop` branch. Downloads only succeed once
   the signed overlay and its `.sig` are both on `develop`; until then the app keeps the bundled overlay. Commit the overlay and
   its `.sig` together.
