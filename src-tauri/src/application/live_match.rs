@@ -363,6 +363,11 @@ fn blue_side_is_home(
             away_votes += 1;
         }
     }
+    if home_votes == away_votes {
+        log::warn!(
+            "[cmd] could not tell which fixture team plays blue ({home_votes} players of each); reading blue as home"
+        );
+    }
     away_votes <= home_votes
 }
 

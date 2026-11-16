@@ -1119,4 +1119,20 @@ mod tests {
 
         assert_eq!(fixture_score(&played_game(&state)), (0, 1));
     }
+    #[test]
+    fn a_blue_side_split_evenly_between_both_teams_keeps_blue_as_home() {
+        let state = state_with_live_session("team2", 1);
+        let mut report = sim_game("t2", "t1", "blue", 10, 4);
+        report.champions.retain(|champion| champion.team == "red");
+        report.champions.extend(
+            sim_champions("t2", "blue", 10, 4)
+                .into_iter()
+                .take(2)
+                .chain(sim_champions("t1", "blue", 10, 4).into_iter().take(2)),
+        );
+
+        finish_live_match_internal(&state, Some(report), None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (1, 0));
+    }
 }
