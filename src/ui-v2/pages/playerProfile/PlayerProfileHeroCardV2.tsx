@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { EyeOff, Pencil, Shield, User } from "lucide-react";
 import type { PlayerData } from "@/store/gameStore";
 import { formatPlayerMarketValue, formatPlayerWage } from "@/lib/playerProfile/helpers";
+import { formatAge } from "@/lib/formatting/valueFormatting";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import type { PlayerProfileScoutStatus, ScoutAvailability } from "@/lib/playerProfile/scouting";
@@ -21,7 +22,8 @@ interface PlayerProfileHeroCardV2Props {
   player: PlayerData;
   ovr: number;
   primaryRole?: UiRole;
-  age: number;
+  /** `null` when the date of birth is unknown. */
+  age: number | null;
   teamName: string;
   annualSuffix: string;
   language: string;
@@ -198,7 +200,7 @@ export default function PlayerProfileHeroCardV2({
                   <Pencil className="size-3.5" />
                 </button>
               )}
-              <span className="text-muted-foreground/70">{t("common.age")} {age}</span>
+              <span className="text-muted-foreground/70">{t("common.age")} {formatAge(age)}</span>
             </div>
 
             {isOwnClub && editingRole && (

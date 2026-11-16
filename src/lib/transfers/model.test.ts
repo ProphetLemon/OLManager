@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { GameStateData, PlayerData, TeamData } from "@/store/gameStore";
 import {
   deriveTransferCollections,
   filterTransferPlayers,
   getCurrentTransferList,
+  sortTransferPlayers,
   type TransferTabView,
 } from "@/lib/transfers/model";
 
@@ -431,5 +432,42 @@ describe("transfers/model", () => {
     const collections = deriveTransferCollections(gameState, "team-1");
 
     expect(collections.marketPlayers).toEqual([]);
+  });
+
+  it("sorts players without a date of birth after the rest by age, in both directions", () => {
+    const players = [
+      createPlayer({ id: "older", date_of_birth: "2000-01-01" }),
+      createPlayer({ id: "unknown", date_of_birth: "" }),
+      createPlayer({ id: "oldest", date_of_birth: "1995-05-05" }),
+      createPlayer({ id: "youngest", date_of_birth: "January 19, 2006" }),
+    ];
+
+    const ids = (direction: "asc" | "desc") =>
+      sortTransferPlayers(players, { key: "age", direction }, "2026-11-16").map((player) => player.id);
+
+    expect(ids("asc")).toEqual(["youngest", "older", "oldest", "unknown"]);
+    expect(ids("desc")).toEqual(["oldest", "older", "youngest", "unknown"]);
+  });
+
+  describe("age on the game date", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("reads ages on the game date, not the computer's clock", () => {
+      // Both are 21 on the game date, so they tie and keep their order. On the
+      // computer's clock, months later, the first one is already 22.
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2027-12-01T00:00:00Z"));
+      const players = [
+        createPlayer({ id: "born-june", date_of_birth: "2005-06-01" }),
+        createPlayer({ id: "born-february", date_of_birth: "2006-02-15" }),
+      ];
+
+      const ids = sortTransferPlayers(players, { key: "age", direction: "asc" }, "2027-03-01")
+        .map((player) => player.id);
+
+      expect(ids).toEqual(["born-june", "born-february"]);
+    });
   });
 });

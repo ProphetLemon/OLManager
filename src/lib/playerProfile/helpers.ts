@@ -22,7 +22,7 @@ export function getPlayerTeamName(
 export function getPlayerAge(
     dateOfBirth: string,
     asOfDate: string,
-): number {
+): number | null {
     return calcAge(dateOfBirth, asOfDate);
 }
 

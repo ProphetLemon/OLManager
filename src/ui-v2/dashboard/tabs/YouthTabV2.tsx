@@ -22,7 +22,7 @@ import {
   promoteAcademyPlayer,
 } from "@/services/academyService";
 import { academyBlockedMessage, academyRegionKey } from "@/lib/academy/acquisitionMessage";
-import { calcAge } from "@/lib/common/helpers";
+import { calcAge, compareAgesUnknownLast, formatAge } from "@/lib/common/helpers";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
@@ -216,7 +216,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
         case "pos":
           return dir * ((ROLE_ORDER[a.role] ?? 99) - (ROLE_ORDER[b.role] ?? 99));
         case "age":
-          return dir * (a.age - b.age);
+          return compareAgesUnknownLast(a.age, b.age, dir);
         case "ovr":
           return dir * (a.ovr - b.ovr);
         case "potential": {
@@ -516,13 +516,13 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
       {linkedClubFinance && (
         <Card data-testid="linked-club-finance" className="shrink-0">
           <CardHeader className="pb-2">
-            <CardTitle className="font-heading text-sm uppercase tracking-widest text-muted-foreground">
+            <CardTitle className="font-heading text-sm uppercase tracking-wide text-muted-foreground">
               {t("youthAcademy.linkedFinance.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
             <div>
-              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
+              <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">
                 {t("youthAcademy.linkedFinance.balance")}
               </p>
               <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", linkedClubFinance.balance >= 0 ? "text-positive" : "text-negative")}>
@@ -530,7 +530,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
               </p>
             </div>
             <div>
-              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
+              <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">
                 {t("youthAcademy.linkedFinance.sponsor")}
               </p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">
@@ -538,7 +538,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
               </p>
             </div>
             <div>
-              <p className="font-heading text-2xs uppercase tracking-wider text-muted-foreground">
+              <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">
                 {t("youthAcademy.linkedFinance.wages")}
               </p>
               <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">
@@ -646,7 +646,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                               title={player.position}
                             />
                           </TableCell>
-                          <TableCell className="text-center tabular-nums text-foreground">{player.age}</TableCell>
+                          <TableCell className="text-center tabular-nums text-foreground">{formatAge(player.age)}</TableCell>
                           <TableCell className="text-center">
                             <span className="font-heading font-bold tabular-nums text-foreground">{player.ovr}</span>
                           </TableCell>

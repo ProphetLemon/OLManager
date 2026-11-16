@@ -25,7 +25,7 @@ import type {
 } from "@/store/gameStore";
 import { findAcademyTeamForParent } from "@/store/academySelectors";
 import { useTabUiField } from "@/store/tabUiStore";
-import { formatVal, calcAge, getTeamName } from "@/lib/common/helpers";
+import { formatVal, calcAge, formatAge, getTeamName } from "@/lib/common/helpers";
 import { formatNumber } from "@/lib/formatting/valueFormatting";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
@@ -205,8 +205,9 @@ export function TransfersTabV2({
     () => sortTransferPlayers(
       filterTransferPlayers(currentList, search, posFilter, competitionTeamIds),
       sort,
+      gameState.clock.current_date,
     ),
-    [currentList, search, posFilter, competitionTeamIds, sort],
+    [currentList, search, posFilter, competitionTeamIds, sort, gameState.clock.current_date],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
@@ -781,7 +782,7 @@ export function TransfersTabV2({
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums text-sm text-muted-foreground">{age}</TableCell>
+                      <TableCell className="text-right tabular-nums text-sm text-muted-foreground">{formatAge(age)}</TableCell>
                       <TableCell>
                         {player.team_id ? (
                           <button

@@ -2,7 +2,7 @@ import type { GameStateData, PlayerData } from "../../store/gameStore";
 import { calculateLolOvr } from "../../lib/players/lolPlayerStats";
 import { findAcademyTeamForParent } from "@/store/academySelectors";
 import { getLolRoleForPlayer } from "@/lib/squad/helpers";
-import { calcAge } from "../../lib/common/helpers";
+import { calcAge, compareAgesUnknownLast } from "../../lib/common/helpers";
 
 function normalizePlayerKey(player: PlayerData): string {
   const normalizeToken = (value: string): string =>
@@ -213,9 +213,11 @@ export interface TransferSortState {
   direction: TransferSortDirection;
 }
 
+/** Sorts a transfer list; ages are read on `asOfDate`, the game's current date. */
 export function sortTransferPlayers(
   players: PlayerData[],
   sort: TransferSortState | null,
+  asOfDate: string,
 ): PlayerData[] {
   if (!sort) return players;
 
@@ -238,7 +240,11 @@ export function sortTransferPlayers(
         return ((order[roleA] ?? 0) - (order[roleB] ?? 0)) * factor;
       }
       case "age":
-        return (calcAge(a.date_of_birth, new Date().toISOString()) - calcAge(b.date_of_birth, new Date().toISOString())) * factor;
+        return compareAgesUnknownLast(
+          calcAge(a.date_of_birth, asOfDate),
+          calcAge(b.date_of_birth, asOfDate),
+          factor,
+        );
       case "team": {
         const teamA = a.team_id ?? "";
         const teamB = b.team_id ?? "";

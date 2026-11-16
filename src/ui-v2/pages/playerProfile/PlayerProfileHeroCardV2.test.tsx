@@ -149,4 +149,26 @@ describe("PlayerProfileHeroCardV2", () => {
     );
     expect(screen.getByText("República de Corea")).toBeInTheDocument();
   });
+
+  it("shows a dash instead of an age when the date of birth is unknown", async () => {
+    const PlayerProfileHeroCardV2 = (await import("./PlayerProfileHeroCardV2")).default;
+    render(
+      <PlayerProfileHeroCardV2
+        player={MOCK_PLAYER}
+        ovr={75}
+        age={null}
+        teamName="Test Team"
+        annualSuffix="/yr"
+        language="es"
+        isOwnClub
+        scoutAvailability={"none" as any}
+        scoutStatus={"none" as any}
+        scoutError={null}
+        onScout={vi.fn()}
+        t={(key: string) => ES_TRANSLATIONS[key] ?? key}
+      />,
+    );
+    expect(screen.getByText("Edad —")).toBeInTheDocument();
+    expect(screen.queryByText("Edad 0")).not.toBeInTheDocument();
+  });
 });
