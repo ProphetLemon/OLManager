@@ -94,7 +94,10 @@ export function buildOverrides({ rows, window, index, players, teamMap, pins = {
     }
     const statLevel = levels[best.competition];
     const gameLevel = player.competition ? levels[player.competition] : undefined;
-    const mover = Boolean(gameLevel) && best.competition !== player.competition;
+    // A pin is a person's decision that these stats belong to this player as he plays now: the stats' league anchors him, even
+    // when the roster overlay has since moved him to another league (or released him), so a pin is never a league mover.
+    const pinned = match.via === "pin";
+    const mover = !pinned && Boolean(gameLevel) && best.competition !== player.competition;
     // A placeholder has no rating data of its own: its baseline is the median of its league, and it is always suspect.
     const baseline = placeholder ? (own?.median ?? (gameLevel ?? statLevel).median) : player.authoredOvr;
     const suspect = placeholder || isSuspect({ attributes: player.attributes, authoredOvr: player.authoredOvr, leagueMedian: own?.median });
@@ -135,8 +138,8 @@ export function buildOverrides({ rows, window, index, players, teamMap, pins = {
       levelUsed = "both";
     } else {
       // Stats place a player inside his league: with no current competition (or no level) the stat level is the fallback.
-      blend = blendAt(gameLevel ?? statLevel);
-      levelUsed = gameLevel ? "game" : "stat";
+      blend = blendAt(pinned ? statLevel : (gameLevel ?? statLevel));
+      levelUsed = gameLevel && !pinned ? "game" : "stat";
     }
     if (!blend) {
       noEstimate.not_blendable = (noEstimate.not_blendable ?? 0) + 1;

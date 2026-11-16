@@ -9,7 +9,7 @@
   "league_levels": {
     "al": {
       "median": 65,
-      "sd": 2.47
+      "sd": 2.49
     },
     "cblol": {
       "median": 75,
@@ -17,7 +17,7 @@
     },
     "cd": {
       "median": 70,
-      "sd": 2.8
+      "sd": 2.82
     },
     "ebl": {
       "median": 62,
@@ -33,15 +33,15 @@
     },
     "hm": {
       "median": 60,
-      "sd": 2.19
+      "sd": 2.17
     },
     "lck": {
       "median": 85,
       "sd": 4.92
     },
     "lckcl": {
-      "median": 74,
-      "sd": 3.72
+      "median": 73.5,
+      "sd": 3.09
     },
     "lcp": {
       "median": 76,
@@ -65,7 +65,7 @@
     },
     "lfl": {
       "median": 72,
-      "sd": 3.48
+      "sd": 3.54
     },
     "lit": {
       "median": 69,
@@ -121,7 +121,7 @@
     },
     "vcs": {
       "median": 62,
-      "sd": 3
+      "sd": 3.03
     }
   },
   "entries": [
@@ -810,6 +810,24 @@
       "potential_floor": 86
     },
     {
+      "id": "lec-player-110350224593953686",
+      "authored_ovr": 82,
+      "games": 179,
+      "confidence": 0.9,
+      "attributes": {
+        "mechanics": 85,
+        "laning": 84,
+        "teamfighting": 84,
+        "macro_play": 79,
+        "consistency": 74,
+        "shotcalling": 74,
+        "champion_pool": 89,
+        "discipline": 77,
+        "mental_resilience": 84
+      },
+      "potential_floor": 81
+    },
+    {
       "id": "lec-player-98767975961872793",
       "authored_ovr": 84,
       "games": 162,
@@ -1096,6 +1114,24 @@
         "mental_resilience": 79
       },
       "potential_floor": 90
+    },
+    {
+      "id": "player-04031c7d",
+      "authored_ovr": 71,
+      "games": 28,
+      "confidence": 0.7226,
+      "attributes": {
+        "mechanics": 75,
+        "laning": 74,
+        "teamfighting": 75,
+        "macro_play": 75,
+        "consistency": 75,
+        "shotcalling": 68,
+        "champion_pool": 72,
+        "discipline": 75,
+        "mental_resilience": 74
+      },
+      "potential_floor": 78
     },
     {
       "id": "player-046835e1",
@@ -2705,15 +2741,15 @@
       "games": 175,
       "confidence": 0.9,
       "attributes": {
-        "mechanics": 79,
-        "laning": 77,
-        "teamfighting": 74,
-        "macro_play": 77,
-        "consistency": 77,
-        "shotcalling": 76,
-        "champion_pool": 76,
-        "discipline": 71,
-        "mental_resilience": 75
+        "mechanics": 78,
+        "laning": 76,
+        "teamfighting": 73,
+        "macro_play": 76,
+        "consistency": 76,
+        "shotcalling": 75,
+        "champion_pool": 75,
+        "discipline": 70,
+        "mental_resilience": 74
       },
       "potential_floor": 79
     },
@@ -3114,6 +3150,24 @@
       "potential_floor": 69
     },
     {
+      "id": "player-29be9689",
+      "authored_ovr": 74,
+      "games": 73,
+      "confidence": 0.8581,
+      "attributes": {
+        "mechanics": 73,
+        "laning": 73,
+        "teamfighting": 72,
+        "macro_play": 73,
+        "consistency": 74,
+        "shotcalling": 72,
+        "champion_pool": 72,
+        "discipline": 75,
+        "mental_resilience": 74
+      },
+      "potential_floor": 73
+    },
+    {
       "id": "player-29d344fb",
       "authored_ovr": 68,
       "games": 19,
@@ -3137,17 +3191,17 @@
       "games": 70,
       "confidence": 0.8257,
       "attributes": {
-        "mechanics": 63,
-        "laning": 62,
-        "teamfighting": 63,
-        "macro_play": 63,
-        "consistency": 63,
+        "mechanics": 61,
+        "laning": 60,
+        "teamfighting": 62,
+        "macro_play": 62,
+        "consistency": 62,
         "shotcalling": 54,
-        "champion_pool": 60,
+        "champion_pool": 59,
         "discipline": 62,
         "mental_resilience": 62
       },
-      "potential_floor": 61
+      "potential_floor": 60
     },
     {
       "id": "player-2afb7943",
@@ -3328,24 +3382,6 @@
         "mental_resilience": 83
       },
       "potential_floor": 90
-    },
-    {
-      "id": "player-2e567bef",
-      "authored_ovr": 73,
-      "games": 129,
-      "confidence": 0.8801,
-      "attributes": {
-        "mechanics": 73,
-        "laning": 74,
-        "teamfighting": 75,
-        "macro_play": 73,
-        "consistency": 73,
-        "shotcalling": 73,
-        "champion_pool": 73,
-        "discipline": 76,
-        "mental_resilience": 72
-      },
-      "potential_floor": 80
     },
     {
       "id": "player-2e6b37fe",
@@ -4060,10 +4096,10 @@
         "teamfighting": 75,
         "macro_play": 75,
         "consistency": 75,
-        "shotcalling": 73,
+        "shotcalling": 72,
         "champion_pool": 72,
-        "discipline": 74,
-        "mental_resilience": 74
+        "discipline": 73,
+        "mental_resilience": 73
       },
       "potential_floor": 82
     },
@@ -4572,24 +4608,6 @@
       "potential_floor": 77
     },
     {
-      "id": "player-49258aa1",
-      "authored_ovr": 60,
-      "games": 21,
-      "confidence": 0.6116,
-      "attributes": {
-        "mechanics": 62,
-        "laning": 61,
-        "teamfighting": 63,
-        "macro_play": 63,
-        "consistency": 61,
-        "shotcalling": 56,
-        "champion_pool": 62,
-        "discipline": 63,
-        "mental_resilience": 61
-      },
-      "potential_floor": 67
-    },
-    {
       "id": "player-494161aa",
       "authored_ovr": 77,
       "games": 111,
@@ -4930,6 +4948,24 @@
         "mental_resilience": 65
       },
       "potential_floor": 63
+    },
+    {
+      "id": "player-5171726f",
+      "authored_ovr": 75,
+      "games": 181,
+      "confidence": 0.9,
+      "attributes": {
+        "mechanics": 73,
+        "laning": 66,
+        "teamfighting": 80,
+        "macro_play": 77,
+        "consistency": 78,
+        "shotcalling": 78,
+        "champion_pool": 71,
+        "discipline": 72,
+        "mental_resilience": 74
+      },
+      "potential_floor": 84
     },
     {
       "id": "player-517bd222",
@@ -5436,6 +5472,24 @@
       "potential_floor": 61
     },
     {
+      "id": "player-5b9e7047",
+      "authored_ovr": 76,
+      "games": 76,
+      "confidence": 0.7985,
+      "attributes": {
+        "mechanics": 67,
+        "laning": 74,
+        "teamfighting": 70,
+        "macro_play": 71,
+        "consistency": 72,
+        "shotcalling": 64,
+        "champion_pool": 68,
+        "discipline": 71,
+        "mental_resilience": 73
+      },
+      "potential_floor": 79
+    },
+    {
       "id": "player-5bd2e851",
       "authored_ovr": 72,
       "games": 54,
@@ -5639,17 +5693,17 @@
       "games": 91,
       "confidence": 0.8727,
       "attributes": {
-        "mechanics": 80,
-        "laning": 74,
-        "teamfighting": 79,
-        "macro_play": 74,
-        "consistency": 79,
-        "shotcalling": 76,
-        "champion_pool": 76,
-        "discipline": 70,
-        "mental_resilience": 73
+        "mechanics": 79,
+        "laning": 73,
+        "teamfighting": 78,
+        "macro_play": 73,
+        "consistency": 78,
+        "shotcalling": 75,
+        "champion_pool": 75,
+        "discipline": 69,
+        "mental_resilience": 72
       },
-      "potential_floor": 76
+      "potential_floor": 75
     },
     {
       "id": "player-61fca1e3",
@@ -5740,6 +5794,24 @@
         "mental_resilience": 74
       },
       "potential_floor": 77
+    },
+    {
+      "id": "player-62fd57d5",
+      "authored_ovr": 69,
+      "games": 91,
+      "confidence": 0.8694,
+      "attributes": {
+        "mechanics": 71,
+        "laning": 70,
+        "teamfighting": 71,
+        "macro_play": 71,
+        "consistency": 74,
+        "shotcalling": 76,
+        "champion_pool": 77,
+        "discipline": 71,
+        "mental_resilience": 73
+      },
+      "potential_floor": 73
     },
     {
       "id": "player-633c1ca0",
@@ -5837,17 +5909,17 @@
       "games": 117,
       "confidence": 0.8519,
       "attributes": {
-        "mechanics": 77,
-        "laning": 77,
-        "teamfighting": 76,
-        "macro_play": 76,
-        "consistency": 77,
+        "mechanics": 78,
+        "laning": 78,
+        "teamfighting": 77,
+        "macro_play": 77,
+        "consistency": 78,
         "shotcalling": 69,
-        "champion_pool": 73,
+        "champion_pool": 74,
         "discipline": 74,
         "mental_resilience": 75
       },
-      "potential_floor": 75
+      "potential_floor": 76
     },
     {
       "id": "player-64c04cdb",
@@ -6372,6 +6444,24 @@
       "potential_floor": 80
     },
     {
+      "id": "player-6e134f47",
+      "authored_ovr": 75,
+      "games": 109,
+      "confidence": 0.8912,
+      "attributes": {
+        "mechanics": 75,
+        "laning": 75,
+        "teamfighting": 74,
+        "macro_play": 74,
+        "consistency": 75,
+        "shotcalling": 72,
+        "champion_pool": 72,
+        "discipline": 73,
+        "mental_resilience": 73
+      },
+      "potential_floor": 82
+    },
+    {
       "id": "player-6e60132e",
       "authored_ovr": 59,
       "games": 44,
@@ -6449,15 +6539,15 @@
       "games": 124,
       "confidence": 0.842,
       "attributes": {
-        "mechanics": 86,
-        "laning": 83,
-        "teamfighting": 78,
-        "macro_play": 86,
-        "consistency": 82,
-        "shotcalling": 71,
-        "champion_pool": 83,
-        "discipline": 83,
-        "mental_resilience": 77
+        "mechanics": 85,
+        "laning": 81,
+        "teamfighting": 76,
+        "macro_play": 84,
+        "consistency": 80,
+        "shotcalling": 70,
+        "champion_pool": 82,
+        "discipline": 82,
+        "mental_resilience": 76
       },
       "potential_floor": 94
     },
@@ -6647,15 +6737,15 @@
       "games": 231,
       "confidence": 0.9,
       "attributes": {
-        "mechanics": 73,
-        "laning": 73,
-        "teamfighting": 73,
+        "mechanics": 74,
+        "laning": 74,
+        "teamfighting": 74,
         "macro_play": 74,
         "consistency": 74,
-        "shotcalling": 72,
+        "shotcalling": 71,
         "champion_pool": 71,
-        "discipline": 75,
-        "mental_resilience": 75
+        "discipline": 74,
+        "mental_resilience": 74
       },
       "potential_floor": 82
     },
@@ -6910,24 +7000,6 @@
         "mental_resilience": 62
       },
       "potential_floor": 67
-    },
-    {
-      "id": "player-7687488c",
-      "authored_ovr": 74,
-      "games": 175,
-      "confidence": 0.9,
-      "attributes": {
-        "mechanics": 76,
-        "laning": 75,
-        "teamfighting": 76,
-        "macro_play": 77,
-        "consistency": 75,
-        "shotcalling": 74,
-        "champion_pool": 72,
-        "discipline": 75,
-        "mental_resilience": 75
-      },
-      "potential_floor": 81
     },
     {
       "id": "player-76f194bb",
@@ -7367,17 +7439,17 @@
       "games": 81,
       "confidence": 0.8529,
       "attributes": {
-        "mechanics": 75,
-        "laning": 76,
-        "teamfighting": 77,
-        "macro_play": 74,
-        "consistency": 71,
+        "mechanics": 74,
+        "laning": 75,
+        "teamfighting": 76,
+        "macro_play": 73,
+        "consistency": 70,
         "shotcalling": 75,
-        "champion_pool": 75,
+        "champion_pool": 74,
         "discipline": 76,
         "mental_resilience": 74
       },
-      "potential_floor": 75
+      "potential_floor": 74
     },
     {
       "id": "player-800ae09b",
@@ -8568,6 +8640,24 @@
       "potential_floor": 85
     },
     {
+      "id": "player-96954747",
+      "authored_ovr": 71,
+      "games": 146,
+      "confidence": 0.8809,
+      "attributes": {
+        "mechanics": 71,
+        "laning": 67,
+        "teamfighting": 69,
+        "macro_play": 70,
+        "consistency": 70,
+        "shotcalling": 67,
+        "champion_pool": 72,
+        "discipline": 74,
+        "mental_resilience": 73
+      },
+      "potential_floor": 70
+    },
+    {
       "id": "player-975a5169",
       "authored_ovr": 72,
       "games": 48,
@@ -8602,6 +8692,24 @@
         "mental_resilience": 71
       },
       "potential_floor": 76
+    },
+    {
+      "id": "player-985bb0cd",
+      "authored_ovr": 81,
+      "games": 99,
+      "confidence": 0.7982,
+      "attributes": {
+        "mechanics": 84,
+        "laning": 91,
+        "teamfighting": 87,
+        "macro_play": 86,
+        "consistency": 88,
+        "shotcalling": 88,
+        "champion_pool": 83,
+        "discipline": 88,
+        "mental_resilience": 88
+      },
+      "potential_floor": 90
     },
     {
       "id": "player-9996ddf4",
@@ -8789,17 +8897,17 @@
       "games": 62,
       "confidence": 0.82,
       "attributes": {
-        "mechanics": 65,
-        "laning": 70,
-        "teamfighting": 66,
-        "macro_play": 68,
-        "consistency": 68,
+        "mechanics": 67,
+        "laning": 72,
+        "teamfighting": 67,
+        "macro_play": 69,
+        "consistency": 69,
         "shotcalling": 72,
-        "champion_pool": 69,
+        "champion_pool": 70,
         "discipline": 75,
         "mental_resilience": 71
       },
-      "potential_floor": 69
+      "potential_floor": 70
     },
     {
       "id": "player-9feb921f",
@@ -9034,6 +9142,24 @@
         "mental_resilience": 72
       },
       "potential_floor": 73
+    },
+    {
+      "id": "player-a35f01d8",
+      "authored_ovr": 70,
+      "games": 32,
+      "confidence": 0.7083,
+      "attributes": {
+        "mechanics": 71,
+        "laning": 70,
+        "teamfighting": 74,
+        "macro_play": 72,
+        "consistency": 71,
+        "shotcalling": 66,
+        "champion_pool": 70,
+        "discipline": 74,
+        "mental_resilience": 72
+      },
+      "potential_floor": 77
     },
     {
       "id": "player-a396f7e5",
@@ -9432,6 +9558,24 @@
       "potential_floor": 85
     },
     {
+      "id": "player-ad3d0214",
+      "authored_ovr": 72,
+      "games": 113,
+      "confidence": 0.8907,
+      "attributes": {
+        "mechanics": 71,
+        "laning": 71,
+        "teamfighting": 67,
+        "macro_play": 76,
+        "consistency": 69,
+        "shotcalling": 66,
+        "champion_pool": 70,
+        "discipline": 74,
+        "mental_resilience": 71
+      },
+      "potential_floor": 88
+    },
+    {
       "id": "player-ad8464c8",
       "authored_ovr": 58,
       "games": 47,
@@ -9491,15 +9635,15 @@
       "games": 72,
       "confidence": 0.8386,
       "attributes": {
-        "mechanics": 67,
-        "laning": 67,
-        "teamfighting": 69,
+        "mechanics": 66,
+        "laning": 66,
+        "teamfighting": 68,
         "macro_play": 67,
         "consistency": 67,
-        "shotcalling": 72,
+        "shotcalling": 73,
         "champion_pool": 71,
-        "discipline": 74,
-        "mental_resilience": 71
+        "discipline": 75,
+        "mental_resilience": 72
       },
       "potential_floor": 76
     },
@@ -9538,6 +9682,24 @@
         "mental_resilience": 70
       },
       "potential_floor": 75
+    },
+    {
+      "id": "player-afc0ae8e",
+      "authored_ovr": 73,
+      "games": 21,
+      "confidence": 0.6116,
+      "attributes": {
+        "mechanics": 64,
+        "laning": 64,
+        "teamfighting": 64,
+        "macro_play": 70,
+        "consistency": 70,
+        "shotcalling": 66,
+        "champion_pool": 67,
+        "discipline": 69,
+        "mental_resilience": 69
+      },
+      "potential_floor": 80
     },
     {
       "id": "player-b038b2f0",
@@ -9610,24 +9772,6 @@
         "mental_resilience": 68
       },
       "potential_floor": 65
-    },
-    {
-      "id": "player-b0f02939",
-      "authored_ovr": 74,
-      "games": 27,
-      "confidence": 0.7104,
-      "attributes": {
-        "mechanics": 72,
-        "laning": 73,
-        "teamfighting": 79,
-        "macro_play": 76,
-        "consistency": 72,
-        "shotcalling": 75,
-        "champion_pool": 72,
-        "discipline": 76,
-        "mental_resilience": 76
-      },
-      "potential_floor": 84
     },
     {
       "id": "player-b10165b4",
@@ -9772,6 +9916,24 @@
         "mental_resilience": 84
       },
       "potential_floor": 96
+    },
+    {
+      "id": "player-b398a5ac",
+      "authored_ovr": 74,
+      "games": 90,
+      "confidence": 0.8639,
+      "attributes": {
+        "mechanics": 73,
+        "laning": 73,
+        "teamfighting": 73,
+        "macro_play": 72,
+        "consistency": 72,
+        "shotcalling": 72,
+        "champion_pool": 72,
+        "discipline": 75,
+        "mental_resilience": 73
+      },
+      "potential_floor": 81
     },
     {
       "id": "player-b3ed08a3",
@@ -10139,15 +10301,15 @@
       "games": 81,
       "confidence": 0.8529,
       "attributes": {
-        "mechanics": 77,
-        "laning": 77,
-        "teamfighting": 78,
-        "macro_play": 75,
-        "consistency": 75,
-        "shotcalling": 77,
-        "champion_pool": 78,
-        "discipline": 78,
-        "mental_resilience": 75
+        "mechanics": 76,
+        "laning": 76,
+        "teamfighting": 77,
+        "macro_play": 74,
+        "consistency": 74,
+        "shotcalling": 76,
+        "champion_pool": 77,
+        "discipline": 77,
+        "mental_resilience": 74
       },
       "potential_floor": 79
     },
@@ -10609,9 +10771,9 @@
       "attributes": {
         "mechanics": 73,
         "laning": 73,
-        "teamfighting": 74,
-        "macro_play": 74,
-        "consistency": 74,
+        "teamfighting": 73,
+        "macro_play": 73,
+        "consistency": 73,
         "shotcalling": 72,
         "champion_pool": 71,
         "discipline": 75,
@@ -10719,7 +10881,7 @@
         "laning": 70,
         "teamfighting": 70,
         "macro_play": 70,
-        "consistency": 71,
+        "consistency": 70,
         "shotcalling": 68,
         "champion_pool": 68,
         "discipline": 72,
@@ -10913,13 +11075,13 @@
       "games": 74,
       "confidence": 0.8424,
       "attributes": {
-        "mechanics": 69,
-        "laning": 69,
-        "teamfighting": 70,
-        "macro_play": 70,
-        "consistency": 69,
+        "mechanics": 70,
+        "laning": 70,
+        "teamfighting": 71,
+        "macro_play": 71,
+        "consistency": 70,
         "shotcalling": 71,
-        "champion_pool": 70,
+        "champion_pool": 71,
         "discipline": 72,
         "mental_resilience": 70
       },
@@ -11386,10 +11548,10 @@
         "teamfighting": 69,
         "macro_play": 72,
         "consistency": 72,
-        "shotcalling": 73,
+        "shotcalling": 72,
         "champion_pool": 72,
-        "discipline": 73,
-        "mental_resilience": 73
+        "discipline": 72,
+        "mental_resilience": 72
       },
       "potential_floor": 80
     },
@@ -11554,6 +11716,24 @@
         "mental_resilience": 82
       },
       "potential_floor": 83
+    },
+    {
+      "id": "player-d7451d6f",
+      "authored_ovr": 61,
+      "games": 77,
+      "confidence": 0.7891,
+      "attributes": {
+        "mechanics": 64,
+        "laning": 64,
+        "teamfighting": 64,
+        "macro_play": 64,
+        "consistency": 62,
+        "shotcalling": 61,
+        "champion_pool": 65,
+        "discipline": 62,
+        "mental_resilience": 62
+      },
+      "potential_floor": 68
     },
     {
       "id": "player-d80790ca",
@@ -11813,17 +11993,17 @@
       "games": 238,
       "confidence": 0.9,
       "attributes": {
-        "mechanics": 81,
-        "laning": 81,
-        "teamfighting": 81,
-        "macro_play": 81,
-        "consistency": 81,
-        "shotcalling": 77,
-        "champion_pool": 78,
-        "discipline": 80,
-        "mental_resilience": 80
+        "mechanics": 79,
+        "laning": 79,
+        "teamfighting": 79,
+        "macro_play": 79,
+        "consistency": 79,
+        "shotcalling": 76,
+        "champion_pool": 76,
+        "discipline": 79,
+        "mental_resilience": 79
       },
-      "potential_floor": 80
+      "potential_floor": 78
     },
     {
       "id": "player-dd59bec5",
@@ -11896,6 +12076,24 @@
         "mental_resilience": 85
       },
       "potential_floor": 96
+    },
+    {
+      "id": "player-de7b9a68",
+      "authored_ovr": 70,
+      "games": 87,
+      "confidence": 0.8218,
+      "attributes": {
+        "mechanics": 76,
+        "laning": 77,
+        "teamfighting": 76,
+        "macro_play": 76,
+        "consistency": 76,
+        "shotcalling": 76,
+        "champion_pool": 77,
+        "discipline": 73,
+        "mental_resilience": 75
+      },
+      "potential_floor": 76
     },
     {
       "id": "player-debddbbd",
@@ -12300,14 +12498,14 @@
       "confidence": 0.9,
       "attributes": {
         "mechanics": 71,
-        "laning": 75,
+        "laning": 74,
         "teamfighting": 71,
         "macro_play": 71,
         "consistency": 71,
-        "shotcalling": 76,
+        "shotcalling": 75,
         "champion_pool": 77,
-        "discipline": 76,
-        "mental_resilience": 74
+        "discipline": 75,
+        "mental_resilience": 73
       },
       "potential_floor": 76
     },
@@ -12562,24 +12760,6 @@
         "mental_resilience": 62
       },
       "potential_floor": 66
-    },
-    {
-      "id": "player-e9962c33",
-      "authored_ovr": 76,
-      "games": 203,
-      "confidence": 0.9,
-      "attributes": {
-        "mechanics": 78,
-        "laning": 73,
-        "teamfighting": 79,
-        "macro_play": 82,
-        "consistency": 76,
-        "shotcalling": 78,
-        "champion_pool": 74,
-        "discipline": 77,
-        "mental_resilience": 77
-      },
-      "potential_floor": 87
     },
     {
       "id": "player-ea655b10",
@@ -13133,7 +13313,7 @@
         "macro_play": 74,
         "consistency": 76,
         "shotcalling": 70,
-        "champion_pool": 73,
+        "champion_pool": 72,
         "discipline": 76,
         "mental_resilience": 72
       },
@@ -13336,24 +13516,6 @@
         "mental_resilience": 67
       },
       "potential_floor": 70
-    },
-    {
-      "id": "player-f64e6d86",
-      "authored_ovr": 74,
-      "games": 96,
-      "confidence": 0.8756,
-      "attributes": {
-        "mechanics": 74,
-        "laning": 73,
-        "teamfighting": 74,
-        "macro_play": 74,
-        "consistency": 74,
-        "shotcalling": 74,
-        "champion_pool": 74,
-        "discipline": 77,
-        "mental_resilience": 77
-      },
-      "potential_floor": 81
     },
     {
       "id": "player-f698f91a",
@@ -13799,7 +13961,7 @@
         "macro_play": 72,
         "consistency": 72,
         "shotcalling": 71,
-        "champion_pool": 70,
+        "champion_pool": 69,
         "discipline": 74,
         "mental_resilience": 74
       },
@@ -13833,11 +13995,11 @@
         "laning": 70,
         "teamfighting": 77,
         "macro_play": 79,
-        "consistency": 78,
-        "shotcalling": 64,
-        "champion_pool": 74,
-        "discipline": 68,
-        "mental_resilience": 69
+        "consistency": 77,
+        "shotcalling": 63,
+        "champion_pool": 73,
+        "discipline": 67,
+        "mental_resilience": 68
       },
       "potential_floor": 72
     },

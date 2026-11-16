@@ -52,7 +52,11 @@ export const poolId = (kind, page) => deterministicId(kind === "staff" ? "staff"
  */
 export const titleKey = (title) => String(title ?? "").normalize("NFKC").replace(/_/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
 
-const countryOf = (person) => person.profile.country || person.profile.nationality || "";
+/** The country text the game can name: Players.Country, else the primary nationality, else whichever of them is filled. */
+const countryOf = (person) => {
+  const { country, nationality } = person.profile;
+  return [country, nationality].find((value) => countryToIso2(value)) || country || nationality || "";
+};
 
 // --- Tournaments ------------------------------------------------------------------------------------
 

@@ -96,8 +96,16 @@ when an id repeats. Teamless pool players get no entries: the build matches only
    or any seen name) equals his `match_name` and either his latest Leaguepedia team maps to his team through
    `scripts/world/team-map.json`, or his main role (ADC is Bot) and latest competition equal the player's, and the
    pairing is unique on both sides. Anything else with an IGN candidate goes to the review list. `pins.json`
-   (`{ "<Link>": "<player id>" | null }`, committed empty) forces a match or, with `null`, forbids one; a pin that
-   points nowhere is reported and its link stays out.
+   (`{ "<Link>": "<player id>" | null }`) forces a match or, with `null`, forbids one; a pin that
+   points nowhere is reported and its link stays out. A **pin also anchors the player on the league of his stats**
+   (`levelUsed: "stat"`), never as a league mover: it is the decision that these stats belong to him as he plays now.
+   The roster overlay moves and releases players after the stats were taken, and the team test above then fails
+   for a person who is still the same Link (a released player has no team at all), so the override he had would
+   silently disappear on the next rebuild. The committed pins are those players (Angel, Flakked, Luon, Exofeng,
+   Loading, Zelt, Izo, Myrwn and RyuK2); add a pin when `npm run stats:build` drops a rated player the overlay
+   moved, and keep every pin on an id of the kept data rows (the ship gate in `src/lib/world/overrides-ship-gate.test.ts`
+   fails on a pin without an entry). Pins also reach the pool's league anchors (`world/lib/pool-anchors.mjs` builds
+   its records the same way), so the next pool regeneration reads them.
 4. **Estimate**: `estimateSkill` over all rows. Fallback cohorts pool the competitions whose level falls in the same
    5-point bucket. A matched player takes the cohort with the most effective games, which only gives his z. Stats
    place him inside his league, so the target level (`blendRating`) is the fixed level of the competition of his

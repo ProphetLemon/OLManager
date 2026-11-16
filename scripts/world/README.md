@@ -253,6 +253,10 @@ matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision
   `entries`, `tier`, `best_level`, `leagues` and `levels` are context. `wage`, `market_value` and `contract_end` are the roster
   refresh's empty values. `dob_approx` is set when the page has no birth date. A staff add's nationality is an ISO-2 code like a
   player's (empty when the country does not resolve); the roster refresh's staff on a team keep the country name.
+  The country text is `Players.Country`, or the primary nationality when `Country` does not resolve to an ISO-2 code; the spellings
+  `lib/text.mjs` aliases (Moldova, DR Congo, Republic of Ireland among them) are the ones Leaguepedia uses and the country table lacks.
+  A person whose Players page names no country keeps an empty nationality and the report marks the op "nationality unresolved";
+  a flagless free agent is better than a guessed one.
 - The tournament list of each person is summarised (count, leagues, levels) to keep the overlay small; a list longer than the wiki's
   `GROUP_CONCAT` limit sets `pool.tournaments_truncated`.
 
