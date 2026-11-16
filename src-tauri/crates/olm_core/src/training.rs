@@ -8,6 +8,7 @@ use crate::domain::team::{
     TrainingFocus, TrainingIntensity, TrainingSchedule,
 };
 use crate::game::Game;
+use crate::player_age::player_age;
 use crate::potential::{
     GAIN_TAPER_WINDOW, calculate_lol_ovr, effective_potential_cap, gain_headroom,
 };
@@ -877,7 +878,7 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
         .collect();
     crate::champions::ensure_training_targets_for_players(game, &rival_player_ids);
 
-    let current_year = u32::try_from(game.clock.current_date.year()).unwrap_or(0);
+    let today = game.clock.current_date.date_naive();
 
     // Collect plans for all teams (immutable borrow)
     let team_plans: Vec<TeamTrainingPlan> = game
@@ -1000,14 +1001,14 @@ pub fn process_training(game: &mut Game, weekday_num: u32) {
             // Age, morale, and current condition all affect recovery rate.
             // Older players recover more slowly; high morale aids recovery;
             // severely fatigued players have a harder time bouncing back.
-            let age = estimate_age(&player.date_of_birth, current_year);
+            let age = player_age(player, today).years;
             let age_rec = recovery_factor_from_age(age);
             let morale_rec = recovery_factor_from_morale(player.morale);
             let fitness_rec = recovery_factor_from_fitness(player.fitness);
 
             // On rest days: only recovery, no attribute gains
             if !is_training_day {
-                let recovery = condition_recovery(player, recovery_base, current_year);
+                let recovery = condition_recovery(player, recovery_base, today);
                 player.condition = (player.condition + recovery).min(100);
                 continue;
             }
@@ -1348,17 +1349,6 @@ pub fn apply_post_scrim_decision(
     Err("No unresolved scrim report found for this slot".to_string())
 }
 
-/// Estimate player age from date_of_birth string ("YYYY-MM-DD").
-fn estimate_age(dob: &str, current_year: u32) -> u32 {
-    let parts: Vec<&str> = dob.split('-').collect();
-    if parts.is_empty() {
-        return 25; // fallback
-    }
-    let birth_year: u32 = parts[0].parse().unwrap_or(2000);
-    // Rough estimate from the birth year against the game clock's year.
-    current_year.saturating_sub(birth_year)
-}
-
 /// Base condition recovery on a rest day, before staff, facility and player factors.
 const REST_DAY_RECOVERY_BASE: f64 = 9.0;
 
@@ -1370,12 +1360,12 @@ const MATCHDAY_RECOVERY_SHARE: f64 = 0.6;
 
 /// Condition points a player regains from `recovery_base`, scaled by the
 /// player's resilience, age, morale, current condition and fitness.
-fn condition_recovery(
+pub(crate) fn condition_recovery(
     player: &crate::domain::player::Player,
     recovery_base: f64,
-    current_year: u32,
+    today: chrono::NaiveDate,
 ) -> u8 {
-    let age = estimate_age(&player.date_of_birth, current_year);
+    let age = player_age(player, today).years;
     let stamina_factor = player.attributes.mental_resilience as f64 / 100.0;
     (recovery_base
         * (0.5 + stamina_factor * 0.5)
@@ -1390,7 +1380,7 @@ fn condition_recovery(
 /// never costs condition: it only gives back [`MATCHDAY_RECOVERY_SHARE`] of a
 /// rest day, so teams that play on consecutive days stop draining to zero.
 pub fn process_matchday_recovery(game: &mut Game) {
-    let current_year = u32::try_from(game.clock.current_date.year()).unwrap_or(0);
+    let today = game.clock.current_date.date_naive();
     let team_multipliers: HashMap<String, f64> = game
         .teams
         .iter()
@@ -1411,7 +1401,7 @@ pub fn process_matchday_recovery(game: &mut Game) {
             continue;
         };
         let base = REST_DAY_RECOVERY_BASE * MATCHDAY_RECOVERY_SHARE * multiplier;
-        let recovery = condition_recovery(player, base, current_year);
+        let recovery = condition_recovery(player, base, today);
         player.condition = (player.condition + recovery).min(100);
     }
 }
@@ -1640,17 +1630,10 @@ pub fn estimate_team_lol_ovr(game: &crate::game::Game, team_id: &str) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::{
-        apply_focus_gains, apply_scrim_plan_focus_gains, estimate_age, is_lol_training_capped,
-        taper_factor,
+        apply_focus_gains, apply_scrim_plan_focus_gains, is_lol_training_capped, taper_factor,
     };
     use crate::domain::player::{LolRole, Player, PlayerAttributes};
     use crate::domain::team::{ScrimFocus, TrainingFocus};
-
-    #[test]
-    fn estimated_age_follows_the_game_year() {
-        assert_eq!(estimate_age("2000-05-05", 2026), 26);
-        assert_eq!(estimate_age("2000-05-05", 2027), 27);
-    }
 
     fn attrs(stat: u8) -> PlayerAttributes {
         PlayerAttributes {

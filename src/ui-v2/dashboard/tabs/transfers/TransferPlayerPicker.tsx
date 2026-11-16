@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import type { PlayerData } from "@/store/gameStore";
-import { calcAge, formatVal } from "@/lib/common/helpers";
+import { calcAge, formatAge, formatVal } from "@/lib/common/helpers";
 import { getLolRoleForPlayer } from "@/lib/squad/helpers";
 import { Badge } from "@/ui-v2/components/ui/badge";
 import { cn } from "@/ui-v2/lib/utils";
@@ -49,6 +49,7 @@ export default function TransferPlayerPicker({
       <div className="scrollbar-v2 max-h-48 space-y-1 overflow-y-auto">
         {userPlayers.map((player) => {
           const isSelected = selectedPlayerIds.includes(player.id);
+          const age = calcAge(player.date_of_birth, currentDate);
           return (
             <button
               key={player.id}
@@ -69,7 +70,7 @@ export default function TransferPlayerPicker({
               <span className="flex-1 truncate text-left text-foreground">
                 {player.match_name || player.full_name}
               </span>
-              <span className="text-muted-foreground">{t("common.ageShort", { age: calcAge(player.date_of_birth, currentDate) })}</span>
+              <span className="text-muted-foreground">{age === null ? formatAge(age) : t("common.ageShort", { age })}</span>
               <span className="font-semibold tabular-nums text-foreground/80">
                 {formatVal(player.market_value)}
               </span>

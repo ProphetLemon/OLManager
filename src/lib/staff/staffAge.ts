@@ -13,5 +13,5 @@ export function staffAge(staff: Pick<StaffData, "date_of_birth">, asOfDate: stri
   const dateOfBirth = staff.date_of_birth?.trim();
   if (!dateOfBirth || dateOfBirth === PLACEHOLDER_STAFF_BIRTH_DATE) return null;
   const age = calcAge(dateOfBirth, asOfDate);
-  return age > 0 ? age : null;
+  return age !== null && age > 0 ? age : null;
 }
