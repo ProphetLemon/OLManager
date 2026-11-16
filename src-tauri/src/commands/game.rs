@@ -984,6 +984,8 @@ fn fill_short_rosters(
     reserved: &HashSet<String>,
 ) -> Vec<roster_stability::NewGameRosterFill> {
     let fills = roster_stability::fill_new_game_rosters_excluding(game, reserved);
+    #[cfg(test)]
+    crate::world_dupes::record_fills(&fills);
     game.moved_player_ids
         .extend(fills.iter().map(|fill| fill.player_id.clone()));
     if !fills.is_empty() {
