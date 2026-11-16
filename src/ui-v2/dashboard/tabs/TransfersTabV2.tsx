@@ -205,8 +205,9 @@ export function TransfersTabV2({
     () => sortTransferPlayers(
       filterTransferPlayers(currentList, search, posFilter, competitionTeamIds),
       sort,
+      gameState.clock.current_date,
     ),
-    [currentList, search, posFilter, competitionTeamIds, sort],
+    [currentList, search, posFilter, competitionTeamIds, sort, gameState.clock.current_date],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
