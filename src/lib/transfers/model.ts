@@ -213,9 +213,11 @@ export interface TransferSortState {
   direction: TransferSortDirection;
 }
 
+/** Sorts a transfer list; ages are read on `asOfDate`, the game's current date. */
 export function sortTransferPlayers(
   players: PlayerData[],
   sort: TransferSortState | null,
+  asOfDate: string,
 ): PlayerData[] {
   if (!sort) return players;
 
@@ -239,8 +241,8 @@ export function sortTransferPlayers(
       }
       case "age":
         return compareAgesUnknownLast(
-          calcAge(a.date_of_birth, new Date().toISOString()),
-          calcAge(b.date_of_birth, new Date().toISOString()),
+          calcAge(a.date_of_birth, asOfDate),
+          calcAge(b.date_of_birth, asOfDate),
           factor,
         );
       case "team": {
