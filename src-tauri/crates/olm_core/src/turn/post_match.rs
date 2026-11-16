@@ -1007,6 +1007,38 @@ fn capped_positive_recovery(delta: i16, player: &crate::domain::player::Player) 
     delta
 }
 
+/// Kills credited to `player_id` in the report's kill feed; the fallback for engines that
+/// leave `PlayerMatchStats::kills` at zero.
+fn kill_feed_kills(report: &crate::engine::MatchReport, player_id: &str) -> u16 {
+    report
+        .kill_feed
+        .iter()
+        .filter(|kill| kill.killer_id == player_id)
+        .count() as u16
+}
+
+/// The individual part of a player's post-match morale change. The report carries series
+/// sums, so it reads the player's average game (`feed_kills` stands in for the kills when
+/// the stats row has none): a line that is worth the same in one game is worth the same in
+/// a best-of-five, instead of growing with the number of games.
+fn individual_morale_delta(
+    stats: &crate::engine::PlayerMatchStats,
+    feed_kills: u16,
+    games: u8,
+) -> i16 {
+    let mut per_game = PerGame::of(stats, games);
+    if stats.kills == 0 {
+        per_game.kills = f64::from(feed_kills) / f64::from(games);
+    }
+    let mut delta = per_game.kills * 3.0 + per_game.assists * 2.0;
+    if per_game.deaths >= 5.0 {
+        delta -= 3.0;
+    } else if per_game.kills + per_game.assists >= 6.0 {
+        delta += 2.0;
+    }
+    delta.round() as i16
+}
+
 /// Update player morale based on match result and individual performance.
 fn update_post_match_morale(
     game: &mut Game,
@@ -1019,6 +1051,7 @@ fn update_post_match_morale(
 
     let home_won = report.home_wins > report.away_wins;
     let away_won = report.away_wins > report.home_wins;
+    let games = games_in_report(report);
 
     for player in game.players.iter_mut() {
         let tid = match player.team_id.as_deref() {
@@ -1038,25 +1071,9 @@ fn update_post_match_morale(
             base_loss + margin_penalty
         };
 
-        let mut individual_delta: i16 = 0;
-        if let Some(ps) = report.player_stats.get(&player.id) {
-            let kills = if ps.kills > 0 {
-                ps.kills
-            } else {
-                report
-                    .kill_feed
-                    .iter()
-                    .filter(|kill| kill.killer_id == player.id)
-                    .count() as u16
-            };
-            individual_delta += kills as i16 * 3;
-            individual_delta += ps.assists as i16 * 2;
-            if ps.deaths >= 5 {
-                individual_delta -= 3;
-            } else if kills + ps.assists >= 6 {
-                individual_delta += 2;
-            }
-        }
+        let individual_delta = report.player_stats.get(&player.id).map_or(0, |ps| {
+            individual_morale_delta(ps, kill_feed_kills(report, &player.id), games)
+        });
 
         let total_delta = capped_positive_recovery(result_delta + individual_delta, player);
         let new_morale = (base_morale + total_delta).clamp(10, 100) as u8;
@@ -1794,6 +1811,60 @@ mod progression_bound_tests {
         apply_player_stats(&mut game, &report, "home", "away");
         let rating = game.players[0].stats.avg_rating;
         assert!((rating - 7.35).abs() < 0.01, "rating {rating}");
+    }
+}
+
+#[cfg(test)]
+mod series_morale_tests {
+    use super::individual_morale_delta;
+    use crate::engine::PlayerMatchStats;
+
+    /// The report line of a series in which every game was `(kills, deaths, assists)`.
+    fn series_line(per_game: (u16, u16, u16), games: u8) -> PlayerMatchStats {
+        let games = u16::from(games);
+        PlayerMatchStats {
+            kills: per_game.0 * games,
+            deaths: per_game.1 * games,
+            assists: per_game.2 * games,
+            ..Default::default()
+        }
+    }
+
+    fn delta(per_game: (u16, u16, u16), games: u8) -> i16 {
+        individual_morale_delta(&series_line(per_game, games), 0, games)
+    }
+
+    #[test]
+    fn a_single_game_should_keep_its_individual_delta() {
+        // 4 kills * 3 + 6 assists * 2 + 2 for a 10 kill-and-assist game.
+        assert_eq!(delta((4, 2, 6), 1), 26);
+    }
+
+    #[test]
+    fn the_same_per_game_line_should_give_the_same_delta_over_any_number_of_games() {
+        let one = delta((4, 2, 6), 1);
+        assert_eq!([2, 3, 5].map(|games| delta((4, 2, 6), games)), [one; 3]);
+    }
+
+    #[test]
+    fn three_deaths_a_game_over_a_best_of_three_should_not_trip_the_fed_penalty() {
+        // Nine summed deaths, but never more than three in a game: the +2 stays.
+        assert_eq!(delta((3, 3, 4), 3), delta((3, 3, 4), 1));
+    }
+
+    #[test]
+    fn five_deaths_in_every_game_should_still_trip_the_fed_penalty() {
+        assert_eq!(delta((1, 5, 0), 3), 3 - 3);
+    }
+
+    #[test]
+    fn the_kill_feed_should_stand_in_for_missing_kills_per_game() {
+        let stats = PlayerMatchStats {
+            assists: 18,
+            ..Default::default()
+        };
+        // 12 feed kills over 3 games is 4 a game: 12 + 12 + 2.
+        assert_eq!(individual_morale_delta(&stats, 12, 3), 26);
     }
 }
 
