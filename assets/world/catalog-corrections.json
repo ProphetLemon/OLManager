@@ -1,11 +1,1201 @@
 {
   "corrections": [
     {
+      "id": "player-024b1212",
+      "field": "nationality",
+      "from": "",
+      "to": "KW",
+      "evidence": "https://lol.fandom.com/wiki/Aklass (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-04f19ebe",
+      "field": "nationality",
+      "from": "",
+      "to": "GB",
+      "evidence": "https://lol.fandom.com/wiki/GertrudeThePony (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-0652df30",
+      "field": "nationality",
+      "from": "",
+      "to": "TN",
+      "evidence": "https://lol.fandom.com/wiki/Sundax (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-075cdc01",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/xinsheng (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-0a48f6ed",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Ke (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-0ca2e82d",
+      "field": "nationality",
+      "from": "",
+      "to": "CZ",
+      "evidence": "https://lol.fandom.com/wiki/safo (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-0fb5ec08",
+      "field": "nationality",
+      "from": "",
+      "to": "KR",
+      "evidence": "https://lol.fandom.com/wiki/Cid (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-10bfcfdd",
+      "field": "nationality",
+      "from": "",
+      "to": "US",
+      "evidence": "https://lol.fandom.com/wiki/Rapid (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-11a98d0e",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Miyi (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-132c37de",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Relaxing (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-13c1e39d",
+      "field": "nationality",
+      "from": "",
+      "to": "GR",
+      "evidence": "https://lol.fandom.com/wiki/SneakyLemon (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-16702d04",
+      "field": "nationality",
+      "from": "",
+      "to": "VN",
+      "evidence": "https://lol.fandom.com/wiki/Gloryy (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-16ab7931",
+      "field": "nationality",
+      "from": "",
+      "to": "TN",
+      "evidence": "https://lol.fandom.com/wiki/Shadow (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-16b75fca",
+      "field": "nationality",
+      "from": "",
+      "to": "NL",
+      "evidence": "https://lol.fandom.com/wiki/Fortunate (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-1ad3c256",
+      "field": "nationality",
+      "from": "",
+      "to": "HK",
+      "evidence": "https://lol.fandom.com/wiki/Sywjj (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-1d39bc6b",
+      "field": "nationality",
+      "from": "",
+      "to": "HU",
+      "evidence": "https://lol.fandom.com/wiki/Ragnarr (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-1db8680c",
+      "field": "nationality",
+      "from": "",
+      "to": "VN",
+      "evidence": "https://lol.fandom.com/wiki/Haaland (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-1de7d051",
+      "field": "nationality",
+      "from": "",
+      "to": "FR",
+      "evidence": "https://lol.fandom.com/wiki/Dadou (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-1e68af4f",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Juice (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-20c1419e",
+      "field": "nationality",
+      "from": "",
+      "to": "DK",
+      "evidence": "https://lol.fandom.com/wiki/Bjoernen (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-22c50a94",
+      "field": "nationality",
+      "from": "",
+      "to": "CZ",
+      "evidence": "https://lol.fandom.com/wiki/Xavis (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-2647fe92",
+      "field": "nationality",
+      "from": "",
+      "to": "TN",
+      "evidence": "https://lol.fandom.com/wiki/Wicked (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-29c4c7b3",
+      "field": "nationality",
+      "from": "",
+      "to": "DK",
+      "evidence": "https://lol.fandom.com/wiki/reje (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-2af0a675",
+      "field": "nationality",
+      "from": "",
+      "to": "KR",
+      "evidence": "https://lol.fandom.com/wiki/Raon (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-2f019360",
+      "field": "nationality",
+      "from": "",
+      "to": "TR",
+      "evidence": "https://lol.fandom.com/wiki/Grave (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-31b53d20",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/luoyiyu (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-31d1fa76",
+      "field": "nationality",
+      "from": "",
+      "to": "PL",
+      "evidence": "https://lol.fandom.com/wiki/Xavi (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-38a4e6a6",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/sorrow (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-39c88777",
+      "field": "nationality",
+      "from": "",
+      "to": "EG",
+      "evidence": "https://lol.fandom.com/wiki/Zeal (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-3a004205",
+      "field": "nationality",
+      "from": "",
+      "to": "VN",
+      "evidence": "https://lol.fandom.com/wiki/Easylove (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-3d7ae2a4",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/fishone (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-3e71895a",
+      "field": "nationality",
+      "from": "",
+      "to": "HR",
+      "evidence": "https://lol.fandom.com/wiki/Tali (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-3f634687",
+      "field": "nationality",
+      "from": "",
+      "to": "TR",
+      "evidence": "https://lol.fandom.com/wiki/Podex (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-3fb7c577",
+      "field": "nationality",
+      "from": "",
+      "to": "AR",
+      "evidence": "https://lol.fandom.com/wiki/Kurckoo (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-411e110b",
+      "field": "nationality",
+      "from": "",
+      "to": "TW",
+      "evidence": "https://lol.fandom.com/wiki/TNS (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-4174cafe",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/TENG (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-41e444c0",
+      "field": "nationality",
+      "from": "",
+      "to": "CZ",
+      "evidence": "https://lol.fandom.com/wiki/Opat04 (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-42d63c68",
+      "field": "nationality",
+      "from": "",
+      "to": "US",
+      "evidence": "https://lol.fandom.com/wiki/Beep (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-432d39e2",
+      "field": "nationality",
+      "from": "",
+      "to": "DE",
+      "evidence": "https://lol.fandom.com/wiki/MrJackson (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-44d6cbd6",
+      "field": "nationality",
+      "from": "",
+      "to": "KR",
+      "evidence": "https://lol.fandom.com/wiki/Guardian (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-45f60b44",
+      "field": "nationality",
+      "from": "",
+      "to": "SE",
+      "evidence": "https://lol.fandom.com/wiki/Slice (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-46007dbb",
+      "field": "nationality",
+      "from": "",
+      "to": "US",
+      "evidence": "https://lol.fandom.com/wiki/Shimmer (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-47201b68",
+      "field": "nationality",
+      "from": "",
+      "to": "NL",
+      "evidence": "https://lol.fandom.com/wiki/Pekidelion (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-48923d32",
+      "field": "nationality",
+      "from": "",
+      "to": "RS",
+      "evidence": "https://lol.fandom.com/wiki/MegaJ (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-49ce0250",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Mio7 (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-4a8ec0a1",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Flying (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-4b5f7a96",
+      "field": "nationality",
+      "from": "",
+      "to": "PT",
+      "evidence": "https://lol.fandom.com/wiki/DIGA (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-4c73fc27",
+      "field": "nationality",
+      "from": "",
+      "to": "SE",
+      "evidence": "https://lol.fandom.com/wiki/Goldenpenny (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-4e77d11d",
+      "field": "nationality",
+      "from": "",
+      "to": "HU",
+      "evidence": "https://lol.fandom.com/wiki/Paresz (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-511fe89f",
+      "field": "nationality",
+      "from": "",
+      "to": "BG",
+      "evidence": "https://lol.fandom.com/wiki/Vzz (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-51df346f",
+      "field": "nationality",
+      "from": "",
+      "to": "FR",
+      "evidence": "https://lol.fandom.com/wiki/Kamiloo (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-52b45ae7",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/chips (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-54449e50",
+      "field": "nationality",
+      "from": "",
+      "to": "SE",
+      "evidence": "https://lol.fandom.com/wiki/Cha0s (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-55ef3ff2",
+      "field": "nationality",
+      "from": "",
+      "to": "IT",
+      "evidence": "https://lol.fandom.com/wiki/BeWhite (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-5790ae15",
+      "field": "nationality",
+      "from": "",
+      "to": "DE",
+      "evidence": "https://lol.fandom.com/wiki/Lyrokun (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-57a5114e",
+      "field": "nationality",
+      "from": "",
+      "to": "TN",
+      "evidence": "https://lol.fandom.com/wiki/BipolarXD (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-580d74c6",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Ryan3 (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-5b187146",
+      "field": "nationality",
+      "from": "",
+      "to": "TW",
+      "evidence": "https://lol.fandom.com/wiki/Sword (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-5d20721a",
+      "field": "nationality",
+      "from": "",
+      "to": "VN",
+      "evidence": "https://lol.fandom.com/wiki/NPC (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-5dc120ca",
+      "field": "nationality",
+      "from": "",
+      "to": "RO",
+      "evidence": "https://lol.fandom.com/wiki/Ronaldo (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-5e2304cb",
+      "field": "nationality",
+      "from": "",
+      "to": "FR",
+      "evidence": "https://lol.fandom.com/wiki/KKT (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-5ece99f6",
+      "field": "nationality",
+      "from": "",
+      "to": "TW",
+      "evidence": "https://lol.fandom.com/wiki/Dotmm (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-5f771268",
+      "field": "nationality",
+      "from": "",
+      "to": "TW",
+      "evidence": "https://lol.fandom.com/wiki/Mese (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-5fc13a3d",
+      "field": "nationality",
+      "from": "",
+      "to": "CZ",
+      "evidence": "https://lol.fandom.com/wiki/hanii (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-601e5b71",
+      "field": "nationality",
+      "from": "",
+      "to": "IT",
+      "evidence": "https://lol.fandom.com/wiki/Loeloal (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-6073045c",
+      "field": "nationality",
+      "from": "",
+      "to": "FR",
+      "evidence": "https://lol.fandom.com/wiki/LONVEY (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-607fa235",
+      "field": "nationality",
+      "from": "",
+      "to": "HK",
+      "evidence": "https://lol.fandom.com/wiki/MadDogg9 (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-61df48a6",
+      "field": "nationality",
+      "from": "",
+      "to": "DK",
+      "evidence": "https://lol.fandom.com/wiki/Ag0nyPain (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-6328d358",
+      "field": "nationality",
+      "from": "",
+      "to": "PL",
+      "evidence": "https://lol.fandom.com/wiki/LeQu (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-64c76975",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/pjo (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-665b801f",
+      "field": "nationality",
+      "from": "",
+      "to": "VN",
+      "evidence": "https://lol.fandom.com/wiki/rayq (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-67a8e7d1",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Wenbo (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-67cd8bd2",
+      "field": "nationality",
+      "from": "",
+      "to": "TR",
+      "evidence": "https://lol.fandom.com/wiki/HolyPhoenix (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-67e3036c",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/mxx (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-6e2081ea",
+      "field": "nationality",
+      "from": "",
+      "to": "PL",
+      "evidence": "https://lol.fandom.com/wiki/Barti (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-6e802a7a",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Starfire (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-6f192835",
+      "field": "nationality",
+      "from": "",
+      "to": "PT",
+      "evidence": "https://lol.fandom.com/wiki/Oceann (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-702a0b68",
+      "field": "nationality",
+      "from": "",
+      "to": "CZ",
+      "evidence": "https://lol.fandom.com/wiki/Vyni (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-72c8f566",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Yxl (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-73ea4805",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/luxury (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-7422547b",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Today (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-74a4ab05",
+      "field": "nationality",
+      "from": "",
+      "to": "DE",
+      "evidence": "https://lol.fandom.com/wiki/Luis (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-7605d8aa",
+      "field": "nationality",
+      "from": "",
+      "to": "PT",
+      "evidence": "https://lol.fandom.com/wiki/ffernandes (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-792f026c",
+      "field": "nationality",
+      "from": "",
+      "to": "EG",
+      "evidence": "https://lol.fandom.com/wiki/Poro (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-7a2950e1",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/putaogou (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-7cc302b4",
+      "field": "nationality",
+      "from": "",
+      "to": "CZ",
+      "evidence": "https://lol.fandom.com/wiki/Chimer (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-821c2f46",
+      "field": "nationality",
+      "from": "",
+      "to": "HK",
+      "evidence": "https://lol.fandom.com/wiki/Keres (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-839a50ce",
+      "field": "nationality",
+      "from": "",
+      "to": "AT",
+      "evidence": "https://lol.fandom.com/wiki/Anonymouss (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-843fa280",
+      "field": "nationality",
+      "from": "",
+      "to": "IT",
+      "evidence": "https://lol.fandom.com/wiki/mT (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-84e571f0",
+      "field": "nationality",
+      "from": "",
+      "to": "IT",
+      "evidence": "https://lol.fandom.com/wiki/downfall (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-85b26719",
+      "field": "nationality",
+      "from": "",
+      "to": "SE",
+      "evidence": "https://lol.fandom.com/wiki/Spiderlair (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-85fbce5e",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/OvO (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-8a37954c",
+      "field": "nationality",
+      "from": "",
+      "to": "PL",
+      "evidence": "https://lol.fandom.com/wiki/Hyper720 (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-8b783618",
+      "field": "nationality",
+      "from": "",
+      "to": "VN",
+      "evidence": "https://lol.fandom.com/wiki/TT (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-8ca7a86d",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/XI_LAI (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-90529482",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Ninefog (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-95d0b2ad",
+      "field": "nationality",
+      "from": "",
+      "to": "PL",
+      "evidence": "https://lol.fandom.com/wiki/JayJay (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-96bc3a10",
+      "field": "nationality",
+      "from": "",
+      "to": "PL",
+      "evidence": "https://lol.fandom.com/wiki/Klopsik (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-970d7ba9",
+      "field": "nationality",
+      "from": "",
+      "to": "DK",
+      "evidence": "https://lol.fandom.com/wiki/MadsF (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-977ce5d4",
+      "field": "nationality",
+      "from": "",
+      "to": "CZ",
+      "evidence": "https://lol.fandom.com/wiki/Fishireal (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-993cb5c3",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Liangchen (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-9c516f6f",
+      "field": "nationality",
+      "from": "",
+      "to": "BR",
+      "evidence": "https://lol.fandom.com/wiki/Guizzy (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-9df2110d",
+      "field": "nationality",
+      "from": "",
+      "to": "PL",
+      "evidence": "https://lol.fandom.com/wiki/Raticait (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-9fee5fba",
+      "field": "nationality",
+      "from": "",
+      "to": "KR",
+      "evidence": "https://lol.fandom.com/wiki/Listo (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-9ff63586",
+      "field": "nationality",
+      "from": "",
+      "to": "TN",
+      "evidence": "https://lol.fandom.com/wiki/%C3%8Ensane (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-a020f702",
+      "field": "nationality",
+      "from": "",
+      "to": "GR",
+      "evidence": "https://lol.fandom.com/wiki/CHIMP (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-a3fe8d49",
+      "field": "nationality",
+      "from": "",
+      "to": "PL",
+      "evidence": "https://lol.fandom.com/wiki/ShazQ (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-aa98b82d",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Beluga (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-abac4e86",
+      "field": "nationality",
+      "from": "",
+      "to": "BR",
+      "evidence": "https://lol.fandom.com/wiki/Damage (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-ac940528",
+      "field": "nationality",
+      "from": "",
+      "to": "US",
+      "evidence": "https://lol.fandom.com/wiki/Souldier (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
       "id": "player-ac9f33f8",
       "field": "full_name",
       "from": "Lee Sang-hyeok",
       "to": "Mun Hyeon-jun",
       "evidence": "Leaguepedia T1 team members lists Oner (Jungler) as Mun Hyeon-jun; Lee Sang-hyeok is Faker (player-1ec551c6)."
+    },
+    {
+      "id": "player-ad1f94b3",
+      "field": "nationality",
+      "from": "",
+      "to": "BR",
+      "evidence": "https://lol.fandom.com/wiki/Houndin (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-ad347714",
+      "field": "nationality",
+      "from": "",
+      "to": "TW",
+      "evidence": "https://lol.fandom.com/wiki/Masuhana (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-ada017e3",
+      "field": "nationality",
+      "from": "",
+      "to": "IT",
+      "evidence": "https://lol.fandom.com/wiki/Xen0gan (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-b1c31131",
+      "field": "nationality",
+      "from": "",
+      "to": "DK",
+      "evidence": "https://lol.fandom.com/wiki/Hankat (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-b2a34f15",
+      "field": "nationality",
+      "from": "",
+      "to": "BE",
+      "evidence": "https://lol.fandom.com/wiki/Bwipo (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-b39a0917",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Rbow (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-b4ab6c76",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/hanghang (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-b5f898f6",
+      "field": "nationality",
+      "from": "",
+      "to": "VN",
+      "evidence": "https://lol.fandom.com/wiki/BayMaxxx (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-b636d52a",
+      "field": "nationality",
+      "from": "",
+      "to": "TW",
+      "evidence": "https://lol.fandom.com/wiki/Leowei (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-b8640c83",
+      "field": "nationality",
+      "from": "",
+      "to": "SE",
+      "evidence": "https://lol.fandom.com/wiki/Unicow (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-b86911d2",
+      "field": "nationality",
+      "from": "",
+      "to": "NL",
+      "evidence": "https://lol.fandom.com/wiki/ShadowDragon (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-b8795a9a",
+      "field": "nationality",
+      "from": "",
+      "to": "IT",
+      "evidence": "https://lol.fandom.com/wiki/Sveglia (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-bddb2f0b",
+      "field": "nationality",
+      "from": "",
+      "to": "VN",
+      "evidence": "https://lol.fandom.com/wiki/Hy (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-bf285977",
+      "field": "nationality",
+      "from": "",
+      "to": "DE",
+      "evidence": "https://lol.fandom.com/wiki/Kamito (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-bf4007f8",
+      "field": "nationality",
+      "from": "",
+      "to": "CA",
+      "evidence": "https://lol.fandom.com/wiki/Tails (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-bf502604",
+      "field": "nationality",
+      "from": "",
+      "to": "AT",
+      "evidence": "https://lol.fandom.com/wiki/Nan0 (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-c1794c0b",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/5t5 (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-c179da47",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/sjj (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-c28ffe5a",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Zartheit1 (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-c35f299f",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Later (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-c38f09d6",
+      "field": "nationality",
+      "from": "",
+      "to": "PT",
+      "evidence": "https://lol.fandom.com/wiki/TheGreatGary (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-c97ba69f",
+      "field": "nationality",
+      "from": "",
+      "to": "CZ",
+      "evidence": "https://lol.fandom.com/wiki/LANDY (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-ca24f005",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Yanxiang (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-cb568d13",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Hran (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-ce515dc2",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/heiYue (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-cebefa78",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/ZiYe (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-d31effef",
+      "field": "nationality",
+      "from": "",
+      "to": "TW",
+      "evidence": "https://lol.fandom.com/wiki/Feng55 (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-d32d4735",
+      "field": "nationality",
+      "from": "",
+      "to": "NL",
+      "evidence": "https://lol.fandom.com/wiki/Luuuk (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-d442b787",
+      "field": "nationality",
+      "from": "",
+      "to": "GB",
+      "evidence": "https://lol.fandom.com/wiki/NoName (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-d462f3cc",
+      "field": "nationality",
+      "from": "",
+      "to": "TW",
+      "evidence": "https://lol.fandom.com/wiki/Killer2 (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-d475bfda",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/banye (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-d6762106",
+      "field": "nationality",
+      "from": "",
+      "to": "DK",
+      "evidence": "https://lol.fandom.com/wiki/Markus (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-da041064",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/GLFS (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-da3ce20b",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/xlun (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-da456182",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Mentality (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-da5d0a37",
+      "field": "nationality",
+      "from": "",
+      "to": "KR",
+      "evidence": "https://lol.fandom.com/wiki/Lucifer (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-dd854ce7",
+      "field": "nationality",
+      "from": "",
+      "to": "TW",
+      "evidence": "https://lol.fandom.com/wiki/Zsouaia (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-df326714",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Coward (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-e16a590e",
+      "field": "nationality",
+      "from": "",
+      "to": "US",
+      "evidence": "https://lol.fandom.com/wiki/Tomo (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-e478bb1d",
+      "field": "nationality",
+      "from": "",
+      "to": "HK",
+      "evidence": "https://lol.fandom.com/wiki/BuLuKaKa (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-e4e77fb5",
+      "field": "nationality",
+      "from": "",
+      "to": "DK",
+      "evidence": "https://lol.fandom.com/wiki/Erolle (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-e5d6d739",
+      "field": "nationality",
+      "from": "",
+      "to": "TR",
+      "evidence": "https://lol.fandom.com/wiki/Kakarot (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-e8b74930",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Yomiya (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-ee44393b",
+      "field": "nationality",
+      "from": "",
+      "to": "CH",
+      "evidence": "https://lol.fandom.com/wiki/Ray (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-eee8c630",
+      "field": "nationality",
+      "from": "",
+      "to": "PT",
+      "evidence": "https://lol.fandom.com/wiki/Chambel (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-ef3c9acb",
+      "field": "nationality",
+      "from": "",
+      "to": "PL",
+      "evidence": "https://lol.fandom.com/wiki/nvidek (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-ef608bed",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Yuji (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-f0e036fb",
+      "field": "nationality",
+      "from": "",
+      "to": "TR",
+      "evidence": "https://lol.fandom.com/wiki/monkaS (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-f1b77df8",
+      "field": "nationality",
+      "from": "",
+      "to": "ES",
+      "evidence": "https://lol.fandom.com/wiki/Enricfh (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-f5ab7f49",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/XBY (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-f71343e3",
+      "field": "nationality",
+      "from": "",
+      "to": "VN",
+      "evidence": "https://lol.fandom.com/wiki/666 (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-f82dd204",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/charlotte (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-f8631e8c",
+      "field": "nationality",
+      "from": "",
+      "to": "TW",
+      "evidence": "https://lol.fandom.com/wiki/Zoey (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-f9f3c124",
+      "field": "nationality",
+      "from": "",
+      "to": "CN",
+      "evidence": "https://lol.fandom.com/wiki/Elysia13 (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-fa25e8e1",
+      "field": "nationality",
+      "from": "",
+      "to": "US",
+      "evidence": "https://lol.fandom.com/wiki/Blight (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-fa3dfced",
+      "field": "nationality",
+      "from": "",
+      "to": "TR",
+      "evidence": "https://lol.fandom.com/wiki/Kaine (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-fb09c941",
+      "field": "nationality",
+      "from": "",
+      "to": "VN",
+      "evidence": "https://lol.fandom.com/wiki/PTM (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-fc3baa7b",
+      "field": "nationality",
+      "from": "",
+      "to": "DK",
+      "evidence": "https://lol.fandom.com/wiki/Szygenda (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-fcec0a68",
+      "field": "nationality",
+      "from": "",
+      "to": "PE",
+      "evidence": "https://lol.fandom.com/wiki/Diaakc (Leaguepedia Players, queried 2026-11-16)"
+    },
+    {
+      "id": "player-fecdc32b",
+      "field": "nationality",
+      "from": "",
+      "to": "HK",
+      "evidence": "https://lol.fandom.com/wiki/Epic (Leaguepedia Players, queried 2026-11-16)"
     }
   ]
 }
