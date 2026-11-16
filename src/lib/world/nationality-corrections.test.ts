@@ -232,6 +232,12 @@ describe("bundled catalog corrections", () => {
     }
   });
 
+  it("fills the empty nationality of the example player from the Leaguepedia join", () => {
+    // Szygenda: Leaguepedia lists Mathias Jensen from Denmark.
+    expect(bundled).toContainEqual(expect.objectContaining({ id: "player-fc3baa7b", field: "nationality", from: "", to: "DK" }));
+    expect(bundled.filter((c) => c.field === "nationality").length).toBeGreaterThanOrEqual(170);
+  });
+
   it.skipIf(!fs.existsSync(path.join(dataDir, "competitions")))("applies every bundled correction to the shipped data", () => {
     const world = loadWorld(dataDir);
     expect(world.corrections.skipped).toEqual([]);
