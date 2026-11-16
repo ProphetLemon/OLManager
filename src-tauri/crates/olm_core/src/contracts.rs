@@ -10,8 +10,9 @@ use crate::domain::player::{
 };
 use crate::domain::team::Team;
 use crate::game::Game;
+use crate::player_age::player_age;
 use crate::roster_stability::{RosterStabilityReason, repair_team};
-use chrono::{Datelike, Months, NaiveDate};
+use chrono::{Months, NaiveDate};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -564,7 +565,7 @@ fn expected_wage_with_floor(
         player.wage
     };
     let mut wage = starting_wage as f32;
-    let age = player_age_on(current_date, &player.date_of_birth);
+    let age = player_age(player, current_date).years;
     let remaining_days = remaining_contract_days(player, current_date);
 
     if age <= 27 {
@@ -627,7 +628,7 @@ fn importance_wage_multiplier(player: &Player) -> f32 {
 }
 
 pub(crate) fn expected_contract_years(player: &Player, current_date: NaiveDate) -> u32 {
-    let age = player_age_on(current_date, &player.date_of_birth);
+    let age = player_age(player, current_date).years;
 
     if age <= 28 {
         return 3;
@@ -815,18 +816,6 @@ pub(crate) fn has_active_manager_block(player: &Player, current_date: NaiveDate)
     NaiveDate::parse_from_str(blocked_until, "%Y-%m-%d")
         .map(|blocked_until| blocked_until >= current_date)
         .unwrap_or(true)
-}
-
-fn player_age_on(current_date: NaiveDate, date_of_birth: &str) -> i32 {
-    let Ok(dob) = NaiveDate::parse_from_str(date_of_birth, "%Y-%m-%d") else {
-        return 30;
-    };
-
-    let mut age = current_date.year() - dob.year();
-    if current_date.ordinal() < dob.ordinal() {
-        age -= 1;
-    }
-    age
 }
 
 fn remaining_contract_days(player: &Player, current_date: NaiveDate) -> i64 {
