@@ -9,6 +9,7 @@ use olm_core::game::Game;
 use olm_core::live_match_manager::{self, MatchMode};
 use olm_core::roster_stability;
 use olm_core::state::StateManager;
+use olm_core::turn::merge_series_reports;
 use serde::{Deserialize, Serialize};
 
 fn role_to_string(role: &olm_core::domain::stats::LolRole) -> &'static str {
@@ -65,6 +66,10 @@ pub struct LolSimMatchReportInput {
     pub events: Vec<LolSimMatchReportEventInput>,
     pub stats: LolSimMatchReportStatsInput,
     pub champions: Vec<LolSimMatchReportChampionInput>,
+    /// The fixture team that plays blue in this game. Reports built without champions (a
+    /// skipped or delegated game) cannot be read from player ids, so the frontend names it.
+    #[serde(default)]
+    pub blue_team_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -321,14 +326,218 @@ fn build_match_report_from_lol_sim(input: LolSimMatchReportInput) -> MatchReport
     }
 }
 
+/// Whether the blue side of a reported game is the fixture's home team.
+///
+/// The frontend seats the user on the blue side they pick, so the user's club can be the
+/// fixture's away team on blue (or its home team on red). The report only says "blue" and
+/// "red", so unless it names the blue team the side is read from who the blue champions
+/// are: their ids are player ids, and each player belongs to one of the fixture's two
+/// teams. Ids that resolve to neither team (or to both equally) keep the original reading,
+/// blue as home.
+fn blue_side_is_home(
+    game: &Game,
+    home_team_id: &str,
+    away_team_id: &str,
+    champions: &[LolSimMatchReportChampionInput],
+    blue_team_id: Option<&str>,
+) -> bool {
+    // The frontend names the blue team when it knows it; that settles it for a fixture team.
+    match blue_team_id {
+        Some(id) if id == home_team_id => return true,
+        Some(id) if id == away_team_id => return false,
+        _ => {}
+    }
+    let (mut home_votes, mut away_votes) = (0_usize, 0_usize);
+    for champion in champions
+        .iter()
+        .filter(|champion| map_sim_team_to_side(&champion.team) == Side::Home)
+    {
+        let team_id = game
+            .players
+            .iter()
+            .find(|player| player.id == champion.id)
+            .and_then(|player| player.team_id.as_deref());
+        if team_id == Some(home_team_id) {
+            home_votes += 1;
+        } else if team_id == Some(away_team_id) {
+            away_votes += 1;
+        }
+    }
+    if home_votes == away_votes {
+        log::warn!(
+            "[cmd] could not tell which fixture team plays blue ({home_votes} players of each); reading blue as home"
+        );
+    }
+    away_votes <= home_votes
+}
+
+/// Turns a report built as blue = home into the one for a fixture where blue is away.
+fn swap_report_sides(report: &mut MatchReport) {
+    std::mem::swap(&mut report.home_wins, &mut report.away_wins);
+    std::mem::swap(&mut report.home_stats, &mut report.away_stats);
+    report.home_possession = 100.0 - report.home_possession;
+    for event in &mut report.events {
+        event.side = event.side.opposite();
+    }
+    for kill in &mut report.kill_feed {
+        kill.side = kill.side.opposite();
+    }
+}
+
+/// One game's report from the frontend, credited to the fixture's home and away teams.
+fn fixture_report_from_lol_sim(
+    game: &Game,
+    home_team_id: &str,
+    away_team_id: &str,
+    input: LolSimMatchReportInput,
+) -> MatchReport {
+    let blue_is_home = blue_side_is_home(
+        game,
+        home_team_id,
+        away_team_id,
+        &input.champions,
+        input.blue_team_id.as_deref(),
+    );
+    let mut report = build_match_report_from_lol_sim(input);
+    if !blue_is_home {
+        swap_report_sides(&mut report);
+    }
+    report
+}
+
+/// Games a side must win to take a best-of-`best_of` series.
+fn series_target_wins(best_of: u8) -> u8 {
+    best_of / 2 + 1
+}
+
+/// Games each side has won in the given per-game reports.
+fn series_wins<'a>(reports: impl IntoIterator<Item = &'a MatchReport>) -> (u8, u8) {
+    reports.into_iter().fold((0, 0), |(home, away), report| {
+        (
+            home.saturating_add(report.home_wins),
+            away.saturating_add(report.away_wins),
+        )
+    })
+}
+
+/// Whether two reports say exactly the same thing.
+fn same_report(left: &MatchReport, right: &MatchReport) -> bool {
+    matches!(
+        (serde_json::to_value(left), serde_json::to_value(right)),
+        (Ok(left), Ok(right)) if left == right
+    )
+}
+
+/// Keeps `report` as game `game_number` of the series, replacing that game and any after it.
+///
+/// A series is recorded in order, so a retry or a series restarted from game 1 overwrites
+/// what an earlier attempt left. Only games that leave the series undecided are kept: the
+/// deciding game goes through `finish_live_match`, so a Bo1, a game past the series' length
+/// and a game after the decision are all refused.
+fn keep_series_game(
+    buffer: &mut Vec<MatchReport>,
+    game_number: u8,
+    best_of: u8,
+    report: MatchReport,
+) -> Result<(), String> {
+    let index = usize::from(game_number)
+        .checked_sub(1)
+        .ok_or("Series games are numbered from 1")?;
+    if game_number > best_of {
+        return Err(format!(
+            "Game {game_number} is past the {best_of} games of the series"
+        ));
+    }
+    if index > buffer.len() {
+        return Err(format!(
+            "Game {game_number} was recorded before game {}",
+            buffer.len() + 1
+        ));
+    }
+
+    // Two played games never produce the same report, so a repeat is the same game sent twice
+    // (a double click on Continue) and must not count as the next one. A skipped game has no
+    // player lines to tell it apart, so two of them can match by chance and are let through.
+    if index > 0 && !report.player_stats.is_empty() && same_report(&buffer[index - 1], &report) {
+        return Err(format!(
+            "Game {game_number} repeats game {}: it was already recorded",
+            game_number - 1
+        ));
+    }
+
+    let (home_wins, away_wins) = series_wins(buffer[..index].iter().chain([&report]));
+    let target = series_target_wins(best_of);
+    if home_wins >= target || away_wins >= target {
+        return Err(format!(
+            "Game {game_number} decides the best-of-{best_of} series: finish the match instead"
+        ));
+    }
+
+    buffer.truncate(index);
+    buffer.push(report);
+    Ok(())
+}
+
+/// The report `apply_match_report` gets for a finished match.
+///
+/// A series the user played game by game merges the recorded games with the deciding one,
+/// exactly as an AI series is merged. No recorded games means a single game.
+///
+/// Two checks keep a game that failed to record from skewing the series. When the caller
+/// says which game of the series is deciding (`game_number`), every game before it must be
+/// recorded; a gap that the score alone cannot show (game 2 missing from a 2-1 that reads
+/// 2-0) is caught there. Whatever the caller sends, recorded games that do not add up to a
+/// series won by the deciding game's winner are not trusted either. In both cases the
+/// deciding game stands alone, as it always did, and a warning is logged.
+fn series_report(
+    buffered: Vec<MatchReport>,
+    deciding: MatchReport,
+    best_of: u8,
+    game_number: Option<u8>,
+) -> MatchReport {
+    if buffered.is_empty() {
+        return deciding;
+    }
+    if game_number.is_some_and(|number| usize::from(number) != buffered.len() + 1) {
+        log::warn!(
+            "[cmd] finish_live_match: game {:?} decides the series but {} games were recorded; using the last game alone",
+            game_number,
+            buffered.len()
+        );
+        return deciding;
+    }
+    let (home_wins, away_wins) = series_wins(buffered.iter().chain([&deciding]));
+    let target = series_target_wins(best_of);
+    let home_takes_series = home_wins >= target && away_wins < target;
+    let away_takes_series = away_wins >= target && home_wins < target;
+    let deciding_home_won = deciding.home_wins > deciding.away_wins;
+    let consistent =
+        (home_takes_series && deciding_home_won) || (away_takes_series && !deciding_home_won);
+    if !consistent {
+        log::warn!(
+            "[cmd] finish_live_match: recorded games {}-{} do not make a best-of-{} series won by the last game; using the last game alone",
+            home_wins,
+            away_wins,
+            best_of
+        );
+        return deciding;
+    }
+
+    let mut games = buffered;
+    games.push(deciding.clone());
+    merge_series_reports(games).unwrap_or(deciding)
+}
+
 pub fn finish_live_match(
     state: &StateManager,
     lol_report: Option<LolSimMatchReportInput>,
+    game_number: Option<u8>,
     locale: Option<&str>,
     data_base: Option<&std::path::Path>,
 ) -> Result<FinishLiveMatchResponse, String> {
-    info!("[cmd] finish_live_match");
-    let session = state.take_live_match().ok_or("No active live match")?;
+    info!("[cmd] finish_live_match: game_number={:?}", game_number);
+    let mut session = state.take_live_match().ok_or("No active live match")?;
+    let buffered_games = std::mem::take(&mut session.series_reports);
 
     let fixture_index = session.fixture_index;
     let round_matchday = session.round_matchday;
@@ -337,8 +546,19 @@ pub fn finish_live_match(
     let away_team_id = session.away_team_id.clone();
 
     let report = if let Some(input) = lol_report {
-        build_match_report_from_lol_sim(input)
+        state
+            .get_game(|game| {
+                let deciding =
+                    fixture_report_from_lol_sim(game, &home_team_id, &away_team_id, input);
+                let best_of = game
+                    .active_league()
+                    .and_then(|league| league.fixtures.get(fixture_index))
+                    .map_or(1, |fixture| fixture.best_of);
+                series_report(buffered_games, deciding, best_of, game_number)
+            })
+            .ok_or("No active game session")?
     } else {
+        // A report-less finish is the backend's own game, not a series the user played.
         session.match_state.into_report()
     };
     info!(
@@ -382,6 +602,30 @@ pub fn finish_live_match(
     Ok(FinishLiveMatchResponse {
         game: crate::client_game::game_for_client(&game),
         round_summary,
+    })
+}
+
+/// Keeps one non-deciding game of the user's series for `finish_live_match` to merge.
+///
+/// `game_number` counts from 1. The report is credited to the fixture's home and away teams
+/// now, because the user can swap colours from one game to the next.
+pub fn record_series_game(
+    state: &StateManager,
+    game_number: u8,
+    lol_report: LolSimMatchReportInput,
+) -> Result<(), String> {
+    info!("[cmd] record_series_game: game={}", game_number);
+    state.with_session_mut(|session| {
+        let live = session.live_match.as_mut().ok_or("No active live match")?;
+        let game = session.game.as_ref().ok_or("No active game session")?;
+        let best_of = game
+            .active_league()
+            .and_then(|league| league.fixtures.get(live.fixture_index))
+            .map(|fixture| fixture.best_of)
+            .ok_or("Fixture not found")?;
+        let report =
+            fixture_report_from_lol_sim(game, &live.home_team_id, &live.away_team_id, lol_report);
+        keep_series_game(&mut live.series_reports, game_number, best_of, report)
     })
 }
 
@@ -529,6 +773,7 @@ mod tests {
                 red: team_stats(),
             },
             champions,
+            blue_team_id: None,
         }
     }
 
@@ -566,5 +811,27 @@ mod tests {
         assert_eq!(report.player_stats["b1"].damage_dealt, 0);
         assert_eq!(report.player_stats["b2"].damage_dealt, 0);
         assert_eq!(report.home_stats.damage_dealt, 0);
+    }
+
+    #[test]
+    fn swapping_report_sides_moves_score_stats_and_events_to_the_other_team() {
+        let mut input = input(vec![
+            champion("b1", "blue", 1_000.0),
+            champion("r1", "red", 500.0),
+        ]);
+        input.winner = Some("blue".to_string());
+        input.events = vec![LolSimMatchReportEventInput {
+            t: 600.0,
+            text: "blue destroyed a tower".to_string(),
+            kind: "tower".to_string(),
+        }];
+        let mut report = build_match_report_from_lol_sim(input);
+
+        swap_report_sides(&mut report);
+
+        assert_eq!((report.home_wins, report.away_wins), (0, 1));
+        assert_eq!(report.away_stats.damage_dealt, 1_000);
+        assert_eq!(report.home_stats.damage_dealt, 500);
+        assert_eq!(report.events[0].side, Side::Away);
     }
 }
