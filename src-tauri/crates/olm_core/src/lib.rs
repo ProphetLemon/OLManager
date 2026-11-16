@@ -42,6 +42,7 @@ pub mod meta_relationships;
 pub mod narrative;
 pub mod news;
 pub mod placeholder_ratings;
+pub mod player_age;
 pub mod player_events;
 pub mod player_rating_overrides;
 pub mod player_identity;
