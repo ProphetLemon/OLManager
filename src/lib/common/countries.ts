@@ -396,6 +396,21 @@ const DEMONYM_TO_CODE: Record<string, string> = {
   Canadá: "CA",
 };
 
+const DEMONYM_TO_CODE_LOWER: Record<string, string> = Object.fromEntries(
+  Object.entries(DEMONYM_TO_CODE).map(([name, code]) => [name.toLowerCase(), code]),
+);
+
+/** Short spellings the data uses that the English country list does not carry. */
+const NAME_ALIAS_TO_CODE: Record<string, string> = { korea: "KR" };
+
+/** Full English country name (case-insensitive) to its alpha-2 code. */
+function countryNameToCode(value: string): string | undefined {
+  const name = value.trim();
+  // Three letters or fewer is a code or an abbreviation ("USA"), never a full name.
+  if (name.length <= 3) return undefined;
+  return NAME_ALIAS_TO_CODE[name.toLowerCase()] ?? countries.getAlpha2Code(name, "en");
+}
+
 /**
  * Normalise a nationality value: if it's already an alpha-2 code, return it;
  * if it's a demonym string from an old save, convert it.
@@ -408,8 +423,13 @@ export function normaliseNationality(value: string): string {
   if (upper.length === 2 && countries.isValid(upper)) return upper;
   const alias = ALIAS_TO_CODE[value.trim().toLowerCase()];
   if (alias) return alias;
-  // Try demonym map
-  return DEMONYM_TO_CODE[value] ?? value;
+  // Try demonym map, then the same names ignoring case, then any English country name.
+  return (
+    DEMONYM_TO_CODE[value] ??
+    DEMONYM_TO_CODE_LOWER[value.trim().toLowerCase()] ??
+    countryNameToCode(value) ??
+    value
+  );
 }
 
 export { countries };
