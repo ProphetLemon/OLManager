@@ -6,7 +6,7 @@
 //! corrections file (`assets/world/catalog-corrections.json`) fixes individual fields.
 //! Everything is pure and never fails: bad input is skipped and reported.
 
-use crate::domain::player::Player;
+use crate::domain::player::{Player, TransferOfferStatus};
 use crate::domain::team::{Team, TeamKind};
 use crate::game::Game;
 use crate::generator::definitions::CompetitionManifest;
@@ -123,10 +123,20 @@ fn same_person_survivor<'a>(
 }
 
 /// Player ids whose team was changed in play, so catalog rehydration keeps them where the
-/// game put them: ids in `moved_player_ids`, players with a transfer record, and players
-/// swapped in as part of a transfer.
+/// game put them: ids in `moved_player_ids`, players with a transfer record, players swapped
+/// in as part of a transfer, and players with a pending transfer offer (it lives on the
+/// player record, so dropping the record would silently cancel it).
 pub fn transfer_protected_player_ids(game: &Game) -> HashSet<String> {
     let mut ids = game.moved_player_ids.clone();
+    for player in &game.players {
+        if player
+            .transfer_offers
+            .iter()
+            .any(|offer| offer.status == TransferOfferStatus::Pending)
+        {
+            ids.insert(player.id.clone());
+        }
+    }
     for entry in &game.transfer_history.entries {
         ids.insert(entry.player_id.clone());
         for included in &entry.included_players {

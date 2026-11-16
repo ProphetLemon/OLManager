@@ -3035,6 +3035,61 @@ mod tests {
         assert!(game.retired_player_ids.is_empty());
     }
 
+    fn pending_offer() -> olm_core::domain::player::TransferOffer {
+        serde_json::from_value(serde_json::json!({
+            "id": "offer-1",
+            "from_team_id": "team-1",
+            "fee": 1000,
+            "wage_offered": 100,
+        }))
+        .expect("offer")
+    }
+
+    #[test]
+    fn rehydration_releases_an_academy_player_with_an_open_offer_instead_of_dropping_it() {
+        let mut game = game_with_academy_twins();
+        let mut bid_on = academy_player(
+            "stale-same",
+            "academy-prime_league-nord",
+            "Toasty",
+            "January 19, 2006",
+        );
+        bid_on.transfer_offers.push(pending_offer());
+        game.players.extend([
+            bid_on,
+            academy_player("twin-same", "academy-prm-nord", "Toasty", "2006-01-19"),
+        ]);
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academy_players_dropped, 0);
+        let kept = game.players.iter().find(|p| p.id == "stale-same");
+        let kept = kept.expect("player with an offer kept");
+        assert_eq!(kept.team_id, None);
+        assert_eq!(kept.transfer_offers.len(), 1);
+        assert!(game.retired_player_ids.is_empty());
+    }
+
+    #[test]
+    fn rehydration_releases_a_canonical_club_player_with_an_open_offer_instead_of_dropping_it() {
+        let mut game = game_with_person_records(
+            ("Linus Grönlund", "RoyalKanin", "2002-07-06"),
+            ("Kanin", "RoyalKanin", "July 6, 2002"),
+        );
+        let bid_on = game
+            .players
+            .iter_mut()
+            .find(|p| p.id == "canonical-person")
+            .unwrap();
+        bid_on.transfer_offers.push(pending_offer());
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        let kept = game.players.iter().find(|p| p.id == "canonical-person");
+        assert_eq!(kept.expect("player with an offer kept").team_id, None);
+        assert!(game.retired_player_ids.is_empty());
+    }
+
     #[test]
     fn rehydration_keeps_an_academy_when_both_copies_are_linked() {
         let mut game = game_with_academy_twins();
