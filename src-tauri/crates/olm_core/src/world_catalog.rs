@@ -7,7 +7,7 @@
 //! Everything is pure and never fails: bad input is skipped and reported.
 
 use crate::domain::player::Player;
-use crate::domain::team::Team;
+use crate::domain::team::{Team, TeamKind};
 use crate::game::Game;
 use crate::generator::definitions::CompetitionManifest;
 use log::warn;
@@ -63,6 +63,149 @@ pub fn remove_orphan_stale_teams(game: &mut Game) -> Vec<String> {
     }
 
     game.teams.retain(|team| !orphans.contains(&team.id));
+    for player in &mut game.players {
+        if player
+            .team_id
+            .as_ref()
+            .is_some_and(|id| orphans.contains(id))
+        {
+            player.team_id = None;
+        }
+    }
+    for member in &mut game.staff {
+        if member
+            .team_id
+            .as_ref()
+            .is_some_and(|id| orphans.contains(id))
+        {
+            member.team_id = None;
+        }
+    }
+    let mut removed: Vec<String> = orphans.into_iter().collect();
+    removed.sort_unstable();
+    for id in &removed {
+        if !game.removed_team_ids.contains(id) {
+            game.removed_team_ids.push(id.clone());
+        }
+    }
+    removed
+}
+
+/// Remove the canonical clubs that no league plays, from a game whose leagues are still the
+/// stale duplicates (releases up to 2026.1113.2 built both families in the same world and
+/// scheduled only the stale one). The stale club survives: league, fixtures and standings
+/// reference it. A pair is repaired only while a stale league for it exists, so a new world
+/// is untouched. Academy clubs and the manager's own club stay (the latter with a warning).
+///
+/// The removed clubs' staff are freed and their players released with their wage. A player
+/// who is the same person (full name and birth date) as a player of the stale competition
+/// is dropped and tombstoned in `retired_player_ids`, so the catalog does not re-add it;
+/// one that moved or has a transfer record is released instead, never dropped.
+/// Ids are appended to `removed_team_ids` once. Returns the removed team ids.
+pub fn remove_unscheduled_canonical_duplicates(game: &mut Game) -> Vec<String> {
+    let scheduled: HashSet<&str> = game
+        .leagues
+        .iter()
+        .flat_map(|league| league.standings.iter().map(|entry| entry.team_id.as_str()))
+        .collect();
+    let stale_competitions: HashSet<&str> = STALE_DUPLICATE_COMPETITIONS
+        .iter()
+        .map(|(stale, _)| *stale)
+        .filter(|stale| {
+            game.leagues
+                .iter()
+                .any(|league| league.competition_id.as_deref() == Some(*stale))
+                || game.teams.iter().any(|team| {
+                    team.competition_id.as_deref() == Some(*stale)
+                        && scheduled.contains(team.id.as_str())
+                })
+        })
+        .collect();
+    if stale_competitions.is_empty() {
+        return Vec::new();
+    }
+    let canonical_competitions: HashSet<&str> = STALE_DUPLICATE_COMPETITIONS
+        .iter()
+        .filter(|(stale, _)| stale_competitions.contains(stale))
+        .map(|(_, canonical)| *canonical)
+        .collect();
+
+    let manager_team = game.manager.team_id.as_deref();
+    let mut orphans: HashSet<String> = HashSet::new();
+    for team in &game.teams {
+        let is_unscheduled_canonical = team.team_kind == TeamKind::Main
+            && team
+                .competition_id
+                .as_deref()
+                .is_some_and(|competition| canonical_competitions.contains(competition))
+            && !scheduled.contains(team.id.as_str());
+        if !is_unscheduled_canonical {
+            continue;
+        }
+        if manager_team == Some(team.id.as_str()) {
+            warn!(
+                "[world_catalog] keeping the manager's club {}: no league plays it, but it is the manager's",
+                team.id
+            );
+            continue;
+        }
+        orphans.insert(team.id.clone());
+    }
+    if orphans.is_empty() {
+        return Vec::new();
+    }
+
+    let stale_teams: HashSet<&str> = game
+        .teams
+        .iter()
+        .filter(|team| {
+            team.competition_id
+                .as_deref()
+                .is_some_and(|c| stale_competitions.contains(c))
+        })
+        .map(|team| team.id.as_str())
+        .collect();
+    let stale_people: HashSet<(&str, &str)> = game
+        .players
+        .iter()
+        .filter(|player| {
+            player
+                .team_id
+                .as_deref()
+                .is_some_and(|id| stale_teams.contains(id))
+        })
+        .map(|player| (player.full_name.as_str(), player.date_of_birth.as_str()))
+        .collect();
+    let transferred: HashSet<&str> = game
+        .transfer_history
+        .entries
+        .iter()
+        .map(|entry| entry.player_id.as_str())
+        .collect();
+    let mut dropped: HashSet<String> = HashSet::new();
+    for player in &game.players {
+        let on_orphan = player
+            .team_id
+            .as_ref()
+            .is_some_and(|id| orphans.contains(id));
+        if on_orphan
+            && !game.moved_player_ids.contains(&player.id)
+            && !transferred.contains(player.id.as_str())
+            && stale_people.contains(&(player.full_name.as_str(), player.date_of_birth.as_str()))
+        {
+            dropped.insert(player.id.clone());
+        }
+    }
+
+    game.teams.retain(|team| !orphans.contains(&team.id));
+    game.players.retain(|player| !dropped.contains(&player.id));
+    let mut dropped: Vec<String> = dropped.into_iter().collect();
+    dropped.sort_unstable();
+    for id in dropped {
+        if !game.retired_player_ids.contains(&id) {
+            game.retired_player_ids.push(id);
+        }
+    }
     for player in &mut game.players {
         if player
             .team_id

@@ -1235,6 +1235,9 @@ pub struct RehydrateCounts {
     /// Teams of stale duplicate competitions, held by the save and played by no league,
     /// that were removed.
     pub stale_teams_removed: usize,
+    /// Canonical clubs no league plays, removed because their stale twin is the one a
+    /// league schedules.
+    pub canonical_duplicates_removed: usize,
 }
 
 impl RehydrateCounts {
@@ -1245,6 +1248,7 @@ impl RehydrateCounts {
             + self.staff
             + self.staff_completed
             + self.stale_teams_removed
+            + self.canonical_duplicates_removed
     }
 }
 
@@ -1275,6 +1279,8 @@ pub(crate) fn apply_catalog_to_game(
     mut catalog_staff: Vec<Staff>,
 ) -> RehydrateCounts {
     let stale_teams_removed = world_catalog::remove_orphan_stale_teams(game).len();
+    let canonical_duplicates_removed =
+        world_catalog::remove_unscheduled_canonical_duplicates(game).len();
     let teams = merge_missing_teams(game, catalog_teams);
 
     let players_reassigned = reassign_stale_player_teams(game, &catalog_players);
@@ -1305,6 +1311,7 @@ pub(crate) fn apply_catalog_to_game(
         staff,
         staff_completed,
         stale_teams_removed,
+        canonical_duplicates_removed,
     };
     if counts.total() > 0 {
         // Rehydrated players arrive without a residency; the save was already
@@ -2334,5 +2341,301 @@ mod tests {
 
         assert_eq!(counts.stale_teams_removed, 0);
         assert!(game.teams.iter().any(|team| team.id == "lck-cl-orphan"));
+    }
+
+    /// A save from before the fix: the league plays the stale club `{stale}-a`, while its
+    /// canonical twin `{canonical}-a` sits in the world and no league plays it.
+    fn game_with_canonical_twin(stale: &str, canonical: &str) -> Game {
+        use olm_core::domain::league::League;
+
+        let mut game = rehydrate_test_game(vec![
+            rehydrate_test_player("stale-player", Some(&format!("{stale}-a"))),
+            rehydrate_test_player("canonical-player", Some(&format!("{canonical}-a"))),
+            rehydrate_test_player("stays", Some("team-1")),
+        ]);
+        for (id, competition) in [
+            (format!("{stale}-a"), stale),
+            (format!("{canonical}-a"), canonical),
+        ] {
+            let mut team = Team::new(
+                id.clone(),
+                id.clone(),
+                "TWN".to_string(),
+                "Korea".to_string(),
+                "Seoul".to_string(),
+                "Ground".to_string(),
+                1_000,
+            );
+            team.competition_id = Some(competition.to_string());
+            game.teams.push(team);
+        }
+        game.staff.push(rehydrate_test_staff(
+            "canonical-coach",
+            Some(&format!("{canonical}-a")),
+        ));
+        game.leagues.push(League::new(
+            stale.to_string(),
+            stale.to_string(),
+            2026,
+            &[format!("{stale}-a")],
+            Some(stale.to_string()),
+        ));
+        game
+    }
+
+    fn assert_canonical_twin_removed(stale: &str, canonical: &str) {
+        let mut game = game_with_canonical_twin(stale, canonical);
+        let twin = format!("{canonical}-a");
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.canonical_duplicates_removed, 1);
+        assert!(game.teams.iter().all(|team| team.id != twin));
+        assert_eq!(game.removed_team_ids, vec![twin]);
+        let player = game.players.iter().find(|p| p.id == "canonical-player");
+        assert_eq!(player.expect("player kept").team_id, None);
+        let coach = game.staff.iter().find(|s| s.id == "canonical-coach");
+        assert_eq!(coach.expect("staff kept").team_id, None);
+        assert!(game
+            .teams
+            .iter()
+            .any(|team| team.id == format!("{stale}-a")));
+        assert_eq!(game.leagues[0].standings.len(), 1);
+        let stale_player = game.players.iter().find(|p| p.id == "stale-player");
+        assert_eq!(
+            stale_player.expect("stale player kept").team_id.as_deref(),
+            Some(format!("{stale}-a").as_str())
+        );
+    }
+
+    #[test]
+    fn rehydration_removes_the_canonical_twin_of_a_scheduled_stale_club() {
+        assert_canonical_twin_removed("lck-cl", "lckcl");
+    }
+
+    #[test]
+    fn rehydration_removes_the_canonical_twin_of_a_scheduled_prime_league_club() {
+        assert_canonical_twin_removed("prime_league", "prm");
+    }
+
+    #[test]
+    fn rehydration_keeps_the_canonical_club_when_no_stale_league_exists() {
+        let mut game = game_with_canonical_twin("lck-cl", "lckcl");
+        game.teams.retain(|team| team.id != "lck-cl-a");
+        game.leagues[0].competition_id = Some("lckcl".to_string());
+        game.leagues[0].standings[0].team_id = "lckcl-a".to_string();
+        // A canonical club outside the league, as a new world can hold (an unplayed split).
+        let mut unplayed = game
+            .teams
+            .iter()
+            .find(|t| t.id == "lckcl-a")
+            .unwrap()
+            .clone();
+        unplayed.id = "lckcl-b".to_string();
+        game.teams.push(unplayed);
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.canonical_duplicates_removed, 0);
+        assert!(game.teams.iter().any(|team| team.id == "lckcl-a"));
+        assert!(game.teams.iter().any(|team| team.id == "lckcl-b"));
+        assert!(game.removed_team_ids.is_empty());
+    }
+
+    #[test]
+    fn rehydration_keeps_the_managers_canonical_club() {
+        let mut game = game_with_canonical_twin("lck-cl", "lckcl");
+        game.manager.team_id = Some("lckcl-a".to_string());
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.canonical_duplicates_removed, 0);
+        assert!(game.teams.iter().any(|team| team.id == "lckcl-a"));
+        assert!(game.removed_team_ids.is_empty());
+    }
+
+    #[test]
+    fn rehydration_still_removes_the_canonical_twin_when_the_manager_plays_the_stale_club() {
+        let mut game = game_with_canonical_twin("lck-cl", "lckcl");
+        game.manager.team_id = Some("lck-cl-a".to_string());
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.canonical_duplicates_removed, 1);
+        assert!(game.teams.iter().any(|team| team.id == "lck-cl-a"));
+    }
+
+    #[test]
+    fn rehydration_drops_a_same_person_duplicate_and_tombstones_the_id() {
+        let mut game = game_with_canonical_twin("prime_league", "prm");
+        let mut twin_record = rehydrate_test_player("canonical-person", Some("prm-a"));
+        twin_record.full_name = "Same Person".to_string();
+        twin_record.date_of_birth = "1999-05-05".to_string();
+        let mut stale_record = rehydrate_test_player("stale-person", Some("prime_league-a"));
+        stale_record.full_name = "Same Person".to_string();
+        stale_record.date_of_birth = "1999-05-05".to_string();
+        game.players.push(twin_record.clone());
+        game.players.push(stale_record);
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.canonical_duplicates_removed, 1);
+        assert!(game.players.iter().all(|p| p.id != "canonical-person"));
+        assert!(game.players.iter().any(|p| p.id == "stale-person"));
+        assert_eq!(
+            game.retired_player_ids,
+            vec!["canonical-person".to_string()]
+        );
+        assert!(game.players.iter().any(|p| p.id == "canonical-player"));
+
+        // The catalog still ships the canonical record: it must not come back.
+        apply_catalog_to_game(&mut game, vec![], vec![twin_record], vec![]);
+        assert!(game.players.iter().all(|p| p.id != "canonical-person"));
+    }
+
+    #[test]
+    fn rehydration_releases_a_moved_player_instead_of_dropping_it() {
+        let mut game = game_with_canonical_twin("prime_league", "prm");
+        let mut canonical = rehydrate_test_player("canonical-person", Some("prm-a"));
+        canonical.full_name = "Same Person".to_string();
+        let mut stale = rehydrate_test_player("stale-person", Some("prime_league-a"));
+        stale.full_name = "Same Person".to_string();
+        game.players.push(canonical);
+        game.players.push(stale);
+        game.moved_player_ids.insert("canonical-person".to_string());
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        let kept = game.players.iter().find(|p| p.id == "canonical-person");
+        assert_eq!(kept.expect("moved player kept").team_id, None);
+        assert!(game.retired_player_ids.is_empty());
+    }
+
+    #[test]
+    fn rehydration_repair_is_idempotent_and_finishes_a_partly_repaired_save() {
+        let mut game = game_with_canonical_twin("lck-cl", "lckcl");
+        let mut second = game
+            .teams
+            .iter()
+            .find(|t| t.id == "lckcl-a")
+            .unwrap()
+            .clone();
+        second.id = "lckcl-b".to_string();
+        game.teams.push(second);
+        // `lckcl-c` was removed and tombstoned by an earlier run.
+        game.removed_team_ids.push("lckcl-c".to_string());
+
+        // The catalog still ships the removed clubs with their players and staff.
+        let template = game
+            .teams
+            .iter()
+            .find(|t| t.id == "lckcl-a")
+            .unwrap()
+            .clone();
+        let catalog = || {
+            let mut other = template.clone();
+            other.id = "lckcl-b".to_string();
+            (
+                vec![template.clone(), other],
+                vec![rehydrate_test_player("canonical-player", Some("lckcl-a"))],
+                vec![rehydrate_test_staff("canonical-coach", Some("lckcl-a"))],
+            )
+        };
+        let (teams, players, staff) = catalog();
+        let first = apply_catalog_to_game(&mut game, teams, players, staff);
+        let (teams, players, staff) = catalog();
+        let again = apply_catalog_to_game(&mut game, teams, players, staff);
+
+        assert_eq!(first.canonical_duplicates_removed, 2);
+        assert_eq!(again.total(), 0);
+        assert_eq!(game.removed_team_ids, vec!["lckcl-c", "lckcl-a", "lckcl-b"]);
+        assert!(game.teams.iter().all(|t| !t.id.starts_with("lckcl-")));
+        let player = game.players.iter().find(|p| p.id == "canonical-player");
+        assert_eq!(player.expect("player kept").team_id, None);
+    }
+
+    #[test]
+    fn rehydration_releases_a_player_with_a_transfer_record_instead_of_dropping_it() {
+        use olm_core::domain::transfer_history::TransferHistoryEntry;
+
+        let mut game = game_with_canonical_twin("prime_league", "prm");
+        let mut canonical = rehydrate_test_player("canonical-person", Some("prm-a"));
+        canonical.full_name = "Same Person".to_string();
+        let mut stale = rehydrate_test_player("stale-person", Some("prime_league-a"));
+        stale.full_name = "Same Person".to_string();
+        game.players.push(canonical);
+        game.players.push(stale);
+        let entry: TransferHistoryEntry = serde_json::from_value(serde_json::json!({
+            "id": "transfer-1",
+            "player_id": "canonical-person",
+        }))
+        .expect("transfer entry");
+        game.transfer_history.entries.push(entry);
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        let kept = game.players.iter().find(|p| p.id == "canonical-person");
+        assert_eq!(kept.expect("transferred player kept").team_id, None);
+        assert!(game.retired_player_ids.is_empty());
+    }
+
+    #[test]
+    fn rehydration_leaves_academy_links_alone() {
+        use olm_core::domain::team::TeamKind;
+
+        let mut game = game_with_canonical_twin("prime_league", "prm");
+        let mut academy = Team::new(
+            "academy-prime_league-a".to_string(),
+            "Academy".to_string(),
+            "ACA".to_string(),
+            "Germany".to_string(),
+            "Berlin".to_string(),
+            "Ground".to_string(),
+            1_000,
+        );
+        academy.team_kind = TeamKind::Academy;
+        academy.competition_id = Some("prm".to_string());
+        academy.parent_team_id = Some("team-1".to_string());
+        game.teams.push(academy);
+        game.teams[0].academy_team_id = Some("academy-prime_league-a".to_string());
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert!(game.teams.iter().any(|t| t.id == "academy-prime_league-a"));
+        assert_eq!(
+            game.teams[0].academy_team_id.as_deref(),
+            Some("academy-prime_league-a")
+        );
+    }
+
+    #[test]
+    fn rehydration_keeps_a_pending_offer_for_a_released_player() {
+        use olm_core::domain::player::TransferOffer;
+
+        let mut game = game_with_canonical_twin("lck-cl", "lckcl");
+        let offer: TransferOffer = serde_json::from_value(serde_json::json!({
+            "id": "offer-1",
+            "from_team_id": "team-1",
+            "fee": 1000,
+            "wage_offered": 100,
+        }))
+        .expect("offer");
+        game.players
+            .iter_mut()
+            .find(|p| p.id == "canonical-player")
+            .unwrap()
+            .transfer_offers
+            .push(offer);
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        let player = game
+            .players
+            .iter()
+            .find(|p| p.id == "canonical-player")
+            .unwrap();
+        assert_eq!(player.team_id, None);
+        assert_eq!(player.transfer_offers.len(), 1);
+        assert_eq!(player.transfer_offers[0].from_team_id, "team-1");
     }
 }
