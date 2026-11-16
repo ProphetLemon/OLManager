@@ -835,6 +835,12 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
         estimated.rostered, estimated.free_agents
     );
 
+    // 6b. Players shipped without a potential (0) get one from real peers of their age,
+    // measured on their final OVR. Market values and wages below follow the potential.
+    let potentials_filled =
+        olm_core::potential_fill::fill_missing_potentials(&mut all_players, start_date);
+    info!("[game] filled the potential of {} players shipped without one", potentials_filled);
+
     // 7. Recalculate market_value for players who have 0 (data issue in regional leagues)
     game_setup::apply_default_market_values(&mut all_players);
 
@@ -1546,6 +1552,23 @@ pub async fn delete_save(
     sm.delete_save(&save_id)
 }
 
+/// Brings the ratings of a loaded save up to date: `lol_ovr` is stored as 0 in the save
+/// DB, and players an older version saved without a potential (0) get one now that
+/// their OVR is known. Runs after the catalog rehydration, so the catalog players it
+/// merged are covered, and before the roster repair.
+fn refresh_ratings_on_load(game: &mut Game) {
+    for player in &mut game.players {
+        player.lol_ovr = olm_core::potential::calculate_lol_ovr(player);
+    }
+    let filled = olm_core::potential_fill::fill_missing_potentials(
+        &mut game.players,
+        game.clock.current_date.date_naive(),
+    );
+    if filled > 0 {
+        info!("[cmd] load_game: filled the potential of {} players saved without one", filled);
+    }
+}
+
 #[tauri::command]
 pub async fn load_game(
     state: State<'_, StateManager>,
@@ -1618,10 +1641,7 @@ pub async fn load_game(
     // Bootstrap champion state so the Champions tab has data
     info!("[cmd] load_game: bootstrapping champion state...");
     olm_core::champions::bootstrap_champion_state(&mut game);
-    // Refresh lol_ovr for all players (it's stored as 0 in the save DB)
-    for player in &mut game.players {
-        player.lol_ovr = olm_core::potential::calculate_lol_ovr(player);
-    }
+    refresh_ratings_on_load(&mut game);
     info!(
         "[cmd] load_game: champion_patch.hidden_meta={}, champion_masteries={}",
         game.champion_patch.hidden_meta.len(),
@@ -2992,8 +3012,17 @@ mod tests {
                 .map(|p| p.id.clone())
                 .collect();
             assert_eq!(rated_below, Vec::<String>::new());
-            // Data players shipped without a potential (0) sit below their rating with or
-            // without overrides; overrides must not add to them.
+            // Data players shipped with a small positive potential under their rating stay
+            // below it with or without overrides; overrides must not add to them.
+            // Players shipped without a potential (0) are filled at assembly, so none is
+            // left at 0 and none of them sits below its rating.
+            let unfilled: Vec<_> = world
+                .players
+                .iter()
+                .filter(|p| p.potential_base == 0)
+                .map(|p| p.id.clone())
+                .collect();
+            assert_eq!(unfilled, Vec::<String>::new());
             let already_below: HashSet<_> =
                 without.players.iter().filter(below).map(|p| p.id.as_str()).collect();
             let new_below: Vec<_> = world
@@ -3004,6 +3033,151 @@ mod tests {
                 .map(|p| p.id.clone())
                 .collect();
             assert_eq!(new_below, Vec::<String>::new());
+        }
+
+        #[test]
+        fn no_player_of_a_new_world_has_a_potential_of_zero() {
+            let (game, ..) = new_game();
+            let zero: Vec<_> = game
+                .players
+                .iter()
+                .filter(|p| p.potential_base == 0)
+                .map(|p| p.id.clone())
+                .collect();
+            assert_eq!(zero, Vec::<String>::new());
+        }
+
+        #[test]
+        fn a_data_player_shipped_without_a_potential_is_given_one_at_or_above_his_rating() {
+            // Elmillor ships `potential_base: 0`; the report used to read 0 to 3.
+            let (game, ..) = new_game();
+            let elmillor = game
+                .players
+                .iter()
+                .find(|p| p.id == "fa-c45e5ff7")
+                .expect("Elmillor is a bundled free agent");
+            assert!(
+                elmillor.potential_base >= elmillor.lol_ovr,
+                "potential {} under OVR {}",
+                elmillor.potential_base,
+                elmillor.lol_ovr
+            );
+            assert!(elmillor.potential_base > 3);
+        }
+
+        /// Ids of the data players shipped with `potential_base: 0`.
+        fn shipped_without_potential() -> HashSet<String> {
+            let mut ids = HashSet::new();
+            for entry in std::fs::read_dir(data_base().join("players")).expect("data/players") {
+                let path = entry.expect("entry").path();
+                if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                    continue;
+                }
+                let file: serde_json::Value =
+                    serde_json::from_str(&std::fs::read_to_string(&path).expect("read"))
+                        .expect("player file");
+                for p in file["players"].as_array().into_iter().flatten() {
+                    if p["potential_base"].as_u64() == Some(0) {
+                        ids.insert(p["id"].as_str().expect("id").to_string());
+                    }
+                }
+            }
+            ids
+        }
+
+        /// A save an older version wrote: the bundled world with Elmillor as the friend's
+        /// save has him (flat attributes, no potential, a spent research that read 2),
+        /// one more player with no potential, and one researched player with a real one.
+        /// Returns the loaded game and the ids (elmillor, young zero, researched).
+        fn old_save_with_players_without_a_potential() -> (Game, [String; 3]) {
+            let (mut game, ..) = new_game();
+            let elmillor = "fa-c45e5ff7".to_string();
+            let young_zero = game
+                .players
+                .iter()
+                .find(|p| p.id != elmillor && p.date_of_birth.as_str() > "2004" && p.potential_base > 0)
+                .map(|p| p.id.clone())
+                .expect("a young player");
+            let researched = game
+                .players
+                .iter()
+                .find(|p| p.id != elmillor && p.id != young_zero && p.potential_base > 60)
+                .map(|p| p.id.clone())
+                .expect("a player with a real potential");
+            for p in &mut game.players {
+                if p.id == elmillor {
+                    p.attributes = olm_core::domain::player::PlayerAttributes::from_array([50; 9]);
+                    p.potential_base = 0;
+                    p.potential_revealed = Some(2);
+                } else if p.id == young_zero {
+                    p.potential_base = 0;
+                } else if p.id == researched {
+                    p.potential_revealed = Some(p.potential_base + 2);
+                }
+            }
+            let dir = tempfile::tempdir().expect("tempdir");
+            let mut manager = SaveManager::init(dir.path()).expect("save manager");
+            let save_id = manager.create_save(&game, "old save").expect("create save");
+            let loaded = manager.load_game(&save_id).expect("load save");
+            (loaded, [elmillor, young_zero, researched])
+        }
+
+        fn potentials(game: &Game) -> HashMap<String, (u8, Option<u8>)> {
+            game.players
+                .iter()
+                .map(|p| (p.id.clone(), (p.potential_base, p.potential_revealed)))
+                .collect()
+        }
+
+        #[test]
+        fn loading_a_save_heals_a_player_with_no_potential_and_a_revealed_estimate_of_2() {
+            let (mut game, [elmillor, ..]) = old_save_with_players_without_a_potential();
+
+            refresh_ratings_on_load(&mut game);
+
+            let healed = game.players.iter().find(|p| p.id == elmillor).expect("Elmillor");
+            assert!(healed.potential_base >= healed.lol_ovr);
+            assert!(healed.potential_base > 3);
+            assert_eq!(healed.potential_revealed, Some(healed.potential_base + 2));
+            assert!(healed.potential_revealed.unwrap() > healed.lol_ovr);
+        }
+
+        #[test]
+        fn loading_a_save_fills_every_other_player_without_a_potential() {
+            let (mut game, [_, young_zero, _]) = old_save_with_players_without_a_potential();
+
+            refresh_ratings_on_load(&mut game);
+
+            let young = game.players.iter().find(|p| p.id == young_zero).expect("young player");
+            assert!(young.potential_base >= young.lol_ovr);
+            assert!(game.players.iter().all(|p| p.potential_base > 0));
+        }
+
+        #[test]
+        fn loading_a_save_leaves_players_with_a_potential_untouched() {
+            let (mut game, [elmillor, young_zero, _]) = old_save_with_players_without_a_potential();
+            let before = potentials(&game);
+
+            refresh_ratings_on_load(&mut game);
+
+            let after = potentials(&game);
+            let changed: Vec<_> = before
+                .iter()
+                .filter(|(id, value)| **id != elmillor && **id != young_zero && after[*id] != **value)
+                .map(|(id, _)| id.clone())
+                .collect();
+            assert_eq!(changed, Vec::<String>::new());
+        }
+
+        #[test]
+        fn a_second_load_changes_nothing() {
+            let (mut game, _) = old_save_with_players_without_a_potential();
+            refresh_ratings_on_load(&mut game);
+            let once = potentials(&game);
+
+            refresh_ratings_on_load(&mut game);
+
+            assert_eq!(potentials(&game), once);
         }
 
         #[test]
@@ -3034,9 +3208,32 @@ mod tests {
                 old.3
             };
             assert_eq!(new.3, expected_value);
+            // A player shipped without a potential is given one drawn from the gaps of its
+            // peers (`potential_fill`), and an override moves the OVR, and so the gap, of
+            // one of those peers: its potential, and the value and wage seeded from it,
+            // may drift a little. Its attributes may not. The wages a club's players share
+            // are scaled by that club's potentials, so a clubmate's wage may follow.
+            let filled = shipped_without_potential();
+            let team_of: HashMap<&str, Option<&str>> = world
+                .players
+                .iter()
+                .map(|p| (p.id.as_str(), p.team_id.as_deref()))
+                .collect();
+            let clubs_with_filled: HashSet<&str> = filled
+                .iter()
+                .filter_map(|f| team_of.get(f.as_str()).copied().flatten())
+                .collect();
             for (other, row) in &before {
-                if *other != id {
-                    assert_eq!(Some(row), after.get(other), "{other} must not change");
+                if *other == id {
+                    continue;
+                }
+                let after = &after[other];
+                if filled.contains(other) {
+                    assert_eq!((row.0, row.1), (after.0, after.1), "{other} ratings must not change");
+                } else if team_of[other.as_str()].is_some_and(|t| clubs_with_filled.contains(t)) {
+                    assert_eq!((row.0, row.1, row.2, row.3), (after.0, after.1, after.2, after.3), "{other} must not change");
+                } else {
+                    assert_eq!(row, after, "{other} must not change");
                 }
             }
         }
