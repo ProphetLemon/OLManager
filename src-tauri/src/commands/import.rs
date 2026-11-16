@@ -1255,6 +1255,7 @@ impl RehydrateCounts {
 ///
 /// Existing entities are otherwise never mutated, so saves generated before a
 /// data update pick up new roster slots and team moves without losing progress.
+/// Players merged without a potential get one (see `potential_fill`).
 pub fn rehydrate_game_from_catalog(
     app_handle: &tauri::AppHandle,
     game: &mut Game,
@@ -1278,6 +1279,15 @@ pub(crate) fn apply_catalog_to_game(
 
     let players_reassigned = reassign_stale_player_teams(game, &catalog_players);
     let players = merge_missing_players(game, catalog_players);
+    if players > 0 {
+        // The catalog ships many players without a potential (0). Fill them before the
+        // market values read it, but only when this call merged players: this runs on
+        // every `get_active_game`, and a save's own players are healed on load.
+        olm_core::potential_fill::fill_missing_potentials(
+            &mut game.players,
+            game.clock.current_date.date_naive(),
+        );
+    }
 
     game_setup::apply_default_market_values(&mut game.players);
 
@@ -1855,6 +1865,81 @@ mod tests {
         let added = &game.players[0];
         assert!(added.resident_region.is_some());
         assert!(!added.is_import);
+    }
+
+    #[test]
+    fn rehydration_gives_a_catalog_player_shipped_without_a_potential_one() {
+        let mut game = rehydrate_test_game(vec![]);
+        let mut shipped = rehydrate_test_player("shipped-zero", None);
+        shipped.potential_base = 0;
+        shipped.potential_revealed = None;
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![shipped], vec![]);
+
+        assert_eq!(counts.players, 1);
+        let added = game
+            .players
+            .iter()
+            .find(|p| p.id == "shipped-zero")
+            .unwrap();
+        assert!(added.potential_base >= olm_core::potential::calculate_lol_ovr(added));
+    }
+
+    #[test]
+    fn rehydration_values_a_player_shipped_without_a_potential_by_the_filled_one() {
+        // Five rated players with room to grow give the fill a non-zero gap to draw.
+        let references = (0..5)
+            .map(|i| {
+                let mut p = rehydrate_test_player(&format!("ref-{i}"), Some("team-1"));
+                p.attributes.mechanics = 70;
+                p.potential_base = 95;
+                p
+            })
+            .collect();
+        let mut game = rehydrate_test_game(references);
+        let mut shipped = rehydrate_test_player("shipped-zero", None);
+        shipped.potential_base = 0;
+        shipped.market_value = 0;
+
+        apply_catalog_to_game(&mut game, vec![], vec![shipped], vec![]);
+
+        let added = game
+            .players
+            .iter()
+            .find(|p| p.id == "shipped-zero")
+            .unwrap();
+        let ovr = olm_core::potential::calculate_lol_ovr(added);
+        assert!(added.potential_base > ovr, "the fill drew a gap");
+        assert_eq!(
+            added.market_value,
+            olm_core::game_setup::suggested_seed_market_value(ovr, added.potential_base, false)
+        );
+    }
+
+    #[test]
+    fn rehydration_leaves_players_with_a_potential_alone() {
+        let mut game = rehydrate_test_game(vec![]);
+        let mut set = rehydrate_test_player("set", None);
+        set.potential_base = 77;
+        let mut shipped = rehydrate_test_player("shipped-zero", None);
+        shipped.potential_base = 0;
+
+        apply_catalog_to_game(&mut game, vec![], vec![set, shipped], vec![]);
+
+        let kept = game.players.iter().find(|p| p.id == "set").unwrap();
+        assert_eq!(kept.potential_base, 77);
+    }
+
+    #[test]
+    fn rehydration_that_merges_no_player_does_not_scan_the_world_for_potentials() {
+        let mut stored = rehydrate_test_player("stored-zero", Some("team-1"));
+        stored.potential_base = 0;
+        let mut game = rehydrate_test_game(vec![stored]);
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.players, 0);
+        assert_eq!(game.players[0].potential_base, 0);
     }
 
     #[test]
