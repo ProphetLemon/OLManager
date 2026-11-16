@@ -34,6 +34,7 @@ import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
 import { countryName } from "@/lib/common/countries";
 import { resolveSeasonContext } from "@/lib/season/seasonContext";
 import { getAnnualWageBill, getTransferBudgetSummary } from "@/lib/finances/finance";
+import { effectiveWage, useExpectedSigningWages } from "@/hooks/useExpectedSigningWages";
 import {
   counterOffer,
   makeTransferBid,
@@ -216,6 +217,8 @@ export function TransfersTabV2({
     () => filteredList.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE),
     [filteredList, safePage],
   );
+
+  const expectedWages = useExpectedSigningWages(paginatedList);
 
   // Reset page when filters change
   const previousFilters = useRef<unknown[] | null>(null);
@@ -799,7 +802,7 @@ export function TransfersTabV2({
                         {formatVal(player.market_value)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
-                        {formatVal(player.wage)}{annualSuffix}
+                        {formatVal(effectiveWage(player, expectedWages))}{annualSuffix}
                       </TableCell>
                       <TableCell className="text-center">
                         <span
