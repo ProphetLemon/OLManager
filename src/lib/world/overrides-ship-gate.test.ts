@@ -23,6 +23,13 @@ const asset = JSON.parse(fs.readFileSync(overridesFile, "utf8")) as { entries: E
 const { players } = loadGamePlayers({ dataDir: path.join(root, "data"), overlayFile });
 const ovrOf = new Map(players.map((p) => [p.id, p.authoredOvr] as const));
 
+// The 14 duplicate player rows the data dedupe (olmanager-data 2a1acf9) drops. An override on one of them breaks once that data ships, and the
+// kept twin carries the same person, so an entry must key to the kept id. Present with or without the dedupe.
+const DEDUPE_DROPPED_IDS = [
+  "player-f4e49f51", "player-b753c79c", "player-37e12b7d", "player-84345e75", "player-7b51fd6f", "player-1867a3bb", "player-9276105b",
+  "player-9a95ae46", "player-a2d61244", "player-a947fb1e", "player-756b6429", "player-a6317295", "player-49258aa1",
+];
+
 describe("player-rating-overrides.json matches the shipped roster overlay", () => {
   it("has entries to check", () => {
     expect(asset.entries.length).toBeGreaterThan(0);
@@ -39,6 +46,18 @@ describe("player-rating-overrides.json matches the shipped roster overlay", () =
       .filter((e) => ovrOf.has(e.id) && ovrOf.get(e.id) !== e.authored_ovr)
       .map((e) => `${e.id}: authored_ovr ${e.authored_ovr}, the game builds ${ovrOf.get(e.id)}`);
     expect(stale, `stale entries (the game skips them as skipped_stale):\n${stale.join("\n")}`).toEqual([]);
+  });
+
+  it("never keys an entry to a row the data dedupe drops", () => {
+    const dropped = new Set(DEDUPE_DROPPED_IDS);
+    expect(asset.entries.filter((e) => dropped.has(e.id)).map((e) => e.id)).toEqual([]);
+  });
+
+  it("keeps the override of every pinned player the roster overlay moved or released", () => {
+    const pins = JSON.parse(fs.readFileSync(path.join(root, "scripts/stats/pins.json"), "utf8")) as Record<string, string | null>;
+    const keyed = new Set(asset.entries.map((e) => e.id));
+    const missing = Object.entries(pins).filter(([, id]) => id && !keyed.has(id)).map(([link, id]) => `${link} (${id})`);
+    expect(missing, `pinned players with no override entry: ${missing.join(", ")}`).toEqual([]);
   });
 
   it("names every player once", () => {
