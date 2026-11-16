@@ -623,6 +623,37 @@ fn laning_delta_from_ratio(
     }
 }
 
+/// Number of games a report covers: the series score, or one for a single game. Series
+/// reports sum every game's line (`simulate_series`), so their counts are series totals.
+fn games_in_report(report: &crate::engine::MatchReport) -> u8 {
+    report.home_wins.saturating_add(report.away_wins).max(1)
+}
+
+/// A player's kills, deaths and assists in an average game of the report. The post-match
+/// thresholds (`deaths_bad`, `assist_good`, a kda of 2) are per game, so they only read this
+/// view and never the raw series totals. For a single game it equals the report's counts.
+#[derive(Clone, Copy)]
+struct PerGame {
+    kills: f64,
+    deaths: f64,
+    assists: f64,
+}
+
+impl PerGame {
+    fn of(stats: &crate::engine::PlayerMatchStats, games: u8) -> Self {
+        let games = f64::from(games);
+        Self {
+            kills: f64::from(stats.kills) / games,
+            deaths: f64::from(stats.deaths) / games,
+            assists: f64::from(stats.assists) / games,
+        }
+    }
+
+    fn kda(self) -> f64 {
+        (self.kills + self.assists) / self.deaths.max(1.0)
+    }
+}
+
 fn apply_lol_profile_progression(
     game: &mut Game,
     report: &crate::engine::MatchReport,
@@ -664,7 +695,8 @@ fn apply_lol_profile_progression(
         };
 
         let role = ps.role;
-        let kda = (ps.kills + ps.assists) as f64 / ps.deaths.max(1) as f64;
+        let per_game = PerGame::of(ps, games_in_report(report));
+        let kda = per_game.kda();
         let opponent_cs = if tid == home_team_id {
             &away_cs
         } else {
@@ -697,9 +729,13 @@ fn apply_lol_profile_progression(
         // that axis. A report with no team damage is unmeasured and reads as par.
         let dmg_per_min =
             damage_vs_par(ps.damage_dealt, team_damage, role).unwrap_or(1.0) * exp_dmg;
+        let bad = f64::from(deaths_bad);
+        let bad_minus_1 = f64::from(deaths_bad.saturating_sub(1));
+        let bad_plus_1 = f64::from(deaths_bad.saturating_add(1));
+        let bad_plus_2 = f64::from(deaths_bad.saturating_add(2));
         let mechanics_delta: i16 = if dmg_per_min >= exp_dmg + 120.0 {
             1
-        } else if dmg_per_min < exp_dmg - 150.0 && ps.deaths >= deaths_bad {
+        } else if dmg_per_min < exp_dmg - 150.0 && per_game.deaths >= bad {
             -1
         } else {
             0
@@ -707,7 +743,7 @@ fn apply_lol_profile_progression(
         let laning_delta = laning_delta_from_ratio(lane_ratio, role);
         let teamfighting_delta: i16 = if kp >= exp_kp + 0.08 && kda >= 2.0 {
             1
-        } else if kp < exp_kp - 0.2 && ps.deaths >= deaths_bad.saturating_sub(1) {
+        } else if kp < exp_kp - 0.2 && per_game.deaths >= bad_minus_1 {
             -1
         } else {
             0
@@ -724,16 +760,19 @@ fn apply_lol_profile_progression(
         } else {
             0
         };
-        let consistency_delta: i16 = if ps.deaths <= 2 && kda >= 2.0 {
+        let consistency_delta: i16 = if per_game.deaths <= 2.0 && kda >= 2.0 {
             1
-        } else if ps.deaths >= deaths_bad {
+        } else if per_game.deaths >= bad {
             -1
         } else {
             0
         };
-        let shotcalling_delta: i16 = if ps.assists >= assist_good && kp >= exp_kp + 0.1 {
+        let shotcalling_delta: i16 = if per_game.assists >= f64::from(assist_good)
+            && kp >= exp_kp + 0.1
+        {
             1
-        } else if ps.assists <= assist_good.saturating_sub(4) && kp < exp_kp - 0.25 {
+        } else if per_game.assists <= f64::from(assist_good.saturating_sub(4)) && kp < exp_kp - 0.25
+        {
             -1
         } else {
             0
@@ -741,25 +780,27 @@ fn apply_lol_profile_progression(
         let champion_pool_delta: i16 = if kda >= 3.0 && lane_ratio.is_some_and(|ratio| ratio >= 1.0)
         {
             1
-        } else if kda < 1.0 && ps.deaths >= deaths_bad.saturating_sub(1) {
+        } else if kda < 1.0 && per_game.deaths >= bad_minus_1 {
             -1
         } else {
             0
         };
-        let discipline_delta: i16 = if ps.deaths <= 2 && ps.kills + ps.assists >= 4 {
-            1
-        } else if ps.deaths >= deaths_bad.saturating_add(1) {
-            -1
-        } else {
-            0
-        };
-        let mental_resilience_delta: i16 = if ps.deaths >= 4 && ps.kills + ps.assists >= 8 {
-            1
-        } else if ps.deaths >= deaths_bad.saturating_add(2) {
-            -1
-        } else {
-            0
-        };
+        let discipline_delta: i16 =
+            if per_game.deaths <= 2.0 && per_game.kills + per_game.assists >= 4.0 {
+                1
+            } else if per_game.deaths >= bad_plus_1 {
+                -1
+            } else {
+                0
+            };
+        let mental_resilience_delta: i16 =
+            if per_game.deaths >= 4.0 && per_game.kills + per_game.assists >= 8.0 {
+                1
+            } else if per_game.deaths >= bad_plus_2 {
+                -1
+            } else {
+                0
+            };
 
         let (mech_num, lane_num, macro_num, shot_num) = match role {
             Some(crate::engine::sim_background::LolRole::Support) => (1_i16, 0_i16, 2_i16, 2_i16),
@@ -1867,5 +1908,176 @@ mod laning_relative_tests {
             Some((LolRole::Adc, line(LolRole::Adc, 310, 2))),
         );
         assert_eq!(home.1, 50);
+    }
+}
+
+#[cfg(test)]
+mod series_units_tests {
+    use super::apply_lol_profile_progression;
+    use crate::clock::GameClock;
+    use crate::domain::manager::Manager;
+    use crate::domain::player::{LolRole as PlayerRole, Player, PlayerAttributes};
+    use crate::engine::sim_background::LolRole;
+    use crate::engine::{MatchReport, MatchReportEndReason, PlayerMatchStats, TeamStats};
+    use crate::game::Game;
+    use chrono::{TimeZone, Utc};
+    use std::collections::HashMap;
+
+    const ROLES: [LolRole; 5] = [
+        LolRole::Top,
+        LolRole::Jungle,
+        LolRole::Mid,
+        LolRole::Adc,
+        LolRole::Support,
+    ];
+    /// Team kills of one game, so the kill-participation ratio is the same in every unit.
+    const TEAM_KILLS_PER_GAME: u16 = 20;
+
+    fn position(role: LolRole) -> PlayerRole {
+        match role {
+            LolRole::Top => PlayerRole::Top,
+            LolRole::Jungle => PlayerRole::Jungle,
+            LolRole::Mid => PlayerRole::Mid,
+            LolRole::Adc => PlayerRole::Adc,
+            LolRole::Support => PlayerRole::Support,
+        }
+    }
+
+    fn flat_attrs() -> PlayerAttributes {
+        PlayerAttributes {
+            mechanics: 50,
+            laning: 50,
+            teamfighting: 50,
+            macro_play: 50,
+            consistency: 50,
+            shotcalling: 50,
+            champion_pool: 50,
+            discipline: 50,
+            mental_resilience: 50,
+        }
+    }
+
+    /// The nine attributes of the lone home player after one report of `games` games in
+    /// which every game had the per-game line `(kills, deaths, assists)`; the report
+    /// carries the series sums, as `simulate_series` builds them.
+    fn after_series(role: LolRole, per_game: (u16, u16, u16), games: u8) -> [u8; 9] {
+        let mut player = Player::new(
+            "h".to_string(),
+            "h".to_string(),
+            "Player h".to_string(),
+            "1998-03-15".to_string(),
+            "England".to_string(),
+            position(role),
+            flat_attrs(),
+        );
+        player.team_id = Some("home".to_string());
+        player.potential_base = 99;
+        let line = PlayerMatchStats {
+            role: Some(role),
+            duration_seconds: 30 * 60 * u32::from(games),
+            kills: per_game.0 * u16::from(games),
+            deaths: per_game.1 * u16::from(games),
+            assists: per_game.2 * u16::from(games),
+            creep_score: 200 * u16::from(games),
+            ..Default::default()
+        };
+        let manager = Manager::new(
+            "m".to_string(),
+            "A".to_string(),
+            "B".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2025, 8, 12, 12, 0, 0).unwrap());
+        let mut game = Game::new(clock, manager, vec![], vec![player], vec![], vec![]);
+        // A 2-1 or 3-0 series: the home side takes the majority of the games.
+        let home_wins = games / 2 + 1;
+        let report = MatchReport {
+            home_wins,
+            away_wins: games - home_wins,
+            home_stats: TeamStats {
+                kills: TEAM_KILLS_PER_GAME * u16::from(games),
+                ..TeamStats::default()
+            },
+            away_stats: TeamStats::default(),
+            events: vec![],
+            kill_feed: vec![],
+            player_stats: HashMap::from([("h".to_string(), line)]),
+            home_possession: 50.0,
+            total_minutes: 30,
+            game_duration_seconds: 30 * 60 * u32::from(games),
+            ended_by: MatchReportEndReason::TimeLimit,
+        };
+        apply_lol_profile_progression(&mut game, &report, "home", "away");
+        let a = &game.players[0].attributes;
+        [
+            a.mechanics,
+            a.laning,
+            a.teamfighting,
+            a.macro_play,
+            a.consistency,
+            a.shotcalling,
+            a.champion_pool,
+            a.discipline,
+            a.mental_resilience,
+        ]
+    }
+
+    /// Per-game lines that cross a threshold only when the series sum is read as one game.
+    const LINES: [(u16, u16, u16); 6] = [
+        (5, 3, 4),  // 3 deaths a game: 9 over a bo3, past every deaths_bad
+        (5, 2, 4),  // 2 deaths a game: good consistency per game, 6 summed
+        (1, 5, 1),  // poor line
+        (8, 1, 12), // dominant line
+        (3, 2, 9),
+        (0, 0, 0),
+    ];
+
+    #[test]
+    fn a_series_should_read_like_one_game_of_the_same_per_game_line() {
+        for role in ROLES {
+            for line in LINES {
+                let single = after_series(role, line, 1);
+                for games in [2, 3, 5] {
+                    assert_eq!(
+                        after_series(role, line, games),
+                        single,
+                        "{role:?} {line:?} over {games} games"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn three_deaths_a_game_over_a_best_of_three_should_not_cost_consistency() {
+        // Mid: 9 summed deaths reach deaths_bad 7, but 3 a game never do.
+        let after = after_series(LolRole::Mid, (5, 3, 4), 3);
+        assert_eq!(after[4], 50);
+    }
+
+    /// Characterisation, recorded on 78fd260c before the unit change: single-game reports
+    /// must give the same attributes after it. Shotcalling and macro_play are left out of
+    /// the hash because the shotcalling rule changes in a later commit; no lane opponent
+    /// is in the report, so laning stays unmeasured.
+    #[test]
+    fn single_game_reports_should_keep_their_recorded_outcome() {
+        let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+        for role in ROLES {
+            for kills in [0_u16, 2, 5, 9] {
+                for deaths in 0..=10_u16 {
+                    for assists in [0_u16, 3, 6, 9, 13] {
+                        let attrs = after_series(role, (kills, deaths, assists), 1);
+                        for (i, value) in attrs.into_iter().enumerate() {
+                            if i == 3 || i == 5 {
+                                continue;
+                            }
+                            hash = (hash ^ u64::from(value)).wrapping_mul(0x0100_0000_01b3);
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!(hash, 7_645_557_679_294_536_828);
     }
 }
