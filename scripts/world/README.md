@@ -79,6 +79,28 @@ competition's players moved or retired unless it has a reviewed exception.
   competition's per-position medians with seeded jitter (+-4), and `dob_approx: true` on the op when the infobox has no birth date.
 - The same input produces byte-identical output.
 
+## Filling empty nationalities (`nationality-corrections.mjs`)
+
+Some bundled players have no nationality, so they show no flag and a teamless one never counts as an import. The tool turns
+a join between those players and Leaguepedia's `Players` table into `nationality` entries (`from: ""`, ISO-2 `to`) of
+`assets/world/catalog-corrections.json`. **It makes no network request**: it reads a join that was queried once, by hand
+(`--rows` the Cargo `Players` rows with `ID`, `Name`, `Country`; `--detail` one `[tier, id, in-game name, real name, country,
+rows with that ID]` per player).
+
+```bash
+node scripts/world/nationality-corrections.mjs --rows lp-cargo-rows.json --detail lp-join-detail.json \
+  [--data-dir data] [--out assets/world/catalog-corrections.json] [--queried 2026-11-16] [--list review.md]
+```
+
+- Only the two name-confirmed tiers write an entry: `A` (one row with that in-game name, real name agrees) and `A2` (several
+  rows share the name, exactly one agrees on the real name). Weaker tiers stay empty on purpose.
+- An id the shipped data lacks, a player that already has a nationality, or a country with no ISO-2 code is skipped and
+  printed, never written. Existing entries are kept (also another field of the same player) and the output is sorted by id.
+- `United Kingdom` becomes `GB`. The evidence is the Leaguepedia page of the row's `ID`; an `A2` page can be a disambiguation
+  page when several people share the ID, so skim the `--list` table before committing.
+- The same input gives byte-identical output. `src/lib/world/nationality-corrections.test.ts` covers it, including a check that
+  every bundled correction still applies to `data/`.
+
 ## Licence and attribution
 
 Leaguepedia text is available under the licence reported by `api.php?action=query&meta=siteinfo&siprop=rightsinfo`
