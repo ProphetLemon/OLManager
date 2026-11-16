@@ -311,6 +311,29 @@ describe("PlayerProfileV2 contract surfaces", () => {
     );
   });
 
+  it("shows the wage a wage-0 free agent would ask instead of 0", async () => {
+    const player = createPlayer({ team_id: null, contract_end: null, wage: 0 });
+    vi.mocked(invoke).mockImplementation(async (command: string) =>
+      command === "get_expected_signing_wages"
+        ? { [player.id]: 211_000 }
+        : defaultInvokeResponse(command),
+    );
+
+    render(
+      <PlayerProfile
+        player={player}
+        gameState={createGameState(player)}
+        isOwnClub={false}
+        onClose={vi.fn()}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(hasAnnualWage(document.body.textContent ?? "", 211_000)).toBe(true),
+    );
+    expect(hasAnnualWage(document.body.textContent ?? "", 0)).toBe(false);
+  });
+
   it("renders expiry date, years remaining, and contract risk for the selected player", () => {
     const player = createPlayer();
     const gameState = createGameState(player);

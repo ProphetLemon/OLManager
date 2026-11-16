@@ -1,8 +1,13 @@
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { PlayerData, TeamData, TransferOfferData } from "@/store/gameStore";
 import { formatVal, getTeamName } from "@/lib/common/helpers";
-import type { WageNegotiationResponseData } from "@/services/transfersService";
+import { needsExpectedWage } from "@/hooks/useExpectedSigningWages";
+import {
+  getExpectedSigningWages,
+  type WageNegotiationResponseData,
+} from "@/services/transfersService";
 import NegotiationFeedbackPanel, {
   type NegotiationFeedbackPanelData,
 } from "@/ui-v2/components/negotiation/NegotiationFeedbackPanel";
@@ -66,6 +71,34 @@ export default function WageNegotiationDialog({
   const exceedsBudget = isWageValid && wageValue > annualWageBudget;
   const closeBlocked = loading || result === "accepted";
   const isFreeAgent = target.fromTeamId === null;
+  const currentWageAmount = useRef(wageAmount);
+  currentWageAmount.current = wageAmount;
+  const needsAsk = target.fromTeamId === null && needsExpectedWage({ ...target.player, team_id: null });
+  const targetPlayerId = target.player.id;
+
+  // A free agent with no wage on record would open at 0 (Submit disabled): start from the
+  // wage they would actually ask, unless an amount is already there.
+  useEffect(() => {
+    if (!needsAsk) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const asks = await getExpectedSigningWages([targetPlayerId]);
+        const ask = asks?.[targetPlayerId];
+        const typed = Number.parseFloat(currentWageAmount.current);
+        if (!cancelled && typeof ask === "number" && ask > 0 && !(typed > 0)) {
+          onWageAmountChange(String(Math.round(ask)));
+        }
+      } catch {
+        // The field stays empty; a first offer still reveals the ask.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per negotiated player
+  }, [needsAsk, targetPlayerId, target.offerId]);
+
   const showCurrentWage = !isFreeAgent && target.player.wage > 0;
   const fromTeamName = target.fromTeamId ? getTeamName(teams, target.fromTeamId) : null;
 

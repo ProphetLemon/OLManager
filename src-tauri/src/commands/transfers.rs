@@ -1,4 +1,5 @@
 use log::info;
+use std::collections::HashMap;
 use olm_core::domain::negotiation::NegotiationFeedback;
 use olm_core::domain::transfer_history::TransferHistoryEntry;
 use tauri::State;
@@ -347,10 +348,28 @@ pub fn get_transfer_history_cmd(
     Ok(get_transfer_history(&game))
 }
 
+/// Read-only: what each player would ask the user's club for a new contract.
+#[tauri::command]
+pub fn get_expected_signing_wages(
+    state: State<'_, StateManager>,
+    player_ids: Vec<String>,
+) -> Result<HashMap<String, u32>, String> {
+    get_expected_signing_wages_internal(&state, &player_ids)
+}
+
+fn get_expected_signing_wages_internal(
+    state: &StateManager,
+    player_ids: &[String],
+) -> Result<HashMap<String, u32>, String> {
+    state
+        .get_game(|g| olm_core::transfers::expected_signing_wages_for_user(g, player_ids))
+        .ok_or("No active game session".to_string())?
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        counter_offer_internal, make_transfer_bid_internal, negotiate_player_wage_internal,
+        counter_offer_internal, get_expected_signing_wages_internal, make_transfer_bid_internal, negotiate_player_wage_internal,
         preview_transfer_bid_financial_impact_internal, respond_to_offer_internal,
         toggle_loan_list_internal, toggle_transfer_list_internal,
     };
@@ -582,6 +601,18 @@ mod tests {
                 .as_deref(),
             Some("team-1")
         );
+    }
+
+    #[test]
+    fn get_expected_signing_wages_internal_reads_state_without_changing_it() {
+        let state = StateManager::new();
+        state.set_game(make_game());
+
+        let wages = get_expected_signing_wages_internal(&state, &["player-1".to_string()])
+            .expect("wages");
+
+        assert!(wages.get("player-1").is_some_and(|wage| *wage > 0));
+        assert!(get_expected_signing_wages_internal(&StateManager::new(), &[]).is_err());
     }
 
     #[test]

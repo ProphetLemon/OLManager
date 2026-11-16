@@ -307,6 +307,7 @@ pub fn run() {
             counter_offer,
             negotiate_player_wage,
             get_transfer_history_cmd,
+            get_expected_signing_wages,
             release_player_contract,
             send_scout,
             advance_to_next_season,

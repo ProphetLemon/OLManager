@@ -81,7 +81,9 @@ export function BenchRow({ model, loanListed, onOpen, onToggleTransfer, onToggle
           </span>
         </span>
         <span className="hidden w-24 shrink-0 flex-col text-end @4xl:flex">
-          <span className="font-semibold tabular-nums">{model.wageLabel}</span>
+          <span className="font-semibold tabular-nums" title={model.wageLabel}>
+            {model.wageCompact}
+          </span>
           <span className="text-xs text-muted-foreground">
             {t("onAir.squad.perYear", { defaultValue: "/yr" })}
           </span>

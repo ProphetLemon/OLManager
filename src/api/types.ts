@@ -94,6 +94,7 @@ export interface TransferRepository {
   releaseContract(args: { playerId: string }): Promise<GameStateData>
   negotiateWage(args: { playerId: string; offerId: string; annualWage: number; contractYears: number }): Promise<WageNegotiationResponseData>
   getHistory(): Promise<TransferHistoryEntryData[]>
+  getExpectedSigningWages(args: { playerIds: string[] }): Promise<Record<string, number>>
 }
 
 export interface InboxRepository {

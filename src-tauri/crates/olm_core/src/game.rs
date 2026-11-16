@@ -152,8 +152,9 @@ pub struct Game {
     /// catalog rehydration can always keep these players where the game put them.
     #[serde(default)]
     pub moved_player_ids: HashSet<String>,
-    /// Tombstones for players the roster overlay retired. Catalog rehydration
-    /// must never re-add these (see `merge_missing_players`).
+    /// Tombstones for players the roster overlay retired, or that the canonical-duplicate
+    /// repair dropped as the same person as another record. Catalog rehydration must
+    /// never re-add these (see `merge_missing_players`).
     #[serde(default)]
     pub retired_player_ids: Vec<String>,
     /// `as_of` date of the roster overlay applied when this game was created,
