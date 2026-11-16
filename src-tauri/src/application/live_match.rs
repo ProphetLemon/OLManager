@@ -420,6 +420,14 @@ fn series_wins<'a>(reports: impl IntoIterator<Item = &'a MatchReport>) -> (u8, u
     })
 }
 
+/// Whether two reports say exactly the same thing.
+fn same_report(left: &MatchReport, right: &MatchReport) -> bool {
+    matches!(
+        (serde_json::to_value(left), serde_json::to_value(right)),
+        (Ok(left), Ok(right)) if left == right
+    )
+}
+
 /// Keeps `report` as game `game_number` of the series, replacing that game and any after it.
 ///
 /// A series is recorded in order, so a retry or a series restarted from game 1 overwrites
@@ -444,6 +452,16 @@ fn keep_series_game(
         return Err(format!(
             "Game {game_number} was recorded before game {}",
             buffer.len() + 1
+        ));
+    }
+
+    // Two played games never produce the same report, so a repeat is the same game sent twice
+    // (a double click on Continue) and must not count as the next one. A skipped game has no
+    // player lines to tell it apart, so two of them can match by chance and are let through.
+    if index > 0 && !report.player_stats.is_empty() && same_report(&buffer[index - 1], &report) {
+        return Err(format!(
+            "Game {game_number} repeats game {}: it was already recorded",
+            game_number - 1
         ));
     }
 

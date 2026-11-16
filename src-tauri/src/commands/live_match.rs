@@ -1177,4 +1177,34 @@ mod tests {
 
         assert_eq!(fixture_score(&played_game(&state)), (2, 1));
     }
+    #[test]
+    fn a_game_identical_to_the_one_before_it_is_not_recorded_again() {
+        let state = state_with_live_session("team1", 5);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+
+        // A double click on Continue would send the same game as the next number.
+        assert!(record_series_game(&state, 2, game_one()).is_err());
+    }
+
+    #[test]
+    fn a_recorded_game_can_be_sent_again_under_its_own_number() {
+        let state = state_with_live_session("team1", 5);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+        record_series_game(&state, 2, game_three()).expect("record game 2");
+
+        assert!(record_series_game(&state, 2, game_three()).is_ok());
+    }
+    #[test]
+    fn two_skipped_games_that_match_by_chance_are_both_recorded() {
+        let state = state_with_live_session("team1", 5);
+        let skipped = || {
+            let mut game = game_one();
+            game.champions.clear();
+            game.blue_team_id = Some("team1".to_string());
+            game
+        };
+        record_series_game(&state, 1, skipped()).expect("record game 1");
+
+        assert!(record_series_game(&state, 2, skipped()).is_ok());
+    }
 }
