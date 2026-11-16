@@ -479,6 +479,21 @@ describe("transfers/model", () => {
       const other = contractedSend0o({ id: "other", full_name: "Someone Else" });
       expect(marketIds(other, contractedSend0o(), freeSend0o())).toEqual([]);
     });
+
+    it("reads a 'Month D, YYYY' date of birth as the same day as its ISO form", () => {
+      const stale = freeSend0o({ date_of_birth: "February 25, 2004" });
+      expect(marketIds(contractedSend0o(), stale)).toEqual([]);
+    });
+
+    it("still tells apart two different days written in different forms", () => {
+      const stale = freeSend0o({ date_of_birth: "February 26, 2004" });
+      expect(marketIds(contractedSend0o(), stale)).toEqual(["player-bea33543"]);
+    });
+
+    it("counts an unreadable date of birth as unknown, not as different", () => {
+      const stale = freeSend0o({ date_of_birth: "sometime in 2004" });
+      expect(marketIds(contractedSend0o(), stale)).toEqual([]);
+    });
   });
 
   it("sorts players without a date of birth after the rest by age, in both directions", () => {

@@ -1026,6 +1026,7 @@ pub(crate) fn runtime_catalog_players(
         }
     }
 
+    let (players, _stale_twins) = world_catalog::drop_stale_twins_of_live_players(players);
     world_catalog::dedupe_players(players).0
 }
 
@@ -2229,6 +2230,35 @@ mod tests {
                 )
             })
             .collect()
+    }
+
+    /// A catalog rehydration reads the catalog the way a new game builds it: the stale
+    /// record of a person a live competition also ships is not re-added as a free agent.
+    #[test]
+    fn runtime_players_leave_out_the_stale_twin_of_a_live_player() {
+        let data = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("data");
+        let manifests: Vec<CompetitionManifest> =
+            olm_core::competitions::scan_competitions(&data.join("competitions"))
+                .into_iter()
+                .filter(|m| m.id == "prm" || m.id == "prime_league")
+                .collect();
+        assert_eq!(manifests.len(), 2, "prm and prime_league manifests present");
+
+        let players = runtime_catalog_players(&manifests, |manifest| {
+            let mut player = rehydrate_test_player(&format!("{}-densi", manifest.id), None);
+            player.match_name = "Densi".to_string();
+            player.date_of_birth = if manifest.id == "prm" {
+                "2003-06-03".to_string()
+            } else {
+                "June 3, 2003".to_string()
+            };
+            Ok(vec![player])
+        });
+
+        let ids: Vec<&str> = players.iter().map(|p| p.id.as_str()).collect();
+        assert_eq!(ids, vec!["prm-densi"]);
     }
 
     /// A player whose only record sits in a competition no league schedules is a free agent,
