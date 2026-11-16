@@ -464,7 +464,11 @@ fn apply_player_stats(
                 // 1.5x par adds +0.5, half of par takes 0.5 off. Unmeasured adds 0.
                 let damage_bonus = damage_vs_par(ps.damage_dealt, team_damage, ps.role)
                     .map_or(0.0, |ratio| (ratio - 1.0).clamp(-0.5, 0.5) as f32);
-                6.0 + ((kills + ps.assists) as f32 * 0.35) - (ps.deaths as f32 * 0.25)
+                // A series report sums every game's line, but the weights are per game: rate
+                // the average game, as one appearance counts the whole series.
+                let games = f32::from(games_in_report(report));
+                6.0 + ((kills + ps.assists) as f32 / games * 0.35)
+                    - (ps.deaths as f32 / games * 0.25)
                     + damage_bonus
             };
             if player.stats.appearances == 1 {
@@ -1769,6 +1773,26 @@ mod progression_bound_tests {
     #[test]
     fn fallback_rating_should_ignore_unmeasured_damage() {
         let rating = fallback_rating(0, 0);
+        assert!((rating - 7.35).abs() < 0.01, "rating {rating}");
+    }
+
+    #[test]
+    fn fallback_rating_should_rate_a_series_by_its_average_game() {
+        let mut game = game_with_player(50, 90, None);
+        // Three games of the 2 kills, 3 deaths, 4 assists line above, summed as a series.
+        let mut report = report_for(PlayerMatchStats {
+            role: Some(LolRole::Mid),
+            duration_seconds: MINUTES * 60 * 3,
+            kills: 6,
+            deaths: 9,
+            assists: 12,
+            ..Default::default()
+        });
+        report.home_wins = 2;
+        report.away_wins = 1;
+        report.home_stats = team_stats(0);
+        apply_player_stats(&mut game, &report, "home", "away");
+        let rating = game.players[0].stats.avg_rating;
         assert!((rating - 7.35).abs() < 0.01, "rating {rating}");
     }
 }
