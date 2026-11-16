@@ -1552,6 +1552,23 @@ pub async fn delete_save(
     sm.delete_save(&save_id)
 }
 
+/// Brings the ratings of a loaded save up to date: `lol_ovr` is stored as 0 in the save
+/// DB, and players an older version saved without a potential (0) get one now that
+/// their OVR is known. Runs after the catalog rehydration, so the catalog players it
+/// merged are covered, and before the roster repair.
+fn refresh_ratings_on_load(game: &mut Game) {
+    for player in &mut game.players {
+        player.lol_ovr = olm_core::potential::calculate_lol_ovr(player);
+    }
+    let filled = olm_core::potential_fill::fill_missing_potentials(
+        &mut game.players,
+        game.clock.current_date.date_naive(),
+    );
+    if filled > 0 {
+        info!("[cmd] load_game: filled the potential of {} players saved without one", filled);
+    }
+}
+
 #[tauri::command]
 pub async fn load_game(
     state: State<'_, StateManager>,
@@ -1624,10 +1641,7 @@ pub async fn load_game(
     // Bootstrap champion state so the Champions tab has data
     info!("[cmd] load_game: bootstrapping champion state...");
     olm_core::champions::bootstrap_champion_state(&mut game);
-    // Refresh lol_ovr for all players (it's stored as 0 in the save DB)
-    for player in &mut game.players {
-        player.lol_ovr = olm_core::potential::calculate_lol_ovr(player);
-    }
+    refresh_ratings_on_load(&mut game);
     info!(
         "[cmd] load_game: champion_patch.hidden_meta={}, champion_masteries={}",
         game.champion_patch.hidden_meta.len(),
@@ -2985,6 +2999,101 @@ mod tests {
                 elmillor.lol_ovr
             );
             assert!(elmillor.potential_base > 3);
+        }
+
+        /// A save an older version wrote: the bundled world with Elmillor as the friend's
+        /// save has him (flat attributes, no potential, a spent research that read 2),
+        /// one more player with no potential, and one researched player with a real one.
+        /// Returns the loaded game and the ids (elmillor, young zero, researched).
+        fn old_save_with_players_without_a_potential() -> (Game, [String; 3]) {
+            let (mut game, ..) = new_game();
+            let elmillor = "fa-c45e5ff7".to_string();
+            let young_zero = game
+                .players
+                .iter()
+                .find(|p| p.id != elmillor && p.date_of_birth.as_str() > "2004" && p.potential_base > 0)
+                .map(|p| p.id.clone())
+                .expect("a young player");
+            let researched = game
+                .players
+                .iter()
+                .find(|p| p.id != elmillor && p.id != young_zero && p.potential_base > 60)
+                .map(|p| p.id.clone())
+                .expect("a player with a real potential");
+            for p in &mut game.players {
+                if p.id == elmillor {
+                    p.attributes = olm_core::domain::player::PlayerAttributes::from_array([50; 9]);
+                    p.potential_base = 0;
+                    p.potential_revealed = Some(2);
+                } else if p.id == young_zero {
+                    p.potential_base = 0;
+                } else if p.id == researched {
+                    p.potential_revealed = Some(p.potential_base + 2);
+                }
+            }
+            let dir = tempfile::tempdir().expect("tempdir");
+            let mut manager = SaveManager::init(dir.path()).expect("save manager");
+            let save_id = manager.create_save(&game, "old save").expect("create save");
+            let loaded = manager.load_game(&save_id).expect("load save");
+            (loaded, [elmillor, young_zero, researched])
+        }
+
+        fn potentials(game: &Game) -> HashMap<String, (u8, Option<u8>)> {
+            game.players
+                .iter()
+                .map(|p| (p.id.clone(), (p.potential_base, p.potential_revealed)))
+                .collect()
+        }
+
+        #[test]
+        fn loading_a_save_heals_a_player_with_no_potential_and_a_revealed_estimate_of_2() {
+            let (mut game, [elmillor, ..]) = old_save_with_players_without_a_potential();
+
+            refresh_ratings_on_load(&mut game);
+
+            let healed = game.players.iter().find(|p| p.id == elmillor).expect("Elmillor");
+            assert!(healed.potential_base >= healed.lol_ovr);
+            assert!(healed.potential_base > 3);
+            assert_eq!(healed.potential_revealed, Some(healed.potential_base + 2));
+            assert!(healed.potential_revealed.unwrap() > healed.lol_ovr);
+        }
+
+        #[test]
+        fn loading_a_save_fills_every_other_player_without_a_potential() {
+            let (mut game, [_, young_zero, _]) = old_save_with_players_without_a_potential();
+
+            refresh_ratings_on_load(&mut game);
+
+            let young = game.players.iter().find(|p| p.id == young_zero).expect("young player");
+            assert!(young.potential_base >= young.lol_ovr);
+            assert!(game.players.iter().all(|p| p.potential_base > 0));
+        }
+
+        #[test]
+        fn loading_a_save_leaves_players_with_a_potential_untouched() {
+            let (mut game, [elmillor, young_zero, _]) = old_save_with_players_without_a_potential();
+            let before = potentials(&game);
+
+            refresh_ratings_on_load(&mut game);
+
+            let after = potentials(&game);
+            let changed: Vec<_> = before
+                .iter()
+                .filter(|(id, value)| **id != elmillor && **id != young_zero && after[*id] != **value)
+                .map(|(id, _)| id.clone())
+                .collect();
+            assert_eq!(changed, Vec::<String>::new());
+        }
+
+        #[test]
+        fn a_second_load_changes_nothing() {
+            let (mut game, _) = old_save_with_players_without_a_potential();
+            refresh_ratings_on_load(&mut game);
+            let once = potentials(&game);
+
+            refresh_ratings_on_load(&mut game);
+
+            assert_eq!(potentials(&game), once);
         }
 
         #[test]
