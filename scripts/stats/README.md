@@ -77,6 +77,12 @@ user's explicit authorization (destination, operation and credential). Tests use
 `assets/world/player-rating-overrides.json` plus `report.md` and `report.json` (default
 `src-tauri/target/olm-scratch/stat-ratings`). It is offline and deterministic.
 
+**Ship gate.** The asset pairs player ids and `authored_ovr` guards with the roster overlay that ships beside it, so rebuild it
+whenever the overlay is regenerated: `npm run stats:build -- --rows <rows.json>` (the default `--overlay` is the in-tree one).
+`src/lib/world/overrides-ship-gate.test.ts` fails when an entry's id is absent from `data/` plus the overlay (the game would
+log `skipped_missing`), when its `authored_ovr` differs from the OVR the game builds for that player (`skipped_stale`), or
+when an id repeats. Teamless pool players get no entries: the build matches only players on a team.
+
 1. **Game players** (`lib/game-world.mjs`): `data/` through `scripts/world/lib/world.mjs` (catalog corrections,
    effective team ids, free agents) plus the roster overlay (moves, retirements, adds, same rules as
    `apply_world_overlay`). Not reproduced from the Rust assembly: ERL academy bootstrap, short-roster fills,
