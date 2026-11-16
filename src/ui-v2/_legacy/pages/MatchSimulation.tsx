@@ -17,6 +17,7 @@ import ChampionDraft, {
 } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import type { ChampionDraftResultPayload } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import { finalizeLiveMatch, type FinishLiveMatchResponse } from "@/ui-v2/_legacy/pages/MatchSimulation.finalize";
+import { recordSeriesGame } from "@/ui-v2/_legacy/pages/MatchSimulation.seriesRecord";
 import LiveMatchV2 from "@/ui-v2/match/LiveMatchV2";
 import DraftResultStage from "@/ui-v2/match/DraftResultStage";
 import PostGame from "@/ui-v2/match/PostGame";
@@ -1444,6 +1445,7 @@ export default function MatchSimulation() {
     let userSeriesWins = 0;
     let opponentSeriesWins = 0;
     let seriesComplete = seriesLength === 1;
+    let currentGameNumber = 1;
     let nextSeriesUsedChampionIds = seriesLength > 1 ? seriesUsedChampionIds : [];
 
     if (currentFixture?.id) {
@@ -1525,6 +1527,7 @@ export default function MatchSimulation() {
       );
       setSeriesGames(nextSeriesGames);
       setSeriesGameIndex(currentSeriesGameIndex);
+      currentGameNumber = currentSeriesGameIndex;
 
       persistFixtureDraftResult(currentFixture.id, {
         snapshot: snapshotForResult,
@@ -1576,7 +1579,16 @@ export default function MatchSimulation() {
       return;
     }
 
-    setStage("draft_result");
+    // A game that does not decide the series still counts: the backend keeps its report so the
+    // fixture gets the true series score and every game's statistics.
+    void (async () => {
+      await recordSeriesGame({
+        record: (args) => invoke("record_series_game", args),
+        gameNumber: currentGameNumber,
+        lolReport: buildLolMatchReport(runtimeForFinalize),
+      });
+      setStage("draft_result");
+    })();
   }, [
     blueTeamId,
     championSelections,
