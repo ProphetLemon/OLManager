@@ -464,7 +464,11 @@ fn apply_player_stats(
                 // 1.5x par adds +0.5, half of par takes 0.5 off. Unmeasured adds 0.
                 let damage_bonus = damage_vs_par(ps.damage_dealt, team_damage, ps.role)
                     .map_or(0.0, |ratio| (ratio - 1.0).clamp(-0.5, 0.5) as f32);
-                6.0 + ((kills + ps.assists) as f32 * 0.35) - (ps.deaths as f32 * 0.25)
+                // A series report sums every game's line, but the weights are per game: rate
+                // the average game, as one appearance counts the whole series.
+                let games = f32::from(games_in_report(report));
+                6.0 + ((kills + ps.assists) as f32 / games * 0.35)
+                    - (ps.deaths as f32 / games * 0.25)
                     + damage_bonus
             };
             if player.stats.appearances == 1 {
@@ -598,10 +602,64 @@ fn laning_cs_cut(role: crate::engine::sim_background::LolRole) -> f64 {
 fn lane_cs_ratio(
     creep_score: u16,
     role: Option<crate::engine::sim_background::LolRole>,
-    opponent_cs: &HashMap<crate::engine::sim_background::LolRole, u16>,
+    opponents: &HashMap<crate::engine::sim_background::LolRole, LaneLine>,
 ) -> Option<f64> {
-    let opponent = *opponent_cs.get(&role?)?;
+    let opponent = opponents.get(&role?)?.creep_score;
     Some((f64::from(creep_score) + 1.0) / (f64::from(opponent) + 1.0))
+}
+
+/// What one side's player of a role puts against the lane opponent, as the report counts it
+/// (series totals on a series report; both sides of a ratio always share that unit).
+#[derive(Clone, Copy)]
+struct LaneLine {
+    creep_score: u16,
+    assists: u16,
+}
+
+/// Assist ratio at which a player counts as clearly out-shotcalling the lane opponent, per
+/// role, as the exact fraction `(numerator, denominator)`: the 80th percentile of
+/// r = (A + 1) / (A_opponent + 1) over every paired player-game of the 2026 pro games in
+/// the SR0 reference data (`players_2026.jsonl.gz`, the same 2,602 games as
+/// `laning_cs_cut`, 5,204 pairings per role with both sides counted). Top 8/3 (2.667),
+/// Jungle, Mid and ADC 5/2, Support 13/5 (2.6). Real assists at or above the cut are
+/// 20.1-21.5% of player-games and at or below its inverse the same share, so +1 and -1 fire
+/// equally often. Assist counts are small integers, so the cut sits on exact ties: it is
+/// kept as a fraction and compared by cross-multiplication. Like laning, the rule compares
+/// two players of one game, so it holds on any engine's assist scale. Script:
+/// OLManager-notes/research/par-asymmetry-scripts/real_cuts.py (PA1, 2026-11-16).
+fn shotcalling_assist_cut(role: crate::engine::sim_background::LolRole) -> (u32, u32) {
+    use crate::engine::sim_background::LolRole;
+    match role {
+        LolRole::Top => (8, 3),
+        LolRole::Jungle | LolRole::Mid | LolRole::Adc => (5, 2),
+        LolRole::Support => (13, 5),
+    }
+}
+
+/// Shotcalling delta from the assists against the same-role opponent's: +1 when
+/// (A + 1) / (A_opp + 1) is at or above the role's cut, -1 at or below its inverse, 0 in
+/// between and when the lane is unmeasured. The +1 keeps a zero-assist line finite.
+fn shotcalling_delta_vs_lane(
+    assists: u16,
+    role: Option<crate::engine::sim_background::LolRole>,
+    opponents: &HashMap<crate::engine::sim_background::LolRole, LaneLine>,
+) -> i16 {
+    let Some(role) = role else {
+        return 0;
+    };
+    let Some(opponent) = opponents.get(&role) else {
+        return 0;
+    };
+    let (cut_num, cut_den) = shotcalling_assist_cut(role);
+    let own = u32::from(assists) + 1;
+    let other = u32::from(opponent.assists) + 1;
+    if own * cut_den >= cut_num * other {
+        1
+    } else if own * cut_num <= cut_den * other {
+        -1
+    } else {
+        0
+    }
 }
 
 /// Laning delta from the lane CS ratio: +1 at or above the role's cut, -1 at or below its
@@ -623,26 +681,63 @@ fn laning_delta_from_ratio(
     }
 }
 
+/// Number of games a report covers: the series score, or one for a single game. Series
+/// reports sum every game's line (`simulate_series`), so their counts are series totals.
+fn games_in_report(report: &crate::engine::MatchReport) -> u8 {
+    report.home_wins.saturating_add(report.away_wins).max(1)
+}
+
+/// A player's kills, deaths and assists in an average game of the report. The post-match
+/// thresholds (`deaths_bad`, a kda of 2) are per game, so they only read this
+/// view and never the raw series totals. For a single game it equals the report's counts.
+#[derive(Clone, Copy)]
+struct PerGame {
+    kills: f64,
+    deaths: f64,
+    assists: f64,
+}
+
+impl PerGame {
+    fn of(stats: &crate::engine::PlayerMatchStats, games: u8) -> Self {
+        let games = f64::from(games);
+        Self {
+            kills: f64::from(stats.kills) / games,
+            deaths: f64::from(stats.deaths) / games,
+            assists: f64::from(stats.assists) / games,
+        }
+    }
+
+    fn kda(self) -> f64 {
+        (self.kills + self.assists) / self.deaths.max(1.0)
+    }
+}
+
 fn apply_lol_profile_progression(
     game: &mut Game,
     report: &crate::engine::MatchReport,
     home_team_id: &str,
     away_team_id: &str,
 ) {
-    // Creep score of each side's player per role, so every player finds their lane
-    // opponent in the other side's map. A side with two players of one role keeps the last.
-    let mut home_cs: HashMap<crate::engine::sim_background::LolRole, u16> = HashMap::new();
-    let mut away_cs: HashMap<crate::engine::sim_background::LolRole, u16> = HashMap::new();
+    // Creep score and assists of each side's player per role, so every player finds their
+    // lane opponent in the other side's map. A side with two players of one role keeps the last.
+    let mut home_lane: HashMap<crate::engine::sim_background::LolRole, LaneLine> = HashMap::new();
+    let mut away_lane: HashMap<crate::engine::sim_background::LolRole, LaneLine> = HashMap::new();
     for player in &game.players {
         let side = match player.team_id.as_deref() {
-            Some(team_id) if team_id == home_team_id => &mut home_cs,
-            Some(team_id) if team_id == away_team_id => &mut away_cs,
+            Some(team_id) if team_id == home_team_id => &mut home_lane,
+            Some(team_id) if team_id == away_team_id => &mut away_lane,
             _ => continue,
         };
         if let Some(ps) = report.player_stats.get(&player.id)
             && let Some(role) = ps.role
         {
-            side.insert(role, ps.creep_score);
+            side.insert(
+                role,
+                LaneLine {
+                    creep_score: ps.creep_score,
+                    assists: ps.assists,
+                },
+            );
         }
     }
 
@@ -664,13 +759,14 @@ fn apply_lol_profile_progression(
         };
 
         let role = ps.role;
-        let kda = (ps.kills + ps.assists) as f64 / ps.deaths.max(1) as f64;
-        let opponent_cs = if tid == home_team_id {
-            &away_cs
+        let per_game = PerGame::of(ps, games_in_report(report));
+        let kda = per_game.kda();
+        let opponents = if tid == home_team_id {
+            &away_lane
         } else {
-            &home_cs
+            &home_lane
         };
-        let lane_ratio = lane_cs_ratio(ps.creep_score, role, opponent_cs);
+        let lane_ratio = lane_cs_ratio(ps.creep_score, role, opponents);
         let team_damage = if tid == home_team_id {
             report.home_stats.damage_dealt
         } else {
@@ -679,17 +775,13 @@ fn apply_lol_profile_progression(
         let vision_per_min = ps.vision_score as f64 / minutes;
         let kp = (ps.kills + ps.assists) as f64 / team_kills;
 
-        let (exp_dmg, exp_vision, exp_kp, assist_good, deaths_bad) = match role {
-            Some(crate::engine::sim_background::LolRole::Top) => (560.0, 0.45, 0.42, 4_u16, 7_u16),
-            Some(crate::engine::sim_background::LolRole::Jungle) => {
-                (520.0, 0.65, 0.52, 5_u16, 8_u16)
-            }
-            Some(crate::engine::sim_background::LolRole::Mid) => (660.0, 0.55, 0.50, 5_u16, 7_u16),
-            Some(crate::engine::sim_background::LolRole::Adc) => (740.0, 0.45, 0.50, 4_u16, 7_u16),
-            Some(crate::engine::sim_background::LolRole::Support) => {
-                (340.0, 1.20, 0.56, 8_u16, 9_u16)
-            }
-            None => (560.0, 0.55, 0.48, 5_u16, 8_u16),
+        let (exp_dmg, exp_vision, exp_kp, deaths_bad) = match role {
+            Some(crate::engine::sim_background::LolRole::Top) => (560.0, 0.45, 0.42, 7_u16),
+            Some(crate::engine::sim_background::LolRole::Jungle) => (520.0, 0.65, 0.52, 8_u16),
+            Some(crate::engine::sim_background::LolRole::Mid) => (660.0, 0.55, 0.50, 7_u16),
+            Some(crate::engine::sim_background::LolRole::Adc) => (740.0, 0.45, 0.50, 7_u16),
+            Some(crate::engine::sim_background::LolRole::Support) => (340.0, 1.20, 0.56, 9_u16),
+            None => (560.0, 0.55, 0.48, 8_u16),
         };
 
         // The thresholds below keep their old per-minute margins around `exp_dmg`; the
@@ -697,9 +789,13 @@ fn apply_lol_profile_progression(
         // that axis. A report with no team damage is unmeasured and reads as par.
         let dmg_per_min =
             damage_vs_par(ps.damage_dealt, team_damage, role).unwrap_or(1.0) * exp_dmg;
+        let bad = f64::from(deaths_bad);
+        let bad_minus_1 = f64::from(deaths_bad.saturating_sub(1));
+        let bad_plus_1 = f64::from(deaths_bad.saturating_add(1));
+        let bad_plus_2 = f64::from(deaths_bad.saturating_add(2));
         let mechanics_delta: i16 = if dmg_per_min >= exp_dmg + 120.0 {
             1
-        } else if dmg_per_min < exp_dmg - 150.0 && ps.deaths >= deaths_bad {
+        } else if dmg_per_min < exp_dmg - 150.0 && per_game.deaths >= bad {
             -1
         } else {
             0
@@ -707,7 +803,7 @@ fn apply_lol_profile_progression(
         let laning_delta = laning_delta_from_ratio(lane_ratio, role);
         let teamfighting_delta: i16 = if kp >= exp_kp + 0.08 && kda >= 2.0 {
             1
-        } else if kp < exp_kp - 0.2 && ps.deaths >= deaths_bad.saturating_sub(1) {
+        } else if kp < exp_kp - 0.2 && per_game.deaths >= bad_minus_1 {
             -1
         } else {
             0
@@ -724,42 +820,38 @@ fn apply_lol_profile_progression(
         } else {
             0
         };
-        let consistency_delta: i16 = if ps.deaths <= 2 && kda >= 2.0 {
+        let consistency_delta: i16 = if per_game.deaths <= 2.0 && kda >= 2.0 {
             1
-        } else if ps.deaths >= deaths_bad {
+        } else if per_game.deaths >= bad {
             -1
         } else {
             0
         };
-        let shotcalling_delta: i16 = if ps.assists >= assist_good && kp >= exp_kp + 0.1 {
-            1
-        } else if ps.assists <= assist_good.saturating_sub(4) && kp < exp_kp - 0.25 {
-            -1
-        } else {
-            0
-        };
+        let shotcalling_delta = shotcalling_delta_vs_lane(ps.assists, role, opponents);
         let champion_pool_delta: i16 = if kda >= 3.0 && lane_ratio.is_some_and(|ratio| ratio >= 1.0)
         {
             1
-        } else if kda < 1.0 && ps.deaths >= deaths_bad.saturating_sub(1) {
+        } else if kda < 1.0 && per_game.deaths >= bad_minus_1 {
             -1
         } else {
             0
         };
-        let discipline_delta: i16 = if ps.deaths <= 2 && ps.kills + ps.assists >= 4 {
-            1
-        } else if ps.deaths >= deaths_bad.saturating_add(1) {
-            -1
-        } else {
-            0
-        };
-        let mental_resilience_delta: i16 = if ps.deaths >= 4 && ps.kills + ps.assists >= 8 {
-            1
-        } else if ps.deaths >= deaths_bad.saturating_add(2) {
-            -1
-        } else {
-            0
-        };
+        let discipline_delta: i16 =
+            if per_game.deaths <= 2.0 && per_game.kills + per_game.assists >= 4.0 {
+                1
+            } else if per_game.deaths >= bad_plus_1 {
+                -1
+            } else {
+                0
+            };
+        let mental_resilience_delta: i16 =
+            if per_game.deaths >= 4.0 && per_game.kills + per_game.assists >= 8.0 {
+                1
+            } else if per_game.deaths >= bad_plus_2 {
+                -1
+            } else {
+                0
+            };
 
         let (mech_num, lane_num, macro_num, shot_num) = match role {
             Some(crate::engine::sim_background::LolRole::Support) => (1_i16, 0_i16, 2_i16, 2_i16),
@@ -1683,6 +1775,26 @@ mod progression_bound_tests {
         let rating = fallback_rating(0, 0);
         assert!((rating - 7.35).abs() < 0.01, "rating {rating}");
     }
+
+    #[test]
+    fn fallback_rating_should_rate_a_series_by_its_average_game() {
+        let mut game = game_with_player(50, 90, None);
+        // Three games of the 2 kills, 3 deaths, 4 assists line above, summed as a series.
+        let mut report = report_for(PlayerMatchStats {
+            role: Some(LolRole::Mid),
+            duration_seconds: MINUTES * 60 * 3,
+            kills: 6,
+            deaths: 9,
+            assists: 12,
+            ..Default::default()
+        });
+        report.home_wins = 2;
+        report.away_wins = 1;
+        report.home_stats = team_stats(0);
+        apply_player_stats(&mut game, &report, "home", "away");
+        let rating = game.players[0].stats.avg_rating;
+        assert!((rating - 7.35).abs() < 0.01, "rating {rating}");
+    }
 }
 
 #[cfg(test)]
@@ -1867,5 +1979,365 @@ mod laning_relative_tests {
             Some((LolRole::Adc, line(LolRole::Adc, 310, 2))),
         );
         assert_eq!(home.1, 50);
+    }
+}
+
+#[cfg(test)]
+mod series_units_tests {
+    use super::apply_lol_profile_progression;
+    use crate::clock::GameClock;
+    use crate::domain::manager::Manager;
+    use crate::domain::player::{LolRole as PlayerRole, Player, PlayerAttributes};
+    use crate::engine::sim_background::LolRole;
+    use crate::engine::{MatchReport, MatchReportEndReason, PlayerMatchStats, TeamStats};
+    use crate::game::Game;
+    use chrono::{TimeZone, Utc};
+    use std::collections::HashMap;
+
+    const ROLES: [LolRole; 5] = [
+        LolRole::Top,
+        LolRole::Jungle,
+        LolRole::Mid,
+        LolRole::Adc,
+        LolRole::Support,
+    ];
+    /// Team kills of one game, so the kill-participation ratio is the same in every unit.
+    const TEAM_KILLS_PER_GAME: u16 = 20;
+
+    fn position(role: LolRole) -> PlayerRole {
+        match role {
+            LolRole::Top => PlayerRole::Top,
+            LolRole::Jungle => PlayerRole::Jungle,
+            LolRole::Mid => PlayerRole::Mid,
+            LolRole::Adc => PlayerRole::Adc,
+            LolRole::Support => PlayerRole::Support,
+        }
+    }
+
+    fn flat_attrs() -> PlayerAttributes {
+        PlayerAttributes {
+            mechanics: 50,
+            laning: 50,
+            teamfighting: 50,
+            macro_play: 50,
+            consistency: 50,
+            shotcalling: 50,
+            champion_pool: 50,
+            discipline: 50,
+            mental_resilience: 50,
+        }
+    }
+
+    /// The nine attributes of the lone home player after one report of `games` games in
+    /// which every game had the per-game line `(kills, deaths, assists)`; the report
+    /// carries the series sums, as `simulate_series` builds them.
+    fn after_series(role: LolRole, per_game: (u16, u16, u16), games: u8) -> [u8; 9] {
+        let mut player = Player::new(
+            "h".to_string(),
+            "h".to_string(),
+            "Player h".to_string(),
+            "1998-03-15".to_string(),
+            "England".to_string(),
+            position(role),
+            flat_attrs(),
+        );
+        player.team_id = Some("home".to_string());
+        player.potential_base = 99;
+        let line = PlayerMatchStats {
+            role: Some(role),
+            duration_seconds: 30 * 60 * u32::from(games),
+            kills: per_game.0 * u16::from(games),
+            deaths: per_game.1 * u16::from(games),
+            assists: per_game.2 * u16::from(games),
+            creep_score: 200 * u16::from(games),
+            ..Default::default()
+        };
+        let manager = Manager::new(
+            "m".to_string(),
+            "A".to_string(),
+            "B".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2025, 8, 12, 12, 0, 0).unwrap());
+        let mut game = Game::new(clock, manager, vec![], vec![player], vec![], vec![]);
+        // A 2-1 or 3-0 series: the home side takes the majority of the games.
+        let home_wins = games / 2 + 1;
+        let report = MatchReport {
+            home_wins,
+            away_wins: games - home_wins,
+            home_stats: TeamStats {
+                kills: TEAM_KILLS_PER_GAME * u16::from(games),
+                ..TeamStats::default()
+            },
+            away_stats: TeamStats::default(),
+            events: vec![],
+            kill_feed: vec![],
+            player_stats: HashMap::from([("h".to_string(), line)]),
+            home_possession: 50.0,
+            total_minutes: 30,
+            game_duration_seconds: 30 * 60 * u32::from(games),
+            ended_by: MatchReportEndReason::TimeLimit,
+        };
+        apply_lol_profile_progression(&mut game, &report, "home", "away");
+        let a = &game.players[0].attributes;
+        [
+            a.mechanics,
+            a.laning,
+            a.teamfighting,
+            a.macro_play,
+            a.consistency,
+            a.shotcalling,
+            a.champion_pool,
+            a.discipline,
+            a.mental_resilience,
+        ]
+    }
+
+    /// Per-game lines that cross a threshold only when the series sum is read as one game.
+    const LINES: [(u16, u16, u16); 6] = [
+        (5, 3, 4),  // 3 deaths a game: 9 over a bo3, past every deaths_bad
+        (5, 2, 4),  // 2 deaths a game: good consistency per game, 6 summed
+        (1, 5, 1),  // poor line
+        (8, 1, 12), // dominant line
+        (3, 2, 9),
+        (0, 0, 0),
+    ];
+
+    #[test]
+    fn a_series_should_read_like_one_game_of_the_same_per_game_line() {
+        for role in ROLES {
+            for line in LINES {
+                let single = after_series(role, line, 1);
+                for games in [2, 3, 5] {
+                    assert_eq!(
+                        after_series(role, line, games),
+                        single,
+                        "{role:?} {line:?} over {games} games"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn three_deaths_a_game_over_a_best_of_three_should_not_cost_consistency() {
+        // Mid: 9 summed deaths reach deaths_bad 7, but 3 a game never do.
+        let after = after_series(LolRole::Mid, (5, 3, 4), 3);
+        assert_eq!(after[4], 50);
+    }
+
+    /// Characterisation, recorded on 78fd260c before the unit change: single-game reports
+    /// must give the same attributes after it. Shotcalling and macro_play are left out of
+    /// the hash because the shotcalling rule changes in a later commit; no lane opponent
+    /// is in the report, so laning stays unmeasured.
+    #[test]
+    fn single_game_reports_should_keep_their_recorded_outcome() {
+        let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+        for role in ROLES {
+            for kills in [0_u16, 2, 5, 9] {
+                for deaths in 0..=10_u16 {
+                    for assists in [0_u16, 3, 6, 9, 13] {
+                        let attrs = after_series(role, (kills, deaths, assists), 1);
+                        for (i, value) in attrs.into_iter().enumerate() {
+                            if i == 3 || i == 5 {
+                                continue;
+                            }
+                            hash = (hash ^ u64::from(value)).wrapping_mul(0x0100_0000_01b3);
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!(hash, 7_645_557_679_294_536_828);
+    }
+}
+
+#[cfg(test)]
+mod shotcalling_relative_tests {
+    use super::{apply_lol_profile_progression, shotcalling_assist_cut};
+    use crate::clock::GameClock;
+    use crate::domain::manager::Manager;
+    use crate::domain::player::{LolRole as PlayerRole, Player, PlayerAttributes};
+    use crate::engine::sim_background::LolRole;
+    use crate::engine::{MatchReport, MatchReportEndReason, PlayerMatchStats, TeamStats};
+    use crate::game::Game;
+    use chrono::{TimeZone, Utc};
+    use std::collections::HashMap;
+
+    fn position(role: LolRole) -> PlayerRole {
+        match role {
+            LolRole::Top => PlayerRole::Top,
+            LolRole::Jungle => PlayerRole::Jungle,
+            LolRole::Mid => PlayerRole::Mid,
+            LolRole::Adc => PlayerRole::Adc,
+            LolRole::Support => PlayerRole::Support,
+        }
+    }
+
+    fn player(id: &str, team: &str, role: LolRole) -> Player {
+        let level = 50;
+        let mut player = Player::new(
+            id.to_string(),
+            id.to_string(),
+            format!("Player {id}"),
+            "1998-03-15".to_string(),
+            "England".to_string(),
+            position(role),
+            PlayerAttributes {
+                mechanics: level,
+                laning: level,
+                teamfighting: level,
+                macro_play: level,
+                consistency: level,
+                shotcalling: level,
+                champion_pool: level,
+                discipline: level,
+                mental_resilience: level,
+            },
+        );
+        player.team_id = Some(team.to_string());
+        player.potential_base = 99;
+        player
+    }
+
+    /// Three deaths and a modest line keep the discipline, consistency and teamfighting
+    /// terms at zero, so only the shotcalling term can move `macro_play` for a Support
+    /// or Jungle (vision is unmeasured).
+    fn line(role: LolRole, assists: u16) -> PlayerMatchStats {
+        PlayerMatchStats {
+            role: Some(role),
+            duration_seconds: 30 * 60,
+            kills: 1,
+            deaths: 3,
+            assists,
+            creep_score: 200,
+            ..Default::default()
+        }
+    }
+
+    /// `macro_play` of the home player and, when there is one, the away player, after one
+    /// game in which they have `home_assists` and `away_assists`.
+    fn macro_play_after(
+        role: LolRole,
+        home_assists: u16,
+        away: Option<(LolRole, u16)>,
+    ) -> (u8, Option<u8>) {
+        let mut players = vec![player("h", "home", role)];
+        let mut stats = HashMap::from([("h".to_string(), line(role, home_assists))]);
+        if let Some((away_role, assists)) = away {
+            players.push(player("a", "away", away_role));
+            stats.insert("a".to_string(), line(away_role, assists));
+        }
+        let manager = Manager::new(
+            "m".to_string(),
+            "A".to_string(),
+            "B".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2025, 8, 12, 12, 0, 0).unwrap());
+        let mut game = Game::new(clock, manager, vec![], players, vec![], vec![]);
+        let report = MatchReport {
+            home_wins: 1,
+            away_wins: 0,
+            home_stats: TeamStats {
+                kills: 20,
+                ..TeamStats::default()
+            },
+            away_stats: TeamStats {
+                kills: 20,
+                ..TeamStats::default()
+            },
+            events: vec![],
+            kill_feed: vec![],
+            player_stats: stats,
+            home_possession: 50.0,
+            total_minutes: 30,
+            game_duration_seconds: 30 * 60,
+            ended_by: MatchReportEndReason::TimeLimit,
+        };
+        apply_lol_profile_progression(&mut game, &report, "home", "away");
+        (
+            game.players[0].attributes.macro_play,
+            game.players.get(1).map(|p| p.attributes.macro_play),
+        )
+    }
+
+    fn support(home: u16, away: u16) -> (u8, Option<u8>) {
+        macro_play_after(LolRole::Support, home, Some((LolRole::Support, away)))
+    }
+
+    #[test]
+    fn support_at_par_with_the_opponent_should_keep_macro_play() {
+        assert_eq!(support(6, 6), (50, Some(50)));
+    }
+
+    #[test]
+    fn support_with_a_ratio_between_the_cuts_should_keep_macro_play() {
+        // 12 against 9 assists: (13 / 10) is under 2.6 and over 1 / 2.6.
+        assert_eq!(support(12, 9), (50, Some(50)));
+        assert_eq!(support(9, 12), (50, Some(50)));
+    }
+
+    #[test]
+    fn support_far_above_the_opponent_should_gain_macro_play_and_the_opponent_lose_it() {
+        assert_eq!(support(20, 4), (51, Some(49)));
+    }
+
+    #[test]
+    fn support_far_below_the_opponent_should_lose_macro_play() {
+        assert_eq!(support(4, 20), (49, Some(51)));
+    }
+
+    #[test]
+    fn support_exactly_on_the_top_cut_should_gain_macro_play() {
+        // 12 against 4 assists: 13 / 5 is the Support cut, 2.6 exactly.
+        assert_eq!(support(12, 4), (51, Some(49)));
+    }
+
+    #[test]
+    fn support_just_under_the_top_cut_should_keep_macro_play() {
+        assert_eq!(support(11, 4), (50, Some(50)));
+    }
+
+    #[test]
+    fn zero_assists_against_an_opponent_with_none_should_keep_macro_play() {
+        assert_eq!(support(0, 0), (50, Some(50)));
+    }
+
+    #[test]
+    fn a_couple_of_assists_against_none_should_gain_macro_play() {
+        // (2 + 1) / (0 + 1) = 3, past 2.6.
+        assert_eq!(support(2, 0), (51, Some(49)));
+    }
+
+    #[test]
+    fn jungle_far_above_the_opponent_should_gain_macro_play() {
+        let (home, away) = macro_play_after(LolRole::Jungle, 20, Some((LolRole::Jungle, 4)));
+        assert_eq!((home, away), (51, Some(49)));
+    }
+
+    #[test]
+    fn no_same_role_opponent_should_keep_macro_play() {
+        let (home, _) = macro_play_after(LolRole::Support, 20, Some((LolRole::Adc, 0)));
+        assert_eq!(home, 50);
+        let (alone, _) = macro_play_after(LolRole::Support, 20, None);
+        assert_eq!(alone, 50);
+    }
+
+    #[test]
+    fn every_cut_should_sit_above_one_and_come_from_the_recorded_table() {
+        let cuts = [
+            (LolRole::Top, (8, 3)),
+            (LolRole::Jungle, (5, 2)),
+            (LolRole::Mid, (5, 2)),
+            (LolRole::Adc, (5, 2)),
+            (LolRole::Support, (13, 5)),
+        ];
+        for (role, cut) in cuts {
+            assert_eq!(shotcalling_assist_cut(role), cut);
+            assert!(cut.0 > cut.1);
+        }
     }
 }

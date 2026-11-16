@@ -17,6 +17,7 @@ import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { tierFromLp, type SoloQTier } from "@/lib/players/soloq";
 import { resolveSeasonContext } from "@/lib/season/seasonContext";
+import { effectiveWage, useExpectedSigningWages } from "@/hooks/useExpectedSigningWages";
 import { demoteMainPlayerToAcademy, promoteAcademyPlayer } from "@/services/academyService";
 import { startPotentialResearch } from "@/services/playerService";
 import { findAcademyTeamForParent, getManagedTeamIds } from "@/store/academySelectors";
@@ -120,6 +121,7 @@ function PlayerProfileContent({
   const { t, i18n } = useTranslation();
   const annualSuffix = t("finances.perYearSuffix", "/yr");
   const primaryRole = resolvePlayerLolRole(player);
+  const expectedWages = useExpectedSigningWages([player]);
 
   const [scoutStatus, setScoutStatus] = useState<PlayerProfileScoutStatus>("idle");
   const [scoutError, setScoutError] = useState<string | null>(null);
@@ -319,6 +321,7 @@ function PlayerProfileContent({
     <div className="mx-auto w-[92%] max-w-[2000px]">
       <PlayerProfileHeroCardV2
         player={player}
+        displayWage={effectiveWage(player, expectedWages)}
         ovr={ovr}
         primaryRole={primaryRole}
         age={age}

@@ -25,7 +25,7 @@ import type {
 } from "@/store/gameStore";
 import { findAcademyTeamForParent } from "@/store/academySelectors";
 import { useTabUiField } from "@/store/tabUiStore";
-import { formatVal, calcAge, getTeamName } from "@/lib/common/helpers";
+import { formatVal, calcAge, formatAge, getTeamName } from "@/lib/common/helpers";
 import { formatNumber } from "@/lib/formatting/valueFormatting";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
@@ -34,6 +34,7 @@ import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
 import { countryName } from "@/lib/common/countries";
 import { resolveSeasonContext } from "@/lib/season/seasonContext";
 import { getAnnualWageBill, getTransferBudgetSummary } from "@/lib/finances/finance";
+import { effectiveWage, useExpectedSigningWages } from "@/hooks/useExpectedSigningWages";
 import {
   counterOffer,
   makeTransferBid,
@@ -205,8 +206,9 @@ export function TransfersTabV2({
     () => sortTransferPlayers(
       filterTransferPlayers(currentList, search, posFilter, competitionTeamIds),
       sort,
+      gameState.clock.current_date,
     ),
-    [currentList, search, posFilter, competitionTeamIds, sort],
+    [currentList, search, posFilter, competitionTeamIds, sort, gameState.clock.current_date],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
@@ -215,6 +217,8 @@ export function TransfersTabV2({
     () => filteredList.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE),
     [filteredList, safePage],
   );
+
+  const expectedWages = useExpectedSigningWages(paginatedList);
 
   // Reset page when filters change
   const previousFilters = useRef<unknown[] | null>(null);
@@ -781,7 +785,7 @@ export function TransfersTabV2({
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums text-sm text-muted-foreground">{age}</TableCell>
+                      <TableCell className="text-right tabular-nums text-sm text-muted-foreground">{formatAge(age)}</TableCell>
                       <TableCell>
                         {player.team_id ? (
                           <button
@@ -798,7 +802,7 @@ export function TransfersTabV2({
                         {formatVal(player.market_value)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
-                        {formatVal(player.wage)}{annualSuffix}
+                        {formatVal(effectiveWage(player, expectedWages))}{annualSuffix}
                       </TableCell>
                       <TableCell className="text-center">
                         <span

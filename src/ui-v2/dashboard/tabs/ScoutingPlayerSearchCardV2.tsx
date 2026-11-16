@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import type { PlayerData, TeamData } from "@/store/gameStore";
 import { countryName } from "@/lib/common/countries";
-import { calcAge, formatVal, getTeamName } from "@/lib/common/helpers";
+import { calcAge, compareAgesUnknownLast, formatAge, formatVal, getTeamName } from "@/lib/common/helpers";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
 import { getLolRoleForPlayer, type LolRole } from "@/lib/squad/helpers";
@@ -78,7 +78,7 @@ export default function ScoutingPlayerSearchCardV2({
           const order: Record<string, number> = { TOP: 1, JUNGLE: 2, MID: 3, ADC: 4, SUPPORT: 5 };
           return ((order[getLolRoleForPlayer(a)] ?? 0) - (order[getLolRoleForPlayer(b)] ?? 0)) * factor;
         }
-        case "age": return (calcAge(a.date_of_birth, currentDate) - calcAge(b.date_of_birth, currentDate)) * factor;
+        case "age": return compareAgesUnknownLast(calcAge(a.date_of_birth, currentDate), calcAge(b.date_of_birth, currentDate), factor);
         case "team": return getTeamName(teams, a.team_id).localeCompare(getTeamName(teams, b.team_id)) * factor;
         case "value": return (a.market_value - b.market_value) * factor;
         default: return 0;
@@ -187,7 +187,7 @@ export default function ScoutingPlayerSearchCardV2({
                       />
                     </td>
                     <td className="px-1 py-2.5 text-center font-heading text-xs tabular-nums text-muted-foreground">
-                      {calcAge(player.date_of_birth, currentDate)}
+                      {formatAge(calcAge(player.date_of_birth, currentDate))}
                     </td>
                     <td className="max-w-[120px] truncate px-1 py-2.5 text-xs text-muted-foreground">
                       {team}

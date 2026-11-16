@@ -2,7 +2,8 @@ import type { GameStateData, PlayerData } from "../../store/gameStore";
 import { calculateLolOvr } from "../../lib/players/lolPlayerStats";
 import { findAcademyTeamForParent } from "@/store/academySelectors";
 import { getLolRoleForPlayer } from "@/lib/squad/helpers";
-import { calcAge } from "../../lib/common/helpers";
+import { calcAge, compareAgesUnknownLast } from "../../lib/common/helpers";
+import { normaliseNationality } from "../../lib/common/countries";
 
 function normalizePlayerKey(player: PlayerData): string {
   const normalizeToken = (value: string): string =>
@@ -26,6 +27,37 @@ function normalizeNameToken(value: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
+}
+
+/** What identifies a person beyond their nick; an empty field is unknown, not different. */
+interface PersonFingerprint {
+  fullName: string;
+  dob: string;
+  nationality: string;
+}
+
+function personFingerprint(player: PlayerData): PersonFingerprint {
+  const nick = normalizeNameToken(player.match_name || "");
+  const fullName = normalizeNameToken(player.full_name || "");
+  return {
+    // A "full name" that only repeats the nick (stale nick-only records) says nothing.
+    fullName: fullName === nick ? "" : fullName,
+    dob: (player.date_of_birth || "").trim(),
+    nationality: normaliseNationality((player.nationality || "").trim()).toUpperCase(),
+  };
+}
+
+function contradicts(a: string, b: string): boolean {
+  return a !== "" && b !== "" && a !== b;
+}
+
+/** Same nick, and no field that is present on both sides tells them apart. */
+function couldBeSamePerson(a: PersonFingerprint, b: PersonFingerprint): boolean {
+  return (
+    !contradicts(a.fullName, b.fullName) &&
+    !contradicts(a.dob, b.dob) &&
+    !contradicts(a.nationality, b.nationality)
+  );
 }
 
 function dedupePlayersPreferAcademy(
@@ -94,12 +126,24 @@ export function deriveTransferCollections(
   const isLinkedClubPlayer = (player: PlayerData) =>
     linkedClubId !== null && player.team_id === linkedClubId;
 
-  const contractedNickSet = new Set(
-    gameState.players
-      .filter((player) => player.team_id !== null)
-      .map((player) => normalizeNameToken(player.match_name || ""))
-      .filter((token) => token.length > 0),
-  );
+  // Contracted players by nick: a free agent with the same nick is hidden only when one of
+  // them could be the same person (stale duplicate records), not for every namesake.
+  const contractedByNick = new Map<string, PersonFingerprint[]>();
+  gameState.players
+    .filter((player) => player.team_id !== null)
+    .forEach((player) => {
+      const nick = normalizeNameToken(player.match_name || "");
+      if (nick.length === 0) return;
+      const list = contractedByNick.get(nick) ?? [];
+      list.push(personFingerprint(player));
+      contractedByNick.set(nick, list);
+    });
+  const duplicatesContractedPlayer = (player: PlayerData): boolean => {
+    const namesakes = contractedByNick.get(normalizeNameToken(player.match_name || ""));
+    if (!namesakes) return false;
+    const fingerprint = personFingerprint(player);
+    return namesakes.some((other) => couldBeSamePerson(fingerprint, other));
+  };
 
   const marketPlayers = dedupePlayersPreferAcademy(
     gameState.players.filter(
@@ -108,10 +152,7 @@ export function deriveTransferCollections(
         player.team_id !== userTeamId &&
         !isLinkedClubPlayer(player) &&
         !academyIdentityKeys.has(normalizePlayerKey(player)) &&
-        !(
-          player.team_id === null &&
-          contractedNickSet.has(normalizeNameToken(player.match_name || ""))
-        ),
+        !(player.team_id === null && duplicatesContractedPlayer(player)),
     ),
     academyTeamIds,
   );
@@ -213,9 +254,11 @@ export interface TransferSortState {
   direction: TransferSortDirection;
 }
 
+/** Sorts a transfer list; ages are read on `asOfDate`, the game's current date. */
 export function sortTransferPlayers(
   players: PlayerData[],
   sort: TransferSortState | null,
+  asOfDate: string,
 ): PlayerData[] {
   if (!sort) return players;
 
@@ -238,7 +281,11 @@ export function sortTransferPlayers(
         return ((order[roleA] ?? 0) - (order[roleB] ?? 0)) * factor;
       }
       case "age":
-        return (calcAge(a.date_of_birth, new Date().toISOString()) - calcAge(b.date_of_birth, new Date().toISOString())) * factor;
+        return compareAgesUnknownLast(
+          calcAge(a.date_of_birth, asOfDate),
+          calcAge(b.date_of_birth, asOfDate),
+          factor,
+        );
       case "team": {
         const teamA = a.team_id ?? "";
         const teamB = b.team_id ?? "";

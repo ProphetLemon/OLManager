@@ -1596,8 +1596,18 @@ pub async fn load_game(
     let rehydrated = crate::commands::import::rehydrate_game_from_catalog(&app_handle, &mut game);
     if rehydrated.total() > 0 {
         info!(
-            "[cmd] load_game: rehydrated {} missing teams, {} players, {} reassigned players, {} staff from catalog",
-            rehydrated.teams, rehydrated.players, rehydrated.players_reassigned, rehydrated.staff
+            "[cmd] load_game: rehydrated {} missing teams, {} players, {} reassigned players, {} staff from catalog, removed {} stale and {} canonical duplicate clubs, {} duplicate players dropped, {} released, removed {} duplicate academies, {} academy players dropped, {} released",
+            rehydrated.teams,
+            rehydrated.players,
+            rehydrated.players_reassigned,
+            rehydrated.staff,
+            rehydrated.stale_teams_removed,
+            rehydrated.canonical_duplicates_removed,
+            rehydrated.canonical_players_dropped,
+            rehydrated.canonical_players_released,
+            rehydrated.stale_academies_removed,
+            rehydrated.stale_academy_players_dropped,
+            rehydrated.stale_academy_players_released
         );
     }
     info!(
@@ -2217,6 +2227,70 @@ mod tests {
                 .filter(|id| olm_core::world_catalog::is_stale_duplicate_competition(id))
                 .collect();
             assert!(stale.is_empty(), "stale leagues built: {stale:?}");
+        }
+
+        /// Every system that prices a player by age reads one age for each player of a new
+        /// world, also the ones whose date of birth is missing: contracts and the AI squad
+        /// logic answer the same for a player as for a twin with a real date of birth at
+        /// the age `player_age` gives.
+        #[test]
+        fn a_new_game_gives_every_player_the_same_age_in_every_system() {
+            use olm_core::ai_team_agent::retention_score;
+            use olm_core::contracts::{expected_signing_wage, expected_wage};
+            use olm_core::player_age::{parse_date_of_birth, player_age};
+
+            let (game, _catalog_players, _overlay, _user_team) = new_game();
+            let today = game.clock.current_date.date_naive();
+            let club = &game.teams[0];
+
+            let (mut unknown, mut month_name_recovered, mut checked) = (0_usize, 0_usize, 0_usize);
+            for player in &game.players {
+                let age = player_age(player, today);
+                let raw = player.date_of_birth.trim();
+                if !age.known {
+                    unknown += 1;
+                    assert!(
+                        parse_date_of_birth(raw).is_none(),
+                        "{} has a readable date of birth {raw:?} but reads as unknown",
+                        player.id
+                    );
+                } else if !raw.is_empty() && raw.as_bytes().get(4) != Some(&b'-') {
+                    month_name_recovered += 1;
+                }
+
+                let mut twin = player.clone();
+                twin.date_of_birth = today
+                    .checked_sub_months(chrono::Months::new(age.years * 12))
+                    .expect("a date in range")
+                    .format("%Y-%m-%d")
+                    .to_string();
+                assert_eq!(
+                    expected_wage(player, club, today),
+                    expected_wage(&twin, club, today),
+                    "{} expected wage",
+                    player.id
+                );
+                assert_eq!(
+                    expected_signing_wage(player, club, today),
+                    expected_signing_wage(&twin, club, today),
+                    "{} expected signing wage",
+                    player.id
+                );
+                assert_eq!(
+                    retention_score(player, club, today).to_bits(),
+                    retention_score(&twin, club, today).to_bits(),
+                    "{} retention score",
+                    player.id
+                );
+                checked += 1;
+            }
+            eprintln!(
+                "age agreement: {checked} players, {unknown} without a date of birth, \
+                 {month_name_recovered} read from a \"Month D, YYYY\" date"
+            );
+            assert!(unknown > 0, "a new world has players without a date of birth");
+            assert!(month_name_recovered > 0, "the Month D, YYYY dates are read");
+            assert_eq!(checked, game.players.len());
         }
 
         /// Every main club a league schedules starts with a 12-month sponsor sized by its

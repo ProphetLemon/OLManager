@@ -5,7 +5,8 @@ use crate::domain::player::{Player, PlayerTrait};
 use crate::domain::season::TransferWindowStatus;
 use crate::domain::team::Team;
 use crate::game::Game;
-use chrono::{Datelike, NaiveDate};
+use crate::player_age::player_age;
+use chrono::NaiveDate;
 use std::collections::{HashMap, HashSet};
 
 // ---------------------------------------------------------------------------
@@ -117,18 +118,9 @@ pub fn trait_bonus(traits: &[PlayerTrait]) -> f64 {
     bonus.clamp(0.0, 1.0)
 }
 
-/// Compute player age from date_of_birth string.
-pub fn player_age(date_of_birth: &str, today: NaiveDate) -> u8 {
-    let birth = match NaiveDate::parse_from_str(date_of_birth, "%Y-%m-%d") {
-        Ok(d) => d,
-        Err(_) => return 25, // fallback
-    };
-    let mut age = today.year() - birth.year();
-    // Birthday check: use month*100+day to avoid leap-year ordinal skew
-    if today.format("%m%d").to_string() < birth.format("%m%d").to_string() {
-        age -= 1;
-    }
-    age.max(0) as u8
+/// The player's age on `today`, from the shared age helper.
+fn age_in_years(player: &Player, today: NaiveDate) -> u8 {
+    u8::try_from(player_age(player, today).years).unwrap_or(u8::MAX)
 }
 
 // ---------------------------------------------------------------------------
@@ -184,7 +176,7 @@ fn weighted_score(
 ) -> f64 {
     let lol_ovr = f64::from(current_ovr(player)) / 99.0; // normalise 0..1
 
-    let age = player_age(&player.date_of_birth, today);
+    let age = age_in_years(player, today);
     let age_f = age_factor(age);
 
     // Expected wage from contracts module
@@ -480,7 +472,7 @@ pub fn evaluate_sales(team: &Team, players: &mut [Player], today: NaiveDate) {
         }
 
         // Spec TA-03 explicit criteria
-        let age = player_age(&player.date_of_birth, today);
+        let age = age_in_years(player, today);
         let contract_months_remaining = match player.contract_end.as_deref() {
             Some(end_str) => {
                 if let Ok(end) = NaiveDate::parse_from_str(end_str, "%Y-%m-%d") {
@@ -1763,14 +1755,6 @@ mod tests {
         if let Some(team) = game.teams.iter().find(|t| t.id == "ai_team") {
             assert!(team.transfer_budget >= 0, "budget should not go negative");
         }
-    }
-
-    #[test]
-    fn test_player_age_computation() {
-        let today = NaiveDate::from_ymd_opt(2026, 6, 15).unwrap();
-        assert_eq!(player_age("2000-01-01", today), 26);
-        assert_eq!(player_age("1995-06-15", today), 31);
-        assert_eq!(player_age("2020-06-15", today), 6);
     }
 
     #[test]

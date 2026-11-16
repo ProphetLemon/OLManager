@@ -1,6 +1,6 @@
 use crate::domain::player::Player;
 use crate::game::Game;
-use chrono::{Datelike, NaiveDate};
+use crate::player_age::player_age;
 use serde::{Deserialize, Serialize};
 
 /// A single award entry (player + stat value).
@@ -28,19 +28,9 @@ struct PlayerAwardContext<'a> {
     player: &'a Player,
     team_id: String,
     team_name: String,
-    age: i32,
-}
-
-fn player_age_on(today: &NaiveDate, date_of_birth: &str) -> i32 {
-    if let Ok(dob) = NaiveDate::parse_from_str(date_of_birth, "%Y-%m-%d") {
-        let mut age = today.year() - dob.year();
-        if today.ordinal() < dob.ordinal() {
-            age -= 1;
-        }
-        age
-    } else {
-        30
-    }
+    /// `None` when the player ships no date of birth: an award is a claim about a real
+    /// person, so a drawn age never qualifies.
+    age: Option<u32>,
 }
 
 fn resolve_team_info(game: &Game, player: &Player) -> (String, String) {
@@ -68,7 +58,9 @@ fn build_player_award_contexts(game: &Game) -> Vec<PlayerAwardContext<'_>> {
                 player,
                 team_id,
                 team_name,
-                age: player_age_on(&today, &player.date_of_birth),
+                age: Some(player_age(player, today))
+                    .filter(|age| age.known)
+                    .map(|age| age.years),
             }
         })
         .collect()
@@ -143,7 +135,7 @@ pub fn compute_season_awards(game: &Game) -> SeasonAwards {
     let young_player = top_awards(
         &contexts,
         |context| {
-            context.age <= 21
+            context.age.is_some_and(|age| age <= 21)
                 && context.player.stats.appearances >= 3
                 && context.player.stats.avg_rating > 0.0
         },
@@ -423,5 +415,55 @@ mod tests {
             .map(|entry| entry.player_id.as_str())
             .collect();
         assert_eq!(young_player_ids, vec!["young-four-apps", "young-eligible"]);
+    }
+
+    #[test]
+    fn a_player_with_an_unknown_age_never_wins_young_player() {
+        // The award is a public claim about a real person, so the age drawn for a player
+        // without a birth date (which can be 21 or less) must not qualify.
+        let today = chrono::NaiveDate::from_ymd_opt(2025, 6, 15).unwrap();
+        let unknown_id = (0..500)
+            .map(|index| format!("no-birth-date-{index}"))
+            .find(|id| {
+                let age = crate::player_age::player_age(
+                    &make_player(id, id, None, LolRole::Mid, "", PlayerSeasonStats::default()),
+                    today,
+                );
+                !age.known && age.years <= 21
+            })
+            .expect("one of 500 ids is drawn at 21 or younger");
+        let stats = |avg_rating| PlayerSeasonStats {
+            appearances: 6,
+            avg_rating,
+            ..PlayerSeasonStats::default()
+        };
+        let players = vec![
+            make_player(
+                &unknown_id,
+                "Unknown",
+                Some("team1"),
+                LolRole::Mid,
+                "",
+                stats(9.5),
+            ),
+            make_player(
+                "known-young",
+                "Known",
+                Some("team1"),
+                LolRole::Mid,
+                "2005-01-10",
+                stats(7.0),
+            ),
+        ];
+
+        let awards =
+            compute_season_awards(&make_game(players, vec![make_team("team1", "Test FC")]));
+
+        let young_player_ids: Vec<_> = awards
+            .young_player
+            .iter()
+            .map(|entry| entry.player_id.as_str())
+            .collect();
+        assert_eq!(young_player_ids, vec!["known-young"]);
     }
 }

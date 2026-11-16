@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { GameStateData, PlayerData, TeamData } from "@/store/gameStore";
 import {
   deriveTransferCollections,
   filterTransferPlayers,
   getCurrentTransferList,
+  sortTransferPlayers,
   type TransferTabView,
 } from "@/lib/transfers/model";
 
@@ -419,17 +420,101 @@ describe("transfers/model", () => {
     ]);
   });
 
-  it("hides a free agent whose nick equals a contracted player's", () => {
-    const contracted = createPlayer({
-      id: "contracted-send0o",
-      full_name: "Another Person",
-      match_name: "Send0o",
-      team_id: "team-2",
+  describe("a free agent that shares a nick with a contracted player", () => {
+    const marketIds = (...players: PlayerData[]) =>
+      deriveTransferCollections(createGameState(players), "team-1").marketPlayers.map((p) => p.id);
+
+    const contractedSend0o = (overrides: Partial<PlayerData> = {}) =>
+      createPlayer({
+        id: "contracted-send0o",
+        match_name: "Send0o",
+        full_name: "Rosendo Fuentes Boveda",
+        date_of_birth: "2004-02-25",
+        nationality: "ES",
+        team_id: "team-2",
+        ...overrides,
+      });
+
+    const freeSend0o = (overrides: Partial<PlayerData> = {}) =>
+      poolFreeAgent({ date_of_birth: "2004-02-25", ...overrides });
+
+    it("is hidden when nothing contradicts that they are the same person", () => {
+      expect(marketIds(contractedSend0o(), freeSend0o())).toEqual([]);
     });
-    const gameState = createGameState([contracted, poolFreeAgent()]);
 
-    const collections = deriveTransferCollections(gameState, "team-1");
+    it("stays visible when the date of birth differs", () => {
+      expect(marketIds(contractedSend0o({ date_of_birth: "1999-07-01" }), freeSend0o())).toEqual([
+        "player-bea33543",
+      ]);
+    });
 
-    expect(collections.marketPlayers).toEqual([]);
+    it("stays visible when the full name differs", () => {
+      expect(marketIds(contractedSend0o({ full_name: "Another Person" }), freeSend0o())).toEqual([
+        "player-bea33543",
+      ]);
+    });
+
+    it("compares full names and nationalities ignoring case, accents and spaces", () => {
+      const contracted = contractedSend0o({ full_name: "rosendo  fuentes boveda", nationality: "es" });
+      const free = freeSend0o({ full_name: "Rosendo Fuéntes Boveda" });
+      expect(marketIds(contracted, free)).toEqual([]);
+    });
+
+    it("stays visible when the nationalities differ", () => {
+      const contracted = contractedSend0o({ full_name: "Send0o", date_of_birth: "", nationality: "FR" });
+      expect(marketIds(contracted, freeSend0o())).toEqual(["player-bea33543"]);
+    });
+
+    it("hides the free agent behind a nick-only record with no other fields", () => {
+      const nickOnly = contractedSend0o({ full_name: "Send0o", date_of_birth: "", nationality: "" });
+      expect(marketIds(nickOnly, freeSend0o())).toEqual([]);
+    });
+
+    it("never lets a missing field on the free agent count as a difference", () => {
+      const free = freeSend0o({ date_of_birth: "", nationality: "" });
+      expect(marketIds(contractedSend0o(), free)).toEqual([]);
+    });
+
+    it("hides the free agent when any one contracted namesake could be them", () => {
+      const other = contractedSend0o({ id: "other", full_name: "Someone Else" });
+      expect(marketIds(other, contractedSend0o(), freeSend0o())).toEqual([]);
+    });
+  });
+
+  it("sorts players without a date of birth after the rest by age, in both directions", () => {
+    const players = [
+      createPlayer({ id: "older", date_of_birth: "2000-01-01" }),
+      createPlayer({ id: "unknown", date_of_birth: "" }),
+      createPlayer({ id: "oldest", date_of_birth: "1995-05-05" }),
+      createPlayer({ id: "youngest", date_of_birth: "January 19, 2006" }),
+    ];
+
+    const ids = (direction: "asc" | "desc") =>
+      sortTransferPlayers(players, { key: "age", direction }, "2026-11-16").map((player) => player.id);
+
+    expect(ids("asc")).toEqual(["youngest", "older", "oldest", "unknown"]);
+    expect(ids("desc")).toEqual(["oldest", "older", "youngest", "unknown"]);
+  });
+
+  describe("age on the game date", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("reads ages on the game date, not the computer's clock", () => {
+      // Both are 21 on the game date, so they tie and keep their order. On the
+      // computer's clock, months later, the first one is already 22.
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2027-12-01T00:00:00Z"));
+      const players = [
+        createPlayer({ id: "born-june", date_of_birth: "2005-06-01" }),
+        createPlayer({ id: "born-february", date_of_birth: "2006-02-15" }),
+      ];
+
+      const ids = sortTransferPlayers(players, { key: "age", direction: "asc" }, "2027-03-01")
+        .map((player) => player.id);
+
+      expect(ids).toEqual(["born-june", "born-february"]);
+    });
   });
 });
