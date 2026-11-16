@@ -7,10 +7,12 @@
 //! Everything is pure and never fails: bad input is skipped and reported.
 
 use crate::domain::player::Player;
-use crate::domain::team::Team;
+use crate::domain::team::{Team, TeamKind};
 use crate::game::Game;
 use crate::generator::definitions::CompetitionManifest;
-use log::warn;
+use crate::player_age::parse_date_of_birth;
+use chrono::NaiveDate;
+use log::{info, warn};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
@@ -89,6 +91,311 @@ pub fn remove_orphan_stale_teams(game: &mut Game) -> Vec<String> {
         }
     }
     removed
+}
+
+/// A name compared case-insensitively with surrounding and repeated spaces ignored.
+fn person_key(name: &str) -> String {
+    name.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
+}
+
+/// The stale-competition player `player` is the same person as, if any: the same full
+/// name and birth date, or the same match name and birth date (the stale records write the
+/// nickname as the full name and the date as "July 6, 2002"). A date that is missing or
+/// unreadable never matches, and neither does an empty name.
+fn same_person_survivor<'a>(
+    player: &Player,
+    stale_by_name: &'a HashMap<(String, NaiveDate), String>,
+    stale_by_match_name: &'a HashMap<(String, NaiveDate), String>,
+) -> Option<&'a str> {
+    let born = parse_date_of_birth(&player.date_of_birth)?;
+    let full_name = person_key(&player.full_name);
+    let match_name = person_key(&player.match_name);
+    let by_name = (!full_name.is_empty())
+        .then(|| stale_by_name.get(&(full_name, born)))
+        .flatten();
+    let by_match_name = (!match_name.is_empty())
+        .then(|| stale_by_match_name.get(&(match_name, born)))
+        .flatten();
+    by_name.or(by_match_name).map(String::as_str)
+}
+
+/// Player ids whose team was changed in play, so catalog rehydration keeps them where the
+/// game put them: ids in `moved_player_ids`, players with a transfer record, and players
+/// swapped in as part of a transfer.
+pub fn transfer_protected_player_ids(game: &Game) -> HashSet<String> {
+    let mut ids = game.moved_player_ids.clone();
+    for entry in &game.transfer_history.entries {
+        ids.insert(entry.player_id.clone());
+        for included in &entry.included_players {
+            ids.insert(included.player_id.clone());
+        }
+    }
+    ids
+}
+
+/// Rewrite dropped ids in a list, keeping the first occurrence of each id.
+fn remap_ids(ids: &mut Vec<String>, survivors: &HashMap<String, String>) {
+    let mut seen: HashSet<String> = HashSet::new();
+    let remapped: Vec<String> = ids
+        .iter()
+        .map(|id| survivors.get(id).unwrap_or(id).clone())
+        .filter(|id| seen.insert(id.clone()))
+        .collect();
+    *ids = remapped;
+}
+
+/// Point every id-keyed reference to a dropped player at the stale record that survives.
+/// `survivors` maps a dropped id to the surviving id. Mastery rows of a dropped player move
+/// to the survivor only for champions the survivor has no row for; the rest are deleted.
+fn remap_dropped_players(game: &mut Game, survivors: &HashMap<String, String>) {
+    let remap = |id: &mut String| {
+        if let Some(survivor) = survivors.get(id.as_str()) {
+            id.clone_from(survivor);
+        }
+    };
+    for assignment in &mut game.scouting_assignments {
+        remap(&mut assignment.player_id);
+    }
+    for message in &mut game.messages {
+        if let Some(id) = message.context.player_id.as_mut() {
+            remap(id);
+        }
+        if let Some(report) = message.context.scout_report.as_mut() {
+            remap(&mut report.player_id);
+        }
+        if let Some(report) = message.context.delegated_renewal_report.as_mut() {
+            for case in &mut report.cases {
+                remap(&mut case.player_id);
+            }
+        }
+    }
+    for article in &mut game.news {
+        remap_ids(&mut article.player_ids, survivors);
+    }
+    for post in &mut game.social_posts {
+        remap_ids(&mut post.player_ids, survivors);
+    }
+    for player in &mut game.players {
+        for offer in &mut player.transfer_offers {
+            for item in &mut offer.players_included {
+                remap(&mut item.player_id);
+            }
+        }
+    }
+
+    let held: HashSet<(String, String)> = game
+        .champion_masteries
+        .iter()
+        .filter(|row| !survivors.contains_key(&row.player_id))
+        .map(|row| (row.player_id.clone(), row.champion_id.clone()))
+        .collect();
+    let mut moved: HashSet<(String, String)> = HashSet::new();
+    game.champion_masteries.retain_mut(|row| {
+        let Some(survivor) = survivors.get(&row.player_id) else {
+            return true;
+        };
+        let key = (survivor.clone(), row.champion_id.clone());
+        if held.contains(&key) || !moved.insert(key) {
+            return false;
+        }
+        row.player_id.clone_from(survivor);
+        true
+    });
+
+    for (dropped, survivor) in survivors {
+        if let Some(date) = game.soloq_history.scouted.remove(dropped) {
+            game.soloq_history
+                .scouted
+                .entry(survivor.clone())
+                .or_insert(date);
+        }
+        if let Some(history) = game.soloq_history.players.remove(dropped) {
+            game.soloq_history
+                .players
+                .entry(survivor.clone())
+                .or_insert(history);
+        }
+    }
+}
+
+/// What `remove_unscheduled_canonical_duplicates` changed.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct CanonicalDuplicateReport {
+    /// Ids of the removed canonical clubs, sorted.
+    pub removed_teams: Vec<String>,
+    /// Ids of the players dropped as the same person as a stale-competition player, sorted.
+    pub dropped_players: Vec<String>,
+    /// Players of the removed clubs that were released as free agents.
+    pub released_players: usize,
+}
+
+/// Remove the canonical clubs that no league plays, from a game whose leagues are still the
+/// stale duplicates (releases up to 2026.1113.2 built both families in the same world and
+/// scheduled only the stale one). The stale club survives: league, fixtures and standings
+/// reference it. A pair is repaired only while a stale league with standings, or a
+/// scheduled stale club, exists for it, so a new world is untouched. Academy clubs and the
+/// manager's own club stay (the latter with a warning, said only when the pass changes
+/// something).
+///
+/// The removed clubs' staff are freed and their players released with their wage. A player
+/// who is the same person as a player of the stale competition (see `same_person_survivor`)
+/// is dropped and tombstoned in `retired_player_ids`, so the catalog does not re-add it, and
+/// every id-keyed reference to it is pointed at the surviving record. A player that moved,
+/// has a transfer record or was swapped into a transfer is released instead, never dropped.
+/// Ids are appended to `removed_team_ids` once.
+pub fn remove_unscheduled_canonical_duplicates(game: &mut Game) -> CanonicalDuplicateReport {
+    let scheduled: HashSet<&str> = game
+        .leagues
+        .iter()
+        .flat_map(|league| league.standings.iter().map(|entry| entry.team_id.as_str()))
+        .collect();
+    let stale_competitions: HashSet<&str> = STALE_DUPLICATE_COMPETITIONS
+        .iter()
+        .map(|(stale, _)| *stale)
+        .filter(|stale| {
+            game.leagues.iter().any(|league| {
+                league.competition_id.as_deref() == Some(*stale) && !league.standings.is_empty()
+            }) || game.teams.iter().any(|team| {
+                team.competition_id.as_deref() == Some(*stale)
+                    && scheduled.contains(team.id.as_str())
+            })
+        })
+        .collect();
+    if stale_competitions.is_empty() {
+        return CanonicalDuplicateReport::default();
+    }
+    let canonical_competitions: HashSet<&str> = STALE_DUPLICATE_COMPETITIONS
+        .iter()
+        .filter(|(stale, _)| stale_competitions.contains(stale))
+        .map(|(_, canonical)| *canonical)
+        .collect();
+
+    let manager_team = game.manager.team_id.as_deref();
+    let mut orphans: HashSet<String> = HashSet::new();
+    let mut kept_manager_club: Option<&str> = None;
+    for team in &game.teams {
+        let is_unscheduled_canonical = team.team_kind == TeamKind::Main
+            && team
+                .competition_id
+                .as_deref()
+                .is_some_and(|competition| canonical_competitions.contains(competition))
+            && !scheduled.contains(team.id.as_str());
+        if !is_unscheduled_canonical {
+            continue;
+        }
+        if manager_team == Some(team.id.as_str()) {
+            kept_manager_club = Some(team.id.as_str());
+            continue;
+        }
+        orphans.insert(team.id.clone());
+    }
+    if orphans.is_empty() {
+        return CanonicalDuplicateReport::default();
+    }
+    // Said only when the pass changes something: it runs on every `get_active_game`.
+    if let Some(id) = kept_manager_club {
+        warn!(
+            "[world_catalog] keeping the manager's club {id}: no league plays it, but it is the manager's"
+        );
+    }
+
+    let stale_teams: HashSet<&str> = game
+        .teams
+        .iter()
+        .filter(|team| {
+            team.competition_id
+                .as_deref()
+                .is_some_and(|c| stale_competitions.contains(c))
+        })
+        .map(|team| team.id.as_str())
+        .collect();
+    let mut stale_by_name: HashMap<(String, NaiveDate), String> = HashMap::new();
+    let mut stale_by_match_name: HashMap<(String, NaiveDate), String> = HashMap::new();
+    for player in &game.players {
+        if !player
+            .team_id
+            .as_deref()
+            .is_some_and(|id| stale_teams.contains(id))
+        {
+            continue;
+        }
+        if let Some(born) = parse_date_of_birth(&player.date_of_birth) {
+            stale_by_name
+                .entry((person_key(&player.full_name), born))
+                .or_insert_with(|| player.id.clone());
+            stale_by_match_name
+                .entry((person_key(&player.match_name), born))
+                .or_insert_with(|| player.id.clone());
+        }
+    }
+    let protected = transfer_protected_player_ids(game);
+    let mut survivors: HashMap<String, String> = HashMap::new();
+    for player in &game.players {
+        let on_orphan = player
+            .team_id
+            .as_ref()
+            .is_some_and(|id| orphans.contains(id));
+        if !on_orphan || protected.contains(&player.id) {
+            continue;
+        }
+        if let Some(survivor) = same_person_survivor(player, &stale_by_name, &stale_by_match_name) {
+            survivors.insert(player.id.clone(), survivor.to_string());
+        }
+    }
+
+    game.teams.retain(|team| !orphans.contains(&team.id));
+    game.players
+        .retain(|player| !survivors.contains_key(&player.id));
+    remap_dropped_players(game, &survivors);
+    let mut dropped: Vec<String> = survivors.into_keys().collect();
+    dropped.sort_unstable();
+    for id in &dropped {
+        if !game.retired_player_ids.contains(id) {
+            game.retired_player_ids.push(id.clone());
+        }
+    }
+    let mut released_players = 0;
+    for player in &mut game.players {
+        if player
+            .team_id
+            .as_ref()
+            .is_some_and(|id| orphans.contains(id))
+        {
+            player.team_id = None;
+            released_players += 1;
+        }
+    }
+    for member in &mut game.staff {
+        if member
+            .team_id
+            .as_ref()
+            .is_some_and(|id| orphans.contains(id))
+        {
+            member.team_id = None;
+        }
+    }
+    let mut removed: Vec<String> = orphans.into_iter().collect();
+    removed.sort_unstable();
+    for id in &removed {
+        if !game.removed_team_ids.contains(id) {
+            game.removed_team_ids.push(id.clone());
+        }
+    }
+    info!(
+        "[world_catalog] removed {} unscheduled canonical clubs, dropped {} duplicate players {:?}, released {}",
+        removed.len(),
+        dropped.len(),
+        dropped,
+        released_players
+    );
+    CanonicalDuplicateReport {
+        removed_teams: removed,
+        dropped_players: dropped,
+        released_players,
+    }
 }
 
 /// A player record that lost a duplicate-id resolution.
