@@ -221,6 +221,95 @@ fn remap_dropped_players(game: &mut Game, survivors: &HashMap<String, String>) {
     }
 }
 
+/// Ids of the teams some league schedules.
+fn scheduled_team_ids(game: &Game) -> HashSet<&str> {
+    game.leagues
+        .iter()
+        .flat_map(|league| league.standings.iter().map(|entry| entry.team_id.as_str()))
+        .collect()
+}
+
+/// The stale competitions this save still plays: a stale league with standings, or a stale
+/// club some league schedules. Empty for a new world, which gates every duplicate repair.
+fn stale_era_competitions(game: &Game, scheduled: &HashSet<&str>) -> HashSet<&'static str> {
+    STALE_DUPLICATE_COMPETITIONS
+        .iter()
+        .map(|(stale, _)| *stale)
+        .filter(|stale| {
+            game.leagues.iter().any(|league| {
+                league.competition_id.as_deref() == Some(*stale) && !league.standings.is_empty()
+            }) || game.teams.iter().any(|team| {
+                team.competition_id.as_deref() == Some(*stale)
+                    && scheduled.contains(team.id.as_str())
+            })
+        })
+        .collect()
+}
+
+/// What `remove_teams` took out of a game.
+struct TeamRemoval {
+    /// Removed team ids, sorted.
+    removed: Vec<String>,
+    /// Ids of the dropped players, sorted.
+    dropped: Vec<String>,
+    /// Players of the removed teams released as free agents.
+    released_players: usize,
+}
+
+/// Delete `orphans` from the game. A player in `survivors` (dropped id to surviving id) is
+/// deleted, tombstoned in `retired_player_ids`, and every reference to it is pointed at the
+/// survivor; every other player and every staff member of an orphan becomes a free agent.
+/// The ids are appended to `removed_team_ids` once.
+fn remove_teams(
+    game: &mut Game,
+    orphans: HashSet<String>,
+    survivors: HashMap<String, String>,
+) -> TeamRemoval {
+    game.teams.retain(|team| !orphans.contains(&team.id));
+    game.players
+        .retain(|player| !survivors.contains_key(&player.id));
+    remap_dropped_players(game, &survivors);
+    let mut dropped: Vec<String> = survivors.into_keys().collect();
+    dropped.sort_unstable();
+    for id in &dropped {
+        if !game.retired_player_ids.contains(id) {
+            game.retired_player_ids.push(id.clone());
+        }
+    }
+    let mut released_players = 0;
+    for player in &mut game.players {
+        if player
+            .team_id
+            .as_ref()
+            .is_some_and(|id| orphans.contains(id))
+        {
+            player.team_id = None;
+            released_players += 1;
+        }
+    }
+    for member in &mut game.staff {
+        if member
+            .team_id
+            .as_ref()
+            .is_some_and(|id| orphans.contains(id))
+        {
+            member.team_id = None;
+        }
+    }
+    let mut removed: Vec<String> = orphans.into_iter().collect();
+    removed.sort_unstable();
+    for id in &removed {
+        if !game.removed_team_ids.contains(id) {
+            game.removed_team_ids.push(id.clone());
+        }
+    }
+    TeamRemoval {
+        removed,
+        dropped,
+        released_players,
+    }
+}
+
 /// What `remove_unscheduled_canonical_duplicates` changed.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct CanonicalDuplicateReport {
@@ -247,23 +336,8 @@ pub struct CanonicalDuplicateReport {
 /// has a transfer record or was swapped into a transfer is released instead, never dropped.
 /// Ids are appended to `removed_team_ids` once.
 pub fn remove_unscheduled_canonical_duplicates(game: &mut Game) -> CanonicalDuplicateReport {
-    let scheduled: HashSet<&str> = game
-        .leagues
-        .iter()
-        .flat_map(|league| league.standings.iter().map(|entry| entry.team_id.as_str()))
-        .collect();
-    let stale_competitions: HashSet<&str> = STALE_DUPLICATE_COMPETITIONS
-        .iter()
-        .map(|(stale, _)| *stale)
-        .filter(|stale| {
-            game.leagues.iter().any(|league| {
-                league.competition_id.as_deref() == Some(*stale) && !league.standings.is_empty()
-            }) || game.teams.iter().any(|team| {
-                team.competition_id.as_deref() == Some(*stale)
-                    && scheduled.contains(team.id.as_str())
-            })
-        })
-        .collect();
+    let scheduled = scheduled_team_ids(game);
+    let stale_competitions = stale_era_competitions(game, &scheduled);
     if stale_competitions.is_empty() {
         return CanonicalDuplicateReport::default();
     }
@@ -346,44 +420,11 @@ pub fn remove_unscheduled_canonical_duplicates(game: &mut Game) -> CanonicalDupl
         }
     }
 
-    game.teams.retain(|team| !orphans.contains(&team.id));
-    game.players
-        .retain(|player| !survivors.contains_key(&player.id));
-    remap_dropped_players(game, &survivors);
-    let mut dropped: Vec<String> = survivors.into_keys().collect();
-    dropped.sort_unstable();
-    for id in &dropped {
-        if !game.retired_player_ids.contains(id) {
-            game.retired_player_ids.push(id.clone());
-        }
-    }
-    let mut released_players = 0;
-    for player in &mut game.players {
-        if player
-            .team_id
-            .as_ref()
-            .is_some_and(|id| orphans.contains(id))
-        {
-            player.team_id = None;
-            released_players += 1;
-        }
-    }
-    for member in &mut game.staff {
-        if member
-            .team_id
-            .as_ref()
-            .is_some_and(|id| orphans.contains(id))
-        {
-            member.team_id = None;
-        }
-    }
-    let mut removed: Vec<String> = orphans.into_iter().collect();
-    removed.sort_unstable();
-    for id in &removed {
-        if !game.removed_team_ids.contains(id) {
-            game.removed_team_ids.push(id.clone());
-        }
-    }
+    let TeamRemoval {
+        removed,
+        dropped,
+        released_players,
+    } = remove_teams(game, orphans, survivors);
     info!(
         "[world_catalog] removed {} unscheduled canonical clubs, dropped {} duplicate players {:?}, released {}",
         removed.len(),
