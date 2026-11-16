@@ -118,6 +118,7 @@ fn player_record(
         vision_score: 30,
         wards_placed: 12,
         bans_json: String::new(),
+        games: 1,
     }
 }
 
@@ -144,6 +145,7 @@ fn team_record(
         gold_earned: 60_000,
         damage_dealt: 95_000,
         objectives: 7,
+        games: 1,
     }
 }
 
@@ -290,4 +292,80 @@ fn get_team_match_history_returns_lol_first_fields() {
     assert_eq!(history[0].result, "Loss");
     assert_eq!(history[0].kills, 11);
     assert_eq!(history[0].objectives, 7);
+}
+
+#[test]
+fn team_overview_averages_divide_by_the_games_the_rows_sum() {
+    let state = StateManager::new();
+    state.set_game(make_game(vec![make_player(
+        "player-1",
+        "team-1",
+        LolRole::Adc,
+    )]));
+    let mut series = team_record("2025-08-08", TeamSide::Red, MatchOutcome::Win, 30, 18);
+    series.games = 3;
+    series.duration_seconds = 6300;
+    state.set_stats_state(StatsState {
+        player_matches: vec![],
+        team_matches: vec![
+            team_record("2025-08-01", TeamSide::Blue, MatchOutcome::Win, 10, 9),
+            series,
+        ],
+    });
+
+    let overview = get_team_stats_overview_internal(&state, "team-1")
+        .unwrap()
+        .expect("expected team overview");
+
+    assert_eq!(overview.matches_played, 2);
+    assert_eq!(overview.metrics.kills.total, 40);
+    assert_eq!(overview.metrics.kills.per_match, Some(10.0));
+    assert_eq!(
+        overview.metrics.average_game_duration_seconds.per_match,
+        Some(2100.0)
+    );
+}
+
+#[test]
+fn player_match_history_exposes_the_games_of_each_row() {
+    let state = StateManager::new();
+    state.set_game(make_game(vec![make_player(
+        "player-1",
+        "team-1",
+        LolRole::Adc,
+    )]));
+    let mut series = player_record(
+        "2025-06-17",
+        "player-1",
+        TeamSide::Red,
+        MatchOutcome::Win,
+        12,
+        6,
+        15,
+        600,
+    );
+    series.games = 3;
+    state.set_stats_state(StatsState {
+        player_matches: vec![
+            player_record(
+                "2025-06-10",
+                "player-1",
+                TeamSide::Blue,
+                MatchOutcome::Win,
+                3,
+                1,
+                8,
+                210,
+            ),
+            series,
+        ],
+        team_matches: vec![],
+    });
+
+    let history = get_player_match_history_internal(&state, "player-1", None).unwrap();
+
+    assert_eq!(
+        history.iter().map(|entry| entry.games).collect::<Vec<_>>(),
+        vec![3, 1]
+    );
 }

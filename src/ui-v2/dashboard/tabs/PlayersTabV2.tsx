@@ -11,7 +11,7 @@ import {
 import type { GameStateData, PlayerData, PlayerSelectionOptions } from "@/store/gameStore";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
-import { getTeamName, calcAge, formatVal } from "@/lib/common/helpers";
+import { getTeamName, calcAge, compareAgesUnknownLast, formatAge, formatVal } from "@/lib/common/helpers";
 import { getAllCountryNames } from "@/lib/common/countries";
 import { getLolRoleForPlayer } from "@/lib/squad/helpers";
 import { PlayerAvatar } from "@/ui-v2/_legacy/components/ui/PlayerAvatar";
@@ -220,10 +220,12 @@ export function PlayersTabV2({
           cmp = a.match_name.localeCompare(b.match_name);
           break;
         case "age":
-          cmp =
-            calcAge(a.date_of_birth, gameState.clock.current_date) -
-            calcAge(b.date_of_birth, gameState.clock.current_date);
-          break;
+          // Directed here, not by the final flip below, so unknown ages stay last.
+          return compareAgesUnknownLast(
+            calcAge(a.date_of_birth, gameState.clock.current_date),
+            calcAge(b.date_of_birth, gameState.clock.current_date),
+            dir === "asc" ? 1 : -1,
+          );
         case "nationality":
           cmp = (a.nationality ?? "").localeCompare(b.nationality ?? "");
           break;
@@ -572,7 +574,7 @@ export function PlayersTabV2({
 
                         {/* Age */}
                         <TableCell className="tabular-nums text-foreground">
-                          {age}
+                          {formatAge(age)}
                         </TableCell>
 
                         {/* Nationality */}

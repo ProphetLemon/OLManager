@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { countryName } from "@/lib/common/countries";
-import { calcAge, formatVal } from "@/lib/common/helpers";
+import { calcAge, formatAge, formatVal } from "@/lib/common/helpers";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
@@ -115,7 +115,7 @@ export default function TeamProfileRosterCardV2({
                     </span>
                   </TableCell>
                   <TableCell className="px-5 tabular-nums text-muted-foreground/80">
-                    {calcAge(player.date_of_birth, currentDate)}
+                    {formatAge(calcAge(player.date_of_birth, currentDate))}
                   </TableCell>
                   <TableCell className="px-5 text-muted-foreground">
                     <div className="flex items-center gap-1">

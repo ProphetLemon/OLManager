@@ -94,6 +94,13 @@ export async function negotiatePlayerWage(
   return getApiClientSync().transfers.negotiateWage({ playerId, offerId, annualWage, contractYears });
 }
 
+/** What each player would ask the user's club for a contract (read-only, by player id). */
+export async function getExpectedSigningWages(
+  playerIds: string[],
+): Promise<Record<string, number>> {
+  return getApiClientSync().transfers.getExpectedSigningWages({ playerIds });
+}
+
 export interface TransferHistoryEntryData {
   id: string;
   player_id: string;

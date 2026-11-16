@@ -10,6 +10,8 @@ use super::shared::{calculate_average, competition_label, ensure_team_exists, op
 #[derive(Debug, Clone, Default)]
 struct TeamAggregate {
     matches_played: u32,
+    /// Games the rows sum: the divisor of every per-game average.
+    games_played: u32,
     wins: u32,
     losses: u32,
     duration_seconds_total: u32,
@@ -49,6 +51,7 @@ fn aggregate_team_history(records: &[TeamMatchStatsRecord]) -> Option<TeamAggreg
     let mut aggregate = TeamAggregate::default();
     for record in records {
         aggregate.matches_played += 1;
+        aggregate.games_played += record.game_count();
         aggregate.duration_seconds_total += record.duration_seconds;
         aggregate.kills += record.kills as u32;
         aggregate.deaths += record.deaths as u32;
@@ -71,14 +74,14 @@ fn build_team_overview(aggregate: &TeamAggregate) -> TeamStatsOverviewDto {
         wins: aggregate.wins,
         losses: aggregate.losses,
         metrics: TeamStatsOverviewMetricsDto {
-            kills: metric_dto(aggregate.kills, aggregate.matches_played),
-            deaths: metric_dto(aggregate.deaths, aggregate.matches_played),
-            gold_earned: metric_dto(aggregate.gold_earned, aggregate.matches_played),
-            damage_to_champions: metric_dto(aggregate.damage_dealt, aggregate.matches_played),
-            objectives: metric_dto(aggregate.objectives, aggregate.matches_played),
+            kills: metric_dto(aggregate.kills, aggregate.games_played),
+            deaths: metric_dto(aggregate.deaths, aggregate.games_played),
+            gold_earned: metric_dto(aggregate.gold_earned, aggregate.games_played),
+            damage_to_champions: metric_dto(aggregate.damage_dealt, aggregate.games_played),
+            objectives: metric_dto(aggregate.objectives, aggregate.games_played),
             average_game_duration_seconds: metric_dto(
                 aggregate.duration_seconds_total,
-                aggregate.matches_played,
+                aggregate.games_played,
             ),
         },
     }

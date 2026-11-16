@@ -6,7 +6,8 @@ pub use crate::application::live_match::FinishLiveMatchResponse;
 use crate::application::live_match::{
     apply_match_command as apply_match_command_service,
     finish_live_match as finish_live_match_service,
-    get_match_snapshot as get_match_snapshot_service, start_live_match as start_live_match_service,
+    get_match_snapshot as get_match_snapshot_service,
+    record_series_game as record_series_game_service, start_live_match as start_live_match_service,
     LolSimMatchReportInput,
 };
 use olm_core::domain::stats::MatchOutcome;
@@ -88,10 +89,11 @@ pub struct FixtureChampionPickInput {
 fn finish_live_match_internal(
     state: &StateManager,
     lol_report: Option<LolSimMatchReportInput>,
+    game_number: Option<u8>,
     locale: Option<&str>,
     data_base: Option<&std::path::Path>,
 ) -> Result<FinishLiveMatchResponse, String> {
-    finish_live_match_service(state, lol_report, locale, data_base)
+    finish_live_match_service(state, lol_report, game_number, locale, data_base)
 }
 
 /// Start a live match for a given fixture.
@@ -141,15 +143,29 @@ pub fn finish_live_match(
     app_handle: tauri::AppHandle,
     state: State<'_, StateManager>,
     lol_report: Option<LolSimMatchReportInput>,
+    game_number: Option<u8>,
 ) -> Result<FinishLiveMatchResponse, String> {
     let settings = crate::commands::settings::get_settings(app_handle.clone()).unwrap_or_default();
     let data_base = crate::commands::competitions::resolve_data_base(&app_handle);
     finish_live_match_internal(
         &state,
         lol_report,
+        game_number,
         Some(settings.language.as_str()),
         data_base.as_deref(),
     )
+}
+
+/// Keep a game of the user's best-of-N series that did not decide it, so that
+/// `finish_live_match` stores the true series score and every game's statistics.
+/// `game_number` counts from 1; recording a number again replaces that game and later ones.
+#[tauri::command]
+pub fn record_series_game(
+    state: State<'_, StateManager>,
+    game_number: u8,
+    lol_report: LolSimMatchReportInput,
+) -> Result<(), String> {
+    record_series_game_service(&state, game_number, lol_report)
 }
 
 #[tauri::command]
@@ -393,6 +409,10 @@ mod tests {
     use super::{
         apply_press_conference_effects, finish_live_match_internal,
     };
+    use crate::application::live_match::{
+        record_series_game, LolSimMatchReportChampionInput, LolSimMatchReportInput, LolSimMatchReportStatsInput,
+        LolSimMatchReportTeamStatsInput,
+    };
     use chrono::{TimeZone, Utc};
     use olm_core::clock::GameClock;
     use olm_core::domain::league::{
@@ -402,6 +422,7 @@ mod tests {
     use olm_core::domain::player::{
         LolRole, Player, PlayerAttributes,
     };
+    use olm_core::domain::stats::MatchOutcome;
     use olm_core::domain::team::Team;
     use olm_core::game::Game;
     use olm_core::live_match_manager::{self, MatchMode};
@@ -613,7 +634,7 @@ mod tests {
         state.set_game(game);
         state.set_live_match(session);
 
-        let response = finish_live_match_internal(&state, None, None, None)
+        let response = finish_live_match_internal(&state, None, None, None, None)
             .expect("finish live match response");
 
         let round_summary = response.round_summary.expect("round summary response");
@@ -631,5 +652,583 @@ mod tests {
                 .to_string(),
             "2025-06-16"
         );
+    }
+    /// The five players of a test squad that take the field, in role order.
+    const SQUAD_SLOTS: [&str; 5] = ["gk", "def0", "mid0", "mid1", "fwd0"];
+
+    fn sim_champions(
+        prefix: &str,
+        team: &str,
+        kills: u16,
+        deaths: u16,
+    ) -> Vec<LolSimMatchReportChampionInput> {
+        SQUAD_SLOTS
+            .iter()
+            .enumerate()
+            .map(|(slot, name)| LolSimMatchReportChampionInput {
+                id: format!("{prefix}_{name}"),
+                name: format!("{prefix} {name}"),
+                team: team.to_string(),
+                role: "MID".to_string(),
+                // The first player carries the team's kills and deaths, so a series total is
+                // easy to read; everyone assists once.
+                kills: if slot == 0 { kills } else { 0 },
+                deaths: if slot == 0 { deaths } else { 0 },
+                assists: 1,
+                cs: 100,
+                gold: 500,
+                spent_gold: 5_000,
+                damage_dealt: 1_000.0,
+            })
+            .collect()
+    }
+
+    fn sim_team_stats(kills: u16, deaths: u16) -> LolSimMatchReportTeamStatsInput {
+        LolSimMatchReportTeamStatsInput {
+            kills,
+            deaths,
+            gold: 40_000,
+            towers: 5,
+            dragons: 2,
+            barons: 1,
+        }
+    }
+
+    /// One game as the frontend reports it: the `blue_prefix` squad plays blue.
+    fn sim_game(
+        blue_prefix: &str,
+        red_prefix: &str,
+        winner: &str,
+        blue_kills: u16,
+        red_kills: u16,
+    ) -> LolSimMatchReportInput {
+        let mut champions = sim_champions(blue_prefix, "blue", blue_kills, red_kills);
+        champions.extend(sim_champions(red_prefix, "red", red_kills, blue_kills));
+        LolSimMatchReportInput {
+            winner: Some(winner.to_string()),
+            time_sec: 1_800.0,
+            events: vec![],
+            stats: LolSimMatchReportStatsInput {
+                blue: sim_team_stats(blue_kills, red_kills),
+                red: sim_team_stats(red_kills, blue_kills),
+            },
+            champions,
+            blue_team_id: None,
+        }
+    }
+
+    /// A live session for fixture 0 (team1 home, team2 away) with `user_team` managed.
+    fn state_with_live_session(user_team: &str, best_of: u8) -> StateManager {
+        let state = StateManager::new();
+        let mut game = make_game_with_round();
+        game.manager.hire(user_team.to_string());
+        game.leagues[0].fixtures[0].best_of = best_of;
+        let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+        olm_core::turn::simulate_other_matches(&mut game, &today, Some(0));
+        let session =
+            live_match_manager::create_live_match(&game, 0, MatchMode::Live, false).unwrap();
+        state.set_game(game);
+        state.set_live_match(session);
+        state
+    }
+
+    fn played_game(state: &StateManager) -> Game {
+        state.get_game(|game| game.clone()).expect("game")
+    }
+
+    fn fixture_score(game: &Game) -> (u8, u8) {
+        let result = game.active_league().unwrap().fixtures[0]
+            .result
+            .as_ref()
+            .expect("fixture result");
+        (result.home_wins, result.away_wins)
+    }
+
+    fn standing<'a>(game: &'a Game, team_id: &str) -> &'a StandingEntry {
+        game.active_league()
+            .unwrap()
+            .standings
+            .iter()
+            .find(|entry| entry.team_id == team_id)
+            .expect("standing")
+    }
+
+    #[test]
+    fn a_game_won_by_the_away_team_on_blue_is_credited_to_the_away_team() {
+        let state = state_with_live_session("team2", 1);
+
+        finish_live_match_internal(
+            &state,
+            Some(sim_game("t2", "t1", "blue", 10, 4)),
+            None,
+            None,
+            None,
+        )
+        .expect("finish");
+
+        let game = played_game(&state);
+        assert_eq!(fixture_score(&game), (0, 1));
+        assert_eq!(standing(&game, "team2").won, 1);
+        assert_eq!(standing(&game, "team1").lost, 1);
+    }
+
+    #[test]
+    fn team_stats_of_the_away_team_on_blue_land_on_the_away_team() {
+        let state = state_with_live_session("team2", 1);
+
+        finish_live_match_internal(
+            &state,
+            Some(sim_game("t2", "t1", "blue", 10, 4)),
+            None,
+            None,
+            None,
+        )
+        .expect("finish");
+
+        let rows = state.with_stats_state(|stats| stats.team_matches.clone());
+        let away = rows
+            .iter()
+            .find(|row| row.team_id == "team2")
+            .expect("away row");
+        assert_eq!(
+            (away.kills, away.deaths, away.result),
+            (10, 4, MatchOutcome::Win)
+        );
+        let home = rows
+            .iter()
+            .find(|row| row.team_id == "team1")
+            .expect("home row");
+        assert_eq!(
+            (home.kills, home.deaths, home.result),
+            (4, 10, MatchOutcome::Loss)
+        );
+    }
+
+    #[test]
+    fn a_game_won_by_the_home_team_on_red_is_credited_to_the_home_team() {
+        let state = state_with_live_session("team1", 1);
+
+        finish_live_match_internal(
+            &state,
+            Some(sim_game("t2", "t1", "red", 4, 10)),
+            None,
+            None,
+            None,
+        )
+        .expect("finish");
+
+        let game = played_game(&state);
+        assert_eq!(fixture_score(&game), (1, 0));
+        assert_eq!(standing(&game, "team1").won, 1);
+    }
+
+    #[test]
+    fn a_game_with_the_home_team_on_blue_keeps_the_usual_mapping() {
+        let state = state_with_live_session("team1", 1);
+
+        finish_live_match_internal(
+            &state,
+            Some(sim_game("t1", "t2", "blue", 10, 4)),
+            None,
+            None,
+            None,
+        )
+        .expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (1, 0));
+    }
+    // -----------------------------------------------------------------------
+    // A best-of-N series the user plays game by game
+    // -----------------------------------------------------------------------
+
+    /// Game 1 of the sample series: team1 (home) wins on blue, 10 kills to 4.
+    fn game_one() -> LolSimMatchReportInput {
+        sim_game("t1", "t2", "blue", 10, 4)
+    }
+
+    /// Game 2: team2 wins on blue (team1 on red), 9 kills to 3.
+    fn game_two() -> LolSimMatchReportInput {
+        sim_game("t2", "t1", "blue", 9, 3)
+    }
+
+    /// Game 3: team1 wins on blue again, 12 kills to 6.
+    fn game_three() -> LolSimMatchReportInput {
+        sim_game("t1", "t2", "blue", 12, 6)
+    }
+
+    /// Plays a series for `user_team`: records every game but the last, then finishes with it.
+    fn play_series(
+        user_team: &str,
+        best_of: u8,
+        games: Vec<LolSimMatchReportInput>,
+    ) -> StateManager {
+        let state = state_with_live_session(user_team, best_of);
+        let mut games = games;
+        let game_count = games.len() as u8;
+        let last = games.pop().expect("a series has games");
+        for (index, game) in games.into_iter().enumerate() {
+            record_series_game(&state, index as u8 + 1, game).expect("record game");
+        }
+        finish_live_match_internal(&state, Some(last), Some(game_count), None, None)
+            .expect("finish");
+        state
+    }
+
+    #[test]
+    fn a_two_one_series_stores_two_one_in_the_fixture() {
+        let state = play_series("team1", 3, vec![game_one(), game_two(), game_three()]);
+
+        assert_eq!(fixture_score(&played_game(&state)), (2, 1));
+    }
+
+    #[test]
+    fn a_two_one_series_counts_every_map_in_the_standings() {
+        let state = play_series("team1", 3, vec![game_one(), game_two(), game_three()]);
+
+        let game = played_game(&state);
+        let winner = standing(&game, "team1");
+        let loser = standing(&game, "team2");
+        assert_eq!((winner.maps_won, winner.maps_lost), (2, 1));
+        assert_eq!((loser.maps_won, loser.maps_lost), (1, 2));
+    }
+
+    #[test]
+    fn a_two_one_series_still_counts_as_one_played_win() {
+        let state = play_series("team1", 3, vec![game_one(), game_two(), game_three()]);
+
+        let game = played_game(&state);
+        let winner = standing(&game, "team1");
+        assert_eq!((winner.played, winner.won, winner.points), (1, 1, 3));
+    }
+
+    #[test]
+    fn a_two_zero_sweep_gives_a_map_difference_of_two() {
+        let state = play_series("team1", 3, vec![game_one(), game_three()]);
+
+        let game = played_game(&state);
+        let winner = standing(&game, "team1");
+        assert_eq!(winner.maps_won - winner.maps_lost, 2);
+    }
+
+    #[test]
+    fn the_users_players_season_totals_include_every_game_of_the_series() {
+        let state = play_series("team1", 3, vec![game_one(), game_two(), game_three()]);
+
+        let game = played_game(&state);
+        let player = game
+            .players
+            .iter()
+            .find(|p| p.id == "t1_gk")
+            .expect("player");
+        // 10 + 3 + 12 kills, one assist per game, 30 minutes per game.
+        assert_eq!(
+            (
+                player.stats.kills,
+                player.stats.assists,
+                player.stats.minutes_played
+            ),
+            (25, 3, 90)
+        );
+    }
+
+    #[test]
+    fn the_series_stats_row_sums_kills_deaths_and_farm_of_every_game() {
+        let state = play_series("team1", 3, vec![game_one(), game_two(), game_three()]);
+
+        let rows = state.with_stats_state(|stats| stats.player_matches.clone());
+        let row = rows
+            .iter()
+            .find(|row| row.player_id == "t1_gk")
+            .expect("row");
+        assert_eq!(
+            (
+                row.kills,
+                row.deaths,
+                row.assists,
+                row.creep_score,
+                row.duration_seconds
+            ),
+            (25, 19, 3, 300, 5_400)
+        );
+    }
+
+    #[test]
+    fn the_series_rows_count_the_games_they_sum() {
+        let state = play_series("team1", 3, vec![game_one(), game_two(), game_three()]);
+
+        let (player_games, team_games) = state.with_stats_state(|stats| {
+            (
+                stats
+                    .player_matches
+                    .iter()
+                    .map(|r| r.games)
+                    .collect::<Vec<_>>(),
+                stats
+                    .team_matches
+                    .iter()
+                    .map(|r| r.games)
+                    .collect::<Vec<_>>(),
+            )
+        });
+        assert!(player_games
+            .iter()
+            .chain(&team_games)
+            .all(|games| *games == 3));
+    }
+
+    #[test]
+    fn the_series_team_row_sums_both_teams_over_the_games() {
+        let state = play_series("team1", 3, vec![game_one(), game_two(), game_three()]);
+
+        let rows = state.with_stats_state(|stats| stats.team_matches.clone());
+        let team = rows.iter().find(|row| row.team_id == "team1").expect("row");
+        assert_eq!(
+            (team.kills, team.deaths, team.result),
+            (25, 19, MatchOutcome::Win)
+        );
+    }
+
+    #[test]
+    fn a_series_the_away_user_wins_credits_the_away_team() {
+        // team2 (away, the user) wins games 1 and 3 and loses game 2.
+        let state = play_series(
+            "team2",
+            3,
+            vec![
+                sim_game("t2", "t1", "blue", 10, 4),
+                sim_game("t1", "t2", "blue", 9, 3),
+                sim_game("t1", "t2", "red", 6, 12),
+            ],
+        );
+
+        let game = played_game(&state);
+        assert_eq!(fixture_score(&game), (1, 2));
+        assert_eq!(standing(&game, "team2").maps_won, 2);
+    }
+
+    #[test]
+    fn a_best_of_five_sweep_earns_the_fan_bonus() {
+        let state = state_with_live_session("team1", 5);
+        state.with_session_mut(|session| {
+            session.game.as_mut().expect("game").manager.fan_approval = 50;
+        });
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+        record_series_game(&state, 2, game_three()).expect("record game 2");
+
+        finish_live_match_internal(
+            &state,
+            Some(sim_game("t1", "t2", "blue", 8, 2)),
+            None,
+            None,
+            None,
+        )
+        .expect("finish");
+
+        // +5 for the win and +3 for a three-game margin.
+        assert_eq!(played_game(&state).manager.fan_approval, 58);
+    }
+
+    #[test]
+    fn a_session_without_recorded_games_finishes_as_a_single_game() {
+        let state = state_with_live_session("team1", 3);
+
+        finish_live_match_internal(&state, Some(game_one()), None, None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (1, 0));
+    }
+
+    #[test]
+    fn recording_a_game_again_replaces_it_instead_of_adding_a_game() {
+        let state = state_with_live_session("team1", 3);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+        record_series_game(&state, 1, game_one()).expect("retry game 1");
+
+        finish_live_match_internal(&state, Some(game_three()), None, None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (2, 0));
+    }
+
+    #[test]
+    fn a_new_live_session_does_not_inherit_the_recorded_games_of_the_old_one() {
+        let state = state_with_live_session("team1", 3);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+        let fresh = state.with_session_mut(|session| {
+            let game = session.game.as_ref().expect("game");
+            live_match_manager::create_live_match(game, 0, MatchMode::Live, false).unwrap()
+        });
+        state.set_live_match(fresh);
+
+        finish_live_match_internal(&state, Some(game_three()), None, None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (1, 0));
+    }
+
+    #[test]
+    fn recorded_games_that_do_not_make_a_decided_series_fall_back_to_the_last_game() {
+        let state = state_with_live_session("team1", 3);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+
+        // Game 2 was lost, so 1-1 is not a finished series: the last game stands alone.
+        finish_live_match_internal(&state, Some(game_two()), None, None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (0, 1));
+    }
+
+    #[test]
+    fn a_report_less_finish_ignores_the_recorded_games() {
+        let state = state_with_live_session("team1", 3);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+        state.with_live_match(|session| {
+            session.run_to_completion();
+        });
+
+        finish_live_match_internal(&state, None, None, None, None).expect("finish");
+
+        let (home, away) = fixture_score(&played_game(&state));
+        assert_eq!(home + away, 1);
+    }
+
+    #[test]
+    fn a_best_of_one_takes_no_recorded_game() {
+        let state = state_with_live_session("team1", 1);
+
+        assert!(record_series_game(&state, 1, game_one()).is_err());
+    }
+
+    #[test]
+    fn a_game_that_decides_the_series_is_not_recorded() {
+        let state = state_with_live_session("team1", 3);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+
+        assert!(record_series_game(&state, 2, game_three()).is_err());
+    }
+
+    #[test]
+    fn a_game_after_the_best_of_games_is_not_recorded() {
+        let state = state_with_live_session("team1", 3);
+
+        assert!(record_series_game(&state, 4, game_one()).is_err());
+    }
+
+    #[test]
+    fn a_game_recorded_before_the_ones_it_follows_is_not_recorded() {
+        let state = state_with_live_session("team1", 5);
+
+        assert!(record_series_game(&state, 2, game_one()).is_err());
+    }
+
+    #[test]
+    fn game_numbers_start_at_one() {
+        let state = state_with_live_session("team1", 3);
+
+        assert!(record_series_game(&state, 0, game_one()).is_err());
+    }
+
+    #[test]
+    fn recording_needs_an_active_live_match() {
+        let state = StateManager::new();
+
+        assert!(record_series_game(&state, 1, game_one()).is_err());
+    }
+    #[test]
+    fn a_game_without_champions_is_credited_by_the_blue_team_the_frontend_names() {
+        let state = state_with_live_session("team2", 1);
+        let mut report = sim_game("t2", "t1", "blue", 10, 4);
+        report.champions.clear();
+        report.blue_team_id = Some("team2".to_string());
+
+        finish_live_match_internal(&state, Some(report), None, None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (0, 1));
+    }
+
+    #[test]
+    fn a_game_without_champions_or_blue_team_keeps_blue_as_home() {
+        let state = state_with_live_session("team2", 1);
+        let mut report = sim_game("t2", "t1", "blue", 10, 4);
+        report.champions.clear();
+
+        finish_live_match_internal(&state, Some(report), None, None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (1, 0));
+    }
+
+    #[test]
+    fn a_blue_team_that_is_in_neither_side_of_the_fixture_falls_back_to_the_players() {
+        let state = state_with_live_session("team2", 1);
+        let mut report = sim_game("t2", "t1", "blue", 10, 4);
+        report.blue_team_id = Some("team9".to_string());
+
+        finish_live_match_internal(&state, Some(report), None, None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (0, 1));
+    }
+    #[test]
+    fn a_blue_side_split_evenly_between_both_teams_keeps_blue_as_home() {
+        let state = state_with_live_session("team2", 1);
+        let mut report = sim_game("t2", "t1", "blue", 10, 4);
+        report.champions.retain(|champion| champion.team == "red");
+        report.champions.extend(
+            sim_champions("t2", "blue", 10, 4)
+                .into_iter()
+                .take(2)
+                .chain(sim_champions("t1", "blue", 10, 4).into_iter().take(2)),
+        );
+
+        finish_live_match_internal(&state, Some(report), None, None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (1, 0));
+    }
+    #[test]
+    fn a_game_missing_before_the_decider_is_not_merged_into_a_wrong_series() {
+        let state = state_with_live_session("team1", 3);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+        // Game 2 (a loss for team1) never reached the backend; game 3 is a win.
+
+        finish_live_match_internal(&state, Some(game_three()), Some(3), None, None)
+            .expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (1, 0));
+    }
+
+    #[test]
+    fn a_caller_that_sends_no_game_number_still_gets_the_merged_series() {
+        let state = state_with_live_session("team1", 3);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+        record_series_game(&state, 2, game_two()).expect("record game 2");
+
+        finish_live_match_internal(&state, Some(game_three()), None, None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (2, 1));
+    }
+    #[test]
+    fn a_game_identical_to_the_one_before_it_is_not_recorded_again() {
+        let state = state_with_live_session("team1", 5);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+
+        // A double click on Continue would send the same game as the next number.
+        assert!(record_series_game(&state, 2, game_one()).is_err());
+    }
+
+    #[test]
+    fn a_recorded_game_can_be_sent_again_under_its_own_number() {
+        let state = state_with_live_session("team1", 5);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+        record_series_game(&state, 2, game_three()).expect("record game 2");
+
+        assert!(record_series_game(&state, 2, game_three()).is_ok());
+    }
+    #[test]
+    fn two_skipped_games_that_match_by_chance_are_both_recorded() {
+        let state = state_with_live_session("team1", 5);
+        let skipped = || {
+            let mut game = game_one();
+            game.champions.clear();
+            game.blue_team_id = Some("team1".to_string());
+            game
+        };
+        record_series_game(&state, 1, skipped()).expect("record game 1");
+
+        assert!(record_series_game(&state, 2, skipped()).is_ok());
     }
 }

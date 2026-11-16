@@ -1849,10 +1849,25 @@ fn simulate_series(
         reports.push(report);
     }
 
-    let mut merged = match reports.last() {
-        Some(report) => report.clone(),
-        None => crate::engine::simulate_lol(home_data, away_data, config, &mut rng),
-    };
+    merge_series_reports(reports)
+        .unwrap_or_else(|| crate::engine::simulate_lol(home_data, away_data, config, &mut rng))
+}
+
+/// Merges the reports of the games of one series, in play order, into the series report.
+///
+/// The score counts the games each side won, team and player lines are summed, durations
+/// are summed, events are concatenated, possession is averaged over the games, and how the
+/// match ended comes from the last game. `None` when there are no games to merge.
+pub fn merge_series_reports(
+    reports: Vec<crate::engine::MatchReport>,
+) -> Option<crate::engine::MatchReport> {
+    let mut merged = reports.last()?.clone();
+    let mut home_wins = 0_u8;
+    let mut away_wins = 0_u8;
+    for report in &reports {
+        home_wins = home_wins.saturating_add(report.home_wins);
+        away_wins = away_wins.saturating_add(report.away_wins);
+    }
     merged.home_wins = home_wins;
     merged.away_wins = away_wins;
 
@@ -1945,7 +1960,7 @@ fn simulate_series(
         merged.home_possession = possession_sum / f64::from(home_wins + away_wins);
     }
 
-    merged
+    Some(merged)
 }
 
 #[cfg(test)]
@@ -2359,6 +2374,25 @@ mod tests {
         assert!(records.iter().any(|r| r.assists > 0));
     }
 
+    #[test]
+    fn a_best_of_three_row_counts_every_game_it_sums() {
+        let (mut game, today) = bg_test_game("2025-06-15");
+        if let Some(league) = game.active_league_mut() {
+            league.fixtures[0].best_of = 3;
+        }
+        let mut capture = StatsState::default();
+        simulate_other_matches_with_capture(&mut game, &today, None, &mut |stats| capture = stats);
+
+        let fixture = game.active_league().unwrap().fixtures[0]
+            .result
+            .as_ref()
+            .unwrap();
+        let games = fixture.home_wins + fixture.away_wins;
+        assert!(games >= 2);
+        assert!(capture.player_matches.iter().all(|r| r.games == games));
+        assert!(capture.team_matches.iter().all(|r| r.games == games));
+    }
+
     // -----------------------------------------------------------------------
     // T9: simulate_background_league tests
     // -----------------------------------------------------------------------
@@ -2759,5 +2793,150 @@ mod tests {
             .leagues
             .iter()
             .any(|l| l.league_kind == crate::domain::league::LeagueKind::Academy));
+    }
+
+    fn series_game_report(
+        home_won: bool,
+        home_kills: u16,
+        away_kills: u16,
+        duration_seconds: u32,
+        home_possession: f64,
+        ended_by: crate::engine::MatchReportEndReason,
+    ) -> crate::engine::MatchReport {
+        let player = crate::engine::PlayerMatchStats {
+            role: Some(crate::engine::LolRole::Mid),
+            duration_seconds,
+            kills: home_kills,
+            deaths: away_kills,
+            assists: 2,
+            creep_score: 100,
+            gold_earned: 10_000,
+            damage_dealt: 20_000,
+            vision_score: 5,
+            wards_placed: 3,
+            ..Default::default()
+        };
+        crate::engine::MatchReport {
+            home_wins: u8::from(home_won),
+            away_wins: u8::from(!home_won),
+            home_stats: crate::engine::TeamStats {
+                kills: home_kills,
+                deaths: away_kills,
+                gold_earned: 50_000,
+                damage_dealt: 90_000,
+                objectives: 7,
+                possession_ticks: 10,
+                ..Default::default()
+            },
+            away_stats: crate::engine::TeamStats {
+                kills: away_kills,
+                deaths: home_kills,
+                gold_earned: 40_000,
+                damage_dealt: 70_000,
+                objectives: 3,
+                possession_ticks: 20,
+                ..Default::default()
+            },
+            events: vec![crate::engine::MatchEvent {
+                minute: 10,
+                event_type: crate::engine::EventType::Kill,
+                side: crate::engine::Side::Home,
+                zone: crate::engine::Zone::Midfield,
+                player_id: Some("p1".to_string()),
+                secondary_player_id: None,
+            }],
+            kill_feed: vec![],
+            player_stats: HashMap::from([("p1".to_string(), player)]),
+            home_possession,
+            total_minutes: (duration_seconds / 60) as u8,
+            game_duration_seconds: duration_seconds,
+            ended_by,
+        }
+    }
+
+    fn two_to_one_series() -> Vec<crate::engine::MatchReport> {
+        use crate::engine::MatchReportEndReason::{NexusDestroyed, TimeLimit};
+        vec![
+            series_game_report(true, 10, 4, 1_800, 60.0, NexusDestroyed),
+            series_game_report(false, 3, 9, 2_100, 40.0, NexusDestroyed),
+            series_game_report(true, 12, 6, 1_500, 50.0, TimeLimit),
+        ]
+    }
+
+    #[test]
+    fn merge_series_reports_counts_the_games_each_side_won() {
+        let merged = merge_series_reports(two_to_one_series()).expect("merged series");
+
+        assert_eq!((merged.home_wins, merged.away_wins), (2, 1));
+    }
+
+    #[test]
+    fn merge_series_reports_sums_team_stats_across_games() {
+        let merged = merge_series_reports(two_to_one_series()).expect("merged series");
+
+        assert_eq!(
+            (
+                merged.home_stats.kills,
+                merged.home_stats.deaths,
+                merged.home_stats.gold_earned,
+                merged.home_stats.damage_dealt,
+                merged.home_stats.objectives,
+                merged.home_stats.possession_ticks,
+            ),
+            (25, 19, 150_000, 270_000, 21, 30)
+        );
+        assert_eq!(
+            (merged.away_stats.kills, merged.away_stats.possession_ticks),
+            (19, 60)
+        );
+    }
+
+    #[test]
+    fn merge_series_reports_sums_each_players_line_across_games() {
+        let merged = merge_series_reports(two_to_one_series()).expect("merged series");
+
+        let line = &merged.player_stats["p1"];
+        assert_eq!(
+            (
+                line.kills,
+                line.deaths,
+                line.assists,
+                line.creep_score,
+                line.gold_earned,
+                line.damage_dealt,
+                line.duration_seconds,
+            ),
+            (25, 19, 6, 300, 30_000, 60_000, 5_400)
+        );
+    }
+
+    #[test]
+    fn merge_series_reports_sums_durations_and_joins_events() {
+        let merged = merge_series_reports(two_to_one_series()).expect("merged series");
+
+        assert_eq!(merged.game_duration_seconds, 5_400);
+        assert_eq!(merged.events.len(), 3);
+    }
+
+    #[test]
+    fn merge_series_reports_averages_possession_over_the_games_played() {
+        let merged = merge_series_reports(two_to_one_series()).expect("merged series");
+
+        assert!((merged.home_possession - 50.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn merge_series_reports_takes_how_it_ended_from_the_last_game() {
+        let merged = merge_series_reports(two_to_one_series()).expect("merged series");
+
+        assert_eq!(
+            merged.ended_by,
+            crate::engine::MatchReportEndReason::TimeLimit
+        );
+    }
+
+    #[test]
+    fn merge_series_reports_has_nothing_to_merge_without_games() {
+        assert!(merge_series_reports(Vec::new()).is_none());
     }
 }

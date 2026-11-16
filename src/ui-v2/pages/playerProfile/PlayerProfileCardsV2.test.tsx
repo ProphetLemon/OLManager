@@ -161,6 +161,18 @@ describe("PlayerProfileMatchHistoryCardV2", () => {
     render(<PlayerProfileMatchHistoryCardV2 history={withChampion} t={t} language="en" />);
     expect(screen.getByText(/Malphite/)).toBeInTheDocument();
   });
+
+  it("marks a series row with the games its line sums", () => {
+    const series = [{ ...entries[0], games: 3 }] as unknown as PlayerMatchHistoryEntryData[];
+    render(<PlayerProfileMatchHistoryCardV2 history={series} t={t} language="en" />);
+    expect(screen.getByText("×3")).toBeInTheDocument();
+  });
+
+  it("leaves a single-game row without a games mark", () => {
+    const single = [{ ...entries[0], games: 1 }] as unknown as PlayerMatchHistoryEntryData[];
+    render(<PlayerProfileMatchHistoryCardV2 history={single} t={t} language="en" />);
+    expect(screen.queryByText(/^×/)).toBeNull();
+  });
 });
 
 describe("PlayerProfileContractCardV2", () => {

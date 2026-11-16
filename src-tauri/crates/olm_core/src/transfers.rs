@@ -16,6 +16,7 @@ use crate::finances::{
     record_transaction_with_text,
 };
 use crate::game::Game;
+use crate::player_age::player_age;
 use crate::roster_stability::{RosterStabilityReason, repair_team};
 use chrono::{Datelike, NaiveDate};
 use rand_08::Rng;
@@ -205,11 +206,11 @@ fn minimum_acceptable_fee(
     ((player.market_value as f64) * multiplier).round() as u64
 }
 
-fn calculate_player_offer_value(
+pub(crate) fn calculate_player_offer_value(
     current_date: NaiveDate,
     player: &crate::domain::player::Player,
 ) -> u64 {
-    let age = calc_player_age(current_date, &player.date_of_birth);
+    let age = player_age(player, current_date).years;
 
     let age_multiplier: f64 = if age <= 20 {
         1.30
@@ -239,15 +240,6 @@ fn calculate_player_offer_value(
     };
 
     ((player.market_value as f64) * age_multiplier * potential_multiplier).round() as u64
-}
-
-fn calc_player_age(current_date: NaiveDate, date_of_birth: &str) -> u32 {
-    let dob = NaiveDate::parse_from_str(date_of_birth, "%Y-%m-%d").unwrap_or(current_date);
-    let mut age = (current_date.year() - dob.year()) as u32;
-    if current_date < dob.with_year(current_date.year()).unwrap_or(dob) {
-        age = age.saturating_sub(1);
-    }
-    age
 }
 
 fn player_move_openness_score(
@@ -2083,7 +2075,7 @@ fn wage_floor(reference_wage: u32) -> u32 {
     (u64::from(reference_wage) * WAGE_FLOOR_PCT_OF_EXPECTED).div_ceil(100) as u32
 }
 
-fn calculate_wage_acceptance_score(
+pub(crate) fn calculate_wage_acceptance_score(
     current_date: NaiveDate,
     player: &crate::domain::player::Player,
     offered_wage: u32,
@@ -2192,7 +2184,7 @@ fn calculate_wage_acceptance_score(
         score += 10;
     }
 
-    let age = calc_player_age(current_date, &player.date_of_birth);
+    let age = player_age(player, current_date).years;
     if age <= 22 {
         score += 8;
     } else if age >= 32 {
@@ -2802,6 +2794,29 @@ fn complete_transfer_with_wage(
     );
 
     Ok(())
+}
+
+/// What each listed player would ask the user's club for a new contract: the same
+/// `expected_signing_wage` reference [`negotiate_player_wage`] measures offers and counters
+/// against. Read-only, so the UI can show it before any offer is made (a free agent's own
+/// `wage` is 0 when the record carries none). Unknown ids are skipped.
+pub fn expected_signing_wages_for_user(
+    game: &Game,
+    player_ids: &[String],
+) -> Result<std::collections::HashMap<String, u32>, String> {
+    let user_team_id = game.manager.team_id.as_deref().ok_or("No user team")?;
+    let team = game
+        .teams
+        .iter()
+        .find(|t| t.id == user_team_id)
+        .ok_or("User team not found")?;
+    let today = game.clock.current_date.date_naive();
+    Ok(game
+        .players
+        .iter()
+        .filter(|p| player_ids.contains(&p.id))
+        .map(|p| (p.id.clone(), expected_signing_wage(p, team, today)))
+        .collect())
 }
 
 pub fn get_transfer_history(game: &Game) -> Vec<TransferHistoryEntry> {

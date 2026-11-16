@@ -10,7 +10,9 @@ use serde::{Deserialize, Serialize};
 use crate::game::Game;
 
 use crate::domain::league::StandingEntry;
-use crate::engine::{LiveMatchState, MatchCommand, MatchConfig, MatchSnapshot, MinuteResult, Side};
+use crate::engine::{
+    LiveMatchState, MatchCommand, MatchConfig, MatchReport, MatchSnapshot, MinuteResult, Side,
+};
 
 const LOL_STARTERS_REQUIRED: usize = 5;
 
@@ -42,6 +44,11 @@ pub struct LiveMatchSession {
     pub home_team_id: String,
     pub away_team_id: String,
     pub user_side: Option<Side>,
+    /// Reports of the games of a best-of-N series that are already played and did not decide
+    /// it, in play order, already credited to the fixture's home and away teams. The deciding
+    /// game arrives through `finish_live_match`, which merges them. Empty for a single game,
+    /// and a new session always starts empty.
+    pub series_reports: Vec<MatchReport>,
 }
 
 impl LiveMatchSession {
@@ -179,5 +186,6 @@ pub fn create_live_match(
         home_team_id,
         away_team_id,
         user_side,
+        series_reports: Vec::new(),
     })
 }

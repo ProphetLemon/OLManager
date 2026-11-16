@@ -30,6 +30,7 @@ use chrono::NaiveDate;
 
 use crate::domain::player::Player;
 use crate::placeholder_ratings::is_placeholder_rating;
+use crate::player_age::parse_date_of_birth;
 use crate::potential::calculate_lol_ovr;
 use crate::squad_generator::full_years_between;
 use crate::stable_hash::stable_hash;
@@ -58,7 +59,8 @@ impl AgeBand {
     const COUNT: usize = 6;
 
     fn of(player: &Player, today: NaiveDate) -> Self {
-        let Ok(born) = NaiveDate::parse_from_str(&player.date_of_birth, "%Y-%m-%d") else {
+        // The shared parser, so a date of birth reads the same here as in every age reader.
+        let Some(born) = parse_date_of_birth(&player.date_of_birth) else {
             return Self::Unknown;
         };
         match full_years_between(today, born) {
@@ -272,6 +274,17 @@ mod tests {
         fill_missing_potentials(&mut players, today());
 
         assert_eq!(players.last().unwrap().potential_base, 68);
+    }
+
+    #[test]
+    fn a_month_name_date_of_birth_uses_its_real_age_band() {
+        let mut players = reference("unknown", "", 5, 8);
+        players.extend(reference("known", AGE_28, 6, 2));
+        players.push(marked("target", "March 1, 1998", 60));
+
+        fill_missing_potentials(&mut players, today());
+
+        assert_eq!(players.last().unwrap().potential_base, 62);
     }
 
     #[test]
