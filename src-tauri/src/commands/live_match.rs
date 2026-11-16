@@ -393,6 +393,10 @@ mod tests {
     use super::{
         apply_press_conference_effects, finish_live_match_internal,
     };
+    use crate::application::live_match::{
+        LolSimMatchReportChampionInput, LolSimMatchReportInput, LolSimMatchReportStatsInput,
+        LolSimMatchReportTeamStatsInput,
+    };
     use chrono::{TimeZone, Utc};
     use olm_core::clock::GameClock;
     use olm_core::domain::league::{
@@ -402,6 +406,7 @@ mod tests {
     use olm_core::domain::player::{
         LolRole, Player, PlayerAttributes,
     };
+    use olm_core::domain::stats::MatchOutcome;
     use olm_core::domain::team::Team;
     use olm_core::game::Game;
     use olm_core::live_match_manager::{self, MatchMode};
@@ -631,5 +636,179 @@ mod tests {
                 .to_string(),
             "2025-06-16"
         );
+    }
+    /// The five players of a test squad that take the field, in role order.
+    const SQUAD_SLOTS: [&str; 5] = ["gk", "def0", "mid0", "mid1", "fwd0"];
+
+    fn sim_champions(
+        prefix: &str,
+        team: &str,
+        kills: u16,
+        deaths: u16,
+    ) -> Vec<LolSimMatchReportChampionInput> {
+        SQUAD_SLOTS
+            .iter()
+            .enumerate()
+            .map(|(slot, name)| LolSimMatchReportChampionInput {
+                id: format!("{prefix}_{name}"),
+                name: format!("{prefix} {name}"),
+                team: team.to_string(),
+                role: "MID".to_string(),
+                // The first player carries the team's kills and deaths, so a series total is
+                // easy to read; everyone assists once.
+                kills: if slot == 0 { kills } else { 0 },
+                deaths: if slot == 0 { deaths } else { 0 },
+                assists: 1,
+                cs: 100,
+                gold: 500,
+                spent_gold: 5_000,
+                damage_dealt: 1_000.0,
+            })
+            .collect()
+    }
+
+    fn sim_team_stats(kills: u16, deaths: u16) -> LolSimMatchReportTeamStatsInput {
+        LolSimMatchReportTeamStatsInput {
+            kills,
+            deaths,
+            gold: 40_000,
+            towers: 5,
+            dragons: 2,
+            barons: 1,
+        }
+    }
+
+    /// One game as the frontend reports it: the `blue_prefix` squad plays blue.
+    fn sim_game(
+        blue_prefix: &str,
+        red_prefix: &str,
+        winner: &str,
+        blue_kills: u16,
+        red_kills: u16,
+    ) -> LolSimMatchReportInput {
+        let mut champions = sim_champions(blue_prefix, "blue", blue_kills, red_kills);
+        champions.extend(sim_champions(red_prefix, "red", red_kills, blue_kills));
+        LolSimMatchReportInput {
+            winner: Some(winner.to_string()),
+            time_sec: 1_800.0,
+            events: vec![],
+            stats: LolSimMatchReportStatsInput {
+                blue: sim_team_stats(blue_kills, red_kills),
+                red: sim_team_stats(red_kills, blue_kills),
+            },
+            champions,
+        }
+    }
+
+    /// A live session for fixture 0 (team1 home, team2 away) with `user_team` managed.
+    fn state_with_live_session(user_team: &str, best_of: u8) -> StateManager {
+        let state = StateManager::new();
+        let mut game = make_game_with_round();
+        game.manager.hire(user_team.to_string());
+        game.leagues[0].fixtures[0].best_of = best_of;
+        let today = game.clock.current_date.format("%Y-%m-%d").to_string();
+        olm_core::turn::simulate_other_matches(&mut game, &today, Some(0));
+        let session =
+            live_match_manager::create_live_match(&game, 0, MatchMode::Live, false).unwrap();
+        state.set_game(game);
+        state.set_live_match(session);
+        state
+    }
+
+    fn played_game(state: &StateManager) -> Game {
+        state.get_game(|game| game.clone()).expect("game")
+    }
+
+    fn fixture_score(game: &Game) -> (u8, u8) {
+        let result = game.active_league().unwrap().fixtures[0]
+            .result
+            .as_ref()
+            .expect("fixture result");
+        (result.home_wins, result.away_wins)
+    }
+
+    fn standing<'a>(game: &'a Game, team_id: &str) -> &'a StandingEntry {
+        game.active_league()
+            .unwrap()
+            .standings
+            .iter()
+            .find(|entry| entry.team_id == team_id)
+            .expect("standing")
+    }
+
+    #[test]
+    fn a_game_won_by_the_away_team_on_blue_is_credited_to_the_away_team() {
+        let state = state_with_live_session("team2", 1);
+
+        finish_live_match_internal(
+            &state,
+            Some(sim_game("t2", "t1", "blue", 10, 4)),
+            None,
+            None,
+        )
+        .expect("finish");
+
+        let game = played_game(&state);
+        assert_eq!(fixture_score(&game), (0, 1));
+        assert_eq!(standing(&game, "team2").won, 1);
+        assert_eq!(standing(&game, "team1").lost, 1);
+    }
+
+    #[test]
+    fn team_stats_of_the_away_team_on_blue_land_on_the_away_team() {
+        let state = state_with_live_session("team2", 1);
+
+        finish_live_match_internal(
+            &state,
+            Some(sim_game("t2", "t1", "blue", 10, 4)),
+            None,
+            None,
+        )
+        .expect("finish");
+
+        let rows = state.with_stats_state(|stats| stats.team_matches.clone());
+        let away = rows
+            .iter()
+            .find(|row| row.team_id == "team2")
+            .expect("away row");
+        assert_eq!(
+            (away.kills, away.deaths, away.result),
+            (10, 4, MatchOutcome::Win)
+        );
+        let home = rows
+            .iter()
+            .find(|row| row.team_id == "team1")
+            .expect("home row");
+        assert_eq!(
+            (home.kills, home.deaths, home.result),
+            (4, 10, MatchOutcome::Loss)
+        );
+    }
+
+    #[test]
+    fn a_game_won_by_the_home_team_on_red_is_credited_to_the_home_team() {
+        let state = state_with_live_session("team1", 1);
+
+        finish_live_match_internal(&state, Some(sim_game("t2", "t1", "red", 4, 10)), None, None)
+            .expect("finish");
+
+        let game = played_game(&state);
+        assert_eq!(fixture_score(&game), (1, 0));
+        assert_eq!(standing(&game, "team1").won, 1);
+    }
+
+    #[test]
+    fn a_game_with_the_home_team_on_blue_keeps_the_usual_mapping() {
+        let state = state_with_live_session("team1", 1);
+
+        finish_live_match_internal(
+            &state,
+            Some(sim_game("t1", "t2", "blue", 10, 4)),
+            None,
+            None,
+        )
+        .expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (1, 0));
     }
 }

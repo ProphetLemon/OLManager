@@ -321,6 +321,66 @@ fn build_match_report_from_lol_sim(input: LolSimMatchReportInput) -> MatchReport
     }
 }
 
+/// Whether the blue side of a reported game is the fixture's home team.
+///
+/// The frontend seats the user on the blue side they pick, so the user's club can be the
+/// fixture's away team on blue (or its home team on red). The report only says "blue" and
+/// "red", so the side is read from who the blue champions are: their ids are player ids,
+/// and each player belongs to one of the fixture's two teams. Ids that resolve to neither
+/// team (or to both equally) keep the original reading, blue as home.
+fn blue_side_is_home(
+    game: &Game,
+    home_team_id: &str,
+    away_team_id: &str,
+    champions: &[LolSimMatchReportChampionInput],
+) -> bool {
+    let (mut home_votes, mut away_votes) = (0_usize, 0_usize);
+    for champion in champions
+        .iter()
+        .filter(|champion| map_sim_team_to_side(&champion.team) == Side::Home)
+    {
+        let team_id = game
+            .players
+            .iter()
+            .find(|player| player.id == champion.id)
+            .and_then(|player| player.team_id.as_deref());
+        if team_id == Some(home_team_id) {
+            home_votes += 1;
+        } else if team_id == Some(away_team_id) {
+            away_votes += 1;
+        }
+    }
+    away_votes <= home_votes
+}
+
+/// Turns a report built as blue = home into the one for a fixture where blue is away.
+fn swap_report_sides(report: &mut MatchReport) {
+    std::mem::swap(&mut report.home_wins, &mut report.away_wins);
+    std::mem::swap(&mut report.home_stats, &mut report.away_stats);
+    report.home_possession = 100.0 - report.home_possession;
+    for event in &mut report.events {
+        event.side = event.side.opposite();
+    }
+    for kill in &mut report.kill_feed {
+        kill.side = kill.side.opposite();
+    }
+}
+
+/// One game's report from the frontend, credited to the fixture's home and away teams.
+fn fixture_report_from_lol_sim(
+    game: &Game,
+    home_team_id: &str,
+    away_team_id: &str,
+    input: LolSimMatchReportInput,
+) -> MatchReport {
+    let blue_is_home = blue_side_is_home(game, home_team_id, away_team_id, &input.champions);
+    let mut report = build_match_report_from_lol_sim(input);
+    if !blue_is_home {
+        swap_report_sides(&mut report);
+    }
+    report
+}
+
 pub fn finish_live_match(
     state: &StateManager,
     lol_report: Option<LolSimMatchReportInput>,
@@ -337,7 +397,9 @@ pub fn finish_live_match(
     let away_team_id = session.away_team_id.clone();
 
     let report = if let Some(input) = lol_report {
-        build_match_report_from_lol_sim(input)
+        state
+            .get_game(|game| fixture_report_from_lol_sim(game, &home_team_id, &away_team_id, input))
+            .ok_or("No active game session")?
     } else {
         session.match_state.into_report()
     };
@@ -566,5 +628,27 @@ mod tests {
         assert_eq!(report.player_stats["b1"].damage_dealt, 0);
         assert_eq!(report.player_stats["b2"].damage_dealt, 0);
         assert_eq!(report.home_stats.damage_dealt, 0);
+    }
+
+    #[test]
+    fn swapping_report_sides_moves_score_stats_and_events_to_the_other_team() {
+        let mut input = input(vec![
+            champion("b1", "blue", 1_000.0),
+            champion("r1", "red", 500.0),
+        ]);
+        input.winner = Some("blue".to_string());
+        input.events = vec![LolSimMatchReportEventInput {
+            t: 600.0,
+            text: "blue destroyed a tower".to_string(),
+            kind: "tower".to_string(),
+        }];
+        let mut report = build_match_report_from_lol_sim(input);
+
+        swap_report_sides(&mut report);
+
+        assert_eq!((report.home_wins, report.away_wins), (0, 1));
+        assert_eq!(report.away_stats.damage_dealt, 1_000);
+        assert_eq!(report.home_stats.damage_dealt, 500);
+        assert_eq!(report.events[0].side, Side::Away);
     }
 }
