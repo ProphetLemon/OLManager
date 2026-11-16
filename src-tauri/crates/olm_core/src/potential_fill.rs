@@ -95,7 +95,10 @@ impl GapPools {
             pools.all.push(gap);
         }
         pools.all.sort_unstable();
-        pools.by_band.iter_mut().for_each(|gaps| gaps.sort_unstable());
+        pools
+            .by_band
+            .iter_mut()
+            .for_each(|gaps| gaps.sort_unstable());
         pools
     }
 
