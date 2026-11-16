@@ -3001,6 +3001,26 @@ mod tests {
             assert!(elmillor.potential_base > 3);
         }
 
+        /// Ids of the data players shipped with `potential_base: 0`.
+        fn shipped_without_potential() -> HashSet<String> {
+            let mut ids = HashSet::new();
+            for entry in std::fs::read_dir(data_base().join("players")).expect("data/players") {
+                let path = entry.expect("entry").path();
+                if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                    continue;
+                }
+                let file: serde_json::Value =
+                    serde_json::from_str(&std::fs::read_to_string(&path).expect("read"))
+                        .expect("player file");
+                for p in file["players"].as_array().into_iter().flatten() {
+                    if p["potential_base"].as_u64() == Some(0) {
+                        ids.insert(p["id"].as_str().expect("id").to_string());
+                    }
+                }
+            }
+            ids
+        }
+
         /// A save an older version wrote: the bundled world with Elmillor as the friend's
         /// save has him (flat attributes, no potential, a spent research that read 2),
         /// one more player with no potential, and one researched player with a real one.
@@ -3124,9 +3144,32 @@ mod tests {
                 old.3
             };
             assert_eq!(new.3, expected_value);
+            // A player shipped without a potential is given one drawn from the gaps of its
+            // peers (`potential_fill`), and an override moves the OVR, and so the gap, of
+            // one of those peers: its potential, and the value and wage seeded from it,
+            // may drift a little. Its attributes may not. The wages a club's players share
+            // are scaled by that club's potentials, so a clubmate's wage may follow.
+            let filled = shipped_without_potential();
+            let team_of: HashMap<&str, Option<&str>> = world
+                .players
+                .iter()
+                .map(|p| (p.id.as_str(), p.team_id.as_deref()))
+                .collect();
+            let clubs_with_filled: HashSet<&str> = filled
+                .iter()
+                .filter_map(|f| team_of.get(f.as_str()).copied().flatten())
+                .collect();
             for (other, row) in &before {
-                if *other != id {
-                    assert_eq!(Some(row), after.get(other), "{other} must not change");
+                if *other == id {
+                    continue;
+                }
+                let after = &after[other];
+                if filled.contains(other) {
+                    assert_eq!((row.0, row.1), (after.0, after.1), "{other} ratings must not change");
+                } else if team_of[other.as_str()].is_some_and(|t| clubs_with_filled.contains(t)) {
+                    assert_eq!((row.0, row.1, row.2, row.3), (after.0, after.1, after.2, after.3), "{other} must not change");
+                } else {
+                    assert_eq!(row, after, "{other} must not change");
                 }
             }
         }
