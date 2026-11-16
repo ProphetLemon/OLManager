@@ -1992,7 +1992,7 @@ mod tests {
     fn roster_overlay_keeps_teamless_pool_adds_as_free_agents_with_a_market_value() {
         let mut game = test_game();
         let overlay = WorldOverlay::parse(
-            r#"{"schemaVersion":1,"as_of":"2026-11-07",
+            r#"{"schemaVersion":2,"as_of":"2026-11-07",
                 "source":{"name":"Leaguepedia","license":"CC BY-SA 3.0","license_url":"https://www.fandom.com/licensing"},
                 "players":[{"op":"add","evidence":"https://lol.fandom.com/wiki/Send0o","dob_approx":true,
                   "player":{"id":"player-bea33543","team_id":null,"position":"Top","nationality":"ES",

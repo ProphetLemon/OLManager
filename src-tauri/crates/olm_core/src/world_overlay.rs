@@ -1,7 +1,7 @@
 //! Roster overlay: a small, reviewed patch applied on top of the bundled world
 //! when a new game starts (player moves, retirements, additions and staff
-//! changes). The wire format is contract v1 of `assets/world/roster-overlay.json`,
-//! produced by `scripts/world/refresh.mjs`.
+//! changes). The wire format is contract v1 of `assets/world/roster-overlay.json`
+//! (v2 when it carries teamless adds), produced by `scripts/world/refresh.mjs`.
 //!
 //! [`apply_world_overlay`] is pure: it mutates the passed vectors and never does
 //! I/O. Ops that reference unknown ids or teams are skipped and reported, never
@@ -12,13 +12,21 @@ use std::fmt;
 
 use chrono::{Duration, NaiveDate, Utc};
 use serde::{Deserialize, Deserializer, Serialize};
+use thiserror::Error;
 
 use crate::domain::player::{LolRole, Player};
 use crate::domain::staff::{Staff, StaffRole};
 use crate::domain::team::Team;
 
-/// The only overlay `schemaVersion` this build understands.
-pub const SUPPORTED_SCHEMA_VERSION: u64 = 1;
+/// First overlay contract version. Installed apps built before the pool only
+/// understand this one and reject every other version at parse.
+pub const BASE_SCHEMA_VERSION: u64 = 1;
+/// Version an overlay must declare when it carries teamless adds (the active
+/// pros pool). Old apps reject it at parse and keep their rosters instead of
+/// putting pool players on AI teams.
+pub const POOL_SCHEMA_VERSION: u64 = 2;
+/// Every overlay `schemaVersion` this build understands.
+pub const SUPPORTED_SCHEMA_VERSIONS: [u64; 2] = [BASE_SCHEMA_VERSION, POOL_SCHEMA_VERSION];
 
 /// An overlay may be dated slightly ahead of the local clock (time zones).
 const MAX_FUTURE_DAYS: i64 = 2;
@@ -31,54 +39,34 @@ const MAX_ATTRIBUTE: u8 = 100;
 
 const BUNDLED_OVERLAY_JSON: &str = include_str!("../../../../assets/world/roster-overlay.json");
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum OverlayError {
     /// The document is not valid JSON or does not match the contract shape.
-    Json(serde_json::Error),
-    /// `schemaVersion` is missing or not [`SUPPORTED_SCHEMA_VERSION`].
+    #[error("invalid roster overlay JSON: {0}")]
+    Json(#[from] serde_json::Error),
+    /// `schemaVersion` is missing or not in [`SUPPORTED_SCHEMA_VERSIONS`].
+    #[error("{}", unsupported_version_message(.0))]
     UnsupportedSchemaVersion(Option<u64>),
+    /// A version 1 overlay carries teamless adds, which need
+    /// [`POOL_SCHEMA_VERSION`] so apps that predate the pool reject the file.
+    #[error(
+        "roster overlay schemaVersion {schema_version} cannot carry teamless adds (they need schemaVersion {POOL_SCHEMA_VERSION})"
+    )]
+    TeamlessAddsNeedSchemaV2 { schema_version: u64 },
     /// A date field is not a real `YYYY-MM-DD` date.
+    #[error("roster overlay field `{field}` is not a YYYY-MM-DD date: {value:?}")]
     InvalidDate { field: String, value: String },
     /// A field violates the contract (empty id, unknown position, ...).
+    #[error("roster overlay field `{field}` is invalid: {reason}")]
     InvalidField { field: String, reason: &'static str },
 }
 
-impl fmt::Display for OverlayError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Json(err) => write!(f, "invalid roster overlay JSON: {err}"),
-            Self::UnsupportedSchemaVersion(Some(found)) => write!(
-                f,
-                "unsupported roster overlay schemaVersion {found} (expected {SUPPORTED_SCHEMA_VERSION})"
-            ),
-            Self::UnsupportedSchemaVersion(None) => {
-                write!(f, "roster overlay has no numeric schemaVersion")
-            }
-            Self::InvalidDate { field, value } => {
-                write!(
-                    f,
-                    "roster overlay field `{field}` is not a YYYY-MM-DD date: {value:?}"
-                )
-            }
-            Self::InvalidField { field, reason } => {
-                write!(f, "roster overlay field `{field}` is invalid: {reason}")
-            }
-        }
-    }
-}
-
-impl std::error::Error for OverlayError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Json(err) => Some(err),
-            _ => None,
-        }
-    }
-}
-
-impl From<serde_json::Error> for OverlayError {
-    fn from(err: serde_json::Error) -> Self {
-        Self::Json(err)
+fn unsupported_version_message(found: &Option<u64>) -> String {
+    match found {
+        Some(found) => format!(
+            "unsupported roster overlay schemaVersion {found} (expected {BASE_SCHEMA_VERSION} or {POOL_SCHEMA_VERSION})"
+        ),
+        None => "roster overlay has no numeric schemaVersion".to_string(),
     }
 }
 
@@ -331,13 +319,24 @@ impl WorldOverlay {
             .collect()
     }
 
+    /// Whether any player or staff add has no team (the active-pros pool).
+    fn has_teamless_adds(&self) -> bool {
+        let player_adds = self.players.iter().any(|op| {
+            matches!(op, PlayerOp::Add { player, .. } if player.team_id.is_none())
+        });
+        player_adds
+            || self.staff.iter().any(|op| {
+                matches!(op, StaffOp::Add { staff, .. } if staff.team_id.is_none())
+            })
+    }
+
     /// Parse and validate an overlay document. The schema version is checked
     /// before the rest of the shape so a future version reports as
     /// [`OverlayError::UnsupportedSchemaVersion`] rather than a decoding error.
     pub fn parse(json: &str) -> Result<Self, OverlayError> {
         let raw: serde_json::Value = serde_json::from_str(json)?;
         let version = raw.get("schemaVersion").and_then(serde_json::Value::as_u64);
-        if version != Some(SUPPORTED_SCHEMA_VERSION) {
+        if !version.is_some_and(|found| SUPPORTED_SCHEMA_VERSIONS.contains(&found)) {
             return Err(OverlayError::UnsupportedSchemaVersion(version));
         }
         let overlay: Self = serde_json::from_value(raw)?;
@@ -354,10 +353,15 @@ impl WorldOverlay {
     /// later than `today` + [`MAX_FUTURE_DAYS`]), usable ids and roles, bounded
     /// sizes, sane attributes, asset-only image paths and a trusted licence.
     pub fn validate_at(&self, today: NaiveDate) -> Result<(), OverlayError> {
-        if self.schema_version != SUPPORTED_SCHEMA_VERSION {
+        if !SUPPORTED_SCHEMA_VERSIONS.contains(&self.schema_version) {
             return Err(OverlayError::UnsupportedSchemaVersion(Some(
                 self.schema_version,
             )));
+        }
+        if self.schema_version < POOL_SCHEMA_VERSION && self.has_teamless_adds() {
+            return Err(OverlayError::TeamlessAddsNeedSchemaV2 {
+                schema_version: self.schema_version,
+            });
         }
         let as_of = check_canonical_date("as_of", &self.as_of)?;
         if as_of > today + Duration::days(MAX_FUTURE_DAYS) {
@@ -798,7 +802,7 @@ mod tests {
 
     fn overlay(players: &str, staff: &str) -> WorldOverlay {
         WorldOverlay::parse(&format!(
-            r#"{{"schemaVersion":1,"as_of":"2026-11-07",
+            r#"{{"schemaVersion":2,"as_of":"2026-11-07",
                 "source":{{"name":"Leaguepedia","license":"CC BY-SA 3.0","license_url":"https://www.fandom.com/licensing"}},
                 "coverage":[],"players":[{players}],"staff":[{staff}]}}"#
         ))
@@ -1055,13 +1059,62 @@ mod tests {
 
     #[test]
     fn unknown_schema_version_is_rejected() {
-        let err = WorldOverlay::parse(r#"{"schemaVersion":2,"as_of":"2026-11-07"}"#).unwrap_err();
+        let err = WorldOverlay::parse(r#"{"schemaVersion":3,"as_of":"2026-11-07"}"#).unwrap_err();
         assert!(matches!(
             err,
-            OverlayError::UnsupportedSchemaVersion(Some(2))
+            OverlayError::UnsupportedSchemaVersion(Some(3))
         ));
         let err = WorldOverlay::parse(r#"{"as_of":"2026-11-07"}"#).unwrap_err();
         assert!(matches!(err, OverlayError::UnsupportedSchemaVersion(None)));
+    }
+
+    /// Document with a chosen `schemaVersion` carrying the given player and staff ops.
+    fn versioned(version: u64, players: &str, staff: &str) -> String {
+        format!(
+            r#"{{"schemaVersion":{version},"as_of":"2026-11-07",{SOURCE},"players":[{players}],"staff":[{staff}]}}"#
+        )
+    }
+
+    const TEAMED_PLAYER: &str = r#"{"op":"add","player":{"id":"p-new","match_name":"New","full_name":"New Guy","position":"ADC","team_id":"t-b","date_of_birth":"2004-04-17"}}"#;
+
+    #[test]
+    fn schema_version_2_with_teamless_pool_adds_is_accepted() {
+        let json = versioned(2, POOL_PLAYER, POOL_STAFF);
+        let overlay = WorldOverlay::parse(&json).expect("version 2 carries teamless adds");
+        assert_eq!(overlay.schema_version, 2);
+    }
+
+    #[test]
+    fn schema_version_1_without_teamless_adds_is_still_accepted() {
+        let json = versioned(1, TEAMED_PLAYER, "");
+        assert!(WorldOverlay::parse(&json).is_ok());
+    }
+
+    #[test]
+    fn schema_version_1_with_a_teamless_player_add_is_rejected() {
+        let err = WorldOverlay::parse(&versioned(1, POOL_PLAYER, "")).unwrap_err();
+        assert!(matches!(
+            err,
+            OverlayError::TeamlessAddsNeedSchemaV2 { schema_version: 1 }
+        ));
+    }
+
+    #[test]
+    fn schema_version_1_with_a_teamless_staff_add_is_rejected() {
+        let err = WorldOverlay::parse(&versioned(1, "", POOL_STAFF)).unwrap_err();
+        assert!(matches!(
+            err,
+            OverlayError::TeamlessAddsNeedSchemaV2 { schema_version: 1 }
+        ));
+    }
+
+    #[test]
+    fn schema_version_3_is_rejected_even_without_ops() {
+        let err = WorldOverlay::parse(&versioned(3, "", "")).unwrap_err();
+        assert!(matches!(
+            err,
+            OverlayError::UnsupportedSchemaVersion(Some(3))
+        ));
     }
 
     #[test]
@@ -1202,6 +1255,7 @@ mod tests {
 
     #[test]
     fn staff_attributes_are_bounded_to_100() {
+        // A teamless add needs schemaVersion 2; the bound under test is the attribute, not the version.
         let staff = |attrs: &str| {
             doc(
                 "2026-11-07",
@@ -1209,6 +1263,7 @@ mod tests {
                     r#","staff":[{{"op":"add","staff":{{"id":"s-new","role":"Coach","team_id":null,"attributes":{attrs}}}}}]"#
                 ),
             )
+            .replacen(r#""schemaVersion":1"#, r#""schemaVersion":2"#, 1)
         };
         assert!(validate_doc(&staff(r#"{"coaching":100}"#)).is_ok());
         assert!(validate_doc(&staff(r#"{"coaching":101}"#)).is_err());
@@ -1235,8 +1290,12 @@ mod tests {
         let staff = doc(
             "2026-11-07",
             r#","staff":[{"op":"add","staff":{"id":"s-new","role":"Coach","team_id":null,"profile_image_url":"https://evil.example/x.png"}}]"#,
-        );
-        assert!(validate_doc(&staff).is_err());
+        )
+        .replacen(r#""schemaVersion":1"#, r#""schemaVersion":2"#, 1);
+        assert!(matches!(
+            validate_doc(&staff),
+            Err(OverlayError::InvalidField { .. })
+        ));
     }
 
     #[test]
@@ -1281,7 +1340,7 @@ mod tests {
     #[test]
     fn bundled_overlay_parses_and_validates() {
         let bundled = bundled_world_overlay().expect("bundled overlay must be valid");
-        assert_eq!(bundled.schema_version, SUPPORTED_SCHEMA_VERSION);
+        assert!(SUPPORTED_SCHEMA_VERSIONS.contains(&bundled.schema_version));
         assert_eq!(bundled.source.license, "CC BY-SA 3.0");
         assert!(bundled.validate().is_ok());
     }
