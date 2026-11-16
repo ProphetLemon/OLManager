@@ -780,7 +780,10 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
             twin.player_id, twin.dropped_from, twin.live_twin_id
         );
     }
-    info!("[game] dropped {} stale twins of live players", stale_twins.len());
+    info!(
+        "[game] dropped {} stale twins of live players",
+        stale_twins.len()
+    );
     let (mut all_players, dropped_duplicates) = world_catalog::dedupe_players(tagged_players);
     for dup in &dropped_duplicates {
         info!(
@@ -2228,7 +2231,12 @@ mod tests {
 
             let data = data_base();
             let manifests = olm_core::competitions::scan_competitions(&data.join("competitions"));
-            let key = |name: &str| name.split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase();
+            let key = |name: &str| {
+                name.split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" ")
+                    .to_lowercase()
+            };
             let identities = |player: &Player| {
                 let born = parse_date_of_birth(&player.date_of_birth);
                 born.map(|born| {
@@ -2245,7 +2253,8 @@ mod tests {
             let mut live_identities = HashSet::new();
             let mut stale: Vec<(String, Player)> = Vec::new();
             for manifest in manifests.iter().filter(|m| !m.legacy) {
-                let players = olm_core::competitions::load_players(&data, manifest).unwrap_or_default();
+                let players =
+                    olm_core::competitions::load_players(&data, manifest).unwrap_or_default();
                 if world_catalog::is_stale_duplicate_competition(&manifest.id) {
                     stale.extend(players.into_iter().map(|p| (manifest.id.clone(), p)));
                 } else {
@@ -2258,15 +2267,23 @@ mod tests {
             let twins: Vec<&(String, Player)> = stale
                 .iter()
                 .filter(|(_, p)| !live_ids.contains(&p.id))
-                .filter(|(_, p)| identities(p).iter().any(|identity| live_identities.contains(identity)))
+                .filter(|(_, p)| {
+                    identities(p)
+                        .iter()
+                        .any(|identity| live_identities.contains(identity))
+                })
                 .collect();
-            let per_competition = |competition: &str| twins.iter().filter(|(c, _)| c == competition).count();
+            let per_competition =
+                |competition: &str| twins.iter().filter(|(c, _)| c == competition).count();
             eprintln!(
                 "stale twins of live players: prime_league {}, lck-cl {}",
                 per_competition("prime_league"),
                 per_competition("lck-cl")
             );
-            assert!(!twins.is_empty(), "the real data ships stale twins of live players");
+            assert!(
+                !twins.is_empty(),
+                "the real data ships stale twins of live players"
+            );
 
             let ((_, built, _), _) = assemble_world_reporting_rating_overrides(
                 &data,
@@ -2280,10 +2297,17 @@ mod tests {
             let built_ids: HashSet<&str> = built.iter().map(|p| p.id.as_str()).collect();
 
             for (competition, twin) in &twins {
-                assert!(!built_ids.contains(twin.id.as_str()), "{competition} twin {} was kept", twin.id);
+                assert!(
+                    !built_ids.contains(twin.id.as_str()),
+                    "{competition} twin {} was kept",
+                    twin.id
+                );
             }
             for id in &live_ids {
-                assert!(built_ids.contains(id.as_str()), "live player {id} was dropped");
+                assert!(
+                    built_ids.contains(id.as_str()),
+                    "live player {id} was dropped"
+                );
             }
             let twin_ids: HashSet<&str> = twins.iter().map(|(_, p)| p.id.as_str()).collect();
             for (competition, player) in &stale {
@@ -2295,6 +2319,40 @@ mod tests {
                     );
                 }
             }
+        }
+
+        /// The ERL academies are seeded from the raw catalog rows, which the reviewed
+        /// corrections used to miss: their copy of a corrected player kept its empty
+        /// nationality. Read from the real `data/`.
+        #[test]
+        fn academy_seeds_carry_the_bundled_nationality_corrections() {
+            let seeds: Vec<&olm_core::academy::AcademyPlayerSeed> =
+                olm_core::academy::academy_seed_catalog()
+                    .iter()
+                    .flat_map(|team| team.players.iter())
+                    .collect();
+            assert!(!seeds.is_empty(), "the real data seeds academies");
+            let empty = seeds
+                .iter()
+                .filter(|seed| seed.nationality.trim().is_empty())
+                .count();
+            eprintln!(
+                "academy seeds: {} rows, {empty} with an empty nationality",
+                seeds.len()
+            );
+
+            let mut corrected = 0;
+            for correction in world_catalog::bundled_catalog_corrections()
+                .iter()
+                .filter(|correction| correction.field == "nationality")
+            {
+                for seed in seeds.iter().filter(|seed| seed.id == correction.id) {
+                    assert_eq!(seed.nationality, correction.to, "seed of {}", correction.id);
+                    corrected += 1;
+                }
+            }
+            eprintln!("academy seeds corrected: {corrected}");
+            assert!(corrected > 0, "some corrected players are academy-seeded");
         }
 
         /// A new game schedules no league for the stale duplicates the catalog still

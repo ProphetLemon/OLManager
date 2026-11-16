@@ -774,6 +774,30 @@ pub struct CorrectionReport {
     pub skipped: Vec<String>,
 }
 
+/// Apply one correction to the identity fields of the record it names. `Err` says why it
+/// was not applied: an unsupported field, or a `from` that no longer matches.
+pub fn apply_identity_correction(
+    correction: &CatalogCorrection,
+    match_name: &mut String,
+    full_name: &mut String,
+    nationality: &mut String,
+) -> Result<(), String> {
+    let slot = match correction.field.as_str() {
+        "full_name" => full_name,
+        "match_name" => match_name,
+        "nationality" => nationality,
+        other => return Err(format!("{}: unsupported field '{other}'", correction.id)),
+    };
+    if *slot != correction.from {
+        return Err(format!(
+            "{}.{}: expected '{}' but found '{}'",
+            correction.id, correction.field, correction.from, slot
+        ));
+    }
+    slot.clone_from(&correction.to);
+    Ok(())
+}
+
 /// Apply reviewed corrections. An unknown id, field, or a `from` that no longer matches
 /// is skipped and reported, never an error.
 pub fn apply_catalog_corrections(
@@ -788,26 +812,15 @@ pub fn apply_catalog_corrections(
                 .push(format!("{}: unknown player id", correction.id));
             continue;
         };
-        let slot = match correction.field.as_str() {
-            "full_name" => &mut player.full_name,
-            "match_name" => &mut player.match_name,
-            "nationality" => &mut player.nationality,
-            other => {
-                report
-                    .skipped
-                    .push(format!("{}: unsupported field '{other}'", correction.id));
-                continue;
-            }
-        };
-        if *slot != correction.from {
-            report.skipped.push(format!(
-                "{}.{}: expected '{}' but found '{}'",
-                correction.id, correction.field, correction.from, slot
-            ));
-            continue;
+        match apply_identity_correction(
+            correction,
+            &mut player.match_name,
+            &mut player.full_name,
+            &mut player.nationality,
+        ) {
+            Ok(()) => report.applied += 1,
+            Err(note) => report.skipped.push(note),
         }
-        slot.clone_from(&correction.to);
-        report.applied += 1;
     }
     for note in &report.skipped {
         warn!("[world_catalog] correction skipped: {note}");
