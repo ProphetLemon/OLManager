@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { LolSimV1RuntimeState } from "@/ui-v2/_legacy/components/match/lol-prototype/backend/contract-v1";
 
 import { buildLolMatchReport } from "./MatchSimulation";
-import { recordSeriesGame } from "./MatchSimulation.seriesRecord";
+import { guardReentry, recordSeriesGame, settleSeriesGame } from "./MatchSimulation.seriesRecord";
 
 function runtime(winner: "blue" | "red"): LolSimV1RuntimeState {
   return {
@@ -102,5 +102,141 @@ describe("buildLolMatchReport names the blue team", () => {
     const report = buildLolMatchReport(runtime("blue"));
 
     expect(report).not.toHaveProperty("blueTeamId");
+  });
+});
+
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+describe("guardReentry", () => {
+  it("ignores a second call while the first is still running", () => {
+    const busy = { current: false };
+    const pending = deferred();
+    const run = vi.fn(() => pending.promise);
+    const guarded = guardReentry(busy, run);
+
+    guarded();
+    guarded();
+
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it("runs again once the first call has finished", async () => {
+    const busy = { current: false };
+    const pending = deferred();
+    const run = vi.fn(() => pending.promise);
+    const guarded = guardReentry(busy, run);
+
+    guarded();
+    pending.resolve();
+    await pending.promise;
+    await Promise.resolve();
+    guarded();
+
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it("lets go when the run throws before returning", () => {
+    const busy = { current: false };
+    const guarded = guardReentry(busy, () => {
+      throw new Error("boom");
+    });
+
+    expect(() => guarded()).toThrow("boom");
+    expect(busy.current).toBe(false);
+  });
+});
+
+describe("settleSeriesGame", () => {
+  it("records a game that does not decide the series, then settles", async () => {
+    const record = vi.fn().mockResolvedValue(undefined);
+    const finalize = vi.fn().mockResolvedValue(true);
+    const onSettled = vi.fn();
+    const lolReport = buildLolMatchReport(runtime("blue"));
+
+    await settleSeriesGame({ seriesComplete: false, gameNumber: 1, lolReport, record, finalize, onSettled });
+
+    expect(record).toHaveBeenCalledWith({ gameNumber: 1, lolReport });
+    expect(finalize).not.toHaveBeenCalled();
+    expect(onSettled).toHaveBeenCalledTimes(1);
+  });
+
+  it("finishes the match with the deciding game's number and does not record it", async () => {
+    const record = vi.fn().mockResolvedValue(undefined);
+    const finalize = vi.fn().mockResolvedValue(true);
+    const onSettled = vi.fn();
+    const lolReport = buildLolMatchReport(runtime("blue"));
+
+    await settleSeriesGame({ seriesComplete: true, gameNumber: 3, lolReport, record, finalize, onSettled });
+
+    expect(finalize).toHaveBeenCalledWith(lolReport, 3);
+    expect(record).not.toHaveBeenCalled();
+    expect(onSettled).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not settle when finishing the match failed", async () => {
+    const onSettled = vi.fn();
+
+    await settleSeriesGame({
+      seriesComplete: true,
+      gameNumber: 1,
+      lolReport: buildLolMatchReport(runtime("blue")),
+      record: vi.fn(),
+      finalize: vi.fn().mockResolvedValue(false),
+      onSettled,
+    });
+
+    expect(onSettled).not.toHaveBeenCalled();
+  });
+
+  it("still settles when recording the game failed", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const onSettled = vi.fn();
+
+    await settleSeriesGame({
+      seriesComplete: false,
+      gameNumber: 1,
+      lolReport: buildLolMatchReport(runtime("blue")),
+      record: vi.fn().mockRejectedValue("nope"),
+      finalize: vi.fn(),
+      onSettled,
+    });
+
+    expect(onSettled).toHaveBeenCalledTimes(1);
+    errorSpy.mockRestore();
+  });
+});
+
+describe("a best-of-three the user wins 2-1, with every Continue clicked twice", () => {
+  it("records games 1 and 2 once each and finishes with game 3", async () => {
+    const busy = { current: false };
+    const record = vi.fn().mockResolvedValue(undefined);
+    const finalize = vi.fn().mockResolvedValue(true);
+    const onSettled = vi.fn();
+    const fullTime = guardReentry(busy, (gameNumber: number) =>
+      settleSeriesGame({
+        seriesComplete: gameNumber === 3,
+        gameNumber,
+        lolReport: buildLolMatchReport(runtime(gameNumber === 2 ? "red" : "blue")),
+        record,
+        finalize,
+        onSettled,
+      }),
+    );
+
+    for (const gameNumber of [1, 2, 3]) {
+      fullTime(gameNumber);
+      fullTime(gameNumber);
+      await vi.waitFor(() => expect(onSettled).toHaveBeenCalledTimes(gameNumber));
+    }
+
+    expect(record.mock.calls.map(([args]) => args.gameNumber)).toEqual([1, 2]);
+    expect(finalize).toHaveBeenCalledTimes(1);
+    expect(finalize.mock.calls[0][1]).toBe(3);
   });
 });

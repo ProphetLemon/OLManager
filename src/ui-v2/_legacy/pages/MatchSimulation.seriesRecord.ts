@@ -26,3 +26,54 @@ export async function recordSeriesGame({ record, gameNumber, lolReport }: Record
     return false;
   }
 }
+
+/**
+ * Wraps a handler so a second call made while the first is still running is ignored.
+ * The end-of-game Continue now waits for the backend, so a double click would otherwise
+ * run the handler twice and count one game as two. `busy` is a ref so it survives renders.
+ */
+export function guardReentry<A extends unknown[]>(
+  busy: { current: boolean },
+  run: (...args: A) => Promise<void> | void,
+): (...args: A) => void {
+  return (...args: A) => {
+    if (busy.current) return;
+    busy.current = true;
+    let pending: Promise<void> | void;
+    try {
+      pending = run(...args);
+    } catch (error) {
+      busy.current = false;
+      throw error;
+    }
+    void Promise.resolve(pending).finally(() => {
+      busy.current = false;
+    });
+  };
+}
+
+interface SettleSeriesGameParams {
+  /** True when this game decided the series (or is the only game). */
+  seriesComplete: boolean;
+  /** 1-based position of this game in the series. */
+  gameNumber: number;
+  lolReport: LolSimV1MatchReportInput;
+  record: (args: RecordSeriesGameArgs) => Promise<unknown>;
+  /** Finishes the live match with the deciding game; resolves false when that failed. */
+  finalize: (lolReport: LolSimV1MatchReportInput, gameNumber: number) => Promise<boolean>;
+  /** Moves on to the next stage once the backend has the game. */
+  onSettled: () => void;
+}
+
+/**
+ * What happens to a finished game: the deciding one finishes the match, any other is
+ * recorded for the backend to merge later. The stage only advances once that is done.
+ */
+export async function settleSeriesGame({ seriesComplete, gameNumber, lolReport, record, finalize, onSettled }: SettleSeriesGameParams): Promise<void> {
+  if (seriesComplete) {
+    if (await finalize(lolReport, gameNumber)) onSettled();
+    return;
+  }
+  await recordSeriesGame({ record, gameNumber, lolReport });
+  onSettled();
+}

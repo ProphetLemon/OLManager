@@ -17,7 +17,7 @@ import ChampionDraft, {
 } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import type { ChampionDraftResultPayload } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import { finalizeLiveMatch, type FinishLiveMatchResponse } from "@/ui-v2/_legacy/pages/MatchSimulation.finalize";
-import { recordSeriesGame } from "@/ui-v2/_legacy/pages/MatchSimulation.seriesRecord";
+import { guardReentry, settleSeriesGame } from "@/ui-v2/_legacy/pages/MatchSimulation.seriesRecord";
 import LiveMatchV2 from "@/ui-v2/match/LiveMatchV2";
 import DraftResultStage from "@/ui-v2/match/DraftResultStage";
 import PostGame from "@/ui-v2/match/PostGame";
@@ -1314,7 +1314,7 @@ export default function MatchSimulation() {
     setStage("first_half");
   }, []);
 
-  const finalizeMatch = useCallback(async (lolReport?: LolSimV1MatchReportInput): Promise<boolean> => {
+  const finalizeMatch = useCallback(async (lolReport?: LolSimV1MatchReportInput, gameNumber?: number): Promise<boolean> => {
     if (hasFinalizedMatch) {
       return true;
     }
@@ -1326,7 +1326,7 @@ export default function MatchSimulation() {
     const winner = lolReport?.winner;
     const canRecordPicks = !!(fixtureId && draft && draftSnapshot && winner);
     const finalized = await finalizeLiveMatch({
-      finish: () => invoke<FinishLiveMatchResponse>("finish_live_match", { lolReport }),
+      finish: () => invoke<FinishLiveMatchResponse>("finish_live_match", { lolReport, gameNumber }),
       recordPicks: canRecordPicks
         ? () => {
             const winnerTeamId = winner === "blue"
@@ -1353,7 +1353,7 @@ export default function MatchSimulation() {
     return finalized;
   }, [championSelections, currentFixture?.id, draftPayload, hasFinalizedMatch, renderSnapshotWithTactics, setGameState, snapshot]);
 
-  const handleFullTime = useCallback((finalRuntimeState: LolSimV1RuntimeState, meta?: { source: "live" | "skip"; precomputedResult?: DraftMatchResult }) => {
+  const runFullTime = useCallback((finalRuntimeState: LolSimV1RuntimeState, meta?: { source: "live" | "skip"; precomputedResult?: DraftMatchResult }): Promise<void> | void => {
     console.info("[MatchSimulation] handleFullTime");
     const source = meta?.source ?? "live";
     setFinalRuntimeState(finalRuntimeState);
@@ -1374,13 +1374,12 @@ export default function MatchSimulation() {
         return;
       }
 
-      void (async () => {
+      return (async () => {
         const finalized = await finalizeMatch(buildLolMatchReport(finalRuntimeState, blueTeamId ?? undefined));
         if (finalized) {
           setStage("draft_result");
         }
       })();
-      return;
     }
 
     // Determine the single source of truth for the post-match result before any
@@ -1570,26 +1569,16 @@ export default function MatchSimulation() {
       },
     };
 
-    if (seriesComplete) {
-      void (async () => {
-        const finalized = await finalizeMatch(buildLolMatchReport(runtimeForFinalize, blueTeamId ?? undefined));
-        if (finalized) {
-          setStage("draft_result");
-        }
-      })();
-      return;
-    }
-
-    // A game that does not decide the series still counts: the backend keeps its report so the
-    // fixture gets the true series score and every game's statistics.
-    void (async () => {
-      await recordSeriesGame({
-        record: (args) => invoke("record_series_game", args),
-        gameNumber: currentGameNumber,
-        lolReport: buildLolMatchReport(runtimeForFinalize, blueTeamId ?? undefined),
-      });
-      setStage("draft_result");
-    })();
+    // The deciding game finishes the match; any other is recorded so the fixture gets the true
+    // series score and every game's statistics. The stage advances once the backend has it.
+    return settleSeriesGame({
+      seriesComplete,
+      gameNumber: currentGameNumber,
+      lolReport: buildLolMatchReport(runtimeForFinalize, blueTeamId ?? undefined),
+      record: (args) => invoke("record_series_game", args),
+      finalize: (report, gameNumber) => finalizeMatch(report, gameNumber),
+      onSettled: () => setStage("draft_result"),
+    });
   }, [
     blueTeamId,
     championSelections,
@@ -1614,6 +1603,10 @@ export default function MatchSimulation() {
     snapshot,
     userSelectedSide,
   ]);
+
+  // Continue waits for the backend now, so a double click must not count a game twice.
+  const fullTimeBusyRef = useRef(false);
+  const handleFullTime = useMemo(() => guardReentry(fullTimeBusyRef, runFullTime), [runFullTime]);
 
   const handleSimulateFromTactics = async (): Promise<void> => {
     if (!renderSnapshotWithTactics || isSimulating) {
