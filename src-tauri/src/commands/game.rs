@@ -1596,13 +1596,15 @@ pub async fn load_game(
     let rehydrated = crate::commands::import::rehydrate_game_from_catalog(&app_handle, &mut game);
     if rehydrated.total() > 0 {
         info!(
-            "[cmd] load_game: rehydrated {} missing teams, {} players, {} reassigned players, {} staff from catalog, removed {} stale and {} canonical duplicate clubs",
+            "[cmd] load_game: rehydrated {} missing teams, {} players, {} reassigned players, {} staff from catalog, removed {} stale and {} canonical duplicate clubs, {} duplicate players dropped, {} released",
             rehydrated.teams,
             rehydrated.players,
             rehydrated.players_reassigned,
             rehydrated.staff,
             rehydrated.stale_teams_removed,
-            rehydrated.canonical_duplicates_removed
+            rehydrated.canonical_duplicates_removed,
+            rehydrated.canonical_players_dropped,
+            rehydrated.canonical_players_released
         );
     }
     info!(
