@@ -651,6 +651,88 @@ pub fn dedupe_players(entries: Vec<(String, Player)>) -> (Vec<Player>, Vec<Dropp
     (kept, dropped)
 }
 
+/// A stale-competition player left out of a new world because a live competition holds
+/// the same person.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DroppedStaleTwin {
+    pub player_id: String,
+    pub dropped_from: String,
+    pub live_twin_id: String,
+}
+
+/// Drop the records of a stale duplicate competition for people a live competition also
+/// holds. A new world keeps no team of a stale competition, so its players would become free
+/// agents next to the live record of the same person, and the AI market could sign both.
+///
+/// The person is matched like `same_person_survivor` does (a name and a readable birth date),
+/// except that either name of the stale record may equal either name of the live one: the
+/// stale files sometimes write the nick as the full name and the other way round. Only a
+/// stale record that is a free agent or sits on a team of its own competition goes; a record
+/// sharing its id with a live one is left to [`dedupe_players`]; a live record is never
+/// dropped. `entries` pairs each player with the competition it was loaded from; survivors
+/// keep their order.
+pub fn drop_stale_twins_of_live_players(
+    entries: Vec<(String, Player)>,
+) -> (Vec<(String, Player)>, Vec<DroppedStaleTwin>) {
+    let names = |player: &Player| -> Vec<String> {
+        [
+            person_key(&player.full_name),
+            person_key(&player.match_name),
+        ]
+        .into_iter()
+        .filter(|name| !name.is_empty())
+        .collect()
+    };
+
+    let mut live_ids: HashSet<&str> = HashSet::new();
+    let mut live_by_identity: HashMap<(String, NaiveDate), &str> = HashMap::new();
+    for (competition, player) in &entries {
+        if is_stale_duplicate_competition(competition) {
+            continue;
+        }
+        live_ids.insert(player.id.as_str());
+        if let Some(born) = parse_date_of_birth(&player.date_of_birth) {
+            for name in names(player) {
+                live_by_identity
+                    .entry((name, born))
+                    .or_insert(player.id.as_str());
+            }
+        }
+    }
+
+    let mut dropped = Vec::new();
+    let mut drop_flags = Vec::with_capacity(entries.len());
+    for (competition, player) in &entries {
+        let removable = is_stale_duplicate_competition(competition)
+            && !live_ids.contains(player.id.as_str())
+            && player.team_id.as_deref().is_none_or(|team| {
+                matches!(team, "fa" | "freeagent") || team.starts_with(&format!("{competition}-"))
+            });
+        let twin = removable
+            .then(|| parse_date_of_birth(&player.date_of_birth))
+            .flatten()
+            .and_then(|born| {
+                names(player)
+                    .into_iter()
+                    .find_map(|name| live_by_identity.get(&(name, born)).copied())
+            });
+        if let Some(live_twin_id) = twin {
+            dropped.push(DroppedStaleTwin {
+                player_id: player.id.clone(),
+                dropped_from: competition.clone(),
+                live_twin_id: live_twin_id.to_string(),
+            });
+        }
+        drop_flags.push(twin.is_some());
+    }
+    let kept = entries
+        .into_iter()
+        .zip(drop_flags)
+        .filter_map(|(entry, dropped)| (!dropped).then_some(entry))
+        .collect();
+    (kept, dropped)
+}
+
 /// Turn players whose team does not exist into free agents. Returns their ids.
 pub fn detach_orphaned_players(players: &mut [Player], teams: &[Team]) -> Vec<String> {
     let team_ids: HashSet<&str> = teams.iter().map(|t| t.id.as_str()).collect();
@@ -918,6 +1000,188 @@ mod tests {
     #[test]
     fn malformed_corrections_document_yields_no_corrections() {
         assert!(parse_catalog_corrections("not json").is_empty());
+    }
+
+    fn born(mut p: Player, full_name: &str, dob: &str) -> Player {
+        p.full_name = full_name.to_string();
+        p.date_of_birth = dob.to_string();
+        p
+    }
+
+    fn ids(entries: &[(String, Player)]) -> Vec<&str> {
+        entries.iter().map(|(_, p)| p.id.as_str()).collect()
+    }
+
+    #[test]
+    fn a_stale_player_who_is_a_live_player_by_nick_and_birth_date_is_dropped() {
+        let live = born(
+            player("live", "Densi", Some("prm-t1")),
+            "Denis Real",
+            "2003-06-03",
+        );
+        let stale = born(player("stale", "Densi", None), "Densi", "June 3, 2003");
+        let (kept, dropped) = drop_stale_twins_of_live_players(vec![
+            ("prm".into(), live),
+            ("prime_league".into(), stale),
+        ]);
+        assert_eq!(ids(&kept), vec!["live"]);
+        assert_eq!(
+            dropped,
+            vec![DroppedStaleTwin {
+                player_id: "stale".into(),
+                dropped_from: "prime_league".into(),
+                live_twin_id: "live".into(),
+            }]
+        );
+    }
+
+    #[test]
+    fn a_stale_player_who_is_a_live_player_by_full_name_and_birth_date_is_dropped() {
+        let live = born(
+            player("live", "Rin", Some("lckcl-t1")),
+            "Kim Rin",
+            "2001-02-03",
+        );
+        let stale = born(
+            player("stale", "Other Nick", None),
+            "  kim  RIN ",
+            "2001-02-03",
+        );
+        let (kept, dropped) = drop_stale_twins_of_live_players(vec![
+            ("lckcl".into(), live),
+            ("lck-cl".into(), stale),
+        ]);
+        assert_eq!(ids(&kept), vec!["live"]);
+        assert_eq!(dropped.len(), 1);
+    }
+
+    #[test]
+    fn a_stale_record_with_its_nick_and_full_name_swapped_is_a_twin() {
+        let live = born(
+            player("live", "Dinai", Some("lckcl-t1")),
+            "Hwang Chi-hyeon",
+            "2005-09-22",
+        );
+        let stale = born(
+            player("stale", "Hwang Chi-hyeon", None),
+            "Dinai",
+            "2005-09-22",
+        );
+        let (kept, dropped) = drop_stale_twins_of_live_players(vec![
+            ("lckcl".into(), live),
+            ("lck-cl".into(), stale),
+        ]);
+        assert_eq!(ids(&kept), vec!["live"]);
+        assert_eq!(dropped.len(), 1);
+    }
+
+    #[test]
+    fn the_stale_record_is_dropped_even_when_it_is_listed_first() {
+        let stale = born(player("stale", "Densi", None), "Densi", "June 3, 2003");
+        let live = born(
+            player("live", "Densi", Some("prm-t1")),
+            "Denis Real",
+            "2003-06-03",
+        );
+        let (kept, _) = drop_stale_twins_of_live_players(vec![
+            ("prime_league".into(), stale),
+            ("prm".into(), live),
+        ]);
+        assert_eq!(ids(&kept), vec!["live"]);
+    }
+
+    #[test]
+    fn a_stale_player_with_another_birth_date_or_no_readable_one_stays() {
+        let live = born(
+            player("live", "Densi", Some("prm-t1")),
+            "Denis Real",
+            "2003-06-03",
+        );
+        let other_day = born(player("other-day", "Densi", None), "Densi", "June 4, 2003");
+        let unreadable = born(
+            player("unreadable", "Densi", None),
+            "Densi",
+            "sometime in 2003",
+        );
+        let missing = born(player("missing", "Densi", None), "Densi", "");
+        let (kept, dropped) = drop_stale_twins_of_live_players(vec![
+            ("prm".into(), live),
+            ("prime_league".into(), other_day),
+            ("prime_league".into(), unreadable),
+            ("prime_league".into(), missing),
+        ]);
+        assert_eq!(
+            ids(&kept),
+            vec!["live", "other-day", "unreadable", "missing"]
+        );
+        assert!(dropped.is_empty());
+    }
+
+    #[test]
+    fn a_live_player_is_never_dropped_even_when_two_live_players_match() {
+        let a = born(
+            player("a", "Densi", Some("prm-t1")),
+            "Denis Real",
+            "2003-06-03",
+        );
+        let b = born(
+            player("b", "Densi", Some("al-t2")),
+            "Denis Real",
+            "2003-06-03",
+        );
+        let (kept, dropped) =
+            drop_stale_twins_of_live_players(vec![("prm".into(), a), ("al".into(), b)]);
+        assert_eq!(ids(&kept), vec!["a", "b"]);
+        assert!(dropped.is_empty());
+    }
+
+    #[test]
+    fn a_stale_player_under_contract_on_a_live_team_stays() {
+        let live = born(
+            player("live", "Densi", Some("prm-t1")),
+            "Denis Real",
+            "2003-06-03",
+        );
+        let signed = born(
+            player("signed", "Densi", Some("prm-t9")),
+            "Densi",
+            "June 3, 2003",
+        );
+        let (kept, dropped) = drop_stale_twins_of_live_players(vec![
+            ("prm".into(), live),
+            ("prime_league".into(), signed),
+        ]);
+        assert_eq!(ids(&kept), vec!["live", "signed"]);
+        assert!(dropped.is_empty());
+    }
+
+    #[test]
+    fn a_stale_record_sharing_an_id_with_a_live_one_is_left_to_the_id_dedupe() {
+        let live = born(
+            player("same", "Densi", Some("prm-t1")),
+            "Denis Real",
+            "2003-06-03",
+        );
+        let stale = born(player("same", "Densi", None), "Densi", "June 3, 2003");
+        let (kept, dropped) = drop_stale_twins_of_live_players(vec![
+            ("prm".into(), live),
+            ("prime_league".into(), stale),
+        ]);
+        assert_eq!(kept.len(), 2);
+        assert!(dropped.is_empty());
+        assert_eq!(dedupe_players(kept).0.len(), 1);
+    }
+
+    #[test]
+    fn a_stale_player_with_only_a_stale_twin_stays() {
+        let a = born(player("a", "Densi", None), "Densi", "June 3, 2003");
+        let b = born(player("b", "Densi", None), "Densi", "June 3, 2003");
+        let (kept, dropped) = drop_stale_twins_of_live_players(vec![
+            ("prime_league".into(), a),
+            ("lck-cl".into(), b),
+        ]);
+        assert_eq!(kept.len(), 2);
+        assert!(dropped.is_empty());
     }
 
     #[test]
