@@ -463,11 +463,29 @@ fn keep_series_game(
 /// The report `apply_match_report` gets for a finished match.
 ///
 /// A series the user played game by game merges the recorded games with the deciding one,
-/// exactly as an AI series is merged. No recorded games means a single game. Recorded games
-/// that do not add up to a series won by the deciding game's winner (a game that failed to
-/// record, say) are not trusted: the deciding game then stands alone, as it always did.
-fn series_report(buffered: Vec<MatchReport>, deciding: MatchReport, best_of: u8) -> MatchReport {
+/// exactly as an AI series is merged. No recorded games means a single game.
+///
+/// Two checks keep a game that failed to record from skewing the series. When the caller
+/// says which game of the series is deciding (`game_number`), every game before it must be
+/// recorded; a gap that the score alone cannot show (game 2 missing from a 2-1 that reads
+/// 2-0) is caught there. Whatever the caller sends, recorded games that do not add up to a
+/// series won by the deciding game's winner are not trusted either. In both cases the
+/// deciding game stands alone, as it always did, and a warning is logged.
+fn series_report(
+    buffered: Vec<MatchReport>,
+    deciding: MatchReport,
+    best_of: u8,
+    game_number: Option<u8>,
+) -> MatchReport {
     if buffered.is_empty() {
+        return deciding;
+    }
+    if game_number.is_some_and(|number| usize::from(number) != buffered.len() + 1) {
+        log::warn!(
+            "[cmd] finish_live_match: game {:?} decides the series but {} games were recorded; using the last game alone",
+            game_number,
+            buffered.len()
+        );
         return deciding;
     }
     let (home_wins, away_wins) = series_wins(buffered.iter().chain([&deciding]));
@@ -495,10 +513,11 @@ fn series_report(buffered: Vec<MatchReport>, deciding: MatchReport, best_of: u8)
 pub fn finish_live_match(
     state: &StateManager,
     lol_report: Option<LolSimMatchReportInput>,
+    game_number: Option<u8>,
     locale: Option<&str>,
     data_base: Option<&std::path::Path>,
 ) -> Result<FinishLiveMatchResponse, String> {
-    info!("[cmd] finish_live_match");
+    info!("[cmd] finish_live_match: game_number={:?}", game_number);
     let mut session = state.take_live_match().ok_or("No active live match")?;
     let buffered_games = std::mem::take(&mut session.series_reports);
 
@@ -517,7 +536,7 @@ pub fn finish_live_match(
                     .active_league()
                     .and_then(|league| league.fixtures.get(fixture_index))
                     .map_or(1, |fixture| fixture.best_of);
-                series_report(buffered_games, deciding, best_of)
+                series_report(buffered_games, deciding, best_of, game_number)
             })
             .ok_or("No active game session")?
     } else {

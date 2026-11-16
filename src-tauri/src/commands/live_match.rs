@@ -89,10 +89,11 @@ pub struct FixtureChampionPickInput {
 fn finish_live_match_internal(
     state: &StateManager,
     lol_report: Option<LolSimMatchReportInput>,
+    game_number: Option<u8>,
     locale: Option<&str>,
     data_base: Option<&std::path::Path>,
 ) -> Result<FinishLiveMatchResponse, String> {
-    finish_live_match_service(state, lol_report, locale, data_base)
+    finish_live_match_service(state, lol_report, game_number, locale, data_base)
 }
 
 /// Start a live match for a given fixture.
@@ -142,12 +143,14 @@ pub fn finish_live_match(
     app_handle: tauri::AppHandle,
     state: State<'_, StateManager>,
     lol_report: Option<LolSimMatchReportInput>,
+    game_number: Option<u8>,
 ) -> Result<FinishLiveMatchResponse, String> {
     let settings = crate::commands::settings::get_settings(app_handle.clone()).unwrap_or_default();
     let data_base = crate::commands::competitions::resolve_data_base(&app_handle);
     finish_live_match_internal(
         &state,
         lol_report,
+        game_number,
         Some(settings.language.as_str()),
         data_base.as_deref(),
     )
@@ -631,7 +634,7 @@ mod tests {
         state.set_game(game);
         state.set_live_match(session);
 
-        let response = finish_live_match_internal(&state, None, None, None)
+        let response = finish_live_match_internal(&state, None, None, None, None)
             .expect("finish live match response");
 
         let round_summary = response.round_summary.expect("round summary response");
@@ -759,6 +762,7 @@ mod tests {
             Some(sim_game("t2", "t1", "blue", 10, 4)),
             None,
             None,
+            None,
         )
         .expect("finish");
 
@@ -775,6 +779,7 @@ mod tests {
         finish_live_match_internal(
             &state,
             Some(sim_game("t2", "t1", "blue", 10, 4)),
+            None,
             None,
             None,
         )
@@ -803,8 +808,14 @@ mod tests {
     fn a_game_won_by_the_home_team_on_red_is_credited_to_the_home_team() {
         let state = state_with_live_session("team1", 1);
 
-        finish_live_match_internal(&state, Some(sim_game("t2", "t1", "red", 4, 10)), None, None)
-            .expect("finish");
+        finish_live_match_internal(
+            &state,
+            Some(sim_game("t2", "t1", "red", 4, 10)),
+            None,
+            None,
+            None,
+        )
+        .expect("finish");
 
         let game = played_game(&state);
         assert_eq!(fixture_score(&game), (1, 0));
@@ -818,6 +829,7 @@ mod tests {
         finish_live_match_internal(
             &state,
             Some(sim_game("t1", "t2", "blue", 10, 4)),
+            None,
             None,
             None,
         )
@@ -852,11 +864,13 @@ mod tests {
     ) -> StateManager {
         let state = state_with_live_session(user_team, best_of);
         let mut games = games;
+        let game_count = games.len() as u8;
         let last = games.pop().expect("a series has games");
         for (index, game) in games.into_iter().enumerate() {
             record_series_game(&state, index as u8 + 1, game).expect("record game");
         }
-        finish_live_match_internal(&state, Some(last), None, None).expect("finish");
+        finish_live_match_internal(&state, Some(last), Some(game_count), None, None)
+            .expect("finish");
         state
     }
 
@@ -977,8 +991,14 @@ mod tests {
         record_series_game(&state, 1, game_one()).expect("record game 1");
         record_series_game(&state, 2, game_three()).expect("record game 2");
 
-        finish_live_match_internal(&state, Some(sim_game("t1", "t2", "blue", 8, 2)), None, None)
-            .expect("finish");
+        finish_live_match_internal(
+            &state,
+            Some(sim_game("t1", "t2", "blue", 8, 2)),
+            None,
+            None,
+            None,
+        )
+        .expect("finish");
 
         // +5 for the win and +3 for a three-game margin.
         assert_eq!(played_game(&state).manager.fan_approval, 58);
@@ -988,7 +1008,7 @@ mod tests {
     fn a_session_without_recorded_games_finishes_as_a_single_game() {
         let state = state_with_live_session("team1", 3);
 
-        finish_live_match_internal(&state, Some(game_one()), None, None).expect("finish");
+        finish_live_match_internal(&state, Some(game_one()), None, None, None).expect("finish");
 
         assert_eq!(fixture_score(&played_game(&state)), (1, 0));
     }
@@ -999,7 +1019,7 @@ mod tests {
         record_series_game(&state, 1, game_one()).expect("record game 1");
         record_series_game(&state, 1, game_one()).expect("retry game 1");
 
-        finish_live_match_internal(&state, Some(game_three()), None, None).expect("finish");
+        finish_live_match_internal(&state, Some(game_three()), None, None, None).expect("finish");
 
         assert_eq!(fixture_score(&played_game(&state)), (2, 0));
     }
@@ -1014,7 +1034,7 @@ mod tests {
         });
         state.set_live_match(fresh);
 
-        finish_live_match_internal(&state, Some(game_three()), None, None).expect("finish");
+        finish_live_match_internal(&state, Some(game_three()), None, None, None).expect("finish");
 
         assert_eq!(fixture_score(&played_game(&state)), (1, 0));
     }
@@ -1025,7 +1045,7 @@ mod tests {
         record_series_game(&state, 1, game_one()).expect("record game 1");
 
         // Game 2 was lost, so 1-1 is not a finished series: the last game stands alone.
-        finish_live_match_internal(&state, Some(game_two()), None, None).expect("finish");
+        finish_live_match_internal(&state, Some(game_two()), None, None, None).expect("finish");
 
         assert_eq!(fixture_score(&played_game(&state)), (0, 1));
     }
@@ -1038,7 +1058,7 @@ mod tests {
             session.run_to_completion();
         });
 
-        finish_live_match_internal(&state, None, None, None).expect("finish");
+        finish_live_match_internal(&state, None, None, None, None).expect("finish");
 
         let (home, away) = fixture_score(&played_game(&state));
         assert_eq!(home + away, 1);
@@ -1093,7 +1113,7 @@ mod tests {
         report.champions.clear();
         report.blue_team_id = Some("team2".to_string());
 
-        finish_live_match_internal(&state, Some(report), None, None).expect("finish");
+        finish_live_match_internal(&state, Some(report), None, None, None).expect("finish");
 
         assert_eq!(fixture_score(&played_game(&state)), (0, 1));
     }
@@ -1104,7 +1124,7 @@ mod tests {
         let mut report = sim_game("t2", "t1", "blue", 10, 4);
         report.champions.clear();
 
-        finish_live_match_internal(&state, Some(report), None, None).expect("finish");
+        finish_live_match_internal(&state, Some(report), None, None, None).expect("finish");
 
         assert_eq!(fixture_score(&played_game(&state)), (1, 0));
     }
@@ -1115,7 +1135,7 @@ mod tests {
         let mut report = sim_game("t2", "t1", "blue", 10, 4);
         report.blue_team_id = Some("team9".to_string());
 
-        finish_live_match_internal(&state, Some(report), None, None).expect("finish");
+        finish_live_match_internal(&state, Some(report), None, None, None).expect("finish");
 
         assert_eq!(fixture_score(&played_game(&state)), (0, 1));
     }
@@ -1131,8 +1151,30 @@ mod tests {
                 .chain(sim_champions("t1", "blue", 10, 4).into_iter().take(2)),
         );
 
-        finish_live_match_internal(&state, Some(report), None, None).expect("finish");
+        finish_live_match_internal(&state, Some(report), None, None, None).expect("finish");
 
         assert_eq!(fixture_score(&played_game(&state)), (1, 0));
+    }
+    #[test]
+    fn a_game_missing_before_the_decider_is_not_merged_into_a_wrong_series() {
+        let state = state_with_live_session("team1", 3);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+        // Game 2 (a loss for team1) never reached the backend; game 3 is a win.
+
+        finish_live_match_internal(&state, Some(game_three()), Some(3), None, None)
+            .expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (1, 0));
+    }
+
+    #[test]
+    fn a_caller_that_sends_no_game_number_still_gets_the_merged_series() {
+        let state = state_with_live_session("team1", 3);
+        record_series_game(&state, 1, game_one()).expect("record game 1");
+        record_series_game(&state, 2, game_two()).expect("record game 2");
+
+        finish_live_match_internal(&state, Some(game_three()), None, None, None).expect("finish");
+
+        assert_eq!(fixture_score(&played_game(&state)), (2, 1));
     }
 }
