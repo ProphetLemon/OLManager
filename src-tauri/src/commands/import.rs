@@ -3091,6 +3091,47 @@ mod tests {
         );
     }
 
+    /// The user's parallel academy league holds every academy of an ERL league, linked or not.
+    fn academy_league_playing(team_ids: &[&str]) -> olm_core::domain::league::League {
+        use olm_core::domain::league::{League, LeagueKind};
+
+        let ids: Vec<String> = team_ids.iter().map(|id| id.to_string()).collect();
+        let mut league = League::new(
+            "prime_league".to_string(),
+            "Prime League academies".to_string(),
+            2026,
+            &ids,
+            None,
+        );
+        league.league_kind = LeagueKind::Academy;
+        league
+    }
+
+    #[test]
+    fn rehydration_keeps_a_pair_when_an_academy_league_schedules_the_stale_copy() {
+        let mut game = game_with_academy_twins();
+        game.leagues
+            .push(academy_league_playing(&["academy-prime_league-nord"]));
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academies_removed, 0);
+        assert!(!stale_academy_removed(&game) && !canonical_academy_removed(&game));
+        assert_eq!(game.leagues[1].standings.len(), 1);
+    }
+
+    #[test]
+    fn rehydration_keeps_a_pair_when_an_academy_league_schedules_the_canonical_copy() {
+        let mut game = game_with_academy_twins();
+        game.leagues
+            .push(academy_league_playing(&["academy-prm-nord"]));
+
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert_eq!(counts.stale_academies_removed, 0);
+        assert!(!stale_academy_removed(&game) && !canonical_academy_removed(&game));
+    }
+
     #[test]
     fn rehydration_keeps_an_academy_the_manager_is_on() {
         let mut game = game_with_academy_twins();

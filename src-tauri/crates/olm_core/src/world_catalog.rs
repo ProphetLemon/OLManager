@@ -463,8 +463,9 @@ pub struct AcademyDuplicateReport {
 /// `prm` twin, paired by id), while the save still plays a stale league (the gate of
 /// `remove_unscheduled_canonical_duplicates`). The copy a club links as its academy
 /// survives; when neither is linked the canonical copy survives, and when both are linked
-/// neither is touched. The manager's club and its academy are never removed. An academy with
-/// no twin stays.
+/// neither is touched. A pair is also left alone when a league schedules either copy (the
+/// user's parallel academy league does). The manager's club and its academy are never
+/// removed, and an academy with no twin stays.
 ///
 /// Players and staff of a removed academy follow `remove_teams`: a player who is the same
 /// person as one on the surviving twin is dropped and its references remapped, any other
@@ -505,10 +506,18 @@ pub fn remove_stale_academy_duplicates(game: &mut Game) -> AcademyDuplicateRepor
             let Some(canonical) = academies.get(canonical.as_str()).copied() else {
                 continue;
             };
-            match (linked.contains(stale), linked.contains(canonical)) {
-                (false, _) => pairs.push((*stale, canonical.to_string())),
-                (true, false) => pairs.push((canonical, (*stale).to_string())),
-                (true, true) => {}
+            let pair = match (linked.contains(stale), linked.contains(canonical)) {
+                (false, _) => Some((*stale, canonical.to_string())),
+                (true, false) => Some((canonical, (*stale).to_string())),
+                (true, true) => None,
+            };
+            // A league plays the academy (the user's parallel academy league holds every
+            // academy of an ERL league): removing a copy would leave its standings dangling.
+            if let Some((removed, surviving)) = pair
+                && !scheduled.contains(removed)
+                && !scheduled.contains(surviving.as_str())
+            {
+                pairs.push((removed, surviving));
             }
         }
     }
