@@ -321,6 +321,7 @@ pub fn run() {
             apply_match_command,
             get_match_snapshot,
             finish_live_match,
+            record_series_game,
             record_fixture_champion_picks,
             delete_save,
             skip_to_match_day,

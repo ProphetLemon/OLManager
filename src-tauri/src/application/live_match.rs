@@ -9,6 +9,7 @@ use olm_core::game::Game;
 use olm_core::live_match_manager::{self, MatchMode};
 use olm_core::roster_stability;
 use olm_core::state::StateManager;
+use olm_core::turn::merge_series_reports;
 use serde::{Deserialize, Serialize};
 
 fn role_to_string(role: &olm_core::domain::stats::LolRole) -> &'static str {
@@ -381,6 +382,93 @@ fn fixture_report_from_lol_sim(
     report
 }
 
+/// Games a side must win to take a best-of-`best_of` series.
+fn series_target_wins(best_of: u8) -> u8 {
+    best_of / 2 + 1
+}
+
+/// Games each side has won in the given per-game reports.
+fn series_wins<'a>(reports: impl IntoIterator<Item = &'a MatchReport>) -> (u8, u8) {
+    reports.into_iter().fold((0, 0), |(home, away), report| {
+        (
+            home.saturating_add(report.home_wins),
+            away.saturating_add(report.away_wins),
+        )
+    })
+}
+
+/// Keeps `report` as game `game_number` of the series, replacing that game and any after it.
+///
+/// A series is recorded in order, so a retry or a series restarted from game 1 overwrites
+/// what an earlier attempt left. Only games that leave the series undecided are kept: the
+/// deciding game goes through `finish_live_match`, so a Bo1, a game past the series' length
+/// and a game after the decision are all refused.
+fn keep_series_game(
+    buffer: &mut Vec<MatchReport>,
+    game_number: u8,
+    best_of: u8,
+    report: MatchReport,
+) -> Result<(), String> {
+    let index = usize::from(game_number)
+        .checked_sub(1)
+        .ok_or("Series games are numbered from 1")?;
+    if game_number > best_of {
+        return Err(format!(
+            "Game {game_number} is past the {best_of} games of the series"
+        ));
+    }
+    if index > buffer.len() {
+        return Err(format!(
+            "Game {game_number} was recorded before game {}",
+            buffer.len() + 1
+        ));
+    }
+
+    let (home_wins, away_wins) = series_wins(buffer[..index].iter().chain([&report]));
+    let target = series_target_wins(best_of);
+    if home_wins >= target || away_wins >= target {
+        return Err(format!(
+            "Game {game_number} decides the best-of-{best_of} series: finish the match instead"
+        ));
+    }
+
+    buffer.truncate(index);
+    buffer.push(report);
+    Ok(())
+}
+
+/// The report `apply_match_report` gets for a finished match.
+///
+/// A series the user played game by game merges the recorded games with the deciding one,
+/// exactly as an AI series is merged. No recorded games means a single game. Recorded games
+/// that do not add up to a series won by the deciding game's winner (a game that failed to
+/// record, say) are not trusted: the deciding game then stands alone, as it always did.
+fn series_report(buffered: Vec<MatchReport>, deciding: MatchReport, best_of: u8) -> MatchReport {
+    if buffered.is_empty() {
+        return deciding;
+    }
+    let (home_wins, away_wins) = series_wins(buffered.iter().chain([&deciding]));
+    let target = series_target_wins(best_of);
+    let home_takes_series = home_wins >= target && away_wins < target;
+    let away_takes_series = away_wins >= target && home_wins < target;
+    let deciding_home_won = deciding.home_wins > deciding.away_wins;
+    let consistent =
+        (home_takes_series && deciding_home_won) || (away_takes_series && !deciding_home_won);
+    if !consistent {
+        log::warn!(
+            "[cmd] finish_live_match: recorded games {}-{} do not make a best-of-{} series won by the last game; using the last game alone",
+            home_wins,
+            away_wins,
+            best_of
+        );
+        return deciding;
+    }
+
+    let mut games = buffered;
+    games.push(deciding.clone());
+    merge_series_reports(games).unwrap_or(deciding)
+}
+
 pub fn finish_live_match(
     state: &StateManager,
     lol_report: Option<LolSimMatchReportInput>,
@@ -388,7 +476,8 @@ pub fn finish_live_match(
     data_base: Option<&std::path::Path>,
 ) -> Result<FinishLiveMatchResponse, String> {
     info!("[cmd] finish_live_match");
-    let session = state.take_live_match().ok_or("No active live match")?;
+    let mut session = state.take_live_match().ok_or("No active live match")?;
+    let buffered_games = std::mem::take(&mut session.series_reports);
 
     let fixture_index = session.fixture_index;
     let round_matchday = session.round_matchday;
@@ -398,9 +487,18 @@ pub fn finish_live_match(
 
     let report = if let Some(input) = lol_report {
         state
-            .get_game(|game| fixture_report_from_lol_sim(game, &home_team_id, &away_team_id, input))
+            .get_game(|game| {
+                let deciding =
+                    fixture_report_from_lol_sim(game, &home_team_id, &away_team_id, input);
+                let best_of = game
+                    .active_league()
+                    .and_then(|league| league.fixtures.get(fixture_index))
+                    .map_or(1, |fixture| fixture.best_of);
+                series_report(buffered_games, deciding, best_of)
+            })
             .ok_or("No active game session")?
     } else {
+        // A report-less finish is the backend's own game, not a series the user played.
         session.match_state.into_report()
     };
     info!(
@@ -444,6 +542,30 @@ pub fn finish_live_match(
     Ok(FinishLiveMatchResponse {
         game: crate::client_game::game_for_client(&game),
         round_summary,
+    })
+}
+
+/// Keeps one non-deciding game of the user's series for `finish_live_match` to merge.
+///
+/// `game_number` counts from 1. The report is credited to the fixture's home and away teams
+/// now, because the user can swap colours from one game to the next.
+pub fn record_series_game(
+    state: &StateManager,
+    game_number: u8,
+    lol_report: LolSimMatchReportInput,
+) -> Result<(), String> {
+    info!("[cmd] record_series_game: game={}", game_number);
+    state.with_session_mut(|session| {
+        let live = session.live_match.as_mut().ok_or("No active live match")?;
+        let game = session.game.as_ref().ok_or("No active game session")?;
+        let best_of = game
+            .active_league()
+            .and_then(|league| league.fixtures.get(live.fixture_index))
+            .map(|fixture| fixture.best_of)
+            .ok_or("Fixture not found")?;
+        let report =
+            fixture_report_from_lol_sim(game, &live.home_team_id, &live.away_team_id, lol_report);
+        keep_series_game(&mut live.series_reports, game_number, best_of, report)
     })
 }
 
