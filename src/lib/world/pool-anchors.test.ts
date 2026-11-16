@@ -95,6 +95,19 @@ describe("players without a usable estimate", () => {
     expect(calculateLolOvr(out.attributes)).toBe(61);
   });
 
+  it("keep the tier-3 baseline for a tier-3 person with no mapped league: nothing measured tier 3, so no judgment default", () => {
+    for (const tier of [3, 4, Number.NaN]) {
+      const out = rate({ tier, competition: null });
+      expect(out).toMatchObject({ source: RATING_TIER_DEFAULT, reason: "no-mapped-league" });
+      expect(out.attributes).toEqual(ratePoolPlayer({ tier: 3, position: "Mid", baselines, estimate: null }).attributes);
+    }
+    expect(rate({ tier: 3, competition: null }).ovr).toBe(calculateLolOvr(ratePoolPlayer({ tier: 3, position: "Mid", baselines, estimate: null }).attributes));
+    // Tier 1 and tier 2 people with no mapped league still take the judgment default.
+    for (const tier of [1, 2]) expect(rate({ tier, competition: null })).toMatchObject({ source: RATING_JUDGMENT_DEFAULT, ovr: 61 });
+    // A tier-3 person whose league is mapped keeps that league's default.
+    expect(rate({ tier: 3, competition: "ljl" }).source).toBe(RATING_LEAGUE_DEFAULT);
+  });
+
   it("count a league the game has no level for as unmapped", () => {
     expect(rate({ competition: "nolevel" }).source).toBe(RATING_JUDGMENT_DEFAULT);
   });
@@ -233,7 +246,8 @@ describe("buildPoolOps with anchors", () => {
     const inputs = await fetchPoolInputs({ client: stubClient() });
     const selection = selectPool({ people: inputs.people, context, world });
     const ops = buildPoolOps({ selection, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])), games: inputs.games, baselines, anchors: anchors as never });
-    for (const { op } of ops.players) {
+    // The tier default (staff, and tier-3 people with no mapped league) keeps the baseline's own potential, as it always did.
+    for (const { op } of ops.players.filter((e) => e.op.pool.rating !== RATING_TIER_DEFAULT)) {
       expect(op.player.potential_base).toBeGreaterThanOrEqual(calculateLolOvr(op.player.attributes));
       expect(op.player.potential_base).toBeLessThanOrEqual(100);
     }

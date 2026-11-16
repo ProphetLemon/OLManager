@@ -42,7 +42,8 @@ export const RATING_GAME_TIER_DEFAULT = "game-tier-default";
 /** With anchors: no league the game models, so the default of the game's tier-2 population. A judgment, not a measurement. */
 export const RATING_JUDGMENT_DEFAULT = "judgment-default";
 /**
- * JUDGMENT. The leagues of players with no mapped league (LCP Wildcard, Battle of S.E.A, Thailand Series, ...) are minor leagues
+ * JUDGMENT, pool tiers 1 and 2 only (a tier-3 person with no mapped league keeps the tier-3 baseline: nothing measured tier 3, and the
+ * judgment figure would rank him above the rostered tier-2 bench). The leagues of players with no mapped league (LCP Wildcard, Battle of S.E.A, Thailand Series, ...) are minor leagues
  * the game does not model. They take the default of the game's tier-2 population of rostered players with no estimate (329 of
  * them), which is the nearest measured population, not the 12-player tier-1 figure. Nothing validates this number for them.
  */
@@ -113,8 +114,11 @@ export function shapeBaselines({ baselines, tier, anchors, competition }) {
   if (competition && anchors.levels[competition]) {
     return { player: (_, position) => baselines.player(competition, position), staff: (role) => baselines.staff(role) };
   }
-  return tierBaselines(baselines, JUDGMENT_DEFAULT_TIER);
+  return tierBaselines(baselines, hasJudgmentDefault(tier) ? JUDGMENT_DEFAULT_TIER : tier);
 }
+
+/** The judgment default covers pool tiers 1 and 2 only: nothing measured tier 3 (any other tier counts as 3, as in `tierBaselines`). */
+const hasJudgmentDefault = (tier) => tier === 1 || tier === 2;
 
 /** The default OVR and where it comes from, for a player with anchors and no usable estimate. */
 function defaultOf(anchors, competition) {
@@ -143,7 +147,7 @@ function defaultOf(anchors, competition) {
  *   `reason` says why a player fell back to a default; without anchors the default carries the exact tier baseline (no jitter)
  */
 export function ratePoolPlayer({ tier, position, baselines, estimate = null, anchors = null, competition = null, seed = null }) {
-  if (anchors) return rateAnchored({ position, baselines, estimate, anchors, competition, seed });
+  if (anchors) return rateAnchored({ tier, position, baselines, estimate, anchors, competition, seed });
   const base = tierBaselines(baselines, tier).player(null, position);
   const authoredOvr = calculateLolOvr(base.attributes);
   const fallback = (reason) => ({ source: RATING_TIER_DEFAULT, reason, attributes: { ...base.attributes }, potential: base.potential, ovr: authoredOvr, games: null, competition: null });
@@ -162,7 +166,7 @@ export function ratePoolPlayer({ tier, position, baselines, estimate = null, anc
 }
 
 /** `ratePoolPlayer` with the game's league ladder: the anchor of a stats rating is his league's level, not a tier baseline. */
-function rateAnchored({ position, baselines, estimate, anchors, competition, seed }) {
+function rateAnchored({ tier, position, baselines, estimate, anchors, competition, seed }) {
   const reason = !estimate ? "no-stats"
     : gamePosition(estimate.role) !== gamePosition(position) ? "role-mismatch"
       : !(estimate.games >= STATS_MIN_GAMES) ? "below-min-games"
@@ -181,7 +185,12 @@ function rateAnchored({ position, baselines, estimate, anchors, competition, see
     }
   }
   const { source, median } = defaultOf(anchors, competition);
-  const shaped = shapeBaselines({ baselines, tier: JUDGMENT_DEFAULT_TIER, anchors, competition }).player(null, position);
+  if (source === RATING_JUDGMENT_DEFAULT && !hasJudgmentDefault(tier)) {
+    // A tier-3 person with no mapped league keeps the tier-3 baseline (the record's own seeded shape), as before the ladder existed.
+    const base = tierBaselines(baselines, tier).player(null, position);
+    return { source: RATING_TIER_DEFAULT, reason: "no-mapped-league", attributes: { ...base.attributes }, potential: base.potential, ovr: calculateLolOvr(base.attributes), games: null, competition: null };
+  }
+  const shaped = shapeBaselines({ baselines, tier, anchors, competition }).player(null, position);
   const shape = seed ?? { attributes: shaped.attributes, potential: shaped.potential };
   const derived = deriveAttributes({ attributes: shape.attributes, authoredOvr: calculateLolOvr(shape.attributes), finalOvr: median, games: 0, potentialBase: shape.potential });
   return {

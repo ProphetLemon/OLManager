@@ -148,7 +148,7 @@ export function renderPoolSection({ settings, inputs, selection, limits, bytes, 
     const anchored = [RATING_LEAGUE_DEFAULT, RATING_GAME_TIER_DEFAULT, RATING_JUDGMENT_DEFAULT].some((key) => ratings.byRating[key]);
     if (anchored) {
       const n = (key) => ratings.byRating[key] ?? 0;
-      lines.push(`${ratings.total.stats} of ${ratings.total.stats + ratings.total.tierDefault} adds were rated from stats, anchored to the game's league levels; ${ratings.total.tierDefault} took a default: ${n(RATING_LEAGUE_DEFAULT)} the default of their league, ${n(RATING_GAME_TIER_DEFAULT)} the default of the game tier of their league (too few comparable players in it), ${n(RATING_JUDGMENT_DEFAULT)} the judgment default (no league the game models: the default of the game's tier-${JUDGMENT_DEFAULT_TIER} population, not a measurement), ${n(RATING_TIER_DEFAULT)} the tier default (staff).`, "");
+      lines.push(`${ratings.total.stats} of ${ratings.total.stats + ratings.total.tierDefault} adds were rated from stats, anchored to the game's league levels; ${ratings.total.tierDefault} took a default: ${n(RATING_LEAGUE_DEFAULT)} the default of their league, ${n(RATING_GAME_TIER_DEFAULT)} the default of the game tier of their league (too few comparable players in it), ${n(RATING_JUDGMENT_DEFAULT)} the judgment default (tier 1 or 2, no league the game models: the default of the game's tier-${JUDGMENT_DEFAULT_TIER} population, not a measurement), ${n(RATING_TIER_DEFAULT)} the tier default (staff, and tier-3 people with no mapped league).`, "");
     } else {
       lines.push(`${ratings.total.stats} of ${ratings.total.stats + ratings.total.tierDefault} adds were rated from stats; ${ratings.total.tierDefault} took the tier default.`, "");
     }

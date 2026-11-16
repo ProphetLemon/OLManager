@@ -215,7 +215,9 @@ matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision
   - `"judgment-default"`: **a judgment, not a measurement.** No league the game models (LCP Wildcard League, Battle of S.E.A, Thailand
     Series, ...: minor leagues with no rostered counterpart). The default is the median of the game's tier-2 population of rostered
     players with no usable estimate (329 players, `JUDGMENT_DEFAULT_TIER`), the nearest measured population. Nothing validates this
-    number for these leagues. A person with no tournament in a modelled league is here whatever his Leaguepedia tier.
+    number for these leagues. A person of Leaguepedia tier 1 or 2 with no tournament in a modelled league is here. A tier-3 person with
+    no mapped league is not: nothing measured tier 3, and 65 would rank him above the rostered tier-2 bench (64.0), so he keeps the
+    `"tier-default"` below (the tier-3 baseline, about 57), as before the ladder existed (reason `no-mapped-league`).
   - `"tier-default"`: staff (no per-game stats), and everybody when the run has no ladder (no `--pool-stats`): for a player, the median of
     the real players of his tier in his position when the tier has at least 10 of them in the game (the same rule as the game's
     placeholder ratings), otherwise the game's median per position shifted by the tier (1 top flight, 0; 2 official circuit, -6; 3
