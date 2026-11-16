@@ -8,7 +8,9 @@ use crate::domain::stats::{
 };
 use crate::game::Game;
 use crate::messages;
-use crate::potential::{GAIN_TAPER_WINDOW, effective_potential_cap, gain_headroom};
+use crate::potential::{
+    GAIN_TAPER_WINDOW, LOSS_TAPER_FLOOR, calculate_lol_ovr, effective_potential_cap, gain_headroom,
+};
 use log::debug;
 use std::collections::HashMap;
 
@@ -528,7 +530,7 @@ fn scale_delta(delta: i16, num: i16, den: i16) -> i16 {
 
 /// Scales a positive delta by the attribute's headroom to `ceiling`, so growth fades
 /// out inside the last `GAIN_TAPER_WINDOW` points and stops at the ceiling. Negative
-/// deltas are never tapered.
+/// deltas pass through; `tapered_loss` handles them.
 ///
 /// Deltas are whole points, so the scaled value is rounded with `phase` (any per-match
 /// counter) as a deterministic dither: over `GAIN_TAPER_WINDOW` consecutive phases the
@@ -546,6 +548,26 @@ fn tapered_gain(delta: i16, current: u8, ceiling: u8, phase: u32) -> i16 {
     }
     let dither = (phase % u32::from(GAIN_TAPER_WINDOW.unsigned_abs())) as i16;
     (delta * headroom + dither) / GAIN_TAPER_WINDOW
+}
+
+/// Scales a negative delta while the attribute is 1 to 9 points under `ceiling`, so a
+/// player who keeps par near the cap does not slide away from it. The share is
+/// `max(headroom, LOSS_TAPER_FLOOR) / GAIN_TAPER_WINDOW`, rounded with the same `phase`
+/// dither as `tapered_gain`: over `GAIN_TAPER_WINDOW` consecutive phases the losses add
+/// up to exactly `delta * share`, with no RNG. At or above the ceiling (a weak match at
+/// the cap costs the full point) and 10 or more points under it, a loss is full.
+/// Positive deltas pass through.
+fn tapered_loss(delta: i16, current: u8, ceiling: u8, phase: u32) -> i16 {
+    if delta >= 0 {
+        return delta;
+    }
+    let headroom = i16::from(ceiling) - i16::from(current);
+    if headroom <= 0 || headroom >= GAIN_TAPER_WINDOW {
+        return delta;
+    }
+    let share = headroom.max(LOSS_TAPER_FLOOR);
+    let dither = (phase % u32::from(GAIN_TAPER_WINDOW.unsigned_abs())) as i16;
+    -((-delta * share + dither) / GAIN_TAPER_WINDOW)
 }
 
 /// Creep-score ratio at which a laner counts as clearly ahead of the lane opponent, per
@@ -782,22 +804,39 @@ fn apply_lol_profile_progression(
         // Attributes stop growing at the potential cap, like training does at OVR level.
         let ceiling = effective_potential_cap(player);
         let phase = player.stats.appearances;
-        let grow = |attribute: &mut u8, delta: i16, slot: u32| {
-            let gain = tapered_gain(delta, *attribute, ceiling, phase.wrapping_add(slot));
-            *attribute = clamp_attr_range(i16::from(*attribute) + gain);
+        // A gain also waits while the rounded OVR sits at the cap, the same test as
+        // `is_lol_training_capped`, re-read after every gain so a match cannot carry OVR
+        // past it. Losses taper near the cap instead (`tapered_loss`).
+        let grow = |player: &mut crate::domain::player::Player,
+                    attribute: fn(&mut crate::domain::player::PlayerAttributes) -> &mut u8,
+                    delta: i16,
+                    slot: u32| {
+            let phase = phase.wrapping_add(slot);
+            let current = *attribute(&mut player.attributes);
+            let change = if delta > 0 {
+                if calculate_lol_ovr(player) >= ceiling {
+                    0
+                } else {
+                    tapered_gain(delta, current, ceiling, phase)
+                }
+            } else {
+                tapered_loss(delta, current, ceiling, phase)
+            };
+            let value = attribute(&mut player.attributes);
+            *value = clamp_attr_range(i16::from(*value) + change);
         };
 
-        grow(&mut player.attributes.mechanics, d_dribbling, 0);
-        grow(&mut player.attributes.champion_pool, d_agility, 1);
-        grow(&mut player.attributes.laning, d_shooting, 2);
-        grow(&mut player.attributes.consistency, d_positioning, 3);
-        grow(&mut player.attributes.teamfighting, d_teamwork, 4);
-        grow(&mut player.attributes.mental_resilience, d_stamina, 5);
-        grow(&mut player.attributes.macro_play, d_vision, 6);
-        grow(&mut player.attributes.consistency, d_decisions, 7);
-        grow(&mut player.attributes.discipline, d_composure, 8);
-        grow(&mut player.attributes.shotcalling, d_leadership, 9);
-        grow(&mut player.attributes.teamfighting, d_passing, 10);
+        grow(player, |a| &mut a.mechanics, d_dribbling, 0);
+        grow(player, |a| &mut a.champion_pool, d_agility, 1);
+        grow(player, |a| &mut a.laning, d_shooting, 2);
+        grow(player, |a| &mut a.consistency, d_positioning, 3);
+        grow(player, |a| &mut a.teamfighting, d_teamwork, 4);
+        grow(player, |a| &mut a.mental_resilience, d_stamina, 5);
+        grow(player, |a| &mut a.macro_play, d_vision, 6);
+        grow(player, |a| &mut a.consistency, d_decisions, 7);
+        grow(player, |a| &mut a.discipline, d_composure, 8);
+        grow(player, |a| &mut a.shotcalling, d_leadership, 9);
+        grow(player, |a| &mut a.teamfighting, d_passing, 10);
     }
 }
 
@@ -1222,7 +1261,7 @@ mod vision_progression_tests {
 mod progression_bound_tests {
     use super::{
         GAIN_TAPER_WINDOW, apply_lol_profile_progression, apply_player_stats,
-        expected_damage_share, tapered_gain,
+        expected_damage_share, tapered_gain, tapered_loss,
     };
     use crate::clock::GameClock;
     use crate::domain::manager::Manager;
@@ -1439,6 +1478,110 @@ mod progression_bound_tests {
                 let gained = i16::from(current) + tapered_gain(2, current, 85, phase);
                 assert!(gained <= 85);
             }
+        }
+    }
+
+    /// Total loss of one point over `GAIN_TAPER_WINDOW` consecutive phases.
+    fn loss_over_a_window(current: u8, ceiling: u8) -> i16 {
+        (0..GAIN_TAPER_WINDOW as u32)
+            .map(|phase| tapered_loss(-1, current, ceiling, phase))
+            .sum()
+    }
+
+    #[test]
+    fn weak_match_at_the_cap_should_cost_the_full_point() {
+        for phase in 0..GAIN_TAPER_WINDOW as u32 {
+            assert_eq!(tapered_loss(-1, 85, 85, phase), -1);
+            assert_eq!(tapered_loss(-2, 85, 85, phase), -2);
+            assert_eq!(tapered_loss(-1, 90, 85, phase), -1);
+        }
+    }
+
+    #[test]
+    fn loss_one_or_two_under_the_cap_should_land_one_match_in_five() {
+        // The floor holds the share at 2 of 10 for headroom 1 and 2.
+        assert_eq!(loss_over_a_window(84, 85), -2);
+        assert_eq!(loss_over_a_window(83, 85), -2);
+    }
+
+    #[test]
+    fn loss_five_under_the_cap_should_land_one_match_in_two() {
+        assert_eq!(loss_over_a_window(80, 85), -5);
+    }
+
+    #[test]
+    fn loss_should_average_to_the_scaled_share_for_a_two_point_loss() {
+        let total: i16 = (0..GAIN_TAPER_WINDOW as u32)
+            .map(|phase| tapered_loss(-2, 80, 85, phase))
+            .sum();
+        assert_eq!(total, -10);
+    }
+
+    #[test]
+    fn loss_ten_or_more_under_the_cap_should_be_full() {
+        for phase in 0..GAIN_TAPER_WINDOW as u32 {
+            assert_eq!(tapered_loss(-1, 75, 85, phase), -1);
+            assert_eq!(tapered_loss(-2, 40, 85, phase), -2);
+        }
+    }
+
+    #[test]
+    fn gain_ten_or_more_under_the_cap_should_stay_full() {
+        for phase in 0..GAIN_TAPER_WINDOW as u32 {
+            assert_eq!(tapered_gain(1, 75, 85, phase), 1);
+            assert_eq!(tapered_gain(2, 40, 85, phase), 2);
+        }
+    }
+
+    #[test]
+    fn positive_delta_should_pass_through_the_loss_taper() {
+        for phase in 0..GAIN_TAPER_WINDOW as u32 {
+            assert_eq!(tapered_loss(1, 84, 85, phase), 1);
+        }
+    }
+
+    #[test]
+    fn no_gain_should_land_while_ovr_is_at_the_cap_even_if_the_attribute_is_under_its_cap() {
+        let mut game = game_with_player(82, 80, None);
+        // The other eight attributes hold OVR at 81, over the cap of 80, while mechanics
+        // sits 10 under it.
+        game.players[0].attributes.mechanics = 70;
+        assert!(calculate_lol_ovr(&game.players[0]) >= 80);
+        let before = attribute_sum(&game);
+        apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+        assert_eq!(attribute_sum(&game), before);
+    }
+
+    #[test]
+    fn strong_matches_should_never_end_ovr_above_the_cap_when_one_attribute_starts_above_it() {
+        let mut game = game_with_player(78, 80, None);
+        game.players[0].attributes.mechanics = 90;
+        for appearance in 1..=400 {
+            game.players[0].stats.appearances = appearance;
+            apply_lol_profile_progression(&mut game, &strong_report(), "home", "away");
+            assert!(calculate_lol_ovr(&game.players[0]) <= 80);
+        }
+    }
+
+    #[test]
+    fn par_attribute_near_the_cap_should_stay_within_three_points_of_it() {
+        // Equal +1 and -1 against one attribute at its cap, whichever phase the run
+        // starts on. The OVR gate is the attribute itself here: no gain at the cap.
+        for first_phase in 0..GAIN_TAPER_WINDOW as u32 {
+            let mut attribute = 80_u8;
+            for match_number in 0..200_u32 {
+                let phase = first_phase + match_number;
+                let change = if match_number % 2 == 0 {
+                    tapered_loss(-1, attribute, 80, phase)
+                } else if attribute >= 80 {
+                    0
+                } else {
+                    tapered_gain(1, attribute, 80, phase)
+                };
+                attribute = (i16::from(attribute) + change) as u8;
+            }
+            assert!(attribute <= 80, "{attribute} passed the cap");
+            assert!(80 - attribute <= 3, "{attribute} is over 3 under the cap");
         }
     }
 
