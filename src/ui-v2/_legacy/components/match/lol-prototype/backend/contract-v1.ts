@@ -187,6 +187,8 @@ export interface LolSimV1MatchReportChampionInput {
 }
 
 export interface LolSimV1MatchReportInput {
+  /** The fixture team that plays blue in this game; the backend credits the game by it. */
+  blueTeamId?: string;
   winner: TeamId | null;
   timeSec: number;
   events: LolSimV1MatchReportEventInput[];
