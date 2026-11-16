@@ -22,7 +22,7 @@ import {
   promoteAcademyPlayer,
 } from "@/services/academyService";
 import { academyBlockedMessage, academyRegionKey } from "@/lib/academy/acquisitionMessage";
-import { calcAge } from "@/lib/common/helpers";
+import { calcAge, compareAgesUnknownLast, formatAge } from "@/lib/common/helpers";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
@@ -216,7 +216,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
         case "pos":
           return dir * ((ROLE_ORDER[a.role] ?? 99) - (ROLE_ORDER[b.role] ?? 99));
         case "age":
-          return dir * (a.age - b.age);
+          return compareAgesUnknownLast(a.age, b.age, dir);
         case "ovr":
           return dir * (a.ovr - b.ovr);
         case "potential": {
@@ -646,7 +646,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                               title={player.position}
                             />
                           </TableCell>
-                          <TableCell className="text-center tabular-nums text-foreground">{player.age}</TableCell>
+                          <TableCell className="text-center tabular-nums text-foreground">{formatAge(player.age)}</TableCell>
                           <TableCell className="text-center">
                             <span className="font-heading font-bold tabular-nums text-foreground">{player.ovr}</span>
                           </TableCell>

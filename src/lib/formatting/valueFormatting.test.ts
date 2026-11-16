@@ -2,7 +2,15 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import i18n from "@/i18n";
 import { useSettingsStore } from "@/store/settingsStore";
-import { calcAge, formatCurrencyAmount, formatNumber, formatVal } from "./valueFormatting";
+import {
+  calcAge,
+  compareAgesUnknownLast,
+  formatAge,
+  formatCurrencyAmount,
+  formatNumber,
+  formatVal,
+  parseDateOfBirth,
+} from "./valueFormatting";
 
 describe("calcAge", () => {
   it("calculates age relative to the provided in-game date", () => {
@@ -15,9 +23,57 @@ describe("calcAge", () => {
     expect(calcAge("2000-01-01", "2027-01-01T00:00:00Z")).toBe(27);
   });
 
-  it("does not leak NaN for missing or invalid dates", () => {
-    expect(calcAge("", "2026-07-01T00:00:00Z")).toBe(0);
-    expect(calcAge("2000-01-01", "")).toBe(0);
+  it("has no age for a missing or unreadable date of birth", () => {
+    expect(calcAge("", "2026-07-01T00:00:00Z")).toBeNull();
+    expect(calcAge("   ", "2026-07-01T00:00:00Z")).toBeNull();
+    expect(calcAge(null, "2026-07-01T00:00:00Z")).toBeNull();
+    expect(calcAge(undefined, "2026-07-01T00:00:00Z")).toBeNull();
+    expect(calcAge("unknown", "2026-07-01T00:00:00Z")).toBeNull();
+    expect(calcAge("2006-13-40", "2026-07-01T00:00:00Z")).toBeNull();
+  });
+
+  it("has no age when the as-of date is unreadable", () => {
+    expect(calcAge("2000-01-01", "")).toBeNull();
+  });
+
+  it("reads the Month D, YYYY form the data also ships", () => {
+    expect(calcAge("January 19, 2006", "2027-01-01T00:00:00Z")).toBe(20);
+    expect(calcAge("November 5, 2002", "2027-01-01T00:00:00Z")).toBe(24);
+    expect(calcAge("january 19, 2006", "2027-01-19T00:00:00Z")).toBe(21);
+  });
+
+  it("counts the birthday the same way for both forms", () => {
+    expect(calcAge("2006-01-19", "2027-01-18T00:00:00Z")).toBe(20);
+    expect(calcAge("January 19, 2006", "2027-01-18T00:00:00Z")).toBe(20);
+    expect(calcAge("January 19, 2006", "2027-01-19T00:00:00Z")).toBe(21);
+  });
+});
+
+describe("parseDateOfBirth", () => {
+  it("accepts the same two forms as the game core and nothing else", () => {
+    expect(parseDateOfBirth("2006-01-19")?.toISOString()).toBe("2006-01-19T00:00:00.000Z");
+    expect(parseDateOfBirth(" January 19, 2006 ")?.toISOString()).toBe("2006-01-19T00:00:00.000Z");
+    for (const raw of ["", "2006", "19/01/2006", "2006-01-19T00:00:00Z", "2006-02-30"]) {
+      expect(parseDateOfBirth(raw), raw).toBeNull();
+    }
+  });
+});
+
+describe("formatAge", () => {
+  it("shows a dash for an unknown age", () => {
+    expect(formatAge(null)).toBe("—");
+    expect(formatAge(24)).toBe("24");
+  });
+});
+
+describe("compareAgesUnknownLast", () => {
+  const sortAges = (ages: (number | null)[], factor: 1 | -1) =>
+    [...ages].sort((a, b) => compareAgesUnknownLast(a, b, factor));
+
+  it("sorts unknown ages after known ones in both directions", () => {
+    const ages = [22, null, 19, null, 30];
+    expect(sortAges(ages, 1)).toEqual([19, 22, 30, null, null]);
+    expect(sortAges(ages, -1)).toEqual([30, 22, 19, null, null]);
   });
 });
 

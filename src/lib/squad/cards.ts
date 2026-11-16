@@ -59,7 +59,7 @@ export function getPlayerCardModel(
   const asOf = ctx.currentDate.slice(0, 10);
   const contractEnd = player.contract_end ?? null;
   const risk = contractEnd ? getContractRiskLevel(contractEnd, asOf) : null;
-  const age = player.date_of_birth ? calcAge(player.date_of_birth, asOf) : 0;
+  const age = calcAge(player.date_of_birth, asOf);
 
   const nationality = player.nationality_code ?? player.nationality ?? null;
 
@@ -68,8 +68,7 @@ export function getPlayerCardModel(
     name: player.match_name,
     role: resolvePlayerLolRole(player),
     ovr: calculateLolOvr(player),
-    // calcAge returns 0 for unparseable dates.
-    age: age > 0 ? age : null,
+    age: age !== null && age > 0 ? age : null,
     wage: player.wage,
     wageLabel: `${activeCurrencySymbol()}${player.wage.toLocaleString(ctx.locale)}`,
     wageCompact: formatVal(player.wage),
