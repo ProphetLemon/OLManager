@@ -8,7 +8,9 @@ export const DEFAULT_POOL_SINCE: string;
 export const DEFAULT_QUALIFIER_CAP: number;
 export const DEFAULT_POOL_PROBE: string;
 export const POOL_LIMITS: Readonly<{ players: number; staff: number; opsPerList: number; overlayBytes: number }>;
-export { GAME_POSITION, RATING_STATS, RATING_TIER_DEFAULT, TIER_OFFSETS, tierBaselines } from "./pool-rating.mjs";
+export {
+  GAME_POSITION, JUDGMENT_DEFAULT_TIER, RATING_GAME_TIER_DEFAULT, RATING_JUDGMENT_DEFAULT, RATING_LEAGUE_DEFAULT, RATING_STATS, RATING_TIER_DEFAULT, TIER_OFFSETS, tierBaselines,
+} from "./pool-rating.mjs";
 export type { Baselines } from "./pool-rating.mjs";
 export function compare(a: string, b: string): -1 | 0 | 1;
 export function isoDate(value: unknown): string | null;
@@ -79,4 +81,6 @@ export function buildPoolOps(input: {
   /** Usable skill estimate per player page: a player with one that has enough games is rated from stats. */
   skill?: Map<string, SkillEstimate> | null;
   baselines: Baselines;
+  /** The game's league levels and defaults: ratings anchor to them instead of to the tier baseline. */
+  anchors?: import("./pool-rating.mjs").PoolAnchors | null;
 }): { players: PoolOpEntry[]; staff: PoolOpEntry[]; skipped: Array<{ kind: string; subject: string; detail: string }> };

@@ -7,6 +7,7 @@ export interface LeagueLevelCounts {
   n_excluded: number;
 }
 export const POOL_BUCKET: number;
+export const isPlaceholder: (p: { isFlat50?: boolean; isAllZero?: boolean; attributes?: unknown }) => boolean;
 export function median(values: number[]): number;
 export function populationSd(values: number[]): number;
 type LevelPlayer = { competition: string | null; team_id: string | null; authoredOvr: number; isFlat50: boolean; isAllZero: boolean; attributes?: unknown };

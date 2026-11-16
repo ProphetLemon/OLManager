@@ -9,7 +9,7 @@
 import { IdCollisionError, deterministicId, generatePlayer, generateStaff } from "./generate.mjs";
 import { pageUrl } from "./leaguepedia-parse.mjs";
 import { OPEN_QUALIFIER_ENTRIES, gameStatus, qualifierSplit } from "./pool-scope.mjs";
-import { GAME_POSITION, RATING_STATS, RATING_TIER_DEFAULT, ratePoolPlayer, tierBaselines } from "./pool-rating.mjs";
+import { GAME_POSITION, RATING_STATS, RATING_TIER_DEFAULT, latestMappedCompetition, ratePoolPlayer, shapeBaselines, tierBaselines } from "./pool-rating.mjs";
 import { dataRoleForLabel } from "./staff-policy.mjs";
 import { compactKey, countryToIso2 } from "./text.mjs";
 
@@ -27,7 +27,9 @@ export const POOL_LIMITS = Object.freeze({
   overlayBytes: 4 * 1024 * 1024,
 });
 
-export { GAME_POSITION, RATING_STATS, RATING_TIER_DEFAULT, TIER_OFFSETS, tierBaselines } from "./pool-rating.mjs";
+export {
+  GAME_POSITION, JUDGMENT_DEFAULT_TIER, RATING_GAME_TIER_DEFAULT, RATING_JUDGMENT_DEFAULT, RATING_LEAGUE_DEFAULT, RATING_STATS, RATING_TIER_DEFAULT, TIER_OFFSETS, tierBaselines,
+} from "./pool-rating.mjs";
 
 /** Code-unit order, so ids and lists come out the same on every machine and locale. */
 export const compare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
@@ -212,6 +214,8 @@ function poolMeta(entry, { tournamentIndex, games, rating }) {
   if (person.toursTruncated) meta.tournaments_truncated = true;
   meta.rating = rating.source;
   if (rating.source === RATING_STATS) meta.rating_games = rating.games;
+  // The league whose level or default the rating used (anchored ratings only); review data, like the rest of `pool`.
+  if (rating.competition) meta.rating_competition = rating.competition;
   return meta;
 }
 
@@ -224,8 +228,11 @@ function poolMeta(entry, { tournamentIndex, games, rating }) {
  * @param {Map<string, import("../../stats/lib/skill.mjs").SkillEstimate>|null} [input.skill] usable skill estimate per player page
  *   (see pool-rating.mjs); a player with one that has enough games is rated from stats, everybody else gets the tier default
  * @param {ReturnType<import("./generate.mjs").computeBaselines>} input.baselines
+ * @param {object|null} [input.anchors] the game's league levels and defaults (pool-anchors.mjs). With them a stats rating sits on the level
+ *   of the league his stats come from and a player without an estimate takes the default of the league he last played in (or the
+ *   judgment default); without them everybody is anchored to the tier baseline, as before.
  */
-export function buildPoolOps({ selection, tournamentIndex, games = null, skill = null, baselines }) {
+export function buildPoolOps({ selection, tournamentIndex, games = null, skill = null, baselines, anchors = null }) {
   const players = [];
   const staff = [];
   const skipped = [];
@@ -234,16 +241,22 @@ export function buildPoolOps({ selection, tournamentIndex, games = null, skill =
     const profile = person.profile;
     const birth = isoDate(profile.birthDate);
     const country = countryOf(person);
-    const rated = tierBaselines(baselines, person.tier);
+    // Staff have no stats and no league: the tier default, as always. A player's shape comes from the league he last played in when the run has anchors.
+    const competition = anchors && entry.kind === "player" ? latestMappedCompetition({ tournaments: person.tournaments ?? [], tournamentIndex, anchors }) : null;
+    const rated = entry.kind === "player" ? shapeBaselines({ baselines, tier: person.tier, anchors, competition }) : tierBaselines(baselines, person.tier);
     try {
       if (entry.kind === "player") {
         const { record, dobApprox, nationalityMissing } = generatePlayer({
           page: person.page, ign: profile.ign, realName: profile.name, country, position: entry.role, teamId: null, competition: null,
           infobox: { birthDate: birth, name: profile.name, country }, baselines: rated, takenIds: new Set(),
         });
-        // Stats replace the tier default's seeded jitter: the jitter only keeps clones of one baseline apart.
-        const rating = ratePoolPlayer({ tier: person.tier, position: entry.role, baselines, estimate: skill?.get(person.page) ?? null });
-        if (rating.source === RATING_STATS) {
+        // Stats replace the seeded jitter: the jitter only keeps clones of one baseline apart. An anchored default keeps the jittered
+        // record as its shape (so a league's players are not clones) and lands on the league's default OVR.
+        const rating = ratePoolPlayer({
+          tier: person.tier, position: entry.role, baselines, estimate: skill?.get(person.page) ?? null, anchors, competition,
+          seed: { attributes: record.attributes, potential: record.potential_base },
+        });
+        if (rating.source !== RATING_TIER_DEFAULT) {
           record.attributes = rating.attributes;
           record.potential_base = rating.potential;
         }

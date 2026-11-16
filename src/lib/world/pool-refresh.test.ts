@@ -227,6 +227,26 @@ describe("refresh with --pool", () => {
       expect(serializeOverlay(rated.overlay)).toBe(serializeOverlay((await run({ inputs, statsRows: rowsFor(pages, tops[0]) })).overlay));
     });
 
+    it("pools small leagues by level when the run has the game's ladder: poolOf reaches the skill model (A6f)", async () => {
+      const plain = await run({ inputs });
+      const tops = plain.pool!.selection.players.filter((e) => e.role === "Top").map((e) => e.page);
+      // 24 Top players with 12 games each, split over two leagues of 12: neither has the 15 players a cohort needs, together they do.
+      const pages = [...tops, ...Array.from({ length: 24 - tops.length }, (_, i) => `Filler ${i}`)];
+      const rows = rowsFor(pages, tops[0]).map((r) => ({ ...r, competition: pages.indexOf(r.playerKey) % 2 === 0 ? "ga" : "gb" }));
+      const anchors = {
+        levels: { ga: { median: 70, sd: 4 }, gb: { median: 70, sd: 4 } }, prefixes: {}, leagueDefault: {}, tierDefault: { 1: { median: 70, n: 20 }, 2: { median: 60, n: 20 } }, tierOf: {},
+      };
+      const alone = await run({ inputs, statsRows: rows });
+      const pooled = await run({ inputs, statsRows: rows, anchors });
+      const op = (result: typeof plain, page: string) => (result.overlay.players as Array<Record<string, any>>).find((o) => o.op === "add" && o.pool?.page === page)!;
+      expect(alone.report).toContain(`0 of 48 adds were rated from stats; 48 took the tier default.`);
+      for (const page of tops) expect(op(pooled, page).pool).toMatchObject({ rating: "stats", rating_competition: pages.indexOf(page) % 2 === 0 ? "ga" : "gb" });
+      expect(pooled.report).toContain(`${tops.length} of 48 adds were rated from stats, anchored to the game's league levels; ${48 - tops.length} took a default: 0 the default of their league, 0 the default of the game tier of their league`);
+      // 34 players and 14 staff: the players who are not Top took the judgment default (no mapped league in the fixtures), the staff the tier default.
+      expect(pooled.report).toContain(`${34 - tops.length} the judgment default`);
+      expect(pooled.report).toContain("14 the tier default (staff)");
+    });
+
     it("rates nobody when the rows give no cohort", async () => {
       const result = await run({ inputs, statsRows: rowsFor(["Nobody"], "Nobody") });
       expect(result.report).toContain("0 of 48 adds were rated from stats; 48 took the tier default.");

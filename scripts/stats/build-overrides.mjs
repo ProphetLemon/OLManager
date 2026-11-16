@@ -191,7 +191,7 @@ export function buildOverrides({ rows, window, index, players, teamMap, pins = {
   entries.sort((a, b) => compare(a.id, b.id));
 
   const asset = { version: ASSET_VERSION, method: METHOD, source: SOURCE, window: { since: window.since, until: window.until }, league_levels: levels, entries };
-  return { asset, report: buildReport({ levels, counts, players, identity, records, entries, noEstimate, window, referenceDate, estimates }) };
+  return { asset, report: buildReport({ levels, counts, players, identity, records, entries, noEstimate, window, referenceDate, estimates }), records, levels };
 }
 
 function buildReport({ levels, counts, players, identity, records, entries, noEstimate, window, referenceDate, estimates }) {
