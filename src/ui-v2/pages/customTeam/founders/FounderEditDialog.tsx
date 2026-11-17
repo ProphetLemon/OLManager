@@ -124,7 +124,7 @@ export default function FounderEditDialog({
 
   const idFor = (field: FounderField) => `${baseId}-${field}`;
   const errorFor = (field: FounderField) => (fieldError?.field === field ? fieldError.message : null);
-  const hasHint = (field: FounderField) => field === "birth_date" || field === "nick" || field === "full_name";
+  const hasHint = (field: FounderField) => field === "birth_date" || field === "nick" || field === "full_name" || field === "nationality";
   const describedBy = (field: FounderField) =>
     [hasHint(field) ? `${idFor(field)}-hint` : null, errorFor(field) ? `${idFor(field)}-error` : null]
       .filter(Boolean)
@@ -196,6 +196,9 @@ export default function FounderEditDialog({
                 </option>
               ))}
             </select>
+            <p id={`${idFor("nationality")}-hint`} className="mt-1 text-xs text-muted-foreground">
+              {t("teamSelect.founders.dialog.nationalityHint")}
+            </p>
             <FieldError id={`${idFor("nationality")}-error`} message={errorFor("nationality")} />
           </div>
 

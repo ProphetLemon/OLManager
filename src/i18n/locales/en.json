@@ -697,6 +697,7 @@
         "birthHint": "Born between {{min}} and {{max}} to stay {{age}} years old.",
         "nickHint": "{{min}} to {{max}} characters: letters, digits, _ . and -",
         "fullNameHint": "{{min}} to {{max}} characters: letters, spaces, apostrophes and hyphens",
+        "nationalityHint": "Only countries in this league's region are listed, so founders never count as imports.",
         "restore": "Restore generated",
         "cancel": "Cancel",
         "save": "Save"

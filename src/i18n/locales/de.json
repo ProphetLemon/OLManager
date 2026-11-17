@@ -525,6 +525,7 @@
         "birthHint": "Geboren zwischen {{min}} und {{max}}, damit der Spieler {{age}} Jahre alt bleibt.",
         "nickHint": "{{min}} bis {{max}} Zeichen: Buchstaben, Ziffern, _ . und -",
         "fullNameHint": "{{min}} bis {{max}} Zeichen: Buchstaben, Leerzeichen, Apostrophe und Bindestriche",
+        "nationalityHint": "Es werden nur Länder aus der Region dieser Liga angezeigt, damit Gründer nie als Importspieler zählen.",
         "restore": "Erzeugte Werte wiederherstellen",
         "cancel": "Abbrechen",
         "save": "Speichern"
