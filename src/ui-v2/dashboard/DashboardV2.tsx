@@ -746,7 +746,7 @@ export default function DashboardV2() {
           callCount={callCount}
           onShowCalls={handleShowCalls}
           compact={showSeasonSummary}
-          stripVisible={rail.mode !== "tree"}
+          stripVisible={false}
         />
 
         <ScrimResultNoticeV2

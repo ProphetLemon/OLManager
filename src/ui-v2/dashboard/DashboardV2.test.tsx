@@ -764,10 +764,10 @@ describe("DashboardV2 rail mode", () => {
   const measure = (w: number, h: number) =>
     act(() => MockResizeObserver.all.forEach((o) => o.emit(w, h)));
 
-  it("keeps today's rail and strip while the body has no size", async () => {
+  it("is Split, with no strip (the panel replaces it), while the body has no size", async () => {
     await renderDashboard();
     expect(shell.sidebar).toMatchObject({ railMode: "split" });
-    expect(shell.header).toMatchObject({ stripVisible: true });
+    expect(shell.header).toMatchObject({ stripVisible: false });
   });
 
   it("is already in Tree on the first committed render when the body has a size", async () => {
@@ -799,11 +799,11 @@ describe("DashboardV2 rail mode", () => {
     expect(shell.header).toMatchObject({ stripVisible: false });
   });
 
-  it("falls back to Split, with the strip, in a narrow window", async () => {
+  it("falls back to Split at 960x640 and still shows no strip: the panel replaces it", async () => {
     await renderDashboard();
     measure(1280, 764);
     measure(960, 595);
     expect(shell.sidebar).toMatchObject({ railMode: "split" });
-    expect(shell.header).toMatchObject({ stripVisible: true });
+    expect(shell.header).toMatchObject({ stripVisible: false });
   });
 });
