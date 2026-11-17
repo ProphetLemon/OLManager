@@ -59,11 +59,12 @@ describe("DashboardSidebarV2 rail", () => {
     expect(document.body).toHaveFocus();
   });
 
-  it("makes exactly one stop tabbable, the one for the active tab", () => {
+  it("makes the stop for the active tab tabbable, and the panel's active tab as the second stop (R15)", () => {
     setup({ activeTab: "Squad" });
     const tabbable = screen.getAllByRole("button").filter((b) => b.getAttribute("tabindex") === "0");
-    expect(tabbable).toHaveLength(1);
+    expect(tabbable).toHaveLength(2);
     expect(tabbable[0]).toHaveAccessibleName("Club");
+    expect(tabbable[1]).toHaveAccessibleName("Squad");
   });
 
   it("keeps the first stop tabbable when no stop owns the tab", () => {
@@ -75,8 +76,10 @@ describe("DashboardSidebarV2 rail", () => {
 
   it("marks the group launcher current for any tab inside the group", () => {
     setup({ activeTab: "Transfers" });
-    expect(stop(/^Market/)).toHaveAttribute("aria-current", "page");
-    expect(stop(/^Club/)).not.toHaveAttribute("aria-current");
+    // The docked panel also lists a "Market" tab, so the launcher is picked by its id.
+    const launcher = (id: string) => document.querySelector(`[data-nav-id="group:${id}"]`);
+    expect(launcher("market")).toHaveAttribute("aria-current", "page");
+    expect(launcher("club")).not.toHaveAttribute("aria-current");
   });
 
   it("follows external tab changes without moving focus", () => {
@@ -164,7 +167,7 @@ describe("DashboardSidebarV2 rail", () => {
   it("keeps stops scrollable while the pinned block is separate", () => {
     setup();
     const scroller = nav().querySelector('[data-slot="rail-stops"]') as HTMLElement;
-    const pinned = nav().querySelector('[data-slot="rail-pinned"]') as HTMLElement;
+    const pinned = nav().querySelector('[data-slot="rail-cluster"]') as HTMLElement;
     expect(scroller.className).toContain("overflow-y-auto");
     expect(scroller.contains(stop(/^Settings/))).toBe(false);
     expect(pinned.contains(stop(/^Settings/))).toBe(true);

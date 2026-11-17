@@ -372,6 +372,7 @@ describe("the tips on the icons", () => {
     hover(screen.getAllByTestId("card-item")[0]);
     expect(tip()).toHaveTextContent("Abyssal Mask");
     fireEvent.pointerLeave(screen.getAllByTestId("card-item")[0], { pointerType: "mouse" });
+    advance(200); // the tip stays through its short hover grace (WCAG 1.4.13)
     expect(tip()).toBeNull();
 
     hover(card().querySelector(".arena-item[data-empty]") as Element);

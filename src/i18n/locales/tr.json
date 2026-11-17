@@ -3690,10 +3690,13 @@
   "onAir": {
     "nav": {
       "rail": "Ana gezinme",
-      "strip": "{{group}} bölümleri",
+      "sections": "{{group}} bölümleri",
       "skip": "Ana içeriğe geç",
       "bug": "Hata bildir",
-      "manager": "Menajer profili"
+      "manager": "Menajer profili",
+      "needsCall_one": "{{label}}, kararını bekliyor",
+      "needsCall_other": "{{label}}, {{count}} öğe kararını bekliyor",
+      "more": "Daha fazla"
     },
     "bar": {
       "phase": {

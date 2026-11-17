@@ -44,3 +44,44 @@ describe("token namespaces", () => {
     expect(sizes.filter((name) => colours.has(name))).toEqual([]);
   });
 });
+
+describe("rail tree tokens", () => {
+  const expected: Record<string, string> = {
+    "nav-row": "max(2rem, 32px)",
+    "nav-row-child": "max(1.75rem, 28px)",
+    "nav-cell": "max(2.25rem, 36px)",
+    "nav-indent": "max(2.375rem, 32px)",
+    "nav-icon": "max(1.25rem, 18px)",
+    "rail-w-tree": "max(14rem, 192px)",
+    "rail-w-split": "max(4.75rem, 64px)",
+    "rail-w-compact": "max(3.5rem, 56px)",
+    "nav-panel-w": "max(9rem, 136px)",
+  };
+
+  it.each(Object.entries(expected))("declares --%s as %s in :root", (name, value) => {
+    expect(ruleBody(":root")).toContain(`--${name}: ${value};`);
+  });
+
+  it("declares every --nav-* and --rail-w-* token as max(rem, px)", () => {
+    const declared = [...css.matchAll(/^\s*--((?:nav|rail-w)-[a-z-]+):\s*([^;]+);/gm)];
+    expect(declared.length).toBeGreaterThanOrEqual(Object.keys(expected).length);
+    for (const [, name, value] of declared) {
+      expect(value, `--${name}`).toMatch(/^max\(\d+(?:\.\d+)?rem,\s*\d+(?:\.\d+)?px\)$/);
+    }
+  });
+
+  it("gives no new token the name of a --color-* or --text-* token", () => {
+    // Tailwind builds `text-<name>` / `bg-<name>` from those namespaces (the NR0 --text-rail lesson).
+    const names = [...css.matchAll(/^\s*--((?:nav|rail-w)-[a-z-]+):/gm)].map((m) => m[1]);
+    const taken = new Set(
+      [...css.matchAll(/^\s*--(?:color|text)-([a-z0-9-]+):/gm)].map((m) => m[1]),
+    );
+    expect(names.filter((n) => taken.has(n))).toEqual([]);
+  });
+});
+
+describe("the active row tint", () => {
+  it("is one token, 16% of the club colour", () => {
+    expect(ruleBody(":root")).toContain("--row-wash: color-mix(in srgb, var(--club) 16%, transparent);");
+  });
+});

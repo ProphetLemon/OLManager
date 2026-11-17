@@ -33,6 +33,34 @@ describe("useRovingFocus", () => {
     expect(result.current.getTabIndex(1)).toBe(-1);
   });
 
+  describe("onKey", () => {
+    it("skips the default move when it returns true", () => {
+      const onKey = vi.fn(() => true);
+      const { result } = setup({ onKey });
+      const down = key("ArrowDown");
+      act(() => result.current.handleKeyDown(down));
+      expect(onKey).toHaveBeenCalledWith(down, 0);
+      expect(result.current.activeIndex).toBe(0);
+    });
+
+    it("keeps the default move when it returns false", () => {
+      const onKey = vi.fn(() => false);
+      const { result } = setup({ onKey });
+      act(() => result.current.handleKeyDown(key("ArrowDown")));
+      expect(onKey).toHaveBeenCalledTimes(1);
+      expect(result.current.activeIndex).toBe(1);
+    });
+
+    it("receives the current index and runs before the type-ahead", () => {
+      const onKey = vi.fn((e: React.KeyboardEvent) => e.key === "c");
+      const { result } = setup({ onKey });
+      act(() => result.current.handleKeyDown(key("ArrowDown")));
+      act(() => result.current.handleKeyDown(key("c")));
+      expect(onKey).toHaveBeenLastCalledWith(expect.objectContaining({ key: "c" }), 1);
+      expect(result.current.activeIndex).toBe(1);
+    });
+  });
+
   it("clamps and calls edge callbacks when loop is off", () => {
     const onEdgeUp = vi.fn();
     const onEdgeDown = vi.fn();

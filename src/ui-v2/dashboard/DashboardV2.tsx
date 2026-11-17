@@ -26,11 +26,11 @@ import {
 } from "@/lib/home/blockerRules";
 import type { PlayerData } from "@/store/gameStore";
 import { resolveActiveLineupIds } from "@/store/types";
-import type { ShellBadges } from "@/ui-v2/shell/shellTypes";
 import { resolveNavTab } from "@/ui-v2/shell/navModel";
 
 import {
   formatDateFull,
+  formatMatchDate,
   isSeasonComplete as isLeagueSeasonComplete,
 } from "@/lib/common/helpers";
 import DashboardOverlays from "@/ui-v2/_legacy/components/dashboard/DashboardOverlays";
@@ -58,6 +58,8 @@ import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboar
 import { useNavMemoryStore } from "@/store/navMemoryStore";
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
+import { useRailMode } from "@/ui-v2/shell/useRailMode";
+import { buildAttentionMap } from "@/ui-v2/shell/attention";
 import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
 
 
@@ -200,6 +202,9 @@ export default function DashboardV2() {
   // What blocks the advance, for "Needs your call". Fed by the Continue modal and
   // by the backend pre-check, which re-runs after every game state update.
   const [lastBlockers, setLastBlockers] = useState<RetainedBlockers | null>(null);
+  // The dashboard body (everything under the title bar) decides Tree or Split for the rail.
+  const [railBody, setRailBody] = useState<HTMLDivElement | null>(null);
+  const rail = useRailMode(railBody);
   const focusCallsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -555,6 +560,9 @@ export default function DashboardV2() {
   const currentDate = gameState
     ? formatDateFull(gameState.clock.current_date, settings.language)
     : "";
+  const currentDateShort = gameState
+    ? formatMatchDate(gameState.clock.current_date, settings.language)
+    : "";
   const unreadMessagesCount = gameState ? getUnreadMessagesCount(gameState) : 0;
   const pendingOffersCount = gameState ? getPendingIncomingOffersCount(gameState) : 0;
   const myTeamName = gameState ? getManagerTeamName(gameState) : null;
@@ -616,14 +624,6 @@ export default function DashboardV2() {
     : null;
   const callCount = callResult?.decisions ?? 0;
 
-  const shellBadges: ShellBadges = {
-    unread: unreadMessagesCount,
-    offers: pendingOffersCount,
-    players: worldCounts.players,
-    teams: worldCounts.teams,
-    staff: worldCounts.staff,
-  };
-
   const dashboardTabContentModel = gameState
     ? createDashboardTabContentModel({
         activeTab: profileNavigation.activeTab,
@@ -661,7 +661,7 @@ export default function DashboardV2() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden bg-background text-foreground">
+    <div ref={setRailBody} className="flex min-h-0 flex-1 overflow-hidden bg-background text-foreground">
       <a
         href={`#${MAIN_CONTENT_ID}`}
         onClick={handleSkipToMain}
@@ -686,6 +686,10 @@ export default function DashboardV2() {
         onNavigateSettings={() => navigate("/settings", { state: { from: "/dashboard" } })}
         onExitClick={() => !isExitingToMenu && setShowExitConfirm(true)}
         compact={showSeasonSummary}
+        railMode={rail.mode}
+        railSlot={{ slotW: rail.slotW, slotH: rail.slotH, need: rail.need, rootPx: rail.rootPx }}
+        attention={buildAttentionMap(callResult?.items ?? [])}
+        platform={rail.platform}
       />
 
       <DashboardOverlays
@@ -714,6 +718,7 @@ export default function DashboardV2() {
         <DashboardHeaderV2
           activeTabLabel={activeTabLabel}
           currentDate={currentDate}
+          currentDateShort={currentDateShort}
           hasProfileHistory={hasProfileHistory}
           isAdvancing={isAdvancing}
           seasonComplete={showSeasonSummary}
@@ -728,12 +733,9 @@ export default function DashboardV2() {
           onContinue={handleContinue}
           onSkipToMatchDay={handleSkipToMatchDay}
           onSkipToNextDay={handleSkipToNextDay}
-          onNavigate={handleNavigate}
           teamName={myTeamName ?? ""}
           teamLogo={teamLogo}
           activeTab={profileNavigation.activeTab}
-          onNavClick={handleNavClick}
-          badges={shellBadges}
           isUnemployed={isUnemployed ?? false}
           callCount={callCount}
           onShowCalls={handleShowCalls}

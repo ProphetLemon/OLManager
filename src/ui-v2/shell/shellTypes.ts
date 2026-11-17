@@ -5,10 +5,3 @@ export interface ShellBadges {
   teams: number;
   staff: number;
 }
-
-export interface ShellNavProps {
-  activeTab: string;
-  onNavClick: (tab: string) => void;
-  badges: ShellBadges;
-  isUnemployed: boolean;
-}

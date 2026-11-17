@@ -3690,10 +3690,13 @@
   "onAir": {
     "nav": {
       "rail": "Navegação principal",
-      "strip": "Secções de {{group}}",
+      "sections": "Secções de {{group}}",
       "skip": "Saltar para o conteúdo principal",
       "bug": "Reportar bug",
-      "manager": "Perfil do treinador"
+      "manager": "Perfil do treinador",
+      "needsCall_one": "{{label}}, precisa da sua decisão",
+      "needsCall_other": "{{label}}, {{count}} precisam da sua decisão",
+      "more": "Mais"
     },
     "bar": {
       "phase": {

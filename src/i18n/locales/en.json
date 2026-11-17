@@ -3724,10 +3724,13 @@
   "onAir": {
     "nav": {
       "rail": "Main navigation",
-      "strip": "{{group}} sections",
+      "sections": "{{group}} sections",
       "skip": "Skip to main content",
       "bug": "Report bug",
-      "manager": "Manager profile"
+      "manager": "Manager profile",
+      "needsCall_one": "{{label}}, needs your call",
+      "needsCall_other": "{{label}}, {{count}} need your call",
+      "more": "More"
     },
     "bar": {
       "phase": {
