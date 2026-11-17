@@ -10,6 +10,8 @@ import {
   railClusterHeight,
   splitLabelsFit,
   splitNeed,
+  splitStopHeight,
+  ANDROID_STOPS,
   navRowChild,
   railNeed,
   railWTree,
@@ -222,5 +224,37 @@ describe("splitLabelsFit (R13)", () => {
   it("defaults to labels, and a NaN root never claims the labels fit", () => {
     expect(splitLabelsFit({ slotH: 5000, rootPx: 16, labelLines: 1 })).toBe("labels");
     expect(splitLabelsFit({ slotH: 5000, rootPx: NaN, labelLines: 1 })).toBe("icons");
+  });
+});
+
+describe("the Android hit in the Split helpers", () => {
+  it("has seven stops: Home, Inbox, Schedule, the three groups and More", () => {
+    expect(ANDROID_STOPS).toBe(7);
+  });
+
+  it("floors a stop at the Android --hit (48 px), not the desktop 24 px one", () => {
+    expect(splitStopHeight(9, 1, "android")).toBe(48);
+    expect(splitStopHeight(9, 2, "android")).toBe(48);
+    // Desktop at root 9: the content (6.75 + 18 + 1.125 + 9 per line) is what counts.
+    expect(splitStopHeight(9, 1, "desktop")).toBeCloseTo(34.875);
+    expect(splitStopHeight(9, 2, "desktop")).toBeCloseTo(43.875);
+  });
+
+  it("needs 7 x 48 + 16 px on Android (the spec's 352), whatever the label lines", () => {
+    expect(splitNeed(9, "labels", 1, ANDROID_STOPS, "android")).toBe(352);
+    expect(splitNeed(9, "labels", 2, ANDROID_STOPS, "android")).toBe(352);
+  });
+
+  it("splitLabelsFit uses it: fits at 412 and 360 px in one and two lines, not below 352", () => {
+    for (const slotH of [412, 360, 352]) {
+      for (const labelLines of [1, 2]) {
+        expect(splitLabelsFit({ slotH, rootPx: 9, labelLines, platform: "android" }), `${slotH}/${labelLines}`).toBe("labels");
+      }
+    }
+    expect(splitLabelsFit({ slotH: 351, rootPx: 9, labelLines: 1, platform: "android" })).toBe("icons");
+  });
+
+  it("keeps the desktop numbers when no platform is given", () => {
+    expect(splitNeed(16, "labels", 1)).toBe(8 * 50 + 13 + 4 * 36 + 9);
   });
 });
