@@ -26,7 +26,7 @@ export function RailCluster({ children }: { children: ReactNode }) {
     <div
       data-slot="rail-cluster"
       style={{ gridTemplateColumns: `repeat(${RAIL_CLUSTER_COLUMNS}, minmax(0, 1fr))` }}
-      className="grid shrink-0 gap-0 border-t border-line px-1.5 py-1"
+      className="grid shrink-0 gap-0 border-t border-line px-[6px] py-[4px]"
     >
       {children}
     </div>

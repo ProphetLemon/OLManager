@@ -53,7 +53,7 @@ export function RailTree({
     a && attentionName ? { attention: a, attentionName: attentionName(label, a.count) } : {};
 
   return (
-    <ul className="m-0 list-none p-1.5">
+    <ul className="m-0 list-none p-[6px]">
       {RAIL_DIRECT.map((item) => (
         <li key={item.tab}>
           <RailRow
@@ -68,7 +68,7 @@ export function RailTree({
           />
         </li>
       ))}
-      <li role="presentation" className="mx-1.5 my-2">
+      <li role="presentation" className="mx-[6px] my-[8px]">
         <hr className="m-0 border-0 border-t border-line" />
       </li>
       {groups.map((g) => {
@@ -76,7 +76,7 @@ export function RailTree({
         const listId = `${baseId}-${g.id}`;
         const label = labelOf(g);
         return (
-          <li key={g.id} className={g.id === "market" ? "mt-1" : undefined}>
+          <li key={g.id} className={g.id === "market" ? "mt-[4px]" : undefined}>
             <RailRow
               kind="header"
               navId={`group:${g.id}`}

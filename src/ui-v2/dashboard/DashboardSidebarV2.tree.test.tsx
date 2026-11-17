@@ -137,6 +137,23 @@ describe("Tree rail structure", () => {
   });
 });
 
+describe("Tree rail structural spacing", () => {
+  // Spacing utilities such as p-1.5 or my-2 are rem-scaled and grew the tree past `need` at XL.
+  const REM_SPACING = /(^|\s)-?(?:p|px|py|pt|pb|m|mx|my|mt|mb|gap)-(?:[1-9]|\.)/;
+
+  it("spends only px-fixed spacing on the list, the divider, the Market gap and the cluster", () => {
+    setup();
+    const nav = screen.getByRole("navigation", { name: "Main navigation" });
+    const root = nav.querySelector("ul")!;
+    const divider = root.querySelector(":scope > li:has(hr)") as HTMLElement;
+    const market = navId("group:market").closest("li") as HTMLElement;
+    const cluster = document.querySelector('[data-slot="rail-cluster"]') as HTMLElement;
+    for (const el of [root, divider, market, cluster]) {
+      expect(el.className, el.outerHTML.slice(0, 60)).not.toMatch(REM_SPACING);
+    }
+  });
+});
+
 describe("Tree rail active state", () => {
   it("marks the active child current and its header only active-within", () => {
     setup({ activeTab: "Squad" });

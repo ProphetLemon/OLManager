@@ -5,6 +5,7 @@ import {
   navRow,
   RAIL_CLUSTER_CELLS,
   RAIL_CLUSTER_COLUMNS,
+  RAIL_STRUCTURAL_PARTS,
   RAIL_STRUCTURAL_PX,
   railClusterHeight,
   navRowChild,
@@ -59,6 +60,19 @@ describe("the utility cluster", () => {
         RAIL_STRUCTURAL_PX + 8 * navRow(r) + 10 * navRowChild(r) + railClusterHeight(r),
       );
     }
+  });
+});
+
+describe("the structural allowance", () => {
+  it("covers the px-fixed parts of the real layout, at every root", () => {
+    const parts = Object.values(RAIL_STRUCTURAL_PARTS).reduce((a, b) => a + b, 0);
+    expect(parts).toBeLessThanOrEqual(RAIL_STRUCTURAL_PX);
+  });
+
+  it("makes need at roots 18 and 20 the rows plus the constant allowance (the rows are the only rem part)", () => {
+    expect(railNeed(18)).toBe(RAIL_STRUCTURAL_PX + 8 * 36 + 10 * 31.5 + 40.5);
+    expect(railNeed(20)).toBe(RAIL_STRUCTURAL_PX + 8 * 40 + 10 * 35 + 45);
+    expect(railNeed(20)).toBe(765);
   });
 });
 

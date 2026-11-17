@@ -17,6 +17,16 @@ export const railWTree = (r: number): number => Math.max(14 * r, 192);
 
 /** Rail padding 20, divider 17, Market gap 4, utility cluster border and padding 9. */
 export const RAIL_STRUCTURAL_PX = 50;
+/**
+ * The px-fixed chrome the real layout spends, none of it rem-scaled (a rem part would
+ * outgrow the allowance at the large roots: it did, by 2 px at XL).
+ */
+export const RAIL_STRUCTURAL_PARTS = {
+  listPadding: 12,
+  divider: 17,
+  marketGap: 4,
+  clusterChrome: 9,
+} as const;
 /** Content width the 960 px minimum window already leaves at root 16. */
 export const CONTENT_FLOOR_PX = 880;
 /** Extra room required to re-enter Tree from Split, so a boundary size cannot flicker. */
