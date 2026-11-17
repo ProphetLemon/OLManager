@@ -6,10 +6,14 @@ import { LogOut, Settings } from "lucide-react";
 import { useRovingFocus } from "@/hooks/useRovingFocus";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import { RailItem } from "@/ui-v2/shell/RailItem";
+import { RailTree } from "@/ui-v2/shell/RailTree";
+import type { RailMode } from "@/ui-v2/shell/railMode";
+import { treeKeyAction, type TreeRow } from "@/ui-v2/shell/treeRows";
 import {
   RAIL_DIRECT,
   RAIL_GROUPS,
   groupForTab,
+  isGroupOpen,
   railStopForTab,
   resolveGroupLanding,
   type NavItem,
@@ -36,6 +40,10 @@ interface Props {
   staffCount?: number;
   /** Drops the visible labels; names stay available to assistive tech. */
   compact?: boolean;
+  /** Tree shows the Club tree in the rail; anything else is today's icon rail. */
+  railMode?: RailMode;
+  /** Measurements behind `railMode`, exposed as data attributes for QA. */
+  railSlot?: { slotW: number; slotH: number; need: number };
 }
 
 interface Stop {
@@ -58,8 +66,12 @@ export function DashboardSidebarV2({
   teamCount = 0,
   staffCount = 0,
   compact = false,
+  railMode = "split",
+  railSlot,
 }: Props) {
   const { t } = useTranslation();
+  // The end-of-season screen keeps the icon rail whatever the size says.
+  const tree = railMode === "tree" && !compact;
 
   const badges: ShellBadges = useMemo(
     () => ({
@@ -80,12 +92,39 @@ export function DashboardSidebarV2({
     rememberTab(activeTab);
   }, [activeTab, rememberTab]);
 
+  const openGroups = useNavMemoryStore((s) => s.openGroups);
+  const toggleGroup = useNavMemoryStore((s) => s.toggleGroup);
+
   const groups = useMemo(
     () => RAIL_GROUPS.filter((g) => !(isUnemployed && g.hiddenWhenUnemployed)),
     [isUnemployed],
   );
 
-  const stops: Stop[] = useMemo(
+  // Tree: the visible rows in DOM order, then the utility stops. Split: today's stops.
+  const treeRows: TreeRow[] = useMemo(() => {
+    if (!tree) return [];
+    const rows: TreeRow[] = RAIL_DIRECT.map((i) => ({
+      id: `tab:${i.tab}`,
+      kind: "leaf" as const,
+      level: 0 as const,
+      parentId: null,
+    }));
+    for (const g of groups) {
+      const open = isGroupOpen(openGroups, g.id);
+      rows.push({ id: `group:${g.id}`, kind: "header", level: 0, parentId: null, expanded: open });
+      if (open) {
+        for (const i of g.items) {
+          rows.push({ id: `tab:${i.tab}`, kind: "child", level: 1, parentId: `group:${g.id}` });
+        }
+      }
+    }
+    for (const u of ["settings", "exit", "manager"]) {
+      rows.push({ id: `util:${u}`, kind: "utility", level: 0, parentId: null });
+    }
+    return rows;
+  }, [tree, groups, openGroups]);
+
+  const splitStops: Stop[] = useMemo(
     () => [
       ...RAIL_DIRECT.map((item) => ({ id: item.tab, activate: () => onNavClick(item.tab) })),
       ...groups.map((g) => ({
@@ -99,12 +138,47 @@ export function DashboardSidebarV2({
     [groups, lastVisited, onNavClick, onNavigateSettings, onExitClick],
   );
 
-  const currentStopId = activeTab === "Manager" ? "Manager" : railStopForTab(activeTab);
+  const stops: Stop[] = useMemo(
+    () =>
+      tree
+        ? treeRows.map((r) => {
+            const tab = r.id.startsWith("tab:") ? r.id.slice(4) : "";
+            if (r.id.startsWith("group:")) {
+              return { id: r.id, activate: () => toggleGroup(r.id.slice(6) as RailGroupId) };
+            }
+            if (r.id === "util:settings") return { id: r.id, activate: onNavigateSettings };
+            if (r.id === "util:exit") return { id: r.id, activate: onExitClick };
+            if (r.id === "util:manager") return { id: r.id, activate: () => onNavClick("Manager") };
+            return { id: r.id, activate: () => onNavClick(tab) };
+          })
+        : splitStops,
+    [tree, treeRows, splitStops, toggleGroup, onNavigateSettings, onExitClick, onNavClick],
+  );
+  // Tree: the row the user last moved to wins until the active tab changes; else the
+  // active tab's row (its header while the group is collapsed).
+  const [roving, setRoving] = useState<{ tab: string; id: string | null }>({ tab: activeTab, id: null });
+  if (roving.tab !== activeTab) setRoving({ tab: activeTab, id: null });
+  const treeActiveId = (() => {
+    if (activeTab === "Manager") return "util:manager";
+    const g = groupForTab(activeTab);
+    if (g && !isGroupOpen(openGroups, g)) return `group:${g}`;
+    return `tab:${activeTab}`;
+  })();
+  const treeCurrentId =
+    roving.id && stops.some((s) => s.id === roving.id) ? roving.id : treeActiveId;
+
+  const currentStopId = tree
+    ? treeCurrentId
+    : activeTab === "Manager"
+      ? "Manager"
+      : railStopForTab(activeTab);
   const controlledIndex = stops.findIndex((s) => s.id === currentStopId);
 
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const stopsRef = useRef(stops);
   stopsRef.current = stops;
+  // Tree keymap, kept in a ref because it needs `setActiveIndex` from the hook it feeds.
+  const treeKeyRef = useRef<(e: React.KeyboardEvent, i: number) => boolean>(() => false);
   const { activeIndex, shouldFocus, setActiveIndex, handleKeyDown, getTabIndex } = useRovingFocus({
     itemCount: stops.length,
     columns: 1,
@@ -113,7 +187,39 @@ export function DashboardSidebarV2({
     orientation: "vertical",
     onSelect: (i) => stopsRef.current[i]?.activate(),
     getItemLabel: (i) => itemRefs.current[stops[i]?.id ?? ""]?.title ?? "",
+    onKey: (e, i) => treeKeyRef.current(e, i),
   });
+
+  treeKeyRef.current = (e, roving) => {
+    if (!tree) return false;
+    // The row that has focus is the one that acts, whatever the roving state says yet.
+    const focused = stopIndexOf(e.target);
+    const i = focused >= 0 ? focused : roving;
+    // Browser and OS shortcuts (Alt+Left = back) are not ours: skip the roving default too.
+    if (e.altKey || e.ctrlKey || e.metaKey) return true;
+    const action = treeKeyAction(treeRows, i, e.key, "tree");
+    const arrow = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key);
+    switch (action.type) {
+      case "move":
+        e.preventDefault();
+        setActiveIndex(action.index);
+        return true;
+      case "expand":
+      case "collapse":
+      case "toggle":
+        e.preventDefault();
+        toggleGroup(action.id.slice("group:".length) as RailGroupId);
+        return true;
+      case "activate":
+        e.preventDefault();
+        stopsRef.current[i]?.activate();
+        return true;
+      default:
+        // "Nothing" means nothing: the roving default must not move focus either.
+        if (arrow) e.preventDefault();
+        return arrow;
+    }
+  };
 
   // Depends on the focus intent only: `stops` is rebuilt whenever the parent passes new
   // callbacks, and re-running on that would pull focus back into the rail.
@@ -138,6 +244,7 @@ export function DashboardSidebarV2({
     const i = stopIndexOf(e.target);
     if (i < 0) return;
     if (i !== activeIndex) setActiveIndex(i);
+    if (tree) setRoving({ tab: activeTab, id: stops[i].id });
     (e.target as HTMLElement).scrollIntoView?.({ block: "nearest" });
   };
 
@@ -167,7 +274,7 @@ export function DashboardSidebarV2({
   })`;
 
   const indexOf = (id: string) => stops.findIndex((s) => s.id === id);
-  const itemProps = (id: string) => ({
+  const itemProps = (id: string): { tabIndex: 0 | -1; buttonRef: (el: HTMLButtonElement | null) => void } => ({
     tabIndex: getTabIndex(indexOf(id)),
     buttonRef: (el: HTMLButtonElement | null) => {
       itemRefs.current[id] = el;
@@ -186,9 +293,13 @@ export function DashboardSidebarV2({
 
   return (
     <aside
+      data-rail-mode={tree ? "tree" : "split"}
+      data-rail-slot-w={railSlot?.slotW}
+      data-rail-slot-h={railSlot?.slotH}
+      data-rail-need={railSlot?.need}
       className={cn(
         "flex h-full min-h-0 shrink-0 flex-col border-e border-line bg-rail text-sidebar-foreground",
-        compact ? "w-14" : "w-[4.75rem]",
+        tree ? "w-[var(--rail-w-tree)]" : compact ? "w-14" : "w-[4.75rem]",
       )}
     >
       <nav
@@ -206,6 +317,22 @@ export function DashboardSidebarV2({
           style={{ maskImage: fadeMask, WebkitMaskImage: fadeMask }}
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
+          {tree ? (
+            <RailTree
+              activeTab={activeTab}
+              groups={groups}
+              openGroups={openGroups}
+              badges={badges}
+              labelOf={labelOf}
+              listLabel={(group) =>
+                t("onAir.nav.strip", { group, defaultValue: "{{group}} sections" })
+              }
+              onNavClick={onNavClick}
+              onToggleGroup={toggleGroup}
+              handle={itemProps}
+            />
+          ) : (
+            <>
           {RAIL_DIRECT.map((item) => (
             <RailItem
               key={item.tab}
@@ -232,6 +359,8 @@ export function DashboardSidebarV2({
               {...itemProps(`group:${g.id}`)}
             />
           ))}
+            </>
+          )}
         </div>
 
         <div
@@ -246,7 +375,8 @@ export function DashboardSidebarV2({
             label={t("dashboard.settings", { defaultValue: "Settings" })}
             compact={compact}
             onClick={onNavigateSettings}
-            {...itemProps("settings")}
+            data-nav-id="util:settings"
+            {...itemProps(tree ? "util:settings" : "settings")}
           />
           <RailItem
             icon={LogOut}
@@ -254,7 +384,8 @@ export function DashboardSidebarV2({
             tone="danger"
             compact={compact}
             onClick={onExitClick}
-            {...itemProps("exit")}
+            data-nav-id="util:exit"
+            {...itemProps(tree ? "util:exit" : "exit")}
           />
           <button
             type="button"
@@ -262,9 +393,10 @@ export function DashboardSidebarV2({
             aria-label={managerName ? `${managerLabel}, ${managerName}` : managerLabel}
             aria-current={activeTab === "Manager" ? "page" : undefined}
             title={managerFullName ?? managerName ?? managerLabel}
-            {...{ tabIndex: getTabIndex(indexOf("Manager")) }}
+            data-nav-id="util:manager"
+            {...{ tabIndex: getTabIndex(indexOf(tree ? "util:manager" : "Manager")) }}
             ref={(el) => {
-              itemRefs.current.Manager = el;
+              itemRefs.current[tree ? "util:manager" : "Manager"] = el;
             }}
             className="mx-auto my-1 flex size-[var(--hit)] items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
           >

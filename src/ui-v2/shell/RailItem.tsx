@@ -19,6 +19,8 @@ interface RailItemProps {
   tone?: "default" | "danger";
   buttonRef?: Ref<HTMLButtonElement>;
   "data-rail-stop"?: string;
+  /** Stable row id (`util:settings`) the tree rail keys focus and tests on. */
+  "data-nav-id"?: string;
 }
 
 const BADGE_CAP = 99;
@@ -54,6 +56,7 @@ export function RailItem({
       data-slot="rail-item"
       data-active={active ? "true" : undefined}
       data-rail-stop={rest["data-rail-stop"]}
+      data-nav-id={rest["data-nav-id"]}
       className={cn(
         "relative mx-1.5 flex min-h-[var(--hit)] w-[calc(100%-0.75rem)] scroll-my-8 flex-col rounded-[0.625rem] items-center justify-center gap-0.5 px-1 py-1.5 text-center transition-colors",
         "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring",
