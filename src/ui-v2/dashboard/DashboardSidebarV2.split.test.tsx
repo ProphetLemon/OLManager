@@ -260,10 +260,10 @@ describe("Split keyboard", () => {
     expect(navId("tab:Squad")).toHaveFocus();
   });
 
-  it("makes exactly one row tabbable", () => {
+  it("makes one row per widget tabbable: the rail's and the panel's (R15)", () => {
     setup({ activeTab: "Tactics" });
     const tabbable = [...document.querySelectorAll("nav button")].filter((b) => b.getAttribute("tabindex") === "0");
-    expect(tabbable).toHaveLength(1);
+    expect(tabbable).toHaveLength(2);
   });
 
   it("leaves Alt, Ctrl and Meta combinations to the browser", () => {
@@ -568,5 +568,69 @@ describe("Focus restore edge cases", () => {
     fireEvent.blur(window);
     act(() => void fireEvent.focus(window));
     expect(navId("tab:Inbox")).toHaveFocus();
+  });
+});
+
+describe("The panel is its own Tab stop (R15)", () => {
+  const tabbables = () =>
+    [...document.querySelectorAll<HTMLElement>("button")].filter((b) => b.getAttribute("tabindex") === "0");
+  /** What Tab reaches next: the following tabbable in document order. */
+  const nextTab = (from: HTMLElement) => {
+    const list = tabbables();
+    return list[list.indexOf(from) + 1] ?? null;
+  };
+
+  it("has two Tab stops, the rail's current stop then the panel's active child, in that order", () => {
+    setup({ activeTab: "Tactics" });
+    const stops = tabbables().map((b) => b.dataset.navId);
+    expect(stops).toEqual(["group:club", "tab:Tactics"]);
+  });
+
+  it("Tab from the rail stop lands in the panel, and Tab again leaves the rail", () => {
+    setup({ activeTab: "Tactics" });
+    focus(navId("group:club"));
+    const inPanel = nextTab(navId("group:club"));
+    expect(inPanel).toBe(navId("tab:Tactics"));
+    expect(document.querySelector('[data-slot="rail-panel"]')!.contains(inPanel)).toBe(true);
+    expect(nextTab(inPanel!)).toBeNull(); // nothing tabbable after the panel inside the rail
+  });
+
+  it("keeps the panel's own roving: arrows move its Tab stop, and the rail keeps its stop", () => {
+    setup({ activeTab: "Squad" });
+    focus(navId("tab:Squad"));
+    press(navId("tab:Squad"), "ArrowDown");
+    expect(navId("tab:Tactics")).toHaveFocus();
+    expect(tabbables().map((b) => b.dataset.navId)).toEqual(["group:club", "tab:Tactics"]);
+  });
+
+  it("Right and Left still cross between the columns", () => {
+    setup({ activeTab: "Tactics" });
+    focus(navId("group:club"));
+    press(navId("group:club"), "ArrowRight");
+    expect(navId("tab:Tactics")).toHaveFocus();
+    press(navId("tab:Tactics"), "ArrowLeft");
+    expect(navId("group:club")).toHaveFocus();
+  });
+
+  it("has one Tab stop when there is no panel, and one in Tree", () => {
+    const { rerender } = setup({ activeTab: "Inbox" });
+    expect(tabbables()).toHaveLength(1);
+    rerender({ railMode: "tree", activeTab: "Tactics" });
+    expect(tabbables()).toHaveLength(1);
+  });
+
+  it("is the same on Android", () => {
+    setup({ activeTab: "Tactics", platform: "android" });
+    expect(tabbables().map((b) => b.dataset.navId)).toEqual(["group:club", "tab:Tactics"]);
+  });
+});
+
+describe("The Split stops are a list", () => {
+  it("wraps the stops in a list of items, with the divider outside the count", () => {
+    setup({ activeTab: "Home" });
+    const list = document.querySelector('[data-slot="rail-stops"] ul')!;
+    expect(list).not.toBeNull();
+    expect(list.querySelectorAll(':scope > li:has([data-slot="rail-item"])')).toHaveLength(8);
+    for (const child of list.children) expect(child.tagName).toBe("LI");
   });
 });

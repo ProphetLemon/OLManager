@@ -40,40 +40,47 @@ interface StopsProps {
 export function RailSplitStops({ activeTab, groups, badges, labelOf, compact, iconOnly = false, lastVisited, android = false, trailing, onNavClick, handle }: StopsProps) {
   const badgeOf = (item: NavItem) => (item.badge ? badges[item.badge] : undefined);
   const hintOf = (g: RailGroup) => g.items.map(labelOf).join(", ");
+  const stop = (item: NavItem) => (
+    <li key={item.tab}>
+      <RailItem
+        icon={item.icon}
+        label={labelOf(item)}
+        active={activeTab === item.tab}
+        badge={badgeOf(item)}
+        compact={compact}
+        iconOnly={iconOnly}
+        onClick={() => onNavClick(item.tab)}
+        data-nav-id={`tab:${item.tab}`}
+        {...handle(`tab:${item.tab}`)}
+      />
+    </li>
+  );
   return (
-    <>
-      {RAIL_DIRECT.filter((item) => !android || ANDROID_DIRECT.includes(item.tab)).map((item) => (
-        <RailItem
-          key={item.tab}
-          icon={item.icon}
-          label={labelOf(item)}
-          active={activeTab === item.tab}
-          badge={badgeOf(item)}
-          compact={compact}
-          iconOnly={iconOnly}
-          onClick={() => onNavClick(item.tab)}
-          data-nav-id={`tab:${item.tab}`}
-          {...handle(`tab:${item.tab}`)}
-        />
-      ))}
-      {!android && <div role="separator" className="mx-3 my-1.5 border-t border-line" />}
+    <ul className="m-0 list-none p-0">
+      {RAIL_DIRECT.filter((item) => !android || ANDROID_DIRECT.includes(item.tab)).map(stop)}
+      {!android && (
+        <li role="presentation" className="mx-3 my-1.5">
+          <hr className="m-0 border-0 border-t border-line" />
+        </li>
+      )}
       {groups.map((g) => (
-        <RailItem
-          key={g.id}
-          icon={g.icon}
-          label={labelOf(g)}
-          hint={hintOf(g)}
-          active={groupForTab(activeTab) === g.id}
-          badge={g.id === "market" ? badges.offers : undefined}
-          compact={compact}
-          iconOnly={iconOnly}
-          onClick={() => onNavClick(resolveGroupLanding(g.id, lastVisited))}
-          data-nav-id={`group:${g.id}`}
-          {...handle(`group:${g.id}`)}
-        />
+        <li key={g.id}>
+          <RailItem
+            icon={g.icon}
+            label={labelOf(g)}
+            hint={hintOf(g)}
+            active={groupForTab(activeTab) === g.id}
+            badge={g.id === "market" ? badges.offers : undefined}
+            compact={compact}
+            iconOnly={iconOnly}
+            onClick={() => onNavClick(resolveGroupLanding(g.id, lastVisited))}
+            data-nav-id={`group:${g.id}`}
+            {...handle(`group:${g.id}`)}
+          />
+        </li>
       ))}
-      {trailing}
-    </>
+      {trailing && <li>{trailing}</li>}
+    </ul>
   );
 }
 

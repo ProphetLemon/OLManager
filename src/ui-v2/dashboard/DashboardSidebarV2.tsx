@@ -188,8 +188,12 @@ export function DashboardSidebarV2({
 
   // The row the user last moved to wins until the active tab changes; else the active tab's
   // row: its header while a Tree group is collapsed, its launcher in Split.
-  const [roving, setRoving] = useState<{ tab: string; id: string | null }>({ tab: activeTab, id: null });
-  if (roving.tab !== activeTab) setRoving({ tab: activeTab, id: null });
+  const [roving, setRoving] = useState<{ tab: string; id: string | null; panelId: string | null }>({
+    tab: activeTab,
+    id: null,
+    panelId: null,
+  });
+  if (roving.tab !== activeTab) setRoving({ tab: activeTab, id: null, panelId: null });
   const activeRowId = (() => {
     if (activeTab === "Manager") return android ? "util:more" : "util:manager";
     if (android && (activeTab === "News" || activeTab === "Social")) return "util:more";
@@ -286,7 +290,12 @@ export function DashboardSidebarV2({
     if (i < 0) return;
     lastRailId.current = stops[i].id;
     if (i !== activeIndex) setActiveIndex(i);
-    setRoving({ tab: activeTab, id: stops[i].id });
+    const focusedRow = rows[i];
+    setRoving((prev) => ({
+      tab: activeTab,
+      id: stops[i].id,
+      panelId: focusedRow?.column === "panel" ? stops[i].id : prev.panelId,
+    }));
     (e.target as HTMLElement).scrollIntoView?.({ block: "nearest" });
   };
   const onNavBlur = (e: React.FocusEvent) => {
@@ -362,8 +371,20 @@ export function DashboardSidebarV2({
   const fade = useFadeMask<HTMLDivElement>(`${stops.length}-${tree}`);
 
   const indexOf = (id: string) => stops.findIndex((s) => s.id === id);
+  // R15: in Split (and on Android) the rail and its docked panel are two roving widgets, one
+  // Tab stop each. Tab order: the rail's current stop, the panel's current row, then the content.
+  // Tree keeps one stop: its children are rows of the same widget.
+  const panelRows = rows.filter((r) => r.column === "panel");
+  const inPanel = panelRows.some((r) => r.id === currentRowId);
+  const railTabId = inPanel && panelGroup ? `group:${panelGroup.id}` : currentRowId;
+  const panelTabId = inPanel
+    ? currentRowId
+    : (panelRows.find((r) => r.id === roving.panelId) ??
+        panelRows.find((r) => r.active) ??
+        panelRows[0])?.id;
+  const twoStops = !tree && panelRows.length > 0;
   const itemProps = (id: string): { tabIndex: 0 | -1; buttonRef: (el: HTMLButtonElement | null) => void } => ({
-    tabIndex: getTabIndex(indexOf(id)),
+    tabIndex: twoStops ? (id === railTabId || id === panelTabId ? 0 : -1) : getTabIndex(indexOf(id)),
     buttonRef: (el: HTMLButtonElement | null) => {
       itemRefs.current[id] = el;
     },

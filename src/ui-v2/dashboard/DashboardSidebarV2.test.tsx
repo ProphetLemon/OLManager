@@ -59,11 +59,12 @@ describe("DashboardSidebarV2 rail", () => {
     expect(document.body).toHaveFocus();
   });
 
-  it("makes exactly one stop tabbable, the one for the active tab", () => {
+  it("makes the stop for the active tab tabbable, and the panel's active tab as the second stop (R15)", () => {
     setup({ activeTab: "Squad" });
     const tabbable = screen.getAllByRole("button").filter((b) => b.getAttribute("tabindex") === "0");
-    expect(tabbable).toHaveLength(1);
+    expect(tabbable).toHaveLength(2);
     expect(tabbable[0]).toHaveAccessibleName("Club");
+    expect(tabbable[1]).toHaveAccessibleName("Squad");
   });
 
   it("keeps the first stop tabbable when no stop owns the tab", () => {

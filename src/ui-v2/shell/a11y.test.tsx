@@ -111,12 +111,15 @@ describe.each(["off", "high"])("shell accessibility, contrast %s", (mode) => {
     expect(inPanel[0].querySelector('[data-slot="rail-item-bar"]')).not.toBeNull();
   });
 
-  it("uses no positive tabindex and one tab stop per roving widget", () => {
+  it("uses no positive tabindex and one tab stop per roving widget (the rail and its panel)", () => {
     const { container } = renderShell();
     expect(container.querySelector('[tabindex]:not([tabindex="0"]):not([tabindex="-1"])')).toBeNull();
     const rail = screen.getByRole("navigation", { name: "Main navigation" });
+    // Two widgets, one Tab stop each (R15): the rail's current stop and the panel's current row.
     const stops = rail.querySelectorAll('button[tabindex="0"]');
-    expect(stops).toHaveLength(1);
+    expect(stops).toHaveLength(2);
+    const panel = within(rail).getByRole("group", { name: /Club/i });
+    expect([...stops].filter((s) => panel.contains(s))).toHaveLength(1);
   });
 
   it("has no duplicate ids and no hidden focusable controls", () => {
