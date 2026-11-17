@@ -11,6 +11,7 @@ export interface RailModeState {
   need: number;
   /** The root font size the decision used, px. */
   rootPx: number;
+  platform: RailPlatform;
 }
 
 interface Measured {
@@ -129,5 +130,5 @@ export function useRailMode(
     setM((prev) => next(prev, { reservedTop }));
   }, [reservedTop]);
 
-  return { mode: m.mode, slotW: m.slotW, slotH: m.slotH, need: railNeed(m.rootPx, m.reservedTop), rootPx: m.rootPx };
+  return { mode: m.mode, slotW: m.slotW, slotH: m.slotH, need: railNeed(m.rootPx, m.reservedTop), rootPx: m.rootPx, platform: m.platform };
 }
