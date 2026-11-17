@@ -79,3 +79,9 @@ describe("rail tree tokens", () => {
     expect(names.filter((n) => taken.has(n))).toEqual([]);
   });
 });
+
+describe("the active row tint", () => {
+  it("is one token, 16% of the club colour", () => {
+    expect(ruleBody(":root")).toContain("--row-wash: color-mix(in srgb, var(--club) 16%, transparent);");
+  });
+});

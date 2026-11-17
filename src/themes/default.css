@@ -191,6 +191,8 @@
   --map-casing: #0a0d13;
   --map-ink: #eef1f7;
   --club-wash: color-mix(in srgb, var(--club) 36%, transparent);
+  /* The tint of the rail row that owns the current page (all rail forms). */
+  --row-wash: color-mix(in srgb, var(--club) 16%, transparent);
   --hit: max(2.75rem, 24px);
   /* Rail tree (NR1). Each is max(rem, px): it follows the UI scale above the px floor
      and never drops under it at the small roots (12 desktop XS, 9 Android).

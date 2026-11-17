@@ -4,6 +4,8 @@ import type { Ref } from "react";
 import { IconTip } from "@/ui-v2/components/ui/icon-tip";
 import { cn } from "@/ui-v2/lib/utils";
 
+import { ACTIVE_ROW_CLASS, RailActiveBar, badgeText as formatBadge } from "./railActive";
+
 interface RailItemProps {
   icon: LucideIcon;
   label: string;
@@ -31,8 +33,6 @@ interface RailItemProps {
   "data-nav-id"?: string;
 }
 
-const BADGE_CAP = 99;
-
 /**
  * The visible label of a Split stop: up to two balanced lines, hyphenated by the document
  * language, never clipped (R12). The weight is set apart. The hidden measurer that decides
@@ -59,7 +59,7 @@ export function RailItem({
   ...rest
 }: RailItemProps) {
   const count = badge !== undefined && badge > 0 ? badge : 0;
-  const badgeText = count > BADGE_CAP ? `${BADGE_CAP}+` : String(count);
+  const badgeText = formatBadge(count);
   const accessibleName = count > 0 ? `${label}, ${badgeText}` : label;
 
   const iconAndBadge = (
@@ -100,17 +100,11 @@ export function RailItem({
         tone === "danger"
           ? "text-negative hover:bg-negative/10"
           : active
-            ? "bg-[color-mix(in_srgb,var(--club)_16%,transparent)] text-foreground [[data-contrast=high]_&]:data-[active=true]:outline-2 [[data-contrast=high]_&]:data-[active=true]:-outline-offset-2 [[data-contrast=high]_&]:data-[active=true]:outline-solid [[data-contrast=high]_&]:data-[active=true]:outline-club-text"
+            ? ACTIVE_ROW_CLASS
             : "text-muted-foreground hover:bg-accent hover:text-foreground",
       )}
     >
-      {active && (
-        <span
-          aria-hidden="true"
-          data-slot="rail-item-bar"
-          className="absolute inset-y-0 -start-1.5 my-auto h-8 max-h-full w-1 rounded-e-sm bg-club-text"
-        />
-      )}
+      {active && <RailActiveBar size="stop" />}
       {iconOnly ? (
         // The tip's parent must be the button itself, so it follows the button's focus.
         <IconTip label={hint ? `${label}: ${hint}` : label} followFocus className="relative inline-flex">

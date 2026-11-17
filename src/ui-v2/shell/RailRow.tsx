@@ -3,7 +3,7 @@ import type { Ref } from "react";
 
 import { cn } from "@/ui-v2/lib/utils";
 
-import { badgeText as formatBadge } from "./railActive";
+import { ACTIVE_ROW_CLASS, RailActiveBar, badgeText as formatBadge } from "./railActive";
 
 export type RailRowKind = "leaf" | "header" | "child" | "panel";
 
@@ -85,19 +85,13 @@ export function RailRow({
             ? cn(tall ? "min-h-[var(--hit)]" : "min-h-[var(--nav-row-child)]", "py-[2px] ps-3")
             : "h-[var(--nav-row)] ps-3",
         active
-          ? "bg-[color-mix(in_srgb,var(--club)_16%,transparent)] text-foreground [[data-contrast=high]_&]:data-[active=true]:outline-2 [[data-contrast=high]_&]:data-[active=true]:-outline-offset-2 [[data-contrast=high]_&]:data-[active=true]:outline-solid [[data-contrast=high]_&]:data-[active=true]:outline-club-text"
+          ? ACTIVE_ROW_CLASS
           : activeWithin
             ? "text-foreground hover:bg-accent"
             : "text-muted-foreground hover:bg-accent hover:text-foreground",
       )}
     >
-      {active && (
-        <span
-          aria-hidden="true"
-          data-slot="rail-item-bar"
-          className="absolute inset-y-0 -start-1.5 my-auto h-4 w-[3px] rounded-e-sm bg-club-text"
-        />
-      )}
+      {active && <RailActiveBar size="row" />}
       {Icon && <Icon className="size-[var(--nav-icon)] shrink-0" aria-hidden="true" />}
       <span
         aria-hidden="true"
