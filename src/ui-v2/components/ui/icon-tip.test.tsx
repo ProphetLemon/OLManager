@@ -284,3 +284,62 @@ describe("keyboard focus of the parent (followFocus)", () => {
     expect(tip()).toBeNull();
   });
 });
+
+describe("an icon inside a button (followFocus)", () => {
+  function cell() {
+    render(
+      <button type="button">
+        <IconTip label="Settings" followFocus data-testid="icon">
+          <i />
+        </IconTip>
+      </button>,
+    );
+    return screen.getByRole("button");
+  }
+  const rect = (top: number, height: number) =>
+    ({ top, height, bottom: top + height, left: 0, right: 40, width: 40, x: 0, y: top, toJSON() {} }) as DOMRect;
+
+  it("opens when the pointer is anywhere over the button, not only over the 18 px icon", () => {
+    const button = cell();
+    fireEvent.pointerEnter(button, { pointerType: "mouse" });
+    advance(ICON_TIP_HOVER_DELAY_MS);
+    expect(tip()).toHaveTextContent("Settings");
+    fireEvent.pointerLeave(button, { pointerType: "mouse" });
+    advance(ICON_TIP_LEAVE_GRACE_MS);
+    expect(tip()).toBeNull();
+  });
+
+  it("keeps the tip hoverable when it is entered from the button", () => {
+    const button = cell();
+    fireEvent.pointerEnter(button, { pointerType: "mouse" });
+    advance(ICON_TIP_HOVER_DELAY_MS);
+    fireEvent.pointerLeave(button, { pointerType: "mouse" });
+    fireEvent.pointerEnter(tip()!, { pointerType: "mouse" });
+    advance(ICON_TIP_LEAVE_GRACE_MS * 3);
+    expect(tip()).not.toBeNull();
+  });
+
+  it("sits above the button, not above the icon, so it never covers the focus ring (WCAG 2.4.11)", () => {
+    const button = cell();
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      if (this.matches('[role="tooltip"]')) return rect(0, 20);
+      if (this.tagName === "BUTTON") return rect(100, 36); // the cell
+      return rect(109, 18); // the icon, 9 px inside the cell
+    });
+    act(() => button.focus());
+    // 100 (button top) - 20 (plate) - 6 (gap) = 74; anchored to the icon it would be 83 and reach into the ring.
+    expect(tip()!.style.top).toBe("74px");
+    vi.restoreAllMocks();
+  });
+
+  it("still sits above the icon for a tip that is not in a button", () => {
+    const { icon } = setup();
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      return this.matches('[role="tooltip"]') ? rect(0, 20) : rect(109, 18);
+    });
+    fireEvent.pointerEnter(icon, { pointerType: "mouse" });
+    advance(ICON_TIP_HOVER_DELAY_MS);
+    expect(tip()!.style.top).toBe("83px");
+    vi.restoreAllMocks();
+  });
+});

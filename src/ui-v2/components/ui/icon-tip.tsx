@@ -112,11 +112,24 @@ export function IconTip({ label, className, followFocus = false, children, ...re
     };
     parent.addEventListener("focus", onFocus);
     parent.addEventListener("blur", close);
+    // The whole button is the hover target, not only the icon inside it. The handlers are read
+    // through a ref so this effect does not re-bind on every render.
+    const enter = (e: Event) => hoverRef.current.enter(e as PointerEvent);
+    const leave = (e: Event) => hoverRef.current.leave(e as PointerEvent);
+    parent.addEventListener("pointerenter", enter);
+    parent.addEventListener("pointerleave", leave);
     return () => {
       parent.removeEventListener("focus", onFocus);
       parent.removeEventListener("blur", close);
+      parent.removeEventListener("pointerenter", enter);
+      parent.removeEventListener("pointerleave", leave);
     };
   }, [followFocus, close]);
+
+  const hoverRef = useRef<{ enter: (e: { pointerType: string }) => void; leave: (e: { pointerType: string }) => void }>({
+    enter: () => {},
+    leave: () => {},
+  });
 
   const swallowNextClick = () => {
     const swallow = (event: Event) => {
@@ -128,7 +141,7 @@ export function IconTip({ label, className, followFocus = false, children, ...re
     window.setTimeout(() => window.removeEventListener("click", swallow, true), CLICK_SWALLOW_MS);
   };
 
-  const onPointerEnter = (event: ReactPointerEvent<HTMLSpanElement>) => {
+  const onPointerEnter = (event: { pointerType: string }) => {
     if (event.pointerType === "touch") return;
     window.clearTimeout(leaveTimer.current);
     window.clearTimeout(hoverTimer.current);
@@ -136,7 +149,7 @@ export function IconTip({ label, className, followFocus = false, children, ...re
   };
 
   // The tip is hoverable: leaving the trigger or the tip waits a short grace before closing.
-  const onPointerLeave = (event: ReactPointerEvent<HTMLSpanElement>) => {
+  const onPointerLeave = (event: { pointerType: string }) => {
     if (event.pointerType === "touch") return;
     window.clearTimeout(hoverTimer.current);
     window.clearTimeout(leaveTimer.current);
@@ -144,6 +157,7 @@ export function IconTip({ label, className, followFocus = false, children, ...re
   };
 
   const keepOpen = () => window.clearTimeout(leaveTimer.current);
+  hoverRef.current = { enter: onPointerEnter, leave: onPointerLeave };
 
   const onPointerDown = (event: ReactPointerEvent<HTMLSpanElement>) => {
     if (event.pointerType !== "touch") return;
@@ -164,15 +178,17 @@ export function IconTip({ label, className, followFocus = false, children, ...re
       {...rest}
       ref={triggerRef}
       className={className}
-      onPointerEnter={onPointerEnter}
-      onPointerLeave={onPointerLeave}
+      onPointerEnter={followFocus ? undefined : onPointerEnter}
+      onPointerLeave={followFocus ? undefined : onPointerLeave}
       onPointerDown={onPointerDown}
       onPointerUp={cancelPress}
       onPointerCancel={cancelPress}
       onContextMenu={(event) => event.preventDefault()}
     >
       {children}
-      {open ? <IconTipPlate label={label} anchor={triggerRef} onEnter={keepOpen} onLeave={onPointerLeave} /> : null}
+      {open ? (
+        <IconTipPlate label={label} anchor={triggerRef} aroundParent={followFocus} onEnter={keepOpen} onLeave={onPointerLeave} />
+      ) : null}
     </span>
   );
 }
@@ -180,11 +196,14 @@ export function IconTip({ label, className, followFocus = false, children, ...re
 function IconTipPlate({
   label,
   anchor,
+  aroundParent,
   onEnter,
   onLeave,
 }: {
   label: string;
   anchor: React.RefObject<HTMLSpanElement | null>;
+  /** Sit above the parent button instead of the icon inside it, so the focus ring stays clear. */
+  aroundParent: boolean;
   onEnter: () => void;
   onLeave: (event: ReactPointerEvent<HTMLSpanElement>) => void;
 }) {
@@ -195,14 +214,14 @@ function IconTipPlate({
     const trigger = anchor.current;
     const plate = plateRef.current;
     if (!trigger || !plate) return;
-    const a = trigger.getBoundingClientRect();
+    const a = (aroundParent ? (trigger.parentElement ?? trigger) : trigger).getBoundingClientRect();
     const p = plate.getBoundingClientRect();
     const vw = document.documentElement.clientWidth;
     const centred = a.left + a.width / 2 - p.width / 2;
     const left = Math.min(Math.max(centred, VIEWPORT_MARGIN), Math.max(VIEWPORT_MARGIN, vw - p.width - VIEWPORT_MARGIN));
     const above = a.top - p.height - GAP;
     setPlacement({ left, top: above >= VIEWPORT_MARGIN ? above : a.bottom + GAP });
-  }, [anchor, label]);
+  }, [anchor, label, aroundParent]);
 
   return createPortal(
     <span
