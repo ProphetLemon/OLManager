@@ -5,6 +5,7 @@ import {
   ICON_TIP_HOVER_DELAY_MS,
   ICON_TIP_LEAVE_GRACE_MS,
   ICON_TIP_LONG_PRESS_MS,
+  ICON_TIP_SCROLL_GRACE_MS,
   ICON_TIP_TOUCH_HIDE_MS,
   IconTip,
 } from "./icon-tip";
@@ -179,6 +180,7 @@ describe("touch long press", () => {
     const { icon } = setup();
     fireEvent.pointerDown(icon, { pointerType: "touch" });
     advance(ICON_TIP_LONG_PRESS_MS);
+    advance(ICON_TIP_SCROLL_GRACE_MS + 1); // a scroll right at opening is the rail's own scrollIntoView
     fireEvent.scroll(window);
     expect(tip()).toBeNull();
   });
@@ -239,19 +241,46 @@ describe("keyboard focus of the parent (followFocus)", () => {
     expect(button).toHaveFocus();
   });
 
-  it("stays closed when a pointer press caused the focus", () => {
-    const button = focusSetup();
-    fireEvent.pointerDown(button, { pointerType: "mouse" });
-    act(() => button.focus());
-    expect(tip()).toBeNull();
+  describe("with :focus-visible support", () => {
+    // jsdom has no :focus-visible; stand in for a browser that decides it.
+    let visible = true;
+    beforeEach(() => {
+      visible = true;
+      vi.stubGlobal("CSS", { supports: () => true });
+      const real = Element.prototype.matches;
+      vi.spyOn(Element.prototype, "matches").mockImplementation(function (this: Element, selector: string) {
+        return selector === ":focus-visible" ? visible : real.call(this, selector);
+      });
+    });
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    it("opens when the browser calls the focus keyboard focus", () => {
+      const button = focusSetup();
+      act(() => button.focus());
+      expect(tip()).toHaveTextContent("Settings");
+    });
+
+    it("opens nothing for a pointer press followed by focus, a tap included", () => {
+      const button = focusSetup();
+      visible = false;
+      fireEvent.pointerDown(button, { pointerType: "touch" });
+      fireEvent.pointerUp(button, { pointerType: "touch" });
+      act(() => button.focus()); // the compat mousedown focus of a tap
+      expect(tip()).toBeNull();
+    });
   });
 
-  it("opens for a later keyboard focus when the earlier click never focused the button", () => {
+  it("keeps a focus-opened tip through the scroll its own focus causes, then closes on a later scroll", () => {
     const button = focusSetup();
-    fireEvent.pointerDown(button, { pointerType: "mouse" });
-    fireEvent.pointerUp(button, { pointerType: "mouse" }); // a webview where the click did not focus
     act(() => button.focus());
-    expect(tip()).toHaveTextContent("Settings");
+    fireEvent.scroll(window); // scrollIntoView on the focused cell fires this a frame later
+    expect(tip()).not.toBeNull();
+    advance(ICON_TIP_SCROLL_GRACE_MS + 1);
+    fireEvent.scroll(window);
+    expect(tip()).toBeNull();
   });
 
   it("closes on blur at once, without the hover grace", () => {

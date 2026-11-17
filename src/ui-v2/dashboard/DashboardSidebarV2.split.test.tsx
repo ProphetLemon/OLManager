@@ -183,6 +183,20 @@ describe("Split utility cells (R12)", () => {
     expect(screen.getByRole("tooltip")).toHaveTextContent("Settings");
   });
 
+  it("move the tip with the arrow keys: the focused cell shows its label and the previous one closes", () => {
+    setup();
+    focus(navId("util:settings"));
+    expect(screen.getAllByRole("tooltip")).toHaveLength(1);
+    press(navId("util:settings"), "ArrowDown");
+    expect(navId("util:exit")).toHaveFocus();
+    const tips = screen.getAllByRole("tooltip");
+    expect(tips).toHaveLength(1);
+    expect(tips[0]).toHaveTextContent("Exit");
+    press(navId("util:exit"), "ArrowUp");
+    expect(screen.getAllByRole("tooltip")).toHaveLength(1);
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Settings");
+  });
+
   it("keep the bug cell in the roving widget and open its report on Enter", () => {
     setup();
     focus(navId("group:world"));

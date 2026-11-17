@@ -15,6 +15,11 @@ import { cn } from "@/ui-v2/lib/utils";
 export const ICON_TIP_HOVER_DELAY_MS = 350;
 export const ICON_TIP_LONG_PRESS_MS = 450;
 export const ICON_TIP_TOUCH_HIDE_MS = 2500;
+/**
+ * Scroll events in this window after the tip opens are not the user scrolling: focusing a cell
+ * makes the rail call scrollIntoView, and that fires a scroll event a frame later.
+ */
+export const ICON_TIP_SCROLL_GRACE_MS = 150;
 /** After the pointer leaves the trigger or the tip, the tip stays this long so it can be reached (WCAG 1.4.13). */
 export const ICON_TIP_LEAVE_GRACE_MS = 150;
 /** After a long press ends, the click the browser still sends is swallowed for this long. */
@@ -22,11 +27,20 @@ const CLICK_SWALLOW_MS = 600;
 const VIEWPORT_MARGIN = 6;
 const GAP = 6;
 
+function isKeyboardFocus(el: Element): boolean {
+  try {
+    if (typeof CSS === "undefined" || !CSS.supports?.("selector(:focus-visible)")) return true;
+    return el.matches(":focus-visible");
+  } catch {
+    return true;
+  }
+}
+
 export interface IconTipProps extends Omit<HTMLAttributes<HTMLSpanElement>, "title"> {
   /** The text of the tip. Also what a pointer user reads; screen readers get it elsewhere. */
   label: string;
   /**
-   * Also open while the parent button has keyboard focus (focus that a pointer did not cause), so the label is
+   * Also open while the parent button has keyboard focus (focus the browser calls keyboard focus), so the label is
    * not a pointer-only affordance. Escape closes it and focus stays on the parent.
    */
   followFocus?: boolean;
@@ -56,6 +70,7 @@ export function IconTip({ label, className, followFocus = false, children, ...re
   const pressTimer = useRef<number | undefined>(undefined);
   const hideTimer = useRef<number | undefined>(undefined);
   const leaveTimer = useRef<number | undefined>(undefined);
+  const openedAt = useRef(0);
 
   const clearTimers = useCallback(() => {
     window.clearTimeout(hoverTimer.current);
@@ -77,17 +92,22 @@ export function IconTip({ label, className, followFocus = false, children, ...re
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();
     };
+    openedAt.current = Date.now();
+    const onScroll = () => {
+      if (Date.now() - openedAt.current < ICON_TIP_SCROLL_GRACE_MS) return;
+      close();
+    };
     const onPress = (event: Event) => {
       if (event instanceof PointerEvent && event.pointerType === "mouse") return;
       close();
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onPress, true);
-    window.addEventListener("scroll", close, true);
+    window.addEventListener("scroll", onScroll, true);
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onPress, true);
-      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("scroll", onScroll, true);
     };
   }, [open, close]);
 
@@ -95,33 +115,17 @@ export function IconTip({ label, className, followFocus = false, children, ...re
     if (!followFocus) return;
     const parent = triggerRef.current?.parentElement;
     if (!parent) return;
-    // A click focuses the button too; only focus that did not come from a pointer is ours.
-    let pointerFocus = false;
-    const onPointerDown = () => {
-      pointerFocus = true;
-    };
-    // A press that never focused the button must not hide the next keyboard focus.
-    const onPointerEnd = () => {
-      pointerFocus = false;
-    };
+    // The browser knows whether a focus came from the keyboard: a click or a tap (which focuses
+    // through a compat mousedown after pointerup) does not match :focus-visible. Without support
+    // (jsdom), every focus counts as keyboard focus.
     const onFocus = () => {
-      if (!pointerFocus) setOpen(true);
+      if (isKeyboardFocus(parent)) setOpen(true);
     };
-    const onBlur = () => {
-      pointerFocus = false;
-      close();
-    };
-    parent.addEventListener("pointerdown", onPointerDown);
-    parent.addEventListener("pointerup", onPointerEnd);
-    parent.addEventListener("pointercancel", onPointerEnd);
     parent.addEventListener("focus", onFocus);
-    parent.addEventListener("blur", onBlur);
+    parent.addEventListener("blur", close);
     return () => {
-      parent.removeEventListener("pointerdown", onPointerDown);
-      parent.removeEventListener("pointerup", onPointerEnd);
-      parent.removeEventListener("pointercancel", onPointerEnd);
       parent.removeEventListener("focus", onFocus);
-      parent.removeEventListener("blur", onBlur);
+      parent.removeEventListener("blur", close);
     };
   }, [followFocus, close]);
 

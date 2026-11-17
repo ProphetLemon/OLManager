@@ -359,9 +359,17 @@ describe("Tree utility cluster", () => {
     expect(screen.getByRole("tooltip")).toHaveTextContent("Settings");
     act(() => navId("util:settings").blur());
     expect(screen.queryByRole("tooltip")).toBeNull();
+    // A browser that supports :focus-visible says a click's focus is not keyboard focus.
+    vi.stubGlobal("CSS", { supports: () => true });
+    const real = Element.prototype.matches;
+    const spy = vi.spyOn(Element.prototype, "matches").mockImplementation(function (this: Element, sel: string) {
+      return sel === ":focus-visible" ? false : real.call(this, sel);
+    });
     fireEvent.pointerDown(navId("util:exit"), { pointerType: "mouse" });
     focus(navId("util:exit"));
     expect(screen.queryByRole("tooltip")).toBeNull();
+    spy.mockRestore();
+    vi.unstubAllGlobals();
   });
 
   it("keeps Exit in the danger tone and runs its callbacks", () => {
