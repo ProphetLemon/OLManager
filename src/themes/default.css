@@ -201,6 +201,9 @@
   --nav-indent: max(2.375rem, 32px); /* child text indent */
   --nav-icon: max(1.25rem, 18px); /* every rail icon */
   --rail-w-tree: max(14rem, 192px); /* the rail when it shows the tree */
+  --rail-w-split: max(4.75rem, 64px); /* the icon rail beside a docked panel */
+  --rail-w-compact: max(3.5rem, 56px); /* the icon rail on the end-of-season screen */
+  --nav-panel-w: max(9rem, 136px); /* the docked panel of the active group (Split) */
   /* Display-cutout and system-bar insets. 0px wherever the webview reports none
      (every desktop window), so applying them never moves anything there. */
   --safe-top: env(safe-area-inset-top, 0px);

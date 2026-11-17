@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { treeKeyAction, type TreeRow } from "./treeRows";
+import { equivalentRowId, treeKeyAction, type TreeRow } from "./treeRows";
 
 // Visible rows in DOM order: Club open, Market closed.
 const rows: TreeRow[] = [
@@ -95,10 +95,6 @@ describe("treeKeyAction, other keys", () => {
     expect(act("tab:Squad", "Escape", "tree")).toEqual({ type: "none" });
   });
 
-  it("closes the panel on Escape in Split", () => {
-    expect(act("tab:Squad", "Escape", "split")).toEqual({ type: "close" });
-  });
-
   it("is inert for an empty list or an out-of-range index", () => {
     expect(treeKeyAction([], 0, "ArrowDown")).toEqual({ type: "none" });
     expect(treeKeyAction(rows, -1, "ArrowRight")).toEqual({ type: "none" });
@@ -107,11 +103,77 @@ describe("treeKeyAction, other keys", () => {
 });
 
 describe("treeKeyAction, Split cross-column moves", () => {
-  // Stubbed in unit 1: Split keeps the flat behaviour until the panel exists (unit 4).
-  it("does not act on Right or Left yet", () => {
-    expect(act("group:club", "ArrowRight", "split")).toEqual({ type: "none" });
-    expect(act("tab:Squad", "ArrowLeft", "split")).toEqual({ type: "none" });
+  // Split: a rail column (stops, then utilities) and a docked panel for the active group.
+  const split: TreeRow[] = [
+    { id: "tab:Home", kind: "leaf", level: 0, parentId: null, column: "rail" },
+    { id: "group:club", kind: "leaf", level: 0, parentId: null, column: "rail", hasPanel: true },
+    { id: "group:market", kind: "leaf", level: 0, parentId: null, column: "rail" },
+    { id: "util:settings", kind: "utility", level: 0, parentId: null, column: "rail" },
+    { id: "tab:Squad", kind: "child", level: 1, parentId: "group:club", column: "panel" },
+    { id: "tab:Tactics", kind: "child", level: 1, parentId: "group:club", column: "panel", active: true },
+    { id: "tab:Training", kind: "child", level: 1, parentId: "group:club", column: "panel" },
+  ];
+  const at = (id: string) => split.findIndex((r) => r.id === id);
+  const go = (id: string, key: string) => treeKeyAction(split, at(id), key, "split");
+
+  it("Right on a group stop with a panel moves to the active panel child", () => {
+    expect(go("group:club", "ArrowRight")).toEqual({ type: "move", index: at("tab:Tactics") });
   });
-  it.todo("unit 4: Right on a group stop enters the panel (active child, else first)");
-  it.todo("unit 4: Left in the panel returns to the owning group stop");
+
+  it("Right enters the first panel child when none is active", () => {
+    const none = split.map((r) => ({ ...r, active: false }));
+    expect(treeKeyAction(none, at("group:club"), "ArrowRight", "split")).toEqual({
+      type: "move",
+      index: at("tab:Squad"),
+    });
+  });
+
+  it("Right does nothing on a stop without a panel, or on the panel itself", () => {
+    expect(go("group:market", "ArrowRight")).toEqual({ type: "none" });
+    expect(go("tab:Home", "ArrowRight")).toEqual({ type: "none" });
+    expect(go("tab:Squad", "ArrowRight")).toEqual({ type: "none" });
+  });
+
+  it("Left in the panel returns to the owning group stop, and does nothing in the rail", () => {
+    expect(go("tab:Tactics", "ArrowLeft")).toEqual({ type: "move", index: at("group:club") });
+    expect(go("group:club", "ArrowLeft")).toEqual({ type: "none" });
+    expect(go("util:settings", "ArrowLeft")).toEqual({ type: "none" });
+  });
+
+  it("Escape in the panel returns to the owning stop; elsewhere it does nothing", () => {
+    expect(go("tab:Training", "Escape")).toEqual({ type: "move", index: at("group:club") });
+    expect(go("group:club", "Escape")).toEqual({ type: "none" });
+  });
+
+  it("Up, Down, Home and End stay inside the column of the current row, wrapping there", () => {
+    expect(go("util:settings", "ArrowDown")).toEqual({ type: "move", index: at("tab:Home") });
+    expect(go("tab:Home", "ArrowUp")).toEqual({ type: "move", index: at("util:settings") });
+    expect(go("tab:Tactics", "ArrowDown")).toEqual({ type: "move", index: at("tab:Training") });
+    expect(go("tab:Training", "ArrowDown")).toEqual({ type: "move", index: at("tab:Squad") });
+    expect(go("tab:Tactics", "Home")).toEqual({ type: "move", index: at("tab:Squad") });
+    expect(go("tab:Tactics", "End")).toEqual({ type: "move", index: at("tab:Training") });
+    expect(go("group:club", "End")).toEqual({ type: "move", index: at("util:settings") });
+  });
+
+  it("activates a stop or a panel child on Enter", () => {
+    expect(go("group:club", "Enter")).toEqual({ type: "activate", id: "group:club" });
+    expect(go("tab:Squad", " ")).toEqual({ type: "activate", id: "tab:Squad" });
+  });
+});
+
+describe("equivalentRowId (focus across a Tree/Split flip)", () => {
+  const ids = (list: string[]) => list.map((id) => ({ id, kind: "leaf" as const, level: 0 as const, parentId: null }));
+
+  it("keeps an id that still exists", () => {
+    expect(equivalentRowId(ids(["tab:Squad", "group:club"]), "tab:Squad")).toBe("tab:Squad");
+  });
+
+  it("maps a tab whose row is gone to its group stop", () => {
+    expect(equivalentRowId(ids(["tab:Home", "group:club", "util:bug"]), "tab:Tactics")).toBe("group:club");
+  });
+
+  it("falls back to the first row when nothing matches", () => {
+    expect(equivalentRowId(ids(["tab:Home", "group:club"]), "tab:Nowhere")).toBe("tab:Home");
+    expect(equivalentRowId([], "tab:Home")).toBeNull();
+  });
 });

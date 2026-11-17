@@ -53,6 +53,9 @@ describe("rail tree tokens", () => {
     "nav-indent": "max(2.375rem, 32px)",
     "nav-icon": "max(1.25rem, 18px)",
     "rail-w-tree": "max(14rem, 192px)",
+    "rail-w-split": "max(4.75rem, 64px)",
+    "rail-w-compact": "max(3.5rem, 56px)",
+    "nav-panel-w": "max(9rem, 136px)",
   };
 
   it.each(Object.entries(expected))("declares --%s as %s in :root", (name, value) => {
