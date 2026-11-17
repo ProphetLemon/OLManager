@@ -22,10 +22,19 @@ export const CONTENT_FLOOR_PX = 880;
 /** Extra room required to re-enter Tree from Split, so a boundary size cannot flicker. */
 export const HYSTERESIS_PX = 16;
 
+/** The pinned utility cluster: Bug, Settings, Exit and Manager, icon-only. */
+export const RAIL_CLUSTER_CELLS = 4;
+export const RAIL_CLUSTER_COLUMNS = 4;
+
+/** Height of the cluster: its rows of `--nav-cell`. `railNeed` and the cluster both read this. */
+export function railClusterHeight(r: number): number {
+  return Math.ceil(RAIL_CLUSTER_CELLS / RAIL_CLUSTER_COLUMNS) * navCell(r);
+}
+
 /** Height the tree needs: Club open, Market and World closed (8 rows, 10 children, 1 cell). */
 export function railNeed(rootPx: number, reservedTop = 0): number {
   return (
-    RAIL_STRUCTURAL_PX + 8 * navRow(rootPx) + 10 * navRowChild(rootPx) + navCell(rootPx) + reservedTop
+    RAIL_STRUCTURAL_PX + 8 * navRow(rootPx) + 10 * navRowChild(rootPx) + railClusterHeight(rootPx) + reservedTop
   );
 }
 

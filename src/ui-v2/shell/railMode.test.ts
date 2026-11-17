@@ -3,6 +3,10 @@ import {
   decideRailMode,
   navCell,
   navRow,
+  RAIL_CLUSTER_CELLS,
+  RAIL_CLUSTER_COLUMNS,
+  RAIL_STRUCTURAL_PX,
+  railClusterHeight,
   navRowChild,
   railNeed,
   railWTree,
@@ -39,6 +43,22 @@ describe("size helpers", () => {
   it("derive the height the tree needs (spec section 3 thresholds)", () => {
     expect([12, 14, 16, 18, 20].map((r) => railNeed(r))).toEqual([622, 622, 622, 693.5, 765]);
     expect(railNeed(16, 50)).toBe(672);
+  });
+});
+
+describe("the utility cluster", () => {
+  it("is four cells in one row of the grid", () => {
+    expect(RAIL_CLUSTER_CELLS).toBe(4);
+    expect(RAIL_CLUSTER_COLUMNS).toBe(4);
+  });
+
+  it("is one --nav-cell high at every root, and need is built from that same helper", () => {
+    for (const r of [9, 12, 14, 16, 18, 20]) {
+      expect(railClusterHeight(r)).toBe(navCell(r));
+      expect(railNeed(r)).toBe(
+        RAIL_STRUCTURAL_PX + 8 * navRow(r) + 10 * navRowChild(r) + railClusterHeight(r),
+      );
+    }
   });
 });
 
