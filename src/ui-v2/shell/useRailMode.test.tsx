@@ -63,7 +63,7 @@ describe("useRailMode", () => {
     expect(live()).toHaveLength(1);
     expect(live()[0].observed).toHaveLength(1);
     resize(1280, 764);
-    expect(result.current).toEqual({ mode: "tree", slotW: 1280, slotH: 764, need: 622 });
+    expect(result.current).toEqual({ mode: "tree", slotW: 1280, slotH: 764, need: 622, rootPx: 16 });
   });
 
   it("is Split, today's rail, while the element has no size and the observer has not fired", () => {
@@ -75,7 +75,7 @@ describe("useRailMode", () => {
     const el = sized(1280, 764);
     const { result } = renderHook(() => useRailMode(el));
     expect(live()[0].observed).toHaveLength(1); // the observer never fired in this test
-    expect(result.current).toEqual({ mode: "tree", slotW: 1280, slotH: 764, need: 622 });
+    expect(result.current).toEqual({ mode: "tree", slotW: 1280, slotH: 764, need: 622, rootPx: 16 });
   });
 
   it("decides the mount measurement without hysteresis and honours the root size", () => {

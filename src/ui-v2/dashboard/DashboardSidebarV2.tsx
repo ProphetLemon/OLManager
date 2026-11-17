@@ -9,7 +9,7 @@ import { RailSplitPanel, RailSplitStops } from "@/ui-v2/shell/RailSplit";
 import { RailTree } from "@/ui-v2/shell/RailTree";
 import { RailCell, RailCluster } from "@/ui-v2/shell/RailUtility";
 import type { AttentionMap } from "@/ui-v2/shell/attention";
-import type { RailMode } from "@/ui-v2/shell/railMode";
+import { splitLabelsFit, type RailMode } from "@/ui-v2/shell/railMode";
 import { equivalentRowId, treeKeyAction, type TreeRow } from "@/ui-v2/shell/treeRows";
 import {
   RAIL_DIRECT,
@@ -43,7 +43,7 @@ interface Props {
   /** Tree shows the Club tree in the rail; Split is the icon rail with a docked panel. */
   railMode?: RailMode;
   /** Measurements behind `railMode`, exposed as data attributes for QA. */
-  railSlot?: { slotW: number; slotH: number; need: number };
+  railSlot?: { slotW: number; slotH: number; need: number; rootPx?: number };
   /** What needs a call, per tab; drawn on the Tree rows and the panel rows. */
   attention?: AttentionMap;
 }
@@ -332,6 +332,33 @@ export function DashboardSidebarV2({
     },
   });
 
+  // R13: icon-only stops when the labelled ones would not fit the height, so the rail never
+  // scrolls its stops. The widest label (1 or 2 lines) is measured while labels are shown.
+  const [labelMode, setLabelMode] = useState<"labels" | "icons">("labels");
+  const [labelLines, setLabelLines] = useState(1);
+  useLayoutEffect(() => {
+    if (tree || compact || !railSlot?.rootPx) return;
+    let lines = labelLines;
+    if (labelMode === "labels") {
+      let widest = 1;
+      for (const el of navRef.current?.querySelectorAll<HTMLElement>('[data-slot="rail-item-label"]') ?? []) {
+        const line = parseFloat(getComputedStyle(el).lineHeight) || railSlot.rootPx;
+        widest = Math.max(widest, Math.round(el.getBoundingClientRect().height / line) || 1);
+      }
+      lines = Math.min(widest, 2);
+    }
+    const next = splitLabelsFit({
+      slotH: railSlot.slotH,
+      rootPx: railSlot.rootPx,
+      labelLines: lines,
+      stops: RAIL_DIRECT.length + groups.length,
+      current: labelMode,
+    });
+    if (lines !== labelLines) setLabelLines(lines);
+    if (next !== labelMode) setLabelMode(next);
+  });
+  const iconOnlyStops = !tree && !compact && !!railSlot?.rootPx && labelMode === "icons";
+
   const labelOf = (item: { labelKey: string; defaultLabel: string }) =>
     t(item.labelKey, { defaultValue: item.defaultLabel });
   const listLabel = (group: string) => t("onAir.nav.strip", { group, defaultValue: "{{group}} sections" });
@@ -469,6 +496,7 @@ export function DashboardSidebarV2({
                   badges={badges}
                   labelOf={labelOf}
                   compact={compact}
+                  iconOnly={iconOnlyStops}
                   lastVisited={lastVisited}
                   onNavClick={onNavClick}
                   handle={itemProps}

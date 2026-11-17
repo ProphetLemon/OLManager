@@ -8,6 +8,8 @@ import {
   RAIL_STRUCTURAL_PARTS,
   RAIL_STRUCTURAL_PX,
   railClusterHeight,
+  splitLabelsFit,
+  splitNeed,
   navRowChild,
   railNeed,
   railWTree,
@@ -169,5 +171,56 @@ describe("degenerate inputs", () => {
       expect(decideRailMode({ ...base, slotW: 1072, slotH: 622, rootPx })).toBe("tree");
       expect(decideRailMode({ ...base, slotW: 1071, slotH: 622, rootPx })).toBe("split");
     }
+  });
+});
+
+describe("splitLabelsFit (R13)", () => {
+  const TITLE = 2.25;
+  const fit = (root: number, windowH: number, lines: 1 | 2, current: "labels" | "icons" = "labels") =>
+    splitLabelsFit({ slotH: windowH - TITLE * root, rootPx: root, labelLines: lines, current });
+
+  // Window height 640 and 800 at XS, M, L and XL; slot = window minus the rem title bar.
+  const table: Array<[string, number, number, "labels" | "icons", "labels" | "icons"]> = [
+    // scale, root, window height, one-line labels, two-line labels
+    ["XS", 12, 640, "labels", "labels"],
+    ["M", 16, 640, "labels", "icons"],
+    ["L", 18, 640, "icons", "icons"],
+    ["XL", 20, 640, "icons", "icons"],
+    ["XS", 12, 800, "labels", "labels"],
+    ["M", 16, 800, "labels", "labels"],
+    ["L", 18, 800, "labels", "icons"],
+    ["XL", 20, 800, "labels", "icons"],
+  ];
+  it.each(table)("%s (root %i) at window height %i", (_s, root, h, one, two) => {
+    expect(fit(root, h, 1)).toBe(one);
+    expect(fit(root, h, 2)).toBe(two);
+  });
+
+  it("derives the need from the same tokens as railMode (helpers, cluster, separator)", () => {
+    // M, one line: 8 stops of 50, separator 13, four stacked cells and the cluster chrome.
+    expect(splitNeed(16, "labels", 1)).toBe(8 * 50 + 13 + 4 * 36 + 9);
+    expect(splitNeed(20, "icons", 2)).toBe(8 * navCell(20) + 16 + 4 * navCell(20) + 9);
+    expect(splitNeed(16, "labels", 2)).toBeGreaterThan(splitNeed(16, "labels", 1));
+    expect(splitNeed(16, "icons", 2)).toBeLessThan(splitNeed(16, "labels", 1));
+  });
+
+  it("is inclusive at the need, and re-enters the labels only with 16 px to spare", () => {
+    const need = splitNeed(16, "labels", 1);
+    const at = (slotH: number, current: "labels" | "icons") =>
+      splitLabelsFit({ slotH, rootPx: 16, labelLines: 1, current });
+    expect(at(need, "labels")).toBe("labels");
+    expect(at(need - 0.1, "labels")).toBe("icons");
+    expect(at(need, "icons")).toBe("icons");
+    expect(at(need + 15.9, "icons")).toBe("icons");
+    expect(at(need + 16, "icons")).toBe("labels");
+  });
+
+  it("counts a shorter list when a group is hidden", () => {
+    expect(splitNeed(16, "labels", 1, 7)).toBe(splitNeed(16, "labels", 1) - 50);
+  });
+
+  it("defaults to labels, and a NaN root never claims the labels fit", () => {
+    expect(splitLabelsFit({ slotH: 5000, rootPx: 16, labelLines: 1 })).toBe("labels");
+    expect(splitLabelsFit({ slotH: 5000, rootPx: NaN, labelLines: 1 })).toBe("icons");
   });
 });

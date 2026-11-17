@@ -18,6 +18,8 @@ interface StopsProps {
   labelOf: LabelOf;
   /** Hides the visible labels (the end-of-season screen); names stay for assistive tech. */
   compact: boolean;
+  /** R13: icon-only stops with an IconTip, when the labelled ones do not fit the height. */
+  iconOnly?: boolean;
   lastVisited: Partial<Record<RailGroupId, string>>;
   onNavClick: (tab: string) => void;
   handle: (navId: string) => RowHandle;
@@ -27,7 +29,7 @@ interface StopsProps {
  * The icon-over-label stops of the Split rail: the direct stops, then one launcher per group.
  * A launcher navigates to its group's last tab; the panel beside the rail lists the rest.
  */
-export function RailSplitStops({ activeTab, groups, badges, labelOf, compact, lastVisited, onNavClick, handle }: StopsProps) {
+export function RailSplitStops({ activeTab, groups, badges, labelOf, compact, iconOnly = false, lastVisited, onNavClick, handle }: StopsProps) {
   const badgeOf = (item: NavItem) => (item.badge ? badges[item.badge] : undefined);
   const hintOf = (g: RailGroup) => g.items.map(labelOf).join(", ");
   return (
@@ -40,6 +42,7 @@ export function RailSplitStops({ activeTab, groups, badges, labelOf, compact, la
           active={activeTab === item.tab}
           badge={badgeOf(item)}
           compact={compact}
+          iconOnly={iconOnly}
           onClick={() => onNavClick(item.tab)}
           data-nav-id={`tab:${item.tab}`}
           {...handle(`tab:${item.tab}`)}
@@ -55,6 +58,7 @@ export function RailSplitStops({ activeTab, groups, badges, labelOf, compact, la
           active={groupForTab(activeTab) === g.id}
           badge={g.id === "market" ? badges.offers : undefined}
           compact={compact}
+          iconOnly={iconOnly}
           onClick={() => onNavClick(resolveGroupLanding(g.id, lastVisited))}
           data-nav-id={`group:${g.id}`}
           {...handle(`group:${g.id}`)}

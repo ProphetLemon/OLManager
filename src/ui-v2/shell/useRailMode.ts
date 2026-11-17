@@ -9,6 +9,8 @@ export interface RailModeState {
   slotH: number;
   /** Height the tree needs at the current root size. */
   need: number;
+  /** The root font size the decision used, px. */
+  rootPx: number;
 }
 
 interface Measured {
@@ -127,5 +129,5 @@ export function useRailMode(
     setM((prev) => next(prev, { reservedTop }));
   }, [reservedTop]);
 
-  return { mode: m.mode, slotW: m.slotW, slotH: m.slotH, need: railNeed(m.rootPx, m.reservedTop) };
+  return { mode: m.mode, slotW: m.slotW, slotH: m.slotH, need: railNeed(m.rootPx, m.reservedTop), rootPx: m.rootPx };
 }

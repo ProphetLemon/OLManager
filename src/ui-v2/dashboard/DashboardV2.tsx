@@ -692,7 +692,7 @@ export default function DashboardV2() {
         onExitClick={() => !isExitingToMenu && setShowExitConfirm(true)}
         compact={showSeasonSummary}
         railMode={rail.mode}
-        railSlot={{ slotW: rail.slotW, slotH: rail.slotH, need: rail.need }}
+        railSlot={{ slotW: rail.slotW, slotH: rail.slotH, need: rail.need, rootPx: rail.rootPx }}
         attention={buildAttentionMap(callResult?.items ?? [])}
       />
 

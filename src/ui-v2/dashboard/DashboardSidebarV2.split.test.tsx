@@ -13,7 +13,7 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/ReportBugModal", () => ({
 }));
 
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
-import { RAIL_CLUSTER_CELLS } from "@/ui-v2/shell/railMode";
+import { RAIL_CLUSTER_CELLS, splitNeed } from "@/ui-v2/shell/railMode";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
@@ -134,7 +134,7 @@ describe("Split rail structure", () => {
 describe("Split sizes and text (R12)", () => {
   it("sets stop labels to wrap in two balanced lines instead of clipping, and hyphenate", () => {
     setup();
-    const label = navId("tab:Inbox").querySelector("span[aria-hidden]:not([data-slot])") as HTMLElement;
+    const label = navId("tab:Inbox").querySelector('[data-slot="rail-item-label"]') as HTMLElement;
     for (const cls of ["line-clamp-2", "text-balance", "hyphens-auto", "wrap-break-word", "text-nav"]) {
       expect(label.className, cls).toContain(cls);
     }
@@ -331,5 +331,77 @@ describe("Tree and Split flip keeps focus by id", () => {
     act(() => (document.activeElement as HTMLElement).blur());
     rerender({ railMode: "split" });
     expect(document.body).toHaveFocus();
+  });
+});
+
+describe("Split labels that do not fit (R13)", () => {
+  const slot = (slotH: number, rootPx: number) => ({ slotW: 960, slotH, need: 622, rootPx });
+  const label = (id: string) => navId(id).querySelector('[data-slot="rail-item-label"]');
+
+  it("keeps the labels while the stops fit the rail's height", () => {
+    setup({ activeTab: "Squad", railSlot: slot(800, 16) });
+    expect(label("tab:Inbox")).not.toBeNull();
+    expect(navId("tab:Inbox").className).not.toContain("h-[var(--nav-cell)]");
+  });
+
+  it("renders the stops icon-only at --nav-cell when they do not fit, each with an aria-label and an IconTip", () => {
+    setup({ activeTab: "Squad", unreadMessagesCount: 21, railSlot: slot(595, 20) });
+    for (const id of ["tab:Home", "tab:Inbox", "tab:Schedule", "group:club", "group:market", "group:world"]) {
+      expect(label(id), id).toBeNull();
+      expect(navId(id).className, id).toContain("h-[var(--nav-cell)]");
+      expect(navId(id).getAttribute("aria-label"), id).toBeTruthy();
+    }
+    expect(navId("tab:Inbox")).toHaveAccessibleName("Inbox, 21");
+    focus(navId("tab:Home"));
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Home");
+    press(navId("tab:Home"), "ArrowDown");
+    expect(navId("tab:Inbox")).toHaveFocus();
+    expect(screen.getAllByRole("tooltip")).toHaveLength(1);
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Inbox");
+  });
+
+  it("keeps the current marks, the panel and its labels when the stops go icon-only", () => {
+    setup({ activeTab: "Tactics", railSlot: slot(595, 20) });
+    expect(navId("group:club")).toHaveAttribute("aria-current", "page");
+    expect(navId("group:club").querySelector('[data-slot="rail-item-bar"]')).not.toBeNull();
+    expect(navId("tab:Tactics")).toHaveAttribute("aria-current", "page");
+    expect(panel()!.contains(navId("tab:Tactics"))).toBe(true);
+    expect(navId("tab:Tactics")).toHaveTextContent("Tactics");
+  });
+
+  it("goes back to labels only with 16 px to spare", () => {
+    const need = splitNeed(16, "labels", 1);
+    const { rerender } = setup({ railSlot: slot(need - 1, 16) });
+    expect(label("tab:Home")).toBeNull();
+    rerender({ railSlot: slot(need + 15, 16) });
+    expect(label("tab:Home")).toBeNull();
+    rerender({ railSlot: slot(need + 16, 16) });
+    expect(label("tab:Home")).not.toBeNull();
+  });
+
+  it("counts a shorter rail while the Club group is hidden", () => {
+    const need7 = splitNeed(16, "labels", 1, 7);
+    setup({ isUnemployed: true, railSlot: slot(need7, 16) });
+    expect(label("tab:Home")).not.toBeNull();
+  });
+
+  it("measures how many lines the labels wrap to and goes icon-only when two lines would not fit", () => {
+    // jsdom has no layout: report a two-line label (height 2 x the 16 px line).
+    const spy = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      const h = this.matches('[data-slot="rail-item-label"]') ? 32 : 0;
+      return { width: 0, height: h, top: 0, left: 0, right: 0, bottom: h, x: 0, y: 0, toJSON() {} } as DOMRect;
+    });
+    const fitsOneLine = splitNeed(16, "labels", 1);
+    expect(fitsOneLine).toBeLessThan(splitNeed(16, "labels", 2));
+    setup({ railSlot: slot(fitsOneLine, 16) });
+    expect(label("tab:Home")).toBeNull();
+    spy.mockRestore();
+  });
+
+  it("leaves the Tree and the compact rail alone", () => {
+    const { rerender } = setup({ railMode: "tree", railSlot: slot(300, 20) });
+    expect(navId("tab:Home").className).toContain("h-[var(--nav-row)]");
+    rerender({ railMode: "split", compact: true });
+    expect(navId("tab:Home").className).not.toContain("h-[var(--nav-cell)]");
   });
 });

@@ -81,3 +81,53 @@ export function decideRailMode({
     slotH >= railNeed(rootPx, reservedTop) + margin && slotW >= railMinWidth(rootPx) + margin;
   return fits ? "tree" : "split";
 }
+
+/** `--hit` on desktop: max(2.75rem, 24px). */
+const hitDesktop = (r: number): number => Math.max(2.75 * r, 24);
+/** `--nav-icon`: max(1.25rem, 18px). */
+export const navIcon = (r: number): number => Math.max(1.25 * r, 18);
+
+/** The direct stops plus the group launchers of the Split rail (the eight, employed). */
+export const SPLIT_STOPS = 8;
+
+/**
+ * Height of one labelled Split stop: the rem padding (0.375rem twice), the icon, the 0.125rem
+ * gap and `lines` of 1rem label, never under `--hit`. Mirrors RailItem's classes.
+ */
+export function splitStopHeight(r: number, lines: number): number {
+  return Math.max(hitDesktop(r), 0.75 * r + navIcon(r) + 0.125 * r + lines * r);
+}
+
+/** What the Split rail spends on its stops, a divider (0.375rem twice and 1 px) and the stacked cluster. */
+export function splitNeed(r: number, labels: "labels" | "icons", lines: number, stops = SPLIT_STOPS): number {
+  const perStop = labels === "labels" ? splitStopHeight(r, lines) : navCell(r);
+  const divider = 0.75 * r + 1;
+  const cluster = RAIL_CLUSTER_CELLS * navCell(r) + RAIL_STRUCTURAL_PARTS.clusterChrome;
+  return stops * perStop + divider + cluster;
+}
+
+export interface SplitLabelsInput {
+  /** Rail height: the dashboard body under the title bar. */
+  slotH: number;
+  rootPx: number;
+  /** The most lines any stop label wraps to (1 or 2). */
+  labelLines: number;
+  /** Stops in the rail: 8, or 7 while the Club group is hidden. */
+  stops?: number;
+  current?: "labels" | "icons";
+}
+
+/**
+ * R13: labelled stops while they fit the rail's height, else icon-only cells at `--nav-cell`.
+ * A navigation rail never scrolls its stops out of view. Re-entering labels needs 16 px to spare.
+ */
+export function splitLabelsFit({
+  slotH,
+  rootPx,
+  labelLines,
+  stops = SPLIT_STOPS,
+  current = "labels",
+}: SplitLabelsInput): "labels" | "icons" {
+  const margin = current === "icons" ? HYSTERESIS_PX : 0;
+  return slotH >= splitNeed(rootPx, "labels", labelLines, stops) + margin ? "labels" : "icons";
+}
