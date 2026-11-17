@@ -15,11 +15,6 @@ import { cn } from "@/ui-v2/lib/utils";
 export const ICON_TIP_HOVER_DELAY_MS = 350;
 export const ICON_TIP_LONG_PRESS_MS = 450;
 export const ICON_TIP_TOUCH_HIDE_MS = 2500;
-/**
- * Scroll events in this window after the tip opens are not the user scrolling: focusing a cell
- * makes the rail call scrollIntoView, and that fires a scroll event a frame later.
- */
-export const ICON_TIP_SCROLL_GRACE_MS = 150;
 /** After the pointer leaves the trigger or the tip, the tip stays this long so it can be reached (WCAG 1.4.13). */
 export const ICON_TIP_LEAVE_GRACE_MS = 150;
 /** After a long press ends, the click the browser still sends is swallowed for this long. */
@@ -70,7 +65,6 @@ export function IconTip({ label, className, followFocus = false, children, ...re
   const pressTimer = useRef<number | undefined>(undefined);
   const hideTimer = useRef<number | undefined>(undefined);
   const leaveTimer = useRef<number | undefined>(undefined);
-  const openedAt = useRef(0);
 
   const clearTimers = useCallback(() => {
     window.clearTimeout(hoverTimer.current);
@@ -92,22 +86,17 @@ export function IconTip({ label, className, followFocus = false, children, ...re
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();
     };
-    openedAt.current = Date.now();
-    const onScroll = () => {
-      if (Date.now() - openedAt.current < ICON_TIP_SCROLL_GRACE_MS) return;
-      close();
-    };
     const onPress = (event: Event) => {
       if (event instanceof PointerEvent && event.pointerType === "mouse") return;
       close();
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onPress, true);
-    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("scroll", close, true);
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onPress, true);
-      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("scroll", close, true);
     };
   }, [open, close]);
 

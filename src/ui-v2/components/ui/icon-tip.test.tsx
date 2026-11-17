@@ -5,7 +5,6 @@ import {
   ICON_TIP_HOVER_DELAY_MS,
   ICON_TIP_LEAVE_GRACE_MS,
   ICON_TIP_LONG_PRESS_MS,
-  ICON_TIP_SCROLL_GRACE_MS,
   ICON_TIP_TOUCH_HIDE_MS,
   IconTip,
 } from "./icon-tip";
@@ -180,7 +179,6 @@ describe("touch long press", () => {
     const { icon } = setup();
     fireEvent.pointerDown(icon, { pointerType: "touch" });
     advance(ICON_TIP_LONG_PRESS_MS);
-    advance(ICON_TIP_SCROLL_GRACE_MS + 1); // a scroll right at opening is the rail's own scrollIntoView
     fireEvent.scroll(window);
     expect(tip()).toBeNull();
   });
@@ -271,16 +269,6 @@ describe("keyboard focus of the parent (followFocus)", () => {
       act(() => button.focus()); // the compat mousedown focus of a tap
       expect(tip()).toBeNull();
     });
-  });
-
-  it("keeps a focus-opened tip through the scroll its own focus causes, then closes on a later scroll", () => {
-    const button = focusSetup();
-    act(() => button.focus());
-    fireEvent.scroll(window); // scrollIntoView on the focused cell fires this a frame later
-    expect(tip()).not.toBeNull();
-    advance(ICON_TIP_SCROLL_GRACE_MS + 1);
-    fireEvent.scroll(window);
-    expect(tip()).toBeNull();
   });
 
   it("closes on blur at once, without the hover grace", () => {
