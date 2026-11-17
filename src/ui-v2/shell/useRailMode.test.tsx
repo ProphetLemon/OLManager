@@ -31,6 +31,13 @@ function setRoot(px: number | null) {
   document.documentElement.style.fontSize = px === null ? "" : `${px}px`;
 }
 
+/** An element whose layout box is `w` x `h` (jsdom has no layout). */
+function sized(w: number, h: number) {
+  const el = document.createElement("div");
+  el.getBoundingClientRect = () => ({ width: w, height: h, top: 0, left: 0, right: w, bottom: h, x: 0, y: 0, toJSON() {} }) as DOMRect;
+  return el;
+}
+
 function setup() {
   const el = document.createElement("div");
   return renderHook(() => useRailMode(el));
@@ -59,9 +66,52 @@ describe("useRailMode", () => {
     expect(result.current).toEqual({ mode: "tree", slotW: 1280, slotH: 764, need: 622 });
   });
 
-  it("is Split, today's rail, until the observer first fires", () => {
+  it("is Split, today's rail, while the element has no size and the observer has not fired", () => {
     const { result } = setup();
     expect(result.current).toMatchObject({ mode: "split", slotW: 0, slotH: 0 });
+  });
+
+  it("measures the element on mount, before any observer callback, so there is no Split frame", () => {
+    const el = sized(1280, 764);
+    const { result } = renderHook(() => useRailMode(el));
+    expect(live()[0].observed).toHaveLength(1); // the observer never fired in this test
+    expect(result.current).toEqual({ mode: "tree", slotW: 1280, slotH: 764, need: 622 });
+  });
+
+  it("decides the mount measurement without hysteresis and honours the root size", () => {
+    setRoot(20);
+    const { result } = renderHook(() => useRailMode(sized(1280, 755)));
+    expect(result.current).toMatchObject({ mode: "split", need: 765 });
+    const exact = renderHook(() => useRailMode(sized(1160, 765)));
+    expect(exact.result.current.mode).toBe("tree");
+  });
+
+  it("reads the platform at mount: Android is Split from the first measurement", () => {
+    document.documentElement.dataset.platform = "android";
+    const { result } = renderHook(() => useRailMode(sized(5000, 5000)));
+    expect(result.current.mode).toBe("split");
+  });
+
+  it("does not count a first 0 x 0 callback as a measurement", () => {
+    const { result } = setup();
+    resize(0, 0);
+    expect(result.current).toMatchObject({ mode: "split", slotW: 0, slotH: 0 });
+    resize(1104, 622); // still the first real measurement: no re-entry margin
+    expect(result.current.mode).toBe("tree");
+  });
+
+  it("does not re-render when an <html> style write changes nothing that matters", async () => {
+    let renders = 0;
+    const el = sized(1280, 764);
+    renderHook(() => {
+      renders += 1;
+      return useRailMode(el);
+    });
+    resize(1280, 764);
+    const before = renders;
+    document.documentElement.style.setProperty("--club", "#123456");
+    await new Promise((r) => setTimeout(r, 20)); // let the MutationObserver deliver
+    expect(renders).toBe(before);
   });
 
   it("flips to split when the slot shrinks and back when it grows", () => {

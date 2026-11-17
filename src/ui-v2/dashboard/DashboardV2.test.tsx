@@ -764,10 +764,23 @@ describe("DashboardV2 rail mode", () => {
   const measure = (w: number, h: number) =>
     act(() => MockResizeObserver.all.forEach((o) => o.emit(w, h)));
 
-  it("keeps today's rail and strip until the body has been measured", async () => {
+  it("keeps today's rail and strip while the body has no size", async () => {
     await renderDashboard();
     expect(shell.sidebar).toMatchObject({ railMode: "split" });
     expect(shell.header).toMatchObject({ stripVisible: true });
+  });
+
+  it("is already in Tree on the first committed render when the body has a size", async () => {
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 1280, height: 764, top: 0, left: 0, right: 1280, bottom: 764, x: 0, y: 0, toJSON() {},
+    } as DOMRect);
+    try {
+      await renderDashboard();
+      expect(shell.sidebar).toMatchObject({ railMode: "tree" });
+      expect(shell.header).toMatchObject({ stripVisible: false });
+    } finally {
+      rect.mockRestore();
+    }
   });
 
   it("passes Tree to the sidebar and hides the strip when the body fits the tree", async () => {

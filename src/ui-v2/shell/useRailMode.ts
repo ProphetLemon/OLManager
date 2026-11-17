@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useSettingsStore } from "@/store/settingsStore";
 import { decideRailMode, railNeed, type RailMode, type RailPlatform } from "./railMode";
 
@@ -34,18 +34,19 @@ function readPlatform(): RailPlatform {
   return document.documentElement.dataset.platform === "android" ? "android" : "desktop";
 }
 
+const KEYS = ["mode", "slotW", "slotH", "rootPx", "platform", "reservedTop", "measured"] as const;
+const same = (a: Measured, b: Measured) => KEYS.every((k) => a[k] === b[k]);
+
 /** Pure step: change some inputs and re-decide the mode, with the old mode as `current`. */
 function next(prev: Measured, patch: Partial<Omit<Measured, "mode">>): Measured {
   const merged = { ...prev, ...patch };
-  if (!merged.measured) {
-    return merged.platform === prev.platform && merged.rootPx === prev.rootPx && merged.reservedTop === prev.reservedTop
-      ? prev
-      : { ...merged, mode: "split" };
+  const keep = (candidate: Measured) => (same(prev, candidate) ? prev : candidate);
+  // A 0 x 0 slot (hidden, detached, not laid out yet) is no information: it never marks
+  // the slot measured, and after a real measurement it keeps the mode.
+  if (merged.slotW === 0 && merged.slotH === 0) {
+    return keep({ ...merged, measured: prev.measured, mode: prev.measured ? prev.mode : "split" });
   }
-  // A hidden or detached slot reports 0 x 0: that is no information, so keep the mode.
-  if (merged.slotW === 0 && merged.slotH === 0 && merged.platform !== "android") {
-    return { ...merged, mode: prev.mode };
-  }
+  if (!merged.measured) return keep({ ...merged, mode: "split" });
   const mode = decideRailMode({
     platform: merged.platform,
     slotW: merged.slotW,
@@ -55,14 +56,15 @@ function next(prev: Measured, patch: Partial<Omit<Measured, "mode">>): Measured 
     current: prev.measured ? prev.mode : "tree",
     reservedTop: merged.reservedTop,
   });
-  return { ...merged, mode };
+  return keep({ ...merged, mode });
 }
 
 /**
  * Tree or Split for the rail, from the size of `slot` (the dashboard body, under the
  * title bar). The slot is an element held in state (it can mount late), not a ref.
- * Until the observer first fires the mode is Split, today's rail, and the first real
- * measurement is decided without hysteresis.
+ * The element is measured synchronously in a layout effect, so the first painted frame
+ * already has the right mode; while it has no size the mode is Split, today's rail. The
+ * first real measurement is decided without hysteresis.
  */
 export function useRailMode(
   slot: HTMLElement | null,
@@ -81,6 +83,20 @@ export function useRailMode(
       measured: false,
     };
   });
+
+  useLayoutEffect(() => {
+    if (!slot) return;
+    const box = slot.getBoundingClientRect();
+    setM((prev) =>
+      next(prev, {
+        slotW: box.width,
+        slotH: box.height,
+        measured: true,
+        rootPx: readRootPx(),
+        platform: readPlatform(),
+      }),
+    );
+  }, [slot]);
 
   useEffect(() => {
     const el = slot;
