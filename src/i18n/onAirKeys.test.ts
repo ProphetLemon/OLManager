@@ -60,6 +60,9 @@ describe("onAir i18n keys", () => {
     expect(REQUIRED.size).toBeGreaterThan(100);
     for (const key of [
       "onAir.nav.rail",
+      "onAir.nav.needsCall_one",
+      "onAir.nav.needsCall_other",
+      "onAir.nav.more",
       "onAir.bar.toResolve_one",
       "onAir.bar.toResolve_other",
       "onAir.home.daysToGo_other",

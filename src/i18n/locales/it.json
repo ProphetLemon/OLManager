@@ -3686,7 +3686,10 @@
       "strip": "Sezioni {{group}}",
       "skip": "Vai al contenuto principale",
       "bug": "Segnala bug",
-      "manager": "Profilo manager"
+      "manager": "Profilo manager",
+      "needsCall_one": "{{label}}, richiede una tua decisione",
+      "needsCall_other": "{{label}}, {{count}} richiedono una tua decisione",
+      "more": "Altro"
     },
     "bar": {
       "phase": {

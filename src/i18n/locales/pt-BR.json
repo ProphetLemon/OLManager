@@ -3686,7 +3686,10 @@
       "strip": "Seções de {{group}}",
       "skip": "Pular para o conteúdo principal",
       "bug": "Reportar bug",
-      "manager": "Perfil do técnico"
+      "manager": "Perfil do técnico",
+      "needsCall_one": "{{label}}, precisa da sua decisão",
+      "needsCall_other": "{{label}}, {{count}} precisam da sua decisão",
+      "more": "Mais"
     },
     "bar": {
       "phase": {

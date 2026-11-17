@@ -3686,7 +3686,10 @@
       "strip": "Bereiche: {{group}}",
       "skip": "Zum Hauptinhalt springen",
       "bug": "Fehler melden",
-      "manager": "Managerprofil"
+      "manager": "Managerprofil",
+      "needsCall_one": "{{label}}, braucht deine Entscheidung",
+      "needsCall_other": "{{label}}, {{count}} brauchen deine Entscheidung",
+      "more": "Mehr"
     },
     "bar": {
       "phase": {
