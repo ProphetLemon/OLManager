@@ -14,6 +14,7 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/ReportBugModal", () => ({
 
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { RAIL_CLUSTER_CELLS, splitNeed } from "@/ui-v2/shell/railMode";
+import { RAIL_LABEL_CLASS, RAIL_STOP_INSET_REM } from "@/ui-v2/shell/RailItem";
 
 const lang = vi.hoisted(() => ({ value: "en" }));
 
@@ -632,5 +633,71 @@ describe("The Split stops are a list", () => {
     expect(list).not.toBeNull();
     expect(list.querySelectorAll(':scope > li:has([data-slot="rail-item"])')).toHaveLength(8);
     for (const child of list.children) expect(child.tagName).toBe("LI");
+  });
+});
+
+describe("Window focus restore, in the browser's real event order", () => {
+  it("restores after the element blur (no relatedTarget) that comes before the window blur", () => {
+    const { rerender } = setup({ activeTab: "Tactics" });
+    focus(navId("tab:Tactics"));
+    // The browser blurs the element first (focusout, relatedTarget null) and the window after;
+    // document.activeElement stays on the row throughout.
+    fireEvent.focusOut(navId("tab:Tactics"), { relatedTarget: null });
+    fireEvent.blur(window);
+    rerender({ activeTab: "Transfers" });
+    expect(document.body).toHaveFocus();
+    act(() => void fireEvent.focus(window));
+    expect(navId("group:club")).toHaveFocus();
+  });
+
+  it("does not restore when focus was outside the rail as the window blurred", () => {
+    const outside = document.createElement("button");
+    document.body.append(outside);
+    const { rerender } = setup({ activeTab: "Tactics" });
+    focus(navId("tab:Tactics"));
+    focus(outside);
+    fireEvent.blur(window);
+    rerender({ activeTab: "Transfers" });
+    act(() => void fireEvent.focus(window));
+    expect(outside).toHaveFocus();
+    outside.remove();
+  });
+
+  it("a press outside the rail while the window was away cancels the restore", () => {
+    const { rerender } = setup({ activeTab: "Tactics" });
+    focus(navId("tab:Tactics"));
+    fireEvent.blur(window);
+    rerender({ activeTab: "Transfers" });
+    fireEvent.pointerDown(document.body); // the click that brings the window back
+    act(() => void fireEvent.focus(window));
+    expect(document.body).toHaveFocus();
+  });
+});
+
+describe("The label measurer shares the stop's styles", () => {
+  it("uses the stop's label classes and its inset, not hand copies", () => {
+    setup({ railSlot: { slotW: 960, slotH: 900, need: 622, rootPx: 16 } });
+    const measurer = document.querySelector<HTMLElement>('[data-slot="rail-measurer"]')!;
+    const span = measurer.querySelector("span")!;
+    for (const cls of RAIL_LABEL_CLASS.split(" ")) expect(span.className, cls).toContain(cls);
+    expect(span.className).toContain("font-bold"); // the widest weight, the active stop's
+    expect(measurer.style.width).toBe(`calc(var(--rail-w-split) - ${RAIL_STOP_INSET_REM}rem)`);
+    const real = document.querySelector<HTMLElement>('[data-slot="rail-item-label"]')!;
+    for (const cls of RAIL_LABEL_CLASS.split(" ")) expect(real.className, cls).toContain(cls);
+  });
+
+  it("re-measures when a web font finishes loading after the first ready", () => {
+    const fonts = new EventTarget() as EventTarget & { ready: Promise<void> };
+    fonts.ready = Promise.resolve();
+    Object.defineProperty(document, "fonts", { value: fonts, configurable: true });
+    let lines = 1;
+    const spy = measurerHeights(() => 16 * lines);
+    setup({ railSlot: { slotW: 960, slotH: splitNeed(16, "labels", 1) + 20, need: 622, rootPx: 16 } });
+    const before = spy.mock.calls.length;
+    lines = 2;
+    act(() => void fonts.dispatchEvent(new Event("loadingdone")));
+    expect(spy.mock.calls.length).toBeGreaterThan(before);
+    expect(document.querySelector('[data-slot="rail-column"] [data-slot="rail-item-label"]')).toBeNull();
+    delete (document as { fonts?: unknown }).fonts;
   });
 });

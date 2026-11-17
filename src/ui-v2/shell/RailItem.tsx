@@ -33,6 +33,16 @@ interface RailItemProps {
 
 const BADGE_CAP = 99;
 
+/**
+ * The visible label of a Split stop: up to two balanced lines, hyphenated by the document
+ * language, never clipped (R12). The weight is set apart. The hidden measurer that decides
+ * R13 uses these same classes.
+ */
+export const RAIL_LABEL_CLASS =
+  "w-full wrap-break-word font-heading text-nav leading-4 line-clamp-2 text-balance hyphens-auto";
+/** What a stop's label loses to its margin (mx-1.5 twice) and padding (px-1 twice), in rem. */
+export const RAIL_STOP_INSET_REM = 1.25;
+
 /** One icon-over-label stop of the navigation rail. */
 export function RailItem({
   icon: Icon,
@@ -114,8 +124,7 @@ export function RailItem({
         aria-hidden="true"
         data-slot="rail-item-label"
         className={cn(
-          // Up to two balanced lines, hyphenated by the document language, never clipped (R12).
-          "w-full wrap-break-word font-heading text-nav leading-4 line-clamp-2 text-balance hyphens-auto",
+          RAIL_LABEL_CLASS,
           active ? "font-bold" : "font-medium",
           compact && "sr-only",
         )}

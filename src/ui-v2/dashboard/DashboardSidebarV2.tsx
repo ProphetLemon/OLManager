@@ -7,6 +7,7 @@ import { useRovingFocus } from "@/hooks/useRovingFocus";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import { ANDROID_DIRECT, RailSplitPanel, RailSplitStops } from "@/ui-v2/shell/RailSplit";
 import { RailMore } from "@/ui-v2/shell/RailMore";
+import { RAIL_LABEL_CLASS, RAIL_STOP_INSET_REM } from "@/ui-v2/shell/RailItem";
 import { useFadeMask } from "@/ui-v2/shell/useFadeMask";
 import { RailTree } from "@/ui-v2/shell/RailTree";
 import { RailCell, RailCluster } from "@/ui-v2/shell/RailUtility";
@@ -312,11 +313,21 @@ export function DashboardSidebarV2({
   useEffect(() => {
     // A press outside the rail ends "focus was in the rail"; removal of a focused row does not blur.
     const onPress = (e: Event) => {
-      if (e.target instanceof Node && !navRef.current?.contains(e.target)) focusInside.current = false;
+      if (e.target instanceof Node && !navRef.current?.contains(e.target)) {
+        focusInside.current = false;
+        // A click that brings the window back is not a way into the rail either.
+        insideAtWindowBlur.current = false;
+      }
     };
     // The window losing focus is not a way back into the rail either.
+    // The row's own blur (no relatedTarget) arrives before this one and already cleared
+    // `focusInside`, so read where focus is from the document: it stays on the row while the
+    // window is away.
     const onWindowBlur = () => {
-      insideAtWindowBlur.current = focusInside.current;
+      const active = document.activeElement;
+      const inside = !!active && active !== document.body && !!navRef.current?.contains(active);
+      insideAtWindowBlur.current = inside;
+      if (inside) lastRailId.current = active.getAttribute("data-nav-id") ?? lastRailId.current;
       focusInside.current = false;
     };
     // Back from another window: if the rail had focus when it left and its row was removed
@@ -398,9 +409,13 @@ export function DashboardSidebarV2({
   const [fontsTick, setFontsTick] = useState(0);
   useEffect(() => {
     let live = true;
-    void document.fonts?.ready?.then(() => live && setFontsTick((n) => n + 1));
+    const tick = () => live && setFontsTick((n) => n + 1);
+    void document.fonts?.ready?.then(tick);
+    // A font that loads after the first `ready` (a lazily used weight) widens the labels too.
+    document.fonts?.addEventListener?.("loadingdone", tick);
     return () => {
       live = false;
+      document.fonts?.removeEventListener?.("loadingdone", tick);
     };
   }, []);
   const measurerRef = useRef<HTMLDivElement | null>(null);
@@ -552,12 +567,13 @@ export function DashboardSidebarV2({
           ref={measurerRef}
           data-slot="rail-measurer"
           aria-hidden="true"
-          className="pointer-events-none invisible absolute -z-10 w-[calc(var(--rail-w-split)-1.25rem)]"
+          style={{ width: `calc(var(--rail-w-split) - ${RAIL_STOP_INSET_REM}rem)` }}
+          className="pointer-events-none invisible absolute -z-10"
         >
           {stopLabels.map((label, i) => (
             <span
               key={i}
-              className="block w-full wrap-break-word font-heading text-nav leading-4 font-bold line-clamp-2 text-balance hyphens-auto"
+              className={cn(RAIL_LABEL_CLASS, "block font-bold")}
             >
               {label}
             </span>
