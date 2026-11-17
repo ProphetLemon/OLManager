@@ -1,4 +1,4 @@
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import { ChevronDown, TriangleAlert, type LucideIcon } from "lucide-react";
 import type { Ref } from "react";
 
 import { cn } from "@/ui-v2/lib/utils";
@@ -21,6 +21,10 @@ interface RailRowProps {
   /** Headers only. */
   expanded?: boolean;
   controls?: string;
+  /** Something here needs a call: a warning icon (a shape, not a colour) and the count above 1. */
+  attention?: { count: number; headline: string };
+  /** The accessible name of an attention row ("Scrims, needs your call"); replaces the label. */
+  attentionName?: string;
   tabIndex?: 0 | -1;
   buttonRef?: Ref<HTMLButtonElement>;
   onClick: () => void;
@@ -39,6 +43,8 @@ export function RailRow({
   activeWithin = false,
   expanded,
   controls,
+  attention,
+  attentionName,
   tabIndex,
   buttonRef,
   onClick,
@@ -54,7 +60,8 @@ export function RailRow({
       type="button"
       tabIndex={tabIndex}
       onClick={onClick}
-      aria-label={count > 0 ? `${label}, ${badgeText}` : label}
+      aria-label={count > 0 ? `${attentionName ?? label}, ${badgeText}` : (attentionName ?? label)}
+      aria-description={attention?.headline}
       aria-current={active ? "page" : undefined}
       aria-expanded={isHeader ? expanded : undefined}
       aria-controls={isHeader ? controls : undefined}
@@ -91,6 +98,16 @@ export function RailRow({
       >
         {label}
       </span>
+      {attention && (
+        <span
+          aria-hidden="true"
+          data-slot="rail-attention"
+          className="inline-flex shrink-0 items-center gap-0.5 font-heading text-nav leading-4 font-bold tabular-nums"
+        >
+          <TriangleAlert className="size-[var(--nav-icon)]" />
+          {attention.count > 1 ? attention.count : null}
+        </span>
+      )}
       {count > 0 && (
         <span
           aria-hidden="true"

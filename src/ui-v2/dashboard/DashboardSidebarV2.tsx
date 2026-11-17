@@ -7,6 +7,8 @@ import { useRovingFocus } from "@/hooks/useRovingFocus";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import { RailItem } from "@/ui-v2/shell/RailItem";
 import { RailTree } from "@/ui-v2/shell/RailTree";
+import { RailCell, RailCluster } from "@/ui-v2/shell/RailUtility";
+import type { AttentionMap } from "@/ui-v2/shell/attention";
 import type { RailMode } from "@/ui-v2/shell/railMode";
 import { treeKeyAction, type TreeRow } from "@/ui-v2/shell/treeRows";
 import {
@@ -44,6 +46,8 @@ interface Props {
   railMode?: RailMode;
   /** Measurements behind `railMode`, exposed as data attributes for QA. */
   railSlot?: { slotW: number; slotH: number; need: number };
+  /** What needs a call, per tab; drawn on the Tree rows. */
+  attention?: AttentionMap;
 }
 
 interface Stop {
@@ -68,6 +72,7 @@ export function DashboardSidebarV2({
   compact = false,
   railMode = "split",
   railSlot,
+  attention,
 }: Props) {
   const { t } = useTranslation();
   // The end-of-season screen keeps the icon rail whatever the size says.
@@ -92,6 +97,8 @@ export function DashboardSidebarV2({
     rememberTab(activeTab);
   }, [activeTab, rememberTab]);
 
+  // The bug report is opened from the roving widget (Enter on its cell), so its modal is controlled here.
+  const [bugOpen, setBugOpen] = useState(false);
   const openGroups = useNavMemoryStore((s) => s.openGroups);
   const toggleGroup = useNavMemoryStore((s) => s.toggleGroup);
 
@@ -118,7 +125,7 @@ export function DashboardSidebarV2({
         }
       }
     }
-    for (const u of ["settings", "exit", "manager"]) {
+    for (const u of ["bug", "settings", "exit", "manager"]) {
       rows.push({ id: `util:${u}`, kind: "utility", level: 0, parentId: null });
     }
     return rows;
@@ -146,6 +153,7 @@ export function DashboardSidebarV2({
             if (r.id.startsWith("group:")) {
               return { id: r.id, activate: () => toggleGroup(r.id.slice(6) as RailGroupId) };
             }
+            if (r.id === "util:bug") return { id: r.id, activate: () => setBugOpen(true) };
             if (r.id === "util:settings") return { id: r.id, activate: onNavigateSettings };
             if (r.id === "util:exit") return { id: r.id, activate: onExitClick };
             if (r.id === "util:manager") return { id: r.id, activate: () => onNavClick("Manager") };
@@ -186,7 +194,10 @@ export function DashboardSidebarV2({
     focusOnMount: false,
     orientation: "vertical",
     onSelect: (i) => stopsRef.current[i]?.activate(),
-    getItemLabel: (i) => itemRefs.current[stops[i]?.id ?? ""]?.title ?? "",
+    getItemLabel: (i) => {
+      const el = itemRefs.current[stops[i]?.id ?? ""];
+      return el?.title || el?.getAttribute("aria-label") || "";
+    },
     onKey: (e, i) => treeKeyRef.current(e, i),
   });
 
@@ -327,6 +338,15 @@ export function DashboardSidebarV2({
               listLabel={(group) =>
                 t("onAir.nav.strip", { group, defaultValue: "{{group}} sections" })
               }
+              attention={attention}
+              attentionName={(label, count) =>
+                t("onAir.nav.needsCall", {
+                  label,
+                  count,
+                  defaultValue_one: "{{label}}, needs your call",
+                  defaultValue_other: "{{label}}, {{count}} need your call",
+                })
+              }
               onNavClick={onNavClick}
               onToggleGroup={toggleGroup}
               handle={itemProps}
@@ -363,6 +383,61 @@ export function DashboardSidebarV2({
           )}
         </div>
 
+        {tree ? (
+          <RailCluster>
+            <FloatingBugButton
+              variant="cell"
+              open={bugOpen}
+              onOpenChange={setBugOpen}
+              data-nav-id="util:bug"
+              {...itemProps("util:bug")}
+            />
+            <RailCell
+              navId="util:settings"
+              icon={Settings}
+              label={t("dashboard.settings", { defaultValue: "Settings" })}
+              onClick={onNavigateSettings}
+              {...itemProps("util:settings")}
+            />
+            <RailCell
+              navId="util:exit"
+              icon={LogOut}
+              tone="danger"
+              label={t("dashboard.exitToMenu", { defaultValue: "Exit" })}
+              onClick={onExitClick}
+              {...itemProps("util:exit")}
+            />
+            <RailCell
+              navId="util:manager"
+              label={managerName ? `${managerLabel}, ${managerName}` : managerLabel}
+              tip={managerFullName ?? managerName ?? managerLabel}
+              current={activeTab === "Manager"}
+              onClick={() => onNavClick("Manager")}
+              {...itemProps("util:manager")}
+            >
+              {managerAvatar ? (
+                <img
+                  src={managerAvatar}
+                  alt=""
+                  className={cn(
+                    "size-7 rounded-full object-cover ring-2",
+                    activeTab === "Manager" ? "ring-[3px] ring-club-text" : "ring-line",
+                  )}
+                />
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "flex size-7 items-center justify-center rounded-full bg-muted font-heading text-nav font-bold text-foreground ring-2",
+                    activeTab === "Manager" ? "ring-[3px] ring-club-text" : "ring-line",
+                  )}
+                >
+                  {initials}
+                </span>
+              )}
+            </RailCell>
+          </RailCluster>
+        ) : (
         <div
           data-slot="rail-pinned"
           className="flex shrink-0 flex-col items-stretch border-t border-line py-1"
@@ -422,6 +497,7 @@ export function DashboardSidebarV2({
             )}
           </button>
         </div>
+        )}
       </nav>
     </aside>
   );

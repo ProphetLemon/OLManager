@@ -2,18 +2,31 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useNavMemoryStore } from "@/store/navMemoryStore";
 
-vi.mock("@/ui-v2/_legacy/components/dashboard/FloatingBugButton", () => ({
-  default: () => <button type="button">Report bug</button>,
+vi.mock("@/ui-v2/_legacy/components/dashboard/ReportBugModal", () => ({
+  default: ({ onClose }: { onClose: () => void }) => (
+    <div role="dialog" aria-label="Bug report">
+      <button type="button" onClick={onClose}>
+        Close bug report
+      </button>
+    </div>
+  ),
 }));
 
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
+import { RAIL_CLUSTER_CELLS, RAIL_CLUSTER_COLUMNS } from "@/ui-v2/shell/railMode";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
   useTranslation: () => ({
     i18n: { language: "en" },
-    t: (key: string, opts?: { defaultValue?: string; group?: string }) =>
-      (opts?.defaultValue ?? key).replace("{{group}}", opts?.group ?? ""),
+    t: (key: string, opts?: Record<string, unknown>) => {
+      const count = opts?.count as number | undefined;
+      const text =
+        (count === 1 ? (opts?.defaultValue_one as string | undefined) : (opts?.defaultValue_other as string | undefined)) ??
+        (opts?.defaultValue as string | undefined) ??
+        key;
+      return text.replace(/\{\{(\w+)\}\}/g, (_m, name: string) => String(opts?.[name] ?? ""));
+    },
   }),
 }));
 
@@ -293,5 +306,137 @@ describe("Tree rail keyboard", () => {
     focus(row(/^Home/));
     press(row(/^Home/), "n");
     expect(navId("tab:News")).toHaveFocus();
+  });
+});
+
+describe("Tree utility cluster", () => {
+  const cells = () => [...document.querySelectorAll<HTMLElement>('[data-slot="rail-cluster"] [data-nav-id]')];
+
+  it("pins four icon-only cells in one grid row: Bug, Settings, Exit, Manager", () => {
+    setup();
+    const cluster = document.querySelector<HTMLElement>('[data-slot="rail-cluster"]')!;
+    expect(cells().map((c) => c.dataset.navId)).toEqual(["util:bug", "util:settings", "util:exit", "util:manager"]);
+    expect(cells()).toHaveLength(RAIL_CLUSTER_CELLS);
+    expect(cluster.style.gridTemplateColumns).toBe(`repeat(${RAIL_CLUSTER_COLUMNS}, minmax(0, 1fr))`);
+    for (const c of cells()) {
+      expect(c.className).toContain("h-[var(--nav-cell)]");
+      // No visible word: the only text is the manager's initials, and they are aria-hidden.
+      const visible = [...c.querySelectorAll("*")].filter((n) => n.children.length === 0 && n.textContent?.trim() && n.getAttribute("aria-hidden") !== "true");
+      expect(visible).toEqual([]);
+    }
+  });
+
+  it("names every cell with an aria-label", () => {
+    setup();
+    expect(cells().map((c) => c.getAttribute("aria-label"))).toEqual([
+      "Reportar Bug", // FloatingBugButton's own default text; the i18n key is onAir.nav.bug
+      "Settings",
+      "Exit",
+      "Manager profile, Boss",
+    ]);
+  });
+
+  it("shows each label in an IconTip on keyboard focus, and not for pointer focus", () => {
+    setup();
+    focus(navId("util:settings"));
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Settings");
+    act(() => navId("util:settings").blur());
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    fireEvent.pointerDown(navId("util:exit"), { pointerType: "mouse" });
+    focus(navId("util:exit"));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  it("keeps Exit in the danger tone and runs its callbacks", () => {
+    const { props } = setup();
+    expect(navId("util:exit").className).toContain("text-negative");
+    fireEvent.click(navId("util:exit"));
+    expect(props.onExitClick).toHaveBeenCalledTimes(1);
+    fireEvent.click(navId("util:settings"));
+    expect(props.onNavigateSettings).toHaveBeenCalledTimes(1);
+    fireEvent.click(navId("util:manager"));
+    expect(props.onNavClick).toHaveBeenLastCalledWith("Manager");
+  });
+
+  it("reaches the bug cell with the arrows and opens the report with Enter", () => {
+    setup();
+    focus(header("World"));
+    fireEvent.keyDown(header("World"), { key: "ArrowDown" });
+    expect(navId("util:bug")).toHaveFocus();
+    expect(navId("util:bug")).toHaveAttribute("tabindex", "0");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.keyDown(navId("util:bug"), { key: "Enter" });
+    expect(screen.getByRole("dialog", { name: "Bug report" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Close bug report" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("opens the report on click as well, and it is the only tab stop in the cluster", () => {
+    setup();
+    fireEvent.click(navId("util:bug"));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(cells().filter((c) => c.getAttribute("tabindex") === "0")).toHaveLength(0);
+  });
+});
+
+describe("Tree attention marker", () => {
+  const attention = {
+    Scrims: { count: 1, headline: "Scrims are not planned" },
+    Squad: { count: 3, headline: "Lineup incomplete" },
+    Transfers: { count: 2, headline: "Offers waiting" },
+  };
+
+  it("names a row that needs a call, with the headline as its description", () => {
+    setup({ attention });
+    expect(navId("tab:Scrims")).toHaveAccessibleName("Scrims, needs your call");
+    expect(navId("tab:Scrims")).toHaveAttribute("aria-description", "Scrims are not planned");
+    expect(navId("tab:Squad")).toHaveAccessibleName("Squad, 3 need your call");
+  });
+
+  it("leaves other rows alone: plain name, no description", () => {
+    setup({ attention });
+    expect(navId("tab:Tactics")).toHaveAccessibleName("Tactics");
+    expect(navId("tab:Tactics")).not.toHaveAttribute("aria-description");
+    expect(navId("tab:Tactics").querySelector('[data-slot="rail-attention"]')).toBeNull();
+  });
+
+  it("draws a warning icon, the count only above 1, and no state word", () => {
+    setup({ attention });
+    const one = navId("tab:Scrims").querySelector('[data-slot="rail-attention"]')!;
+    expect(one.querySelector("svg")).not.toBeNull();
+    expect(one.getAttribute("aria-hidden")).toBe("true");
+    expect(one.textContent).toBe("");
+    const many = navId("tab:Squad").querySelector('[data-slot="rail-attention"]')!;
+    expect(many.textContent).toBe("3");
+    expect(many.className).toContain("text-nav");
+    expect(navId("tab:Scrims").textContent).not.toMatch(/not planned|needs/i);
+  });
+
+  it("rolls up onto a collapsed header, and only when it is collapsed", () => {
+    setup({ attention });
+    fireEvent.click(header("Club"));
+    expect(header("Club")).toHaveAccessibleName("Club, 4 need your call");
+    expect(header("Club")).toHaveAttribute("aria-description", "Lineup incomplete");
+    expect(header("Club").querySelector('[data-slot="rail-attention"]')).not.toBeNull();
+    fireEvent.click(header("Club"));
+    expect(header("Club")).toHaveAccessibleName("Club");
+    expect(header("Club").querySelector('[data-slot="rail-attention"]')).toBeNull();
+    // Market is collapsed by default and holds Transfers.
+    expect(header("Market")).toHaveAccessibleName("Market, 2 need your call");
+  });
+
+  it("keeps the badge count in the name next to the attention text", () => {
+    setup({ attention, pendingOffersCount: 3, activeTab: "Transfers" });
+    expect(navId("tab:Transfers")).toHaveAccessibleName("Transfers, 2 need your call, 3");
+  });
+
+  it("sets every badge in the nav text size, never under 10 px", () => {
+    setup({ unreadMessagesCount: 21, activeTab: "Transfers", pendingOffersCount: 3 });
+    const badges = document.querySelectorAll('[data-slot="rail-item-badge"]');
+    expect(badges.length).toBeGreaterThan(0);
+    for (const b of badges) {
+      expect(b.className).toContain("text-nav");
+      expect(b.className).not.toContain("text-xs");
+    }
   });
 });
