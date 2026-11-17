@@ -115,3 +115,24 @@ describe("android", () => {
     }
   });
 });
+
+describe("degenerate inputs", () => {
+  const base = { platform: "desktop", current: "tree" } as const;
+
+  it("is split for a 0 x 0 slot", () => {
+    expect(decideRailMode({ ...base, slotW: 0, slotH: 0, rootPx: 16 })).toBe("split");
+  });
+
+  it("is split, never tree, when the root size is NaN (every comparison is false)", () => {
+    expect(decideRailMode({ ...base, slotW: 5000, slotH: 5000, rootPx: NaN })).toBe("split");
+  });
+
+  it("uses the px floors for a root of 0 or 9", () => {
+    for (const rootPx of [0, 9]) {
+      expect(railNeed(rootPx)).toBe(622);
+      expect(railWTree(rootPx)).toBe(192);
+      expect(decideRailMode({ ...base, slotW: 1072, slotH: 622, rootPx })).toBe("tree");
+      expect(decideRailMode({ ...base, slotW: 1071, slotH: 622, rootPx })).toBe("split");
+    }
+  });
+});
