@@ -36,7 +36,7 @@ describe("pool gates", () => {
 
   it("fail when the pool outgrows its limits: about 5,000 players, 800 staff, or the game's ops per list", () => {
     expect(POOL_LIMITS).toMatchObject({ players: 5000, staff: 800, opsPerList: 5000 });
-    expect(gates(overlay, { limits: { players: 33 } })["pool-size"]).toMatchObject({ ok: false, detail: expect.stringContaining("34 pool players (limit 33)") });
+    expect(gates(overlay, { limits: { players: 34 } })["pool-size"]).toMatchObject({ ok: false, detail: expect.stringContaining("35 pool players (limit 34)") });
     expect(gates(overlay, { limits: { staff: 13 } })["pool-size"]).toMatchObject({ ok: false, detail: expect.stringContaining("14 pool staff (limit 13)") });
     expect(gates(overlay, { limits: { opsPerList: 20 } })["pool-size"]).toMatchObject({ ok: false, detail: expect.stringContaining("the game rejects more than 20") });
   });
@@ -104,7 +104,7 @@ describe("refresh with --pool", () => {
     const withPool = await run({ inputs });
     expect(withPool.overlay.players.slice(0, plain.overlay.players.length)).toEqual(plain.overlay.players);
     expect(withPool.overlay.staff.slice(0, plain.overlay.staff.length)).toEqual(plain.overlay.staff);
-    expect(withPool.overlay.players).toHaveLength(plain.overlay.players.length + 34);
+    expect(withPool.overlay.players).toHaveLength(plain.overlay.players.length + 35);
     expect(withPool.overlay.staff).toHaveLength(plain.overlay.staff.length + 14);
     expect(withPool.gates.results.map((g) => g.name)).toEqual([...plain.gates.results.map((g) => g.name), "pool-size", "pool-complete", "pool-ids", "pool-no-duplicates", "pool-overlay-size"]);
     for (const g of withPool.gates.results) expect(g.ok, `${g.name}: ${g.detail}`).toBe(true);
@@ -156,9 +156,9 @@ describe("refresh with --pool", () => {
 
     it("has a pool section with the counts by role, region, level and staff kind", () => {
       expect(report).toContain("## Active-pros pool");
-      expect(report).toContain("34 players and 14 staff added as teamless free agents");
+      expect(report).toContain("35 players and 14 staff added as teamless free agents");
       expect(report).toContain("### Ratings: stats or tier default");
-      expect(report).toContain("0 of 48 adds were rated from stats; 48 took the tier default.");
+      expect(report).toContain("0 of 49 adds were rated from stats; 49 took the tier default.");
       for (const heading of ["Players by position", "Players by region", "Players by best tournament level", "Players by tier", "Staff by game role (Leaguepedia label)", "Staff by region", "Staff by best tournament level"]) {
         expect(report).toContain(heading);
       }
@@ -172,8 +172,8 @@ describe("refresh with --pool", () => {
       expect(report).toContain("| people with a roster entry in the filter | 61 |");
       expect(report).toContain("| no Players page | 6 |");
       expect(report).toContain("| already in the game (matcher and id-map.json) | 5 |");
-      expect(report).toContain("| on a team the game has (roster overlay handles them) | 1 |");
-      expect(report).toContain("| added | 48 |");
+      expect(report).toContain("| on a team the game has (roster overlay handles them) | 0 |");
+      expect(report).toContain("| added | 49 |");
     });
 
     it("shows the qualifier-cap effect", () => {
@@ -232,7 +232,7 @@ describe("refresh with --pool", () => {
       expect(addsOf(rated).filter((o) => o.op !== "add" || !tops.includes(o.pool?.page))).toEqual(rest);
       expect(rated.overlay.staff).toEqual(plain.overlay.staff);
       expect(rated.gates.ok).toBe(true);
-      expect(rated.report).toContain(`${tops.length} of 48 adds were rated from stats; ${48 - tops.length} took the tier default.`);
+      expect(rated.report).toContain(`${tops.length} of 49 adds were rated from stats; ${49 - tops.length} took the tier default.`);
       expect(rated.report).toMatch(/\| Top \| \d+ \| \d* ?\|?/);
       expect(rated.report).toContain("Players by tier");
       expect(serializeOverlay(rated.overlay)).toBe(serializeOverlay((await run({ inputs, statsRows: rowsFor(pages, tops[0]) })).overlay));
@@ -250,24 +250,24 @@ describe("refresh with --pool", () => {
       const alone = await run({ inputs, statsRows: rows });
       const pooled = await run({ inputs, statsRows: rows, anchors });
       const op = (result: typeof plain, page: string) => (result.overlay.players as Array<Record<string, any>>).find((o) => o.op === "add" && o.pool?.page === page)!;
-      expect(alone.report).toContain(`0 of 48 adds were rated from stats; 48 took the tier default.`);
+      expect(alone.report).toContain(`0 of 49 adds were rated from stats; 49 took the tier default.`);
       for (const page of tops) expect(op(pooled, page).pool).toMatchObject({ rating: "stats", rating_competition: pages.indexOf(page) % 2 === 0 ? "ga" : "gb" });
-      expect(pooled.report).toContain(`${tops.length} of 48 adds were rated from stats, anchored to the game's league levels; ${48 - tops.length} took a default: 0 the default of their league, 0 the default of the game tier of their league`);
-      // 34 players and 14 staff. Players with no mapped league (none in the fixtures) take the judgment default in tiers 1 and 2 and the
+      expect(pooled.report).toContain(`${tops.length} of 49 adds were rated from stats, anchored to the game's league levels; ${49 - tops.length} took a default: 0 the default of their league, 0 the default of the game tier of their league`);
+      // 35 players and 14 staff. Players with no mapped league (none in the fixtures) take the judgment default in tiers 1 and 2 and the
       // tier default in tier 3, as staff do.
       const adds = (pooled.overlay.players as Array<Record<string, any>>).filter((o) => o.op === "add" && o.pool);
       const judgment = adds.filter((o) => o.pool.rating === "judgment-default");
       const tierDefault = adds.filter((o) => o.pool.rating === "tier-default");
       expect(judgment.every((o) => o.pool.tier === 1 || o.pool.tier === 2)).toBe(true);
       expect(adds.filter((o) => o.pool.tier === 3 && o.pool.rating !== "stats").every((o) => o.pool.rating === "tier-default")).toBe(true);
-      expect(judgment.length + tierDefault.length + tops.length).toBe(34);
+      expect(judgment.length + tierDefault.length + tops.length).toBe(35);
       expect(pooled.report).toContain(`${judgment.length} the judgment default`);
       expect(pooled.report).toContain(`${tierDefault.length + 14} the tier default (staff, and tier-3 people with no mapped league)`);
     });
 
     it("rates nobody when the rows give no cohort", async () => {
       const result = await run({ inputs, statsRows: rowsFor(["Nobody"], "Nobody") });
-      expect(result.report).toContain("0 of 48 adds were rated from stats; 48 took the tier default.");
+      expect(result.report).toContain("0 of 49 adds were rated from stats; 49 took the tier default.");
     });
   });
 

@@ -103,8 +103,8 @@ describe("selectPool", () => {
   });
 
   it("adds the people the game does not have and says what it left out", () => {
-    expect(result.counts).toMatchObject({ considered: 61, noPage: 6, inGame: 5, onGameTeam: 1, handledByRoster: 0, uncertain: 0, noPosition: 1, duplicates: 0, collisions: 0 });
-    expect(result.players).toHaveLength(34);
+    expect(result.counts).toMatchObject({ considered: 61, noPage: 6, inGame: 5, onGameTeam: 0, handledByRoster: 0, uncertain: 0, noPosition: 1, duplicates: 0, collisions: 0 });
+    expect(result.players).toHaveLength(35);
     expect(result.staff).toHaveLength(14);
   });
 
@@ -117,8 +117,31 @@ describe("selectPool", () => {
     expect(result.statuses.get("Aiming")).toMatchObject({ id: world.players.find((p) => p.match_name === "Aiming")!.id });
   });
 
-  it("leaves out people on a team the game has: the roster overlay handles them", () => {
-    expect(result.statuses.get("Obsess")).toMatchObject({ state: "excluded", code: "on-game-team" });
+  it("leaves out people on a team the game has only when the roster overlay of this run handles them", () => {
+    const rows = [row({ player: "Obsess", ign: "Obsess", name: "Patrick Engelmann", team: "Fnatic", rmin: "Top", rmax: "Top", prole: "Top" })];
+    const handled = select(rows, { rosterTitles: { player: new Set(["Obsess"]) } });
+    expect(handled.statuses.get("Obsess")).toMatchObject({ state: "excluded", code: "on-game-team" });
+    expect(handled.counts.onGameTeam).toBe(1);
+    expect(handled.players).toHaveLength(0);
+  });
+
+  it("does not add a person on a game team whose name may match a game record: it needs a human", () => {
+    const rows = [row({ player: "Aimingg", ign: "Aimingg", name: "Kim Ha-ram", country: "South Korea", birth: "", team: "Fnatic", prole: "Co-Streamer", rmin: "Bot", rmax: "Bot" })];
+    const out = select(rows);
+    expect(out.players).toHaveLength(0);
+    expect(out.statuses.get("Aimingg")).toMatchObject({ state: "refused", code: "ambiguous-with-game" });
+  });
+
+  it("keeps a person whose team the game has but whom no roster handles (a co-streamer): the normal pool rule decides", () => {
+    // Players-page team is a game team, role is not a playing one, and the roster overlay adds nobody by this name.
+    const rows = [row({ player: "Obsess", ign: "Obsess", name: "Patrick Engelmann", team: "Fnatic", prole: "Co-Streamer", rmin: "Top", rmax: "Top" })];
+    const out = select(rows);
+    expect(out.statuses.get("Obsess")).toMatchObject({ state: "added" });
+    expect(out.counts.onGameTeam).toBe(0);
+    expect(out.players.map((e) => e.page)).toEqual(["Obsess"]);
+    // still subject to the other rules: an unmatched person with no position stays out
+    const none = select([row({ player: "Obsess", ign: "Obsess", name: "Patrick Engelmann", team: "Fnatic", prole: "Co-Streamer", rmin: "Co-Streamer", rmax: "Co-Streamer" })]);
+    expect(none.statuses.get("Obsess")).toMatchObject({ state: "refused", code: "no-position" });
   });
 
   it("leaves out people the same run's roster overlay already adds", () => {
@@ -250,7 +273,7 @@ describe("buildPoolOps", () => {
   const staffOp = (page: string) => ops.staff.find((e) => e.op.pool.page === page)!.op;
 
   it("emits teamless adds the overlay schema accepts", () => {
-    expect(ops.players).toHaveLength(34);
+    expect(ops.players).toHaveLength(35);
     expect(ops.staff).toHaveLength(14);
     for (const entry of [...ops.players, ...ops.staff]) {
       expect(entry).toMatchObject({ teamId: null, competition: null });

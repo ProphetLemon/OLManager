@@ -123,18 +123,24 @@ export function selectPool({ people, context, world, rosterIds = new Set(), rost
       statuses.set(person.page, { state: "excluded", code: "in-game", reason: `already in the game as ${game.id}`, id: game.id });
       continue;
     }
-    if (game.status === "on-game-team") {
-      counts.onGameTeam += 1;
-      statuses.set(person.page, { state: "excluded", code: "on-game-team", reason: "his current team is a team the game has; the roster overlay handles him" });
-      continue;
-    }
-    if (game.status === "uncertain") {
-      refuse(person, "ambiguous-with-game", `possible match with a game record, needs a human (pin it in id-map.json): ${game.reason ?? "unconfirmed match"}`, "uncertain");
-      continue;
-    }
     const id = poolId(person.kind, person.page);
     const sameTitle = rosterKeys[person.kind === "staff" ? "staff" : "player"].has(titleKey(person.page));
-    if (rosterIds.has(id) || sameTitle) {
+    const handledByOverlay = rosterIds.has(id) || sameTitle;
+    // A current team the game has excludes a person only when the roster overlay of this run really handles him. A player
+    // whose Players page names a game team but who is on none of its playing rosters (a co-streamer, say) is nobody's
+    // business but the pool's, so he falls through to the same checks as any other candidate.
+    if (game.status === "on-game-team" && handledByOverlay) {
+      counts.onGameTeam += 1;
+      statuses.set(person.page, { state: "excluded", code: "on-game-team", reason: "his current team is a team the game has and the roster overlay of this run handles him", id });
+      continue;
+    }
+    // `unconfirmed` is the matcher's doubt about a person on a game team: not handled by the overlay, still maybe in the game.
+    const doubt = game.status === "uncertain" ? game.reason : game.status === "on-game-team" ? game.unconfirmed : undefined;
+    if (game.status === "uncertain" || (game.status === "on-game-team" && "unconfirmed" in game)) {
+      refuse(person, "ambiguous-with-game", `possible match with a game record, needs a human (pin it in id-map.json): ${doubt ?? "unconfirmed match"}`, "uncertain");
+      continue;
+    }
+    if (handledByOverlay) {
       counts.handledByRoster += 1;
       const why = sameTitle && !rosterIds.has(id) ? `already adds the page "${person.page}" under another spelling` : `already adds or moves ${id}`;
       statuses.set(person.page, { state: "excluded", code: "roster-overlay", reason: `the roster overlay of this run ${why}`, id });

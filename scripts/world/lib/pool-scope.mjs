@@ -336,7 +336,7 @@ export function gameTeamKeys(teamMap) {
 /**
  * Is this person already in the game?
  * `in-game`: matched to a game player or staff id. `on-game-team`: not matched, but his current team is one the game
- * has, so the roster overlay handles him. `uncertain`: a weak or ambiguous match that needs a human. `new`: neither.
+ * has (the pool leaves him to the roster overlay only when that overlay handles him; `unconfirmed` carries a weak or ambiguous match). `uncertain`: a weak or ambiguous match that needs a human. `new`: neither.
  */
 export function gameStatus(person, { playerIndex, staffIndex, overrides, teamKeys }) {
   const profile = person.profile;
@@ -348,7 +348,11 @@ export function gameStatus(person, { playerIndex, staffIndex, overrides, teamKey
   );
   if (result.status === "matched") return { status: "in-game", id: result.entity.id };
   const teams = [profile.team, ...String(profile.currentTeams ?? "").split(",")].map(compactKey).filter(Boolean);
-  if (teams.some((team) => teamKeys.has(team))) return { status: "on-game-team" };
+  if (teams.some((team) => teamKeys.has(team))) {
+    // The matcher's doubt travels along: a person the roster overlay does not handle is still not new when a game record may be him.
+    const doubtful = result.status === "review" || result.status === "ambiguous";
+    return doubtful ? { status: "on-game-team", unconfirmed: result.reason } : { status: "on-game-team" };
+  }
   if (result.status === "review" || result.status === "ambiguous") return { status: "uncertain", reason: result.reason };
   return { status: "new" };
 }

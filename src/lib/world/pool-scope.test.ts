@@ -313,6 +313,12 @@ describe("gameStatus", () => {
     expect(gameStatus(person({ ign: "Newbie", name: "Some One", currentTeams: "Other, G2 Esports" }), context)).toEqual({ status: "on-game-team" });
   });
 
+  it("carries the matcher's doubt along for someone on a team the game has", () => {
+    const status = gameStatus(person({ ign: "Caper", name: "Rasmus Winther", country: "Denmark", team: "G2 Esports" }), context);
+    expect(status).toMatchObject({ status: "on-game-team" });
+    expect(status).toHaveProperty("unconfirmed");
+  });
+
   it("flags a same-name match with no birth date as uncertain, not as new", () => {
     expect(gameStatus(person({ ign: "Caper", name: "Rasmus Winther", country: "Denmark" }), context).status).toBe("uncertain");
   });

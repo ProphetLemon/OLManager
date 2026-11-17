@@ -54,7 +54,7 @@ export interface Person {
 }
 export type GameStatus =
   | { status: "in-game"; id: string }
-  | { status: "on-game-team" }
+  | { status: "on-game-team"; unconfirmed?: string }
   | { status: "uncertain"; reason?: string }
   | { status: "new" };
 export interface PeopleSummary {
