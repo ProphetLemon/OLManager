@@ -16,11 +16,11 @@
   /* On-map labels of the match arena only: one of the two exceptions to "rem only".
      Android runs a 9 px root, where 0.75rem would be 6.75 px, so the floor is
      physical. Never use it outside src/ui-v2/match (the only other exception is
-     --text-rail below). */
+     --text-nav below). */
   --text-map: max(0.75rem, 10px);
   /* Navigation labels (rail, later the Club tree): the second px-floored size,
      for the same reason as --text-map. Never use it outside src/ui-v2/shell. */
-  --text-rail: max(0.75rem, 10px);
+  --text-nav: max(0.75rem, 10px);
 
   /* P1 type scale (rem only) */
   --text-section: 1.375rem;
