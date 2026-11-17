@@ -59,7 +59,9 @@ export function RailTree({
           />
         </li>
       ))}
-      <li role="separator" className="mx-1.5 my-2 border-t border-line" />
+      <li role="presentation" className="mx-1.5 my-2">
+        <hr className="m-0 border-0 border-t border-line" />
+      </li>
       {groups.map((g) => {
         const open = isGroupOpen(openGroups, g.id);
         const listId = `${baseId}-${g.id}`;

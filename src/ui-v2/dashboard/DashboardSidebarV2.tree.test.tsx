@@ -70,6 +70,19 @@ describe("Tree rail structure", () => {
     for (const g of ["club", "market", "world"]) expect(navId(`group:${g}`)).toBeInTheDocument();
   });
 
+  it("keeps the divider valid inside the list: every child of a list is a plain item", () => {
+    setup();
+    const nav = screen.getByRole("navigation", { name: "Main navigation" });
+    expect(nav.querySelector('li[role="separator"]')).toBeNull();
+    for (const ul of nav.querySelectorAll("ul")) {
+      for (const child of ul.children) {
+        expect(child.tagName).toBe("LI");
+        expect(child.getAttribute("role") === null || child.getAttribute("role") === "presentation").toBe(true);
+      }
+    }
+    expect(within(nav).getAllByRole("separator").length).toBeGreaterThanOrEqual(1);
+  });
+
   it("gives each group header aria-expanded and aria-controls pointing at its list", () => {
     setup();
     for (const [name, open] of [["Club", "true"], ["Market", "false"], ["World", "false"]] as const) {
