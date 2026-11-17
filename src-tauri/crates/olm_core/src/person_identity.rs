@@ -213,10 +213,25 @@ pub struct PersonKey {
 
 impl PersonKey {
     pub fn of(player: &Player) -> Self {
+        // `folded_names` and `folded_real_names` in one pass: an index folds every record.
+        let mut names = Vec::with_capacity(2);
+        let mut real_names = Vec::with_capacity(2);
+        for raw in [&player.match_name, &player.full_name] {
+            let folded = fold_name(raw);
+            if folded.is_empty() {
+                continue;
+            }
+            if name_words(raw) >= 2 && !real_names.contains(&folded) {
+                real_names.push(folded.clone());
+            }
+            if !names.contains(&folded) {
+                names.push(folded);
+            }
+        }
         Self {
             id: player.id.clone(),
-            names: folded_names(player),
-            real_names: folded_real_names(player),
+            names,
+            real_names,
             born: parse_date_of_birth(&player.date_of_birth),
             nationality: nationality_key(&player.nationality),
         }

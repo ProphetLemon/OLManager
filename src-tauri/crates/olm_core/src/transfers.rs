@@ -903,27 +903,26 @@ pub(crate) fn contracted_person_index(game: &Game) -> PersonIndex {
 /// A free-agent pick: player id, asking price, market value.
 type FreeAgentPick = (String, u64, u64);
 
-/// The best pick of `pick` that could not be the same person as a contracted player. `pick`
-/// returns the best candidate that is not in the skip set; a twin goes into the set and the
-/// pick is repeated, so only the few twins on top of the ranking cost a second scan.
-fn pick_untwinned(
+/// The best of `candidates`, by `rank`, that could not be the same person as a contracted
+/// player. Among equal ranks the last candidate wins, as `max_by_key` picks. The ranking is
+/// built once and only its first few entries are checked, so a twin on top costs one lookup,
+/// not another scan of the market.
+fn best_untwinned(
     game: &Game,
     twins: &PersonIndex,
-    mut pick: impl FnMut(&HashSet<String>) -> Option<FreeAgentPick>,
+    candidates: impl Iterator<Item = FreeAgentPick>,
+    rank: impl Fn(&FreeAgentPick) -> u64,
 ) -> Option<FreeAgentPick> {
-    let mut skip: HashSet<String> = HashSet::new();
-    loop {
-        let candidate = pick(&skip)?;
-        let is_twin = game
+    let mut ranked: Vec<FreeAgentPick> = candidates.collect();
+    ranked.reverse();
+    ranked.sort_by_key(|candidate| std::cmp::Reverse(rank(candidate)));
+    ranked.into_iter().find(|candidate| {
+        !game
             .players
             .iter()
             .find(|player| player.id == candidate.0)
-            .is_some_and(|player| twins.has_twin_of(player));
-        if !is_twin {
-            return Some(candidate);
-        }
-        skip.insert(candidate.0);
-    }
+            .is_some_and(|player| twins.has_twin_of(player))
+    })
 }
 
 fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
@@ -980,10 +979,12 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
 
         let preferred_role = ai_team_priority_role(game, &team_id);
 
-        let role_candidate = pick_untwinned(game, &twins, |skip| {
+        let role_candidate = best_untwinned(
+            game,
+            &twins,
             game.players
                 .iter()
-                .filter(|player| player.team_id.is_none() && !skip.contains(&player.id))
+                .filter(|player| player.team_id.is_none())
                 .filter(|player| crate::residency::has_import_slot_for(game, team, player))
                 .filter(|player| lol_role_to_string(&player.natural_position) == preferred_role)
                 .filter_map(|player| {
@@ -993,14 +994,16 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
                         asking_price as u64,
                         player.market_value,
                     ))
-                })
-                .max_by_key(|(_, _, market_value)| *market_value)
-        });
+                }),
+            |(_, _, market_value)| *market_value,
+        );
 
-        let candidate = pick_untwinned(game, &twins, |skip| {
+        let candidate = best_untwinned(
+            game,
+            &twins,
             game.players
                 .iter()
-                .filter(|player| player.team_id.is_none() && !skip.contains(&player.id))
+                .filter(|player| player.team_id.is_none())
                 .filter(|player| crate::residency::has_import_slot_for(game, team, player))
                 .filter_map(|player| {
                     let asking_price = (player.market_value as i64).max(25_000) / 5;
@@ -1009,9 +1012,9 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
                         asking_price as u64,
                         player.market_value,
                     ))
-                })
-                .max_by_key(|(_, _, market_value)| *market_value)
-        });
+                }),
+            |(_, _, market_value)| *market_value,
+        );
 
         let Some((player_id, fee, _)) = role_candidate.or(candidate) else {
             continue;
@@ -1057,10 +1060,12 @@ pub fn ai_agent_purchase(game: &mut Game, team_id: &str, role: &str) -> bool {
     }
 
     let twins = contracted_person_index(game);
-    let candidate = pick_untwinned(game, &twins, |skip| {
+    let candidate = best_untwinned(
+        game,
+        &twins,
         game.players
             .iter()
-            .filter(|player| player.team_id.is_none() && !skip.contains(&player.id))
+            .filter(|player| player.team_id.is_none())
             .filter(|player| crate::residency::has_import_slot_for(game, &team, player))
             .filter(|player| lol_role_to_string(&player.natural_position) == role)
             .filter_map(|player| {
@@ -1070,9 +1075,9 @@ pub fn ai_agent_purchase(game: &mut Game, team_id: &str, role: &str) -> bool {
                     asking_price as u64,
                     player.market_value,
                 ))
-            })
-            .max_by_key(|(_, fee, _)| *fee)
-    });
+            }),
+        |(_, fee, _)| *fee,
+    );
 
     if let Some((player_id, fee, _market_value)) = candidate {
         let Some(player) = game.players.iter().find(|p| p.id == player_id) else {
@@ -3285,14 +3290,16 @@ fn academy_role_count(game: &Game, academy_team_id: &str, role: &str) -> usize {
 
 fn try_assign_free_agent_by_role(game: &mut Game, academy_team_id: &str, role: &str) -> bool {
     let twins = contracted_person_index(game);
-    let candidate_id = pick_untwinned(game, &twins, |skip| {
+    let candidate_id = best_untwinned(
+        game,
+        &twins,
         game.players
             .iter()
-            .filter(|player| player.team_id.is_none() && !skip.contains(&player.id))
+            .filter(|player| player.team_id.is_none())
             .filter(|player| lol_role_to_string(&player.natural_position) == role)
-            .max_by_key(|player| player.market_value)
-            .map(|player| (player.id.clone(), 0, player.market_value))
-    })
+            .map(|player| (player.id.clone(), 0, player.market_value)),
+        |(_, _, market_value)| *market_value,
+    )
     .map(|(id, _, _)| id);
 
     let Some(candidate_id) = candidate_id else {

@@ -546,21 +546,17 @@ pub fn evaluate_purchases(team_id: &str, game: &mut Game, report: &RosterReport)
     // Compute cheapest available free agent wage + estimate for headroom. A teamless twin
     // of a contracted player is not available: the club would not sign him.
     let twins = crate::transfers::contracted_person_index(game);
-    let mut cheapest_fa_wage = 0;
-    let mut twin_ids: std::collections::HashSet<&str> = std::collections::HashSet::new();
-    while let Some(cheapest) = game
+    let mut free_agents: Vec<&Player> = game
         .players
         .iter()
-        .filter(|p| p.team_id.is_none() && !twin_ids.contains(p.id.as_str()))
-        .min_by_key(|p| p.wage)
-    {
-        if twins.has_twin_of(cheapest) {
-            twin_ids.insert(cheapest.id.as_str());
-            continue;
-        }
-        cheapest_fa_wage = cheapest.wage;
-        break;
-    }
+        .filter(|p| p.team_id.is_none())
+        .collect();
+    free_agents.sort_by_key(|p| p.wage);
+    let cheapest_fa_wage = free_agents
+        .into_iter()
+        .find(|p| !twins.has_twin_of(p))
+        .map(|p| p.wage)
+        .unwrap_or(0);
 
     let projected_bill = current_wage_bill + i64::from(cheapest_fa_wage);
     if projected_bill > soft_cap_wage {
