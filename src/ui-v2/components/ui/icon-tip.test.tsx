@@ -171,3 +171,46 @@ describe("cleanup", () => {
     expect(vi.getTimerCount()).toBeLessThanOrEqual(1);
   });
 });
+
+describe("keyboard focus of the parent (followFocus)", () => {
+  function focusSetup() {
+    render(
+      <button type="button">
+        <IconTip label="Settings" followFocus data-testid="icon">
+          <i />
+        </IconTip>
+      </button>,
+    );
+    return screen.getByRole("button");
+  }
+
+  it("shows the label as soon as the parent button takes focus, and hides it on blur", () => {
+    const button = focusSetup();
+    act(() => button.focus());
+    expect(tip()).toHaveTextContent("Settings");
+    act(() => button.blur());
+    expect(tip()).toBeNull();
+  });
+
+  it("closes on Escape while the parent keeps focus", () => {
+    const button = focusSetup();
+    act(() => button.focus());
+    expect(tip()).not.toBeNull();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(tip()).toBeNull();
+    expect(button).toHaveFocus();
+  });
+
+  it("stays closed when a pointer press caused the focus", () => {
+    const button = focusSetup();
+    fireEvent.pointerDown(button, { pointerType: "mouse" });
+    act(() => button.focus());
+    expect(tip()).toBeNull();
+  });
+
+  it("does nothing on focus without the prop", () => {
+    const { icon } = setup();
+    act(() => icon.parentElement!.focus());
+    expect(tip()).toBeNull();
+  });
+});

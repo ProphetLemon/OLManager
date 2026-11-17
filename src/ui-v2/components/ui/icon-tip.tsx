@@ -23,6 +23,11 @@ const GAP = 6;
 export interface IconTipProps extends Omit<HTMLAttributes<HTMLSpanElement>, "title"> {
   /** The text of the tip. Also what a pointer user reads; screen readers get it elsewhere. */
   label: string;
+  /**
+   * Also open while the parent button has keyboard focus (focus that a pointer did not cause), so the label is
+   * not a pointer-only affordance. Escape closes it and focus stays on the parent.
+   */
+  followFocus?: boolean;
   children?: ReactNode;
 }
 
@@ -42,7 +47,7 @@ interface Placement {
  * screen with many icons carries no extra tree. The names should also reach assistive
  * technology through the parent's description, because the plate is not announced.
  */
-export function IconTip({ label, className, children, ...rest }: IconTipProps) {
+export function IconTip({ label, className, followFocus = false, children, ...rest }: IconTipProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLSpanElement>(null);
   const hoverTimer = useRef<number | undefined>(undefined);
@@ -81,6 +86,32 @@ export function IconTip({ label, className, children, ...rest }: IconTipProps) {
       window.removeEventListener("scroll", close, true);
     };
   }, [open, close]);
+
+  useEffect(() => {
+    if (!followFocus) return;
+    const parent = triggerRef.current?.parentElement;
+    if (!parent) return;
+    // A click focuses the button too; only focus that did not come from a pointer is ours.
+    let pointerFocus = false;
+    const onPointerDown = () => {
+      pointerFocus = true;
+    };
+    const onFocus = () => {
+      if (!pointerFocus) setOpen(true);
+    };
+    const onBlur = () => {
+      pointerFocus = false;
+      close();
+    };
+    parent.addEventListener("pointerdown", onPointerDown);
+    parent.addEventListener("focus", onFocus);
+    parent.addEventListener("blur", onBlur);
+    return () => {
+      parent.removeEventListener("pointerdown", onPointerDown);
+      parent.removeEventListener("focus", onFocus);
+      parent.removeEventListener("blur", onBlur);
+    };
+  }, [followFocus, close]);
 
   const swallowNextClick = () => {
     const swallow = (event: Event) => {
