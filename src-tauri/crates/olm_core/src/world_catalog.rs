@@ -10,6 +10,7 @@ use crate::domain::player::{Player, TransferOfferStatus};
 use crate::domain::team::{Team, TeamKind};
 use crate::game::Game;
 use crate::generator::definitions::CompetitionManifest;
+use crate::person_identity::{folded_names, has_all_attributes_zero};
 use crate::player_age::parse_date_of_birth;
 use chrono::NaiveDate;
 use log::{info, warn};
@@ -651,26 +652,52 @@ pub fn dedupe_players(entries: Vec<(String, Player)>) -> (Vec<Player>, Vec<Dropp
     (kept, dropped)
 }
 
-/// A stale-competition player left out of a new world because a live competition holds
-/// the same person.
+/// A stale-competition player left out of a new world.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DroppedStaleTwin {
     pub player_id: String,
     pub dropped_from: String,
+    /// The live record of the same person, or empty when the record went for having no
+    /// rating data at all (every attribute at 0).
     pub live_twin_id: String,
+}
+
+/// Stale-competition ids that are a different person from the live record sharing their
+/// name. The name rule never drops them. Reviewed one by one.
+const REVIEWED_STALE_NAMESAKES: [&str; 1] = [
+    // Winner: the stale lck-cl record is a real second player named Winner.
+    "player-c46f4677",
+];
+
+/// The live competition that replaces a stale duplicate one.
+fn successor_competition(stale: &str) -> Option<&'static str> {
+    STALE_DUPLICATE_COMPETITIONS
+        .iter()
+        .find(|(candidate, _)| *candidate == stale)
+        .map(|(_, canonical)| *canonical)
 }
 
 /// Drop the records of a stale duplicate competition for people a live competition also
 /// holds. A new world keeps no team of a stale competition, so its players would become free
 /// agents next to the live record of the same person, and the AI market could sign both.
 ///
-/// The person is matched like `same_person_survivor` does (a name and a readable birth date),
-/// except that either name of the stale record may equal either name of the live one: the
-/// stale files sometimes write the nick as the full name and the other way round. Only a
-/// stale record that is a free agent or sits on a team of its own competition goes; a record
-/// sharing its id with a live one is left to [`dedupe_players`]; a live record is never
-/// dropped. `entries` pairs each player with the competition it was loaded from; survivors
-/// keep their order.
+/// A stale record goes when any of these holds:
+/// - **its successor league holds the name**: any folded name of the record (match or full
+///   name, parenthesis and accents ignored, either way round) equals a folded name of a record
+///   of the live league that replaces its file (`lck-cl` by `lckcl`, `prime_league` by `prm`).
+///   The stale files ship the same people with birth dates a month off, a year-digit typo or
+///   none, so the date is not part of the key;
+/// - **it matches a live record by name and birth date** anywhere in the catalog (the
+///   original rule, kept because a stale record can also duplicate a player of another league);
+/// - **it carries no rating data**: all nine attributes are 0, a placeholder with nothing to
+///   play.
+///
+/// Only a stale record that is a free agent or sits on a team of its own competition goes; a
+/// record sharing its id with a live one is left to [`dedupe_players`]; a live record is never
+/// dropped; reviewed namesakes ([`REVIEWED_STALE_NAMESAKES`]) never go by name. The function
+/// only filters what a world is built from: it never touches a save, and on a rehydrate it
+/// only decides which catalog records may be appended. `entries` pairs each player with the
+/// competition it was loaded from; survivors keep their order.
 pub fn drop_stale_twins_of_live_players(
     entries: Vec<(String, Player)>,
 ) -> (Vec<(String, Player)>, Vec<DroppedStaleTwin>) {
@@ -686,6 +713,8 @@ pub fn drop_stale_twins_of_live_players(
 
     let mut live_ids: HashSet<&str> = HashSet::new();
     let mut live_by_identity: HashMap<(String, NaiveDate), &str> = HashMap::new();
+    // Folded name -> id, per live competition that replaces a stale one.
+    let mut successor_names: HashMap<(&str, String), &str> = HashMap::new();
     for (competition, player) in &entries {
         if is_stale_duplicate_competition(competition) {
             continue;
@@ -695,6 +724,16 @@ pub fn drop_stale_twins_of_live_players(
             for name in names(player) {
                 live_by_identity
                     .entry((name, born))
+                    .or_insert(player.id.as_str());
+            }
+        }
+        if STALE_DUPLICATE_COMPETITIONS
+            .iter()
+            .any(|(_, canonical)| canonical == competition)
+        {
+            for name in folded_names(player) {
+                successor_names
+                    .entry((competition.as_str(), name))
                     .or_insert(player.id.as_str());
             }
         }
@@ -708,19 +747,35 @@ pub fn drop_stale_twins_of_live_players(
             && player.team_id.as_deref().is_none_or(|team| {
                 matches!(team, "fa" | "freeagent") || team.starts_with(&format!("{competition}-"))
             });
+        let by_name = || {
+            let successor = successor_competition(competition)?;
+            if REVIEWED_STALE_NAMESAKES.contains(&player.id.as_str()) {
+                return None;
+            }
+            folded_names(player).into_iter().find_map(|name| {
+                successor_names
+                    .get(&(successor, name))
+                    .map(|id| id.to_string())
+            })
+        };
+        let by_birth_date = || {
+            let born = parse_date_of_birth(&player.date_of_birth)?;
+            names(player)
+                .into_iter()
+                .find_map(|name| live_by_identity.get(&(name, born)).map(|id| id.to_string()))
+        };
         let twin = removable
-            .then(|| parse_date_of_birth(&player.date_of_birth))
-            .flatten()
-            .and_then(|born| {
-                names(player)
-                    .into_iter()
-                    .find_map(|name| live_by_identity.get(&(name, born)).copied())
-            });
-        if let Some(live_twin_id) = twin {
+            .then(|| {
+                by_name().or_else(by_birth_date).or_else(|| {
+                    has_all_attributes_zero(player).then(String::new)
+                })
+            })
+            .flatten();
+        if let Some(live_twin_id) = &twin {
             dropped.push(DroppedStaleTwin {
                 player_id: player.id.clone(),
                 dropped_from: competition.clone(),
-                live_twin_id: live_twin_id.to_string(),
+                live_twin_id: live_twin_id.clone(),
             });
         }
         drop_flags.push(twin.is_some());
@@ -860,10 +915,25 @@ mod tests {
             "2000-01-01".to_string(),
             "KR".to_string(),
             crate::domain::stats::LolRole::Mid,
-            PlayerAttributes::default(),
+            rated(),
         );
         p.team_id = team.map(str::to_string);
         p
+    }
+
+    /// Attributes at 50: a rated record (the default is all zeros, a placeholder shell).
+    fn rated() -> PlayerAttributes {
+        PlayerAttributes {
+            mechanics: 50,
+            laning: 50,
+            teamfighting: 50,
+            macro_play: 50,
+            consistency: 50,
+            shotcalling: 50,
+            champion_pool: 50,
+            discipline: 50,
+            mental_resilience: 50,
+        }
     }
 
     fn team(id: &str) -> Team {
@@ -1104,30 +1174,128 @@ mod tests {
     }
 
     #[test]
-    fn a_stale_player_with_another_birth_date_or_no_readable_one_stays() {
+    fn a_stale_player_with_another_name_or_no_twin_stays() {
         let live = born(
             player("live", "Densi", Some("prm-t1")),
             "Denis Real",
             "2003-06-03",
         );
-        let other_day = born(player("other-day", "Densi", None), "Densi", "June 4, 2003");
-        let unreadable = born(
-            player("unreadable", "Densi", None),
-            "Densi",
-            "sometime in 2003",
-        );
-        let missing = born(player("missing", "Densi", None), "Densi", "");
+        let other_name = born(player("other", "Kaiser", None), "Kaiser", "June 3, 2003");
+        let no_date = born(player("no-date", "Pasu", None), "Pasu", "");
         let (kept, dropped) = drop_stale_twins_of_live_players(vec![
             ("prm".into(), live),
-            ("prime_league".into(), other_day),
-            ("prime_league".into(), unreadable),
-            ("prime_league".into(), missing),
+            ("prime_league".into(), other_name),
+            ("prime_league".into(), no_date),
         ]);
-        assert_eq!(
-            ids(&kept),
-            vec!["live", "other-day", "unreadable", "missing"]
-        );
+        assert_eq!(ids(&kept), vec!["live", "other", "no-date"]);
         assert!(dropped.is_empty());
+    }
+
+    /// The stale file and its successor league disagree on the birth date (a month, a
+    /// day-swap, a year digit, or a missing one): the name alone is the key.
+    #[test]
+    fn a_stale_twin_is_dropped_whatever_its_birth_date_says() {
+        let cases = [
+            ("kangin", "Kangin", "2003-01-14", "2003-03-14"),
+            ("zephyr", "Zephyr", "2007-01-08", "2007-12-08"),
+            ("ddoiv", "DDoiV", "2003-10-21", "2023-10-21"),
+            ("seaz", "Seaz", "December 17, 2000", "2000-11-17"),
+            ("cracker", "Cracker", "2008-01-20", ""),
+            ("pasu", "Pasu", "", ""),
+        ];
+        for (id, nick, stale_dob, live_dob) in cases {
+            let live = born(
+                player(&format!("live-{id}"), nick, Some("lckcl-t1")),
+                &format!("{nick} Real"),
+                live_dob,
+            );
+            let stale = born(player(id, nick, None), nick, stale_dob);
+            let (kept, dropped) = drop_stale_twins_of_live_players(vec![
+                ("lckcl".into(), live),
+                ("lck-cl".into(), stale),
+            ]);
+            assert_eq!(ids(&kept), vec![format!("live-{id}").as_str()], "{nick}");
+            assert_eq!(dropped.len(), 1, "{nick}");
+        }
+    }
+
+    #[test]
+    fn a_stale_twin_with_its_nick_and_full_name_swapped_is_dropped() {
+        let live = born(
+            player("live", "Dinai", Some("lckcl-t1")),
+            "Hwang Chi-hyeon",
+            "2004-02-02",
+        );
+        let mut stale = born(player("stale", "Hwang Chi-hyeon", None), "Dinai", "");
+        stale.date_of_birth = "2001-05-05".into();
+        let (kept, _) = drop_stale_twins_of_live_players(vec![
+            ("lckcl".into(), live),
+            ("lck-cl".into(), stale),
+        ]);
+        assert_eq!(ids(&kept), vec!["live"]);
+    }
+
+    #[test]
+    fn names_fold_accents_case_parentheses_and_html_entities() {
+        let live = born(
+            player("live", "Papiteero&nbsp;", Some("prm-t1")),
+            "Pápiteero (Real)",
+            "",
+        );
+        let stale = born(player("stale", "papiteero", None), "papiteero", "");
+        let (kept, _) = drop_stale_twins_of_live_players(vec![
+            ("prm".into(), live),
+            ("prime_league".into(), stale),
+        ]);
+        assert_eq!(ids(&kept), vec!["live"]);
+    }
+
+    #[test]
+    fn a_stale_record_is_only_matched_against_its_own_successor_league() {
+        // A prime_league record whose name appears in lckcl, not in prm, stays.
+        let live = born(player("live", "Seaz", Some("lckcl-t1")), "Seaz Real", "2000-01-01");
+        let stale = born(player("stale", "Seaz", None), "Seaz", "1999-05-05");
+        let (kept, _) = drop_stale_twins_of_live_players(vec![
+            ("lckcl".into(), live),
+            ("prime_league".into(), stale),
+        ]);
+        assert_eq!(ids(&kept), vec!["live", "stale"]);
+    }
+
+    #[test]
+    fn a_stale_shell_with_every_attribute_at_zero_is_dropped_without_a_twin() {
+        let mut shell = born(player("shell", "Dome", None), "Dome", "2001-01-01");
+        shell.attributes = PlayerAttributes::default();
+        let rated = born(player("rated", "Rin", None), "Rin", "2001-01-01");
+        let (kept, dropped) = drop_stale_twins_of_live_players(vec![
+            ("prime_league".into(), shell),
+            ("prime_league".into(), rated),
+        ]);
+        assert_eq!(ids(&kept), vec!["rated"]);
+        assert_eq!(dropped[0].player_id, "shell");
+    }
+
+    #[test]
+    fn a_live_zero_attribute_record_is_never_dropped() {
+        let mut shell = born(player("live-shell", "Dome", Some("prm-t1")), "Dome", "");
+        shell.attributes = PlayerAttributes::default();
+        let (kept, _) = drop_stale_twins_of_live_players(vec![("prm".into(), shell)]);
+        assert_eq!(ids(&kept), vec!["live-shell"]);
+    }
+
+    #[test]
+    fn a_reviewed_namesake_survives_the_name_rule() {
+        let live = born(
+            player("player-eddde7b7", "Winner", Some("lckcl-t1")),
+            "Winner Real",
+            "2000-01-01",
+        );
+        let stale = born(player("player-c46f4677", "Winner", None), "Winner", "1999-09-09");
+        let (kept, _) = drop_stale_twins_of_live_players(vec![
+            ("lckcl".into(), live),
+            ("lck-cl".into(), stale),
+        ]);
+        assert_eq!(ids(&kept), vec!["player-eddde7b7", "player-c46f4677"]);
     }
 
     #[test]

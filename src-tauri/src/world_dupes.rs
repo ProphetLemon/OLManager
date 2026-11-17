@@ -61,7 +61,7 @@ fn data_dir() -> PathBuf {
 }
 
 /// The two formats the game reads (`player_age::parse_date_of_birth`, `calcAge` in the UI).
-fn parse_dob(raw: &str) -> Option<NaiveDate> {
+pub(crate) fn parse_dob(raw: &str) -> Option<NaiveDate> {
     let raw = raw.trim();
     ["%Y-%m-%d", "%B %d, %Y"]
         .iter()
@@ -97,7 +97,7 @@ fn fold_name(name: &str) -> String {
 }
 
 /// The two-letter code of a nationality the data writes either way ("KR" or "South Korea").
-fn nationality_key(raw: &str) -> String {
+pub(crate) fn nationality_key(raw: &str) -> String {
     let lowered = raw.trim().to_lowercase();
     let code = match lowered.as_str() {
         "south korea" | "korea" => "KR",

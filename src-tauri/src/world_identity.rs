@@ -1,0 +1,361 @@
+//! Identity invariants of a day-0 new-game world.
+//!
+//! The world is built the way `select_team` builds it (the same path as the `world_identity_dump`
+//! harness), and these tests assert what a QA pass checks by eye: each real person once, no free
+//! agent twin of a rostered player, no placeholder rating shells, no lane left uncovered.
+//!
+//! Reviewed exceptions live in `world_identity_review.json`, one entry per pair with a reason:
+//! - `namesakes`: different people who share a name. They never fail a test.
+//! - `deferred`: the same person twice that a later change will fix. Each entry must still
+//!   occur (a fixed pair has to leave the list) and the list may never grow past
+//!   `DEFERRED_CEILING`, so the count can only go down.
+//! - `rated_one`: a record allowed at OVR 1 or with every attribute at 0.
+//!
+//! Set `OLM_WI_PRINT=1` to print every suspect pair as ready-to-paste JSON entries.
+
+use std::collections::{BTreeSet, HashMap};
+
+use chrono::NaiveDate;
+use olm_core::domain::player::Player;
+use olm_core::domain::stats::LolRole;
+use olm_core::domain::team::TeamKind;
+use olm_core::game::Game;
+use olm_core::person_identity::{folded_names, folded_real_names, has_all_attributes_zero};
+use olm_core::world_overlay::bundled_world_overlay;
+use serde::Deserialize;
+
+use crate::pool_bench::{init_message_stores, new_game};
+use crate::world_dupes::{nationality_key, parse_dob};
+
+const REVIEW: &str = include_str!("world_identity_review.json");
+
+/// The most deferred pairs the review file may hold. Lower it when pairs are fixed; raising it
+/// needs a reviewed reason in the change that does so.
+const DEFERRED_CEILING: usize = 42;
+
+/// Main clubs (the user's club apart) missing a lane at day 0, by the lane the club page shows.
+/// Re-measured after each change; a ratchet, so it only moves down.
+const ROLE_GAP_CLUBS: usize = 10;
+
+const USER_CLUB: &str = "lec-g2-esports";
+
+#[derive(Debug, Deserialize)]
+struct Review {
+    namesakes: Vec<PairEntry>,
+    deferred: Vec<PairEntry>,
+    rated_one: Vec<RatedEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+struct PairEntry {
+    ids: [String; 2],
+    #[serde(default)]
+    class: String,
+    reason: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct RatedEntry {
+    id: String,
+    reason: String,
+}
+
+type Pair = (String, String);
+
+fn pair(a: &str, b: &str) -> Pair {
+    if a <= b {
+        (a.to_string(), b.to_string())
+    } else {
+        (b.to_string(), a.to_string())
+    }
+}
+
+fn review() -> Review {
+    let review: Review = serde_json::from_str(REVIEW).expect("world_identity_review.json parses");
+    for entry in review.namesakes.iter().chain(&review.deferred) {
+        assert!(
+            !entry.reason.trim().is_empty(),
+            "review entry {:?} needs a reason",
+            entry.ids
+        );
+    }
+    for entry in &review.rated_one {
+        assert!(!entry.reason.trim().is_empty(), "{} needs a reason", entry.id);
+    }
+    review
+}
+
+fn world() -> &'static Game {
+    static WORLD: std::sync::OnceLock<Game> = std::sync::OnceLock::new();
+    WORLD.get_or_init(|| {
+        init_message_stores();
+        let overlay = bundled_world_overlay().expect("bundled overlay");
+        new_game(&overlay, USER_CLUB).0
+    })
+}
+
+fn is_lane(role: LolRole) -> bool {
+    !matches!(role, LolRole::Unknown)
+}
+
+/// The lane the club page shows: `position` when it is a lane, else `natural_position`.
+fn shown_role(player: &Player) -> LolRole {
+    if is_lane(player.position) {
+        player.position
+    } else {
+        player.natural_position
+    }
+}
+
+fn nationalities_agree(a: &Player, b: &Player) -> bool {
+    let (x, y) = (nationality_key(&a.nationality), nationality_key(&b.nationality));
+    x.is_empty() || y.is_empty() || x == y
+}
+
+/// Whether two records may be one person. They must share a folded name (match or full name,
+/// parenthesis stripped, either way round). Then:
+/// - on the same club it is one person written twice;
+/// - a shared name and the same birth date is one person, whatever else differs;
+/// - two records that each carry a real name (two or more words) and share none are two people
+///   who happen to share a nick;
+/// - a shared real name settles it when the nationalities do not differ;
+/// - a shared nick alone needs agreeing nationalities and birth dates within 400 days (a month,
+///   a day-swap or a year-digit typo is one person; another year is not).
+fn suspect(a: &Player, b: &Player) -> bool {
+    let names_a = folded_names(a);
+    if !folded_names(b).iter().any(|name| names_a.contains(name)) {
+        return false;
+    }
+    // One club holding two records that share a name is one person written twice.
+    if a.team_id.is_some() && a.team_id == b.team_id {
+        return true;
+    }
+    let (born_a, born_b) = (parse_dob(&a.date_of_birth), parse_dob(&b.date_of_birth));
+    if born_a.is_some() && born_a == born_b {
+        return true;
+    }
+    let (real_a, real_b) = (folded_real_names(a), folded_real_names(b));
+    if !real_a.is_empty() && !real_b.is_empty() {
+        return real_a.iter().any(|name| real_b.contains(name)) && nationalities_agree(a, b);
+    }
+    if !nationalities_agree(a, b) {
+        return false;
+    }
+    match (born_a, born_b) {
+        (Some(x), Some(y)) => (x - y).num_days().abs() <= 400 || same_digits_but_one(x, y),
+        _ => true,
+    }
+}
+
+/// A year typed with one wrong digit (2003 for 2023) with the day and month intact.
+fn same_digits_but_one(x: NaiveDate, y: NaiveDate) -> bool {
+    use chrono::Datelike;
+    x.month() == y.month()
+        && x.day() == y.day()
+        && x.year()
+            .to_string()
+            .chars()
+            .zip(y.year().to_string().chars())
+            .filter(|(c, d)| c != d)
+            .count()
+            == 1
+}
+
+/// Every pair of records that may be one person, as sorted id pairs.
+fn suspects(game: &Game) -> BTreeSet<Pair> {
+    let mut by_name: HashMap<String, Vec<usize>> = HashMap::new();
+    for (index, player) in game.players.iter().enumerate() {
+        for name in folded_names(player) {
+            by_name.entry(name).or_default().push(index);
+        }
+    }
+    let mut found = BTreeSet::new();
+    for indexes in by_name.values() {
+        for (position, &i) in indexes.iter().enumerate() {
+            for &j in &indexes[position + 1..] {
+                let (a, b) = (&game.players[i], &game.players[j]);
+                if a.id != b.id && suspect(a, b) {
+                    found.insert(pair(&a.id, &b.id));
+                }
+            }
+        }
+    }
+    found
+}
+
+fn pairs_of(entries: &[PairEntry]) -> BTreeSet<Pair> {
+    entries
+        .iter()
+        .map(|entry| pair(&entry.ids[0], &entry.ids[1]))
+        .collect()
+}
+
+fn describe(game: &Game, id: &str) -> String {
+    game.players
+        .iter()
+        .find(|player| player.id == id)
+        .map(|p| {
+            format!(
+                "{id} {:?}/{:?} dob={:?} nat={} team={}",
+                p.match_name,
+                p.full_name,
+                p.date_of_birth,
+                p.nationality,
+                p.team_id.as_deref().unwrap_or("FA"),
+            )
+        })
+        .unwrap_or_else(|| format!("{id} (absent)"))
+}
+
+fn report(game: &Game, pairs: &BTreeSet<Pair>) -> String {
+    pairs
+        .iter()
+        .map(|(a, b)| format!("\n  {}\n  {}\n", describe(game, a), describe(game, b)))
+        .collect()
+}
+
+fn print_entries_if_asked(game: &Game, found: &BTreeSet<Pair>) {
+    if std::env::var("OLM_WI_PRINT").is_ok() {
+        for (a, b) in found {
+            println!(
+                "SUSPECT {{\"ids\": [\"{a}\", \"{b}\"], \"reason\": \"\"}}  // {} | {}",
+                describe(game, a),
+                describe(game, b)
+            );
+        }
+        println!("SUSPECT-COUNT {}", found.len());
+    }
+}
+
+#[test]
+fn each_person_appears_once_unless_reviewed() {
+    let game = world();
+    let review = review();
+    let found = suspects(game);
+    print_entries_if_asked(game, &found);
+    let allowed: BTreeSet<Pair> = pairs_of(&review.namesakes)
+        .union(&pairs_of(&review.deferred))
+        .cloned()
+        .collect();
+    let unexplained: BTreeSet<Pair> = found.difference(&allowed).cloned().collect();
+    assert!(
+        unexplained.is_empty(),
+        "{} pair(s) of one person twice:{}",
+        unexplained.len(),
+        report(game, &unexplained)
+    );
+}
+
+#[test]
+fn no_free_agent_duplicates_a_contracted_player() {
+    let game = world();
+    let review = review();
+    let team_of: HashMap<&str, Option<&str>> = game
+        .players
+        .iter()
+        .map(|p| (p.id.as_str(), p.team_id.as_deref()))
+        .collect();
+    let allowed: BTreeSet<Pair> = pairs_of(&review.namesakes)
+        .union(&pairs_of(&review.deferred))
+        .cloned()
+        .collect();
+    let twins: BTreeSet<Pair> = suspects(game)
+        .into_iter()
+        .filter(|(a, b)| team_of[a.as_str()].is_none() != team_of[b.as_str()].is_none())
+        .filter(|p| !allowed.contains(p))
+        .collect();
+    assert!(
+        twins.is_empty(),
+        "{} free agent(s) duplicate a contracted player:{}",
+        twins.len(),
+        report(game, &twins)
+    );
+}
+
+#[test]
+fn deferred_pairs_still_occur_and_never_grow() {
+    let game = world();
+    let review = review();
+    let found = suspects(game);
+    let deferred = pairs_of(&review.deferred);
+    let fixed: BTreeSet<Pair> = deferred.difference(&found).cloned().collect();
+    assert!(
+        fixed.is_empty(),
+        "{} deferred pair(s) no longer occur; remove them from the review file:{}",
+        fixed.len(),
+        report(game, &fixed)
+    );
+    assert_eq!(
+        review.deferred.len(),
+        deferred.len(),
+        "a deferred pair is listed twice"
+    );
+    assert!(
+        review.deferred.len() <= DEFERRED_CEILING,
+        "{} deferred pairs, ceiling {DEFERRED_CEILING}",
+        review.deferred.len()
+    );
+    assert_eq!(
+        review.deferred.len(),
+        DEFERRED_CEILING,
+        "fewer deferred pairs than the ceiling: lower DEFERRED_CEILING to {}",
+        review.deferred.len()
+    );
+}
+
+#[test]
+fn no_player_is_a_placeholder_shell_without_a_reason() {
+    let game = world();
+    let review = review();
+    let allowed: BTreeSet<&str> = review.rated_one.iter().map(|e| e.id.as_str()).collect();
+    let shells: Vec<String> = game
+        .players
+        .iter()
+        .filter(|p| has_all_attributes_zero(p) || olm_core::potential::calculate_lol_ovr(p) <= 1)
+        .filter(|p| !allowed.contains(p.id.as_str()))
+        .map(|p| describe(game, &p.id))
+        .collect();
+    assert!(
+        shells.is_empty(),
+        "{} player(s) with no rating data:\n  {}",
+        shells.len(),
+        shells.join("\n  ")
+    );
+}
+
+fn clubs_missing_a_lane(game: &Game) -> Vec<String> {
+    let user_team = game.manager.team_id.clone().unwrap_or_default();
+    game.teams
+        .iter()
+        .filter(|team| team.team_kind == TeamKind::Main && team.id != user_team)
+        .filter(|team| {
+            let shown: std::collections::HashSet<LolRole> = game
+                .players
+                .iter()
+                .filter(|p| p.team_id.as_deref() == Some(team.id.as_str()))
+                .map(shown_role)
+                .collect();
+            [LolRole::Top, LolRole::Jungle, LolRole::Mid, LolRole::Adc, LolRole::Support]
+                .iter()
+                .any(|lane| !shown.contains(lane))
+        })
+        .map(|team| team.id.clone())
+        .collect()
+}
+
+#[test]
+fn clubs_missing_a_lane_only_go_down() {
+    let game = world();
+    let gaps = clubs_missing_a_lane(game);
+    assert!(
+        gaps.len() <= ROLE_GAP_CLUBS,
+        "{} clubs miss a lane (ratchet {ROLE_GAP_CLUBS}): {gaps:?}",
+        gaps.len()
+    );
+    assert_eq!(
+        gaps.len(),
+        ROLE_GAP_CLUBS,
+        "fewer clubs miss a lane: lower ROLE_GAP_CLUBS to {} ({gaps:?})",
+        gaps.len()
+    );
+}

@@ -47,6 +47,7 @@ pub mod player_age;
 mod player_age_readers_tests;
 pub mod player_events;
 pub mod player_rating_overrides;
+pub mod person_identity;
 pub mod player_identity;
 pub mod player_rating;
 pub mod potential;

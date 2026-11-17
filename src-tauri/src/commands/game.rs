@@ -780,10 +780,17 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
     let (tagged_players, stale_twins) =
         world_catalog::drop_stale_twins_of_live_players(tagged_players);
     for twin in &stale_twins {
-        info!(
-            "[game] stale player {} from '{}' is the same person as live player {}: dropped",
-            twin.player_id, twin.dropped_from, twin.live_twin_id
-        );
+        if twin.live_twin_id.is_empty() {
+            info!(
+                "[game] stale player {} from '{}' has no rating data: dropped",
+                twin.player_id, twin.dropped_from
+            );
+        } else {
+            info!(
+                "[game] stale player {} from '{}' is the same person as live player {}: dropped",
+                twin.player_id, twin.dropped_from, twin.live_twin_id
+            );
+        }
     }
     info!(
         "[game] dropped {} stale twins of live players",
@@ -2396,9 +2403,38 @@ mod tests {
                     "live player {id} was dropped"
                 );
             }
+            // A stale record also goes when its successor league holds its name, or when it has
+            // no rating data; every other stale record stays as a free agent.
+            use olm_core::person_identity::{folded_names, has_all_attributes_zero};
+            let mut successor_names: HashSet<(String, String)> = HashSet::new();
+            for manifest in manifests.iter().filter(|m| !m.legacy) {
+                if world_catalog::STALE_DUPLICATE_COMPETITIONS
+                    .iter()
+                    .any(|(_, canonical)| *canonical == manifest.id)
+                {
+                    for player in
+                        olm_core::competitions::load_players(&data, manifest).unwrap_or_default()
+                    {
+                        for name in folded_names(&player) {
+                            successor_names.insert((manifest.id.clone(), name));
+                        }
+                    }
+                }
+            }
             let twin_ids: HashSet<&str> = twins.iter().map(|(_, p)| p.id.as_str()).collect();
             for (competition, player) in &stale {
-                if !twin_ids.contains(player.id.as_str()) {
+                let canonical = world_catalog::STALE_DUPLICATE_COMPETITIONS
+                    .iter()
+                    .find(|(stale_id, _)| stale_id == competition)
+                    .map(|(_, canonical)| canonical.to_string())
+                    .unwrap_or_default();
+                let by_name = folded_names(player)
+                    .into_iter()
+                    .any(|name| successor_names.contains(&(canonical.clone(), name)));
+                if !twin_ids.contains(player.id.as_str())
+                    && !by_name
+                    && !has_all_attributes_zero(player)
+                {
                     assert!(
                         built_ids.contains(player.id.as_str()),
                         "{competition} player {} has no live twin but was dropped",
@@ -2523,7 +2559,12 @@ mod tests {
                  {month_name_recovered} read from a \"Month D, YYYY\" date"
             );
             assert!(unknown > 0, "a new world has players without a date of birth");
-            assert!(month_name_recovered > 0, "the Month D, YYYY dates are read");
+            // The stale free agents that shipped "Month D, YYYY" dates are gone from a new
+            // world, so the format is checked on the parser itself.
+            assert!(
+                parse_date_of_birth("July 11, 2005").is_some(),
+                "the Month D, YYYY dates are read"
+            );
             assert_eq!(checked, game.players.len());
         }
 
