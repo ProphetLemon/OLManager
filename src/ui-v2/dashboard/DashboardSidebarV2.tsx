@@ -305,7 +305,13 @@ export function DashboardSidebarV2({
     if (prevRowsKey.current === rowsKey) return;
     prevRowsKey.current = rowsKey;
     const active = document.activeElement;
-    const lost = !active || active === document.body || !navRef.current?.contains(active);
+    // A collapsed Tree group hides its children (`hidden`) rather than removing them, and the
+    // browser only drops their focus a frame later, so a hidden focused row counts as lost too.
+    const lost =
+      !active ||
+      active === document.body ||
+      !navRef.current?.contains(active) ||
+      active.closest("[hidden]") !== null;
     if (!focusInside.current || !lost) return;
     (itemRefs.current[currentRowId] ?? itemRefs.current[stops[0]?.id ?? ""])?.focus();
   }, [rowsKey, currentRowId, stops]);

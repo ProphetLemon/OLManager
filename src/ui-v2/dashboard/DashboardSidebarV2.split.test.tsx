@@ -406,6 +406,37 @@ describe("Split labels that do not fit (R13)", () => {
   });
 });
 
+describe("Collapsing the group of the focused Tree child", () => {
+  it("returns focus to the group's header when a click collapses it without moving focus", () => {
+    setup({ railMode: "tree", activeTab: "Tactics" });
+    focus(navId("tab:Tactics"));
+    // A screen reader's activation: click() on the header, focus stays where it was. The
+    // children are hidden, not removed, and the browser only drops their focus a frame later.
+    act(() => navId("group:club").click());
+    expect(navId("group:club")).toHaveAttribute("aria-expanded", "false");
+    expect(navId("group:club")).toHaveFocus();
+  });
+
+  it("still restores when the browser reports the loss as a focusout with no relatedTarget", () => {
+    setup({ railMode: "tree", activeTab: "Tactics" });
+    focus(navId("tab:Tactics"));
+    const child = navId("tab:Tactics");
+    act(() => {
+      navId("group:club").click();
+      child.dispatchEvent(new FocusEvent("focusout", { bubbles: true, relatedTarget: null }));
+      child.blur();
+    });
+    expect(navId("group:club")).toHaveFocus();
+  });
+
+  it("falls back to the first stop when the header is gone too", () => {
+    const { rerender } = setup({ railMode: "tree", activeTab: "Squad" });
+    focus(navId("tab:Squad"));
+    rerender({ isUnemployed: true });
+    expect(navId("tab:Home")).toHaveFocus();
+  });
+});
+
 describe("Focus survives a rail change that is not a Tree/Split flip", () => {
   it("lands on the new active group's launcher when the panel remounts under a route change", () => {
     const { rerender } = setup({ activeTab: "Tactics" });
