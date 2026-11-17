@@ -199,6 +199,17 @@ describe("AppV2 platform", () => {
   });
 });
 
+describe("AppV2 safe areas", () => {
+  it("pads the app root with the four safe-area tokens", () => {
+    useSettingsStore.setState({ loaded: true });
+    render(<AppV2 />);
+    const root = screen.getByTestId("app-root");
+    for (const side of ["top", "right", "bottom", "left"]) {
+      expect(root.className).toContain(`var(--safe-${side})`);
+    }
+  });
+});
+
 describe("AppV2 document language", () => {
   it("mirrors the active i18n language on <html lang> on load and on every change", async () => {
     document.documentElement.lang = "xx";

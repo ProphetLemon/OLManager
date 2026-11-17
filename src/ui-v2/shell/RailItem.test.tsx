@@ -68,9 +68,9 @@ describe("RailItem", () => {
     expect(button).toHaveAttribute("aria-current", "page");
   });
 
-  it("keeps labels at 0.75rem or larger", () => {
+  it("sets labels in the rail token, never below 10px", () => {
     render(<RailItem icon={Mail} label="Inbox" onClick={vi.fn()} />);
-    expect(screen.getByText("Inbox").className).toContain("text-[0.75rem]");
+    expect(screen.getByText("Inbox").className).toContain("text-rail");
   });
 
   it("describes a launcher through aria-description and the tooltip", () => {

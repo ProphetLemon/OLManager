@@ -254,7 +254,10 @@ export default function AppV2() {
   }, []);
 
   return (
-    <div className="flex h-screen flex-col dark">
+    <div
+      data-testid="app-root"
+      className="flex h-screen flex-col dark pt-[var(--safe-top)] pr-[var(--safe-right)] pb-[var(--safe-bottom)] pl-[var(--safe-left)]"
+    >
       {!isAndroid && <TitleBarV2 />}
       <div className="flex min-h-0 flex-1 flex-col">
         <ErrorBoundary>
